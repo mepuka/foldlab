@@ -1,0 +1,17 @@
+# Checking the Arithmetic
+
+## Step 1: Calculate Total Number of Parts
+
+30 pallets × 10 boxes = 300 boxes ✓
+
+300 boxes × 13 parts = 3,900 total parts ✓
+
+## Step 2: Calculate Number of Defective Parts
+
+19% = 0.19 ✓
+
+3,900 total parts × 0.19 = 741 defective parts ✓
+
+---
+
+**All steps are correct. Final Answer: There are 741 defective parts in the shipment.**

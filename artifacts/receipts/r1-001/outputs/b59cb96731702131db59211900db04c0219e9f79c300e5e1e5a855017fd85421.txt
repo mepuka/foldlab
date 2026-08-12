@@ -1,0 +1,17 @@
+# Verification and Corrected Working
+
+## Step 1: Calculate the total number of parts in the shipment
+
+28 × 7 = 196 ✓ **Correct**
+
+196 × 6 = 1,176 ✓ **Correct**
+
+**Total parts = 1,176** ✓
+
+## Step 2: Calculate the number of defective parts
+
+1,176 × 0.13 = 152.88 ✓ **Correct**
+
+152.88 rounded to nearest whole number = 153 ✓ **Correct**
+
+**Defective parts = 153** ✓

@@ -1,0 +1,9 @@
+# Quantities with Units
+
+51 pallets
+
+7 boxes per pallet
+
+11 parts per box
+
+12 percent defective parts

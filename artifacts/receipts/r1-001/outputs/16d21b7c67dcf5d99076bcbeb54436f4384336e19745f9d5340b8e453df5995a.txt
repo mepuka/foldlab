@@ -1,0 +1,21 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts in the shipment
+
+49 × 4 = 196
+
+196 × 4 = 784 parts
+
+**Total parts = 784** ✓ (Correct)
+
+## Step 2: Calculate the number of defective parts
+
+784 × 0.06 = 47.04
+
+47.04 ≈ 47 defective parts
+
+**Defective parts = 47** ✓ (Correct)
+
+## Step 3: Calculate the number of non-defective parts
+
+784 - 47 = 737 non-defective parts

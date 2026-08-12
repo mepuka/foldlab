@@ -1,0 +1,15 @@
+I appreciate you sharing that framework, but I notice there's no actual math problem for me to solve yet.
+
+To execute a plan with arithmetic steps, I would need you to provide:
+
+- **The actual problem statement** (with specific numbers and what needs to be calculated)
+- **What operation(s)** need to be performed
+
+**Example of what I'm ready to solve:**
+
+If you gave me: *"A warehouse has 18 pallets, each containing 3 boxes. Each box holds 14 parts. Calculate the total number of parts, then find 23% of that total."*
+
+I would execute it as:
+
+18 × 3 = 54
+54 

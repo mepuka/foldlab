@@ -1,0 +1,13 @@
+# Executing the Plan
+
+## Step 1: Calculate the total number of parts
+
+23 pallets × 5 boxes per pallet = 115 boxes
+
+115 boxes × 10 parts per box = 1,150 total parts
+
+## Step 2: Calculate the number of defective parts at 8 percent
+
+1,150 total parts × 0.08 = 92 defective parts
+
+**Answer: 92 defective parts**

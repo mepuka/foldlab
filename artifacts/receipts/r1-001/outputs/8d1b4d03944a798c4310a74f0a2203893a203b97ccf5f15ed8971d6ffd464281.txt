@@ -1,0 +1,3 @@
+# Problem Statement
+
+How many defective parts are there among the 12 pallets containing 3 boxes per pallet with 4 parts per box, given that 5 percent of the parts are defective?

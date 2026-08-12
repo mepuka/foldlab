@@ -1,0 +1,21 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts
+
+19 × 8 = 152
+
+152 × 7 = 1,064
+
+**Total parts = 1,064** ✓ (Correct)
+
+## Step 2: Calculate the number of defective parts
+
+1,064 × 0.16 = 170.24
+
+**Defective parts = 170.24 (or approximately 170 defective parts)** ✓ (Correct)
+
+---
+
+## Summary
+- Total parts: **1,064**
+- Defective parts: **170.24** (rounds to **170 

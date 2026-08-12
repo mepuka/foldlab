@@ -1,0 +1,21 @@
+# Checking the Arithmetic
+
+## Step 1: Calculate total number of parts in the shipment
+
+42 × 8 = 336 ✓
+
+336 × 12 = 4,032 ✓
+
+**Total parts in shipment: 4,032** ✓
+
+## Step 2: Calculate the number of defective parts
+
+4,032 × 0.15 = 604.8 ✓
+
+**Defective parts: 604.8 (or 605 when rounded to nearest whole number)** ✓
+
+---
+
+## Result
+
+**All arithmetic is correct.** No corrections needed.

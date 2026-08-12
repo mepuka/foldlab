@@ -1,0 +1,13 @@
+# Executing the Plan
+
+## Step 1: Calculate the total number of parts
+
+40 × 5 = 200
+
+200 × 5 = 1,000 total parts
+
+## Step 2: Calculate the number of defective parts
+
+1,000 × 0.09 = 90 defective parts
+
+**Final Answer: 90 defective parts**

@@ -1,0 +1,9 @@
+# Quantities in the Problem
+
+14 pallets
+
+6 boxes per pallet
+
+11 parts per box
+
+11 percent defective parts

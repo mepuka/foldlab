@@ -1,0 +1,1 @@
+A shipment of 42 pallets, each containing 8 boxes, with 12 parts per box, has a 15 percent defective rate.

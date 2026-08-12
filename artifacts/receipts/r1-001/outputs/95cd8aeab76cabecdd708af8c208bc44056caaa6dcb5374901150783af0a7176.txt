@@ -1,0 +1,7 @@
+# Plan to Solve the Problem
+
+1. **Calculate the total number of parts in the shipment**
+   - Multiply: 14 pallets × 6 boxes per pallet × 11 parts per box = 924 total parts
+
+2. **Calculate the number of damaged parts**
+   - Multiply the total by the damage percentage: 924 × 0.11 = 101.64 damaged parts (or approximately 102 damaged parts if rounding to the nearest whole number)

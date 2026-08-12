@@ -1,0 +1,17 @@
+# Execution of Plan
+
+## Step 1: Calculate the total number of parts in the shipment
+
+28 × 7 = 196
+
+196 × 6 = 1,176
+
+**Total parts = 1,176**
+
+## Step 2: Calculate the number of defective parts
+
+1,176 × 0.13 = 152.88
+
+152.88 rounded to nearest whole number = 153
+
+**Defective parts = 153**

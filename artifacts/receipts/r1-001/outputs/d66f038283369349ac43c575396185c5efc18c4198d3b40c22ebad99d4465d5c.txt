@@ -1,0 +1,19 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts
+
+51 × 7 = 357
+
+357 × 11 = 3,927
+
+**Total parts = 3,927** ✓ (This is correct)
+
+## Step 2: Calculate the number of defective parts
+
+3,927 × 0.12 = 471.24
+
+**Defective parts = 471.24 (or approximately 471 defective parts)** ✓ (This is correct)
+
+---
+
+**All arithmetic is correct.** No corrections needed.

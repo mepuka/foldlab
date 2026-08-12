@@ -1,0 +1,15 @@
+# Execution of the Defective Parts Problem
+
+## Step 1: Calculate the total number of parts in the shipment
+
+25 × 8 = 200
+
+200 × 6 = 1,200 total parts
+
+## Step 2: Calculate the number of defective parts
+
+1,200 × 0.14 = 168 defective parts
+
+---
+
+**Answer: There are 168 defective parts in the shipment.**

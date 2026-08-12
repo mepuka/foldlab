@@ -1,0 +1,3 @@
+# Problem Restatement
+
+There are 35 pallets with 3 boxes per pallet and 9 parts per box, where 24 percent of the parts are defective and 76 percent are non-defective.

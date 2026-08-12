@@ -1,0 +1,19 @@
+# Executing the Two-Step Plan
+
+## Step 1: Calculate the total number of parts in the shipment
+
+44 × 11 = 484
+
+484 × 8 = 3,872
+
+**Total parts in shipment: 3,872**
+
+## Step 2: Calculate the number of defective parts
+
+3,872 × 0.21 = 813.12
+
+**Defective parts: 813 (rounded) or 813.12 (exact)**
+
+---
+
+**Final Answer:** The shipment contains **3,872 total parts**, of which approximately **813 parts are defective**.

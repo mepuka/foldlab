@@ -1,0 +1,22 @@
+# Corrected Working:
+
+## Step 1: Calculate Total Number of Parts
+
+19 × 8 = 152
+
+152 × 7 = 1,064
+
+**Total parts = 1,064 parts** ✓ (Correct)
+
+## Step 2: Calculate Number of Defective Parts
+
+1,064 × 0.16 = **170.24** ✓ (Correct)
+
+170.24 rounded to nearest whole number = **170** ✓ (Correct)
+
+**Defective parts = 170 parts**
+
+---
+
+## Final Answer
+The shipment contains **1,064 total parts**

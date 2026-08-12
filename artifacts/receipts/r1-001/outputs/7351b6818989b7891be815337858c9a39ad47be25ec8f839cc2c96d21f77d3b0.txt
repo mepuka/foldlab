@@ -1,0 +1,21 @@
+# Corrected Working:
+
+## Step 1: Calculate the total number of parts
+
+35 × 3 = 105 ✓
+
+105 × 9 = 945 ✓
+
+**Total parts = 945** ✓
+
+## Step 2: Calculate the number of defective parts
+
+945 × 0.24 = 226.8 ✓
+
+**Rounded up = 227 defective parts** ✓
+
+**Rounded down = 226 defective parts** ✓
+
+---
+
+**All arithmetic is correct.** No corrections needed.

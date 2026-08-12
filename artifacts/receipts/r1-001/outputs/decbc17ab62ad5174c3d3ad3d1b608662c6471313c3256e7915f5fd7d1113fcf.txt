@@ -1,0 +1,11 @@
+# Two-Step Plan to Find Defective Parts
+
+1. **Calculate the total number of parts:**
+   - Multiply the number of pallets by boxes per pallet by parts per box
+   - Total parts = 12 pallets × 3 boxes/pallet × 4 parts/box = 144 parts
+
+2. **Calculate the number of defective parts:**
+   - Multiply the total number of parts by the defect rate (5%)
+   - Defective parts = 144 parts × 0.05 = **7.2 defective parts**
+
+*Note: Since you cannot have a fractional part, this would round to approximately **7

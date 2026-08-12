@@ -1,0 +1,1 @@
+How many non-defective parts are there in 21 pallets containing 11 boxes per pallet with 14 parts per box if 22 percent of the parts are defective?

@@ -1,0 +1,5 @@
+The final numeric answer is:
+
+**471.24**
+
+(or **471** defective parts if rounding to whole parts)

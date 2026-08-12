@@ -1,0 +1,21 @@
+# Corrected Working: Finding the Number of Defective Parts
+
+**Step 1: Calculate the total number of parts in the shipment**
+
+18 × 3 = 54
+
+54 × 14 = 756
+
+**Total parts in shipment = 756 parts** ✓ (Correct)
+
+**Step 2: Calculate the number of defective parts**
+
+756 × 0.23 = 173.88
+
+173.88 ≈ 174
+
+**Number of defective parts = 174 defective parts** ✓ (Correct)
+
+---
+
+**Result: The arithmetic is correct throughout. No corrections needed.**

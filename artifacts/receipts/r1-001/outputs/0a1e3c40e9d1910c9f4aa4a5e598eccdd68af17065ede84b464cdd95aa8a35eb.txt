@@ -1,0 +1,13 @@
+# Executing the Plan: Defective Parts Problem
+
+## Step 1: Calculate the total number of parts
+
+12 × 3 = 36
+
+36 × 4 = 144 total parts
+
+## Step 2: Calculate the number of defective parts
+
+144 × 0.05 = 7.2 defective parts
+
+**Result:** 7.2 defective parts (or **7 defective parts** when rounded down to whole units)

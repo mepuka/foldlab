@@ -31,6 +31,30 @@ WITHIN-system — a fact recorded once is reused by digest and never
 re-requested — so provider nondeterminism never gets a vote. No
 semantic acceptors are needed for this rung's claims.
 
+## RESULT — PASSED, 2026-08-12 (coordinator-executed; see caveat)
+
+Bundle `artifacts/receipts/r1-001`, verified by the frozen gate:
+**960 logical steps, 380 physical calls — reuse 2.526x — spend
+$0.160229 actual vs $0.478720 naive: $0.318491 eliminated by content
+addressing**, every number recomputed from provider receipts at pinned
+prices, never taken from the manifest. One hard kill at 61 receipts;
+the resume bought zero already-recorded work (RL2: no digest has two
+receipts — exactly-once, priced). The physical count matched the
+structural prediction exactly (19 per question), which is itself
+evidence the sp-address discipline behaves as specified: reuse here is
+an arithmetic consequence of cone structure, not a cache heuristic.
+
+CAVEAT, stated plainly: no external climber — the coordinator authored
+the harness against its own frozen verifier at the operator's
+direction (R1-attempts.md). The verifier predates the harness and the
+receipts are provider-reported; the operator's console cross-check
+(~$0.16 for this run) is the independent leg. A future re-run by an
+external climber upgrades this result's provenance for free.
+
+This is the "novel → useful" experiment the writ-large assessment
+called for: real model, real dollars, measured elimination, receipts
+in the ledger, crash-recovery included — at a total cost of 16 cents.
+
 ## Workload (pinned shape, climber picks content within it)
 
 A pipeline of L >= 4 chained steps per question (e.g., extract → plan →

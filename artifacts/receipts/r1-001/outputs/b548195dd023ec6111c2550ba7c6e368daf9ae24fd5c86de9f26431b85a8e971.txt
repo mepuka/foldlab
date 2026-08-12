@@ -1,0 +1,19 @@
+# Corrected Working
+
+## Step 1: Calculate total number of parts in the shipment
+
+16 pallets × 9 boxes per pallet = 144 boxes
+
+144 boxes × 7 parts per box = 1,008 total parts
+
+✓ This step is correct.
+
+## Step 2: Calculate the number of defective parts
+
+1,008 total parts × 0.17 = 171.36 defective parts
+
+171.36 rounded = **171 defective parts**
+
+✓ This step is correct.
+
+All arithmetic checks out. No corrections needed.

@@ -1,0 +1,1 @@
+There are 51 pallets with 7 boxes per pallet containing 11 parts per box, and 12 percent of the parts are defective.

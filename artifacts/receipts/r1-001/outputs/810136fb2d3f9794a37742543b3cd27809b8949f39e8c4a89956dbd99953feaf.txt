@@ -1,0 +1,19 @@
+# Checking the Arithmetic
+
+## Step 1: Calculate the total number of parts in the shipment
+
+25 × 8 = 200 ✓
+
+200 × 6 = 1,200 ✓
+
+**Total parts in shipment = 1,200** ✓
+
+## Step 2: Calculate the number of defective parts
+
+1,200 × 0.14 = 168 ✓
+
+**Number of defective parts = 168** ✓
+
+---
+
+**All steps are correct. The shipment contains 168 defective parts.**

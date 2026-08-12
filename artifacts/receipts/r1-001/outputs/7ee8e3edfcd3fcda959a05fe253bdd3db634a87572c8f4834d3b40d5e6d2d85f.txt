@@ -1,0 +1,19 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts
+
+47 × 10 = 470
+
+470 × 8 = 3,760
+
+**Total parts = 3,760** ✓ (Correct)
+
+## Step 2: Calculate the number of defective parts
+
+3,760 × 0.20 = 752
+
+**Defective parts = 752** ✓ (Correct)
+
+---
+
+**All arithmetic is correct.** No corrections needed.

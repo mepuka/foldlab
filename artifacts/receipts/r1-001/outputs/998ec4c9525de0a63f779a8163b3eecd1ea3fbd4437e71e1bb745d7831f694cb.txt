@@ -1,0 +1,8 @@
+# Plan to Solve the Problem
+
+1. **Calculate the total number of parts in the shipment**
+   - Multiply the number of pallets (49) by the number of boxes per pallet (4) by the number of parts per box (4)
+   - Total parts = 49 × 4 × 4 = 784 parts
+
+2. **Calculate the number of defective and non-defective parts**
+   - Multiply the total parts (784) by the defective rate (6% or 0.06) to find defective parts: 784 × 0.06 = 47.04 ≈ 47 defective

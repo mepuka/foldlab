@@ -1,0 +1,19 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts in the shipment
+
+40 × 5 = 200 ✓
+
+200 × 5 = 1,000 ✓
+
+**Total parts = 1,000 parts**
+
+## Step 2: Calculate the number of defective parts
+
+1,000 × 0.09 = 90 ✓
+
+**Defective parts = 90 defective parts**
+
+---
+
+**Verification Result:** All arithmetic steps are correct. No errors found.

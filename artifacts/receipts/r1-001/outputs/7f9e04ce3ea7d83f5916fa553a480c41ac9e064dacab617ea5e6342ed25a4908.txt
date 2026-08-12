@@ -1,0 +1,15 @@
+# Executing the Two-Step Plan
+
+## Step 1: Calculate the total number of parts
+
+49 × 4 = 196
+
+196 × 4 = 784
+
+**Total parts = 784**
+
+## Step 2: Calculate the number of defective parts
+
+784 × 0.06 = 47.04
+
+**Defective parts = 47.04 (or approximately 47 when rounded)**

@@ -1,0 +1,19 @@
+# Corrected Working
+
+## Step 1: Calculate the total number of parts across all pallets
+
+35 × 3 = 105 ✓
+
+105 × 9 = 945 parts ✓
+
+**Total parts = 945** ✓
+
+## Step 2: Determine the number of defective and non-defective parts
+
+945 × 0.24 = 226.8 defective parts ✓
+
+945 × 0.76 = 718.2 non-defective parts ✓
+
+**Defective parts = 226.8** ✓
+
+**Non-defective parts = 718.

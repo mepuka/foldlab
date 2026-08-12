@@ -1,0 +1,7 @@
+# Two-Step Plan to Solve the Problem
+
+1. **Calculate the total number of parts**
+   - Multiply the number of pallets by boxes per pallet by parts per box: 49 × 4 × 4 = 784 total parts
+
+2. **Calculate the number of defective parts**
+   - Multiply the total number of parts by the defective percentage: 784 × 0.06 = 47.04 defective parts (or approximately 47 defective parts when rounded)
