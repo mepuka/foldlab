@@ -1,0 +1,16 @@
+{
+  "_provenance": "generated once by go/cmd/streamfix (go run ./cmd/streamfix); frozen. Regeneration requires a stated reason in docs/primitives/MECH-attempts.md.",
+  "alphaHead": "565a331b6c6f27b0ddd3ffd3d14bd5891dae980e0185ec1a297da9f844dcd433",
+  "betaHead": "343a90333c98deb86f60651196bae8034d5ccfc6ec0904321bb2473f23e404a9",
+  "compactionBase": "c047e942221c11b3f1a2e68bb3c15fa400d4d419601d2108fa79732a1991df85",
+  "compactionState": "3e62aed9f3f9bccb9becc247da17d154d057a4613e83304ad0cf3423a23fad90",
+  "compactionTail": 3,
+  "foldStateDigest": "bb947adc8d4623e9340ae0932ac1f7e65dbae211b991b11eaf24817dbe7dafe1",
+  "forkChildAHead": "2282ef1daa04c3c33d9a88a089a2dbc060dc17783e538a1fa3c004c59de09aa0",
+  "forkChildBHead": "efeae8b2bfc64ebd450f8acbe2d504383419bbe263270a9567b9c8d36c367775",
+  "forkTrunkHead": "67005fba4def6bcf3b0a93cca9619f5c94139de3451e46cb30c1b70ccbff6902",
+  "gzipAlphaBase64": "H4sIAAAAAAAA/2JgTcwpyEhkgABGBgYG5kRbQ1RRJpBokq0RqigzRK0xIAAA//80g5u8QgAAAA==",
+  "gzipAlphaEncoded": 55,
+  "mergeFactDigest": "d0d870192c6c57ea51ad862f6c41fc477abcca993469af9cdbd1efd8ff0ec919",
+  "mergedHead": "2ca781ff419b1b00cff5098a5fd28be7d28271e770deb5ac4aafac25c443a84b"
+}

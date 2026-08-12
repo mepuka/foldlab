@@ -1,0 +1,21 @@
+{
+  "name": "foldlab",
+  "private": true,
+  "type": "module",
+  "description": "Effect v4 + Go lab: stream folds, chain identity, and the commitment algebra — HTTP surface over the two-fold core.",
+  "scripts": {
+    "prepare": "effect-language-service patch",
+    "dev": "bun src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-beta.107",
+    "effect": "4.0.0-beta.107"
+  },
+  "devDependencies": {
+    "@effect/language-service": "latest",
+    "@types/bun": "latest",
+    "typescript": "^5.9.2"
+  }
+}
