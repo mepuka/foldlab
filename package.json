@@ -7,7 +7,11 @@
     "prepare": "effect-language-service patch",
     "dev": "bun src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "build:wasm": "bun scripts/build-wasm.ts",
+    "bench": "bun bench/stream.bench.ts",
+    "bench:go": "bun scripts/bench-go.ts",
+    "bench:compare": "bun scripts/bench-compare.ts"
   },
   "dependencies": {
     "@effect/platform-bun": "4.0.0-beta.107",
@@ -16,6 +20,7 @@
   "devDependencies": {
     "@effect/language-service": "latest",
     "@types/bun": "latest",
+    "mitata": "^1.0.34",
     "typescript": "^5.9.2"
   }
 }

@@ -11,6 +11,7 @@
       "devDependencies": {
         "@effect/language-service": "latest",
         "@types/bun": "latest",
+        "mitata": "^1.0.34",
         "typescript": "^5.9.2",
       },
     },
@@ -51,6 +52,8 @@
     "fast-check": ["fast-check@4.9.0", "", { "dependencies": { "pure-rand": "^8.0.0" } }, "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg=="],
 
     "kubernetes-types": ["kubernetes-types@1.30.0", "", {}, "sha512-Dew1okvhM/SQcIa2rcgujNndZwU8VnSapDgdxlYoB84ZlpAD43U6KLAFqYo17ykSFGHNPrg0qry0bP+GJd9v7Q=="],
+
+    "mitata": ["mitata@1.0.34", "", {}, "sha512-Mc3zrtNBKIMeHSCQ0XqRLo1vbdIx1wvFV9c8NJAiyho6AjNfMY8bVhbS12bwciUdd1t4rj8099CH3N3NFahaUA=="],
 
     "msgpackr": ["msgpackr@2.0.5", "", { "optionalDependencies": { "msgpackr-extract": "^3.0.4" } }, "sha512-cef05H/dSYpLpqp3sj/qyZh5vhUYCalnaLO7j1yOmpsR0y/XwLVtK7r5gn+U/F7CTEfMowcGhlUQJDLcLf7jcA=="],
 
