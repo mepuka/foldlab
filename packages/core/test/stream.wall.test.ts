@@ -36,7 +36,7 @@ import {
 } from "../src/stream.ts"
 
 const fixture = JSON.parse(
-  readFileSync(join(import.meta.dir, "../fixtures/stream-wall.json"), "utf8"),
+  readFileSync(join(import.meta.dir, "../../../fixtures/stream-wall.json"), "utf8"),
 ) as Record<string, string | number>
 
 const alpha = [event("alpha", 1, "a=1"), event("alpha", 2, "b=2"), event("alpha", 3, "a=3")]

@@ -37,12 +37,12 @@ import {
   renameStream,
 } from "../src/xform.ts"
 
-const wasmPath = join(import.meta.dir, "../dist/stream.wasm")
-const loaderPath = join(import.meta.dir, "../dist/wasm_exec.js")
+const wasmPath = join(import.meta.dir, "../../../dist/stream.wasm")
+const loaderPath = join(import.meta.dir, "../../../dist/wasm_exec.js")
 const built = existsSync(wasmPath) && existsSync(loaderPath)
 
 const fixture = JSON.parse(
-  readFileSync(join(import.meta.dir, "../fixtures/stream-wall.json"), "utf8"),
+  readFileSync(join(import.meta.dir, "../../../fixtures/stream-wall.json"), "utf8"),
 ) as Record<string, string | number>
 
 // The same corpus the fixture pinned: the merged log from stream-wall.

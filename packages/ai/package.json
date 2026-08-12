@@ -1,0 +1,14 @@
+{
+  "name": "@foldlab/ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Derived AI SDK adapter surfaces.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@foldlab/core": "workspace:*",
+    "effect": "catalog:"
+  }
+}

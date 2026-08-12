@@ -2,7 +2,7 @@
  * Generates the schema-identity wall fixture, ONCE (the streamfix
  * tradition): structural digests over the battery, frozen.
  *
- *   bun test/schemafix.ts > fixtures/schema-wall.json
+ *   bun packages/core/test/schemafix.ts > fixtures/schema-wall.json
  */
 
 import { Effect } from "effect"
@@ -18,7 +18,7 @@ console.log(
   JSON.stringify(
     {
       _provenance:
-        "generated once by test/schemafix.ts (bun test/schemafix.ts) against " +
+        "generated once by packages/core/test/schemafix.ts against " +
         "effect@4.0.0-beta.107; frozen. Regeneration requires a stated reason.",
       ...digests,
     },

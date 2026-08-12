@@ -9,6 +9,12 @@ Committed decisions: `docs/adr/`. Agent operating contract:
 
 ## Where the repo stands
 
+Monorepo as of 2026-08-12: `src/` → `packages/core/src/` (stream, xform,
+schema, entity, streamBindings, mint), agent surface → `packages/mcp/`,
+HTTP → `packages/server/`; `packages/{codegen,nats,ai}` reserved. `go/`
+and `fixtures/` unchanged at root. Older `src/...` paths below read
+through that mapping.
+
 Every wall below is a passing test, not an intention (`bun test` 17/17,
 `tsc` clean, Go gate green):
 

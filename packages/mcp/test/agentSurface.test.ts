@@ -9,9 +9,9 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
 import { makeAgentSurface } from "../src/agentSurface.ts"
-import { probeCorpus } from "../src/mint.ts"
-import { headFrom, streamSeed } from "../src/stream.ts"
-import { apply, compose, filterKeyPrefix, mapValueUpper, renameStream } from "../src/xform.ts"
+import { probeCorpus } from "@foldlab/core/mint"
+import { headFrom, streamSeed } from "@foldlab/core/stream"
+import { apply, compose, filterKeyPrefix, mapValueUpper, renameStream } from "@foldlab/core/xform"
 
 const run = <A, E>(e: Effect.Effect<A, E>) => Effect.runSync(e)
 const flip = <A, E>(e: Effect.Effect<A, E>) => Effect.runSync(Effect.flip(e))

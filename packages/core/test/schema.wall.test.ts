@@ -18,7 +18,7 @@ import { decodeFrame, encodeFrame, toStreamEvents } from "../src/schema.ts"
 import { headFrom, streamSeed } from "../src/stream.ts"
 
 const fixture = JSON.parse(
-  readFileSync(join(import.meta.dir, "../fixtures/stream-wall.json"), "utf8"),
+  readFileSync(join(import.meta.dir, "../../../fixtures/stream-wall.json"), "utf8"),
 ) as Record<string, string>
 
 describe("schema as the Go boundary", () => {

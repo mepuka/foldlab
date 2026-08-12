@@ -25,10 +25,10 @@ import {
   type Handle,
   type Json,
   type MintOptions,
-} from "./mint.ts"
-import { toStreamEvents, WireEvent } from "./schema.ts"
-import { headFrom, streamSeed, type StreamEvent } from "./stream.ts"
-import { apply, filterKeyPrefix, mapValueUpper, renameStream, type Xform } from "./xform.ts"
+} from "@foldlab/core/mint"
+import { toStreamEvents, WireEvent } from "@foldlab/core/schema"
+import { headFrom, streamSeed, type StreamEvent } from "@foldlab/core/stream"
+import { apply, filterKeyPrefix, mapValueUpper, renameStream, type Xform } from "@foldlab/core/xform"
 
 // ---------- the primitive catalog: what may be declared ----------
 

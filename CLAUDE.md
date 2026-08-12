@@ -27,7 +27,8 @@ stay green.
 frozen. TS must reproduce every digest byte-identically (`bun test`). On
 mismatch, the DEFAULT reading is that a port drifted — investigate; never
 repin without a stated reason. Canonical encodings are pinned in
-`go/stream/stream.go` and `src/stream.ts` (they must match, byte for byte).
+`go/stream/stream.go` and `packages/core/src/stream.ts` (they must match,
+byte for byte).
 
 ## Reference
 

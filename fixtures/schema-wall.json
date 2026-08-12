@@ -1,5 +1,5 @@
 {
-  "_provenance": "generated once by test/schemafix.ts (bun test/schemafix.ts) against effect@4.0.0-beta.107; frozen. Regeneration requires a stated reason.",
+  "_provenance": "generated once by packages/core/test/schemafix.ts against effect@4.0.0-beta.107; frozen. Regeneration requires a stated reason.",
   "wireEvent": "d5cae5f869a4322252ec5e34470d3cbcb0cabf72502904dd748a34d8986eccea",
   "gzipEventFrame": "238c0f974f17a0908db4302878dd1243e842753eda961d13b2eeea5785cfb09e",
   "plainStruct": "7f8b567a09f63bfdf1020bd92304cc8f2333bb2d8744e090c3b39a25f7d8b9b7",

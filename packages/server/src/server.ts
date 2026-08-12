@@ -27,7 +27,7 @@ import {
   type StreamEvent,
   stateDigest,
   streamSeed,
-} from "./stream.ts"
+} from "@foldlab/core/stream"
 
 const alpha = [event("alpha", 1, "a=1"), event("alpha", 2, "b=2"), event("alpha", 3, "a=3")]
 const beta = [event("beta", 1, "c=4"), event("beta", 2, "a=5")]

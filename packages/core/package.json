@@ -1,0 +1,13 @@
+{
+  "name": "@foldlab/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stream folds, chain identity, transforms, entities, and the fence.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "effect": "catalog:"
+  }
+}

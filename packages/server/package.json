@@ -1,0 +1,15 @@
+{
+  "name": "@foldlab/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The HTTP surface.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@foldlab/core": "workspace:*",
+    "effect": "catalog:",
+    "@effect/platform-bun": "catalog:"
+  }
+}

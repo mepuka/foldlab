@@ -1,0 +1,14 @@
+{
+  "name": "@foldlab/nats",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "NATS subject bindings and the derived node.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@foldlab/core": "workspace:*",
+    "effect": "catalog:"
+  }
+}

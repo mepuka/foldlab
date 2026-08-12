@@ -40,7 +40,7 @@ edit the fixture. Regeneration requires a stated reason committed with the
 change, and is almost never the answer.
 
 Canonical encodings are pinned byte-for-byte in BOTH `go/stream/stream.go`
-and `src/stream.ts`:
+and `packages/core/src/stream.ts`:
 
 ```
 enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
@@ -53,19 +53,31 @@ frozen fixture will tell you whether you actually did.
 
 ## Layout
 
-- `src/stream.ts` ≡ `go/stream/stream.go` — the value wall (heads, merge,
-  fold, compaction, fork, gzip transport).
-- `src/xform.ts` ≡ `go/stream/transform.go` — the transform wall (fused
-  per-event pipelines; `null`/`ok=false` drops).
-- `src/schema.ts` — the Go wire frame as an Effect Schema (decode =
-  ingestion from Go).
-- `src/entity.ts` — entities as quotients by correlation key.
-- `src/streamBindings.ts` — Effect Stream orchestration; chunking is
-  transport and provably never moves a head.
-- `go/cmd/wasmwall` + `test/wasm.wall.test.ts` — same Go source compiled to
-  wasm, run in Bun, same digest. Boundary is data (frames in, JSON out).
-- `test/*.wall.test.ts` — the walls. `NEXT.md` — design state and ratified
-  decisions. `SLICE-*.md` — scoped, self-contained task briefs.
+Bun workspace monorepo: `packages/*` (TS), `go/` (its own module),
+`fixtures/` shared at root. The effect pin lives once in the root
+package.json catalog; packages reference `catalog:`.
+
+- `packages/core` — `@foldlab/core`: stream, xform, schema, entity,
+  streamBindings, mint. Its `test/` holds the walls.
+  - `src/stream.ts` ≡ `go/stream/stream.go` — the value wall (heads,
+    merge, fold, compaction, fork, gzip transport).
+  - `src/xform.ts` ≡ `go/stream/transform.go` — the transform wall (fused
+    per-event pipelines; `null`/`ok=false` drops).
+  - `src/schema.ts` — the Go wire frame as an Effect Schema (decode =
+    ingestion from Go).
+  - `src/entity.ts` — entities as quotients by correlation key.
+  - `src/streamBindings.ts` — Effect Stream orchestration; chunking is
+    transport and provably never moves a head.
+- `packages/mcp` — `@foldlab/mcp`: agentSurface + mcpMain (stdio entry;
+  `.mcp.json` at root mounts it).
+- `packages/server` — `@foldlab/server`: the HTTP surface.
+- `packages/codegen`, `packages/nats`, `packages/ai` — reserved, empty.
+- `go/cmd/wasmwall` + `packages/core/test/wasm.wall.test.ts` — same Go
+  source compiled to wasm, run in Bun, same digest. Boundary is data
+  (frames in, JSON out). `dist/` builds at root.
+- `packages/*/test/*.wall.test.ts` — the walls. `NEXT.md` — design state
+  and ratified decisions. `SLICE-*.md` — scoped, self-contained task
+  briefs.
 
 ## Effect v4 — trust the pin, not your memory
 

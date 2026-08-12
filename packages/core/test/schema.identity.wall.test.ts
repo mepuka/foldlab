@@ -11,7 +11,7 @@ import { structuralDigest } from "../src/mint.ts"
 import { battery, forgivenAsBareString } from "./schemaBattery.ts"
 
 const fixture = JSON.parse(
-  readFileSync(join(import.meta.dir, "../fixtures/schema-wall.json"), "utf8"),
+  readFileSync(join(import.meta.dir, "../../../fixtures/schema-wall.json"), "utf8"),
 ) as Record<string, string>
 
 const digest = (s: Schema.Top) => Effect.runSync(structuralDigest(s))

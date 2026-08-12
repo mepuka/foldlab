@@ -3,7 +3,7 @@
  * MCP client (e.g. .mcp.json):
  *
  *   { "mcpServers": { "foldlab": { "command": "bun",
- *     "args": ["C:/Users/kokok/Dev/foldlab/src/mcpMain.ts"] } } }
+ *     "args": ["packages/mcp/src/mcpMain.ts"] } } }
  *
  * Auto-annotation default: every mint carries the surface and primitive it
  * came through — configure `annotate` in makeAgentSurface for agent ids,

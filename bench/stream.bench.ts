@@ -13,8 +13,8 @@ import { bench, group, run } from "mitata"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { encodeEvent, event, headFrom, streamSeed, type StreamEvent } from "../src/stream.ts"
-import { apply, compose, filterKeyPrefix, mapValueUpper, renameStream } from "../src/xform.ts"
+import { encodeEvent, event, headFrom, streamSeed, type StreamEvent } from "@foldlab/core/stream"
+import { apply, compose, filterKeyPrefix, mapValueUpper, renameStream } from "@foldlab/core/xform"
 
 // The deterministic corpus: same discipline as go/stream/bench_test.go —
 // no randomness; a benchmark corpus is a fixture like any other.
