@@ -1,0 +1,117 @@
+# RG-A — The Transposition Demo
+
+COORDINATOR-OWNED. Spec and verifier (`go/gauntlet/transposition.go`,
+`go/cmd/transposeverify/`) are frozen: climbers build the fleet that
+survives this page, they do not edit it.
+
+## The claim under test
+
+N worker processes over a real out-of-process JetStream explore ONE
+search space with massive path reconvergence, using the effector as a
+distributed transposition table — and the verifier proves from the
+exported bundle that the fleet expanded every distinct state EXACTLY
+once (zero surplus, zero missing), discovered them in dependency order,
+and left a chained, replayable search record. Content addressing turns
+the exponential path tree into the small state DAG; the effector makes
+that collapse race-safe fleet-wide; the journal makes the whole search
+auditable by recomputation. This is the "expansions = |distinct nodes|,
+not |paths|" headline from the AI-inference map (RG-A), demonstrated
+rather than asserted.
+
+## Pinned search space (what makes verification exact)
+
+The lattice L(n): states (x, y) with 0 <= x, y <= n; start (0, 0);
+moves R -> (x+1, y) and D -> (x, y+1) while in bounds. Every state is
+reachable; distinct states = (n+1)^2. The naive path TREE (what a
+search without a transposition table walks) has
+sum over states of C(x+y, x) nodes — the verifier computes this with
+big integers and reports the collapse factor:
+
+    factor = (path-tree nodes) / (physical expansions)
+
+At n = 40 the tree has on the order of 10^23 nodes; the fleet expands
+1,681. Honesty: nobody would actually walk the full tree — the factor
+quantifies the sharing that content addressing finds automatically; it
+is the transposition-table pitch from game search, stated exactly.
+
+Pinned derivations (H = SHA-256 hex of RFC 8785 bytes, as in G1):
+
+    d(x,y) = H({"salt": salt, "x": x, "y": y})    -- the work digest
+    r(x,y) = H({"do": d(x,y)})                    -- the expansion result
+    payload(x,y) = canonical bytes of
+        {"result": r, "state": {"x": x, "y": y}, "worker": w}
+
+An expansion is an effector `Do` on d(x,y): the effect body appends its
+ledger line (own file, unique nonce, claim fence) BEFORE returning, as
+in G1. The expanding worker then appends the state's payload to the ONE
+shared journal (position-CAS; every worker races the same subject —
+throughput under contention is part of the hill).
+
+State fold: the map { "x,y": r(x,y) } over all states, digest = H(map).
+
+## The bundle
+
+    manifest.json        canonical, exactly:
+                         {"expansions":e,"n":n,"salt":s,
+                          "state_digest":h,"workers":w}
+    journal.ndjson       wire bytes, verbatim, in order
+    registers.ndjson     {"digest":d,"fence":f,"result":r}, digest-sorted
+    ledger/<owner>.ndjson one per worker, as in G1
+    viz/                 at least one SVG rendering of the state DAG
+                         colored by expanding worker (attested, not
+                         law-checked; derived from the bundle only)
+
+## Verifier laws (TV1–TV8, enforced by `transposeverify`)
+
+- **TV1 chain**: canonical bytes, contiguous seq, prev-links from
+  genesis (as G1's GV1).
+- **TV2 semantics**: payloads canonical; states in bounds; d and r
+  match the pinned derivations; worker names valid.
+- **TV3 completeness**: the journal's states are EXACTLY the (n+1)^2
+  lattice states — no repeats, none missing. The search finished and
+  the record says so.
+- **TV4 frontier order**: every state's in-bounds parents (x-1,y) and
+  (x,y-1) appear EARLIER in the journal. Discovery respected the
+  dependency order — this is what makes it a search record rather than
+  an enumeration dump, and it is the law that forces real frontier
+  coordination between workers.
+- **TV5 commitment**: registers in bijection with states; results agree
+  with the journal; fences >= 1.
+- **TV6 economy + fencing**: total ledger lines == expansions ==
+  (n+1)^2 — ZERO duplicate physical expansions fleet-wide (no storm in
+  this rung, so zero surplus is the law, not a target); no two owners
+  share a (digest, fence); every committed fence physically ran; the
+  journal's `worker` for each state is the ledger owner of its
+  committed fence (the expander appends its own discovery).
+- **TV7 participation**: distinct ledger owners == manifest.workers,
+  >= 8; every worker expanded >= 5% of states — the fleet searched,
+  not one hero with seven spectators. n >= 40.
+- **TV8 replay**: the state fold's digest equals manifest.state_digest;
+  the verifier reports the collapse factor from its own big-integer
+  count.
+
+A pass is `transposeverify` exit 0 on the bundle. In-concert review:
+the coordinator watches one live run; ledger/storm truthfulness is
+attested here exactly as in G1 (the bundle proves consistency, not
+that processes really raced — the observed run is the check).
+
+## Why this rung is a hill and not a chore
+
+Zero surplus under 8 racing processes means the lookup-before-claim
+discipline has to be airtight; TV4 means a worker cannot expand ahead
+of the recorded frontier, so workers must learn discoveries from the
+journal (or Watch as chatter, with the journal as authority) and
+contend for the SAME journal positions without duplicating or
+deadlocking; TV7 outlaws the degenerate solution where one worker does
+everything. The tension between TV6 (never do extra work) and TV7
+(everyone works) under a single position-CAS journal is the actual
+coordination problem.
+
+## Non-goals
+
+No crash storm (G1 owns faults; this rung owns economy and coordination
+— a climber may of course reuse G1 infrastructure). No best-first
+scoring (a later variant can add pinned scores and priority laws; the
+lattice keeps verification exact today). No claims about LLM quality —
+the expansion effect is a hash stand-in for an expensive evaluation;
+the demo is about the coordination layer, which is provider-agnostic.
