@@ -54,22 +54,31 @@ func main() {
 		panic(err)
 	}
 
+	// The transform wall: the composed pipeline's output head, pinned so a
+	// TS mirror of the same pipeline must reproduce it byte-identically.
+	pipeline := stream.Compose(
+		stream.RenameStream("z"), stream.FilterKeyPrefix("a"), stream.MapValueUpper(),
+	)
+	transformed := stream.Apply(pipeline, merged)
+
 	out := map[string]any{
 		"_provenance": "generated once by go/cmd/streamfix (go run ./cmd/streamfix); frozen. " +
 			"Regeneration requires a stated reason in docs/primitives/MECH-attempts.md.",
-		"alphaHead":        stream.HeadFrom(stream.StreamSeed("alpha"), alpha).Hex(),
-		"betaHead":         stream.HeadFrom(stream.StreamSeed("beta"), beta).Hex(),
-		"mergeFactDigest":  stream.FactDigest(fact).Hex(),
-		"mergedHead":       stream.HeadFrom(stream.MergeSeed(), merged).Hex(),
-		"foldStateDigest":  state.StateDigest().Hex(),
-		"compactionBase":   compacted.Base.Hex(),
-		"compactionState":  compacted.State.StateDigest().Hex(),
-		"compactionTail":   len(compacted.Tail),
-		"forkTrunkHead":    trunk.Hex(),
-		"forkChildAHead":   childA.Hex(),
-		"forkChildBHead":   childB.Hex(),
-		"gzipAlphaBase64":  base64.StdEncoding.EncodeToString(frame),
-		"gzipAlphaEncoded": len(frame),
+		"alphaHead":         stream.HeadFrom(stream.StreamSeed("alpha"), alpha).Hex(),
+		"betaHead":          stream.HeadFrom(stream.StreamSeed("beta"), beta).Hex(),
+		"mergeFactDigest":   stream.FactDigest(fact).Hex(),
+		"mergedHead":        stream.HeadFrom(stream.MergeSeed(), merged).Hex(),
+		"foldStateDigest":   state.StateDigest().Hex(),
+		"compactionBase":    compacted.Base.Hex(),
+		"compactionState":   compacted.State.StateDigest().Hex(),
+		"compactionTail":    len(compacted.Tail),
+		"forkTrunkHead":     trunk.Hex(),
+		"forkChildAHead":    childA.Hex(),
+		"forkChildBHead":    childB.Hex(),
+		"gzipAlphaBase64":   base64.StdEncoding.EncodeToString(frame),
+		"gzipAlphaEncoded":  len(frame),
+		"xformPipelineHead": stream.HeadFrom(stream.StreamSeed("t"), transformed).Hex(),
+		"xformPipelineKept": len(transformed),
 	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
