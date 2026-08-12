@@ -197,6 +197,18 @@ is the checker for this, promoted from safety net to the user-extensibility
 story. Effectful mint (`mintEffect` for Effect-returning transforms with
 services) is the next fence extension.
 
+## Owed by the in-flight Go perf landing (verification 2026-08-12)
+
+The rewrite is verified real (geomean -32%, allocs collapsed) and
+behavior-faithful — findings and obligations in
+[docs/research/2026-08-12-go-perf-verification.md](docs/research/2026-08-12-go-perf-verification.md):
+(1) pin `MapValueUpper` to ASCII-only on BOTH sides + non-ASCII law tests
+(closes the pre-existing TS≠Go Unicode drift the ASCII fixture never saw);
+(2) stated aliasing comment on zero-copy `GunzipEvents` payloads;
+(3) the `FilterKeyPrefix` dead disjunct. ADR-0007 is the general rule: a
+wall certifies only its corpus — every pinned transform owes a domain
+statement and a divergence probe.
+
 ## Backlog, ordered
 
 1. ~~`mint()` + registry (the fence) with its law suite.~~ DONE — see the
