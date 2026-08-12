@@ -5,6 +5,12 @@ mechanism cited here is grounded in the ported substrate
 (`go/journal/journal.go`, `go/effector/effector.go`, `go/cmd/journald/`),
 which passes its embedded-NATS conformance tests under this repo's gates.
 Theory heritage: `.reference/playground-core/SPEC.md` (amended §2/§3/§6).
+The server-side guarantees every mechanism below leans on are
+source-verified at the pinned versions in
+[2026-08-12-jetstream-guarantees-source-verified.md](2026-08-12-jetstream-guarantees-source-verified.md)
+— including the two caveats that matter (KV reads are never
+read-after-write consistent; the dedup assist is standalone-path-ordered
+behind CAS, so the digest-compare fallback is load-bearing).
 
 ## The frame: general replay with four specific properties
 
