@@ -35,3 +35,25 @@ served from the journal on the second resume. Prices pinned in
 nano-USD per token (gpt-5-mini 250/2000) because sub-micro rates
 don't fit integer micro units. Total calibration spend both legs:
 $4.7474.
+
+ratification (2026-08-12): operator accepted the six mechanization
+pins as recommended (derived split, k_survivors in manifest, typed
+journal facts with CL3 by chain position, provider-agnostic candidate
+encoding with opaque params, R1-convention economics, floors in
+counts). Spec marked RATIFIED.
+
+verifier frozen (2026-08-12): go/gauntlet/climb.go + cmd/climbverify.
+CL1-CL5 mechanical on top of the RL discipline; self-test fabricates a
+consistent 64-logical-step bundle (2 generations, population 3,
+survivors 2, derived 4/2 split) and proves each tamper class refuses
+with its named law: swapped survivors -> CL2; holdout receipt moved
+before the final selection -> CL3; orphaned mutation -> CL4; forged
+output text -> CL1 (result digest binds text to chain); split flip ->
+plan refusal; single-owner ledger -> CL5; raised gain floor -> floor
+refusal. R2 floors pinned by test (a change is a spec amendment).
+Fixture surprise worth keeping: shared step-0 templates deduped
+across candidates AND splits (26 physical for 64 logical, 2.46x on a
+toy), caught by the verifier before the coordinator's own arithmetic —
+the discipline outran its author. DISPATCH UNBLOCKED: next is the
+harness (go/cmd/climb), K=6/G=4/k=2 over the 40-question dev split,
+operator cap $15.

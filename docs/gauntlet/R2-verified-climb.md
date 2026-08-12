@@ -1,11 +1,51 @@
 # R2 — The Verified Climb (optimization rung)
 
-COORDINATOR-OWNED. Status: SPEC DRAFT — awaiting ratification; verifier
-not yet frozen. The first rung whose headline is an OPTIMIZATION result:
-a population hill climb over inference-pipeline specifications, against
-a real model API, on a real post-cutoff benchmark, where the bundle
-proves the climb, the legality of every selection, and the spend
-economics — from records alone.
+COORDINATOR-OWNED. Status: SPEC RATIFIED (operator, 2026-08-12 — the
+six mechanization pins below accepted as recommended), VERIFIER FROZEN
+(`go/gauntlet/climb.go` + `cmd/climbverify`, CL1–CL5 mechanical,
+self-tested) — DISPATCH UNBLOCKED. The first rung whose headline is an
+OPTIMIZATION result: a population hill climb over inference-pipeline
+specifications, against a real model API, on a real post-cutoff
+benchmark, where the bundle proves the climb, the legality of every
+selection, and the spend economics — from records alone.
+
+Wire details pinned by the verifier: the journal carries TYPED
+canonical facts (`kind`: `receipt` | `mutation` | `selection`) on the
+standard chain; `candidates.ndjson` rows are `{digest, steps:[{model,
+params, template}]}` with `params` opaque canonical bytes and digests
+recomputed; `plan.ndjson` rows are `{candidate, generation, inputs,
+question, split, step, work}` with `work = H({inputs, step:
+stepSpecDigest})`, step-0 inputs `[H({question: id, seed})]`, step-s
+inputs the parent's recorded result digest; the dev/holdout split is
+DERIVED per tier by ordering question ids on `H({id, seed})` and
+taking the first `holdout_per_tier[source]` — never chosen; prices are
+integer nano-USD per token; `ledger.ndjson` claims (one per receipt,
+≥ WorkersMin owners) evidence the fleet; outputs for every final step
+are bundled and bound to receipts by result digest.
+
+## Pinned mechanics (ratification, 2026-08-12)
+
+1. The split is a derivation, not a choice (kills the
+   picked-after-calibration attack): per tier, order ids by
+   H({id, seed}); first N_h are holdout (aime 12 / hmmt_nov 9 /
+   hmmt_feb 6 = 27; dev = 40). The verifier recomputes membership.
+2. `k_survivors` is a manifest fact: constant across generations,
+   2 ≤ k_survivors < k_population.
+3. Typed journal facts; CL3 enforced by chain position (no
+   holdout-demanded receipt before the final selection fact); CL2 read
+   from `selection` facts (survivors in rank order, best first) and
+   recomputed as top-k by (score desc, candidate digest asc).
+4. Candidate = canonical list of step specs {model, params, template},
+   params opaque canonical bytes (provider-agnostic: the record hashes
+   provider config, never interprets it); all steps on the manifest
+   model; work digest = H({inputs, step: stepSpecDigest}).
+5. Economics R1-convention: naive spend = Σ plan rows' receipt cost;
+   reuse = logical rows / physical receipts; every receipt demanded by
+   the plan or referenced as a mutation's `via`.
+6. Floors in counts, within-run: generation 0 evaluates the seed;
+   after the final selection, exactly {seed, winner} run the holdout;
+   final dev ≥ seed dev + 4 (of 40 = +10 points); winner holdout ≥
+   seed holdout + 1.
 
 ## The claim under test
 
