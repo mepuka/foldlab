@@ -117,6 +117,32 @@ is the check on storm truthfulness. Fencing evidence (GV4) is real but
 conditional on effect bodies writing the ledger before returning — that
 discipline is part of the harness contract, reviewed, not verified.
 
+## RESULT — PASSED, ratified 2026-08-12 (in-concert review)
+
+Climber A's harness (`go/crashstorm`, `go/cmd/gauntlet`; build SHA-256
+2F75AD23…3B61 per the attempts log) passed. Coordinator verification,
+performed independently: frozen paths byte-untouched; full Go/TS gates
+green under the coordinator's own runs; `gauntletverify` exit 0 on the
+three final bundles (500/8/25 kills/5 restarts/25 steals each, 25
+honestly-counted crash-window duplicate runs per bundle); TWO fresh
+coordinator-chosen seeds (`coordinator-witness-1/2`) run live under
+observation — both verified, with a mid-run process census showing the
+10-process fleet (controller + server + 8 workers) churning through
+kills. The headline law held under real violence: at-least-once effects
+(duplicates exist and are counted), exactly-once commitment (500
+registers, zero double commits), portable proof (the verifier needed
+only the bundle).
+
+**Named caveat, carried forward**: the storm is CHOREOGRAPHED — every
+seed produces exactly 25 kills / 25 steals / 25 duplicates / 5
+restarts, with kills timed to land in the effect-ran-commit-pending
+window. That deterministically targets the hardest window (good) but
+explores a single schedule family and shapes the floors exactly
+(minimum-effort). Legal under G1's floors-as-minimums. A successor rung
+(G2) should require stochastic storm schedules with per-seed variance,
+or verifier-supplied schedules, before any claim stronger than "the
+laws hold under an adversarially-timed but fixed storm shape."
+
 ## Non-goals for G1
 
 Network partitions (JetStream client reconnect churn is in scope via
