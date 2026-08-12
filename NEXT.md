@@ -266,11 +266,15 @@ statement and a divergence probe.
    ([docs/research/2026-08-12-nats-agent-protocol.md](docs/research/2026-08-12-nats-agent-protocol.md):
    three wire shapes — journal facts / commitment registers / ephemeral
    chatter — one promotion rule, utilities inventory) and the substrate it
-   maps is ported and green. Remaining: the derived-node conformance test
-   on embedded NATS (the collector's first real backing is NATS KV through
-   the Go twin — anchors as revision-CAS'd KV entries), then KV `Watch` as
-   the register live plane (classified as chatter; ordered first in the
-   mapping page's lane).
+   maps is ported and green. KV `Watch` as the register live plane is
+   DONE (`go/effector/watch.go` + the WL1–WL4 law suite: revision order,
+   faithful steal chains, Initial-marked catch-up, chatter-not-authority)
+   — first pattern from actually using the substrate: a live plane costs
+   ~80 lines when the register is already the authority, because the feed
+   never has to be correct, only recoverable-from. Remaining: the
+   derived-node conformance test on embedded NATS (the collector's first
+   real backing is NATS KV through the Go twin — anchors as
+   revision-CAS'd KV entries).
 3. Schema-chain → Xform lowering ("compiler"), digest equality as the
    compiler test; schema-aware codecs (delta/dict/columnar derived from the
    type; law: round trip preserves the head). Frame (ratified): every
