@@ -3,7 +3,9 @@
 State as of `edb48af` (2026-08-12), and the design ideas ratified in
 conversation, so the next session starts mid-stride. Theory background:
 [.reference/core-concepts.md](.reference/core-concepts.md). Proof heritage:
-`.reference/playground-mech/`.
+`.reference/playground-mech/`. Ubiquitous language: [CONTEXT.md](CONTEXT.md).
+Committed decisions: `docs/adr/`. Agent operating contract:
+[AGENTS.md](AGENTS.md).
 
 ## Where the repo stands
 
@@ -26,6 +28,14 @@ Every wall below is a passing test, not an intention (`bun test` 17/17,
   correlation key, both folds maintained O(1) per event, backing-layer
   independent (EC2), composition = fold of child anchors (EC4:
   deterministic, order-committed, transitively history-sensitive).
+- **Wasm wall**: `go/cmd/wasmwall` + `test/wasm.wall.test.ts` — the SAME Go
+  source compiled GOOS=js GOARCH=wasm, loaded into Bun, reproduces
+  `xformPipelineHead` byte-identically. Same Go source, three runtimes, one
+  digest. Boundary is data: one entry point, base64 gzip frames in, JSON
+  {head, kept, frames} out; errors return as data, nothing throws across.
+  `bun run build:wasm` produces gitignored `dist/`; the test auto-skips
+  without it. Module is ~3.7MB (fine in Bun; browser story wants
+  TinyGo/wasm-opt later).
 
 Division of labor, on purpose: **Schema** is the typed, annotated, public
 face; **Effect Stream** is orchestration (and the program value IS the DAG —
@@ -91,6 +101,44 @@ annotations. Before code: a one-page mapping of the NATS agent protocol
 onto the three wire shapes (registers / journal facts / ephemeral chatter);
 anything the protocol leaves as chatter that we need as fact gets promoted
 through the effector.
+
+## Ratified decisions (2026-08-12, grilled and confirmed)
+
+1. **Wasm does both jobs** — distribution (Go hot path in JS runtimes) and
+   verification (mint() runs the Go twin in-process at mint time; the wasm
+   module is the registry's executable half). Two lanes fall out: **compose**
+   (existing primitives, no toolchain, instant verify) vs **derive** (new Go
+   twin: codegen + go build + full wall). Lead the public story with wasm;
+   the Go/NATS substrate story is co-equal.
+2. **The boundary is data, not FFI.** One entry point taking a serialized
+   pipeline program + canonical frames; never named-function marshalling.
+   The program encoding IS registry data, so the wasm module is an
+   interpreter of registry entries, and the same program runs over wasm,
+   NATS request/reply, and CLI stdin. TS DX is a veneer that builds
+   programs. (The wasm wall hardcodes the pinned pipeline; the program
+   interpreter arrives with mint().)
+3. **Bindings: registry for truth, annotations for authoring.** The schema
+   digest is STRUCTURAL (type identity only — a type on two NATS subjects is
+   one type). Every binding (NATS subject, effector register, correlation
+   key, codec, commutativity class) is its own law-gated registry record
+   `{schemaDigest, bindingClass, params, lawResult}` — committed only after
+   its checker passes. Schema annotations carry the CLAIM; the registry
+   carries the FACT. mint() extracts claims, runs laws, commits records,
+   returns a handle `{structuralDigest, bindings}`.
+4. **Provenance is one mechanism.** LLM traffic goes through the journal
+   (the journal is load-bearing for conversation data, decided explicitly).
+   Records are events; lineage is a query. The one new object is the
+   **certificate** — a minted schema bundling {schema digest, program
+   digest, input anchor, span head} — riding on every produced record and
+   every AI tool result. Users never see correlation keys or stream
+   mechanics; the entity handle presents the semantically-shaped view.
+5. **AI bindings: effect-native + MCP are first-class.** Our pin ships
+   `effect/unstable/ai` (Tool, Toolkit, LanguageModel, Chat, McpServer).
+   The registry (mint/resolve/run) is exposed as an MCP server via effect's
+   own McpServer. Vercel AI SDK (`Schema.toStandardSchemaV1`, live at the
+   pin) and Anthropic SDK (`effect/JsonSchema`) surfaces are DERIVED
+   adapters off the same minted schema — never hand-written ports, so they
+   cannot drift. Beta-rename risk is confined to the adapter layer.
 
 ## Backlog, ordered
 
