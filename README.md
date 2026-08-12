@@ -1,30 +1,53 @@
 # foldlab
 
-Effect v4 + Go lab for stream algebra: chain identity, meaning folds, merge
-facts, forks, compaction, and schemas as language boundaries. Named for the
-central idea — every stream is a left fold twice over: hash-fold = identity,
-state-fold = meaning, and *the chain remembers what the fold forgives*.
+Effect v4 + Go lab for verifiable computation over streams: canonical
+bytes, digest identity, chained journals, fenced exactly-once registers,
+and laws for all of it. Named for the central idea — every stream is a
+left fold twice over: hash-fold = identity, state-fold = meaning, and
+*the chain remembers what the fold forgives*.
 
-Born from the playground-mech model-gate sessions (2026-08-11/12); the theory
-compilation is [.reference/core-concepts.md](.reference/core-concepts.md) and
-the proofs behind it are mirrored in `.reference/playground-mech/`.
+**The claim this repo can back up**: workflows over NATS JetStream whose
+histories verify by recomputation, whose contested effects commit exactly
+once behind fences, and whose runs export as portable bundles a stranger
+can check without trusting anyone. Don't take the README's word:
+
+```bash
+cd go
+go run ./cmd/gauntletverify ../artifacts/gauntlet/final-alpha
+go run ./cmd/transposeverify ../artifacts/transposition/rga-complete
+```
+
+Those bundles were produced by 8-process worker fleets over a real
+JetStream while an adversary kill-9'd workers and cold-restarted the
+server (G1), and while racing a shared frontier with zero duplicate
+expansions permitted (RG-A). The verifiers recompute every claim from
+the bundle bytes alone. Specs, laws, and ratified results:
+[docs/gauntlet/](docs/gauntlet/).
 
 ## Layout
 
-- `src/stream.ts` — the stream algebra (canonical encoding, SHA-256 chain
-  heads, merge facts, LWW-KV fold, compaction, fork segments).
-- `src/schema.ts` — the Schema workshop: `GzipEventFrame`, a schema whose
-  encoded side is the Go-emitted gzip wire frame and whose type side is
-  typed events. The Go boundary as a bidirectional, effect-capable
-  transformation.
-- `src/server.ts` — HTTP app (effect/unstable/http on @effect/platform-bun):
-  `GET /health`, `GET /demo/merge` (law SL1 live), `GET /demo/fork`.
-- `go/stream` — the byte-identical Go mirror; `go/cmd/streamfix` generated
-  the frozen wall fixture in `fixtures/stream-wall.json` (P2a tradition:
-  generated once; a digest mismatch is a drift finding, not a repin).
-- `test/` — the cross-language wall (every digest byte-identical to Go) and
-  the schema-boundary proof (Go frame → schema decode → chain head equals
-  the frozen Go digest).
+- `packages/core` — the TS stream algebra: canonical encoding, chain
+  heads, merge facts, entity collector, transforms, and `mint()` (the
+  type-creation fence: schemas and transforms enter the world only
+  through law-checked, digest-addressed commits to a registry).
+- `packages/{mcp,server}` — the agent surface (MCP over the registry)
+  and HTTP demos; `packages/{ai,codegen,nats}` reserved.
+- `go/stream` — the byte-identical Go mirror of the algebra;
+  `fixtures/stream-wall.json` is the frozen cross-language wall.
+- `go/{canonical,journal,effector}` — the substrate: RFC 8785 canonical
+  JSON, the hash-chained CAS-append verify-on-read journal, the
+  single-key fenced effector over JetStream KV (leases are liveness,
+  fences are safety), plus `effector.Watch` — the live plane, which is
+  chatter, never authority.
+- `go/gauntlet` + `go/cmd/{gauntletverify,transposeverify}` — the frozen
+  fitness functions for the demonstration rungs.
+- `go/{crashstorm,transfleet}` + `go/cmd/{gauntlet,transpose}` — the
+  fleets that passed them.
+- `docs/research/` — source-pinned dossiers: the NATS agent protocol
+  (three wire shapes, one promotion rule) and JetStream's actual
+  guarantees at the pinned versions, verified in server source.
+- `.reference/` (gitignored, local study material) — theory heritage
+  from the playground sessions this lab grew out of.
 
 ## Commands
 
@@ -32,8 +55,16 @@ the proofs behind it are mirrored in `.reference/playground-mech/`.
 bun install        # prepare patches TypeScript with the Effect Language Service
 bun run typecheck
 bun test
-bun run dev        # http://localhost:3123
 cd go && gofmt -l . && go vet ./... && go test ./...
 ```
 
-Pinned: `effect@4.0.0-beta.107`, `@effect/platform-bun@4.0.0-beta.107`, Go 1.26.
+Pinned: `effect@4.0.0-beta.107`, `@effect/platform-bun@4.0.0-beta.107`,
+Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`.
+
+## Discipline
+
+Walls are digest-equality tests between independent implementations;
+fixtures are frozen evidence, never constants to update. Laws precede
+code; coordinator-owned specs and verifiers are marked frozen in their
+headers and are not edited by implementing agents. Every research claim
+is either source-pinned (repo, commit, file, line) or marked UNVERIFIED.
