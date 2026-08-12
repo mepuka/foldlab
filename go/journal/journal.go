@@ -1,0 +1,328 @@
+package journal
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
+
+	"foldlab/canonical"
+)
+
+type Cursor struct {
+	Seq  int
+	Head string
+}
+
+type AppendOutcome string
+
+const (
+	Stored    AppendOutcome = "stored"
+	Duplicate AppendOutcome = "duplicate"
+)
+
+var (
+	ErrBadStream = errors.New("journal stream does not have the required shape")
+	ErrConflict  = errors.New("journal position is already occupied")
+	ErrTampered  = errors.New("journal entry failed verification")
+)
+
+var validName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+type Journal struct {
+	mu      sync.Mutex
+	js      jetstream.JetStream
+	stream  jetstream.Stream
+	subject string
+	cursor  Cursor
+}
+
+type wireEntry struct {
+	Payload string `json:"payload"`
+	Prev    string `json:"prev"`
+	Seq     int    `json:"seq"`
+}
+
+func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, error) {
+	if !validName.MatchString(name) {
+		return nil, fmt.Errorf("invalid journal name %q", name)
+	}
+
+	streamName := "J_" + name
+	subject := "j." + name
+	stream, err := js.Stream(ctx, streamName)
+	if err != nil {
+		if !errors.Is(err, jetstream.ErrStreamNotFound) {
+			return nil, err
+		}
+		stream, err = js.CreateStream(ctx, jetstream.StreamConfig{
+			Name:              streamName,
+			Subjects:          []string{subject},
+			Retention:         jetstream.LimitsPolicy,
+			MaxMsgs:           -1,
+			MaxBytes:          -1,
+			Discard:           jetstream.DiscardOld,
+			MaxAge:            0,
+			MaxMsgsPerSubject: -1,
+			Storage:           jetstream.FileStorage,
+			Duplicates:        2 * time.Minute,
+			DenyDelete:        true,
+			DenyPurge:         true,
+		})
+		if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+			stream, err = js.Stream(ctx, streamName)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	info, err := stream.Info(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if reason := badShapeReason(info.Config, subject); reason != "" {
+		return nil, fmt.Errorf("%w: %s", ErrBadStream, reason)
+	}
+
+	cursor := Cursor{Seq: -1, Head: canonical.Genesis}
+	if info.State.Msgs > 0 {
+		raw, getErr := stream.GetMsg(ctx, info.State.LastSeq)
+		if getErr != nil {
+			return nil, fmt.Errorf("read journal tail: %w", getErr)
+		}
+		entry, decodeErr := decodeEntry(raw.Data)
+		if decodeErr != nil {
+			return nil, fmt.Errorf("decode journal tail: %w", decodeErr)
+		}
+		cursor = Cursor{
+			Seq:  int(raw.Sequence) - 1,
+			Head: canonical.EntryDigest(entry),
+		}
+	}
+
+	return &Journal{
+		js:      js,
+		stream:  stream,
+		subject: subject,
+		cursor:  cursor,
+	}, nil
+}
+
+func (j *Journal) Head() Cursor {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.cursor
+}
+
+func (j *Journal) Append(
+	ctx context.Context,
+	payload string,
+) (canonical.ChainEntry, AppendOutcome, error) {
+	if strings.Contains(payload, "\n") {
+		return canonical.ChainEntry{}, "", errors.New("journal payloads must not contain newlines")
+	}
+
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	entry := canonical.ChainEntry{
+		Seq:     j.cursor.Seq + 1,
+		Prev:    j.cursor.Head,
+		Payload: payload,
+	}
+	outcome, err := j.appendEntry(ctx, entry)
+	return entry, outcome, err
+}
+
+func (j *Journal) AppendEntry(
+	ctx context.Context,
+	entry canonical.ChainEntry,
+) (AppendOutcome, error) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.appendEntry(ctx, entry)
+}
+
+func (j *Journal) Read(
+	ctx context.Context,
+	from Cursor,
+	max int,
+) ([]canonical.ChainEntry, Cursor, error) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if from.Seq < -1 {
+		return nil, from, fmt.Errorf("invalid cursor sequence %d", from.Seq)
+	}
+	info, err := j.stream.Info(ctx)
+	if err != nil {
+		return nil, from, err
+	}
+
+	entries := make([]canonical.ChainEntry, 0)
+	cursor := from
+	nextStreamSeq := uint64(from.Seq + 2)
+	for nextStreamSeq <= info.State.LastSeq && (max <= 0 || len(entries) < max) {
+		position := int(nextStreamSeq) - 1
+		raw, getErr := j.stream.GetMsg(ctx, nextStreamSeq)
+		if getErr != nil {
+			if errors.Is(getErr, jetstream.ErrMsgNotFound) {
+				return entries, cursor, tampered(position, "message is missing")
+			}
+			return entries, cursor, getErr
+		}
+
+		entry, decodeErr := decodeEntry(raw.Data)
+		if decodeErr != nil {
+			return entries, cursor, tampered(position, "invalid entry JSON: %v", decodeErr)
+		}
+		if entry.Seq != position {
+			return entries, cursor, tampered(position, "seq is %d", entry.Seq)
+		}
+		if entry.Prev != cursor.Head {
+			return entries, cursor, tampered(position, "prev does not match the verified head")
+		}
+
+		digest := canonical.EntryDigest(entry)
+		if canonical.DigestHex(raw.Data) != digest {
+			return entries, cursor, tampered(position, "wire bytes are not canonical")
+		}
+
+		entries = append(entries, entry)
+		cursor = Cursor{Seq: position, Head: digest}
+		nextStreamSeq++
+	}
+
+	if cursor.Seq > j.cursor.Seq {
+		j.cursor = cursor
+	}
+	return entries, cursor, nil
+}
+
+func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (AppendOutcome, error) {
+	if entry.Seq < 0 {
+		return "", fmt.Errorf("%w: invalid position %d", ErrConflict, entry.Seq)
+	}
+	wire, err := encodeEntry(entry)
+	if err != nil {
+		return "", err
+	}
+	digest := canonical.EntryDigest(entry)
+	message := nats.NewMsg(j.subject)
+	message.Data = wire
+	message.Header.Set("Nats-Msg-Id", digest)
+
+	ack, err := j.js.PublishMsg(
+		ctx,
+		message,
+		jetstream.WithExpectLastSequencePerSubject(uint64(entry.Seq)),
+	)
+	if err == nil {
+		j.recordAccepted(entry, digest)
+		if ack.Duplicate {
+			return Duplicate, nil
+		}
+		return Stored, nil
+	}
+	if !isWrongLastSequence(err) {
+		return "", err
+	}
+
+	stored, getErr := j.stream.GetMsg(ctx, uint64(entry.Seq+1))
+	if getErr != nil {
+		return "", err
+	}
+	if canonical.DigestHex(stored.Data) == digest {
+		j.recordAccepted(entry, digest)
+		return Duplicate, nil
+	}
+	return "", fmt.Errorf("%w at position %d", ErrConflict, entry.Seq)
+}
+
+func (j *Journal) recordAccepted(entry canonical.ChainEntry, digest string) {
+	if entry.Seq >= j.cursor.Seq {
+		j.cursor = Cursor{Seq: entry.Seq, Head: digest}
+	}
+}
+
+func badShapeReason(config jetstream.StreamConfig, subject string) string {
+	if config.Retention != jetstream.LimitsPolicy {
+		return "retention is not limits"
+	}
+	if config.Storage != jetstream.FileStorage {
+		return "storage is not file"
+	}
+	if config.Discard != jetstream.DiscardOld {
+		return "discard policy is not old"
+	}
+	if len(config.Subjects) != 1 || config.Subjects[0] != subject {
+		return "subject set is not the pinned singleton"
+	}
+	if config.MaxMsgs > 0 || config.MaxBytes > 0 || config.MaxAge > 0 || config.MaxMsgsPerSubject > 0 {
+		return "an eviction limit is configured"
+	}
+	if !config.DenyDelete || !config.DenyPurge {
+		return "delete and purge are not denied"
+	}
+	if config.Duplicates < 2*time.Minute {
+		return "duplicate window is shorter than two minutes"
+	}
+	if config.AllowRollup {
+		return "rollup can remove prior entries"
+	}
+	if config.NoAck || config.Sealed {
+		return "stream does not accept acknowledged appends"
+	}
+	if config.Mirror != nil || len(config.Sources) != 0 {
+		return "stream imports messages from another stream"
+	}
+	if config.FirstSeq > 1 {
+		return "stream sequence does not begin at one"
+	}
+	return ""
+}
+
+func encodeEntry(entry canonical.ChainEntry) ([]byte, error) {
+	raw, err := json.Marshal(wireEntry{
+		Payload: entry.Payload,
+		Prev:    entry.Prev,
+		Seq:     entry.Seq,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return canonical.Canonicalize(raw)
+}
+
+func decodeEntry(data []byte) (canonical.ChainEntry, error) {
+	var wire wireEntry
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return canonical.ChainEntry{}, err
+	}
+	return canonical.ChainEntry{
+		Seq:     wire.Seq,
+		Prev:    wire.Prev,
+		Payload: wire.Payload,
+	}, nil
+}
+
+func isWrongLastSequence(err error) bool {
+	var apiError *jetstream.APIError
+	if !errors.As(err, &apiError) {
+		return false
+	}
+	return apiError.ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence ||
+		apiError.ErrorCode == jetstream.JSErrCodeStreamWrongLastSequenceConstant
+}
+
+func tampered(position int, format string, args ...any) error {
+	detail := fmt.Sprintf(format, args...)
+	return fmt.Errorf("%w at position %d: %s", ErrTampered, position, detail)
+}

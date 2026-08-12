@@ -43,6 +43,14 @@ Every wall below is a passing test, not an intention (`bun test` 17/17,
   (MintRefused with the law that caught it; UnknownDigest for anything not
   committed), composition only through handles, and optional per-mint seeds
   rooting the verification lineage (tenant/namespace/parent-anchor).
+- **NATS substrate (ported 2026-08-12)**: `go/{canonical,journal,effector,
+  cmd/journald}` — the playground kernel's Go substrate now lives HERE
+  under foldlab's gates: RFC 8785 canonical JSON (frozen
+  `fixtures/golden-conformance.json`), the hash-chained CAS-append
+  verify-on-read journal over JetStream, the single-key fenced effector
+  over JetStream KV (the audited A6 protocol), and journald with its
+  black-box conformance test — all passing on embedded NATS. Protocol
+  mapping: [docs/research/2026-08-12-nats-agent-protocol.md](docs/research/2026-08-12-nats-agent-protocol.md).
 - **Wasm wall**: `go/cmd/wasmwall` + `test/wasm.wall.test.ts` — the SAME Go
   source compiled GOOS=js GOARCH=wasm, loaded into Bun, reproduces
   `xformPipelineHead` byte-identically. Same Go source, three runtimes, one
@@ -254,9 +262,15 @@ statement and a divergence probe.
    user-injected Layers, verified against the pinned probe layer), and the
    wasm lane (a minted transform's Go twin verified through
    `go/cmd/wasmwall`'s data boundary at mint time).
-2. NATS-agent-protocol mapping page; then the derived-node conformance test
-   on embedded NATS (Go side; the collector's first real backing is NATS KV
-   through the Go twin).
+2. ~~NATS-agent-protocol mapping page~~ DONE
+   ([docs/research/2026-08-12-nats-agent-protocol.md](docs/research/2026-08-12-nats-agent-protocol.md):
+   three wire shapes — journal facts / commitment registers / ephemeral
+   chatter — one promotion rule, utilities inventory) and the substrate it
+   maps is ported and green. Remaining: the derived-node conformance test
+   on embedded NATS (the collector's first real backing is NATS KV through
+   the Go twin — anchors as revision-CAS'd KV entries), then KV `Watch` as
+   the register live plane (classified as chatter; ordered first in the
+   mapping page's lane).
 3. Schema-chain → Xform lowering ("compiler"), digest equality as the
    compiler test; schema-aware codecs (delta/dict/columnar derived from the
    type; law: round trip preserves the head). Frame (ratified): every
