@@ -209,7 +209,12 @@ services) is the next fence extension.
    through the Go twin).
 3. Schema-chain → Xform lowering ("compiler"), digest equality as the
    compiler test; schema-aware codecs (delta/dict/columnar derived from the
-   type; law: round trip preserves the head).
+   type; law: round trip preserves the head). Frame (ratified): every
+   derivation is a SEMANTIC FOLD over the digest-anchored AST — the
+   two-fold discipline one level up (identity fold = structural digest,
+   semantic folds = Go twin / JSON Schema / DDL / span preview / codecs).
+   Non-Effect code never gets source analysis; it gets the data boundary —
+   fold the traffic, not the AST.
 4. Entity census over real agent streams: correlation-keyed collector +
    anchors as the seen-this-tree-before index; spans = segments between
    anchors, span id = chain head (verifiable), trace id = root anchor.

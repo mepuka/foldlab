@@ -122,6 +122,13 @@ structural digest plus its verified bindings.
 A schema's identity, computed from type structure alone. Deployment facts
 never move it: a type on two subjects is one type.
 
+**Semantic fold**:
+A derivation computed as a fold over a digest-anchored AST or program
+value — the meaning-side twin of the structural digest. Every derived
+surface (Go twin, JSON Schema, DDL, span preview, codec) is one; derived
+surfaces cannot drift because their input has committed identity.
+_Avoid_: code generator, compiler pass (those are implementations of one)
+
 **Binding**:
 A law-gated deployment fact about a schema — subject, codec, correlation
 key, commutativity class — committed to the registry only after its checker
