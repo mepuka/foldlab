@@ -77,6 +77,24 @@ const decodeWire = (e: StreamEvent) => ({
   payload: new TextDecoder().decode(e.payload),
 })
 
+// ---------- MCP hints: part of the interface, not decoration ----------
+
+// A client's permission UI reads these, so a wrong hint misdescribes the
+// surface to every agent. The pin defaults every tool to destructive.
+// Nothing here is: minting is ADDITIVE and keyed by digest — the same
+// declaration mints to the same digest and leaves the registry in the same
+// state — which is also why everything is idempotent. The registry is
+// in-memory and no tool reaches an outside system, so the world is closed.
+const hint = <A extends Tool.Any>(tool: A, readOnly: boolean): A =>
+  tool
+    .annotate(Tool.Readonly, readOnly)
+    .annotate(Tool.Destructive, false)
+    .annotate(Tool.Idempotent, true)
+    .annotate(Tool.OpenWorld, false) as A
+
+const reads = <A extends Tool.Any>(tool: A): A => hint(tool, true)
+const writes = <A extends Tool.Any>(tool: A): A => hint(tool, false)
+
 // ---------- the surface ----------
 
 export interface SurfaceOptions {
@@ -191,7 +209,7 @@ export const makeAgentSurface = (options?: SurfaceOptions) => {
   }
 
   const toolkit = Toolkit.make(
-    Tool.make("mint_transform", {
+    writes(Tool.make("mint_transform", {
       description:
         "Mint a declared transform through the fence: laws run (purity, determinism, batch≡stream), the pair is anchored, digests come back. Refusals are data naming the law.",
       parameters: Schema.Struct({
@@ -202,8 +220,8 @@ export const makeAgentSurface = (options?: SurfaceOptions) => {
       success: Minted,
       failure: Refusal,
       failureMode: "return",
-    }),
-    Tool.make("compose_mints", {
+    })),
+    writes(Tool.make("compose_mints", {
       description: "Compose already-minted transforms by digest. Forged digests refuse before any law runs.",
       parameters: Schema.Struct({
         digests: Schema.Array(Schema.String),
@@ -212,8 +230,8 @@ export const makeAgentSurface = (options?: SurfaceOptions) => {
       success: Minted,
       failure: Refusal,
       failureMode: "return",
-    }),
-    Tool.make("resolve_digest", {
+    })),
+    reads(Tool.make("resolve_digest", {
       description: "Resolve a digest to its registry record. An unknown digest is a typed refusal, not a miss.",
       parameters: Schema.Struct({ digest: Schema.String }),
       success: Schema.Struct({
@@ -223,8 +241,8 @@ export const makeAgentSurface = (options?: SurfaceOptions) => {
       }),
       failure: Refusal,
       failureMode: "return",
-    }),
-    Tool.make("probe_transform", {
+    })),
+    reads(Tool.make("probe_transform", {
       description:
         "Run a minted transform over events (yours, or the probe corpus when null) and get heads back — verifiable by recomputation.",
       parameters: Schema.Struct({
@@ -239,18 +257,18 @@ export const makeAgentSurface = (options?: SurfaceOptions) => {
       }),
       failure: Refusal,
       failureMode: "return",
-    }),
-    Tool.make("ontology", {
+    })),
+    reads(Tool.make("ontology", {
       description:
         "The registry graph: every committed record (digest, kind, refs, meta) with its annotation claims. The ontology that built itself.",
       parameters: Schema.Struct({}),
       success: Schema.Struct({ graph: Schema.String }),
-    }),
-    Tool.make("example_records", {
+    })),
+    reads(Tool.make("example_records", {
       description: "The deterministic probe corpus as typed events — example records to transform.",
       parameters: Schema.Struct({}),
       success: Schema.Struct({ events: Schema.Array(WireEvent) }),
-    }),
+    })),
   )
 
   const handlersLayer = toolkit.toLayer({

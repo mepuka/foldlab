@@ -21,10 +21,20 @@
 import { Effect, Schema, SchemaGetter, SchemaIssue } from "effect"
 import { encodeEvent, parseFrames, type StreamEvent } from "./stream.ts"
 
-/** The typed event as it crosses the boundary (payloads are UTF-8 text). */
+/**
+ * The typed event as it crosses the boundary (payloads are UTF-8 text).
+ *
+ * Domain: `seq` is a non-negative SAFE integer — narrower than Go's u64,
+ * because a JS number above 2^53 cannot round-trip. The bound is the
+ * schema's, not a handler's, so an inadmissible sequence is refused at
+ * decode as data rather than dying in `encodeEvent`'s `checkedSeq`: a
+ * surface must not admit what its own canonical encoder refuses.
+ */
 export const WireEvent = Schema.Struct({
   stream: Schema.String,
-  seq: Schema.Number,
+  seq: Schema.Int.check(
+    Schema.isBetween({ minimum: 0, maximum: globalThis.Number.MAX_SAFE_INTEGER }),
+  ),
   payload: Schema.String,
 })
 

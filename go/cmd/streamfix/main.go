@@ -3,7 +3,7 @@
 // side must reproduce every digest byte-identically or a port has drifted —
 // which is a finding to investigate, not a constant to update).
 //
-//	cd go && go run ./cmd/streamfix > ../packages/mech/fixtures/stream-wall.json
+//	cd go && go run ./cmd/streamfix > ../fixtures/stream-wall.json
 package main
 
 import (

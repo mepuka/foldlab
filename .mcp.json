@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "foldlab": {
+      "command": "bun",
+      "args": ["src/mcpMain.ts"]
+    }
+  }
+}
