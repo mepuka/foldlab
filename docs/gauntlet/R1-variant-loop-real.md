@@ -1,8 +1,17 @@
 # R1 — The Variant Loop, Real (receipts rung)
 
-COORDINATOR-OWNED. Status: SPEC RATIFIED, verifier freeze pending
-(dispatch blocked until `go/gauntlet/real.go` + `cmd/realverify` land
-frozen). The first rung whose effects cost real money.
+COORDINATOR-OWNED. Status: SPEC RATIFIED, VERIFIER FROZEN
+(`go/gauntlet/real.go` + `cmd/realverify`, RL1–RL7 mechanical, self-
+tested) — DISPATCH UNBLOCKED. The first rung whose effects cost real
+money. Wire details pinned by the verifier: journal facts are receipt
+payloads `{"digest","input_tokens","model","output_tokens","result",
+"stop"}` on the standard chain; `plan.ndjson` rows are
+`{"inputs","question","step","template","variant","work"}` with
+`work = H({"inputs","model","template"})` recomputed by the verifier,
+step-0 inputs = `[H({"question","seed"})]`, step-s inputs = the
+parent's recorded result digest; prices are integer micro-USD per
+token (haiku: 1 in / 5 out); every receipt must be demanded by the
+plan (no journal padding).
 
 ## The claim under test
 
