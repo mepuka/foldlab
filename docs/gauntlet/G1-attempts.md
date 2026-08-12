@@ -1,0 +1,15 @@
+attempt 1: read the frozen G1 contract, verifier, journal, effector, canonical implementation, and JetStream dossier; ran the baseline Go laws -> 8/8 Go packages green; harness acceptance still red because no G1 producer exists
+attempt 2: added the permitted multi-process controller, TCP NATS server, eight worker modes, O_APPEND+fsync physical ledgers, real kill/restart orchestration, and canonical bundle exporter -> implementation written; compile and frozen verifier gates pending
+attempt 3: formatted the new Go paths and ran the full Go law suite -> 10/10 Go packages green; live crash-storm acceptance pending
+attempt 4: ran seed g1-crash-storm-alpha over real file-backed out-of-process JetStream with eight worker processes -> frozen G1 verifier green; 500 steps, 25 distinct steals, 25 hard kills, 5 cold restarts
+attempt 5: ran seeds g1-crash-storm-beta and g1-crash-storm-gamma concurrently from the unchanged alpha harness build -> both self-verifiers green; each has 500 steps, 8 owners, 25 distinct steals, 25 hard kills, and 5 cold restarts
+attempt 6: ran the exact frozen gauntletverify command over alpha, beta, and gamma together -> 3/3 bundles verified at every G1 floor
+attempt 7: audited the artifact contract and changed journal export to copy verified JetStream message bytes verbatim; removed dead controller/export symbols -> source strengthened; rebuild and fresh same-build bundles pending
+attempt 8: formatted the raw-wire strengthening and reran every Go package law -> 10/10 Go packages green; fresh final bundles pending
+attempt 9: rebuilt audited harness SHA-256 2F75AD23789449C640D4A50097D973AEF069C499C56748989E40ABF3CB4C2E61 once and ran final-alpha, final-beta, and final-gamma from it -> all 3 self-verifiers green; each 500/8/25 steals/25 kills/5 restarts
+attempt 10: ran the exact frozen gauntletverify command over final-alpha, final-beta, and final-gamma from the audited build -> 3/3 final bundles verified at GV1-GV9 and all hardness floors
+attempt 11: ran Go formatting emptiness, go vet ./..., and go test ./... after final bundle export -> 11/11 Go packages green; no unformatted files
+attempt 12: ran bun run typecheck and bun test after final Go gates -> typecheck green; 54 pass, 1 optional wasm skip, 0 fail
+attempt 13: audited final ownership, frozen paths, dependency diffs, bundle layouts, and child-process cleanup; corrected attempt 11 package bookkeeping after concurrent transposeverify entered the branch -> 12/12 Go packages green; frozen files untouched; no gauntlet processes remain
+attempt 14: completed the requirement audit against the full NATS protocol dossier, harness process/kill/fsync/raw-wire source, binary provenance, and exact final bundle shapes -> 3 distinct same-build bundles each show 500 journal + 500 registers + 525 physical runs, 8 owners, 25 steals/kills, 5 mid-run restarts, and counterfactual cones 159/355/20
+attempt 15: reran the exact three-bundle verifier plus current-state Go format/vet/test and Bun typecheck/test after the completion audit -> 3/3 bundles verified; 12/12 Go packages green; Bun 54 pass, 1 optional wasm skip, 0 fail
