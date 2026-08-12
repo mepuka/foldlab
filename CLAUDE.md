@@ -9,9 +9,9 @@ stay green.
 - Pinned exact: `effect@4.0.0-beta.107`, `@effect/platform-bun@4.0.0-beta.107`.
   v4 betas rename APIs between releases — confirm exports against
   `node_modules/effect/dist/*.d.ts` before use.
-- The Effect v4 source is cloned at
-  `~/.local/share/effect-solutions/effect` for reference; it tracks tip and
-  may be NEWER than the pin.
+- Effect v4 source reference: the pinned package under
+  `node_modules/effect` is the authority; upstream is
+  github.com/Effect-TS/effect (tip may be NEWER than the pin).
 - Guides: https://github.com/kitlangton/effect-solutions
   (`packages/website/docs`). The `effect-solutions` CLI has no win32 binary.
 - HTTP is `effect/unstable/http`; runtime layers from `@effect/platform-bun`;
