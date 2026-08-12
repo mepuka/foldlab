@@ -1,6 +1,9 @@
 package stream
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func txCorpus() []Event {
 	return []Event{
@@ -46,5 +49,54 @@ func TestComposeIdentityAndPurity(t *testing.T) {
 	Apply(Compose(RenameStream("z"), MapValueUpper()), xs)
 	if txHead(xs) != before {
 		t.Fatalf("a transform mutated its input stream")
+	}
+}
+
+// A drop is terminal for that event; downstream transforms observe nothing.
+func TestComposeStopsAfterDrop(t *testing.T) {
+	calls := 0
+	drop := func(e Event) (Event, bool) {
+		return e, false
+	}
+	after := func(e Event) (Event, bool) {
+		calls++
+		return e, true
+	}
+	if got, ok := Compose(drop, after)(ev("s", 1, "a=1")); ok {
+		t.Fatalf("dropped event survived as %#v", got)
+	}
+	if calls != 0 {
+		t.Fatalf("downstream transform ran %d times after a drop", calls)
+	}
+}
+
+// XL4: value mapping retains bytes.ToUpper semantics for ASCII, Unicode,
+// invalid UTF-8, and payloads with no value boundary.
+func TestMapValueUpperMatchesByteSemantics(t *testing.T) {
+	payloads := [][]byte{
+		[]byte("key=lower"),
+		[]byte("Key=ALREADY"),
+		[]byte("key=Straße"),
+		[]byte("key=ɐtail"),
+		append([]byte("key="), 0xff, 'a'),
+		[]byte("no-boundary"),
+	}
+	upper := MapValueUpper()
+	for _, payload := range payloads {
+		input := Event{Payload: append([]byte(nil), payload...)}
+		got, ok := upper(input)
+		if !ok {
+			t.Fatalf("upper unexpectedly dropped %q", payload)
+		}
+		want := payload
+		if i := bytes.IndexByte(payload, '='); i >= 0 {
+			want = append(append([]byte(nil), payload[:i+1]...), bytes.ToUpper(payload[i+1:])...)
+		}
+		if !bytes.Equal(got.Payload, want) {
+			t.Fatalf("upper(%q) = %q, want %q", payload, got.Payload, want)
+		}
+		if !bytes.Equal(input.Payload, payload) {
+			t.Fatalf("upper mutated %q", payload)
+		}
 	}
 }

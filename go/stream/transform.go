@@ -1,6 +1,10 @@
 package stream
 
-import "bytes"
+import (
+	"bytes"
+	"unicode"
+	"unicode/utf8"
+)
 
 // An Xform is one stream-to-stream transformation: a per-event morphism,
 // with ok=false dropping the event. This is the Go dual of a Schema
@@ -53,9 +57,26 @@ func RenameStream(to string) Xform {
 func FilterKeyPrefix(prefix string) Xform {
 	p := []byte(prefix)
 	return func(e Event) (Event, bool) {
-		return e, bytes.HasPrefix(e.Payload, p) ||
-			(bytes.IndexByte(e.Payload, '=') > len(p) && bytes.HasPrefix(e.Payload[:len(p)], p))
+		i := bytes.IndexByte(e.Payload, '=')
+		return e, i > 0 && bytes.HasPrefix(e.Payload[:i], p)
 	}
+}
+
+func appendUpper(dst, src []byte) []byte {
+	for len(src) > 0 {
+		if c := src[0]; c < utf8.RuneSelf {
+			if 'a' <= c && c <= 'z' {
+				c -= 'a' - 'A'
+			}
+			dst = append(dst, c)
+			src = src[1:]
+			continue
+		}
+		r, size := utf8.DecodeRune(src)
+		dst = utf8.AppendRune(dst, unicode.ToUpper(r))
+		src = src[size:]
+	}
+	return dst
 }
 
 // MapValueUpper uppercases the value half of key=value payloads, allocating
@@ -66,10 +87,9 @@ func MapValueUpper() Xform {
 		if i < 0 {
 			return e, true
 		}
-		p := make([]byte, len(e.Payload))
+		p := make([]byte, i+1, len(e.Payload))
 		copy(p, e.Payload[:i+1])
-		copy(p[i+1:], bytes.ToUpper(e.Payload[i+1:]))
-		e.Payload = p
+		e.Payload = appendUpper(p, e.Payload[i+1:])
 		return e, true
 	}
 }

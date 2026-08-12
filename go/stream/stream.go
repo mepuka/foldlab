@@ -30,32 +30,76 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"sync"
+	"unicode/utf8"
 )
 
 // An Event is one received fact: stream identity, position, payload. Arrival
 // order across streams is NOT in the event — order is what merge facts commit.
+// Stream is valid UTF-8 by contract; transports validate it before an event
+// reaches the allocation-free identity path.
 type Event struct {
 	Stream  string
 	Seq     uint64
 	Payload []byte
 }
 
+const (
+	eventFrameOverhead      = 2 + 8 + 4
+	maxEncodedStreamLen     = 1<<16 - 1
+	maxEncodedPayloadLen    = 1<<32 - 1
+	maxPooledCanonicalBytes = 1 << 20
+)
+
+func fastEncodedEventLen(e Event) (int, bool) {
+	size := uint64(eventFrameOverhead) + uint64(len(e.Stream)) + uint64(len(e.Payload))
+	ok := utf8.ValidString(e.Stream) &&
+		len(e.Stream) <= maxEncodedStreamLen &&
+		uint64(len(e.Payload)) <= maxEncodedPayloadLen &&
+		size <= uint64(^uint(0)>>1)
+	return int(size), ok
+}
+
+func checkedEncodedEventLen(e Event) (int, error) {
+	size, ok := fastEncodedEventLen(e)
+	if ok {
+		return size, nil
+	}
+	if !utf8.ValidString(e.Stream) {
+		return 0, fmt.Errorf("stream: stream ID is not valid UTF-8")
+	}
+	if len(e.Stream) > maxEncodedStreamLen {
+		return 0, fmt.Errorf("stream: stream length %d exceeds u16", len(e.Stream))
+	}
+	if uint64(len(e.Payload)) > maxEncodedPayloadLen {
+		return 0, fmt.Errorf("stream: payload length %d exceeds u32", len(e.Payload))
+	}
+	return 0, fmt.Errorf("stream: canonical event length overflows int")
+}
+
+func encodedEventLen(e Event) int {
+	if len(e.Stream) > maxEncodedStreamLen || uint64(len(e.Payload)) > maxEncodedPayloadLen {
+		panic("stream: event is outside the canonical encoding domain")
+	}
+	maxInt := int(^uint(0) >> 1)
+	if ^uint(0)>>32 == 0 && len(e.Payload) > maxInt-eventFrameOverhead-len(e.Stream) {
+		panic("stream: canonical event length overflows int")
+	}
+	return eventFrameOverhead + len(e.Stream) + len(e.Payload)
+}
+
+func appendEncodedEvent(dst []byte, e Event) []byte {
+	dst = binary.BigEndian.AppendUint16(dst, uint16(len(e.Stream)))
+	dst = append(dst, e.Stream...)
+	dst = binary.BigEndian.AppendUint64(dst, e.Seq)
+	dst = binary.BigEndian.AppendUint32(dst, uint32(len(e.Payload)))
+	return append(dst, e.Payload...)
+}
+
 // EncodeEvent is the canonical byte form. Everything — chain heads, merge
 // digests, wire frames — goes through it, so there is exactly one identity.
 func EncodeEvent(e Event) []byte {
-	buf := make([]byte, 0, 2+len(e.Stream)+8+4+len(e.Payload))
-	var b2 [2]byte
-	var b4 [4]byte
-	var b8 [8]byte
-	binary.BigEndian.PutUint16(b2[:], uint16(len(e.Stream)))
-	buf = append(buf, b2[:]...)
-	buf = append(buf, e.Stream...)
-	binary.BigEndian.PutUint64(b8[:], e.Seq)
-	buf = append(buf, b8[:]...)
-	binary.BigEndian.PutUint32(b4[:], uint32(len(e.Payload)))
-	buf = append(buf, b4[:]...)
-	buf = append(buf, e.Payload...)
-	return buf
+	return appendEncodedEvent(make([]byte, 0, encodedEventLen(e)), e)
 }
 
 // Head is a chain fingerprint: 32 bytes committing to an entire prefix.
@@ -65,6 +109,9 @@ func (h Head) Hex() string { return fmt.Sprintf("%x", h[:]) }
 
 // StreamSeed is the empty-history head of one named stream.
 func StreamSeed(stream string) Head {
+	if !utf8.ValidString(stream) {
+		panic("stream: stream ID is not valid UTF-8")
+	}
 	return sha256.Sum256([]byte("playground.stream.v1:" + stream))
 }
 
@@ -74,22 +121,34 @@ func MergeSeed() Head {
 	return sha256.Sum256([]byte("playground.merge.v1"))
 }
 
+const inlineHeadFrameSize = 256
+
+func headFrame(buf []byte, h Head, e Event) []byte {
+	size := len(h) + encodedEventLen(e)
+	if cap(buf) < size {
+		buf = make([]byte, 0, size)
+	} else {
+		buf = buf[:0]
+	}
+	buf = append(buf, h[:]...)
+	return appendEncodedEvent(buf, e)
+}
+
 // Extend is the identity fold: one event onto a head. O(1) incremental — the
 // whole point of chaining over rehashing history.
 func Extend(h Head, e Event) Head {
-	d := sha256.New()
-	d.Write(h[:])
-	d.Write(EncodeEvent(e))
-	var out Head
-	copy(out[:], d.Sum(nil))
-	return out
+	var inline [inlineHeadFrameSize]byte
+	return sha256.Sum256(headFrame(inline[:0], h, e))
 }
 
 // HeadFrom folds a batch onto a base head.
 func HeadFrom(base Head, events []Event) Head {
 	h := base
+	var inline [inlineHeadFrameSize]byte
+	buf := inline[:0]
 	for _, e := range events {
-		h = Extend(h, e)
+		buf = headFrame(buf, h, e)
+		h = sha256.Sum256(buf)
 	}
 	return h
 }
@@ -111,18 +170,29 @@ type MergeFact struct {
 
 // EncodeFact is the merge fact's canonical byte form.
 func EncodeFact(m MergeFact) []byte {
-	buf := make([]byte, 0, 4+len(m.Picks)*12)
-	var b2 [2]byte
-	var b4 [4]byte
-	var b8 [8]byte
-	binary.BigEndian.PutUint32(b4[:], uint32(len(m.Picks)))
-	buf = append(buf, b4[:]...)
-	for _, p := range m.Picks {
-		binary.BigEndian.PutUint16(b2[:], uint16(len(p.Stream)))
-		buf = append(buf, b2[:]...)
-		buf = append(buf, p.Stream...)
-		binary.BigEndian.PutUint64(b8[:], p.Seq)
-		buf = append(buf, b8[:]...)
+	if uint64(len(m.Picks)) > maxEncodedPayloadLen {
+		panic("stream: merge pick count exceeds u32")
+	}
+	maxInt := int(^uint(0) >> 1)
+	size := 4
+	for i, pick := range m.Picks {
+		if !utf8.ValidString(pick.Stream) {
+			panic(fmt.Sprintf("stream: pick %d stream ID is not valid UTF-8", i))
+		}
+		if len(pick.Stream) > maxEncodedStreamLen {
+			panic(fmt.Sprintf("stream: pick %d stream length %d exceeds u16", i, len(pick.Stream)))
+		}
+		if size > maxInt-10 || len(pick.Stream) > maxInt-size-10 {
+			panic("stream: canonical merge fact length overflows int")
+		}
+		size += 2 + len(pick.Stream) + 8
+	}
+	buf := make([]byte, 0, size)
+	buf = binary.BigEndian.AppendUint32(buf, uint32(len(m.Picks)))
+	for _, pick := range m.Picks {
+		buf = binary.BigEndian.AppendUint16(buf, uint16(len(pick.Stream)))
+		buf = append(buf, pick.Stream...)
+		buf = binary.BigEndian.AppendUint64(buf, pick.Seq)
 	}
 	return buf
 }
@@ -141,17 +211,47 @@ func FactDigest(m MergeFact) Head {
 // over well-formed input, and an explicit error — never a silent skip — on a
 // pick with no matching source event (a gap is data, not noise).
 func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
-	index := make(map[string]map[uint64]Event, len(sources))
-	for name, events := range sources {
-		bySeq := make(map[uint64]Event, len(events))
-		for _, e := range events {
-			bySeq[e.Seq] = e
-		}
-		index[name] = bySeq
+	type sourceIndex struct {
+		events []Event
+		first  uint64
+		dense  bool
+		bySeq  map[uint64]Event
 	}
+
+	index := make(map[string]sourceIndex, len(sources))
+	for name, events := range sources {
+		source := sourceIndex{events: events, dense: true}
+		if len(events) > 0 {
+			source.first = events[0].Seq
+		}
+		for i, e := range events {
+			if e.Seq != source.first+uint64(i) {
+				source.dense = false
+				break
+			}
+		}
+		if !source.dense {
+			source.bySeq = make(map[uint64]Event, len(events))
+			for _, e := range events {
+				source.bySeq[e.Seq] = e
+			}
+		}
+		index[name] = source
+	}
+
 	out := make([]Event, 0, len(m.Picks))
 	for i, p := range m.Picks {
-		e, ok := index[p.Stream][p.Seq]
+		source, ok := index[p.Stream]
+		var e Event
+		if ok && source.dense {
+			offset := p.Seq - source.first
+			ok = offset < uint64(len(source.events))
+			if ok {
+				e = source.events[int(offset)]
+			}
+		} else if ok {
+			e, ok = source.bySeq[p.Seq]
+		}
 		if !ok {
 			return nil, fmt.Errorf("stream: pick %d references missing event %s@%d", i, p.Stream, p.Seq)
 		}
@@ -166,19 +266,38 @@ func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
 // payloads are "key=value", same-key later writes win. Cross-key events
 // commute under this fold; same-key events do not — which is exactly the
 // classification that decides where a merge NEEDS a committed order.
+type kvEntry struct {
+	value []byte
+}
+
 type KV struct {
-	m     map[string]string
+	m     map[string]*kvEntry
 	count uint32
 }
 
-func NewKV() *KV { return &KV{m: map[string]string{}} }
+func NewKV() *KV { return &KV{m: map[string]*kvEntry{}} }
 
 func (k *KV) Apply(e Event) error {
-	parts := bytes.SplitN(e.Payload, []byte{'='}, 2)
-	if len(parts) != 2 || len(parts[0]) == 0 {
+	if !utf8.Valid(e.Payload) {
+		return fmt.Errorf("stream: payload is not valid UTF-8")
+	}
+	i := bytes.IndexByte(e.Payload, '=')
+	if i <= 0 {
 		return fmt.Errorf("stream: payload %q is not key=value", e.Payload)
 	}
-	k.m[string(parts[0])] = string(parts[1])
+	key, value := e.Payload[:i], e.Payload[i+1:]
+	if bytes.IndexByte(key, 0) >= 0 || bytes.IndexByte(value, 0) >= 0 {
+		return fmt.Errorf("stream: payload %q contains NUL outside the state-digest domain", e.Payload)
+	}
+	if k.count == ^uint32(0) {
+		return fmt.Errorf("stream: KV event count exceeds u32")
+	}
+	entry := k.m[string(key)]
+	if entry == nil {
+		entry = &kvEntry{}
+		k.m[string(key)] = entry
+	}
+	entry.value = append(entry.value[:0], value...)
 	k.count++
 	return nil
 }
@@ -200,7 +319,7 @@ func (k *KV) StateDigest() Head {
 	for _, key := range keys {
 		d.Write([]byte(key))
 		d.Write([]byte{0})
-		d.Write([]byte(k.m[key]))
+		d.Write(k.m[key].value)
 		d.Write([]byte{0})
 	}
 	var out Head
@@ -251,8 +370,8 @@ func Compact(base Head, events []Event, k int) (Compacted, error) {
 
 // A Segment is a batch of events chained onto a parent head. Histories are
 // DAG nodes addressed by head; a fork is two segments with the SAME parent —
-// creation is O(1) and copies nothing, because the shared prefix is shared
-// structure, not duplicated bytes. Same answer as git, for the same reason.
+// the shared prefix is never copied, while the inserted tail owns its payload
+// bytes so caller mutation cannot change content already named by its head.
 type Segment struct {
 	Parent Head
 	Events []Event
@@ -263,10 +382,19 @@ func (s Segment) Head() Head { return HeadFrom(s.Parent, s.Events) }
 // Store is a content-addressed segment store: head -> segment.
 type Store map[Head]Segment
 
+func cloneEvents(events []Event) []Event {
+	out := make([]Event, len(events))
+	for i, event := range events {
+		out[i] = event
+		out[i].Payload = bytes.Clone(event.Payload)
+	}
+	return out
+}
+
 // Put inserts a segment and returns its head (its name — nothing else names it).
 func (st Store) Put(s Segment) Head {
 	h := s.Head()
-	st[h] = s
+	st[h] = Segment{Parent: s.Parent, Events: cloneEvents(s.Events)}
 	return h
 }
 
@@ -274,8 +402,15 @@ func (st Store) Put(s Segment) Head {
 // event history. An unknown intermediate head is an explicit error: with hash
 // chaining, ABSENCE is detectable — you know exactly what you are missing.
 func (st Store) Replay(head Head, root Head) ([]Event, error) {
-	var segs []Segment
+	var (
+		segs []Segment
+		seen = make(map[Head]struct{})
+	)
 	for h := head; h != root; {
+		if _, ok := seen[h]; ok {
+			return nil, fmt.Errorf("stream: segment cycle at head %s", h.Hex())
+		}
+		seen[h] = struct{}{}
 		s, ok := st[h]
 		if !ok {
 			return nil, fmt.Errorf("stream: no segment for head %s (gap is explicit)", h.Hex())
@@ -285,28 +420,132 @@ func (st Store) Replay(head Head, root Head) ([]Event, error) {
 	}
 	var out []Event
 	for i := len(segs) - 1; i >= 0; i-- {
-		out = append(out, segs[i].Events...)
+		out = append(out, cloneEvents(segs[i].Events)...)
 	}
 	return out, nil
 }
 
 // ---------- compression: transport, never identity ----------
 
+var (
+	gzipWriters = sync.Pool{
+		New: func() any { return gzip.NewWriter(io.Discard) },
+	}
+	gzipFrames = sync.Pool{
+		New: func() any { return new([]byte) },
+	}
+)
+
+func encodedEventsLen(events []Event) (int, error) {
+	maxInt := int(^uint(0) >> 1)
+	total := 0
+	for i, e := range events {
+		size, err := checkedEncodedEventLen(e)
+		if err != nil {
+			return 0, fmt.Errorf("stream: event %d: %w", i, err)
+		}
+		if size > maxInt-total {
+			return 0, fmt.Errorf("stream: canonical frame length overflows int")
+		}
+		total += size
+	}
+	return total, nil
+}
+
 // GzipEvents frames a batch as concatenated canonical encodings, gzipped.
 func GzipEvents(events []Event) ([]byte, error) {
-	var raw bytes.Buffer
-	for _, e := range events {
-		raw.Write(EncodeEvent(e))
+	size, err := encodedEventsLen(events)
+	if err != nil {
+		return nil, err
 	}
+	frame := gzipFrames.Get().(*[]byte)
+	raw := (*frame)[:0]
+	if cap(raw) < size {
+		raw = make([]byte, 0, size)
+	}
+	defer func() {
+		if cap(raw) <= maxPooledCanonicalBytes {
+			*frame = raw[:0]
+			gzipFrames.Put(frame)
+		}
+	}()
+	for _, e := range events {
+		raw = appendEncodedEvent(raw, e)
+	}
+
 	var out bytes.Buffer
-	w := gzip.NewWriter(&out)
-	if _, err := w.Write(raw.Bytes()); err != nil {
+	w := gzipWriters.Get().(*gzip.Writer)
+	w.Reset(&out)
+	defer func() {
+		w.Reset(io.Discard)
+		gzipWriters.Put(w)
+	}()
+	if _, err := w.Write(raw); err != nil {
 		return nil, err
 	}
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
 	return out.Bytes(), nil
+}
+
+func decodeEvents(raw []byte) ([]Event, error) {
+	var (
+		lastStreamBytes []byte
+		lastStream      string
+		haveLastStream  bool
+		streams         map[string]string
+		out             []Event
+	)
+	for off := 0; off < len(raw); {
+		if len(raw)-off < 2 {
+			return nil, fmt.Errorf("stream: truncated frame at %d", off)
+		}
+		idLen := int(binary.BigEndian.Uint16(raw[off:]))
+		off += 2
+		if len(raw)-off < idLen+8+4 {
+			return nil, fmt.Errorf("stream: truncated frame at %d", off)
+		}
+		idBytes := raw[off : off+idLen]
+		if !utf8.Valid(idBytes) {
+			return nil, fmt.Errorf("stream: stream ID at %d is not valid UTF-8", off)
+		}
+		var id string
+		switch {
+		case !haveLastStream:
+			id = string(idBytes)
+			lastStreamBytes = idBytes
+			lastStream = id
+			haveLastStream = true
+		case bytes.Equal(idBytes, lastStreamBytes):
+			id = lastStream
+		default:
+			if streams == nil {
+				streams = map[string]string{lastStream: lastStream}
+			}
+			var ok bool
+			id, ok = streams[string(idBytes)]
+			if !ok {
+				id = string(idBytes)
+				streams[id] = id
+			}
+			lastStreamBytes = idBytes
+			lastStream = id
+		}
+		off += idLen
+		seq := binary.BigEndian.Uint64(raw[off:])
+		off += 8
+		payLen := binary.BigEndian.Uint32(raw[off:])
+		off += 4
+		if uint64(payLen) > uint64(len(raw)-off) {
+			return nil, fmt.Errorf("stream: truncated payload at %d", off)
+		}
+		end := off + int(payLen)
+		payload := raw[off:end:end]
+		off = end
+		out = append(out, Event{Stream: id, Seq: seq, Payload: payload})
+	}
+	return out, nil
 }
 
 // GunzipEvents inverts GzipEvents, re-parsing the canonical frames.
@@ -322,29 +561,5 @@ func GunzipEvents(frame []byte) ([]Event, error) {
 	if err := r.Close(); err != nil {
 		return nil, err
 	}
-	var out []Event
-	for off := 0; off < len(raw); {
-		if len(raw)-off < 2 {
-			return nil, fmt.Errorf("stream: truncated frame at %d", off)
-		}
-		idLen := int(binary.BigEndian.Uint16(raw[off:]))
-		off += 2
-		if len(raw)-off < idLen+8+4 {
-			return nil, fmt.Errorf("stream: truncated frame at %d", off)
-		}
-		id := string(raw[off : off+idLen])
-		off += idLen
-		seq := binary.BigEndian.Uint64(raw[off:])
-		off += 8
-		payLen := int(binary.BigEndian.Uint32(raw[off:]))
-		off += 4
-		if len(raw)-off < payLen {
-			return nil, fmt.Errorf("stream: truncated payload at %d", off)
-		}
-		payload := make([]byte, payLen)
-		copy(payload, raw[off:off+payLen])
-		off += payLen
-		out = append(out, Event{Stream: id, Seq: seq, Payload: payload})
-	}
-	return out, nil
+	return decodeEvents(raw)
 }

@@ -2,6 +2,7 @@ package stream
 
 import (
 	"bytes"
+	"sync"
 	"testing"
 )
 
@@ -111,6 +112,26 @@ func TestMergeGapIsExplicit(t *testing.T) {
 	}
 }
 
+// Sparse sources retain the map semantics: arbitrary ordering is valid and
+// duplicate positions resolve to the last source event.
+func TestMergeIndexesSparseSources(t *testing.T) {
+	source := []Event{
+		ev("alpha", 7, "a=first"),
+		ev("alpha", 3, "b=middle"),
+		ev("alpha", 7, "a=last"),
+	}
+	merged, err := ApplyMerge(MergeFact{Picks: []Pick{{"alpha", 3}, {"alpha", 7}}}, map[string][]Event{"alpha": source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(merged[0].Payload); got != "b=middle" {
+		t.Fatalf("sparse position resolved to %q", got)
+	}
+	if got := string(merged[1].Payload); got != "a=last" {
+		t.Fatalf("duplicate position resolved to %q", got)
+	}
+}
+
 // L4: compaction preserves both folds at EVERY boundary — the final state
 // (meaning) and the final head recomputed across the boundary (identity).
 func TestCompactionPreservesBothFolds(t *testing.T) {
@@ -200,4 +221,61 @@ func TestGzipRoundTripPreservesIdentity(t *testing.T) {
 	if HeadFrom(StreamSeed("alpha"), back) != HeadFrom(StreamSeed("alpha"), alpha) {
 		t.Fatalf("round trip changed the head")
 	}
+}
+
+// Repeated and switching stream IDs decode through the same canonical frame.
+func TestGzipRoundTripPreservesStreamSwitches(t *testing.T) {
+	events := []Event{
+		ev("alpha", 1, "a=1"),
+		ev("alpha", 2, "b=2"),
+		ev("beta", 1, "c=3"),
+		ev("alpha", 3, "d=4"),
+	}
+	frame, err := GzipEvents(events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := GunzipEvents(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range events {
+		if !bytes.Equal(EncodeEvent(events[i]), EncodeEvent(back[i])) {
+			t.Fatalf("stream switch changed canonical bytes at %d", i)
+		}
+	}
+}
+
+// Pool reuse cannot share transport state across concurrent round trips.
+func TestGzipConcurrentRoundTripsDoNotCrossTalk(t *testing.T) {
+	events := []Event{
+		ev("alpha", 1, "a=1"),
+		ev("beta", 1, "b=2"),
+		ev("alpha", 2, "c=3"),
+	}
+	want := HeadFrom(MergeSeed(), events)
+	var workers sync.WaitGroup
+	for range 8 {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for range 50 {
+				frame, err := GzipEvents(events)
+				if err != nil {
+					t.Errorf("gzip: %v", err)
+					return
+				}
+				back, err := GunzipEvents(frame)
+				if err != nil {
+					t.Errorf("gunzip: %v", err)
+					return
+				}
+				if got := HeadFrom(MergeSeed(), back); got != want {
+					t.Errorf("concurrent round trip moved the head")
+					return
+				}
+			}
+		}()
+	}
+	workers.Wait()
 }

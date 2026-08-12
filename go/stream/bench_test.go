@@ -42,13 +42,6 @@ func benchmarkMerge(n int) (MergeFact, map[string][]Event) {
 	return MergeFact{Picks: picks}, map[string][]Event{"left": left, "right": right}
 }
 
-var (
-	benchmarkBytesSink  []byte
-	benchmarkEventsSink []Event
-	benchmarkHeadSink   Head
-	benchmarkKVSink     *KV
-)
-
 func BenchmarkEncodeEvent(b *testing.B) {
 	for _, size := range []struct {
 		name  string
@@ -60,12 +53,9 @@ func BenchmarkEncodeEvent(b *testing.B) {
 		event := benchmarkEvents(1, size.bytes)[0]
 		b.Run(size.name, func(b *testing.B) {
 			b.ReportAllocs()
-			b.ResetTimer()
-			var encoded []byte
-			for i := 0; i < b.N; i++ {
-				encoded = EncodeEvent(event)
+			for b.Loop() {
+				EncodeEvent(event)
 			}
-			benchmarkBytesSink = encoded
 		})
 	}
 }
@@ -77,15 +67,12 @@ func BenchmarkExtend(b *testing.B) {
 		base := StreamSeed("bench")
 		b.Run("n="+strconv.Itoa(n), func(b *testing.B) {
 			b.ReportAllocs()
-			b.ResetTimer()
-			var head Head
-			for i := 0; i < b.N; i++ {
-				head = base
+			for b.Loop() {
+				head := base
 				for _, event := range events {
 					head = Extend(head, event)
 				}
 			}
-			benchmarkHeadSink = head
 		})
 	}
 }
@@ -96,12 +83,9 @@ func BenchmarkHeadFrom(b *testing.B) {
 		base := StreamSeed("bench")
 		b.Run("n="+strconv.Itoa(n), func(b *testing.B) {
 			b.ReportAllocs()
-			b.ResetTimer()
-			var head Head
-			for i := 0; i < b.N; i++ {
-				head = HeadFrom(base, events)
+			for b.Loop() {
+				HeadFrom(base, events)
 			}
-			benchmarkHeadSink = head
 		})
 	}
 }
@@ -117,21 +101,15 @@ func BenchmarkApplyFusion(b *testing.B) {
 		b.Run("n="+strconv.Itoa(n), func(b *testing.B) {
 			b.Run("fused", func(b *testing.B) {
 				b.ReportAllocs()
-				b.ResetTimer()
-				var out []Event
-				for i := 0; i < b.N; i++ {
-					out = Apply(fused, events)
+				for b.Loop() {
+					Apply(fused, events)
 				}
-				benchmarkEventsSink = out
 			})
 			b.Run("sequential", func(b *testing.B) {
 				b.ReportAllocs()
-				b.ResetTimer()
-				var out []Event
-				for i := 0; i < b.N; i++ {
-					out = Apply(h, Apply(g, Apply(f, events)))
+				for b.Loop() {
+					Apply(h, Apply(g, Apply(f, events)))
 				}
-				benchmarkEventsSink = out
 			})
 		})
 	}
@@ -140,31 +118,23 @@ func BenchmarkApplyFusion(b *testing.B) {
 func BenchmarkApplyMerge(b *testing.B) {
 	fact, sources := benchmarkMerge(10_000)
 	b.ReportAllocs()
-	b.ResetTimer()
-	var merged []Event
-	for i := 0; i < b.N; i++ {
-		var err error
-		merged, err = ApplyMerge(fact, sources)
+	for b.Loop() {
+		_, err := ApplyMerge(fact, sources)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-	benchmarkEventsSink = merged
 }
 
 func BenchmarkFoldKV(b *testing.B) {
 	events := benchmarkKVEvents(10_000, 100)
 	b.ReportAllocs()
-	b.ResetTimer()
-	var state *KV
-	for i := 0; i < b.N; i++ {
-		var err error
-		state, err = FoldKV(events)
+	for b.Loop() {
+		_, err := FoldKV(events)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-	benchmarkKVSink = state
 }
 
 func BenchmarkStateDigest(b *testing.B) {
@@ -174,27 +144,20 @@ func BenchmarkStateDigest(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.ReportAllocs()
-	b.ResetTimer()
-	var digest Head
-	for i := 0; i < b.N; i++ {
-		digest = state.StateDigest()
+	for b.Loop() {
+		state.StateDigest()
 	}
-	benchmarkHeadSink = digest
 }
 
 func BenchmarkGzipEvents(b *testing.B) {
 	events := benchmarkKVEvents(1_000, 100)
 	b.ReportAllocs()
-	b.ResetTimer()
-	var frame []byte
-	for i := 0; i < b.N; i++ {
-		var err error
-		frame, err = GzipEvents(events)
+	for b.Loop() {
+		_, err := GzipEvents(events)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-	benchmarkBytesSink = frame
 }
 
 func BenchmarkGunzipEvents(b *testing.B) {
@@ -204,13 +167,10 @@ func BenchmarkGunzipEvents(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.ReportAllocs()
-	b.ResetTimer()
-	var decoded []Event
-	for i := 0; i < b.N; i++ {
-		decoded, err = GunzipEvents(frame)
+	for b.Loop() {
+		_, err = GunzipEvents(frame)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-	benchmarkEventsSink = decoded
 }

@@ -32,6 +32,35 @@ export interface StreamEvent {
   readonly payload: Uint8Array
 }
 
+const maxU16 = 0xffff
+const maxU32 = 0xffff_ffff
+const encoder = new TextEncoder()
+
+const hasUnpairedSurrogate = (value: string): boolean => {
+  for (let i = 0; i < value.length; i++) {
+    const unit = value.charCodeAt(i)
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(++i)
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return true
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return true
+    }
+  }
+  return false
+}
+
+const streamBytes = (stream: string): Uint8Array => {
+  if (hasUnpairedSurrogate(stream)) throw new RangeError("stream ID is not valid UTF-8")
+  const bytes = encoder.encode(stream)
+  if (bytes.length > maxU16) throw new RangeError("stream ID exceeds u16 bytes")
+  return bytes
+}
+
+const checkedSeq = (seq: number): bigint => {
+  if (!Number.isSafeInteger(seq) || seq < 0) throw new RangeError("sequence is not a safe unsigned integer")
+  return BigInt(seq)
+}
+
 export const event = (
   stream: string,
   seq: number,
@@ -41,12 +70,13 @@ export const event = (
 // ---------- canonical encoding and the identity fold ----------
 
 export const encodeEvent = (e: StreamEvent): Uint8Array => {
-  const id = new TextEncoder().encode(e.stream)
+  const id = streamBytes(e.stream)
+  if (e.payload.length > maxU32) throw new RangeError("payload exceeds u32 bytes")
   const buf = new Uint8Array(2 + id.length + 8 + 4 + e.payload.length)
   const view = new DataView(buf.buffer)
   view.setUint16(0, id.length)
   buf.set(id, 2)
-  view.setBigUint64(2 + id.length, BigInt(e.seq))
+  view.setBigUint64(2 + id.length, checkedSeq(e.seq))
   view.setUint32(2 + id.length + 8, e.payload.length)
   buf.set(e.payload, 2 + id.length + 8 + 4)
   return buf
@@ -61,8 +91,11 @@ const sha256 = (...parts: ReadonlyArray<Uint8Array>): Head => {
   return h.digest("hex")
 }
 
-const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s)
+const utf8 = (s: string): Uint8Array => encoder.encode(s)
 const fromHex = (hex: string): Uint8Array => {
+  if (!/^[0-9a-f]{64}$/i.test(hex)) {
+    throw new RangeError("head must be exactly 32 hexadecimal bytes")
+  }
   const out = new Uint8Array(hex.length / 2)
   for (let i = 0; i < out.length; i++) {
     out[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16)
@@ -71,7 +104,7 @@ const fromHex = (hex: string): Uint8Array => {
 }
 
 export const streamSeed = (stream: string): Head =>
-  sha256(utf8(`playground.stream.v1:${stream}`))
+  sha256(utf8("playground.stream.v1:"), streamBytes(stream))
 
 export const mergeSeed = (): Head => sha256(utf8("playground.merge.v1"))
 
@@ -94,17 +127,18 @@ export interface MergeFact {
 }
 
 export const encodeFact = (m: MergeFact): Uint8Array => {
+  if (m.picks.length > maxU32) throw new RangeError("merge pick count exceeds u32")
   const chunks: Array<Uint8Array> = []
   const count = new Uint8Array(4)
   new DataView(count.buffer).setUint32(0, m.picks.length)
   chunks.push(count)
   for (const p of m.picks) {
-    const id = utf8(p.stream)
+    const id = streamBytes(p.stream)
     const head = new Uint8Array(2 + id.length + 8)
     const view = new DataView(head.buffer)
     view.setUint16(0, id.length)
     head.set(id, 2)
-    view.setBigUint64(2 + id.length, BigInt(p.seq))
+    view.setBigUint64(2 + id.length, checkedSeq(p.seq))
     chunks.push(head)
   }
   const total = chunks.reduce((n, c) => n + c.length, 0)
@@ -164,16 +198,31 @@ export interface KVState {
 
 export const emptyKV: KVState = { entries: new Map(), count: 0 }
 
+const strictDecoder = new TextDecoder("utf-8", { fatal: true })
+
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
 ): Effect.Effect<KVState, MalformedPayload> =>
   Effect.suspend(() => {
-    const text = new TextDecoder().decode(e.payload)
+    let text: string
+    try {
+      text = strictDecoder.decode(e.payload)
+    } catch {
+      return Effect.fail(new MalformedPayload({ event: e }))
+    }
     const eq = text.indexOf("=")
     if (eq <= 0) return Effect.fail(new MalformedPayload({ event: e }))
+    const key = text.slice(0, eq)
+    const value = text.slice(eq + 1)
+    if (
+      key.includes("\0") || value.includes("\0") ||
+      !Number.isSafeInteger(state.count) || state.count < 0 || state.count >= maxU32
+    ) {
+      return Effect.fail(new MalformedPayload({ event: e }))
+    }
     const entries = new Map(state.entries)
-    entries.set(text.slice(0, eq), text.slice(eq + 1))
+    entries.set(key, value)
     return Effect.succeed({ entries, count: state.count + 1 })
   })
 
@@ -188,15 +237,35 @@ export const foldKV = (
  * heads differ. The chain remembers what the fold forgives.
  */
 export const stateDigest = (state: KVState): Head => {
+  if (!Number.isInteger(state.count) || state.count < 0 || state.count > maxU32) {
+    throw new RangeError("KV count is outside u32")
+  }
   const h = createHash("sha256")
   h.update(utf8("playground.fold.kv.v1"))
   const count = new Uint8Array(4)
   new DataView(count.buffer).setUint32(0, state.count)
   h.update(count)
-  for (const key of [...state.entries.keys()].sort()) {
-    h.update(utf8(key))
+  const entries = [...state.entries].map(([key, value]) => {
+    if (
+      key.includes("\0") || value.includes("\0") ||
+      hasUnpairedSurrogate(key) || hasUnpairedSurrogate(value)
+    ) {
+      throw new RangeError("KV entry is outside the state-digest domain")
+    }
+    return { key, keyBytes: utf8(key), valueBytes: utf8(value) }
+  })
+  entries.sort((left, right) => {
+    const n = Math.min(left.keyBytes.length, right.keyBytes.length)
+    for (let i = 0; i < n; i++) {
+      const delta = left.keyBytes[i]! - right.keyBytes[i]!
+      if (delta !== 0) return delta
+    }
+    return left.keyBytes.length - right.keyBytes.length
+  })
+  for (const entry of entries) {
+    h.update(entry.keyBytes)
     h.update(new Uint8Array([0]))
-    h.update(utf8(state.entries.get(key)!))
+    h.update(entry.valueBytes)
     h.update(new Uint8Array([0]))
   }
   return h.digest("hex")
@@ -212,6 +281,11 @@ export interface Compacted {
   readonly tail: ReadonlyArray<StreamEvent>
 }
 
+export class CompactionBoundary extends Data.TaggedError("CompactionBoundary")<{
+  readonly boundary: number
+  readonly length: number
+}> {}
+
 /**
  * Fold away the first k events. The two-fold law (tested): the state fold
  * of prefix+tail equals state-at-k then tail, and the final head recomputed
@@ -223,12 +297,17 @@ export const compact = (
   base: Head,
   events: ReadonlyArray<StreamEvent>,
   k: number,
-): Effect.Effect<Compacted, MalformedPayload> =>
-  Effect.map(foldKV(events.slice(0, k)), (state) => ({
-    base: headFrom(base, events.slice(0, k)),
-    state,
-    tail: events.slice(k),
-  }))
+): Effect.Effect<Compacted, MalformedPayload | CompactionBoundary> =>
+  Effect.suspend<Compacted, MalformedPayload | CompactionBoundary, never>(() => {
+    if (!Number.isInteger(k) || k < 0 || k > events.length) {
+      return Effect.fail(new CompactionBoundary({ boundary: k, length: events.length }))
+    }
+    return Effect.map(foldKV(events.slice(0, k)), (state) => ({
+      base: headFrom(base, events.slice(0, k)),
+      state,
+      tail: events.slice(k),
+    }))
+  })
 
 // ---------- fork: two histories sharing a prefix ----------
 
@@ -244,10 +323,20 @@ export class SegmentGap extends Data.TaggedError("SegmentGap")<{
   readonly head: Head
 }> {}
 
+export class SegmentCycle extends Data.TaggedError("SegmentCycle")<{
+  readonly head: Head
+}> {}
+
+const cloneEvent = (e: StreamEvent): StreamEvent => ({
+  stream: e.stream,
+  seq: e.seq,
+  payload: e.payload.slice(),
+})
+
 /** Content-addressed segment store: head -> segment. Fork = same parent. */
 export const put = (store: Map<Head, Segment>, s: Segment): Head => {
   const h = segmentHead(s)
-  store.set(h, s)
+  store.set(h, { parent: s.parent, events: s.events.map(cloneEvent) })
   return h
 }
 
@@ -255,18 +344,21 @@ export const replay = (
   store: ReadonlyMap<Head, Segment>,
   head: Head,
   root: Head,
-): Effect.Effect<Array<StreamEvent>, SegmentGap> =>
-  Effect.suspend(() => {
+): Effect.Effect<Array<StreamEvent>, SegmentGap | SegmentCycle> =>
+  Effect.suspend<Array<StreamEvent>, SegmentGap | SegmentCycle, never>(() => {
     const segments: Array<Segment> = []
+    const seen = new Set<Head>()
     let cursor = head
     while (cursor !== root) {
+      if (seen.has(cursor)) return Effect.fail(new SegmentCycle({ head: cursor }))
+      seen.add(cursor)
       const s = store.get(cursor)
       if (s === undefined) return Effect.fail(new SegmentGap({ head: cursor }))
       segments.push(s)
       cursor = s.parent
     }
     segments.reverse()
-    return Effect.succeed(segments.flatMap((s) => [...s.events]))
+    return Effect.succeed(segments.flatMap((s) => s.events.map(cloneEvent)))
   })
 
 // ---------- compression: transport, never identity ----------
@@ -277,14 +369,28 @@ export const parseFrames = (raw: Uint8Array): Array<StreamEvent> => {
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
   let off = 0
   while (off < raw.length) {
+    if (raw.length - off < 2) throw new RangeError(`truncated frame at ${off}`)
     const idLen = view.getUint16(off)
     off += 2
-    const stream = new TextDecoder().decode(raw.slice(off, off + idLen))
+    if (raw.length - off < idLen + 8 + 4) {
+      throw new RangeError(`truncated frame at ${off}`)
+    }
+    let stream: string
+    try {
+      stream = strictDecoder.decode(raw.subarray(off, off + idLen))
+    } catch {
+      throw new RangeError(`stream ID at ${off} is not valid UTF-8`)
+    }
     off += idLen
-    const seq = Number(view.getBigUint64(off))
+    const rawSeq = view.getBigUint64(off)
+    if (rawSeq > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new RangeError(`sequence at ${off} exceeds Number.MAX_SAFE_INTEGER`)
+    }
+    const seq = Number(rawSeq)
     off += 8
     const payLen = view.getUint32(off)
     off += 4
+    if (payLen > raw.length - off) throw new RangeError(`truncated payload at ${off}`)
     out.push({ stream, seq, payload: raw.slice(off, off + payLen) })
     off += payLen
   }
