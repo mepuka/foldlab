@@ -1,0 +1,22 @@
+{
+  "_provenance": "generated once by test/schemafix.ts (bun test/schemafix.ts) against effect@4.0.0-beta.107; frozen. Regeneration requires a stated reason.",
+  "wireEvent": "d5cae5f869a4322252ec5e34470d3cbcb0cabf72502904dd748a34d8986eccea",
+  "gzipEventFrame": "238c0f974f17a0908db4302878dd1243e842753eda961d13b2eeea5785cfb09e",
+  "plainStruct": "7f8b567a09f63bfdf1020bd92304cc8f2333bb2d8744e090c3b39a25f7d8b9b7",
+  "registeredSymKeyA": "6a87bc75a74493ef6ee6468f3ceb7a7989d6320510be6f8be1e053058897bada",
+  "registeredSymKeyB": "43eae3a10edf907dbb777a766fcf7a1bb2890e45d244818d1f7fe430cfcaaad4",
+  "uniqueSymbolA": "67d0963f23e2bc49b51e166d4b6746ab80881eb7dfd5f9f84e12362c6fe111e4",
+  "uniqueSymbolB": "427810d128b894ef4718619fc92fdd3a2da66b38452badaa5d31886f2536e263",
+  "symbolKeyword": "09132e0857e02a9597dc04b875d38dc1c9a2fdbe030156f06d27ead36b5098b5",
+  "recursiveTree": "9c12c67f65432719c09facdf69fc247d3f21a74eb92ca370e562a1cca979f1e3",
+  "dateDeclaration": "2077772593828f0af8c3884045474a92e7694fe38b06e548d6fb7c7df36a75a9",
+  "bytesDeclaration": "959e0d2448e94673923c48efe7f11869e6530e909345353becb46ef5f0be31e2",
+  "bareString": "452b1767882c3bc9a45057c35429696fb346d104dc71e05ded7f48e9cf4c9f01",
+  "checkedString": "2d93c34fef422cd6033677ef9c772c8255bcef2e583f02407f7427f0f53f0853",
+  "brandA": "452b1767882c3bc9a45057c35429696fb346d104dc71e05ded7f48e9cf4c9f01",
+  "brandB": "452b1767882c3bc9a45057c35429696fb346d104dc71e05ded7f48e9cf4c9f01",
+  "getterUpper": "452b1767882c3bc9a45057c35429696fb346d104dc71e05ded7f48e9cf4c9f01",
+  "getterLower": "452b1767882c3bc9a45057c35429696fb346d104dc71e05ded7f48e9cf4c9f01",
+  "defaultlessStruct": "7f36b5cb3be6fc920f30024671e963e28caa10734692c5a50800770e9c4ce4c4",
+  "defaultedStruct": "7f36b5cb3be6fc920f30024671e963e28caa10734692c5a50800770e9c4ce4c4"
+}

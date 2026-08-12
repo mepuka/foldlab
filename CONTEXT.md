@@ -103,6 +103,16 @@ _Avoid_: metadata, lineage tag
 
 ### The fence
 
+**Schema**:
+The declared form of a boundary crossing: a Type side, an Encoded side,
+and the transformation between them — never merely a type. Its identity
+commits the SHAPES of both sides and nothing else; every other semantic
+bit (behavior, brands, defaults, meaning) lives on the tier its author
+chooses: a check (narrows the shape — moves identity), an annotation (a
+claim — free, uncommitted), or a binding (a claim promoted to fact by a
+law). The lab does not decide a domain's semantics; it provides the tiers.
+_Avoid_: type (one side of a schema), model, DTO
+
 **Mint**:
 The committed operation by which a type, transform, or binding enters the
 world: it must typecheck, receive a digest in the registry, and pass its
@@ -119,8 +129,10 @@ What mint returns and the only reference agents may compose with — a
 structural digest plus its verified bindings.
 
 **Structural digest**:
-A schema's identity, computed from type structure alone. Deployment facts
-never move it: a type on two subjects is one type.
+A schema's identity: a digest over the representation of BOTH its sides,
+Type and Encoded, with every annotation stripped. Checks participate —
+narrowing a domain is a new schema — annotations and deployment facts
+never do: a schema on two subjects is one schema.
 
 **Semantic fold**:
 A derivation computed as a fold over a digest-anchored AST or program

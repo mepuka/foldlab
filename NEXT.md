@@ -148,6 +148,38 @@ through the effector.
    pin) and Anthropic SDK (`effect/JsonSchema`) surfaces are DERIVED
    adapters off the same minted schema — never hand-written ports, so they
    cannot drift. Beta-rename risk is confined to the adapter layer.
+6. **The IDE is a mount point, not a surface.** An IDE is an MCP client, so
+   the agent surface already reaches it; the work was discoverability
+   (`.mcp.json`, added), not construction. The two richer readings — a
+   language service that refuses unresolvable digests, an editor that
+   authors mint calls — stay shelved behind their real prerequisites
+   (registry persistence; the program interpreter).
+7. **Schema identity commits shape only; the representation is walled**
+   (ADR-0008, grilled over the live battery). A schema is its
+   transformation pair, but its identity is the shapes of the two sides —
+   checks move it, brands/getters/defaults are claims that do not, local
+   symbols refuse, and behavior commitment is a BINDING (probe law as
+   checker), never part of identity. The digest preimage is downstream of
+   the beta's `SchemaRepresentation`, so `fixtures/schema-wall.json` +
+   `test/schema.identity.wall.test.ts` pin digests and semantics both; a
+   red wall at a beta bump is a deliberate `foldlab.schema.v2` re-pin. The
+   foldlab-owned canonical schema encoding is the named derivation target,
+   mandatory when a non-TS runtime must verify a schema digest.
+
+## The surface census (2026-08-12)
+
+Every interface through which the lab touches the world is enumerated in
+[docs/research/2026-08-12-surface-census.md](docs/research/2026-08-12-surface-census.md):
+34 surfaces, each owing four things (derivation source, law, digest story,
+domain statement) under six proposed kinds — source, derived, **ported**,
+read, ingress, projection. What it found: the TS core is the standing
+*ported* surface ADR-0006 exists to eliminate; the certificate is the
+keystone five unbuilt surfaces wait on; the journal has no module and
+there is no ingestion surface at all; determinism in the core is currently
+total, which is an asset with a deadline. Booting the MCP server exposed
+two live defects — the surface admits sequence numbers its own encoder
+refuses (defect, not typed refusal), and all six tools advertise
+themselves as destructive including the pure reads.
 
 ## The self-building ontology (thesis, 2026-08-12)
 
@@ -225,6 +257,9 @@ statement and a divergence probe.
    derivation is a SEMANTIC FOLD over the digest-anchored AST — the
    two-fold discipline one level up (identity fold = structural digest,
    semantic folds = Go twin / JSON Schema / DDL / span preview / codecs).
+   The identity fold is currently the pinned beta's representation, walled
+   by fixture (ADR-0008); the foldlab-owned encoding replaces it here when
+   a non-TS runtime must verify schema identity.
    Non-Effect code never gets source analysis; it gets the data boundary —
    fold the traffic, not the AST.
 4. Entity census over real agent streams: correlation-keyed collector +
