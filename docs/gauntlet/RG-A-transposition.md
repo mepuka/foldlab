@@ -107,6 +107,30 @@ everything. The tension between TV6 (never do extra work) and TV7
 (everyone works) under a single position-CAS journal is the actual
 coordination problem.
 
+## RESULT — PASSED, ratified 2026-08-12 (in-concert review)
+
+Climber's fleet (`go/transfleet`, `go/cmd/transpose`, commit 8f0efb2;
+final build SHA-256 59412D3F…94BA per the attempts log) passed.
+Coordinator verification, independent: frozen paths byte-untouched;
+gates green under coordinator runs; `transposeverify` exit 0 on the
+final bundle AND on two fresh coordinator-seeded witness runs; live
+process census caught the 10-process fleet (controller + server + 8
+workers) at t+200ms — the full 1,681-state search over real
+out-of-process JetStream completes in ~2 seconds. Verified headline:
+424,784,580,848,791,721,628,839 path-tree nodes served by exactly
+1,681 physical expansions (zero surplus, every worker ≥ 210), i.e. a
+×2.5e20 collapse found by content addressing and PROVEN from the
+exported record. The climber's design took the TDS hash-home route
+(static digest-sharded ownership, 211/210 split), moving contention
+off the register and onto the shared journal — a legitimate
+architecture the prior-art section anticipates; note the consequence:
+register steals were never exercised here (fences all 1), so the
+racing-claims regime remains covered by G1, not this rung. Their
+attempts log includes two self-audits (SVG bytes tested against the
+XML claim; frontier discovery strengthened from enumeration to literal
+successor derivation) — both the kind of skepticism the protocol
+wants. Record visualization published from the bundle during review.
+
 ## Prior art (source-read 2026-08-12)
 
 Romein, Bal, Schaeffer, Plaat, "A Performance Analysis of
