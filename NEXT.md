@@ -28,6 +28,15 @@ Every wall below is a passing test, not an intention (`bun test` 17/17,
   correlation key, both folds maintained O(1) per event, backing-layer
   independent (EC2), composition = fold of child anchors (EC4:
   deterministic, order-committed, transitively history-sensitive).
+- **The fence**: `src/mint.ts` + `test/mint.test.ts` — mint() is running.
+  Structural digests (annotations stripped — claims never move identity),
+  behavior-committed transform digests (probe output head under the mint's
+  seed), law suite at mint time (purity, determinism, batch≡stream at three
+  chunkings), anchoring via the collector's composition fold (the anchor
+  head IS the handle digest — auditable by recomputation), typed refusals
+  (MintRefused with the law that caught it; UnknownDigest for anything not
+  committed), composition only through handles, and optional per-mint seeds
+  rooting the verification lineage (tenant/namespace/parent-anchor).
 - **Wasm wall**: `go/cmd/wasmwall` + `test/wasm.wall.test.ts` — the SAME Go
   source compiled GOOS=js GOARCH=wasm, loaded into Bun, reproduces
   `xformPipelineHead` byte-identically. Same Go source, three runtimes, one
@@ -140,9 +149,61 @@ through the effector.
    adapters off the same minted schema — never hand-written ports, so they
    cannot drift. Beta-rename risk is confined to the adapter layer.
 
+## The self-building ontology (thesis, 2026-08-12)
+
+Correlation is the flagship use case, and the differentiator is that our
+correlation is BOTH recomputable AND semantically tagged. Span id = chain
+head (identity, recomputable by any auditor); span type = minted schema
+digest, edge type = minted transform digest, entity boundary =
+commutativity class (semantics, every tag law-gated by the fence before it
+can attach). Consequence: the trace graph and the type system are ONE
+graph — what happened, what kind of thing it was, and what it may compose
+with are the same structure. It grows only through mint(), so it is an
+ontology that builds itself and cannot lie: a node that doesn't resolve
+doesn't exist; a tag without a passed law can't attach. This unifies agent
+handling — observability, typing, and composition stop being three
+systems. (Deep-dive research on the tracing frontier landing in
+docs/research/; the industry's span ids are random and its tags are
+strings, which is exactly the gap.)
+
+**Constraint, non-negotiable: AGENT FIRST.** The primary producer and
+consumer of the ontology is an agent, and the primary interface is the
+tool call — agents mint, agents resolve, agents query lineage and
+correlation (MCP tools over the registry and journal). Human views are
+projections of the agent surface, never the source of it — ADR-0006
+applies to UIs too. This inverts the industry default (human dashboards
+with export APIs bolted on) and is the shape everything below must fit.
+
+Concretely (ratified in conversation): the MCP server is first-class and
+**auto-annotates** — it populates annotation claims on every mint
+(configurable: agent id, session, source pointer, timestamps), and claims
+flow through the fence's claim→law→fact pipeline like any authored
+annotation. From a codebase, an agent runs a command and gets: the
+ontology (registry graph), example records for a schema, a transform run
+over sample events with heads back. First cut: src/agentSurface.ts
+(toolkit + registry + claims) and src/mcpMain.ts (stdio entry an agent
+client can mount today).
+
+## User-injected context (ratified idea, 2026-08-12)
+
+Effect Context/Layer is the extension surface: a minted transform's
+requirements (`DecodingServices` — the LLM-as-getter, backing layers,
+clocks, codecs) are satisfied by whatever Layer the USER injects, while the
+fence stays honest because verification runs against a pinned probe layer
+and the digest commits to behavior under it. The discipline mirrors
+annotations: **every injectable service contract ships with a conformance
+law** — backlog item on outcome-branching conformance (the §5.8 oracle law)
+is the checker for this, promoted from safety net to the user-extensibility
+story. Effectful mint (`mintEffect` for Effect-returning transforms with
+services) is the next fence extension.
+
 ## Backlog, ordered
 
-1. `mint()` + registry (the fence) with its law suite.
+1. ~~`mint()` + registry (the fence) with its law suite.~~ DONE — see the
+   fence wall above. Next fence extensions: `mintEffect` (services via
+   user-injected Layers, verified against the pinned probe layer), and the
+   wasm lane (a minted transform's Go twin verified through
+   `go/cmd/wasmwall`'s data boundary at mint time).
 2. NATS-agent-protocol mapping page; then the derived-node conformance test
    on embedded NATS (Go side; the collector's first real backing is NATS KV
    through the Go twin).
