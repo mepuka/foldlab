@@ -107,6 +107,38 @@ everything. The tension between TV6 (never do extra work) and TV7
 (everyone works) under a single position-CAS journal is the actual
 coordination problem.
 
+## Prior art (source-read 2026-08-12)
+
+Romein, Bal, Schaeffer, Plaat, "A Performance Analysis of
+Transposition-Table-Driven Work Scheduling in Distributed Search,"
+IEEE TPDS 13(5), May 2002 (paper read, pp. 447ff) — the closest
+ancestor. TDS puts "the transposition table at the heart of the
+parallel work scheduling": every generated state is hashed to a HOME
+processor and pushed there asynchronously; the home does the lookup
+and owns the expansion. Their own words carry both the shared thesis
+and the gap: "recognizing that the search space really is a graph,
+not a tree," and "*Assuming the table is large enough to cache all
+visited states*, TDS guarantees that no redundant search effort is
+performed" — a guarantee conditional on memory, holding within one
+crash-free run on a reliable network (128-node Myrinet; 1.6–12.9x
+over work stealing), leaving no artifact by which anyone could check
+it afterward. RG-A's deltas, precisely: durable fenced registers
+instead of volatile evictable slots (the "assuming" clause deleted);
+crash-tolerant workers (G1's territory) instead of a zero-failure
+model; universal content addresses instead of per-run hash
+signatures; and the economy claim as a VERIFIED post-hoc law (TV6)
+over an exported record instead of an argument about code. The
+economics are inverted with the layer: TDS pushes work to the table
+because lookups are expensive relative to expansions; we centralize
+the table in a consensus substrate because expansions (LLM calls) are
+expensive relative to CAS. Their hash-home sharding remains the
+sanctioned architecture hint for TV7 work-sharing, with a 24-year
+pedigree. (Related: Reinefeld & Marsland 1994, TT for IDA*; Zobrist
+1970, per-run hash signatures; Kishimoto, Fukunaga, Botea, HDA*, 2009;
+Akagi, Kishimoto, Fukunaga on IDA*+TT correctness pathologies —
+pathologies that arise from caching search-CONTROL data, which RG-A
+sidesteps by caching only content-addressed facts.)
+
 ## Non-goals
 
 No crash storm (G1 owns faults; this rung owns economy and coordination
