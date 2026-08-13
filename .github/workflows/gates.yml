@@ -1,0 +1,139 @@
+# The gate battery, exactly as AGENTS.md and proto/AGENTS.md state it
+# locally. Nothing here is a CI-only check and nothing local is skipped
+# here; if the two ever diverge, the local statement wins and this file is
+# wrong.
+#
+# One job on purpose. The JCS differential lane crosses the language seam
+# in BOTH directions — root `bun test` spawns `go run ./cmd/jcsprobe`,
+# `go test ./...` spawns `bun packages/core/scripts/jcs-probe.ts`, and
+# `proto/ts` builds `cmd/protod` before it can talk to a daemon — so bun
+# and Go must both be on PATH for every suite. Split into per-language
+# jobs, each suite would half-run and still report green.
+#
+# What a green run certifies: the corpus and the recorded seeds, not all
+# inputs (ADR-0007). The fuzz lanes run at bounded run counts here; the
+# long variants in README.md stay a deliberate human act.
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  battery:
+    name: gate battery
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pins are law (docs/OPERATIONS.md): bun 1.3.14 is the version the
+      # repository is developed against and the one `@types/bun` pins; Go
+      # comes from go/go.mod so there is one place to re-pin, not two.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+
+      - name: Prepare gate log directory
+        run: mkdir -p ci-logs
+
+      # --- root ----------------------------------------------------------
+      # --frozen-lockfile is bun's CI default; stated out loud because a
+      # silently re-resolved lockfile would defeat the pins.
+      - name: root — bun install
+        run: bun install --frozen-lockfile 2>&1 | tee ci-logs/root-install.log
+
+      - name: root — bun run typecheck
+        run: bun run typecheck 2>&1 | tee ci-logs/root-typecheck.log
+
+      # Spawns the persistent Go probe: every generated value and every
+      # fast-check shrink candidate crosses the real TS↔Go seam.
+      - name: root — bun test
+        run: bun test 2>&1 | tee ci-logs/root-test.log
+
+      # --- go ------------------------------------------------------------
+      - name: go — gofmt -l .
+        working-directory: go
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt -l . must print nothing; it printed:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go — go vet ./...
+        working-directory: go
+        run: go vet ./... 2>&1 | tee ../ci-logs/go-vet.log
+
+      # Spawns the persistent Bun probe from the repository root, so the
+      # root install above is a prerequisite of this step, not just of the
+      # TypeScript suite.
+      - name: go — go test ./...
+        working-directory: go
+        run: go test ./... 2>&1 | tee ../ci-logs/go-test.log
+
+      # --- proto/go ------------------------------------------------------
+      - name: proto/go — gofmt -l .
+        working-directory: proto/go
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt -l . must print nothing; it printed:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: proto/go — go vet ./...
+        working-directory: proto/go
+        run: go vet ./... 2>&1 | tee ../../ci-logs/proto-go-vet.log
+
+      - name: proto/go — go test ./...
+        working-directory: proto/go
+        run: go test ./... 2>&1 | tee ../../ci-logs/proto-go-test.log
+
+      # --- proto/ts ------------------------------------------------------
+      # Its own island: own lockfile, own bunfig test root.
+      - name: proto/ts — bun install
+        working-directory: proto/ts
+        run: bun install --frozen-lockfile 2>&1 | tee ../../ci-logs/proto-ts-install.log
+
+      - name: proto/ts — bunx tsc --noEmit
+        working-directory: proto/ts
+        run: bunx tsc --noEmit 2>&1 | tee ../../ci-logs/proto-ts-typecheck.log
+
+      # Builds and spawns protod against temp JetStream stores.
+      - name: proto/ts — bun test .
+        working-directory: proto/ts
+        run: bun test . 2>&1 | tee ../../ci-logs/proto-ts-test.log
+
+      # A red gate is evidence, so keep what it produced: the fast-check
+      # report (minimized bytes, seed, replay path, shrink count) lives in
+      # the captured stdout, and a Go fuzz failure mints a minimized input
+      # under testdata/fuzz/ that belongs in the repository afterwards.
+      - name: Upload gate output
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gate-output-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ci-logs/
+            go/**/testdata/fuzz/**
+            proto/go/**/testdata/fuzz/**
+          if-no-files-found: ignore
+          retention-days: 30
