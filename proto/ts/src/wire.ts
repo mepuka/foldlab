@@ -12,9 +12,10 @@ export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
 export const INGRESS_PREFIX = "flb.ing."
 
-// Daemon refusal sorts are server-side classification, not a wire field.
-// A future refusal corpus may admit only `structural`; `absence` is a
-// head-relative observation that later presence can repeal.
+// Daemon refusal sorts are persisted on the wire. A future refusal corpus may
+// admit only `structural`; `absence` is a head-relative observation that later
+// presence can repeal. Readers retain the field rather than reclassifying an
+// archived refusal through the current table.
 export const DAEMON_REFUSAL_SORTS = {
   "malformed": "structural",
   "invalid-structure": "structural",
@@ -30,6 +31,12 @@ export const DAEMON_REFUSAL_SORTS = {
 export type DaemonRefusalKind = keyof typeof DAEMON_REFUSAL_SORTS
 export type RefusalSort = typeof DAEMON_REFUSAL_SORTS[DaemonRefusalKind]
 
+// Digest of the canonical { grammar, sortByKind } manifest frozen in
+// proto/wire/refusal-sorts.json. A re-sort must mint a new grammar digest.
+export const REFUSAL_SORT_GRAMMAR = "flb.type.v0"
+export const REFUSAL_SORT_GRAMMAR_DIGEST =
+  "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88"
+
 export const refusalSortOf = (kind: string): RefusalSort | undefined =>
   Object.prototype.hasOwnProperty.call(DAEMON_REFUSAL_SORTS, kind)
     ? DAEMON_REFUSAL_SORTS[kind as DaemonRefusalKind]
@@ -44,7 +51,7 @@ export const NextHint = Schema.Struct({
 })
 export type NextHint = typeof NextHint.Type
 
-export const Refusal = Schema.Struct({
+const RefusalFields = {
   kind: Schema.String,
   law: Schema.String,
   path: Schema.optionalKey(Schema.Array(Schema.String)),
@@ -52,8 +59,22 @@ export const Refusal = Schema.Struct({
   expected: Schema.optionalKey(Schema.Unknown),
   example: Schema.optionalKey(Schema.Unknown),
   next: Schema.Array(NextHint),
-  local: Schema.Boolean,
+}
+
+export const DaemonRefusal = Schema.Struct({
+  ...RefusalFields,
+  sort: Schema.Literals(["structural", "absence"]),
+  local: Schema.Literal(false),
 })
+export type DaemonRefusal = typeof DaemonRefusal.Type
+
+export const LocalRefusal = Schema.Struct({
+  ...RefusalFields,
+  local: Schema.Literal(true),
+})
+export type LocalRefusal = typeof LocalRefusal.Type
+
+export const Refusal = Schema.Union([DaemonRefusal, LocalRefusal])
 export type Refusal = typeof Refusal.Type
 
 export const RefusalReply = Schema.Struct({

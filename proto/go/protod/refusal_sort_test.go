@@ -3,13 +3,15 @@ package protod
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"testing"
+
+	"foldlab/canonical"
 )
 
 type refusalSortVector struct {
-	Structural []string `json:"structural"`
-	Absence    []string `json:"absence"`
+	Grammar       string                 `json:"grammar"`
+	GrammarDigest string                 `json:"grammarDigest"`
+	SortByKind    map[string]RefusalSort `json:"sortByKind"`
 }
 
 func readRefusalSortVector(t *testing.T) refusalSortVector {
@@ -27,29 +29,47 @@ func readRefusalSortVector(t *testing.T) refusalSortVector {
 
 func TestRefusalSortsMatchSharedVector(t *testing.T) {
 	vector := readRefusalSortVector(t)
-	for sort, kinds := range map[RefusalSort][]string{
-		RefusalStructural: vector.Structural,
-		RefusalAbsence:    vector.Absence,
-	} {
-		for _, kind := range kinds {
-			got, ok := RefusalSortOf(kind)
-			if !ok || got != sort {
-				t.Fatalf("RefusalSortOf(%q) = %q, %v; want %q", kind, got, ok, sort)
-			}
+	for kind, sort := range vector.SortByKind {
+		got, ok := RefusalSortOf(kind)
+		if !ok || got != sort {
+			t.Fatalf("RefusalSortOf(%q) = %q, %v; want %q", kind, got, ok, sort)
 		}
 	}
-	if got, want := len(refusalSortByKind), len(vector.Structural)+len(vector.Absence); got != want {
+	if got, want := len(refusalSortByKind), len(vector.SortByKind); got != want {
 		t.Fatalf("classification has %d kinds, shared vector has %d", got, want)
 	}
 }
 
-func TestRefusalSortDoesNotRideOnTheWire(t *testing.T) {
-	raw, err := json.Marshal(Refusal{
+func TestRefusalSortTableIsFrozenByGrammarDigest(t *testing.T) {
+	vector := readRefusalSortVector(t)
+	manifest := map[string]any{
+		"grammar":    vector.Grammar,
+		"sortByKind": vector.SortByKind,
+	}
+	raw, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonicalBytes, err := canonical.Canonicalize(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := canonical.DigestHex(canonicalBytes); got != vector.GrammarDigest {
+		t.Fatalf("sort grammar digest = %s, frozen vector says %s", got, vector.GrammarDigest)
+	}
+	if vector.Grammar != RefusalSortGrammar || vector.GrammarDigest != RefusalSortGrammarDigest {
+		t.Fatalf("production grammar pin = (%q, %q), vector = (%q, %q)",
+			RefusalSortGrammar, RefusalSortGrammarDigest, vector.Grammar, vector.GrammarDigest)
+	}
+}
+
+func TestRefusalSortRidesOnTheWire(t *testing.T) {
+	raw, err := json.Marshal(refuse(&Refusal{
 		Kind:  KindMalformed,
 		Law:   "test law",
 		Next:  []NextHint{},
 		Local: false,
-	})
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,16 +77,11 @@ func TestRefusalSortDoesNotRideOnTheWire(t *testing.T) {
 	if err := json.Unmarshal(raw, &got); err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]any{
-		"kind":  KindMalformed,
-		"law":   "test law",
-		"next":  []any{},
-		"local": false,
+	refusal, ok := got["refusal"].(map[string]any)
+	if !ok {
+		t.Fatalf("wire refusal is not an object: %#v", got)
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("wire refusal changed: got %#v, want %#v", got, want)
-	}
-	if _, present := got["sort"]; present {
-		t.Fatal("server-side refusal sort leaked onto the wire")
+	if refusal["sort"] != string(RefusalStructural) {
+		t.Fatalf("wire refusal sort = %#v, want %q", refusal["sort"], RefusalStructural)
 	}
 }

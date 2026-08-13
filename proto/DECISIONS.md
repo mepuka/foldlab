@@ -1002,18 +1002,22 @@ Why: every alternative still suppresses true offenders or makes the refusal
 depend on representation order; a complete sorted value is deterministic and
 safe to retain as evidence. **Load-bearing? yes.**
 
-### D??. Refusal sort is server-side and total over the nine daemon kinds
+### D??. Refusal sort is persisted and the total table has a grammar digest
 
-Decided: the Go and TypeScript kind tables classify the six byte/grammar
-refusals as `structural` and the three head-relative misses as `absence`; the
-classification does not ride on W7's wire refusal. One shared vector is the
-cross-language pin, structural requests are replayed against empty and
-populated catalogs, and absence is defined by same-request admission after the
-missing evidence lands. Alternatives: add `sort` to the wire; infer sort from
-kind prefixes; classify every refusal as permanent evidence. Why: the ticket
-fixes the ontology and wire neutrality, while an explicit total table makes a
-new or omitted kind fail conformance instead of silently entering a corpus.
-**Load-bearing? yes.**
+Decided: every daemon W7 refusal persists `sort`; the Go emitter derives it
+from the total nine-kind table, TypeScript requires and round-trips it, and
+strict Go comparison requires the field. The table is frozen as the canonical
+`{grammar, sortByKind}` manifest for `flb.type.v0`, digest
+`ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88`.
+The tracer has no independently content-addressed grammar artifact yet, so this
+smallest manifest pin makes any re-sort mint a new digest without inventing the
+future certification record. Client-local refusals remain outside the daemon
+sort table. Alternatives: the superseded server-side-only code property;
+persist the sort but leave the table unversioned; classify client-local kinds
+without ontology authority. Why: Addendum 2 requires archived meaning to ride
+with the datum and forbids a later code edit from silently rewriting the table;
+the manifest digest is the narrow pin available before Task 32 adds
+`grammar_digest` to certification records. **Load-bearing? yes.**
 
 ### D??. Duplicate-refusal source order is UTF-8 byte order
 

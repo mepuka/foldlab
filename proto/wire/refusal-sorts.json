@@ -1,15 +1,15 @@
 {
-  "structural": [
-    "malformed",
-    "invalid-structure",
-    "digest-mismatch",
-    "bad-cursor",
-    "unknown-request",
-    "bad-journal"
-  ],
-  "absence": [
-    "unknown-ref",
-    "unknown-identity",
-    "unknown-journal"
-  ]
+  "grammar": "flb.type.v0",
+  "grammarDigest": "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88",
+  "sortByKind": {
+    "malformed": "structural",
+    "invalid-structure": "structural",
+    "digest-mismatch": "structural",
+    "bad-cursor": "structural",
+    "unknown-request": "structural",
+    "bad-journal": "structural",
+    "unknown-ref": "absence",
+    "unknown-identity": "absence",
+    "unknown-journal": "absence"
+  }
 }

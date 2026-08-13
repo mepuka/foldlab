@@ -46,6 +46,8 @@ test("the smoke thread reads like an agent session", async () => {
   if (typoed.ok) throw new Error("typo was admitted")
   const refusal = typoed.refusal
   expect(refusal.kind).toBe("invalid-structure")
+  if (refusal.local) throw new Error("daemon refusal was marked local")
+  expect(refusal.sort).toBe("structural")
   expect(refusal.local).toBe(false)
   expect(refusal.law).toContain("flb.type.v0")
   expect(refusal.path).toEqual(["structure", "k"])
@@ -95,6 +97,8 @@ test("the smoke thread reads like an agent session", async () => {
   expect(unknown.ok).toBe(false)
   if (unknown.ok) throw new Error("unknown identity admitted")
   expect(unknown.refusal.kind).toBe("unknown-identity")
+  if (unknown.refusal.local) throw new Error("daemon refusal was marked local")
+  expect(unknown.refusal.sort).toBe("absence")
   expect(unknown.refusal.next.some((h) => h.subject === "flb.req.type.create")).toBe(true)
 
   // 7 — read the catalog and the data journal; the client recomputes

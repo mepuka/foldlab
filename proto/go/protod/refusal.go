@@ -6,7 +6,8 @@ package protod
 
 // RefusalSort names whether a daemon refusal is permanent evidence about its
 // request bytes or a head-relative observation that later presence repeals.
-// It is server-side classification only: W7's wire refusal stays unchanged.
+// It rides on every daemon refusal so an archived value retains the sort that
+// was true under the grammar that emitted it.
 type RefusalSort string
 
 const (
@@ -14,9 +15,17 @@ const (
 	RefusalAbsence    RefusalSort = "absence"
 )
 
+// RefusalSortGrammarDigest pins the canonical kind-to-sort manifest for the
+// current grammar. A changed classification mints a new digest; readers of an
+// archived refusal never reinterpret its persisted Sort through a newer table.
+const (
+	RefusalSortGrammar       = "flb.type.v0"
+	RefusalSortGrammarDigest = "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88"
+)
+
 // Refusal kinds. Each names the one law that refused; the conformance test
 // covers every kind from the daemon side. The blocks make the ontology visible
-// at the declaration site without adding a field to the wire value.
+// at the declaration site.
 const (
 	KindMalformed        = "malformed"         // body is not a JSON object the handler can read
 	KindInvalidStructure = "invalid-structure" // flb.type.v0 grammar violation
@@ -62,21 +71,22 @@ type NextHint struct {
 	Body    any    `json:"body,omitempty"`
 }
 
-// Refusal is the uniform refusal value. Its sort is intentionally absent from
-// this type: classification is server-side and W7's wire shape is unchanged.
-// Law carries the sentence that
-// refused; Path/Got/Expected/Example locate and teach the repair; Next
+// Refusal is the uniform refusal value. Sort is persisted in every serialized
+// daemon refusal; it is not reconstructed by readers from mutable code. Law
+// carries the sentence that refused; Path/Got/Expected/Example locate and
+// teach the repair; Next
 // makes self-repair possible without external docs. Local is always
 // false from the daemon — the TS client marks its own refusals true.
 type Refusal struct {
-	Kind     string     `json:"kind"`
-	Law      string     `json:"law"`
-	Path     []string   `json:"path,omitempty"`
-	Got      any        `json:"got,omitempty"`
-	Expected any        `json:"expected,omitempty"`
-	Example  any        `json:"example,omitempty"`
-	Next     []NextHint `json:"next"`
-	Local    bool       `json:"local"`
+	Kind     string      `json:"kind"`
+	Sort     RefusalSort `json:"sort"`
+	Law      string      `json:"law"`
+	Path     []string    `json:"path,omitempty"`
+	Got      any         `json:"got,omitempty"`
+	Expected any         `json:"expected,omitempty"`
+	Example  any         `json:"example,omitempty"`
+	Next     []NextHint  `json:"next"`
+	Local    bool        `json:"local"`
 }
 
 type refusalReply struct {
@@ -85,6 +95,11 @@ type refusalReply struct {
 }
 
 func refuse(r *Refusal) refusalReply {
+	sort, ok := RefusalSortOf(r.Kind)
+	if !ok {
+		panic("protod: unclassified refusal kind " + r.Kind)
+	}
+	r.Sort = sort
 	if r.Next == nil {
 		r.Next = []NextHint{}
 	}

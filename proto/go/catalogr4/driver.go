@@ -326,7 +326,7 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 		if err != nil {
 			return fmt.Sprintf("Publish refusal reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 		}
-		if refusal.Kind != "unknown-identity" {
+		if refusal.Kind != "unknown-identity" || refusal.Sort != "absence" {
 			return fmt.Sprintf("model refused unknown identity, protod returned %s", compactJSON(reply)), nil
 		}
 		return "", nil

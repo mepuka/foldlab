@@ -371,13 +371,15 @@ and [go/canonical/probes/](go/canonical/probes/).
 The daemon's laws (W1–W10) are each witnessed by black-box tests over
 NATS subjects. Its nine refusal kinds are total over two ontological sorts:
 structural refusals reproduce unchanged across catalog heads; absence
-refusals are repealed when the missing evidence lands. The sort is server-side
-classification and does not change W7's wire value.
+refusals are repealed when the missing evidence lands. Every daemon refusal
+persists the sort on the wire, and the complete kind-to-sort manifest is
+frozen under a grammar digest so archived values are not silently re-sorted.
 
 ### Evidence
 
 The TypeScript suites, the Go conformance suite, the shared all-nine refusal
-sort vector, per-kind structural/repealability laws, and restart survival
+sort vector and its independently recomputed manifest digest, per-kind
+structural/repealability laws, strict decoder controls, and restart survival
 ([proto/](proto/)).
 
 ### Bounds and residuals

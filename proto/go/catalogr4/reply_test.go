@@ -36,12 +36,33 @@ func TestStrictReplyDecodingRejectsMissingAndMistypedBranchFields(t *testing.T) 
 			check: func(reply map[string]any) error { _, err := decodeRefusalFact(reply); return err },
 			want:  `field "ok" is string, want boolean`,
 		},
+		{
+			name:  "refusal sort missing",
+			value: validRefusalReply(),
+			check: func(reply map[string]any) error { _, err := decodeRefusalFact(reply); return err },
+			want:  `missing field "sort"`,
+		},
+		{
+			name:  "refusal sort mistyped",
+			value: validRefusalReply(),
+			check: func(reply map[string]any) error { _, err := decodeRefusalFact(reply); return err },
+			want:  `field "sort" is bool, want string`,
+		},
+		{
+			name:  "refusal sort unknown",
+			value: validRefusalReply(),
+			check: func(reply map[string]any) error { _, err := decodeRefusalFact(reply); return err },
+			want:  `field "refusal".sort = "permanent", want structural or absence`,
+		},
 	}
 
 	delete(tests[0].value, "created")
 	tests[1].value["created"] = "false"
 	tests[2].value["admitted"] = "true"
 	tests[3].value["ok"] = "false"
+	delete(tests[4].value["refusal"].(map[string]any), "sort")
+	tests[5].value["refusal"].(map[string]any)["sort"] = false
+	tests[6].value["refusal"].(map[string]any)["sort"] = "permanent"
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -73,7 +94,7 @@ func validRefusalReply() map[string]any {
 		"ok": false,
 		"refusal": map[string]any{
 			"kind": "unknown-identity", "law": "create before publish",
-			"next": []any{}, "local": false,
+			"sort": "absence", "next": []any{}, "local": false,
 		},
 	}
 }

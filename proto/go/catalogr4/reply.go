@@ -13,6 +13,7 @@ type createFact struct {
 
 type refusalFact struct {
 	Kind string
+	Sort string
 }
 
 func decodeCreateFact(reply map[string]any) (createFact, error) {
@@ -92,7 +93,7 @@ func decodeRefusalFact(reply map[string]any) (refusalFact, error) {
 		return refusalFact{}, fmt.Errorf("field %q is %T, want object", "refusal", reply["refusal"])
 	}
 	if err := requireAllowedKeys(refusal,
-		[]string{"kind", "law", "local", "next"},
+		[]string{"kind", "law", "local", "next", "sort"},
 		[]string{"example", "expected", "got", "path"}); err != nil {
 		return refusalFact{}, fmt.Errorf("field %q: %w", "refusal", err)
 	}
@@ -102,6 +103,13 @@ func decodeRefusalFact(reply map[string]any) (refusalFact, error) {
 	}
 	if _, err := requireString(refusal, "law"); err != nil {
 		return refusalFact{}, fmt.Errorf("field %q: %w", "refusal", err)
+	}
+	sort, err := requireString(refusal, "sort")
+	if err != nil {
+		return refusalFact{}, fmt.Errorf("field %q: %w", "refusal", err)
+	}
+	if sort != "structural" && sort != "absence" {
+		return refusalFact{}, fmt.Errorf("field %q.sort = %q, want structural or absence", "refusal", sort)
 	}
 	if err := requireBoolValue(refusal, "local", false); err != nil {
 		return refusalFact{}, fmt.Errorf("field %q: %w", "refusal", err)
@@ -120,7 +128,7 @@ func decodeRefusalFact(reply map[string]any) (refusalFact, error) {
 			}
 		}
 	}
-	return refusalFact{Kind: kind}, nil
+	return refusalFact{Kind: kind, Sort: sort}, nil
 }
 
 func requireExactKeys(value map[string]any, expected ...string) error {

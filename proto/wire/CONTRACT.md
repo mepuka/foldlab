@@ -120,28 +120,37 @@ bytes).
 
 ```json
 {"ok": false, "refusal": {
-  "kind": "<see table>", "law": "<the sentence that refused>",
+  "kind": "<see table>", "sort": "structural|absence",
+  "law": "<the sentence that refused>",
   "path": ["..."]?, "got": ...?, "expected": ...?, "example": ...?,
   "next": [{"subject": "...", "note": "...", "body": {...}?}],
   "local": false
 }}
 ```
 
-`local` is `false` in every daemon refusal; the TS client emits the
-same shape with `local:true` for its own conditions (`unreachable`,
-`malformed-reply`, `verify-failed`, `beyond-v0`, `underivable`).
+`sort` is persisted in every daemon refusal. Readers of archived values use
+that field; they never reclassify the kind through current code. The canonical
+kind-to-sort manifest is frozen in `refusal-sorts.json` under grammar digest
+`ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88`;
+a re-sort must mint a new digest. Only `structural` refusals may enter a future
+permanent refusal corpus. `absence` is a head-relative observation whose
+missing evidence may later arrive.
 
-| kind | law it names |
-|---|---|
-| `malformed` | body is not JSON / not an object / field shapes wrong |
-| `invalid-structure` | flb.type.v0 grammar violation (path/got/expected/example) |
-| `unknown-ref` | a ref digest does not resolve in the catalog |
-| `digest-mismatch` | asserted identity the daemon cannot re-derive (W1) |
-| `unknown-identity` | frame claims an uncataloged digest (W4) |
-| `bad-journal` | ingress names an invalid or reserved journal |
-| `unknown-journal` | read addresses a journal that does not exist (lag is absence) |
-| `bad-cursor` | read cursor does not verify against the journal (W6) |
-| `unknown-request` | request subject has no handler (W9) |
+`local` is `false` in every daemon refusal. The TS client's own conditions
+(`unreachable`, `malformed-reply`, `verify-failed`, `beyond-v0`,
+`underivable`) carry `local:true` and deliberately have no daemon sort.
+
+| kind | sort | law it names |
+|---|---|---|
+| `malformed` | `structural` | body is not JSON / not an object / field shapes wrong |
+| `invalid-structure` | `structural` | flb.type.v0 grammar violation (path/got/expected/example) |
+| `unknown-ref` | `absence` | a ref digest does not resolve in the catalog |
+| `digest-mismatch` | `structural` | asserted identity the daemon cannot re-derive (W1) |
+| `unknown-identity` | `absence` | frame claims an uncataloged digest (W4) |
+| `bad-journal` | `structural` | ingress names an invalid or reserved journal |
+| `unknown-journal` | `absence` | read addresses a journal that does not exist (lag is absence) |
+| `bad-cursor` | `structural` | read cursor does not verify against the journal (W6) |
+| `unknown-request` | `structural` | request subject has no handler (W9) |
 
 ## flb.type.v0 specifics pinned by this implementation
 
