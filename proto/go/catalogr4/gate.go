@@ -18,6 +18,14 @@ type HonestReport struct {
 	Minimized   Schedule    `json:"minimized,omitempty"`
 }
 
+type ReplyMutantReport struct {
+	Mutant     string      `json:"mutant"`
+	Branch     string      `json:"branch"`
+	Hits       int         `json:"hits"`
+	Caught     bool        `json:"caught"`
+	Divergence *Divergence `json:"divergence"`
+}
+
 func RunCorruptedControls(ctx context.Context, corpus []Schedule) (SensitivityReport, error) {
 	report := SensitivityReport{Schedules: len(corpus)}
 	kinds := [...]MutationKind{MutateCatalog, MutateMirror, MutateData, MutateResolve}
@@ -54,6 +62,54 @@ func RunSabotageControl(ctx context.Context) (*Divergence, error) {
 		return nil, fmt.Errorf("the AssertedIdentity sabotage went undetected")
 	}
 	return result.Divergence, nil
+}
+
+// RunReplyMutantControl executes the one branch witness selected by the
+// active catalogr4_reply_* build tag. Each tagged binary changes only the
+// decoded reply shape; the daemon state and the model expectation stay honest.
+func RunReplyMutantControl(ctx context.Context) (ReplyMutantReport, error) {
+	if activeReplyMutant == nil {
+		return ReplyMutantReport{}, fmt.Errorf("reply-mutant mode requires one catalogr4_reply_* build tag")
+	}
+	var schedule Schedule
+	switch activeReplyMutant.Branch {
+	case "CreateAtomic.created":
+		schedule = Schedule{{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1}}
+	case "CreateAtomic.converged":
+		schedule = Schedule{
+			{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1},
+			{Kind: CreateAtomic, Creator: 2, Daemon: 1, Value: 1},
+		}
+	case "Publish.admitted":
+		schedule = Schedule{
+			{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1},
+			{Kind: Publish, Daemon: 1, Value: 1},
+		}
+	case "Publish.refused":
+		schedule = Schedule{{Kind: Publish, Daemon: 1, Value: 1}}
+	default:
+		return ReplyMutantReport{}, fmt.Errorf("unknown reply-mutant branch %q", activeReplyMutant.Branch)
+	}
+
+	beforeHits := activeReplyMutant.Hits
+	result, err := Replay(ctx, schedule, ReplayOptions{})
+	if err != nil {
+		return ReplyMutantReport{}, err
+	}
+	report := ReplyMutantReport{
+		Mutant:     activeReplyMutant.Name,
+		Branch:     activeReplyMutant.Branch,
+		Hits:       activeReplyMutant.Hits - beforeHits,
+		Caught:     result.Divergence != nil,
+		Divergence: result.Divergence,
+	}
+	if report.Hits != 1 {
+		return report, fmt.Errorf("reply mutant %s fired %d times, want exactly once", report.Mutant, report.Hits)
+	}
+	if !report.Caught {
+		return report, fmt.Errorf("reply mutant %s on %s went undetected", report.Mutant, report.Branch)
+	}
+	return report, nil
 }
 
 func RunHonestCorpus(ctx context.Context, corpus []Schedule) (HonestReport, error) {

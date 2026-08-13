@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	mode := flag.String("mode", "honest", "coverage, corrupted, sabotage, or honest")
+	mode := flag.String("mode", "honest", "coverage, corrupted, sabotage, reply-mutant, or honest")
 	flag.Parse()
 
 	config := catalogr4.DefaultCorpusConfig()
@@ -41,6 +41,12 @@ func main() {
 			Caught     bool                  `json:"caught"`
 			Divergence *catalogr4.Divergence `json:"divergence"`
 		}{Caught: true, Divergence: divergence})
+	case "reply-mutant":
+		report, err := catalogr4.RunReplyMutantControl(context.Background())
+		if err != nil {
+			fatal(err)
+		}
+		printJSON(report)
 	case "honest":
 		report, err := catalogr4.RunHonestCorpus(context.Background(), corpus)
 		if err != nil {
