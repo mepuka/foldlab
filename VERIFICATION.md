@@ -12,7 +12,7 @@ in
 
 | Rung | What it establishes |
 | --- | --- |
-| R0 | fixture walls |
+| R0 | fixture walls — a wall is a differential test: two implementations, one input, digests compared |
 | R1 | property tests |
 | R2 | bounded model check |
 | R3 | inductive invariant |
@@ -74,10 +74,11 @@ and unique terminal outcome, for the register
   (ticket 013).
 - The R4 sample rides on top of the exhaustive small-scope core; the
   count is the bridge to the binary, not the proof.
-- Gap, being closed: the proof artifacts live in untracked heritage
-  material, so the public repository asserts this claim without
-  shipping its evidence. Ticket 013 ports the specs, configs, and
-  counterexample files into `verify/effector/`.
+- Gap, being closed: the proof artifacts live in `.reference/`, an
+  untracked predecessor repository that is absent from this checkout,
+  so the public repository asserts this claim without shipping its
+  evidence. Ticket 013 ports the specs, configs, and counterexample
+  files into `verify/effector/`.
 
 ### Checkable at
 
@@ -162,7 +163,8 @@ ticket 013 lands the proof artifacts.
   assumption below); the harness maps those values to real derived
   digests. The resolve index is a definition (a pure fold of the
   journal); R4 samples that abstraction against state extracted through
-  the narrow writ.
+  the narrow writ — the client's three-verb capability set (read /
+  publish / request).
 - R4's `MirrorAdvance` is a named re-create-and-project substitute
   while replica roles are unbuilt. It exercises derivation and union
   resolution, but not ADR-0009 origin-position copy, prefix
@@ -214,8 +216,9 @@ canonical bytes; the daemon refuses any digest it cannot re-derive.
 
 ### Evidence
 
-The flb.type.v0 grammar and both codecs are pinned by frozen fixture
-([proto/wire/fixtures/](proto/wire/fixtures/)).
+The flb.type.v0 grammar — a tagged union of node kinds, in Effect terms
+a `Schema.Union` of tagged structs — and both codecs are pinned by a
+frozen fixture ([proto/wire/fixtures/](proto/wire/fixtures/)).
 
 ### Bounds and residuals
 

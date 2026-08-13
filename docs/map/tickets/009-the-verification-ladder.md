@@ -92,8 +92,9 @@ ledger these serve is [VERIFICATION.md](../../../VERIFICATION.md).
 
 ## Effector status (for the record)
 
-R3/R4 CLAIMED, in the playground heritage: Apalache inductive invariant
-(unbounded fences/depth, identity-free), TLC exhaustive at caps 2/3/4
+R3/R4 CLAIMED, but the evidence sits in `.reference/`, an untracked
+predecessor repository absent from this checkout: Apalache inductive
+invariant (unbounded fences/depth, identity-free), TLC exhaustive at caps 2/3/4
 matching Go and TS checkers exactly, 15,378 lockstep schedules on
 embedded NATS with 828/828 corrupted-schedule negative controls caught.
 Porting those specs into foldlab-owned `verify/` (out of .reference) is

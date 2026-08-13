@@ -1,13 +1,15 @@
 # NEXT — the session brief
 
-State as of 2026-08-13 (post tracer bullet, catalog model gate, fold
+State as of 2026-08-13 (post tracer bullet — the end-to-end vertical
+slice through every layer, in `proto/` — catalog model gate, fold
 algebra, and the JCS differential lane), so the next session starts
 mid-stride. Every claim with a rung and its bounds:
 [VERIFICATION.md](VERIFICATION.md). Theory background:
-[.reference/core-concepts.md](.reference/core-concepts.md). Proof heritage:
-`.reference/playground-mech/`. Ubiquitous language: [CONTEXT.md](CONTEXT.md).
-Committed decisions: `docs/adr/`. Live planning: `docs/map/`. Agent
-operating contract: [AGENTS.md](AGENTS.md).
+`.reference/core-concepts.md`. Proof artifacts:
+`.reference/playground-mech/` — `.reference/` is an untracked predecessor
+repository, absent from this checkout. Ubiquitous language:
+[CONTEXT.md](CONTEXT.md). Committed decisions: `docs/adr/`. Live
+planning: `docs/map/`. Agent operating contract: [AGENTS.md](AGENTS.md).
 
 ## Where the repo stands
 
@@ -19,7 +21,8 @@ scaffold in `packages/client/`, HTTP demo in `packages/server/`;
 tracer bullet, own gates) and `verify/` (model gates) at root. Older
 `src/...` paths below read through that mapping.
 
-Every wall below is a passing test, not an intention (root `bun test`:
+Every wall below — a differential test: two implementations, one input,
+digests compared — is a passing test, not an intention (root `bun test`:
 113 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 13
 files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
 in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
@@ -37,9 +40,10 @@ in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
   Effect `Stream`; rechunking at any size never moves a head (chunking is
   transport, so orchestration is provably free to vary).
 - **Entity collector**: `src/entity.ts` — entities as quotients by
-  correlation key, both folds maintained O(1) per event, backing-layer
-  independent (EC2), composition = fold of child anchors (EC4:
-  deterministic, order-committed, transitively history-sensitive).
+  correlation key (one entity is ONE group of `Stream.groupByKey`, a
+  single equivalence class), both folds maintained O(1) per event,
+  backing-layer independent (EC2), composition = fold of child anchors
+  (EC4: deterministic, order-committed, transitively history-sensitive).
 - **NATS substrate (ported 2026-08-12)**: `go/{canonical,journal,effector,
   cmd/journald}` — the playground kernel's Go substrate now lives HERE
   under foldlab's gates: RFC 8785 canonical JSON (frozen
@@ -82,7 +86,9 @@ in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
   refused, convergence by content address, create-before-publish,
   verify-on-read, replies that teach, refusals as data, the three-verb
   writ, scheme-tagged facts. Plus the stateless concierge (fill /
-  unfill / frontier, laws C1–C5) and MCP tools derived from
+  unfill / frontier, laws C1–C5) — a typed-hole structure editor in the
+  Hazelnut lineage: construction proceeds hole by hole, and every
+  intermediate state is well-formed — and MCP tools derived from
   `contract.describe` at startup, so no hand-written tool list can
   drift. Its graduation map is in `proto/AGENTS.md`; the code has not
   moved yet.
@@ -207,7 +213,8 @@ canonical bytes.
 5. **The lawful surface** (ADR-0010): a public function enters a
    library only with the law that licenses it — a universal property's
    uniqueness clause, or a proved equation whose two sides it collapses
-   — and ships with the generated law tests. Convenience with no
+   — and ships with the generated law tests (fast-check property
+   suites, derived rather than hand-written). Convenience with no
    licensing law is refused from the public surface.
 6. **AGENT FIRST** (ratified constraint): the primary producer and
    consumer of the system is an agent, and the primary interface is the
@@ -267,14 +274,16 @@ register store, NATS resolution, the Effect surface, JS-runtime
 resolution) live in docs/map/tickets/; ticket 020's phase 1
 (JournalMessageStorage — durable Effect workflows on the proven
 journal, browser demo) is grilled, ratified, and specced. Design
-dossiers live in docs/design/ (the WorkflowEngine correspondence and
-product dialogue are the 020 anchors).
+dossiers — source-cited research write-ups, one per question — live in
+docs/design/ (the WorkflowEngine correspondence and product dialogue
+are the 020 anchors).
 
 1. The foldlab-owned canonical schema encoding (map ticket 004,
    critical path): the daemon must recompute schema digests from bytes
    alone. Interim identity stays `bytes-sha256-v1` over submitted
    canonical bytes. Everything downstream waits here — the certificate
-   (005), the grammar foundry (015), the ontology explorer (016).
+   (005), the grammar generator (ticket 015, "the grammar foundry"),
+   the ontology explorer (016).
 2. The workflow abstraction (map ticket 008) — the one remaining
    ungrilled decision on the path: program as digestable catalog data;
    run as durable journaled fact.

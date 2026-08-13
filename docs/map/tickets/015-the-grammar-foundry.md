@@ -1,6 +1,6 @@
 ---
 id: 015
-title: The grammar foundry — NL to proven DSL over MCP
+title: The grammar generator (the grammar foundry) — NL to proven DSL over MCP
 type: wayfinder:build
 status: open
 assignee:

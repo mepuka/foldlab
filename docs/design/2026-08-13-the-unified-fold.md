@@ -7,7 +7,8 @@ ASPIRATIONAL** — the mint-rollback lesson is that abstraction without a consum
 gets deleted (NEXT.md). rc.108-confirmed where it touches Effect (`file:line`
 into `repos/effect/`); literature named where reached. No machinery — prose and
 signatures. Consumer-gated to tickets 004 (owned schema encoding), 014 (fold
-algebra), 015 (grammar foundry), 016 (ontology explorer). Labels: **SHIPPED**
+algebra), 015 (the grammar generator, a.k.a. "the grammar foundry"), 016
+(ontology explorer). Labels: **SHIPPED**
 (walled/tested), **RATIFIED-UNBUILT**, **ASPIRATIONAL**.
 
 The repo already states its own thesis; this doc makes it rigorous. README ("Why
