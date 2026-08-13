@@ -312,19 +312,21 @@ saying so, frozen in concierge.json. What survives is inert: no test
 replays hint bodies — true, and a violation of nothing promised.
 The dead-end framing is withdrawn.
 
-## Disposition owed
+## Refutation handoff (historical; superseded by the closure table)
 
-C1, C3, C4 stand confirmed at high confidence with executed evidence
-and await operator disposition. C2's residue is a fail-fast gap, not
-an integrity hole; C5's residue is a naming/witness gap inside an
+At this checkpoint C1, C3, and C4 stood confirmed with executed evidence
+and had not yet been dispositioned. The decisions that followed are recorded
+below and in the closure table; this paragraph is no longer a list of operator
+choices. C1 and C4 were repaired, while C3 remains a technical contract
+residual rather than an undecided policy question. C2's residue is a fail-fast
+gap, not an integrity hole; C5's residue is a naming/witness gap inside an
 enforced envelope plus the unguarded library seam; C6's residue is the
-consumer question ADR-0010 already carries; C7's residue is one
-misleading comment and a TS-only blind spot demonstrable by mutation.
-C8 is withdrawn.
+consumer question ADR-0010 already carries; C7's residue is one misleading
+comment and a TS-only blind spot demonstrable by mutation. C8 is withdrawn.
 
 ## Live proof-team findings (2026-08-13, Mac session — for the PC team)
 
-Three Opus teams run in isolated worktrees on the Mac under a
+Three Opus teams ran in isolated worktrees on the Mac under a
 15-minute consultation loop: a PROVER (R3 repair and completion), a
 HARDENER (model robustness), and a BREAKER (adversarial probes plus
 audit duty over the other two). Discipline in force: no verdict
@@ -377,8 +379,9 @@ just-claimed R4 gate. The same mechanism exempts `Publish`'s refusal
 branch from both action properties. Write-up with a proposed
 checkable reformulation (the resolving case as a state-level
 implication TLC evaluates on every reachable state):
-`verify/catalog/probes/FINDING-BRIDGE-001.md` on the BREAKER branch.
-Disposition is the operator's; nothing ratified was modified.
+`verify/catalog/probes/FINDING-BRIDGE-001.md` on the BREAKER branch. At that
+checkpoint the disposition belonged to the operator; Proposal 1 was later
+ratified and landed at `b93867814`.
 
 ### FINDING-BOUNDS-001 — configs silently truncate at 4
 
@@ -390,12 +393,18 @@ both fails to widen the model and loosens the invariant meant to
 certify the natural bound. Evidence: `NumVals = 4` and `NumVals = 9`
 produce byte-identical closures (1,757 generated / 457 distinct /
 depth 10). A future "checked at 6 values" claim would come back green
-covering nothing new. Resolved on `codex/catalog-bound-guards`: executable
-`ASSUME` guards reject all out-of-range constants, three independent overrun
-configs make the literal-domain guards repealable, and the invariant is
-stated against `Cardinality(Vals)`.
+covering nothing new. The reviewed repair is integrated on
+`codex/all-correctness-integration` through `3a5cc5820`: executable `ASSUME`
+guards cover every constant, three independent overrun configs make the
+literal-domain guards repealable, and the invariant is stated against
+`Cardinality(Vals)`. It is not on `main` at this reconciliation; the exact
+landing condition is stated with the closure table.
 
-### Repairs and hardening in flight
+### Historical proof-team work plan
+
+The bullets below record the plan at dispatch time. They are evidence of the
+review sequence, not current status; landed and prepared results are reconciled
+in the closure table.
 
 - PROVER: hypothesis bounds repaired — `catalog = Gen(3)` (the exact
   natural maximum; the committed Gen(2) under-covered IndInv, claim
@@ -438,16 +447,19 @@ stated against `Cardinality(Vals)`.
   14,736 times at cap2, and `MirrorReset` dead at the gate config by
   design (covered by its negative control).
 
-### Ledger edits owed at merge (operator-owned; proposed, not made)
+### Historical merge checklist (operator decisions resolved)
 
-- VERIFICATION.md's R3 entry: state the Gen bounds inside the claim
-  sentence; note FINDING-R3-001 (R3 restored re-runnable at HEAD);
-  count 3 obligations + 3 controls.
-- VERIFICATION.md's "four sabotaged variants … at depths 2/3/4/5"
-  becomes five variants once `CatalogBroken.overrun.cfg` lands.
-- The R4 entry owes a FINDING-BRIDGE-001 disposition: either the
-  reformulated checkable bridge, or a stated-abstraction note that the
-  resolving case is discharged by inspection, not by TLC.
+- The R3 claim now states its Gen bounds and held status in
+  `VERIFICATION.md`; FINDING-R3-001's re-checkability repair landed at
+  `6b713a639` and the later truth pass landed at `746430a9f`.
+- FINDING-BRIDGE-001 was ratified at `20d987b26`, repaired at
+  `b93867814`, and its three-layer scope is in the ledger. There is no
+  remaining bridge-disposition choice on this board.
+- FINDING-BOUNDS-001's bound-honesty ledger edits and three independent
+  overrun controls are integrated in candidate `3a5cc5820`; its `80f4aa330`
+  commit is the merge-equivalent replacement for the original `8a97d9f1b`
+  patch. They remain branch evidence until that series lands on `main` and
+  the post-merge gates pass.
 
 ## Operator ratifications (2026-08-13, recorded by the PC coordinator)
 
@@ -457,10 +469,9 @@ per item so the lanes do not collide.
 1. **FINDING-BRIDGE-001, Proposal 1 — RATIFIED.** `ResolvingCreateAgrees`
    enters `CatalogWire.cfg`'s INVARIANTS; the README "How R4 attaches"
    sentence is corrected to: creating case checked as an action
-   property, resolving case checked as a state invariant. Implementation
-   lands in the Mac lanes (they hold the probes, controls, and canary
-   discipline in flight). PC replication before ratification: all seven
-   W/X probes rerun on Windows, verdicts and closure counts exact
+   property, resolving case checked as a state invariant. The repair later
+   landed on `main` at `b93867814`. PC replication before ratification reran
+   all seven W/X probes on Windows, with exact verdicts and closure counts
    (W1 clean 9,133/863/d11; W2 violated d2; X1 clean 9,133/863;
    X2 violated d2; X3 clean 119,145/18,295; X4 violated; X5 clean
    163,101/21,977). Note for the gate scripts: TLC on Windows rejects
@@ -477,28 +488,29 @@ per item so the lanes do not collide.
    resync that erases local resolvability is now a ratified-law
    violation, and if replica reality ever demands it, that returns as a
    grill, never a silent weakening.
-3. **Bridge disposition scope (three layers, for the eventual ledger
-   edit at merge):** (a) TLA bridge, resolving half — was asserted, not
+3. **Bridge disposition scope (three layers, recorded for the ledger
+   edit):** (a) TLA bridge, resolving half — was asserted, not
    checked; repaired by Proposal 1. (b) Binary lockstep layer — NOT
    affected: `CreateAtomic.converged` and `Publish.refused` are driven
    branches in the 131-schedule corpus with post-state comparison and
    corrupted-expectation sensitivity on both; a proof-mechanics defect,
    not a binary defect. (c) The claim text — "checks that relation
-   directly" was the only false statement; it gets the correction.
+   directly" was the only false statement; it was corrected.
 4. **TS refusal-domain batch — RATIFIED and dispatched (PC side).**
    C1/M1/J1/A1 fixed as one law (every packages/core fold entry point
    total by refusal) with regression-first discipline and an
    adversarial generator flip; spec at scratch/codex/22 (PC), branch
-   codex/ts-refusal-wall when in flight. packages/core only; verify/
-   remains Mac-lane territory.
-5. **C4 status (PC side):** an independent widened-hypothesis run is in
-   flight on Windows at catalog `Gen(3)` / mirror `Gen(6)` / data
+   codex/ts-refusal-wall when in flight. It later landed as task 22 at
+   `531ca6d56`. packages/core only; verify/ remained Mac-lane territory.
+5. **C4 status at ratification (PC side):** an independent
+   widened-hypothesis run was in flight on Windows at catalog `Gen(3)` /
+   mirror `Gen(6)` / data
    `Gen(4)` — deliberately wider than the PROVER's argued-cutoff bounds
    — as the cross-platform, cross-bounds replication of the R3 repair.
    Same jar (sha `33611081…ad4346`), all four obligations including
    both controls. Verdicts will be appended when they land.
 
-## Review cycle closed — issues filed, two cores certified clean (2026-08-13)
+## Review-cycle findings filed; two cores certified clean (2026-08-13 snapshot)
 
 Standing order in effect: confirmed findings are filed as GitHub issues on
 `mepuka/foldlab` with full evidence (executed repro or committed checker
@@ -542,14 +554,16 @@ Code defects (`bug` + `finding`):
 
 Proof-mechanics (`proof-mechanics` + `finding`):
 
-- #7 FINDING-R3-001 — the R4 merge broke R3 re-checkability (Snowcat fails at HEAD); repair applied and certified.
-- #8 FINDING-BRIDGE-001 — half the R4 refinement bridge is asserted, not checked; reformulation tested, awaiting disposition.
-- #9 FINDING-BOUNDS-001 — catalog model constants silently truncate at 4; fix in flight.
+- #7 FINDING-R3-001 — the R4 merge broke R3 re-checkability (Snowcat failed at that HEAD); repair certified and landed at `6b713a639`.
+- #8 FINDING-BRIDGE-001 — half the R4 refinement bridge was asserted, not checked; disposition ratified and repair landed at `b93867814`.
+- #9 FINDING-BOUNDS-001 — catalog model constants silently truncate at 4;
+  reviewed repair integrated in candidate `3a5cc5820`, not yet on `main`.
 
-Bug tally: 9 confirmed (C1, CG1, JR1, JR2, JR3, A1, A2, J1, M1), 1 suspected
-(S1), 3 certified clean (effector A6 register, jcs canonical TS↔Go, stream KV
-algebra TS↔Go). Exploitable-today: the journal multi-writer path (JR1/JR2/JR3)
-in shipped journald; the rest latent until wired.
+Bug tally at filing: 9 confirmed (C1, CG1, JR1, JR2, JR3, A1, A2, J1, M1),
+1 suspected (S1), 3 certified clean (effector A6 register, jcs canonical
+TS↔Go, stream KV algebra TS↔Go). At filing time the journal multi-writer path
+(JR1/JR2/JR3) was exploitable in shipped journald; the closure table records
+its same-day repair.
 
 ### The pattern
 
@@ -562,9 +576,28 @@ compositionality-of-proof thesis stated as a defect taxonomy: build on a
 lawful surface and the law is inherited; hand-roll a parallel path and it is
 not.
 
-## Closure table (2026-08-13, end of cycle — supersedes "Disposition owed")
+## Closure table (post-cycle reconciliation — durable issue #12 board)
 
-| Claim / finding | Issue | Landed | Status |
+This table is current against `origin/main` at
+`72afae43d915c2a50ce9f0c79b7f852c80c8c2e0`. Every issue in issue #12's
+filed-finding queue except #9 has landed. The open C3, C5, and C7 rows are
+separately recorded technical residuals; they are not unresolved operator
+decisions and do not change issue #12's one-item merge remainder.
+
+Issue #9 is **INTEGRATED CANDIDATE, NOT LANDED**. Its branch being green does
+not close the board. The exact close condition is all of the following:
+
+1. `git merge-base --is-ancestor 3a5cc5820fde148182cf87186d126d4d16a48dbc main`
+   exits zero. This records `3a5cc5820` as the reviewed replacement series;
+   its `80f4aa330` commit carries the original `8a97d9f1b` mechanics;
+2. the post-merge `verify/catalog/run.sh` gate reports two clean closures,
+   three independent bound rejections, and four required refutations; and
+3. the repository's required TypeScript and Go gates pass on the resulting
+   `main` tree.
+
+Until all three hold, issue #9 and issue #12 remain open.
+
+| Claim / finding | Issue | Evidence / location | Status |
 |---|---|---|---|
 | C1 collector poisoning | #4 | 045616863 (one walled kvStep, forgive-on-meaning) | FIXED |
 | C2 / JR1 unverified tail | #2 | 2505e76c7 (tailCursor, one adoption path) | FIXED (fail-fast scope per refuter) |
@@ -583,6 +616,7 @@ not.
 | M1 merge duplicate seqs | #6 | dd658a214 (both runtimes + shared vector) | FIXED |
 | S1 Bun coupling | #6 | 243caeb54 | FIXED |
 | FINDING-R3-001 re-checkability | #7 | 6b713a639 (annotations certified inert) | FIXED |
-| FINDING-BRIDGE-001 vacuous half | #8 | b93867814 (ResolvingCreateAgrees in the gate) | FIXED; strengthenings with HARDENER |
-| FINDING-BOUNDS-001 truncation | #9 | `codex/catalog-bound-guards` | FIXED; three independent guard controls |
+| FINDING-BRIDGE-001 vacuous half | #8 | b93867814 (ResolvingCreateAgrees in the gate) | FIXED; ratified disposition landed |
+| FINDING-BOUNDS-001 truncation | #9 | reviewed candidate `3a5cc5820` (`80f4aa330` replaces original patch SHA) | INTEGRATED CANDIDATE, NOT ON MAIN (last open issue) |
+| R4 reply/gate self-enforcement follow-through | — | 6656c68c7 (strict reply mutants + self-asserting canary counts) | FIXED (checkable halves) |
 | Effector A6 register | — | certified clean on the running binary | docs/research/2026-08-13-effector-certified.md |
