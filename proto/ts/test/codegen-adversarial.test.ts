@@ -27,10 +27,16 @@ afterAll(async () => {
   await daemon?.stop()
 }, 60_000)
 
+const digestOf = (structure: Json): string => {
+  const identity = structureDigest(structure)
+  if (!identity.ok) throw new Error(identity.refusal.reason)
+  return identity.digest
+}
+
 const targetDerivations = (structure: Json): ReadonlyArray<readonly [string, () => Derived<unknown>]> => [
   ["effect-schema", () => toEffectSchema(structure)],
   ["json-schema", () => toJsonSchema(structure)],
-  ["go", () => toGoSource(structure, "Generated", structureDigest(structure))],
+  ["go", () => toGoSource(structure, "Generated", digestOf(structure))],
 ]
 
 const deriveWithoutThrowing = (structure: Json): ReadonlyArray<Derived<unknown>> =>
@@ -145,7 +151,7 @@ describe("Go composite derivation preserves complete nested types", () => {
       },
       optional: [],
     }
-    const derived = toGoSource(structure, "Nested", structureDigest(structure))
+    const derived = toGoSource(structure, "Nested", digestOf(structure))
     expect(derived.ok).toBe(true)
     if (!derived.ok) throw new Error(JSON.stringify(derived.refusal))
 
@@ -162,7 +168,7 @@ describe("Go composite derivation preserves complete nested types", () => {
         optional: [],
       },
     }
-    const derived = toGoSource(structure, "NestedList", structureDigest(structure))
+    const derived = toGoSource(structure, "NestedList", digestOf(structure))
     expect(derived.ok).toBe(true)
     if (!derived.ok) throw new Error(JSON.stringify(derived.refusal))
 
@@ -184,7 +190,7 @@ describe("Go field names preserve semantic fields", () => {
       fields: Object.fromEntries(names.map((name) => [name, { k: "string" }])),
       optional: [],
     }
-    const derived = toGoSource(structure, "Names", structureDigest(structure))
+    const derived = toGoSource(structure, "Names", digestOf(structure))
     expect(derived.ok).toBe(true)
     if (!derived.ok) throw new Error(JSON.stringify(derived.refusal))
 

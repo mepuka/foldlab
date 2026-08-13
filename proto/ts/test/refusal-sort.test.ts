@@ -45,7 +45,9 @@ test("the kind-to-sort table is pinned by the grammar digest", () => {
     grammar: vector.grammar,
     sortByKind: vector.sortByKind,
   })
-  const digest = new Bun.CryptoHasher("sha256").update(canonical).digest("hex")
+  expect(canonical.ok).toBe(true)
+  if (!canonical.ok) throw new Error(canonical.refusal.reason)
+  const digest = new Bun.CryptoHasher("sha256").update(canonical.bytes).digest("hex")
   expect(vector.grammar).toBe(REFUSAL_SORT_GRAMMAR)
   expect(vector.grammarDigest).toBe(REFUSAL_SORT_GRAMMAR_DIGEST)
   expect(digest).toBe(vector.grammarDigest)

@@ -1,12 +1,18 @@
-// The TS side of the fixture wall: proto/wire/fixtures was generated
-// once by the Go side (cmd/wirefix) and frozen. Every canonical byte
-// string and digest re-derives here independently; a mismatch means
-// this port drifted — never edit the fixture.
+// The proto adapter side of the fixture wall: proto/wire/fixtures was
+// generated once by the Go side (cmd/wirefix) and frozen. Every canonical
+// byte string and digest re-derives through the single TS encoder; a mismatch
+// means the adapter or identity path drifted — never edit the fixture.
 import { describe, expect, test } from "bun:test"
 import { canonicalize, entryDigest, foldChain, sha256Hex, GENESIS, type Json } from "../src/jcs.ts"
 
 const fixture = async (name: string): Promise<any> =>
   (await import(`../../wire/fixtures/${name}`, { with: { type: "json" } })).default
+
+const canonicalBytes = (value: Json): string => {
+  const encoded = canonicalize(value)
+  if (!encoded.ok) throw new Error(encoded.refusal.reason)
+  return encoded.bytes
+}
 
 describe("type fixtures re-derive byte-identically", async () => {
   const vectors: Array<{ name: string; structure: Json; canonical: string; digest: string }> =
@@ -14,7 +20,7 @@ describe("type fixtures re-derive byte-identically", async () => {
   test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
   for (const vector of vectors) {
     test(vector.name, () => {
-      const canonical = canonicalize(vector.structure)
+      const canonical = canonicalBytes(vector.structure)
       expect(canonical).toBe(vector.canonical)
       expect(sha256Hex(canonical)).toBe(vector.digest)
     })
@@ -53,7 +59,7 @@ describe("frame fixtures re-derive", async () => {
   test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
   for (const vector of vectors) {
     test(vector.name, () => {
-      expect(canonicalize(vector.frame)).toBe(vector.canonical)
+      expect(canonicalBytes(vector.frame)).toBe(vector.canonical)
     })
   }
 })
@@ -69,8 +75,8 @@ describe("concierge request/reply fixtures re-derive", async () => {
   test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
   for (const vector of vectors) {
     test(vector.name, () => {
-      expect(canonicalize(vector.request)).toBe(vector.requestCanonical)
-      expect(canonicalize(vector.reply)).toBe(vector.replyCanonical)
+      expect(canonicalBytes(vector.request)).toBe(vector.requestCanonical)
+      expect(canonicalBytes(vector.reply)).toBe(vector.replyCanonical)
     })
   }
 })

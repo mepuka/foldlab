@@ -22,6 +22,18 @@ const vectors: Array<{ name: string; structure: Json; canonical: string; digest:
 // Refs resolve inside the fixture corpus itself: digest → structure.
 const resolve: Resolve = (digest) => vectors.find((v) => v.digest === digest)?.structure
 
+const digestOf = (structure: Json): string => {
+  const identity = structureDigest(structure)
+  if (!identity.ok) throw new Error(identity.refusal.reason)
+  return identity.digest
+}
+
+const canonicalBytesOf = (structure: Json): string => {
+  const canonical = canonicalizeStructure(structure)
+  if (!canonical.ok) throw new Error(canonical.refusal.reason)
+  return canonical.bytes
+}
+
 interface CheckSemanticVector {
   readonly name: string
   readonly authored: Schema.Top
@@ -110,7 +122,7 @@ const assertFixedCheckRow = (
   actual: Json,
   expected: CheckSemanticVector,
 ): void => {
-  if (canonicalizeStructure(actual) !== canonicalizeStructure(expected.structure)) {
+  if (canonicalBytesOf(actual) !== canonicalBytesOf(expected.structure)) {
     throw new Error(`${expected.name} did not match its fixed canonical check row`)
   }
 }
@@ -125,7 +137,7 @@ const derivationTargets: ReadonlyArray<DerivationTarget> = [
   { name: "json-schema", derive: toJsonSchema },
   {
     name: "go",
-    derive: (structure) => toGoSource(structure, "Generated", structureDigest(structure)),
+    derive: (structure) => toGoSource(structure, "Generated", digestOf(structure)),
   },
 ]
 
@@ -392,7 +404,7 @@ describe("go target", () => {
   test("refuses an asserted digest that does not match the generated structure", () => {
     const structure: Json = { k: "bool" }
     const asserted = "f".repeat(64)
-    const expected = structureDigest(structure)
+    const expected = digestOf(structure)
     const derived = toGoSource(structure, "Boolean", asserted)
 
     expect(derived).toEqual({

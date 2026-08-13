@@ -80,7 +80,9 @@ const observeEffect = (structure: Json, input: Record<string, Json>): Outcome =>
 }
 
 const observeGo = (structure: Json, input: Record<string, Json>): Outcome => {
-  const derived = toGoSource(structure, "IngressFrame", structureDigest(structure))
+  const identity = structureDigest(structure)
+  if (!identity.ok) throw new Error(identity.refusal.reason)
+  const derived = toGoSource(structure, "IngressFrame", identity.digest)
   if (!derived.ok) throw new Error(`Go derivation refused: ${JSON.stringify(derived.refusal)}`)
 
   const dir = mkdtempSync(join(tmpdir(), "flb-width-finding-"))

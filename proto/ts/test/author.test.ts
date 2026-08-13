@@ -47,7 +47,9 @@ describe("author fold maps the v0 slice", () => {
       },
       optional: ["note"],
     })
-    expect(folded.digest).toBe(structureDigest(folded.structure))
+    const identity = structureDigest(folded.structure)
+    expect(identity.ok).toBe(true)
+    if (identity.ok) expect(folded.digest).toBe(identity.digest)
   })
 
   test("declared checks enter identity through the owned name table", () => {
@@ -104,6 +106,17 @@ describe("author fold maps the v0 slice", () => {
       ok: true,
       structure: { k: "ref", digest },
     })
+  })
+
+  test("a schema literal outside the Unicode scalar domain refuses identity as data", () => {
+    const folded = foldSchema(Schema.Literal("\ud800"))
+    expect(folded.ok).toBe(false)
+    if (folded.ok) throw new Error(`lone-surrogate literal minted ${folded.digest}`)
+    expect(folded.refusal).toMatchObject({
+      kind: "invalid-structure",
+      local: true,
+    })
+    expect(folded.refusal.law).toContain("not valid Unicode")
   })
 })
 

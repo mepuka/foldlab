@@ -12,6 +12,7 @@ import {
   canonicalizeStructure,
   compareCanonicalBytes,
   structureDigest,
+  type CanonicalRefusal,
   type Json,
 } from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
@@ -76,6 +77,19 @@ const beyond = (path: ReadonlyArray<string>, got: unknown, why: string): Fail =>
       "beyond-v0",
       `flb.type.v0 cannot express this schema yet: ${why} — the grammar grows under ticket 004, never by a parallel encoding`,
       { path, got: String(got) },
+    ),
+  )
+
+const nonCanonical = (path: ReadonlyArray<string>, refusal: CanonicalRefusal): Fail =>
+  new Fail(
+    localRefusal(
+      "invalid-structure",
+      `flb.type.v0 cannot claim identity outside the RFC 8785 domain: ${refusal.reason}`,
+      {
+        path: [...path, refusal.path],
+        got: refusal.reason,
+        expected: "a finite, acyclic plain JSON value containing only Unicode scalar strings",
+      },
     ),
   )
 
@@ -214,7 +228,9 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
       for (let index = 0; index < node.types.length; index++) {
         const folded = foldNode(node.types[index], [...path, "of", String(index)])
         if (folded instanceof Fail) return folded
-        members.push({ value: folded, canonical: canonicalize(folded) })
+        const encoded = canonicalize(folded)
+        if (!encoded.ok) return nonCanonical([...path, "of", String(index)], encoded.refusal)
+        members.push({ value: folded, canonical: encoded.bytes })
       }
       // Law: order never moves identity in an unordered collection.
       members.sort((left, right) => compareCanonicalBytes(left.canonical, right.canonical))
@@ -250,10 +266,14 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
 export const foldSchema = (schema: Schema.Top): FoldResult => {
   const folded = foldNode(schema.ast, ["structure"])
   if (folded instanceof Fail) return { ok: false, refusal: folded.refusal }
+  const canonical = canonicalizeStructure(folded)
+  if (!canonical.ok) return { ok: false, refusal: nonCanonical(["structure"], canonical.refusal).refusal }
+  const identity = structureDigest(folded)
+  if (!identity.ok) return { ok: false, refusal: nonCanonical(["structure"], identity.refusal).refusal }
   return {
     ok: true,
     structure: folded,
-    digest: structureDigest(folded),
-    canonical: canonicalizeStructure(folded),
+    digest: identity.digest,
+    canonical: canonical.bytes,
   }
 }

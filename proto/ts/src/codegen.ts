@@ -406,9 +406,13 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
  * re-parse (gofmt accepts it); the byte-level codec wall is a stated
  * future obligation (SPEC §6). */
 export const toGoSource = (structure: Json, typeName: string, digest: string): Derived<string> => {
+  const identity = structureDigest(structure)
+  if (!identity.ok) {
+    return { ok: false, refusal: underivable(["structure"], structure, identity.refusal.reason).refusal }
+  }
   const goType = toGoType(structure, ["structure"])
   if (goType instanceof Fail) return { ok: false, refusal: goType.refusal }
-  const actualDigest = structureDigest(structure)
+  const actualDigest = identity.digest
   if (digest !== actualDigest) {
     return {
       ok: false,

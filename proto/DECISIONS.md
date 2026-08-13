@@ -303,6 +303,8 @@ packages/client is meant to be Effect-native, this is a known rewrite,
 not a drift.
 
 ### D26. TS canonicalization: JSON.stringify + UTF-16 key sort
+**SUPERSEDED BY Issue 31's strict structure JCS closure below.**
+
 Decided: ~30 lines in `src/jcs.ts`; scalar serialization delegates to
 JSON.stringify (ES shortest-number form and minimal string escapes ARE
 the JCS rules); objects sort keys by code unit. Numbers beyond float64
@@ -1642,3 +1644,46 @@ correction and the pinned implementation. Evidence and disposition choices
 are in `ts/FINDING-MCP-001.md`. **Load-bearing? yes** — callers cannot know
 whether advertised schemas are enforced until the coordinator chooses the MCP
 validation boundary.
+## Issue 31 — strict structure JCS identity closure (2026-08-13)
+
+### D??. One RFC 8785 encoder owns the TypeScript identity domain
+
+Decided: `proto/ts` delegates canonical encoding to
+`packages/core/src/jcs.ts` and exposes its typed `CanonicalEncoding` result;
+proto retains only grammar-aware structure normalization and hashing. The
+proto-to-Go test now crosses the real `go/cmd/jcsprobe` process, while the core
+encoder retains its generated differential wall. Alternatives: repair the
+second serializer in place (two implementations could drift again); vendor a
+third-party JCS package (new runtime dependency and another trust base); keep a
+throwing compatibility wrapper (excluded inputs would still escape the refusal
+channel). Why: the defect existed because the strongest wall certified the
+already-correct TS/Go pair while the identity-bearing proto implementation was
+independent. **Load-bearing? yes** — every TypeScript digest now has one
+canonical admission domain.
+
+### D??. Structure identity validates before its pure normalization walk
+
+Decided: `canonicalizeStructure` first asks the shared encoder to admit the
+complete input, then normalizes union order, canonicalizes again, and only then
+may `structureDigest` hash. Therefore cycles, exotic prototypes, undefined,
+non-finite numbers, and invalid Unicode refuse as typed data before recursive
+normalization; negative zero remains admitted and normalizes to RFC 8785's
+`0`. `normalizeStructure` stays non-mutating and is pinned idempotent, with an
+in-place-sort negative control. Alternatives: normalize first (cycles can
+overflow before admission); catch recursion errors (engine-dependent failure,
+not domain evidence); hash `JSON.stringify` output (the lone-surrogate mutant
+recreates the reported digest). Why: admission must dominate every identity
+walk, and normalization must not change its caller. **Load-bearing? yes.**
+
+### D??. Existing frozen independent oracles close the reported sharp edges
+
+Decided: the new wall reads RFC 8785 Appendix B's frozen minus-zero row from
+`fixtures/jcs-rfc8785.json` and the existing CG1 lone-surrogate value from
+`go/canonical/probes/cg1-vector.json`; no frozen fixture was regenerated. The
+same test requires proto runtime values and the real Go constrained decoder to
+agree on acceptance and canonical bytes. Alternative: add expected literals
+only inside the test (not independent); regenerate a wire fixture (the issue
+does not license moving any existing digest). Why: the two existing artifacts
+already name the independent standard result and the cross-runtime excluded
+value. **Load-bearing? no** — the oracle artifacts may be consolidated later
+without changing the admitted domain.
