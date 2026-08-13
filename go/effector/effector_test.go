@@ -160,7 +160,7 @@ func TestOpenRefusesWrongShape(t *testing.T) {
 	}
 }
 
-func TestOpenAcceptsConformantVariant(t *testing.T) {
+func TestOpenRefusesHistoryAboveOne(t *testing.T) {
 	js := startJetStream(t)
 	if _, err := js.CreateKeyValue(ctx(t), jetstream.KeyValueConfig{
 		Bucket:      "E_wide",
@@ -170,12 +170,41 @@ func TestOpenAcceptsConformantVariant(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("precreate conformant variant: %v", err)
 	}
-	e, err := effector.Open(ctx(t), js, "wide")
-	if err != nil {
-		t.Fatalf("open refused a conformant bucket: %v", err)
+	if _, err := effector.Open(ctx(t), js, "wide"); !errors.Is(err, effector.ErrBadBucket) {
+		t.Fatalf("open history=5 err=%v, want ErrBadBucket", err)
 	}
-	if _, err := e.Claim(ctx(t), digest(1), "w", time.Second); err != nil {
-		t.Fatalf("claim on conformant bucket: %v", err)
+}
+
+func TestOpenRefusesAfterBucketShapeDrifts(t *testing.T) {
+	js := startJetStream(t)
+	opened := mustOpen(t, js, "drift")
+	stream, err := js.Stream(ctx(t), "KV_E_drift")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := stream.Info(ctx(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := info.Config
+	changed.MaxMsgsPerSubject = 2
+	if _, err := js.UpdateStream(ctx(t), changed); err != nil {
+		t.Fatalf("mutate bucket stream config: %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		_, _, err := opened.Lookup(ctx(t), digest(1))
+		if errors.Is(err, effector.ErrBadBucket) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected lookup error while waiting for advisory: %v", err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("stream-update advisory did not turn bucket drift into a standing refusal")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

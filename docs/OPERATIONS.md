@@ -34,6 +34,21 @@ battery and the affected model gates, and record what moved and what it
 cost — the same way `verify/catalog/run.sh` records the jar it actually
 ran rather than trusting the tag.
 
+## Daemon durability and memory posture
+
+`protod` and `journald` require `--sync-mode crash-durable` or
+`--sync-mode power-durable`. Crash-durable is the kill-9 envelope and does not
+cover plug-pull loss; power-durable selects the pinned server's sync-always
+path. The measured cost is in
+[`docs/bench/2026-08-13-task-19-nats-hardening.md`](bench/2026-08-13-task-19-nats-hardening.md).
+
+Both commands set the Go runtime memory limit to 512 MiB; `protod` exposes
+`--memory-limit` for an explicit deployment override. Direct users of the
+embedded `protod.Acquire` library own their process-wide limit. Broker logs go
+to stderr. A line carrying `ipq_drops_total` means the JetStream API internal
+queue already dropped requests: page on the increasing counter and reconcile
+from journal authority; the counter is evidence, not recovery.
+
 ## How work reaches `main`
 
 Executors work on their own branch or worktree — `codex/<task>`,

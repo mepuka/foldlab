@@ -988,3 +988,71 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 19 — NATS hardening batch (2026-08-13)
+
+### D??. Durability is a required two-level lifecycle choice
+
+Decided: `protod.Options.SyncMode` has no valid zero value and accepts exactly
+`crash-durable` or `power-durable`; the latter sets the pinned nats-server
+`server.Options.SyncAlways` field. Both daemon commands set an explicit 512 MiB
+Go runtime memory limit, and journald requires the same sync choice through its
+flag/environment seam. Alternatives: keep the server default implicit; make
+sync-always unconditional; infer a choice from deployment. Why: the two levels
+make different power-loss claims and their measured write prices differ by
+roughly 30–85x, so choosing silently would either overclaim durability or hide
+a material cost. **Load-bearing? yes** — the acknowledgement claim is a
+function of this choice.
+
+### D??. Owned stream shapes are standing invariants signaled by advisories
+
+Decided: journal and effector subscribe to the pinned
+`$JS.EVENT.ADVISORY.STREAM.UPDATED.<stream>` subject at Open, re-read the live
+shape on any update, and make later operations refuse with the existing typed
+bad-shape error after drift. The journal gate separately denies each Task 19
+hazard field; the effector pins history to exactly one; both deny
+`AsyncPersistMode`. Alternatives: open-time-only checks; polling; attempting to
+undo admin changes. Why: the pin emits a precise update advisory, and refusal
+preserves evidence rather than racing an administrator with an automatic
+repair. **Load-bearing? yes** — otherwise the executable envelope is only a
+startup observation.
+
+### D??. Listener credentials are per acquisition and logs carry a drop total
+
+Decided: each protod acquisition generates separate random 256-bit internal and
+application passwords; no anonymous user exists, and the client URL carries
+the application credential. The embedded server uses a protod logger with
+`NoLog:false`; pinned JetStream API queue-drop warnings are surfaced with a
+monotone `ipq_drops_total`. Product connections carry
+app/version/purpose names. Alternatives: static credentials; anonymous mapping
+to the restricted user; leave `NoLog:true`; expose a new monitoring Go API.
+Why: static/anonymous credentials retain local impersonation, while the log is
+the pinned server's synchronous drop signal and does not widen the daemon's
+lifecycle-only API. **Load-bearing? yes** for listener authority; **no** for the
+client labels.
+
+### D?? disposition. T19-1 keeps direct get denied and pipelines ordinary gets
+
+Decided: Addendum 1 accepts T19-1. The red direct-batch probe remains runnable
+under the `task19finding` build tag. Production uses a bounded 16-request window
+of ordinary per-message JetStream management gets and folds replies strictly
+in sequence order through the unchanged verifier. The pre-change sequential
+path remains test-only and agrees on entries, digests, and cursor over the
+frozen corpus. Alternatives: enable `AllowDirect`; add a pull consumer; keep the
+walk strictly sequential; use a 32-request window. Why: direct get contradicts
+the ratified gate, a consumer adds ack/redelivery lifecycle, and 16 was the
+smallest measured window that delivered the stable local throughput gain. The
+count-10 result is +45.18% crash-durable throughput (p=0.000); the power-durable
+delta is noise. **Load-bearing? yes** — request scheduling may not reorder the
+identity fold.
+
+### D??. Pipelining's allocation price is explicit
+
+Decided: retain the bounded pipeline despite a measured +0.73% allocations per
+1,000-entry read (p=0.000), recorded beside the throughput result. Alternatives:
+hide the regression; revert to sequential; reach below the pinned high-level
+API for a custom async request multiplexer. Why: each pinned `GetMsg` is a
+blocking call, so concurrency necessarily adds goroutine/result bookkeeping;
+the crash-durable throughput gain pays that bounded cost, while a lower-level
+replacement would need a new semantic wall. **Load-bearing? no** — this is a
+performance seam, not an identity law.

@@ -11,7 +11,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/url"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -27,8 +30,19 @@ import (
 type Assumption string
 
 const (
-	AssumptionLinearizableReads    Assumption = "linearizable-reads"
-	AssumptionTerminalImmutability Assumption = "terminal-immutability"
+	AssumptionLinearizableReads      Assumption = "linearizable-reads"
+	AssumptionTerminalImmutability   Assumption = "terminal-immutability"
+	AssumptionAcknowledgedDurability Assumption = "acknowledged-write-durability"
+)
+
+// SyncMode declares which acknowledged-write durability envelope the daemon
+// enters. The zero value is intentionally invalid: callers must choose the
+// crash-only residual or pay for synchronous storage writes.
+type SyncMode string
+
+const (
+	SyncCrashDurable SyncMode = "crash-durable"
+	SyncPowerDurable SyncMode = "power-durable"
 )
 
 // ErrOutsideCertifiedEnvelope marks a lifecycle refusal for a substrate
@@ -55,11 +69,13 @@ func (e *LifecycleError) Unwrap() error { return ErrOutsideCertifiedEnvelope }
 
 // Options configures an acquired daemon. StoreDir is required (tests pass
 // temp dirs; tracer data is disposable). Listen defaults to "127.0.0.1:0" —
-// a random port on loopback. The zero value selects the certified standalone
-// substrate envelope.
+// a random port on loopback. SyncMode is required. LogWriter receives embedded
+// server logs and defaults to stderr.
 type Options struct {
 	StoreDir           string
 	Listen             string
+	SyncMode           SyncMode
+	LogWriter          io.Writer
 	JetStreamClustered bool
 	KVReplicas         int
 	MemoryStorage      bool
@@ -78,6 +94,7 @@ type Daemon struct {
 
 	url  string
 	subs []*nats.Subscription
+	logs *natsLogSink
 }
 
 // Acquire starts the embedded NATS server (JetStream on StoreDir),
@@ -87,6 +104,12 @@ type Daemon struct {
 func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	if opts.StoreDir == "" {
 		return nil, errors.New("protod: StoreDir is required")
+	}
+	if opts.SyncMode != SyncCrashDurable && opts.SyncMode != SyncPowerDurable {
+		return nil, &LifecycleError{
+			Assumption:    AssumptionAcknowledgedDurability,
+			Configuration: fmt.Sprintf("sync mode %q", opts.SyncMode),
+		}
 	}
 	if opts.JetStreamClustered {
 		return nil, &LifecycleError{
@@ -125,6 +148,15 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("protod: create internal credential: %w", err)
 	}
+	applicationPassword, err := randomCredential()
+	if err != nil {
+		return nil, fmt.Errorf("protod: create application credential: %w", err)
+	}
+	logWriter := opts.LogWriter
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
+	logSink := newNATSLogSink(logWriter)
 
 	natsServer, err := server.NewServer(&server.Options{
 		ServerName: "flb-protod",
@@ -132,13 +164,13 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		Port:       port,
 		JetStream:  true,
 		StoreDir:   opts.StoreDir,
-		NoLog:      true,
+		NoLog:      false,
 		NoSigs:     true,
-		NoAuthUser: "application",
+		SyncAlways: opts.SyncMode == SyncPowerDurable,
 		Users: []*server.User{
 			{Username: "protod-internal", Password: internalPassword},
 			{
-				Username: "application",
+				Username: "application", Password: applicationPassword,
 				Permissions: &server.Permissions{
 					Publish: &server.SubjectPermission{
 						Allow: []string{subjectRequestWildcard, ingressWildcard},
@@ -151,6 +183,7 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	if err != nil {
 		return nil, fmt.Errorf("protod: create embedded nats-server: %w", err)
 	}
+	natsServer.SetLogger(logSink, false, false)
 	go natsServer.Start()
 	if !natsServer.ReadyForConnections(10 * time.Second) {
 		natsServer.Shutdown()
@@ -167,6 +200,7 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		"",
 		nats.InProcessServer(natsServer),
 		nats.UserInfo("protod-internal", internalPassword),
+		nats.Name("foldlab-protod/0.0.0/internal-runtime"),
 	)
 	if err != nil {
 		release()
@@ -192,7 +226,8 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		js:       js,
 		catalog:  openedCatalog,
 		journals: map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
-		url:      natsServer.ClientURL(),
+		url:      authenticatedURL(natsServer.ClientURL(), "application", applicationPassword),
+		logs:     logSink,
 	}
 
 	requestSub, err := conn.Subscribe(subjectRequestWildcard, d.handleRequest)
@@ -209,6 +244,15 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	}
 	d.subs = []*nats.Subscription{requestSub, ingressSub}
 	return d, nil
+}
+
+func authenticatedURL(raw, username, password string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	parsed.User = url.UserPassword(username, password)
+	return parsed.String()
 }
 
 func randomCredential() (string, error) {

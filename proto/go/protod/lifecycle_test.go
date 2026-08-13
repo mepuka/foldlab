@@ -3,6 +3,7 @@ package protod_test
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 func TestAcquireRefusesClusteredJetStream(t *testing.T) {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{
 		StoreDir:           t.TempDir(),
+		SyncMode:           protod.SyncCrashDurable,
 		JetStreamClustered: true,
 	})
 	if daemon != nil {
@@ -28,6 +30,7 @@ func TestAcquireRefusesClusteredJetStream(t *testing.T) {
 func TestAcquireRefusesReplicatedKeyValueBuckets(t *testing.T) {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{
 		StoreDir:   t.TempDir(),
+		SyncMode:   protod.SyncCrashDurable,
 		KVReplicas: 3,
 	})
 	if daemon != nil {
@@ -40,6 +43,7 @@ func TestAcquireRefusesReplicatedKeyValueBuckets(t *testing.T) {
 func TestAcquireRefusesInMemoryStorage(t *testing.T) {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{
 		StoreDir:      t.TempDir(),
+		SyncMode:      protod.SyncCrashDurable,
 		MemoryStorage: true,
 	})
 	if daemon != nil {
@@ -49,8 +53,19 @@ func TestAcquireRefusesInMemoryStorage(t *testing.T) {
 	assertLifecycleRefusal(t, err, protod.AssumptionTerminalImmutability, "in-memory storage")
 }
 
-func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) {
+func TestAcquireRequiresDeclaredSyncMode(t *testing.T) {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: t.TempDir()})
+	if daemon != nil {
+		daemon.Release()
+		t.Fatal("Acquire returned a daemon without a declared sync mode")
+	}
+	assertLifecycleRefusal(t, err, protod.AssumptionAcknowledgedDurability, `sync mode ""`)
+}
+
+func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) {
+	daemon, err := protod.Acquire(context.Background(), protod.Options{
+		StoreDir: t.TempDir(), SyncMode: protod.SyncCrashDurable,
+	})
 	if err != nil {
 		t.Fatalf("Acquire certified envelope: %v", err)
 	}
@@ -98,6 +113,32 @@ func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) 
 		case <-time.After(10 * time.Second):
 			t.Fatalf("application %s was not refused", operation.name)
 		}
+	}
+}
+
+func TestListenerRequiresGeneratedApplicationCredential(t *testing.T) {
+	daemon, err := protod.Acquire(context.Background(), protod.Options{
+		StoreDir: t.TempDir(), Listen: "127.0.0.1:0", SyncMode: protod.SyncCrashDurable,
+	})
+	if err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	t.Cleanup(daemon.Release)
+
+	authenticated, err := nats.Connect(daemon.URL(), nats.Name("foldlab/test authenticated application"))
+	if err != nil {
+		t.Fatalf("authenticated connect: %v", err)
+	}
+	authenticated.Close()
+
+	parsed, err := url.Parse(daemon.URL())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed.User = nil
+	if anonymous, err := nats.Connect(parsed.String(), nats.Timeout(time.Second)); err == nil {
+		anonymous.Close()
+		t.Fatal("listener admitted an unauthenticated client")
 	}
 }
 

@@ -1,3 +1,5 @@
+//go:build task19finding
+
 package journal_test
 
 import (
@@ -15,7 +17,8 @@ import (
 // batch get is served only by $JS.API.DIRECT.GET.<stream>, whose subscription
 // exists only when StreamConfig.AllowDirect is true. The journal shape gate is
 // simultaneously required to deny AllowDirect, leaving no admitted batch-get
-// path until the operator dispositions the finding.
+// path. Addendum 1 accepted this finding and ratified bounded pipelining of the
+// ordinary per-message management API instead.
 func TestTask19FindingBatchGetRequiresAllowDirect(t *testing.T) {
 	js := startJetStream(t)
 	opened, err := journal.Open(ctx(t), js, "task19_batch")

@@ -33,13 +33,14 @@ func acquire(t *testing.T) *harness {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{
 		StoreDir: t.TempDir(),
 		Listen:   "127.0.0.1:0",
+		SyncMode: protod.SyncCrashDurable,
 	})
 	if err != nil {
 		t.Fatalf("acquire daemon: %v", err)
 	}
 	t.Cleanup(daemon.Release)
 
-	conn, err := nats.Connect(daemon.URL())
+	conn, err := nats.Connect(daemon.URL(), nats.Name("foldlab-protod-test/0.0.0/conformance-client"))
 	if err != nil {
 		t.Fatalf("connect plain client: %v", err)
 	}
@@ -644,11 +645,11 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	store := t.TempDir()
 	ctx := context.Background()
 
-	first, err := protod.Acquire(ctx, protod.Options{StoreDir: store})
+	first, err := protod.Acquire(ctx, protod.Options{StoreDir: store, SyncMode: protod.SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("acquire: %v", err)
 	}
-	conn, err := nats.Connect(first.URL())
+	conn, err := nats.Connect(first.URL(), nats.Name("foldlab-protod-test/0.0.0/restart-client"))
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
@@ -661,12 +662,12 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	conn.Close()
 	first.Release()
 
-	second, err := protod.Acquire(ctx, protod.Options{StoreDir: store})
+	second, err := protod.Acquire(ctx, protod.Options{StoreDir: store, SyncMode: protod.SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("re-acquire: %v", err)
 	}
 	defer second.Release()
-	conn2, err := nats.Connect(second.URL())
+	conn2, err := nats.Connect(second.URL(), nats.Name("foldlab-protod-test/0.0.0/restart-client"))
 	if err != nil {
 		t.Fatalf("reconnect: %v", err)
 	}

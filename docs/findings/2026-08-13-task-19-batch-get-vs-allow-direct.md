@@ -1,7 +1,8 @@
 # Task 19 finding T19-1 — batch get requires the forbidden direct surface
 
-Status: **OPEN — operator disposition required.** No production fix has been
-attempted.
+Status: **ACCEPTED — Addendum 1 ratified the disposition.** The red probe stays
+preserved under the `task19finding` build tag; production keeps `AllowDirect`
+denied and pipelines the ordinary per-message management requests.
 
 Task 19 requires both of these properties:
 
@@ -26,7 +27,7 @@ No responder exists. Replay:
 
 ```text
 cd go
-go test ./journal -run '^TestTask19FindingBatchGetRequiresAllowDirect$' -count=1 -v
+go test -tags task19finding ./journal -run '^TestTask19FindingBatchGetRequiresAllowDirect$' -count=1 -v
 ```
 
 The test fails with:
@@ -48,16 +49,10 @@ FINDING T19-1: conforming AllowDirect=false journal has no batch-get responder
 - `nats.go/jetstream/stream.go:256-263,547-555`: the pinned high-level
   `Stream.GetMsg` request type exposes no batch field.
 
-## Choices requiring ratification
+## Ratified disposition
 
-- Permit `AllowDirect` for owned journal streams and rely on listener
-  permissions to keep the direct subject internal.
-- Keep `AllowDirect` denied and introduce a pull-consumer batch read, changing
-  the task's consumer-free read-path premise and lifecycle/cursor costs.
-- Keep `AllowDirect` denied and retain the current per-message management API
-  walk, declining the get-batch requirement at this pin.
-- Move the NATS pin to a version with a non-direct management batch API, if one
-  exists and passes the full pin-bump gates.
-
-Until one choice is ratified, implementing any of them would silently rewrite
-the coordinator-owned specification.
+Task 19 Addendum 1 keeps `AllowDirect` denied. `journal.Read` instead issues a
+bounded window of per-message `$JS.API.STREAM.MSG.GET` requests concurrently
+and folds their replies strictly in stream-sequence order. A retained
+sequential implementation and frozen-corpus digest wall prove that request
+scheduling did not change verify-on-read.

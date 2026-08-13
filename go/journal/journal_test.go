@@ -266,6 +266,42 @@ func TestOpenRefusesWrongShape(t *testing.T) {
 	}
 }
 
+func TestOpenRefusesAfterStreamShapeDrifts(t *testing.T) {
+	js := startJetStream(t)
+	opened, err := journal.Open(ctx(t), js, "drift")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream, err := js.Stream(ctx(t), "J_drift")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := stream.Info(ctx(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := info.Config
+	changed.MaxMsgs = 1
+	if _, err := js.UpdateStream(ctx(t), changed); err != nil {
+		t.Fatalf("mutate stream config: %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		_, _, err := opened.Read(ctx(t), journal.Cursor{Seq: -1, Head: canonical.Genesis}, 0)
+		if errors.Is(err, journal.ErrBadStream) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("unexpected read error while waiting for advisory: %v", err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("stream-update advisory did not turn shape drift into a standing refusal")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func TestAppendReadRoundTrip(t *testing.T) {
 	js := startJetStream(t)
 	j, err := journal.Open(ctx(t), js, "rt")

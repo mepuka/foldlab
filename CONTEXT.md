@@ -161,6 +161,13 @@ The equivalence that decides which events are the same entity's history.
 The load-bearing event log — domain traffic and LLM/agent traffic alike.
 Lineage is a query over the journal, not a separate system.
 
+**Sync mode**:
+The explicit durability envelope selected when a daemon starts:
+`crash-durable` covers acknowledged writes across process failure while naming
+the kernel-buffer power-loss residual; `power-durable` synchronizes every
+storage write and prices that stronger claim with a benchmark. There is no
+implicit mode because the two acknowledgements do not mean the same thing.
+
 **Span**:
 A segment of journal traffic between anchors. Its id is the segment's chain
 head, so a span id is recomputable, not merely assigned.
