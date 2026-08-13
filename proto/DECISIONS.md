@@ -931,3 +931,38 @@ mutate state instead of replies (already covered; misses the
 reply-only class the audit proved survivable). Why: a comparator that
 defaults a missing field to the expected value is a prover that
 cannot fail on that field. **Load-bearing? yes.**
+## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
+
+### D??. The tracer-bullet home is `proto/ts/src/cluster/`
+
+Decided: the first Effect durable-messaging proof slice belongs beside the
+existing tracer client, with a directory-local context naming the law that it
+may only compose `ProtoClient`'s narrow writ. Promotion to a product package is
+deferred until the MCP-after phase proves a lasting consumer. Alternatives:
+`packages/client` (premature graduation); a new `packages/workflow` (a product
+surface before the proof slice exists); `proto/demo` (would make the demo own
+the adapter). Why: this is tracer-bullet proof work and the existing client is
+the only lawful boundary it may depend on. **Load-bearing? no** — the module can
+move at graduation without changing its contract.
+
+### D??. FINDING: the pinned `MessageStorage` contract exceeds the narrow writ
+
+Decided: stop before implementing `JournalMessageStorage`. At rc.108 the
+service has sixteen operations, not the four summarized in the design notes,
+and stock cluster code actively supplies `withTransaction` around persisted
+RPC handlers. The SQL reference uses a real transaction; protod has no
+transaction context, atomic batch, conditional append, or begin/commit/abort
+request. Alternatives deliberately not taken: implement `withTransaction` as
+identity; buffer only journal writes in TypeScript; silently add a daemon
+request; claim conformance only from examples that leave the transaction
+annotation false. Why: each alternative either weakens the upstream semantic,
+fails to include arbitrary effects in the atomic boundary, violates the
+narrow writ, or sizes the claim to a path that never exercises the missing
+operation. Evidence and the minimized counterexample are in
+`ts/src/cluster/FINDING-WRIT-001.md`. **Load-bearing? yes** — "the writ suffices
+for durable execution" is false for the full pinned seam until the operator
+ratifies a narrower domain or a new daemon capability.
+
+The contract-suite semantics source and demo transport decisions were not
+reached. Findings-before-fixes forbids deciding or building later stages after
+the step-2 stop condition.
