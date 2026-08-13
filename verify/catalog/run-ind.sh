@@ -7,6 +7,12 @@
 # in either direction — including a control that comes back green, because a
 # prover that cannot fail proves nothing.
 #
+# Canary, run FIRST because it is cheap (~15s) and decisive:
+#   0  blind ingress must be refuted from the CONCRETE Init at length 1.  No
+#      induction, no Gen hypothesis, almost no SMT search — if this does not
+#      come back Error the harness cannot fail and nothing below means
+#      anything, so the gate stops there rather than spending the hour.
+#
 # Obligations (must be NoError):
 #   1 base            Init    => IndInv
 #   2 consecution     IndInv /\ Next => IndInv'
@@ -148,12 +154,12 @@ run_apalache() {
   "${JAVA[@]}" -jar "$JAR" check \
     --config="$cfg" --init="$init" --inv="$inv" --length="$len" \
     CatalogInd.tla >> "$log" 2>&1
-  local rc=$?
+  RC=$?
   end=$(date +%s)
   WALL=$((end - start))
   {
     echo "### -----------------------------------------------------------"
-    echo "### exit code: $rc"
+    echo "### exit code: $RC"
     echo "### wall clock: ${WALL}s"
   } >> "$log"
   LOG="$log"
@@ -166,7 +172,7 @@ expect_noerror() {
   echo "== $label — $what"
   echo "   (must be NoError)"
   run_apalache "$label" "$@"
-  if grep -q "The outcome is: NoError" "$LOG"; then
+  if [ "$RC" -eq 0 ] && grep -q "The outcome is: NoError" "$LOG"; then
     echo "   NoError, as required (${WALL}s) — $LOG"
   else
     echo "   GATE FAILURE: expected NoError. See $LOG"
@@ -185,16 +191,37 @@ expect_error() {
   echo "== $label — $what"
   echo "   (must be Error, on exactly: $law)"
   run_apalache "$label" "$@"
-  if grep -q "The outcome is: Error" "$LOG" && grep -qE "invariant .*violated" "$LOG"; then
+  # RC 12 is Apalache's property-violation code.  A type error exits 120/255
+  # and prints no "The outcome is:" line at all — requiring BOTH the code and
+  # the outcome line is what stops a broken module from being mistaken for a
+  # successfully refuted control (FINDING-R3-001 is exactly that failure).
+  if [ "$RC" -eq 12 ] && grep -q "The outcome is: Error" "$LOG" \
+     && grep -qE "invariant [0-9]+ violated" "$LOG"; then
     echo "   refuted as required on $law (${WALL}s) — $LOG"
-    grep -m1 -E "invariant .*violated" "$LOG" | sed 's/^/     /'
+    grep -m1 -E "invariant [0-9]+ violated" "$LOG" | sed 's/^/     /'
   else
-    echo "   GATE FAILURE: the planted gap was NOT caught; the prover could"
-    echo "   not fail, so the clean verdicts above prove nothing. See $LOG"
+    echo "   GATE FAILURE: the planted gap was NOT caught (exit $RC); the"
+    echo "   prover could not fail, so the clean verdicts above prove"
+    echo "   nothing.  A type error here counts as a failure, not a"
+    echo "   refutation.  See $LOG"
     FAILED=1
   fi
   echo
 }
+
+echo "-- fast refutability canary (~15s): the harness must be able to fail --"
+echo "   Blind ingress, refuted from the CONCRETE Init rather than from the Gen"
+echo "   hypothesis.  It needs no induction, so if it does not come back Error"
+echo "   the harness is broken and the hour of obligations below is worthless."
+echo
+expect_error ob0-canary-refutable "canary: blind ingress refuted from Init" \
+  "AdmissionStep" \
+  CatalogInd.blind.cfg Init AdmissionStep 1
+if [ "$FAILED" -ne 0 ]; then
+  echo "R3 GATE: FAIL — the refutability canary did not fire.  Stopping before"
+  echo "the expensive obligations, which could not have meant anything."
+  exit 1
+fi
 
 echo "-- proof obligations (hypothesis: catalog=Gen(3), mirror=Gen(4), data=Gen(2), creators=Gen(4)) --"
 echo
@@ -233,10 +260,11 @@ else
 fi
 
 if [ "$FAILED" -eq 0 ]; then
-  echo "R3 GATE: PASS — 3 obligations NoError, 1 tripwire NoError, 2 controls"
-  echo "refuted on their named laws, 1 independence control clean, data-cutoff"
-  echo "insensitivity clean.  Bounds as configured: 2 daemons, 3 values, 2"
-  echo "creators, DataCap = 0; hypothesis catalog=Gen(3) mirror=Gen(4)"
+  echo "R3 GATE: PASS — refutability canary fired, 3 obligations NoError, 1"
+  echo "tripwire NoError, 2 controls refuted on their named laws, 1 independence"
+  echo "control clean, data-cutoff insensitivity clean.  Bounds as configured:"
+  echo "2 daemons, 3 values, 2 creators, DataCap = 0;"
+  echo "hypothesis catalog=Gen(3) mirror=Gen(4)"
   echo "data=Gen(2) creators=Gen(4).  Nothing outside those bounds is claimed."
   echo "Verbatim output kept in $LOGDIR"
 else

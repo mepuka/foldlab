@@ -66,26 +66,31 @@ function Invoke-Apalache([string]$Label, [string]$Config, [string]$Init, [string
     $started = Get-Date
     Push-Location $here
     try {
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         if (Get-Command mise -ErrorAction SilentlyContinue) {
             & mise x java@21 -- java -jar $jar check "--config=$Config" "--init=$Init" "--inv=$Inv" "--length=$Length" CatalogInd.tla *>> $log
         } else {
             & java -jar $jar check "--config=$Config" "--init=$Init" "--inv=$Inv" "--length=$Length" CatalogInd.tla *>> $log
         }
+        $rc = $LASTEXITCODE
+        $ErrorActionPreference = $prevEap
     } finally {
         Pop-Location
     }
     $wall = [int]((Get-Date) - $started).TotalSeconds
     "### -----------------------------------------------------------" |
         Out-File -LiteralPath $log -Append -Encoding utf8
+    "### exit code: $rc"      | Out-File -LiteralPath $log -Append -Encoding utf8
     "### wall clock: ${wall}s" | Out-File -LiteralPath $log -Append -Encoding utf8
-    return @{ Log = $log; Wall = $wall }
+    return @{ Log = $log; Wall = $wall; Rc = $rc }
 }
 
 function Expect-NoError([string]$Label, [string]$What, [string]$Config, [string]$Init, [string]$Inv, [int]$Length) {
     Write-Output "== $Label — $What"
     Write-Output "   (must be NoError)"
     $r = Invoke-Apalache $Label $Config $Init $Inv $Length
-    if (Select-String -Quiet -LiteralPath $r.Log -Pattern "The outcome is: NoError") {
+    if ($r.Rc -eq 0 -and (Select-String -Quiet -LiteralPath $r.Log -Pattern "The outcome is: NoError")) {
         Write-Output ("   NoError, as required ({0}s) — {1}" -f $r.Wall, $r.Log)
     } else {
         Write-Output "   GATE FAILURE: expected NoError. See $($r.Log)"
@@ -101,16 +106,34 @@ function Expect-Error([string]$Label, [string]$What, [string]$Law, [string]$Conf
     Write-Output "== $Label — $What"
     Write-Output "   (must be Error, on exactly: $Law)"
     $r = Invoke-Apalache $Label $Config $Init $Inv $Length
+    # Rc 12 is Apalache's property-violation code; a type error exits 120/255
+    # and prints no "The outcome is:" line at all.  Requiring both is what
+    # stops a broken module from passing as a refuted control.
     $isError = Select-String -Quiet -LiteralPath $r.Log -Pattern "The outcome is: Error"
-    $named = Select-String -Quiet -LiteralPath $r.Log -Pattern "invariant .*violated"
-    if ($isError -and $named) {
+    $named = Select-String -Quiet -LiteralPath $r.Log -Pattern "invariant [0-9]+ violated"
+    if ($r.Rc -eq 12 -and $isError -and $named) {
         Write-Output ("   refuted as required on {0} ({1}s) — {2}" -f $Law, $r.Wall, $r.Log)
     } else {
-        Write-Output "   GATE FAILURE: the planted gap was NOT caught; the prover could not"
-        Write-Output "   fail, so the clean verdicts above prove nothing. See $($r.Log)"
+        Write-Output "   GATE FAILURE: the planted gap was NOT caught (exit $($r.Rc)); the"
+        Write-Output "   prover could not fail, so the clean verdicts above prove nothing."
+        Write-Output "   A type error here counts as a failure, not a refutation."
+        Write-Output "   See $($r.Log)"
         $script:failed = 1
     }
     Write-Output ""
+}
+
+Write-Output "-- fast refutability canary (~15s): the harness must be able to fail --"
+Write-Output "   Blind ingress, refuted from the CONCRETE Init rather than from the Gen"
+Write-Output "   hypothesis.  It needs no induction, so if it does not come back Error"
+Write-Output "   the harness is broken and the hour of obligations below is worthless."
+Write-Output ""
+Expect-Error "ob0-canary-refutable" "canary: blind ingress refuted from Init" `
+    "AdmissionStep" "CatalogInd.blind.cfg" "Init" "AdmissionStep" 1
+if ($script:failed -ne 0) {
+    Write-Output "R3 GATE: FAIL — the refutability canary did not fire.  Stopping before"
+    Write-Output "the expensive obligations, which could not have meant anything."
+    exit 1
 }
 
 Write-Output "-- proof obligations (hypothesis: catalog=Gen(3), mirror=Gen(4), data=Gen(2), creators=Gen(4)) --"
