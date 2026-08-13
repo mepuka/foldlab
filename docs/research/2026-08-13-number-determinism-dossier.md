@@ -74,3 +74,38 @@ defaults — a TODO comment, a silent algorithm swap, and a library
 whose docs misdescribe it — against a spec that leaves 45.8% of
 inputs open. The wall is not a formality; it is the only instrument
 that would notice any of this moving.
+
+## Supplement: the bug archaeology (second deep-dive scout, same day)
+
+CORRECTION to "why engines agree": both engines are now Dragonbox —
+JSC swapped Dec 2023 (WebKit 264284), V8 Apr 2025 (afb4ab89ece,
+shipped Chrome 138) — both on default to-even policies, both swaps
+landing with zero test-expectation changes and no follow-up
+correctness CLs. The two-independent-implementations window was Dec
+2023–Apr 2025, AND OUR PINS SIT INSIDE IT: pinned node v22 (V8 12.4)
+still runs Grisu3+bignum while pinned bun (JSC) runs Dragonbox — so
+the measured 4.4M-value agreement crossed genuinely independent
+algorithms, the strongest form of that evidence. When node bumps past
+V8 13.8 both engines share Dragonbox and the lane's independence
+weakens; the lane records engine-algorithm provenance per pin so the
+transition is visible (task 21 addendum).
+
+SHIPPED-DIVERGENCE PRECEDENTS (all in untested paths; full citation
+table in the scout report): Chrome vs Safari emitted different digit
+strings for (0.1).toString(36) for ~five years (2012–2017, fixed V8
+5.7); Chrome returned "0" for (5e-324).toString(2) until Chrome 77
+(2019) while Firefox/Safari returned the exact 1076-char expansion;
+test262's toFixed exactness test exists because ChakraCore diverged;
+x87 builds produced different digits from 80-bit extended precision
+(a same-engine, different-target divergence). Radix-10 String(x):
+NO citable divergence in any shipped release, ever — supported by
+V8 and JSC literally sharing one library 2011–2023 — recorded as
+unanswered-as-negative: convention plus lineage, never the standard.
+
+STRUCTURAL BLINDNESS: differential JS-engine fuzzers that compare
+output (DUMPLING, AccuOracle) NORMALIZE floating-point values before
+comparison by design, so the academic apparatus cannot catch a
+number-printing divergence. The three-way lane is coverage
+effectively nobody else runs. WHATWG codified the latitude in 2009:
+a UA need only be self-consistent, "though it may differ from the
+value used by other user agents."
