@@ -25,7 +25,24 @@ machine-author path is first-class: `flb.type.v0` authoring grammar
 (= ticket 004's owned structure, first cut), `contract.describe` with
 MCP tools derived from it, codegen with a round-trip wall. The
 co-deliverable is `proto/DECISIONS.md` — every decision the spec didn't
-fix, logged for grilling. If
+fix, logged for grilling.
+
+Bullet two, ratified 2026-08-12 (operator; builds after bullet one's
+DECISIONS.md lands): STATELESS GUIDED CONSTRUCTION — the concierge
+authoring flow. One authoring-layer concept: a hole (`{"k":"hole"}`) in
+a partial `flb.type.v0` tree; the partial IS the state and travels in
+every request/reply, so the daemon holds no sessions. Three pure
+operations as daemon REQUEST KINDS (never MCP-layer logic — the
+concierge is contract, `contract.describe` describes it, MCP tools
+derive from it): `type.fill` (partial + path + subtree → new partial +
+frontier: remaining holes, each annotated with legal kinds, examples,
+and fitting cataloged refs — the refusal machinery pointed forward),
+`type.unfill` (mechanical undo — the zipper; the model's context also
+holds every prior partial), and finish = zero holes = `type.create`
+unchanged. Holes never touch the catalog grammar or identity: a tree
+with holes cannot be cataloged. Later optimization if partials grow
+heavy, inside the laws: digest-addressed partials with refusal-on-miss
+(a recomputable cache, never a session). If
 [The workflow abstraction](008-the-workflow-abstraction.md) has
 resolved by then, the prototype should interpret a program value
 rather than a hand-wired pipeline — the node-as-interpreter and

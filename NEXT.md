@@ -208,6 +208,10 @@ statement and a divergence probe.
    real backing is NATS KV through the Go twin — anchors as
    revision-CAS'd KV entries. (KV `Watch` live plane is DONE:
    `go/effector/watch.go` + WL1–WL4.)
+5. The verification ladder (map ticket 009): first climb is the
+   catalog+ingress model gate (TLA+ spec → TLC → Apalache → lockstep
+   against the tracer daemon), following the effector's proven
+   pipeline; concierge algebra properties land inside bullet two.
 
 Anything not listed here (lowering, codecs, entity census, effectful
 getters) waits behind the map's gates.
