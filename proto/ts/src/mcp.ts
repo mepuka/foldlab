@@ -14,6 +14,8 @@ import { SUBJECT_JOURNAL_READ, type ProtoClient } from "./client.ts"
 import { toJsonSchema } from "./codegen.ts"
 import type { Json } from "./jcs.ts"
 import {
+  DaemonRefusal as DaemonRefusalSchema,
+  LocalRefusal as LocalRefusalSchema,
   Refusal as RefusalSchema,
   CursorSeq,
   Hex64,
@@ -25,6 +27,49 @@ import {
 } from "./wire.ts"
 
 const NATS_SUBJECT_META_KEY = "foldlab.dev/nats-subject"
+
+const DaemonRefusal = DaemonRefusalSchema.pipe(
+  Schema.fieldsAssign({
+    kind: Schema.Literals([
+      "malformed",
+      "invalid-structure",
+      "unknown-ref",
+      "digest-mismatch",
+      "unknown-identity",
+      "bad-journal",
+      "unknown-journal",
+      "bad-cursor",
+      "unknown-request",
+    ]),
+  }),
+)
+
+const ClientLocalRefusal = LocalRefusalSchema.pipe(
+  Schema.fieldsAssign({
+    kind: Schema.Literals([
+      "malformed",
+      "bad-journal",
+      "unreachable",
+      "malformed-reply",
+      "verify-failed",
+      "beyond-v0",
+      "underivable",
+      "digest-mismatch",
+    ]),
+  }),
+)
+
+/** The daemon's existing reply is already an envelope: every fact has
+ * ok:true, while refusals have ok:false plus refusal. The record rest
+ * preserves contract-derived fact fields verbatim; the fixed fields make
+ * the complete refusal vocabulary visible to validating MCP clients. */
+const McpOutputEnvelope = Schema.StructWithRest(
+  Schema.Struct({
+    ok: Schema.Boolean,
+    refusal: Schema.optionalKey(Schema.Union([DaemonRefusal, ClientLocalRefusal])),
+  }),
+  [Schema.Record(Schema.String, Schema.Unknown)],
+)
 
 export interface DerivedTool {
   readonly name: string
@@ -152,7 +197,7 @@ export const mcpLayer = (
     Tool.dynamic(tool.name, {
       description: tool.description,
       parameters: tool.inputSchema as any,
-      success: Schema.Unknown,
+      success: McpOutputEnvelope,
     })
       .annotate(Tool.Readonly, tool.annotations.readOnlyHint)
       .annotate(Tool.Destructive, tool.annotations.destructiveHint)

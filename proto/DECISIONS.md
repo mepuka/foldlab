@@ -1606,3 +1606,21 @@ does not prove membership. The finite production fixpoint terminates and its
 closed witness is checked by the admission grammar rather than trusted.
 **Load-bearing? yes** — this is the mechanical meaning of C4's “admits a closed
 completion” claim.
+## Task 29 — MCP output envelope (2026-08-14)
+
+### D??. The advertised envelope is the existing reply object, open over fact fields
+
+Decided: every dynamic MCP tool uses one `StructWithRest` output schema that
+requires the existing `ok` discriminant, permits the contract-derived fact
+fields as unknown rest properties, and optionally declares a refusal as a
+union of two refinements of the shared wire `Refusal`: the nine daemon kinds
+and every client-local kind emitted by the current writ, author, and codegen
+surfaces. Alternatives: retain
+`Schema.Unknown` or use a top-level fact/refusal union (both are dropped by
+the pinned `registerToolkit` object guard); add a new nested `fact` envelope
+(would change the daemon reply passthrough); enumerate only the nine daemon
+kinds (would turn an existing local refusal into a tool-result encoding
+defect). Why: the schema must advertise every value that can already cross
+the seam while leaving each contract-derived fact byte-for-byte unchanged.
+**Load-bearing? yes** — this shape simultaneously carries W8 and determines
+whether validating MCP clients can see the refusal contract.
