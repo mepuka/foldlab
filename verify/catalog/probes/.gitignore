@@ -1,0 +1,4 @@
+# TLC trace-exploration specs, regenerated on every refuted run. Generated
+# output, not evidence — the verbatim run logs in _runlogs/ are the evidence.
+*_TTrace_*.tla
+*_TTrace_*.bin

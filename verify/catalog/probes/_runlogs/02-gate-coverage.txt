@@ -1,0 +1,45 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed -279591011543246489 with 1 worker on 8 cores with 7282MB heap and 64MB offheap memory [pid: 37366] (Mac OS X 26.2 aarch64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/Catalog.tla
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/Integers.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/Sequences.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/_TLCTrace.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/Naturals.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/TLC.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/TLCExt.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-272581404039291825/FiniteSets.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Catalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Catalog
+Starting... (2026-08-13 04:55:35)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-13 04:55:35.
+Progress(8) at 2026-08-13 04:55:38: 70,715 states generated (70,715 s/min), 16,680 distinct states found (16,680 ds/min), 10,421 states left on queue.
+Progress(11) at 2026-08-13 04:56:38: 1,025,631 states generated (954,916 s/min), 213,364 distinct states found (196,684 ds/min), 117,679 states left on queue.
+Progress(12) at 2026-08-13 04:57:38: 1,794,029 states generated (768,398 s/min), 361,994 distinct states found (148,630 ds/min), 190,205 states left on queue.
+Progress(13) at 2026-08-13 04:58:38: 2,468,080 states generated (674,051 s/min), 486,494 distinct states found (124,500 ds/min), 247,417 states left on queue.
+Progress(13) at 2026-08-13 04:59:38: 3,011,442 states generated (543,362 s/min), 587,785 distinct states found (101,291 ds/min), 294,081 states left on queue.
+Progress(13) at 2026-08-13 05:00:38: 3,489,801 states generated (478,359 s/min), 678,863 distinct states found (91,078 ds/min), 336,458 states left on queue.
+Progress(13) at 2026-08-13 05:01:38: 3,914,207 states generated (424,406 s/min), 756,289 distinct states found (77,426 ds/min), 370,317 states left on queue.
+Progress(13) at 2026-08-13 05:02:38: 4,349,741 states generated (435,534 s/min), 836,182 distinct states found (79,893 ds/min), 406,122 states left on queue.
+Progress(14) at 2026-08-13 05:03:38: 5,092,874 states generated (743,133 s/min), 966,967 distinct states found (130,785 ds/min), 459,141 states left on queue.
+Progress(14) at 2026-08-13 05:04:38: 5,620,613 states generated (527,739 s/min), 1,061,728 distinct states found (94,761 ds/min), 499,837 states left on queue.
+Progress(14) at 2026-08-13 05:05:38: 6,098,658 states generated (478,045 s/min), 1,145,999 distinct states found (84,271 ds/min), 531,807 states left on queue.
+Progress(14) at 2026-08-13 05:06:38: 6,492,433 states generated (393,775 s/min), 1,216,178 distinct states found (70,179 ds/min), 561,352 states left on queue.
+Progress(14) at 2026-08-13 05:07:38: 6,880,170 states generated (387,737 s/min), 1,284,768 distinct states found (68,590 ds/min), 589,347 states left on queue.
+Progress(14) at 2026-08-13 05:08:38: 7,461,449 states generated (581,279 s/min), 1,387,486 distinct states found (102,718 ds/min), 630,386 states left on queue.
+Progress(14) at 2026-08-13 05:09:38: 8,217,357 states generated (755,908 s/min), 1,519,853 distinct states found (132,367 ds/min), 683,061 states left on queue.
+Progress(15) at 2026-08-13 05:10:38: 8,805,017 states generated (587,660 s/min), 1,620,088 distinct states found (100,235 ds/min), 719,728 states left on queue.
+Progress(15) at 2026-08-13 05:11:39: 9,384,815 states generated (579,798 s/min), 1,715,837 distinct states found (95,749 ds/min), 752,961 states left on queue.
+Progress(15) at 2026-08-13 05:12:39: 10,234,316 states generated (849,501 s/min), 1,859,400 distinct states found (143,563 ds/min), 805,980 states left on queue.
+Progress(15) at 2026-08-13 05:13:39: 10,972,753 states generated (738,437 s/min), 1,983,570 distinct states found (124,170 ds/min), 846,488 states left on queue.
+Progress(15) at 2026-08-13 05:14:39: 11,543,007 states generated (570,254 s/min), 2,080,521 distinct states found (96,951 ds/min), 882,168 states left on queue.
+Progress(15) at 2026-08-13 05:15:39: 12,421,351 states generated (878,344 s/min), 2,227,740 distinct states found (147,219 ds/min), 932,452 states left on queue.

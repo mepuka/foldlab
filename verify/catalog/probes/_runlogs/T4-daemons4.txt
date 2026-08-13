@@ -1,0 +1,48 @@
+### BREAKER probe: T4-daemons4
+### module: Catalog.tla
+### started: 2026-08-13T09:58:25Z
+### jar sha256: ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f
+### command: mise x java@21 -- java -Xmx12g -XX:+UseParallelGC -DTLA-Library=probes -cp tools/tla2tools.jar tlc2.TLC -workers 1 -fp 1 -deadlock  -config probes/T4-daemons4.cfg Catalog.tla
+###
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed -2063246410830663780 with 1 worker on 8 cores with 10923MB heap and 64MB offheap memory [pid: 38728] (Mac OS X 26.2 aarch64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/Catalog.tla
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/Integers.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/Sequences.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/_TLCTrace.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/Naturals.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/TLC.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/TLCExt.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-16346321537327968033/FiniteSets.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Catalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Catalog
+Starting... (2026-08-13 04:58:27)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-13 04:58:27.
+Progress(10) at 2026-08-13 04:58:30: 22,926 states generated (22,926 s/min), 5,401 distinct states found (5,401 ds/min), 2,975 states left on queue.
+Progress(15) at 2026-08-13 04:59:30: 429,931 states generated (407,005 s/min), 62,486 distinct states found (57,085 ds/min), 20,343 states left on queue.
+Progress(16) at 2026-08-13 05:00:30: 725,937 states generated (296,006 s/min), 92,004 distinct states found (29,518 ds/min), 22,024 states left on queue.
+Progress(18) at 2026-08-13 05:01:30: 1,017,330 states generated (291,393 s/min), 116,809 distinct states found (24,805 ds/min), 17,437 states left on queue.
+Progress(19) at 2026-08-13 05:02:30: 1,290,580 states generated (273,250 s/min), 134,689 distinct states found (17,880 ds/min), 9,406 states left on queue.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 10.0E-9
+  based on the actual fingerprints:  val = 7.2E-9
+1436629 states generated, 141957 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 25.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 16 and the 95th percentile is 4).
+Finished in 04min 33s at (2026-08-13 05:02:59)
+###
+### exit code: 0
+### wall clock: 275s
+### finished: 2026-08-13T10:03:00Z
