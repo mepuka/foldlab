@@ -1061,3 +1061,49 @@ lost adjacent u64 identity coordinates by the time this seam receives it, so
 refusal is the only narrow closure that preserves exact identity. **Load-bearing?
 yes** — without the gate, `compareWitness` selects its left input for both
 orders at NaN and the module's headline commutativity law is false.
+
+## Issue 46 — lossless Schema transport wall (2026-08-13)
+
+### D??. The text schema refuses malformed UTF-8 and invalid encoder inputs
+
+Decided: `parseFrames` retains the canonical stream domain of arbitrary
+payload bytes, while `GzipEventFrame` truthfully narrows its `WireEvent` face
+to Unicode-scalar UTF-8 text. Decode uses a fatal UTF-8 decoder and returns a
+typed Schema issue; encode validates stream and payload scalar values and their
+canonical u16/u32 UTF-8 byte lengths in `WireEvent` before the eager canonical
+encoder callback runs. Alternatives: replacement decoding (collides distinct
+bytes at U+FFFD); base64 payloads (a wire-shape redesign not authorized by
+issue 46); narrow `parseFrames` itself (would reject lawful canonical binary
+events outside this text view); catch `RangeError` around the callback (too
+late, because the public Effect constructor already threw). Why: a schema must
+not admit a value its encoder rejects, and a text view must never repair bytes
+into a different identity. **Load-bearing? yes** — this is the Go-to-TypeScript
+identity boundary.
+
+### D??. Sharp schema rows are live Go-origin evidence, not a frozen-fixture rewrite
+
+Decided: a stdlib-only `go/cmd/schemawallprobe` emits two non-ASCII and two
+malformed-payload frames with their independently computed Go heads. The TS
+wall reproduces heads for admitted text and requires typed refusal for raw
+`ff`/`fe`, while also proving the malformed source heads differ. The existing
+`fixtures/stream-wall.json` remains byte-identical and untouched. Alternatives:
+construct malformed frames only in TypeScript (not an independent wall); add
+rows to the frozen fixture without regeneration authority; duplicate #38's
+broader stream/xform corpus. Why: the live Go oracle covers this exact schema
+seam without treating gzip transport bytes as identity or expanding into the
+other #38 lanes. **Load-bearing? yes** — both-sides-agree is not independent
+evidence, and the original ASCII-only wall could not fail on this defect.
+
+### D??. FINDING: fatal TextDecoder still strips leading BOM bytes
+
+Decided: preserve and stop on `FINDING-SCHEMA-BOM-001`. A live Go-origin pair
+proves `ef bb bf` and empty payloads have distinct canonical heads, while the
+pinned runtime's fatal decoder admits both and maps both to the empty string
+because `ignoreBOM` defaults false. The issue-authorized malformed-byte and
+constructor fixes remain, but the widened valid-UTF-8 case is not repaired
+before operator disposition. Alternatives and the opt-in red command are in
+`packages/core/FINDING-SCHEMA-BOM-001.md`. Why: U+FEFF is a Unicode scalar, so
+silently stripping it contradicts the stated text domain; choosing preservation
+or typed exclusion changes that public domain and must be explicit.
+**Load-bearing? yes** — this is another distinct-byte collision at the same
+identity boundary.
