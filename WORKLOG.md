@@ -228,3 +228,44 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   commitment not placement.
 - Design arc complete (dossier -> workflow-replay design -> wider map -> closure).
 - Committing + pushing. DONE.
+
+### Burst 8 — the theoretical capstone: docs/design/2026-08-13-the-unified-fold.md (done)
+- Retask: theory capstone unifying everything as ONE catamorphism. 4 parts.
+- Noted: .reference/core-concepts.md does NOT exist at this pin; grounded Part 1
+  in README "Why foldlab"/"theory in brief" + CONTEXT.md + source I'd read.
+- Part 1 THE UNIFICATION: catamorphism = unique fold out of initial algebra
+  (Bird-Meertens). Three faces = one structure:
+  Face A ADT = initial algebra of polynomial functor (algebra.ts AlgebraSpec
+  :52-65 IS the grammar; product :245-284); structural digest = AST fold
+  (CONTEXT/004, ASPIRATIONAL; interim bytes-sha256-v1 SHIPPED).
+  Face B Merkle = SAME catamorphism into canonicalize-then-SHA256 algebra;
+  head = headFrom/extend left fold (stream.ts:112-116), structural digest folds
+  tree into same hashing algebra (jcs:108). SHIPPED.
+  Face C free monoid = event stream; time-fold = unique monoid hom (fold.ts:60-88);
+  uniqueness=>invalidation-free cache, hom=>parallel replay. R1 shipped, universal
+  property=argument toward R5.
+  UNIFICATION: head(identity) + state(meaning) = two catamorphisms over ONE shape
+  (X*) at two algebras; "chain remembers what fold forgives" = head INJECTIVE
+  (collision resistance) vs meaning-hom LOSSY = ker(ĝ); Freyd/Rutten μF->νF
+  minimization-map kernel (resonances 3). Honest edge: 004 semantic laws
+  ASPIRATIONAL, recursion hole, meta-theorem argument-not-mechanized.
+- Part 2 byte-guaranteed codegen: type=cataloged value by structural digest;
+  certifier=one lawful fold (certify(bytes)->Certificate|Refusal, ESOP 2012
+  translation-validation); codegen=semantic fold (toEffectSchema/toJsonSchema/
+  toGoSource SHIPPED in proto, GBNF/FSM ASPIRATIONAL 015); byte-guaranteed via
+  constrained decode (jcs:341) + canonical bytes served by digest, grounded in
+  number-determinism dossier (45.8% latitude closed by RFC8785+constrained
+  decode+JCS wall). Edges: Gold (teaching loop load-bearing), GAD NeurIPS 2024
+  (validity syntactic), semantic gap.
+- Part 3 four use cases: multiagent comm (content-address ontology, union
+  resolution, teaching refusals, byte-guarantee=>can't emit invalid); local DSLs
+  + generated translation (homomorphism, GF parse∘linearize=id, ASPIRATIONAL 015);
+  streaming (xform.ts fusion SHIPPED); aggregation (free-monoid fold = through-
+  line to Part 1, foldCache/foldLaws SHIPPED, consumer-gated 020).
+- Part 4 frontier (one para): proof EXTENDS wherever a derived artifact is a
+  catamorphism over digest-anchored input (inherits committed identity, can't
+  drift, parse∘linearize walls); STOPS at the semantic gap (induced grammar
+  meaning intent is irreducible) — recomputability of what was built, never
+  fidelity to intent. The honest cap, like commitment-not-placement.
+- Appendix: full grounding ledger (repo instances + labels + literature).
+- Committing + pushing. Capstone done.
