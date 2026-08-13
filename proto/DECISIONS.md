@@ -1034,6 +1034,28 @@ The contract-suite semantics source and demo transport decisions were not
 reached. Findings-before-fixes forbids deciding or building later stages after
 the step-2 stop condition.
 
+## GitHub issue 41 — executable `unknown-ref` repair
+
+### D??. Concierge repair selects the first bounded catalog candidate
+
+Decided: when one concierge step introduces an unresolved ref and the catalog
+already contains a resolvable digest, the refusal re-holes that ref node and
+puts an immediately executable `type.fill` request using the first digest from
+the same sorted, 16-item candidate set used by the frontier at `next[0]`.
+`example` carries the same ref. If the candidate set is empty, the existing
+wire-frozen retry/describe fallback remains because inventing a replacement
+would assert identity; the generic concierge teacher currently masks the
+internal create/read advice in that case, a separate residual rather than a
+claim of this repair. Alternatives: always echo the failed request (the
+reported infinite repair loop even when candidates exist); require an extra
+unfill/frontier/fill sequence; return every catalog digest; select insertion
+order. Why: W7 requires self-repair without source reading, while bounded
+sorted selection is deterministic and already licensed by the frontier seam.
+The regression executes the advertised request against a real daemon and
+requires acceptance. **Load-bearing? no** — this chooses one truthful example
+from an already bounded advertised set; it does not change identity, admission,
+or candidate membership.
+
 ## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
 
 ### D??. FINDING: every representable concierge hole currently expects the same nonterminal
