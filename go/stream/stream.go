@@ -1,7 +1,7 @@
 // Package stream is the stream-journal lane: the engineering substrate the
 // agent-streaming conversation needs — fingerprinting, merge, fork,
 // compaction, replay, compression — each stated as a small algebra whose laws
-// are CHECKED, here and byte-identically in packages/mech/src/stream.ts (the
+// are CHECKED, here and byte-identically in packages/core/src/stream.ts (the
 // cross-language wall, P2a fixture tradition).
 //
 // The one idea underneath all six concepts: an event stream is a left fold
