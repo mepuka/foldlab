@@ -10,7 +10,10 @@ import {
   algebras,
   encodeFoldState,
   homomorphisms,
+  mapped,
+  mappedStep,
   steps,
+  type Algebra,
   type DeclaredHom,
   type FoldState,
   type Step,
@@ -59,6 +62,107 @@ registerLaws(
   primitiveFolds.sum.zip(primitiveFolds.count.zip(primitiveFolds.setUnion)),
   { zip: primitiveFolds.max },
 )
+
+/**
+ * Lawful-surface admission (A1 #5, A2 #11). The gate that admits a mapped view
+ * must prove LAW, not merely digest CONSENSUS. These tests pin the brand as a
+ * runtime capability minted only by this module, and mark the precise residual
+ * gap the brand does NOT close.
+ */
+describe("lawful-surface admission (A1/A2)", () => {
+  test("A1: the Declaration brand is file-private, not re-mintable from the global registry", () => {
+    const decl = algebras.max.declaration!
+    const brands = Object.getOwnPropertySymbols(decl)
+    expect(brands).toHaveLength(1)
+    // A file-private Symbol() has no registry key; a Symbol.for() key would.
+    expect(Symbol.keyFor(brands[0]!)).toBeUndefined()
+    // The key an attacker would guess resolves to a DIFFERENT symbol.
+    expect(brands[0]).not.toBe(Symbol.for("@foldlab/core/Declaration"))
+  })
+
+  test("A1: the DeclaredHom brand is file-private, not re-mintable from the global registry", () => {
+    const hom = homomorphisms.isPositiveFromMax
+    const brands = Object.getOwnPropertySymbols(hom)
+    expect(brands).toHaveLength(1)
+    expect(Symbol.keyFor(brands[0]!)).toBeUndefined()
+    expect(brands[0]).not.toBe(Symbol.for("@foldlab/core/DeclaredHom"))
+  })
+
+  test("A1: mapped refuses a forged declaration that copies a real digest onto a lying combine", () => {
+    const realMax = algebras.max.declaration!
+    const forgedSource = {
+      empty: null,
+      combine: (left: number | null) => left, // NOT max's combine
+      declaration: {
+        // The global-registry brand outside code can reach, plus max's digest.
+        [Symbol.for("@foldlab/core/Declaration")]: true,
+        spec: realMax.spec,
+        encoding: realMax.encoding,
+        digest: realMax.digest,
+      },
+    } as unknown as Algebra<number | null>
+    const result = mapped(homomorphisms.isPositiveFromMax, forgedSource)
+    expect(result.declaration).toBeUndefined()
+    expect(result.identityIssue).toBeDefined()
+  })
+
+  test("A1: the gates refuse a forged homomorphism with a genuine declaration but a lying map", () => {
+    const genuine = homomorphisms.isPositiveFromMax
+    const forgedHom = {
+      // No reachable DeclaredHom brand; genuine source/target/declaration copied.
+      source: genuine.source,
+      target: genuine.target,
+      map: (_value: number | null) => true, // lies: always positive
+      declaration: genuine.declaration,
+    } as unknown as typeof genuine
+    expect(mapped(forgedHom, algebras.max).declaration).toBeUndefined()
+    expect(mappedStep(forgedHom, steps.sequenceNumber).declaration).toBeUndefined()
+  })
+
+  test("A2: mappedStep refuses a forged source-step declaration (brand, matching mapped)", () => {
+    const realSeq = steps.sequenceNumber.declaration!
+    const forgedStep = {
+      apply: (event: StreamEvent) => event.seq,
+      declaration: {
+        [Symbol.for("@foldlab/core/Declaration")]: true,
+        spec: realSeq.spec,
+        encoding: realSeq.encoding,
+        digest: realSeq.digest,
+      },
+    } as unknown as Step<StreamEvent, number | null>
+    expect(mappedStep(homomorphisms.isPositiveFromMax, forgedStep).declaration).toBeUndefined()
+  })
+
+  test("A2: the mapped fold VIEW is gated at the algebra even when the composed step is honest", () => {
+    // A mapped STEP is honest function-composition identity (hom.map ∘ step),
+    // well-defined for any genuine source, so mappedStep certifies it...
+    const composed = mappedStep(homomorphisms.isPositiveFromMax, steps.payloadLength)
+    expect(composed.declaration).toBeDefined()
+    // ...but the replay-free homomorphism VIEW is licensed only over the algebra
+    // the hom preserves. mapped refuses a mismatched algebra, so the fold whose
+    // map pairs them earns no identity — the source-match lives where the
+    // algebra is present, which is the only place preservation is a property.
+    expect(mapped(homomorphisms.isPositiveFromMax, algebras.min).declaration).toBeUndefined()
+    const fold = defineFold(algebras.min, steps.payloadNumber(["x"]))
+      .map(homomorphisms.isPositiveFromMax)
+    expect(fold.digest).toBeUndefined()
+  })
+
+  test("KNOWN GAP: a genuine declaration re-hosted on a foreign combine is admitted (closure proposed)", () => {
+    // The brand refuses FABRICATED declarations. It does NOT catch a GENUINE,
+    // branded declaration re-hosted on a foreign combine: same digest implies
+    // same SPEC (canonical encoding is injective), not same BEHAVIOR, because
+    // Algebra carries combine as an independent structural field. Closing this
+    // requires branding the Algebra/Step VALUE itself (proposed; no cross-process
+    // consumer exists yet). This test pins the gap so any change is visible.
+    const rehosted = {
+      empty: null,
+      combine: (left: number | null) => left, // lies
+      declaration: algebras.max.declaration, // genuine, branded, real digest
+    } as unknown as Algebra<number | null>
+    expect(mapped(homomorphisms.isPositiveFromMax, rehosted).declaration).toBeDefined()
+  })
+})
 
 describe("fold construction rights", () => {
   test("sum and count close under u32 modular addition", () => {

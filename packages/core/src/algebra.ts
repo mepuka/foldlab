@@ -92,7 +92,12 @@ export type HomSpec = {
   readonly op: "isPositiveFromMax"
 }
 
-const DeclarationTypeId: unique symbol = Symbol.for("@foldlab/core/Declaration")
+// File-private brand: a fresh `Symbol()`, NOT `Symbol.for(...)`. The global
+// symbol registry is reachable from any module, so a `Symbol.for` key lets
+// outside code mint an object carrying the brand at runtime and impersonate a
+// Declaration; a file-private symbol cannot be named or re-minted anywhere
+// else, so a branded value was constructed by this module's own `declaration`.
+const DeclarationTypeId: unique symbol = Symbol("@foldlab/core/Declaration")
 
 export interface Declaration<S> {
   readonly [DeclarationTypeId]: true
@@ -100,6 +105,17 @@ export interface Declaration<S> {
   readonly encoding: string
   readonly digest: string
 }
+
+/**
+ * The runtime admission check behind the brand: a caller-supplied declaration
+ * is trusted only when it carries the file-private brand. The static type is
+ * already nominal (the `unique symbol` key is unnameable outside this file), so
+ * a forgery can reach a gate only through a deliberate `as` cast; this refuses
+ * that forgery at runtime rather than trusting its copied digest.
+ */
+const isDeclaration = <S>(value: Declaration<S> | undefined): value is Declaration<S> =>
+  value !== undefined &&
+  (value as { readonly [DeclarationTypeId]?: unknown })[DeclarationTypeId] === true
 
 /** Identity and associativity license every `combine` exposed by an Algebra. */
 export interface Algebra<A extends FoldState> {
@@ -120,7 +136,10 @@ export interface Step<E, A extends FoldState> {
 
 export type EventGeneratorSpec = { readonly kind: "streamEvent" }
 
-const DeclaredHomTypeId: unique symbol = Symbol.for("@foldlab/core/DeclaredHom")
+// File-private brand, for the same reason as `DeclarationTypeId`: the closed
+// homomorphism registry is trustworthy only if a `DeclaredHom` cannot be minted
+// outside this module.
+const DeclaredHomTypeId: unique symbol = Symbol("@foldlab/core/DeclaredHom")
 
 /** Homomorphism commutation licenses deriving a mapped fold without replay. */
 export interface DeclaredHom<A extends FoldState, B extends FoldState> {
@@ -130,6 +149,11 @@ export interface DeclaredHom<A extends FoldState, B extends FoldState> {
   readonly map: (value: A) => B
   readonly declaration: Declaration<HomSpec>
 }
+
+/** A homomorphism is admitted only if it carries this module's private brand. */
+const isDeclaredHom = <A extends FoldState, B extends FoldState>(
+  value: DeclaredHom<A, B>,
+): boolean => (value as { readonly [DeclaredHomTypeId]?: unknown })[DeclaredHomTypeId] === true
 
 export type AlgebraState<M> = M extends Algebra<infer A> ? A : never
 export type ProductState<Ms extends ReadonlyArray<Algebra<FoldState>>> = {
@@ -237,7 +261,7 @@ const setUnion = declaredAlgebra<ReadonlyArray<string>>(
 export const algebras = { sum, count, max, min, any, all, setUnion } as const
 
 const algebraIssue = (members: ReadonlyArray<Algebra<FoldState>>): string | undefined => {
-  const first = members.find((member) => member.declaration === undefined)
+  const first = members.find((member) => !isDeclaration(member.declaration))
   return first === undefined ? undefined : first.identityIssue ?? "a product member is anonymous"
 }
 
@@ -270,7 +294,7 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
   const spec: AlgebraSpec = {
     v: "foldlab.algebra.v1",
     op: "product",
-    of: members.flatMap((member) => member.declaration === undefined ? [] : [member.declaration.spec]),
+    of: members.flatMap((member) => isDeclaration(member.declaration) ? [member.declaration.spec] : []),
   }
   const declared = declaration(spec)
   return declared === undefined
@@ -311,10 +335,11 @@ export const mapped = <A extends FoldState, B extends FoldState>(
   hom: DeclaredHom<A, B>,
   source: Algebra<A>,
 ): Algebra<B> => {
-  const compatible = source.declaration !== undefined &&
-    hom.source.declaration !== undefined &&
+  const compatible = isDeclaredHom(hom) &&
+    isDeclaration(source.declaration) &&
+    isDeclaration(hom.source.declaration) &&
     source.declaration.digest === hom.source.declaration.digest
-  if (!compatible || hom.target.declaration === undefined) {
+  if (!compatible || !isDeclaration(hom.target.declaration)) {
     return {
       empty: hom.target.empty,
       combine: hom.target.combine,
@@ -417,18 +442,18 @@ export const productStep = <E, const As extends ReadonlyArray<FoldState>>(
   const apply = (event: E): As => members.map((member) => member.apply(event)) as unknown as As
   const declarations = members.map((member) => member.declaration)
   const eventGenerator = members[0]?.eventGenerator
-  if (!declarations.every((candidate) => candidate !== undefined)) {
+  if (!declarations.every((candidate) => isDeclaration(candidate))) {
     return {
       apply,
       ...(eventGenerator === undefined ? {} : { eventGenerator }),
-      identityIssue: members.find((member) => member.declaration === undefined)?.identityIssue ??
+      identityIssue: members.find((member) => !isDeclaration(member.declaration))?.identityIssue ??
         "a product step is anonymous",
     }
   }
   const spec: StepSpec = {
     v: "foldlab.step.v1",
     op: "product",
-    of: declarations.flatMap((candidate) => candidate === undefined ? [] : [candidate.spec]),
+    of: declarations.flatMap((candidate) => isDeclaration(candidate) ? [candidate.spec] : []),
   }
   const declared = declaration(spec)
   return declared === undefined
@@ -446,7 +471,7 @@ export const mappedStep = <E, A extends FoldState, B extends FoldState>(
   source: Step<E, A>,
 ): Step<E, B> => {
   const apply = (event: E): B => hom.map(source.apply(event))
-  if (source.declaration === undefined) {
+  if (!isDeclaredHom(hom) || !isDeclaration(source.declaration)) {
     return {
       apply,
       ...(source.eventGenerator === undefined ? {} : { eventGenerator: source.eventGenerator }),
