@@ -13,8 +13,11 @@ skipping — the failure direction is correct).
 
 Findings only; no fixes were applied. Each central claim carries an id
 (C1–C8). An adversarial refutation pass — one independent read-only
-reviewer per claim, instructed to refute — was launched with this
-document; its verdicts will be recorded here when they land.
+reviewer per claim, instructed to refute — ran the same day; the
+verdicts are recorded at the end of this document. Three claims
+CONFIRMED (C1, C3, C4), four WEAKENED (C2, C5, C6, C7), one REFUTED
+(C8). The claim texts below are kept as written; the verdicts section
+carries what fell.
 
 ## Central claims
 
@@ -175,3 +178,146 @@ smoke test repairs a typo by resubmitting the refusal's own example,
 and the writ is enforced at the NATS permission layer. FINDING-001 was
 stopped on red with a minimized counterexample after both control
 classes passed and before any pass count existed.
+
+## Refutation verdicts (2026-08-13)
+
+Eight independent read-only reviewers, one per claim, each instructed
+to refute. Every verdict returned at high confidence. Corrections the
+refuters made to this document's own claims are recorded verbatim
+below; a claim that survived is not thereby strengthened beyond its
+stated bounds.
+
+**C1 — CONFIRMED.** Reproduced by execution against the real modules:
+`applyKV` refuses a NUL key as `MalformedPayload`; `applySync` stores
+it and `anchors()` throws `RangeError`, and still throws after
+subsequent clean ingests — `Backing` has no delete, so recovery is
+discarding the store. Two corrections: (1) the filter at
+entity.test.ts:48 does NOT exclude NUL — the generator itself emits
+printable ASCII only (30,000 samples, code points 32–126), so the
+pre-sanitized-domain conclusion holds for a stronger reason than
+stated; (2) reachability is latent — `anchors()` has one non-test
+caller (`runCollect`), itself only called from a test, so no shipped
+ingress path feeds a collector today. Incidental finding: the lossy
+decoder silently collides — payloads `0xff"=v"` and `0xfe"=v"` fold to
+the same key U+FFFD and the same stateDigest while their chain heads
+differ. `composeEntities` shares the hazard.
+
+**C2 — WEAKENED.** The code fact is confirmed (Open adopts the tail
+head with no byte check; Read never lowers an Open-adopted cursor; no
+test reopens over a tampered tail; protod ingress.go:108–118 appends
+and republishes the head with no genesis read on that path). The
+overstatement: the proposed one-line check is a canonicality predicate
+and the stated consequence is realized with canonical bytes — a forged
+canonical tail passes the check and poisons the head anyway, while the
+non-canonical case the check does catch yields the honest digest via
+`EntryDigest(decoded)` and does not poison the head. Remedy and
+consequence apply to nearly disjoint scenarios. The residual defect is
+real but is fail-fast/diagnostics, not the integrity hole the wording
+implies. Mitigations omitted: protod's catalog does a genesis Read at
+construction; application credentials cannot publish to `j.>`;
+DenyDelete/DenyPurge means a tampered tail already bricks the journal.
+
+**C3 — CONFIRMED.** Every leg is an unconditional code path.
+CONTRACT.md:115–117 ratifies openness and DECISIONS.md D5 records the
+strict alternative as explicitly rejected; `decodeBody` uses plain
+`json.Unmarshal` (no DisallowUnknownFields) and ingress canonicalizes
+the raw body, so extras persist; contract.go:195–198 describes a
+closed two-field struct; codegen.ts:186 closes every struct and
+codegen.test.ts:221–236 pins that; mcp.ts:43 builds the publish tool
+from exactly that node and mcp.test.ts:115–119 asserts the served
+schema equals it. Sharpening: DECISIONS.md D21 rejected closed-struct
+description for `structure` precisely because "it would make MCP
+clients reject valid structures" — the ingress frame got the treatment
+D21 refused. Severity bound: the Effect MCP pin skips server-side
+schema validation, so a client that ignores the advertised schema is
+still admitted; the defect is what schema-validating hosts are handed.
+
+**C4 — CONFIRMED.** Settled against upstream Apalache source (fetched
+`ValueGenerator.scala`, `genSeq` asserts `len <= bound`; `genFun`
+recurses with the same bound), not memory. A length-3 catalog
+satisfies all seven IndInv conjuncts (explicit witness checked
+clause-by-clause), is reachable in 6 steps from Init, and is
+unrepresentable under `Gen(2)` — consecution and action safety were
+discharged over a strict subset of IndInv; uncovered: every transition
+OUT of a length-3 catalog or a data journal of length >= 3.
+Aggravation: `Gen` appears nowhere in README.md or CLIMB.md, while
+README.md:150–152 affirmatively claims catalog length carries no
+artificial cap, and `data = Gen(2)` caps the hypothesis at the depth
+R2's TLC closure already exhausted, eating R3's marginal contribution.
+Obligation 3 is a propositional tautology (StateSafety's five
+conjuncts are verbatim a subset of IndInv's; the committed run.txt
+confirms `--init=IndInit --inv=StateSafety --length=0`); one of the
+"four NoError verdicts" can never flip.
+
+**C5 — WEAKENED.** The core holds: the only assertion is per-writer
+monotonicity against the goroutine's own ack (assumptions_test.go:362);
+eight writers share one connection, so no cross-client freshness is
+ever checked; a stale `before` read routes into `continue` with no
+assertion — the test cannot distinguish linearizable reads from stale
+reads plus CAS, even inside the R1 envelope. Ticket 011:20–21 asked
+for "reads that must observe completed writes". The mitigations the
+claim's handed form omitted (this document's own C5 text already
+carried them): protod.Acquire refuses clustered and R>1 before startup
+with a typed error naming the assumption; VERIFICATION.md:132–134
+bounds the assumption to the R1 configuration in the sentence naming
+the test; the direct-get staleness is already documented in the
+source-verified JetStream report. Residual that survives: the test
+under-tests its name at R1 too; go/AGENTS.md:17–18 states
+"linearizable reads" unqualified; and the envelope is enforced only at
+the protod seam — `effector.Open`/`journal.Open` accept any
+caller-supplied JetStream and neither shape gate checks `Replicas`.
+
+**C6 — WEAKENED.** The import trace reproduced exactly: two
+out-of-package consumers, `stream.ts`/`xform.ts` only; the tower is
+transitively unreachable from both entry points; `foldCache` has no
+reader outside its test; no Go twin exists. Two corrections: jcs.ts
+does not terminate in its own tests — `packages/core/scripts/jcs-probe.ts`
+is a shipped CLI executed by the Go differential fuzzer and named in
+CI (still a testing surface, so it dents wording, not substance). And
+"the EXACT structural pattern the mint rollback deleted" overstates:
+NEXT.md:112–114 gives three rollback reasons of which the fold algebra
+shares one (no consumer) but not the others (it has ticket 014's
+ratified plan; ADR-0010 frames it as the lawful answer to the mint
+pattern); the consumer-gate was consciously applied to `range`. The
+lawful-but-not-load-bearing observation stands.
+
+**C7 — WEAKENED.** The TS half is exactly right and was proven by
+mutation: a `compact` returning a reversed tail passes every assertion
+in stream.wall.test.ts and stream.property.test.ts while breaking the
+identity half of the law — and passes every Go test too, since Go's
+implementation is untouched. The generalization fell: the claim's "no
+test over arbitrary histories and arbitrary cut points" is false —
+go/stream/fuzz_test.go:240–273 (`FuzzCompactionPreservesBothFolds`)
+and go/stream/stream_test.go:135–164 quantify both halves of the law
+at every boundary, and VERIFICATION.md places the property/fuzz tier
+in Go by design. What survives: the "(tested)" parenthetical at
+stream.ts:290 — the only such parenthetical in the repo — sits on the
+side that does not test the law, and a TS-side defect class exists
+that no current test can catch. Caveat on the Go fuzzer: no committed
+corpus, so the normal gate runs its three seeds.
+
+**C8 — REFUTED.** SPEC.md:53–56 attaches "filled body templates" to
+FACTS; refusals are promised only hints "sufficient for self-repair
+without external docs", and CONTRACT.md:125 marks hint `body`
+optional. Bodyless refusal hints are pervasive and the suite is green,
+so the claimed reading would make the daemon fail its own tests
+everywhere. The cited hint's verbatim replay refuses `malformed` and
+returns `describeHint()` — one wasted round trip that itself teaches;
+the sibling `readCatalogHint` on the same refusal is fully replayable
+and is the actual repair route; a filled digest is impossible in
+principle (the daemon cannot know the intended type, and a fresh
+catalog may be empty). The concierge teachFill/teachUnfill hints echo
+the refused request as an edit-template by design, with the note
+saying so, frozen in concierge.json. What survives is inert: no test
+replays hint bodies — true, and a violation of nothing promised.
+The dead-end framing is withdrawn.
+
+## Disposition owed
+
+C1, C3, C4 stand confirmed at high confidence with executed evidence
+and await operator disposition. C2's residue is a fail-fast gap, not
+an integrity hole; C5's residue is a naming/witness gap inside an
+enforced envelope plus the unguarded library seam; C6's residue is the
+consumer question ADR-0010 already carries; C7's residue is one
+misleading comment and a TS-only blind spot demonstrable by mutation.
+C8 is withdrawn.
