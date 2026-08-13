@@ -1,0 +1,41 @@
+{
+  "_provenance": "generated once by the TypeScript fold implementation over the existing frozen stream-wall event corpus; frozen single-implementation pin, not a wall; a future Go twin must match it",
+  "sum": {
+    "step": "payloadLength",
+    "state": 15,
+    "digest": "be5fe3afd548f1501c89b078e43f85fa90627ae94a93a2c01b7305e439507bf5"
+  },
+  "count": {
+    "step": "constOne",
+    "state": 5,
+    "digest": "90b7e2741f2d1bef1a702198265bc15061e6515f74f04c2b2e80daa8e8304868"
+  },
+  "max": {
+    "step": "sequenceNumber",
+    "state": 3,
+    "digest": "65a3f5035a6ccba4d22c225c536384ae466b12d60d2e2d5c39a7ce4c7e822571"
+  },
+  "min": {
+    "step": "sequenceNumber",
+    "state": 1,
+    "digest": "ad1f8922ad6d5d02481443607b6c8a7bda82623caf6b4f215cbfd151bab4e92f"
+  },
+  "any": {
+    "step": "payloadNonEmpty",
+    "state": true,
+    "digest": "17f5d0ec87e6d814564f7e3541b37b81f99ff9d51b82f8fe15eac7d25e5b5f95"
+  },
+  "all": {
+    "step": "payloadNonEmpty",
+    "state": true,
+    "digest": "5fca7cbd774f1aef590de0db935be7d4704438a1f35c6a54d18ec6709e84232a"
+  },
+  "setUnion": {
+    "step": "streamSet",
+    "state": [
+      "alpha",
+      "beta"
+    ],
+    "digest": "504a6596150d5dbe2e8440e7663859bb917863fabd36b1e1b607f7ac910eea65"
+  }
+}

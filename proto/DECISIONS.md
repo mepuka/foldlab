@@ -384,3 +384,86 @@ daemon; TS independently re-canonicalizes both sides. Alternatives:
 partial values only; duplicating cases in the old type fixture. Why:
 the new seam includes frontier teaching and refusals, not just grammar
 bytes. **Load-bearing? no.**
+
+## Task 06 — fold algebra (2026-08-13)
+
+### D38. Minimal algebra grammar: seven primitives plus product and mapped
+Decided: v1 declares u32-modular `sum`, u32-modular `count`, nullable
+finite-number `max`, nullable finite-number `min`, `any`, `all`, and
+`setUnion` over unique Unicode strings sorted by UTF-16 code units;
+the combinators are variadic `product` and `mapped`. `max`/`min` use
+`null` as identity so every carrier has a real empty value. Alternatives:
+sentinel infinities (outside JSON/JCS and misleading in fixtures); one
+generic numeric monoid with parameters (would erase the distinct count
+claim); JS `Set` state (no canonical JSON value). Why: this is the
+smallest grammar that exercises closed additive, idempotent, Boolean,
+unordered, product, and homomorphic folds. u32 wrapping keeps sum/count
+closed and genuinely associative instead of pretending IEEE-754 addition
+is a monoid. **Load-bearing? yes** — these spec objects
+are digest preimages and a later Go twin must implement them exactly.
+
+### D39. Step grammar is total over StreamEvent
+Decided: declared v1 steps are `constOne`, `payloadLength`,
+`sequenceNumber`, `payloadNonEmpty`, `streamSet`, and
+`payloadNumber(path)`, plus derived `product` and `mapped` steps. A
+payload-number path is an array of JSON object member names into a
+strict-UTF-8 payload; malformed JSON, a missing/non-object path, a
+non-number, non-finite number, or negative zero maps to `null` (the
+max/min identity). Alternatives: throw or add an error carrier (would
+make Fold partial); default to zero (would invent data); omit the path
+step (would leave the ratified declared-field-path question unfixed).
+Why: every declared step remains a total generator map while absence is
+represented honestly. **Load-bearing? yes** — step specs enter fold
+identity and define the future port's behavior.
+
+### D40. The first homomorphism registry has one nontrivial member
+Decided: v1 declares only `isPositiveFromMax : max(number|null) → any`,
+mapping `null` to false and a number to `number > 0`. Alternatives:
+product projections (useful but require a wider indexed hom grammar);
+identity homomorphisms (too trivial to exercise the law); numeric sign
+over sum (not a homomorphism). Why: `positive(max(a,b))` equals
+`positive(a) || positive(b)`, so the registry starts with one honest,
+nontrivial view and no speculative entries. **Load-bearing? yes** — the
+hom spec and behavior are digested and law-tested.
+
+### D41. Identity preimages commit declarations, never function bytes
+Decided: every algebra, step, and hom spec is RFC 8785 encoded and
+SHA-256 digested. A fold digest is SHA-256 over the RFC 8785 bytes of
+`{v:"foldlab.fold.v1", algebra:<full algebra spec>,
+stepDigest:<declared step digest>}`. Product and mapped specs recursively
+carry their declared children. Anonymous behavior remains fully usable
+but has no digest; cache access returns `IdentityUnavailable`. Alternatives:
+hash `Function#toString` (not canonical); hash only child digests (less
+inspectable); assign an identity to anonymous behavior (unverifiable).
+Why: this follows ticket 014 literally: the monoid spec bytes and step
+program digest are the identity preimage. **Load-bearing? yes** — every
+cache key and future cross-language pin depends on this layout.
+
+### D42. Fold fixtures live beside core and are a pin, not yet a wall
+Decided: `packages/core/fixtures/fold-pin.json` records state plus fold
+digest for all seven primitives over the event corpus already frozen by
+`fixtures/stream-wall.json`; the provenance names TypeScript as the sole
+generator and explicitly says "not a wall." Alternative: extend the Go
+stream fixture now (would falsely imply a Go fold-algebra twin); mix pins
+into the law test (would blur examples and identity evidence). Why: the
+future Go twin gets one stable target without upgrading today's evidence
+claim. **Load-bearing? no** — organization can move; provenance honesty
+cannot.
+
+### D43. The pinned Effect API derives fast-check arbitraries through Schema
+At `effect@4.0.0-rc.108`, the exact API is
+`Schema.toArbitrary(schema)(FastCheck)`; `effect/testing/FastCheck`
+re-exports `fast-check`, and the pinned Effect package depends on
+`fast-check@^4.9.0`. Task 06 adds exact `fast-check@4.9.0` as a core
+devDependency. Decided: algebra values carry a small generator
+declaration; a testing adapter interprets primitive declarations as
+Effect Schemas and calls `Schema.toArbitrary`, while product generators
+compose recursively. Declared StreamEvent inputs are likewise
+Schema-derived. Generator descriptions do not enter algebra or fold
+identity. Alternative: handwritten arbitrary values beside every test
+(declarations and inputs could drift); import Effect into the pure algebra
+(violates the ratified seam). Why: tests derive inputs from declared
+structure while runtime algebra stays plain. Fast-check assertions leave
+`endOnFailure:false`, and a negative control proves shrinking reaches the
+minimized counterexample. **Load-bearing? no** — generator tuning may
+change without moving runtime identity.
