@@ -40,9 +40,11 @@
  * claim here that IS wall-anchored is the projection law, because the digest it
  * has to reproduce was frozen by Go.
  *
- * Refusals are values, in the `{ ok }` discipline this package's fold lane
+ * Refusals are values in the `{ ok }` discipline this package's fold lane
  * already uses (`jcs.ts`, `algebra.ts`, `foldLaws.ts`), not thrown and not on
- * the Effect channel.
+ * the Effect channel. In particular, `foldSeqKV(events).ok` is the union
+ * discriminant; the adjacent `applyKV` in `stream.ts` returns an Effect and
+ * must not be read as though it had that field.
  */
 
 import { emptyKV, kvStep, type KVState, type StreamEvent } from "./stream.ts"
