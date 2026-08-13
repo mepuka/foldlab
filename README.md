@@ -58,8 +58,10 @@ bun test
 cd go && gofmt -l . && go vet ./... && go test ./...
 ```
 
-Pinned: `effect@4.0.0-beta.107`, `@effect/platform-bun@4.0.0-beta.107`,
-Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`.
+Pinned: `effect@4.0.0-rc.108`, `@effect/platform-bun@4.0.0-rc.108`,
+Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`. The official Effect
+source is the [`effect@4.0.0-rc.108` tag](https://github.com/Effect-TS/effect/tree/effect%404.0.0-rc.108)
+at commit [`bef7bf38ae4b73d5511043f707aed083de5da7cc`](https://github.com/Effect-TS/effect/commit/bef7bf38ae4b73d5511043f707aed083de5da7cc).
 
 ## Discipline
 

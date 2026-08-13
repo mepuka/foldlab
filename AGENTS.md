@@ -27,6 +27,10 @@ Effect v3. Confirm APIs against the pinned declarations in
 `node_modules/effect/dist/*.d.ts` and the pinned source above rather than
 memory. Schema is `effect/Schema`; do not add deprecated `@effect/schema`.
 
+General reference for Effect idioms and API orientation:
+https://github.com/Effect-TS/effect/blob/main/LLMS.md (describes upstream
+tip; the pin above stays the authority when they disagree).
+
 ## Non-negotiable rules
 
 - `fixtures/stream-wall.json` is frozen. A digest mismatch means the change is
