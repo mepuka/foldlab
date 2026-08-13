@@ -334,7 +334,7 @@ export const combineKV = (left: KVState, right: KVState): KVState | undefined =>
  * naming both counts, so a parallel replay that overran the digest's u32 says
  * which two halves did it.
  */
-export const mergeKV = (
+export const combineKVEffect = (
   left: KVState,
   right: KVState,
 ): Effect.Effect<KVState, KVCountOverflow> =>

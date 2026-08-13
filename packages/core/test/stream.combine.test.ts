@@ -23,11 +23,11 @@ import * as FastCheck from "fast-check"
 import {
   applyMerge,
   combineKV,
+  combineKVEffect,
   emptyKV,
   event,
   foldKV,
   KVCountOverflow,
-  mergeKV,
   stateDigest,
   type Head,
   type KVState,
@@ -188,9 +188,9 @@ describe("combineKV: the rights it does NOT confer", () => {
     expect(combineKV(one, heavy)).toBeUndefined()
     expect(defined(combineKV(heavy, emptyKV)).count).toBe(maxU32)
 
-    const exit = Effect.runSyncExit(mergeKV(heavy, one))
+    const exit = Effect.runSyncExit(combineKVEffect(heavy, one))
     expect(Exit.isFailure(exit)).toBe(true)
-    const refusal = Effect.runSync(Effect.flip(mergeKV(heavy, one)))
+    const refusal = Effect.runSync(Effect.flip(combineKVEffect(heavy, one)))
     expect(refusal).toBeInstanceOf(KVCountOverflow)
     expect(refusal.left).toBe(maxU32)
     expect(refusal.right).toBe(1)
@@ -208,15 +208,17 @@ describe("combineKV: the rights it does NOT confer", () => {
     expect([...combined.entries]).toEqual([["a", "1"]])
   })
 
-  test("mergeKV succeeds exactly where combineKV is defined", () => {
+  test("combineKVEffect succeeds exactly where combineKV is defined", () => {
     FastCheck.assert(
       FastCheck.property(history, history, (xs, ys) => {
         const left = Effect.runSync(foldKV(xs))
         const right = Effect.runSync(foldKV(ys))
         const value = combineKV(left, right)
-        const exit = Effect.runSyncExit(mergeKV(left, right))
+        const exit = Effect.runSyncExit(combineKVEffect(left, right))
         expect(Exit.isSuccess(exit)).toBe(value !== undefined)
-        if (value !== undefined) expect(stateDigest(Effect.runSync(mergeKV(left, right)))).toBe(stateDigest(value))
+        if (value !== undefined) {
+          expect(stateDigest(Effect.runSync(combineKVEffect(left, right)))).toBe(stateDigest(value))
+        }
       }),
       { seed: 0x14_06_14, numRuns: 200, endOnFailure: false },
     )

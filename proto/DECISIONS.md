@@ -988,3 +988,18 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 26 — Rosetta code surfaces (2026-08-14)
+
+### D??. The typed KV combine names its operation and its error channel
+
+Decided: the Effect-returning sibling of `combineKV` is
+`combineKVEffect`. `combine` names the associative segment-recombination
+operation; `Effect` names the typed refusal channel. The unreleased `mergeKV`
+name is removed without an alias. Alternatives: retain `mergeKV` (collides
+with the committed-interleaving meaning of Merge); `combineKVTyped` (names a
+property every TypeScript value already has); retain a compatibility alias
+(freezes the misleading name into a second public path). Why: one operation
+keeps one domain name across its pure and Effect dialects, while the suffix
+makes their different refusal channels visible at the call site.
+**Load-bearing? no** — this is surface vocabulary, changed before release.
