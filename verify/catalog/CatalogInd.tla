@@ -79,6 +79,13 @@ MonotonicityStep ==
 
 SafetySteps == AdmissionStep /\ MonotonicityStep
 
+StateSafety ==
+  /\ Convergence
+  /\ NoAdmissionOnFaith
+  /\ ResolvableOnlyViaCommitted
+  /\ LagIsAbsenceNeverWrongData
+  /\ CatalogNaturallyBounded
+
 (***************************************************************************)
 (* Negative-control candidate for obligation 5: IndInv minus the          *)
 (* CAS-freshness clause.  Consecution from THIS invariant must be          *)

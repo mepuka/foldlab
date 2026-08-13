@@ -1,0 +1,1 @@
+ check --config=CatalogInd.cfg --init=IndInit --inv=StateSafety --length=0 CatalogInd.tla

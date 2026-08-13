@@ -65,6 +65,17 @@ verification.
    refusal kind enumerated by `contract.describe` must be witnessed by
    a test; mechanical, lands with the tracer.
 
+## The hardening program (tickets cut 2026-08-12)
+
+The critical-gap closers, each provable with the structures already in
+hand: ticket 010 (catalog R4 lockstep against protod — the
+model-to-binary bridge), 011 (executable substrate assumptions + the
+certified envelope: out-of-envelope configs refuse at Acquire), 012
+(the journal's own model gate, then composed into the catalog model as
+a refinement), 013 (effector evidence ported public into
+verify/effector/ + the N-owner generalization attempt). The claims
+ledger these serve is [VERIFICATION.md](../../../VERIFICATION.md).
+
 ## Effector status (for the record)
 
 R3/R4 CLAIMED, in the playground heritage: Apalache inductive invariant

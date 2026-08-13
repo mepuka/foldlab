@@ -74,6 +74,9 @@ reply carries facts the agent, or anyone auditing it, can re-derive.
 
 ## Where to look
 
+- [VERIFICATION.md](VERIFICATION.md) — the claims ledger: every
+  verification claim with its rung, bounds, assumptions, and the file
+  where it is checkable.
 - [CONTEXT.md](CONTEXT.md) — the ubiquitous language: folds, heads,
   journals, catalogs, refusals.
 - [proto/SPEC.md](proto/SPEC.md) and

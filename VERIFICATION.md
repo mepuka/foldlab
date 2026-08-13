@@ -1,0 +1,128 @@
+# VERIFICATION — the claims ledger
+
+Every verification claim the repository makes, with its rung, its
+exact bounds, the assumptions it stands on, and the file where it is
+checkable. A claim absent from this ledger is not made. Rungs are
+defined in
+[docs/map/tickets/009-the-verification-ladder.md](docs/map/tickets/009-the-verification-ladder.md):
+R0 fixture walls, R1 property tests, R2 bounded model check, R3
+inductive invariant, R4 lockstep conformance against the running
+binary, R5 mechanized proof.
+
+## The effector (commitment register) — R3 + R4
+
+Claim: fencing safety (no commit lands below the highest linearized
+fence) and unique terminal outcome, for the register
+`Absent | Claim(fence, owner, lease) | Done(fence, result)`.
+
+- Unbounded in fences and interleaving depth: Apalache inductive
+  invariant. Bounded at 3 and 4 owners. The identity-free variant —
+  safety survives deleting every process-identity clause, including
+  one identity running concurrent workers — is the generalization
+  argument for arbitrary owner counts; it is an argument, not an
+  N-owner proof (ticket 013).
+- TLC exhaustive at generation caps 2/3/4 (584 / 2,312 / 6,848
+  states), matching independent Go and TypeScript bounded checkers
+  state-for-state.
+- R4: 15,378 schedules replayed in lockstep against the Go
+  implementation on embedded NATS. Harness sensitivity: 828/828
+  deliberately corrupted schedules detected. The sample rides on top
+  of the exhaustive small-scope core; the count is the bridge to the
+  binary, not the proof.
+- Gap, being closed: the proof artifacts live in untracked heritage
+  material, so the public repository asserts this claim without
+  shipping its evidence. Ticket 013 ports the specs, configs, and
+  counterexample files into `verify/effector/`. Until it lands, the
+  running code and its tests are at [go/effector/](go/effector/).
+
+## Catalog + ingress — R2 claimed, R3 in flight, R4 pending
+
+Claim: no admission on faith (every admitted frame's type digest was
+committed before admission), convergence (equal bytes yield one fact
+per authority journal, any interleaving, any daemon), resolution
+monotonicity (the resolvable set never shrinks), and mirror integrity
+(a replica holds only a prefix of its origin).
+
+- R2: TLC 2.19, bounds 2 daemons / 3 values / 2 creators / data cap 2:
+  12,707,989 distinct states to closure, depth 24. All four invariants
+  held. Four sabotaged variants (blind ingress, asserted identity,
+  forged mirror, resetting mirror) each violated exactly the law it
+  dropped, at depths 2/3/4/5; traces committed. A bounded check
+  certifies only its bounds.
+- Model abstractions, stated: digests are modeled as the identity
+  function on values (content addressing plus the collision-resistance
+  assumption below); the resolve index is a definition (a pure fold of
+  the journal), so drift between the model's index and the
+  implementation's is outside R2 — that is the R4 bridge, ticket 010.
+- R3: inductive candidate stated in
+  [verify/catalog/CatalogInd.tla](verify/catalog/CatalogInd.tla), not
+  claimed; the climb is in progress.
+- Checkable at: [verify/catalog/](verify/catalog/) (spec, configs,
+  counterexample traces, run record).
+
+## Journal and chain walls — R0/R1, model pending
+
+Claim: TypeScript and Go implementations of the stream algebra take
+equal inputs to byte-identical digests; the journal's verify-on-read
+detects tampering.
+
+- R0: frozen fixture walls ([fixtures/](fixtures/)), generated once by
+  the Go side, recomputed by both sides forever.
+- R1: property and fuzz tests ([go/stream/](go/stream/)); divergence
+  probes owed per ADR-0007 where domains exceed the fixtures.
+- Empirical crash evidence: fleet runs under kill-9 storms and cold
+  restarts with independently verifiable bundles
+  ([docs/gauntlet/](docs/gauntlet/)).
+- No dedicated model of CAS-append + crash recovery yet; the catalog
+  model embeds an abstract CAS. Ticket 012 gives the journal its own
+  model gate.
+
+## Schema identity — interim, greenfield build in progress
+
+Claim (interim law only): a type's identity is SHA-256 over its
+submitted canonical bytes; the daemon refuses any digest it cannot
+re-derive. The flb.type.v0 grammar and both codecs are pinned by
+frozen fixture ([proto/wire/fixtures/](proto/wire/fixtures/)).
+Byte-coarse identity is a stated limitation; the owned encoding with
+ratified semantic laws is ticket 004.
+
+## Tracer conformance — R0/R1, single daemon
+
+The daemon's laws (W1–W10) are each witnessed by black-box tests over
+NATS subjects: 60 TypeScript tests, the Go conformance suite, all nine
+refusal kinds, restart survival ([proto/](proto/)). Unexercised, by
+stated scope: replica roles (ratified in ADR-0009, unbuilt), union
+resolution across daemons, ingress payload conformance (admission
+checks identity resolution only — the contract says so).
+
+## Standing assumptions
+
+1. SHA-256 collision resistance. Identity claims reduce to it.
+2. RFC 8785 canonicalization agreement across implementations —
+   mitigated, not assumed silently: golden conformance fixtures
+   including string-escape and number-normalization rows
+   ([fixtures/golden-conformance.json](fixtures/golden-conformance.json)).
+3. JetStream properties at the pinned versions in the single embedded
+   server configuration: atomic create-if-absent, revision CAS,
+   linearizable reads, no deletion of terminal values. These are
+   source-verified
+   ([docs/research/2026-08-12-jetstream-guarantees-source-verified.md](docs/research/2026-08-12-jetstream-guarantees-source-verified.md)),
+   not proved. Clustered or replicated JetStream configurations are
+   outside the certified envelope: the read-linearizability assumption
+   does not automatically transfer. Ticket 011 turns these
+   assumptions into an executable gate and makes the daemon refuse
+   configurations outside the envelope.
+4. Safety only. No liveness claim is made anywhere: leases, retries,
+   and progress under contention are liveness machinery and are
+   untested formally.
+
+## How to refute a claim
+
+Refutation is a contribution, and the machinery ships in the repo. A
+wall claim falls to a byte: inputs on which the two implementations
+disagree. A model claim falls to a trace: a TLC run violating a named
+invariant at the stated bounds (the sabotaged variants show what a
+violation looks like). A conformance claim falls to a divergence: a
+schedule on which the binary and the model disagree. Counterexamples
+are kept and committed — the repository already carries five of its
+own.

@@ -135,19 +135,25 @@ VARIABLES
 
 vars == <<catalog, mirror, data, creators>>
 
+\* @type: (Seq($fact)) => Set($fact);
 Range(s)  == { s[i] : i \in DOMAIN s }
+\* @type: (Seq($fact)) => Set(Int);
 ValsOf(s) == { s[i].val : i \in DOMAIN s }
 
 \* Committed evidence: facts in some AUTHORITY journal.  Mirrors never
 \* commit — they carry commitments made elsewhere.
+\* @type: Set($fact);
 CommittedFacts == UNION { Range(catalog[d]) : d \in Daemons }
+\* @type: Set(Int);
 CommittedIds   == { f.id : f \in CommittedFacts }
 
 \* The resolve index as the ratified law states it: a pure fold of the
 \* journals the daemon holds — its own, plus every mirrored prefix.
 \* Union resolution, ticket 002 #5.
+\* @type: (Int) => Set($fact);
 LocalFacts(d) ==
   Range(catalog[d]) \cup UNION { Range(mirror[d][o]) : o \in Daemons \ {d} }
+\* @type: (Int) => Set(Int);
 ResolvableIds(d) == { f.id : f \in LocalFacts(d) }
 
 Init ==
