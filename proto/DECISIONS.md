@@ -831,3 +831,45 @@ request really is atomic; the claim must name the map it was earned
 against. Details and sub-decisions: R4-DECISIONS D9–D11.
 **Load-bearing? yes** — every consumer of the R4 claim inherits exactly
 this map and no more.
+
+## Task 23 — cross-language identity-domain closure (2026-08-13)
+
+Entries prepared in go/canonical/probes/FINDING.md (the task's evidence
+home) with placeholders; numbered D60-D62 at merge per the header rule.
+
+### D60. Every stored journal head is verified before cursor adoption
+
+Decided: `Open`, verified `Read`, and conflict recovery use one stored-entry
+verification path before changing a journal cursor. A losing append still
+returns `ErrConflict` once, but may heal its handle only by adopting a tail
+whose position and canonical wire-byte digest verify. Alternatives: leave
+resync to callers; adopt the broker tail without verification; give each path
+its own verifier. Why: the writer must not inherit a weaker tamper-evidence law
+than the reader, and one verifier prevents the law from drifting between
+resume and recovery. **Load-bearing? yes.**
+
+### D61. Chain-entry identity refuses invalid Unicode in both runtimes
+
+Decided: chain-entry identity never substitutes a replacement scalar or mints
+an identity outside the canonical Unicode and safe-unsigned sequence domains.
+The Go `EntryDigest` and
+`BuildChain` APIs return typed errors and every caller propagates or handles
+them; the TypeScript chain-entry identity lane refuses lone surrogates and
+invalid runtime numbers as data; a shared refusal vector proves both domains
+agree, including the accepted `2^53-1` edge. Alternatives: panic; return a
+sentinel digest; add a checked twin while retaining the unsafe export; fix only
+one runtime. Why: all four alternatives leave either an untyped failure, an
+identity collision, or a cross-language domain mismatch. **Load-bearing? yes.**
+
+### D62. Merge replay refuses duplicate source sequence coordinates
+
+Decided: each source supplied to `ApplyMerge` / `applyMerge` must contain at
+most one event for each sequence coordinate. Both runtimes refuse duplicates
+before resolving picks with a typed `MergeDuplicateSequence` carrying the
+source, sequence, and both event indexes; one frozen vector licenses the shared
+boundary. Unique sparse coordinates remain valid. Alternatives: first-write-
+wins; last-write-wins; require all sources to be dense; validate only events
+referenced by the merge fact. Why: either winner policy makes an identity
+coordinate ambiguous, a density rule rejects lawful sparse sources, and
+pick-only validation lets an invalid supplied source change admissibility with
+an unrelated fact. **Load-bearing? yes.**
