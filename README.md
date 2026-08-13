@@ -132,3 +132,65 @@ for Go's native fuzzer, use
 
 `effect@4.0.0-rc.108` ([source tag](https://github.com/Effect-TS/effect/tree/effect%404.0.0-rc.108)),
 Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`.
+
+## The live watch
+
+A coordinator seat runs continuous review over the parallel build —
+monitoring lanes, bug-bash lanes, and first-consumer dogfooding — and
+this log gets the results as they land. Newest first. Every finding
+links to its issue; every claim there carries executed evidence.
+
+**2026-08-13 — foundations audit at `074947f`: INTACT, with one wall
+red and invisible.** Zero frozen digests moved across 82 commits of
+two-machine parallel landing — mechanically proven (no removed hex
+constants in the diff walk; `streamfix` regenerates the fixture
+byte-identically). But the wasm wall auto-skips on fresh checkouts
+(`describe.if(built)` + gitignored `dist/`) and is **failing today**
+when built: exactly 27 Unicode scalars diverge TS vs Go, because
+`toUpperCase` follows the JS engine's Unicode 16 tables while Go ships
+15.0.0 — two external tables, neither pinned, guarding a digest path
+([#27](https://github.com/mepuka/foldlab/issues/27)). Ledger/doc drift
+from the flurry consolidated in
+[#28](https://github.com/mepuka/foldlab/issues/28).
+
+**2026-08-13 — first-consumer dogfood of the fresh KV surface.** The
+parallel-replay demo works in a 70-line consumer script: sequential ≡
+split-and-combine ≡ enriched-semilattice, one digest; swapping the
+halves breaks the order-sensitive route (by design) and commutes on
+the semilattice route (by law). Two catches filed from the same
+session: `emptyKV` exports one shared mutable `Map` — a consumer
+mutation would poison every later fold in the process
+([#25](https://github.com/mepuka/foldlab/issues/25)) — and the
+adjacent-file refusal-channel split (`applyKV` returns an Effect,
+`foldSeqKV` a union) executes as a false "refused" under an
+untypechecked consumer ([#26](https://github.com/mepuka/foldlab/issues/26)).
+
+**2026-08-13 — the KV combine, proven and merged.** The briefed goal
+(one operation, homomorphic AND commutative) was internally
+contradictory — together those force order-insensitivity, and
+last-write-wins is order-sensitive by construction. Split instead:
+`combineKV` (associative segment recombination — every split of the
+frozen corpus recombines to the frozen digest: the parallel-replay
+license) and `combineSeqKV` (true join-semilattice on the enriched
+carrier, projection reproducing the frozen digest byte-for-byte). The
+tie-break rule was decided by the frozen corpus, not taste: `(seq,
+stream)` reproduces the pinned digest; the other order provably
+elects a different winner. Generated commutativity/idempotence laws
+landed with a discriminating negative control
+([#20](https://github.com/mepuka/foldlab/issues/20) delivered), and
+the suspected dense/sparse merge divergence was refuted by a deciding
+test — which surfaced a real cross-language finding instead: Go's
+duplicate refusal blames a map-order-random source, TS blames
+deterministically ([#21](https://github.com/mepuka/foldlab/issues/21)).
+
+**2026-08-13 — the review cycle in issues.** The Rosetta pass
+(vocabulary bridge to the common Effect knower, corrected twice by
+its own audit lanes: [#14](https://github.com/mepuka/foldlab/issues/14)),
+the MCP pin conformance findings
+([#16](https://github.com/mepuka/foldlab/issues/16),
+[#17](https://github.com/mepuka/foldlab/issues/17)), the refusal-corpus
+sort split ([#18](https://github.com/mepuka/foldlab/issues/18)), the
+frontier finding whose premise was then properly refuted by a deeper
+lane and converted to a tripwire
+([#19](https://github.com/mepuka/foldlab/issues/19)), and the
+semilattice law gap ([#20](https://github.com/mepuka/foldlab/issues/20)).
