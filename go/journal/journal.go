@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -229,6 +230,12 @@ func (j *Journal) Read(
 func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (AppendOutcome, error) {
 	if entry.Seq < 0 {
 		return "", fmt.Errorf("%w: invalid position %d", ErrConflict, entry.Seq)
+	}
+	// Invalid UTF-8 is outside the canonical domain: both the wire encoder and
+	// EntryDigest would launder it to U+FFFD, collapsing distinct payloads to one
+	// journal identity. Refuse it here, matching CanonicalizeValue's domain.
+	if !utf8.ValidString(entry.Payload) {
+		return "", errors.New("journal payload is not valid Unicode")
 	}
 	wire, err := encodeEntry(entry)
 	if err != nil {
