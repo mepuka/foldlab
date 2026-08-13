@@ -41,3 +41,38 @@ Phase 2 — test magic, each API named with its licensing law
 Sequencing: phase 1 design grilling may start any time (it informs
 the certificate shape rather than waiting on it); builds go to codex
 per the standing tiers.
+
+## Phase 1 resolution (2026-08-13, operator-grilled and ratified)
+
+Re-sequenced: the first build slice is **JournalMessageStorage** — the
+smallest real consumer, positioned as visual/tactile proof rather than
+the long-term bet. The MCP surface follows it; the observability
+Layers (this ticket's original phase 1) queue behind that; test magic
+unchanged as the later phase.
+
+Ratified shape:
+
+1. SEAM: Effect's `MessageStorage` interface (the seam under
+   `ClusterWorkflowEngine` + `SingleRunner`, both used stock and
+   unchanged). The pinned finding that licenses the slice: their own
+   single-process layer still requires a SQL client — the wedge is
+   the SQL dependency, not single-node.
+2. SUBSTRATE: through the narrow writ to protod (read/publish/request
+   only) — durable messaging inherits the proven journal, the
+   certified envelope, and tamper evidence; "the writ suffices for
+   durable execution" is part of the claim.
+3. DONE GATE (two parts): (a) Effect's stock workflow examples run
+   unchanged on the swapped Layer; (b) an authored DIFFERENTIAL
+   conformance suite — the assumed MessageStorage contract written
+   down (save/ack survive restart, ordering, dedup, read-back
+   exactness), run against BOTH our Layer and their SQL storage, with
+   negative controls that must fail (a storage that drops or reorders
+   is caught). No TCK exists at the pin; this suite is the upstream
+   artifact.
+4. DEMO: in the browser. A small HTTP surface feeding an Effect Atom
+   front end that shows the effector register and workflow state
+   live; the choreography is kill -9 mid-activity → restart → resume
+   exactly once (fencing made visible), then flip one stored byte →
+   verify-on-read refuses with a named position (tamper evidence made
+   visible).
+5. Claims enter VERIFICATION.md bounded to the envelope, at merge.
