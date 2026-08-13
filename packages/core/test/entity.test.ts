@@ -67,6 +67,27 @@ const malformedPayloadCases: ReadonlyArray<ReadonlyArray<number>> = [
 const malformedPayloadArbitrary = FastCheck.constantFrom(...malformedPayloadCases)
   .map((payload) => Uint8Array.from(payload))
 
+const invalidAnchorArbitrary = FastCheck.oneof(
+  FastCheck.constant({ key: "high\ud800", head: "00".repeat(32) }),
+  FastCheck.constant({ key: "low\udc00", head: "00".repeat(32) }),
+  FastCheck.constant({ key: "contains=delimiter", head: "00".repeat(32) }),
+  FastCheck.string({ maxLength: 80 }).filter((head) => !/^[0-9a-f]{64}$/i.test(head))
+    .map((head) => ({ key: "valid", head })),
+)
+
+const invalidEventArbitrary = FastCheck.oneof(
+  FastCheck.integer({ max: -1 }).map((seq) => ({
+    stream: "bus",
+    seq,
+    payload: new TextEncoder().encode("key=value"),
+  })),
+  FastCheck.constant({
+    stream: "bus\ud800",
+    seq: 1,
+    payload: new TextEncoder().encode("key=value"),
+  }),
+)
+
 // A second, deliberately different backing implementation.
 const arrayBacking = (): Backing => {
   let entries: Array<[string, EntityView]> = []
@@ -168,7 +189,82 @@ describe("entity collector laws", () => {
       key: "child\0",
       head: "00".repeat(32),
     }])))
-    expect(composed._tag).toBe("MalformedPayload")
+    expect(composed._tag).toBe("InvalidEntityAnchor")
+  })
+
+  test("composition refuses non-scalar keys and malformed heads before encoding", () => {
+    for (const child of [
+      { key: "high\ud800", head: "00".repeat(32) },
+      { key: "low\udc00", head: "00".repeat(32) },
+      { key: "valid", head: "not-a-head" },
+    ]) {
+      const refusal = Effect.runSync(Effect.flip(composeEntities("root", [child])))
+      expect(refusal._tag).toBe("InvalidEntityAnchor")
+    }
+    const parent = Effect.runSync(Effect.flip(composeEntities("root\ud800", [])))
+    expect(parent._tag).toBe("InvalidEntityAnchor")
+  })
+
+  test("the composition refusal generator targets invalid keys and heads", () => {
+    FastCheck.assert(
+      FastCheck.property(invalidAnchorArbitrary, (child) => {
+        const refusal = Effect.runSync(Effect.flip(composeEntities("root", [child])))
+        expect(refusal._tag).toBe("InvalidEntityAnchor")
+      }),
+      { seed: 0x22c1_0005, numRuns: 250, endOnFailure: false },
+    )
+  })
+
+  test("collector reads and writes its backing only when the Effect executes", () => {
+    let correlations = 0
+    let gets = 0
+    let sets = 0
+    const backing: Backing = {
+      get: () => {
+        gets++
+        return undefined
+      },
+      set: () => {
+        sets++
+      },
+      keys: () => [],
+    }
+    const collector = makeCollector(backing, () => {
+      correlations++
+      return "entity"
+    })
+    const pending = collector.ingest(event("bus", 1, "key=value"))
+    expect(correlations).toBe(0)
+    expect(gets).toBe(0)
+    expect(sets).toBe(0)
+    Effect.runSync(pending)
+    expect(correlations).toBe(1)
+    expect(gets).toBe(1)
+    expect(sets).toBe(1)
+  })
+
+  test("collector refuses malformed event identity as data", () => {
+    for (const candidate of [
+      { stream: "bus", seq: -1, payload: new TextEncoder().encode("key=value") },
+      { stream: "bus\ud800", seq: 1, payload: new TextEncoder().encode("key=value") },
+    ]) {
+      const collector = makeCollector(memoryBacking(), () => "entity")
+      const refusal = Effect.runSync(Effect.flip(collector.ingest(candidate)))
+      expect(refusal._tag).toBe("InvalidStreamEvent")
+      expect(collector.anchors()).toEqual([])
+    }
+  })
+
+  test("the collector refusal generator targets malformed event identity", () => {
+    FastCheck.assert(
+      FastCheck.property(invalidEventArbitrary, (candidate) => {
+        const collector = makeCollector(memoryBacking(), () => "entity")
+        const refusal = Effect.runSync(Effect.flip(collector.ingest(candidate)))
+        expect(refusal._tag).toBe("InvalidStreamEvent")
+        expect(collector.anchors()).toEqual([])
+      }),
+      { seed: 0x22c1_0006, numRuns: 250, endOnFailure: false },
+    )
   })
 
   test("the entity refusal generator targets every payload boundary", () => {

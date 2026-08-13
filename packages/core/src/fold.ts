@@ -3,6 +3,8 @@
 import { createHash } from "node:crypto"
 import {
   encodeFoldState,
+  isDeclaredAlgebra,
+  isDeclaredStep,
   mapped,
   mappedStep,
   product,
@@ -43,11 +45,14 @@ const foldIdentity = <E, A extends FoldState>(
   algebra: Algebra<A>,
   step: Step<E, A>,
 ): FoldIdentity | undefined => {
-  if (algebra.declaration === undefined || step.declaration === undefined) return undefined
+  if (!isDeclaredAlgebra(algebra) || !isDeclaredStep(step)) return undefined
+  const algebraDeclaration = algebra.declaration
+  const stepDeclaration = step.declaration
+  if (algebraDeclaration === undefined || stepDeclaration === undefined) return undefined
   const preimage = encodeFoldState({
     v: "foldlab.fold.v1",
-    algebra: algebra.declaration.spec,
-    stepDigest: step.declaration.digest,
+    algebra: algebraDeclaration.spec,
+    stepDigest: stepDeclaration.digest,
   })
   if (!preimage.ok) return undefined
   return {

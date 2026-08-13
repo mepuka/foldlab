@@ -1,6 +1,12 @@
 /** Immutable memo entries: a fold digest plus a history head names one result. */
 
-import { encodeFoldState, type CanonicalEncoding, type FoldState } from "./algebra.ts"
+import {
+  encodeFoldState,
+  isDeclaredAlgebra,
+  isDeclaredStep,
+  type CanonicalEncoding,
+  type FoldState,
+} from "./algebra.ts"
 import type { Fold } from "./fold.ts"
 import type { Head } from "./stream.ts"
 
@@ -36,9 +42,15 @@ const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable =>
   refusal: {
     _tag: "IdentityUnavailable",
     feature: "fold-cache",
-    reason: fold.algebra.declaration === undefined
-      ? fold.algebra.identityIssue ?? "the algebra is anonymous"
-      : fold.step.identityIssue ?? "the step is anonymous",
+    reason: !isDeclaredAlgebra(fold.algebra)
+      ? fold.algebra.identityIssue ?? (fold.algebra.declaration === undefined
+        ? "the algebra is anonymous"
+        : "the algebra has no admitted declaration")
+      : !isDeclaredStep(fold.step)
+      ? fold.step.identityIssue ?? (fold.step.declaration === undefined
+        ? "the step is anonymous"
+        : "the step has no admitted declaration")
+      : "the fold identity is unavailable",
   },
 })
 
