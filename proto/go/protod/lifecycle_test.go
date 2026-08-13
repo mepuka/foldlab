@@ -49,14 +49,14 @@ func TestAcquireRefusesInMemoryStorage(t *testing.T) {
 	assertLifecycleRefusal(t, err, protod.AssumptionTerminalImmutability, "in-memory storage")
 }
 
-func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) {
+func TestAcquireRestrictsApplicationPublishToThePublicWrit(t *testing.T) {
 	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: t.TempDir()})
 	if err != nil {
 		t.Fatalf("Acquire certified envelope: %v", err)
 	}
 	t.Cleanup(daemon.Release)
 
-	permissionErrors := make(chan error, 2)
+	permissionErrors := make(chan error, 3)
 	application, err := nats.Connect(daemon.URL(), nats.ErrorHandler(func(
 		_ *nats.Conn,
 		_ *nats.Subscription,
@@ -71,15 +71,21 @@ func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) 
 
 	for _, operation := range []struct {
 		name    string
+		subject string
 		headers nats.Header
 	}{
-		{name: "delete", headers: nats.Header{"KV-Operation": []string{"DEL"}}},
-		{name: "purge", headers: nats.Header{
+		{
+			name:    "delete",
+			subject: "$KV.E_protected.work." + strings.Repeat("a", 64),
+			headers: nats.Header{"KV-Operation": []string{"DEL"}},
+		},
+		{name: "purge", subject: "$KV.E_protected.work." + strings.Repeat("a", 64), headers: nats.Header{
 			"KV-Operation":      []string{"PURGE"},
 			jetstream.MsgRollup: []string{jetstream.MsgRollupSubject},
 		}},
+		{name: "forged-reply", subject: "_INBOX.victim.forged"},
 	} {
-		msg := nats.NewMsg("$KV.E_protected.work." + strings.Repeat("a", 64))
+		msg := nats.NewMsg(operation.subject)
 		msg.Header = operation.headers
 		if err := application.PublishMsg(msg); err != nil {
 			t.Fatalf("application %s publish returned before authorization: %v", operation.name, err)
@@ -98,6 +104,82 @@ func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) 
 		case <-time.After(10 * time.Second):
 			t.Fatalf("application %s was not refused", operation.name)
 		}
+	}
+}
+
+func TestApplicationConnectionsCannotEavesdropReplyOrJetStreamTraffic(t *testing.T) {
+	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: t.TempDir()})
+	if err != nil {
+		t.Fatalf("Acquire certified envelope: %v", err)
+	}
+	t.Cleanup(daemon.Release)
+
+	spy, err := nats.Connect(daemon.URL())
+	if err != nil {
+		t.Fatalf("connect spying application: %v", err)
+	}
+	t.Cleanup(spy.Close)
+	spyInbox, err := spy.SubscribeSync("_INBOX.>")
+	if err != nil {
+		t.Fatalf("subscribe spying application to inbox wildcard: %v", err)
+	}
+	if err := spy.FlushTimeout(time.Second); err != nil {
+		t.Fatalf("flush spying subscription: %v", err)
+	}
+
+	victim, err := nats.Connect(daemon.URL())
+	if err != nil {
+		t.Fatalf("connect victim application: %v", err)
+	}
+	t.Cleanup(victim.Close)
+	reply, err := victim.Request(
+		"flb.req.type.create",
+		[]byte(`{"structure":{"k":"string"}}`),
+		5*time.Second,
+	)
+	if err != nil {
+		t.Fatalf("victim's own request/reply failed: %v", err)
+	}
+	if !strings.Contains(string(reply.Data), `"ok":true`) {
+		t.Fatalf("victim received non-ok reply: %s", reply.Data)
+	}
+	reply, err = victim.Request(
+		"flb.req.journal.read",
+		[]byte(`{"journal":"catalog","from":{"seq":-1,"head":"0000000000000000000000000000000000000000000000000000000000000000"},"max":0}`),
+		5*time.Second,
+	)
+	if err != nil {
+		t.Fatalf("victim's own read request/reply failed: %v", err)
+	}
+	if !strings.Contains(string(reply.Data), `"ok":true`) {
+		t.Fatalf("victim received non-ok read reply: %s", reply.Data)
+	}
+
+	var sawApplicationReply, sawJetStreamControl bool
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		message, nextErr := spyInbox.NextMsg(time.Until(deadline))
+		if errors.Is(nextErr, nats.ErrTimeout) {
+			break
+		}
+		if nextErr != nil {
+			t.Fatalf("read spying inbox: %v", nextErr)
+		}
+		body := string(message.Data)
+		if strings.Contains(body, `"ok":true`) &&
+			(strings.Contains(body, `"created":true`) || strings.Contains(body, `"journal":"catalog"`)) {
+			sawApplicationReply = true
+		}
+		if strings.Contains(body, "io.nats.jetstream.api") {
+			sawJetStreamControl = true
+		}
+	}
+	if sawApplicationReply || sawJetStreamControl {
+		t.Fatalf(
+			"application inbox wildcard eavesdropped traffic: application-reply=%t jetstream-control=%t",
+			sawApplicationReply,
+			sawJetStreamControl,
+		)
 	}
 }
 

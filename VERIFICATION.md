@@ -419,7 +419,12 @@ unbuilt), union resolution across daemons, ingress payload conformance
    `protod.Acquire` enforces the envelope: application credentials have
    only the three-verb writ, and clustered JetStream, R>1 KV buckets,
    or in-memory storage refuse before startup with a typed lifecycle
-   error naming the uncovered assumption
+   error naming the uncovered assumption. Each application connection is also
+   isolated in a private NATS account with only the writ service-imported: a
+   two-client black-box control proves an `_INBOX.>` subscription cannot read
+   another client's replies or the daemon's JetStream responses, while the
+   victim's own request/reply succeeds and forged inbox publication remains
+   permission-refused
    ([proto/go/protod/lifecycle_test.go](proto/go/protod/lifecycle_test.go)).
 4. Safety only. No liveness claim is made anywhere: leases, retries,
    and progress under contention are liveness machinery and are

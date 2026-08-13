@@ -126,30 +126,22 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		return nil, fmt.Errorf("protod: create internal credential: %w", err)
 	}
 
+	authenticator := newConnectionAuthenticator(internalPassword)
 	natsServer, err := server.NewServer(&server.Options{
-		ServerName: "flb-protod",
-		Host:       host,
-		Port:       port,
-		JetStream:  true,
-		StoreDir:   opts.StoreDir,
-		NoLog:      true,
-		NoSigs:     true,
-		NoAuthUser: "application",
-		Users: []*server.User{
-			{Username: "protod-internal", Password: internalPassword},
-			{
-				Username: "application",
-				Permissions: &server.Permissions{
-					Publish: &server.SubjectPermission{
-						Allow: []string{subjectRequestWildcard, ingressWildcard},
-					},
-					Subscribe: &server.SubjectPermission{Allow: []string{"_INBOX.>"}},
-				},
-			},
-		},
+		ServerName:                 "flb-protod",
+		Host:                       host,
+		Port:                       port,
+		JetStream:                  true,
+		StoreDir:                   opts.StoreDir,
+		NoLog:                      true,
+		NoSigs:                     true,
+		CustomClientAuthentication: authenticator,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("protod: create embedded nats-server: %w", err)
+	}
+	if err := authenticator.bind(natsServer); err != nil {
+		return nil, fmt.Errorf("protod: configure application isolation: %w", err)
 	}
 	go natsServer.Start()
 	if !natsServer.ReadyForConnections(10 * time.Second) {
