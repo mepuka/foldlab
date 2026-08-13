@@ -988,3 +988,21 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 48 — core-owned public values (2026-08-13)
+
+### D??. Module descriptors are frozen; mutable work state is copied or constructed
+
+Decided: process-wide algebra, law, and registry descriptors are frozen;
+each algebra owns a distinct frozen law record; array identities are frozen;
+and identities containing `Map` plus entity views are constructed or copied
+at every public ownership boundary. This branch includes Task 38's
+`emptyKV()` constructor because it is based before that independent fix and
+the enriched identity must not silently depend on merge order. Alternatives:
+trust TypeScript `readonly` (erased at runtime); shallow-freeze every value
+(does not protect `Map` contents); deep-freeze caller-owned inputs (seizes
+ownership the API was not given); copy every primitive and descriptor on every
+read (allocation without a mutable carrier to isolate). Why: callers may
+mutate values they receive, but that mutation must never rewrite a later fold,
+digest preimage, generated law selection, or collector anchor. **Load-bearing?
+yes.**

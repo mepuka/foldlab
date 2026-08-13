@@ -43,11 +43,20 @@ export interface Backing {
   keys(): ReadonlyArray<string>
 }
 
+/** Copy the only mutable member before a view crosses an ownership boundary. */
+const copyView = (view: EntityView): EntityView => ({
+  ...view,
+  state: { entries: new Map(view.state.entries), count: view.state.count },
+})
+
 export const memoryBacking = (): Backing => {
   const m = new Map<string, EntityView>()
   return {
-    get: (k) => m.get(k),
-    set: (k, v) => void m.set(k, v),
+    get: (k) => {
+      const found = m.get(k)
+      return found === undefined ? undefined : copyView(found)
+    },
+    set: (k, v) => void m.set(k, copyView(v)),
     keys: () => [...m.keys()].sort(),
   }
 }
@@ -99,9 +108,12 @@ export const makeCollector = (
       events: prev.events + 1,
     }
     backing.set(key, next)
-    return next
+    return copyView(next)
   },
-  entity: (key) => backing.get(key),
+  entity: (key) => {
+    const found = backing.get(key)
+    return found === undefined ? undefined : copyView(found)
+  },
   anchors: () =>
     backing
       .keys()

@@ -297,9 +297,9 @@ describe("state and store adversaries", () => {
     FastCheck.assert(
       FastCheck.property(malformedPayloadArbitrary, (payload) => {
         const input = rawEvent("s", 1, payload)
-        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, input)))
+        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV(), input)))
         expect(refusal._tag).toBe("MalformedPayload")
-        expect(kvStep(emptyKV, input)).toBeUndefined()
+        expect(kvStep(emptyKV(), input)).toBeUndefined()
       }),
       {
         examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),

@@ -394,8 +394,8 @@ parallel-replay demo works in a 70-line consumer script: sequential ≡
 split-and-combine ≡ enriched-semilattice, one digest; swapping the
 halves breaks the order-sensitive route (by design) and commutes on
 the semilattice route (by law). Two catches filed from the same
-session: `emptyKV` exports one shared mutable `Map` — a consumer
-mutation would poison every later fold in the process
+session: `emptyKV` had exported one shared mutable `Map` — a consumer
+mutation could poison every later fold in the process
 ([#25](https://github.com/mepuka/foldlab/issues/25)) — and the
 adjacent-file refusal-channel split (`applyKV` returns an Effect,
 `foldSeqKV` a union) executes as a false "refused" under an

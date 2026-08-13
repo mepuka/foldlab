@@ -73,7 +73,8 @@ export interface SeqKVState {
   readonly seen: ReadonlyMap<string, ReadonlySet<number>>
 }
 
-export const emptySeqKV: SeqKVState = { entries: new Map(), seen: new Map() }
+/** A fresh enriched identity; ReadonlyMap is a view, not runtime protection. */
+export const emptySeqKV = (): SeqKVState => ({ entries: new Map(), seen: new Map() })
 
 /**
  * Two events claim one identity coordinate with different payloads, so the join
@@ -168,7 +169,7 @@ const seenWith = (
  * definition of what the meaning fold reads.
  */
 export const singletonSeqKV = (e: StreamEvent): SeqKVResult => {
-  const stepped = kvStep(emptyKV, e)
+  const stepped = kvStep(emptyKV(), e)
   if (stepped === undefined) {
     return { ok: false, refusal: { _tag: "MalformedPayload", stream: e.stream, seq: e.seq } }
   }
@@ -250,7 +251,7 @@ export const seqKvStep = (state: SeqKVState, e: StreamEvent): SeqKVResult => {
  * this fold and `foldKV`.
  */
 export const foldSeqKV = (events: ReadonlyArray<StreamEvent>): SeqKVResult => {
-  let state = emptySeqKV
+  let state = emptySeqKV()
   for (const e of events) {
     const next = seqKvStep(state, e)
     if (!next.ok) return next

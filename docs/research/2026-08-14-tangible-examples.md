@@ -87,7 +87,7 @@ what the fold forgives" as two hex strings, no metaphor.
 
 You already write `Stream.runFold` — an accumulator, a step, a stream, one
 answer at the end. `foldKV` in `packages/core/src/stream.ts:267` is literally
-`Effect.reduce(events, () => emptyKV, applyKV)`, so you already own the
+`Effect.reduce(events, emptyKV, applyKV)`, so you already own the
 meaning fold. The delta is that foldlab runs a *second* fold over the same
 stream at the same time, whose accumulator is a 32-byte SHA-256 and whose
 step is `extend(head, event)`. The second fold has no reducer you write — it
