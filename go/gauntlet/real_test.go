@@ -38,6 +38,10 @@ func templateDigest(t *testing.T, variant, step int) string {
 }
 
 func buildRealBundle(t *testing.T) string {
+	return buildRealBundleWithTemplates(t, templateDigest)
+}
+
+func buildRealBundleWithTemplates(t *testing.T, templates func(*testing.T, int, int) string) string {
 	t.Helper()
 	dir := t.TempDir()
 	model := "claude-haiku-4-5-20251001"
@@ -75,7 +79,7 @@ func buildRealBundle(t *testing.T) string {
 				} else {
 					inputs = []string{prevResult}
 				}
-				tmpl := templateDigest(t, vi, s)
+				tmpl := templates(t, vi, s)
 				work := mustDigest(t, map[string]any{"inputs": inputs, "model": model, "template": tmpl})
 				works[rowKey{vi, qi, s}] = work
 				if !seen[work] {
@@ -95,9 +99,9 @@ func buildRealBundle(t *testing.T) string {
 	writeFile(t, dir, "journal.ndjson", strings.Join(journal, "\n")+"\n")
 	writeFile(t, dir, "plan.ndjson", strings.Join(planRows, "\n")+"\n")
 	writeFile(t, dir, "storm.ndjson", strings.Join([]string{
-		string(mustCanonical(t, map[string]any{"action": "spawn", "at": 1, "target": "harness"})),
-		string(mustCanonical(t, map[string]any{"action": "kill", "at": 2, "target": "harness"})),
-		string(mustCanonical(t, map[string]any{"action": "resume", "at": 3, "target": "harness"})),
+		string(mustCanonical(t, map[string]any{"action": "spawn", "at": 1, "target": "worker"})),
+		string(mustCanonical(t, map[string]any{"action": "kill", "at": 2, "target": "worker"})),
+		string(mustCanonical(t, map[string]any{"action": "resume", "at": 3, "target": "worker"})),
 	}, "\n")+"\n")
 	writeFile(t, dir, "manifest.json", string(mustCanonical(t, map[string]any{
 		"caps": map[string]any{
@@ -217,11 +221,33 @@ func TestRealReuseFloorRefused(t *testing.T) {
 func TestRealMissingKillRefused(t *testing.T) {
 	dir := buildRealBundle(t)
 	writeFile(t, dir, "storm.ndjson", string(mustCanonical(t,
-		map[string]any{"action": "spawn", "at": 1, "target": "harness"},
+		map[string]any{"action": "spawn", "at": 1, "target": "worker"},
 	))+"\n")
 	_, err := VerifyReal(dir, realTestFloors)
 	if err == nil || !errors.Is(err, ErrFloor) {
 		t.Fatalf("missing kill not refused: %v", err)
+	}
+}
+
+func TestRealIdenticalVariantsRefused(t *testing.T) {
+	dir := buildRealBundleWithTemplates(t, func(t *testing.T, _ int, step int) string {
+		return templateDigest(t, 0, step)
+	})
+	_, err := VerifyReal(dir, realTestFloors)
+	if err == nil || !errors.Is(err, ErrPlan) {
+		t.Fatalf("identical variants not refused: %v", err)
+	}
+	if !strings.Contains(err.Error(), "identical template shapes") {
+		t.Fatalf("identical variants refused by wrong control: %v", err)
+	}
+}
+
+func TestRealGhostStormTargetRefused(t *testing.T) {
+	dir := buildRealBundle(t)
+	rewriteStormTarget(t, dir, "kill", "ghost-that-never-existed")
+	_, err := VerifyReal(dir, realTestFloors)
+	if err == nil || !errors.Is(err, ErrFloor) {
+		t.Fatalf("ghost storm target not refused: %v", err)
 	}
 }
 
@@ -245,6 +271,32 @@ func rewriteRealManifest(t *testing.T, dir string, mutate func(map[string]any)) 
 	mustUnmarshal(t, data, &m)
 	mutate(m)
 	if err := os.WriteFile(path, mustCanonical(t, m), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func rewriteStormTarget(t *testing.T, dir, action, target string) {
+	t.Helper()
+	path := filepath.Join(dir, "storm.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	found := false
+	for i, line := range lines {
+		var event map[string]any
+		mustUnmarshal(t, []byte(line), &event)
+		if event["action"] == action && !found {
+			event["target"] = target
+			lines[i] = string(mustCanonical(t, event))
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("storm action %q not found", action)
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

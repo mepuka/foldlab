@@ -58,8 +58,12 @@ func buildBundle(t *testing.T) string {
 		base := mustDigest(t, map[string]any{"salt": testSalt, "step": i})
 		digests[i] = mustDigest(t, map[string]any{"base": base, "prev": prevResult})
 		results[i] = mustDigest(t, map[string]any{"do": digests[i]})
+		worker := "a"
+		if i%2 == 1 || i == 3 {
+			worker = "b"
+		}
 		payload := string(mustCanonical(t, map[string]any{
-			"digest": digests[i], "result": results[i], "step": i,
+			"digest": digests[i], "result": results[i], "step": i, "worker": worker,
 		}))
 		entry := canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: payload}
 		wire := mustCanonical(t, map[string]any{"payload": payload, "prev": head, "seq": i})
@@ -114,7 +118,8 @@ func buildBundle(t *testing.T) string {
 
 	writeFile(t, dir, "storm.ndjson", strings.Join([]string{
 		string(mustCanonical(t, map[string]any{"action": "spawn", "at": 1, "target": "a"})),
-		string(mustCanonical(t, map[string]any{"action": "kill", "at": 2, "target": "a"})),
+		string(mustCanonical(t, map[string]any{"action": "spawn", "at": 2, "target": "b"})),
+		string(mustCanonical(t, map[string]any{"action": "kill", "at": 3, "target": "a"})),
 	}, "\n")+"\n")
 
 	state := make(map[string]any, steps)
@@ -245,6 +250,86 @@ func TestDishonestDupCountRefused(t *testing.T) {
 	_, err := Verify(dir, testFloors)
 	if err == nil || !errors.Is(err, ErrLedger) {
 		t.Fatalf("dishonest dup count not refused: %v", err)
+	}
+}
+
+func TestLedgerReownershipRefused(t *testing.T) {
+	dir := buildBundle(t)
+	aPath := filepath.Join(dir, "ledger", "a.ndjson")
+	bPath := filepath.Join(dir, "ledger", "b.ndjson")
+	aData, err := os.ReadFile(aPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bData, err := os.ReadFile(bPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reown := func(data []byte, owner string) []byte {
+		t.Helper()
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		for i, line := range lines {
+			var run map[string]any
+			mustUnmarshal(t, []byte(line), &run)
+			run["owner"] = owner
+			lines[i] = string(mustCanonical(t, run))
+		}
+		return []byte(strings.Join(lines, "\n") + "\n")
+	}
+	// Swap every physical run between the two owner files. The ledger is
+	// still internally self-consistent, but no longer agrees with who
+	// journaled the committed step.
+	if err := os.WriteFile(aPath, reown(bData, "a"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bPath, reown(aData, "b"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrLedger) {
+		t.Fatalf("ledger reownership not refused as attribution failure: %v", err)
+	}
+}
+
+func TestGhostStormTargetRefused(t *testing.T) {
+	dir := buildBundle(t)
+	path := filepath.Join(dir, "storm.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	var event map[string]any
+	mustUnmarshal(t, []byte(lines[len(lines)-1]), &event)
+	event["target"] = "ghost-that-never-existed"
+	lines[len(lines)-1] = string(mustCanonical(t, event))
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrFloor) {
+		t.Fatalf("ghost storm target not refused: %v", err)
+	}
+}
+
+func TestStormTimestampRefused(t *testing.T) {
+	dir := buildBundle(t)
+	path := filepath.Join(dir, "storm.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	var event map[string]any
+	mustUnmarshal(t, []byte(lines[0]), &event)
+	event["at"] = float64(0)
+	lines[0] = string(mustCanonical(t, event))
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrFloor) {
+		t.Fatalf("zero storm timestamp not refused: %v", err)
 	}
 }
 

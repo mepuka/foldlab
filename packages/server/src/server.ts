@@ -99,14 +99,16 @@ const forkDemo = Effect.suspend(() => {
   })
 })
 
-const Routes = Layer.mergeAll(
+export const Routes = Layer.mergeAll(
   HttpRouter.add("GET", "/health", HttpServerResponse.text("foldlab: two folds, one law")),
   HttpRouter.add("GET", "/demo/merge", mergeDemo),
   HttpRouter.add("GET", "/demo/fork", forkDemo),
 )
 
-HttpRouter.serve(Routes).pipe(
-  Layer.provide(BunHttpServer.layer({ port: 3123 })),
-  Layer.launch,
-  BunRuntime.runMain,
-)
+if (import.meta.main) {
+  HttpRouter.serve(Routes).pipe(
+    Layer.provide(BunHttpServer.layer({ port: 3123 })),
+    Layer.launch,
+    BunRuntime.runMain,
+  )
+}
