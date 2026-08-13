@@ -795,6 +795,11 @@ name, and unsupported configuration acquires nothing. **Load-bearing? yes** —
 the refusal is what prevents a proof from silently escaping its envelope.
 
 ### D58. External clients are one restricted application credential class
+
+SUPERSEDED BY (account placement only): GitHub issue #56's application inbox
+isolation decision below. The public writ and ephemeral internal credential
+remain in force; applications no longer share `NoAuthUser`'s global account.
+
 Decided: protod's anonymous client connection maps through `NoAuthUser` to an
 `application` user allowed to publish only `flb.req.>` / `flb.ing.>` and
 subscribe only to `_INBOX.>`; the daemon's in-process connection authenticates
@@ -1149,3 +1154,27 @@ still throw); catch exceptions independently in each target (paths and laws
 can drift); widen the daemon grammar (unlicensed). Why: derivation failures are
 data and cross-target consistency includes refusal paths. **Load-bearing? no**
 — this enforces existing laws without changing the owned grammar.
+
+## GitHub issue #56 — application inbox isolation (2026-08-13)
+
+### D??. One private NATS account per application connection
+
+Decided: the daemon remains in the global JetStream-enabled account, while its
+custom embedded-server authenticator registers every anonymous application
+connection in a fresh account named from the server-issued connection ID. The
+application account service-imports only `flb.req.>` and `flb.ing.>` from the
+daemon account; NATS maps each service reply back into the importing account,
+so `_INBOX.>` retains ordinary request/reply without being global. Publish and
+subscribe permissions still enforce exactly the three-verb writ, including a
+direct forged-reply refusal. Alternatives: retain one application account and
+grant `_INBOX.>` globally (the confirmed breach); expose a client-chosen inbox
+prefix and treat secrecy as authorization (another client can guess or copy
+it); issue a new static user/password before every connection (an auth-surface
+redesign, and credentials alone do not isolate a shared account); route
+JetStream directly into application accounts (widens the writ). Why: NATS
+accounts are the pinned server's subject-namespace isolation boundary and
+service imports preserve its native response mapping. The two-client
+black-box control drives both a public request reply and real internal
+JetStream traffic. **Load-bearing? yes** — user permissions are shared by a
+credential, while confidentiality is per connection; without distinct account
+namespaces, `_INBOX.>` authorizes every application's and the daemon's replies.

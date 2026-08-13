@@ -15,6 +15,10 @@ spec did not fix is logged in `DECISIONS.md`.
   across any seam.
 - The writ is three verbs (read / publish / request). The session
   facade and the MCP tools compose them and add no capability.
+- Application connections occupy private NATS accounts. Their service imports
+  expose only the writ; an inbox subscription sees only replies mapped into
+  that connection's account, never another client's or the daemon's JetStream
+  control traffic.
 - Heads are claims: every read is verified by the reader, including the
   supplied cursor's stored anchor and the exact requested journal attribution
   (`ProtoClient.read` folds locally; the Go conformance test refolds;
