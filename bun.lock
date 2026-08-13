@@ -15,6 +15,14 @@
         "typescript": "^5.9.2",
       },
     },
+    "examples/rosetta": {
+      "name": "@foldlab/example-rosetta",
+      "version": "0.0.0",
+      "dependencies": {
+        "@foldlab/core": "workspace:*",
+        "effect": "catalog:",
+      },
+    },
     "packages/ai": {
       "name": "@foldlab/ai",
       "version": "0.0.0",
@@ -77,6 +85,8 @@
     "@foldlab/codegen": ["@foldlab/codegen@workspace:packages/codegen"],
 
     "@foldlab/core": ["@foldlab/core@workspace:packages/core"],
+
+    "@foldlab/example-rosetta": ["@foldlab/example-rosetta@workspace:examples/rosetta"],
 
     "@foldlab/server": ["@foldlab/server@workspace:packages/server"],
 
