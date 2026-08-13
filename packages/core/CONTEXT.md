@@ -33,7 +33,9 @@ deterministic tie-break. Single-implementation, no Go twin, therefore
 not a wall; its one wall-anchored claim is the projection back onto
 `KVState`, which reproduces the frozen fold-state digest on the frozen
 corpus. A tie at one identity coordinate with two different values
-refuses rather than picking.
+refuses rather than picking. The sequence coordinate is a non-negative
+JavaScript safe integer, not an arbitrary u64: event admission and structural
+state combination refuse every other number before witness comparison.
 
 **Claimed law**:
 A `commutative` or `idempotent` claim carried on an `Algebra` beside its
