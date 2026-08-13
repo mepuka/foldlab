@@ -69,6 +69,25 @@ derive → compile → re-fold → same digest, over the frozen fixture
 corpus. The proof that the effect-schema target and the author fold are
 inverse enough to trust.
 
+**Sketch target**:
+A derivation target whose output is deliberately coarser than the
+structure it renders (the Go one). Sketch status licenses imprecision
+about which legal inputs are represented; it never licenses admitting
+an illegal one, so a sketch still validates every child it glosses
+over (D47).
+
+**Identity-order traversal**:
+The one seam every derivation target walks object fields through
+(`fieldNamesInIdentityOrder`): RFC 8785's UTF-16 code-unit order, the
+same order identity's bytes use. It is why "the path that refused" is
+a fact rather than an artifact of how the value was constructed
+(D48 disposition, D49).
+
+**Cross-target consistency**:
+The generalized law that for one structure all targets derive or all
+refuse at the same path. It quantifies over future targets too, so
+adding a target means joining the property, not extending a list.
+
 **Ready line**:
 The single JSON line protod prints once its surfaces are live:
 `{"ready":true,"url":"nats://..."}`. Harnesses parse it; humans read it.

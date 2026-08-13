@@ -3,6 +3,36 @@
 Format per entry: what was decided / alternatives / why /
 **load-bearing?** yes | no | maybe (grill the yeses first).
 
+Scope, stated: this began as the tracer bullet's log and is now the
+repository's decision log — entries from D38 on cover `packages/core`,
+`go/canonical`, and the verification lane as well as `proto/`.
+
+## Numbering rule (added 2026-08-13, after the D44–D48 collision)
+
+D-numbers are repository-wide and assigned AT MERGE, never on a branch.
+Two branches that both start numbering at the next free ID is exactly
+how D44–D48 got double-assigned once; the renumbering parenthetical
+under Task 09 is what that costs. So:
+
+1. A branch writes entries under its own `## Task NN` heading with
+   task-local placeholders (`D?a`, `D?b`, …). Whoever merges reads the
+   last `### D` heading in this file, assigns the next free numbers,
+   and records the renumbering in a parenthetical under the task
+   heading.
+2. One number, one decision, forever. Numbers are never reused, and
+   never renumbered after merge — every outside reference would rot.
+3. A decision a later ratification overrides KEEPS its number and gains
+   a `SUPERSEDED BY` line naming what replaced it. Nothing is deleted:
+   this file is history, not a spec.
+4. A disposition of an earlier finding is a sub-entry titled
+   `### D<n> disposition`, so it sorts with the decision it settles and
+   consumes no number of its own.
+5. D-numbers, map tickets (`docs/map/tickets/NNN`), ADRs
+   (`docs/adr/NNNN`), and task numbers (`scratch/`) are four
+   independent sequences that collide constantly at the same small
+   integers. Always cite with the prefix — "D46", "ticket 014",
+   "ADR-0010", "Task 09" — never as a bare number.
+
 ## Wire and subjects
 
 ### D1. Subject scheme: `flb.req.<noun>.<verb>` + `flb.ing.<journal>`
@@ -93,6 +123,9 @@ yields, and JCS does not sort arrays). Why: one shape, one digest.
 sorted lists to comply.
 
 ### D10. Union member order moves identity
+SUPERSEDED BY: `proto/SPEC.md` ratified amendment 2 — order never moves
+identity in unordered collections; union members sort by canonical
+bytes before digesting.
 Decided: `union.of` is an ordered array; `[A,B] ≠ [B,A]`.
 Alternative: canonical member ordering (sort by member digest). Why:
 Effect unions are ordered (match order is semantic — anyOf tries in
@@ -122,6 +155,9 @@ for one meaning. **Load-bearing? maybe** — 004's exhaustive fold must
 pick one encoding and stick to it.
 
 ### D13. The `flb.ref` annotation is identity-bearing (the carve-out)
+SUPERSEDED BY: `proto/SPEC.md` ratified amendment 1 — refs are
+Declarations whose required identifier IS the digest. No `flb.ref`
+string exists in code.
 Decided: a compiled ref schema carries the target digest as annotation
 `flb.ref`; the author fold checks it FIRST and emits
 `{"k":"ref","digest"}` instead of folding the inlined target.
@@ -201,6 +237,9 @@ reply IS the derivation root for every MCP tool; its field names are
 wire law the moment anyone else derives from it.
 
 ### D21. `flb.v0.opaque` brand for positions v0 cannot describe
+SUPERSEDED BY: `proto/SPEC.md` ratified amendment 3 — `{"k":"opaque"}`
+is a first-class grammar node. No `flb.v0.opaque` string exists in
+code, and its mid-name version position was never repeated.
 Decided: a well-known brand marks "any JSON / any v0 structure"
 positions in the contract (v0 has no recursion, so it cannot describe
 its own grammar); the json-schema target renders it as `{}`
@@ -613,6 +652,7 @@ unchanged cross-target property passes; permanent probes pin the exact D48
 surrogate pair from `fixtures/golden-conformance.json`'s string-escape
 corpus. No fixture changed. **Load-bearing? yes** — a new target that walks
 fields elsewhere can reintroduce construction history into evidence.
+
 ## Task 09 — JCS differential fuzz lane (2026-08-13)
 
 (Entries renumbered D50–D54 at merge: the task-09 branch diverged

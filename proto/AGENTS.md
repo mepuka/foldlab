@@ -25,6 +25,19 @@ spec did not fix is logged in `DECISIONS.md`.
   same-path inverse of fill, frontier-empty exactly matches create
   acceptance, advertised examples never dead-end, and holes never bear
   identity (`go/protod/conformance_test.go`, `ts/test/concierge.test.ts`).
+- Derivation targets agree or refuse together (D46 disposition): for
+  any structure, every target derives, or every target refuses AT THE
+  SAME PATH. The property quantifies over every pair of CURRENT AND
+  FUTURE targets — a new target joins the law, it does not get an
+  exemption. A sketch target may be imprecise about which legal inputs
+  it represents; it may never admit an illegal one, so it recursively
+  validates children it does not represent (D47).
+- One traversal orders every target (D48 disposition, D49): object
+  fields are walked through `fieldNamesInIdentityOrder` — identity's
+  RFC 8785 UTF-16 code-unit order, never a locale sort. One ordering
+  law for identity and evidence; a target that sorts anywhere else
+  reintroduces construction history into refusal paths, which is the
+  exact defect D48 found.
 
 ## Gates
 
@@ -45,7 +58,7 @@ written.
 - `go/` — module `foldlab/proto` (`replace foldlab => ../../go`).
   Public API: `protod.Acquire/URL/Release` — lifecycle only. Internal
   seams: dispatch, catalog, walk (flb.type.v0 + partials), concierge,
-  ingress, refusal,
+  ingress, read (journal.read as a request kind, D2), refusal,
   scheme (W10), contract. `cmd/protod` (ready line on stdout, serves
   until stdin closes), `cmd/wirefix` (fixture generator, run once).
 - `ts/` — package `@foldlab/proto` (effect 4.0.0-rc.108 exact +
