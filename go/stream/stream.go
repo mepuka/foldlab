@@ -383,6 +383,50 @@ func FoldKV(events []Event) (*KV, error) {
 	return k, nil
 }
 
+// KVCountOverflow refuses a union whose summed event count leaves the u32 the
+// state digest stores it in.
+type KVCountOverflow struct {
+	Left  uint32
+	Right uint32
+}
+
+func (err *KVCountOverflow) Error() string {
+	return fmt.Sprintf("stream: KV counts %d + %d exceed u32", err.Left, err.Right)
+}
+
+// CombineKV is the meaning fold's combine: the last-write-wins map union, with
+// right read as the LATER half of one history. It is the twin of combineKV in
+// packages/core/src/stream.ts and the same three laws hold on both sides —
+// identity, associativity, and the homomorphism that licenses parallel replay:
+//
+//	CombineKV(FoldKV(xs), FoldKV(ys)) == FoldKV(append(xs, ys...))
+//
+// The wall is the proof rather than the property: combine_test.go cuts the
+// frozen fixtures/stream-wall.json corpus at every split point and requires the
+// recombined StateDigest to be the frozen foldStateDigest byte for byte.
+//
+// It is a monoid and NOT a semilattice. Order is the semantics of last-write-
+// wins, so swapping the arguments moves the answer wherever the two halves
+// write one key; and the count is a sum, so a state combined with itself
+// double-counts. A fold that must merge WITHOUT a committed order needs the
+// join-semilattice, which is only reachable by keeping every event's identity
+// coordinate — see packages/core/src/kvSemilattice.ts, which has no Go twin.
+//
+// Both inputs are left untouched and the result owns its value bytes.
+func CombineKV(left, right *KV) (*KV, error) {
+	if uint64(left.count)+uint64(right.count) > uint64(^uint32(0)) {
+		return nil, &KVCountOverflow{Left: left.count, Right: right.count}
+	}
+	out := &KV{m: make(map[string]*kvEntry, len(left.m)+len(right.m)), count: left.count + right.count}
+	for key, entry := range left.m {
+		out.m[key] = &kvEntry{value: bytes.Clone(entry.value)}
+	}
+	for key, entry := range right.m {
+		out.m[key] = &kvEntry{value: bytes.Clone(entry.value)}
+	}
+	return out, nil
+}
+
 // ---------- compaction: replacing a prefix by its fold ----------
 
 // Compacted replaces a prefix by (its chain head, its fold state) and keeps

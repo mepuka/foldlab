@@ -35,6 +35,7 @@ The table points; the entries below carry the bounds.
 | Effector (commitment register) | R3 + R4 | **Claimed**; proof artifacts not yet shipped in this repository (ticket 013) | [go/effector/](go/effector/) |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
 | Journal and chain walls | R0/R1 | **Claimed**; no model gate yet (ticket 012) | [fixtures/](fixtures/), [go/stream/](go/stream/), [docs/gauntlet/](docs/gauntlet/) |
+| KV meaning fold — combine and join | R0/R1 | **Claimed** for the monoid in both languages; the join is TypeScript only | [go/stream/combine_test.go](go/stream/combine_test.go), [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts), [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts) |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
@@ -206,6 +207,87 @@ tampering.
 
 [fixtures/](fixtures/), [go/stream/](go/stream/), and
 [docs/gauntlet/](docs/gauntlet/).
+
+## KV meaning fold — combine and join — R0/R1
+
+### Claim
+
+The last-write-wins KV fold has a `combine`: cut a history anywhere,
+fold the pieces independently, combine them, and the answer is the
+answer the whole history gives. Go and TypeScript both reach the frozen
+fold-state digest that way.
+
+On an enriched state that keeps each event's identity coordinate, the
+same fold is a join-semilattice — idempotent, commutative, associative —
+and projecting it back onto the shipped `KVState` agrees with the
+shipped left fold on histories that are strictly increasing in witness
+order with distinct coordinates.
+
+### Evidence
+
+- R0: every split point of the frozen merged corpus, folded in pieces
+  and recombined, reproduces `foldStateDigest`
+  (`bb947adc8d4623e9340ae0932ac1f7e65dbae211b991b11eaf24817dbe7dafe1`)
+  in both languages, and so does every three-way split under either
+  grouping. `fixtures/stream-wall.json` regenerates byte-identically.
+- R0: the enriched fold, projected, reaches the same frozen digest on
+  the same corpus — the corpus is witness-ordered.
+- R1: generated property suites for identity, associativity, the
+  concatenation homomorphism, arbitrary split points, and — for the
+  join — idempotence, commutativity, associativity, permutation
+  invariance, and the projection law.
+- Negative controls, each refuted on exactly the law it drops:
+  `combineKV` fails commutativity and idempotence with minimized
+  counterexamples; ordering the witness `(stream, seq)` instead of
+  `(seq, stream)` moves the frozen digest to `910950be...`; forcing the
+  join's winner rule the wrong way turns six tests red; forcing every
+  merge source onto the dense path turns the duplicate refusals red.
+- The generated law suite now derives commutativity and idempotence
+  from a per-algebra claim, and refuses a false one: a last-write-wins
+  register claiming commutativity fails that law while passing every
+  law it does hold.
+
+### Bounds and residuals
+
+- `combineKV` is a monoid and nothing more. It is NOT commutative and
+  NOT idempotent, so it licenses parallel replay of an ordered history
+  and does not license coordination-free federation. The design insight
+  that one operation could be both is refuted: an unconditional
+  concatenation homomorphism plus commutativity would force the fold to
+  be order-insensitive, which last-write-wins is not, by construction.
+- The join-semilattice is TypeScript only. There is no Go twin and
+  therefore no cross-language wall for it; its one wall-anchored claim
+  is the projection, because the digest that has to come back was
+  frozen by Go.
+- The projection law holds only on witness-ordered histories with
+  distinct coordinates. A two-event counterexample off that domain is
+  pinned, as is the count divergence under re-delivery.
+- The join's refusal channel does not associate: with two states
+  disagreeing at one coordinate and a third holding a later write for
+  the same key, one grouping refuses and the other succeeds. The laws
+  are therefore stated over the witness-consistent domain.
+- The enriched state is O(history) where `KVState` is O(distinct keys),
+  because reproducing `count` idempotently requires remembering which
+  coordinates were absorbed rather than how many.
+- FINDING, reported and not repaired: `ApplyMerge`'s duplicate refusal
+  is not a function of its input in Go. With two duplicated sources the
+  refusal names either one across identical calls — measured at
+  1750/250 over 2000 runs — because `map[string][]Event` has no order,
+  while the TypeScript twin walks a `ReadonlyMap` in insertion order and
+  always names the first. Both refuse; they can disagree about the
+  refusal value, which this lane treats as data. The doc-comment on
+  `ApplyMerge` says "deterministic".
+- Answered, not a finding: the dense and sparse indexing paths inside
+  `ApplyMerge` agree. A duplicate coordinate cannot survive the density
+  check, so the fast path never sees one.
+
+### Checkable at
+
+[go/stream/combine_test.go](go/stream/combine_test.go),
+[go/stream/merge_paths_test.go](go/stream/merge_paths_test.go),
+[packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts),
+[packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts),
+and [packages/core/test/fold.laws.test.ts](packages/core/test/fold.laws.test.ts).
 
 ## Schema identity — interim, greenfield build in progress
 

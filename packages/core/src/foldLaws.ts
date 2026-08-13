@@ -100,6 +100,15 @@ const assertProperty = (
  * with mapping the source's answer; that pair is what licenses reading a mapped
  * result without folding again.
  *
+ * Two further laws appear only where the algebra claims them. Commutativity
+ * licenses folding a history whose order was never agreed, and idempotence
+ * licenses re-delivery; together they are what a fold needs to merge without
+ * coordination, and neither follows from the monoid laws. They are generated
+ * from the claim rather than assumed, so an algebra that claims a right it does
+ * not have fails here instead of failing in a federation — and one that claims
+ * nothing gets no law and no right, which is why the suite's own list of law
+ * names is a faithful statement of what was checked.
+ *
  * Refuses with `LawInputsUnavailable` when the algebra declares no way to
  * generate values or the step declares no way to generate events, rather than
  * returning a suite that would pass vacuously.
@@ -192,6 +201,38 @@ export const makeFoldLawSuite = <
       },
     },
   ]
+
+  // The claimed laws are ADDED, never stubbed. A law case that returned early
+  // for an algebra making no claim would put a green, empty test under a name
+  // that reads like a proof; a suite that lists only what it checked cannot lie
+  // by omission, and the absence of the name is the report.
+  if (fold.algebra.laws?.commutative === true) {
+    laws.push({
+      name: "combine commutativity",
+      seed: seed + 5,
+      check: () => assertProperty(
+        FastCheck.property(state, state, (left, right) =>
+          equal(
+            fold.algebra.combine(left, right),
+            fold.algebra.combine(right, left),
+          )),
+        seed + 5,
+        numRuns,
+      ),
+    })
+  }
+
+  if (fold.algebra.laws?.idempotent === true) {
+    laws.push({
+      name: "combine idempotence",
+      seed: seed + 6,
+      check: () => assertProperty(
+        FastCheck.property(state, (value) => equal(fold.algebra.combine(value, value), value)),
+        seed + 6,
+        numRuns,
+      ),
+    })
+  }
 
   for (const splitSeed of splitSeeds) {
     laws.push({

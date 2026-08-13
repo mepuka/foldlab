@@ -67,6 +67,119 @@ registerLaws(
 )
 
 /**
+ * The semilattice gate (#20). Commutativity and idempotence are what separate
+ * an algebra that may federate from one that must not, and the suite is only
+ * worth having if it can REFUSE a false claim. These tests hand it three
+ * algebras that lie and one that does not, and check the outcome each time.
+ *
+ * The lying algebra is not invented for the occasion: `lastWriteWins` is the
+ * last-write-wins register — the one-key restriction of the very KV union that
+ * #14 §6.1 finding 3 named as the missing `combine` — and it is a lawful monoid
+ * that is idempotent and genuinely not commutative. It is the case the gate
+ * exists to catch.
+ */
+describe("claimed laws are checked, and a false claim is refused (#20)", () => {
+  const suiteFor = <A extends FoldState>(algebra: Algebra<A>, step: Step<StreamEvent, A>) => {
+    const suite = makeFoldLawSuite(defineFold(algebra, step), { fixtures: foldFixtureEvents })
+    if (!suite.ok) throw new Error(suite.refusal.reason)
+    return suite
+  }
+  const lawNamed = <A extends FoldState>(
+    algebra: Algebra<A>,
+    step: Step<StreamEvent, A>,
+    name: string,
+  ) => suiteFor(algebra, step).laws.find((law) => law.name === name)
+
+  /** The LWW register: a later write displaces an earlier one; no write is neutral. */
+  const lastWriteWins = (left: number | null, right: number | null): number | null =>
+    right === null ? left : right
+
+  test("a claim that is absent generates no law, so no name reads as a proof", () => {
+    const unclaimed: Algebra<number | null> = {
+      empty: null,
+      combine: lastWriteWins,
+      generator: algebras.max.generator!,
+    }
+    const names = suiteFor(unclaimed, steps.sequenceNumber).laws.map((law) => law.name)
+    expect(names).not.toContain("combine commutativity")
+    expect(names).not.toContain("combine idempotence")
+  })
+
+  test("REFUSED: the LWW register claiming commutativity fails its own law", () => {
+    const lying: Algebra<number | null> = {
+      empty: null,
+      combine: lastWriteWins,
+      generator: algebras.max.generator!,
+      laws: { commutative: true, idempotent: true },
+    }
+    const commutativity = lawNamed(lying, steps.sequenceNumber, "combine commutativity")
+    expect(commutativity).toBeDefined()
+    expect(() => commutativity!.check()).toThrow()
+
+    // Everything it does hold, it still passes — the refusal is surgical, not a
+    // blanket rejection of an algebra that is a perfectly good monoid.
+    for (const name of ["monoid identity", "monoid associativity", "combine idempotence"]) {
+      const law = lawNamed(lying, steps.sequenceNumber, name)
+      expect(law).toBeDefined()
+      expect(() => law!.check()).not.toThrow()
+    }
+  })
+
+  test("REFUSED: addition claiming idempotence fails its own law", () => {
+    const lying: Algebra<number> = {
+      empty: 0,
+      combine: (left, right) => (left + right) % 0x1_0000_0000,
+      generator: algebras.sum.generator!,
+      laws: { commutative: true, idempotent: true },
+    }
+    const idempotence = lawNamed(lying, steps.payloadLength, "combine idempotence")
+    expect(idempotence).toBeDefined()
+    expect(() => idempotence!.check()).toThrow()
+    expect(() => lawNamed(lying, steps.payloadLength, "combine commutativity")!.check())
+      .not.toThrow()
+  })
+
+  test("ADMITTED: the five declared joins carry both laws and pass them", () => {
+    for (const name of ["max", "min", "any", "all", "setUnion"] as const) {
+      const algebra = algebras[name]
+      expect(algebra.laws).toEqual({ commutative: true, idempotent: true })
+    }
+    for (const name of ["sum", "count"] as const) {
+      expect(algebras[name].laws).toEqual({ commutative: true, idempotent: false })
+    }
+  })
+
+  test("the suite lists exactly the claims: sum commutes, setUnion also absorbs", () => {
+    const sumNames = suiteFor(algebras.sum, steps.payloadLength).laws.map((law) => law.name)
+    expect(sumNames).toContain("combine commutativity")
+    expect(sumNames).not.toContain("combine idempotence")
+
+    const setNames = suiteFor(algebras.setUnion, steps.streamSet).laws.map((law) => law.name)
+    expect(setNames).toContain("combine commutativity")
+    expect(setNames).toContain("combine idempotence")
+  })
+
+  test("a product is never more federated than its least federated member", () => {
+    expect(product(algebras.setUnion, algebras.max).laws)
+      .toEqual({ commutative: true, idempotent: true })
+    // `sum` absorbs nothing, so the pair absorbs nothing.
+    expect(product(algebras.setUnion, algebras.sum).laws)
+      .toEqual({ commutative: true, idempotent: false })
+    // An anonymous member claiming nothing sinks both claims.
+    const anonymous: Algebra<number> = { empty: 0, combine: (left) => left }
+    expect(product(algebras.setUnion, anonymous).laws)
+      .toEqual({ commutative: false, idempotent: false })
+  })
+
+  test("a mapped view carries the target's claims, not the source's", () => {
+    // `max` is a join and `any` is a join, so the view is one too — but the
+    // claim comes from the target, whose combine is the one that runs.
+    expect(mapped(homomorphisms.isPositiveFromMax, algebras.max).laws)
+      .toEqual(algebras.any.laws)
+  })
+})
+
+/**
  * Lawful-surface admission (A1 #5, A2 #11). The gate that admits a mapped view
  * must prove LAW, not merely digest CONSENSUS. These tests pin the brand as a
  * runtime capability minted only by this module, and mark the precise residual

@@ -14,6 +14,35 @@ The frozen Go-generated gzip frame (`fixtures/stream-wall.json`, via
 typed by a schema, judged by decoded values and heads, never compressed
 bytes.
 
+**Combine (KV)**:
+`combineKV` in `stream.ts`, twinned as `CombineKV` in `go/stream` — the
+last-write-wins map union, right read as the later half of one history.
+A monoid and only a monoid: it satisfies the parallel-replay
+homomorphism unconditionally, and it is neither commutative nor
+idempotent, because order is the semantics of last-write-wins and the
+event count is a sum. Say "combine", not "merge": a merge in this lane
+is a committed linearization (`MergeFact`), and the two are different
+things.
+
+**Join (KV)**:
+`combineSeqKV` in `kvSemilattice.ts` — the same fold made idempotent,
+commutative and associative by enriching the state to
+`key -> (witness, value)` plus the identity coordinates absorbed. The
+**witness** is `(seq, stream)`: sequence as logical clock, stream id as
+deterministic tie-break. Single-implementation, no Go twin, therefore
+not a wall; its one wall-anchored claim is the projection back onto
+`KVState`, which reproduces the frozen fold-state digest on the frozen
+corpus. A tie at one identity coordinate with two different values
+refuses rather than picking.
+
+**Claimed law**:
+A `commutative` or `idempotent` claim carried on an `Algebra` beside its
+spec, never inside it — `AlgebraSpec` is hashed into every frozen fold
+digest, so the claim rides alongside as `generator` does. The generated
+suite turns each claim into a property test and generates nothing where
+nothing is claimed, so a suite's list of law names is a faithful
+statement of what was checked.
+
 **Walled boundary behavior**:
 Canonical JSON encoding and `applyKV` refuse excluded inputs as data; the four
 algebra derivation gates withhold identity from unbranded declarations and
@@ -30,7 +59,9 @@ migration.
 Three dialects, on purpose. Pure synchronous modules twinned with Go —
 `jcs`, `algebra`, `foldCache`, `foldLaws` — return ok-unions
 (`{ ok: false, refusal }`), because that path mints digests and must run
-as plain functions. Effect-shaped surfaces carry `Data.TaggedError`
+as plain functions. `kvSemilattice` joins them for the same reason and
+not by analogy: its `projectKV` output goes straight into `stateDigest`,
+so the join stays outside Effect exactly where the digests are minted. Effect-shaped surfaces carry `Data.TaggedError`
 failures in the typed error channel (`stream.ts`: `MergeGap`,
 `MalformedPayload`, `CompactionBoundary`, and the rest). Internal
 canonical-encoder range violations throw `RangeError` — they are

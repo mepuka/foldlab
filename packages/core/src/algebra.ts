@@ -176,6 +176,34 @@ const isDeclaration = <S>(value: Declaration<S> | undefined): value is Declarati
   (value as { readonly [DeclarationTypeId]?: unknown })[DeclarationTypeId] === true
 
 /**
+ * The two laws beyond the monoid that an algebra may claim about its combine,
+ * each one a right that some caller wants and neither one free.
+ *
+ * `commutative` says the two arguments may be swapped, which is what licenses
+ * folding a history whose order was never agreed — two hosts that never spoke
+ * can each fold what they saw and combine. `idempotent` says a value combined
+ * with itself is itself, which is what licenses re-delivery: an event or a
+ * whole state may arrive twice without moving the answer. Together they turn a
+ * monoid into a join-semilattice, and a join-semilattice is exactly the shape
+ * that merges without coordination.
+ *
+ * A claim here is a claim, not a proof, and it is carried OUTSIDE the canonical
+ * spec on purpose. Every algebra digest in `fixtures/fold-pin.json` is the hash
+ * of the spec's canonical bytes, so a field added to `AlgebraSpec` would move
+ * seven frozen digests to record something no consumer reads back. It rides
+ * beside the spec instead, exactly as `generator` does — and like `generator`
+ * it earns its keep by being read by the generated suites, which turn each
+ * claim into a property test that can fail.
+ */
+export interface AlgebraLaws {
+  readonly commutative: boolean
+  readonly idempotent: boolean
+}
+
+/** No claim beyond the monoid: the conservative default for anything derived. */
+const noExtraLaws: AlgebraLaws = { commutative: false, idempotent: false }
+
+/**
  * A carrier with a neutral value and a way to combine two values into one.
  *
  * Two laws are required of every algebra and neither can be shown by the type:
@@ -185,6 +213,10 @@ const isDeclaration = <S>(value: Declaration<S> | undefined): value is Declarati
  * an algebra that breaks them silently breaks every fold built on it; the
  * generated suites check both against the declared generator.
  *
+ * `laws` carries whatever the algebra claims beyond those two. An absent claim
+ * is not a denial — it is the absence of a right, and the suites test exactly
+ * what is claimed, so an algebra can never hold a right no property checked.
+ *
  * A declaration is present only when this module minted one. When it is absent
  * the algebra is still usable and `identityIssue` states in plain words why no
  * name was earned.
@@ -193,6 +225,7 @@ export interface Algebra<A extends FoldState> {
   readonly empty: A
   combine(left: A, right: A): A
   readonly generator?: ValueGenerator<A>
+  readonly laws?: AlgebraLaws
   readonly declaration?: Declaration<AlgebraSpec>
   readonly identityIssue?: string
 }
@@ -330,11 +363,18 @@ const declaredAlgebra = <A extends FoldState>(
   empty: A,
   combine: (left: A, right: A) => A,
   generator: ValueGenerator<A>,
+  laws: AlgebraLaws,
 ): Algebra<A> => {
   const declared = declaration(spec)
   return declared === undefined
-    ? { empty, combine, generator, identityIssue: "algebra spec is outside the RFC 8785 domain" }
-    : { empty, combine, generator, declaration: declared }
+    ? {
+      empty,
+      combine,
+      generator,
+      laws,
+      identityIssue: "algebra spec is outside the RFC 8785 domain",
+    }
+    : { empty, combine, generator, laws, declaration: declared }
 }
 
 const normalizeSet = (values: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -351,41 +391,55 @@ const optionalIntegerGenerator = valueGenerator<number | null>({
 const booleanGenerator = valueGenerator<boolean>({ kind: "boolean" })
 const stringSetGenerator = valueGenerator<ReadonlyArray<string>>({ kind: "stringSet" })
 
+// Addition commutes and absorbs nothing: `sum` and `count` may be folded in any
+// order but never over a re-delivered value, so they claim commutativity alone.
+const addition: AlgebraLaws = { commutative: true, idempotent: false }
+// A maximum, a minimum, a boolean connective and a set union are all joins: two
+// arguments may be swapped and a value may arrive twice. These five are the
+// federating half of the registry.
+const join: AlgebraLaws = { commutative: true, idempotent: true }
+
 const sum = declaredAlgebra(
   { v: "foldlab.algebra.v1", op: "sum", semantics: "u32-add-mod-2^32" },
   0,
   (left, right) => (left + right) % modulusU32,
   u32Generator,
+  addition,
 )
 const count = declaredAlgebra(
   { v: "foldlab.algebra.v1", op: "count", semantics: "u32-add-mod-2^32" },
   0,
   (left, right) => (left + right) % modulusU32,
   u32Generator,
+  addition,
 )
 const max = declaredAlgebra<number | null>(
   { v: "foldlab.algebra.v1", op: "max", semantics: "nullable-finite-number" },
   null,
   (left, right) => left === null ? right : right === null ? left : Math.max(left, right),
   optionalIntegerGenerator,
+  join,
 )
 const min = declaredAlgebra<number | null>(
   { v: "foldlab.algebra.v1", op: "min", semantics: "nullable-finite-number" },
   null,
   (left, right) => left === null ? right : right === null ? left : Math.min(left, right),
   optionalIntegerGenerator,
+  join,
 )
 const any = declaredAlgebra(
   { v: "foldlab.algebra.v1", op: "any", semantics: "boolean" },
   false,
   (left, right) => left || right,
   booleanGenerator,
+  join,
 )
 const all = declaredAlgebra(
   { v: "foldlab.algebra.v1", op: "all", semantics: "boolean" },
   true,
   (left, right) => left && right,
   booleanGenerator,
+  join,
 )
 const setUnion = declaredAlgebra<ReadonlyArray<string>>(
   {
@@ -396,6 +450,7 @@ const setUnion = declaredAlgebra<ReadonlyArray<string>>(
   [],
   (left, right) => normalizeSet([...left, ...right]),
   stringSetGenerator,
+  join,
 )
 
 /**
@@ -408,6 +463,13 @@ const setUnion = declaredAlgebra<ReadonlyArray<string>>(
  * neutral, so an empty history has an answer; `any` is boolean or and `all` is
  * boolean and; `setUnion` keeps strings sorted and unique, so a set has one
  * representation and the same members always encode to the same bytes.
+ *
+ * Five of the seven claim to be joins — `max`, `min`, `any`, `all`, `setUnion`
+ * — and are therefore the ones a federated fold may be built on. `sum` and
+ * `count` claim commutativity only: they may be folded in any order, but a
+ * value that arrives twice is counted twice, so neither may be handed a history
+ * that can re-deliver. Every one of those claims is a generated property test,
+ * not a remark.
  */
 export const algebras = { sum, count, max, min, any, all, setUnion } as const
 
@@ -432,6 +494,13 @@ const algebraIssue = (members: ReadonlyArray<Algebra<FoldState>>): string | unde
  * combined description left the canonical domain. The random-value description
  * survives only if every member had one, since a missing slot would leave the
  * suites unable to generate a whole value.
+ *
+ * A claim beyond the monoid survives only if EVERY member makes it, which is
+ * the honest reading of a slot-wise operation: swapping the arguments of a
+ * product swaps them in every slot at once, so one non-commuting member is
+ * enough to break the whole, and the same for absorption. A member that makes
+ * no claim is read as making none, so a product is never more federated than
+ * its least federated part.
  */
 export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
   ...members: Ms
@@ -441,6 +510,10 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
     members.map((member, index) =>
       member.combine(left[index] as FoldState, right[index] as FoldState)
     ) as ProductState<Ms>
+  const laws: AlgebraLaws = {
+    commutative: members.every((member) => member.laws?.commutative === true),
+    idempotent: members.every((member) => member.laws?.idempotent === true),
+  }
   const generators = members.map((member) => member.generator)
   const generatorSpecs: Array<GeneratorSpec> = []
   for (const candidate of generators) {
@@ -455,6 +528,7 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
       empty,
       combine,
       ...(generator === undefined ? {} : { generator }),
+      laws,
       identityIssue: issue,
     }
   }
@@ -469,9 +543,16 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
       empty,
       combine,
       ...(generator === undefined ? {} : { generator }),
+      laws,
       identityIssue: "product spec is outside the RFC 8785 domain",
     }
-    : { empty, combine, ...(generator === undefined ? {} : { generator }), declaration: declared }
+    : {
+      empty,
+      combine,
+      ...(generator === undefined ? {} : { generator }),
+      laws,
+      declaration: declared,
+    }
 }
 
 const positiveSpec: HomSpec = {
@@ -520,6 +601,10 @@ export const mapped = <A extends FoldState, B extends FoldState>(
   hom: DeclaredHom<A, B>,
   source: Algebra<A>,
 ): Algebra<B> => {
+  // A mapped view combines with the TARGET's combine, unchanged, so it holds
+  // exactly the target's claims — nothing is inherited from the source, whose
+  // combine no longer runs.
+  const laws = hom.target.laws ?? noExtraLaws
   const compatible = isDeclaredHom(hom) &&
     isDeclaration(source.declaration) &&
     isDeclaration(hom.source.declaration) &&
@@ -529,6 +614,7 @@ export const mapped = <A extends FoldState, B extends FoldState>(
       empty: hom.target.empty,
       combine: hom.target.combine,
       ...(hom.target.generator === undefined ? {} : { generator: hom.target.generator }),
+      laws,
       identityIssue: source.identityIssue ?? "homomorphism source does not match the algebra declaration",
     }
   }
@@ -545,12 +631,14 @@ export const mapped = <A extends FoldState, B extends FoldState>(
       empty: hom.target.empty,
       combine: hom.target.combine,
       ...(hom.target.generator === undefined ? {} : { generator: hom.target.generator }),
+      laws,
       identityIssue: "mapped algebra spec is outside the RFC 8785 domain",
     }
     : {
       empty: hom.target.empty,
       combine: hom.target.combine,
       ...(hom.target.generator === undefined ? {} : { generator: hom.target.generator }),
+      laws,
       declaration: declared,
     }
 }
