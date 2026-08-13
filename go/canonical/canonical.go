@@ -1,3 +1,6 @@
+// Package canonical defines the repository's cross-language identity bytes.
+// JSON identity is RFC 8785 canonical, and chain identity hashes those
+// uncompressed canonical bytes rather than any transport representation.
 package canonical
 
 import (
@@ -15,22 +18,31 @@ import (
 	"unicode/utf8"
 )
 
+// Genesis is the all-zero head that precedes the first entry in a chain.
 const Genesis = "0000000000000000000000000000000000000000000000000000000000000000"
 
 const maxJSONDepth = 256
 
+// ChainEntry is the complete identity-bearing input for one journal position.
+// Seq is a zero-based safe unsigned integer, and Prev is Genesis or the
+// digest of the immediately preceding entry.
 type ChainEntry struct {
-	Seq     int64
-	Prev    string
+	// Seq is the zero-based entry position in the safe unsigned domain.
+	Seq int64
+	// Prev is Genesis at position zero and otherwise the preceding digest.
+	Prev string
+	// Payload is the identity-bearing event text and must be valid Unicode.
 	Payload string
 }
 
 // InvalidUTF8Error refuses a chain-entry field outside the canonical Unicode
 // domain. Identity never repairs such a field or substitutes U+FFFD.
 type InvalidUTF8Error struct {
+	// Field names the invalid ChainEntry field.
 	Field string
 }
 
+// Error reports the chain-entry Unicode refusal.
 func (err *InvalidUTF8Error) Error() string {
 	return fmt.Sprintf("chain entry %s is not valid UTF-8", err.Field)
 }
@@ -39,15 +51,19 @@ func (err *InvalidUTF8Error) Error() string {
 // identity domain. Go can represent larger platform ints; the canonical wall
 // deliberately stops at JavaScript's exact-integer boundary.
 type InvalidSequenceError struct {
+	// Seq is the refused sequence value.
 	Seq int64
 }
 
+// Error reports the safe-unsigned-domain refusal.
 func (err *InvalidSequenceError) Error() string {
 	return fmt.Sprintf("chain entry seq %d is not a safe unsigned integer", err.Seq)
 }
 
 const maxSafeSequence int64 = 1<<53 - 1
 
+// Canonicalize decodes JSON under the I-JSON domain restrictions and returns
+// its RFC 8785 canonical byte representation.
 func Canonicalize(jsonBytes []byte) ([]byte, error) {
 	value, err := Decode(jsonBytes)
 	if err != nil {
@@ -60,7 +76,7 @@ func Canonicalize(jsonBytes []byte) ([]byte, error) {
 // RFC 8785. Values outside nil/bool/float64/string/[]any/map[string]any refuse.
 func CanonicalizeValue(value any) ([]byte, error) {
 	var output bytes.Buffer
-	if err := appendCanonical(&output, value); err != nil {
+	if err := appendCanonical(&output, value, 0); err != nil {
 		return nil, err
 	}
 	return output.Bytes(), nil
@@ -238,11 +254,15 @@ func parseHexUnit(input []byte, offset int) (uint16, bool) {
 	return value, true
 }
 
+// DigestHex returns the lowercase SHA-256 digest of input.
 func DigestHex(input []byte) string {
 	digest := sha256.Sum256(input)
 	return hex.EncodeToString(digest[:])
 }
 
+// EntryDigest returns the identity of entry: SHA-256 over the canonical JSON
+// object containing payload, prev, and seq. It refuses values outside the
+// shared Go/JavaScript identity domain.
 func EntryDigest(entry ChainEntry) (string, error) {
 	if !utf8.ValidString(entry.Payload) {
 		return "", &InvalidUTF8Error{Field: "payload"}
@@ -264,6 +284,8 @@ func EntryDigest(entry ChainEntry) (string, error) {
 	return DigestHex(encoded.Bytes()), nil
 }
 
+// BuildChain derives entry digests in order from Genesis and returns the final
+// head. Every payload must be in EntryDigest's identity domain.
 func BuildChain(payloads []string) (entryDigests []string, head string, err error) {
 	entryDigests = make([]string, len(payloads))
 	head = Genesis
@@ -282,7 +304,7 @@ func BuildChain(payloads []string) (entryDigests []string, head string, err erro
 	return entryDigests, head, nil
 }
 
-func appendCanonical(output *bytes.Buffer, value any) error {
+func appendCanonical(output *bytes.Buffer, value any, depth int) error {
 	switch value := value.(type) {
 	case nil:
 		output.WriteString("null")
@@ -311,26 +333,36 @@ func appendCanonical(output *bytes.Buffer, value any) error {
 		}
 		appendJSONString(output, value)
 	case []any:
+		if depth >= maxJSONDepth {
+			return fmt.Errorf("nesting exceeds %d", maxJSONDepth)
+		}
 		output.WriteByte('[')
 		for index, item := range value {
 			if index > 0 {
 				output.WriteByte(',')
 			}
-			if err := appendCanonical(output, item); err != nil {
+			if err := appendCanonical(output, item, depth+1); err != nil {
 				return err
 			}
 		}
 		output.WriteByte(']')
 	case map[string]any:
-		keys := make([]string, 0, len(value))
+		if depth >= maxJSONDepth {
+			return fmt.Errorf("nesting exceeds %d", maxJSONDepth)
+		}
+		type decoratedKey struct {
+			name  string
+			units []uint16
+		}
+		keys := make([]decoratedKey, 0, len(value))
 		for key := range value {
 			if !utf8.ValidString(key) {
 				return errors.New("object member name is not valid Unicode")
 			}
-			keys = append(keys, key)
+			keys = append(keys, decoratedKey{name: key, units: utf16.Encode([]rune(key))})
 		}
 		sort.Slice(keys, func(i, j int) bool {
-			return utf16Less(keys[i], keys[j])
+			return utf16UnitsLess(keys[i].units, keys[j].units)
 		})
 
 		output.WriteByte('{')
@@ -338,9 +370,9 @@ func appendCanonical(output *bytes.Buffer, value any) error {
 			if index > 0 {
 				output.WriteByte(',')
 			}
-			appendJSONString(output, key)
+			appendJSONString(output, key.name)
 			output.WriteByte(':')
-			if err := appendCanonical(output, value[key]); err != nil {
+			if err := appendCanonical(output, value[key.name], depth+1); err != nil {
 				return err
 			}
 		}
@@ -384,9 +416,13 @@ func appendJSONString(output *bytes.Buffer, value string) {
 	output.WriteByte('"')
 }
 
-func utf16Less(left, right string) bool {
-	leftUnits := utf16.Encode([]rune(left))
-	rightUnits := utf16.Encode([]rune(right))
+// UTF16Less reports RFC 8785's object-member order: lexicographic UTF-16
+// code units. Callers use this law instead of locale or UTF-8 byte ordering.
+func UTF16Less(left, right string) bool {
+	return utf16UnitsLess(utf16.Encode([]rune(left)), utf16.Encode([]rune(right)))
+}
+
+func utf16UnitsLess(leftUnits, rightUnits []uint16) bool {
 	length := min(len(leftUnits), len(rightUnits))
 	for index := 0; index < length; index++ {
 		if leftUnits[index] != rightUnits[index] {

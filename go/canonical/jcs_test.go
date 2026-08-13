@@ -42,6 +42,15 @@ func TestRFC8785SerializesNegativeZeroAsZero(t *testing.T) {
 	}
 }
 
+func TestUTF16LessOrdersSupplementaryScalarsByLeadingSurrogate(t *testing.T) {
+	if !canonical.UTF16Less("😀", "\ue000") {
+		t.Fatal("UTF16Less must compare surrogate code units, not UTF-8 or scalar values")
+	}
+	if canonical.UTF16Less("ab", "a") {
+		t.Fatal("UTF16Less must place a prefix before its extension")
+	}
+}
+
 func TestRFC8785AppendixBNumberVectors(t *testing.T) {
 	for _, vector := range loadRFC8785Corpus(t).Numbers {
 		bits, err := strconv.ParseUint(vector.IEEE754, 16, 64)
@@ -70,6 +79,20 @@ func TestCanonicalizeValueRefusesInvalidUTF8StringsAndNames(t *testing.T) {
 		if got, err := canonical.CanonicalizeValue(value); err == nil {
 			t.Fatalf("CanonicalizeValue(%#v) = %q, want refusal", value, got)
 		}
+	}
+}
+
+func TestCanonicalizeValueEnforcesTheConstrainedDecodeDepth(t *testing.T) {
+	value := any(nil)
+	for range 256 {
+		value = []any{value}
+	}
+	if _, err := canonical.CanonicalizeValue(value); err != nil {
+		t.Fatalf("256 nested containers refused: %v", err)
+	}
+	value = []any{value}
+	if _, err := canonical.CanonicalizeValue(value); err == nil {
+		t.Fatal("257 nested containers were accepted")
 	}
 }
 

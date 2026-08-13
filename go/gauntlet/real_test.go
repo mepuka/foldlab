@@ -229,8 +229,8 @@ func TestRealMissingKillRefused(t *testing.T) {
 // amendment, not a tweak.
 func TestR1FloorsArePinned(t *testing.T) {
 	want := RealFloors{LogicalMin: 480, ReuseMilli: 2500, KillsMin: 1}
-	if R1 != want {
-		t.Fatalf("R1 floors drifted: %+v", R1)
+	if R1() != want {
+		t.Fatalf("R1 floors drifted: %+v", R1())
 	}
 }
 

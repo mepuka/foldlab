@@ -28,6 +28,15 @@ type harness struct {
 	conn *nats.Conn
 }
 
+func requireType[T any](t *testing.T, value any, label string) T {
+	t.Helper()
+	typed, ok := value.(T)
+	if !ok {
+		t.Fatalf("%s has type %T and value %v", label, value, value)
+	}
+	return typed
+}
+
 func acquire(t *testing.T) *harness {
 	t.Helper()
 	daemon, err := protod.Acquire(context.Background(), protod.Options{
@@ -94,7 +103,7 @@ func (h *harness) refusal(r reply, kind string) map[string]any {
 	if refusal["kind"] != kind {
 		h.t.Fatalf("refusal kind is %v, want %q (law: %v)", refusal["kind"], kind, refusal["law"])
 	}
-	law, _ := refusal["law"].(string)
+	law := requireType[string](h.t, refusal["law"], "refusal law")
 	if law == "" {
 		h.t.Fatalf("refusal carries no law sentence: %v", refusal)
 	}
@@ -133,11 +142,11 @@ func sampleStructure() map[string]any {
 }
 
 func TestConformance(t *testing.T) {
-	h := acquire(t)
 	sample := sampleStructure()
 	sampleDigest := digestOf(t, sample)
 
 	t.Run("W1 asserted digest the daemon cannot re-derive refuses with both values", func(t *testing.T) {
+		h := acquire(t)
 		lie := strings.Repeat("ab", 32)
 		r := h.request("flb.req.type.create", map[string]any{
 			"structure": sample, "assertedDigest": lie,
@@ -152,6 +161,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W1 a correct asserted digest is accepted", func(t *testing.T) {
+		h := acquire(t)
 		r := h.request("flb.req.type.create", map[string]any{
 			"structure": sample, "assertedDigest": sampleDigest,
 		})
@@ -164,6 +174,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W2 formatting never moves identity or refuses", func(t *testing.T) {
+		h := acquire(t)
 		// Same structure, hostile formatting and key order.
 		weird := []byte(`{
 			"structure": {
@@ -183,6 +194,10 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W3 same bytes converge, never error", func(t *testing.T) {
+		h := acquire(t)
+		if first := h.create(sample); first["ok"] != true || first["created"] != true {
+			t.Fatalf("first create failed: %v", first)
+		}
 		r := h.create(sample)
 		if r["ok"] != true || r["created"] != false {
 			t.Fatalf("resubmission must converge with created:false: %v", r)
@@ -193,17 +208,19 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W10 the catalog fact is scheme-tagged", func(t *testing.T) {
+		h := acquire(t)
 		r := h.create(sample)
 		if r["scheme"] != "bytes-sha256-v1" {
 			t.Fatalf("create reply is not scheme-tagged: %v", r)
 		}
 		read := h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
-		entries := read["entries"].([]any)
+		entries := requireType[[]any](t, read["entries"], "catalog entries")
 		if len(entries) == 0 {
 			t.Fatal("catalog is empty")
 		}
 		var fact map[string]any
-		payload := entries[0].(map[string]any)["payload"].(string)
+		entry := requireType[map[string]any](t, entries[0], "catalog entry")
+		payload := requireType[string](t, entry["payload"], "catalog payload")
 		if err := json.Unmarshal([]byte(payload), &fact); err != nil {
 			t.Fatalf("catalog payload is not a fact: %v", err)
 		}
@@ -213,6 +230,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("invalid-structure refusal teaches path, got, expected, example", func(t *testing.T) {
+		h := acquire(t)
 		r := h.create(map[string]any{"k": "strng"}) // the typo'd create
 		refusal := h.refusal(r, "invalid-structure")
 		path, ok := refusal["path"].([]any)
@@ -232,11 +250,16 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("unknown-ref refuses an unresolvable digest", func(t *testing.T) {
+		h := acquire(t)
 		r := h.create(map[string]any{"k": "ref", "digest": strings.Repeat("9", 64)})
 		h.refusal(r, "unknown-ref")
 	})
 
 	t.Run("a resolvable ref with a declared check is created", func(t *testing.T) {
+		h := acquire(t)
+		if seeded := h.create(sample); seeded["ok"] != true {
+			t.Fatalf("seed referenced type: %v", seeded)
+		}
 		r := h.create(map[string]any{
 			"k":     "check",
 			"base":  map[string]any{"k": "ref", "digest": sampleDigest},
@@ -248,6 +271,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W4 unknown identity never enters a journal", func(t *testing.T) {
+		h := acquire(t)
 		r := h.request("flb.ing.data", map[string]any{
 			"type": strings.Repeat("7", 64), "payload": map[string]any{"x": 1},
 		})
@@ -258,13 +282,17 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W5 an admit reply means durably appended and readable", func(t *testing.T) {
+		h := acquire(t)
+		if seeded := h.create(sample); seeded["ok"] != true {
+			t.Fatalf("seed admitted type: %v", seeded)
+		}
 		admit := h.request("flb.ing.data", map[string]any{
 			"type": sampleDigest, "payload": map[string]any{"id": "s-1", "celsius": 21.5},
 		})
 		if admit["ok"] != true || admit["admitted"] != true {
 			t.Fatalf("publish refused: %v", admit)
 		}
-		note, _ := admit["note"].(string)
+		note := requireType[string](t, admit["note"], "admit note")
 		if !strings.Contains(note, "NOT checked") {
 			t.Fatalf("admit reply must state that payload conformance was not checked: %q", note)
 		}
@@ -272,7 +300,7 @@ func TestConformance(t *testing.T) {
 		if read["ok"] != true {
 			t.Fatalf("read-your-admissions failed: %v", read)
 		}
-		entries := read["entries"].([]any)
+		entries := requireType[[]any](t, read["entries"], "data entries")
 		if len(entries) != 1 {
 			t.Fatalf("admitted frame is not readable: %v", read)
 		}
@@ -282,12 +310,19 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W6 the reader recomputes the head the reply claims", func(t *testing.T) {
+		h := acquire(t)
+		if seeded := h.create(sample); seeded["ok"] != true {
+			t.Fatalf("seed admitted type: %v", seeded)
+		}
+		if admitted := h.request("flb.ing.data", map[string]any{"type": sampleDigest, "payload": "x"}); admitted["ok"] != true {
+			t.Fatalf("seed journal: %v", admitted)
+		}
 		read := h.request("flb.req.journal.read", map[string]any{"journal": "data"})
-		entries := read["entries"].([]any)
+		entries := requireType[[]any](t, read["entries"], "data entries")
 		payloads := make([]string, len(entries))
 		for index, raw := range entries {
-			entry := raw.(map[string]any)
-			payloads[index] = entry["payload"].(string)
+			entry := requireType[map[string]any](t, raw, "data entry")
+			payloads[index] = requireType[string](t, entry["payload"], "data payload")
 		}
 		_, head, err := canonical.BuildChain(payloads)
 		if err != nil {
@@ -299,6 +334,13 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W6 a cursor that does not verify refuses as bad-cursor", func(t *testing.T) {
+		h := acquire(t)
+		if seeded := h.create(sample); seeded["ok"] != true {
+			t.Fatalf("seed admitted type: %v", seeded)
+		}
+		if admitted := h.request("flb.ing.data", map[string]any{"type": sampleDigest, "payload": "x"}); admitted["ok"] != true {
+			t.Fatalf("seed journal: %v", admitted)
+		}
 		r := h.request("flb.req.journal.read", map[string]any{
 			"journal": "data",
 			"from":    map[string]any{"seq": -1, "head": strings.Repeat("f", 64)},
@@ -311,6 +353,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W7 facts teach: every ok reply carries next hints", func(t *testing.T) {
+		h := acquire(t)
 		for subject, body := range map[string]any{
 			"flb.req.type.create":  map[string]any{"structure": sample},
 			"flb.req.journal.read": map[string]any{"journal": "catalog"},
@@ -323,7 +366,7 @@ func TestConformance(t *testing.T) {
 			if !ok || len(next) == 0 {
 				t.Fatalf("%s reply teaches nothing (W7): %v", subject, r)
 			}
-			hint := next[0].(map[string]any)
+			hint := requireType[map[string]any](t, next[0], "next hint")
 			if hint["subject"] == "" || hint["note"] == "" {
 				t.Fatalf("%s: empty hint: %v", subject, hint)
 			}
@@ -331,20 +374,22 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("contract.describe describes the surface in flb.type.v0", func(t *testing.T) {
+		h := acquire(t)
 		r := h.request("flb.req.contract.describe", map[string]any{})
 		if r["ok"] != true {
 			t.Fatalf("describe refused: %v", r)
 		}
-		contract := r["contract"].(map[string]any)
-		requests := contract["requests"].([]any)
+		contract := requireType[map[string]any](t, r["contract"], "contract")
+		requests := requireType[[]any](t, contract["requests"], "contract requests")
 		if len(requests) != 5 {
 			t.Fatalf("expected 5 request kinds, got %d", len(requests))
 		}
 		names := map[string]bool{}
 		for _, raw := range requests {
-			request := raw.(map[string]any)
-			names[request["name"].(string)] = true
-			body := request["body"].(map[string]any)
+			request := requireType[map[string]any](t, raw, "contract request")
+			name := requireType[string](t, request["name"], "contract request name")
+			names[name] = true
+			body := requireType[map[string]any](t, request["body"], "contract request body")
 			if body["k"] == nil {
 				t.Fatalf("request body is not an flb.type.v0 node: %v", request)
 			}
@@ -358,6 +403,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("W8 remaining refusal kinds arrive as data", func(t *testing.T) {
+		h := acquire(t)
 		// malformed: not JSON
 		h.refusal(h.requestRaw("flb.req.type.create", []byte("{not json")), "malformed")
 		// malformed: JSON but not an object
@@ -381,6 +427,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("struct field ordering is canonical: permuted fields converge", func(t *testing.T) {
+		h := acquire(t)
 		first := h.create(map[string]any{
 			"k":      "struct",
 			"fields": map[string]any{"a": map[string]any{"k": "int"}, "b": map[string]any{"k": "bool"}},
@@ -399,6 +446,7 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("union member order is canonical: permuted members converge", func(t *testing.T) {
+		h := acquire(t)
 		first := h.create(map[string]any{
 			"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "null"}},
 		})
@@ -417,17 +465,19 @@ func TestConformance(t *testing.T) {
 	})
 
 	t.Run("duplicate union members refuse at the sorted duplicate", func(t *testing.T) {
+		h := acquire(t)
 		r := h.create(map[string]any{
 			"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "string"}},
 		})
 		refusal := h.refusal(r, "invalid-structure")
-		path := refusal["path"].([]any)
+		path := requireType[[]any](t, refusal["path"], "duplicate path")
 		if fmt.Sprint(path) != "[structure of 1]" {
 			t.Fatalf("duplicate path is %v, want [structure of 1]", path)
 		}
 	})
 
 	t.Run("opaque is a first-class leaf", func(t *testing.T) {
+		h := acquire(t)
 		r := h.create(map[string]any{"k": "opaque"})
 		if r["ok"] != true || r["created"] != true {
 			t.Fatalf("opaque create failed: %v", r)
@@ -451,8 +501,8 @@ func TestConciergeStartsFromABareHole(t *testing.T) {
 	if !ok || len(frontier) != 1 {
 		t.Fatalf("bare-hole start must return one frontier entry: %v", started)
 	}
-	entry := frontier[0].(map[string]any)
-	if path := entry["path"].([]any); len(path) != 0 {
+	entry := requireType[map[string]any](t, frontier[0], "frontier entry")
+	if path := requireType[[]any](t, entry["path"], "frontier path"); len(path) != 0 {
 		t.Fatalf("root hole path is %v, want []", path)
 	}
 	legal, ok := entry["legal"].([]any)
@@ -493,17 +543,17 @@ func TestConciergeFillUnfillAreInverse(t *testing.T) {
 	if fmt.Sprint(unfilled["partial"]) != fmt.Sprint(partial) {
 		t.Fatalf("unfill(fill(p)) = %v, want %v", unfilled["partial"], partial)
 	}
-	frontier := unfilled["frontier"].([]any)
+	frontier := requireType[[]any](t, unfilled["frontier"], "unfilled frontier")
 	if len(frontier) != 1 {
 		t.Fatalf("restored partial has frontier %v, want one hole", frontier)
 	}
 }
 
 func TestConciergeConformance(t *testing.T) {
-	h := acquire(t)
 	hole := map[string]any{"k": "hole"}
 
 	t.Run("C1 fill and unfill are byte-pure", func(t *testing.T) {
+		h := acquire(t)
 		fillBody, err := json.Marshal(map[string]any{
 			"partial": hole,
 			"path":    []any{},
@@ -529,13 +579,14 @@ func TestConciergeConformance(t *testing.T) {
 	})
 
 	t.Run("C3 frontier empty means the decided partial creates", func(t *testing.T) {
+		h := acquire(t)
 		partial := map[string]any{"k": "list", "of": hole}
 		open := h.request("flb.req.type.fill", map[string]any{
 			"partial": partial,
 			"path":    []any{"of"},
 			"subtree": hole,
 		})
-		if open["ok"] != true || len(open["frontier"].([]any)) != 1 {
+		if open["ok"] != true || len(requireType[[]any](t, open["frontier"], "open frontier")) != 1 {
 			t.Fatalf("open partial frontier is not one hole: %v", open)
 		}
 		h.refusal(h.create(partial), "invalid-structure")
@@ -545,7 +596,7 @@ func TestConciergeConformance(t *testing.T) {
 			"path":    []any{"of"},
 			"subtree": map[string]any{"k": "string"},
 		})
-		if complete["ok"] != true || len(complete["frontier"].([]any)) != 0 {
+		if complete["ok"] != true || len(requireType[[]any](t, complete["frontier"], "complete frontier")) != 0 {
 			t.Fatalf("decided partial frontier is not empty: %v", complete)
 		}
 		created := h.create(complete["partial"])
@@ -555,6 +606,7 @@ func TestConciergeConformance(t *testing.T) {
 	})
 
 	t.Run("C4 every advertised root fill is accepted", func(t *testing.T) {
+		h := acquire(t)
 		created := h.create(map[string]any{"k": "bool"})
 		if created["ok"] != true {
 			t.Fatalf("seed catalog type: %v", created)
@@ -564,17 +616,18 @@ func TestConciergeConformance(t *testing.T) {
 			"path":    []any{},
 			"subtree": hole,
 		})
-		entry := started["frontier"].([]any)[0].(map[string]any)
-		legal := entry["legal"].([]any)
+		frontier := requireType[[]any](t, started["frontier"], "started frontier")
+		entry := requireType[map[string]any](t, frontier[0], "frontier entry")
+		legal := requireType[[]any](t, entry["legal"], "frontier legal choices")
 		if len(legal) != 13 {
 			t.Fatalf("frontier advertises %d kinds, want 13: %v", len(legal), legal)
 		}
-		refs := entry["refs"].([]any)
+		refs := requireType[[]any](t, entry["refs"], "frontier refs")
 		if len(refs) == 0 || len(refs) > 16 {
 			t.Fatalf("frontier refs violate availability/cap: %v", refs)
 		}
 		for _, raw := range legal {
-			choice := raw.(map[string]any)
+			choice := requireType[map[string]any](t, raw, "frontier choice")
 			filled := h.request("flb.req.type.fill", map[string]any{
 				"partial": hole,
 				"path":    []any{},
@@ -606,6 +659,7 @@ func TestConciergeConformance(t *testing.T) {
 		}
 		for _, testCase := range cases {
 			t.Run(testCase.name, func(t *testing.T) {
+				h := acquire(t)
 				refusal := h.refusal(h.request(testCase.subject, testCase.body), testCase.kind)
 				if refusal["expected"] == nil && refusal["example"] == nil {
 					t.Fatalf("refusal teaches neither expected nor example: %v", refusal)
@@ -630,10 +684,11 @@ func TestConciergePartialIsTheEntireState(t *testing.T) {
 	}
 	continued := second.request("flb.req.type.fill", map[string]any{
 		"partial": started["partial"],
-		"path":    started["frontier"].([]any)[0].(map[string]any)["path"],
+		"path": requireType[map[string]any](t,
+			requireType[[]any](t, started["frontier"], "started frontier")[0], "frontier entry")["path"],
 		"subtree": map[string]any{"k": "string"},
 	})
-	if continued["ok"] != true || len(continued["frontier"].([]any)) != 0 {
+	if continued["ok"] != true || len(requireType[[]any](t, continued["frontier"], "continued frontier")) != 0 {
 		t.Fatalf("second daemon could not continue from request state alone: %v", continued)
 	}
 }
@@ -657,7 +712,7 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	if created["ok"] != true {
 		t.Fatalf("create: %v", created)
 	}
-	digest := created["digest"].(string)
+	digest := requireType[string](t, created["digest"], "created digest")
 	conn.Close()
 	first.Release()
 

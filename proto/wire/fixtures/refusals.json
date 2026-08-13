@@ -1,0 +1,16 @@
+{
+  "reason": "Task 20 F9: operator-ratified bad-stream and bad-bucket refusal kinds",
+  "kinds": [
+    "malformed",
+    "invalid-structure",
+    "unknown-ref",
+    "digest-mismatch",
+    "unknown-identity",
+    "bad-journal",
+    "unknown-journal",
+    "bad-cursor",
+    "bad-stream",
+    "bad-bucket",
+    "unknown-request"
+  ]
+}

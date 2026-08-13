@@ -47,7 +47,7 @@ func TestTypeFixturesRederive(t *testing.T) {
 		if string(bytes) != vector.Canonical {
 			t.Errorf("%s: canonical bytes drifted\n got %s\nwant %s", vector.Name, bytes, vector.Canonical)
 		}
-		if derived := activeScheme.Derive(bytes); derived != vector.Digest {
+		if derived := (bytesSHA256V1{}).Derive(bytes); derived != vector.Digest {
 			t.Errorf("%s: digest drifted: got %s want %s", vector.Name, derived, vector.Digest)
 		}
 		// Every fixture structure is a valid flb.type.v0 node.
@@ -101,6 +101,26 @@ func TestFrameFixturesRederive(t *testing.T) {
 		}
 		if string(bytes) != vector.Canonical {
 			t.Errorf("%s: canonical bytes drifted\n got %s\nwant %s", vector.Name, bytes, vector.Canonical)
+		}
+	}
+}
+
+func TestRefusalKindFixturePinsTheWireVocabulary(t *testing.T) {
+	var fixture struct {
+		Kinds []string `json:"kinds"`
+	}
+	loadFixture(t, "refusals.json", &fixture)
+	want := []string{
+		KindMalformed, KindInvalidStructure, KindUnknownRef, KindDigestMismatch,
+		KindUnknownIdentity, KindBadJournal, KindUnknownJournal, KindBadCursor,
+		KindBadStream, KindBadBucket, KindUnknownRequest,
+	}
+	if len(fixture.Kinds) != len(want) {
+		t.Fatalf("refusal kind fixture has %d kinds, want %d", len(fixture.Kinds), len(want))
+	}
+	for index := range want {
+		if fixture.Kinds[index] != want[index] {
+			t.Fatalf("refusal kind fixture[%d] = %q, want %q", index, fixture.Kinds[index], want[index])
 		}
 	}
 }

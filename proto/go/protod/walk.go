@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"unicode/utf16"
+
+	"foldlab/canonical"
 )
 
 // The flb.type.v0 structure walk. One pass validates the grammar,
@@ -136,42 +137,6 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 				return r
 			}
 		}
-		// Partials have no identity. Preserve their union positions so a
-		// fill followed by unfill at the same path is an exact inverse.
-		if allowHoles {
-			return nil
-		}
-		type canonicalMember struct {
-			value any
-			bytes []byte
-		}
-		canonical := make([]canonicalMember, len(members))
-		for index, member := range members {
-			memberBytes, err := canonicalBytes(member)
-			if err != nil {
-				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
-					"flb.type.v0: every union member must have canonical JSON bytes",
-					member, "a canonicalizable type node", map[string]any{"k": "string"})
-			}
-			canonical[index] = canonicalMember{value: member, bytes: memberBytes}
-		}
-		// Law: order never moves identity in an unordered collection.
-		// Normalize union members by their canonical bytes before the
-		// enclosing structure is encoded and digested.
-		sort.Slice(canonical, func(i, j int) bool {
-			return bytes.Compare(canonical[i].bytes, canonical[j].bytes) < 0
-		})
-		for index := 1; index < len(canonical); index++ {
-			if bytes.Equal(canonical[index-1].bytes, canonical[index].bytes) {
-				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
-					"flb.type.v0: union members must be unique after canonical-byte sorting",
-					canonical[index].value, "a member with distinct canonical bytes",
-					map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}})
-			}
-		}
-		for index := range canonical {
-			members[index] = canonical[index].value
-		}
 		return nil
 	case "brand":
 		if r := checkKeys(node, path, kind, "k", "name", "of"); r != nil {
@@ -221,6 +186,71 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 	}
 }
 
+// normalizeUnions gives unordered union collections one identity by sorting
+// their already-validated members by canonical bytes. Partials never call it:
+// their positional union order is authoring state.
+func normalizeUnions(value any) *Refusal {
+	return normalizeUnionNode(value, []string{"structure"})
+}
+
+func normalizeUnionNode(value any, path []string) *Refusal {
+	node := value.(map[string]any)
+	switch node["k"].(string) {
+	case "list", "brand":
+		return normalizeUnionNode(node["of"], append(path, "of"))
+	case "check":
+		return normalizeUnionNode(node["base"], append(path, "base"))
+	case "struct":
+		fields := node["fields"].(map[string]any)
+		names := make([]string, 0, len(fields))
+		for name := range fields {
+			names = append(names, name)
+		}
+		sort.Slice(names, func(i, j int) bool { return canonical.UTF16Less(names[i], names[j]) })
+		for _, name := range names {
+			if refusal := normalizeUnionNode(fields[name], append(path, "fields", name)); refusal != nil {
+				return refusal
+			}
+		}
+	case "union":
+		members := node["of"].([]any)
+		for index, member := range members {
+			if refusal := normalizeUnionNode(member, append(path, "of", fmt.Sprintf("%d", index))); refusal != nil {
+				return refusal
+			}
+		}
+		type canonicalMember struct {
+			value any
+			bytes []byte
+		}
+		canonical := make([]canonicalMember, len(members))
+		for index, member := range members {
+			memberBytes, err := canonicalBytes(member)
+			if err != nil {
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+					"flb.type.v0: every union member must have canonical JSON bytes",
+					member, "a canonicalizable type node", map[string]any{"k": "string"})
+			}
+			canonical[index] = canonicalMember{value: member, bytes: memberBytes}
+		}
+		sort.Slice(canonical, func(i, j int) bool {
+			return bytes.Compare(canonical[i].bytes, canonical[j].bytes) < 0
+		})
+		for index := 1; index < len(canonical); index++ {
+			if bytes.Equal(canonical[index-1].bytes, canonical[index].bytes) {
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+					"flb.type.v0: union members must be unique after canonical-byte sorting",
+					canonical[index].value, "a member with distinct canonical bytes",
+					map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}})
+			}
+		}
+		for index := range canonical {
+			members[index] = canonical[index].value
+		}
+	}
+	return nil
+}
+
 func walkStruct(node map[string]any, path []string, result *walkResult, allowHoles bool) *Refusal {
 	if r := checkKeys(node, path, "struct", "k", "fields", "optional"); r != nil {
 		return r
@@ -237,7 +267,7 @@ func walkStruct(node map[string]any, path []string, result *walkResult, allowHol
 		names = append(names, name)
 	}
 	sort.Slice(names, func(i, j int) bool {
-		return utf16Less(names[i], names[j])
+		return canonical.UTF16Less(names[i], names[j])
 	})
 	for _, name := range names {
 		if r := walkNode(fields[name], append(path, "fields", name), result, allowHoles); r != nil {
@@ -273,7 +303,7 @@ func walkStruct(node map[string]any, path []string, result *walkResult, allowHol
 			// Arrays are ordered and order would move identity: the
 			// canonical structure pins one order (UTF-16 code units,
 			// matching RFC 8785 member sorting).
-			if index > 0 && !utf16Less(previous, name) {
+			if index > 0 && !canonical.UTF16Less(previous, name) {
 				return structureRefusal(append(path, "optional", fmt.Sprintf("%d", index)),
 					"flb.type.v0: optional names are sorted by UTF-16 code units — list order must not move identity",
 					name, fmt.Sprintf("a name sorting after %q", previous), nil)
@@ -344,21 +374,6 @@ func checkKeys(node map[string]any, path []string, kind string, allowed ...strin
 	return structureRefusal(append(path, extra[0]),
 		fmt.Sprintf("flb.type.v0: a %q node carries exactly its declared keys — unknown keys refuse", kind),
 		extra, allowed, nil)
-}
-
-// utf16Less mirrors go/canonical's member ordering (RFC 8785): compare
-// by UTF-16 code units, which differs from Go's byte order only above
-// the basic multilingual plane.
-func utf16Less(left, right string) bool {
-	leftUnits := utf16.Encode([]rune(left))
-	rightUnits := utf16.Encode([]rune(right))
-	length := min(len(leftUnits), len(rightUnits))
-	for index := 0; index < length; index++ {
-		if leftUnits[index] != rightUnits[index] {
-			return leftUnits[index] < rightUnits[index]
-		}
-	}
-	return len(leftUnits) < len(rightUnits)
 }
 
 func structureRefusal(path []string, law string, got, expected, example any) *Refusal {

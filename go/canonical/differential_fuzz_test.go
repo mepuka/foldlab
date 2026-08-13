@@ -38,8 +38,25 @@ type tsJCSProbe struct {
 	stdin   io.WriteCloser
 	writer  *bufio.Writer
 	scanner *bufio.Scanner
-	stderr  bytes.Buffer
+	stderr  lockedBuffer
 	mu      sync.Mutex
+}
+
+type lockedBuffer struct {
+	mu     sync.Mutex
+	buffer bytes.Buffer
+}
+
+func (buffer *lockedBuffer) Write(data []byte) (int, error) {
+	buffer.mu.Lock()
+	defer buffer.mu.Unlock()
+	return buffer.buffer.Write(data)
+}
+
+func (buffer *lockedBuffer) String() string {
+	buffer.mu.Lock()
+	defer buffer.mu.Unlock()
+	return buffer.buffer.String()
 }
 
 func startTSJCSProbe(t testing.TB) *tsJCSProbe {

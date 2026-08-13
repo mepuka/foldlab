@@ -99,13 +99,13 @@ func vConciergeReply() map[string]any {
 	})
 }
 
-func describeReply() map[string]any {
+func describeReply(schemeName string) map[string]any {
 	return map[string]any{
 		"ok": true,
 		"contract": map[string]any{
 			"name":    "flb.proto",
 			"version": "v0",
-			"scheme":  activeScheme.Name(),
+			"scheme":  schemeName,
 			"note": "every reply is either the request's fact shape or the uniform refusal " +
 				"{ok:false, refusal}; refusals are data and nothing throws across this seam",
 			"requests": []any{

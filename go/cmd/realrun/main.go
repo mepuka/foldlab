@@ -102,20 +102,23 @@ func controller(bundle string) error {
 	if err != nil {
 		return err
 	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
 	journalPath := filepath.Join(bundle, "journal.ndjson")
-	for {
-		time.Sleep(2 * time.Second)
-		if n := countLines(journalPath); n >= 60 {
-			break
-		}
-		if cmd.ProcessState != nil {
-			return errors.New("worker exited before the kill window")
+	for countLines(journalPath) < 60 {
+		select {
+		case werr := <-done:
+			if werr == nil {
+				werr = errors.New("worker finished")
+			}
+			return fmt.Errorf("worker exited before the kill window: %w", werr)
+		case <-time.After(2 * time.Second):
 		}
 	}
 	if err := cmd.Process.Kill(); err != nil {
 		return fmt.Errorf("kill worker: %w", err)
 	}
-	_ = cmd.Wait()
+	<-done
 	if err := stormEvent("kill"); err != nil {
 		return err
 	}
@@ -138,7 +141,7 @@ func controller(bundle string) error {
 
 	// The frozen gate, run in-process for convenience; the committed
 	// check remains `go run ./cmd/realverify <bundle>`.
-	report, err := gauntlet.VerifyReal(bundle, gauntlet.R1)
+	report, err := gauntlet.VerifyReal(bundle, gauntlet.R1())
 	if err != nil {
 		return fmt.Errorf("frozen verifier REFUSED the bundle: %w", err)
 	}

@@ -21,7 +21,7 @@ type TransFloors struct {
 	MinSharePct int
 }
 
-var RGA = TransFloors{N: 40, Workers: 8, MinSharePct: 5}
+func RGA() TransFloors { return TransFloors{N: 40, Workers: 8, MinSharePct: 5} }
 
 var (
 	ErrEconomy       = errors.New("gauntlet: economy refused (TV6)")

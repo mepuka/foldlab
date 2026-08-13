@@ -266,6 +266,33 @@ func TestWrongCounterfactualRefused(t *testing.T) {
 	}
 }
 
+func TestCounterfactualPositionAtStepsRefused(t *testing.T) {
+	dir := buildBundle(t)
+	rewriteManifest(t, dir, func(manifest map[string]any) {
+		manifest["cf_position"] = float64(testFloors.Steps)
+	})
+	path := filepath.Join(dir, "counterfactual.json")
+	var claim map[string]any
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, &claim); err != nil {
+		t.Fatal(err)
+	}
+	claim["position"] = float64(testFloors.Steps)
+	if err := os.WriteFile(path, mustCanonical(t, claim), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	floors := testFloors
+	floors.ConeMin = 0
+	_, err = Verify(dir, floors)
+	if err == nil || !errors.Is(err, ErrCounterfactual) {
+		t.Fatalf("position equal to steps was not refused as counterfactual law: %v", err)
+	}
+}
+
 func TestFloorsRefused(t *testing.T) {
 	dir := buildBundle(t)
 	strict := testFloors
@@ -280,8 +307,8 @@ func TestFloorsRefused(t *testing.T) {
 // amendment, not a tweak.
 func TestG1FloorsArePinned(t *testing.T) {
 	want := Floors{Steps: 500, Workers: 8, Kills: 25, ServerRestarts: 5, Steals: 10, ConeMin: 10}
-	if G1 != want {
-		t.Fatalf("G1 floors drifted: %+v", G1)
+	if G1() != want {
+		t.Fatalf("G1 floors drifted: %+v", G1())
 	}
 }
 

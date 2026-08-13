@@ -16,7 +16,7 @@ func main() {
 	}
 	failed := false
 	for _, dir := range os.Args[1:] {
-		report, err := gauntlet.VerifyTransposition(dir, gauntlet.RGA)
+		report, err := gauntlet.VerifyTransposition(dir, gauntlet.RGA())
 		if err != nil {
 			failed = true
 			fmt.Printf("REFUSED  %s\n         %v\n", dir, err)

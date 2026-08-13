@@ -3,7 +3,9 @@
 // string and digest re-derives here independently; a mismatch means
 // this port drifted — never edit the fixture.
 import { describe, expect, test } from "bun:test"
+import { Result, Schema } from "effect"
 import { canonicalize, entryDigest, foldChain, sha256Hex, GENESIS, type Json } from "../src/jcs.ts"
+import { RefusalKind } from "../src/wire.ts"
 
 const fixture = async (name: string): Promise<any> =>
   (await import(`../../wire/fixtures/${name}`, { with: { type: "json" } })).default
@@ -56,6 +58,18 @@ describe("frame fixtures re-derive", async () => {
       expect(canonicalize(vector.frame)).toBe(vector.canonical)
     })
   }
+})
+
+describe("refusal kind fixture pins the TS wire vocabulary", async () => {
+  const vector: { kinds: string[] } = await fixture("refusals.json")
+  test("every frozen kind decodes", () => {
+    for (const kind of vector.kinds) {
+      expect(Result.isSuccess(Schema.decodeUnknownResult(RefusalKind)(kind))).toBe(true)
+    }
+  })
+  test("an unlisted kind is refused", () => {
+    expect(Result.isFailure(Schema.decodeUnknownResult(RefusalKind)("made-up"))).toBe(true)
+  })
 })
 
 describe("concierge request/reply fixtures re-derive", async () => {

@@ -14,12 +14,18 @@ import (
 // Expiry is NOT evaluated here: the transition reports what is stored,
 // and only Lookup decides whether a stored claim still holds.
 type Transition struct {
-	Digest   string
-	State    State
-	Claim    *Claim
-	Outcome  *Outcome
+	// Digest names the observed work identity.
+	Digest string
+	// State is Held or Committed for the stored authority value.
+	State State
+	// Claim is populated exactly when State is Held.
+	Claim *Claim
+	// Outcome is populated exactly when State is Committed.
+	Outcome *Outcome
+	// Revision is the JetStream KV revision of this observation.
 	Revision uint64
-	Initial  bool
+	// Initial marks values replayed before the watch reached its live edge.
+	Initial bool
 }
 
 // Watch is the register live plane, and it is chatter (see

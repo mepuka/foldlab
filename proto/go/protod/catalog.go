@@ -32,14 +32,15 @@ type catalog struct {
 	mu       sync.Mutex
 	journal  *journal.Journal
 	byDigest map[string]catalogFact
+	scheme   scheme
 }
 
-func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) {
+func openCatalog(ctx context.Context, js jetstream.JetStream, identityScheme scheme) (*catalog, error) {
 	opened, err := journal.Open(ctx, js, catalogJournalName)
 	if err != nil {
 		return nil, err
 	}
-	c := &catalog{journal: opened, byDigest: map[string]catalogFact{}}
+	c := &catalog{journal: opened, byDigest: map[string]catalogFact{}, scheme: identityScheme}
 	entries, _, err := opened.Read(ctx, journal.Cursor{Seq: -1, Head: genesis}, 0)
 	if err != nil {
 		return nil, fmt.Errorf("rebuild catalog index: %w", err)
@@ -107,6 +108,9 @@ func (c *catalog) create(
 			}, nil
 		}
 	}
+	if refusal := normalizeUnions(structure); refusal != nil {
+		return catalogFact{}, false, refusal, nil
+	}
 
 	bytes, err := canonicalBytes(structure)
 	if err != nil {
@@ -114,7 +118,7 @@ func (c *catalog) create(
 		// cannot be escaped here; treat failure as substrate.
 		return catalogFact{}, false, nil, err
 	}
-	derived := activeScheme.Derive(bytes)
+	derived := c.scheme.Derive(bytes)
 	if asserted != "" && asserted != derived {
 		return catalogFact{}, false, &Refusal{
 			Kind:     KindDigestMismatch,
@@ -145,7 +149,7 @@ func (c *catalog) create(
 
 	fact = catalogFact{
 		Digest:    derived,
-		Scheme:    activeScheme.Name(),
+		Scheme:    c.scheme.Name(),
 		Structure: canonicalValue,
 		Submitter: submitter,
 	}

@@ -24,6 +24,7 @@ const (
 )
 
 func RunWorker(
+	ctx context.Context,
 	url string,
 	bundle string,
 	salt string,
@@ -31,7 +32,6 @@ func RunWorker(
 	ownerIndex int,
 	paceFile string,
 ) error {
-	ctx := context.Background()
 	connection, js, err := connect(ctx, url, "g1-"+owner)
 	if err != nil {
 		return err
@@ -45,6 +45,9 @@ func RunWorker(
 	var observedAt time.Time
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		openedJournal, openedEffector, err := openWorkerPrimitives(ctx, js)
 		if err != nil {
 			time.Sleep(20 * time.Millisecond)

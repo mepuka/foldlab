@@ -125,10 +125,9 @@ func TestTranspositionValidBundlePasses(t *testing.T) {
 
 func TestTranspositionSurplusExpansionRefused(t *testing.T) {
 	dir := buildTransBundle(t)
-	// Worker a runs one extra expansion of a state b owns at fence 1:
-	// this is BOTH surplus (TV6 economy) and a fencing violation; the
-	// fencing check fires first and either refusal is ErrLedger/ErrEconomy.
-	bData, _ := os.ReadFile(filepath.Join(dir, "ledger", "b.ndjson"))
+	// Worker a repeats one of its own expansions under a fresh nonce. Fencing
+	// remains valid, so this witnesses TV6's economy sentinel specifically.
+	bData, _ := os.ReadFile(filepath.Join(dir, "ledger", "a.ndjson"))
 	firstB := strings.SplitN(strings.TrimSpace(string(bData)), "\n", 2)[0]
 	var run map[string]any
 	mustUnmarshal(t, []byte(firstB), &run)
@@ -141,8 +140,8 @@ func TestTranspositionSurplusExpansionRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := VerifyTransposition(dir, transTestFloors)
-	if err == nil || (!errors.Is(err, ErrEconomy) && !errors.Is(err, ErrLedger)) {
-		t.Fatalf("surplus expansion not refused: %v", err)
+	if err == nil || !errors.Is(err, ErrEconomy) {
+		t.Fatalf("surplus expansion not refused as TV6 economy: %v", err)
 	}
 }
 
@@ -208,8 +207,8 @@ func TestTranspositionHeroWorkerRefused(t *testing.T) {
 // amendment, not a tweak.
 func TestRGAFloorsArePinned(t *testing.T) {
 	want := TransFloors{N: 40, Workers: 8, MinSharePct: 5}
-	if RGA != want {
-		t.Fatalf("RGA floors drifted: %+v", RGA)
+	if RGA() != want {
+		t.Fatalf("RGA floors drifted: %+v", RGA())
 	}
 }
 

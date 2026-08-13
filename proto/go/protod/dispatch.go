@@ -3,6 +3,8 @@ package protod
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/nats-io/nats.go"
 
@@ -24,7 +26,7 @@ const (
 	ingressWildcard         = "flb.ing.>"
 )
 
-var genesis = canonical.Genesis
+const genesis = canonical.Genesis
 
 type createRequest struct {
 	Structure      any    `json:"structure"`
@@ -43,10 +45,11 @@ type createReply struct {
 }
 
 func (d *Daemon) handleRequest(msg *nats.Msg) {
+	ctx, done := d.beginHandler()
+	defer done()
 	if msg.Reply == "" {
 		return
 	}
-	ctx := context.Background()
 	var reply any
 	switch msg.Subject {
 	case SubjectTypeCreate:
@@ -58,7 +61,7 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 	case SubjectJournalRead:
 		reply = d.serveRead(ctx, msg.Data)
 	case SubjectContractDescribe:
-		reply = describeReply()
+		reply = describeReply(d.scheme.Name())
 	default:
 		reply = refuse(&Refusal{
 			Kind: KindUnknownRequest,
@@ -74,7 +77,9 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 			Next: []NextHint{describeHint()},
 		})
 	}
-	d.respond(msg, reply)
+	if err := d.respond(msg, reply); err != nil {
+		fmt.Fprintf(os.Stderr, "protod: respond to %s: %v\n", msg.Subject, err)
+	}
 }
 
 func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
@@ -162,13 +167,13 @@ func truncateForReply(body []byte) string {
 	return string(body[:limit]) + "…"
 }
 
-func (d *Daemon) respond(msg *nats.Msg, reply any) {
+func (d *Daemon) respond(msg *nats.Msg, reply any) error {
 	if reply == nil {
-		return
+		return nil
 	}
 	data, err := json.Marshal(reply)
 	if err != nil {
-		return
+		return err
 	}
-	_ = msg.Respond(data)
+	return msg.Respond(data)
 }

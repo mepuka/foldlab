@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -17,13 +18,14 @@ import (
 )
 
 type workerProcess struct {
-	owner      string
-	index      int
-	command    *exec.Cmd
-	done       chan error
-	notBefore  time.Time
-	finished   bool
-	generation int
+	owner              string
+	index              int
+	command            *exec.Cmd
+	done               chan error
+	notBefore          time.Time
+	finished           bool
+	killedByController bool
+	generation         int
 }
 
 type serverProcess struct {
@@ -44,7 +46,7 @@ type Controller struct {
 	workers    map[string]*workerProcess
 }
 
-func Run(ctx context.Context, executable, bundle, seed string) (gauntlet.Report, error) {
+func Run(ctx context.Context, executable, bundle, seed string) (report gauntlet.Report, runErr error) {
 	var zero gauntlet.Report
 	if seed == "" {
 		return zero, errors.New("seed must not be empty")
@@ -66,13 +68,27 @@ func Run(ctx context.Context, executable, bundle, seed string) (gauntlet.Report,
 	if err != nil {
 		return zero, err
 	}
-	defer os.RemoveAll(runtimeDir)
+	var controller *Controller
+	defer func() {
+		if controller != nil {
+			controller.stopAll()
+		}
+		if runErr != nil {
+			if err := preserveRuntimeLogs(absBundle, runtimeDir); err != nil {
+				runErr = errors.Join(runErr, fmt.Errorf("preserve runtime logs: %w", err))
+			}
+			return
+		}
+		if err := os.RemoveAll(runtimeDir); err != nil {
+			runErr = fmt.Errorf("remove runtime directory: %w", err)
+		}
+	}()
 
 	port, err := reservePort()
 	if err != nil {
 		return zero, err
 	}
-	controller := &Controller{
+	controller = &Controller{
 		executable: executable,
 		bundle:     absBundle,
 		seed:       seed,
@@ -86,8 +102,6 @@ func Run(ctx context.Context, executable, bundle, seed string) (gauntlet.Report,
 	if err := os.WriteFile(controller.paceFile, []byte("120"), 0o644); err != nil {
 		return zero, err
 	}
-	defer controller.stopAll()
-
 	if err := controller.startServer(ctx); err != nil {
 		return zero, err
 	}
@@ -106,11 +120,36 @@ func Run(ctx context.Context, executable, bundle, seed string) (gauntlet.Report,
 	if err := ExportBundle(ctx, controller.url, controller.bundle, controller.seed, controller.salt); err != nil {
 		return zero, err
 	}
-	report, err := gauntlet.Verify(controller.bundle, gauntlet.G1)
+	report, err = gauntlet.Verify(controller.bundle, gauntlet.G1())
 	if err != nil {
 		return zero, fmt.Errorf("self-verification refused produced bundle: %w", err)
 	}
 	return report, nil
+}
+
+func preserveRuntimeLogs(bundle, runtimeDir string) error {
+	destinationRoot := filepath.Join(bundle, "runtime-logs")
+	return filepath.WalkDir(runtimeDir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".log") {
+			return nil
+		}
+		relative, err := filepath.Rel(runtimeDir, path)
+		if err != nil {
+			return err
+		}
+		destination := filepath.Join(destinationRoot, relative)
+		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(destination, data, 0o644)
+	})
 }
 
 func reservePort() (int, error) {
@@ -147,13 +186,13 @@ func (controller *Controller) startServer(ctx context.Context) error {
 	done := make(chan error, 1)
 	go func() { done <- command.Wait() }()
 	controller.server = &serverProcess{command: command, done: done}
-	if err := waitForServer(ctx, controller.url); err != nil {
+	if err := waitForServer(ctx, controller.url, done); err != nil {
 		return err
 	}
 	return nil
 }
 
-func waitForServer(ctx context.Context, url string) error {
+func waitForServer(ctx context.Context, url string, serverDone <-chan error) error {
 	for {
 		connection, err := nats.Connect(url, nats.Timeout(200*time.Millisecond), nats.NoReconnect())
 		if err == nil {
@@ -164,6 +203,11 @@ func waitForServer(ctx context.Context, url string) error {
 			connection.Close()
 		}
 		select {
+		case err := <-serverDone:
+			if err == nil {
+				err = errors.New("server stopped")
+			}
+			return fmt.Errorf("server exited before ready: %w", err)
 		case <-ctx.Done():
 			return fmt.Errorf("wait for server: %w", ctx.Err())
 		case <-time.After(20 * time.Millisecond):
@@ -199,6 +243,7 @@ func (controller *Controller) startWorker(slot *workerProcess) error {
 	slot.command = command
 	slot.done = done
 	slot.finished = false
+	slot.killedByController = false
 	slot.generation++
 	if err := appendStorm(controller.bundle, "spawn", slot.owner); err != nil {
 		_ = command.Process.Kill()
@@ -232,7 +277,7 @@ func (controller *Controller) driveStorm(ctx context.Context) error {
 			}
 			return nil
 		}
-		if err := controller.respawnReadyWorkers(); err != nil {
+		if err := controller.respawnReadyWorkers(controller.startWorker); err != nil {
 			return err
 		}
 
@@ -289,7 +334,9 @@ func (controller *Controller) hardKillWorker(slot *workerProcess) error {
 	if slot.command == nil || slot.command.Process == nil {
 		return errors.New("worker is not running")
 	}
+	slot.killedByController = true
 	if err := slot.command.Process.Kill(); err != nil {
+		slot.killedByController = false
 		return err
 	}
 	select {
@@ -344,6 +391,9 @@ func (controller *Controller) observeWorkerExits() error {
 				slot.finished = true
 				continue
 			}
+			if !slot.killedByController {
+				return fmt.Errorf("worker %s exited unexpectedly: %w", slot.owner, err)
+			}
 			slot.notBefore = time.Now().Add(20 * time.Millisecond)
 		default:
 		}
@@ -351,12 +401,12 @@ func (controller *Controller) observeWorkerExits() error {
 	return nil
 }
 
-func (controller *Controller) respawnReadyWorkers() error {
+func (controller *Controller) respawnReadyWorkers(start func(*workerProcess) error) error {
 	for _, slot := range controller.workers {
-		if slot.command != nil || slot.finished || time.Now().Before(slot.notBefore) {
+		if slot.command != nil || slot.finished || !slot.killedByController || time.Now().Before(slot.notBefore) {
 			continue
 		}
-		if err := controller.startWorker(slot); err != nil {
+		if err := start(slot); err != nil {
 			return err
 		}
 	}
@@ -379,9 +429,19 @@ func (controller *Controller) stopAll() {
 	for _, slot := range controller.workers {
 		if slot.command != nil && slot.command.Process != nil {
 			_ = slot.command.Process.Kill()
+			if slot.done != nil {
+				select {
+				case <-slot.done:
+				case <-time.After(3 * time.Second):
+				}
+			}
 		}
 	}
 	if controller.server != nil && controller.server.command != nil && controller.server.command.Process != nil {
 		_ = controller.server.command.Process.Kill()
+		select {
+		case <-controller.server.done:
+		case <-time.After(3 * time.Second):
+		}
 	}
 }

@@ -142,7 +142,7 @@ func controller(bundle string, fake bool) error {
 
 	// The frozen gate, at the full R2 floors either way; the committed
 	// check remains `go run ./cmd/climbverify <bundle>`.
-	report, err := gauntlet.VerifyClimb(bundle, gauntlet.R2)
+	report, err := gauntlet.VerifyClimb(bundle, gauntlet.R2())
 	if err != nil {
 		return fmt.Errorf("frozen verifier REFUSED the bundle: %w", err)
 	}

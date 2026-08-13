@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,13 +31,15 @@ type Floors struct {
 	ConeMin        int
 }
 
-var G1 = Floors{
-	Steps:          500,
-	Workers:        8,
-	Kills:          25,
-	ServerRestarts: 5,
-	Steals:         10,
-	ConeMin:        10,
+func G1() Floors {
+	return Floors{
+		Steps:          500,
+		Workers:        8,
+		Kills:          25,
+		ServerRestarts: 5,
+		Steals:         10,
+		ConeMin:        10,
+	}
 }
 
 var (
@@ -372,7 +375,13 @@ func Verify(dir string, floors Floors) (Report, error) {
 	if cf.Position != man.CfPosition {
 		return report, fmt.Errorf("%w: position disagrees with manifest", ErrCounterfactual)
 	}
-	if cf.Position < 0 || cf.Position > man.Steps-floors.ConeMin {
+	if cf.Position < 0 || cf.Position >= man.Steps {
+		return report, fmt.Errorf(
+			"%w: position %d is outside %d steps",
+			ErrCounterfactual, cf.Position, man.Steps,
+		)
+	}
+	if cf.Position > man.Steps-floors.ConeMin {
 		return report, fmt.Errorf(
 			"%w: position %d leaves a cone smaller than %d",
 			ErrCounterfactual, cf.Position, floors.ConeMin,
@@ -485,7 +494,7 @@ func strictDecode(data []byte, target any) error {
 		return err
 	}
 	var trailing struct{}
-	if err := decoder.Decode(&trailing); err == nil || err.Error() != "EOF" {
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
 		return errors.New("trailing JSON")
 	}
 	return nil

@@ -1,3 +1,6 @@
+// Package journal implements a CAS-appended, verify-on-read event chain over
+// JetStream. It admits only the pinned authoritative stream shape: imported or
+// evicting streams are refused rather than treated as journal authority.
 package journal
 
 import (
@@ -17,26 +20,42 @@ import (
 	"foldlab/canonical"
 )
 
+// Cursor names a verified position and head digest. Seq is -1 only for
+// genesis; all other values are zero-based positions within the platform int
+// range. A cursor supplied to Read is observation input, never writer state.
 type Cursor struct {
-	Seq  int
+	// Seq is -1 at genesis or the last verified zero-based position.
+	Seq int
+	// Head is Genesis at Seq -1 or the digest at Seq.
 	Head string
 }
 
+// AppendOutcome classifies whether an append stored new bytes or repeated the
+// exact identity already accepted at its position.
 type AppendOutcome string
 
 const (
-	Stored    AppendOutcome = "stored"
+	// Stored means this call won the position's CAS and stored the entry.
+	Stored AppendOutcome = "stored"
+	// Duplicate means the same entry identity already occupies the position.
 	Duplicate AppendOutcome = "duplicate"
 )
 
 var (
+	// ErrBadStream refuses a JetStream stream that lacks the authority shape.
 	ErrBadStream = errors.New("journal stream does not have the required shape")
-	ErrConflict  = errors.New("journal position is already occupied")
-	ErrTampered  = errors.New("journal entry failed verification")
+	// ErrBadCursor refuses a cursor outside the accepted position domain.
+	ErrBadCursor = errors.New("journal cursor is outside the accepted domain")
+	// ErrConflict reports that different bytes already occupy an append position.
+	ErrConflict = errors.New("journal position is already occupied")
+	// ErrTampered reports stored bytes that fail sequence, chain, or canonicality verification.
+	ErrTampered = errors.New("journal entry failed verification")
 )
 
 var validName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
+// Journal is one authoritative journal handle. Its append cursor changes only
+// after a verified adoption or an accepted append; reads cannot mutate it.
 type Journal struct {
 	mu      sync.Mutex
 	js      jetstream.JetStream
@@ -51,6 +70,8 @@ type wireEntry struct {
 	Seq     int64  `json:"seq"`
 }
 
+// Open opens or creates the named journal, verifies its immutable authority
+// shape, and adopts only a verified tail as the append cursor.
 func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("invalid journal name %q", name)
@@ -125,30 +146,22 @@ func tailCursor(ctx context.Context, stream jetstream.Stream) (Cursor, error) {
 	if err != nil {
 		return Cursor{}, fmt.Errorf("read journal tail: %w", err)
 	}
-	position, err := positionFromStreamSequence(raw.Sequence)
+	_, position, digest, err := verifyEntry(raw)
 	if err != nil {
-		return Cursor{}, err
-	}
-	entry, err := decodeEntry(raw.Data)
-	if err != nil {
-		return Cursor{}, fmt.Errorf("decode journal tail: %w", err)
-	}
-	digest, err := canonical.EntryDigest(entry)
-	if err != nil {
-		return Cursor{}, tampered(position, "%v", err)
-	}
-	if canonical.DigestHex(raw.Data) != digest {
-		return Cursor{}, tampered(position, "wire bytes are not canonical")
+		return Cursor{}, fmt.Errorf("verify journal tail: %w", err)
 	}
 	return Cursor{Seq: position, Head: digest}, nil
 }
 
+// Head returns the handle's current verified append cursor.
 func (j *Journal) Head() Cursor {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	return j.cursor
 }
 
+// Append builds the next entry from the verified append cursor and stores it
+// with a last-sequence CAS. A lost CAS returns ErrConflict after safe resync.
 func (j *Journal) Append(
 	ctx context.Context,
 	payload string,
@@ -168,6 +181,8 @@ func (j *Journal) Append(
 	return entry, outcome, err
 }
 
+// AppendEntry conditionally stores a caller-built entry at its declared
+// position. It never bypasses canonical identity or last-sequence CAS checks.
 func (j *Journal) AppendEntry(
 	ctx context.Context,
 	entry canonical.ChainEntry,
@@ -177,6 +192,9 @@ func (j *Journal) AppendEntry(
 	return j.appendEntry(ctx, entry)
 }
 
+// Read verifies at most max entries after from and returns the entries plus the
+// last verified continuation cursor. A non-positive max means unbounded at
+// this substrate seam. Read never changes the handle's append cursor.
 func (j *Journal) Read(
 	ctx context.Context,
 	from Cursor,
@@ -186,7 +204,7 @@ func (j *Journal) Read(
 	defer j.mu.Unlock()
 
 	if from.Seq < -1 {
-		return nil, from, fmt.Errorf("invalid cursor sequence %d", from.Seq)
+		return nil, from, fmt.Errorf("%w: invalid sequence %d", ErrBadCursor, from.Seq)
 	}
 	info, err := j.stream.Info(ctx)
 	if err != nil {
@@ -209,23 +227,12 @@ func (j *Journal) Read(
 			return entries, cursor, getErr
 		}
 
-		entry, decodeErr := decodeEntry(raw.Data)
-		if decodeErr != nil {
-			return entries, cursor, tampered(position, "invalid entry JSON: %v", decodeErr)
-		}
-		if entry.Seq != int64(position) {
-			return entries, cursor, tampered(position, "seq is %d", entry.Seq)
+		entry, _, digest, verifyErr := verifyEntry(raw)
+		if verifyErr != nil {
+			return entries, cursor, verifyErr
 		}
 		if entry.Prev != cursor.Head {
 			return entries, cursor, tampered(position, "prev does not match the verified head")
-		}
-
-		digest, digestErr := canonical.EntryDigest(entry)
-		if digestErr != nil {
-			return entries, cursor, tampered(position, "%v", digestErr)
-		}
-		if canonical.DigestHex(raw.Data) != digest {
-			return entries, cursor, tampered(position, "wire bytes are not canonical")
 		}
 
 		entries = append(entries, entry)
@@ -233,9 +240,6 @@ func (j *Journal) Read(
 		nextStreamSeq++
 	}
 
-	if cursor.Seq > j.cursor.Seq {
-		j.cursor = cursor
-	}
 	return entries, cursor, nil
 }
 
@@ -373,6 +377,28 @@ func decodeEntry(data []byte) (canonical.ChainEntry, error) {
 		Prev:    wire.Prev,
 		Payload: wire.Payload,
 	}, nil
+}
+
+func verifyEntry(raw *jetstream.RawStreamMsg) (canonical.ChainEntry, int, string, error) {
+	position, err := positionFromStreamSequence(raw.Sequence)
+	if err != nil {
+		return canonical.ChainEntry{}, 0, "", err
+	}
+	entry, err := decodeEntry(raw.Data)
+	if err != nil {
+		return canonical.ChainEntry{}, position, "", tampered(position, "invalid entry JSON: %v", err)
+	}
+	if entry.Seq != int64(position) {
+		return canonical.ChainEntry{}, position, "", tampered(position, "seq is %d", entry.Seq)
+	}
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return canonical.ChainEntry{}, position, "", tampered(position, "%v", err)
+	}
+	if canonical.DigestHex(raw.Data) != digest {
+		return canonical.ChainEntry{}, position, "", tampered(position, "wire bytes are not canonical")
+	}
+	return entry, position, digest, nil
 }
 
 func cursorPosition(seq int64) (int, error) {

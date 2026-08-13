@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -60,9 +61,11 @@ func (e *LifecycleError) Unwrap() error { return ErrOutsideCertifiedEnvelope }
 type Options struct {
 	StoreDir           string
 	Listen             string
+	RequestTimeout     time.Duration
 	JetStreamClustered bool
 	KVReplicas         int
 	MemoryStorage      bool
+	CatalogR4Sabotage  bool
 }
 
 // Daemon owns the embedded NATS server, the catalog, and every journal
@@ -72,12 +75,18 @@ type Daemon struct {
 	conn    *nats.Conn
 	js      jetstream.JetStream
 	catalog *catalog
+	scheme  scheme
+	ctx     context.Context
+	cancel  context.CancelFunc
 
 	mu       sync.Mutex
 	journals map[string]*journal.Journal
+	handlers sync.WaitGroup
 
-	url  string
-	subs []*nats.Subscription
+	url            string
+	subs           []*nats.Subscription
+	requestTimeout time.Duration
+	releaseOnce    sync.Once
 }
 
 // Acquire starts the embedded NATS server (JetStream on StoreDir),
@@ -105,6 +114,17 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 			Assumption:    AssumptionTerminalImmutability,
 			Configuration: "in-memory storage",
 		}
+	}
+	requestTimeout := opts.RequestTimeout
+	if requestTimeout == 0 {
+		requestTimeout = 30 * time.Second
+	}
+	if requestTimeout < 0 {
+		return nil, errors.New("protod: RequestTimeout must not be negative")
+	}
+	identityScheme, err := configuredScheme(opts)
+	if err != nil {
+		return nil, err
 	}
 	listen := opts.Listen
 	if listen == "" {
@@ -167,6 +187,7 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		"",
 		nats.InProcessServer(natsServer),
 		nats.UserInfo("protod-internal", internalPassword),
+		nats.ErrorHandler(reportAsyncNATSError),
 	)
 	if err != nil {
 		release()
@@ -179,30 +200,37 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		return nil, fmt.Errorf("protod: create JetStream context: %w", err)
 	}
 
-	openedCatalog, err := openCatalog(ctx, js)
+	openedCatalog, err := openCatalog(ctx, js, identityScheme)
 	if err != nil {
 		conn.Close()
 		release()
 		return nil, fmt.Errorf("protod: open catalog: %w", err)
 	}
 
+	daemonCtx, cancel := context.WithCancel(ctx)
 	d := &Daemon{
-		server:   natsServer,
-		conn:     conn,
-		js:       js,
-		catalog:  openedCatalog,
-		journals: map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
-		url:      natsServer.ClientURL(),
+		server:         natsServer,
+		conn:           conn,
+		js:             js,
+		catalog:        openedCatalog,
+		scheme:         identityScheme,
+		ctx:            daemonCtx,
+		cancel:         cancel,
+		journals:       map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
+		url:            natsServer.ClientURL(),
+		requestTimeout: requestTimeout,
 	}
 
 	requestSub, err := conn.Subscribe(subjectRequestWildcard, d.handleRequest)
 	if err != nil {
+		cancel()
 		conn.Close()
 		release()
 		return nil, fmt.Errorf("protod: subscribe requests: %w", err)
 	}
 	ingressSub, err := conn.Subscribe(ingressWildcard, d.handleIngress)
 	if err != nil {
+		cancel()
 		conn.Close()
 		release()
 		return nil, fmt.Errorf("protod: subscribe ingress: %w", err)
@@ -212,11 +240,19 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 }
 
 func randomCredential() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(bytes), nil
+	return hex.EncodeToString(randomBytes), nil
+}
+
+func reportAsyncNATSError(_ *nats.Conn, sub *nats.Subscription, err error) {
+	subject := "<connection>"
+	if sub != nil {
+		subject = sub.Subject
+	}
+	fmt.Fprintf(os.Stderr, "protod: asynchronous NATS error on %s: %v\n", subject, err)
 }
 
 // URL is the client-facing NATS URL of the embedded server.
@@ -224,12 +260,33 @@ func (d *Daemon) URL() string { return d.url }
 
 // Release drains the surfaces and shuts the embedded server down.
 func (d *Daemon) Release() {
-	for _, sub := range d.subs {
-		_ = sub.Unsubscribe()
+	d.releaseOnce.Do(func() {
+		for _, sub := range d.subs {
+			_ = sub.Drain()
+		}
+		d.cancel()
+		done := make(chan struct{})
+		go func() {
+			d.handlers.Wait()
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-time.After(d.requestTimeout):
+		}
+		d.conn.Close()
+		d.server.Shutdown()
+		d.server.WaitForShutdown()
+	})
+}
+
+func (d *Daemon) beginHandler() (context.Context, func()) {
+	d.handlers.Add(1)
+	ctx, cancel := context.WithTimeout(d.ctx, d.requestTimeout)
+	return ctx, func() {
+		cancel()
+		d.handlers.Done()
 	}
-	d.conn.Close()
-	d.server.Shutdown()
-	d.server.WaitForShutdown()
 }
 
 // openJournal opens (or creates) a journal this daemon is authority

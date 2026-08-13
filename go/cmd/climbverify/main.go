@@ -14,7 +14,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: climbverify <bundle-dir>")
 		os.Exit(2)
 	}
-	report, err := gauntlet.VerifyClimb(os.Args[1], gauntlet.R2)
+	report, err := gauntlet.VerifyClimb(os.Args[1], gauntlet.R2())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "climbverify: REFUSED: %v\n", err)
 		os.Exit(1)

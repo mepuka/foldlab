@@ -38,7 +38,7 @@ func (e *engine) call(prompt string, p stepParams) (string, int64, int64, string
 		return "", 0, 0, "", err
 	}
 	for attempt := 1; ; attempt++ {
-		req, err := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+		req, err := http.NewRequestWithContext(e.ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
 		if err != nil {
 			return "", 0, 0, "", err
 		}
@@ -53,8 +53,11 @@ func (e *engine) call(prompt string, p stepParams) (string, int64, int64, string
 			time.Sleep(time.Duration(attempt*attempt) * time.Second)
 			continue
 		}
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if readErr != nil {
+			return "", 0, 0, "", fmt.Errorf("read provider response: %w", readErr)
+		}
 		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
 			if attempt >= 5 {
 				return "", 0, 0, "", fmt.Errorf("api status %d after %d attempts", resp.StatusCode, attempt)

@@ -21,8 +21,28 @@ export const NextHint = Schema.Struct({
 })
 export type NextHint = typeof NextHint.Type
 
+export const RefusalKind = Schema.Literals([
+  "malformed",
+  "invalid-structure",
+  "unknown-ref",
+  "digest-mismatch",
+  "unknown-identity",
+  "bad-journal",
+  "unknown-journal",
+  "bad-cursor",
+  "bad-stream",
+  "bad-bucket",
+  "unknown-request",
+  "unreachable",
+  "malformed-reply",
+  "verify-failed",
+  "beyond-v0",
+  "underivable",
+])
+export type RefusalKind = typeof RefusalKind.Type
+
 export const Refusal = Schema.Struct({
-  kind: Schema.String,
+  kind: RefusalKind,
   law: Schema.String,
   path: Schema.optionalKey(Schema.Array(Schema.String)),
   got: Schema.optionalKey(Schema.Unknown),
@@ -84,6 +104,7 @@ export const ReadReply = Schema.Struct({
   entries: Schema.Array(WireEntry),
   seq: Schema.Int,
   head: Schema.String,
+  partial: Schema.Boolean,
   note: Schema.String,
   next: Schema.Array(NextHint),
 })
@@ -143,7 +164,7 @@ export type Reply<A> =
   | { readonly ok: false; readonly refusal: Refusal }
 
 export const localRefusal = (
-  kind: string,
+  kind: RefusalKind,
   law: string,
   extra?: Partial<Pick<Refusal, "got" | "expected" | "path" | "example">>,
 ): Refusal => ({

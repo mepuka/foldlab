@@ -1,0 +1,11 @@
+const Genesis = "0000000000000000000000000000000000000000000000000000000000000000"
+func BuildChain(payloads []string) (entryDigests []string, head string, err error)
+func Canonicalize(jsonBytes []byte) ([]byte, error)
+func CanonicalizeValue(value any) ([]byte, error)
+func Decode(jsonBytes []byte) (any, error)
+func DigestHex(input []byte) string
+func EntryDigest(entry ChainEntry) (string, error)
+func UTF16Less(left, right string) bool
+type ChainEntry struct{ ... }
+type InvalidSequenceError struct{ ... }
+type InvalidUTF8Error struct{ ... }

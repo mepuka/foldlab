@@ -88,7 +88,7 @@ func runWorker(args []string) error {
 	if *index < 0 || *index >= crashstorm.Workers {
 		return fmt.Errorf("worker index %d is outside [0,%d)", *index, crashstorm.Workers)
 	}
-	return crashstorm.RunWorker(*url, *bundle, *salt, *owner, *index, *paceFile)
+	return crashstorm.RunWorker(context.Background(), *url, *bundle, *salt, *owner, *index, *paceFile)
 }
 
 func runServer(args []string) error {

@@ -251,7 +251,12 @@ func buildClimbBundle(t *testing.T) climbFixture {
 	// Ledger: alternate two workers over the receipts.
 	var ledger []string
 	i := 0
+	receipts := make([]string, 0, len(receiptSeen))
 	for work := range receiptSeen {
+		receipts = append(receipts, work)
+	}
+	sort.Strings(receipts)
+	for _, work := range receipts {
 		owner := "w1"
 		if i%2 == 1 {
 			owner = "w2"
@@ -290,7 +295,7 @@ func buildClimbBundle(t *testing.T) climbFixture {
 }
 
 // rechain rewrites journal.ndjson from a payload list.
-func rechain(t *testing.T, dir string, payloads []string) {
+func chainInto(t *testing.T, dir string, payloads []string) {
 	t.Helper()
 	head := canonical.Genesis
 	var journal []string
@@ -361,11 +366,12 @@ func TestClimbSelectionTamperRefused(t *testing.T) {
 		var m map[string]any
 		mustUnmarshal(t, []byte(p), &m)
 		if m["kind"] == "selection" && m["generation"] == float64(2) {
-			m["survivors"] = []any{fx.c1, fx.c2}
+			survivors := m["survivors"].([]any)
+			survivors[0], survivors[1] = survivors[1], survivors[0]
 			payloads[i] = string(mustCanonical(t, m))
 		}
 	}
-	rechain(t, fx.dir, payloads)
+	chainInto(t, fx.dir, payloads)
 	_, err := VerifyClimb(fx.dir, climbTestFloors)
 	if err == nil || !errors.Is(err, ErrSelection) {
 		t.Fatalf("selection tamper not refused as CL2: %v", err)
@@ -384,9 +390,9 @@ func TestClimbHoldoutBeforeSelectionRefused(t *testing.T) {
 		t.Fatalf("fixture drift: last payload is %v, want a holdout receipt", m["kind"])
 	}
 	reordered := append([]string{moved}, payloads[:last]...)
-	rechain(t, fx.dir, reordered)
+	chainInto(t, fx.dir, reordered)
 	_, err := VerifyClimb(fx.dir, climbTestFloors)
-	if err == nil || !errors.Is(err, ErrSelection) {
+	if err == nil || !errors.Is(err, ErrHoldout) {
 		t.Fatalf("holdout-before-selection not refused as CL3: %v", err)
 	}
 }
@@ -403,7 +409,7 @@ func TestClimbMissingLineageRefused(t *testing.T) {
 		}
 		kept = append(kept, p)
 	}
-	rechain(t, fx.dir, kept)
+	chainInto(t, fx.dir, kept)
 	_, err := VerifyClimb(fx.dir, climbTestFloors)
 	if err == nil || !errors.Is(err, ErrLineage) {
 		t.Fatalf("missing lineage not refused as CL4: %v", err)
@@ -512,7 +518,7 @@ func TestR2FloorsArePinned(t *testing.T) {
 		GenerationsMin: 4, PopulationMin: 6, StepsMin: 4,
 		DevMin: 40, HoldoutMin: 27, DevGainMin: 4, HoldoutGainMin: 1,
 	}
-	if R2 != want {
-		t.Fatalf("R2 floors drifted: %+v", R2)
+	if R2() != want {
+		t.Fatalf("R2 floors drifted: %+v", R2())
 	}
 }

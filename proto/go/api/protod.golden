@@ -1,0 +1,11 @@
+const SubjectTypeCreate = "flb.req.type.create" ...
+const KindMalformed = "malformed" ...
+var ErrOutsideCertifiedEnvelope = errors.New("protod: outside certified substrate envelope")
+type Assumption string
+    const AssumptionLinearizableReads Assumption = "linearizable-reads" ...
+type Daemon struct{ ... }
+    func Acquire(ctx context.Context, opts Options) (*Daemon, error)
+type LifecycleError struct{ ... }
+type NextHint struct{ ... }
+type Options struct{ ... }
+type Refusal struct{ ... }

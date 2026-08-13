@@ -1,3 +1,7 @@
+// Package effector implements the proven single-key A6 register protocol over
+// JetStream KV. Safety depends only on atomic create-if-absent, revision CAS,
+// linearizable reads, and the law that a committed outcome is never mutated or
+// deleted; clocks and owner identities affect liveness only.
 package effector
 
 import (
@@ -15,32 +19,50 @@ import (
 	"foldlab/canonical"
 )
 
+// State is the authority-visible state of one work digest.
 type State string
 
 const (
+	// Unclaimed means no unexpired claim or committed outcome is authoritative.
 	Unclaimed State = "unclaimed"
-	Held      State = "held"
+	// Held means an unexpired claim currently holds authority.
+	Held State = "held"
+	// Committed means the immutable outcome is authoritative.
 	Committed State = "committed"
 )
 
+// Claim is a fenced lease attempt for one work digest. Owner and Expiry affect
+// liveness; Fence is what prevents an older claimant from committing.
 type Claim struct {
+	// Digest names the work identity.
 	Digest string
-	Fence  uint64
-	Owner  string
+	// Fence increases on every successful reclaim and licenses Commit.
+	Fence uint64
+	// Owner is liveness metadata and confers no safety authority.
+	Owner string
+	// Expiry determines when another claimant may attempt a higher fence.
 	Expiry time.Time
 }
 
+// Outcome is the immutable result committed for a work digest and fence.
 type Outcome struct {
+	// Digest names the work identity.
 	Digest string
-	Fence  uint64
+	// Fence is the claim fence that committed this outcome.
+	Fence uint64
+	// Result is the immutable committed result.
 	Result string
 }
 
 var (
+	// ErrBadBucket refuses a KV bucket that lacks the A6 substrate shape.
 	ErrBadBucket = errors.New("effector bucket does not have the required shape")
-	ErrHeld      = errors.New("effector claim is held")
+	// ErrHeld reports an unexpired or concurrently won claim.
+	ErrHeld = errors.New("effector claim is held")
+	// ErrCommitted reports an already committed, incompatible outcome.
 	ErrCommitted = errors.New("effector outcome is already committed")
-	ErrFenced    = errors.New("effector claim was superseded")
+	// ErrFenced reports that a newer fence superseded a claim.
+	ErrFenced = errors.New("effector claim was superseded")
 )
 
 var (
@@ -48,6 +70,7 @@ var (
 	validDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
+// Effector is an A6 authority handle backed by one shape-verified KV bucket.
 type Effector struct {
 	kv jetstream.KeyValue
 }
@@ -70,6 +93,8 @@ type authorityValue struct {
 	outcome *Outcome
 }
 
+// Open opens or creates the named KV bucket and refuses any bucket whose
+// storage, history, TTL, or capacity violates the A6 substrate contract.
 func Open(ctx context.Context, js jetstream.JetStream, name string) (*Effector, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("invalid effector name %q", name)
@@ -105,6 +130,8 @@ func Open(ctx context.Context, js jetstream.JetStream, name string) (*Effector, 
 	return &Effector{kv: kv}, nil
 }
 
+// Claim acquires an absent or expired work digest using create-if-absent or
+// revision CAS. It returns ErrHeld or ErrCommitted when authority already exists.
 func (e *Effector) Claim(
 	ctx context.Context,
 	digest string,
@@ -183,6 +210,8 @@ func (e *Effector) Claim(
 	return claim, nil
 }
 
+// Commit replaces claim with an immutable outcome only when the stored fence
+// still matches. The boolean is true only for the call that stored the outcome.
 func (e *Effector) Commit(ctx context.Context, claim Claim, result string) (bool, error) {
 	if !validDigest.MatchString(claim.Digest) {
 		return false, fmt.Errorf("invalid work digest %q", claim.Digest)
@@ -245,6 +274,8 @@ func (e *Effector) Commit(ctx context.Context, claim Claim, result string) (bool
 	)
 }
 
+// Lookup performs the linearizable authority read for digest. Expired claims
+// are reported as Unclaimed; committed outcomes never expire.
 func (e *Effector) Lookup(ctx context.Context, digest string) (State, Outcome, error) {
 	if !validDigest.MatchString(digest) {
 		return Unclaimed, Outcome{}, fmt.Errorf("invalid work digest %q", digest)
@@ -269,6 +300,8 @@ func (e *Effector) Lookup(ctx context.Context, digest string) (State, Outcome, e
 	return Held, Outcome{}, nil
 }
 
+// Do returns an existing outcome or claims, executes effect, and commits its
+// result. The boolean is true only when this call first committed the outcome.
 func (e *Effector) Do(
 	ctx context.Context,
 	digest string,

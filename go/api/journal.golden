@@ -1,0 +1,6 @@
+var ErrBadStream = errors.New("journal stream does not have the required shape") ...
+type AppendOutcome string
+    const Stored AppendOutcome = "stored" ...
+type Cursor struct{ ... }
+type Journal struct{ ... }
+    func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, error)

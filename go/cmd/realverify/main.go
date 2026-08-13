@@ -20,7 +20,7 @@ func main() {
 	}
 	failed := false
 	for _, dir := range os.Args[1:] {
-		report, err := gauntlet.VerifyReal(dir, gauntlet.R1)
+		report, err := gauntlet.VerifyReal(dir, gauntlet.R1())
 		if err != nil {
 			failed = true
 			fmt.Printf("REFUSED  %s\n         %v\n", dir, err)

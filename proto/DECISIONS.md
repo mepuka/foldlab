@@ -988,3 +988,32 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 20 — harness integrity (2026-08-13)
+
+### D??. Journal cursors retain a checked platform-int sequence boundary
+
+Decided: `journal.Cursor.Seq` remains an `int` because it indexes verified
+in-memory positions and collections, while every JetStream `uint64` and
+canonical-entry `int64` crossing uses an explicit checked conversion. Genesis
+is the sole negative value (`-1`), and a platform-overflowing stored position
+is refused rather than truncated. Alternatives: widen the public cursor to
+`uint64` and add a separate genesis representation; use `int64` throughout;
+rely on unchecked casts. Why: widening would churn the established wire/API
+boundary without enlarging the canonical identity domain, while unchecked
+casts would let one stored coordinate name another on 32-bit platforms.
+**Load-bearing? yes** — sequence agreement is part of journal identity and CAS
+positioning.
+
+### D??. Reads are stateless observations of a journal handle
+
+Decided: a caller-supplied read cursor advances only the cursor returned by
+that `Read`; it never changes the handle's private append cursor. Writer state
+changes only after an accepted append or verified tail adoption by `Open` or
+conflict recovery. Alternatives: cache the caller's cursor; resync the writer
+after every read; maintain separate reader and writer handles. Why: a cursor is
+only verified for the entries actually traversed, and an empty read from an
+unverified head supplies no evidence that the head is authoritative. Keeping
+observation stateless is the narrowest repair and prevents a read from
+poisoning the next append. **Load-bearing? yes** — otherwise an unverified
+caller value can mint the next chain link.

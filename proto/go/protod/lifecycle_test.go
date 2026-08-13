@@ -101,6 +101,33 @@ func TestAcquireProtectsRegisterBucketsFromApplicationCredentials(t *testing.T) 
 	}
 }
 
+func TestAcquireContextBoundsJournalHandlers(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	daemon, err := protod.Acquire(ctx, protod.Options{
+		StoreDir:       t.TempDir(),
+		RequestTimeout: time.Second,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(daemon.Release)
+
+	client, err := nats.Connect(daemon.URL())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(client.Close)
+	cancel()
+	_, err = client.Request(
+		protod.SubjectJournalRead,
+		[]byte(`{"journal":"catalog"}`),
+		100*time.Millisecond,
+	)
+	if !errors.Is(err, nats.ErrTimeout) {
+		t.Fatalf("journal request after daemon context cancellation = %v, want nats.ErrTimeout", err)
+	}
+}
+
 func assertLifecycleRefusal(
 	t *testing.T,
 	err error,

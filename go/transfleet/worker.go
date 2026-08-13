@@ -57,12 +57,16 @@ func RunWorker(ctx context.Context, url, bundle, salt, owner string, index int) 
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			time.Sleep(5 * time.Millisecond)
+			if err := waitForRetry(ctx, 5*time.Millisecond); err != nil {
+				return err
+			}
 			continue
 		}
 		state, eligible := w.nextEligible()
 		if !eligible {
-			time.Sleep(2 * time.Millisecond)
+			if err := waitForRetry(ctx, 2*time.Millisecond); err != nil {
+				return err
+			}
 			continue
 		}
 		if err := w.expand(ctx, state); err != nil {
@@ -188,7 +192,9 @@ func (w *worker) expand(ctx context.Context, state State) error {
 		registerState, outcome, lookupErr := w.effector.Lookup(opCtx, digest)
 		cancel()
 		if lookupErr != nil {
-			time.Sleep(3 * time.Millisecond)
+			if err := waitForRetry(ctx, 3*time.Millisecond); err != nil {
+				return err
+			}
 			continue
 		}
 		switch registerState {
@@ -198,7 +204,9 @@ func (w *worker) expand(ctx context.Context, state State) error {
 			}
 			return w.appendDiscovery(ctx, state, payload)
 		case effector.Held:
-			time.Sleep(3 * time.Millisecond)
+			if err := waitForRetry(ctx, 3*time.Millisecond); err != nil {
+				return err
+			}
 			continue
 		case effector.Unclaimed:
 		}
@@ -208,10 +216,14 @@ func (w *worker) expand(ctx context.Context, state State) error {
 		cancel()
 		if claimErr != nil {
 			if errors.Is(claimErr, effector.ErrHeld) || errors.Is(claimErr, effector.ErrCommitted) {
-				time.Sleep(2 * time.Millisecond)
+				if err := waitForRetry(ctx, 2*time.Millisecond); err != nil {
+					return err
+				}
 				continue
 			}
-			time.Sleep(5 * time.Millisecond)
+			if err := waitForRetry(ctx, 5*time.Millisecond); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -231,7 +243,9 @@ func (w *worker) expand(ctx context.Context, state State) error {
 			if errors.Is(commitErr, effector.ErrFenced) || errors.Is(commitErr, effector.ErrCommitted) {
 				return fmt.Errorf("commit refused for (%d,%d): %w", state.X, state.Y, commitErr)
 			}
-			time.Sleep(3 * time.Millisecond)
+			if err := waitForRetry(ctx, 3*time.Millisecond); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -273,7 +287,20 @@ func (w *worker) appendDiscovery(ctx context.Context, state State, payload strin
 				return ctx.Err()
 			}
 		}
-		time.Sleep(1 * time.Millisecond)
+		if err := waitForRetry(ctx, time.Millisecond); err != nil {
+			return err
+		}
+	}
+}
+
+func waitForRetry(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 

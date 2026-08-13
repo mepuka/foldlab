@@ -20,6 +20,7 @@ import (
 
 type workerProcess struct {
 	command *exec.Cmd
+	done    chan struct{}
 }
 
 type workerExit struct {
@@ -105,7 +106,7 @@ func Run(ctx context.Context, executable, bundle, seed string) (gauntlet.TransRe
 	if err := ExportBundle(ctx, controller.url, controller.bundle, controller.salt); err != nil {
 		return zero, err
 	}
-	report, err := gauntlet.VerifyTransposition(controller.bundle, gauntlet.RGA)
+	report, err := gauntlet.VerifyTransposition(controller.bundle, gauntlet.RGA())
 	if err != nil {
 		return zero, fmt.Errorf("self-verification refused produced bundle: %w", err)
 	}
@@ -146,14 +147,14 @@ func (controller *Controller) startServer(ctx context.Context) error {
 	done := make(chan error, 1)
 	go func() { done <- command.Wait() }()
 	controller.server = &serverProcess{command: command, done: done}
-	if err := waitForServer(ctx, controller.url); err != nil {
+	if err := waitForServer(ctx, controller.url, done); err != nil {
 		return err
 	}
 	fmt.Printf("server ready pid=%d url=%s file_store=true\n", command.Process.Pid, controller.url)
 	return nil
 }
 
-func waitForServer(ctx context.Context, url string) error {
+func waitForServer(ctx context.Context, url string, serverDone <-chan error) error {
 	for {
 		connection, err := nats.Connect(url, nats.Timeout(200*time.Millisecond), nats.NoReconnect())
 		if err == nil {
@@ -164,6 +165,11 @@ func waitForServer(ctx context.Context, url string) error {
 			connection.Close()
 		}
 		select {
+		case err := <-serverDone:
+			if err == nil {
+				err = errors.New("server stopped")
+			}
+			return fmt.Errorf("server exited before ready: %w", err)
 		case <-ctx.Done():
 			return fmt.Errorf("wait for server: %w", ctx.Err())
 		case <-time.After(20 * time.Millisecond):
@@ -194,8 +200,13 @@ func (controller *Controller) startWorker(index int, exits chan<- workerExit) er
 		return fmt.Errorf("spawn %s: %w", owner, err)
 	}
 	_ = logFile.Close()
-	controller.workers[owner] = &workerProcess{command: command}
-	go func() { exits <- workerExit{owner: owner, err: command.Wait()} }()
+	done := make(chan struct{})
+	controller.workers[owner] = &workerProcess{command: command, done: done}
+	go func() {
+		err := command.Wait()
+		close(done)
+		exits <- workerExit{owner: owner, err: err}
+	}()
 	fmt.Printf("worker spawned owner=%s pid=%d\n", owner, command.Process.Pid)
 	return nil
 }
@@ -263,6 +274,10 @@ func (controller *Controller) stopAll() {
 		process := controller.workers[owner]
 		if process.command != nil && process.command.Process != nil {
 			_ = process.command.Process.Kill()
+			select {
+			case <-process.done:
+			case <-time.After(3 * time.Second):
+			}
 		}
 	}
 	if controller.server != nil && controller.server.command != nil && controller.server.command.Process != nil {

@@ -18,7 +18,7 @@ type RealFloors struct {
 	KillsMin   int
 }
 
-var R1 = RealFloors{LogicalMin: 480, ReuseMilli: 2500, KillsMin: 1}
+func R1() RealFloors { return RealFloors{LogicalMin: 480, ReuseMilli: 2500, KillsMin: 1} }
 
 var (
 	ErrPlan     = errors.New("gauntlet: plan refused (RL2/RL4)")

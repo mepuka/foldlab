@@ -3,6 +3,8 @@ package protod
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -37,10 +39,14 @@ type admitReply struct {
 }
 
 func (d *Daemon) handleIngress(msg *nats.Msg) {
+	ctx, done := d.beginHandler()
+	defer done()
 	if msg.Reply == "" {
 		return
 	}
-	d.respond(msg, d.serveIngress(context.Background(), msg.Subject, msg.Data))
+	if err := d.respond(msg, d.serveIngress(ctx, msg.Subject, msg.Data)); err != nil {
+		fmt.Fprintf(os.Stderr, "protod: respond to %s: %v\n", msg.Subject, err)
+	}
 }
 
 func (d *Daemon) serveIngress(ctx context.Context, subject string, body []byte) any {

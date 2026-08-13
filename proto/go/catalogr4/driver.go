@@ -115,7 +115,9 @@ func acquireDriver(ctx context.Context) (*replayDriver, error) {
 			driver.release()
 			return nil, err
 		}
-		daemon, err := protod.Acquire(ctx, protod.Options{StoreDir: store, Listen: "127.0.0.1:0"})
+		daemon, err := protod.Acquire(ctx, protod.Options{
+			StoreDir: store, Listen: "127.0.0.1:0", CatalogR4Sabotage: catalogR4SabotageEnabled,
+		})
 		if err != nil {
 			_ = os.RemoveAll(store)
 			driver.release()

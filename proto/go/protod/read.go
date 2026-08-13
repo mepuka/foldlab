@@ -15,6 +15,7 @@ import (
 // recompute the head locally anyway; the reply says so.
 
 const readNote = "heads are claims: recompute the chain head from the entries locally"
+const maxReadEntries = 1000
 
 type readRequest struct {
 	Journal string `json:"journal"`
@@ -37,6 +38,7 @@ type readReply struct {
 	Entries []wireEntry `json:"entries"`
 	Seq     int         `json:"seq"`
 	Head    string      `json:"head"`
+	Partial bool        `json:"partial"`
 	Note    string      `json:"note"`
 	Next    []NextHint  `json:"next"`
 }
@@ -60,6 +62,9 @@ func (d *Daemon) serveRead(ctx context.Context, body []byte) any {
 	}
 	if request.From.Head == "" && request.From.Seq == -1 {
 		request.From.Head = genesis
+	}
+	if request.Max <= 0 || request.Max > maxReadEntries {
+		request.Max = maxReadEntries
 	}
 
 	journalHandle, refusal, err := d.lookupJournal(ctx, request.Journal)
@@ -89,15 +94,18 @@ func (d *Daemon) serveRead(ctx context.Context, body []byte) any {
 				Next:     []NextHint{readCatalogHint()},
 			})
 		}
-		return refuse(&Refusal{
-			Kind:     KindBadCursor,
-			Law:      "read cursors carry a seq at or above -1",
-			Path:     []string{"from", "seq"},
-			Got:      request.From.Seq,
-			Expected: "an integer >= -1",
-			Example:  map[string]any{"seq": -1, "head": genesis},
-			Next:     []NextHint{readCatalogHint()},
-		})
+		if errors.Is(err, journal.ErrBadCursor) {
+			return refuse(&Refusal{
+				Kind:     KindBadCursor,
+				Law:      "read cursors carry a seq at or above -1",
+				Path:     []string{"from", "seq"},
+				Got:      request.From.Seq,
+				Expected: "an integer >= -1",
+				Example:  map[string]any{"seq": -1, "head": genesis},
+				Next:     []NextHint{readCatalogHint()},
+			})
+		}
+		return nil // substrate failure: D4 forbids inventing a domain law
 	}
 
 	wire := make([]wireEntry, len(entries))
@@ -110,6 +118,7 @@ func (d *Daemon) serveRead(ctx context.Context, body []byte) any {
 		Entries: wire,
 		Seq:     cursor.Seq,
 		Head:    cursor.Head,
+		Partial: cursor.Seq < journalHandle.Head().Seq,
 		Note:    readNote,
 		Next: []NextHint{
 			{
@@ -118,7 +127,7 @@ func (d *Daemon) serveRead(ctx context.Context, body []byte) any {
 				Body: map[string]any{
 					"journal": request.Journal,
 					"from":    map[string]any{"seq": cursor.Seq, "head": cursor.Head},
-					"max":     0,
+					"max":     maxReadEntries,
 				},
 			},
 		},

@@ -25,7 +25,7 @@ var workerColors = []string{
 // RenderSVG has one input—the exported bundle—and derives every mark
 // from its manifest and journal files.
 func RenderSVG(bundle string) error {
-	if _, err := gauntlet.VerifyTransposition(bundle, gauntlet.RGA); err != nil {
+	if _, err := gauntlet.VerifyTransposition(bundle, gauntlet.RGA()); err != nil {
 		return fmt.Errorf("refuse SVG source bundle: %w", err)
 	}
 	manifestBytes, err := os.ReadFile(filepath.Join(bundle, "manifest.json"))

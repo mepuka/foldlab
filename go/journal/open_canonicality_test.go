@@ -32,3 +32,21 @@ func TestOpenRefusesNonCanonicalTail(t *testing.T) {
 		t.Fatalf("reopen over non-canonical tail: err=%v, want ErrTampered", err)
 	}
 }
+
+func TestOpenRefusesCanonicalTailWithWrongEntrySequence(t *testing.T) {
+	js := startJetStream(t)
+	c := ctx(t)
+	if _, err := journal.Open(c, js, "jr_seq"); err != nil {
+		t.Fatalf("bootstrap open: %v", err)
+	}
+	raw, err := canonical.Canonicalize([]byte(`{"seq":99,"prev":"` + canonical.Genesis + `","payload":"x"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rawPublishBytes(t, js, "jr_seq", raw, "wrong-seq-tail", 0); err != nil {
+		t.Fatalf("inject wrong-sequence tail: %v", err)
+	}
+	if _, err := journal.Open(c, js, "jr_seq"); !errors.Is(err, journal.ErrTampered) {
+		t.Fatalf("reopen over wrong-sequence tail: err=%v, want ErrTampered", err)
+	}
+}

@@ -17,6 +17,9 @@ func (catalogR4AssertedIdentity) Derive(canonicalBytes []byte) string {
 	return canonical.DigestHex(preimage)
 }
 
-func init() {
-	activeScheme = catalogR4AssertedIdentity{}
+func configuredScheme(opts Options) (scheme, error) {
+	if opts.CatalogR4Sabotage {
+		return catalogR4AssertedIdentity{}, nil
+	}
+	return bytesSHA256V1{}, nil
 }

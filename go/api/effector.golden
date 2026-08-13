@@ -1,0 +1,8 @@
+var ErrBadBucket = errors.New("effector bucket does not have the required shape") ...
+type Claim struct{ ... }
+type Effector struct{ ... }
+    func Open(ctx context.Context, js jetstream.JetStream, name string) (*Effector, error)
+type Outcome struct{ ... }
+type State string
+    const Unclaimed State = "unclaimed" ...
+type Transition struct{ ... }

@@ -91,13 +91,15 @@ exactly when `type.create` accepts the partial (C3).
 ```
 
 Fact: `{"ok":true,"journal":name,"entries":[{"seq","prev","payload"}...],
-"seq":int,"head":hex64,"note":...,"next":[...]}`
+"seq":int,"head":hex64,"partial":bool,"note":...,"next":[...]}`
 
 `from` defaults to `{seq:-1, head:GENESIS}`. Heads are claims (W6): the
 reply says so in `note`, and the reader recomputes the chain locally
 (entry digest = SHA-256 of the canonical bytes of
 `{"payload":...,"prev":...,"seq":...}`, chained from all-zero genesis).
 A cursor that does not verify refuses (`bad-cursor`) and leaks nothing.
+Reads return at most 1000 entries. `partial:true` means more entries exist;
+the reply cursor and `next` hint continue from the last verified entry.
 
 ### ingress frame
 
@@ -141,6 +143,8 @@ same shape with `local:true` for its own conditions (`unreachable`,
 | `bad-journal` | ingress names an invalid or reserved journal |
 | `unknown-journal` | read addresses a journal that does not exist (lag is absence) |
 | `bad-cursor` | read cursor does not verify against the journal (W6) |
+| `bad-stream` | journal stream violates the pinned authority shape |
+| `bad-bucket` | effector bucket violates the pinned register shape |
 | `unknown-request` | request subject has no handler (W9) |
 
 ## flb.type.v0 specifics pinned by this implementation
@@ -194,3 +198,6 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
+- `refusals.json` — the frozen daemon refusal-kind vocabulary. Task 20 F9's
+  operator-ratified bad-stream/bad-bucket names are the stated reason for
+  this additive fixture.

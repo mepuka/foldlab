@@ -15,6 +15,8 @@ const (
 	KindBadJournal       = "bad-journal"       // ingress subject names an invalid or reserved journal
 	KindUnknownJournal   = "unknown-journal"   // read addresses a journal that does not exist
 	KindBadCursor        = "bad-cursor"        // read cursor does not verify against the journal (W6)
+	KindBadStream        = "bad-stream"        // journal stream violates the authority shape law
+	KindBadBucket        = "bad-bucket"        // effector bucket violates the register shape law
 	KindUnknownRequest   = "unknown-request"   // request subject has no handler
 )
 

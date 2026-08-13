@@ -24,7 +24,6 @@ func connect(ctx context.Context, url, name string) (*nats.Conn, jetstream.JetSt
 				return connection, js, nil
 			}
 			connection.Close()
-			err = jsErr
 		}
 		select {
 		case <-ctx.Done():

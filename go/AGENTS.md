@@ -23,3 +23,6 @@ The Go module holds the substrate and the algebra's hot path. Read root
   before editing there.
 - Benchmarks live next to laws (`go test -bench -benchmem`); watch
   allocations, not cycles (`bench/BENCH.md`).
+- A failing fuzz target's minimized `testdata/fuzz` entry is evidence: commit
+  it with the fix in the same change so the discovered input remains a
+  permanent regression.

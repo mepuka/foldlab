@@ -84,9 +84,24 @@ jobs:
       # Spawns the persistent Bun probe from the repository root, so the
       # root install above is a prerequisite of this step, not just of the
       # TypeScript suite.
-      - name: go — go test ./...
+      - name: go — go test -race ./...
         working-directory: go
-        run: go test ./... 2>&1 | tee ../ci-logs/go-test.log
+        run: go test -race ./... 2>&1 | tee ../ci-logs/go-test.log
+
+      - name: go — staticcheck
+        working-directory: go
+        run: go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./... 2>&1 | tee ../ci-logs/go-staticcheck.log
+
+      - name: go — js/wasm compile
+        working-directory: go
+        run: GOOS=js GOARCH=wasm go build -o "$RUNNER_TEMP/wasmwall.wasm" ./cmd/wasmwall 2>&1 | tee ../ci-logs/go-wasm-build.log
+
+      - name: go — exported API wall
+        working-directory: go
+        run: |
+          diff -u api/canonical.golden <(go doc -short ./canonical)
+          diff -u api/journal.golden <(go doc -short ./journal)
+          diff -u api/effector.golden <(go doc -short ./effector)
 
       # --- proto/go ------------------------------------------------------
       - name: proto/go — gofmt -l .
@@ -103,9 +118,32 @@ jobs:
         working-directory: proto/go
         run: go vet ./... 2>&1 | tee ../../ci-logs/proto-go-vet.log
 
-      - name: proto/go — go test ./...
+      - name: proto/go — go test -race ./...
         working-directory: proto/go
-        run: go test ./... 2>&1 | tee ../../ci-logs/proto-go-test.log
+        run: go test -race ./... 2>&1 | tee ../../ci-logs/proto-go-test.log
+
+      - name: proto/go — non-default build tags
+        working-directory: proto/go
+        run: |
+          for tag in \
+            catalogr4_sabotage \
+            catalogr4_reply_created \
+            catalogr4_reply_converged \
+            catalogr4_reply_admitted \
+            catalogr4_reply_refused
+          do
+            echo "== $tag"
+            go vet -tags "$tag" ./...
+            go build -tags "$tag" ./...
+          done 2>&1 | tee ../../ci-logs/proto-go-tags.log
+
+      - name: proto/go — staticcheck
+        working-directory: proto/go
+        run: go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./... 2>&1 | tee ../../ci-logs/proto-go-staticcheck.log
+
+      - name: proto/go — exported API wall
+        working-directory: proto/go
+        run: diff -u api/protod.golden <(go doc -short ./protod)
 
       # --- proto/ts ------------------------------------------------------
       # Its own island: own lockfile, own bunfig test root.

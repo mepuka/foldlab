@@ -22,8 +22,6 @@ func (bytesSHA256V1) Derive(canonicalBytes []byte) string {
 	return canonical.DigestHex(canonicalBytes)
 }
 
-var activeScheme scheme = bytesSHA256V1{}
-
 // canonicalBytes marshals a decoded JSON value and canonicalizes it
 // (RFC 8785). Identity is always of these bytes, never of what the
 // submitter happened to send (W2).

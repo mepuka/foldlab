@@ -9,6 +9,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,8 +38,9 @@ const (
 	capMaxOutTok = 20000
 	capSpendNano = 15_000_000_000 // $15.00, the operator cap
 
-	priceInNano  = 1000 // haiku: $1 / MTok input
-	priceOutNano = 5000 // haiku: $5 / MTok output
+	priceInNano   = 1000 // haiku: $1 / MTok input
+	priceOutNano  = 5000 // haiku: $5 / MTok output
+	worstCaseNano = int64(capMaxOutTok) * priceOutNano
 
 	pinnedCorpusSHA = "8ce15a57d0d8a6b8bba1efb7f04ceeb64358a8d2e8227c6651d90af8c9fae5f2"
 	placeholder     = "{{INPUT}}"
@@ -94,6 +96,7 @@ type engine struct {
 	fake    bool
 	client  *http.Client
 	key     string
+	ctx     context.Context
 }
 
 func openEngine(bundle string, fake bool) (*engine, map[string]mutRec, [][]string, error) {
@@ -104,6 +107,7 @@ func openEngine(bundle string, fake bool) (*engine, map[string]mutRec, [][]strin
 		head:     canonical.Genesis,
 		outputs:  filepath.Join(bundle, "outputs"),
 		fake:     fake,
+		ctx:      context.Background(),
 	}
 	if err := os.MkdirAll(e.outputs, 0o755); err != nil {
 		return nil, nil, nil, err
@@ -310,15 +314,18 @@ func (e *engine) ensure(work, owner, prompt string, p stepParams) (string, error
 			<-ch
 			continue
 		}
-		// Caps are laws, enforced BEFORE the call — fail closed.
-		if e.calls >= capMaxCalls {
-			err := fmt.Errorf("cap reached: %d calls — stopping, bundle is partial", e.calls)
+		// Caps are laws, enforced BEFORE the call — fail closed. In-flight
+		// work reserves both a call and its maximum output-token spend.
+		reserved := len(e.inflight)
+		if e.calls+reserved >= capMaxCalls {
+			err := fmt.Errorf("cap reached: %d completed + %d reserved calls — stopping, bundle is partial", e.calls, reserved)
 			e.failed = err
 			e.mu.Unlock()
 			return "", err
 		}
-		if e.spend >= capSpendNano {
-			err := fmt.Errorf("spend cap reached: %d nano-usd — stopping, bundle is partial", e.spend)
+		reservedSpend := int64(reserved) * worstCaseNano
+		if e.spend+reservedSpend >= capSpendNano {
+			err := fmt.Errorf("spend cap reached: %d spent + %d reserved nano-usd — stopping, bundle is partial", e.spend, reservedSpend)
 			e.failed = err
 			e.mu.Unlock()
 			return "", err

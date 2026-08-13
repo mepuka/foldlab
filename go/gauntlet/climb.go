@@ -36,23 +36,26 @@ type ClimbFloors struct {
 	HoldoutGainMin int
 }
 
-var R2 = ClimbFloors{
-	LogicalMin:     3840,
-	ReuseMilli:     3000,
-	KillsMin:       1,
-	WorkersMin:     4,
-	GenerationsMin: 4,
-	PopulationMin:  6,
-	StepsMin:       4,
-	DevMin:         40,
-	HoldoutMin:     27,
-	DevGainMin:     4,
-	HoldoutGainMin: 1,
+func R2() ClimbFloors {
+	return ClimbFloors{
+		LogicalMin:     3840,
+		ReuseMilli:     3000,
+		KillsMin:       1,
+		WorkersMin:     4,
+		GenerationsMin: 4,
+		PopulationMin:  6,
+		StepsMin:       4,
+		DevMin:         40,
+		HoldoutMin:     27,
+		DevGainMin:     4,
+		HoldoutGainMin: 1,
+	}
 }
 
 var (
 	ErrScore     = errors.New("gauntlet: score refused (CL1)")
-	ErrSelection = errors.New("gauntlet: selection refused (CL2/CL3)")
+	ErrSelection = errors.New("gauntlet: selection refused (CL2)")
+	ErrHoldout   = errors.New("gauntlet: holdout isolation refused (CL3)")
 	ErrLineage   = errors.New("gauntlet: lineage refused (CL4)")
 	ErrFleet     = errors.New("gauntlet: fleet economy refused (CL5)")
 )
@@ -538,7 +541,7 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 				return report, fmt.Errorf("%w: plan row %d claims holdout for a derived-dev question", ErrPlan, i)
 			}
 			if row.Generation != man.Generations {
-				return report, fmt.Errorf("%w: plan row %d holdout outside the final generation", ErrSelection, i)
+				return report, fmt.Errorf("%w: plan row %d holdout outside the final generation", ErrHoldout, i)
 			}
 		default:
 			return report, fmt.Errorf("%w: plan row %d unknown split %q", ErrPlan, i, row.Split)
@@ -586,7 +589,7 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 		}
 		// CL3: holdout work is bought only after the final selection.
 		if row.Split == "holdout" && receiptPos[work] < finalSelPos {
-			return report, fmt.Errorf("%w: row %v holdout receipt precedes the final selection", ErrSelection, key)
+			return report, fmt.Errorf("%w: row %v holdout receipt precedes the final selection", ErrHoldout, key)
 		}
 		naiveNano += fact.InputTokens*man.Prices.InputNanoPerTok +
 			fact.OutputTokens*man.Prices.OutputNanoPerTok
@@ -647,17 +650,6 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 			}
 		}
 	}
-	// Holdout: exactly {seed, winner}, each complete.
-	if len(holdoutRowsPerCand) != 2 || holdoutRowsPerCand[man.SeedCandidate] == 0 || holdoutRowsPerCand[winner] == 0 {
-		return report, fmt.Errorf("%w: holdout must evaluate exactly the seed and the winner", ErrSelection)
-	}
-	for cand, rows := range holdoutRowsPerCand {
-		if rows != len(holdoutSet)*man.L {
-			return report, fmt.Errorf("%w: candidate %s has %d holdout rows, want %d",
-				ErrPlan, cand, rows, len(holdoutSet)*man.L)
-		}
-	}
-
 	// CL1: scores recomputed from bundled final-step outputs, bound to
 	// the chain by result digest, under the frozen normalizer.
 	scoreCache := make(map[string]int)
@@ -722,6 +714,19 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 					"%w: generation %d survivor %d is %s, recomputed top-k says %s",
 					ErrSelection, g, i, want, ranking[i].cand)
 			}
+		}
+	}
+
+	// CL3: holdout is exactly {seed, winner}, each complete. This check
+	// follows CL2 so a dishonest selection cannot masquerade as a holdout
+	// isolation failure.
+	if len(holdoutRowsPerCand) != 2 || holdoutRowsPerCand[man.SeedCandidate] == 0 || holdoutRowsPerCand[winner] == 0 {
+		return report, fmt.Errorf("%w: holdout must evaluate exactly the seed and the winner", ErrHoldout)
+	}
+	for cand, rows := range holdoutRowsPerCand {
+		if rows != len(holdoutSet)*man.L {
+			return report, fmt.Errorf("%w: candidate %s has %d holdout rows, want %d",
+				ErrPlan, cand, rows, len(holdoutSet)*man.L)
 		}
 	}
 

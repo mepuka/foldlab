@@ -77,3 +77,76 @@ jobs:
             tlc-out/catalog-tlc.*/*.out.txt
           if-no-files-found: warn
           retention-days: 90
+
+  r4-catalog:
+    name: R4 executable refinement + controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: proto/go/go.mod
+      - name: verify/catalog/run-r4.sh
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/r4-out"
+          TMPDIR="$GITHUB_WORKSPACE/r4-out" bash verify/catalog/run-r4.sh 2>&1 \
+            | tee "$GITHUB_WORKSPACE/r4-out/gate.log"
+      - name: Upload R4 output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: r4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: r4-out/
+          if-no-files-found: warn
+          retention-days: 90
+
+  r3-induction:
+    name: R3 induction + controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: verify/catalog/run-ind.sh
+        run: bash verify/catalog/run-ind.sh
+      - name: Upload R3 output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: r3-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verify/catalog/_runlogs/
+          if-no-files-found: warn
+          retention-days: 90
+
+  go-vulnerability:
+    name: pinned Go vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+      - name: go — govulncheck
+        working-directory: go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
+      - name: proto/go — govulncheck
+        working-directory: proto/go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
