@@ -7,6 +7,8 @@ package protod
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -21,12 +23,46 @@ import (
 	"foldlab/journal"
 )
 
-// Options configures an acquired daemon. StoreDir is required (tests
-// pass temp dirs; tracer data is disposable). Listen defaults to
-// "127.0.0.1:0" — a random port on loopback.
+// Assumption names one substrate property on which the daemon's proofs rely.
+type Assumption string
+
+const (
+	AssumptionLinearizableReads    Assumption = "linearizable-reads"
+	AssumptionTerminalImmutability Assumption = "terminal-immutability"
+)
+
+// ErrOutsideCertifiedEnvelope marks a lifecycle refusal for a substrate
+// configuration whose assumptions have not passed an executable gate.
+var ErrOutsideCertifiedEnvelope = errors.New("protod: outside certified substrate envelope")
+
+// LifecycleError refuses daemon startup before any substrate resources are
+// acquired. Assumption names the executable law the configuration uncovers.
+type LifecycleError struct {
+	Assumption    Assumption
+	Configuration string
+}
+
+func (e *LifecycleError) Error() string {
+	return fmt.Sprintf(
+		"%v: %s uncovers assumption %s",
+		ErrOutsideCertifiedEnvelope,
+		e.Configuration,
+		e.Assumption,
+	)
+}
+
+func (e *LifecycleError) Unwrap() error { return ErrOutsideCertifiedEnvelope }
+
+// Options configures an acquired daemon. StoreDir is required (tests pass
+// temp dirs; tracer data is disposable). Listen defaults to "127.0.0.1:0" —
+// a random port on loopback. The zero value selects the certified standalone
+// substrate envelope.
 type Options struct {
-	StoreDir string
-	Listen   string
+	StoreDir           string
+	Listen             string
+	JetStreamClustered bool
+	KVReplicas         int
+	MemoryStorage      bool
 }
 
 // Daemon owns the embedded NATS server, the catalog, and every journal
@@ -52,6 +88,24 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	if opts.StoreDir == "" {
 		return nil, errors.New("protod: StoreDir is required")
 	}
+	if opts.JetStreamClustered {
+		return nil, &LifecycleError{
+			Assumption:    AssumptionLinearizableReads,
+			Configuration: "clustered JetStream",
+		}
+	}
+	if opts.KVReplicas > 1 {
+		return nil, &LifecycleError{
+			Assumption:    AssumptionLinearizableReads,
+			Configuration: "R>1 KV buckets",
+		}
+	}
+	if opts.MemoryStorage {
+		return nil, &LifecycleError{
+			Assumption:    AssumptionTerminalImmutability,
+			Configuration: "in-memory storage",
+		}
+	}
 	listen := opts.Listen
 	if listen == "" {
 		listen = "127.0.0.1:0"
@@ -67,6 +121,10 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	if port == 0 {
 		port = server.RANDOM_PORT
 	}
+	internalPassword, err := randomCredential()
+	if err != nil {
+		return nil, fmt.Errorf("protod: create internal credential: %w", err)
+	}
 
 	natsServer, err := server.NewServer(&server.Options{
 		ServerName: "flb-protod",
@@ -76,6 +134,19 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		StoreDir:   opts.StoreDir,
 		NoLog:      true,
 		NoSigs:     true,
+		NoAuthUser: "application",
+		Users: []*server.User{
+			{Username: "protod-internal", Password: internalPassword},
+			{
+				Username: "application",
+				Permissions: &server.Permissions{
+					Publish: &server.SubjectPermission{
+						Allow: []string{subjectRequestWildcard, ingressWildcard},
+					},
+					Subscribe: &server.SubjectPermission{Allow: []string{"_INBOX.>"}},
+				},
+			},
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("protod: create embedded nats-server: %w", err)
@@ -92,7 +163,11 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		natsServer.WaitForShutdown()
 	}
 
-	conn, err := nats.Connect("", nats.InProcessServer(natsServer))
+	conn, err := nats.Connect(
+		"",
+		nats.InProcessServer(natsServer),
+		nats.UserInfo("protod-internal", internalPassword),
+	)
 	if err != nil {
 		release()
 		return nil, fmt.Errorf("protod: connect in-process: %w", err)
@@ -134,6 +209,14 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	}
 	d.subs = []*nats.Subscription{requestSub, ingressSub}
 	return d, nil
+}
+
+func randomCredential() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 // URL is the client-facing NATS URL of the embedded server.
