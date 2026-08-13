@@ -56,7 +56,7 @@ func buildTransBundle(t *testing.T) string {
 			"worker": w,
 		}))
 		wire := mustCanonical(t, map[string]any{"payload": payload, "prev": head, "seq": i})
-		head = mustEntryDigest(t, canonical.ChainEntry{Seq: i, Prev: head, Payload: payload})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: payload})
 		journal = append(journal, string(wire))
 	}
 	writeFile(t, dir, "journal.ndjson", strings.Join(journal, "\n")+"\n")
@@ -167,7 +167,7 @@ func TestTranspositionFrontierViolationRefused(t *testing.T) {
 	var rebuilt []string
 	for i, p := range payloads {
 		wire := mustCanonical(t, map[string]any{"payload": p, "prev": head, "seq": i})
-		head = mustEntryDigest(t, canonical.ChainEntry{Seq: i, Prev: head, Payload: p})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: p})
 		rebuilt = append(rebuilt, string(wire))
 	}
 	if err := os.WriteFile(path, []byte(strings.Join(rebuilt, "\n")+"\n"), 0o644); err != nil {

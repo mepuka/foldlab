@@ -20,7 +20,7 @@ const Genesis = "000000000000000000000000000000000000000000000000000000000000000
 const maxJSONDepth = 256
 
 type ChainEntry struct {
-	Seq     int
+	Seq     int64
 	Prev    string
 	Payload string
 }
@@ -39,7 +39,7 @@ func (err *InvalidUTF8Error) Error() string {
 // identity domain. Go can represent larger platform ints; the canonical wall
 // deliberately stops at JavaScript's exact-integer boundary.
 type InvalidSequenceError struct {
-	Seq int
+	Seq int64
 }
 
 func (err *InvalidSequenceError) Error() string {
@@ -250,7 +250,7 @@ func EntryDigest(entry ChainEntry) (string, error) {
 	if !utf8.ValidString(entry.Prev) {
 		return "", &InvalidUTF8Error{Field: "prev"}
 	}
-	if entry.Seq < 0 || int64(entry.Seq) > maxSafeSequence {
+	if entry.Seq < 0 || entry.Seq > maxSafeSequence {
 		return "", &InvalidSequenceError{Seq: entry.Seq}
 	}
 	var encoded bytes.Buffer
@@ -259,7 +259,7 @@ func EntryDigest(entry ChainEntry) (string, error) {
 	encoded.WriteString(`,"prev":`)
 	appendJSONString(&encoded, entry.Prev)
 	encoded.WriteString(`,"seq":`)
-	encoded.WriteString(strconv.Itoa(entry.Seq))
+	encoded.WriteString(strconv.FormatInt(entry.Seq, 10))
 	encoded.WriteByte('}')
 	return DigestHex(encoded.Bytes()), nil
 }
@@ -269,7 +269,7 @@ func BuildChain(payloads []string) (entryDigests []string, head string, err erro
 	head = Genesis
 	for seq, payload := range payloads {
 		digest, err := EntryDigest(ChainEntry{
-			Seq:     seq,
+			Seq:     int64(seq),
 			Prev:    head,
 			Payload: payload,
 		})

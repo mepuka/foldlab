@@ -503,7 +503,7 @@ func verifiedPayloads(reply map[string]any, journalName string) ([]string, error
 			return nil, fmt.Errorf("read %s entry %d is not an object", journalName, index)
 		}
 		seq, ok := entry["seq"].(float64)
-		if !ok || int(seq) != index {
+		if !ok || seq != float64(index) {
 			return nil, fmt.Errorf("read %s entry %d has seq %v", journalName, index, entry["seq"])
 		}
 		if entry["prev"] != wantPrev {
@@ -514,7 +514,7 @@ func verifiedPayloads(reply map[string]any, journalName string) ([]string, error
 			return nil, fmt.Errorf("read %s entry %d payload is not a string", journalName, index)
 		}
 		payloads[index] = payload
-		digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: index, Prev: wantPrev, Payload: payload})
+		digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: int64(index), Prev: wantPrev, Payload: payload})
 		if err != nil {
 			return nil, fmt.Errorf("read %s entry %d is outside the canonical domain: %w", journalName, index, err)
 		}

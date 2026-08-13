@@ -370,7 +370,7 @@ func walkChain(lines [][]byte) (string, error) {
 		if err := strictDecode(line, &wire); err != nil {
 			return "", fmt.Errorf("%w: entry %d: %v", ErrChain, i, err)
 		}
-		if wire.Seq != i {
+		if wire.Seq != int64(i) {
 			return "", fmt.Errorf("%w: entry %d has seq %d", ErrChain, i, wire.Seq)
 		}
 		if wire.Prev != head {

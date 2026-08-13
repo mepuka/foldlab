@@ -13,8 +13,8 @@ import (
 
 type cg1Vector struct {
 	GoInvalidUTF8Hex []string `json:"goInvalidUtf8Hex"`
-	InvalidSequence  []int    `json:"invalidSequence"`
-	ValidSequence    []int    `json:"validSequenceBoundary"`
+	InvalidSequence  []int64  `json:"invalidSequence"`
+	ValidSequence    []int64  `json:"validSequenceBoundary"`
 }
 
 func readCG1Vector(t *testing.T) cg1Vector {

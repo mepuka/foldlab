@@ -16,6 +16,7 @@ package journal_test
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -116,7 +117,7 @@ func rawPublishBytes(t *testing.T, js jetstream.JetStream, name string, data []b
 // independently of the journal implementation.
 func entryWire(t *testing.T, e canonical.ChainEntry) []byte {
 	t.Helper()
-	raw := []byte(`{"payload":` + jsonString(e.Payload) + `,"prev":"` + e.Prev + `","seq":` + itoa(e.Seq) + `}`)
+	raw := []byte(`{"payload":` + jsonString(e.Payload) + `,"prev":"` + e.Prev + `","seq":` + strconv.FormatInt(e.Seq, 10) + `}`)
 	c, err := canonical.Canonicalize(raw)
 	if err != nil {
 		t.Fatalf("canonicalize entry: %v", err)
@@ -291,7 +292,7 @@ func TestAppendReadRoundTrip(t *testing.T) {
 		t.Fatalf("read length: %d, want %d", len(got), len(payloads))
 	}
 	for i, e := range got {
-		if e.Payload != payloads[i] || e.Seq != i {
+		if e.Payload != payloads[i] || e.Seq != int64(i) {
 			t.Fatalf("entry %d: %+v, want payload %q seq %d", i, e, payloads[i], i)
 		}
 		if e != entries[i] {
@@ -585,7 +586,7 @@ func TestReopenContinues(t *testing.T) {
 		t.Fatalf("entries: %d, want %d", len(entries), len(want))
 	}
 	for i, e := range entries {
-		if e.Payload != want[i] || e.Seq != i {
+		if e.Payload != want[i] || e.Seq != int64(i) {
 			t.Fatalf("entry %d: %+v, want %q", i, e, want[i])
 		}
 	}

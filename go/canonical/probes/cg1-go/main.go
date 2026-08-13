@@ -36,7 +36,7 @@ func main() {
 	}
 
 	for _, value := range os.Args[3:5] {
-		seq := parseInt(value)
+		seq := parseInt64(value)
 		_, err := canonical.EntryDigest(canonical.ChainEntry{
 			Seq:     seq,
 			Prev:    canonical.Genesis,
@@ -50,7 +50,7 @@ func main() {
 		}
 	}
 
-	validMax := parseInt(os.Args[5])
+	validMax := parseInt64(os.Args[5])
 	digest, err := canonical.EntryDigest(canonical.ChainEntry{
 		Seq:     validMax,
 		Prev:    canonical.Genesis,
@@ -80,11 +80,11 @@ func decode(value string) []byte {
 	return decoded
 }
 
-func parseInt(value string) int {
+func parseInt64(value string) int64 {
 	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil || int64(int(parsed)) != parsed {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "parse int %q: %v\n", value, err)
 		os.Exit(2)
 	}
-	return int(parsed)
+	return parsed
 }

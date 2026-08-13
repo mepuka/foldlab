@@ -83,7 +83,7 @@ type manifest struct {
 type wireEntry struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 }
 
 type stepPayload struct {
@@ -163,7 +163,7 @@ func Verify(dir string, floors Floors) (Report, error) {
 		if err := strictDecode(line, &wire); err != nil {
 			return report, fmt.Errorf("%w: entry %d: %v", ErrChain, i, err)
 		}
-		if wire.Seq != i {
+		if wire.Seq != int64(i) {
 			return report, fmt.Errorf("%w: entry %d has seq %d", ErrChain, i, wire.Seq)
 		}
 		if wire.Prev != head {

@@ -56,7 +56,8 @@ scoped suites as well.
   represents lone high/low surrogates in `payload` or `prev` as an
   `InvalidUnicode` refusal value. `foldChain` propagates its reason without an
   exception crossing the exported identity seam.
-- Both implementations share the exact sequence domain `0..2^53-1`. Go
+- Both implementations share the exact sequence domain `0..2^53-1`. Go's
+  canonical sequence lane is explicitly `int64` on every architecture and
   returns `*InvalidSequenceError` for the integer costumes it can represent;
   TypeScript returns `InvalidSequence` data for negative zero, non-finite,
   fractional, negative, unsafe, and non-number runtime values before entering
@@ -119,10 +120,12 @@ dense-sequence requirement: unique sparse coordinates remain lawful. It does
 not alter merge-fact identity or any existing valid merge output.
 
 The sequence gate does not claim Go can represent JavaScript's `NaN`,
-infinities, fractions, negative zero, or non-number runtime costumes; Go's
-`ChainEntry.Seq` is an `int`. TypeScript negative controls cover those local
-representations. The common cross-language claim is limited to exactly
-representable integer positions `0..2^53-1`.
+infinities, fractions, negative zero, or non-number runtime costumes;
+`ChainEntry.Seq` is an `int64`. TypeScript negative controls cover those local
+representations. Journal cursors and in-memory slice indexes remain
+platform-sized `int`; every narrowing from canonical `int64` or JetStream
+`uint64` is range-checked before conversion. The common cross-language claim
+is limited to exactly representable integer positions `0..2^53-1`.
 
 ## Proposed merge-time DECISIONS entries
 

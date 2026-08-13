@@ -60,7 +60,7 @@ type Manifest struct {
 type journalWire struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 }
 
 func SaltForSeed(seed string) string {

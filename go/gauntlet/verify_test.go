@@ -61,7 +61,7 @@ func buildBundle(t *testing.T) string {
 		payload := string(mustCanonical(t, map[string]any{
 			"digest": digests[i], "result": results[i], "step": i,
 		}))
-		entry := canonical.ChainEntry{Seq: i, Prev: head, Payload: payload}
+		entry := canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: payload}
 		wire := mustCanonical(t, map[string]any{"payload": payload, "prev": head, "seq": i})
 		head = mustEntryDigest(t, entry)
 		journal = append(journal, string(wire))

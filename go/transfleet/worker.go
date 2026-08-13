@@ -245,7 +245,7 @@ func (w *worker) appendDiscovery(ctx context.Context, state State, payload strin
 			return nil
 		}
 		entry := canonical.ChainEntry{
-			Seq:     w.cursor.Seq + 1,
+			Seq:     int64(w.cursor.Seq) + 1,
 			Prev:    w.cursor.Head,
 			Payload: payload,
 		}
@@ -258,7 +258,7 @@ func (w *worker) appendDiscovery(ctx context.Context, state State, payload strin
 				return err
 			}
 			w.cursor = journal.Cursor{
-				Seq:  entry.Seq,
+				Seq:  w.cursor.Seq + 1,
 				Head: head,
 			}
 			decoded, _, err := decodePayload(payload, w.salt)

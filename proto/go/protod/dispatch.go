@@ -37,7 +37,7 @@ type createReply struct {
 	Created     bool       `json:"created"`
 	Digest      string     `json:"digest"`
 	Scheme      string     `json:"scheme"`
-	CatalogSeq  int        `json:"catalogSeq"`
+	CatalogSeq  int64      `json:"catalogSeq"`
 	CatalogHead string     `json:"catalogHead"`
 	Next        []NextHint `json:"next"`
 }

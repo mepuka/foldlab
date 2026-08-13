@@ -17,7 +17,7 @@ import (
 type journalWire struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 }
 
 func ExportBundle(ctx context.Context, url, bundle, seed, salt string) error {

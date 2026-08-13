@@ -124,7 +124,7 @@ func openEngine(bundle string, fake bool) (*engine, map[string]mutRec, [][]strin
 			var wire struct {
 				Payload string `json:"payload"`
 				Prev    string `json:"prev"`
-				Seq     int    `json:"seq"`
+				Seq     int64  `json:"seq"`
 			}
 			if err := json.Unmarshal(line, &wire); err != nil {
 				return nil, nil, nil, fmt.Errorf("corrupt journal at seq %d: %w", e.nextSeq, err)
@@ -137,7 +137,10 @@ func openEngine(bundle string, fake bool) (*engine, map[string]mutRec, [][]strin
 				return nil, nil, nil, fmt.Errorf("corrupt journal at seq %d: %w", wire.Seq, err)
 			}
 			e.head = digest
-			e.nextSeq = wire.Seq + 1
+			if wire.Seq < 0 || uint64(wire.Seq) >= uint64(^uint(0)>>1) {
+				return nil, nil, nil, fmt.Errorf("journal seq %d exceeds platform index range", wire.Seq)
+			}
+			e.nextSeq = int(wire.Seq) + 1
 			var peek struct {
 				Kind string `json:"kind"`
 			}
@@ -253,7 +256,7 @@ func (e *engine) journalAppend(payload map[string]any) error {
 	if err := e.journal.Sync(); err != nil {
 		return err
 	}
-	digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: e.nextSeq, Prev: e.head, Payload: string(p)})
+	digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: int64(e.nextSeq), Prev: e.head, Payload: string(p)})
 	if err != nil {
 		return err
 	}

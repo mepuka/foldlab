@@ -143,7 +143,7 @@ func TestChainFoldConsistency(t *testing.T) {
 	}
 	prev := canonical.Genesis
 	for i, p := range payloads {
-		want := mustEntryDigest(t, canonical.ChainEntry{Seq: i, Prev: prev, Payload: p})
+		want := mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: prev, Payload: p})
 		if digests[i] != want {
 			t.Fatalf("entry %d (payload %q): got %s want %s", i, p, digests[i], want)
 		}
