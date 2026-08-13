@@ -269,3 +269,36 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   fidelity to intent. The honest cap, like commitment-not-placement.
 - Appendix: full grounding ledger (repo instances + labels + literature).
 - Committing + pushing. Capstone done.
+
+### Burst 9 — issue #13 product dialogue (done)
+- Read issue #13 (body Q1-7 + follow-up A/B/C). Wrote
+  docs/design/2026-08-13-workflow-engine-product-dialogue.md.
+- PINNED Effect-team grounding (strict ground rule): ClusterWorkflowEngine rides
+  Sharding+MessageStorage (:1-6/:790); Sharding = ownership+routing+health checks;
+  SINGLERUNNER = their OWN single-process layer BUT "still requires a SQL client"
+  (:1-11) => the wedge is the SQL dependency, not single-node (sharpens Q1/Q7);
+  MessageStorage = pluggable backend "tracks duplicate requests" (dedup exactly-
+  once), noop/memory for local/test; MessageStorage.test.ts = memory-only NOT a
+  TCK (B2 verified gap); Activity stores/replays result; Workflow identity =
+  tag+idempotency-key (Q5). EXTERNAL (labelled): EffectTS_ X post (Cluster =
+  production-grade multi-node at scale); durable-exec surveys (render/zenml).
+- SHARPEST answers: Q7 minimal demo = reuse STOCK ClusterWorkflowEngine +
+  SingleRunner + swap SqlMessageStorage->JournalMessageStorage (build ONE thing,
+  their engine/examples unchanged). Q3 wedge = auditor-who-trusts-neither
+  recomputes exactly-once (proof is the product). Part 2A = concierge lifts to
+  workflow construction (C4 no-dead-ends on PROGRAMS) BUT only for a REGULAR
+  fragment (loops/recursion break decidability) - flagged open.
+- HONEST 'we can't'/'worse' answers: Q4 arbitrary-effect determinism is
+  UNDECIDABLE (strong form impossible; only refuse non-canonical RESULTS today +
+  certifier verdict under a DSL); Q2 three WORSE cells (canonical-bytes
+  strictness, no-silent-hot-patch rigidity, inherited unstable churn); Q5 branch-
+  not-mutate rigidity; B2 TCK is a proposal not a thing we built.
+- Part 3 grounding (today's session): C1 lane collisions = 3 lost CAS races the
+  effector refuses by construction (issue #12 claim-first protocol = proven
+  Claim); C2 approval gate = human holding a Claim, lease-expiry escalation =
+  D2 steal-by-fence-not-clock (already proven); C3 two-fold split as LLM-nondet
+  discipline (chain remembers bytes, meaning forgives, retry=new fact, concierge
+  = certified construction). Honest edge: retrospective mapping, engine unbuilt.
+- Coordinated: referenced architecture team's deep-module map (B3 deletion test),
+  did not duplicate module interfaces.
+- Committing + pushing. Awaiting coordinator synthesis pointer to #13.
