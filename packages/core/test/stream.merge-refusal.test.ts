@@ -48,8 +48,9 @@ describe("the shared merge-refusal wall", () => {
    * side is deterministic: sources arrive in a `ReadonlyMap`, replay walks it in
    * insertion order, and the first duplicated source is always the one named.
    * The Go twin takes `map[string][]Event`, which has no order at all, and its
-   * randomized iteration names either source across identical calls — measured
-   * at roughly 1750/250 over 2000 runs. So the two implementations agree that
+   * randomized iteration names either source across identical calls — about a
+   * 7:1 split in representative 2,000-run probes, with the exact draw varying
+   * each run. So the two implementations agree that
    * the input is refused and can disagree about the refusal VALUE, which the
    * lane treats as data. Reported, not repaired.
    */

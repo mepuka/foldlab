@@ -23,7 +23,7 @@ tracer bullet, own gates) and `verify/` (model gates) at root. Older
 
 Every wall below — a differential test: two implementations, one input,
 digests compared — is a passing test, not an intention (root `bun test`:
-139 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 14
+186 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 16
 files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
 in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 
@@ -60,7 +60,7 @@ in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
   `bun run build:wasm` produces gitignored `dist/`; the test auto-skips
   without it. Module is ~3.7MB (fine in Bun; browser story wants
   TinyGo/wasm-opt later).
-- **Fold algebra (ticket 014, 2026-08-13)**: `packages/core/src/`
+- **Fold algebra (ticket-014, 2026-08-13)**: `packages/core/src/`
   {`algebra`, `fold`, `foldLaws`, `foldCache`, `foldBindings`} —
   algebras, steps and homomorphisms are DECLARED data, so a fold's
   identity is the digest over (algebra declaration, step digest) and a
@@ -134,7 +134,7 @@ battery encoded semantic decisions (checks move identity,
 brands/getters/defaults don't) the operator never made from first
 principles; and the digest preimage was a TS library internal of the
 pinned rc — unusable by the Go daemon the ownership model just made the
-verifier. Schema identity restarts greenfield in map ticket 004, every
+verifier. Schema identity restarts greenfield in ticket-004, every
 semantic
 decision grilled with the operator; the wiped battery remains in git
 history as evidence of what the rc representation did.
@@ -142,7 +142,7 @@ history as evidence of what the rc representation did.
 What mint was reaching for stays available as a law, not a mechanism: a
 transform must pass its digest law before anything depends on it — the
 walls, applied at a different moment. Any registry-like need must be
-pulled in by a real consumer (the wrapper prototype, map ticket 003),
+pulled in by a real consumer (the wrapper prototype, ticket-003),
 never built ahead of one.
 
 ## Ratified: the seam decision (2026-08-12)
@@ -160,7 +160,7 @@ point, with the wall proving the move changed nothing.
 
 ## Ratified: the ownership model (2026-08-12)
 
-Ticket 002 resolved in full — the resolution text is in
+The ticket-002 resolution is complete — its text is in
 [docs/map/tickets/002-the-ownership-question.md](docs/map/tickets/002-the-ownership-question.md),
 the journal-roles split is ADR-0009. The sort that organizes it:
 
@@ -202,7 +202,7 @@ canonical bytes.
    beta-rename risk is confined to the adapter layer.
 3. **The journal is load-bearing for LLM traffic** (ADR-0005): records
    are events, lineage is a query.
-4. **Schema identity: RESOLVED, build dispatched** (ticket 004
+4. **Schema identity: RESOLVED, build dispatched** (ticket-004
    resolution, 2026-08-14): identity = SHA-256 over the RFC 8785
    bytes of the NORMALIZED flb.type.v0 structure — the owned walk,
    immune to vendor churn; the SchemaAST fold is derivation
@@ -223,12 +223,12 @@ canonical bytes.
    query lineage as tool calls. Human views are projections of the
    agent surface, never the source of it.
 
-Everything further out — the certificate (ticket 005, gated behind 004
-and 008), the correlation thesis (trace graph ≡ type system), effectful
-transforms via user-injected Layers, schema-aware codecs — lives in the
+Everything further out — the certificate (ticket-005, gated behind
+ticket-004 and ticket-008), the correlation thesis (trace graph ≡ type
+system), effectful transforms via user-injected Layers, schema-aware codecs — lives in the
 map's tickets and out-of-scope list, each behind its gate. Aspiration
-stays out of this file until the ownership model's details (tickets
-003, 004, 008) are handled.
+stays out of this file until the ownership model's details (ticket-003,
+ticket-004, and ticket-008) are handled.
 
 ## The surface census (2026-08-12)
 
@@ -263,8 +263,8 @@ statement and a divergence probe.
 
 Full demand inventory and dependency graph:
 [docs/design/2026-08-14-estate-structures-map.md](docs/design/2026-08-14-estate-structures-map.md).
-The KV combine memo
-(docs/research/2026-08-14-CRITICAL-MEMO-kv-combine-and-bootstrap.md)
+The KV combine implementation and law evidence
+([merge commit `a9dc142c3`](https://github.com/mepuka/foldlab/commit/a9dc142c3))
 delivered the semilattice laws and the parallel-replay license.
 
 SHORT TERM (dispatchable now, in order — codex specs in scratch/codex/):
@@ -275,18 +275,18 @@ SHORT TERM (dispatchable now, in order — codex specs in scratch/codex/):
 3. Task 32: refusal persistence — flb.certification.v0 with required
    catalog_head (after 30).
 4. Task 33: no-dead-ends mechanized (completion-reachability over the
-   grammar; ticket 003's laws in source).
+   grammar; ticket-003's laws in source).
 5. Task 34: the catalog query fold (queries as values keyed
    (query digest, catalog head); type.get; the fold tower's second
    consumer).
-6. Ticket 026: the scale gauntlet (RG-A tradition; the last magnitude
+6. **ticket-026**: the scale gauntlet (RG-A tradition; the last magnitude
    claim).
 7. Housekeeping lane: tasks 26, 27, 29, 35 (Rosetta code surfaces,
    watch one-clock, MCP output envelope, frame-schema drift).
 
 SHORT TERM, WAVE 2 (grills RESOLVED 2026-08-14 on issues #23/#24 —
 operator + Mac seat; the critical path builds now):
-8. Task 36: the owned canonical encoding (ticket 004 resolution —
+8. Task 36: the owned canonical encoding (ticket-004 resolution —
    identity on the owned walk, normalize named with idempotence,
    recursion banned with the Unison successor pre-ratified,
    dual-record scheme bridges, certify() named).
@@ -295,10 +295,10 @@ operator + Mac seat; the critical path builds now):
    frontier purity with its negative control).
 
 MEDIUM TERM (each behind one named gate):
-- Ticket 012 journal model — unlocks 017, 019, split-CAS R4, and the
-  parked withTransaction question (un-parks task 25).
-- Certificates (005), scale.v0 (016), workflow.v0 (008) — read from
-  task 36's outputs; activate as 36 lands.
+- ticket-012 journal model — unlocks ticket-017, ticket-019, split-CAS
+  R4, and the parked withTransaction question (un-parks task 25).
+- Certificates (ticket-005), scale.v0 (ticket-016), workflow.v0
+  (ticket-008) — read from task 36's outputs; activate as 36 lands.
 - R3 upgrade + issue #9 when the Gen(3) verdicts and HARDENER guards
   land.
 
@@ -309,38 +309,39 @@ behind a grill. Nothing on either list is speculative.
 NOTE: the ratified build order above supersedes the numbered backlog
 below where they disagree; the backlog remains as context.
 
-Landed since this list was last written: ticket 003's tracer bullet
-(both bullets, in `proto/`), ticket 009's first climb (R2; R3 repaired
-and in re-proof, claim held), ticket 010's R4 lockstep (claimed on the
-named coarsened map), ticket 011's substrate assumption gate (the
-envelope refuses what the proofs do not cover), ticket 014's fold
+Landed since this list was last written: ticket-003's tracer bullet
+(both bullets, in `proto/`), ticket-009's first climb (R2; R3 repaired
+and in re-proof, claim held), ticket-010's R4 lockstep (claimed on the
+named coarsened map), ticket-011's substrate assumption gate (the
+envelope refuses what the proofs do not cover), ticket-014's fold
 algebra, the JCS differential lane, and the 2026-08-13 external review
 cycle: eleven filed findings fixed and closed same-day, the refusal
 walls (one meaning-fold; unforgeable brands; cross-language identity
 domains closed at a shared frozen vector), and the effector CERTIFIED
 clean against its machine-checked theorem on the running binary
-(docs/research/2026-08-13-effector-certified.md). Tickets 015 and 016
-were cut; both gate on 004. Newer tickets 017-021 (journaled outcomes,
-register store, NATS resolution, the Effect surface, JS-runtime
-resolution) live in docs/map/tickets/; ticket 020's phase 1
+(docs/research/2026-08-13-effector-certified.md). The ticket-015 and
+ticket-016 entries were cut; both gate on ticket-004. Newer entries,
+ticket-017 through ticket-021, map respectively to journaled outcomes,
+NATS resolution, register store, the Effect surface, and JS-runtime
+resolution; they live in docs/map/tickets/. The ticket-020 phase 1
 (JournalMessageStorage — durable Effect workflows on the proven
 journal, browser demo) is grilled, ratified, and specced. Design
 dossiers — source-cited research write-ups, one per question — live in
 docs/design/ (the WorkflowEngine correspondence and product dialogue
-are the 020 anchors).
+are the ticket-020 anchors).
 
-1. The foldlab-owned canonical schema encoding (map ticket 004,
+1. The foldlab-owned canonical schema encoding (ticket-004,
    critical path): the daemon must recompute schema digests from bytes
    alone. Interim identity stays `bytes-sha256-v1` over submitted
    canonical bytes. Everything downstream waits here — the certificate
-   (005), the grammar generator (ticket 015, "the grammar foundry"),
-   the ontology explorer (016).
-2. The workflow abstraction (map ticket 008) — the one remaining
+   (ticket-005), the grammar generator (ticket-015, "the grammar foundry"),
+   the ontology explorer (ticket-016).
+2. The workflow abstraction (ticket-008) — the one remaining
    ungrilled decision on the path: program as digestable catalog data;
    run as durable journaled fact.
-3. DONE — catalog R4 lockstep landed (ticket 010 closed): claimed
+3. DONE — catalog R4 lockstep landed (ticket-010 closed): claimed
    against the coarsened wire refinement with both bridge halves
-   machine-checked; the split-CAS branch's conformance is ticket 012's
+   machine-checked; the split-CAS branch's conformance is ticket-012's
    obligation, and the oracle-referee gap (no independent check that
    the Go oracle denotes the TLA relation) is a proposed follow-on.
 4. Graduate `proto/` along its own no-redesign map (`proto/AGENTS.md`):
@@ -348,11 +349,11 @@ are the 020 anchors).
    ts/author → `packages/core`, ts/codegen → `packages/codegen`,
    ts/mcp → `packages/ai`, wire fixtures → `fixtures/`. Until this
    runs, `go/daemon/` is a contract with no code beneath it.
-5. The hardening program: ticket 011 LANDED (the substrate assumption
-   gate refuses out-of-envelope configurations); ticket 012 (the
+5. The hardening program: ticket-011 LANDED (the substrate assumption
+   gate refuses out-of-envelope configurations); ticket-012 (the
    journal's own model gate, composed into the catalog model as a
    refinement — now also carrying the split-CAS conformance obligation
-   and the D60 one-verifier law) and ticket 013 (the effector's proof
+   and the D60 one-verifier law) and ticket-013 (the effector's proof
    artifacts into `verify/effector/`) remain open.
 6. Derived-node conformance test on embedded NATS: the collector's first
    real backing is NATS KV through the Go twin — anchors as

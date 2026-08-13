@@ -895,7 +895,10 @@ each boundary and assert typed refusal, never mere no-crash.
 Alternatives: leave the law implicit in tests; claim refusal
 everywhere (falsified by the ratified forgive-on-meaning design). Why:
 a boundary law that names its residuals is the only one a consumer
-can rely on. **Load-bearing? yes.**
+can rely on. This explicitly supersedes the short-lived universal
+“Total by refusal” wording: the forgive-on-meaning path, documented range
+errors, and pinned re-hosting gap make that universal statement false.
+**Load-bearing? yes.**
 
 ### D64. Fold and cache identity require brand-admitted declarations
 
@@ -988,3 +991,28 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Issue #28 — ledger and documentation integrity (2026-08-13)
+
+### D??. The claims ledger names only committed, reproducible evidence
+
+Decided: remove two prose-only mutation outcomes from the negative-control
+claim, scope Go combine evidence to R0, describe the unseeded refusal split as
+an approximate distribution that varies per run, and carry G1's attestation
+and choreographed-schedule bounds into `VERIFICATION.md`. Alternatives: build
+new mutation machinery solely to preserve the stronger prose; pin the map
+iteration probe's seed (which would mask the runtime behavior it demonstrates);
+leave caveats only in the gauntlet spec. Why: the ledger is an index of evidence
+that exists and can be rerun, with the same bounds as its source. **Load-bearing?
+yes** — later work uses the ledger to decide which rights have actually been
+earned.
+
+### D??. Rosetta bridges keep their prohibition force
+
+Decided: every root glossary bridge keeps the external standard term and its
+explanation, but says “do not use for this concept in foldlab prose.” Alternatives:
+restore the terse pre-Rosetta `_Avoid_` lines (loses the bridge); retain the
+gloss alone (turns a repository instruction into narration); introduce new
+house synonyms (explicitly outside this repair). Why: a vocabulary bridge can
+teach recognition without licensing drift in repository prose. **Load-bearing?
+no** — wording may improve while the chosen house terms stay unchanged.

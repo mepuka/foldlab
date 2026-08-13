@@ -35,7 +35,7 @@ The table points; the entries below carry the bounds.
 | Effector (commitment register) | R3 + R4 | **Claimed**; proof artifacts not yet shipped in this repository (ticket 013) | [go/effector/](go/effector/) |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
 | Journal and chain walls | R0/R1 | **Claimed**; no model gate yet (ticket 012) | [fixtures/](fixtures/), [go/stream/](go/stream/), [docs/gauntlet/](docs/gauntlet/) |
-| KV meaning fold — combine and join | R0/R1 | **Claimed** for the monoid in both languages; the join is TypeScript only | [go/stream/combine_test.go](go/stream/combine_test.go), [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts), [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts) |
+| KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Claimed** at R0 in both languages and R1 in TypeScript; the join is TypeScript only | [go/stream/combine_test.go](go/stream/combine_test.go), [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts), [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts) |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
@@ -202,13 +202,21 @@ tampering.
 - No dedicated model of CAS-append + crash recovery yet; the catalog
   model embeds an abstract CAS. Ticket 012 gives the journal its own
   model gate.
+- G1's exported bundles prove record consistency, not that the recorded
+  kills physically happened. Storm truth is attested by the coordinator's
+  in-concert observation, and the fencing evidence assumes effect bodies
+  write their ledger line before returning.
+- G1 covers one choreographed schedule family: exactly 25 kills, 25 steals,
+  25 duplicates, and 5 restarts per final bundle, timed at the hardest crash
+  window. It does not establish stochastic-schedule, partition, or clustered
+  behavior.
 
 ### Checkable at
 
 [fixtures/](fixtures/), [go/stream/](go/stream/), and
 [docs/gauntlet/](docs/gauntlet/).
 
-## KV meaning fold — combine and join — R0/R1
+## KV meaning fold — combine and join — R0/R1 (TypeScript), R0 (Go)
 
 ### Claim
 
@@ -232,16 +240,14 @@ order with distinct coordinates.
   grouping. `fixtures/stream-wall.json` regenerates byte-identically.
 - R0: the enriched fold, projected, reaches the same frozen digest on
   the same corpus — the corpus is witness-ordered.
-- R1: generated property suites for identity, associativity, the
+- R1 in TypeScript: generated property suites for identity, associativity, the
   concatenation homomorphism, arbitrary split points, and — for the
   join — idempotence, commutativity, associativity, permutation
   invariance, and the projection law.
 - Negative controls, each refuted on exactly the law it drops:
   `combineKV` fails commutativity and idempotence with minimized
   counterexamples; ordering the witness `(stream, seq)` instead of
-  `(seq, stream)` moves the frozen digest to `910950be...`; forcing the
-  join's winner rule the wrong way turns six tests red; forcing every
-  merge source onto the dense path turns the duplicate refusals red.
+  `(seq, stream)` moves the frozen digest to `910950be...`.
 - The generated law suite now derives commutativity and idempotence
   from a per-algebra claim, and refuses a false one: a last-write-wins
   register claiming commutativity fails that law while passing every
@@ -255,6 +261,9 @@ order with distinct coordinates.
   that one operation could be both is refuted: an unconditional
   concatenation homomorphism plus commutativity would force the fold to
   be order-insensitive, which last-write-wins is not, by construction.
+- Go's combine evidence stops at R0: its seven combine tests are
+  hand-written examples and frozen-wall checks, with no generated property
+  or fuzz suite. The R1 claim belongs only to TypeScript.
 - The join-semilattice is TypeScript only. There is no Go twin and
   therefore no cross-language wall for it; its one wall-anchored claim
   is the projection, because the digest that has to come back was
@@ -271,8 +280,9 @@ order with distinct coordinates.
   coordinates were absorbed rather than how many.
 - FINDING, reported and not repaired: `ApplyMerge`'s duplicate refusal
   is not a function of its input in Go. With two duplicated sources the
-  refusal names either one across identical calls — measured at
-  1750/250 over 2000 runs — because `map[string][]Event` has no order,
+  refusal names either one across identical calls — approximately a 7:1
+  split in representative 2,000-call probes, with the exact draw varying
+  on every run — because `map[string][]Event` has no order,
   while the TypeScript twin walks a `ReadonlyMap` in insertion order and
   always names the first. Both refuse; they can disagree about the
   refusal value, which this lane treats as data. The doc-comment on
@@ -280,6 +290,13 @@ order with distinct coordinates.
 - Answered, not a finding: the dense and sparse indexing paths inside
   `ApplyMerge` agree. A duplicate coordinate cannot survive the density
   check, so the fast path never sees one.
+- Law-scope decision: the short-lived universal wording “packages/core is
+  total by refusal” was intentionally narrowed to the exact walled boundaries
+  named in [packages/core/CONTEXT.md](packages/core/CONTEXT.md). `kvStep`
+  deliberately forgives an excluded payload in the meaning fold, lower-level
+  canonical writers retain documented range errors, and the genuine-
+  declaration re-host remains a pinned gap; a package-wide claim would
+  therefore be false.
 
 ### Checkable at
 
@@ -372,8 +389,8 @@ NATS subjects.
 
 ### Evidence
 
-60 TypeScript tests, the Go conformance suite, all nine refusal kinds,
-restart survival ([proto/](proto/)).
+The TypeScript suite, the Go conformance suite, all nine refusal kinds,
+and restart survival ([proto/](proto/)).
 
 ### Bounds and residuals
 

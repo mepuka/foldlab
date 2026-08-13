@@ -36,8 +36,9 @@
  *
  * WALL STATUS: single-implementation, TypeScript only. There is no Go twin and
  * therefore no cross-language wall for anything in this file — the same
- * standing that `fixtures/fold-pin.json` declares for the fold lane. The one
- * claim here that IS wall-anchored is the projection law, because the digest it
+ * standing that `packages/core/fixtures/fold-pin.json` declares for the fold
+ * lane. The one claim here that IS wall-anchored is the projection law,
+ * because the digest it
  * has to reproduce was frozen by Go.
  *
  * Refusals are values, in the `{ ok }` discipline this package's fold lane
