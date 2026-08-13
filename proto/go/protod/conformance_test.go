@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -635,6 +636,59 @@ func TestConciergePartialIsTheEntireState(t *testing.T) {
 	})
 	if continued["ok"] != true || len(continued["frontier"].([]any)) != 0 {
 		t.Fatalf("second daemon could not continue from request state alone: %v", continued)
+	}
+}
+
+func TestUnknownRefRefusalTeachesOneStepRepair(t *testing.T) {
+	h := acquire(t)
+	candidates := []string{}
+	for _, structure := range []any{map[string]any{"k": "string"}, map[string]any{"k": "bool"}} {
+		created := h.create(structure)
+		if created["ok"] != true {
+			t.Fatalf("seed catalog type: %v", created)
+		}
+		candidates = append(candidates, created["digest"].(string))
+	}
+	sort.Strings(candidates)
+	knownDigest := candidates[0]
+	badDigest := strings.Repeat("9", 64)
+	partial := map[string]any{
+		"k": "struct",
+		"fields": map[string]any{
+			"amount":   map[string]any{"k": "float"},
+			"currency": map[string]any{"k": "hole"},
+		},
+		"optional": []any{},
+	}
+
+	refusal := h.refusal(h.request("flb.req.type.fill", map[string]any{
+		"partial": partial,
+		"path":    []any{"fields", "currency"},
+		"subtree": map[string]any{"k": "ref", "digest": badDigest},
+	}), "unknown-ref")
+	example := refusal["example"].(map[string]any)
+	if example["digest"] != knownDigest {
+		t.Fatalf("refusal example is not catalog-resolvable: %v", example)
+	}
+
+	next := refusal["next"].([]any)
+	hint := next[0].(map[string]any)
+	if hint["subject"] != "flb.req.type.fill" {
+		t.Fatalf("first repair hint is not an executable fill: %v", hint)
+	}
+	body, ok := hint["body"].(map[string]any)
+	if !ok {
+		t.Fatalf("first repair hint has no filled body: %v", hint)
+	}
+	subtree, ok := body["subtree"].(map[string]any)
+	if !ok || subtree["digest"] != knownDigest {
+		t.Fatalf("repair echoes the unresolved digest instead of selecting catalog digest %s: %v", knownDigest, hint)
+	}
+	if got := fmt.Sprint(body["path"]); got != "[fields currency]" {
+		t.Fatalf("repair moved the caller's fill path: %s", got)
+	}
+	if repaired := h.request(hint["subject"].(string), body); repaired["ok"] != true {
+		t.Fatalf("advertised one-step repair refused: %v", repaired)
 	}
 }
 

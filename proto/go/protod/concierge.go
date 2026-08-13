@@ -67,6 +67,9 @@ func (d *Daemon) serveFill(body []byte) any {
 		return refuse(teachFill(walkRefusal, request))
 	}
 	if unknown := d.firstUnknownRef(result.refs, "partial", SubjectTypeFill); unknown != nil {
+		if repaired := d.teachUnknownRefRepair(unknown, updated); repaired != nil {
+			return refuse(repaired)
+		}
 		return refuse(teachFill(unknown, request))
 	}
 
@@ -109,6 +112,9 @@ func (d *Daemon) serveUnfill(body []byte) any {
 		return refuse(teachUnfill(walkRefusal, request))
 	}
 	if unknown := d.firstUnknownRef(result.refs, "partial", SubjectTypeUnfill); unknown != nil {
+		if repaired := d.teachUnknownRefRepair(unknown, updated); repaired != nil {
+			return refuse(repaired)
+		}
 		return refuse(teachUnfill(unknown, request))
 	}
 
@@ -214,6 +220,32 @@ func (d *Daemon) firstUnknownRef(refs []refUse, prefix string, subject string) *
 		}
 	}
 	return nil
+}
+
+func (d *Daemon) teachUnknownRefRepair(refusal *Refusal, partial any) *Refusal {
+	candidates := d.catalog.resolvableDigests(frontierRefLimit)
+	if len(candidates) == 0 || len(refusal.Path) < 2 || refusal.Path[0] != "partial" || refusal.Path[len(refusal.Path)-1] != "digest" {
+		return nil
+	}
+
+	path := append([]string{}, refusal.Path[1:len(refusal.Path)-1]...)
+	holed, replacementRefusal := replaceTypeNode(partial, path, map[string]any{"k": "hole"}, false)
+	if replacementRefusal != nil {
+		return nil
+	}
+
+	example := map[string]any{"k": "ref", "digest": candidates[0]}
+	refusal.Example = example
+	refusal.Next = append([]NextHint{{
+		Subject: SubjectTypeFill,
+		Note:    "replace the unresolved ref with this catalog-resolvable example",
+		Body: map[string]any{
+			"partial": holed,
+			"path":    path,
+			"subtree": example,
+		},
+	}}, refusal.Next...)
+	return refusal
 }
 
 func teachFill(refusal *Refusal, request fillRequest) *Refusal {

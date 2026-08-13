@@ -114,3 +114,12 @@ Recorded from the MCP deep-read at the pin against spec revision
   with a stated removal window, and session state belongs in the
   journal, where it is recomputable evidence rather than transport
   state.
+- Tool annotations are derived with the rest of the MCP surface:
+  contract and journal reads are read-only/non-destructive; the W3
+  create and C1 fill/unfill operations are convergent, non-destructive
+  mutations; ingress and every unclassified future request remain
+  destructive/non-idempotent until a law licenses a narrower claim.
+- Every tool carries `_meta["foldlab.dev/nats-subject"]`, derived from
+  the same live contract as its name and schema. This is the structural
+  bridge from NATS subjects in verbatim `next` hints to callable MCP
+  tool names; clients never parse descriptions to recover it.

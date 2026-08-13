@@ -1011,6 +1011,73 @@ mutate state instead of replies (already covered; misses the
 reply-only class the audit proved survivable). Why: a comparator that
 defaults a missing field to the expected value is a prover that
 cannot fail on that field. **Load-bearing? yes.**
+
+## Issue 40 — contract-derived MCP tool annotations (2026-08-13)
+
+### D66. Optimistic MCP annotations are a closed law-backed allow-list
+
+Decided: `contract_describe` and `journal_read` advertise read-only and
+non-destructive; `type_create` (W3) and `type_fill`/`type_unfill` (C1)
+advertise non-destructive and idempotent because repeated calls converge
+without an additional state effect. `publish`, and any future request name
+not explicitly licensed by a module law, advertise the conservative mutation
+class: destructive and non-idempotent. Read-only tools do not also claim
+idempotence: the MCP hint is defined for non-read-only tools, and a journal
+read's result can truthfully change as appends arrive. `openWorldHint` remains
+the pinned framework default because issue 40 did not ratify that independent
+dimension. Alternatives: infer optimism from request versus publish alone
+(would misclassify future mutations); mirror Effect's framework defaults
+(reported every tool as destructive); mark every pure handler read-only
+(confuses absence of local state with absence of daemon mutation). Why: only
+semantic laws license optimistic safety hints, while the closed fallback keeps
+new contract growth safe until it is classified. **Load-bearing? yes** — MCP
+clients use these hints when choosing and approving tool calls.
+
+## Issue 41 companions — MCP repair namespace and path provenance (2026-08-13)
+
+### D??. NATS subject-to-MCP tool mapping rides in tool metadata
+
+Decided: every contract-derived MCP tool carries its NATS subject as
+`_meta["foldlab.dev/nats-subject"]`. The mapping comes from the same
+`contract.describe` entry as the tool name and input schema, and rc.108's
+`Tool.Meta` passes it structurally through `tools/list`. Daemon replies remain
+verbatim under D23. Alternatives: parse the subject suffix or prose tool
+description (not a structural contract); rewrite every `next[].subject` into an
+MCP name (violates D23 and creates an MCP refusal dialect); change the daemon to
+speak MCP names (leaks an adapter namespace into the wire contract). Why: W7's
+repair hint can now be resolved mechanically without changing the authority
+that uttered it. **Load-bearing? yes** — this is the cross-namespace repair
+bridge.
+
+### D??. FINDING: fill refusal paths name the reconstructed partial, not the request body
+
+Decided: preserve and stop on `FINDING-MCP-PATH-001`. A digest submitted at
+`subtree/fields/currency/digest` is publicly reported by MCP at
+`partial/fields/currency/digest`, because the daemon walks the reconstructed
+partial after replacement and has discarded request-field provenance. The MCP
+reply equals the direct client reply, so adapter translation would violate D23;
+the frozen concierge fixture pins the existing reconstructed-partial path, so a
+daemon repair requires an explicit wire/fixture ratification. Alternatives and
+the opt-in red command are recorded in `ts/FINDING-MCP-PATH-001.md`. Why: silently
+choosing either path dialect would redefine public evidence semantics.
+**Load-bearing? yes** — mechanical self-repair depends on knowing which submitted
+field a refusal path addresses.
+
+### D??. FINDING: empty-catalog fill overwrites unknown-ref resolver hints
+
+Decided: preserve and stop on `FINDING-MCP-EMPTY-CATALOG-001`. The lower-level
+unknown-ref refusal constructs create/retry/catalog-read hints, but `teachFill`
+and `teachUnfill` replace them with a retry that carries the unchanged bad body
+plus `contract.describe`; replay through MCP returns the same refusal. The
+frozen `fill-unknown-ref-refusal` concierge vector pins this reply and issue 41
+does not authorize regeneration. Alternatives and the opt-in red command are
+recorded in `ts/FINDING-MCP-EMPTY-CATALOG-001.md`; the populated-catalog repair
+on its separate central branch is intentionally out of scope here. Why: fixing
+before ratifying the empty-catalog teaching promise would destroy the pinned
+counterexample and risk claiming that a daemon can synthesize an unknown
+referenced structure. **Load-bearing? yes** — this is the remaining W7 repair
+loop when no catalog candidate exists.
+
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
 ### D??. The tracer-bullet home is `proto/ts/src/cluster/`
@@ -1046,6 +1113,28 @@ ratifies a narrower domain or a new daemon capability.
 The contract-suite semantics source and demo transport decisions were not
 reached. Findings-before-fixes forbids deciding or building later stages after
 the step-2 stop condition.
+
+## GitHub issue 41 — executable `unknown-ref` repair
+
+### D??. Concierge repair selects the first bounded catalog candidate
+
+Decided: when one concierge step introduces an unresolved ref and the catalog
+already contains a resolvable digest, the refusal re-holes that ref node and
+puts an immediately executable `type.fill` request using the first digest from
+the same sorted, 16-item candidate set used by the frontier at `next[0]`.
+`example` carries the same ref. If the candidate set is empty, the existing
+wire-frozen retry/describe fallback remains because inventing a replacement
+would assert identity; the generic concierge teacher currently masks the
+internal create/read advice in that case, a separate residual rather than a
+claim of this repair. Alternatives: always echo the failed request (the
+reported infinite repair loop even when candidates exist); require an extra
+unfill/frontier/fill sequence; return every catalog digest; select insertion
+order. Why: W7 requires self-repair without source reading, while bounded
+sorted selection is deterministic and already licensed by the frontier seam.
+The regression executes the advertised request against a real daemon and
+requires acceptance. **Load-bearing? no** — this chooses one truthful example
+from an already bounded advertised set; it does not change identity, admission,
+or candidate membership.
 
 ## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
 

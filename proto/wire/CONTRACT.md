@@ -161,6 +161,15 @@ silent.
 | `bad-cursor` | read cursor does not verify against the journal (W6) |
 | `unknown-request` | request subject has no handler (W9) |
 
+For a concierge `unknown-ref`, a populated catalog makes the refusal's
+first repair executable: `example` is a resolvable digest and `next[0]`
+is a `type.fill` body whose offending ref position has been re-holed and
+filled with that example. Candidates use the frontier's deterministic,
+bounded digest order. With no catalog candidate, the refusal retains the
+wire-frozen retry/describe fallback because no honest replacement exists yet;
+making its internal create/read advice survive the generic concierge teacher
+remains a bounded residual outside the populated-catalog one-step repair.
+
 ## flb.type.v0 specifics pinned by this implementation
 
 - Nodes are strict: unknown `"k"` refuses; unknown keys refuse.
