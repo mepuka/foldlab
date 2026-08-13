@@ -83,7 +83,7 @@ type manifest struct {
 type wireEntry struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 }
 
 type stepPayload struct {
@@ -163,17 +163,21 @@ func Verify(dir string, floors Floors) (Report, error) {
 		if err := strictDecode(line, &wire); err != nil {
 			return report, fmt.Errorf("%w: entry %d: %v", ErrChain, i, err)
 		}
-		if wire.Seq != i {
+		if wire.Seq != int64(i) {
 			return report, fmt.Errorf("%w: entry %d has seq %d", ErrChain, i, wire.Seq)
 		}
 		if wire.Prev != head {
 			return report, fmt.Errorf("%w: entry %d prev does not match head", ErrChain, i)
 		}
-		head = canonical.EntryDigest(canonical.ChainEntry{
+		digest, err := canonical.EntryDigest(canonical.ChainEntry{
 			Seq:     wire.Seq,
 			Prev:    wire.Prev,
 			Payload: wire.Payload,
 		})
+		if err != nil {
+			return report, fmt.Errorf("%w: entry %d: %v", ErrChain, i, err)
+		}
+		head = digest
 
 		payloadBytes := []byte(wire.Payload)
 		if !isCanonical(payloadBytes) {

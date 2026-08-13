@@ -30,7 +30,7 @@ type admitReply struct {
 	OK       bool       `json:"ok"`
 	Admitted bool       `json:"admitted"`
 	Journal  string     `json:"journal"`
-	Seq      int        `json:"seq"`
+	Seq      int64      `json:"seq"`
 	Head     string     `json:"head"`
 	Note     string     `json:"note"`
 	Next     []NextHint `json:"next"`

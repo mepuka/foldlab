@@ -23,7 +23,7 @@ import (
 const maximumLineBytes = 16 * 1024 * 1024
 
 type wireEntry struct {
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 	Prev    string `json:"prev"`
 	Payload string `json:"payload"`
 }

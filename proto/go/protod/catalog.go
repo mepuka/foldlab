@@ -25,7 +25,7 @@ type catalogFact struct {
 	Scheme    string `json:"scheme"`
 	Structure any    `json:"structure"`
 	Submitter string `json:"submitter"`
-	seq       int
+	seq       int64
 }
 
 type catalog struct {

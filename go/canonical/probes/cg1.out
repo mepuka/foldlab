@@ -1,0 +1,15 @@
+Command (repository root, Windows 11, Go 1.26.5, Bun 1.3.14):
+
+  bun run go/canonical/probes/cg1.ts
+
+Output:
+
+  go-invalid-ff=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
+  go-invalid-fe=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
+  go-collision=true
+  ts-lone-high-surrogate=a9ab2d9c8d6fc8144c61ef397005add940c5137f2c75d385112a09967774a6f1
+  ts-replacement-scalar=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
+  ts-lone-surrogate-accepted=true
+  CG1 RED: proto/ts entryDigest minted identity for a lone surrogate
+
+Exit code: 1

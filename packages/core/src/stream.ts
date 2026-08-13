@@ -160,18 +160,41 @@ export class MergeGap extends Data.TaggedError("MergeGap")<{
   readonly index: number
 }> {}
 
+/** A source contains two events claiming the same identity coordinate. */
+export class MergeDuplicateSequence extends Data.TaggedError("MergeDuplicateSequence")<{
+  readonly source: string
+  readonly seq: number
+  readonly firstIndex: number
+  readonly duplicateIndex: number
+}> {}
+
 /**
  * Replay a merge fact over source streams — deterministic, and total only
- * over complete sources: the Effect fails with a typed MergeGap otherwise.
+ * over complete sources with unique sequence coordinates. Ambiguity and gaps
+ * are typed failures; replay never resolves either with a silent policy.
  */
 export const applyMerge = (
   m: MergeFact,
   sources: ReadonlyMap<string, ReadonlyArray<StreamEvent>>,
-): Effect.Effect<Array<StreamEvent>, MergeGap> =>
-  Effect.suspend(() => {
-    const index = new Map<string, Map<number, StreamEvent>>()
+): Effect.Effect<Array<StreamEvent>, MergeGap | MergeDuplicateSequence> =>
+  Effect.suspend<Array<StreamEvent>, MergeGap | MergeDuplicateSequence, never>(() => {
+    const index = new Map<string, Map<number, { readonly event: StreamEvent; readonly index: number }>>()
     for (const [name, events] of sources) {
-      index.set(name, new Map(events.map((e) => [e.seq, e])))
+      const bySeq = new Map<number, { readonly event: StreamEvent; readonly index: number }>()
+      for (let i = 0; i < events.length; i++) {
+        const event = events[i]!
+        const first = bySeq.get(event.seq)
+        if (first !== undefined) {
+          return Effect.fail(new MergeDuplicateSequence({
+            source: name,
+            seq: event.seq,
+            firstIndex: first.index,
+            duplicateIndex: i,
+          }))
+        }
+        bySeq.set(event.seq, { event, index: i })
+      }
+      index.set(name, bySeq)
     }
     const out: Array<StreamEvent> = []
     for (let i = 0; i < m.picks.length; i++) {
@@ -180,7 +203,7 @@ export const applyMerge = (
       if (found === undefined) {
         return Effect.fail(new MergeGap({ pick, index: i }))
       }
-      out.push(found)
+      out.push(found.event)
     }
     return Effect.succeed(out)
   })

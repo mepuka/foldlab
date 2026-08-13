@@ -57,11 +57,15 @@ func RunWorker(
 			continue
 		}
 		for _, entry := range entries {
-			step, decodeErr := decodeAndVerifyStep(entry.Payload, salt, entry.Seq, previousResult)
+			entryPosition, positionErr := localPosition(entry.Seq)
+			if positionErr != nil {
+				return positionErr
+			}
+			step, decodeErr := decodeAndVerifyStep(entry.Payload, salt, entryPosition, previousResult)
 			if decodeErr != nil {
 				return decodeErr
 			}
-			position = entry.Seq + 1
+			position = entryPosition + 1
 			previousResult = step.Result
 		}
 		cursor = nextCursor
@@ -92,11 +96,15 @@ func RunWorker(
 				return fmt.Errorf("committed result for step %d disagrees with derivation", position)
 			}
 			if appendStep(ctx, openedJournal, cursor, step) {
+				head, err := canonical.EntryDigest(canonical.ChainEntry{
+					Seq: int64(position), Prev: cursor.Head, Payload: mustStepPayload(step),
+				})
+				if err != nil {
+					return err
+				}
 				cursor = journal.Cursor{
-					Seq: position,
-					Head: canonical.EntryDigest(canonical.ChainEntry{
-						Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
-					}),
+					Seq:  position,
+					Head: head,
 				}
 				position++
 				previousResult = step.Result
@@ -129,17 +137,28 @@ func RunWorker(
 			continue
 		}
 		if appendStep(ctx, openedJournal, cursor, step) {
+			head, err := canonical.EntryDigest(canonical.ChainEntry{
+				Seq: int64(position), Prev: cursor.Head, Payload: mustStepPayload(step),
+			})
+			if err != nil {
+				return err
+			}
 			cursor = journal.Cursor{
-				Seq: position,
-				Head: canonical.EntryDigest(canonical.ChainEntry{
-					Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
-				}),
+				Seq:  position,
+				Head: head,
 			}
 			position++
 			previousResult = step.Result
 			observedPosition = -1
 		}
 	}
+}
+
+func localPosition(seq int64) (int, error) {
+	if seq < 0 || uint64(seq) >= uint64(^uint(0)>>1) {
+		return 0, fmt.Errorf("journal seq %d exceeds platform index range", seq)
+	}
+	return int(seq), nil
 }
 
 func openWorkerPrimitives(
@@ -208,7 +227,7 @@ func appendStep(
 	step Step,
 ) bool {
 	payload := mustStepPayload(step)
-	entry := canonical.ChainEntry{Seq: step.Step, Prev: cursor.Head, Payload: payload}
+	entry := canonical.ChainEntry{Seq: int64(step.Step), Prev: cursor.Head, Payload: payload}
 	opCtx, cancel := operationContext(ctx)
 	defer cancel()
 	_, err := opened.AppendEntry(opCtx, entry)

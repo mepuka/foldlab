@@ -48,7 +48,7 @@ type Journal struct {
 type wireEntry struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 }
 
 func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, error) {
@@ -125,12 +125,18 @@ func tailCursor(ctx context.Context, stream jetstream.Stream) (Cursor, error) {
 	if err != nil {
 		return Cursor{}, fmt.Errorf("read journal tail: %w", err)
 	}
-	position := int(raw.Sequence) - 1
+	position, err := positionFromStreamSequence(raw.Sequence)
+	if err != nil {
+		return Cursor{}, err
+	}
 	entry, err := decodeEntry(raw.Data)
 	if err != nil {
 		return Cursor{}, fmt.Errorf("decode journal tail: %w", err)
 	}
-	digest := canonical.EntryDigest(entry)
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return Cursor{}, tampered(position, "%v", err)
+	}
 	if canonical.DigestHex(raw.Data) != digest {
 		return Cursor{}, tampered(position, "wire bytes are not canonical")
 	}
@@ -154,7 +160,7 @@ func (j *Journal) Append(
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	entry := canonical.ChainEntry{
-		Seq:     j.cursor.Seq + 1,
+		Seq:     int64(j.cursor.Seq) + 1,
 		Prev:    j.cursor.Head,
 		Payload: payload,
 	}
@@ -189,9 +195,12 @@ func (j *Journal) Read(
 
 	entries := make([]canonical.ChainEntry, 0)
 	cursor := from
-	nextStreamSeq := uint64(from.Seq + 2)
+	nextStreamSeq := uint64(int64(from.Seq) + 2)
 	for nextStreamSeq <= info.State.LastSeq && (max <= 0 || len(entries) < max) {
-		position := int(nextStreamSeq) - 1
+		position, positionErr := positionFromStreamSequence(nextStreamSeq)
+		if positionErr != nil {
+			return entries, cursor, positionErr
+		}
 		raw, getErr := j.stream.GetMsg(ctx, nextStreamSeq)
 		if getErr != nil {
 			if errors.Is(getErr, jetstream.ErrMsgNotFound) {
@@ -204,14 +213,17 @@ func (j *Journal) Read(
 		if decodeErr != nil {
 			return entries, cursor, tampered(position, "invalid entry JSON: %v", decodeErr)
 		}
-		if entry.Seq != position {
+		if entry.Seq != int64(position) {
 			return entries, cursor, tampered(position, "seq is %d", entry.Seq)
 		}
 		if entry.Prev != cursor.Head {
 			return entries, cursor, tampered(position, "prev does not match the verified head")
 		}
 
-		digest := canonical.EntryDigest(entry)
+		digest, digestErr := canonical.EntryDigest(entry)
+		if digestErr != nil {
+			return entries, cursor, tampered(position, "%v", digestErr)
+		}
 		if canonical.DigestHex(raw.Data) != digest {
 			return entries, cursor, tampered(position, "wire bytes are not canonical")
 		}
@@ -237,11 +249,18 @@ func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (
 	if !utf8.ValidString(entry.Payload) {
 		return "", errors.New("journal payload is not valid Unicode")
 	}
+	position, err := cursorPosition(entry.Seq)
+	if err != nil {
+		return "", err
+	}
 	wire, err := encodeEntry(entry)
 	if err != nil {
 		return "", err
 	}
-	digest := canonical.EntryDigest(entry)
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return "", err
+	}
 	message := nats.NewMsg(j.subject)
 	message.Data = wire
 	message.Header.Set("Nats-Msg-Id", digest)
@@ -252,7 +271,7 @@ func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (
 		jetstream.WithExpectLastSequencePerSubject(uint64(entry.Seq)),
 	)
 	if err == nil {
-		j.recordAccepted(entry, digest)
+		j.recordAccepted(position, digest)
 		if ack.Duplicate {
 			return Duplicate, nil
 		}
@@ -266,7 +285,7 @@ func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (
 	// append is an idempotent duplicate; otherwise a rival holds the position.
 	if stored, getErr := j.stream.GetMsg(ctx, uint64(entry.Seq+1)); getErr == nil &&
 		canonical.DigestHex(stored.Data) == digest {
-		j.recordAccepted(entry, digest)
+		j.recordAccepted(position, digest)
 		return Duplicate, nil
 	}
 	// A rival won the position (or the confirmatory re-read failed — occupancy is
@@ -289,9 +308,9 @@ func (j *Journal) resyncCursor(ctx context.Context) {
 	}
 }
 
-func (j *Journal) recordAccepted(entry canonical.ChainEntry, digest string) {
-	if entry.Seq >= j.cursor.Seq {
-		j.cursor = Cursor{Seq: entry.Seq, Head: digest}
+func (j *Journal) recordAccepted(position int, digest string) {
+	if position >= j.cursor.Seq {
+		j.cursor = Cursor{Seq: position, Head: digest}
 	}
 }
 
@@ -354,6 +373,24 @@ func decodeEntry(data []byte) (canonical.ChainEntry, error) {
 		Prev:    wire.Prev,
 		Payload: wire.Payload,
 	}, nil
+}
+
+func cursorPosition(seq int64) (int, error) {
+	if seq < 0 || uint64(seq) > uint64(^uint(0)>>1) {
+		return 0, fmt.Errorf("journal position %d exceeds platform cursor range", seq)
+	}
+	return int(seq), nil
+}
+
+func positionFromStreamSequence(sequence uint64) (int, error) {
+	if sequence == 0 {
+		return 0, errors.New("journal stream sequence is zero")
+	}
+	position := sequence - 1
+	if position > uint64(^uint(0)>>1) {
+		return 0, fmt.Errorf("journal position %d exceeds platform cursor range", position)
+	}
+	return int(position), nil
 }
 
 func isWrongLastSequence(err error) bool {

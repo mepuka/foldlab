@@ -191,7 +191,7 @@ func worker(bundle string) error {
 			var wire struct {
 				Payload string `json:"payload"`
 				Prev    string `json:"prev"`
-				Seq     int    `json:"seq"`
+				Seq     int64  `json:"seq"`
 			}
 			if err := json.Unmarshal(line, &wire); err != nil {
 				return fmt.Errorf("corrupt journal at seq %d: %w", nextSeq, err)
@@ -199,7 +199,11 @@ func worker(bundle string) error {
 			if wire.Prev != head {
 				return fmt.Errorf("journal chain broken at seq %d", wire.Seq)
 			}
-			head = canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			if err != nil {
+				return fmt.Errorf("corrupt journal at seq %d: %w", wire.Seq, err)
+			}
+			head = digest
 			var receipt struct {
 				Digest       string `json:"digest"`
 				InputTokens  int64  `json:"input_tokens"`
@@ -213,7 +217,10 @@ func worker(bundle string) error {
 			}
 			facts[receipt.Digest] = fact{receipt.Result, receipt.InputTokens, receipt.OutputTokens}
 			spendMicro += receipt.InputTokens*priceInMicro + receipt.OutputTokens*priceOutMicro
-			nextSeq = wire.Seq + 1
+			if wire.Seq < 0 || uint64(wire.Seq) >= uint64(^uint(0)>>1) {
+				return fmt.Errorf("journal seq %d exceeds platform index range", wire.Seq)
+			}
+			nextSeq = int(wire.Seq) + 1
 		}
 	}
 	journal, err := os.OpenFile(journalPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
@@ -299,9 +306,13 @@ func worker(bundle string) error {
 					if err := journal.Sync(); err != nil {
 						return err
 					}
-					head = canonical.EntryDigest(canonical.ChainEntry{
-						Seq: nextSeq, Prev: head, Payload: string(payload),
+					digest, err := canonical.EntryDigest(canonical.ChainEntry{
+						Seq: int64(nextSeq), Prev: head, Payload: string(payload),
 					})
+					if err != nil {
+						return err
+					}
+					head = digest
 					nextSeq++
 					calls++
 					spendMicro += inTok*priceInMicro + outTok*priceOutMicro

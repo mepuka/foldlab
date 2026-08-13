@@ -207,15 +207,48 @@ func FactDigest(m MergeFact) Head {
 	return out
 }
 
+// MergeGap is a pick referencing no source event. A gap is data, not noise.
+type MergeGap struct {
+	Pick  Pick
+	Index int
+}
+
+func (err *MergeGap) Error() string {
+	return fmt.Sprintf("stream: pick %d references missing event %s@%d", err.Index, err.Pick.Stream, err.Pick.Seq)
+}
+
+// MergeDuplicateSequence refuses an ambiguous source index. Sequence is an
+// event identity coordinate, so last-write-wins is not a lawful resolution.
+type MergeDuplicateSequence struct {
+	Source         string
+	Seq            uint64
+	FirstIndex     int
+	DuplicateIndex int
+}
+
+func (err *MergeDuplicateSequence) Error() string {
+	return fmt.Sprintf(
+		"stream: source %s repeats sequence %d at event indexes %d and %d",
+		err.Source,
+		err.Seq,
+		err.FirstIndex,
+		err.DuplicateIndex,
+	)
+}
+
 // ApplyMerge replays a merge fact over source streams: deterministic, total
-// over well-formed input, and an explicit error — never a silent skip — on a
-// pick with no matching source event (a gap is data, not noise).
+// over sources with unique sequence coordinates, and an explicit typed error
+// — never a silent skip or last-write-wins collapse — on malformed input.
 func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
+	type indexedEvent struct {
+		event Event
+		index int
+	}
 	type sourceIndex struct {
 		events []Event
 		first  uint64
 		dense  bool
-		bySeq  map[uint64]Event
+		bySeq  map[uint64]indexedEvent
 	}
 
 	index := make(map[string]sourceIndex, len(sources))
@@ -231,9 +264,17 @@ func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
 			}
 		}
 		if !source.dense {
-			source.bySeq = make(map[uint64]Event, len(events))
-			for _, e := range events {
-				source.bySeq[e.Seq] = e
+			source.bySeq = make(map[uint64]indexedEvent, len(events))
+			for i, e := range events {
+				if first, exists := source.bySeq[e.Seq]; exists {
+					return nil, &MergeDuplicateSequence{
+						Source:         name,
+						Seq:            e.Seq,
+						FirstIndex:     first.index,
+						DuplicateIndex: i,
+					}
+				}
+				source.bySeq[e.Seq] = indexedEvent{event: e, index: i}
 			}
 		}
 		index[name] = source
@@ -250,10 +291,14 @@ func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
 				e = source.events[int(offset)]
 			}
 		} else if ok {
-			e, ok = source.bySeq[p.Seq]
+			indexed, found := source.bySeq[p.Seq]
+			if found {
+				e = indexed.event
+			}
+			ok = found
 		}
 		if !ok {
-			return nil, fmt.Errorf("stream: pick %d references missing event %s@%d", i, p.Stream, p.Seq)
+			return nil, &MergeGap{Pick: p, Index: i}
 		}
 		out = append(out, e)
 	}

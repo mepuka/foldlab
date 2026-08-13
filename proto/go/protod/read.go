@@ -26,7 +26,7 @@ type readRequest struct {
 }
 
 type wireEntry struct {
-	Seq     int    `json:"seq"`
+	Seq     int64  `json:"seq"`
 	Prev    string `json:"prev"`
 	Payload string `json:"payload"`
 }

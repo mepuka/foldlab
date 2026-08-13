@@ -20,10 +20,33 @@ const Genesis = "000000000000000000000000000000000000000000000000000000000000000
 const maxJSONDepth = 256
 
 type ChainEntry struct {
-	Seq     int
+	Seq     int64
 	Prev    string
 	Payload string
 }
+
+// InvalidUTF8Error refuses a chain-entry field outside the canonical Unicode
+// domain. Identity never repairs such a field or substitutes U+FFFD.
+type InvalidUTF8Error struct {
+	Field string
+}
+
+func (err *InvalidUTF8Error) Error() string {
+	return fmt.Sprintf("chain entry %s is not valid UTF-8", err.Field)
+}
+
+// InvalidSequenceError refuses an entry position outside the common Go/JS
+// identity domain. Go can represent larger platform ints; the canonical wall
+// deliberately stops at JavaScript's exact-integer boundary.
+type InvalidSequenceError struct {
+	Seq int64
+}
+
+func (err *InvalidSequenceError) Error() string {
+	return fmt.Sprintf("chain entry seq %d is not a safe unsigned integer", err.Seq)
+}
+
+const maxSafeSequence int64 = 1<<53 - 1
 
 func Canonicalize(jsonBytes []byte) ([]byte, error) {
 	value, err := Decode(jsonBytes)
@@ -220,31 +243,43 @@ func DigestHex(input []byte) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func EntryDigest(entry ChainEntry) string {
+func EntryDigest(entry ChainEntry) (string, error) {
+	if !utf8.ValidString(entry.Payload) {
+		return "", &InvalidUTF8Error{Field: "payload"}
+	}
+	if !utf8.ValidString(entry.Prev) {
+		return "", &InvalidUTF8Error{Field: "prev"}
+	}
+	if entry.Seq < 0 || entry.Seq > maxSafeSequence {
+		return "", &InvalidSequenceError{Seq: entry.Seq}
+	}
 	var encoded bytes.Buffer
 	encoded.WriteString(`{"payload":`)
 	appendJSONString(&encoded, entry.Payload)
 	encoded.WriteString(`,"prev":`)
 	appendJSONString(&encoded, entry.Prev)
 	encoded.WriteString(`,"seq":`)
-	encoded.WriteString(strconv.Itoa(entry.Seq))
+	encoded.WriteString(strconv.FormatInt(entry.Seq, 10))
 	encoded.WriteByte('}')
-	return DigestHex(encoded.Bytes())
+	return DigestHex(encoded.Bytes()), nil
 }
 
-func BuildChain(payloads []string) (entryDigests []string, head string) {
+func BuildChain(payloads []string) (entryDigests []string, head string, err error) {
 	entryDigests = make([]string, len(payloads))
 	head = Genesis
 	for seq, payload := range payloads {
-		digest := EntryDigest(ChainEntry{
-			Seq:     seq,
+		digest, err := EntryDigest(ChainEntry{
+			Seq:     int64(seq),
 			Prev:    head,
 			Payload: payload,
 		})
+		if err != nil {
+			return nil, "", err
+		}
 		entryDigests[seq] = digest
 		head = digest
 	}
-	return entryDigests, head
+	return entryDigests, head, nil
 }
 
 func appendCanonical(output *bytes.Buffer, value any) error {

@@ -48,6 +48,9 @@ func referenceApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, erro
 	for name, events := range sources {
 		bySeq := make(map[uint64]Event, len(events))
 		for _, event := range events {
+			if _, exists := bySeq[event.Seq]; exists {
+				return nil, io.ErrUnexpectedEOF
+			}
 			bySeq[event.Seq] = event
 		}
 		index[name] = bySeq

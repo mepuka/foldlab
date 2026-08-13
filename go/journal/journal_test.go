@@ -16,6 +16,7 @@ package journal_test
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -81,9 +82,27 @@ func mustAppend(t *testing.T, j *journal.Journal, payload string) canonical.Chai
 	return e
 }
 
+func mustEntryDigest(t testing.TB, entry canonical.ChainEntry) string {
+	t.Helper()
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		t.Fatalf("EntryDigest(%+v): %v", entry, err)
+	}
+	return digest
+}
+
+func mustBuildChain(t testing.TB, payloads []string) ([]string, string) {
+	t.Helper()
+	digests, head, err := canonical.BuildChain(payloads)
+	if err != nil {
+		t.Fatalf("BuildChain: %v", err)
+	}
+	return digests, head
+}
+
 func rawPublish(t *testing.T, js jetstream.JetStream, name string, e canonical.ChainEntry, expectSeq uint64) (*jetstream.PubAck, error) {
 	t.Helper()
-	return rawPublishBytes(t, js, name, entryWire(t, e), canonical.EntryDigest(e), expectSeq)
+	return rawPublishBytes(t, js, name, entryWire(t, e), mustEntryDigest(t, e), expectSeq)
 }
 
 func rawPublishBytes(t *testing.T, js jetstream.JetStream, name string, data []byte, msgID string, expectSeq uint64) (*jetstream.PubAck, error) {
@@ -98,7 +117,7 @@ func rawPublishBytes(t *testing.T, js jetstream.JetStream, name string, data []b
 // independently of the journal implementation.
 func entryWire(t *testing.T, e canonical.ChainEntry) []byte {
 	t.Helper()
-	raw := []byte(`{"payload":` + jsonString(e.Payload) + `,"prev":"` + e.Prev + `","seq":` + itoa(e.Seq) + `}`)
+	raw := []byte(`{"payload":` + jsonString(e.Payload) + `,"prev":"` + e.Prev + `","seq":` + strconv.FormatInt(e.Seq, 10) + `}`)
 	c, err := canonical.Canonicalize(raw)
 	if err != nil {
 		t.Fatalf("canonicalize entry: %v", err)
@@ -273,14 +292,14 @@ func TestAppendReadRoundTrip(t *testing.T) {
 		t.Fatalf("read length: %d, want %d", len(got), len(payloads))
 	}
 	for i, e := range got {
-		if e.Payload != payloads[i] || e.Seq != i {
+		if e.Payload != payloads[i] || e.Seq != int64(i) {
 			t.Fatalf("entry %d: %+v, want payload %q seq %d", i, e, payloads[i], i)
 		}
 		if e != entries[i] {
 			t.Fatalf("entry %d: read %+v != appended %+v", i, e, entries[i])
 		}
 	}
-	digests, head := canonical.BuildChain(payloads)
+	digests, head := mustBuildChain(t, payloads)
 	if cursor.Head != head {
 		t.Fatalf("cursor head: %s, want fold head %s", cursor.Head, head)
 	}
@@ -428,7 +447,7 @@ func TestUncertainRetryDuplicate(t *testing.T) {
 	}
 	// and the journal can continue appending past the absorbed retry
 	next := mustAppend(t, j, "twice")
-	if next.Seq != 1 || next.Prev != canonical.EntryDigest(e) {
+	if next.Seq != 1 || next.Prev != mustEntryDigest(t, e) {
 		t.Fatalf("chain broken after duplicate: %+v", next)
 	}
 }
@@ -463,7 +482,7 @@ func TestResumeCursor(t *testing.T) {
 			t.Fatalf("entry %d: %q, want %q (no skip, no re-read)", i, e.Payload, payloads[i])
 		}
 	}
-	_, head := canonical.BuildChain(payloads)
+	_, head := mustBuildChain(t, payloads)
 	if c2.Head != head || c2.Seq != 4 {
 		t.Fatalf("final cursor %+v, want seq 4 head %s", c2, head)
 	}
@@ -567,11 +586,11 @@ func TestReopenContinues(t *testing.T) {
 		t.Fatalf("entries: %d, want %d", len(entries), len(want))
 	}
 	for i, e := range entries {
-		if e.Payload != want[i] || e.Seq != i {
+		if e.Payload != want[i] || e.Seq != int64(i) {
 			t.Fatalf("entry %d: %+v, want %q", i, e, want[i])
 		}
 	}
-	_, head := canonical.BuildChain(want)
+	_, head := mustBuildChain(t, want)
 	if cursor.Head != head {
 		t.Fatalf("head after reopen: %s, want %s", cursor.Head, head)
 	}

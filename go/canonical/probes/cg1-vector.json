@@ -1,0 +1,7 @@
+{
+  "goInvalidUtf8Hex": ["ff", "fe"],
+  "invalidSequence": [-1, 9007199254740992],
+  "validSequenceBoundary": [0, 9007199254740991],
+  "tsLoneSurrogate": "\ud800",
+  "tsReplacementScalar": "�"
+}

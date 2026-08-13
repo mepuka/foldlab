@@ -1,0 +1,15 @@
+{
+  "source": "alpha",
+  "events": [
+    { "seq": 7, "payload": "a=first" },
+    { "seq": 3, "payload": "b=middle" },
+    { "seq": 7, "payload": "a=last" }
+  ],
+  "picks": [
+    { "stream": "alpha", "seq": 3 },
+    { "stream": "alpha", "seq": 7 }
+  ],
+  "duplicateSeq": 7,
+  "firstIndex": 0,
+  "duplicateIndex": 2
+}

@@ -36,8 +36,9 @@ func TestConflictResyncsLoserCursor(t *testing.T) {
 		t.Fatalf("loser append: err=%v, want ErrConflict", err)
 	}
 	// The cursor must now reflect the winner's tail, not the stale genesis head.
-	if got := loser.Head(); got.Seq != 0 || got.Head != canonical.EntryDigest(win) {
-		t.Fatalf("loser cursor after conflict: %+v, want seq 0 head %s", got, canonical.EntryDigest(win))
+	winDigest := mustEntryDigest(t, win)
+	if got := loser.Head(); got.Seq != 0 || got.Head != winDigest {
+		t.Fatalf("loser cursor after conflict: %+v, want seq 0 head %s", got, winDigest)
 	}
 	// Recovery is through Append alone: the next append chains onto the winner.
 	next, outcome, err := loser.Append(c, "c")
@@ -47,7 +48,7 @@ func TestConflictResyncsLoserCursor(t *testing.T) {
 	if outcome != journal.Stored {
 		t.Fatalf("loser recovery outcome: %v, want stored", outcome)
 	}
-	if next.Seq != 1 || next.Prev != canonical.EntryDigest(win) {
+	if next.Seq != 1 || next.Prev != winDigest {
 		t.Fatalf("recovered entry did not chain onto the winner: %+v", next)
 	}
 	// The whole journal reads back as one verified chain.

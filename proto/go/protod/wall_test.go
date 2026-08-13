@@ -69,7 +69,10 @@ func TestChainFixturesRederive(t *testing.T) {
 		t.Fatal("no chain vectors")
 	}
 	for _, vector := range vectors {
-		digests, head := canonical.BuildChain(vector.Payloads)
+		digests, head, err := canonical.BuildChain(vector.Payloads)
+		if err != nil {
+			t.Fatalf("%s: BuildChain: %v", vector.Name, err)
+		}
 		if head != vector.Head {
 			t.Errorf("%s: head drifted: got %s want %s", vector.Name, head, vector.Head)
 		}

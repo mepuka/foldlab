@@ -242,7 +242,7 @@ func buildClimbBundle(t *testing.T) climbFixture {
 	var journal []string
 	for i, p := range payloads {
 		wire := mustCanonical(t, map[string]any{"payload": p, "prev": head, "seq": i})
-		head = canonical.EntryDigest(canonical.ChainEntry{Seq: i, Prev: head, Payload: p})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: p})
 		journal = append(journal, string(wire))
 	}
 	writeFile(t, dir, "journal.ndjson", strings.Join(journal, "\n")+"\n")
@@ -296,7 +296,7 @@ func rechain(t *testing.T, dir string, payloads []string) {
 	var journal []string
 	for i, p := range payloads {
 		wire := mustCanonical(t, map[string]any{"payload": p, "prev": head, "seq": i})
-		head = canonical.EntryDigest(canonical.ChainEntry{Seq: i, Prev: head, Payload: p})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: p})
 		journal = append(journal, string(wire))
 	}
 	if err := os.WriteFile(filepath.Join(dir, "journal.ndjson"),

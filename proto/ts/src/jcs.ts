@@ -96,10 +96,68 @@ export interface ChainEntry {
   readonly payload: string
 }
 
+export interface InvalidUnicodeRefusal {
+  readonly _tag: "InvalidUnicode"
+  readonly field: "payload" | "prev"
+  readonly reason: string
+}
+
+export interface InvalidSequenceRefusal {
+  readonly _tag: "InvalidSequence"
+  readonly seq: unknown
+  readonly reason: string
+}
+
+export type EntryDigestResult =
+  | { readonly ok: true; readonly digest: string }
+  | { readonly ok: false; readonly refusal: InvalidUnicodeRefusal | InvalidSequenceRefusal }
+
+const invalidUnicode = (field: "payload" | "prev"): InvalidUnicodeRefusal => ({
+  _tag: "InvalidUnicode",
+  field,
+  reason: `${field} is not valid Unicode`,
+})
+
+const unicodeScalarRefusal = (
+  value: unknown,
+  field: "payload" | "prev",
+): InvalidUnicodeRefusal | undefined => {
+  if (typeof value !== "string") return invalidUnicode(field)
+  for (let index = 0; index < value.length; index++) {
+    const unit = value.charCodeAt(index)
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const low = value.charCodeAt(index + 1)
+      if (!(low >= 0xdc00 && low <= 0xdfff)) return invalidUnicode(field)
+      index++
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return invalidUnicode(field)
+    }
+  }
+  return undefined
+}
+
+const sequenceRefusal = (seq: unknown): InvalidSequenceRefusal | undefined =>
+  typeof seq !== "number" ||
+    !Number.isSafeInteger(seq) ||
+    seq < 0 ||
+    Object.is(seq, -0)
+    ? { _tag: "InvalidSequence", seq, reason: "seq is not a safe unsigned integer" }
+    : undefined
+
 /** Digest of one chain entry: SHA-256 over the canonical bytes of
- * {payload, prev, seq} — byte-identical to go/canonical.EntryDigest. */
-export const entryDigest = (entry: ChainEntry): string =>
-  sha256Hex(canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq }))
+ * {payload, prev, seq} — byte-identical to go/canonical.EntryDigest. Values
+ * outside the Unicode scalar or safe-unsigned sequence domains are typed data
+ * refusals, never throws. */
+export const entryDigest = (entry: ChainEntry): EntryDigestResult => {
+  const refusal = unicodeScalarRefusal(entry.payload, "payload") ??
+    unicodeScalarRefusal(entry.prev, "prev") ??
+    sequenceRefusal(entry.seq)
+  if (refusal !== undefined) return { ok: false, refusal }
+  return {
+    ok: true,
+    digest: sha256Hex(canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq })),
+  }
+}
 
 /** The verify-on-read chain fold (W6): heads are claims; this recomputes
  * one locally. Returns the verified head, or the seq/reason of the first
@@ -112,13 +170,17 @@ export const foldChain = (
   | { ok: false; seq: number; reason: string } => {
   let cursor = from
   for (const entry of entries) {
+    const digest = entryDigest(entry)
+    if (!digest.ok) {
+      return { ok: false, seq: entry.seq, reason: digest.refusal.reason }
+    }
     if (entry.seq !== cursor.seq + 1) {
       return { ok: false, seq: entry.seq, reason: `seq is ${entry.seq}, want ${cursor.seq + 1}` }
     }
     if (entry.prev !== cursor.head) {
       return { ok: false, seq: entry.seq, reason: "prev does not match the verified head" }
     }
-    cursor = { seq: entry.seq, head: entryDigest(entry) }
+    cursor = { seq: entry.seq, head: digest.digest }
   }
   return { ok: true, seq: cursor.seq, head: cursor.head }
 }
