@@ -19,8 +19,8 @@ const (
 // current grammar. A changed classification mints a new digest; readers of an
 // archived refusal never reinterpret its persisted Sort through a newer table.
 const (
-	RefusalSortGrammar       = "flb.type.v0"
-	RefusalSortGrammarDigest = "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88"
+	RefusalSortGrammar       = "flb.type.v0+flb.session.v0"
+	RefusalSortGrammarDigest = "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc"
 )
 
 // Refusal kinds. Each names the one law that refused; the conformance test
@@ -33,6 +33,8 @@ const (
 	KindBadJournal       = "bad-journal"       // ingress subject names an invalid or reserved journal
 	KindBadCursor        = "bad-cursor"        // read cursor does not verify against the journal (W6)
 	KindUnknownRequest   = "unknown-request"   // request subject has no handler
+	KindSessionStale     = "session-stale"     // expectedHead is not the session's current head
+	KindSessionPrincipal = "session-principal" // mutator principal differs from the session's open.author
 )
 
 const (
@@ -42,15 +44,18 @@ const (
 )
 
 var refusalSortByKind = map[string]RefusalSort{
-	KindMalformed:        RefusalStructural,
-	KindInvalidStructure: RefusalStructural,
-	KindDigestMismatch:   RefusalStructural,
-	KindBadJournal:       RefusalStructural,
-	KindBadCursor:        RefusalStructural,
-	KindUnknownRequest:   RefusalStructural,
-	KindUnknownRef:       RefusalAbsence,
-	KindUnknownIdentity:  RefusalAbsence,
-	KindUnknownJournal:   RefusalAbsence,
+	KindMalformed:         RefusalStructural,
+	KindInvalidStructure:  RefusalStructural,
+	KindDigestMismatch:    RefusalStructural,
+	KindBadJournal:        RefusalStructural,
+	KindBadCursor:         RefusalStructural,
+	KindUnknownRequest:    RefusalStructural,
+	KindUnknownRef:        RefusalAbsence,
+	KindUnknownIdentity:   RefusalAbsence,
+	KindUnknownJournal:    RefusalAbsence,
+	KindSessionStale:      RefusalAbsence,
+	KindSessionPrincipal:  RefusalStructural,
+	KindCompactionBlocked: RefusalAbsence,
 }
 
 // RefusalSortOf classifies daemon refusal kinds. Client-local refusals are not

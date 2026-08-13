@@ -20,6 +20,9 @@ const DAEMON_REFUSAL_KINDS = [
   "unknown-journal",
   "bad-cursor",
   "unknown-request",
+  "session-stale",
+  "session-principal",
+  "compaction-blocked",
 ] as const
 
 const enumsIn = (value: unknown): ReadonlyArray<ReadonlyArray<unknown>> => {
@@ -178,6 +181,10 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       "contract_describe",
       "journal_read",
       "publish",
+      "session_commit",
+      "session_move",
+      "session_open",
+      "session_state",
       "type_create",
       "type_fill",
       "type_unfill",
@@ -295,7 +302,6 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       expect(annotationsOf(tool.name)).toEqual(tool.annotations)
       expect(served._meta).toEqual({ "foldlab.dev/nats-subject": tool.subject })
     }
-
     // Optimistic annotations are closed allow-lists. A future request
     // remains a destructive, non-idempotent mutation until its law is
     // explicitly classified here.
@@ -318,6 +324,10 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       destructiveHint: true,
       idempotentHint: false,
     })
+    for (const name of ["session_move", "session_commit"]) {
+      const tool = tools.find((candidate) => candidate.name === name)
+      expect(tool?.inputSchema.required).toContain("principal")
+    }
     await client.fact.close()
 
     // A typo'd create through the MCP seam: the refusal arrives as DATA

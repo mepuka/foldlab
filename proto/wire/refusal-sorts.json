@@ -1,6 +1,6 @@
 {
-  "grammar": "flb.type.v0",
-  "grammarDigest": "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88",
+  "grammar": "flb.type.v0+flb.session.v0",
+  "grammarDigest": "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc",
   "sortByKind": {
     "malformed": "structural",
     "invalid-structure": "structural",
@@ -10,6 +10,9 @@
     "bad-journal": "structural",
     "unknown-ref": "absence",
     "unknown-identity": "absence",
-    "unknown-journal": "absence"
+    "unknown-journal": "absence",
+    "session-stale": "absence",
+    "session-principal": "structural",
+    "compaction-blocked": "absence"
   }
 }

@@ -40,6 +40,9 @@ const DaemonRefusal = DaemonRefusalSchema.pipe(
       "unknown-journal",
       "bad-cursor",
       "unknown-request",
+      "session-stale",
+      "session-principal",
+      "compaction-blocked",
     ]),
   }),
 )

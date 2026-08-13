@@ -1706,3 +1706,116 @@ does not license moving any existing digest). Why: the two existing artifacts
 already name the independent standard result and the cross-runtime excluded
 value. **Load-bearing? no** — the oracle artifacts may be consolidated later
 without changing the admitted domain.
+## Task 37 — the session journal (2026-08-14)
+
+### D??. Session names address a canonical open event under a reserved house prefix
+
+Decided: one session is the journal `flb_session_v0_<digest>`, where `digest` is
+SHA-256 over the RFC 8785 bytes of its full `open` event. The open carries a
+digest over an owned grammar descriptor that commits every v0 production's
+required/optional fields and child sorts, not only the kind names. The
+underscore spelling obeys the existing journal-name grammar; generic ingress
+refuses the prefix, while `session.open` is the only creator. Alternatives:
+random session ids; hash only author/seed; use dotted `flb.session.v0` names
+outside the house regex; digest only the current kind list. Why: identical open
+facts converge, the journal remains directly readable, and a production-shape
+change cannot masquerade as the same grammar. **Load-bearing? yes** — U3's
+identity and cross-version replay both depend on what the key commits.
+
+### D??. The O(1) extension cache is derived and head-keyed, never authority
+
+Decided: each loaded session journal has a process-local `(verified cursor,
+partial)` cache protected by the session's append lock. Cache miss/restart
+replays from genesis; cache hit applies one move to the current carrier and
+advances one journal position. Generic ingress cannot write the reserved
+journal, so every admitted mutation passes through mandatory `expectedHead`
+position-CAS. Alternatives: replay the entire journal on every move (violates
+the L3 extension claim); treat the cache as durable state (creates a second
+authority); route sessions through the effector (spends decision coordination
+on evidence). Why: the journal remains the sole source of truth while the
+meaning fold extends without history-length work. **Load-bearing? yes** — this
+is the implementation of L1/L3 and G3 together.
+
+### D??. Task 37 records the current digest scheme and owes a future bridge
+
+Decided: every prefix state and L7 commit audit is explicitly tagged
+`bytes-sha256-v1`, computed as SHA-256 over RFC 8785 bytes of the current
+normalize (including canonical union-member order). Task 36 is not merged at
+this lane's base, so no `flb.type.v1` record is invented here. When that scheme
+lands, an old session commit remains an immutable old-scheme fact and gains a
+dual-record bridge; it is never reinterpreted or overwritten. Alternatives:
+read whichever scheme is active after a future merge; anticipate task 36's
+unmerged record shape; omit the scheme from state replies. Why: all three make
+historical state digests silently change or claim a contract this base does not
+have. **Load-bearing? yes** — L7 is meaningful only when both equal digests name
+the same scheme.
+
+### D??. Retention is recorded now; compaction remains a typed domain refusal
+
+Decided: session events carry `compactible`, `irreducible`, or
+`never-discardable`; fill/unfill/refusal/read are trace traffic, open and
+utterance/proposal are replay roots, and commit/adoption are permanent spine
+facts. Both Go and TypeScript expose a compaction planning path that returns the
+marks plus `compaction-blocked`; it cannot discard bytes until task 32 supplies
+`flb.certification.v0`, structural-refusal export, and the corpus digest sealing
+the prefix. Eventual compaction lets head-relative absence refusals die with the
+trace but preserves the prefix state digest beside that corpus digest as durable
+evidence. Because task 30 is not present at this base, its classifier is not
+copied here; at integration both `session-stale` and build-relative
+`compaction-blocked` join the absence sort and never enter the structural
+corpus. Alternatives: compact without export; add a fifth daemon request
+that can only refuse; implement task 32's record in this lane; leave retention
+implicit in prose. Why: the fallback enforces G4 without expanding the ratified
+four-request session surface or crossing an active lane. **Load-bearing? yes**
+— silent compaction would destroy teaching evidence forbidden by issue #24.
+
+## Task 37 Addendum 1 — principal ownership repair (2026-08-14)
+
+### D??. `open.author` is the asserted session owner; every mutator repeats it
+
+Decided: the non-empty `author` on the immutable open event establishes one
+session-owned `principal` string. Every fill, unfill, and commit request and
+journal event carries that string exactly; a missing principal is malformed and
+an unequal principal returns `session-principal` before expected-head CAS or
+append. Replay recovers the principal beside the partial, state/commit facts
+return it, and all generated retry bodies carry it. Concurrent clients using the
+same principal remain legal and race through the existing expected-head gate;
+overlapping edits still require the effector disposition stated by Addendum 1.
+Alternatives: retain author only on open (the confirmed unattributed-history
+defect); allow arbitrary per-move principals (contradicts one author of record);
+add `auth_basis` and transport authentication here (the estate map records that
+machinery as missing and this loopback daemon cannot prove it); derive principal
+from submitter (an independently unauthenticated catalog claim). Why: the journal
+now answers who owns every state transition after restart without inventing an
+authentication claim the substrate cannot discharge. **Load-bearing? yes** —
+this is an asserted ownership coordinate, explicitly not authenticated identity;
+real authentication remains the J9 residual and must precede trusting it as a
+person.
+
+### D??. Addendum 1 authorizes the session fixture's principal-bearing revision
+
+Decided: update only `proto/wire/fixtures/sessions.json` so every post-open move
+carries `principal:"fixture-agent"`, then recompute its canonical event bytes and
+per-prefix chain heads with the existing TS identity implementation; keep the
+open event, session key, grammar digest, state scheme, and every state digest
+unchanged. Alternatives: add a second fixture (leaves the authoritative dialogue
+outside the new replay domain); keep old head pins (would certify events replay
+now rejects); regenerate unrelated wire fixtures. Why: Addendum 1 changes the
+identity bytes of session moves and expressly requires propagation through the
+fixture, while no other frozen authority moved. **Load-bearing? yes** — U3 R0
+must pin the actual principal-bearing journal grammar.
+
+### D??. The combined refusal manifest covers the type and session grammars
+
+Decided at integration: extend Task 30's persisted sort manifest to the three
+session kinds and name its grammar `flb.type.v0+flb.session.v0`.
+`session-stale` and build-relative `compaction-blocked` are absence as Task 37
+already required; `session-principal` is structural because the submitted
+principal and immutable `open.author` determine the refusal independently of
+later heads. Alternatives: leave the new kinds unclassified (the daemon's
+central emitter panics); keep a manifest claiming only `flb.type.v0` while it
+contains session laws (false provenance); classify principal mismatch as
+absence (later presence cannot repeal the same request against the immutable
+open event). Why: every daemon refusal must persist one truthful sort, and a
+changed kind table must mint a new manifest digest. **Load-bearing? yes** —
+archived refusal meaning and future corpus admission depend on this table.

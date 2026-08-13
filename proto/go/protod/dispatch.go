@@ -19,6 +19,10 @@ const (
 	SubjectTypeUnfill       = "flb.req.type.unfill"
 	SubjectJournalRead      = "flb.req.journal.read"
 	SubjectContractDescribe = "flb.req.contract.describe"
+	SubjectSessionOpen      = "flb.req.session.open"
+	SubjectSessionMove      = "flb.req.session.move"
+	SubjectSessionState     = "flb.req.session.state"
+	SubjectSessionCommit    = "flb.req.session.commit"
 	subjectRequestWildcard  = "flb.req.>"
 	ingressPrefix           = "flb.ing."
 	ingressWildcard         = "flb.ing.>"
@@ -59,6 +63,14 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 		reply = d.serveRead(ctx, msg.Data)
 	case SubjectContractDescribe:
 		reply = describeReply()
+	case SubjectSessionOpen:
+		reply = d.serveSessionOpen(ctx, msg.Data)
+	case SubjectSessionMove:
+		reply = d.serveSessionMove(ctx, msg.Data)
+	case SubjectSessionState:
+		reply = d.serveSessionState(ctx, msg.Data)
+	case SubjectSessionCommit:
+		reply = d.serveSessionCommit(ctx, msg.Data)
 	default:
 		reply = refuse(&Refusal{
 			Kind: KindUnknownRequest,
@@ -70,6 +82,10 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 				SubjectTypeUnfill,
 				SubjectJournalRead,
 				SubjectContractDescribe,
+				SubjectSessionOpen,
+				SubjectSessionMove,
+				SubjectSessionState,
+				SubjectSessionCommit,
 			},
 			Next: []NextHint{describeHint()},
 		})

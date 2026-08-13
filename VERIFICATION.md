@@ -405,7 +405,7 @@ and [go/canonical/probes/](go/canonical/probes/).
 ### Claim
 
 The daemon's laws (W1–W10) are each witnessed by black-box tests over
-NATS subjects. Its nine refusal kinds are total over two ontological sorts:
+NATS subjects. Its twelve refusal kinds are total over two ontological sorts:
 structural refusals reproduce unchanged across catalog heads; absence
 refusals are repealed when the missing evidence lands. Every daemon refusal
 persists the sort on the wire, and the complete kind-to-sort manifest is
@@ -413,7 +413,7 @@ frozen under a grammar digest so archived values are not silently re-sorted.
 
 ### Evidence
 
-The TypeScript and Go conformance suites, all nine refusal kinds, restart
+The TypeScript and Go conformance suites, all twelve refusal kinds, restart
 survival, and the issue #57 shared reply corpus ([proto/](proto/)). The corpus
 contains twelve fixed create/admit/refusal values: both decoders agree on
 three admissions and nine rejections spanning recursive excess fields,
@@ -426,7 +426,7 @@ The request-admission control submits duplicate member names, a lone surrogate
 escape, and raw invalid UTF-8 through a real NATS `type.create` request. Each
 must return `malformed` before mutation, while the existing hostile-formatting
 control proves lawful alternate formatting retains the same identity.
-The shared all-nine refusal-sort vector has an independently recomputed
+The shared combined-grammar refusal-sort vector has an independently recomputed
 manifest digest; per-kind structural reproducibility and absence
 repealability laws, strict decoder controls, and restart survival pin the
 persisted classification.

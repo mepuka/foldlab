@@ -129,6 +129,14 @@ func (d *Daemon) serveUnfill(body []byte) any {
 
 func (d *Daemon) buildFrontier(holes [][]string) []frontierEntry {
 	refs := d.catalog.resolvableDigests(frontierRefLimit)
+	return buildFrontierFromSnapshot(holes, refs)
+}
+
+// buildFrontierFromSnapshot is the pure frontier seam. A caller supplies the
+// catalog-head snapshot's resolvable set; session history is neither accepted
+// nor observable. Consequently the result caches under exactly (state,
+// catalog head), as the session law requires.
+func buildFrontierFromSnapshot(holes [][]string, refs []string) []frontierEntry {
 	legal := frontierChoices(refs)
 	frontier := make([]frontierEntry, len(holes))
 	for index, path := range holes {

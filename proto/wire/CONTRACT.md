@@ -16,10 +16,15 @@ the daemon is a bug in one of them.
 | unfill one type node | `flb.req.type.unfill` | request/reply |
 | read a journal | `flb.req.journal.read` | request/reply |
 | describe the contract | `flb.req.contract.describe` | request/reply |
+| open a construction session | `flb.req.session.open` | request/reply |
+| append a session move | `flb.req.session.move` | request/reply |
+| resume session state | `flb.req.session.state` | request/reply |
+| commit a decided session | `flb.req.session.commit` | request/reply |
 | publish a frame | `flb.ing.<journal>` | request/reply (the reply admits or refuses) |
 
-`<journal>` matches `^[A-Za-z0-9_-]+$` and is never `catalog` — the
-catalog is written only by the daemon, through `type.create`. Requests
+`<journal>` matches `^[A-Za-z0-9_-]+$` and is never `catalog` or a name
+beginning `flb_session_v0_` — those journals are written only by the
+daemon through their request kinds. Requests
 on unknown `flb.req.*` subjects are answered with an `unknown-request`
 refusal (data, not silence). Requests without a reply inbox are dropped:
 there is nowhere to teach into.
@@ -92,6 +97,54 @@ the catalog supplies a truthful example. `refs` is the lexicographically
 first 16 resolvable digests. An empty frontier means zero holes and is
 exactly when `type.create` accepts the partial (C3).
 
+### flb.session.v0
+
+```json
+{"grammar":"<current grammar digest>","seed":<partial>?,"author":"<non-empty>"}
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>","principal":"<open.author>",
+ "op":"fill"|"unfill","path":["..."],"subtree":<partial>?}
+{"session":"flb_session_v0_<hex64>"}
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>",
+ "principal":"<open.author>","submitter":"<string>"?}
+```
+
+These are respectively `session.open`, `session.move`, `session.state`, and
+`session.commit`. The session name is SHA-256 over the canonical `open` event,
+and its suffix names one reserved journal. `open` defaults `seed` to a root
+hole; identical open data converges on the same journal.
+
+`expectedHead` and `principal` are mandatory on every state-changing move
+(fill, unfill, commit). `open.author` establishes the session's one asserted
+owner coordinate. Missing principal is malformed; an unequal one returns
+`session-principal`; both refuse before append. Concurrent clients may write
+under that same principal and still race only through expected-head CAS. A stale
+head returns `session-stale` with the current head/state and the exact refused
+move context plus a filled retry body. It never invokes the effector: session
+traffic is evidence guarded by journal position-CAS. This is ownership, not
+authentication: the present loopback daemon has no `auth_basis`, and real
+principal authentication remains a separate required gate.
+
+State facts carry `session`, `head`, `step`, `principal`, `partial`, `stateDigest`,
+`stateScheme`, `catalogHead`, `frontier`, `anchor:{key,head,stateDigest}`, and
+`next`. The frontier is computed solely from the partial and the catalog
+snapshot named by `catalogHead`; session history is not an input. Commit first
+replays the verified journal, normalizes and canonicalizes the zero-hole state,
+and requires its current `bytes-sha256-v1` digest to equal the daemon-derived
+catalog digest (L7). The commit journal event additionally records `scheme`,
+`catalogSeq`, and `catalogHead`; a future scheme is a dual record/bridge, never
+an in-place reinterpretation of this fact.
+
+Every session event carries a retention mark. Each fill, unfill, and commit event
+also carries `principal`, so restart and replay re-establish ownership from the
+journal rather than process memory. Fill/unfill/refusal/read traces
+are `compactible`; open/utterance/proposal traffic is `irreducible`; commit and
+adoption facts are `never-discardable`. Before a session prefix can compact,
+its structural refusals export to the `flb.certification.v0` corpus, absence
+refusals die with the head-relative trace, and both the state digest and corpus
+digest remain as evidence of what was summarized. Actual compaction is blocked
+in this build because that corpus-sealing seam does not exist. The typed
+`compaction-blocked` path retains the complete session.
+
 ### journal.read
 
 ```json
@@ -142,8 +195,9 @@ bytes).
 
 `sort` is persisted in every daemon refusal. Readers of archived values use
 that field; they never reclassify the kind through current code. The canonical
-kind-to-sort manifest is frozen in `refusal-sorts.json` under grammar digest
-`ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88`;
+kind-to-sort manifest for `flb.type.v0+flb.session.v0` is frozen in
+`refusal-sorts.json` under grammar digest
+`080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc`;
 a re-sort must mint a new digest. Only `structural` refusals may enter a future
 permanent refusal corpus. `absence` is a head-relative observation whose
 missing evidence may later arrive.
@@ -163,6 +217,9 @@ missing evidence may later arrive.
 | `unknown-journal` | `absence` | read addresses a journal that does not exist (lag is absence) |
 | `bad-cursor` | `structural` | read cursor does not verify against the journal (W6) |
 | `unknown-request` | `structural` | request subject has no handler (W9) |
+| `session-stale` | `absence` | expectedHead is not the session's current head (G3) |
+| `session-principal` | `structural` | mutator principal differs from immutable `open.author` |
+| `compaction-blocked` | `absence` | the certification corpus seam is unavailable (G4) |
 
 Every local refusal carries at least one `next` action and never performs that
 action implicitly; daemon refusals may use an empty list when absence itself is
@@ -230,8 +287,10 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
-
 `reply-conformance.json` sits beside the generated identity fixtures but is a
 hand-authored adversarial conformance corpus. Its `_provenance` field records
 the first freeze, independent Go oracle, and both executable readers. It may
 grow only with a stated reply-domain reason; existing rows are frozen evidence.
+- `sessions.json` — one `flb.session.v0` dialogue with each canonical event
+  (including its owned principal), per-prefix chain head, and normalized state
+  digest (U3 R0).

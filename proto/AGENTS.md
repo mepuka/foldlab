@@ -37,6 +37,10 @@ spec did not fix is logged in `DECISIONS.md`.
   directed repair. Nothing retries for the caller. Session transcripts reserve
   steps at send time, retain exact sent and claimed wire facts plus verified
   read facts, endpoint and times, and expose only owned snapshots.
+- Session ownership is journal-authoritative: `open.author` establishes one
+  asserted principal coordinate, and every fill, unfill, or commit carries that
+  exact principal. Missing or incompatible principals refuse before append;
+  concurrent clients under the same principal remain legal.
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.
   A digest mismatch means a port drifted; never edit a fixture.
 - The MCP tool surface is derived from `contract.describe` at startup;

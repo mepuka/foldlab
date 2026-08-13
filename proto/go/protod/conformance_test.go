@@ -344,9 +344,23 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("describe refused: %v", r)
 		}
 		contract := r["contract"].(map[string]any)
+		contractNote, ok := contract["note"].(string)
+		if !ok {
+			t.Fatalf("contract note is not a string: %v", contract["note"])
+		}
+		for _, required := range []string{
+			"Session compaction refuses until flb.certification.v0 corpus sealing exists",
+			"structural refusals export",
+			"absence refusals die with the trace",
+			"state digest and corpus digest remain as evidence",
+		} {
+			if !strings.Contains(contractNote, required) {
+				t.Fatalf("contract note omits %q: %q", required, contractNote)
+			}
+		}
 		requests := contract["requests"].([]any)
-		if len(requests) != 5 {
-			t.Fatalf("expected 5 request kinds, got %d", len(requests))
+		if len(requests) != 9 {
+			t.Fatalf("expected 9 request kinds, got %d", len(requests))
 		}
 		names := map[string]bool{}
 		for _, raw := range requests {
@@ -367,6 +381,14 @@ func TestConformance(t *testing.T) {
 		}
 		if !names["type_fill"] || !names["type_unfill"] {
 			t.Fatalf("contract omits concierge request kinds: %v", names)
+		}
+		for _, name := range []string{"session_open", "session_move", "session_state", "session_commit"} {
+			if !names[name] {
+				t.Fatalf("contract omits %s: %v", name, names)
+			}
+		}
+		if names["session_compact"] {
+			t.Fatalf("contract invents an unratified session compaction verb: %v", names)
 		}
 	})
 

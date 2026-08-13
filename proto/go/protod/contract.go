@@ -100,6 +100,31 @@ func vConciergeReply() map[string]any {
 	})
 }
 
+func vSessionAnchor() map[string]any {
+	return vStruct(map[string]any{
+		"key":         vKind("string"),
+		"head":        vDigest(),
+		"stateDigest": vDigest(),
+	})
+}
+
+func vSessionStateReply() map[string]any {
+	return vStruct(map[string]any{
+		"ok":          vKind("bool"),
+		"session":     vKind("string"),
+		"head":        vDigest(),
+		"step":        vKind("int"),
+		"principal":   vKind("string"),
+		"partial":     vPartial(),
+		"stateDigest": vDigest(),
+		"stateScheme": vKind("string"),
+		"catalogHead": vDigest(),
+		"frontier":    vList(vFrontierEntry()),
+		"anchor":      vSessionAnchor(),
+		"next":        vList(vNextHint()),
+	})
+}
+
 func describeReply() map[string]any {
 	return map[string]any{
 		"ok": true,
@@ -108,7 +133,10 @@ func describeReply() map[string]any {
 			"version": "v0",
 			"scheme":  activeScheme.Name(),
 			"note": "every reply is either the request's fact shape or the uniform refusal " +
-				"{ok:false, refusal}; refusals are data and nothing throws across this seam",
+				"{ok:false, refusal}; refusals are data and nothing throws across this seam. " +
+				"Session compaction refuses until flb.certification.v0 corpus sealing exists: " +
+				"structural refusals export, absence refusals die with the trace, and the " +
+				"state digest and corpus digest remain as evidence.",
 			"requests": []any{
 				map[string]any{
 					"name":    "type_create",
@@ -185,6 +213,67 @@ func describeReply() map[string]any {
 					"note":    "this request; the body is ignored",
 					"body":    vStruct(map[string]any{}),
 					"reply":   vOpaque(),
+				},
+				map[string]any{
+					"name":    "session_open",
+					"subject": SubjectSessionOpen,
+					"note": "open or converge on one content-addressed flb.session.v0 journal; " +
+						"the default seed is a root hole and the grammar digest must match this daemon",
+					"body": vStruct(map[string]any{
+						"grammar": vDigest(),
+						"seed":    vPartial(),
+						"author":  vKind("string"),
+					}, "seed"),
+					"reply": vSessionStateReply(),
+				},
+				map[string]any{
+					"name":    "session_move",
+					"subject": SubjectSessionMove,
+					"note": "append one fill or unfill under mandatory expectedHead and the session's open.author principal; " +
+						"stale heads refuse with the current head and exact move context, and sessions never use the effector",
+					"body": vStruct(map[string]any{
+						"session":      vKind("string"),
+						"expectedHead": vDigest(),
+						"principal":    vKind("string"),
+						"op":           vKind("string"),
+						"path":         vList(vKind("string")),
+						"subtree":      vPartial(),
+					}, "subtree"),
+					"reply": vSessionStateReply(),
+				},
+				map[string]any{
+					"name":    "session_state",
+					"subject": SubjectSessionState,
+					"note":    "replay the verified session journal and return its exact current anchor and pure frontier",
+					"body": vStruct(map[string]any{
+						"session": vKind("string"),
+					}),
+					"reply": vSessionStateReply(),
+				},
+				map[string]any{
+					"name":    "session_commit",
+					"subject": SubjectSessionCommit,
+					"note": "under the session's open.author principal, replay a zero-hole state then normalize/canonicalize/digest " +
+						"and require equality with the daemon-derived type.create result before recording the commit fact",
+					"body": vStruct(map[string]any{
+						"session":      vKind("string"),
+						"expectedHead": vDigest(),
+						"principal":    vKind("string"),
+						"submitter":    vKind("string"),
+					}, "submitter"),
+					"reply": vStruct(map[string]any{
+						"ok":          vKind("bool"),
+						"session":     vKind("string"),
+						"head":        vDigest(),
+						"step":        vKind("int"),
+						"principal":   vKind("string"),
+						"stateDigest": vDigest(),
+						"digest":      vDigest(),
+						"scheme":      vKind("string"),
+						"catalogSeq":  vKind("int"),
+						"catalogHead": vDigest(),
+						"next":        vList(vNextHint()),
+					}),
 				},
 			},
 			"ingress": map[string]any{

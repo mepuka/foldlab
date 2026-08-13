@@ -12,13 +12,13 @@ import {
   type RefusalSort,
 } from "../src/wire.ts"
 
-test("the TS refusal sorts match the shared all-nine vector", () => {
+test("the TS refusal sorts match the shared combined-grammar vector", () => {
   const expected = new Map(
     Object.entries(vector.sortByKind) as Array<[DaemonRefusalKind, RefusalSort]>,
   )
 
-  expect(Object.keys(DAEMON_REFUSAL_SORTS).length).toBe(9)
-  expect(expected.size).toBe(9)
+  expect(Object.keys(DAEMON_REFUSAL_SORTS).length).toBe(12)
+  expect(expected.size).toBe(12)
   for (const [kind, sort] of expected) {
     expect(refusalSortOf(kind)).toBe(sort)
     expect(DAEMON_REFUSAL_SORTS[kind]).toBe(sort)

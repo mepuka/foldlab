@@ -76,6 +76,9 @@ type Daemon struct {
 	mu       sync.Mutex
 	journals map[string]*journal.Journal
 
+	sessionMu sync.Mutex
+	sessions  map[string]*sessionJournal
+
 	url  string
 	subs []*nats.Subscription
 }
@@ -184,6 +187,7 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 		js:       js,
 		catalog:  openedCatalog,
 		journals: map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
+		sessions: map[string]*sessionJournal{},
 		url:      natsServer.ClientURL(),
 	}
 

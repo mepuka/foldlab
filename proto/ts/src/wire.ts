@@ -10,6 +10,10 @@ export const SUBJECT_TYPE_FILL = "flb.req.type.fill"
 export const SUBJECT_TYPE_UNFILL = "flb.req.type.unfill"
 export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
+export const SUBJECT_SESSION_OPEN = "flb.req.session.open"
+export const SUBJECT_SESSION_MOVE = "flb.req.session.move"
+export const SUBJECT_SESSION_STATE = "flb.req.session.state"
+export const SUBJECT_SESSION_COMMIT = "flb.req.session.commit"
 export const INGRESS_PREFIX = "flb.ing."
 
 // Daemon refusal sorts are persisted on the wire. A future refusal corpus may
@@ -26,6 +30,9 @@ export const DAEMON_REFUSAL_SORTS = {
   "unknown-ref": "absence",
   "unknown-identity": "absence",
   "unknown-journal": "absence",
+  "session-stale": "absence",
+  "session-principal": "structural",
+  "compaction-blocked": "absence",
 } as const
 
 export type DaemonRefusalKind = keyof typeof DAEMON_REFUSAL_SORTS
@@ -33,9 +40,9 @@ export type RefusalSort = typeof DAEMON_REFUSAL_SORTS[DaemonRefusalKind]
 
 // Digest of the canonical { grammar, sortByKind } manifest frozen in
 // proto/wire/refusal-sorts.json. A re-sort must mint a new grammar digest.
-export const REFUSAL_SORT_GRAMMAR = "flb.type.v0"
+export const REFUSAL_SORT_GRAMMAR = "flb.type.v0+flb.session.v0"
 export const REFUSAL_SORT_GRAMMAR_DIGEST =
-  "ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88"
+  "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc"
 
 export const refusalSortOf = (kind: string): RefusalSort | undefined =>
   Object.prototype.hasOwnProperty.call(DAEMON_REFUSAL_SORTS, kind)
@@ -122,6 +129,44 @@ export const ConciergeReply = Schema.Struct({
   next: Schema.Array(NextHint),
 })
 export type ConciergeReply = typeof ConciergeReply.Type
+
+export const SessionAnchor = Schema.Struct({
+  key: Schema.String,
+  head: Schema.String,
+  stateDigest: Schema.String,
+})
+export interface SessionAnchor extends Schema.Schema.Type<typeof SessionAnchor> {}
+
+export const SessionStateReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  head: Schema.String,
+  step: Schema.Int,
+  principal: Schema.String,
+  partial: Schema.Json,
+  stateDigest: Schema.String,
+  stateScheme: Schema.String,
+  catalogHead: Schema.String,
+  frontier: Schema.Array(FrontierEntry),
+  anchor: SessionAnchor,
+  next: Schema.Array(NextHint),
+})
+export interface SessionStateReply extends Schema.Schema.Type<typeof SessionStateReply> {}
+
+export const SessionCommitReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  head: Schema.String,
+  step: Schema.Int,
+  principal: Schema.String,
+  stateDigest: Schema.String,
+  digest: Schema.String,
+  scheme: Schema.String,
+  catalogSeq: Schema.Int,
+  catalogHead: Schema.String,
+  next: Schema.Array(NextHint),
+})
+export interface SessionCommitReply extends Schema.Schema.Type<typeof SessionCommitReply> {}
 
 export const WireEntry = Schema.Struct({
   seq: NonNegativeInt,

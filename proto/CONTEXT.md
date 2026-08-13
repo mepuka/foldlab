@@ -102,6 +102,26 @@ completion time. A verified read retains both the daemon's claimed wire fact
 and the locally verified cursor. Returned transcripts are snapshots, so a
 consumer cannot erase the record. Sugar strictly above the writ.
 
+**Session journal**:
+One content-addressed `flb.session.v0` construction history under the reserved
+`flb_session_v0_` journal prefix. Its identity fold remembers exact open,
+fill/unfill, and commit traffic; its meaning fold carries the current partial.
+A move always names `expectedHead` and the asserted principal established by
+`open.author`; replay derives both principal and partial from the verified
+journal rather than treating cached state as authority. This ownership
+coordinate prevents accidental cross-author mutation but is not authentication:
+protod has no `auth_basis`, so a caller able to assert the same string can act as
+that principal. Concurrent clients under the same principal remain legal.
+
+**Session retention mark**:
+The storage tier carried by a session event: trace traffic is compactible,
+utterances/proposals are irreducible, and adoption/commit facts are never
+discardable. Until the refusal-corpus seam can export structural refusals and
+seal their corpus digest, compaction is a typed refusal rather than data loss.
+When enabled, absence refusals die with their head-relative trace while the
+state digest and sealed corpus digest remain as evidence of the summarized
+prefix.
+
 ## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
 
 Recorded from the MCP deep-read at the pin against spec revision
