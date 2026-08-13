@@ -1,5 +1,10 @@
 # The first ten minutes
 
+Already know the terrain you are arriving from? Start with
+[one executable minute calibrated to an Effect developer, a platform
+engineer, or an auditor](pick-your-first-minute.md), then return here for the
+full sequence.
+
 This tutorial runs four commands on a fresh checkout and reads their
 output line by line. It stops there: it does not explain why the system
 is built this way, and the commitment register, the wire contract, and
@@ -390,6 +395,9 @@ cursor the daemon never issued. Each carries the same fields.
 
 ## Where to go next
 
+- [Pick your first minute](pick-your-first-minute.md) — the same system
+  entered from Effect, platform operations, or audit work, one existing
+  command and its output at a time.
 - [Why two folds](../explanation/why-two-folds.md) — why the chain head
   is kept when the fold state is already an answer.
 - [CONTEXT.md](../../CONTEXT.md) — the ubiquitous language, worth
