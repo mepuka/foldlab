@@ -57,3 +57,33 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   law licenses parallel/incremental replay. One-line why: it turns an Effect
   Stream run from an ephemeral effect into a citable, cacheable, auditable fact
   with ZERO new coherence machinery — nothing in Effect gives this today.
+
+### Burst 3 — map/tickets + dossier authored (done)
+- Two Explore agents returned: proto (W1-W10 confirmed; NO C1-C5 in SPEC.md —
+  did NOT cite them; mcp.ts derives tools from contract.describe via toJsonSchema;
+  codegen toEffectSchema/toJsonSchema/toGoSource are semantic folds; client
+  three-verb writ; Refusal is a data struct not a tagged error) and map/tickets
+  (004 critical-path RATIFIED build-pending; 005/008 ASPIRATIONAL; 014 fold
+  algebra RATIFIED-UNBUILT consumer=020 metrics; 015/016 RATIFIED-UNBUILT;
+  019 register store; 020 THE EFFECT SURFACE = Layers-first FoldlabTracer/
+  Logger/Metric + replay/counterfactual test magic, RATIFIED-UNBUILT).
+- Confirmed rc.108: Tracer.Tracer = Context.Reference<Tracer> (Tracer.ts:631),
+  Tracer.externalSpan (:113), Span iface (:371); Metric.counter/gauge/summary
+  (Metric.ts:2091/2177/2426); Schema.decodeUnknownResult (:1760); effect/
+  unstable/ai present, Tool.dynamic (unstable/ai/Tool.ts:1326).
+- WROTE docs/research/2026-08-13-expressive-power-dossier.md:
+  §1 power map (P1 invalidation-free cache, P2 proved-split parallel replay,
+  P3 provenance-as-fold, P4 cross-runtime digest equivalence, P5 deterministic
+  replay+counterfactual, P6 schema-as-derivation-source, P7 teaching refusals,
+  P8 lawful combinator) each with law/why-Effect-can't/status/consumer.
+  §2 ranked A/B/C/D framings; RECOMMENDED D "provenance for free" delivered as
+  the FoldlabTracer + verifiable-fold Layer ("your Effect runtime, made
+  recomputable"), built on the A engine (runFold/foldCache), sold with the C
+  guarantee (ADR-0010). Surface signatures rc.108-confirmed; smallest demo =
+  two runCommitted runs, recomputable head + cache hit, no daemon.
+  §3 honest edge led by THE central risk: fold algebra has no non-test consumer
+  (mint-rollback shape) — 020 is what retires it. Plus semantic gap, byte-coarse
+  identity + recursion hole, GAD distortion, coNP basis, absence-has-no-proof,
+  determinism deadline, safety-only, pre-graduation transport.
+  Appendix: rc.108 signature ledger with file:line citations.
+- Committed + pushed after each burst.
