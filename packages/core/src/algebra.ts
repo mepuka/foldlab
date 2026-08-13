@@ -11,7 +11,7 @@
  */
 
 import { createHash } from "node:crypto"
-import { encodeJsonValue, type CanonicalEncoding as JcsCanonicalEncoding } from "./jcs.ts"
+import { decodeJson, encodeJsonValue, type CanonicalEncoding as JcsCanonicalEncoding } from "./jcs.ts"
 import type { StreamEvent } from "./stream.ts"
 
 /**
@@ -667,15 +667,10 @@ const declaredStep = <A extends FoldState>(
     : { apply, eventGenerator: streamEvents, declaration: declared }
 }
 
-const decoder = new TextDecoder("utf-8", { fatal: true })
-
 const readPayloadNumber = (event: StreamEvent, path: ReadonlyArray<string>): number | null => {
-  let value: unknown
-  try {
-    value = JSON.parse(decoder.decode(event.payload))
-  } catch {
-    return null
-  }
+  const decoded = decodeJson(event.payload)
+  if (!decoded.ok) return null
+  let value: unknown = decoded.value
   for (const field of path) {
     if (typeof value !== "object" || value === null || Array.isArray(value)) return null
     value = Object.prototype.hasOwnProperty.call(value, field)
