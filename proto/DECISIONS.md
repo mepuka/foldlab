@@ -966,3 +966,25 @@ ratifies a narrower domain or a new daemon capability.
 The contract-suite semantics source and demo transport decisions were not
 reached. Findings-before-fixes forbids deciding or building later stages after
 the step-2 stop condition.
+
+## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
+
+### D??. FINDING: every representable concierge hole currently expects the same nonterminal
+
+Decided: stop before writing the requested red regression or changing
+`buildFrontier`. The closed implemented partial grammar permits `{"k":"hole"}`
+only where `T` occurs; struct field names are JSON object keys and never values
+visited by `walkNode`, so the ticket's record-field-name hole cannot be
+represented. Root, list-child, struct-field-value, union-member, brand-child,
+and check-base holes all expect `T`, and the current wire law explicitly
+advertises every final v0 kind at those positions. Alternatives deliberately
+not taken: assert a false distinction between two `T` holes; invent a typed
+metadata-hole grammar in this task; reinterpret “admitted by the certifier” as
+the stronger prefix/closed-completion property without a ratified certifier or
+enumerable domain. Why: each would either make the regression encode a false
+law or violate Task 28's “no new grammar machinery” boundary. The minimized
+grammar/path proof and disposition choices are in
+`go/protod/FINDING-FRONTIER-001.md`. **Load-bearing? yes** — per-hole derivation
+cannot be specified, tested, or implemented until the hole sorts and legality
+predicate agree across the coordinator-owned spec, wire contract, and ticket
+003 amendment.
