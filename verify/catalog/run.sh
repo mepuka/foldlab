@@ -60,7 +60,22 @@ if [ -z "$JAR" ]; then
   JAR="tools/tla2tools.jar"
 fi
 
-SHA=$(sha256sum "$JAR" | cut -d' ' -f1)
+# sha256 of the jar actually run.  Portable: coreutils `sha256sum` is absent
+# on stock macOS, where `shasum -a 256` is the form that exists; Linux images
+# often ship the reverse.  Try both, fail loudly if neither is there — a run
+# record that cannot state the sha of its jar is not a run record.
+sha256_of() { # <file>
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  else
+    echo "FAIL: neither sha256sum nor shasum found; cannot pin the jar." >&2
+    exit 2
+  fi
+}
+
+SHA=$(sha256_of "$JAR")
 VERSION=$("${JAVA[@]}" -cp "$JAR" tlc2.TLC -h 2>/dev/null | grep -m1 -oE "Version [^ ]+" || true)
 echo "TLC jar: $JAR"
 echo "  sha256: $SHA"
