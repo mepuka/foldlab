@@ -1,0 +1,42 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 1 and seed -3854737129259495620 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 26920] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a74aeb60a06917ee5\verify\catalog\CatalogBroken.tla
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a74aeb60a06917ee5\verify\catalog\Catalog.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\Integers.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\Sequences.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\Naturals.tla
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module Catalog
+Semantic processing of module CatalogBroken
+Starting... (2026-08-12 22:30:37)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-12 22:30:37.
+Error: Invariant Convergence is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ creators = << [val |-> 0, busy |-> FALSE, at |-> 0, exp |-> 0],
+   [val |-> 0, busy |-> FALSE, at |-> 0, exp |-> 0] >>
+/\ data = <<<<>>, <<>>>>
+/\ catalog = <<<<>>, <<>>>>
+/\ mirror = <<<<<<>>, <<>>>>, <<<<>>, <<>>>>>>
+
+State 2: <CreateBegin line 166, col 3 to line 172, col 50 of module Catalog>
+/\ creators = << [val |-> 1, busy |-> TRUE, at |-> 1, exp |-> 0],
+   [val |-> 0, busy |-> FALSE, at |-> 0, exp |-> 0] >>
+/\ data = <<<<>>, <<>>>>
+/\ catalog = <<<<>>, <<>>>>
+/\ mirror = <<<<<<>>, <<>>>>, <<<<>>, <<>>>>>>
+
+State 3: <CreateFinish line 191, col 3 to line 199, col 50 of module Catalog>
+/\ creators = << [val |-> 0, busy |-> FALSE, at |-> 0, exp |-> 0],
+   [val |-> 0, busy |-> FALSE, at |-> 0, exp |-> 0] >>
+/\ data = <<<<>>, <<>>>>
+/\ catalog = <<<<[val |-> 1, id |-> 2]>>, <<>>>>
+/\ mirror = <<<<<<>>, <<>>>>, <<<<>>, <<>>>>>>
+
+27 states generated, 21 distinct states found, 18 states left on queue.
+The depth of the complete state graph search is 3.
+The average outdegree of the complete state graph is 12 (minimum is 12, the maximum 12 and the 95th percentile is 12).
+Finished in 00s at (2026-08-12 22:30:37)
