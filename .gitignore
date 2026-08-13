@@ -6,3 +6,5 @@ bench/results/
 artifacts/receipts/*/corpus.json
 go/*.exe
 scratch/
+ci-logs/
+tlc-out/

@@ -1,5 +1,7 @@
 # foldlab
 
+[![gates](https://github.com/mepuka/foldlab/actions/workflows/gates.yml/badge.svg?branch=main)](https://github.com/mepuka/foldlab/actions/workflows/gates.yml)
+
 foldlab is a lab for verifiable computation over streams, built with
 Effect (TypeScript) and Go. Every value has one canonical byte form,
 and a value's identity is a SHA-256 digest over those bytes, so any
