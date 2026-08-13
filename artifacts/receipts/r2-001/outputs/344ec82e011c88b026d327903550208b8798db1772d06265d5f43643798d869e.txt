@@ -1,0 +1,9 @@
+```json
+{
+  "template": "<<<Carry out the plan step by step, showing all work. For each calculation:\n1. Show the operation clearly\n2. Verify the result by substitution or alternative method\n3. Check dimensions and reasonableness\n\nAfter completing all steps, verify your answer by:\n- Checking it against the original problem conditions\n- Testing edge cases if applicable\n- Confirming the answer is a valid integer\n\nShow all work below:\n\n{{INPUT}}\n\nFinal verification: [State why this answer is correct]\n\nFINAL ANSWER: [integer]>>>",
+  "params": {
+    "max_tokens": 5000,
+    "thinking_budget": 5000
+  }
+}
+```

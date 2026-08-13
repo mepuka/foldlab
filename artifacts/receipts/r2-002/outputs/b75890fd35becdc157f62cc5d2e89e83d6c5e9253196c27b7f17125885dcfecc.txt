@@ -1,0 +1,73 @@
+# Step-by-Step Solution
+
+## Step 1: Identify the final position of 4
+
+In the sorted array [1, 2, 3, 4, 5, 6, 7], the element 4 is in **position 4** (middle position).
+
+## Step 2: Determine valid starting positions for 4
+
+For 4 to be moved with **at most 3 swaps**:
+
+- **Position 4**: 0 swaps needed ✓
+- **Position 3**: 1 swap right ✓
+- **Position 5**: 1 swap left ✓
+- **Position 2**: 2 swaps right ✓
+- **Position 6**: 2 swaps left ✓
+- **Position 1**: 3 swaps right ✓
+- **Position 7**: 3 swaps left ✓
+
+**Valid starting positions: 1, 2, 3, 4, 5, 6, 7** (all positions can work with ≤3 swaps)
+
+However, the plan focuses on the constraint that other elements also need sorting. Let me reconsider with the sorting perspective.
+
+## Step 3: Constraints on other numbers
+
+For a permutation to be sortable with at most 3 swaps of 4:
+- Elements {1, 2, 3} must all be left of 4's starting position
+- Elements {5, 6, 7} must all be right of 4's starting position
+
+**Valid starting positions for 4: 3, 4, or 5**
+
+### Case 1: 4 at position 3
+- Positions 1-2: {1, 2, 3} — but we only have 2 positions for 3 elements
+- **This case is IMPOSSIBLE**
+
+### Case 2: 4 at position 4
+- Positions 1-3: {1, 2, 3} — exactly fits ✓
+- Positions 5-7: {5, 6, 7} — exactly fits ✓
+- **This case is VALID**
+
+### Case 3: 4 at position 5
+- Positions 1-3: {1, 2, 3} — leaves 1 empty position
+- Positions 6-7: {5, 6, 7} — only 2 positions for 3 elements
+- **This case is IMPOSSIBLE**
+
+## Step 4: Count valid arrangements for Case 2
+
+**Case 2 (4 at position 4):**
+- {1, 2, 3} must fill positions 1-3
+- 4 is at position 4
+- {5, 6, 7} must fill positions 5-7
+
+Number of ways to arrange {1, 2, 3} in positions 1-3: **3! = 6**
+
+Number of ways to arrange {5, 6, 7} in positions 5-7: **3! = 6**
+
+## Step 5: Verify valid sorting sequences exist
+
+For each arrangement:
+- The {1, 2, 3} group can be sorted using bubble sort (adjacent swaps only among themselves)
+- The {5, 6, 7} group can be sorted using bubble sort (adjacent swaps only among themselves)
+- Element 4 at position 4 acts as a "barrier" that other elements don't cross
+- Maximum swaps needed: worst case for {1,2,3} is 3 swaps (reverse order), worst case for {5,6,7} is 3 swaps
+- **All arrangements are valid** since 4 never participates in additional swaps
+
+## Step 6: Sum the valid permutations
+
+**Total valid permutations = 6 × 6 = 36**
+
+---
+
+# Final Answer
+
+**36**

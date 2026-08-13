@@ -1,0 +1,32 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Given:**
+- Three moons: Io, Europa, and Ganymede
+- In one Jupiter month, they complete $I$, $E$, and $G$ orbits respectively (positive integers)
+- Each moon appears as a full moon at the start of each of its orbits
+- The orbits are uniformly spaced throughout the month
+
+**Constraints:**
+1. Exactly **54** moments in time with at least one full moon
+2. Exactly **11** moments in time with at least two full moons  
+3. At least **1** moment in time with all three full moons
+
+## What is Being Asked
+
+**Find:** $I \cdot E \cdot G$ (the product of the three orbit numbers)
+
+## Setup
+
+If we normalize one Jupiter month to the interval $[0, 1)$:
+- Io has full moons at times $\frac{0}{I}, \frac{1}{I}, \frac{2}{I}, \ldots, \frac{I-1}{I}$ (total: $I$ times)
+- Europa has full moons at times $\frac{0}{E}, \frac{1}{E}, \frac{2}{E}, \ldots, \frac{E-1}{E}$ (total: $E$ times)
+- Ganymede has full moons at times $\frac{0}{G}, \frac{1}{G}, \frac{2}{G}, \ldots, \frac{G-1}{G}$ (total: $G$ times)
+
+The constraints translate to counting distinct time points (using inclusion-exclusion):
+- $I + E + G - |I \cap E| - |I \cap G| - |E \cap G| + |I \cap E \cap G| = 54$
+- $|I \cap E| + |I \cap G| + |E \cap G| - 2|I \cap E \cap G| = 11$
+- $|I \cap E \cap G| \geq 1$
+
+where $|I \cap E| = \gcd(I,E)$, etc.

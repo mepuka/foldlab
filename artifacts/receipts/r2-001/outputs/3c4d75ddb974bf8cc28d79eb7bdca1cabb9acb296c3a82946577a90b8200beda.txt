@@ -1,0 +1,30 @@
+# Review and Correction
+
+Looking at the 5-digit palindrome count, let me recount the listed palindromes:
+
+1. 11911
+2. 12721
+3. 13531
+4. 14341
+5. 15151
+6. 21712
+7. 22522
+8. 23332
+9. 24142
+10. 31513
+11. 32323
+12. 33133
+13. 41314
+14. 42124
+15. 51115
+
+**Error found:** The list contains **15 palindromes**, but the solution states "Count: 14"
+
+The correct count should be:
+- 3-digit palindromes: 5
+- 5-digit palindromes: 15
+- **Total: 20**
+
+The arithmetic error occurred when summarizing the 5-digit count as 14 instead of 15.
+
+**20**

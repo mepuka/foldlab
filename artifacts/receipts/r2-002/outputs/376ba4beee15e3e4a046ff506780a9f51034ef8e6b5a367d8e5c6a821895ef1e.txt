@@ -1,0 +1,21 @@
+I'll verify your solution step-by-step.
+
+## Verification of Key Steps
+
+**Steps 1-4: Coordinate Setup and Geometry** ✓
+
+Your coordinate system and angle calculations are correct:
+- $A = (0,0)$, $E = (20,0)$
+- $B = (0,h)$, $D = (20,k)$
+- From the $45°$ angles, $C = (14, h-14)$
+- From consistency: $|DC| = 6\sqrt{2}$ and $h = k + 8$
+
+**Step 5: Inequality Check** ✓
+
+The constraint $DE < AB$ gives $AB > 8$ since $DE = AB - 8$.
+
+**Step 6: Area Calculation** 
+
+Let me verify the shoelace formula with vertices in order: $A(0,0)$, $B(0,AB)$, $C(14, AB-14)$, $D(20, AB-8)$, $E(20,0)$
+
+$$2 \cdot \text{

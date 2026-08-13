@@ -1,0 +1,86 @@
+# Solution
+
+## Step 1: Calculate Total Paths
+From $(0,0)$ to $(5,5)$ requires 5 moves right and 5 moves up.
+$$\binom{10}{5} = \frac{10!}{5!5!} = \frac{10 \times 9 \times 8 \times 7 \times 6}{5 \times 4 \times 3 \times 2 \times 1} = \frac{30240}{120} = 252$$
+
+## Step 2-7: Calculate Paths Through Each Cell
+
+For each cell $(x,y)$ where $0 \leq x,y \leq 5$, I compute:
+$$\binom{x+y}{x}\binom{10-x-y}{5-x}$$
+
+**For y = 0:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{0}{0}\binom{10}{5}$ | 252 |
+| 1 | $\binom{1}{1}\binom{9}{4}$ | 126 |
+| 2 | $\binom{2}{2}\binom{8}{3}$ | 56 |
+| 3 | $\binom{3}{3}\binom{7}{2}$ | 21 |
+| 4 | $\binom{4}{4}\binom{6}{1}$ | 6 |
+| 5 | $\binom{5}{5}\binom{5}{0}$ | 1 |
+| **Row Sum** | | **462** |
+
+**For y = 1:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{1}{0}\binom{9}{5}$ | 126 |
+| 1 | $\binom{2}{1}\binom{8}{4}$ | $2 \times 70 = 140$ |
+| 2 | $\binom{3}{2}\binom{7}{3}$ | $3 \times 35 = 105$ |
+| 3 | $\binom{4}{3}\binom{6}{2}$ | $4 \times 15 = 60$ |
+| 4 | $\binom{5}{4}\binom{5}{1}$ | $5 \times 5 = 25$ |
+| 5 | $\binom{6}{5}\binom{4}{0}$ | 6 |
+| **Row Sum** | | **462** |
+
+**For y = 2:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{2}{0}\binom{8}{5}$ | 56 |
+| 1 | $\binom{3}{1}\binom{7}{4}$ | $3 \times 35 = 105$ |
+| 2 | $\binom{4}{2}\binom{6}{3}$ | $6 \times 20 = 120$ |
+| 3 | $\binom{5}{3}\binom{5}{2}$ | $10 \times 10 = 100$ |
+| 4 | $\binom{6}{4}\binom{4}{1}$ | $15 \times 4 = 60$ |
+| 5 | $\binom{7}{5}\binom{3}{0}$ | 21 |
+| **Row Sum** | | **462** |
+
+**For y = 3:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{3}{0}\binom{7}{5}$ | 21 |
+| 1 | $\binom{4}{1}\binom{6}{4}$ | $4 \times 15 = 60$ |
+| 2 | $\binom{5}{2}\binom{5}{3}$ | $10 \times 10 = 100$ |
+| 3 | $\binom{6}{3}\binom{4}{2}$ | $20 \times 6 = 120$ |
+| 4 | $\binom{7}{4}\binom{3}{1}$ | $35 \times 3 = 105$ |
+| 5 | $\binom{8}{5}\binom{2}{0}$ | 56 |
+| **Row Sum** | | **462** |
+
+**For y = 4:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{4}{0}\binom{6}{5}$ | 6 |
+| 1 | $\binom{5}{1}\binom{5}{4}$ | $5 \times 5 = 25$ |
+| 2 | $\binom{6}{2}\binom{4}{3}$ | $15 \times 4 = 60$ |
+| 3 | $\binom{7}{3}\binom{3}{2}$ | $35 \times 3 = 105$ |
+| 4 | $\binom{8}{4}\binom{2}{1}$ | $70 \times 2 = 140$ |
+| 5 | $\binom{9}{5}\binom{1}{0}$ | 126 |
+| **Row Sum** | | **462** |
+
+**For y = 5:**
+| x | Computation | Result |
+|---|---|---|
+| 0 | $\binom{5}{0}\binom{5}{5}$ | 1 |
+| 1 | $\binom{6}{1}\binom{4}{4}$ | 6 |
+| 2 | $\binom{7}{2}\binom{3}{3}$ | 21 |
+| 3 | $\binom{8}{3}\binom{2}{2}$ | 56 |
+| 4 | $\binom{9}{4}\binom{1}{1}$ | 126 |
+| 5 | $\binom{10}{5}\binom{0}{0}$ | 252 |
+| **Row Sum** | | **462** |
+
+## Step 8: Calculate Expected Value
+
+$$\sum_{x=0}^{5}\sum_{y=0}^{5} \binom{x+y}{x}\binom{10-x-y}{5-x} = 6 \times 462 = 2772$$
+
+$$E = 252 - \frac{2772}{36} = 252 - 77 = 175$$
+
+**Verification:** $2772 ÷ 36 = 77$ ✓ and $252 - 77 = 175$ ✓
+
+FINAL ANSWER: **175**

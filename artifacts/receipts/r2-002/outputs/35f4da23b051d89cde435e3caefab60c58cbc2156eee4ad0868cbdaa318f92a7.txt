@@ -1,0 +1,25 @@
+# Solution Plan
+
+1. **Calculate total paths without restrictions**
+   - Use combinatorics: Kelvin needs 5 moves right and 5 moves up
+   - Total paths = $\binom{10}{5} = 252$
+
+2. **Set up the expectation formula**
+   - $E[\text{valid paths}] = \frac{1}{36} \sum_{c=1}^{36} N(c)$
+   - where $N(c)$ = number of valid paths when raccoon is in cell $c$
+
+3. **For each cell $c$, calculate paths avoiding it**
+   - Use the formula: $N(c) = 252 - (\text{paths through } c)$
+   - Paths through cell $c$ = (paths from start to $c$) × (paths from $c$ to end)
+   - If cell $c$ is at position $(i,j)$: paths through $c = \binom{i+j}{i} \times \binom{(5-i)+(5-j)}{5-i}$
+
+4. **Handle boundary cases**
+   - Bottom-left $(0,0)$: $N(c) = 0$ (cannot start)
+   - Top-right $(5,5)$: $N(c) = 0$ (cannot end)
+   - All other cells: apply formula from step 3
+
+5. **Sum across all 36 cells**
+   - Compute $\sum_{c=1}^{36} N(c)$ by iterating through each cell position
+
+6. **Calculate final expectation**
+   - $E[\text{valid paths}] = \frac{1}{36} \times \text{(sum from step 5)}$

@@ -1,0 +1,98 @@
+# Solution: Step-by-Step Execution
+
+## Step 1: Coordinate System Setup
+
+Place the rectangle $ABCD$ with:
+- $A = (0, 0)$
+- $B = (1, 0)$ (since $AB = 1$)
+- $C = (1, h)$ where $h = BC$ (unknown)
+- $D = (0, h)$
+
+## Step 2: Parameterize X and Y
+
+- $X = (1, x)$ on $\overline{BC}$ where $0 \leq x \leq h$
+- $Y = (0, y)$ on $\overline{AD}$ where $0 \leq y \leq h$
+
+## Step 3: Apply Length Ratio Conditions
+
+**From $AX = k$:**
+$$AX = \sqrt{1^2 + x^2} = k$$
+$$1 + x^2 = k^2 \quad \text{...(Eq. 1)}$$
+
+**From $XY = 2k$:**
+$$XY = \sqrt{1^2 + (y-x)^2} = 2k$$
+$$1 + (y-x)^2 = 4k^2 \quad \text{...(Eq. 2)}$$
+
+**From $YC = k$:**
+$$YC = \sqrt{1^2 + (h-y)^2} = k$$
+$$1 + (h-y)^2 = k^2 \quad \text{...(Eq. 3)}$$
+
+## Step 4: Apply Perpendicularity Conditions
+
+**From $\angle AXY = 90°$:**
+$$\vec{XA} = (-1, -x), \quad \vec{XY} = (-1, y-x)$$
+$$\vec{XA} \cdot \vec{XY} = 1 - x(y-x) = 0$$
+$$1 + x^2 = xy \quad \text{...(Eq. 4)}$$
+
+**From $\angle XYC = 90°$:**
+$$\vec{YX} = (1, x-y), \quad \vec{YC} = (1, h-y)$$
+$$\vec{YX} \cdot \vec{YC} = 1 + (x-y)(h-y) = 0$$
+$$(x-y)(h-y) = -1 \quad \text{...(Eq. 5)}$$
+
+## Step 5: Solve the System
+
+**From Equations 1 and 3:**
+$$1 + x^2 = 1 + (h-y)^2$$
+$$x^2 = (h-y)^2$$
+
+Since $x \geq 0$ and $h - y \geq 0$ (both positive for valid geometry):
+$$x = h - y \quad \text{...(Eq. 6)}$$
+
+**From Equation 4 with Eq. 6:**
+$$x(h-x) = 1 + x^2$$
+$$xh - x^2 = 1 + x^2$$
+$$h = \frac{1 + 2x^2}{x} \quad \text{...(Eq. 8)}$$
+
+**From Equation 5 with Eq. 6:**
+$$(x - (h-x))(h - (h-x)) = -1$$
+$$(2x - h)(x) = -1$$
+$$2x^2 - hx + 1 = 0$$
+
+Substituting Eq. 8:
+$$2x^2 - \frac{1 + 2x^2}{x} \cdot x + 1 = 0$$
+$$2x^2 - 1 - 2x^2 + 1 = 0$$ ✓ (identity)
+
+**From Equation 2 with Eqs. 6 and 8:**
+
+With $y = h - x$:
+$$1 + (h - 2x)^2 = 4(1 + x^2)$$
+
+From Eq. 8: $h - 2x = \frac{1 + 2x^2}{x} - 2x = \frac{1}{x}$
+
+$$1 + \frac{1}{x^2} = 4 + 4x^2$$
+$$\frac{1}{x^2} = 3 + 4x^2$$
+$$1 = 3x^2 + 4x^4$$
+$$4x^4 + 3x^2 - 1 = 0$$
+
+**Solving the quartic (let $u = x^2$):**
+$$4u^2 + 3u - 1 = 0$$
+$$(4u - 1)(u + 1) = 0$$
+
+Since $u = x^2 \geq 0$: $u = \frac{1}{4}$, so $x = \frac{1}{2}$
+
+**Computing h:**
+$$h = \frac{1 + 2 \cdot \frac{1}{4}}{\frac{1}{2}} = \frac{1 + \frac{1}{2}}{\frac{1}{2}} = \frac{3/2}{1/2} = 3$$
+
+## Step 6: Verification
+
+With $x = \frac{1}{2}$, $h = 3$, $y = \frac{5}{2}$, $k = \frac{\sqrt{5}}{2}$:
+
+| Condition | Calculation | Result |
+|-----------|-------------|--------|
+| $AX = k$ | $\sqrt{1 + \frac{1}{4}} = \frac{\sqrt{5}}{2}$ | ✓ |
+| $YC = k$ | $\sqrt{1 + (3-\frac{5}{2})^2} = \frac{\sqrt{5}}{2}$ | ✓ |
+| $XY = 2k$ | $\sqrt{1 + 4} = \sqrt{5}$ | ✓ |
+| $\angle AXY = 90°$ | $\frac{5}{4} - \frac{5}{4} = 0$ | ✓ |
+| $\angle XYC = 90°$ | $(-2)(\frac{1}{2}) = -1$ | ✓ |
+
+FINAL ANSWER: **3**

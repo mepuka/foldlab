@@ -1,0 +1,49 @@
+Looking at this problem, I need to find the largest $n$ such that $n \mid [(\lfloor \sqrt{n} \rfloor)!^{n!} + 450]$.
+
+## Step 1: Understand the Divisibility Condition
+
+The condition is: $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450 \equiv 0 \pmod{n}$
+
+Equivalently: $(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv -450 \pmod{n}$
+
+## Step 2: Key Insight About Factorial Divisibility
+
+If $(\lfloor \sqrt{n} \rfloor)! \equiv 0 \pmod{n}$ (meaning $n$ divides the factorial), then:
+- $(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv 0 \pmod{n}$
+- This requires: $450 \equiv 0 \pmod{n}$, i.e., $n \mid 450$
+
+## Step 3: Factor 450 and Find Prime Factors
+
+$$450 = 2 \times 3^2 \times 5^2$$
+
+The divisors of 450 are: $1, 2, 3, 5, 6, 9, 10, 15, 18, 25, 30, 45, 50, 75, 90, 150, 225, 450$
+
+## Step 4: Determine Which Divisors Satisfy the Factorial Condition
+
+For each divisor $n$ of 450, I need to check if $n \mid (\lfloor \sqrt{n} \rfloor)!$
+
+For $n = 450$:
+- $\lfloor \sqrt{450} \rfloor = \lfloor 21.21... \rfloor = 21$
+- $21! = 1124000727777607680000$
+
+Since $450 = 2 \times 3^2 \times 5^2$, I need to verify that $21!$ contains at least:
+- One factor of 2 ✓ (clearly has many)
+- Two factors of 3 ✓ (clearly has many)  
+- Two factors of 5 ✓ (clearly has at least $\lfloor 21/5 \rfloor + \lfloor 21/25 \rfloor = 4 + 0 = 4$ factors)
+
+Therefore, $21! \equiv 0 \pmod{450}$ ✓
+
+## Step 5: Verify the Solution
+
+For $n = 450$:
+- $(\lfloor \sqrt{450} \rfloor)!^{450!} = (21!)^{450!} \equiv 0 \pmod{450}$ (since $450 \mid 21!$)
+- $450 \equiv 0 \pmod{450}$
+- Therefore: $(21!)^{450!} + 450 \equiv 0 + 0 = 0 \pmod{450}$ ✓
+
+## Step 6: Confirm This Is the Maximum
+
+Since $450$ is the largest divisor of $450$, and divisors larger than 450 do not divide 450, we cannot have any $n > 450$ where $n \mid 450$.
+
+For any $n > 450$ that is not a divisor of 450, if $n$ has a prime factor $p > 5$, then for sufficiently large $\lfloor \sqrt{n} \rfloor$, we would have $p \mid (\lfloor \sqrt{n} \rfloor)!$ but $p \nmid 450$, making the condition impossible to satisfy.
+
+Final answer (single integer only): **450**

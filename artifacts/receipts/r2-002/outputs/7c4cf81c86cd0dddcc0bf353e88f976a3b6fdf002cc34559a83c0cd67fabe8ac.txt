@@ -1,0 +1,15 @@
+# Analysis of the Problem
+
+## Given Quantities and Conditions
+
+1. **Variable**: A positive integer $n$
+2. **Expression to analyze**: $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450$
+3. **Divisibility condition**: $n$ divides $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450$
+4. **Factorization context**: $450 = 2 \cdot 3^2 \cdot 5^2$
+
+## What is Being Asked
+
+Find the **largest positive integer $n$** such that:
+$$n \mid \left[(\lfloor \sqrt{n} \rfloor)!^{n!} + 450\right]$$
+
+In other words, find the greatest $n$ for which the quantity $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450$ is divisible by $n$.

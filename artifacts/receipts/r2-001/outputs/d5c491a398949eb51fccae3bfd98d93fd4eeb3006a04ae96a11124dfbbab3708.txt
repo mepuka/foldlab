@@ -1,0 +1,96 @@
+# Solution: Finding the Second Smallest Multiple of 101 Containing "2026"
+
+## Step 1: Check if 2026 itself is divisible by 101
+
+**What I'm calculating:** 2026 mod 101
+
+**Calculation:**
+- 2026 ÷ 101 = 20 remainder r
+- 101 × 20 = 2020
+- 2026 - 2020 = 6
+- Therefore: 2026 = 101 × 20 + 6
+
+**Result:** 2026 mod 101 = 6, so 2026 is NOT divisible by 101 ✓
+
+---
+
+## Step 2: Find the first smallest multiple of 101 containing "2026"
+
+**What I'm calculating:** The smallest number containing "2026" that is divisible by 101
+
+**Strategy:** Check numbers with "2026" as a substring, starting with 202600.
+
+**Calculation for 202600:**
+- 202600 = 2026 × 100
+- 2026 mod 101 = 6
+- 100 mod 101 = 100
+- 202600 mod 101 = (6 × 100) mod 101 = 600 mod 101
+
+Computing 600 mod 101:
+- 600 ÷ 101 = 5 remainder 95
+- 101 × 5 = 505
+- 600 - 505 = 95
+
+So 202600 mod 101 = 95
+
+**Finding the multiple:**
+- Need to add: 101 - 95 = 6
+- Candidate: 202600 + 6 = **202606**
+
+**Verification:**
+- 202606 ÷ 101 = 2006
+- 101 × 2006 = 202606 ✓
+- Does 202606 contain "2026"? YES: **2026**06 ✓
+
+**Result:** First smallest = 202606
+
+---
+
+## Step 3: Find the second smallest multiple of 101 containing "2026"
+
+**What I'm calculating:** The next smallest number after 202606 that contains "2026" and is divisible by 101
+
+**Strategy:** Check the next natural occurrence of "2026", which is 2026000.
+
+**Calculation for 2026000:**
+- 2026000 = 2026 × 1000
+- 2026 mod 101 = 6
+- 1000 mod 101 = ?
+
+Computing 1000 mod 101:
+- 1000 ÷ 101 = 9 remainder 91
+- 101 × 9 = 909
+- 1000 - 909 = 91
+- So 1000 mod 101 = 91
+
+Computing 2026000 mod 101:
+- 2026000 mod 101 = (6 × 91) mod 101 = 546 mod 101
+- 546 ÷ 101 = 5 remainder 41
+- 101 × 5 = 505
+- 546 - 505 = 41
+- So 2026000 mod 101 = 41
+
+**Finding the multiple:**
+- Need to add: 101 - 41 = 60
+- Candidate: 2026000 + 60 = **2026060**
+
+**Verification:**
+- 2026060 ÷ 101 = 20060
+- 101 × 20060 = 2,026,060 ✓
+- Does 2026060 contain "2026"? YES: **2026**060 ✓
+- Is 2026060 > 202606? YES ✓
+
+---
+
+## Step 4: Verify the complete solution
+
+**Checking the sequence:**
+1. First smallest: 202606 = 101 × 2006, contains "2026" ✓
+2. Second smallest: 2026060 = 101 × 20060, contains "2026" ✓
+3. Confirmed 2026060 is larger than 202606 ✓
+4. The next multiple of 101 after 202606 is 202707 (does not contain "2026") ✓
+5. So 2026060 is indeed the second occurrence ✓
+
+---
+
+**FINAL ANSWER: 2026060**

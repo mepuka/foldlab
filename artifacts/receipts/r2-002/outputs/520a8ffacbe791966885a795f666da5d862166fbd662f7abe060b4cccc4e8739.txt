@@ -1,0 +1,99 @@
+# Finding the Minimum Sum of Squares Using Digits 1-9 Exactly Once
+
+## Step 1: Establish the Theoretical Minimum
+
+Let me first understand what we're looking for:
+- We need distinct positive integers whose squares collectively contain each digit 1-9 exactly once
+- We want to minimize the sum of the squares
+- Zeros are allowed and don't count against our constraint
+
+The theoretical absolute minimum (ignoring the digit constraint) would be:
+1² + 2² + 3² + 4² + 5² + 6² + 7² + 8² + 9² = 1 + 4 + 9 + 16 + 25 + 36 + 49 + 64 + 81 = **285**
+
+However, this uses the *numbers* 1-9, not necessarily giving us the *digits* 1-9. Their squares are: 1, 4, 9, 16, 25, 36, 49, 64, 81 - which collectively contain digits {1,4,9,6,2,5,3,4,6,4,9,8,1} - this uses many repeats and doesn't work.
+
+## Step 2: Identify Perfect Squares and Their Digits
+
+Let me list squares and the nonzero digits they contain:
+
+| n | n² | Nonzero Digits |
+|---|----|----|
+| 1 | 1 | {1} |
+| 2 | 4 | {4} |
+| 3 | 9 | {9} |
+| 4 | 16 | {1,6} |
+| 5 | 25 | {2,5} |
+| 6 | 36 | {3,6} |
+| 7 | 49 | {4,9} |
+| 8 | 64 | {6,4} |
+| 9 | 81 | {8,1} |
+| 10 | 100 | {} |
+| 11 | 121 | {1,2} |
+| 12 | 144 | {1,4} |
+| 13 | 169 | {1,6,9} |
+| 14 | 196 | {1,9,6} |
+| 15 | 225 | {2,5} |
+| 16 | 256 | {2,5,6} |
+| 17 | 289 | {2,8,9} |
+| 18 | 324 | {3,2,4} |
+| 19 | 361 | {3,6,1} |
+| 20 | 400 | {4} |
+
+## Step 3: Systematic Search for Optimal Combinations
+
+I need combinations where the union of digit sets = {1,2,3,4,5,6,7,8,9}.
+
+Let me check promising combinations starting with small sums:
+
+**Candidate 1:** {1, 2, 3, 4, 5, 6, 7, 8, 9}
+- Digits: {1}, {4}, {9}, {1,6}, {2,5}, {3,6}, {4,9}, {6,4}, {8,1} 
+- Union: {1,2,3,4,5,6,8,9} - Missing 7! ❌
+
+**Candidate 2:** Try including 14 (196 = 1,9,6) and 8 (64 = 6,4) and 5 (25 = 2,5)
+- Need to cover {3,7,8} still
+
+Let me try: {5, 13, 14, 17, 18}
+- 5² = 25 → {2,5}
+- 13² = 169 → {1,6,9}
+- 14² = 196 → {1,9,6}
+- 17² = 289 → {2,8,9}
+- 18² = 324 → {3,2,4}
+- Union: {1,2,3,4,5,6,8,9} - Missing 7! ❌
+
+**Candidate 3:** {6, 8, 11, 13, 17}
+- 6² = 36 → {3,6}
+- 8² = 64 → {6,4}
+- 11² = 121 → {1,2}
+- 13² = 169 → {1,6,9}
+- 17² = 289 → {2,8,9}
+- Union: {1,2,3,4,6,8,9} - Missing 5,7! ❌
+
+**Candidate 4:** {2, 5, 6, 13, 17, 19}
+- 2² = 4 → {4}
+- 5² = 25 → {2,5}
+- 6² = 36 → {3,6}
+- 13² = 169 → {1,6,9}
+- 17² = 289 → {2,8,9}
+- 19² = 361 → {3,6,1}
+- Union: {1,2,3,4,5,6,8,9} - Missing 7! ❌
+
+**Candidate 5:** {4, 6, 7, 13, 17}
+- 4² = 16 → {1,6}
+- 6² = 36 → {3,6}
+- 7² = 49 → {4,9}
+- 13² = 169 → {1,6,9}
+- 17² = 289 → {2,8,9}
+- Union: {1,2,3,4,6,8,9} - Missing 5,7! ❌
+
+**Candidate 6:** {1, 3, 5, 16, 17}
+- 1² = 1 → {1}
+- 3² = 9 → {9}
+- 5² = 25 → {2,5}
+- 16² = 256 → {2,5,6}
+- 17² = 289 → {2,8,9}
+- Union: {1,2,5,6,8,9} - Missing 3,4,7! ❌
+
+**Candidate 7:** {1, 2, 5, 13, 14}
+- 1² = 1 → {1}
+- 2² = 4 → {4}
+- 5² = 25 → {2

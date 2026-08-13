@@ -1,0 +1,30 @@
+# Solution Plan
+
+1. **Define variables**
+   - Let $g$ = initial volume of gallium in flask B (liters)
+   - Initial mercury in flask A = 1 liter
+
+2. **Analyze after Step 1 (A → B)**
+   - Mercury poured into B = 1 liter
+   - Flask B now contains: 1 liter mercury + $g$ liters gallium
+   - Total in B = $(1 + g)$ liters
+   - Excess that overflows = $(g)$ liters of pure mercury
+
+3. **Determine flask B capacity constraint**
+   - Since flask B fills to exactly 1 liter, we have: $1 + g = 1$
+   - Therefore: $g = 0$ (flask B was initially empty)
+
+4. **Analyze after Step 2 (mixing in B)**
+   - Flask B contains: 1 liter of pure mercury
+   - Concentration: 100% mercury
+
+5. **Verify against final condition**
+   - The problem states final mixture in B is 30% mercury
+   - This contradicts our finding that B contains pure mercury
+   - **Conclusion:** The problem constraints are inconsistent as stated
+
+6. **Interpretation note**
+   - If the problem intended "flask B is full" to mean a partial fill to some level $L < 1$ liter, the problem becomes solvable
+   - Using the condition that final B has 30% mercury, work backward to find the initial conditions and then calculate $x$
+
+**Alternative approach:** Assume the problem has a solvable interpretation and use the 30% final condition to establish the relationship between mercury content in both flasks at each stage.

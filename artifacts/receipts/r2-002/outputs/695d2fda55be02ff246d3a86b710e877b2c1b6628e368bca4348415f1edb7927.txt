@@ -1,0 +1,32 @@
+# Solution Plan
+
+1. **Apply the roots of unity filter** to express $S_r$:
+   - Use the formula: $S_r = \frac{1}{502} \sum_{j=0}^{501} \omega^{-jr} (1+\omega^j)^{10000}$
+   - where $\omega = e^{2\pi i/502}$ is a primitive 502-nd root of unity
+
+2. **Separate the $j=0$ term**:
+   - $S_r = \frac{1}{502}\left[2^{10000} + \sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000}\right]$
+
+3. **Analyze divisibility by 503**:
+   - Note that $502 \equiv -1 \pmod{503}$, so $502^{-1} \equiv -1 \pmod{503}$
+   - For $503 \mid S_r$, we need: $2^{10000} + \sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000} \equiv 0 \pmod{503}$
+
+4. **Use Fermat's Little Theorem and lifting the exponent**:
+   - Since $503$ is prime: $2^{502} \equiv 1 \pmod{503}$
+   - Compute $10000 \bmod 502$: $10000 = 19 \times 502 + 462$, so $10000 \equiv 462 \pmod{502}$
+   - Therefore: $2^{10000} \equiv 2^{462} \pmod{503}$
+
+5. **Evaluate $2^{462} \pmod{503}$**:
+   - $2^{462} = 2^{502-40} = 2^{502}/2^{40} \equiv 2^{-40} \equiv (2^{40})^{-1} \pmod{503}$
+   - Compute $2^{40} \bmod 503$ by repeated squaring
+   - Find its modular inverse
+
+6. **Count roots of the constraint equation**:
+   - The condition $\sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000} \equiv -2^{10000} \pmod{503}$ must hold
+   - Use properties of Gauss periods and character sums to determine how many values of $r \in \{1, 2, \ldots, 501\}$ satisfy this
+   - Apply results about the distribution of these sums modulo $p$
+
+7. **Report the answer**:
+   - Count the number of $r$ values for which $503 \mid S_r$
+
+**Expected Result:** The symmetry of the roots of unity filter and properties of binomial coefficients modulo a prime typically yield that approximately half (or a specific fraction) of the $S_r$ values are divisible by $503$, with the exact answer determinable through the character sum analysis in step 6.

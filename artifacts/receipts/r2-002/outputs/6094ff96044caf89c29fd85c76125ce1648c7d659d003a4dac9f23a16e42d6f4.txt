@@ -1,0 +1,67 @@
+# Detailed Verification
+
+## Step 1: Coordinate System ✓
+- Origin at center of hemisphere and disk
+- Disk in xy-plane: $z = 0$
+- Hemisphere: upper half of $x^2 + y^2 + z^2 = 200^2$ with $z \geq 0$
+
+## Step 2: Sphere Placement ✓
+- Contact point: $P = (p, 0, 0)$ on disk (using radial symmetry)
+- Sphere center (42 units above disk): $(p, 0, 42)$
+- Sphere equation: $(x-p)^2 + y^2 + (z-42)^2 = 42^2$
+
+## Step 3: Containment Condition ✓
+- All points on sphere must satisfy: $x^2 + y^2 + z^2 \leq 200^2$
+- The farthest point from origin is along the radial direction through the sphere's center
+
+## Step 4: Distance Calculation ✓
+- Distance from origin to sphere center: 
+$$d = \sqrt{p^2 + 0^2 + 42^2} = \sqrt{p^2 + 1764}$$
+
+- Distance to farthest point on sphere:
+$$d_{\text{max}} = \sqrt{p^2 + 1764} + 42$$
+
+- Constraint: $\sqrt{p^2 + 1764} + 42 \leq 200$
+
+## Step 5: Solving the Inequality ✓
+
+$$\sqrt{p^2 + 1764} \leq 158$$
+
+Square both sides:
+$$p^2 + 1764 \leq 158^2$$
+
+Calculate $158^2 = 24964$:
+$$p^2 + 1764 \leq 24964$$
+$$p^2 \leq 23200$$
+
+Simplify $\sqrt{23200}$:
+$$23200 = 400 \cdot 58 \implies \sqrt{23200} = 20\sqrt{58}$$
+
+Therefore: $0 \leq p \leq 20\sqrt{58}$
+
+## Step 6: Area Calculations ✓
+
+**Region $\mathcal{T}$** (disk of radius $20\sqrt{58}$):
+$$\text{Area}_{\mathcal{T}} = \pi(20\sqrt{58})^2 = \pi \cdot 400 \cdot 58 = 23200\pi$$
+
+**Full disk** (radius 200):
+$$\text{Area}_{\text{disk}} = \pi \cdot 200^2 = 40000\pi$$
+
+## Step 7: Compute the Ratio ✓
+
+$$\frac{\text{Area}_{\mathcal{T}}}{\text{Area}_{\text{disk}}} = \frac{23200\pi}{40000\pi} = \frac{23200}{40000}$$
+
+**Factor to reduce:**
+- $23200 = 2^5 \cdot 5^2 \cdot 29 = 800 \cdot 29$
+- $40000 = 2^6 \cdot 5^4 = 800 \cdot 50$
+
+$$\frac{23200}{40000} = \frac{29}{50}$$
+
+**Verify coprimality:** 29 is prime and does not divide 50, so $\gcd(29, 50) = 1$ ✓
+
+## Step 8: Final Answer ✓
+
+With $p = 29$ and $q = 50$:
+$$p + q = 29 + 50 = 79$$
+
+Final answer (single integer only): **79**

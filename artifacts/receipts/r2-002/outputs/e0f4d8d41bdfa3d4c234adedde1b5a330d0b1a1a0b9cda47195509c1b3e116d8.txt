@@ -1,0 +1,36 @@
+# Solution Plan for Counting Hamiltonian Paths
+
+1. **Understand the constraint structure**
+   - Recognize that a 3×10 grid severely limits path flexibility
+   - Note that A and B are in the same row (row 2), columns 2 and 9
+   - Identify that the path must visit all 30 cells exactly once
+
+2. **Analyze the forced structure**
+   - Determine which rows and columns must be traversed in what order
+   - Identify critical "bottlenecks" where the path is forced into specific patterns
+   - Check if A's position (column 2) and B's position (column 9) create mandatory routing
+
+3. **Consider parity and checkerboard coloring**
+   - Color the grid like a checkerboard (alternating black/white)
+   - Verify that a Hamiltonian path alternates between colors
+   - Confirm A and B have compatible colors for a 30-cell path (odd length requires opposite colors)
+
+4. **Trace forced path segments**
+   - Starting from A at (2,2), determine which moves are forced vs. optional
+   - Work systematically through the grid to identify sections where branching occurs
+   - Track how the path must navigate around visited cells
+
+5. **Use systematic case analysis**
+   - Break down the path into manageable sections
+   - Enumerate valid ways to visit cells in rows 1 and 3
+   - Count variations in how row 2 can be traversed around A and B
+
+6. **Verify boundary conditions**
+   - Ensure the path ends exactly at B (row 2, column 9)
+   - Check that no valid paths get stuck before visiting all 30 cells
+   - Confirm all 30 cells are indeed reachable in a connected path
+
+7. **Calculate the final count**
+   - Sum valid configurations from case analysis
+   - Double-check arithmetic
+   - State the answer as the total number of valid Hamiltonian paths

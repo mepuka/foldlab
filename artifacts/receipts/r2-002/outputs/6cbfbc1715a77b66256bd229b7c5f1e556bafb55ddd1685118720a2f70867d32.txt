@@ -1,0 +1,67 @@
+# Solution: Finding the Largest n
+
+## Step 1: Establish the constraint on $\lfloor \sqrt{n} \rfloor$
+
+For $n \geq 3$, we have $\lfloor \sqrt{n} \rfloor \geq 1$.
+
+For $\lfloor \sqrt{n} \rfloor \geq 2$, we have $(\lfloor \sqrt{n} \rfloor)! \geq 2$, making $(\lfloor \sqrt{n} \rfloor)!^{n!}$ divisible by all primes dividing $(\lfloor \sqrt{n} \rfloor)!$.
+
+## Step 2: Analyze the divisibility condition modulo prime factors
+
+For any prime $p$ dividing $n$, we require:
+$$n \mid [(\lfloor \sqrt{n} \rfloor)!^{n!} + 450]$$
+
+If $p \mid (\lfloor \sqrt{n} \rfloor)!$, then:
+$$(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv 0 \pmod{p}$$
+
+This means we need:
+$$p \mid 450$$
+
+**Factoring 450:**
+$$450 = 2 \cdot 225 = 2 \cdot 3^2 \cdot 5^2$$
+
+Therefore, the only primes that can divide both $n$ and $(\lfloor \sqrt{n} \rfloor)!$ are: $\boxed{\{2, 3, 5\}}$
+
+This means **$n$ must be a 3-smooth number** (product of powers of 2, 3, and 5 only).
+
+## Step 3: Determine the bound on $\lfloor \sqrt{n} \rfloor$
+
+For $\lfloor \sqrt{n} \rfloor = 7$: $7! = 5040 = 2^4 \cdot 3^2 \cdot 5 \cdot 7$
+
+Since $7 \mid 7!$ but $7 \nmid 450$, any $n \geq 49$ with prime factor 7 would fail.
+
+For $\lfloor \sqrt{n} \rfloor = 6$: $6! = 720 = 2^4 \cdot 3^2 \cdot 5$ ✓
+
+All prime factors of $6!$ divide 450, so we need:
+$$n < 49 \text{ and } n \text{ is 3-smooth}$$
+
+## Step 4: Test candidates from largest to smallest
+
+The 3-smooth numbers less than 49 are:
+$$1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40, 45, 48$$
+
+**Testing $n = 48$:**
+- $48 = 2^4 \cdot 3$
+- $\lfloor \sqrt{48} \rfloor = 6$, $6! = 720$
+- Check: $720 = 15 \times 48$, so $720 \equiv 0 \pmod{48}$
+- $450 \div 48 = 9$ remainder $18$, so $450 \equiv 18 \pmod{48}$
+- Result: $0 + 18 \equiv 18 \pmod{48}$ ✗ **Not divisible**
+
+**Testing $n = 45$:**
+- $45 = 3^2 \cdot 5$
+- $\lfloor \sqrt{45} \rfloor = 6$ (since $6^2 = 36 < 45 < 49 = 7^2$)
+- $6! = 720$
+
+**Divisibility check modulo 45:**
+- $720 = 16 \times 45$, so $720 \equiv 0 \pmod{45}$
+- $450 = 10 \times 45$, so $450 \equiv 0 \pmod{45}$
+- Result: $720^{45!} + 450 \equiv 0 + 0 \equiv 0 \pmod{45}$ ✓ **DIVISIBLE**
+
+## Step 5: Verify no larger solution exists
+
+For any $n > 45$ and $n < 49$:
+- $n = 46 = 2 \times 23$: Contains prime 23 > 5, fails ✗
+- $n = 47$: Prime > 5, fails ✗
+- $n = 48 = 2^4 \times 3$: Already tested, fails ✗
+
+ANSWER: **45**

@@ -1,0 +1,32 @@
+# Solution Plan for Finding Possible Values of c
+
+1. **Identify the tangency requirement**
+   - For exactly 3 solutions total, one of the equations ($x^2 + ax + b = c$ or $x^2 + ax + b = -c$) must have exactly 1 integer solution (tangency at vertex), and the other must have exactly 2 integer solutions.
+
+2. **Set up vertex conditions**
+   - The parabola vertex occurs at $x = -\frac{a}{2}$
+   - For tangency at an integer point, require $a$ to be even (so $-\frac{a}{2}$ is an integer)
+   - Let $a = 2m$ for integer $m$, so vertex is at $x = -m$
+
+3. **Express the vertex value**
+   - At the vertex $x = -m$: $f(-m) = m^2 - 2m^2 + b = b - m^2$
+   - One of $\{c, -c\}$ must equal $b - m^2$ (the tangent line value)
+   - The other must equal a value where the parabola intersects at exactly 2 integer points
+
+4. **Analyze the two cases**
+   - **Case 1:** $c = b - m^2$ (tangent), and $-c = b - m^2 - 2c$ intersects at 2 points
+   - **Case 2:** $-c = b - m^2$ (tangent), and $c = b - m^2 + 2c$ intersects at 2 points
+
+5. **Determine constraints on c**
+   - For integer solutions to exist for the non-tangent line, its discriminant must be a perfect square
+   - The non-tangent horizontal line must be distance $2c$ from the vertex
+   - Require $c > 0$ and $c \le 2025$
+
+6. **Count valid values of c**
+   - For each positive integer $c$, verify that there exist integers $a, b$ making exactly 3 solutions possible
+   - The key insight: $c$ must be achievable as a distance from vertex to an intersection level
+   - Valid values: $c \in \{1, 2, 3, \ldots, 2025\}$ where each allows appropriate choice of $a, b$
+
+7. **Final answer**
+   - Count all valid $c$ values satisfying $1 \le c \le 2025$
+   - **Answer: 2025**

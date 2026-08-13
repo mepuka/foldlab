@@ -1,0 +1,92 @@
+# Solution: Counting Rectangular Loop Partitions
+
+## What We're Calculating
+
+We need to find the number of ways to partition a $10 \times 10$ grid (100 cells) into exactly 5 nested rectangular loops, where each loop is concentric with the previous one and forms the outer boundary of the remaining cells.
+
+## Step 1: Establish the Outermost Loop Constraint
+
+**Outermost loop dimensions:** $a_1 = 10$ and $b_1 = 10$
+
+**Cells in outermost loop:** 
+$$2a_1 + 2b_1 - 4 = 2(10) + 2(10) - 4 = 36 \text{ cells}$$
+
+**Remaining cells for inner loops:** $100 - 36 = 64$ cells
+
+## Step 2: Derive the Sum Constraint
+
+The total cells must satisfy:
+$$\sum_{i=1}^{5} (2a_i + 2b_i - 4) = 100$$
+
+Expanding:
+$$2(a_1 + a_2 + a_3 + a_4 + a_5) + 2(b_1 + b_2 + b_3 + b_4 + b_5) - 20 = 100$$
+
+$$2(10 + a_2 + a_3 + a_4 + a_5) + 2(10 + b_2 + b_3 + b_4 + b_5) = 120$$
+
+$$\sum_{i=2}^{5} a_i + \sum_{i=2}^{5} b_i = 40$$
+
+Let $S_a = \sum_{i=2}^{5} a_i$ and $S_b = \sum_{i=2}^{5} b_i$. We need: **$S_a + S_b = 40$**
+
+## Step 3: Determine Valid Range for Dimensions
+
+For nested loops with $a_1 = 10$:
+- $2 \le a_2 \le 8$ (must fit inside the inner rectangle of loop 1)
+- $2 \le a_3 \le a_2 - 2$
+- $2 \le a_4 \le a_3 - 2$
+- $2 \le a_5 \le a_4 - 2$
+
+**Minimum possible $S_a$:** All dimensions at minimum: $(2,2,2,2) \Rightarrow S_a = 8$
+
+**Maximum possible $S_a$:** All dimensions at maximum:
+$$(a_2, a_3, a_4, a_5) = (8, 6, 4, 2) \Rightarrow S_a = 20$$
+
+Therefore: $8 \le S_a \le 20$
+
+By the same logic: $8 \le S_b \le 20$
+
+## Step 4: Find Valid Values for $S_a$ and $S_b$
+
+Given $S_a + S_b = 40$ with both sums constrained to $[8, 20]$:
+
+If $S_a = k$, then $S_b = 40 - k$.
+
+For $S_a$ valid: $8 \le k \le 20$
+
+For $S_b$ valid: $8 \le 40 - k \le 20$, which gives $20 \le k \le 32$
+
+**The intersection requires:** $k = 20$
+
+Therefore: **$S_a = 20$ and $S_b = 20$ is the only possibility**
+
+## Step 5: Count Sequences with Sum = 20
+
+For the $a$ sequence to achieve sum 20, we need $(a_2, a_3, a_4, a_5)$ satisfying:
+- All constraints above
+- $a_2 + a_3 + a_4 + a_5 = 20$
+
+Testing if $a_2 = 8$:
+- Then $a_3 \le 6$
+  - If $a_3 = 6$: $a_4 \le 4$
+    - If $a_4 = 4$: $a_5 \le 2$, so $a_5 = 2$ ✓
+    - Sum: $8 + 6 + 4 + 2 = 20$ ✓
+
+Testing if $a_2 = 7$:
+- Maximum possible sum: $7 + 5 + 3 + 1 = 16 < 20$ ✗
+
+Therefore: **$(a_2, a_3, a_4, a_5) = (8, 6, 4, 2)$ is the unique sequence**
+
+By identical reasoning: **$(b_2, b_3, b_4, b_5) = (8, 6, 4, 2)$ is the unique sequence**
+
+## Step 6: Verify the Solution
+
+Total cells:
+$$2(10 + 8 + 6 + 4 + 2) + 2(10 + 8 + 6 + 4 + 2) - 20 = 2(30) + 2(30) - 20 = 100$$ ✓
+
+Each loop fits inside the previous:
+- Loop 1: $10 \times 10$ ✓
+- Loop 2: $8 \times 8$ (fits in inner $8 \times 8$ of loop 1) ✓
+- Loop 3: $6 \times 6$ (fits in inner $6 \times 6$ of loop 2) ✓
+- Loop 4: $4 \times 4$ (fits in inner $4 \times 4$ of loop 3) ✓
+- Loop 5: $2 \times 2$ (fits in inner $2 \times 2$ of loop 4) ✓
+
+**FINAL ANSWER: 1**

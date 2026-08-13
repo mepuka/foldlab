@@ -1,0 +1,48 @@
+# Extended Solution
+
+## Step 1: Identify Valid Values of $r$
+
+For $n = \frac{5r + 8}{4}$ to be an integer, we need $5r + 8 \equiv 0 \pmod{4}$.
+
+Since $5 \equiv 1 \pmod{4}$ and $8 \equiv 0 \pmod{4}$:
+$$5r + 8 \equiv r \pmod{4}$$
+
+Therefore, we need $r \equiv 0 \pmod{4}$, so $r = 4k$ for positive integers $k$.
+
+**Deriving the formula for $n$ and $b$:**
+- If $r = 4k$, then: $n = \frac{5(4k) + 8}{4} = \frac{20k + 8}{4} = 5k + 2$
+- Also: $b = n - r = (5k + 2) - 4k = k + 2$
+
+## Step 2: Apply Minimum Color Constraints
+
+We need both:
+- $r \geq 7$: This gives $4k \geq 7 \Rightarrow k \geq 1.75 \Rightarrow k \geq 2$
+- $b \geq 7$: This gives $k + 2 \geq 7 \Rightarrow k \geq 5$
+
+The binding constraint is **$k \geq 5$**.
+
+## Step 3: Find the Five Smallest Valid Values of $n$
+
+Testing values of $k$ starting from $k = 5$:
+
+| $k$ | $r = 4k$ | $n = 5k + 2$ | $b = k + 2$ | Valid? |
+|-----|----------|--------------|-------------|--------|
+| 5 | 20 | **27** | 7 | ✓ |
+| 6 | 24 | **32** | 8 | ✓ |
+| 7 | 28 | **37** | 9 | ✓ |
+| 8 | 32 | **42** | 10 | ✓ |
+| 9 | 36 | **47** | 11 | ✓ |
+
+The five smallest valid values of $n$ are: **27, 32, 37, 42, 47**
+
+## Step 4: Calculate the Sum
+
+$$27 + 32 + 37 + 42 + 47$$
+
+Computing step-by-step:
+- $27 + 32 = 59$
+- $59 + 37 = 96$
+- $96 + 42 = 138$
+- $138 + 47 = 185$
+
+**185**

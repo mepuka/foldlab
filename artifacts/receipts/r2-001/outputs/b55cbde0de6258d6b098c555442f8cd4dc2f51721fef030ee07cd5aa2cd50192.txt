@@ -1,0 +1,18 @@
+# Given Quantities and Conditions
+
+**Quantities:**
+- Grid dimensions: 3 rows × 10 columns = 30 cells total
+- Starting cell: A (located in row 2, column 2)
+- Ending cell: B (located in row 2, column 9)
+
+**Conditions:**
+1. Movement is allowed only between cells that share an edge (4-directional adjacency: up, down, left, right)
+2. The path must visit every cell exactly once
+3. Starting in cell A counts as the first visit
+4. The path must end at cell B
+
+# What is Being Asked
+
+Compute the total number of distinct Hamiltonian paths from cell A to cell B on this 3 × 10 grid.
+
+Equivalently: How many ways can Alexandrimitrov walk from A to B visiting all 30 cells exactly once?

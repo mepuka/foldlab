@@ -1,0 +1,53 @@
+# Solution: Step-by-Step Verification
+
+## Step 1: Establish the Constraint Condition ✓
+
+For a sphere of radius $r = 42$ centered at $(P_x, P_y, 42)$ to lie completely inside a hemisphere of radius $R = 200$ centered at the origin:
+
+The farthest point on the small sphere from the origin is at distance:
+$$d_{\max} = \sqrt{P_x^2 + P_y^2 + 42^2} + 42$$
+
+The constraint is:
+$$\sqrt{P_x^2 + P_y^2 + 42^2} + 42 \leq 200$$
+
+## Step 2: Simplify the Constraint ✓
+
+Isolating the radical:
+$$\sqrt{P_x^2 + P_y^2 + 42^2} \leq 158$$
+
+Squaring both sides (valid since both sides are non-negative):
+$$P_x^2 + P_y^2 + 42^2 \leq 158^2$$
+
+$$P_x^2 + P_y^2 + 1764 \leq 24964$$
+
+$$P_x^2 + P_y^2 \leq 23200$$
+
+## Step 3: Identify Region $\mathcal{T}$ ✓
+
+The region $\mathcal{T}$ is a disk centered at the origin in the $(P_x, P_y)$ plane with radius:
+$$\rho = \sqrt{23200}$$
+
+Simplifying:
+$$\rho = \sqrt{23200} = \sqrt{400 \cdot 58} = 20\sqrt{58}$$
+
+## Step 4: Calculate the Area Ratio ✓
+
+The disk of possible centers (the projection of the base) has radius $R = 200$.
+
+$$\frac{\text{Area of } \mathcal{T}}{\text{Area of disk}} = \frac{\pi \rho^2}{\pi R^2} = \frac{(20\sqrt{58})^2}{200^2} = \frac{400 \cdot 58}{40000} = \frac{23200}{40000}$$
+
+## Step 5: Reduce to Lowest Terms ✓
+
+Finding the GCD:
+- $23200 = 232 \cdot 100 = 8 \cdot 29 \cdot 100$
+- $40000 = 400 \cdot 100 = 8 \cdot 50 \cdot 100$
+
+$$\frac{23200}{40000} = \frac{232}{400} = \frac{29}{50}$$
+
+Verification: $\gcd(29, 50) = 1$ since 29 is prime and doesn't divide 50. ✓
+
+## Step 6: Final Answer ✓
+
+With $p = 29$ and $q = 50$ in lowest terms:
+
+$$p + q = 29 + 50 = \boxed{79}$$

@@ -1,0 +1,27 @@
+# Solution Plan
+
+1. **Set up a coordinate system** with $\ell_1$ as the $x$-axis and $\ell_2$ as the $y$-axis, so their intersection point is at the origin.
+
+2. **Locate point $P$** using the given distances: $P = (3, 12)$ (since $P$ is distance 3 from $\ell_1$ and distance 12 from $\ell_2$).
+
+3. **Locate point $Q$** using the constraint $|PQ| = 10$:
+   - $Q$ lies on a circle of radius 10 centered at $P$
+   - $Q$ must also satisfy geometric constraints from the circle configuration
+   - Determine $Q = (x_Q, y_Q)$ by solving $|PQ|^2 = 100$
+
+4. **Find the circle centers $O_1$ and $O_2$**:
+   - For $\Gamma_1$: center is at distance $r_1$ from both tangent lines, so $O_1 = (r_1, r_1)$
+   - For $\Gamma_2$: center is at distance $r_2$ from both tangent lines, so $O_2 = (r_2, r_2)$
+   - Both $P$ and $Q$ lie on both circles, giving equations to solve for $r_1$, $r_2$
+
+5. **Identify the tangency points**:
+   - $U_1 = (r_1, 0)$ (where $\Gamma_1$ touches $\ell_1$)
+   - $U_2 = (0, r_1)$ (where $\Gamma_1$ touches $\ell_2$)
+   - $V_1 = (r_2, 0)$ (where $\Gamma_2$ touches $\ell_1$)
+   - $V_2 = (0, r_2)$ (where $\Gamma_2$ touches $\ell_2$)
+
+6. **Calculate the area** of quadrilateral $U_1U_2V_2V_1$ using the Shoelace formula:
+   $$\text{Area} = \frac{1}{2}|r_1 \cdot r_2 + r_1 \cdot r_2| = r_1 r_2$$
+   (The quadrilateral is actually a trapezoid with parallel sides along the axes)
+
+7. **Solve for $r_1 r_2$** from the circle equations and substitute to find the final area.

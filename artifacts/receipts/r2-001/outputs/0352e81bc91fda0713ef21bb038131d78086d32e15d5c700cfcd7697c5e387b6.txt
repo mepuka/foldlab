@@ -1,0 +1,61 @@
+# Step-by-Step Solution
+
+## Step 1: Establish the Constraint Condition
+
+For a sphere of radius $r = 42$ centered at $(P_x, P_y, 42)$ to lie completely inside a hemisphere of radius $R = 200$:
+
+The farthest point on the small sphere from the origin occurs along the radial direction and is at distance:
+$$d_{\max} = \sqrt{P_x^2 + P_y^2 + 42^2} + 42$$
+
+For containment: $d_{\max} \leq 200$
+
+$$\sqrt{P_x^2 + P_y^2 + 42^2} + 42 \leq 200$$
+
+## Step 2: Simplify the Constraint
+
+$$\sqrt{P_x^2 + P_y^2 + 42^2} \leq 158$$
+
+Square both sides:
+$$P_x^2 + P_y^2 + 1764 \leq 24964$$
+
+Calculate: $158^2 = 24964$ and $42^2 = 1764$ ✓
+
+$$P_x^2 + P_y^2 \leq 23200$$
+
+## Step 3: Identify Region $\mathcal{T}$
+
+The region $\mathcal{T}$ is a disk centered at the origin with radius:
+$$\rho = \sqrt{23200}$$
+
+Simplify by factoring:
+$$\rho = \sqrt{23200} = \sqrt{400 \cdot 58} = 20\sqrt{58}$$
+
+## Step 4: Calculate the Area Ratio
+
+The reference disk (in the $(P_x, P_y)$ plane) has radius $R = 200$.
+
+$$\frac{\text{Area of } \mathcal{T}}{\text{Area of reference disk}} = \frac{\pi \rho^2}{\pi R^2} = \frac{\rho^2}{R^2}$$
+
+$$= \frac{23200}{40000}$$
+
+Note: $200^2 = 40000$ ✓
+
+## Step 5: Reduce to Lowest Terms
+
+Find the GCD of 23200 and 40000:
+
+$$23200 = 8 \times 2900 = 8 \times 29 \times 100$$
+$$40000 = 8 \times 5000 = 8 \times 50 \times 100$$
+
+$$\frac{23200}{40000} = \frac{232}{400} = \frac{29}{50}$$
+
+Verify $\gcd(29, 50)$:
+- 29 is prime
+- 50 = 2 × 5²
+- Therefore $\gcd(29, 50) = 1$ ✓
+
+## Step 6: Final Answer
+
+$$p = 29, \quad q = 50$$
+
+$$p + q = 29 + 50 = \boxed{79}$$

@@ -1,0 +1,48 @@
+# Solution
+
+## Step 1: Rewrite the Expression
+
+Starting with $n = a + b + ab$, I'll factor this:
+$$n = a + b + ab = a(1+b) + b = a(1+b) + (1+b) - 1 = (a+1)(b+1) - 1$$
+
+Therefore: $(a+1)(b+1) = n + 1$
+
+Since $n \leq 100$, we need $(a+1)(b+1) \leq 101$.
+
+## Step 2: Determine Valid Ranges
+
+- Since $a, b \geq 1$ (positive integers): $a+1 \geq 2$ and $b+1 \geq 2$
+- Since $a \neq b$: we exclude pairs where $a+1 = b+1$
+- We need $(a+1)(b+1) \leq 101$
+
+## Step 3: Enumerate All Valid Pairs
+
+For each factorization $(a+1)(b+1) = m$ where $2 \leq m \leq 101$ with $a+1 \neq b+1$:
+
+**With $a+1 = 2$:** $b+1 \in \{3,4,...,50\}$ gives $n \in \{5, 7, 9, 11, 13, ..., 97, 99\}$ (48 values)
+
+**With $a+1 = 3$:** $b+1 \in \{4,5,...,33\}$ gives $n \in \{11, 14, 17, 20, 23, ..., 95, 98\}$ (30 values)
+
+**With $a+1 = 4$:** $b+1 \in \{5,6,...,25\}$ gives $n \in \{19, 23, 27, 31, ..., 95, 99\}$ (21 values)
+
+**With $a+1 = 5$:** $b+1 \in \{6,7,...,20\}$ gives $n \in \{29, 34, 39, 44, ..., 94, 99\}$ (15 values)
+
+**With $a+1 = 6$:** $b+1 \in \{7,8,...,16\}$ gives $n \in \{41, 47, 53, 59, 65, 71, 77, 83, 89, 95\}$ (10 values)
+
+**With $a+1 = 7$:** $b+1 \in \{8,9,...,14\}$ gives $n \in \{55, 62, 69, 76, 83, 90, 97\}$ (7 values)
+
+**With $a+1 = 8$:** $b+1 \in \{9,10,11,12\}$ gives $n \in \{71, 79, 87, 95\}$ (4 values)
+
+**With $a+1 = 9$:** $b+1 \in \{10,11\}$ gives $n \in \{89, 98\}$ (2 values)
+
+**With $a+1 = 10$:** $b+1 = 11$ gives $n = 109 > 100$ (excluded)
+
+## Step 4: Collect Distinct Values
+
+Creating a set of all computed values eliminates duplicates from different $(a,b)$ pairs that yield the same $n$:
+
+$\{5, 7, 9, 11, 13, 14, 15, 17, 19, 20, 23, 25, 26, 27, 29, 31, 32, 33, 34, 35, 37, 38, 39, 41, 43, 44, 45, 47, 49, 50, 51, 53, 54, 55, 56, 57, 59, 61, 62, 63, 64, 65, 67, 68, 69, 71, 73, 74, 75, 76, 77, 79, 80, 81, 83, 84, 85, 86, 87, 89, 90, 91, 92, 93, 94, 95, 97, 98, 99\}$
+
+## Step 5: Count the Set
+
+Counting the distinct values gives us: **69**

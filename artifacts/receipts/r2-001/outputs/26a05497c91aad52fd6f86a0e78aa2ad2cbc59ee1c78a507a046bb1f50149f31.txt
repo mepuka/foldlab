@@ -1,0 +1,77 @@
+# Solution: Finding |AB - CD|
+
+## Step 1: Setting Up Coordinates and Constraints
+
+I need to find the lengths $AB = x$ and $CD = y$.
+
+**Key constraint from the line configuration:**
+Since points $A, B, C, D$ are collinear in order with $BC = 10$:
+$$AD = AB + BC + CD = x + 10 + y = 39$$
+$$\therefore x + y = 29 \quad \text{...(Equation 1)}$$
+
+## Step 2: Establishing the Position of Point E
+
+Place the points on a coordinate system:
+- $B = (0, 0)$
+- $C = (10, 0)$
+- $A = (-x, 0)$ (to the left)
+- $D = (10 + y, 0)$ (to the right)
+
+Since triangle $BEC$ is equilateral with side length 10:
+$$E = (5, 5\sqrt{3})$$
+
+**Verification:** $BE = \sqrt{25 + 75} = 10$ ✓ and $CE = 10$ ✓
+
+## Step 3: Computing Distances from E
+
+**Distance from $A$ to $E$:**
+$$AE^2 = (5-(-x))^2 + (5\sqrt{3})^2 = (x+5)^2 + 75 = x^2 + 10x + 100$$
+
+**Distance from $D$ to $E$:**
+$$ED^2 = (5-(10+y))^2 + (5\sqrt{3})^2 = (y+5)^2 + 75 = y^2 + 10y + 100$$
+
+## Step 4: Applying the Law of Cosines
+
+With $\angle AED = 120°$ and $AD = 39$:
+$$AD^2 = AE^2 + ED^2 - 2(AE)(ED)\cos(120°)$$
+
+Since $\cos(120°) = -\frac{1}{2}$:
+$$39^2 = (x^2 + 10x + 100) + (y^2 + 10y + 100) + \sqrt{(x^2 + 10x + 100)(y^2 + 10y + 100)}$$
+
+$$1521 = x^2 + y^2 + 10x + 10y + 200 + \sqrt{(x^2 + 10x + 100)(y^2 + 10y + 100)}$$
+
+## Step 5: Simplifying Using $x + y = 29$
+
+Let $u = x^2 + 10x + 100$ and $v = y^2 + 10y + 100$.
+
+From $x + y = 29$: $(x+y)^2 = 841$, so $x^2 + y^2 = 841 - 2xy$
+
+$$u + v = x^2 + y^2 + 10(29) + 200 = (841 - 2xy) + 290 + 200 = 1331 - 2xy$$
+
+The equation becomes:
+$$1521 = 1331 - 2xy + 200 + \sqrt{uv}$$
+$$190 = -2xy + \sqrt{uv}$$
+
+## Step 6: Testing Integer Solutions
+
+Given $x + y = 29$, I'll test values:
+
+**Testing $x = 25, y = 4$:**
+- $u = 625 + 250 + 100 = 975$
+- $v = 16 + 40 + 100 = 156$
+- $\sqrt{uv} = \sqrt{975 \times 156} = \sqrt{152100} = 390$
+- Check: $u + v + \sqrt{uv} = 975 + 156 + 390 = 1521$ ✓
+
+## Step 7: Verification
+
+**Check all constraints:**
+- $AD = 25 + 10 + 4 = 39$ ✓
+- $AE = \sqrt{975} = 5\sqrt{39}$
+- $ED = \sqrt{156} = 2\sqrt{39}$
+- Law of Cosines: $975 + 156 + 2(5\sqrt{39})(2\sqrt{39})(1/2) = 1131 + 390 = 1521 = 39^2$ ✓
+
+## Calculating the Answer
+
+$$|AB - CD| = |25 - 4| = 21$$
+
+**FINAL ANSWER: 21**

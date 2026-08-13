@@ -1,0 +1,16 @@
+I need to solve for $r$ from the equation:
+
+$$\frac{6}{23} \cdot \frac{42}{13} + \frac{18}{23} \cdot \frac{124}{39} + \frac{11}{23}r + \frac{12}{23} = r$$
+
+Let me calculate each term:
+
+**First term:** $\frac{6}{23} \cdot \frac{42}{13} = \frac{252}{299}$
+
+**Second term:** $\frac{18}{23} \cdot \frac{124}{39} = \frac{18 \cdot 124}{23 \cdot 39} = \frac{2232}{897} = \frac{744}{299}$
+
+(Since $\gcd(2232, 897) = 3$: $2232/3 = 744$, $897/3 = 299$)
+
+**Third and fourth terms:** $\frac{11}{23}r + \frac{12}{23}$
+
+Combining:
+$$

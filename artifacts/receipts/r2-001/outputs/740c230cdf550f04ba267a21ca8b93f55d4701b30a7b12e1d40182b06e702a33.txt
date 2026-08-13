@@ -1,0 +1,80 @@
+I'll carry out this plan step by step.
+
+## Step 1: Set up coordinate system
+
+- $A = (0, 0, 0)$
+- $B = (6, 0, 0)$
+- $C = (0, 4, 0)$
+- Plane $\mathcal{P}$ is the $xy$-plane
+
+## Step 2: Find centroid $G$ and point $D$
+
+The centroid is:
+$$G = \frac{A + B + C}{3} = \left(\frac{0+6+0}{3}, \frac{0+0+4}{3}, 0\right) = \left(2, \frac{4}{3}, 0\right)$$
+
+**Find line $BC$:** From $B(6,0,0)$ to $C(0,4,0)$
+
+The line can be parametrized as: $(1-t)(6,0,0) + t(0,4,0) = (6-6t, 4t, 0)$
+
+**Find projection of $G$ onto $BC$:**
+
+Vector $\vec{BC} = (-6, 4, 0)$
+
+Vector $\vec{BG} = (2-6, \frac{4}{3}-0, 0) = (-4, \frac{4}{3}, 0)$
+
+$$t = \frac{\vec{BG} \cdot \vec{BC}}{|\vec{BC}|^2} = \frac{(-4)(-6) + \frac{4}{3}(4) + 0}{36 + 16} = \frac{24 + \frac{16}{3}}{52} = \frac{\frac{88}{3}}{52} = \frac{88}{156} = \frac{22}{39}$$
+
+Projection point: $P = (6 - 6 \cdot \frac{22}{39}, 4 \cdot \frac{22}{39}, 0) = (6 - \frac{44}{13}, \frac{88}{39}, 0) = (\frac{34}{13}, \frac{88}{39}, 0)$
+
+**Reflect $G$ across $BC$:**
+
+$$D = 2P - G = 2(\frac{34}{13}, \frac{88}{39}, 0) - (2, \frac{4}{3}, 0) = (\frac{68}{13} - 2, \frac{176}{39} - \frac{4}{3}, 0)$$
+
+$$D = (\frac{68-26}{13}, \frac{176-52}{39}, 0) = (\frac{42}{13}, \frac{124}{39}, 0)$$
+
+## Step 3: Identify sphere centers
+
+- $O_1 = (0, 0, 1)$, radius $r_1 = 1$
+- $O_2 = (6, 0, 2)$, radius $r_2 = 2$
+- $O_3 = (0, 4, 3)$, radius $r_3 = 3$
+- $O_4 = (\frac{42}{13}, \frac{124}{39}, r)$, radius $r_4 = r$
+
+## Step 4: Apply mutual tangency conditions
+
+**Spheres 1 and 2:** $|O_1 - O_2| = 1 + 2 = 3$
+
+$$\sqrt{36 + 0 + 1} = \sqrt{37} \neq 3$$ 
+
+This suggests the spheres are internally tangent or the problem setup differs. Let me reconsider: the spheres touch plane $\mathcal{P}$ and are mutually tangent to each other.
+
+## Step 5-7: Use common tangent plane approach
+
+For a sphere centered at $(x_i, y_i, z_i)$ with radius $r_i$ tangent to the $xy$-plane from above, the center is at height $z_i = r_i$.
+
+Let plane $\mathcal{T}$ be $ax + by + cz = d$ with $a^2 + b^2 + c^2 = 1$.
+
+Distance from $O_i$ to $\mathcal{T}$ equals $r_i$:
+$$|ax_i + by_i + cz_i - d| = r_i$$
+
+Assuming all on same side: $ax_i + by_i + cz_i - d = r_i$
+
+$$a(0) + b(0) + c(1) - d = 1 \implies c - d = 1$$
+$$a(6) + b(0) + c(2) - d = 2 \implies 6a + 2c - d = 2$$
+$$a(0) + b(4) + c(3) - d = 3 \implies 4b + 3c - d = 3$$
+$$a(\frac{42}{13}) + b(\frac{124}{39}) + cr - d = r$$
+
+From equations 1-3:
+- $d = c - 1$
+- $6a + 2c - (c-1) = 2 \implies 6a + c = 1$
+- $4b + 3c - (c-1) = 3 \implies 4b + 2c = 2 \implies 2b + c = 1$
+
+From $6a + c = 1$ and $2b + c = 1$: $6a = 2b \implies b = 3a$
+
+Using $a^2 + b^2 + c^2 = 1$: $a^2 + 9a^2 + (1-6a)^2 = 1$
+
+$$10a^2 + 1 - 12a + 36a^2 = 1 \implies 46a^2 = 12a \implies a = \frac{6}{23}$$
+
+Thus $b = \frac{18}{23}$, $c = 1 - 12/23 = 11/23$, $d = 11/23 - 1 = -12/23$
+
+From the fourth equation:
+$$\frac{6}{23} \cdot \frac{42}{13} + \frac{18}{23} \cdot \frac{124}{39} + \frac{11}{23}r + \frac{12}{23} = r$$

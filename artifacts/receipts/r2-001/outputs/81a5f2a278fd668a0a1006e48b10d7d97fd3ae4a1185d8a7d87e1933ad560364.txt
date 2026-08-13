@@ -1,0 +1,158 @@
+# Solution: HATER + HEART = EARTH
+
+## Step 1: Simplify the Algebraic Constraint
+
+**Expand both sides:**
+
+Left side (HATER + HEART):
+$$(10000H + 1000A + 100T + 10E + R) + (10000H + 1000E + 100A + 10R + T)$$
+$$= 20000H + 1100A + 101T + 1010E + 11R$$
+
+Right side (EARTH):
+$$10000E + 1000A + 100R + 10T + H$$
+
+**Set up equation:**
+$$20000H + 1100A + 101T + 1010E + 11R = 10000E + 1000A + 100R + 10T + H$$
+
+**Rearrange to standard form:**
+$$20000H - H + 1100A - 1000A + 101T - 10T + 1010E - 10000E + 11R - 100R = 0$$
+
+$$19999H + 100A + 91T - 8990E - 89R = 0$$
+
+## Step 2: Analyze the Simplified Equation
+
+Rearranging to solve for H:
+$$19999H = 8990E + 89R - 100A - 91T$$
+
+$$H = \frac{8990E + 89R - 100A - 91T}{19999}$$
+
+For H to be an integer, the numerator must be divisible by 19999.
+
+**Key observation:** Since $19999 \approx 20000$ is large and H must be a single digit (1-9), the numerator must be quite small relative to the coefficient of H.
+
+Let me rearrange differently:
+$$19999H + 89R = 8990E + 100A + 91T$$
+
+## Step 3: Apply Leading Digit Constraints
+
+- $H \geq 1$ (leading digit of HATER and HEART)
+- $E \geq 1$ (leading digit of EARTH)
+- All variables: $0 \leq A, T, R \leq 9$
+
+For the equation to balance with $H \geq 1$:
+$$19999H \geq 19999$$
+
+This means: $8990E + 100A + 91T \geq 19999 + 89R$
+
+With $E \leq 9$: $8990(9) = 80910$, which is sufficient.
+
+## Step 4: Systematically Search the Solution Space
+
+Since H is most constrained (due to large coefficient), test $H = 1, 2, ..., 9$.
+
+**For H = 1:**
+$$19999 + 89R = 8990E + 100A + 91T$$
+
+Testing $E = 2$:
+$$19999 + 89R = 17980 + 100A + 91T$$
+$$2019 + 89R = 100A + 91T$$
+
+Testing $A = 9$:
+$$2019 + 89R = 900 + 91T$$
+$$1119 + 89R = 91T$$
+
+Testing $R = 5$:
+$$1119 + 445 = 91T$$
+$$1564 = 91T$$
+$$T = 17.18...$$ ✗ (not a digit)
+
+Testing $R = 4$:
+$$1119 + 356 = 91T$$
+$$1475 = 91T$$
+$$T = 16.2...$$ ✗
+
+Testing $R = 3$:
+$$1119 + 267 = 91T$$
+$$1386 = 91T$$
+$$T = 15.2...$$ ✗
+
+Testing $R = 2$:
+$$1119 + 178 = 91T$$
+$$1297 = 91T$$
+$$T = 14.25...$$ ✗
+
+Testing $R = 1$:
+$$1119 + 89 = 91T$$
+$$1208 = 91T$$
+$$T = 13.27...$$ ✗
+
+Testing $R = 0$:
+$$1119 = 91T$$
+$$T = 12.29...$$ ✗
+
+Testing $A = 8$:
+$$2019 + 89R = 800 + 91T$$
+$$1219 + 89R = 91T$$
+
+Testing $R = 8$:
+$$1219 + 712 = 91T$$
+$$1931 = 91T$$
+$$T = 21.2...$$ ✗
+
+Testing $R = 6$:
+$$1219 + 534 = 91T$$
+$$1753 = 91T$$
+$$T = 19.27...$$ ✗
+
+Testing $A = 7$:
+$$2019 + 89R = 700 + 91T$$
+$$1319 + 89R = 91T$$
+
+Testing $R = 9$:
+$$1319 + 801 = 91T$$
+$$2120 = 91T$$
+$$T = 23.3...$$ ✗
+
+Testing $R = 5$:
+$$1319 + 445 = 91T$$
+$$1764 = 91T$$
+$$T = 19.39...$$ ✗
+
+Testing $R = 1$:
+$$1319 + 89 = 91T$$
+$$1408 = 91T$$
+$$T = 15.48...$$ ✗
+
+Testing $A = 6$:
+$$2019 + 89R = 600 + 91T$$
+$$1419 + 89R = 91T$$
+
+Testing $R = 7$:
+$$1419 + 623 = 91T$$
+$$2042 = 91T$$
+$$T = 22.43...$$ ✗
+
+Testing $R = 4$:
+$$1419 + 356 = 91T$$
+$$1775 = 91T$$
+$$T = 19.51...$$ ✗
+
+Testing $R = 2$:
+$$1419 + 178 = 91T$$
+$$1597 = 91T$$
+$$T = 17.54...$$ ✗
+
+Testing $R = 0$:
+$$1419 = 91T$$
+$$T = 15.59...$$ ✗
+
+Testing $A = 5$:
+$$2019 + 89R = 500 + 91T$$
+$$1519 + 89R = 91T$$
+
+Testing $R = 8$:
+$$1519 + 712 = 91T$$
+$$2231 = 91T$$
+$$T = 24.52...$$ ✗
+
+Testing $R =

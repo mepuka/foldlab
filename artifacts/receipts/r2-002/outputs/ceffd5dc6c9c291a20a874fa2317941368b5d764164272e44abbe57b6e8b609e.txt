@@ -1,0 +1,63 @@
+# Detailed Solution for Counting "SUNS" Subsequences
+
+## Step 1: Verify Position Patterns
+
+String structure: "SUNSUNSUNSUN..." (repeating "SUN") with 30 characters total.
+
+Positions:
+- **S-positions**: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28 (10 total)
+- **U-positions**: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29 (10 total)  
+- **N-positions**: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30 (10 total)
+
+## Step 2: Establish Position Formulas
+
+Using index notation (a, b, d, c ∈ {1, 2, ..., 10}):
+- S_a is at position: 3a - 2
+- U_b is at position: 3b - 1
+- N_d is at position: 3d
+- S_c is at position: 3c - 2
+
+## Step 3: Derive Position Constraints
+
+For a valid "SUNS" subsequence, we need:
+$$3a - 2 < 3b - 1 < 3d < 3c - 2$$
+
+**Inequality 1**: $3a - 2 < 3b - 1$
+$$3a < 3b + 1 \implies a < b + \tfrac{1}{3} \implies a \leq b$$
+
+**Inequality 2**: $3b - 1 < 3d$
+$$3b < 3d + 1 \implies b < d + \tfrac{1}{3} \implies b \leq d$$
+
+**Inequality 3**: $3d < 3c - 2$
+$$3d + 2 < 3c \implies d + \tfrac{2}{3} < c \implies d < c$$
+
+**Combined constraint**: $a \leq b \leq d < c$ where $1 \leq a, b, d, c \leq 10$
+
+## Step 4: Count Valid 4-Tuples
+
+For each value of c from 2 to 10, count tuples (a, b, d) where:
+$$1 \leq a \leq b \leq d \leq c-1$$
+
+The number of non-decreasing sequences of length 3 from a set of size (c-1) is:
+$$\binom{(c-1)+3-1}{3} = \binom{c+1}{3}$$
+
+## Step 5: Calculate the Sum
+
+$$\text{Total} = \sum_{c=2}^{10} \binom{c+1}{3}$$
+
+Computing each term:
+- c=2: $\binom{3}{3} = 1$
+- c=3: $\binom{4}{3} = 4$
+- c=4: $\binom{5}{3} = 10$
+- c=5: $\binom{6}{3} = 20$
+- c=6: $\binom{7}{3} = 35$
+- c=7: $\binom{8}{3} = 56$
+- c=8: $\binom{9}{3} = 84$
+- c=9: $\binom{10}{3} = 120$
+- c=10: $\binom{11}{3} = 165$
+
+**Sum**: 1 + 4 + 10 + 20 + 35 + 56 + 84 + 120 + 165 = **495**
+
+---
+
+**495**

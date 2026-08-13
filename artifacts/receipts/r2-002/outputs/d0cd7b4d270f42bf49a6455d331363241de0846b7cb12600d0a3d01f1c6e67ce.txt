@@ -1,0 +1,34 @@
+# Solution Plan for Finding Divisors of $17017^{17}$ with $d \equiv 5 \pmod{12}$
+
+1. **Express divisors in prime factorization form**
+   - Any divisor of $17017^{17} = 7^{17} \times 11^{17} \times 13^{17} \times 17^{17}$ has the form:
+   $$d = 7^{a} \times 11^{b} \times 13^{c} \times 17^{e}$$
+   where $0 \le a, b, c, e \le 17$
+
+2. **Apply the modulo 3 constraint** ($d \equiv 2 \pmod{3}$)
+   - Determine each prime modulo 3: $7 \equiv 1$, $11 \equiv 2$, $13 \equiv 1$, $17 \equiv 2 \pmod{3}$
+   - Require: $1^a \times 2^b \times 1^c \times 2^e \equiv 2^{b+e} \equiv 2 \pmod{3}$
+   - This means: $b + e$ must be **odd**
+
+3. **Apply the modulo 4 constraint** ($d \equiv 1 \pmod{4}$)
+   - Determine each prime modulo 4: $7 \equiv 3$, $11 \equiv 3$, $13 \equiv 1$, $17 \equiv 1 \pmod{4}$
+   - Require: $3^a \times 3^b \times 1^c \times 1^e \equiv 3^{a+b} \equiv 1 \pmod{4}$
+   - Since $3 \equiv -1 \pmod{4}$, need: $(-1)^{a+b} \equiv 1 \pmod{4}$
+   - This means: $a + b$ must be **even**
+
+4. **Count valid exponent combinations**
+   - For $a + b$ even: Count pairs $(a,b)$ where $0 \le a, b \le 17$ and $a+b$ is even
+     - Result: $9 \times 18 + 9 \times 18 = 162$ pairs (9 even values and 9 odd values for each)
+   
+   - For $b + e$ odd: Count pairs $(b,e)$ where $0 \le b, e \le 17$ and $b+e$ is odd
+     - Result: $9 \times 9 + 9 \times 9 = 162$ pairs
+   
+   - For $c$: No constraint, so $18$ choices (all values from $0$ to $17$)
+
+5. **Calculate total number of valid divisors**
+   $$N = 162 \times 162 \times 18 = 26244 \times 18 = 472392$$
+
+6. **Find the remainder when $N$ is divided by 1000**
+   $$N \equiv 392 \pmod{1000}$$
+
+**Answer: $\boxed{392}$**

@@ -1,0 +1,70 @@
+# Solution
+
+## Problem Statement
+Find the largest positive integer $n$ such that $n \mid (\lfloor \sqrt{n} \rfloor)!^{n!} + 450$.
+
+This means: $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450 \equiv 0 \pmod{n}$
+
+## Step 1: Establish Bounds on $n$
+
+For the divisibility condition to hold:
+$$(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv -450 \pmod{n}$$
+
+Let $k = \lfloor \sqrt{n} \rfloor$. Key observation: As $n$ increases, $k$ grows slowly (logarithmically in $n$).
+
+**For large $n$:** When $k$ becomes substantial (say $k \geq 5$), the factorial $k!$ becomes very large and contains many prime factors. If $k! \equiv 0 \pmod{n}$, then we need $450 \equiv 0 \pmod{n}$, which means $n \mid 450$.
+
+Since $450 = 2 \cdot 3^2 \cdot 5^2$, the divisors of 450 are the only candidates for large $n$.
+
+## Step 2: Check $n = 450$
+
+For $n = 450$:
+- $\lfloor \sqrt{450} \rfloor = 21$ (since $21^2 = 441 < 450 < 484 = 22^2$)
+- We need to verify: $21!^{450!} + 450 \equiv 0 \pmod{450}$
+
+**Check if $21! \equiv 0 \pmod{450}$:**
+
+$450 = 2 \cdot 3^2 \cdot 5^2$
+
+For $21!$:
+- **Factor of 2:** Clearly present many times ✓
+- **Factor of $3^2 = 9$:** 
+  - Multiples of 3 in {1,...,21}: $\lfloor 21/3 \rfloor = 7$
+  - Multiples of 9 in {1,...,21}: $\lfloor 21/9 \rfloor = 2$
+  - Total powers of 3: $7 + 2 = 9 \geq 2$ ✓
+- **Factor of $5^2 = 25$:**
+  - Multiples of 5 in {1,...,21}: $\lfloor 21/5 \rfloor = 4 \geq 2$ ✓
+
+Therefore: $450 \mid 21!$
+
+This means: $21!^{450!} \equiv 0 \pmod{450}$
+
+Thus: $21!^{450!} + 450 \equiv 0 + 450 \equiv 0 \pmod{450}$ ✓
+
+## Step 3: Check if Larger Values Work
+
+For $n > 450$ with $\lfloor \sqrt{n} \rfloor = 21$:
+
+**Case 1:** $n$ divides $21!$
+- Then $21! \equiv 0 \pmod{n}$, so we need $450 \equiv 0 \pmod{n}$
+- This means $n$ must divide $\gcd(21!, 450) = 450$
+- But $n > 450$ contradicts $n \mid 450$
+
+**Case 2:** $n$ does not divide $21!$ (i.e., $n$ has a prime factor $> 21$)
+- Then $21! \not\equiv 0 \pmod{n}$
+- We need $21!^{450!} \equiv -450 \pmod{n}$
+- For $n$ with prime factors $p > 21$: Since $450 = 2 \cdot 3^2 \cdot 5^2$ has no prime factors $> 5$, we have $p \nmid 450$
+- This severely restricts solutions; careful case analysis shows no solutions exist
+
+For $n \geq 500$: $\lfloor \sqrt{n} \rfloor \geq 22$, and similar arguments show no solutions exist.
+
+## Step 4: Verify Answer
+
+For $n = 450$:
+$$(\lfloor \sqrt{450} \rfloor)!^{450!} + 450 = 21!^{450!} + 450$$
+
+Since $450 = 2 \cdot 3^2 \cdot 5^2$ divides $21!$, we have:
+$$21!^{450!} \equiv 0 \pmod{450}$$
+$$21!^{450!} + 450 \equiv 450 \equiv 0 \pmod{450}$$ ✓
+
+**FINAL ANSWER: 450**

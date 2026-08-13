@@ -1,0 +1,88 @@
+# Solution: Cell Loop Partition Problem
+
+## Step 1: Verify the Cell Loop Formula
+
+An $a \times b$ cell loop (rectangular perimeter) contains:
+- Top row: $a$ cells
+- Bottom row: $a$ cells  
+- Left column (excluding corners): $b - 2$ cells
+- Right column (excluding corners): $b - 2$ cells
+- **Total: $2a + 2b - 4$ cells** ✓
+
+Valid dimensions: $2 \leq a, b \leq 10$
+
+## Step 2: Set Up and Simplify the Constraint
+
+We need 5 loops with total cells = 100:
+$$\sum_{i=1}^{5} (2a_i + 2b_i - 4) = 100$$
+
+$$2\sum_{i=1}^{5} (a_i + b_i) - 20 = 100$$
+
+$$\sum_{i=1}^{5} (a_i + b_i) = 60$$
+
+Average per loop: $60 \div 5 = 12$
+
+## Step 3: Search for Valid Dimension Sets
+
+**Testing the Concentric Configuration:**
+
+Consider 5 concentric rectangular loops centered in the $10 \times 10$ grid:
+- Loop 1 (outermost): $10 \times 10$ → cells: $2(10) + 2(10) - 4 = 36$
+- Loop 2: $8 \times 8$ → cells: $2(8) + 2(8) - 4 = 28$
+- Loop 3: $6 \times 6$ → cells: $2(6) + 2(6) - 4 = 20$
+- Loop 4: $4 \times 4$ → cells: $2(4) + 2(4) - 4 = 12$
+- Loop 5 (innermost): $2 \times 2$ → cells: $2(2) + 2(2) - 4 = 4$
+
+**Verification:**
+- Sum of cells: $36 + 28 + 20 + 12 + 4 = 100$ ✓
+- Sum of dimensions: $(20 + 16 + 12 + 8 + 4) = 60$ ✓
+
+## Step 4: Verify Geometric Feasibility
+
+The concentric arrangement perfectly partitions the $10 \times 10$ grid:
+
+```
+[0-9] × [0-9]: 10×10 outer loop (36 cells)
+  ↓
+[1-8] × [1-8]: 8×8 loop (28 cells)
+  ↓
+[2-7] × [2-7]: 6×6 loop (20 cells)
+  ↓
+[3-6] × [3-6]: 4×4 loop (12 cells)
+  ↓
+[4-5] × [4-5]: 2×2 core (4 cells)
+```
+
+- **No overlaps:** Each layer is nested properly inside the previous
+- **No gaps:** The perimeter of each concentric rectangle exactly touches the interior of the next outer layer
+- **Complete coverage:** Total = 100 cells = $10 \times 10$ grid ✓
+
+## Step 5: Check for Alternative Partitions
+
+Given the constraint that:
+1. Total cells must be exactly 100 (the full grid)
+2. Exactly 5 loops required
+3. No overlaps or gaps allowed
+4. Each loop must be a rectangular perimeter
+
+Any alternative arrangement would require fitting non-concentric rectangular perimeters into the grid. Due to:
+- The strict total cell count (100)
+- The requirement that loops don't overlap or leave gaps
+- The discrete grid structure
+
+Non-concentric arrangements cannot satisfy these constraints simultaneously. The concentric structure is geometrically optimal and essentially unique.
+
+## Step 6: Count Distinct Valid Configurations
+
+For the valid dimension set $\{(10,10), (8,8), (6,6), (4,4), (2,2)\}$:
+- These loops are uniquely determined by their positions in a $10 \times 10$ grid
+- The concentric arrangement is forced (no translation possible while maintaining the full grid partition)
+- Each loop has distinct dimensions (no symmetry complications)
+
+**Number of valid configurations: 1**
+
+---
+
+**Final Answer:**
+
+1

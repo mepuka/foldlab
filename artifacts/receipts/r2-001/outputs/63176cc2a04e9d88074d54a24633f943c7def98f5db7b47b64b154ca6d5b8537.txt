@@ -1,0 +1,83 @@
+# Solution: Counting Permutations of Order Dividing 6
+
+I'll execute this plan step by step.
+
+## Step 1: Understanding the Constraint ✓
+
+Since $\pi: \{1,2,3,4,5,6\} \to \{1,2,3,4,5,6\}$ is surjective on a finite set, it must be a **permutation** (bijection).
+
+The condition $\pi^6(a) = a$ for all $a$ means $\pi^6 = \text{identity}$, so the **order of $\pi$ divides 6**.
+
+## Step 2: Possible Orders ✓
+
+Divisors of 6: **1, 2, 3, and 6**
+
+---
+
+## Step 3: Count Permutations of Order 1
+
+Only the **identity permutation** has order 1.
+
+**Count: 1** ✓
+
+---
+
+## Step 4: Count Permutations of Order 2
+
+Order 2 requires the minimal polynomial to divide $x^2 - 1$, giving cycle types with only 2-cycles and fixed points.
+
+**Cycle types:**
+- $(2)(1)(1)(1)(1)$: $\frac{6!}{2^1 \cdot 1! \cdot 4!} = \frac{720}{2 \cdot 24} = 15$
+
+- $(2)(2)(1)(1)$: $\frac{6!}{2^2 \cdot 2! \cdot 2!} = \frac{720}{4 \cdot 2 \cdot 2} = 45$
+
+- $(2)(2)(2)$: $\frac{6!}{2^3 \cdot 3!} = \frac{720}{8 \cdot 6} = 15$
+
+**Subtotal: $15 + 45 + 15 = 75$**
+
+Wait, let me recalculate more carefully:
+- $(2)(1)^4$: $\binom{6}{2} = 15$ ✓
+- $(2)^2(1)^2$: $\frac{1}{2!}\binom{6}{2}\binom{4}{2} = \frac{1}{2} \cdot 15 \cdot 6 = 45$ ✓
+- $(2)^3$: $\frac{1}{3!}\binom{6}{2}\binom{4}{2}\binom{2}{2} = \frac{1}{6} \cdot 15 \cdot 6 \cdot 1 = 15$ ✓
+
+**Count: 75**
+
+---
+
+## Step 5: Count Permutations of Order 3
+
+Order 3 requires cycle types with only 3-cycles and fixed points.
+
+**Cycle types:**
+- $(3)(1)(1)(1)$: $\frac{6!}{3^1 \cdot 1! \cdot 3!} = \frac{720}{3 \cdot 6} = 40$
+
+- $(3)(3)$: $\frac{6!}{3^2 \cdot 2!} = \frac{720}{9 \cdot 2} = 40$
+
+**Count: $40 + 40 = 80$**
+
+---
+
+## Step 6: Count Permutations of Order 6
+
+Order 6 = lcm(2,3) requires at least one 2-cycle and one 3-cycle, or one 6-cycle.
+
+**Cycle types:**
+- $(6)$: $\frac{6!}{6^1 \cdot 1!} = \frac{720}{6} = 120$
+
+- $(3)(2)(1)$: $\frac{6!}{3 \cdot 2 \cdot 1} = \frac{720}{6} = 120$
+
+**Count: $120 + 120 = 240$**
+
+---
+
+## Step 7: Inclusion-Exclusion ✓
+
+There is **no overlap**—every permutation has a unique order. An element cannot simultaneously have two different orders.
+
+---
+
+## Step 8: Final Sum
+
+$$\text{Total} = 1 + 75 + 80 + 240 = \boxed{396}$$
+
+**Note:** The plan's intermediate counts appear to have been estimates. The correct systematic calculation gives **396** as the final answer.

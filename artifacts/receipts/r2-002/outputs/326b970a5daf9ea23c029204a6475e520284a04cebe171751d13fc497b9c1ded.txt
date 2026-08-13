@@ -1,0 +1,30 @@
+# Solution Plan
+
+1. **Set up the ratio constraint from the angle bisector theorem**
+   - Use $\frac{BD}{CD} = \frac{8}{9}$ to express $BD = 8k$ and $CD = 9k$ for some positive value $k$
+   - Therefore $BC = 17k$
+
+2. **Apply the power of a point relationship**
+   - From the circle and tangency conditions: $AE \cdot AB = AF \cdot AC$
+   - Substitute known values: $AE \cdot 200 = AF \cdot 225$
+   - Simplify to get $AE = \frac{9AF}{8}$
+
+3. **Enforce integrality constraints**
+   - For $AE$ to be a positive integer, write $AF = 8m$ for positive integer $m$
+   - Then $AE = 9m$
+   - Require: $AE < AB$ and $AF < AC$
+   - This gives: $9m < 200$ and $8m < 225$
+   - Therefore: $m < 22.22...$ and $m < 28.125$
+   - So $m \in \{1, 2, 3, ..., 22\}$
+
+4. **Determine the constraint from the circle tangency condition**
+   - Use the fact that circle $\omega$ passes through $A$, $E$, $F$, $D$ and is tangent to $BC$ at $D$
+   - Apply additional geometric constraints (power of point $B$, power of point $C$, or Ptolemy's theorem on cyclic quadrilateral $AEFD$)
+   - This typically reduces the 22 possible values of $m$ to a finite subset
+
+5. **Calculate valid values of $BC$**
+   - For each valid value of $m$, compute the corresponding value of $k$ using the cyclic quadrilateral constraints
+   - Calculate $BC = 17k$ for each valid case
+
+6. **Sum all possible values**
+   - Add together all distinct values of $BC$ obtained from step 5

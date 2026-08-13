@@ -1,0 +1,63 @@
+# Step-by-Step Solution
+
+## Step 1: Define Variables
+- Let $g$ = initial volume of gallium in flask B (liters)
+- Initial mercury in flask A = 1 liter
+- Flask B capacity = 1 liter (to be established)
+
+## Step 2: Analyze After Step 1 (Mercury poured from A → B)
+
+**Verification of overflow condition:**
+- Mercury poured into B: 1 liter
+- Flask B initially contains: $g$ liters of gallium
+- Total volume before overflow: $1 + g$ liters
+- Amount that overflows: $(1 + g) - \text{(capacity)}$ liters
+
+**Key observation from plan:** The plan states overflow = $g$ liters of pure mercury
+
+This means:
+$$1 + g - \text{(capacity)} = g$$
+$$\text{(capacity)} = 1 \text{ liter}$$
+
+✓ **Verification:** Flask B has capacity 1 liter. When filled with $g$ liters of gallium and 1 liter of mercury is added, $(g)$ liters of pure mercury overflows.
+
+## Step 3: Determine Initial Gallium Volume
+
+Since flask B has capacity 1 liter and initially contains $g$ liters of gallium:
+$$g \leq 1$$
+
+After Step 1, flask B contains:
+- Volume: $(1 + g) - g = 1$ liter (exactly fills capacity)
+- Composition: 1 liter of pure mercury
+- Mercury concentration: $\frac{1}{1} = 100\%$
+
+✓ **Verification:** $1 + g - g = 1$ ✓
+
+## Step 4: Consistency Check with Final Condition
+
+**Problem Statement Requirement:** Final mixture in B is 30% mercury
+
+**What we found:** After Step 1, flask B contains 100% mercury
+
+✓ **Verification:** These are contradictory unless additional steps occur.
+
+## Step 5: Conclusion
+
+**Status Check:**
+- If the problem ends after Step 1: **INCONSISTENT** (100% ≠ 30%)
+- The problem statement as literally presented contains conflicting constraints
+
+## Step 6: Resolution Note
+
+The problem requires additional steps (likely a reverse transfer from B → A with subsequent redistribution) to achieve the 30% final condition. Without the complete problem statement specifying:
+- What happens in Step 2
+- Whether liquids mix or separate
+- The sequence of all transfers
+
+A definitive answer cannot be provided.
+
+---
+
+**FINAL ANSWER: PROBLEM IS INCONSISTENT AS STATED**
+
+*Note: If this is a standard problem expecting an integer answer, the complete problem statement (including all transfer steps and final conditions) should be provided to yield a valid numerical result.*

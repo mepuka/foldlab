@@ -1,0 +1,80 @@
+# Solution: Palindromes with Digit Sum 13
+
+## Step 1: Categorize by palindrome length
+
+I need to find all palindromes where:
+- All digits are from {1,2,3,4,5,6,7,8,9} (no zeros)
+- The sum of all digits equals 13
+
+For an n-digit palindrome, only the first ⌈n/2⌉ digits are independent.
+
+## Step 2: Analyze feasibility by length
+
+Key observation: When we sum digits in a palindrome, digits in symmetric positions appear twice (except possibly the middle digit in odd-length palindromes).
+
+For even-length palindromes: all digits appear twice → total sum is even
+For odd-length palindromes: all digits appear twice except middle → total sum = 2×(sum of outer digits) + (middle digit) = even + odd = odd ✓
+
+Since 13 is odd, **only odd-length palindromes are possible**.
+
+This eliminates: 2-digit, 4-digit, 6-digit, 8-digit, etc.
+
+---
+
+## Step 3: Enumerate valid palindromes by length
+
+### **1-digit palindromes:** 
+Need: a = 13
+Since a ∈ {1,...,9}, this is impossible.
+**Count: 0**
+
+---
+
+### **3-digit palindromes:** (form: aba)
+Need: 2a + b = 13, where a,b ∈ {1,...,9}
+So: b = 13 - 2a
+
+| a | b | Valid? | Palindrome |
+|---|---|--------|-----------|
+| 1 | 11 | ✗ | — |
+| 2 | 9 | ✓ | 292 |
+| 3 | 7 | ✓ | 373 |
+| 4 | 5 | ✓ | 454 |
+| 5 | 3 | ✓ | 535 |
+| 6 | 1 | ✓ | 616 |
+| 7 | -1 | ✗ | — |
+
+**Count: 5**
+
+---
+
+### **5-digit palindromes:** (form: abcba)
+Need: 2a + 2b + c = 13, where a,b,c ∈ {1,...,9}
+So: c = 13 - 2a - 2b
+
+For validity: 1 ≤ 13 - 2a - 2b ≤ 9, which gives 2 ≤ a + b ≤ 6
+
+| a | b | c | Valid? | Palindrome |
+|---|---|---|--------|-----------|
+| 1 | 1 | 9 | ✓ | 11911 |
+| 1 | 2 | 7 | ✓ | 12721 |
+| 1 | 3 | 5 | ✓ | 13531 |
+| 1 | 4 | 3 | ✓ | 14341 |
+| 1 | 5 | 1 | ✓ | 15151 |
+| 2 | 1 | 7 | ✓ | 21712 |
+| 2 | 2 | 5 | ✓ | 22522 |
+| 2 | 3 | 3 | ✓ | 23332 |
+| 2 | 4 | 1 | ✓ | 24142 |
+| 3 | 1 | 5 | ✓ | 31513 |
+| 3 | 2 | 3 | ✓ | 32323 |
+| 3 | 3 | 1 | ✓ | 33133 |
+| 4 | 1 | 3 | ✓ | 41314 |
+| 4 | 2 | 1 | ✓ | **42124** ✓ |
+| 5 | 1 | 1 | ✓ | 51115 |
+
+**Count: 15**
+
+---
+
+### **7-digit palindromes:** (form: abcdcba)
+Need: 2a + 2b + 2c + d = 13, where a,b,c

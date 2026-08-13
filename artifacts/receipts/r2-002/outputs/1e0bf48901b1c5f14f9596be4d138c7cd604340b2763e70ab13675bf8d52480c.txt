@@ -1,0 +1,26 @@
+# Problem Analysis
+
+## Given Quantities and Conditions:
+
+1. **Variables**: Five letters representing digits: $E, A, R, T, H$ (each in range 0-9)
+
+2. **Addition constraint**: 
+$$\underbrace{HATER}_{5\text{-digit}} + \underbrace{HEART}_{5\text{-digit}} = \underbrace{EARTH}_{5\text{-digit}}$$
+
+   Written in expanded form:
+   $$(10000H + 1000A + 100T + 10E + R) + (10000H + 1000E + 100A + 10R + T) = (10000E + 1000A + 100R + 10T + H)$$
+
+3. **Leading digit constraints**: 
+   - $H \neq 0$ (HATER is a 5-digit number)
+   - $H \neq 0$ (HEART is a 5-digit number)
+   - $E \neq 0$ (EARTH is a 5-digit number)
+
+4. **Digit constraints**: $E, A, R, T, H \in \{0, 1, 2, 3, 4, 5, 6, 7, 8, 9\}$
+
+5. **Distinctness**: The problem states digits are "not necessarily distinct," meaning they may or may not be equal to each other
+
+6. **Uniqueness**: There is exactly one solution to this system
+
+## What is being asked:
+
+**Find the unique 5-digit number EARTH** (i.e., determine the specific values of digits $E, A, R, T, H$) **that satisfies the addition equation above.**

@@ -1,0 +1,104 @@
+# Solution: Finding Fixed Points of f(n)
+
+## Step 1: Understanding Fixed Points
+We need $f(n) = n$, where:
+- Take the decimal digits of $n$
+- Interpret them as a base-$b$ number
+- Where $b = 1 + \max(\text{digits of } n)$
+- Convert back to base 10
+
+The equation is: **decimal representation interpreted in base $b$ equals $n$ itself**
+
+---
+
+## Step 3: 1-Digit Numbers
+
+For $n \in \{1, 2, ..., 9\}$:
+- Single digit $n$ has $\max(\text{digit}) = n$
+- Base: $b = n + 1$
+- In base $b$, the digit $n$ interpreted as base 10 equals $n$ itself
+- Therefore $f(n) = n$ for all single-digit numbers ✓
+
+**Verification:** $f(5) = 5$ (digit 5 in base 6 is still 5)
+
+**Count: 9 numbers**
+
+---
+
+## Step 4: 2-Digit Numbers
+
+Write $n = 10a + c$ where $a \in \{1,...,9\}$, $c \in \{0,...,9\}$
+
+**Base calculation:** $b = \max(a, c) + 1$
+
+**Fixed point equation:**
+- Interpreting "ac" in base $b$: $ab + c$
+- Set equal to $n$:
+$$ab + c = 10a + c$$
+$$ab = 10a$$
+$$b = 10 \text{ (since } a \neq 0)$$
+
+**Solving:** We need $\max(a, c) + 1 = 10$, so $\max(a, c) = 9$
+
+**Case 1:** $a = 9$, $c \in \{0, 1, ..., 9\}$
+- Numbers: $\{90, 91, 92, ..., 99\}$
+- Count: **10 numbers**
+
+**Case 2:** $c = 9$, $a \in \{1, 2, ..., 8\}$ (excluding $a=9$ to avoid double-counting)
+- Numbers: $\{19, 29, 39, 49, 59, 69, 79, 89\}$
+- Count: **8 numbers**
+
+**Verification:** $f(29) = 2 \cdot 10 + 9 = 29$ (digits 2,9 in base 10) ✓
+
+**Count for 2-digit: 10 + 8 = 18 numbers**
+
+---
+
+## Step 5: 3-Digit Numbers
+
+Write $n = 100a + 10b + c$ where $a \in \{1,...,9\}$, $b,c \in \{0,...,9\}$
+
+**Base calculation:** $B = \max(a, b, c) + 1$
+
+**Fixed point equation:**
+$$aB^2 + bB + c = 100a + 10b + c$$
+$$aB^2 + bB = 100a + 10b$$
+$$a(B^2 - 100) + b(B - 10) = 0$$
+$$a(B^2 - 100) = -b(B - 10)$$
+$$a(B-10)(B+10) = -b(B-10)$$
+
+**Case 1:** $B = 10$ (i.e., $\max(a,b,c) = 9$)
+$$0 = 0$$ ✓
+
+This is always satisfied when $B = 10$.
+
+**Solving:** We need $\max(a, b, c) = 9$
+
+Count using complementary method:
+- Total 3-digit numbers: $a \in \{1,...,9\}$, $b,c \in \{0,...,9\}$ = $9 \times 10 \times 10 = 900$
+- Numbers with all digits $\leq 8$: $a \in \{1,...,8\}$, $b,c \in \{0,...,8\}$ = $8 \times 9 \times 9 = 648$
+- Numbers with $\max(a,b,c) = 9$: $900 - 648 = 252$
+
+**Case 2:** $B \neq 10$
+
+Dividing by $(B-10)$:
+$$a(B+10) = -b$$
+
+Since $a > 0$ and $B > 0$, the left side is positive, but the right side is $-b \leq 0$. **Contradiction—no solutions.** ✗
+
+**Count for 3-digit: 252 numbers**
+
+---
+
+## Step 6: Final Sum
+
+| Category | Count |
+|----------|-------|
+| 1-digit | 9 |
+| 2-digit | 18 |
+| 3-digit | 252 |
+| **Total** | **279** |
+
+$$9 + 18 + 252 = 279$$
+
+ANSWER: [279]

@@ -1,0 +1,22 @@
+# Solution Plan
+
+1. **Recognize the key insight**: We need to count pairs $(a,b) \in S \times S$ such that $a+b \in S$
+
+2. **Use the closure property under addition modulo 143**: Note that $a+b \in S$ if and only if $\gcd(a+b, 143) = 1$
+
+3. **Apply the Chinese Remainder Theorem perspective**: Since $143 = 11 \times 13$, we have $\gcd(a+b, 143) = 1$ iff:
+   - $\gcd(a+b, 11) = 1$ AND
+   - $\gcd(a+b, 13) = 1$
+
+4. **Count valid pairs modulo each prime**:
+   - For mod 11: Count pairs $(a \bmod 11, b \bmod 11)$ where $a,b$ are coprime to 11, and $a+b \not\equiv 0 \pmod{11}$
+   - For mod 13: Count pairs $(a \bmod 13, b \bmod 13)$ where $a,b$ are coprime to 13, and $a+b \not\equiv 0 \pmod{13}$
+
+5. **Calculate for each prime independently**:
+   - **Mod 11**: Elements coprime to 11 are $\{1,2,...,10\}$ (10 elements). Count pairs where sum $\not\equiv 0 \pmod{11}$: This is $10^2 - 10 = 90$ pairs
+   - **Mod 13**: Elements coprime to 13 are $\{1,2,...,12\}$ (12 elements). Count pairs where sum $\not\equiv 0 \pmod{13}$: This is $12^2 - 12 = 132$ pairs
+
+6. **Apply the Chinese Remainder Theorem**: By CRT, the total count is the product:
+   $$90 \times 132 = 11,880$$
+
+7. **State the final answer**: There are **11,880** ordered triples $(a,b,c)$ satisfying the conditions.

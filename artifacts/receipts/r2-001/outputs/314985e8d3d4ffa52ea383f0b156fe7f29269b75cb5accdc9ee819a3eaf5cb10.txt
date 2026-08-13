@@ -1,0 +1,33 @@
+# Solution Plan
+
+1. **Calculate the area of triangle ABC**
+   - Use Heron's formula with sides $a = 14$, $b = 15$, $c = 13$
+   - Compute $s = \frac{13+14+15}{2} = 21$
+   - Area $= \sqrt{21 \cdot 8 \cdot 7 \cdot 6} = 84$
+
+2. **Find the circumradius R of triangle ABC**
+   - Use the formula $R = \frac{abc}{4K}$ where $K$ is the area
+   - $R = \frac{13 \cdot 14 \cdot 15}{4 \cdot 84} = \frac{2730}{336} = \frac{65}{8}$
+
+3. **Determine the rotation angle θ**
+   - Use the constraint that $\angle A'C'B' = 90°$ after rotation
+   - Since rotation preserves angles, $\angle ACB = 90°$ is NOT satisfied in the original triangle
+   - Apply the inscribed angle theorem: the angle $\angle ACB$ subtends arc $AB$
+   - Find angle $\angle ACB$ in the original triangle using the law of cosines
+   - Determine the rotation angle needed to make the rotated angle equal to 90°
+
+4. **Set up coordinates**
+   - Place triangle ABC in a coordinate system with circumcenter at origin
+   - Calculate positions of vertices A, B, C on the circumcircle
+   - Rotate to find positions of A', B', C' satisfying the perpendicularity constraint
+
+5. **Identify the hexagon vertices in order**
+   - List vertices $A, A', C', C, B', B$ in cyclic order
+   - Verify the proper ordering respects the constraint that $A'$ and $B$ are on opposite sides of line $B'C'$
+
+6. **Calculate the hexagon area**
+   - Use the shoelace formula with the six vertices in order
+   - Area $= \frac{1}{2}|x_1(y_2-y_6) + x_2(y_3-y_1) + \cdots|$
+
+7. **Round to the nearest integer**
+   - Identify the closest integer to the computed hexagon area

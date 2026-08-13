@@ -1,0 +1,19 @@
+# Solution Plan
+
+1. **Identify valid values of $r$**
+   - Determine that $r$ must satisfy $r \equiv 0 \pmod{4}$ (i.e., $r = 4k$ for positive integers $k$)
+   - This ensures $n = \frac{5r + 8}{4}$ is an integer
+
+2. **Apply the minimum color constraint**
+   - For each candidate $r$, calculate $n = \frac{5r + 8}{4}$
+   - Calculate $b = n - r$
+   - Verify that both $r \geq 7$ and $b \geq 7$
+
+3. **Find the five smallest valid values of $n$**
+   - Test $r = 4, 8, 12, 16, 20, 24, 28, ...$ in order
+   - Keep only those where both constraints are satisfied
+   - Record the corresponding $n$ values until you have five
+
+4. **Calculate the sum**
+   - Add together the five smallest valid $n$ values
+   - Return this sum as the final answer

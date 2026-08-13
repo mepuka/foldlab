@@ -1,0 +1,21 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Prime number:** $p = 503$
+2. **Upper index of binomial coefficients:** $n = 10000$
+3. **Modulus for indexing:** $502$ (which equals $503 - 1$)
+4. **Range of $r$:** positive integers with $1 \le r \le 501$ (i.e., $r \in \{1, 2, \ldots, 501\}$)
+5. **Definition of $S_r$:** 
+$$S_r = \sum_{m \ge 0} \binom{10000}{502m + r}$$
+where $\binom{10000}{n} = 0$ when $n > 10000$
+
+   Equivalently, $S_r$ is the sum of all binomial coefficients $\binom{10000}{k}$ where:
+   - $0 \le k \le 10000$
+   - $k \equiv r \pmod{502}$
+
+6. **List being considered:** $S_0, S_1, S_2, \ldots, S_{501}$ (a total of 502 values)
+
+## Question
+
+Find the number of integers in the list $\{S_0, S_1, S_2, \ldots, S_{501}\}$ that are divisible by $503$.

@@ -1,0 +1,15 @@
+# Analysis of the Competition Math Problem
+
+## Given Quantities and Conditions
+
+1. **What Mark writes:** Squares of several distinct positive integers (in base 10)
+2. **Constraint on the integers:** They must be distinct positive integers
+3. **Constraint on the digits:** Each nonzero digit (1, 2, 3, 4, 5, 6, 7, 8, 9) appears exactly once across all the written squares combined
+4. **Allowed digits:** The digit 0 may appear any number of times (or not at all)
+5. **Digit count requirement:** Exactly 9 nonzero digits total, with no digit repeated
+
+## What is Being Asked
+
+Find the **smallest possible sum** of all the perfect squares written on the blackboard, subject to the constraints above.
+
+In other words: minimize $\sum n_i^2$ where the $n_i$ are distinct positive integers whose squares collectively contain each digit 1-9 exactly once (and possibly contain 0's).

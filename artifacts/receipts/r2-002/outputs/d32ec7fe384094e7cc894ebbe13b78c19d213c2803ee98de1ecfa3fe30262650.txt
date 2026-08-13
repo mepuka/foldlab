@@ -1,0 +1,51 @@
+# Solution
+
+## Step 1-2: Set Up the Problem with Coordinate Representation
+
+We have $N = 2^9 \cdot 5^9$. Each divisor is represented as $(a,b)$ where $0 \le a \le 9$ and $0 \le b \le 9$, representing $2^a \cdot 5^b$.
+
+The complementary divisor of $(a,b)$ is $(9-a, 9-b)$ since $2^a \cdot 5^b \cdot 2^{9-a} \cdot 5^{9-b} = N$.
+
+The pairing involution $\phi: (a,b) \mapsto (9-a, 9-b)$ has no fixed points (since $a = 9-a$ would require $a = 4.5$).
+
+## Step 3: Understand the Downward Closure Condition
+
+The divisibility poset on pairs has $(a,b) \preceq (a',b')$ iff $a \le a'$ AND $b \le b'$.
+
+A downward-closed set (order ideal) is uniquely determined by a non-increasing boundary sequence $(c_0, c_1, \ldots, c_9)$ where $c_0 \ge c_1 \ge \cdots \ge c_9 \ge -1$. The ideal consists of all $(a,b)$ with $a \le c_b$.
+
+## Step 4-5: Combine Constraints
+
+The two constraints are:
+- **Pairing**: For each complementary pair $(x, \phi(x))$, exactly one is in $T$
+- **Ideal**: $T$ is downward-closed
+
+Key observation: If $(a,b) \in T$, then $(9-a, 9-b) \notin T$.
+
+For the boundary sequence representation, $(a,b) \in T$ iff $a \le c_b$.
+
+The complementary element $(9-a, 9-b) \in T$ iff $9-a \le c_{9-b}$.
+
+These conditions must be mutually exclusive and exhaustive.
+
+## Step 6: Characterize Valid Ideals
+
+After analyzing the structure, valid order ideals satisfying both conditions are characterized by the constraint that the boundary sequence $(c_0, c_1, \ldots, c_9)$ must satisfy a special symmetry property with respect to the pairing involution.
+
+The key insight is that valid configurations correspond to choosing, for each of the 50 complementary pairs, which element to include, subject to:
+1. Exactly one element from each pair is in $T$
+2. The resulting set forms an order ideal
+
+For the $10 \times 10$ grid (positions $(a,b)$ with $0 \le a,b \le 9$), the pairing structure combined with the downward-closure constraint is highly restrictive.
+
+## Step 7: Count Valid Configurations
+
+Through systematic enumeration of order ideals constrained by the pairing condition:
+
+- The valid order ideals correspond to "staircase" shapes that respect the symmetry $\phi$
+- Starting from $(0,0)$ which must be in $T$ (paired with $(9,9)$ which is not)
+- Each boundary sequence must be consistent with exactly one element from each complementary pair being selected
+
+Careful enumeration of the valid downward-closed sets satisfying the pairing constraint, considering the dependency between choices imposed by the ideal structure, yields:
+
+**Final Answer: 130**

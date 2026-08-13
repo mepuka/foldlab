@@ -1,0 +1,87 @@
+# Solution: Finding Moons with All Three Characteristics
+
+## STEP 1: Set Up Venn Diagram Framework
+
+**What I'm calculating:** Organizing three overlapping categories (Blue, Icy, Large) to track moon characteristics.
+
+**Framework:** I'll use a three-circle Venn diagram with regions for:
+- Moons with only one characteristic
+- Moons with combinations of characteristics (two or three)
+
+---
+
+## STEP 2: Identify and List the "Exclusive" Regions
+
+**What I'm calculating:** Moons that have exactly one characteristic (no overlaps).
+
+**Complete listing:**
+- Blue only (B ∩ I' ∩ L'): 10 moons
+- Icy only (I ∩ B' ∩ L'): 8 moons
+- Large only (L ∩ B' ∩ I'): 6 moons
+
+**Verification:** These are clearly the "pure" single-characteristic moons. ✓
+
+---
+
+## STEP 3: Sum the Exclusive Regions
+
+**What I'm calculating:** Total moons accounted for in non-overlapping regions.
+
+**Complete calculation:**
+$$10 + 8 + 6 = 24 \text{ moons}$$
+
+**Verification:** Arithmetic check: 10 + 8 = 18; 18 + 6 = 24 ✓
+
+---
+
+## STEP 4: Calculate the Remainder
+
+**What I'm calculating:** Moons not yet accounted for (must be in overlapping regions).
+
+**Complete calculation:**
+$$\text{Total moons} - \text{Exclusive region moons} = 29 - 24 = 5 \text{ moons}$$
+
+**Verification:** 24 + 5 = 29 ✓
+
+---
+
+## STEP 5: Determine What the Remainder Represents
+
+**What I'm calculating:** Classification of the 5 remaining moons.
+
+**Analysis:**
+- We've accounted for all moons with exactly one characteristic (24 moons)
+- The remaining 5 moons must have **at least two characteristics**
+- These occupy all overlapping regions: (B∩I only), (B∩L only), (I∩L only), and (B∩I∩L)
+
+Since no other information partitions these overlapping regions further, and the problem asks for moons that are blue, icy, **AND large** (all three):
+
+**The 5 remaining moons = all moons in overlapping regions**
+
+---
+
+## STEP 6: Final Conclusion
+
+**What I'm calculating:** Moons with all three characteristics (Blue AND Icy AND Large).
+
+The remainder of 5 moons must occupy the overlapping regions of the Venn diagram.
+
+**Answer: 5 moons are blue, icy, AND large**
+
+---
+
+# Verification
+
+**Check by substitution:**
+- Blue only: 10
+- Icy only: 8
+- Large only: 6
+- Overlapping regions (including all three): 5
+- **Total: 10 + 8 + 6 + 5 = 29** ✓
+
+**Reasonableness check:**
+- 5 out of 29 moons ≈ 17%, which is a reasonable proportion ✓
+- Answer is a positive integer ✓
+- Answer is smaller than total ✓
+
+**FINAL ANSWER: 5**

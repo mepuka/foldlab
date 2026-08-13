@@ -1,0 +1,20 @@
+# Verification and Answer
+
+Let me verify the recurrence relation makes sense:
+
+## Double-checking the logic
+
+At each x-position, when at (x,0), to reach (x+1,?):
+- We can use the **diagonal** to go directly to (x+1,1): **1 way**
+- We can go **up to (x,1), then right to (x+1,1)**: **1 way** (using vertical + top horizontal)
+- We must eventually use the **bottom horizontal** (x,0)→(x+1,0), but this means we're still at y=0
+
+The recurrence correctly captures:
+- Paths ending at (x+1,0): must have come from (x,0) via bottom horizontal
+- Paths ending at (x+1,1): either via diagonal OR via vertical+top horizontal from (x,0), plus continuing from (x,1)
+
+## Verification with small cases
+
+For **x=1**: 
+- dp[1][0] = 1 (path: right along bottom)
+- dp[1][1] = 2 (

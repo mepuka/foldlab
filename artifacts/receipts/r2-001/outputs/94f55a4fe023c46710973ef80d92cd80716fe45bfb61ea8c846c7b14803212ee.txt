@@ -1,0 +1,24 @@
+# Solution Plan
+
+1. **Identify the smallest candidate containing "2026"**
+   - Start with the number 2026 itself
+   - Check if 2026 is divisible by 101
+   - If not, determine the remainder when 2026 is divided by 101
+
+2. **Find the smallest multiple of 101 containing "2026"**
+   - If 2026 mod 101 ≠ 0, calculate how much must be added to make it divisible by 101
+   - This gives the first smallest number satisfying both conditions
+
+3. **Find the second smallest multiple of 101 containing "2026"**
+   - Add 101 to the first smallest number found in step 2
+   - Verify this new number still contains "2026" as a substring
+   - If it does, this is the answer
+   - If it doesn't, continue adding 101 until "2026" reappears
+
+4. **Verify the answer**
+   - Confirm the second smallest number is divisible by 101
+   - Confirm "2026" appears as consecutive digits in its decimal representation
+   - Confirm there is exactly one smaller such number
+
+5. **Report the result**
+   - State the second smallest positive integer satisfying both conditions

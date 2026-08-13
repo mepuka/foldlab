@@ -1,0 +1,26 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Angles:**
+- $\angle A = 90°$
+- $\angle E = 90°$
+- $\angle B = 45°$
+- $\angle D = 45°$
+
+**Side Lengths:**
+- $AE = 20$
+- $BC = 14\sqrt{2}$
+- $DE < AB$
+- $AB$ is an integer with $AB < 2026$
+
+**Geometric Configuration:**
+- Pentagon $ABCDE$ is nonconvex
+- Points $B$, $C$, and $D$ lie on the same side of line $AE$
+
+**Area Condition:**
+- The area of pentagon $ABCDE$ is an integer multiple of $16$
+
+## What is Being Asked
+
+Find the number of possible integer values of $AB$ that satisfy all the given conditions.

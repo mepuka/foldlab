@@ -1,0 +1,85 @@
+# Extended Solution
+
+## Step 1: Set up Coordinate System
+
+Place rectangle $ABCD$ with:
+- $A = (0, 0)$
+- $B = (0, 1)$ (so $AB = 1$ ✓)
+- $C = (a, 1)$ where $a = BC$ (unknown)
+- $D = (a, 0)$
+
+## Step 2: Express Positions of $X$ and $Y$
+
+- $X$ on $\overline{BC}$: $X = (t, 1)$ where $0 \leq t \leq a$
+- $Y$ on $\overline{AD}$: $Y = (s, 0)$ where $0 \leq s \leq a$
+
+## Step 3: Apply Perpendicularity at $X$ ($\angle AXY = 90°$)
+
+$$\overrightarrow{XA} = (-t, -1), \quad \overrightarrow{XY} = (s-t, -1)$$
+
+$$\overrightarrow{XA} \cdot \overrightarrow{XY} = -t(s-t) + 1 = 0$$
+
+$$t^2 - ts + 1 = 0 \quad \text{...(1)}$$
+
+## Step 4: Apply Perpendicularity at $Y$ ($\angle XYC = 90°$)
+
+$$\overrightarrow{YX} = (t-s, 1), \quad \overrightarrow{YC} = (a-s, 1)$$
+
+$$\overrightarrow{YX} \cdot \overrightarrow{YC} = (t-s)(a-s) + 1 = 0$$
+
+$$(t-s)(a-s) = -1 \quad \text{...(2)}$$
+
+## Step 5: Apply Ratio Condition $AX : XY : YC = 1 : 2 : 1$
+
+Calculate distances:
+$$AX = \sqrt{t^2 + 1}$$
+$$XY = \sqrt{(s-t)^2 + 1}$$
+$$YC = \sqrt{(a-s)^2 + 1}$$
+
+**From $YC = AX$:**
+$$\sqrt{(a-s)^2 + 1} = \sqrt{t^2 + 1}$$
+$$(a-s)^2 = t^2$$
+$$s = a - t \quad \text{...(3)}$$
+
+**From $XY = 2AX$:**
+$$\sqrt{(s-t)^2 + 1} = 2\sqrt{t^2 + 1}$$
+$$(s-t)^2 + 1 = 4(t^2 + 1)$$
+$$(s-t)^2 = 4t^2 + 3$$
+
+Substituting (3):
+$$(a - 2t)^2 = 4t^2 + 3$$
+$$a^2 - 4at + 4t^2 = 4t^2 + 3$$
+$$a^2 - 4at = 3 \quad \text{...(4)}$$
+
+## Step 6: Solve System of Equations
+
+From equation (1) with substitution $s = a - t$:
+$$t(a-t) = t^2 + 1$$
+$$at - t^2 = t^2 + 1$$
+$$at = 2t^2 + 1$$
+$$a = 2t + \frac{1}{t} \quad \text{...(5)}$$
+
+Substitute (5) into (4):
+$$\left(2t + \frac{1}{t}\right)^2 - 4t\left(2t + \frac{1}{t}\right) = 3$$
+$$4t^2 + 4 + \frac{1}{t^2} - 8t^2 - 4 = 3$$
+$$\frac{1}{t^2} - 4t^2 = 3$$
+$$1 = 4t^4 + 3t^2$$
+$$4t^4 + 3t^2 - 1 = 0$$
+
+Let $u = t^2$:
+$$(4u - 1)(u + 1) = 0$$
+
+Since $u \geq 0$: $u = \frac{1}{4}$, so $t = \frac{1}{2}$
+
+From (5):
+$$a = 2\left(\frac{1}{2}\right) + \frac{1}{1/2} = 1 + 2 = 3$$
+
+## Step 7: Verification
+
+With $t = \frac{1}{2}$, $s = \frac{5}{2}$, $a = 3$:
+- $X = (\frac{1}{2}, 1)$, $Y = (\frac{5}{2}, 0)$
+- $AX = \frac{\sqrt{5}}{2}$, $XY = \sqrt{5}$, $YC = \frac{\sqrt{5}}{2}$ ✓
+- Ratio: $1 : 2 : 1$ ✓
+- All perpendicularity conditions satisfied ✓
+
+**3**

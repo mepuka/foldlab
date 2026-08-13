@@ -1,0 +1,24 @@
+# Analysis of the Problem
+
+## Given Quantities and Conditions
+
+**Given:**
+- The set of numbers: {1, 2, 3, 4, 5, 6, 7}
+- These numbers are written on a blackboard in some initial order (a permutation)
+- The sorting process uses bubble sort: repeatedly swapping adjacent numbers
+- The process continues until the numbers are in ascending order (1, 2, 3, 4, 5, 6, 7)
+
+**Key Constraint:**
+- We restrict to initial orderings where the number 4 participates in **at most 1 swap** during the entire sorting process
+
+## What Is Being Asked
+
+**Find:** The count of initial permutations of {1, 2, 3, 4, 5, 6, 7} such that when bubble sort is applied, the element 4 is involved in at most one adjacent swap before reaching the final sorted configuration.
+
+---
+
+## Clarification on "Swap"
+
+The problem asks for orderings where element 4 (not position 4) participates in at most one adjacent transposition. This means:
+- 0 swaps: the element 4 is already in its final position and never moves
+- 1 swap: the element 4 is moved exactly once (one adjacent transposition involving it)

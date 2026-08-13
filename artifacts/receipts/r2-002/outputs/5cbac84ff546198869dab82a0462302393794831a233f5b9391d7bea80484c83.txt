@@ -1,0 +1,81 @@
+# Solution: Finding Numbers Where $s_2(n) = s_4(n)^2$
+
+## Step 1: Establish the constraint on $s_2(n)$
+
+For $n < 1000$:
+- Maximum $s_2(n)$ occurs at $n = 999 = 1111100111_2$
+- $s_2(999) = 8$
+
+Let $m = s_2(n)$. If $s_4(n) = m^2$:
+- Maximum $s_4(n)$ is at $n = 999 = 33333_4$
+- $s_4(999) = 15$
+- So $m^2 \leq 15$
+
+Therefore $m \in \{1, 2, 3\}$ (since $4^2 = 16 > 15$)
+
+## Step 2: Base-4 to Base-2 Digit Relationship
+
+Each base-4 digit contributes to $s_2(n)$ as follows:
+- $0 = 00_2$ → contributes 0
+- $1 = 01_2$ → contributes 1
+- $2 = 10_2$ → contributes 1
+- $3 = 11_2$ → contributes 2
+
+## Step 3: Find Valid Conditions for Each $m$
+
+**Case $m = 1$:** Need $s_2(n) = 1$ and $s_4(n) = 1$
+- Only one digit equals 1, all others are 0
+- Numbers: $1, 4, 16, 64, 256$
+
+Verification (example): $n = 4 = 100_4$; $s_4(4) = 1$, $s_2(4) = 1_2 = 1$; $1 = 1^2$ ✓
+
+**Case $m = 2$:** Need $s_2(n) = 2$ and $s_4(n) = 4$
+
+Let $a, b, c$ = counts of digits 1, 2, 3 respectively:
+- $s_2(n) = a + b + 2c = 2$
+- $s_4(n) = a + 2b + 3c = 4$
+
+From first equation: $a + b = 2 - 2c$
+From second: $(2-2c) + b + 3c = 4$, so $b + c = 2$
+
+Testing $c = 0$: $b = 2, a = 0$ ✓
+
+So we need exactly two 2's in base-4 representation:
+
+For $n = 2 \cdot 4^i + 2 \cdot 4^j$ where $i < j$ and $n < 1000$:
+- $(0,1): 2 + 8 = 10$
+- $(0,2): 2 + 32 = 34$
+- $(0,3): 2 + 128 = 130$
+- $(0,4): 2 + 512 = 514$
+- $(1,2): 8 + 32 = 40$
+- $(1,3): 8 + 128 = 136$
+- $(1,4): 8 + 512 = 520$
+- $(2,3): 32 + 128 = 160$
+- $(2,4): 32 + 512 = 544$
+- $(3,4): 128 + 512 = 640$
+
+Numbers: $10, 34, 40, 130, 136, 160, 514, 520, 544, 640$
+
+**Case $m = 3$:** Need $s_2(n) = 3$ and $s_4(n) = 9$
+
+Using the same system:
+- $a + b + 2c = 3$
+- $a + 2b + 3c = 9$
+
+From these: $b + c = 6$ and $a = 3 - 2c - b = -3 - c < 0$
+
+**No solutions for $m = 3$**
+
+## Step 4: Complete List of Valid Numbers
+
+Case 1: $\{1, 4, 16, 64, 256\}$
+Case 2: $\{10, 34, 40, 130, 136, 160, 514, 520, 544, 640\}$
+
+## Step 5: Calculate the Sum
+
+Case 1 sum: $1 + 4 + 16 + 64 + 256 = 341$
+
+Case 2 sum:
+$$10 + 34 + 40 + 130 + 136 + 160 + 514 + 520 + 544 + 640 = 2728$$
+
+Total sum: $341 + 2728 = \boxed{3069}$

@@ -1,0 +1,7 @@
+I need to provide only the final answer as a single integer.
+
+However, looking at the problem: √20 is not an integer. It equals 2√5 ≈ 4.47...
+
+If the question asks for the final answer as a single integer and the working shows √20, then rounding to the nearest integer:
+
+4

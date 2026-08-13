@@ -1,0 +1,25 @@
+# Complete Problem Analysis
+
+## Given Quantities:
+
+1. Triangle $\triangle ABC$ lies in plane $\mathcal{P}$
+2. $AB = 6$
+3. $AC = 4$
+4. $\angle BAC = 90°$
+5. $D$ is the reflection of the centroid of $\triangle ABC$ across line $\overline{BC}$
+6. Four spheres, all on the same side of $\mathcal{P}$:
+   - Sphere 1: radius $1$, tangent to $\mathcal{P}$ at point $A$
+   - Sphere 2: radius $2$, tangent to $\mathcal{P}$ at point $B$
+   - Sphere 3: radius $3$, tangent to $\mathcal{P}$ at point $C$
+   - Sphere 4: radius $r$ (unknown), tangent to $\mathcal{P}$ at point $D$
+7. All four spheres are tangent to a second plane $\mathcal{T}$
+8. All four spheres are on the same side of $\mathcal{T}$
+
+## Conditions:
+
+- The four spheres are mutually tangent to each other (implied by the problem structure)
+- The radii $m$ and $n$ in $r = \frac{m}{n}$ are relatively prime positive integers
+
+## What is Being Asked:
+
+Find the value of $r$ (the radius of the fourth sphere), express it as a fraction $\frac{m}{n}$ in lowest terms, and compute $m + n$.

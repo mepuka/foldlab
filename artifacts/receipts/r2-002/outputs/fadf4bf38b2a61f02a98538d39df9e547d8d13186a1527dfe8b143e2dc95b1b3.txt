@@ -1,0 +1,13 @@
+```json
+{
+  "template": "<<<Use extended reasoning to carefully carry out the plan step by step, showing all work. Check your arithmetic and logic carefully.
+
+{{INPUT}}
+
+After completing all steps, state the final answer as a single integer only:>>>",
+  "params": {
+    "max_tokens": 9064,
+    "thinking_budget": 6000
+  }
+}
+```

@@ -1,0 +1,21 @@
+# Analysis of the Problem
+
+## Given Quantities and Conditions
+
+1. **Set**: $A = \{1, 2, 3, 4, 5, 6\}$
+
+2. **Domain and Codomain**: Functions $\pi: A \to A$
+
+3. **Surjectivity Condition**: $\pi$ maps $A$ **onto** $A$ (i.e., $\pi$ is surjective, hence bijective since the domain and codomain are finite and equal)
+
+4. **Functional Equation**: $\pi^6(a) = a$ for every $a \in A$, where $\pi^6$ denotes the composition of $\pi$ with itself 6 times
+
+## What is Being Asked
+
+Find the total number of functions $\pi$ satisfying both the surjectivity condition and the functional equation.
+
+---
+
+## Interpretation
+
+Since $\pi$ is a bijection from a finite set to itself, we're looking for **permutations** of $A$ whose order divides 6 (i.e., permutations $\pi$ such that $\pi^6 = \text{identity}$).

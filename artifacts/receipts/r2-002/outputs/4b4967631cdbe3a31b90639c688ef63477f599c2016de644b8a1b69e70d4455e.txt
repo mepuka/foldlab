@@ -1,0 +1,20 @@
+# Verification and Analysis
+
+Let me verify this solution by checking the methodology and counting more carefully.
+
+## Verification of the Factorization
+
+The factorization is correct: $n = a + b + ab = (a+1)(b+1) - 1$
+
+This means we need $(a+1)(b+1) \leq 101$.
+
+## Systematic Counting
+
+For each value of $a$, with $a < b$ (to avoid double counting), we need:
+$$b \leq \frac{100-a}{1+a}$$
+
+Let me count the valid pairs for each $a$:
+
+- **$a=1$**: $b \leq \frac{99}{2} = 49.5$ → $b \in \{2,3,...,49\}$ → **48 pairs**
+- **$a=2$**: $b \leq \frac{98}{3} = 32.67$ → $b \in \{3,4,...,32\}$ → **30 pairs**
+- **$a=3$**: $b \leq

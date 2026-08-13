@@ -1,0 +1,25 @@
+# Review of Solution
+
+Let me verify the key steps:
+
+**Steps 1-4**: The coordinate setup is correct. Placing A at the origin, establishing positions for B, C, D on a line, and computing point E's location for the equilateral triangle are all valid.
+
+**Step 5**: The Law of Cosines application is correct:
+- With ∠AED = 120°, we have cos(120°) = -1/2
+- This gives the correct equation: 1521 = AE² + ED² + AE·ED ✓
+
+**Step 6**: The algebraic manipulation:
+- Substituting expressions for AE² and ED²: ✓
+- Using x + y = 29 to simplify: ✓
+- The squaring and simplification to reach xy = 180: ✓
+
+**Step 7**: The quadratic equation:
+- t² - 29t + 180 = 0
+- Discriminant: 841 - 720 = 121 = 11² ✓
+- Solutions: t = 20 and t = 9 ✓
+
+**Final calculation**: |20 - 9| = 11 ✓
+
+The solution is logically sound and the algebra checks out.
+
+**11**

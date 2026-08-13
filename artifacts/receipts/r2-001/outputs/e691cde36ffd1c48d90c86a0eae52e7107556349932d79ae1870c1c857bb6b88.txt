@@ -1,0 +1,79 @@
+# Detailed Verification of Solution
+
+## Step 1: Apply the Angle Bisector Theorem
+
+The angle bisector theorem states that $\frac{BD}{DC} = \frac{AB}{AC}$.
+
+Given: $AB = 200$, $AC = 225$
+
+$$\frac{BD}{DC} = \frac{200}{225} = \frac{8 \cdot 25}{9 \cdot 25} = \frac{8}{9}$$
+
+Setting $BD = 8k$ and $DC = 9k$:
+$$BC = BD + DC = 8k + 9k = 17k$$ ✓
+
+## Step 2: Use Power of a Point
+
+**For point B:**
+$$BA \cdot BE = BD^2$$
+$$200 \cdot BE = (8k)^2 = 64k^2$$
+$$BE = \frac{64k^2}{200} = \frac{8k^2}{25}$$
+
+Therefore:
+$$AE = AB - BE = 200 - \frac{8k^2}{25} = \frac{5000 - 8k^2}{25}$$
+
+**For point C:**
+$$CA \cdot CF = CD^2$$
+$$225 \cdot CF = (9k)^2 = 81k^2$$
+$$CF = \frac{81k^2}{225} = \frac{9k^2}{25}$$
+
+Therefore:
+$$AF = AC - CF = 225 - \frac{9k^2}{25} = \frac{5625 - 9k^2}{25}$$ ✓
+
+## Step 3: Enforce Integer Constraints
+
+For $AE$ to be an integer: $5000 - 8k^2 \equiv 0 \pmod{25}$
+
+Since $5000 = 200 \times 25 \equiv 0 \pmod{25}$:
+$$8k^2 \equiv 0 \pmod{25}$$
+
+For $AF$ to be an integer: $5625 - 9k^2 \equiv 0 \pmod{25}$
+
+Since $5625 = 225 \times 25 \equiv 0 \pmod{25}$:
+$$9k^2 \equiv 0 \pmod{25}$$
+
+Since $\gcd(8, 25) = 1$ and $\gcd(9, 25) = 1$:
+$$k^2 \equiv 0 \pmod{25} \implies k = 5m$$ ✓
+
+## Step 4: Substitute and Simplify
+
+With $k = 5m$:
+$$AE = \frac{5000 - 8(25m^2)}{25} = \frac{5000 - 200m^2}{25} = 200 - 8m^2$$
+
+$$AF = \frac{5625 - 9(25m^2)}{25} = \frac{5625 - 225m^2}{25} = 225 - 9m^2$$
+
+**Positivity constraints:**
+- $AE > 0$: $200 - 8m^2 > 0 \implies m^2 < 25 \implies m \leq 4$
+- $AF > 0$: $225 - 9m^2 > 0 \implies m^2 < 25 \implies m \leq 4$
+
+Therefore $m \in \{1, 2, 3, 4\}$ ✓
+
+## Step 5: Calculate for All Valid Values
+
+| $m$ | $AE = 200-8m^2$ | $AF = 225-9m^2$ | $BC = 85m$ |
+|-----|-----------------|-----------------|------------|
+| 1   | $200-8=192$     | $225-9=216$     | $85$       |
+| 2   | $200-32=168$    | $225-36=189$    | $170$      |
+| 3   | $200-72=128$    | $225-81=144$    | $255$      |
+| 4   | $200-128=72$    | $225-144=81$    | $340$      |
+
+All values are positive integers. ✓
+
+## Step 6: Calculate Final Answer
+
+Sum of all possible values of $BC$:
+$$85 + 170 + 255 + 340$$
+$$= (85 + 170) + (255 + 340)$$
+$$= 255 + 595$$
+$$= 850$$
+
+FINAL ANSWER: [850]

@@ -1,0 +1,71 @@
+# Solution: Finding Fixed Points of f(n)
+
+## Step 1: One-Digit Numbers (1-9)
+
+For any 1-digit number $n$ where $1 \leq n \leq 9$:
+- Base $b = n + 1$
+- Interpretation: $f(n) = n$ (a single digit has the same value in any base)
+- All are fixed points!
+
+**1-digit fixed points: 9**
+
+## Step 2: Two-Digit Numbers (10-99)
+
+Let $n = 10a + c$ where $a \in \{1,...,9\}$ and $c \in \{0,...,9\}$.
+
+- Base: $b = \max(a, c) + 1$
+- Interpretation: $f(n) = a \cdot b + c$
+
+For a fixed point:
+$$a \cdot b + c = 10a + c$$
+$$a \cdot b = 10a$$
+$$b = 10$$
+
+Therefore: $\max(a, c) + 1 = 10 \Rightarrow \max(a, c) = 9$
+
+**Counting solutions:**
+- If $a = 9$: $c \in \{0,1,...,9\}$ → **10 numbers** (90-99)
+- If $c = 9$ and $a \neq 9$: $a \in \{1,...,8\}$ → **8 numbers** (19, 29, 39, 49, 59, 69, 79, 89)
+
+**Verification:** $f(19) = 1 \cdot 10 + 9 = 19$ ✓, $f(99) = 9 \cdot 10 + 9 = 99$ ✓
+
+**2-digit fixed points: 18**
+
+## Step 3: Three-Digit Numbers (100-999)
+
+Let $n = 100a + 10b + c$ where $a \in \{1,...,9\}$ and $b,c \in \{0,...,9\}$.
+
+- Base: $B = \max(a, b, c) + 1$
+- Interpretation: $f(n) = a \cdot B^2 + b \cdot B + c$
+
+For a fixed point:
+$$a \cdot B^2 + b \cdot B + c = 100a + 10b + c$$
+$$a(B^2 - 100) + b(B - 10) = 0$$
+
+**Testing $B = 10$:** ($\max(a,b,c) = 9$)
+$$a(100 - 100) + b(10 - 10) = 0 + 0 = 0$$ ✓
+
+This is always satisfied when $B = 10$!
+
+**Testing $B \neq 10$:**
+- If $B > 10$: $B^2 - 100 > 0$ (positive) but $B - 10 > 0$, so both terms have the same sign. This would require $a(B^2-100) = -b(B-10)$ which is impossible for positive $a$ and non-negative $b$.
+- If $B < 10$: $B^2 - 100 < 0$ (negative) while $b(B-10) \leq 0$. For equality, we'd need both sides zero, requiring $a = 0$, contradiction.
+
+**No solutions for $B \neq 10$.**
+
+**Counting solutions with $\max(a,b,c) = 9$:**
+- If $a = 9$: $b, c$ arbitrary → $1 \times 10 \times 10 = 100$
+- If $a \in \{1,...,8\}$ and $b = 9$: → $8 \times 1 \times 10 = 80$
+- If $a \in \{1,...,8\}$, $b \in \{0,...,8\}$, and $c = 9$ → $8 \times 9 \times 1 = 72$
+
+**Total: $100 + 80 + 72 = 252$**
+
+**Verification:** $f(900) = 9 \cdot 100 + 0 \cdot 10 + 0 = 900$ ✓
+
+**3-digit fixed points: 252**
+
+## Final Answer
+
+$$\text{Total} = 9 + 18 + 252 = 279$$
+
+Final answer (single integer only): **279**

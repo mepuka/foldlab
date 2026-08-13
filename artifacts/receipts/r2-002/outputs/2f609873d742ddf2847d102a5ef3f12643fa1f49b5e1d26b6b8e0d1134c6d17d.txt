@@ -1,0 +1,55 @@
+# Solution: Counting 3×3 Grids with Subset-filled Cells
+
+## Problem Interpretation
+
+We need to fill a 3×3 grid where each cell contains a subset of {1, 2, 3, 4}, with the constraint that:
+- Each number k appears exactly once per row (across the subsets in that row)
+- Each number k appears exactly once per column (across the subsets in that column)
+
+This is equivalent to decomposing the 3×3 grid into 4 superimposed Latin squares (one for each number 1, 2, 3, 4).
+
+## Step-by-Step Solution
+
+### Step 1: Understanding the Latin Square Decomposition
+
+For each number k ∈ {1, 2, 3, 4}, consider the 3×3 matrix where position (i,j) contains 1 if number k appears in grid cell (i,j), and 0 otherwise.
+
+Each such matrix must be a **Latin square pattern** (permutation matrix): exactly one occurrence per row and per column.
+
+### Step 2: Counting 3×3 Permutation Matrices
+
+A 3×3 permutation matrix corresponds to a permutation of {1, 2, 3}.
+
+Number of 3×3 permutation matrices = **3! = 6**
+
+### Step 3: Assigning Numbers to Grid Positions
+
+For each of the 4 numbers {1, 2, 3, 4}, we independently choose one of the 6 possible 3×3 permutation matrices (with replacement allowed, since different numbers can follow the same pattern).
+
+**Number of ways = 6 × 6 × 6 × 6**
+
+### Step 4: Verification of Constraints
+
+- Number 1: Appears in exactly one cell per row and column ✓
+- Number 2: Appears in exactly one cell per row and column ✓  
+- Number 3: Appears in exactly one cell per row and column ✓
+- Number 4: Appears in exactly one cell per row and column ✓
+
+Each cell will contain a subset of {1, 2, 3, 4} based on which permutation matrices have a 1 in that position.
+
+### Step 5: Computing the Total
+
+**Total = 6^4 = 1,296**
+
+We can verify this is sensible:
+- 6^4 = (3!)^4 = 1,296
+- This counts ordered 4-tuples of Latin squares
+- Each choice is independent
+
+### Step 6: Final Calculation
+
+6 × 6 × 6 × 6 = 36 × 36 = **1,296**
+
+---
+
+**Final Answer: 1296**

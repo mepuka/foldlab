@@ -1,0 +1,59 @@
+# Detailed Solution
+
+## Step 1: Establish the constraint on differences
+
+Since adjacent integers differ by exactly ±1, when we traverse the complete circle and return to the starting position, the net change must be 0.
+
+## Step 2: Count positive and negative steps
+
+Let $u$ = number of +1 steps and $d$ = number of −1 steps.
+
+For closure: $u - d = 0$, so $u = d$
+
+Therefore: $n = u + d = 2u$ **→ n must be even**
+
+## Step 3: Relate the sum to the path structure
+
+For a path with maximum value $M$ and minimum value $m$:
+- Steps to go from $m$ to $M$: $(M - m)$ steps of +1
+- Steps to return from $M$ to $m$: $(M - m)$ steps of −1
+- Therefore: $n ≥ 2(M - m)$
+
+For a symmetric path starting at $m$, reaching $M$, and returning:
+$$\text{Sum} = m + (m+1) + \cdots + M + (M-1) + \cdots + (m+1) + m$$
+
+If we go from 0 to $k$ and back with $n = 2k$:
+$$\text{Sum} = 0 + 1 + 2 + \cdots + k + (k-1) + \cdots + 1 = k^2$$
+
+## Step 4: Find which value of k approaches sum = 24
+
+Testing symmetric cases:
+- $k = 4$: $n = 8$, sum $= 16$ ✗ (too small)
+- $k = 5$: $n = 10$, sum $= 25$ ✗ (too large by 1)
+- $k = 6$: $n = 12$, sum $= 36$ ✗ (too large)
+
+## Step 5: Construct an arrangement with n = 12
+
+For $n = 12$, we can use a path with negative numbers. Start at 0, go up to 5, come back down, then continue to −1:
+
+$$\boxed{0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0, -1}$$
+
+This forms a circle because position 12 (value −1) is adjacent to position 1 (value 0), and $|-1 - 0| = 1$ ✓
+
+## Step 6: Verify the solution
+
+**Check adjacent differences:**
+- Each consecutive pair differs by exactly ±1 ✓
+- Position 12 to position 1: $|−1 − 0| = 1$ ✓
+
+**Check the sum:**
+$$0 + 1 + 2 + 3 + 4 + 5 + 4 + 3 + 2 + 1 + 0 + (−1) = 24$$ ✓
+
+**Check evenness:** $n = 12$ is even ✓
+
+**Can we do better with n = 10?**
+The symmetric path gives sum = 25. Any non-symmetric arrangement maintaining the circle property and staying bounded gets sum ≥ 24 but cannot equal it exactly with $n = 10$ while preserving all constraints.
+
+---
+
+**Final Answer: 12**

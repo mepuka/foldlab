@@ -1,0 +1,20 @@
+I need to find the actual solution to HATER + HEART = EARTH.
+
+Let me work through this systematically using the equation:
+$$19999H + 100A + 91T = 8990E + 89R$$
+
+Testing H=9, E=5:
+$$19999(9) + 100A + 91T = 8990(5) + 89R$$
+$$179991 + 100A + 91T = 44950 + 89R$$
+$$135041 + 100A + 91T = 89R$$
+
+This won't work as the left side is too large.
+
+Testing H=3, E=7:
+$$19999(3) + 100A + 91T = 8990(7) + 89R$$
+$$59997 + 100A + 91T = 62930 + 89R$$
+$$100A + 91T = 2933 + 89R$$
+
+For A=8, R=1, T=5:
+$$800 + 455 = 2933 + 89$$
+$$1

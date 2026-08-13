@@ -1,0 +1,69 @@
+# Solution: Finding the Sum of Five Smallest Values of n
+
+## Step 1: Simplify the Probability Equation
+
+Starting with: $\binom{r}{4}\binom{b}{3} = \binom{r}{5}\binom{b}{2}$
+
+Divide both sides by $\binom{r}{4}$ and $\binom{b}{2}$:
+$$\frac{\binom{r}{4}}{\binom{r}{5}} = \frac{\binom{b}{2}}{\binom{b}{3}}$$
+
+Calculate each ratio:
+$$\frac{\binom{r}{4}}{\binom{r}{5}} = \frac{\frac{r!}{4!(r-4)!}}{\frac{r!}{5!(r-5)!}} = \frac{5!(r-5)!}{4!(r-4)!} = \frac{5}{r-4}$$
+
+$$\frac{\binom{b}{2}}{\binom{b}{3}} = \frac{\frac{b!}{2!(b-2)!}}{\frac{b!}{3!(b-3)!}} = \frac{3!(b-3)!}{2!(b-2)!} = \frac{3}{b-2}$$
+
+Therefore:
+$$\frac{5}{r-4} = \frac{3}{b-2}$$
+
+## Step 2: Derive the Constraint Equation
+
+Cross multiply:
+$$5(b-2) = 3(r-4)$$
+$$5b - 10 = 3r - 12$$
+$$5b = 3r - 2$$
+
+**Constraint:** $b = \frac{3r - 2}{5}$
+
+## Step 3: Apply Validity Constraints
+
+For $b$ to be a positive integer, we need:
+- $3r - 2 \equiv 0 \pmod{5}$
+- $3r \equiv 2 \pmod{5}$
+
+Since $3 \cdot 2 \equiv 6 \equiv 1 \pmod{5}$, multiply both sides by 2:
+$$r \equiv 4 \pmod{5}$$
+
+So valid values are $r \in \{4, 9, 14, 19, 24, 29, 34, 39, ...\}$
+
+We require $r \geq 7$ and $b \geq 7$.
+
+## Step 4: Find Valid Pairs (r, b)
+
+Check each candidate:
+
+| r | r mod 5 | b = (3r-2)/5 | r ≥ 7? | b ≥ 7? | n = r+b | Valid? |
+|---|---------|--------------|-------|--------|---------|--------|
+| 4 | 4 | (12-2)/5 = 2 | ✗ | ✗ | — | ✗ |
+| 9 | 4 | (27-2)/5 = 5 | ✓ | ✗ | — | ✗ |
+| 14 | 4 | (42-2)/5 = 8 | ✓ | ✓ | 22 | ✓ |
+| 19 | 4 | (57-2)/5 = 11 | ✓ | ✓ | 30 | ✓ |
+| 24 | 4 | (72-2)/5 = 14 | ✓ | ✓ | 38 | ✓ |
+| 29 | 4 | (87-2)/5 = 17 | ✓ | ✓ | 46 | ✓ |
+| 34 | 4 | (102-2)/5 = 20 | ✓ | ✓ | 54 | ✓ |
+
+## Step 5: Verify One Solution
+
+Let me verify $(r, b) = (14, 8)$:
+$$\binom{14}{4}\binom{8}{3} = \frac{14 \cdot 13 \cdot 12 \cdot 11}{24} \cdot \frac{8 \cdot 7 \cdot 6}{6} = 1001 \cdot 56 = 56056$$
+
+$$\binom{14}{5}\binom{8}{2} = \frac{14 \cdot 13 \cdot 12 \cdot 11 \cdot 10}{120} \cdot \frac{8 \cdot 7}{2} = 2002 \cdot 28 = 56056$$ ✓
+
+## Step 6: Calculate Final Answer
+
+The five smallest valid values of $n$ are:
+$$n \in \{22, 30, 38, 46, 54\}$$
+
+Sum:
+$$22 + 30 + 38 + 46 + 54 = 190$$
+
+FINAL ANSWER: [190]

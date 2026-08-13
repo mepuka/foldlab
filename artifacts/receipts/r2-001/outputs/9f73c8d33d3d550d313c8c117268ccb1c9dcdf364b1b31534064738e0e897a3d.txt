@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nExtract and verify the final answer. It should be a single integer. If the working above contains 'FINAL ANSWER: [integer]', extract that integer. Otherwise, identify the numerical result that directly answers the problem. State only that integer with no other text:\n",
+  "params": {
+    "max_tokens": 512,
+    "thinking_budget": 1024
+  }
+}
+```

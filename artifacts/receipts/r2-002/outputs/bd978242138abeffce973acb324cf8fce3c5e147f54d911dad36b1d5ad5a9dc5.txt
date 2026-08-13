@@ -1,0 +1,30 @@
+# Solution Plan for Competition Math Problem
+
+## 1. **Establish the Invariant and Target Value**
+   - Recognize that each operation replaces a number with |max − min|
+   - Observe that the new value is always ≤ current max
+   - Determine that the final equal value must be 0 (since we can only create differences of existing numbers)
+   - Prove that reaching all zeros is necessary and sufficient
+
+## 2. **Find the Lower Bound (Prove Minimality)**
+   - Count how many non-zero numbers must exist at each stage
+   - Show that each operation reduces the count of non-zero numbers by at most 1
+   - Initially: 2025 non-zero numbers (since we have 1, 2, 3, ..., 2026)
+   - Therefore: minimum of **2025 operations** are required
+
+## 3. **Construct an Achievable Strategy (Upper Bound)**
+   - Design a specific sequence of 2025 operations that reaches all zeros
+   - **Strategy**: Repeatedly replace the smallest positive number with (max − min)
+   - Track how this reduces the span and number of distinct values
+   - Show this terminates in exactly 2025 steps with all zeros
+
+## 4. **Verify the Construction Works**
+   - Demonstrate that after k operations, we have 2026 − k distinct non-zero values
+   - Confirm that max − min remains positive until the final operation
+   - Verify that the last non-zero number can be eliminated in operation 2025
+
+## 5. **Conclude with Answer and Proof Summary**
+   - State: **The minimum number of operations is 2025**
+   - Summarize why it cannot be less (lower bound argument)
+   - Summarize why it can be achieved (constructive algorithm)
+   - Conclude these bounds coincide, establishing the exact answer

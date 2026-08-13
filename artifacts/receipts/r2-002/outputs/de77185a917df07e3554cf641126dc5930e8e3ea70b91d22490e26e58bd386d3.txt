@@ -1,0 +1,71 @@
+# Detailed Solution
+
+## Step 1: Simplify the radical expression
+
+The radical $\sqrt[20]{x^{\log_{2026}x}}$ can be rewritten using exponent rules:
+$$\sqrt[20]{x^{\log_{2026}x}} = x^{\frac{\log_{2026}x}{20}}$$
+
+So our equation becomes:
+$$x^{\frac{\log_{2026}x}{20}}=26x$$
+
+## Step 2: Take logarithm base 2026 of both sides
+
+Applying $\log_{2026}$ to both sides:
+$$\log_{2026}\left(x^{\frac{\log_{2026}x}{20}}\right) = \log_{2026}(26x)$$
+
+**Left side:** Using the power rule for logarithms:
+$$\frac{\log_{2026}x}{20} \cdot \log_{2026}x = \frac{(\log_{2026}x)^2}{20}$$
+
+**Right side:** Using the product rule:
+$$\log_{2026}26 + \log_{2026}x$$
+
+This gives us:
+$$\frac{(\log_{2026}x)^2}{20} = \log_{2026}26 + \log_{2026}x$$
+
+## Step 3: Convert to quadratic equation
+
+Let $y = \log_{2026}x$. Then:
+$$\frac{y^2}{20} = \log_{2026}26 + y$$
+
+Multiply both sides by 20:
+$$y^2 = 20\log_{2026}26 + 20y$$
+
+Rearrange to standard form:
+$$y^2 - 20y - 20\log_{2026}26 = 0$$
+
+## Step 4: Solve using Vieta's formulas
+
+Rather than solving for the exact values of $y_1$ and $y_2$, we use **Vieta's formulas** for the quadratic $y^2 - 20y - 20\log_{2026}26 = 0$:
+
+$$y_1 + y_2 = 20 \quad \text{(sum of roots)}$$
+
+## Step 5: Convert solutions back to $x$
+
+Since $y = \log_{2026}x$, we have:
+$$x = 2026^y$$
+
+Therefore:
+$$x_1 = 2026^{y_1} \quad \text{and} \quad x_2 = 2026^{y_2}$$
+
+## Step 6: Find the product of all solutions
+
+$$P = x_1 \cdot x_2 = 2026^{y_1} \cdot 2026^{y_2} = 2026^{y_1 + y_2}$$
+
+Substituting $y_1 + y_2 = 20$:
+$$P = 2026^{20}$$
+
+## Step 7: Factor and count divisors
+
+**Factor 2026:**
+$$2026 = 2 \times 1013$$
+
+(Checking: 1013 is prime, since no prime $\leq \sqrt{1013} \approx 31.8$ divides it)
+
+Therefore:
+$$P = 2026^{20} = (2 \times 1013)^{20} = 2^{20} \times 1013^{20}$$
+
+**Count the divisors** using the formula $\tau(p_1^{a_1} \times p_2^{a_2}) = (a_1+1)(a_2+1)$:
+
+$$\tau(P) = (20+1)(20+1) = 21 \times 21 = 441$$
+
+**Final answer (single integer only): 441**

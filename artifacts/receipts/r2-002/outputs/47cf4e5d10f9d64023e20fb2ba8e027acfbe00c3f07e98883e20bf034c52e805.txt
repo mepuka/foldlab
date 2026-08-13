@@ -1,0 +1,42 @@
+# Solution Plan
+
+## 1. **Set up the coordinate system**
+   - Place the center of the hemisphere and disk at the origin
+   - The disk lies in the $xy$-plane ($z = 0$)
+   - The hemisphere is the upper half of the sphere $x^2 + y^2 + z^2 = 200^2$ (for $z \geq 0$)
+
+## 2. **Determine the sphere's center position**
+   - When the sphere rests on the disk at point $P = (p, 0)$ (use radial symmetry; $p \geq 0$), its center is at $(p, 0, 42)$
+   - The sphere has equation $(x-p)^2 + y^2 + (z-42)^2 = 42^2$
+
+## 3. **Establish the containment condition**
+   - The sphere must lie completely inside the hemisphere
+   - **Key constraint:** Every point on the sphere must satisfy $x^2 + y^2 + z^2 \leq 200^2$
+   - This is equivalent to requiring: the farthest point on the sphere from the origin is at distance $\leq 200$
+   - The farthest point lies along the radial direction from the origin through the sphere's center
+
+## 4. **Apply the distance formula**
+   - The center of the sphere is at distance $\sqrt{p^2 + 42^2}$ from the origin
+   - The farthest point is at distance: $\sqrt{p^2 + 42^2} + 42$ from the origin
+   - Constraint: $\sqrt{p^2 + 42^2} + 42 \leq 200$
+
+## 5. **Solve for the allowed region**
+   - $\sqrt{p^2 + 42^2} \leq 158$
+   - $p^2 + 1764 \leq 24964$
+   - $p^2 \leq 23200$
+   - $p \leq \sqrt{23200} = 20\sqrt{58}$
+
+## 6. **Calculate areas**
+   - **Region $\mathcal{T}$:** A disk of radius $20\sqrt{58}$
+     - Area = $\pi(20\sqrt{58})^2 = 400 \cdot 58 \cdot \pi = 23200\pi$
+   
+   - **Disk:** Radius $200$
+     - Area = $\pi \cdot 200^2 = 40000\pi$
+
+## 7. **Compute the ratio**
+   $$\frac{\text{Area of } \mathcal{T}}{\text{Area of disk}} = \frac{23200\pi}{40000\pi} = \frac{23200}{40000} = \frac{29}{50}$$
+
+## 8. **Verify and answer**
+   - Check that $\gcd(29, 50) = 1$ ✓
+   - $p = 29$, $q = 50$
+   - **Answer:** $p + q = \boxed{79}$

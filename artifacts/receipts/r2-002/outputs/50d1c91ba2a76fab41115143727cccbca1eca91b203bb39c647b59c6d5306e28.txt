@@ -1,0 +1,57 @@
+# Extended Solution
+
+## Step 1: Establish constraints on n
+
+Since adjacent integers differ by exactly ±1, traversing the circle means taking:
+- $u$ steps of +1
+- $d$ steps of -1
+
+For the circle to close (return to starting value): $u = d$
+
+Therefore: $n = u + d = 2u$ (n must be **even**)
+
+## Step 2: Understand the sum structure
+
+Consider a sequence that includes 0 and follows the ±1 pattern. The most efficient way to achieve a large sum is to go upward to some maximum $k$, then return downward.
+
+For the path: $0, 1, 2, 3, ..., k, k-1, ..., 1$
+- This has $n = 2k$ positions
+- The sum is: $(1 + 2 + ... + k) + (1 + 2 + ... + (k-1)) = \frac{k(k+1)}{2} + \frac{k(k-1)}{2} = k^2$
+- Adjacent differences are all ±1 ✓
+- Returns to 0 at completion (position $2k$ has value 1, position 1 has value 0, difference is 1) ✓
+
+## Step 3: Find appropriate values of k
+
+For sum = 24 with this symmetric structure: $k^2 = 24$
+- $k = 4$: sum = 16 (too small)
+- $k = 5$: sum = 25 (too large by 1)
+
+Since we can't achieve exactly 24 with the symmetric path alone, we need to modify it.
+
+## Step 4: Construct the minimal solution
+
+Starting from the $k=5$ case (sum = 25, n = 10), we need to reduce the sum by 1.
+
+Consider: $0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0, -1$
+
+**Verification:**
+- Number of positions: $n = 12$ ✓
+- Adjacent differences: 
+  - Within sequence: all ±1 ✓
+  - Circle closes: $-1$ to $0$ is difference of $+1$ ✓
+- Contains 0: Yes ✓
+- Sum: $0 + 1 + 2 + 3 + 4 + 5 + 4 + 3 + 2 + 1 + 0 + (-1) = 25 - 1 = 24$ ✓
+
+## Step 5: Verify n = 12 is minimal
+
+For smaller even values:
+- $n = 2$: impossible (would need identical values)
+- $n = 4$: max sum with 0 is $0 + 1 + 0 + (-1) = 0$ (too small)
+- $n = 6$: max sum is $0 + 1 + 2 + 1 + 0 + (-1) = 3$ (too small)
+- $n = 8$: max sum is $0 + 1 + 2 + 3 + 2 + 1 + 0 + (-1) = 8$ (too small)
+- $n = 10$: achieves maximum sum of 25, cannot reduce to exactly 24 while maintaining ±1 differences
+- $n = 12$: achieves exactly 24 ✓
+
+## Final Answer
+
+**12**

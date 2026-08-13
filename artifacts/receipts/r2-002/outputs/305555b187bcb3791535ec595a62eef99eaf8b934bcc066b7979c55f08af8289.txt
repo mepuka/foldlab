@@ -1,0 +1,29 @@
+# Solution Plan
+
+1. **Set up the constraint equations**
+   - Let $s = \alpha + \beta + \gamma$ and $p = \alpha\beta\gamma$
+   - Express $\alpha^2 + \beta^2 + \gamma^2 = s^2 - 2(\alpha\beta + \beta\gamma + \gamma\alpha)$
+   - From Vieta's formulas: $s^2 - 2(\alpha\beta + \beta\gamma + \gamma\alpha) = \frac{n}{6}$
+
+2. **Use the cubic constraint on $\alpha, \beta, \gamma$**
+   - If $\alpha, \beta, \gamma$ are roots of $t^3 - st^2 + qt - p = 0$ (where $q = \alpha\beta + \beta\gamma + \gamma\alpha$)
+   - Then $p^2 = 400$, so $p = \pm 20$
+
+3. **Count possible values of $s$**
+   - For each choice of sign for $p \in \{20, -20\}$, the constraint $s^2 - 2q = \frac{n}{6}$ determines $q$ once $s$ is chosen
+   - The discriminant and reality conditions on roots of $t^3 - st^2 + qt - p = 0$ restrict which values of $s$ are valid
+   - Exactly 7 distinct values of $s$ must satisfy all constraints
+
+4. **Analyze the discriminant condition**
+   - The discriminant of $t^3 - st^2 + qt - p = 0$ must permit the existence of roots
+   - This gives polynomial inequalities in $s$ and $n$
+   - The boundary cases (where discriminant = 0) identify critical values of $n$
+
+5. **Determine the greatest $n$**
+   - Find the range of $n$ values for which exactly 7 different real values of $s$ exist
+   - This occurs in an interval $[n_{\min}, n_{\max}]$
+   - Return $n_{\max}$ as the answer
+
+6. **Verify the answer**
+   - Check that at $n = n_{\max}$, there are exactly 7 possible values for $\alpha + \beta + \gamma$
+   - Confirm that for $n > n_{\max}$, there are fewer than 7 possible values

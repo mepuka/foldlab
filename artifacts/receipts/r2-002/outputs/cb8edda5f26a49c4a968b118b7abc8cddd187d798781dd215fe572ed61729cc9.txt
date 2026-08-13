@@ -1,0 +1,35 @@
+# Solution Plan for Partitioning an 8×8 Square into 3 Rectangles
+
+## Step 1: Identify Partition Structure Types
+Determine all topologically distinct ways to arrange 3 rectangles:
+- **Type A:** Two rectangles in one row/column, one in another (L-shaped arrangement)
+- **Type B:** All three rectangles in a linear strip (horizontal or vertical)
+- **Type C:** Other configurations (nested or more complex arrangements)
+
+## Step 2: Enumerate Horizontal Strip Partitions
+- For each way to divide the 8×8 square with 2 horizontal lines at heights h₁ and h₂ (where 0 < h₁ < h₂ < 8)
+- This creates 3 horizontal strips of heights h₁, (h₂ - h₁), and (8 - h₂)
+- Count: C(7,2) = 21 configurations
+
+## Step 3: Enumerate Vertical Strip Partitions
+- For each way to divide the 8×8 square with 2 vertical lines at positions v₁ and v₂ (where 0 < v₁ < v₂ < 8)
+- This creates 3 vertical strips of widths v₁, (v₂ - v₁), and (8 - v₂)
+- Count: C(7,2) = 21 configurations
+
+## Step 4: Enumerate L-Shaped and Two-Row/Column Partitions
+- For each valid split point that creates a rectangle and divides remainder into 2 rectangles
+- Consider: one vertical split creating a left/right division, then horizontal split on the larger piece
+- Consider: one horizontal split creating a top/bottom division, then vertical split on the larger piece
+- Systematically count valid configurations for each split point
+
+## Step 5: Enumerate Other Valid Configurations
+- Check for configurations where rectangles don't align in simple strips
+- Verify each partition completely covers 8×8 with no gaps or overlaps
+
+## Step 6: Sum All Cases
+Add counts from Steps 2, 3, 4, and 5 to get the total number of distinct partitions.
+
+## Step 7: Verify Against Constraints
+- Confirm each counted partition uses exactly 3 rectangles
+- Verify each rectangle has positive integer dimensions
+- Ensure no overlaps and complete coverage

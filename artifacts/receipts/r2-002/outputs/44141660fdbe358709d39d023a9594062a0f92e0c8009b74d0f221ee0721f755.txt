@@ -1,0 +1,26 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Grid and Positions:**
+- Grid dimensions: $6 \times 6$ (36 cells total)
+- Kelvin's starting position: bottom-left cell
+- Kelvin's target position: top-right cell
+
+**Movement Rules:**
+- Kelvin can move either up one cell or right one cell
+- Kelvin must take a path that avoids a raccoon
+
+**Raccoon Placement:**
+- The raccoon is placed uniformly at random in one of the 36 cells
+- Each cell has probability $\frac{1}{36}$ of containing the raccoon
+
+**Special Cases:**
+- If the raccoon is in the bottom-left cell: 0 valid paths (Kelvin cannot start)
+- If the raccoon is in the top-right cell: 0 valid paths (Kelvin cannot finish)
+
+## What is Being Asked
+
+Compute the **expected number of distinct paths** Kelvin can take from the bottom-left cell to the top-right cell while avoiding the randomly-placed raccoon.
+
+Formally: $E[\text{number of valid paths}] = \sum_{c=1}^{36} P(\text{raccoon in cell } c) \cdot (\text{number of paths avoiding cell } c)$

@@ -1,0 +1,77 @@
+# Solution: Finding Valid Values of c for |x² + ax + b| = c with Exactly 3 Integer Solutions
+
+## What I'm Calculating
+
+I need to find how many integer values of $c$ with $1 \le c \le 2025$ allow us to choose integers $a$ and $b$ such that $|x^2 + ax + b| = c$ has exactly 3 integer solutions.
+
+## Complete Solution
+
+**Step 1: Understand the equation structure**
+
+The equation $|f(x)| = c$ where $f(x) = x^2 + ax + b$ is equivalent to:
+- $f(x) = c$, OR
+- $f(x) = -c$
+
+For exactly 3 total integer solutions, one equation must have 1 integer solution (tangency at vertex) and the other must have 2 integer solutions.
+
+**Step 2: Set up vertex conditions**
+
+For tangency at an integer point, the vertex must be at an integer x-coordinate:
+- Vertex location: $x = -\frac{a}{2}$
+- For integer location: Let $a = 2m$ (so $a$ is even)
+- Vertex is at $x = -m$ with value: $f(-m) = (-m)^2 + 2m(-m) + b = b - m^2$
+
+**Step 3: Analyze the tangency cases**
+
+**Case 1:** If $c = b - m^2$ (tangency at $c$), then $-c$ must have discriminant $\Delta > 0$ to get 2 solutions. But $-c < 0 < c = b - m^2$ requires $b > m^2$, which contradicts having $c > 0$. This case fails.
+
+**Case 2:** If $-c = b - m^2$ (tangency at $-c$), then $c = m^2 - b$ and we need $f(x) = c$ to have 2 integer solutions.
+
+**Step 4: Solve for integer solutions in Case 2**
+
+With $c = m^2 - b$, the equation $f(x) = c$ becomes:
+$$x^2 + 2mx + b = m^2 - b$$
+$$x^2 + 2mx + (2b - m^2) = 0$$
+
+The solutions are:
+$$x = \frac{-2m \pm \sqrt{4m^2 - 4(2b - m^2)}}{2} = -m \pm \sqrt{m^2 - 2b + m^2} = -m \pm \sqrt{2m^2 - 2b}$$
+
+$$x = -m \pm \sqrt{2(m^2 - b)} = -m \pm \sqrt{2c}$$
+
+**Step 5: Determine when solutions are integers**
+
+For both solutions to be integers, $\sqrt{2c}$ must be an integer.
+
+Let $\sqrt{2c} = n$ for positive integer $n$.
+
+Then: $2c = n^2$, so $c = \frac{n^2}{2}$
+
+For $c$ to be an integer, $n$ must be even. Let $n = 2j$ for positive integer $j$.
+
+Then: $$c = \frac{(2j)^2}{2} = \frac{4j^2}{2} = 2j^2$$
+
+**Step 6: Count valid values**
+
+With $1 \le c \le 2025$:
+$$1 \le 2j^2 \le 2025$$
+$$j^2 \le 1012.5$$
+$$j \le 31$$
+
+Verification:
+- $j = 31$: $c = 2(31)^2 = 2(961) = 1922 \le 2025$ ✓
+- $j = 32$: $c = 2(32)^2 = 2(1024) = 2048 > 2025$ ✗
+
+**Step 7: Verify with a concrete example**
+
+Let $c = 2$ (where $j = 1$), $m = 0$, so $a = 0$, $b = -2$:
+
+Equation: $|x^2 - 2| = 2$
+- $x^2 - 2 = 2 \Rightarrow x = \pm 2$ (2 integer solutions)
+- $x^2 - 2 = -2 \Rightarrow x = 0$ (1 integer solution)
+- Total: 3 integer solutions ✓
+
+The valid values are: $c \in \{2, 8, 18, 32, 50, 72, 98, \ldots, 1922\}$
+
+These correspond to $j \in \{1, 2, 3, 4, 5, 6, 7, \ldots, 31\}$.
+
+**FINAL ANSWER: 31**

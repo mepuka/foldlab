@@ -1,0 +1,41 @@
+# Verification of Solution
+
+## Step 1-2: Coordinate System and Key Points
+Setting up the square $ABCD$ with side length 12:
+- $A = (0, 0)$, $B = (12, 0)$, $C = (12, 12)$, $D = (0, 12)$ ✓
+- $W = (0, 4)$ on $\overline{AD}$ with $|AW| = 4$ ✓
+- $X = (5, 0)$ on $\overline{AB}$ with $|AX| = 5$ ✓
+
+## Step 3: Side Length Calculation
+$$|WX| = \sqrt{(5-0)^2 + (0-4)^2} = \sqrt{25 + 16} = \sqrt{41}$$ ✓
+
+## Step 4: Perpendicular Vector
+To rotate vector $\overrightarrow{WX} = (5, -4)$ by 90° counterclockwise:
+- Formula: $(a, b) \to (-b, a)$
+- Result: $(5, -4) \to (4, 5)$ ✓
+- Verify length: $\sqrt{4^2 + 5^2} = \sqrt{41}$ ✓
+
+## Step 5: Point Y Location
+$$Y = X + (4, 5) = (5, 0) + (4, 5) = (9, 5)$$
+- Check: $0 < 9 < 12$ and $0 < 5 < 12$ ✓
+
+**Verify square properties:**
+- $|XY| = \sqrt{(9-5)^2 + (5-0)^2} = \sqrt{16 + 25} = \sqrt{41}$ ✓
+
+## Step 6: Area of Triangle BCY
+
+**Method 1 (Shoelace Formula):**
+$$\text{Area} = \frac{1}{2}|12(12-5) + 12(5-0) + 9(0-12)|$$
+$$= \frac{1}{2}|84 + 60 - 108| = \frac{1}{2}|36| = 18$$
+
+**Method 2 (Base-Height, verification):**
+- Points $B = (12, 0)$ and $C = (12, 12)$ lie on the vertical line $x = 12$
+- Base $|BC| = 12$
+- Height = distance from $Y = (9, 5)$ to line $x = 12$ is $|12 - 9| = 3$
+- Area $= \frac{1}{2} \times 12 \times 3 = 18$ ✓
+
+Both methods confirm the answer.
+
+**Final answer (single integer only):**
+
+18

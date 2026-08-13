@@ -1,0 +1,29 @@
+# Plan for Solving the Pentagon Area Problem
+
+1. **Set up a coordinate system**
+   - Place $H$ at the origin $(0, 0)$
+   - Place $O$ at $(20, 0)$ using $HO = 20$
+
+2. **Find the position of $R$**
+   - Use $\angle HOR = 135°$ to determine the direction from $O$ to $R$
+   - The ray from $O$ makes an angle of $135°$ with ray $OH$
+   - Let $OR = r$ (unknown); then $R = O + r(\cos 135°, \sin 135°)$
+
+3. **Find the position of $S$**
+   - Use $\angle ORS = 90°$ to constrain the direction from $R$ to $S$
+   - The ray from $R$ to $S$ is perpendicular to the ray from $R$ to $O$
+   - Use the constraint $OS = 10$ to find $S$'s exact position
+   - This gives us an equation to solve for $r$ and $RS$
+
+4. **Find the position of $E$**
+   - Use $\angle RSE = 135°$ to determine the direction from $S$ to $E$
+   - Use $SE = 26$ to place $E$ at distance 26 from $S$
+   - Verify that $\angle SEH = 90°$ is satisfied (this confirms consistency)
+
+5. **Verify the pentagon is valid**
+   - Check that all five vertices are in convex position
+   - Confirm all angle and distance constraints are met
+
+6. **Calculate the area**
+   - Use the shoelace formula with the coordinates of $H, O, R, S, E$:
+   $$\text{Area} = \frac{1}{2}|x_1(y_2-y_5) + x_2(y_3-y_1) + x_3(y_4-y_2) + x_4(y_5-y_3) + x_5(y_1-y_4)|$$

@@ -1,0 +1,25 @@
+# Verification of Solution
+
+Let me verify that $a = 15$ and $d = 14$ satisfy all the conditions.
+
+## Verification
+
+**Check 1: Distance constraint**
+$$AD = a + 10 + d = 15 + 10 + 14 = 39$$ ✓
+
+**Check 2: Angle condition $\angle AED = 120°$**
+
+With $a = 15$ and $d = 14$:
+- $u = a + 5 = 20$
+- $v = 34 - a = 19$
+
+Computing the dot product equation:
+$$2uv - 150 = \sqrt{u^2 + 75}\sqrt{v^2 + 75}$$
+
+**Left side:**
+$$2(20)(19) - 150 = 760 - 150 = 610$$
+
+**Right side:**
+$$\sqrt{400 + 75}\sqrt{361 + 75} = \sqrt{475}\sqrt{436}$$
+
+We need to verify: $610^2 = 475 \times

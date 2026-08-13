@@ -1,0 +1,99 @@
+# Complete Solution: Minimum Operations to Make All Numbers Equal
+
+## 1. Establish the Lower Bound (Necessity)
+
+### Step 1.1: Prove minimum ≥ 2025 operations
+
+**Initial setup:**
+- We start with 2026 distinct numbers on the blackboard
+- Goal: make all numbers equal (1 distinct value)
+
+**Key observation about operations:**
+- Each operation: replace one number with |max - min|
+- This replaces exactly one number with a new value
+- Maximum reduction in distinct values per operation: 1 (when the new value wasn't already present)
+
+**Counting argument:**
+- Initial distinct values: 2026
+- Final distinct values: 1
+- Minimum reduction needed: 2026 - 1 = 2025
+- Since each operation reduces distinct values by at most 1:
+
+$$\text{Minimum operations} \geq 2025$$
+
+---
+
+## 2. Construct an Explicit Strategy (Sufficiency)
+
+### Step 2.1: Define the algorithm
+
+**Starting configuration:** $\{1, 2, 3, \ldots, 2026\}$
+
+**Strategy:** In each operation, replace max with |max - min|
+
+### Step 2.2: Execute the algorithm step-by-step
+
+**Operation 1:**
+- Current set: $\{1, 2, 3, \ldots, 2026\}$
+- max = 2026, min = 1
+- Replace 2026 with |2026 - 1| = 2025
+- New set: $\{1, 2, 3, \ldots, 2025\}$ (2025 distinct values)
+
+**Operation 2:**
+- Current set: $\{1, 2, 3, \ldots, 2025\}$
+- max = 2025, min = 1
+- Replace 2025 with |2025 - 1| = 2024
+- New set: $\{1, 2, 3, \ldots, 2024\}$ (2024 distinct values)
+
+**Operation 3:**
+- Current set: $\{1, 2, 3, \ldots, 2024\}$
+- max = 2024, min = 1
+- Replace 2024 with |2024 - 1| = 2023
+- New set: $\{1, 2, 3, \ldots, 2023\}$ (2023 distinct values)
+
+**Pattern continues...**
+
+**Operation 2024:**
+- Current set: $\{1, 2\}$
+- max = 2, min = 1
+- Replace 2 with |2 - 1| = 1
+- New set: $\{1, 1\}$ (1 distinct value)
+
+**Operation 2025:**
+- Current set: $\{1, 1, \ldots, 1\}$ (all 2026 numbers equal 1)
+- max = 1, min = 1
+- |max - min| = 0
+- We can stop (operation count = 2025)
+
+### Step 2.3: Verify key properties
+
+✓ **Each operation reduces distinct values by exactly 1:** The replacement value (k-1) never appears in $\{1, 2, \ldots, k-1\}$ before being introduced
+
+✓ **All numbers eventually equal:** After operation 2025, all 2026 positions contain 1
+
+✓ **No further operations needed:** When all values are equal, max = min, so the operation cannot produce anything new
+
+---
+
+## 3. Verify Exactly 2025 Operations
+
+| Operation | Distinct Values Before | max | min | Replacement | Distinct Values After |
+|-----------|------------------------|-----|-----|-------------|----------------------|
+| 1 | 2026 | 2026 | 1 | 2025 | 2025 |
+| 2 | 2025 | 2025 | 1 | 2024 | 2024 |
+| 3 | 2024 | 2024 | 1 | 2023 | 2023 |
+| ⋮ | ⋮ | ⋮ | ⋮ | ⋮ | ⋮ |
+| 2024 | 2 | 2 | 1 | 1 | 1 |
+
+**Total operations:** 2024 + 1 = **2025** ✓
+
+---
+
+## 4. Final Answer
+
+$$\boxed{2025}$$
+
+**Justification:**
+- **Lower bound:** Reducing from 2026 distinct values to 1 requires at least 2025 reductions
+- **Upper bound:** The algorithm achieves exactly 2025 operations
+- **Conclusion:** The minimum number of operations is exactly **2025**

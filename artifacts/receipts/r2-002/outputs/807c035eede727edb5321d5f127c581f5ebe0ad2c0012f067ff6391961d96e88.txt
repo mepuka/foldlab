@@ -1,0 +1,58 @@
+# Solution
+
+## Step 1: Define variables
+- Patrick's speed: $p$ mph
+- Tanya's speed: $p + 2$ mph
+- Jose's speed: $p + 9$ mph
+
+## Step 2: Set up equations
+Let $t$ = time until they all arrive (measured from when Patrick starts)
+- Patrick travels: $d = p \cdot t$
+- Tanya travels: $d = (p+2)(t-1)$ (starts 1 hour later)
+- Jose travels: $d = (p+9)(t-2)$ (starts 2 hours later)
+
+## Step 3: Equate Patrick's and Tanya's distances
+$$p \cdot t = (p+2)(t-1)$$
+$$pt = pt - p + 2t - 2$$
+$$0 = -p + 2t - 2$$
+$$p = 2t - 2 \quad \text{...(1)}$$
+
+## Step 4: Equate Patrick's and Jose's distances
+$$p \cdot t = (p+9)(t-2)$$
+$$pt = pt - 2p + 9t - 18$$
+$$0 = -2p + 9t - 18$$
+$$p = \frac{9t - 18}{2} \quad \text{...(2)}$$
+
+## Step 5: Solve the system
+Set equation (1) equal to equation (2):
+$$2t - 2 = \frac{9t - 18}{2}$$
+
+Multiply both sides by 2:
+$$4t - 4 = 9t - 18$$
+$$14 = 5t$$
+$$t = \frac{14}{5}$$
+
+Substitute back into equation (1):
+$$p = 2\left(\frac{14}{5}\right) - 2 = \frac{28}{5} - \frac{10}{5} = \frac{18}{5}$$
+
+**Verification:** $p = \frac{9(\frac{14}{5}) - 18}{2} = \frac{\frac{126}{5} - \frac{90}{5}}{2} = \frac{36}{10} = \frac{18}{5}$ ✓
+
+## Step 6: Calculate the distance
+$$d = p \cdot t = \frac{18}{5} \cdot \frac{14}{5} = \frac{252}{25}$$
+
+**Verify with Tanya:** $(p+2)(t-1) = \left(\frac{28}{5}\right)\left(\frac{9}{5}\right) = \frac{252}{25}$ ✓
+
+**Verify with Jose:** $(p+9)(t-2) = \left(\frac{63}{5}\right)\left(\frac{4}{5}\right) = \frac{252}{25}$ ✓
+
+## Step 7: Check if in lowest terms
+- $252 = 2^2 \cdot 3^2 \cdot 7$
+- $25 = 5^2$
+
+Since $\gcd(252, 25) = 1$, the fraction is already in lowest terms.
+
+Therefore: $m = 252$ and $n = 25$
+
+## Step 8: Final answer
+$$m + n = 252 + 25 = 277$$
+
+**277**

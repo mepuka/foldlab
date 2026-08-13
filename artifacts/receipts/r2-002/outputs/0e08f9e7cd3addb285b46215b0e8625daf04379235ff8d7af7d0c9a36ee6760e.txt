@@ -1,0 +1,18 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **n is a positive integer**
+2. **n has at least 6 positive integer divisors**
+3. **The 6th largest divisor of n is 6**
+
+## What is Being Asked
+
+Find the sum of all positive integers $n$ satisfying all three conditions above.
+
+---
+
+## Key Clarifications
+
+- The "6th largest divisor" means: if we list all divisors of $n$ in descending order, the 6th element in that list equals 6
+- We need to find every such $n$ and add them together

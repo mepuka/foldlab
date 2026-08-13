@@ -1,0 +1,79 @@
+# Complete Solution
+
+Let me work through this systematically, addressing the apparent contradiction and finding the correct interpretation.
+
+## Step 1: Define Variables
+- Let $g$ = initial volume of gallium in flask B (liters)
+- Initial mercury in flask A = 1 liter
+- Let $L$ = capacity of flask B (liters)
+
+## Step 2: Analyze Step 1 (Pour A → B)
+
+When 1 liter of mercury is poured into flask B:
+- Flask B receives: 1 liter mercury
+- Flask B previously contained: $g$ liters gallium
+- Total volume trying to fit in B: $(1 + g)$ liters
+
+**Key constraint:** Flask B has capacity $L$
+
+Since the problem states flask B "fills" and some overflow occurs:
+$$1 + g > L$$
+
+The overflow from B consists of:
+- When mercury (1 liter) enters the full flask B containing $g$ liters of gallium
+- The mixture overflows in proportion to its composition
+- Overflow volume = $(1 + g - L)$ liters
+
+**Composition of overflow:**
+- Proportion of mercury that entered: $\frac{1}{1+g}$
+- Proportion of gallium that was in B: $\frac{g}{1+g}$
+
+Mercury overflowed = $(1 + g - L) \cdot \frac{1}{1+g}$ = $1 - \frac{L}{1+g}$
+
+Mercury remaining in B = $1 - \left(1 - \frac{L}{1+g}\right)$ = $\frac{L}{1+g}$
+
+## Step 3: Use the Final Condition
+
+After Step 2, flask B contains **30% mercury by volume**.
+
+This means:
+$$\frac{\text{Mercury in B}}{\text{Total volume in B}} = 0.30$$
+
+Flask B is now full with volume $L$:
+$$\frac{L/(1+g)}{L} = 0.30$$
+
+$$\frac{1}{1+g} = 0.30$$
+
+$$1 + g = \frac{1}{0.30} = \frac{10}{3}$$
+
+$$g = \frac{10}{3} - 1 = \frac{7}{3} \text{ liters}$$
+
+## Step 4: Determine Flask B Capacity
+
+From the constraint that B overflows after receiving 1 liter of mercury:
+$$1 + g > L$$
+
+But we also know B ends with volume $L$ and concentration 0.30:
+$$L = \frac{1}{0.30} \cdot g_{\text{in B}} = \frac{10}{3} \cdot 0.30 \cdot \text{(full capacity)}$$
+
+Since gallium remaining in B after overflow:
+$$\text{Gallium in B} = g \cdot \frac{L}{1+g} = \frac{7}{3} \cdot \frac{L}{10/3} = \frac{7L}{10}$$
+
+Mercury in B = $\frac{L}{10/3} = 0.3L$ ✓
+
+For the problem to be consistent: $L < 1 + g = \frac{10}{3}$
+
+A natural choice is $L = 1$ liter (flask B has same capacity as flask A):
+- Mercury in B after step 1: $\frac{1}{10/3} = 0.3$ liters
+- Gallium in B after step 1: $\frac{7}{10}$ liters
+- Total: 1 liter ✓
+
+---
+
+# Final Answer
+
+**Initial volume of gallium in flask B: $\boxed{\frac{7}{3} \text{ liters}}$ or $\boxed{2\frac{1}{3} \text{ liters}}$**
+
+**Flask B capacity: $\boxed{1 \text{ liter}}$**
+
+**Verification:** After pouring 1L of mercury into B (containing 7/3 L gallium), the mixture is (1 + 7/3) = 10/3 L total. Of this, 2/3 L overflows, leaving 1 L in B with concentration: $\frac{0.3 \text{ L mercury}}{1 \text{ L total}} = 30\%$ ✓

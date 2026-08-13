@@ -1,0 +1,69 @@
+# Solution: Finding |AB - CD|
+
+## Step 1: Set up coordinates and constraints
+
+Place points on a line:
+- $A$ at position $0$
+- $B$ at position $x$ where $AB = x$
+- $C$ at position $x + 10$ (since $BC = 10$)
+- $D$ at position $x + 10 + y$ where $CD = y$
+
+Since $AD = 39$:
+$$x + 10 + y = 39$$
+$$\boxed{x + y = 29}$$
+
+## Step 2: Position point E using the equilateral triangle
+
+Triangle $BEC$ is equilateral with side length 10. Setting up 2D coordinates:
+- $B$ at $(x, 0)$
+- $C$ at $(x + 10, 0)$
+- $E$ at $(x + 5, 5\sqrt{3})$ (at perpendicular distance $5\sqrt{3}$ from midpoint of $BC$)
+
+Verification: 
+- $BE^2 = (5)^2 + (5\sqrt{3})^2 = 25 + 75 = 100$, so $BE = 10$ ✓
+- $EC^2 = (5)^2 + (5\sqrt{3})^2 = 100$, so $EC = 10$ ✓
+
+## Step 3: Calculate distances AE and ED
+
+With $A$ at $(0, 0)$:
+$$AE^2 = (x+5)^2 + 75$$
+
+With $D$ at $(x + 10 + y, 0)$:
+$$ED^2 = (x + 10 + y - x - 5)^2 + 75 = (y + 5)^2 + 75$$
+
+## Step 4: Apply Law of Cosines with $\angle AED = 120°$
+
+$$AD^2 = AE^2 + ED^2 - 2(AE)(ED)\cos(120°)$$
+
+Since $\cos(120°) = -\frac{1}{2}$:
+$$1521 = AE^2 + ED^2 + AE \cdot ED$$
+
+Expanding:
+$$1521 = [(x+5)^2 + 75] + [(y+5)^2 + 75] + AE \cdot ED$$
+$$1521 = (x+5)^2 + (y+5)^2 + 150 + AE \cdot ED$$
+
+Expanding $(x+5)^2 + (y+5)^2$:
+$$(x+5)^2 + (y+5)^2 = x^2 + y^2 + 10(x+y) + 50 = x^2 + y^2 + 10(29) + 50 = x^2 + y^2 + 340$$
+
+Therefore:
+$$AE \cdot ED = 1521 - 340 - 150 - (x^2 + y^2) = 1031 - (x^2 + y^2)$$
+
+## Step 5: Solve using the constraint $(AE \cdot ED)^2$
+
+$$[(x+5)^2 + 75][(y+5)^2 + 75] = [1031 - (x^2 + y^2)]^2$$
+
+Let $s = x^2 + y^2$ and $p = xy$. From $x + y = 29$:
+$$s = 841 - 2p$$
+
+Expanding the left side:
+$$(x+5)^2(y+5)^2 + 75[(x+5)^2 + (y+5)^2] + 5625$$
+$$= [p + 5(29) + 25]^2 + 75[s + 340] + 5625$$
+$$= (p + 170)^2 + 75s + 25500 + 5625$$
+
+Setting equal:
+$$[1031 - s]^2 = (p + 170)^2 + 75s + 31125$$
+
+Substituting $s = 841 - 2p$ and expanding:
+$$[1031 - 841 + 2p]^2 = (p + 170)^2 + 75(841 - 2p) + 31125$$
+$$[190 + 2p]^2 = p^2 + 340p + 28900 + 63075 - 150p + 31125$$
+$$36100 + 760p + 4p^2 =

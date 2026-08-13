@@ -1,0 +1,80 @@
+# Solution: Finding Fixed Points of f(n)
+
+## Step 1: Understand the function f(n)
+
+For a number n with digits, f(n) converts n to base (d+1), where d is the greatest digit in n.
+
+## Step 2: One-Digit Numbers (n = 1 to 9)
+
+For digit $d$: greatest digit is $d$, so base $b = d+1$
+
+In base $d+1$, the digit $d$ is represented as just "$d$" (a single digit in that base).
+
+Therefore: $f(d) = d$ for all single digits.
+
+**Count: 9 fixed points** ✓
+
+---
+
+## Step 3: Two-Digit Numbers (n = 10 to 99)
+
+Write $n = 10a + c$ where $a \in \{1,\ldots,9\}$ and $c \in \{0,\ldots,9\}$
+
+Let $d = \max(a,c)$ and base $b = d+1$
+
+In base $b$: $f(n) = a \cdot b + c = a(d+1) + c$
+
+**Setting up the equation:**
+$$10a + c = a(d+1) + c$$
+$$10a = a(d+1)$$
+$$a(10 - d - 1) = 0$$
+$$a(9 - d) = 0$$
+
+Since $a > 0$, we need $d = 9$.
+
+**Finding numbers where greatest digit is 9:**
+- Either $a = 9$ or $c = 9$ (or both)
+- If $a = 9$: $c \in \{0,1,2,\ldots,9\}$ → 10 numbers (90-99)
+- If $c = 9$ and $a \neq 9$: $a \in \{1,2,\ldots,8\}$ → 8 numbers (19, 29, ..., 89)
+
+**Count: 18 fixed points** ✓
+
+---
+
+## Step 4: Three-Digit Numbers (n = 100 to 999)
+
+Write $n = 100a + 10b + c$ where $a \in \{1,\ldots,9\}$, $b,c \in \{0,\ldots,9\}$
+
+Let $d = \max(a,b,c)$ and base $= d+1$
+
+In base $d+1$: $f(n) = a(d+1)^2 + b(d+1) + c$
+
+**Setting up the equation:**
+$$100a + 10b + c = a(d+1)^2 + b(d+1) + c$$
+$$100a + 10b = a(d+1)^2 + b(d+1)$$
+$$a[100 - (d+1)^2] + b[10 - (d+1)] = 0$$
+$$a[100 - (d+1)^2] = b(d+1-10)$$
+$$a[100 - (d+1)^2] = -b(10-d-1)$$
+
+**Checking values of d:**
+
+- **d = 9**: $a[100-100] = -b(0)$ → $0 = 0$ ✓ (always satisfied)
+  - Any $(a,b,c)$ with $\max(a,b,c) = 9$
+  - $a \in \{1,\ldots,9\}, b \in \{0,\ldots,9\}, c \in \{0,\ldots,9\}$ with max = 9
+  - Total: $10 \times 10 \times 10 - 9 \times 9 \times 9 = 1000 - 729 = 271$
+
+- **d = 8**: $a[100-81] = -b(1)$ → $19a = -b$
+  - Since $a,b \geq 0$, this requires $a = b = 0$
+  - But $a \geq 1$, so no solutions
+
+- **d ≤ 7**: $(d+1)^2 \leq 64$, so $100-(d+1)^2 \geq 36 > 0$
+  - Would need $a[100-(d+1)^2] = -b(10-d-1)$ with both sides having opposite signs
+  - Since $a > 0$ and we need the equation to balance with $b \geq 0$, no solutions
+
+**Count: 271 fixed points** ✓
+
+---
+
+## Step 5: Final Count
+
+$$\text{Total} = 9 + 18 + 271 = \boxed{298}$$

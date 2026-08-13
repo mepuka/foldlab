@@ -1,0 +1,53 @@
+# Solution: Finding Moons with All Three Characteristics
+
+## Step 1: Define Variables for the 7 Regions
+
+In a three-set Venn diagram, there are 7 non-overlapping regions:
+- Let x = B ∩ I ∩ L (blue AND icy AND large)
+- Let a = Blue only
+- Let b = Icy only  
+- Let c = Large only
+- Let d = Blue ∩ Icy (not large)
+- Let e = Blue ∩ Large (not icy)
+- Let f = Icy ∩ Large (not blue)
+
+## Step 2: Assign Known Quantities
+
+**"Blue but not icy"** = a + e = 10
+- (This includes: blue only + blue and large but not icy)
+
+**"Icy but not large"** = b + d = 8
+- (This includes: icy only + icy and blue but not large)
+
+**"Large but not blue"** = c + f = 6
+- (This includes: large only + large and icy but not blue)
+
+## Step 3: Sum the Known Regions
+
+Adding all three constraints:
+(a + e) + (b + d) + (c + f) = 10 + 8 + 6
+
+**a + b + c + d + e + f = 24**
+
+## Step 4: Apply the Total Constraint
+
+All 29 moons must be distributed across all 7 regions:
+
+a + b + c + d + e + f + x = 29
+
+## Step 5: Solve for x
+
+Substituting the sum from Step 3:
+
+24 + x = 29
+
+**x = 5**
+
+## Verification
+- Moons with exactly one or two characteristics: 24
+- Moons with all three characteristics: 5
+- Total: 24 + 5 = 29 ✓
+
+---
+
+**5**

@@ -1,0 +1,93 @@
+# Solution: Finding Possible Values of c
+
+## Step 1: Identify the Tangency Requirement
+
+**What:** For exactly 3 integer solutions total, one equation must have exactly 1 integer solution (tangent to vertex) and the other must have exactly 2 integer solutions.
+
+**Calculation:** A horizontal line $y = k$ is tangent to the parabola when the discriminant equals zero: $a^2 - 4(b-k) = 0$, giving vertex height $k = b - \frac{a^2}{4}$.
+
+**Verification:** This is correct by the tangency condition for parabolas.
+
+## Step 2: Set Up Vertex Conditions
+
+**What:** Establish integer vertex coordinates.
+
+**Calculation:** 
+- Vertex occurs at $x = -\frac{a}{2}$
+- For integer x-coordinate, let $a = 2m$ for integer $m$
+- Vertex is at $(-m, b - m^2)$
+
+**Verification:** Substituting: $f(-m) = m^2 - 2m^2 + b = b - m^2$ ✓
+
+## Step 3: Express the Intersection Equation
+
+**What:** For the line $y = k$, find when it intersects the parabola at integer points.
+
+**Calculation:** 
+$$x^2 + 2mx + b = k$$
+$$x^2 + 2mx + (b-k) = 0$$
+$$x = -m \pm \sqrt{m^2 - (b-k)} = -m \pm \sqrt{k - b + m^2}$$
+
+For integer solutions: $k - b + m^2 = d^2$ for non-negative integer $d$.
+
+So $k = b - m^2 + d^2$, giving solutions $x = -m \pm d$ (both integers).
+
+**Verification:** When $d = 0$: one solution. When $d > 0$: two solutions. ✓
+
+## Step 4: Apply to Cases
+
+**What:** Determine which of $\{c, -c\}$ is tangent and which intersects at 2 points.
+
+**Case:** For 3 total solutions:
+- Tangent case: $-c = b - m^2 + 0^2 = b - m^2$ → $b = m^2 - c$
+- Two-point case: $c = b - m^2 + d^2$ for some positive integer $d$
+
+**Calculation:**
+$$c = (m^2 - c) - m^2 + d^2$$
+$$c = -c + d^2$$
+$$d^2 = 2c$$
+
+**Verification:** This is the key constraint: $2c$ must be a perfect square.
+
+## Step 5: Determine Constraint on c
+
+**What:** Find when $2c = d^2$ has solutions for positive integer $d$.
+
+**Calculation:** For $2c = d^2$ with $d$ an integer:
+- $d$ must be even (so $d^2$ is divisible by 4)
+- Let $d = 2e$ for positive integer $e$
+- Then $2c = 4e^2$, so $c = 2e^2$
+
+**Verification:** $c$ must be of the form $2e^2$ where $e \in \{1, 2, 3, ...\}$ ✓
+
+## Step 6: Count Valid Values
+
+**What:** Count how many values $c = 2e^2$ satisfy $1 \leq c \leq 2025$.
+
+**Calculation:**
+$$2e^2 \leq 2025$$
+$$e^2 \leq 1012.5$$
+$$e \leq 31.8...$$
+
+So $e \in \{1, 2, 3, ..., 31\}$
+
+Valid values: $c \in \{2(1)^2, 2(2)^2, 2(3)^2, ..., 2(31)^2\} = \{2, 8, 18, 32, 50, ..., 1922\}$
+
+**Verification:** 
+- For $e = 31$: $c = 2(961) = 1922 \leq 2025$ ✓
+- For $e = 32$: $c = 2(1024) = 2048 > 2025$ ✗
+
+## Step 7: Verify by Substitution
+
+**Check:** For $c = 2$, we have $d^2 = 4$, so $d = 2$.
+- Choose $e = 1$, $m = 0$, $b = 0 - 2 = -2$, $a = 0$
+- Parabola: $y = x^2 - 2$
+- Equation $x^2 - 2 = 2$: $x^2 = 4$ → $x = \pm 2$ (2 solutions) ✓
+- Equation $x^2 - 2 = -2$: $x^2 = 0$ → $x = 0$ (1 solution) ✓
+- Total: 3 solutions ✓
+
+**Final count:** The number of integers $e$ from 1 to 31 is **31**.
+
+---
+
+**FINAL ANSWER: 31**

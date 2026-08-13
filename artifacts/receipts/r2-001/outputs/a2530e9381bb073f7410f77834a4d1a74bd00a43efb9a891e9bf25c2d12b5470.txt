@@ -1,0 +1,84 @@
+# Detailed Solution: Finding Valid Values of c for |x² + ax + b| = c with Exactly 3 Integer Solutions
+
+## Step 1: Set Up the Problem
+
+The equation |x² + ax + b| = c is equivalent to:
+- x² + ax + b = c, **or**
+- x² + ax + b = -c
+
+For exactly 3 total integer solutions, we need:
+- **One equation has 1 solution** (tangency at vertex), **and**
+- **One equation has 2 solutions**
+
+## Step 2: Apply Vertex Tangency Condition
+
+For tangency at the vertex with integer x-coordinate:
+- Vertex is at x = -a/2
+- For integer vertex: **a = 2m** (even), so vertex is at x = -m
+- Vertex value: f(-m) = m² - 2m² + b = **b - m²**
+
+For exactly 1 solution at the vertex:
+- Either c = b - m² **or** -c = b - m²
+
+## Step 3: Analyze Case 2 (the viable case)
+
+**Case:** -c = b - m² (tangency at vertex value b - m²)
+
+Then: **c = m² - b** (so c > 0 requires m² > b)
+
+For x² + 2mx + b = c to have exactly 2 integer solutions:
+$$x^2 + 2mx + (b - c) = 0$$
+$$x^2 + 2mx + (b - (m² - b)) = 0$$
+$$x^2 + 2mx + (2b - m²) = 0$$
+
+**Discriminant:** Δ = 4m² - 4(2b - m²) = 4m² - 8b + 4m² = **8(m² - b) = 8c**
+
+## Step 4: Determine Constraints for Integer Solutions
+
+For 2 distinct integer solutions, 8c must be a **perfect square**.
+
+Let 8c = d² for positive integer d.
+
+Then: **c = d²/8**
+
+For c to be an integer, d must be divisible by some factor. Let d = 2e:
+- 4e² = 8c
+- **c = e²/2**
+
+For c to be integer, e must be even. Let e = 2f:
+- **c = 4f²/2 = 2f²**
+
+## Step 5: Verify with Example
+
+For f = 1: c = 2(1)² = **2**
+- Need m² - b = 2, so pick m = 2, b = 2
+- Then a = 2m = 4
+- Check: |x² + 4x + 2| = 2
+  - x² + 4x + 2 = 2 → x² + 4x = 0 → x(x+4) = 0 → x = 0 or x = -4 ✓ (2 solutions)
+  - x² + 4x + 2 = -2 → x² + 4x + 4 = 0 → (x+2)² = 0 → x = -2 ✓ (1 solution)
+- **Total: 3 integer solutions** ✓
+
+## Step 6: Find Maximum Value of f
+
+Given c ≤ 2025:
+$$2f² ≤ 2025$$
+$$f² ≤ 1012.5$$
+$$f ≤ 31.819...$$
+
+So: **f ∈ {1, 2, 3, ..., 31}**
+
+## Step 7: Count Valid Values
+
+Valid values of c are:
+$$c \in \{2(1)², 2(2)², 2(3)², ..., 2(31)²\}$$
+$$= \{2, 8, 18, 32, 50, ..., 1922\}$$
+
+This gives exactly **31 values**.
+
+**Verification of boundary:**
+- f = 31: c = 2(961) = 1922 ✓ (≤ 2025)
+- f = 32: c = 2(1024) = 2048 ✗ (> 2025)
+
+---
+
+FINAL ANSWER: [31]

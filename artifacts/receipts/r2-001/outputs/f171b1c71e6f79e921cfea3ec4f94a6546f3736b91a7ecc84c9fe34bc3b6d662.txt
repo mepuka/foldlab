@@ -1,0 +1,99 @@
+# Solution: Finding the Sum of the Sequence
+
+## Step 1: Rearrange the Recurrence Relation
+
+**What I'm calculating:** Expressing the recurrence in a more useful form.
+
+**Calculation:**
+From the given recurrence: $a_{n+1}(a_n + 1)^2 \equiv a_n \pmod{397}$
+
+Taking modular inverses (valid since 397 is prime):
+$$\frac{1}{a_{n+1}} \equiv \frac{(a_n + 1)^2}{a_n} \pmod{397}$$
+
+**Verification:** This is valid because we can multiply both sides by $(a_n + 1)^{-2}$ when $a_n \not\equiv 0$.
+
+## Step 2: Find a Telescoping Property
+
+**What I'm calculating:** A relationship that will allow summing the sequence.
+
+**Calculation:**
+$$\frac{1}{a_{n+1}} = \frac{(a_n + 1)^2}{a_n} = \frac{a_n^2 + 2a_n + 1}{a_n}$$
+
+$$= a_n + 2 + \frac{1}{a_n}$$
+
+Rearranging:
+$$\frac{1}{a_n} - \frac{1}{a_{n+1}} = -a_n - 2$$
+
+**Verification:** This relation is exact and will telescope when summed.
+
+## Step 3: Sum the Telescoping Series
+
+**What I'm calculating:** The sum from $i=0$ to $2025$.
+
+**Calculation:**
+Summing both sides from $i = 0$ to $i = 2025$:
+$$\sum_{i=0}^{2025}\left(\frac{1}{a_i} - \frac{1}{a_{i+1}}\right) = -\sum_{i=0}^{2025}(a_i + 2)$$
+
+The left side telescopes:
+$$\frac{1}{a_0} - \frac{1}{a_{2026}} = -\sum_{i=0}^{2025}a_i - 2(2026)$$
+
+Substituting $a_0 = 1$ and $a_{2026} = 9$:
+$$1 - \frac{1}{9} = -\sum_{i=0}^{2025}a_i - 4052$$
+
+$$\frac{8}{9} = -\sum_{i=0}^{2025}a_i - 4052$$
+
+$$\sum_{i=0}^{2025}a_i = -\frac{8}{9} - 4052$$
+
+**Verification:** The telescoping is correct; each middle term cancels.
+
+## Step 4: Include $a_{2026}$ in the Total Sum
+
+**What I'm calculating:** The full sum from $i=0$ to $2026$.
+
+**Calculation:**
+$$\sum_{i=0}^{2026}a_i = \sum_{i=0}^{2025}a_i + a_{2026} = -\frac{8}{9} - 4052 + 9$$
+
+$$= -\frac{8}{9} - 4043$$
+
+## Step 5: Compute Modulo 397
+
+**What I'm calculating:** The answer modulo 397.
+
+**Calculation:**
+
+First, find $9^{-1} \pmod{397}$ using the extended Euclidean algorithm:
+$$397 = 44 \times 9 + 1$$
+$$1 = 397 - 44 \times 9$$
+
+So: $9^{-1} \equiv -44 \equiv 353 \pmod{397}$
+
+Therefore: $\frac{8}{9} \equiv 8 \times 353 = 2824 \pmod{397}$
+
+$$2824 = 7 \times 397 + 45$$
+
+So: $\frac{8}{9} \equiv 45 \pmod{397}$
+
+Thus: $-\frac{8}{9} \equiv -45 \equiv 352 \pmod{397}$
+
+Next, reduce $4043 \pmod{397}$:
+$$4043 = 10 \times 397 + 73$$
+
+So: $4043 \equiv 73 \pmod{397}$
+
+Therefore: $-4043 \equiv -73 \equiv 324 \pmod{397}$
+
+**Final calculation:**
+$$-\frac{8}{9} - 4043 \equiv 352 + 324 = 676 \equiv 279 \pmod{397}$$
+
+(Since $676 = 397 + 279$)
+
+## Step 6: Verification
+
+**Checking reasonableness:** 
+- The answer 279 is an integer between 0 and 396 ✓
+- The telescoping series properly telescopes from $a_0$ to $a_{2026}$ ✓
+- Modular arithmetic is correctly applied ✓
+
+---
+
+**FINAL ANSWER: 279**

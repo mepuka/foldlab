@@ -1,0 +1,18 @@
+# Verification of the Solution
+
+Let me verify this solution by checking the methodology and the count.
+
+## Verification of the Factorization
+
+The key insight is correct:
+$$n = a + b + ab = (a+1)(b+1) - 1$$
+
+So $(a+1)(b+1) = n + 1$ where $1 \leq n \leq 100$, meaning $2 \leq (a+1)(b+1) \leq 101$.
+
+## Checking the Enumeration Logic
+
+For each divisor pair $(d_1, d_2)$ where $d_1 \cdot d_2 = m$ and $2 \leq m \leq 101$:
+- Set $a+1 = d_1$ and $b+1 = d_2$ with $d_1 < d_2$ (to avoid counting the same $n$ multiple times in this direction)
+- Then $n = d_1 \cdot d_2 - 1$
+
+The condition $a \neq b$ means $d_1

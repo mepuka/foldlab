@@ -1,0 +1,31 @@
+# Solution Plan for Finding |AB - CD|
+
+1. **Set up coordinates and variables**
+   - Place points $A, B, C, D$ on a line in order
+   - Let $AB = x$ and $CD = y$ (unknowns to find)
+   - Then $BD = x + 10$ (since $BC = 10$)
+
+2. **Use the equilateral triangle condition**
+   - Since triangle $BEC$ is equilateral with $BC = 10$
+   - We have $BE = EC = 10$
+   - All angles in triangle $BEC$ equal $60°$
+
+3. **Apply the angle condition at E**
+   - Use the constraint that $\angle AED = 120°$
+   - This relates the positions of $A, E, D$ in space
+
+4. **Use the Law of Cosines in triangle AED**
+   - We know $\angle AED = 120°$ and $AD = 39$
+   - Express: $AD^2 = AE^2 + ED^2 - 2(AE)(ED)\cos(120°)$
+   - This gives: $1521 = AE^2 + ED^2 + AE \cdot ED$
+
+5. **Relate distances using triangle geometry**
+   - Use the constraint that $E$ forms an equilateral triangle with $B$ and $C$
+   - Express $AE$ and $ED$ in terms of $x$ and $y$ using coordinate geometry
+
+6. **Solve the system of equations**
+   - Combine the equations from steps 4 and 5
+   - Solve for $x$ and $y$
+
+7. **Calculate the answer**
+   - Compute $|AB - CD| = |x - y|$

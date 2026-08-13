@@ -1,0 +1,66 @@
+# Detailed Solution for Counting "SUNS" Subsequences
+
+## Step 1: Verify Position Mapping
+
+The string "SUNS" repeated 10 times gives us 30 characters:
+- **S positions**: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28 (10 S's)
+- **U positions**: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29 (10 U's)  
+- **N positions**: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30 (10 N's)
+
+Pattern: If we index each letter type from 1 to 10:
+- Position of a-th S: **3a - 2**
+- Position of b-th U: **3b - 1**
+- Position of d-th N: **3d**
+- Position of c-th S: **3c - 2**
+
+## Step 2: Establish Inequality Constraints
+
+For a valid "SUNS" subsequence, we need: 
+$$3a - 2 < 3b - 1 < 3d < 3c - 2$$
+
+**From inequality 1:** $3a - 2 < 3b - 1$
+$$3a < 3b + 1 \implies a \leq b$$
+
+**From inequality 2:** $3b - 1 < 3d$
+$$3b < 3d + 1 \implies b \leq d$$
+
+**From inequality 3:** $3d < 3c - 2$
+$$3d + 2 < 3c \implies d + 1 \leq c$$
+
+Combined constraints:
+$$1 \leq a \leq b \leq d \leq 9 \text{ and } d+1 \leq c \leq 10$$
+
+(Note: d ≤ 9 because we need d + 1 ≤ c ≤ 10)
+
+## Step 3: Count Valid 4-tuples Systematically
+
+For each valid triple (a, b, d), the number of choices for c is: $(10 - d)$
+
+$$\text{Total} = \sum_{a=1}^{9} \sum_{b=a}^{9} \sum_{d=b}^{9} (10 - d)$$
+
+### Inner sum: 
+$$\sum_{d=b}^{9} (10 - d) = \sum_{j=1}^{10-b} j = \frac{(10-b)(11-b)}{2}$$
+
+### Middle sum for each a:
+
+| a | Calculation | Result |
+|---|---|---|
+| 1 | $\frac{1}{2}(9·10 + 8·9 + 7·8 + 6·7 + 5·6 + 4·5 + 3·4 + 2·3 + 1·2)$ | 165 |
+| 2 | $\frac{1}{2}(8·9 + 7·8 + 6·7 + 5·6 + 4·5 + 3·4 + 2·3 + 1·2)$ | 120 |
+| 3 | $\frac{1}{2}(7·8 + 6·7 + 5·6 + 4·5 + 3·4 + 2·3 + 1·2)$ | 84 |
+| 4 | $\frac{1}{2}(6·7 + 5·6 + 4·5 + 3·4 + 2·3 + 1·2) = \frac{112}{2}$ | 56 |
+| 5 | $\frac{1}{2}(5·6 + 4·5 + 3·4 + 2·3 + 1·2) = \frac{70}{2}$ | 35 |
+| 6 | $\frac{1}{2}(4·5 + 3·4 + 2·3 + 1·2) = \frac{40}{2}$ | 20 |
+| 7 | $\frac{1}{2}(3·4 + 2·3 + 1·2) = \frac{20}{2}$ | 10 |
+| 8 | $\frac{1}{2}(2·3 + 1·2) = \frac{8}{2}$ | 4 |
+| 9 | $\frac{1}{2}(1·2) = \frac{2}{2}$ | 1 |
+
+## Step 4: Calculate Final Sum
+
+$$165 + 120 + 84 + 56 + 35 + 20 + 10 + 4 + 1$$
+$$= 285 + 84 + 56 + 35 + 20 + 10 + 4 + 1$$
+$$= 369 + 56 + 35 + 20 + 10 + 4 + 1$$
+$$= 425 + 35 + 20 + 10 + 4 + 1$$
+$$= 495$$
+
+**495**

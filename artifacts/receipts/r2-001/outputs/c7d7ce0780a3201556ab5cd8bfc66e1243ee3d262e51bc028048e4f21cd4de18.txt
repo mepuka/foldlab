@@ -1,0 +1,24 @@
+# Given Quantities and Conditions
+
+## Variables and Rates
+- Patrick's walking speed: $p$ mph (constant)
+- Tanya's running speed: $p + 2$ mph (constant)
+- Jose's bicycling speed: $(p + 2) + 7 = p + 9$ mph (constant)
+
+## Timeline and Departures
+- Patrick departs from school at time $t = 0$
+- Tanya departs from school at time $t = 1$ hour (1 hour after Patrick)
+- Jose departs from school at time $t = 2$ hours (1 hour after Tanya, 2 hours after Patrick)
+- All three travel from school to the park along the same straight road
+
+## Key Condition
+- All three people arrive at the park at the same time
+
+## Distance
+- The distance from school to the park is unknown (what we're solving for)
+
+---
+
+# What Is Being Asked
+
+Find the distance from school to the park in the form $\frac{m}{n}$ miles, where $m$ and $n$ are relatively prime positive integers, and then calculate $m + n$.

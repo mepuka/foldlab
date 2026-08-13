@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nExtract and verify the final answer. State it as a single integer with no other characters:",
+  "params": {
+    "max_tokens": 256,
+    "thinking_budget": 0
+  }
+}
+```

@@ -1,0 +1,63 @@
+# Solution: Counting "SUNS" in the Sequence
+
+## Step 1: Identify Valid Positions
+
+The sequence repeats "SUN" ten times: **SUNSUNSUNSUN...SUN**
+
+**S positions:** {1, 4, 7, 10, 13, 16, 19, 22, 25, 28} — 10 positions
+**U positions:** {2, 5, 8, 11, 14, 17, 20, 23, 26, 29} — 10 positions
+**N positions:** {3, 6, 9, 12, 15, 18, 21, 24, 27, 30} — 10 positions
+
+## Step 2: Set Up the Constraint Framework
+
+We need to count ordered quadruples $(i_1, i_2, i_3, i_4)$ where:
+- $i_1 < i_2 < i_3 < i_4$
+- $i_1$ is an S position
+- $i_2$ is a U position
+- $i_3$ is an N position
+- $i_4$ is an S position
+
+## Step 3: Systematic Counting by Position
+
+**Key observation:** Due to the repeating pattern, position $p$ contains:
+- S if $p \equiv 1 \pmod{3}$
+- U if $p \equiv 2 \pmod{3}$
+- N if $p \equiv 0 \pmod{3}$
+
+For each S position $i_1$, each U position $i_2 > i_1$, and each N position $i_3 > i_2$:
+
+| $i_1$ | $i_2$ | $i_3$ | Valid $i_4$ (S positions > $i_3$) | Count |
+|-------|-------|-------|-----------------------------------|-------|
+| 1 | 2 | 3 | {4,7,10,13,16,19,22,25,28} | 9 |
+| 1 | 2 | 6 | {7,10,13,16,19,22,25,28} | 8 |
+| 1 | 2 | 9 | {10,13,16,19,22,25,28} | 7 |
+| ... | ... | ... | ... | ... |
+
+**Using the indexing structure:** S positions = {$3k+1$: $k=0..9$}, U positions = {$3k+2$: $k=0..9$}, N positions = {$3k$: $k=1..10$}
+
+For $i_1 = 3a+1$, $i_2 = 3b+2$, $i_3 = 3c$:
+- Constraint $i_1 < i_2 < i_3$ requires: $a < b < c$
+- Available $i_4 = 3d+1$ where $d > c$, so $d \in \{c+1, ..., 9\}$
+- Number of choices for $i_4$ is $(9-c)$
+
+## Step 4: Count All Valid Combinations
+
+$$\text{Total} = \sum_{a=0}^{9} \sum_{b=a+1}^{9} \sum_{c=b+1}^{9} (9-c)$$
+
+**Working from innermost sum outward:**
+
+$$\sum_{c=b+1}^{9} (9-c) = \sum_{j=0}^{8-b} j = \frac{(8-b)(9-b)}{2}$$
+
+$$\sum_{b=a+1}^{9} \frac{(8-b)(9-b)}{2} = \frac{1}{2}\sum_{i=0}^{8-a} i(i+1) = \frac{1}{2}\sum_{i=0}^{8-a} (i^2+i)$$
+
+$$= \frac{1}{2}\left[\frac{(8-a)(9-a)(17-2a)}{6} + \frac{(8-a)(9-a)}{2}\right] = \frac{(8-a)(9-a)(10-a)}{6}$$
+
+$$\sum_{a=0}^{9} \frac{(8-a)(9-a)(10-a)}{6} = \frac{1}{6}\sum_{m=0}^{8} m(m+1)(m+2)$$
+
+Using the identity $\sum_{m=0}^{n} m(m+1)(m+2) = \frac{n(n+1)(n+2)(n+3)}{4}$:
+
+$$= \frac{1}{6} \cdot \frac{8 \cdot 9 \cdot 10 \cdot 11}{4} = \frac{7920}{24} = 330$$
+
+## Final Answer
+
+**330**

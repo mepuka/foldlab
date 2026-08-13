@@ -1,0 +1,24 @@
+# Solution Plan
+
+1. **Establish the constraint on $\lfloor \sqrt{n} \rfloor$**
+   - For $n \geq 3$, we have $\lfloor \sqrt{n} \rfloor \geq 1$
+   - Note that $(\lfloor \sqrt{n} \rfloor)! \geq 2$ when $\lfloor \sqrt{n} \rfloor \geq 2$
+   - This makes $(\lfloor \sqrt{n} \rfloor)!^{n!}$ divisible by all small primes
+
+2. **Analyze the divisibility condition modulo prime factors of $n$**
+   - For any prime $p$ dividing $n$: we need $p \mid [(\lfloor \sqrt{n} \rfloor)!^{n!} + 450]$
+   - If $p \mid (\lfloor \sqrt{n} \rfloor)!$, then $(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv 0 \pmod{p}$
+   - This requires $p \mid 450$, so $p \in \{2, 3, 5\}$
+
+3. **Determine the bound on $\lfloor \sqrt{n} \rfloor$**
+   - Since $(\lfloor \sqrt{n} \rfloor)!$ must divide all prime factors of $n$, we need $\lfloor \sqrt{n} \rfloor \leq 5$
+   - This gives $n < 36$
+
+4. **Test candidates systematically**
+   - For each $n$ from 35 down to 1, calculate $\lfloor \sqrt{n} \rfloor$
+   - Compute $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450 \pmod{n}$
+   - Check if the result equals 0
+
+5. **Verify the largest solution**
+   - Confirm that the largest $n$ satisfying the divisibility condition is indeed a solution
+   - Verify that no larger value of $n$ works

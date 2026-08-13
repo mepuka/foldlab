@@ -1,0 +1,80 @@
+# Solution
+
+## Step 1: Rearrange the Recurrence Relation
+
+Given: $a_{n+1}(a_n + 1)^2 \equiv a_n \pmod{397}$
+
+Since 397 is prime, modular inverses exist. We can rearrange to:
+$$a_{n+1} \equiv a_n(a_n + 1)^{-2} \pmod{397}$$
+
+## Step 2: Find a Telescoping Property
+
+Let me explore the function $f(x) = \frac{1}{x}$ applied to the recurrence.
+
+From $a_{n+1}(a_n + 1)^2 = a_n$, dividing both sides by $a_{n+1} \cdot a_n$:
+
+$$\frac{(a_n + 1)^2}{a_n} = \frac{1}{a_{n+1}}$$
+
+Expanding the left side:
+$$\frac{a_n^2 + 2a_n + 1}{a_n} = a_n + 2 + \frac{1}{a_n} = \frac{1}{a_{n+1}}$$
+
+**Rearranging:**
+$$\frac{1}{a_{n+1}} - \frac{1}{a_n} = a_n + 2$$
+
+## Step 3: Create a Telescoping Sum
+
+Summing from $n = 0$ to $n = 2025$:
+$$\sum_{n=0}^{2025}\left(\frac{1}{a_{n+1}} - \frac{1}{a_n}\right) = \sum_{n=0}^{2025}(a_n + 2)$$
+
+The left side telescopes:
+$$\frac{1}{a_{2026}} - \frac{1}{a_0} = \sum_{n=0}^{2025}a_n + 2(2026)$$
+
+With $a_0 = 1$ and $a_{2026} = 9$:
+$$\frac{1}{9} - \frac{1}{1} = \sum_{n=0}^{2025}a_n + 4052$$
+
+$$\frac{1}{9} - 1 = \sum_{n=0}^{2025}a_n + 4052$$
+
+$$\frac{1-9}{9} = \sum_{n=0}^{2025}a_n + 4052$$
+
+$$-\frac{8}{9} = \sum_{n=0}^{2025}a_n + 4052$$
+
+## Step 4: Solve for the Sum (excluding $a_{2026}$)
+
+$$\sum_{n=0}^{2025}a_n = -\frac{8}{9} - 4052$$
+
+## Step 5: Compute Modulo 397
+
+First, find $9^{-1} \pmod{397}$:
+- $397 = 44 \cdot 9 + 1$
+- Therefore: $1 = 397 - 44 \cdot 9$
+- So $9^{-1} \equiv -44 \equiv 353 \pmod{397}$
+
+**Verification:** $9 \cdot 353 = 3177 = 8 \cdot 397 + 1$ ✓
+
+Now: $\frac{1}{9} \equiv 353 \pmod{397}$
+
+$$-\frac{8}{9} \equiv -8 \cdot 353 \equiv -2824 \pmod{397}$$
+
+Calculate $2824 \pmod{397}$:
+- $2824 = 7 \cdot 397 + 45 = 2779 + 45$
+- So $-2824 \equiv -45 \equiv 352 \pmod{397}$
+
+Calculate $4052 \pmod{397}$:
+- $4052 = 10 \cdot 397 + 82 = 3970 + 82$
+- So $4052 \equiv 82 \pmod{397}$
+
+Therefore:
+$$\sum_{n=0}^{2025}a_n \equiv 352 - 82 \equiv 270 \pmod{397}$$
+
+## Step 6: Include $a_{2026}$
+
+$$\sum_{n=0}^{2026}a_n = \sum_{n=0}^{2025}a_n + a_{2026} \equiv 270 + 9 \equiv 279 \pmod{397}$$
+
+## Verification
+
+- Telescoping identity: $\frac{1}{9} - 1 = -\frac{8}{9}$ ✓
+- $-\frac{8}{9} \equiv 352 \pmod{397}$ ✓
+- $352 - 82 = 270$ ✓
+- $270 + 9 = 279$ ✓
+
+FINAL ANSWER: **279**

@@ -1,0 +1,80 @@
+# Solution: Computing $S = \sum_{k=0}^{2026} k\binom{2k}{k}2^k \pmod{2027}$
+
+## What We're Calculating
+
+We need to find the sum $S = \sum_{k=0}^{2026} k\binom{2k}{k}2^k$ modulo the prime $2027$.
+
+## Step 1: Generating Function Structure
+
+The generating function for central binomial coefficients is:
+$$\sum_{k=0}^{\infty} \binom{2k}{k} x^k = \frac{1}{\sqrt{1-4x}} = (1-4x)^{-1/2}$$
+
+## Step 2: Extract the Factor of $k$ Using Derivatives
+
+To get $k$ in the sum:
+$$\sum_{k=0}^{\infty} k\binom{2k}{k} x^k = x\frac{d}{dx}\sum_{k=0}^{\infty} \binom{2k}{k} x^k$$
+
+Taking the derivative:
+$$\frac{d}{dx}(1-4x)^{-1/2} = -\frac{1}{2}(1-4x)^{-3/2} \cdot (-4) = 2(1-4x)^{-3/2}$$
+
+Therefore:
+$$\sum_{k=0}^{\infty} k\binom{2k}{k} x^k = 2x(1-4x)^{-3/2}$$
+
+## Step 3: Work Modulo 2027 Using Finite Field Theory
+
+Since 2027 is prime, we work in $\mathbb{F}_{2027}$. By Fermat's Little Theorem applied to generating functions:
+$$\sum_{k=0}^{2026} \binom{2k}{k}x^k \equiv (1-4x)^{(p-1)/2} = (1-4x)^{1013} \pmod{2027}$$
+
+## Step 4: Evaluate the Base Sum at $x=2$
+
+First, we evaluate $(1-8)^{1013} = (-7)^{1013}$.
+
+We need $\left(\frac{-7}{2027}\right)$:
+- $\left(\frac{-1}{2027}\right) = -1$ since $2027 \equiv 3 \pmod{4}$
+- By quadratic reciprocity: $\left(\frac{7}{2027}\right)\left(\frac{2027}{7}\right) = (-1)^{3 \cdot 1013}$
+- Since $2027 \equiv 1 \pmod{7}$, we have $\left(\frac{2027}{7}\right) = 1$
+- So $\left(\frac{7}{2027}\right) = -1$
+
+Therefore: $\left(\frac{-7}{2027}\right) = (-1)(-1) = 1$, which means $(-7)^{1013} \equiv 1 \pmod{2027}$.
+
+## Step 5: Apply the Derivative Formula
+
+$$\sum_{k=0}^{2026} k\binom{2k}{k}2^k = 2 \cdot \frac{d}{dx}(1-4x)^{1013}\bigg|_{x=2}$$
+
+Computing the derivative:
+$$\frac{d}{dx}(1-4x)^{1013} = 1013 \cdot (-4)(1-4x)^{1012} = -4052(1-4x)^{1012}$$
+
+At $x=2$:
+$$-4052 \cdot (-7)^{1012} \equiv -4052 \cdot 49^{506} \equiv -4052 \cdot 7^{1012} \pmod{2027}$$
+
+## Step 6: Simplify Coefficients Modulo 2027
+
+$$-4052 = -2 \cdot 2026 \equiv 4 \pmod{2027}$$
+
+## Step 7: Compute $7^{1012} \pmod{2027}$
+
+Since 7 is a quadratic non-residue (as computed above), by Euler's criterion:
+$$7^{1013} \equiv -1 \pmod{2027}$$
+
+Therefore:
+$$7^{1012} = \frac{7^{1013}}{7} \equiv \frac{-1}{7} \equiv -7^{-1} \pmod{2027}$$
+
+Finding $7^{-1}$ using the extended Euclidean algorithm:
+- $2027 = 289 \cdot 7 + 4$
+- Back-substituting: $1 = 2 \cdot 2027 - 579 \cdot 7$
+
+So $7^{-1} \equiv -579 \equiv 1448 \pmod{2027}$
+
+Thus: $7^{1012} \equiv -1448 \equiv 579 \pmod{2027}$
+
+## Step 8: Final Calculation
+
+$$S = 2 \cdot 4 \cdot 579 = 8 \cdot 579 = 4632 \equiv 4632 - 2 \cdot 2027 = 4632 - 4054 = 578 \pmod{2027}$$
+
+Wait, let me recalculate: $4 \cdot 579 = 2316 = 2027 + 289$
+
+$$S \equiv 2 \cdot 289 = 578 \pmod{2027}$$
+
+Actually $2 \cdot 4 \cdot 579 = 4632$, and $4632 = 2 \cdot 2027 + 578 = 4054 + 578$.
+
+**FINAL ANSWER: 578**

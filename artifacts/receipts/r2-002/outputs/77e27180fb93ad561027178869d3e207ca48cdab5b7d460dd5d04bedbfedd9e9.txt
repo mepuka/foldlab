@@ -1,0 +1,89 @@
+# Detailed Solution
+
+## Step 1: Coordinate System Setup
+
+Place rectangle $ABCD$ with:
+- $A = (0, 0)$
+- $B = (0, 1)$ (since $AB = 1$)
+- $D = (a, 0)$ where $a = BC = AD$
+- $C = (a, 1)$
+
+## Step 2: Positions of X and Y
+
+Since $X$ lies on $\overline{BC}$ and $Y$ lies on $\overline{AD}$:
+- $X = (x, 1)$ where $0 \leq x \leq a$
+- $Y = (y, 0)$ where $0 \leq y \leq a$
+
+## Step 3: Apply $\angle AXY = 90°$
+
+$$\overrightarrow{XA} = (0,0) - (x,1) = (-x, -1)$$
+$$\overrightarrow{XY} = (y,0) - (x,1) = (y-x, -1)$$
+
+Perpendicularity condition:
+$$\overrightarrow{XA} \cdot \overrightarrow{XY} = -x(y-x) + 1 = 0$$
+$$xy - x^2 = 1$$
+$$y = \frac{1 + x^2}{x} \quad \text{...(Equation 1)}$$
+
+## Step 4: Apply $\angle XYC = 90°$
+
+$$\overrightarrow{YX} = (x-y, 1)$$
+$$\overrightarrow{YC} = (a-y, 1)$$
+
+Perpendicularity condition:
+$$(x-y)(a-y) + 1 = 0$$
+$$(x-y)(a-y) = -1 \quad \text{...(Equation 2)}$$
+
+## Step 5: Apply Ratio Condition $AX : XY : YC = 1 : 2 : 1$
+
+Calculate distances:
+$$AX = \sqrt{x^2 + 1}$$
+$$XY = \sqrt{(y-x)^2 + 1}$$
+$$YC = \sqrt{(a-y)^2 + 1}$$
+
+From $YC = AX$:
+$$(a-y)^2 + 1 = x^2 + 1$$
+$$a - y = x$$
+$$a = x + y \quad \text{...(Equation 3)}$$
+
+From $XY = 2AX$:
+$$(y-x)^2 + 1 = 4(x^2 + 1)$$
+$$(y-x)^2 = 4x^2 + 3$$
+$$y^2 - 2xy - 3x^2 = 3 \quad \text{...(Equation 4)}$$
+
+## Step 6: Solve the System
+
+Substitute Equation 1 into Equation 2:
+$$\left(x - \frac{1+x^2}{x}\right)\left(a - \frac{1+x^2}{x}\right) = -1$$
+$$\left(\frac{-1}{x}\right)\left(\frac{ax - 1 - x^2}{x}\right) = -1$$
+$$ax - 1 - x^2 = x^2$$
+$$a = \frac{1 + 2x^2}{x} \quad \text{...(Equation 5)}$$
+
+Verify Equations 3 and 5 are consistent:
+$$x + \frac{1+x^2}{x} = \frac{x^2 + 1 + x^2}{x} = \frac{1 + 2x^2}{x}$$ ✓
+
+Substitute Equation 1 into Equation 4:
+$$\left(\frac{1+x^2}{x}\right)^2 - 2x \cdot \frac{1+x^2}{x} - 3x^2 = 3$$
+$$\frac{(1+x^2)^2}{x^2} - 2(1+x^2) - 3x^2 = 3$$
+$$(1+x^2)^2 = x^2(5 + 5x^2)$$
+$$1 + 2x^2 + x^4 = 5x^2 + 5x^4$$
+$$4x^4 + 3x^2 - 1 = 0$$
+
+Using the quadratic formula with $u = x^2$:
+$$u = \frac{-3 \pm \sqrt{9 + 16}}{8} = \frac{-3 \pm 5}{8}$$
+
+Taking the positive solution: $u = \frac{1}{4}$, so $x = \frac{1}{2}$
+
+Then:
+$$y = \frac{1 + 1/4}{1/2} = \frac{5/4}{1/2} = \frac{5}{2}$$
+$$a = \frac{1}{2} + \frac{5}{2} = 3$$
+
+## Step 7: Verification
+
+- $AX = \sqrt{1/4 + 1} = \frac{\sqrt{5}}{2}$
+- $XY = \sqrt{4 + 1} = \sqrt{5}$
+- $YC = \sqrt{1/4 + 1} = \frac{\sqrt{5}}{2}$
+- Ratio: $1 : 2 : 1$ ✓
+- Both perpendicularity conditions verified ✓
+- Both points within bounds ✓
+
+Final answer (single integer only): **3**

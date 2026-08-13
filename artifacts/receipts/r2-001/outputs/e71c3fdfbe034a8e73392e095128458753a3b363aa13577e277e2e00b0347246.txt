@@ -1,0 +1,25 @@
+# Solution Plan for Finding Sum of All Valid Radii
+
+1. **Rewrite the parabola in standard form**
+   - Convert $2y = x^2 - 8x + 12$ to vertex form: $y = \frac{1}{2}(x-2)^2 + 2$
+   - Identify vertex at $(2, 2)$ and opening upward
+
+2. **Set up the tangency condition**
+   - A circle with center $(4, 39)$ and radius $r$ is tangent to the parabola when the distance from the center to a point on the parabola equals $r$, AND the radius is perpendicular to the parabola's tangent line at that point
+
+3. **Use the perpendicularity requirement**
+   - For point $(x, y)$ on the parabola, the parabola's slope is $\frac{dy}{dx} = x - 4$
+   - For perpendicularity: the slope from $(4,39)$ to $(x,y)$ must satisfy: $\frac{y-39}{x-4} = -\frac{1}{x-4}$ (negative reciprocal)
+   - This gives the condition: $(y-39)(x-4) = -1$
+
+4. **Solve the system of equations**
+   - Substitute $y = \frac{1}{2}(x-2)^2 + 2$ into $(y-39)(x-4) = -1$
+   - Expand and simplify to get a polynomial equation in $x$
+   - Solve for all valid $x$-coordinates of tangency points
+
+5. **Calculate corresponding radii**
+   - For each tangency point $(x, y)$ found in step 4, compute $r = \sqrt{(x-4)^2 + (y-39)^2}$
+
+6. **Sum all valid radii**
+   - Add together all positive radii values obtained in step 5
+   - This is the final answer

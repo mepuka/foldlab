@@ -1,0 +1,66 @@
+# Solution
+
+## Step 1: Set up equations for the constraints
+
+For an arithmetic sequence with first term $a_1 = 4$ and common difference $d$, the $k$-th term is $a_k = 4 + (k-1)d$.
+
+**For 24 to be a term:** There exists a positive integer $m$ such that
+$$24 = 4 + (m-1)d$$
+$$20 = (m-1)d$$
+
+**For 34 to be a term:** There exists a positive integer $n$ such that
+$$34 = 4 + (n-1)d$$
+$$30 = (n-1)d$$
+
+## Step 2: Determine what $d$ must divide
+
+For both equations to have positive integer solutions:
+- $(m-1) = \frac{20}{d}$ must be a positive integer, so $d \mid 20$
+- $(n-1) = \frac{30}{d}$ must be a positive integer, so $d \mid 30$
+
+Therefore, $d$ must be a common divisor of 20 and 30.
+
+Finding $\gcd(20, 30)$:
+$$\gcd(20, 30) = \gcd(20, 10) = 10$$
+
+Thus $d$ must divide 10.
+
+## Step 3: List all possible divisors of 10
+
+$$d \in \{\pm 1, \pm 2, \pm 5, \pm 10\}$$
+
+## Step 4: Verify each divisor satisfies both constraints
+
+For each divisor $d$:
+
+| $d$ | $m-1 = 20/d$ | $n-1 = 30/d$ | Both positive? |
+|-----|--------------|--------------|---|
+| $1$ | $20$ | $30$ | ✓ |
+| $-1$ | $-20$ | $-30$ | ✗ |
+| $2$ | $10$ | $15$ | ✓ |
+| $-2$ | $-10$ | $-15$ | ✗ |
+| $5$ | $4$ | $6$ | ✓ |
+| $-5$ | $-4$ | $-6$ | ✗ |
+| $10$ | $2$ | $3$ | ✓ |
+| $-10$ | $-2$ | $-3$ | ✗ |
+
+**Valid values:** $d \in \{1, 2, 5, 10\}$
+
+## Step 5: Calculate $a_{10}$ for each valid $d$
+
+Using $a_{10} = 4 + 9d$:
+
+| $d$ | $a_{10} = 4 + 9d$ |
+|-----|---|
+| $1$ | $4 + 9(1) = 13$ |
+| $2$ | $4 + 9(2) = 22$ |
+| $5$ | $4 + 9(5) = 49$ |
+| $10$ | $4 + 9(10) = 94$ |
+
+## Step 6: Sum all the 10th terms
+
+$$\sum a_{10} = 13 + 22 + 49 + 94 = 178$$
+
+# Final Answer
+
+$$\boxed{178}$$

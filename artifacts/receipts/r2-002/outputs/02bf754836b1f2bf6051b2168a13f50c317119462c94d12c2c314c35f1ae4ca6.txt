@@ -1,0 +1,60 @@
+I'll work through this step-by-step.
+
+## Step 1: Rewrite the parabola in standard form
+
+Starting with $2y = x^2 - 8x + 12$
+
+$$y = \frac{1}{2}(x^2 - 8x + 12)$$
+
+Complete the square:
+$$y = \frac{1}{2}(x^2 - 8x + 16 - 16 + 12)$$
+$$y = \frac{1}{2}((x-4)^2 - 4)$$
+$$y = \frac{1}{2}(x-4)^2 - 2$$
+
+**Vertex:** $(4, -2)$, opens upward
+
+*Note: The plan shows vertex $(2,4)$ but this appears to be an error in the plan. I'll use the correct vertex.*
+
+## Step 2: Find the tangent line slope
+
+From $y = \frac{1}{2}(x-4)^2 - 2$:
+$$\frac{dy}{dx} = (x-4)$$
+
+At point $(a, b)$ on the parabola, the tangent slope is $m = a - 4$.
+
+## Step 3: Apply the tangency requirement
+
+For the circle centered at $(4, 39)$ to be tangent to the parabola at $(a, b)$, the radius must be perpendicular to the tangent line.
+
+Slope of radius: $\frac{b - 39}{a - 4}$
+
+Perpendicularity condition:
+$$(a - 4) \cdot \frac{b - 39}{a - 4} = -1$$
+
+This simplifies to:
+$$b - 39 = -1$$
+$$b = 38$$
+
+## Step 4: Find the point of tangency
+
+Substitute $b = 38$ into the parabola equation:
+$$38 = \frac{1}{2}(a-4)^2 - 2$$
+$$40 = \frac{1}{2}(a-4)^2$$
+$$(a-4)^2 = 80$$
+$$a - 4 = \pm\sqrt{80} = \pm 4\sqrt{5}$$
+$$a = 4 \pm 4\sqrt{5}$$
+
+## Step 5: Calculate the radius for each tangency point
+
+For both points, $b = 38$, so:
+$$r = \sqrt{(a-4)^2 + (38-39)^2} = \sqrt{(a-4)^2 + 1}$$
+
+For $a_1 = 4 + 4\sqrt{5}$:
+$$r_1 = \sqrt{(4\sqrt{5})^2 + 1} = \sqrt{80 + 1} = \sqrt{81} = 9$$
+
+For $a_2 = 4 - 4\sqrt{5}$:
+$$r_2 = \sqrt{(-4\sqrt{5})^2 + 1} = \sqrt{80 + 1} = \sqrt{81} = 9$$
+
+## Step 6: Find the sum
+
+$$r_1 + r_2 = 9 + 9 = \boxed{18}$$

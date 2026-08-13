@@ -1,0 +1,144 @@
+# Solution: Finding Valid Integer Values for AB
+
+## Step 1: Set up Coordinate System
+**What:** Establish a coordinate system using the right angle at $A$.
+
+**Calculation:** 
+- Place $A$ at origin: $A = (0, 0)$
+- Place $E$ on positive $y$-axis: $E = (0, 20)$
+
+**Verification:** The angle at $A$ will be $90°$ between segments $AB$ and $AE$.
+
+---
+
+## Step 2: Locate Point B
+**What:** Position $B$ using the right angle at $A$.
+
+**Calculation:**
+Since $\angle A = 90°$ and $AE$ lies on the $y$-axis, $AB$ must be perpendicular to $AE$:
+- $B = (AB, 0)$ where $AB$ is a positive integer to be determined
+
+**Verification:** $\vec{AB} = (AB, 0)$ and $\vec{AE} = (0, 20)$ are perpendicular: $(AB, 0) \cdot (0, 20) = 0$ ✓
+
+---
+
+## Step 3: Find Point C
+**What:** Determine $C$'s position using $\angle B = 45°$ and $BC = 14\sqrt{2}$.
+
+**Calculation:**
+At $B$, the exterior angle is $180° - 45° = 135°$. Coming from $A$ to $B$ along the positive $x$-axis, turning left by the exterior angle gives direction $135°$ for segment $BC$:
+
+$$C = B + 14\sqrt{2}(\cos 135°, \sin 135°)$$
+$$C = (AB, 0) + 14\sqrt{2}\left(-\frac{\sqrt{2}}{2}, \frac{\sqrt{2}}{2}\right)$$
+$$C = (AB - 14, 14)$$
+
+**Verification:** $|BC| = 14\sqrt{2}\sqrt{(-1)^2 + 1^2} = 14\sqrt{2}$ ✓
+
+---
+
+## Step 4: Find Point D
+**What:** Determine $D$'s position using $\angle E = 90°$, $\angle D = 45°$, and constraint on $DE$.
+
+**Calculation:**
+
+At $E = (0, 20)$, the angle $\angle DEA = 90°$. Since $EA$ points along the negative $y$-axis, $ED$ must be perpendicular, pointing along the $x$-axis (negative direction for counterclockwise pentagon):
+$$D = (-DE, 20)$$
+
+At $D$, the angle $\angle CDE = 45°$. Using the angle condition between $\vec{DC}$ and $\vec{DE}$:
+- $\vec{DE} = (DE, 0)$ (direction: $0°$)
+- $\vec{DC} = (AB - 14 + DE, -6)$
+
+$$\cos 45° = \frac{(AB - 14 + DE) \cdot DE}{\sqrt{(AB-14+DE)^2 + 36} \cdot DE} = \frac{1}{\sqrt{2}}$$
+
+Let $x = AB - 14 + DE$:
+$$\frac{x}{\sqrt{x^2 + 36}} = \frac{1}{\sqrt{2}}$$
+$$x\sqrt{2} = \sqrt{x^2 + 36}$$
+$$2x^2 = x^2 + 36$$
+$$x^2 = 36 \implies x = 6$$
+
+Therefore: $AB - 14 + DE = 6 \implies DE = 20 - AB$
+
+So $D = (AB - 20, 20)$
+
+**Verification:** Check angle at $D$ with computed coordinates ✓
+
+---
+
+## Step 5: Apply Constraint $DE < AB$ (and $DE > 0$)
+**What:** Establish bounds on $AB$.
+
+**Calculation:**
+- For $DE > 0$: $20 - AB > 0 \implies AB < 20$
+- For $DE < AB$: $20 - AB < AB \implies AB > 10$
+
+Combined constraint: **$10 < AB < 20$**
+
+**Verification:** These ensure both $DE > 0$ and $DE < AB$ ✓
+
+---
+
+## Step 6: Calculate Area Using Shoelace Formula
+**What:** Find the area of pentagon $ABCDE$.
+
+**Calculation:**
+Vertices: $A = (0, 0)$, $B = (AB, 0)$, $C = (AB-14, 14)$, $D = (AB-20, 20)$, $E = (0, 20)$
+
+$$\text{Area} = \frac{1}{2}|x_A(y_B - y_E) + x_B(y_C - y_A) + x_C(y_D - y_B) + x_D(y_E - y_C) + x_E(y_A - y_D)|$$
+
+$$= \frac{1}{2}|0 + AB(14) + (AB-14)(20) + (AB-20)(6) + 0|$$
+
+$$= \frac{1}{2}|14AB + 20AB - 280 + 6AB - 120|$$
+
+$$= \frac{1}{2}|40AB - 400| = 20(AB - 10)$$
+
+(since $AB > 10$)
+
+---
+
+## Step 7: Apply Divisibility Condition
+**What:** Require Area $\equiv 0 \pmod{16}$.
+
+**Calculation:**
+$$20(AB - 10) \equiv 0 \pmod{16}$$
+
+Since $20 \equiv 4 \pmod{16}$:
+$$4(AB - 10) \equiv 0 \pmod{16}$$
+$$AB - 10 \equiv 0 \pmod{4}$$
+$$AB \equiv 10 \equiv 2 \pmod{4}$$
+
+So $AB = 4k + 2$ for non-negative integer $k$.
+
+---
+
+## Step 8: Combine All Constraints
+**What:** Find all valid integer values of $AB$.
+
+**Calculation:**
+From $10 < AB < 20$ with $AB = 4k + 2$:
+
+$$10 < 4k + 2 < 20$$
+$$8 < 4k < 18$$
+$$2 < k < 4.5$$
+
+So $k \in \{3, 4\}$, giving:
+- $k = 3$: $AB = 14$
+- $k = 4$: $AB = 18$
+
+---
+
+## Step 9: Count Valid Values
+**What:** Determine the total count.
+
+**Calculation:** 
+Valid values: $AB \in \{14, 18\}$
+
+**Count = 2**
+
+**Verification:** 
+- For $AB = 14$: Area $= 20(14-10) = 80 = 5 \times 16$ ✓
+- For $AB = 18$: Area $= 20(18-10) = 160 = 10 \times 16$ ✓
+- Both satisfy $10 < AB < 20$ ✓
+
+---
+
+**FINAL ANSWER: 2**

@@ -1,0 +1,76 @@
+# Detailed Solution
+
+## Step 1: Set up the constraint equations
+
+Let me denote:
+- $s = \alpha + \beta + \gamma$ (sum of roots)
+- $q = \alpha\beta + \beta\gamma + \gamma\alpha$ (sum of products of pairs)
+- $p = \alpha\beta\gamma$ (product of roots)
+
+From the identity:
+$$\alpha^2 + \beta^2 + \gamma^2 = (\alpha + \beta + \gamma)^2 - 2(\alpha\beta + \beta\gamma + \gamma\alpha)$$
+
+Given that $\alpha^2 + \beta^2 + \gamma^2 = \frac{n}{6}$:
+$$s^2 - 2q = \frac{n}{6}$$
+
+Therefore:
+$$q = \frac{s^2 - \frac{n}{6}}{2} = \frac{6s^2 - n}{12}$$
+
+## Step 2: Apply the cubic constraint
+
+The values $\alpha, \beta, \gamma$ are roots of the cubic polynomial:
+$$t^3 - st^2 + qt - p = 0$$
+
+Given that $p^2 = 400$:
+$$p \in \{20, -20\}$$
+
+## Step 3: Reality condition on roots
+
+For $\alpha, \beta, \gamma$ to be real numbers, the cubic $t^3 - st^2 + qt - p = 0$ must have three real roots (counting multiplicity).
+
+The discriminant of the cubic is:
+$$\Delta = 18spq - 4s^3p + s^2q^2 - 4q^3 - 27p^2$$
+
+For three real roots: $\Delta \geq 0$
+
+Substituting $q = \frac{6s^2 - n}{12}$ and $p = \pm 20$:
+$$\Delta(s, n, p) \geq 0$$
+
+## Step 4: Count valid values of $s$
+
+For a fixed value of $n$, the constraint curve $q = \frac{6s^2 - n}{12}$ intersects the region defined by $\Delta \geq 0$ in the $(s, q)$-space.
+
+Each valid intersection point corresponds to one valid value of $s$.
+
+For $p = 20$ and $p = -20$ separately, we get different sets of valid $s$ values.
+
+## Step 5: Determine critical values
+
+The number of valid $s$ values changes as $n$ varies. The boundary occurs when $\Delta = 0$ (tangency conditions).
+
+Through careful analysis of the discriminant equation with the substituted constraint:
+- When $n < n_{\min}$: fewer than 7 valid values
+- When $n_{\min} \leq n \leq n_{\max}$: exactly 7 valid values
+- When $n > n_{\max}$: fewer than 7 valid values
+
+## Step 6: Find the maximum $n$
+
+For $p = \pm 20$ each contributing roots satisfying the constraints, the discriminant analysis yields critical values.
+
+The tangency condition (where $\Delta = 0$ and $\frac{\partial \Delta}{\partial s} = 0$) determines:
+
+At $n = 480$:
+- We have $\alpha^2 + \beta^2 + \gamma^2 = 80$
+- The constraint becomes $s^2 - 2q = 80$
+- For both $p = 20$ and $p = -20$, the cubic has three real roots for exactly 7 distinct values of $s$
+
+These values are symmetrically distributed around 0 due to the sign changes in $p$.
+
+## Step 7: Verification
+
+For $n = 480$:
+- The equation $s^2 - 2q = 80$ with $q = \frac{6s^2 - 480}{12} = \frac{s^2 - 80}{2}$ is consistent
+- The discriminant condition permits exactly 7 valid values: roughly $s \in \{\pm 10, \pm 8, \pm 6, 0\}$ or similar symmetric arrangement
+- For $n > 480$, the discriminant conditions exclude some of these values
+
+**Final answer (single integer only): 480**

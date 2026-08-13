@@ -1,0 +1,21 @@
+I'll verify this solution and check the work carefully.
+
+## Verification of the Solution
+
+**Given Information:**
+- Isosceles triangle ABC with $AB = BC = c$ and $AC = b$
+- Perimeter ratio: $\frac{P(\triangle ABC)}{P(\triangle AIC)} = \frac{125}{6}$
+- I is the incenter
+
+**Checking the setup (Steps 1-3):**
+
+The key insight that $AI = IC$ follows from the isosceles property and equal base angles. ✓
+
+The formula $AI = \frac{2cr}{b}$ derived from $AI = \frac{r}{\sin(A/2)}$ and $\sin(A/2) = \frac{b}{2c}$ is correct. ✓
+
+**Checking the ratio equation (Steps 4-5):**
+
+$$\frac{2c + b}{2AI + b} = \frac{125}{6}$$
+
+Cross-multiplying: $6(2c + b) = 125(2AI + b)$
+$$12c +

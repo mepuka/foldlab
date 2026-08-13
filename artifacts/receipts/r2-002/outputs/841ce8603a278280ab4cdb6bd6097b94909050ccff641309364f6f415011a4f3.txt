@@ -1,0 +1,28 @@
+# Solution Plan
+
+1. **Identify the final position of 4**
+   - In the sorted array, 4 must end up in position 4 (the middle position)
+
+2. **Determine valid starting positions for 4**
+   - If 4 starts at position 4, it needs zero swaps (never moves)
+   - If 4 starts at position 3, it needs one swap to reach position 4
+   - If 4 starts at position 5, it needs one swap to reach position 4
+   - If 4 starts at positions 1, 2, 6, or 7, it would need 3+ swaps (not allowed)
+   - **Valid starting positions: 3, 4, or 5**
+
+3. **For each valid starting position of 4, determine constraints on other numbers**
+   - Numbers that must be to the left of 4's starting position: {1, 2, 3}
+   - Numbers that must be to the right of 4's starting position: {5, 6, 7}
+   - These groups must remain sorted within themselves (or be sortable without disturbing 4)
+
+4. **Count valid arrangements for each case**
+   - **Case 1 (4 at position 3):** {1,2,3} fill positions 1-2, {5,6,7} fill positions 5-7
+   - **Case 2 (4 at position 4):** {1,2,3} fill positions 1-3, {5,6,7} fill positions 5-7
+   - **Case 3 (4 at position 5):** {1,2,3} fill positions 1-3, {5,6,7} fill positions 6-7
+
+5. **For each case, verify that valid sorting sequences exist**
+   - Ensure that {1,2,3} and {5,6,7} can be independently sorted without forcing additional swaps of 4
+   - Count permutations of {1,2,3} and {5,6,7} that allow this
+
+6. **Sum the valid permutations across all cases**
+   - Total = (arrangements for Case 1) + (arrangements for Case 2) + (arrangements for Case 3)

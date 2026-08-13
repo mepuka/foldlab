@@ -1,0 +1,77 @@
+# Detailed Solution
+
+## Step 1: Define the State Space
+
+States represented as $(a, b)$ where:
+- $a$ = number of coins Alice has received
+- $b$ = number of coins Bob has received
+
+Starting at $(0, 0)$. Process terminates when Carol receives any coin.
+
+## Step 2: Target and Terminal States
+
+**Goal**: Reach any state $(a, b)$ with $a \geq 2$ AND $b \geq 2$ before Carol gets a coin.
+
+## Step 3: Transition Probabilities
+
+From state $(a, b)$:
+- Transition to $(a+1, b)$ with probability $\frac{1}{3}$ (Alice)
+- Transition to $(a, b+1)$ with probability $\frac{1}{3}$ (Bob)
+- Transition to terminal state with probability $\frac{1}{3}$ (Carol—process stops)
+
+## Step 4: Define Probability Function
+
+Let $P(a, b)$ = probability of reaching the goal from state $(a, b)$.
+
+**Boundary Conditions:**
+- $P(a, b) = 1$ if $a \geq 2$ AND $b \geq 2$ ✓
+
+## Step 5: Recurrence Relation
+
+For states not yet at goal:
+$$P(a, b) = \frac{1}{3}P(a+1, b) + \frac{1}{3}P(a, b+1) + \frac{1}{3}(0)$$
+$$P(a, b) = \frac{1}{3}[P(a+1, b) + P(a, b+1)]$$
+
+## Step 6: Solve Systematically (Working Backwards)
+
+**Base cases** ($a \geq 2$ AND $b \geq 2$): $P(a, b) = 1$
+
+**For $b = 2, a = 1$:**
+$$P(1, 2) = \frac{1}{3}[P(2, 2) + P(1, 3)] = \frac{1}{3}[1 + 1] = \frac{2}{3}$$
+(Since $P(1,3) = 1$ because $b = 3 \geq 2$)
+
+**For $a = 2, b = 1$:**
+$$P(2, 1) = \frac{1}{3}[P(3, 1) + P(2, 2)] = \frac{1}{3}[1 + 1] = \frac{2}{3}$$
+(Since $P(3,1) = 1$ because $a = 3 \geq 2$)
+
+**For $a = 1, b = 1$:**
+$$P(1, 1) = \frac{1}{3}[P(2, 1) + P(1, 2)] = \frac{1}{3}\left[\frac{2}{3} + \frac{2}{3}\right] = \frac{1}{3} \cdot \frac{4}{3} = \frac{4}{9}$$
+
+**For $a = 0, b = 2$:**
+$$P(0, 2) = \frac{1}{3}[P(1, 2) + P(0, 3)] = \frac{1}{3}\left[\frac{2}{3} + 1\right] = \frac{1}{3} \cdot \frac{5}{3} = \frac{5}{9}$$
+
+**For $a = 2, b = 0$:**
+$$P(2, 0) = \frac{1}{3}[P(3, 0) + P(2, 1)] = \frac{1}{3}\left[1 + \frac{2}{3}\right] = \frac{1}{3} \cdot \frac{5}{3} = \frac{5}{9}$$
+
+**For $a = 0, b = 1$:**
+$$P(0, 1) = \frac{1}{3}[P(1, 1) + P(0, 2)] = \frac{1}{3}\left[\frac{4}{9} + \frac{5}{9}\right] = \frac{1}{3} \cdot \frac{9}{9} = \frac{1}{3}$$
+
+**For $a = 1, b = 0$:**
+$$P(1, 0) = \frac{1}{3}[P(2, 0) + P(1, 1)] = \frac{1}{3}\left[\frac{5}{9} + \frac{4}{9}\right] = \frac{1}{3} \cdot \frac{9}{9} = \frac{1}{3}$$
+
+**For $a = 0, b = 0$ (Initial State):**
+$$P(0, 0) = \frac{1}{3}[P(1, 0) + P(0, 1)] = \frac{1}{3}\left[\frac{1}{3} + \frac{1}{3}\right] = \frac{1}{3} \cdot \frac{2}{3} = \frac{2}{9}$$
+
+## Step 7: Express as a Fraction in Lowest Terms
+
+$$P(0, 0) = \frac{2}{9}$$
+
+Check: $\gcd(2, 9) = 1$ ✓
+
+Thus $m = 2$ and $n = 9$.
+
+## Step 8: Compute Final Answer
+
+$$100m + n = 100(2) + 9 = 200 + 9 = 209$$
+
+FINAL ANSWER: 209

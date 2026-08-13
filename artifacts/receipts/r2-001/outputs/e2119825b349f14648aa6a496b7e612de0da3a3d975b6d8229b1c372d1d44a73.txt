@@ -1,0 +1,75 @@
+# Solution
+
+## Step 1: Check if 2026 is divisible by 101
+
+Divide 2026 by 101:
+$$2026 = 101 \times 20 + 6$$
+
+**Verification:** $101 \times 20 = 2020$, and $2020 + 6 = 2026$ ✓
+
+**Result:** $2026 \equiv 6 \pmod{101}$
+
+So 2026 itself is NOT divisible by 101, but contains the substring "2026".
+
+## Step 2: Find the smallest multiple of 101 containing "2026"
+
+Since 2026 is not divisible by 101, I need to check numbers containing "2026" as a substring.
+
+Let me check **202026**:
+$$202026 = 101 \times 2000 + 26$$
+
+The nearest multiple of 101 is: $202026 + (101 - 26) = 202026 + 75 = 202101$
+
+Does 202101 contain "2026"? **No** ✗
+
+Let me check **202600**:
+$$202600 = 101 \times 2005 + 95$$
+
+The nearest multiple of 101 is: $202600 + (101 - 95) = 202600 + 6 = 202606$
+
+Does 202606 contain "2026"? **Yes** ✓
+
+**Verification:** $101 \times 2006 = 202606$ ✓
+
+**First smallest multiple of 101 containing "2026": 202606**
+
+## Step 3: Find the second smallest multiple of 101 containing "2026"
+
+Add 101 to the first result:
+$$202606 + 101 = 202707$$
+
+Does 202707 contain "2026"? **No** ✗
+
+I need to find the next number containing "2026". The next candidate is **2026000**:
+
+$$2026000 \div 101 = ?$$
+
+Let me calculate:
+$$2026000 = 101 \times 20059 + 41$$
+
+**Verification:** $101 \times 20059 = 2025959$ and $2025959 + 41 = 2026000$ ✓
+
+The nearest multiple of 101 is: $2026000 + (101 - 41) = 2026000 + 60 = 2026060$
+
+Does 2026060 contain "2026"? **Yes** ✓
+
+**Verification:** $101 \times 20060 = 2026060$ ✓
+
+## Step 4: Verify the answer
+
+**First smallest:** 202606
+- Is it a multiple of 101? $202606 \div 101 = 2006$ ✓
+- Contains "2026"? Yes ✓
+
+**Second smallest:** 2026060
+- Is it a multiple of 101? $2026060 \div 101 = 20060$ ✓
+- Contains "2026"? Yes ✓
+- Is there exactly one smaller such number? Yes, 202606 ✓
+
+## Step 5: Final Check
+
+Confirming the sequence:
+- 1st: 202606 = 101 × 2006, contains "2026"
+- 2nd: 2026060 = 101 × 20060, contains "2026"
+
+FINAL ANSWER: **2026060**

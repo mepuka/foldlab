@@ -1,0 +1,21 @@
+# Plan to Solve for Maximum Area of Triangle EUV
+
+1. **Set up coordinates** - Place the parallel lines strategically using the given parallel conditions ($NV \parallel SU$ and $SE \parallel UN$) to establish a coordinate system.
+
+2. **Express pentagon area constraint** - Use the condition that Area($VENUS$) = 84 to write a relationship between the positions of vertices $V$, $E$, $N$, $U$, and $S$.
+
+3. **Express triangle SUN constraint** - Use Area($SUN$) = 24 to establish a second constraint on vertex positions.
+
+4. **Parameterize the configuration** - Use the two constraints to express the coordinates of key vertices in terms of one or more free parameters, reducing degrees of freedom.
+
+5. **Express area of EUV as a function** - Write Area($EUV$) as an explicit function of the remaining parameter(s).
+
+6. **Apply optimization** - Find the parameter value(s) that maximize Area($EUV$) subject to all constraints.
+
+7. **Verify the solution** - Confirm that:
+   - The pentagon remains convex
+   - Both area constraints are satisfied
+   - All parallel conditions hold
+   - The computed maximum is achievable
+
+8. **State the answer** - Report the maximum possible area of triangle $EUV$.

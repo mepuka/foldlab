@@ -1,0 +1,103 @@
+I'll work through this step-by-step.
+
+## Step 1: Establish Coordinate System
+
+- $A = (0, 0)$
+- $E = (20, 0)$ on the positive $x$-axis
+- Since $\angle A = 90°$ and $\angle E = 90°$, we have $AB \perp AE$ and $ED \perp AE$
+
+## Step 2: Locate Vertices $B$ and $D$
+
+- $B = (0, h)$ where $h = AB > 0$
+- $D = (20, k)$ where $k = DE > 0$
+- Both $B$ and $D$ are above the $x$-axis (same side of $AE$)
+
+## Step 3: Use Angle Constraints at $B$ and $D$
+
+At $B$ with $\angle ABC = 45°$:
+- Vector $\vec{BA} = (0, -h)$ (pointing down)
+- The angle from $\vec{BA}$ to $\vec{BC}$ is $45°$ (interior angle)
+- This means $\vec{BC}$ makes an angle of $-45°$ from horizontal (or $315°$)
+- So $\vec{BC} = |BC|(\cos(-45°), \sin(-45°)) = |BC|\left(\frac{1}{\sqrt{2}}, -\frac{1}{\sqrt{2}}\right)$
+
+At $D$ with $\angle EDC = 45°$:
+- Vector $\vec{DE} = (0, -k)$ (pointing down)
+- The angle from $\vec{DE}$ to $\vec{DC}$ is $45°$ (interior angle)
+- This means $\vec{DC}$ makes an angle of $-135°$ from horizontal (or $225°$)
+- So $\vec{DC} = |DC|(\cos(225°), \sin(225°)) = |DC|\left(-\frac{1}{\sqrt{2}}, -\frac{1}{\sqrt{2}}\right)$
+
+## Step 4: Apply the $BC = 14\sqrt{2}$ Constraint
+
+From $B = (0, h)$ with $|BC| = 14\sqrt{2}$:
+$$C = B + 14\sqrt{2}\left(\frac{1}{\sqrt{2}}, -\frac{1}{\sqrt{2}}\right) = (0, h) + (14, -14) = (14, h-14)$$
+
+From $D = (20, k)$, we need $C$ to also satisfy:
+$$C = D + |DC|\left(-\frac{1}{\sqrt{2}}, -\frac{1}{\sqrt{2}}\right)$$
+
+For these to be the same point:
+$$(14, h-14) = \left(20 - \frac{|DC|}{\sqrt{2}}, k - \frac{|DC|}{\sqrt{2}}\right)$$
+
+From the $x$-coordinate:
+$$14 = 20 - \frac{|DC|}{\sqrt{2}} \implies |DC| = 6\sqrt{2}$$
+
+From the $y$-coordinate:
+$$h - 14 = k - \frac{6\sqrt{2}}{\sqrt{2}} = k - 6$$
+$$h = k + 8$$
+
+Therefore: $AB = DE + 8$, or equivalently, $DE = AB - 8$
+
+## Step 5: Enforce the Inequality $DE < AB$
+
+$$DE < AB$$
+$$AB - 8 < AB$$
+$$-8 < 0$$ ✓
+
+This is always true, so we need $DE > 0$:
+$$AB - 8 > 0 \implies AB > 8$$
+
+## Step 6: Calculate the Pentagon's Area
+
+Using the shoelace formula with:
+- $A = (0, 0)$
+- $B = (0, AB)$
+- $C = (14, AB-14)$
+- $D = (20, AB-8)$
+- $E = (20, 0)$
+
+$$\text{Area} = \frac{1}{2}|x_1(y_2-y_5) + x_2(y_3-y_1) + x_3(y_4-y_2) + x_4(y_5-y_3) + x_5(y_1-y_4)|$$
+
+$$= \frac{1}{2}|0(AB-0) + 0(AB-14-0) + 14(AB-8-AB) + 20(0-AB+14) + 20(0-AB+8)|$$
+
+$$= \frac{1}{2}|14(-8) + 20(14-AB) + 20(8-AB)|$$
+
+$$= \frac{1}{2}|-112 + 280 - 20AB + 160 - 20AB|$$
+
+$$= \frac{1}{2}|328 - 40AB| = |164 - 20AB|$$
+
+Since $AB > 8$, we have $20AB > 160$, so for reasonable values: $\text{Area} = 20AB - 164$
+
+## Step 7: Apply Divisibility Constraint
+
+We need Area $\equiv 0 \pmod{16}$:
+$$20AB - 164 \equiv 0 \pmod{16}$$
+$$4AB - 4 \equiv 0 \pmod{16}$$
+$$4AB \equiv 4 \pmod{16}$$
+$$AB \equiv 1 \pmod{4}$$
+
+So $AB \in \{9, 13, 17, 21, 25, ...\}$
+
+## Step 8-9: Combine All Constraints
+
+- $AB > 8$
+- $AB < 2026$
+- $AB \equiv 1 \pmod{4}$
+- $AB \in \mathbb{Z}$
+
+Valid values: $AB \in \{9, 13, 17, ..., 2025\}$ where $AB = 4n + 1$ for $n = 2, 3, 4, ..., 506$
+
+## Step 10: Final Count
+
+The number of integers of the form $4n+1$ from $9$ to $2025$:
+- First term: $9 = 4(2) + 1$
+- Last term: $2025 = 4(506) + 1$
+- Count: $506 

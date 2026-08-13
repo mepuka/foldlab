@@ -1,0 +1,30 @@
+# Solution Plan
+
+1. **Establish bounds on $n$**
+   - Note that $\lfloor \sqrt{n} \rfloor$ grows slowly, so focus on cases where $\lfloor \sqrt{n} \rfloor$ is small
+   - For large $n$, $(\lfloor \sqrt{n} \rfloor)!^{n!}$ becomes astronomically large, making divisibility unlikely
+
+2. **Use factorial divisibility properties**
+   - For $k \geq 5$, we have $k! \equiv 0 \pmod{n}$ for many values of $n$
+   - When $\lfloor \sqrt{n} \rfloor \geq 5$, the term $(\lfloor \sqrt{n} \rfloor)!^{n!}$ becomes divisible by large primes
+   - This severely restricts which $n$ can divide the sum
+
+3. **Systematically check small cases**
+   - Check $n = 1$ to $n = 25$ (where $\lfloor \sqrt{25} \rfloor = 5$)
+   - For each $n$, verify if $n \mid \left[(\lfloor \sqrt{n} \rfloor)!^{n!} + 450\right]$
+   - This requires computing $(\lfloor \sqrt{n} \rfloor)!^{n!} \pmod{n}$
+
+4. **Compute modular values for each range**
+   - **Range $\lfloor \sqrt{n} \rfloor = 1, 2, 3, 4$**: Factorials are small; compute $k!^{n!} \pmod{n}$ directly
+   - **Range $\lfloor \sqrt{n} \rfloor = 5$**: Use Wilson's theorem and properties of factorials modulo primes
+
+5. **Focus on candidates near $n = 450$**
+   - Since $450$ appears in the expression, check divisors of $450$ and nearby integers
+   - Special attention to $n = 450$ and values where prime factors of $450$ (i.e., $2, 3, 5$) play a role
+
+6. **Verify the maximum**
+   - Once candidates are identified, verify the largest one satisfies the divisibility condition
+   - Confirm no larger $n$ works by showing divisibility fails
+
+7. **Conclude with the answer**
+   - Report the largest $n$ found that satisfies the condition

@@ -1,0 +1,41 @@
+# Review of Work
+
+I found an error in **Step 3: Apply Validity Constraints**.
+
+The work states $r \geq 7$, but this is incorrect.
+
+## Correct Constraint Analysis
+
+For the binomial coefficients to be defined:
+- $\binom{r}{5}$ requires $r \geq 5$
+- $\binom{b}{3}$ requires $b \geq 3$
+
+From $b = 3r - 10 \geq 3$:
+$$3r \geq 13$$
+$$r \geq 4.33...$$
+
+The binding constraint is $r \geq 5$.
+
+## Corrected Step 4: Find Valid Pairs
+
+| $r$ | $b = 3r - 10$ | Valid? | $n = r + b$ |
+|-----|---------------|--------|-------------|
+| 5   | $15 - 10 = 5$ | ✓ | 10 |
+| 6   | $18 - 10 = 8$ | ✓ | 14 |
+| 7   | $21 - 10 = 11$ | ✓ | 18 |
+| 8   | $24 - 10 = 14$ | ✓ | 22 |
+| 9   | $27 - 10 = 17$ | ✓ | 26 |
+
+## Corrected Step 5: Five Smallest Values of $n$
+
+- $n_1 = 10$ (from $r=5, b=5$)
+- $n_2 = 14$ (from $r=6, b=8$)
+- $n_3 = 18$ (from $r=7, b=11$)
+- $n_4 = 22$ (from $r=8, b=14$)
+- $n_5 = 26$ (from $r=9, b=17$)
+
+## Corrected Step 6: Final Answer
+
+$$\text{Sum} = 10 + 14 + 18 + 22 + 26 = 90$$
+
+90

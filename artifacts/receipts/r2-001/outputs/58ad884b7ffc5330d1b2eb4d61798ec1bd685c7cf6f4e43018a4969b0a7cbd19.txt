@@ -1,0 +1,123 @@
+# Step-by-Step Solution
+
+## Step 1: Set up a coordinate system
+
+**What we're doing:** Establishing a coordinate system to track positions through rotations.
+
+**Calculation:**
+- Place $B$ at the origin: $B = (0, 0)$
+- Place $A$ on the positive $x$-axis: $A = (1, 0)$
+
+**Verification:** This is a valid setup since $|AB| = 1$. ✓
+
+---
+
+## Step 2: Find the position of $A'$ after the first rotation
+
+**What we're doing:** Rotating point $A$ counterclockwise by angle $\theta$ around $B$.
+
+**Calculation:**
+Using the counterclockwise rotation matrix:
+$$A' = R_\theta \cdot A = \begin{pmatrix} \cos \theta & -\sin \theta \\ \sin \theta & \cos \theta \end{pmatrix} \begin{pmatrix} 1 \\ 0 \end{pmatrix} = \begin{pmatrix} \cos \theta \\ \sin \theta \end{pmatrix}$$
+
+**Verification:** $|BA'| = \sqrt{\cos^2 \theta + \sin^2 \theta} = 1$ ✓
+
+---
+
+## Step 3: Find the position of $B'$ after the second rotation
+
+**What we're doing:** Rotating $B$ clockwise by angle $\theta$ around $A'$.
+
+**Calculation:**
+
+First, find the vector from $A'$ to $B$:
+$$\vec{A'B} = B - A' = (0, 0) - (\cos \theta, \sin \theta) = (-\cos \theta, -\sin \theta)$$
+
+Apply the clockwise rotation matrix (angle $-\theta$):
+$$R_{-\theta} = \begin{pmatrix} \cos \theta & \sin \theta \\ -\sin \theta & \cos \theta \end{pmatrix}$$
+
+$$R_{-\theta} \vec{A'B} = \begin{pmatrix} \cos \theta & \sin \theta \\ -\sin \theta & \cos \theta \end{pmatrix} \begin{pmatrix} -\cos \theta \\ -\sin \theta \end{pmatrix}$$
+
+$$= \begin{pmatrix} -\cos^2 \theta - \sin^2 \theta \\ \sin \theta \cos \theta - \sin \theta \cos \theta \end{pmatrix} = \begin{pmatrix} -1 \\ 0 \end{pmatrix}$$
+
+Therefore:
+$$B' = A' + \begin{pmatrix} -1 \\ 0 \end{pmatrix} = (\cos \theta - 1, \sin \theta)$$
+
+**Verification:** The rotation length is preserved: $|A'B'| = 1$ ✓
+
+---
+
+## Step 4: Apply the distance condition
+
+**What we're doing:** Calculate $|AB'|$ and set it equal to $\frac{4}{3}$.
+
+**Calculation:**
+$$\vec{AB'} = B' - A = (\cos \theta - 1, \sin \theta) - (1, 0) = (\cos \theta - 2, \sin \theta)$$
+
+$$|AB'|^2 = (\cos \theta - 2)^2 + \sin^2 \theta$$
+
+$$= \cos^2 \theta - 4\cos \theta + 4 + \sin^2 \theta$$
+
+$$= 1 - 4\cos \theta + 4 = 5 - 4\cos \theta$$
+
+Set $|AB'| = \frac{4}{3}$:
+$$5 - 4\cos \theta = \frac{16}{9}$$
+
+**Verification:** Squaring $\frac{4}{3}$ gives $\frac{16}{9}$ ✓
+
+---
+
+## Step 5: Solve for $\cos \theta$
+
+**What we're doing:** Isolate $\cos \theta$ from the equation.
+
+**Calculation:**
+$$5 - 4\cos \theta = \frac{16}{9}$$
+
+$$4\cos \theta = 5 - \frac{16}{9} = \frac{45 - 16}{9} = \frac{29}{9}$$
+
+$$\cos \theta = \frac{29}{36}$$
+
+**Verification:** This is a single solution (no quadratic needed since we squared both sides and got one equation in one unknown) ✓
+
+---
+
+## Step 6: Select the valid solution
+
+**What we're doing:** Verify that $0 < \cos \theta < 1$ (corresponds to $0 < \theta < \frac{\pi}{2}$).
+
+**Calculation:**
+$$0 < \frac{29}{36} < 1$$
+
+Since $29 < 36$, we have $\frac{29}{36} < 1$ ✓
+Since $29 > 0$, we have $\frac{29}{36} > 0$ ✓
+
+**Verification:** This is a valid acute angle ✓
+
+---
+
+## Step 7: Express in lowest terms and compute the answer
+
+**What we're doing:** Write $\cos \theta = \frac{m}{n}$ in lowest terms and find $m + n$.
+
+**Calculation:**
+$$\cos \theta = \frac{29}{36}$$
+
+Check $\gcd(29, 36)$:
+- $29$ is prime
+- $36 = 2^2 \times 3^2$
+- Since $29$ is not divisible by $2$ or $3$: $\gcd(29, 36) = 1$ ✓
+
+Therefore: $m = 29$, $n = 36$
+
+$$m + n = 29 + 36 = 65$$
+
+---
+
+## Final Verification
+
+Substitute back: $|AB'|^2 = 5 - 4\left(\frac{29}{36}\right) = 5 - \frac{116}{36} = \frac{180-116}{36} = \frac{64}{36} = \frac{16}{9}$
+
+Therefore: $|AB'| = \frac{4}{3}$ ✓
+
+**FINAL ANSWER: 65**

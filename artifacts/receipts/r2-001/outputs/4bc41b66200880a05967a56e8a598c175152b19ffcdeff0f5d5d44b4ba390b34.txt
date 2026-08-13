@@ -1,0 +1,59 @@
+I'll carry out this solution step by step, showing all work.
+
+## Step 1: Set up a coordinate system
+
+Placing the square $ABCD$ with:
+- $A = (0, 0)$ at the origin
+- $B = (12, 0)$ on the positive $x$-axis
+- $C = (12, 12)$ at the opposite corner
+- $D = (0, 12)$ on the positive $y$-axis
+
+✓ This forms a $12 \times 12$ square.
+
+## Step 2: Locate vertices $W$ and $X$ of square $WXYZ$
+
+- $W$ is on $\overline{AD}$ with $AW = 4$: $W = (0, 4)$ ✓
+- $X$ is on $\overline{AB}$ with $AX = 5$: $X = (5, 0)$ ✓
+
+## Step 3: Verify the side length of square $WXYZ$
+
+$$|WX| = \sqrt{(5-0)^2 + (0-4)^2} = \sqrt{25 + 16} = \sqrt{41}$$
+
+The side length of square $WXYZ$ is $\sqrt{41}$ units.
+
+## Step 4: Find coordinates of $Y$ and $Z$
+
+To complete the square, we rotate $\vec{WX}$ counterclockwise by 90°:
+
+$$\vec{WX} = (5, -4)$$
+
+Rotating 90° counterclockwise: $(x, y) \to (-y, x)$
+
+$$\vec{WX}^{\perp} = (4, 5)$$
+
+Therefore:
+- $Z = W + (4, 5) = (0, 4) + (4, 5) = (4, 9)$ ✓
+- $Y = X + (4, 5) = (5, 0) + (4, 5) = (9, 5)$ ✓
+
+We can verify: $|XY| = \sqrt{(9-5)^2 + (5-0)^2} = \sqrt{16 + 25} = \sqrt{41}$ ✓
+
+## Step 5: Calculate the area of △BCY
+
+Using the coordinate formula for triangle area with vertices $B = (12, 0)$, $C = (12, 12)$, $Y = (9, 5)$:
+
+$$\text{Area} = \frac{1}{2}|x_B(y_C - y_Y) + x_C(y_Y - y_B) + x_Y(y_B - y_C)|$$
+
+Substituting values:
+$$\text{Area} = \frac{1}{2}|12(12-5) + 12(5-0) + 9(0-12)|$$
+
+$$= \frac{1}{2}|12(7) + 12(5) + 9(-12)|$$
+
+$$= \frac{1}{2}|84 + 60 - 108|$$
+
+$$= \frac{1}{2}|36|$$
+
+$$= \frac{1}{2} \cdot 36 = 18$$
+
+## Final Answer
+
+The area of $\triangle BCY$ is $\boxed{18}$ square units.

@@ -1,0 +1,34 @@
+# Solution Plan for 8×8 Square Partition into 3 Rectangles
+
+## Step 1: Identify Possible Partition Structures
+Determine all topologically distinct ways to divide a square into exactly 3 rectangles:
+- **Two parallel cuts** (creating 3 strips)
+- **One straight cut + one perpendicular cut** (creating an L-shape and remainder subdivided)
+- **One straight cut dividing into 2 parts, then subdividing one part** (various configurations)
+
+## Step 2: Case 1 - Three Horizontal Strips
+- Make two horizontal cuts at positions $h_1$ and $h_2$ where $0 < h_1 < h_2 < 8$
+- Creates rectangles: 8×$h_1$, 8×($h_2$−$h_1$), 8×(8−$h_2$)
+- Count valid pairs $(h_1, h_2)$: $\binom{7}{2} = 21$ ways
+
+## Step 3: Case 2 - Three Vertical Strips
+- Make two vertical cuts at positions $v_1$ and $v_2$ where $0 < v_1 < v_2 < 8$
+- Creates rectangles: $v_1$×8, ($v_2$−$v_1$)×8, (8−$v_2$)×8
+- Count valid pairs $(v_1, v_2)$: $\binom{7}{2} = 21$ ways
+
+## Step 4: Case 3 - L-Shaped Partition (One cut creating 2 regions, one subdivided)
+- Make one straight cut (horizontal or vertical) creating 2 rectangles
+- Subdivide one rectangle with a perpendicular cut
+- Account for: position of first cut, position of second cut, which rectangle is subdivided
+- Carefully enumerate to avoid double-counting with Cases 1 & 2
+
+## Step 5: Verify No Overlaps Between Cases
+- Confirm Cases 1 and 2 are mutually exclusive (parallel vs. perpendicular primary divisions)
+- Ensure Case 3 captures L-shaped configurations not counted above
+
+## Step 6: Sum All Valid Configurations
+$$\text{Total} = \text{Case 1} + \text{Case 2} + \text{Case 3}$$
+
+## Step 7: Verify Answer
+- Check a few configurations manually to ensure they genuinely partition the 8×8 square
+- Expected answer range: 40-150 (depending on how Case 3 generalizes)

@@ -1,0 +1,32 @@
+# Solution Plan
+
+1. **Set up coordinates**
+   - Place $B$ at the origin and $C$ at $(10, 0)$ on the x-axis (since $BC = 10$)
+
+2. **Locate point $E$ using the equilateral triangle condition**
+   - Since triangle $BEC$ is equilateral with side length 10, find $E$ at $(5, 5\sqrt{3})$ (the third vertex above the x-axis)
+
+3. **Express positions of $A$ and $D$ on the line**
+   - Let $A = (-a, 0)$ where $a = AB > 0$ (so $A$ is left of $B$)
+   - Let $D = (10 + d, 0)$ where $d = CD > 0$ (so $D$ is right of $C$)
+
+4. **Apply the angle condition $\angle AED = 120°$**
+   - Use the dot product formula: $\cos(120°) = -\frac{1}{2}$
+   - Compute vectors $\overrightarrow{EA} = (-a-5, -5\sqrt{3})$ and $\overrightarrow{ED} = (5+d, -5\sqrt{3})$
+   - Set up: $\frac{\overrightarrow{EA} \cdot \overrightarrow{ED}}{|\overrightarrow{EA}||\overrightarrow{ED}|} = -\frac{1}{2}$
+
+5. **Expand and simplify the dot product equation**
+   - $\overrightarrow{EA} \cdot \overrightarrow{ED} = (-a-5)(5+d) + 75$
+   - $|\overrightarrow{EA}||\overrightarrow{ED}| = \sqrt{(a+5)^2 + 75}\sqrt{(5+d)^2 + 75}$
+   - This yields: $(-a-5)(5+d) + 75 = -\frac{1}{2}\sqrt{(a+5)^2 + 75}\sqrt{(5+d)^2 + 75}$
+
+6. **Use the distance constraint $AD = 39$**
+   - From collinearity: $AD = a + 10 + d = 39$
+   - Therefore: $a + d = 29$
+
+7. **Substitute the constraint into the angle equation**
+   - Replace $d = 29 - a$ and solve for $a$
+   - Square both sides to eliminate the square root and solve the resulting algebraic equation
+
+8. **Compute $|AB - CD|$**
+   - Once $a$ and $d$ are found, calculate $|a - d| = |a - (29-a)| = |2a - 29|$

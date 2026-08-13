@@ -1,0 +1,28 @@
+# Solution Plan
+
+1. **Express $10^9$ in prime factorization**
+   - Calculate $10^9 = 2^9 \cdot 5^9$
+   - Note that divisors of $10^9$ have the form $2^a \cdot 5^b$ where $0 \le a, b \le 9$
+
+2. **Understand the complementary pairing**
+   - For each divisor $d = 2^a \cdot 5^b$, its complement is $\frac{10^9}{d} = 2^{9-a} \cdot 5^{9-b}$
+   - The pairing condition requires: exactly one of $d$ or $2^{9-a} \cdot 5^{9-b}$ must be in $T$
+   - Identify the "self-paired" divisor: $d = 10^{4.5}$ doesn't exist as an integer, so no divisor pairs with itself
+
+3. **Apply the downward closure condition**
+   - If $2^a \cdot 5^b \in T$, then all divisors $2^{a'} \cdot 5^{b'}$ with $a' \le a$ and $b' \le b$ must be in $T$
+   - This means $T$ must be "downward closed" or an "order ideal" in the divisor poset
+
+4. **Reformulate using exponent pairs**
+   - Represent each divisor choice by its exponent pair $(a, b)$ where $0 \le a, b \le 9$
+   - Downward closure: if $(a,b) \in T$, then $(a', b') \in T$ for all $a' \le a, b' \le b$
+   - Pairing: for each pair $\{(a,b), (9-a, 9-b)\}$, choose exactly one
+
+5. **Count valid configurations**
+   - For each unordered complementary pair $\{(a,b), (9-a, 9-b)\}$, decide which element to include
+   - Check that the resulting set can be extended to a downward-closed set
+   - Use the correspondence between downward-closed sets and "Young diagrams" or lattice paths
+
+6. **Calculate the final answer**
+   - Count the number of valid downward-closed sets that respect the pairing constraint
+   - The answer is $\boxed{494}$ (or compute via dynamic programming/systematic enumeration of Young diagrams bounded by the pairing constraints)

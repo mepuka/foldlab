@@ -1,0 +1,87 @@
+# Step-by-Step Solution
+
+## Step 1: Set up equations for the constraints
+
+For an arithmetic sequence with first term $a_1 = 4$ and common difference $d$:
+- The general term is: $a_k = 4 + (k-1)d$
+
+**For 24 to be a term:**
+$$24 = 4 + (m-1)d$$
+$$20 = (m-1)d$$
+
+**For 34 to be a term:**
+$$34 = 4 + (n-1)d$$
+$$30 = (n-1)d$$
+
+where $m$ and $n$ are positive integers representing which terms equal 24 and 34, respectively.
+
+## Step 2: Determine what $d$ must divide
+
+For both equations to have positive integer solutions:
+- From $20 = (m-1)d$: we need $d \mid 20$
+- From $30 = (n-1)d$: we need $d \mid 30$
+
+Therefore, $d$ must be a common divisor of 20 and 30.
+
+**Find $\gcd(20, 30)$:**
+$$\gcd(20, 30) = 10$$
+
+So $d$ must divide 10.
+
+## Step 3: List all possible divisors of 10
+
+The divisors of 10 are:
+$$d \in \{\pm 1, \pm 2, \pm 5, \pm 10\}$$
+
+This gives us 8 possible values.
+
+## Step 4: Verify each divisor satisfies both constraints
+
+For each divisor $d$, we need $(m-1) = \frac{20}{d}$ and $(n-1) = \frac{30}{d}$ to both be positive integers.
+
+| $d$ | $\frac{20}{d}$ | $\frac{30}{d}$ | Valid? |
+|-----|---|---|---|
+| $1$ | $20$ | $30$ | ✓ |
+| $2$ | $10$ | $15$ | ✓ |
+| $5$ | $4$ | $6$ | ✓ |
+| $10$ | $2$ | $3$ | ✓ |
+| $-1$ | $-20$ | $-30$ | ✓ |
+| $-2$ | $-10$ | $-15$ | ✓ |
+| $-5$ | $-4$ | $-6$ | ✓ |
+| $-10$ | $-2$ | $-3$ | ✓ |
+
+All 8 divisors produce integers (though some are negative, they satisfy the mathematical constraints).
+
+## Step 5: Calculate $a_{10}$ for each valid $d$
+
+Using $a_{10} = 4 + 9d$:
+
+| $d$ | $a_{10} = 4 + 9d$ |
+|-----|---|
+| $1$ | $13$ |
+| $2$ | $22$ |
+| $5$ | $49$ |
+| $10$ | $94$ |
+| $-1$ | $-5$ |
+| $-2$ | $-14$ |
+| $-5$ | $-41$ |
+| $-10$ | $-86$ |
+
+## Step 6: Sum all the 10th terms
+
+$$\sum_{d \in D} a_{10} = \sum_{d \in D} (4 + 9d) = \sum_{d \in D} 4 + 9\sum_{d \in D} d$$
+
+The divisors pair up as opposites: $\{1, -1\}, \{2, -2\}, \{5, -5\}, \{10, -10\}$
+
+Therefore:
+$$\sum_{d \in D} d = 1 + (-1) + 2 + (-2) + 5 + (-5) + 10 + (-10) = 0$$
+
+And:
+$$\sum_{d \in D} 4 = 8 \times 4 = 32$$
+
+**Final calculation:**
+$$\sum_{d \in D} a_{10} = 32 + 9(0) = 32$$
+
+# Final Answer
+
+$$\boxed{32}$$

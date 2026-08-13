@@ -1,0 +1,17 @@
+I appreciate you working through this problem systematically, but I need to flag some concerns about the conclusion in **Step 6**.
+
+## Issues with Step 6
+
+The jump from the analysis in Steps 1-5 to claiming "exactly **251** values" needs more rigorous justification. Let me outline what we've established and what remains:
+
+### What we know:
+1. ✓ The roots of unity filter formula is correct
+2. ✓ The computation $2^{462} \equiv 493 \pmod{503}$ is correct
+3. ✓ The constraint is: $493 + \sum_{j=1}^{501} \omega^{-jr}(1+\omega^j)^{10000} \equiv 0 \pmod{503}$
+
+### What needs justification:
+
+The claim that "exactly 251 values of $r$ satisfy the divisibility condition" requires:
+
+1. **Character sum evaluation**: We need to rigorously evaluate 
+$$\sum_{j=1}^{501} \omega^{-jr}(1+\omega^j)^{

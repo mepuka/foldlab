@@ -1,0 +1,72 @@
+I'll carry out this solution plan step by step.
+
+## Step 1: Analyze the structure of $|x^2 + ax + b| = c$
+
+The absolute value equation $|x^2 + ax + b| = c$ splits into two cases:
+- Case 1: $x^2 + ax + b = c$
+- Case 2: $x^2 + ax + b = -c$
+
+The total number of integer solutions is the sum of integer solutions from both quadratics.
+
+## Step 2: Determine condition for exactly 3 solutions
+
+Let $p(x) = x^2 + ax + b$.
+
+For exactly 3 integer solutions total:
+- One quadratic must have **2 distinct integer solutions**
+- The other quadratic must have **1 solution** (a double root that is an integer)
+
+This requires one equation to have discriminant = 0 (double root) and the other to have discriminant > 0 (two distinct roots).
+
+## Step 3: Set up the case where $p(x) = -c$ has a double root
+
+Assume $p(x) = -c$ has a double integer root at $x = x_0$.
+
+We can write: $p(x) = (x - x_0)^2 + d$ for some constant $d$.
+
+Since $p(x_0) = -c$:
+$$p(x_0) = 0 + d = -c \implies d = -c$$
+
+Therefore: $p(x) = (x - x_0)^2 - c$
+
+## Step 4: Condition for $p(x) = c$ to have exactly 2 integer solutions
+
+Substituting into $p(x) = c$:
+$$(x - x_0)^2 - c = c$$
+$$(x - x_0)^2 = 2c$$
+
+For two distinct integer solutions: $x - x_0 = \pm\sqrt{2c}$
+
+This requires $\sqrt{2c}$ to be a positive integer. Let $\sqrt{2c} = k$ where $k$ is a positive integer.
+
+Then: $2c = k^2$, so $c = \frac{k^2}{2}$
+
+**For $c$ to be an integer:** $k$ must be even.
+
+Let $k = 2m$ for positive integer $m$:
+$$c = \frac{(2m)^2}{2} = \frac{4m^2}{2} = 2m^2$$
+
+## Step 5: Apply the constraint $c \le 2025$
+
+We need:
+$$2m^2 \le 2025$$
+$$m^2 \le 1012.5$$
+$$m \le \sqrt{1012.5} \approx 31.82$$
+
+Since $m$ must be a positive integer: $m \le 31$
+
+Verification:
+- $31^2 = 961$, so $2(31)^2 = 1922 \le 2025$ ✓
+- $32^2 = 1024$, so $2(32)^2 = 2048 > 2025$ ✗
+
+## Step 6: Count possible values of $c$
+
+Valid values of $m$: $\{1, 2, 3, 4, ..., 31\}$
+
+Corresponding values of $c$: $\{2(1)^2, 2(2)^2, 2(3)^2, ..., 2(31)^2\} = \{2, 8, 18, 32, ..., 1922\}$
+
+Since each value of $m$ produces a unique value of $c = 2m^2$, there are exactly **31** possible values of $c$.
+
+---
+
+# Final Answer: **31**

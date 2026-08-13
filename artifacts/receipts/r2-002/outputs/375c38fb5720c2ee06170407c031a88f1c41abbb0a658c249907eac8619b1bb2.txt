@@ -1,0 +1,34 @@
+# Solution Plan
+
+## 1. **Set Up the State Space**
+   - Define states as (a, b) where a = Alice's coins, b = Bob's coins
+   - Track only rolls that give coins to Alice or Bob (ignore Carol rolls)
+   - Initial state: (0, 0)
+   - Target state: any (a, b) where a ≥ 2 AND b ≥ 2
+
+## 2. **Condition on the First Carol Roll**
+   - The process continues until Carol gets a coin
+   - Between any two Carol rolls, only Alice and Bob receive coins
+   - Use conditional probability: P(target | before Carol's first coin)
+
+## 3. **Reduce to Simplified Probability**
+   - Given that Carol hasn't rolled yet, each roll gives:
+     - Alice a coin with probability 1/2
+     - Bob a coin with probability 1/2
+   - This is equivalent to: repeatedly flip a fair coin until reaching state (a, b) with a ≥ 2, b ≥ 2
+   - The actual stopping (Carol's roll) doesn't affect the joint distribution of Alice and Bob coins before it occurs
+
+## 4. **Calculate Using Generating Functions or Recursion**
+   - Let P(a, b) = probability of reaching (a, b) before the process ends
+   - Set up recurrence: From state (a, b), move to (a+1, b) or (a, b+1) with equal probability 1/2
+   - Compute P(a, b) for all states (a, b) reachable before target
+   - Sum probabilities for all states (a, b) where a ≥ 2 and b ≥ 2
+
+## 5. **Alternative: Direct Calculation**
+   - P(reach (a, b)) = C(a+b, a) × (1/2)^(a+b)
+   - P(target) = Σ_{a≥2, b≥2} C(a+b, a) × (1/2)^(a+b)
+   - This equals: 1 - [P(a≤1) + P(b≤1) - P(a≤1 AND b≤1)]
+
+## 6. **Reduce to Lowest Terms and Final Answer**
+   - Simplify the resulting fraction to m/n with gcd(m, n) = 1
+   - Compute **100m + n**

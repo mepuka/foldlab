@@ -1,0 +1,28 @@
+# Solution: Finding All n Where 6 is the 6th Largest Divisor
+
+## Step 1: Set up the divisor relationship
+
+**What we're calculating:** Establishing the structure of divisors around 6.
+
+If 6 is the 6th largest divisor of $n$, then listing divisors in descending order:
+$$d_1 = n > d_2 > d_3 > d_4 > d_5 > d_6 = 6 > d_7 > d_8 > \cdots$$
+
+This means exactly 5 divisors are larger than 6.
+
+**Verification:** This structure makes sense—6 occupies the 6th position with exactly 5 divisors above it.
+
+## Step 2: Determine divisors ≤ 6
+
+**What we're calculating:** Which numbers ≤ 6 must divide $n$.
+
+Since 6 is a divisor of $n$:
+- We have $6 | n$, which means $2 | n$ and $3 | n$
+- Therefore {1, 2, 3, 6} all divide $n$
+
+Could 4 or 5 divide $n$?
+- If $4 | n$: divisors ≤ 6 would be {1, 2, 3, 4, 6} (5 divisors), making 6 the 5th largest—contradiction
+- If $5 | n$: divisors ≤ 6 would be {1, 2, 3, 5, 6} (5 divisors), making 6 the 5th largest—contradiction
+
+**Conclusion:** Divisors of $n$ that are ≤ 6 are exactly {1, 2, 3, 6} (4 divisors)
+
+**Verification:** This gives exactly 5 divisors > 6, making 6 the 6

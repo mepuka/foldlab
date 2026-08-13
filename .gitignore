@@ -3,3 +3,5 @@ dist/
 bench/results/
 .reference/
 .env
+artifacts/receipts/*/corpus.json
+go/*.exe

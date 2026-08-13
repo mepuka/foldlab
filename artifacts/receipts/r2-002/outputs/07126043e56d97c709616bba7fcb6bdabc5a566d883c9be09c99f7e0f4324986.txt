@@ -1,0 +1,53 @@
+# Solution: Finding Moons with All Three Characteristics
+
+## Step 1: Define the Seven Regions of the Venn Diagram
+
+For three overlapping sets (Blue, Icy, Large), we have 7 non-overlapping regions:
+
+1. Blue only (B ∩ I' ∩ L')
+2. Icy only (B' ∩ I ∩ L')
+3. Large only (B' ∩ I' ∩ L)
+4. Blue and Icy, but NOT Large (B ∩ I ∩ L')
+5. Blue and Large, but NOT Icy (B ∩ I' ∩ L)
+6. Icy and Large, but NOT Blue (B' ∩ I ∩ L)
+7. All three: Blue AND Icy AND Large (B ∩ I ∩ L) = **x** ← our target
+
+## Step 2: Assign Known Quantities
+
+**"Blue but not icy: 10"** means B ∩ I' = 10
+- This includes Regions 1 and 5
+- Region 1 + Region 5 = 10
+
+**"Icy but not large: 8"** means I ∩ L' = 8
+- This includes Regions 2 and 4
+- Region 2 + Region 4 = 8
+
+**"Large but not blue: 6"** means L ∩ B' = 6
+- This includes Regions 3 and 6
+- Region 3 + Region 6 = 6
+
+## Step 3: Sum the Constraint Equations
+
+Adding the three constraint equations:
+$$(\text{Region 1} + \text{Region 5}) + (\text{Region 2} + \text{Region 4}) + (\text{Region 3} + \text{Region 6}) = 10 + 8 + 6$$
+
+$$\text{Region 1} + \text{Region 2} + \text{Region 3} + \text{Region 4} + \text{Region 5} + \text{Region 6} = 24$$
+
+## Step 4: Apply the Partition Principle
+
+All 29 moons must be distributed across all 7 regions:
+
+$$\text{Regions 1-6} + \text{Region 7} = 29$$
+
+$$24 + x = 29$$
+
+## Step 5: Solve for x
+
+$$x = 29 - 24 = 5$$
+
+## Verification
+- Moons with exactly one characteristic (possibly combined with others): 24
+- Moons with all three characteristics: 5
+- Total: 24 + 5 = 29 ✓
+
+**5**

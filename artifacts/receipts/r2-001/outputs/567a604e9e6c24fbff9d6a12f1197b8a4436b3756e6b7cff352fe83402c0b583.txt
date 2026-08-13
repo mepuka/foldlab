@@ -1,0 +1,28 @@
+# Plan for Solving the Equiangular Pentagon Problem
+
+1. **Set up the perimeter equation**
+   - Let $P = a + b + c + d + e$ (the perimeter)
+   - We need to find $P^2 = (a + b + c + d + e)^2$
+
+2. **Expand the perimeter squared**
+   - $P^2 = a^2 + b^2 + c^2 + d^2 + e^2 + 2(ab + ac + ad + ae + bc + bd + be + cd + ce + de)$
+   - We know $a^2 + b^2 + c^2 + d^2 + e^2 = 308$
+   - So we need: $P^2 = 308 + 2S$ where $S$ is the sum of all pairwise products
+
+3. **Apply the law of cosines to diagonals**
+   - For an equiangular pentagon with interior angles of 108°, use the law of cosines
+   - Each diagonal connects two vertices, and can be expressed in terms of sides
+   - The diagonals relate to sides through $\cos(108°) = \frac{-1 + \sqrt{5}}{4}$ and $\cos(216°) = \frac{-1 - \sqrt{5}}{4}$
+
+4. **Relate the sum of diagonal squares to side lengths**
+   - Sum all law of cosines expressions for the 5 diagonals
+   - This creates a system involving $\sum d_i^2 = 800$ that connects to the pairwise products of sides
+   - Solve for $S = \sum_{i<j} a_i a_j$
+
+5. **Calculate $P^2$**
+   - Substitute the value of $S$ into: $P^2 = 308 + 2S$
+   - Express in the form $m\sqrt{n}$ with $n$ square-free
+
+6. **Find the final answer**
+   - Identify integers $m$ and $n$
+   - Calculate and report $m + n$

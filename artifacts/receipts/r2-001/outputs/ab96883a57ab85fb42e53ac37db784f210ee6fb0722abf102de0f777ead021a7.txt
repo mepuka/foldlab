@@ -1,0 +1,15 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Target range**: integers ≤ 100
+2. **Form requirement**: integers equal to $a + b + ab$
+3. **Constraints on $a$ and $b$**:
+   - Both must be positive integers
+   - They must be distinct ($a \neq b$)
+
+## What is Being Asked
+
+Find the count of how many integers in the set $\{1, 2, 3, \ldots, 100\}$ can be expressed in the form $a + b + ab$ where $a$ and $b$ are distinct positive integers.
+
+(In other words: how many different values of the expression $a + b + ab$ are there that are ≤ 100, as we vary over all valid choices of distinct positive integers $a$ and $b$?)

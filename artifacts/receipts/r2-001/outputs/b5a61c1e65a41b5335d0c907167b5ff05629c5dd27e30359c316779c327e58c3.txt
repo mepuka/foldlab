@@ -1,0 +1,16 @@
+# Competition Math Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **A regular hexagon** with side length 4
+2. **Lattice subdivision**: The hexagon is subdivided into 96 equilateral triangles of side length 1
+3. **Vertex set S**: All vertices of this triangular lattice
+4. **The center of the hexagon**: A fixed point (geometric center)
+
+## What is Being Asked
+
+Find the count of **nondegenerate triangles** satisfying:
+- All three vertices belong to the set $S$ (lattice vertices)
+- The center of the hexagon lies **strictly in the interior** of the triangle (not on the boundary)
+
+In other words: compute $|\{\triangle ABC : A, B, C \in S, \text{ center} \in \text{int}(\triangle ABC)\}|$

@@ -1,0 +1,83 @@
+# Step-by-Step Solution
+
+## Step 1: Understand the Tangency Requirement
+
+For **exactly 3 integer solutions total**, one equation must have exactly **1 solution** (tangency) and the other must have exactly **2 solutions**.
+
+A parabola $y = x^2 + ax + b$ has a horizontal tangent line at its vertex when the discriminant of $x^2 + ax + b = k$ equals zero.
+
+The equation $x^2 + ax + b = k$ has discriminant: $\Delta = a^2 - 4(b-k)$
+
+Tangency occurs when: $a^2 - 4(b-k) = 0 \Rightarrow k = b - \frac{a^2}{4}$
+
+## Step 2: Ensure Integer Vertex Location
+
+For tangency to occur at an integer $x$-coordinate, we need $a$ to be even.
+
+Let $a = 2m$ where $m$ is an integer.
+- Vertex location: $x = -\frac{a}{2} = -m$ ✓ (integer)
+- Vertex value: $f(-m) = (-m)^2 + 2m(-m) + b = m^2 - 2m^2 + b = \boxed{b - m^2}$
+
+## Step 3: Analyze the Two Cases
+
+For exactly 3 solutions, one of $\{c, -c\}$ equals the vertex value $b - m^2$.
+
+**Case 1: $c = b - m^2$** (tangent equation: $x^2 + ax + b = c$)
+
+Then $-c = -(b-m^2) = m^2 - b < 0$ (assuming $b > m^2$).
+
+The other equation: $x^2 + 2mx + b = -c$
+- Vertex value: $b - m^2 = c > 0$
+- For 2 real solutions: need $b - m^2 < -c$, which means $c < -c$ → contradiction since $c > 0$
+
+**Case 2: $-c = b - m^2$** (tangent equation: $x^2 + ax + b = -c$) ✓
+
+Then $c = m^2 - b$, so $b = m^2 - c$.
+
+The other equation: $x^2 + 2mx + b = c$
+$$x^2 + 2mx + (m^2 - c) = c$$
+$$x^2 + 2mx + (m^2 - 2c) = 0$$
+
+Discriminant: $\Delta = 4m^2 - 4(m^2 - 2c) = 4m^2 - 4m^2 + 8c = 8c$
+
+**Verification of discriminant calculation:**
+- $\Delta = (2m)^2 - 4(1)(m^2 - 2c) = 4m^2 - 4m^2 + 8c = 8c$ ✓
+
+For **exactly 2 real solutions**: $8c > 0$ ✓ (true for $c > 0$)
+
+## Step 4: Integer Solutions Requirement
+
+The solutions are: $x = \frac{-2m \pm \sqrt{8c}}{2} = -m \pm \sqrt{2c}$
+
+For **integer solutions**, we need $\sqrt{2c}$ to be an integer.
+
+Let $\sqrt{2c} = k$ for some non-negative integer $k$.
+Then $2c = k^2$, so $c = \frac{k^2}{2}$.
+
+For $c$ to be a positive integer: $k$ must be even.
+
+Let $k = 2n$ where $n$ is a positive integer.
+Then: $c = \frac{(2n)^2}{2} = \frac{4n^2}{2} = 2n^2$
+
+## Step 5: Count Valid Values of c
+
+We need $c \in \{2n^2 : n \in \mathbb{Z}^+\}$ with $c \leq 2025$.
+
+From $2n^2 \leq 2025$:
+$$n^2 \leq 1012.5$$
+$$n \leq 31.8...$$
+$$n \leq 31$$
+
+**Valid values:** $c \in \{2(1)^2, 2(2)^2, 2(3)^2, \ldots, 2(31)^2\}$
+
+That is: $c \in \{2, 8, 18, 32, 50, \ldots, 1922\}$
+
+Number of valid values: $\boxed{31}$
+
+## Verification
+
+- When $n = 31$: $c = 2(31)^2 = 2(961) = 1922$ ✓ (≤ 2025)
+- When $n = 32$: $c = 2(32)^2 = 2(1024) = 2048$ ✗ (> 2025)
+- Each value gives exactly 1 value of $c$ for each positive integer $n$.
+
+FINAL ANSWER: [31]

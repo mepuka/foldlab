@@ -1,0 +1,31 @@
+# Solution Plan
+
+1. **Analyze the structure of $|x^2 + ax + b| = c$**
+   - This absolute value equation splits into two cases: $x^2 + ax + b = c$ and $x^2 + ax + b = -c$
+   - Count total solutions across both quadratics
+
+2. **Determine the condition for exactly 3 solutions**
+   - Let $p(x) = x^2 + ax + b$
+   - For exactly 3 integer solutions to $|p(x)| = c$, one quadratic must have 2 solutions and the other must have 1 solution
+   - This requires one quadratic to have a double root (discriminant = 0) and the other to have two distinct roots
+
+3. **Set up the case where $p(x) = -c$ has a double root**
+   - If $p(x) = -c$ has a double root at $x = x_0$ (an integer), then: $p(x) = (x - x_0)^2 - c$
+   - This means $b = x_0^2 - c$ and the double root gives $p(x_0) = -c$
+
+4. **Condition for $p(x) = c$ to have exactly 2 integer solutions**
+   - We need $(x - x_0)^2 - c = c$, giving $(x - x_0)^2 = 2c$
+   - For two integer solutions: $2c$ must be a perfect square
+   - Let $2c = k^2$ for some positive integer $k$, so $c = \frac{k^2}{2}$
+   - For $c$ to be an integer, $k$ must be even: $k = 2m$, giving $c = 2m^2$
+
+5. **Apply the constraint $c \le 2025$**
+   - We need $2m^2 \le 2025$
+   - This gives $m^2 \le 1012.5$
+   - Therefore $m \le 31$ (since $31^2 = 961 < 1012.5$ and $32^2 = 1024 > 1012.5$)
+   - Valid values: $m \in \{1, 2, 3, ..., 31\}$
+
+6. **Count the possible values of $c$**
+   - Each value $m \in \{1, 2, ..., 31\}$ gives $c = 2m^2$
+   - These are all distinct values
+   - **Answer: 31**

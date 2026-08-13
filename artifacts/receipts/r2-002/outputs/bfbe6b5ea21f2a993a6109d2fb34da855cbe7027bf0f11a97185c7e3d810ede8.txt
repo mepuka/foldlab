@@ -1,0 +1,11 @@
+# Verification of the Solution
+
+Let me verify the final answer by checking the key components:
+
+## Verification of Case $m = 1$:
+Numbers of form $4^i$:
+- $4^0 = 1$: $s_2(1) = 1$, $s_4(1) = 1 = 1^2$ ✓
+- $4^1 = 4$: $s_2(4) = 1$, $s_4(4) = 1 = 1^2$ ✓
+- $4^2 = 16$: $s_2(16) = 1$, $s_4(16) = 1 = 1^2$ ✓
+- $4^3 = 64$: $s_2(64) = 1$, $s_4(64) = 1 = 1^2$ ✓
+- $4^4 = 256$: $s_2(256) = 1$, $s_4(256) = 1 = 1

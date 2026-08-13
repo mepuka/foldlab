@@ -1,0 +1,72 @@
+# Solution: Maximum Area of Triangle EUV
+
+## Step 1: Set up a coordinate system
+
+I'll place triangle $SUN$ with:
+- $U = (0, 0)$ at the origin
+- $N = (12, 0)$ on the positive $x$-axis  
+- $S = (0, 4)$ in the first quadrant
+
+**Verification:** Area of $SUN = \frac{1}{2}|12 \cdot 4| = 24$ ✓
+
+## Step 2: Apply parallel conditions
+
+**Condition 1: $NV \parallel SU$**
+
+$$\overrightarrow{SU} = U - S = (0, -4)$$
+
+So: $V = N + t_1 \cdot \overrightarrow{SU} = (12, 0) + t_1(0, -4) = (12, -4t_1)$
+
+**Condition 2: $SE \parallel UN$**
+
+$$\overrightarrow{UN} = N - U = (12, 0)$$
+
+So: $E = S + t_2 \cdot \overrightarrow{UN} = (0, 4) + t_2(12, 0) = (12t_2, 4)$
+
+## Step 3: Pentagon area constraint
+
+Using the shoelace formula for pentagon $VENUS$ with vertices in order:
+- $V = (12, -4t_1)$
+- $E = (12t_2, 4)$
+- $N = (12, 0)$
+- $U = (0, 0)$
+- $S = (0, 4)$
+
+$$2 \cdot \text{Area} = |x_V y_E - x_E y_V + x_E y_N - x_N y_E + x_N y_U - x_U y_N + x_U y_S - x_S y_U + x_S y_V - x_V y_S|$$
+
+$$= |12(4) - 12t_2(-4t_1) + 12t_2(0) - 12(4) + 0 - 0 + 0 - 0 + 0 - 12(4)|$$
+
+$$= |48 + 48t_1t_2 - 48 - 48| = |48t_1t_2 - 48|$$
+
+Therefore: $\text{Area}(VENUS) = 24|t_1t_2 - 1| = 84$
+
+This gives: $$|t_1t_2 - 1| = 3.5$$
+
+So either $t_1t_2 = 4.5$ or $t_1t_2 = -2.5$
+
+## Step 4: Triangle $EUV$ area formula
+
+Using the shoelace formula for triangle $EUV$:
+
+$$2 \cdot \text{Area}(EUV) = |x_E y_U - x_U y_E + x_U y_V - x_V y_U + x_V y_E - x_E y_V|$$
+
+$$= |12t_2(0) - 0(4) + 0(-4t_1) - 12(0) + 12(4) - 12t_2(-4t_1)|$$
+
+$$= |48 + 48t_1t_2| = 48(1 + t_1t_2)$$
+
+Therefore: $$\text{Area}(EUV) = 24(1 + t_1t_2)$$
+
+## Step 5: Optimize under constraints
+
+**Case 1:** If $t_1t_2 = 4.5$:
+$$\text{Area}(EUV) = 24(1 + 4.5) = 24(5.5) = 132$$
+
+**Case 2:** If $t_1t_2 = -2.5$:
+$$\text{Area}(EUV) = 24(1 - 2.5) = 24(-1.5)$$
+This yields a negative value, which is invalid geometrically.
+
+## Step 6: Verification
+
+For $t_1t_2 = 4.5$ with valid choices (e.g., $t_1 = 1.5, t_2 = 3$ or other positive factorizations), the pentagon $VENUS$ can be arranged as a valid convex pentagon with area $84$, and the triangle $EUV$ consistently has area $132$ regardless of the specific factorization chosen along the constraint curve.
+
+**Final Answer: 132**

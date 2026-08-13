@@ -1,0 +1,72 @@
+# Detailed Solution
+
+## Steps 1-3: Coordinate Setup
+
+- $B$ at origin $(0, 0)$
+- $C$ at $(10, 0)$ 
+- $E$ at $(5, 5\sqrt{3})$ (third vertex of equilateral triangle $BEC$)
+- $A = (-a, 0)$ where $a = AB > 0$
+- $D = (10+d, 0)$ where $d = CD > 0$
+
+## Steps 4-5: Apply the Angle Condition
+
+**Vectors from $E$:**
+$$\overrightarrow{EA} = (-a-5, -5\sqrt{3})$$
+$$\overrightarrow{ED} = (5+d, -5\sqrt{3})$$
+
+**Dot product:**
+$$\overrightarrow{EA} \cdot \overrightarrow{ED} = (-a-5)(5+d) + 75$$
+
+**Magnitudes:**
+$$|\overrightarrow{EA}| = \sqrt{(a+5)^2 + 75}$$
+$$|\overrightarrow{ED}| = \sqrt{(5+d)^2 + 75}$$
+
+**Angle equation** with $\cos(120°) = -\frac{1}{2}$:
+$$\frac{(-a-5)(5+d) + 75}{\sqrt{(a+5)^2 + 75}\sqrt{(5+d)^2 + 75}} = -\frac{1}{2}$$
+
+## Step 6: Distance Constraint
+
+$$AD = (10+d) - (-a) = a + 10 + d = 39$$
+$$\boxed{a + d = 29}$$
+
+## Step 7: Substitution and Solution
+
+Substitute $d = 29 - a$:
+$$(-a-5)(34-a) + 75 = -\frac{1}{2}\sqrt{(a+5)^2 + 75}\sqrt{(34-a)^2 + 75}$$
+
+Expand left side:
+$$a^2 - 29a - 170 + 75 = -\frac{1}{2}\sqrt{(a+5)^2 + 75}\sqrt{(34-a)^2 + 75}$$
+$$a^2 - 29a - 95 = -\frac{1}{2}\sqrt{(a+5)^2 + 75}\sqrt{(34-a)^2 + 75}$$
+
+Multiply by $-2$:
+$$-2a^2 + 58a + 190 = \sqrt{(a^2 + 10a + 100)(a^2 - 68a + 1231)}$$
+
+Square both sides:
+$$(2a^2 - 58a - 190)^2 = (a^2 + 10a + 100)(a^2 - 68a + 1231)$$
+
+**Left side:**
+$$4a^4 - 232a^3 + 2604a^2 + 22040a + 36100$$
+
+**Right side:**
+$$a^4 - 58a^3 + 651a^2 + 5510a + 123100$$
+
+**Simplified equation:**
+$$3a^4 - 174a^3 + 1953a^2 + 16530a - 87000 = 0$$
+$$a^4 - 58a^3 + 651a^2 + 5510a - 29000 = 0$$
+
+**Testing** $a = 4$:
+$$256 - 3712 + 10416 + 22040 - 29000 = 0$$ ✓
+
+Therefore: $a = 4$ and $d = 29 - 4 = 25$
+
+## Verification
+
+- $\overrightarrow{EA} = (-9, -5\sqrt{3})$, $\overrightarrow{ED} = (30, -5\sqrt{3})$
+- $\overrightarrow{EA} \cdot \overrightarrow{ED} = -270 + 75 = -195$
+- $|\overrightarrow{EA}| = \sqrt{156} = 2\sqrt{39}$, $|\overrightarrow{ED}| = \sqrt{975} = 5\sqrt{39}$
+- $\cos(\angle AED) = \frac{-195}{10 \cdot 39} = -\frac{1}{2}$ ✓
+- $AD = 4 + 10 + 25 = 39$ ✓
+
+## Step 8: Final Answer
+
+$$|AB - CD| = |a - d| = |4 - 25| = \boxed{21}$$

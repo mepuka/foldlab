@@ -1,0 +1,46 @@
+# Solution Verification
+
+Let me verify this solution step by step.
+
+## Step 1: Understanding Element 4's Final Position ✓
+- In the sorted array (1, 2, 3, 4, 5, 6, 7), element 4 belongs in position 4
+- Bubble sort only swaps adjacent elements
+- We need permutations where 4 reaches position 4 with at most 1 swap
+- **This is correctly understood.**
+
+## Step 2: Identifying Valid Cases ✓
+The two cases are mutually exclusive and exhaustive:
+- **Case 1:** Element 4 requires 0 swaps (already at position 4)
+- **Case 2:** Element 4 requires exactly 1 swap (starts at position 3 or 5)
+- **This logic is sound.**
+
+## Step 3: Counting Case 1 (Zero Swaps) ✓
+When 4 is already in position 4:
+- Elements {1, 2, 3} must occupy positions {1, 2, 3} in any order: 3! = 6 ways
+- Elements {5, 6, 7} must occupy positions {5, 6, 7} in any order: 3! = 6 ways
+- Total: 6 × 6 = **36** ✓
+
+## Step 4: Counting Case 2a (One Swap from Position 3) ✓
+When 4 starts at position 3 and swaps right:
+- 4 must swap with the element at position 4 (moving 4 to position 4)
+- Elements {1, 2, 3} in positions {1, 2, 3}: 3! = 6 ways
+- Elements {5, 6, 7} in positions {5, 6, 7}: 3! = 6 ways
+- Total: 6 × 6 = **36** ✓
+
+## Step 5: Counting Case 2b (One Swap from Position 5) ✓
+When 4 starts at position 5 and swaps left:
+- 4 must swap with the element at position 4 (moving 4 to position 4)
+- Elements {1, 2, 3} in positions {1, 2, 3}: 3! = 6 ways
+- Elements {5, 6, 7} in positions {5, 6, 7}: 3! = 6 ways
+- Total: 6 × 6 = **36** ✓
+
+## Step 6: Final Calculation ✓
+Total permutations = 36 + 36 + 36 = **108**
+
+---
+
+# Final Answer
+
+**108**
+
+The solution correctly identifies all permutations where element 4 requires at most 1 swap to reach its sorted position, yielding 108 valid permutations.

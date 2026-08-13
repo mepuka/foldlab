@@ -1,0 +1,29 @@
+# Solution Plan for Hexagon Area Problem
+
+1. **Calculate the circumradius of △ABC**
+   - Use Heron's formula to find the area of △ABC
+   - Apply $R = \frac{abc}{4K}$ where $K$ is the area
+
+2. **Find the circumcenter O**
+   - Set up a coordinate system (place $B$ at origin, $C$ on positive $x$-axis)
+   - Use the perpendicular bisector method or solve the system of equations for $O$
+
+3. **Determine the rotation angle θ**
+   - Since rotation preserves distances, $A'C' = AC = 15$ and $B'C' = BC = 14$
+   - Use the constraint $A'C' \perp B'C'$ to set up an equation
+   - Apply the law of cosines in the rotated triangle: $A'B'^2 = A'C'^2 + B'C'^2 - 2(A'C')(B'C')\cos(90°)$
+   - Solve for $\theta$ (accounting for the constraint about opposite sides of $B'C'$)
+
+4. **Calculate the coordinates of rotated vertices**
+   - Apply rotation matrix: $(x', y') = R_\theta(x, y)$ for each vertex about center $O$
+   - Obtain positions of $A'$, $B'$, $C'$
+
+5. **Verify the geometric constraint**
+   - Check that $A'$ and $B$ lie on opposite sides of line $B'C'$
+
+6. **Calculate the hexagon area**
+   - Use the shoelace formula with vertices in order: $A \to A' \to C' \to C \to B \to B'$
+   - Alternatively: $\text{Area}_{\text{hexagon}} = \text{Area}_{\triangle ABC} + \text{Area}_{\triangle A'B'C'} + \text{Area of overlapping regions}$
+
+7. **Round to the nearest integer**
+   - Report the final answer

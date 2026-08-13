@@ -1,0 +1,102 @@
+# Solution for Finding Sum of All Valid Radii
+
+## Step 1: Rewrite the parabola in standard form
+
+**What I'm calculating:** Converting the parabola equation to vertex form
+
+**Complete calculation:**
+Starting with: $2y = x^2 - 8x + 12$
+
+Divide by 2: $y = \frac{1}{2}x^2 - 4x + 6$
+
+Complete the square:
+$$y = \frac{1}{2}(x^2 - 8x) + 6$$
+$$y = \frac{1}{2}(x^2 - 8x + 16 - 16) + 6$$
+$$y = \frac{1}{2}(x-4)^2 - 8 + 6$$
+$$y = \frac{1}{2}(x-4)^2 - 2$$
+
+**Verification:** Vertex is at $(4, -2)$, opening upward. ✓
+
+---
+
+## Step 2: Set up the tangency condition
+
+**What I'm calculating:** The requirement for a circle centered at $(4, 39)$ with radius $r$ to be tangent to the parabola
+
+For tangency, the radius must be perpendicular to the parabola's tangent line at the point of tangency.
+
+---
+
+## Step 3: Use the perpendicularity requirement
+
+**What I'm calculating:** Finding the condition on tangency points using perpendicularity
+
+From the parabola $y = \frac{1}{2}(x-4)^2 - 2$:
+$$\frac{dy}{dx} = x - 4$$
+
+For a point $(x, y)$ on the parabola:
+- Tangent slope: $m_t = x - 4$
+- Radius slope (perpendicular): $m_r = -\frac{1}{x-4}$ (when $x \neq 4$)
+
+The radius connects $(4, 39)$ to $(x, y)$, so:
+$$\frac{y-39}{x-4} = -\frac{1}{x-4}$$
+
+**Complete calculation:**
+$$(x-4) \cdot \frac{y-39}{x-4} = -1$$
+$$y - 39 = -1$$
+$$y = 38$$
+
+**Verification:** This makes sense—the perpendicularity condition gives us a constant $y$-value. ✓
+
+---
+
+## Step 4: Solve the system of equations
+
+**What I'm calculating:** Finding all $x$-coordinates where $y = 38$ on the parabola
+
+Substitute $y = 38$ into $y = \frac{1}{2}(x-4)^2 - 2$:
+$$38 = \frac{1}{2}(x-4)^2 - 2$$
+$$40 = \frac{1}{2}(x-4)^2$$
+$$80 = (x-4)^2$$
+$$x - 4 = \pm\sqrt{80} = \pm 4\sqrt{5}$$
+$$x = 4 \pm 4\sqrt{5}$$
+
+**Verification:** Two solutions as expected for a parabola and horizontal line. ✓
+
+---
+
+## Step 5: Calculate corresponding radii
+
+**What I'm calculating:** The distance from center $(4, 39)$ to each tangency point
+
+**For** $x_1 = 4 + 4\sqrt{5}$, $y_1 = 38$:
+$$r_1 = \sqrt{(4 + 4\sqrt{5} - 4)^2 + (38-39)^2}$$
+$$r_1 = \sqrt{(4\sqrt{5})^2 + (-1)^2}$$
+$$r_1 = \sqrt{80 + 1}$$
+$$r_1 = \sqrt{81} = 9$$
+
+**For** $x_2 = 4 - 4\sqrt{5}$, $y_2 = 38$:
+$$r_2 = \sqrt{(4 - 4\sqrt{5} - 4)^2 + (38-39)^2}$$
+$$r_2 = \sqrt{(-4\sqrt{5})^2 + (-1)^2}$$
+$$r_2 = \sqrt{80 + 1}$$
+$$r_2 = \sqrt{81} = 9$$
+
+**Verification:** Both points are equidistant from the center, which makes sense by symmetry. ✓
+
+---
+
+## Step 6: Sum all valid radii
+
+**What I'm calculating:** The total of all positive radii
+
+$$\text{Sum} = r_1 + r_2 = 9 + 9 = 18$$
+
+**Verification by substitution:** 
+- Point $(4 + 4\sqrt{5}, 38)$: Distance to $(4, 39)$ is $\sqrt{80+1} = 9$ ✓
+- Point $(4 - 4\sqrt{5}, 38)$: Distance to $(4, 39)$ is $\sqrt{80+1} = 9$ ✓
+- Both points satisfy the tangency condition (perpendicularity) ✓
+- The answer is a reasonable integer ✓
+
+---
+
+**FINAL ANSWER: 18**

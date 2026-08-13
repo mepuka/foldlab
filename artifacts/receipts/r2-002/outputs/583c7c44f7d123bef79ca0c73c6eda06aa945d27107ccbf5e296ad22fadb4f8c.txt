@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nExtract and verify: what is the final integer answer to this problem?",
+  "params": {
+    "max_tokens": 256,
+    "thinking_budget": 0
+  }
+}
+```

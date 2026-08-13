@@ -1,0 +1,22 @@
+# Analysis of Competition Problem
+
+## Given Quantities and Conditions
+
+1. **Function definition**: For each positive integer $n$, $f(n)$ is defined as follows:
+   - Take the decimal numeral $n$ and reinterpret it as a base-$b$ numeral
+   - $b$ is the least integer greater than the greatest (largest) digit appearing in $n$
+   - $f(n)$ equals the value of this base-$b$ numeral in base 10
+
+2. **Domain**: $1 \leq n < 1000$ (positive integers less than 1000)
+
+3. **Example clarification**: For $n = 72$:
+   - Greatest digit is 7
+   - Therefore $b = 8$ (least integer greater than 7)
+   - In base 8: $72_8 = 7 \cdot 8 + 2 = 58$ in base 10
+   - So $f(72) = 58$
+
+## What is Being Asked
+
+**Find the count of positive integers $n$ with $1 \leq n < 1000$ such that $f(n) = n$.**
+
+In other words, find how many positive integers less than 1000 satisfy the property that when their decimal numeral is reinterpreted in the appropriate base, the resulting value equals the original number itself.

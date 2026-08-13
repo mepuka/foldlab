@@ -1,0 +1,22 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Setup:**
+- A fair six-sided die (each face equally likely to be rolled)
+- Six stickers labeled with integers 1, 2, 3, 4, 5, 6 (one sticker per integer)
+- A sequential process: for $i = 1$ to $6$, roll the die and place sticker $i$ on the top face
+
+**Process:**
+- When sticker $i$ is placed on the top face, it covers any sticker previously on that face
+- This happens for stickers in order: 1, 2, 3, 4, 5, 6
+
+**Condition Given:**
+- All even-numbered stickers (2, 4, and 6) are visible on faces of the die at the end of the process
+- This means stickers 2, 4, and 6 were never covered by any subsequent sticker
+
+**What is Being Asked:**
+
+Find the conditional probability $p$ that **exactly one face is left blank** (i.e., exactly five of the six faces have stickers on them) **given that stickers 2, 4, and 6 are all visible**.
+
+Express $p = \frac{m}{n}$ where $\gcd(m,n) = 1$, and find $m + n$.

@@ -1,0 +1,33 @@
+# Solution Plan
+
+1. **Set up coordinate system**
+   - Label vertices: bottom row at y=0, top row at y=1
+   - Positions x=0 to x=10 from left to right
+   - Start A = (0,0), End B = (10,1)
+
+2. **Identify available segments**
+   - Horizontal segments: along y=0 and y=1 (each going left-to-right)
+   - Diagonal segments: connecting (i,0) to (i+1,1) for i=0 to 9 (going up-right)
+   - Vertical segments: at each x-position connecting (x,0) to (x,1)
+
+3. **Determine movement rules**
+   - From any vertex, the bug can move right along horizontals, up via verticals, or up-right via diagonals
+   - Each segment used exactly once (no backtracking)
+   - Must progress from x=0 to x=10
+
+4. **Recognize the dynamic programming structure**
+   - State: current position (x, y) and set of already-used segments
+   - Key insight: Due to the no-backtracking constraint, at position x the bug can only be at y=0 or y=1
+   - Track paths using DP based on position and which segments in each "column" have been used
+
+5. **Count paths using recurrence**
+   - Let f(x, y, state) = number of ways to reach vertex (x, y) given which local segments have been traversed
+   - At each step x→x+1, the bug must use some combination of: horizontal, vertical, and diagonal segments
+   - Build up the count recursively from (0,0) to (10,1)
+
+6. **Calculate total paths N**
+   - Sum all valid path counts reaching (10,1)
+   - This yields N
+
+7. **Find the answer**
+   - Compute $\sqrt{N}$

@@ -1,0 +1,28 @@
+# Solution Plan
+
+1. **Set up a recursive counting framework**
+   - Use dynamic programming or depth-first search with memoization
+   - State: current position $(x, y, z)$ and the set of visited points
+   - Base case: return 1 if at $(3,3,3)$; return 0 if stuck or revisiting a point
+
+2. **Implement move generation**
+   - From position $(x, y, z)$, generate all valid next moves:
+     - Increase $x$ by 1 if $x < 3$
+     - Increase $y$ by 1 if $y < 3$
+     - Increase $z$ by 1 if $z < 3$
+     - Decrease $z$ by 1 if $z > 0$
+   - Filter out any move that would revisit an already-visited point
+
+3. **Track visited points**
+   - Maintain a set of visited coordinates along the current path
+   - Before exploring a move, check if the destination is already visited
+   - Add the new point to the visited set before recursing; remove it when backtracking
+
+4. **Execute the recursive search**
+   - Start from $(0,0,0)$ with an empty visited set (or just containing the start point)
+   - For each valid next position, recursively count paths from that position
+   - Sum all counts from recursive calls
+   - Backtrack: remove the current position from visited before returning
+
+5. **Verify and return the result**
+   - The answer is the total count returned from the initial call with start position $(0,0,0)$

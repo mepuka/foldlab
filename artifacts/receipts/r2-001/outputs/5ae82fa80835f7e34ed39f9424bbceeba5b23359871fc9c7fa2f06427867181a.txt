@@ -1,0 +1,23 @@
+# Problem Analysis
+
+## Given Quantities and Conditions:
+
+1. **Cubic polynomial:** $p(x) = x^{3} - \frac{n}{6}x^{2} + (n - 11)x - 400$
+
+2. **Constraint on roots:** The roots of $p(x)$ are $\alpha^{2}$, $\beta^{2}$, and $\gamma^{2}$
+
+3. **Nature of $\alpha, \beta, \gamma$:** They are complex numbers
+
+4. **Critical condition:** There are **exactly seven different possible values** for $\alpha + \beta + \gamma$
+
+5. **Parameter:** $n$ is an integer (implicit from "greatest integer $n$")
+
+## What is Being Asked:
+
+Find the **greatest integer value of $n$** such that all of the above conditions are satisfied simultaneously.
+
+---
+
+## Additional Context to Interpret the Problem:
+
+The key insight is that if $\alpha^2, \beta^2, \gamma^2$ are the roots, then for each root $\alpha^2$, there are two possible values: $\alpha$ and $-\alpha$. This gives $2^3 = 8$ possible combinations of sign choices. However, since we need exactly 7 different values of $\alpha + \beta + \gamma$, one of these 8 sign combinations must yield the same sum as another combination, or equivalently, some constraint on $\alpha, \beta, \gamma$ must reduce the number of distinct sums to exactly 7.

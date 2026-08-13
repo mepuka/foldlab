@@ -1,0 +1,85 @@
+# Solution: Maximum Reachable States on an 8×8 Chessboard
+
+## Step 1: Understand the Movement System
+
+When direction D is called:
+- Jacob moves in direction D
+- Bojac moves 90° counterclockwise from D
+
+**Movement mappings:**
+- North: Jacob North (-1,0), Bojac West (0,-1)
+- East: Jacob East (0,+1), Bojac North (-1,0)
+- South: Jacob South (+1,0), Bojac East (0,+1)
+- West: Jacob West (0,-1), Bojac South (+1,0)
+
+## Step 2: Analyze Relative Position Changes
+
+Let me calculate how the **relative position** (Δr, Δc) = (Jacob_row - Bojac_row, Jacob_col - Bojac_col) changes with each instruction:
+
+| Instruction | Jacob Move | Bojac Move | Relative Change |
+|-------------|-----------|-----------|-----------------|
+| North | (-1,0) | (0,-1) | (-1,0)-(0,-1) = (-1,+1) |
+| East | (0,+1) | (-1,0) | (0,+1)-(-1,0) = (+1,+1) |
+| South | (+1,0) | (0,+1) | (+1,0)-(0,+1) = (+1,-1) |
+| West | (0,-1) | (+1,0) | (0,-1)-(+1,0) = (-1,-1) |
+
+**Key observation:** All relative movements are diagonal: (-1,+1), (+1,+1), (+1,-1), (-1,-1)
+
+## Step 3: Identify the Parity Constraint
+
+Each diagonal move changes both Δr and Δc by ±1.
+
+The sum Δr + Δc changes by:
+- North: -1 + 1 = 0
+- East: +1 + 1 = +2
+- South: +1 - 1 = 0
+- West: -1 - 1 = -2
+
+**Critical insight:** Δr + Δc always changes by an **even number** (0, +2, or -2).
+
+Therefore, **the parity of (Δr + Δc) is invariant** across all reachable states from a given starting configuration.
+
+## Step 4: Determine Reachable Relative Positions
+
+The relative position (Δr, Δc) can range from (-7,-7) to (+7,+7).
+
+Total possible relative positions: 15 × 15 = 225
+
+Relative positions split by parity:
+- Even parity (Δr + Δc even): 113 positions
+- Odd parity (Δr + Δc odd): 112 positions
+
+By choosing the optimal starting position, we can ensure all 113 even-parity relative positions are reachable.
+
+## Step 5: Count Valid Absolute Positions per Relative Position
+
+For a fixed relative position (Δr, Δc), the valid absolute state pairs (Jacob position, Bojac position) satisfy:
+- Jacob_row - Bojac_row = Δr
+- Jacob_col - Bojac_col = Δc
+- 0 ≤ all coordinates ≤ 7
+
+For Bojac at position (b_r, b_c), Jacob must be at (b_r + Δr, b_c + Δc).
+
+Valid Bojac_row values: max(0, -Δr) ≤ b_r ≤ min(7, 7 - Δr)
+- Count: (8 - |Δr|) positions
+
+Valid Bojac_col values: max(0, -Δc) ≤ b_c ≤ min(7, 7 - Δc)
+- Count: (8 - |Δc|) positions
+
+**States per relative position:** (8 - |Δr|)(8 - |Δc|)
+
+## Step 6: Calculate Maximum Reachable States
+
+Total states = Σ(Δr + Δc is even) (8 - |Δr|)(8 - |Δc|)
+
+This can be factored:
+$$\text{Total} = \frac{1}{2} \left[\sum_{\Delta r=-7}^{7}(8-|\Delta r|) \cdot \sum_{\Delta c=-7}^{7}(8-|\Delta c|)\right]$$
+
+Calculate the sum:
+$$\sum_{\Delta r=-7}^{7}(8-|\Delta r|) = 8 + 2(7+6+5+4+3+2+1) = 8 + 2(28) = 64$$
+
+Verification:
+- |Δr| = 0: count 1, value 8
+- |Δr| = 1: count 2, value 7 each
+- |Δr| = 2: count 2, value 6 each
+- ...

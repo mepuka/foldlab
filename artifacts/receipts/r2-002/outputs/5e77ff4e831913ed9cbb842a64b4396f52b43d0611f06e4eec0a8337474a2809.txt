@@ -1,0 +1,51 @@
+# Solution
+
+## Step 1: Rewrite the expression
+
+Starting with $n = a + b + ab$, I can factor this:
+$$n = a + b + ab = (a+1)(b+1) - 1$$
+
+This means $(a+1)(b+1) = n + 1$, so we need $(a+1)(b+1) \leq 101$.
+
+## Step 2: Determine valid constraints
+
+Let $p = a+1$ and $q = b+1$. Since $a, b \geq 1$ and $a \neq b$:
+- $p, q \geq 2$ 
+- $pq \leq 101$
+- $p \neq q$
+
+## Step 3: Characterize when a value $n$ is valid
+
+For a given value $n$ to be achievable, we need $n+1$ to have a factorization $n+1 = pq$ where:
+- Both $p, q \geq 2$ (which requires $n+1$ to be composite)
+- $p \neq q$ (which requires the factorization to have unequal factors)
+
+**Key insight:** A composite number $n+1$ has a factorization with $p \neq q$ unless $n+1$ is a **perfect square of a prime**.
+
+## Step 4: Identify invalid values
+
+For $n \in [1, 100]$, the value $n$ is **NOT valid** if $n+1$ is:
+
+1. **Prime** (26 primes from 2 to 101):
+   2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101
+
+2. **Perfect square of a prime** (4 values):
+   4 = 2², 9 = 3², 25 = 5², 49 = 7²
+
+These correspond to invalid $n$ values:
+$$\{1, 2, 3, 4, 6, 8, 10, 12, 16, 18, 22, 24, 28, 30, 36, 40, 42, 46, 48, 52, 58, 60, 66, 70, 72, 78, 82, 88, 96, 100\}$$
+
+That's **30 invalid values**.
+
+## Step 5: Verification with examples
+
+- $n = 5$: $n+1 = 6 = 2 \times 3$ ✓ Valid; $(a,b) = (1,2)$: $1+2+2=5$ ✓
+- $n = 3$: $n+1 = 4 = 2 \times 2$ ✗ Invalid (only factorization has $p = q$)
+- $n = 11$: $n+1 = 12 = 3 \times 4$ ✓ Valid; $(a,b) = (2,3)$: $2+3+6=11$ ✓
+
+## Step 6: Count valid values
+
+Number of valid values of $n$ in $[1, 100]$:
+$$100 - 30 = 70$$
+
+Final answer (single integer only): **70**

@@ -1,0 +1,22 @@
+# Verification of the Solution
+
+Let me verify that **AB = 245** is correct.
+
+## Given Conditions
+- Isosceles triangle ABC with AB = BC = c
+- I is the incenter
+- Perimeter ratio: $\frac{P(\triangle ABC)}{P(\triangle AIC)} = \frac{125}{6}$
+
+## Solution Verification
+
+**Step 1: Check the perimeters**
+- $c = 245$, $b = AC = 10$
+- $P_1 = 2(245) + 10 = 500$ ✓
+- $AI = 7$, so $P_2 = 2(7) + 10 = 24$ ✓
+- Ratio: $\frac{500}{24} = \frac{125}{6}$ ✓
+
+**Step 2: Verify triangle validity**
+- Triangle inequality: $245 + 245 > 10$ ✓
+- Triangle inequality: $245 + 10 > 245$ ✓
+
+**Step 3: Confirm AI calculation

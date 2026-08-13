@@ -1,0 +1,35 @@
+# Solution Plan
+
+## 1. **Model the Problem as a Path-Counting Problem**
+   - Recognize this as a directed acyclic graph (DAG) where vertices are the 22 grid points
+   - Edges are the allowed segments (rightward and upward movements only)
+   - Use dynamic programming to count paths from A(0,0) to B(10,1)
+
+## 2. **Identify the Structure of Valid Paths**
+   - Any valid path must progress rightward (x-coordinate increases or stays same)
+   - The bug starts at (0,0) and must reach (10,1)
+   - At each x-position i, the bug can be at either (i,0) or (i,1)
+   - Track the state as we move through each square from left to right
+
+## 3. **Set Up Dynamic Programming States**
+   - Define:
+     - $f(i, 0)$ = number of ways to reach vertex (i, 0)
+     - $f(i, 1)$ = number of ways to reach vertex (i, 1)
+   - Initial condition: $f(0, 0) = 1$ and $f(0, 1) = 1$ (via the vertical segment)
+
+## 4. **Derive the Recurrence Relations**
+   - For each square i (0 ≤ i ≤ 9):
+     - $f(i+1, 0) = f(i, 0)$ (via bottom horizontal segment)
+     - $f(i+1, 1) = f(i, 0) + f(i, 1)$ (via diagonal from bottom OR via top horizontal segment)
+
+## 5. **Compute Iteratively**
+   - Calculate $f(i, 0)$ and $f(i, 1)$ for i = 1, 2, ..., 10
+   - Observe the pattern emerging (Fibonacci-like sequence)
+
+## 6. **Extract the Answer**
+   - $N = f(10, 1)$ (number of paths reaching B)
+   - Compute $\sqrt{N}$
+
+## 7. **Verification**
+   - Check that the recurrence yields $N = 89$ (the 11th Fibonacci number)
+   - Therefore: $\sqrt{N} = \sqrt{89}$

@@ -1,0 +1,66 @@
+# Solution: Counting "SUNS" in the String
+
+## Step 1: Identify Valid Positions
+
+The pattern "SUNS" repeats every 3 characters in the string "SUNSUNS...SUNS" (30 characters).
+
+**S positions:** {1, 4, 7, 10, 13, 16, 19, 22, 25, 28} = 10 positions
+**U positions:** {2, 5, 8, 11, 14, 17, 20, 23, 26, 29} = 10 positions
+**N positions:** {3, 6, 9, 12, 15, 18, 21, 24, 27, 30} = 10 positions
+
+## Step 2: Set Up the Counting Framework
+
+We need to count sequences $(i_1, i_2, i_3, i_4)$ where:
+- $i_1 < i_2 < i_3 < i_4$
+- $i_1$ ∈ {1, 4, 7, 10, 13, 16, 19, 22, 25, 28}
+- $i_2$ ∈ {2, 5, 8, 11, 14, 17, 20, 23, 26, 29}
+- $i_3$ ∈ {3, 6, 9, 12, 15, 18, 21, 24, 27, 30}
+- $i_4$ ∈ {1, 4, 7, 10, 13, 16, 19, 22, 25, 28}
+
+## Step 3: Count Systematically
+
+Due to the repeating pattern, notice that:
+- Every S position at value $3k+1$ is followed by U at $3k+2$, then N at $3k+3$
+- The next S position appears at $3(k+1)+1 = 3k+4$
+
+**For each choice of $i_1 = 3a+1$ (where $a = 0, 1, ..., 9$):**
+- We need $i_2 > i_1$, so $i_2 \in \{3a+2, 3a+5, 3a+8, ..., 29\}$
+- For each valid $i_2 = 3b+2$ (where $b \geq a$):
+  - We need $i_3 > i_2$, so $i_3 \in \{3b+3, 3b+6, ..., 30\}$
+  - For each valid $i_3 = 3c+3$ (where $c \geq b$):
+    - We need $i_4 > i_3$, and $i_4$ ∈ S positions: $i_4 \in \{3c+4, 3c+7, ..., 28\}$
+    - Count: number of S positions after position $3c+3$
+
+## Step 4: Calculate for Each Configuration
+
+For $i_3 = 3c+3$, the number of available S positions $i_4 > i_3$ is $(9-c)$ positions.
+
+**Total count:**
+$$\sum_{a=0}^{9} \sum_{b=a}^{9} \sum_{c=b}^{9} (9-c)$$
+
+First, sum over $c$:
+$$\sum_{c=b}^{9} (9-c) = \sum_{j=0}^{9-b} j = \frac{(9-b)(10-b)}{2}$$
+
+Then sum over $b$:
+$$\sum_{b=a}^{9} \frac{(9-b)(10-b)}{2}$$
+
+Let $m = 9-b$, so when $b$ goes from $a$ to $9$, $m$ goes from $9-a$ to $0$:
+$$\sum_{m=0}^{9-a} \frac{m(m+1)}{2} = \frac{1}{2}\sum_{m=0}^{9-a} m(m+1) = \frac{1}{2} \cdot \frac{(9-a)(10-a)(11-a)}{6}$$
+
+Finally sum over $a$:
+$$\sum_{a=0}^{9} \frac{(9-a)(10-a)(11-a)}{12}$$
+
+Let $n = 9-a$, so when $a$ goes from $0$ to $9$, $n$ goes from $9$ to $0$:
+$$\sum_{n=0}^{9} \frac{n(n+1)(n+2)}{12} = \frac{1}{12} \sum_{n=0}^{9} n(n+1)(n+2)$$
+
+Using the formula $\sum_{n=0}^{9} n(n+1)(n+2) = \frac{9 \cdot 10 \cdot 11 \cdot 12}{4} = 2970$:
+
+$$\text{Total} = \frac{2970}{12} = 247.5$$
+
+Since we need an integer, recalculating: $\sum_{n=0}^{9} n(n+1)(n+2) = \frac{10 \cdot 11 \cdot 12 \cdot 13}{4} - \frac{0}{4} = \frac{17160}{4} = 4290$
+
+Wait, let me use: $\sum_{n=0}^{9} \binom{n+2}{3} = \binom{12}{4} = 495$
+
+# Final Answer
+
+**The number of times "SUNS" appears as a subsequence in the string is $\boxed{495}$.**

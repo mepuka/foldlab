@@ -1,0 +1,21 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Set A**: $A = \{1, 2, 3, 4, 5, 6\}$
+
+2. **Function domain and codomain**: $\pi: A \to A$
+
+3. **Surjectivity condition**: $\pi$ maps $A$ **onto** $A$ (i.e., $\pi$ is surjective)
+
+4. **Functional equation**: For every $a \in A$:
+   $$\pi^6(a) = a$$
+   where $\pi^6$ denotes applying $\pi$ six times in composition.
+
+## What is Being Asked
+
+Find the **count** of all functions $\pi$ that simultaneously satisfy:
+- Being a bijection from $A$ to $A$ (surjectivity + finite domain implies bijectivity)
+- Having the property that applying $\pi$ exactly 6 times returns every element to itself
+
+**In permutation language**: Count all permutations of $\{1,2,3,4,5,6\}$ whose order divides 6.

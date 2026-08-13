@@ -1,0 +1,18 @@
+# Solution Plan
+
+1. **Use Vieta's formulas** on $p(x) = x^3 - \frac{n}{6}x^2 + (n-11)x - 400$ to express relationships between the roots $\alpha^2, \beta^2, \gamma^2$:
+   - $\alpha^2 + \beta^2 + \gamma^2 = \frac{n}{6}$
+   - $\alpha^2\beta^2 + \beta^2\gamma^2 + \gamma^2\alpha^2 = n - 11$
+   - $\alpha^2\beta^2\gamma^2 = 400$
+
+2. **Identify the constraint on sign choices:** From $\alpha^2\beta^2\gamma^2 = 400 > 0$, determine that an even number of the values $\{\alpha, \beta, \gamma\}$ must be negative (either 0 or 2 are negative).
+
+3. **Count possible sums:** This constraint reduces the $2^3 = 8$ possible sign combinations to exactly 6 possible values of $\alpha + \beta + \gamma$.
+
+4. **Identify the seventh value:** Recognize that exactly one of $\alpha, \beta, \gamma$ must be real and equal to $\pm 20$ (from $\alpha^2\beta^2\gamma^2 = 400$), which adds a seventh distinct sum when the reality condition is satisfied.
+
+5. **Set up the reality condition:** For exactly one root to be real, impose the constraint that one of $\{\alpha^2, \beta^2, \gamma^2\}$ equals a perfect square value, and derive the corresponding condition on $n$.
+
+6. **Solve for maximum $n$:** Use the conditions from Vieta's formulas combined with the reality constraint to obtain an equation in $n$, and solve for the greatest integer value of $n$ that yields exactly 7 distinct sums.
+
+7. **Verify the answer:** Confirm that the found value of $n$ produces exactly 7 different values for $\alpha + \beta + \gamma$ and that $n+1$ does not satisfy the conditions.

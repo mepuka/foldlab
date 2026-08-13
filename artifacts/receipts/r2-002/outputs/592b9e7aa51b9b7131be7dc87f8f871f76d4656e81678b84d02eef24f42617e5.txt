@@ -1,0 +1,26 @@
+# Solution Plan
+
+1. **Express each term using geometric series**
+   - Rewrite $\frac{1}{10^n - 1}$ as $\frac{1}{10^n - 1} = \frac{1}{10^n} \cdot \frac{1}{1 - 10^{-n}}$
+   - Expand using geometric series: $\frac{1}{10^n - 1} = 10^{-n} + 10^{-2n} + 10^{-3n} + \cdots$
+
+2. **Rearrange the double sum**
+   - Write $S = \sum_{n=1}^{\infty} \sum_{k=1}^{\infty} 10^{-kn}$
+   - Exchange the order of summation: $S = \sum_{m=1}^{\infty} d_m \cdot 10^{-m}$ where $d_m$ counts divisors
+   - Recognize that $d_m$ = number of divisors of $m$
+
+3. **Compute $10^{100} S$**
+   - $10^{100} S = \sum_{m=1}^{\infty} d_m \cdot 10^{100-m}$
+   - Split into integer and fractional parts at $m = 100$
+
+4. **Identify the integer part**
+   - $\lfloor 10^{100} S \rfloor = \sum_{m=1}^{100} d_m \cdot 10^{100-m}$
+   - The terms with $m > 100$ contribute only fractional parts
+
+5. **Find the remainder modulo 1000**
+   - Only the last three decimal digits matter: contributions from $m = 98, 99, 100$
+   - $\lfloor 10^{100} S \rfloor \pmod{1000} = (d_{98} \cdot 100 + d_{99} \cdot 10 + d_{100}) \pmod{1000}$
+   - Calculate: $d_{98} = 6$, $d_{99} = 6$, $d_{100} = 9$
+   - Result: $(600 + 60 + 9) \pmod{1000} = 669$
+
+**Answer: 669**

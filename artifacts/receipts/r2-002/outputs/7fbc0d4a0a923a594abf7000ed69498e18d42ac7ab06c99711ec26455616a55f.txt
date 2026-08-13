@@ -1,0 +1,15 @@
+# Analysis of the Problem
+
+## Given Quantities and Conditions
+
+1. **Target range**: integers ≤ 100
+2. **Form of numbers**: $n = a + b + ab$ for some choice of $a$ and $b$
+3. **Constraint on $a$ and $b$**: 
+   - Both must be positive integers
+   - $a$ and $b$ must be distinct (i.e., $a \neq b$)
+
+## What is Being Asked
+
+Find how many distinct integers that are less than or equal to 100 can be expressed in the form $a + b + ab$ where $a$ and $b$ are distinct positive integers.
+
+In other words: count the size of the set $\{n \in \mathbb{Z} : n \leq 100 \text{ and } n = a + b + ab \text{ for some distinct positive integers } a, b\}$.

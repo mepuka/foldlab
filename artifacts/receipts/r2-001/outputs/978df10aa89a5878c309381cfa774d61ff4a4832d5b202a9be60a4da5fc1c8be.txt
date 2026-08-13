@@ -1,0 +1,94 @@
+I'll work through this step-by-step using the provided plan.
+
+## Step 1: Set up coordinates
+
+Let me place points on a line with:
+- $A$ at position $0$
+- $B$ at position $x$ (so $AB = x$)
+- $C$ at position $x + 10$ (so $BC = 10$)
+- $D$ at position $x + 10 + y$ (so $CD = y$)
+
+Therefore: $AD = x + 10 + y = 39$, which gives us:
+$$x + y = 29 \quad \text{...(Equation 1)}$$
+
+## Step 2: Equilateral triangle BEC
+
+Triangle $BEC$ is equilateral with side length $10$, so:
+- $BE = EC = BC = 10$
+- All angles equal $60°$
+
+## Step 3: Place point E in coordinates
+
+Since $B$ and $C$ are on a line, I'll use 2D coordinates:
+- $B = (x, 0)$
+- $C = (x+10, 0)$
+- $E$ is above the line, forming an equilateral triangle
+
+The midpoint of $BC$ is at $(x+5, 0)$. Point $E$ is at distance $\frac{10\sqrt{3}}{2} = 5\sqrt{3}$ perpendicular to $BC$:
+$$E = (x+5, 5\sqrt{3})$$
+
+Also: $A = (0, 0)$ and $D = (x+10+y, 0)$
+
+## Step 4: Calculate distances AE and ED
+
+$$AE^2 = (x+5)^2 + (5\sqrt{3})^2 = (x+5)^2 + 75$$
+$$AE = \sqrt{(x+5)^2 + 75}$$
+
+$$ED^2 = (x+10+y - (x+5))^2 + (5\sqrt{3})^2 = (y+5)^2 + 75$$
+$$ED = \sqrt{(y+5)^2 + 75}$$
+
+## Step 5: Apply Law of Cosines with $\angle AED = 120°$
+
+$$AD^2 = AE^2 + ED^2 - 2(AE)(ED)\cos(120°)$$
+
+Since $\cos(120°) = -\frac{1}{2}$:
+$$39^2 = AE^2 + ED^2 + AE \cdot ED$$
+$$1521 = AE^2 + ED^2 + AE \cdot ED$$
+
+Substituting our expressions:
+$$1521 = [(x+5)^2 + 75] + [(y+5)^2 + 75] + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+$$1371 = (x+5)^2 + (y+5)^2 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+## Step 6: Simplify using Equation 1
+
+From $x + y = 29$, we have $y = 29 - x$.
+
+Let $u = x + 5$ and $v = y + 5 = 34 - x = 29 - u + 5 = 34 - u$.
+
+Note that $u + v = 39$.
+
+$$1371 = u^2 + v^2 + \sqrt{(u^2 + 75)(v^2 + 75)}$$
+
+Since $u + v = 39$:
+$$u^2 + v^2 = (u+v)^2 - 2uv = 1521 - 2uv$$
+
+$$1371 = 1521 - 2uv + \sqrt{(u^2 + 75)(v^2 + 75)}$$
+$$2uv - 150 = \sqrt{(u^2 + 75)(v^2 + 75)}$$
+
+Squaring both sides:
+$$(2uv - 150)^2 = (u^2 + 75)(v^2 + 75)$$
+$$4u^2v^2 - 600uv + 22500 = u^2v^2 + 75u^2 + 75v^2 + 5625$$
+$$3u^2v^2 - 600uv + 16875 = 75(u^2 + v^2)$$
+$$3u^2v^2 - 600uv + 16875 = 75(1521 - 2uv)$$
+$$3u^2v^2 - 600uv + 16875 = 114075 - 150uv$$
+$$3u^2v^2 - 450uv - 97200 = 0$$
+$$u^2v^2 - 150uv - 32400 = 0$$
+
+Let $p = uv$:
+$$p^2 - 150p - 32400 = 0$$
+$$p = \frac{150 \pm \sqrt{22500 + 129600}}{2} = \frac{150 \pm \sqrt{152100}}{2} = \frac{150 \pm 390}{2}$$
+
+So $p = 270$ or $p = -120$ (rejected).
+
+Thus $uv = 270$, with $u + v = 39$, giving: $u^2 - 39u + 270 = 0$
+$$u = \frac{39 \pm \sqrt{1521 - 1080}}{2} = \frac{39 \pm \sqrt{441}}{2} = \frac{39 \pm 21}{2}$$
+
+So $u = 30$ or $u = 9$.
+
+## Step 7: Calculate the answer
+
+If $u = 30$: $x = 25, y = 4$
+If $u = 9$: $x = 4, y = 25$
+
+$$|AB - CD| = |x - y| = |25 - 4| = \boxed{21}$$

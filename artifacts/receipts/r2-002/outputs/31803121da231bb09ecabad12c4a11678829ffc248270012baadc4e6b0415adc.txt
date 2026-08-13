@@ -1,0 +1,20 @@
+# Analysis of Competition Math Problem
+
+## Given Quantities and Conditions
+
+**Face Specifications:**
+- Two isosceles triangle faces with side lengths $5\sqrt{10}, 5\sqrt{10}, 10$
+- Two isosceles triangle faces with side lengths $5\sqrt{10}, 5\sqrt{10}, 18$
+
+**Sphere Conditions:**
+- All four vertices of the tetrahedron lie on a sphere with center $S$ (circumsphere)
+- All four faces of the tetrahedron are tangent to a sphere with center $R$ (insphere)
+
+**Constraint on Answer:**
+- The distance $RS$ can be expressed as $\frac{m}{n}$ where $\gcd(m,n) = 1$
+
+## What Is Being Asked
+
+Find $m + n$, where $RS = \frac{m}{n}$ in lowest terms.
+
+In other words: **Calculate the distance between the circumcenter and incenter of the tetrahedron, express it as a fraction in lowest terms, and report the sum of numerator and denominator.**

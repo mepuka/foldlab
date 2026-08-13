@@ -1,0 +1,65 @@
+# Solving for Moons with All Three Characteristics
+
+## Step 1: Define the 7 Non-Overlapping Regions
+
+When three sets intersect, they create 7 mutually exclusive regions:
+1. Only blue (B only)
+2. Only icy (I only)
+3. Only large (L only)
+4. Blue and icy, not large (B∩I−L)
+5. Blue and large, not icy (B∩L−I)
+6. Icy and large, not blue (I∩L−B)
+7. All three: blue AND icy AND large (B∩I∩L) = **x**
+
+## Step 2: Interpret the Given Conditions
+
+**"Blue but not icy: 10"** means B − I
+- This includes: (only blue) + (blue and large but not icy)
+- Equation: b₁ + b₅ = 10 ... (1)
+
+**"Icy but not large: 8"** means I − L
+- This includes: (only icy) + (blue and icy but not large)
+- Equation: i₂ + b₄ = 8 ... (2)
+
+**"Large but not blue: 6"** means L − B
+- This includes: (only large) + (icy and large but not blue)
+- Equation: l₃ + i₆ = 6 ... (3)
+
+## Step 3: Verify Mutual Exclusivity
+
+The three given conditions are mutually exclusive:
+- B − I and I − L cannot overlap (one excludes I, the other requires it)
+- B − I and L − B cannot overlap (one requires B, the other excludes it)
+- I − L and L − B cannot overlap (one excludes L, the other requires it)
+
+✓ No double counting
+
+## Step 4: Apply the Partition Principle
+
+All 29 moons must be distributed across all 7 regions:
+
+b₁ + i₂ + l₃ + b₄ + b₅ + i₆ + x = 29
+
+## Step 5: Substitute and Solve
+
+Rearrange by grouping the equations:
+
+(b₁ + b₅) + (i₂ + b₄) + (l₃ + i₆) + x = 29
+
+Substitute the values from equations (1), (2), and (3):
+
+10 + 8 + 6 + x = 29
+
+24 + x = 29
+
+**x = 5**
+
+## Verification
+
+- Blue but not icy: 10 ✓
+- Icy but not large: 8 ✓
+- Large but not blue: 6 ✓
+- All three characteristics: 5 ✓
+- Total: 10 + 8 + 6 + 5 = 29 ✓
+
+Final answer (single integer only): **5**

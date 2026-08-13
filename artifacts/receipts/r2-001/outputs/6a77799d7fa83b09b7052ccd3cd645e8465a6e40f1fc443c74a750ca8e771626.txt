@@ -1,0 +1,26 @@
+# Solution Plan
+
+1. **Express the general term in a useful form**
+   - Rewrite $\frac{1}{10^n - 1}$ using the decomposition: $\frac{1}{10^n - 1} = \frac{1}{9} \cdot \frac{1}{\frac{10^n - 1}{9}}$
+   - Alternatively, use: $\frac{1}{10^n - 1} = \frac{10^{-n}}{1 - 10^{-n}}$ to enable series expansion
+
+2. **Expand using geometric series**
+   - Apply the expansion $\frac{1}{1-x} = 1 + x + x^2 + \cdots$ with $x = 10^{-n}$
+   - This gives: $\frac{1}{10^n - 1} = 10^{-n}(1 + 10^{-n} + 10^{-2n} + 10^{-3n} + \cdots)$
+
+3. **Multiply by $10^{100}$ and rearrange**
+   - Compute $10^{100} S = \sum_{n=1}^{\infty} 10^{100-n}(1 + 10^{-n} + 10^{-2n} + \cdots)$
+   - Separate into: $\sum_{n=1}^{\infty} 10^{100-n} + \sum_{n=1}^{\infty} 10^{100-2n} + \sum_{n=1}^{\infty} 10^{100-3n} + \cdots$
+
+4. **Identify the integer and fractional parts**
+   - Terms with non-negative exponents contribute to the integer part
+   - Terms with negative exponents contribute to the fractional part
+   - Determine which sums have all terms $\geq 1$ (complete integers) and which have fractional remainders
+
+5. **Calculate the integer part modulo 1000**
+   - Sum the geometric series that contribute integers (those where $10^{100-kn} \geq 1$)
+   - Keep only the last three digits by computing each geometric sum modulo $1000$
+   - Add these contributions to find $\lfloor 10^{100} S \rfloor \pmod{1000}$
+
+6. **Verify the fractional part is negligible (if needed)**
+   - Confirm that the remaining fractional part is less than 1, ensuring the floor function is correctly applied

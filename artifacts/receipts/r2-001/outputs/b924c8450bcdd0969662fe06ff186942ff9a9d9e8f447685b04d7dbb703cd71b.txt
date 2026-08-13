@@ -1,0 +1,100 @@
+# Solution: Finding the Length of BC
+
+## What We're Calculating
+We need to find the length $BC$ in rectangle $ABCD$ where:
+- $AB = 1$ (width)
+- $BC = h$ (unknown height)
+- $X$ is on $\overline{BC}$ and $Y$ is on $\overline{AD}$
+- Five conditions link these points through distances and perpendicularity
+
+## Complete Calculation with All Steps
+
+### Step 1: Coordinate Setup
+- $A = (0, 0)$
+- $B = (1, 0)$
+- $C = (1, h)$ 
+- $D = (0, h)$
+- $X = (1, x)$ on $\overline{BC}$ where $0 \leq x \leq h$
+- $Y = (0, y)$ on $\overline{AD}$ where $0 \leq y \leq h$
+
+### Step 2: Apply Length Conditions
+
+**From $AX = k$:**
+$$\sqrt{1^2 + x^2} = k \implies 1 + x^2 = k^2 \quad \text{...(i)}$$
+
+**From $YC = k$:**
+$$\sqrt{1^2 + (h-y)^2} = k \implies 1 + (h-y)^2 = k^2 \quad \text{...(ii)}$$
+
+**From (i) and (ii):**
+$$x^2 = (h-y)^2 \implies x = h - y \quad \text{...(iii)}$$
+
+**From $XY = 2k$:**
+$$\sqrt{1^2 + (x-y)^2} = 2k \implies 1 + (x-y)^2 = 4k^2 \quad \text{...(iv)}$$
+
+### Step 3: Apply Perpendicularity at $X$ (angle $AXY = 90°$)
+
+$$\vec{XA} = (-1, -x), \quad \vec{XY} = (-1, y-x)$$
+
+$$\vec{XA} \cdot \vec{XY} = 0:$$
+$$(-1)(-1) + (-x)(y-x) = 0$$
+$$1 - xy + x^2 = 0$$
+$$xy = 1 + x^2 = k^2 \quad \text{...(v)}$$
+
+### Step 4: Apply Perpendicularity at $Y$ (angle $XYC = 90°$)
+
+$$\vec{YX} = (1, x-y), \quad \vec{YC} = (1, h-y)$$
+
+$$\vec{YX} \cdot \vec{YC} = 0:$$
+$$1 + (x-y)(h-y) = 0$$
+
+**Using (iii)** where $h - y = x$:
+$$(x-y) \cdot x = -1$$
+$$xy = x^2 + 1 \quad \text{...(vi)}$$
+
+This confirms equation (v)! ✓
+
+### Step 5: Solve for $x$
+
+From (v): $y = \frac{1 + x^2}{x}$
+
+Therefore:
+$$x - y = x - \frac{1+x^2}{x} = -\frac{1}{x}$$
+
+Substituting into (iv):
+$$1 + \frac{1}{x^2} = 4k^2$$
+
+Using (i) where $k^2 = 1 + x^2$:
+$$1 + \frac{1}{x^2} = 4(1 + x^2)$$
+$$1 + \frac{1}{x^2} = 4 + 4x^2$$
+$$\frac{1}{x^2} = 3 + 4x^2$$
+$$1 = 3x^2 + 4x^4$$
+
+Let $u = x^2$:
+$$4u^2 + 3u - 1 = 0$$
+
+**Quadratic formula:**
+$$u = \frac{-3 \pm \sqrt{9 + 16}}{8} = \frac{-3 \pm 5}{8}$$
+
+Since $u \geq 0$: $u = \frac{1}{4}$, so $x = \frac{1}{2}$
+
+### Step 6: Calculate $h$
+
+$$y = \frac{1 + (1/2)^2}{1/2} = \frac{5/4}{1/2} = \frac{5}{2}$$
+
+$$h = x + y = \frac{1}{2} + \frac{5}{2} = 3$$
+
+## Verification
+
+With $x = \frac{1}{2}$, $y = \frac{5}{2}$, $h = 3$, $k = \frac{\sqrt{5}}{2}$:
+
+| Condition | Calculation | Result |
+|-----------|-------------|--------|
+| $AX = k$ | $\sqrt{1 + 1/4} = \sqrt{5}/2$ | ✓ |
+| $YC = k$ | $\sqrt{1 + (1/2)^2} = \sqrt{5}/2$ | ✓ |
+| $XY = 2k$ | $\sqrt{1 + 4} = \sqrt{5}$ | ✓ |
+| $\angle AXY = 90°$ | $(-1,-1/2) \cdot (-1,2) = 1 - 1 = 0$ | ✓ |
+| $\angle XYC = 90°$ | $(1,-2) \cdot (1,1/2) = 1 - 1 = 0$ | ✓ |
+
+All conditions satisfied! The value $h = 3$ is a positive integer within the rectangle bounds.
+
+**FINAL ANSWER: 3**

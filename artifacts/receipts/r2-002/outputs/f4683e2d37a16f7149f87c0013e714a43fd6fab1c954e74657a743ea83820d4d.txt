@@ -1,0 +1,17 @@
+# Problem Analysis
+
+## Given Quantities and Conditions:
+
+1. **Grid structure**: A row of 10 squares arranged consecutively
+2. **Diagonals**: Each square has a diagonal connecting its lower left vertex to its upper right vertex
+3. **Starting point (A)**: Lower left corner at position (0, 0)
+4. **Ending point (B)**: Upper right corner at position (10, 1)
+5. **Movement constraints**:
+   - The bug travels along line segments from vertex to vertex
+   - Each segment can be traversed **at most once** (never twice)
+   - **Never moves from right to left** along horizontal or diagonal segments
+6. **Example**: One valid path is shown in the figure
+
+## What is Being Asked:
+
+Find $\sqrt{N}$, where $N$ is the total number of distinct valid paths the bug can take from $A$ to $B$.

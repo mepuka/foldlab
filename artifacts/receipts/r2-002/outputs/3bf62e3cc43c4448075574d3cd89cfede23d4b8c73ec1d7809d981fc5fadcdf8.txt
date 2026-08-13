@@ -1,0 +1,31 @@
+# Solution Plan
+
+1. **Set up a coordinate system**
+   - Place $B$ at the origin $(0, 0)$
+   - Place $A$ at $(1, 0)$
+
+2. **Find coordinates of $A'$ after first rotation**
+   - Rotate $A$ counterclockwise by angle $\theta$ around $B$
+   - Result: $A' = (\cos\theta, \sin\theta)$
+
+3. **Determine the distance $A'B$**
+   - Calculate $|A'B|$ from the rotation property
+   - Confirm $A'B = 1$
+
+4. **Find coordinates of $B'$ after second rotation**
+   - Rotate $B = (0,0)$ clockwise by angle $\theta$ around $A' = (\cos\theta, \sin\theta)$
+   - Apply clockwise rotation matrix around $A'$ as center
+   - Simplify to get $B'$ coordinates in terms of $\cos\theta$ and $\sin\theta$
+
+5. **Apply the distance constraint $AB' = \frac{4}{3}$**
+   - Calculate $|AB'|^2$ where $A = (1, 0)$ and $B' = $ (coordinates from step 4)
+   - Set $|AB'|^2 = \frac{16}{9}$
+   - Expand and simplify using $\cos^2\theta + \sin^2\theta = 1$
+
+6. **Solve for $\cos\theta$**
+   - The equation should reduce to a polynomial in $\cos\theta$
+   - Solve for $\cos\theta$ (keeping only the acute angle solution)
+
+7. **Express answer in required form**
+   - Write $\cos\theta = \frac{m}{n}$ with $\gcd(m,n) = 1$
+   - Calculate $m + n$

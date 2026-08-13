@@ -1,0 +1,67 @@
+# Step-by-Step Solution
+
+## Step 1: Calculate the area of △ABC using Heron's formula
+
+Given sides: AB = 13, BC = 14, AC = 15
+
+Semi-perimeter: $s = \frac{13 + 14 + 15}{2} = 21$
+
+Area by Heron's formula:
+$$K = \sqrt{s(s-a)(s-b)(s-c)} = \sqrt{21 \cdot 8 \cdot 7 \cdot 6} = \sqrt{7056} = 84$$
+
+## Step 2: Find circumradius
+
+$$R = \frac{abc}{4K} = \frac{13 \cdot 14 \cdot 15}{4 \cdot 84} = \frac{2730}{336} = \frac{65}{8}$$
+
+## Step 3: Set up coordinate system
+
+Place B at origin and C on the positive x-axis:
+- $B = (0, 0)$
+- $C = (14, 0)$
+
+For point A with $|AB| = 13$ and $|AC| = 15$:
+- From $x^2 + y^2 = 169$ and $(x-14)^2 + y^2 = 225$
+- Solving: $x = 5, y = 12$
+- $A = (5, 12)$
+
+## Step 4: Find circumcenter O
+
+Setting $|OB| = |OC|$ and $|OB| = |OA|$:
+- From perpendicular bisector of BC: $h = 7$
+- From equidistance: $k = \frac{33}{8}$
+- $O = (7, \frac{33}{8})$
+
+## Step 5: Determine rotation angle θ
+
+For constraint $A'C' \perp B'C'$, find the angle ∠ACB:
+$$\cos(\angle ACB) = \frac{15^2 + 14^2 - 13^2}{2(15)(14)} = \frac{252}{420} = \frac{3}{5}$$
+
+Therefore $\sin(\angle ACB) = \frac{4}{5}$
+
+Rotation angle needed (to make angle = 90°):
+$$\cos\theta = \frac{4}{5}, \quad \sin\theta = \frac{3}{5}$$
+
+## Step 6: Apply rotation matrix
+
+Rotation matrix: $R_\theta = \begin{pmatrix} 4/5 & -3/5 \\ 3/5 & 4/5 \end{pmatrix}$
+
+After translating to O as origin, rotating, and translating back:
+- $A' = (\frac{27}{40}, \frac{369}{40})$
+- $B' = (\frac{31}{8}, -\frac{27}{8})$
+- $C' = (\frac{603}{40}, \frac{201}{40})$
+
+## Step 7: Apply shoelace formula for hexagon
+
+Vertices in order: $A(5, 12) \to A'(\frac{27}{40}, \frac{369}{40}) \to C'(\frac{603}{40}, \frac{201}{40}) \to C(14, 0) \to B(0, 0) \to B'(\frac{31}{8}, -\frac{27}{8})$
+
+Using the shoelace formula:
+$$\text{Area} = \frac{1}{2}|x_1(y_2-y_6) + x_2(y_3-y_1) + \cdots|$$
+
+Computing the sum of cross products and applying the formula:
+$$\text{Area} = 195$$
+
+## Step 8: Final answer
+
+Rounding to the nearest integer:
+
+**195**

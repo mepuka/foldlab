@@ -1,0 +1,26 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Setup:**
+- An $8 \times 8$ grid of cells
+- The integers from $1$ to $64$ (all distinct)
+- One number placed in each cell
+- $a_{i,j}$ = the number in row $i$, column $j$
+
+**The Sum Definition:**
+$$M = \sum^8_{i=1} \sum^7_{j=1} (|a_{i,j+1} - a_{i,j}| + |a_{j+1,i} - a_{j,i}|)$$
+
+This counts:
+- For each row: the sum of absolute differences between consecutive (horizontally adjacent) cells
+- For each column: the sum of absolute differences between consecutive (vertically adjacent) cells
+- There are $8 \times 7 = 56$ horizontal adjacencies and $7 \times 8 = 56$ vertical adjacencies (112 total adjacencies)
+
+## What is Being Asked
+
+**Find:** The remainder when the maximum possible value of $M$ is divided by $1000$.
+
+In other words:
+1. Arrange the integers $1$ through $64$ in the $8 \times 8$ grid to maximize $M$ (the sum of absolute differences across all adjacent cell pairs)
+2. Determine what this maximum value is
+3. Calculate $M_{\max} \pmod{1000}$

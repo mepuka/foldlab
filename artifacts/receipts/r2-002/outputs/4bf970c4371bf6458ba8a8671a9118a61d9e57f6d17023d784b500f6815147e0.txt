@@ -1,0 +1,20 @@
+# Analysis of the Competition Math Problem
+
+## Given Quantities
+
+1. $HO = 20$
+2. $SE = 26$
+3. $OS = 10$
+
+## Given Conditions
+
+1. $HORSE$ is a convex pentagon
+2. $\angle EHO = 90°$
+3. $\angle ORS = 90°$
+4. $\angle SEH = 90°$
+5. $\angle HOR = 135°$
+6. $\angle RSE = 135°$
+
+## What is Being Asked
+
+Compute the area of pentagon $HORSE$.

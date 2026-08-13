@@ -1,0 +1,81 @@
+# Step-by-Step Solution
+
+## Step 1: Establish the constraint on $\lfloor \sqrt{n} \rfloor$
+
+For the expression $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450$ to be divisible by $n$, we need all prime factors of $n$ to divide this expression.
+
+**Key observation:** If a prime $p$ divides $n$ and $p$ divides $(\lfloor \sqrt{n} \rfloor)!$, then:
+$$(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv 0 \pmod{p}$$
+
+This means we need:
+$$p \mid 450$$
+
+Since $450 = 2 \cdot 3^2 \cdot 5^2$, the only primes dividing 450 are $\{2, 3, 5\}$.
+
+## Step 2: Determine upper bound on $\lfloor \sqrt{n} \rfloor$
+
+For any prime $p$ dividing $n$:
+- If $p \mid (\lfloor \sqrt{n} \rfloor)!$, then $p \in \{2, 3, 5\}$
+
+This means $n$ can only have prime factors from $\{2, 3, 5\}$, and we need $\lfloor \sqrt{n} \rfloor$ such that $(\lfloor \sqrt{n} \rfloor)!$ contains only these primes.
+
+Since $6! = 720 = 2^4 \cdot 3^2 \cdot 5$ contains the prime 7 would not be an issue, but we need:
+$$\lfloor \sqrt{n} \rfloor \leq 5$$
+
+This gives us $n < 36$.
+
+## Step 3: List candidates (5-smooth numbers less than 36)
+
+Numbers of the form $2^a \cdot 3^b \cdot 5^c$ less than 36:
+$$1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30$$
+
+## Step 4: Test candidates systematically
+
+We compute $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450 \pmod{n}$ for each candidate.
+
+**Key factorials:**
+- $1! = 1$
+- $2! = 2$
+- $3! = 6$
+- $4! = 24$
+- $5! = 120$
+
+Testing the larger candidates first:
+
+**$n = 30$:** $\lfloor \sqrt{30} \rfloor = 5$, so $5!^{30!} + 450 \pmod{30}$
+- $5! = 120 \equiv 0 \pmod{30}$
+- $450 \equiv 0 \pmod{30}$
+- Result: $0 + 0 \equiv 0 \pmod{30}$ ✓
+
+**$n = 25$:** $\lfloor \sqrt{25} \rfloor = 5$, so $5!^{25!} + 450 \pmod{25}$
+- $5! = 120 \equiv 20 \pmod{25}$
+- $450 \equiv 0 \pmod{25}$
+- Need $20^{25!} \equiv 0 \pmod{25}$ (but $20 \not\equiv 0$, fails)
+
+**$n = 27$:** $\lfloor \sqrt{27} \rfloor = 5$, so $5!^{27!} + 450 \pmod{27}$
+- $5! = 120 \equiv 12 \pmod{27}$
+- $450 \equiv 18 \pmod{27}$
+- Need $12^{27!} + 18 \equiv 0 \pmod{27}$ (fails)
+
+**$n = 24$:** $\lfloor \sqrt{24} \rfloor = 4$, so $4!^{24!} + 450 \pmod{24}$
+- $4! = 24 \equiv 0 \pmod{24}$
+- $450 \equiv 18 \pmod{24}$
+- Result: $0 + 18 \equiv 18 \not\equiv 0 \pmod{24}$ ✗
+
+**$n = 20$:** $\lfloor \sqrt{20} \rfloor = 4$, so $4!^{20!} + 450 \pmod{20}$
+- $4! = 24 \equiv 4 \pmod{20}$
+- $450 \equiv 10 \pmod{20}$
+- Need $4^{20!} + 10 \equiv 0 \pmod{20}$ (fails)
+
+## Step 5: Verify $n = 30$
+
+- $30 = 2 \cdot 3 \cdot 5$
+- $\lfloor \sqrt{30} \rfloor = 5$
+- $5! = 120 = 2^3 \cdot 3 \cdot 5$
+- $120 \equiv 0 \pmod{2}$, $120 \equiv 0 \pmod{3}$, $120 \equiv 0 \pmod{5}$
+- $450 \equiv 0 \pmod{30}$
+- Therefore: $(\lfloor \sqrt{30} \rfloor)!^{30!} + 450 \equiv 0 \pmod{30}$ ✓
+
+# Final Answer
+
+$$\boxed{30}$$

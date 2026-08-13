@@ -1,0 +1,52 @@
+# Systematic Solution
+
+## Step 1: Clarify the Problem Structure
+
+We need to count 3×3 grids where:
+- Each of the 4 numbers {1, 2, 3, 4} appears exactly once in each row
+- Each of the 4 numbers {1, 2, 3, 4} appears exactly once in each column  
+- Each cell can contain multiple numbers (multiple symbols in one cell are allowed)
+
+## Step 2: Reformulate as Independent Latin Squares
+
+The constraint structure suggests we can think of this as **overlaying 4 independent Latin squares** (one for each number), where:
+- Number k forms its own 3×3 permutation matrix L_k
+- L_k has exactly one entry in each row and each column
+- The four matrices L_1, L_2, L_3, L_4 are independent (can overlap in cells)
+
+## Step 3: Count Permutation Matrices for Each Number
+
+For each number k ∈ {1, 2, 3, 4}, we need a valid placement such that it appears exactly once per row and once per column.
+
+The number of ways to arrange symbol k in a 3×3 grid with this property equals the number of 3×3 permutation matrices:
+$$\text{# of 3×3 Latin squares} = 3! = 6$$
+
+**Verification of the 6 permutations for any symbol:**
+- (Row 1→Col 1, Row 2→Col 2, Row 3→Col 3)
+- (Row 1→Col 1, Row 2→Col 3, Row 3→Col 2)
+- (Row 1→Col 2, Row 2→Col 1, Row 3→Col 3)
+- (Row 1→Col 2, Row 2→Col 3, Row 3→Col 1)
+- (Row 1→Col 3, Row 2→Col 1, Row 3→Col 2)
+- (Row 1→Col 3, Row 2→Col 2, Row 3→Col 1)
+
+## Step 4: Apply Independence Principle
+
+Since each of the 4 numbers independently chooses one of 6 permutation matrices, and these choices don't interfere with each other (different numbers can occupy the same cell), the total number of valid grids is:
+
+$$\text{Total} = 6 \times 6 \times 6 \times 6 = 6^4$$
+
+## Step 5: Calculate
+
+$$6^4 = (6^2)^2 = 36^2 = 1296$$
+
+## Step 6: Verify Consistency
+
+- Total symbol placements: 4 symbols × 3 rows = 12 placements across 9 cells
+- Average symbols per cell: 12/9 = 4/3 ✓
+- Each row contains all 4 symbols distributed across 3 cells ✓
+- Each column contains all 4 symbols distributed across 3 cells ✓
+- This structure is consistent with overlaying 4 independent permutation matrices ✓
+
+---
+
+**Final Answer: 1296**

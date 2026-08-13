@@ -1,0 +1,71 @@
+# Step-by-Step Solution
+
+## Step 1: Count the Total Adjacencies
+
+In an 8×8 grid:
+- **Horizontal adjacencies:** 8 rows × 7 pairs per row = 56
+- **Vertical adjacencies:** 8 columns × 7 pairs per column = 56
+- **Total adjacencies:** 56 + 56 = **112 edges**
+
+## Step 2: Verify Degree Sum
+
+Check using the sum of degrees:
+- 4 corner cells: degree 2 each → 4 × 2 = 8
+- 24 edge cells (non-corner): degree 3 each → 24 × 3 = 72
+- 36 interior cells: degree 4 each → 36 × 4 = 144
+- **Total degree sum:** 8 + 72 + 144 = 224
+
+Number of edges = 224/2 = **112** ✓
+
+## Step 3: Apply Checkerboard Strategy
+
+In a standard checkerboard coloring of the 8×8 grid:
+- 32 white squares
+- 32 black squares
+- Every adjacency connects one white to one black cell
+
+**Optimal placement:**
+- Place numbers {1, 2, ..., 32} on white squares
+- Place numbers {33, 34, ..., 64} on black squares
+
+## Step 4: Verify Partition Properties
+
+- Sum of {1,...,32}: $\sum_{i=1}^{32} i = \frac{32 \times 33}{2} = 528$
+- Sum of {33,...,64}: $\sum_{i=33}^{64} i = \sum_{i=1}^{64} i - 528 = \frac{64 \times 65}{2} - 528 = 2080 - 528 = 1552$
+
+## Step 5: Calculate the Maximum Sum
+
+Every edge connects a white cell (containing a number from {1,...,32}) to a black cell (containing a number from {33,...,64}).
+
+For each edge: difference = (black value) - (white value)
+
+Total sum:
+$$M_{\max} = \sum_{\text{all edges}} \text{(black value - white value)}$$
+
+$$= \sum_{b \in \text{black}} b \cdot d_b - \sum_{w \in \text{white}} w \cdot d_w$$
+
+where $d_i$ is the degree of cell $i$.
+
+Since the checkerboard is symmetric, the degree sequences for both color classes are identical. Let's denote the average degree as:
+$$\text{Average degree} = \frac{112}{32} = 3.5$$
+
+Therefore:
+$$M_{\max} = 3.5 \times \sum_{i=33}^{64} i - 3.5 \times \sum_{i=1}^{32} i$$
+
+$$= 3.5 \times 1552 - 3.5 \times 528$$
+
+$$= 3.5 \times (1552 - 528)$$
+
+$$= 3.5 \times 1024$$
+
+$$= 3584$$
+
+## Step 6: Verify the Calculation
+
+Double-check: $3.5 \times 1024 = \frac{7}{2} \times 1024 = 7 \times 512 = 3584$ ✓
+
+## Step 7: Find the Final Answer Modulo 1000
+
+$$M_{\max} \bmod 1000 = 3584 \bmod 1000 = 584$$
+
+ANSWER: **584**

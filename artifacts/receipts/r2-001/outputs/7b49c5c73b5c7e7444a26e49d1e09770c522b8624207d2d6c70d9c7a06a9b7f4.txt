@@ -1,0 +1,29 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Given:**
+- A $10 \times 10$ grid of cells
+- A positive integer $n$ (implicitly $n = 5$, since the grid is $2n \times 2n = 10 \times 10$)
+- Five cell loops to partition the grid
+- For each cell loop: dimensions $a \times b$ where $2 \le a, b \le 2n = 10$
+- Each cell loop is defined as the $2a + 2b - 4$ cells forming the perimeter around an $(a-2) \times (b-2)$ rectangular hole
+
+**Conditions:**
+1. The five cell loops must partition the $10 \times 10$ grid (100 cells total)
+2. Every cell in the grid belongs to exactly one cell loop
+3. Each cell loop has dimensions $a \times b$ with $2 \le a, b \le 10$
+4. The cell loops are nested (concentrically arranged) as shown in the example
+
+**Implicit structural constraint:** From the example pattern, the cell loops must be nested rectangles centered in the grid, where:
+- Each successive loop fits inside the previous loop's inner rectangle
+- The outermost loop is $10 \times 10$
+- Each loop $i$ has outer dimensions $a_i \times b_i$ with inner dimensions $(a_i - 2) \times (b_i - 2)$
+
+## What Is Being Asked
+
+**Find:** The number of distinct ways to partition a $10 \times 10$ grid into exactly 5 cell loops such that:
+- The five loops completely cover all 100 cells with no overlap
+- The loops are nested concentrically (as the structure requires)
+
+In other words, count the number of valid sequences of five nested rectangles $(a_1, b_1), (a_2, b_2), (a_3, b_3), (a_4, b_4), (a_5, b_5)$ where the outer rectangle is $10 \times 10$ and each forms a valid cell loop in the nested structure.

@@ -1,0 +1,50 @@
+# Step-by-Step Solution
+
+## Step 1: Identify valid values of $r$
+
+For $n = \frac{5r + 8}{4}$ to be an integer, I need $5r + 8 \equiv 0 \pmod{4}$.
+
+Since $8 \equiv 0 \pmod{4}$, I need:
+$$5r \equiv 0 \pmod{4}$$
+
+Since $5 \equiv 1 \pmod{4}$, this gives:
+$$r \equiv 0 \pmod{4}$$
+
+Therefore $r \in \{4, 8, 12, 16, 20, 24, 28, 32, 36, ...\}$
+
+## Step 2: Apply constraints systematically
+
+For each candidate $r$, I calculate:
+- $n = \frac{5r + 8}{4}$
+- $b = n - r$
+- Check: $r \geq 7$ AND $b \geq 7$
+
+**$r = 4$:** $n = \frac{28}{4} = 7$, $b = 3$ → Fails ($r < 7$) ✗
+
+**$r = 8$:** $n = \frac{48}{4} = 12$, $b = 4$ → Fails ($b < 7$) ✗
+
+**$r = 12$:** $n = \frac{68}{4} = 17$, $b = 5$ → Fails ($b < 7$) ✗
+
+**$r = 16$:** $n = \frac{88}{4} = 22$, $b = 6$ → Fails ($b < 7$) ✗
+
+**$r = 20$:** $n = \frac{108}{4} = 27$, $b = 7$ → **Valid** ✓
+
+**$r = 24$:** $n = \frac{128}{4} = 32$, $b = 8$ → **Valid** ✓
+
+**$r = 28$:** $n = \frac{148}{4} = 37$, $b = 9$ → **Valid** ✓
+
+**$r = 32$:** $n = \frac{168}{4} = 42$, $b = 10$ → **Valid** ✓
+
+**$r = 36$:** $n = \frac{188}{4} = 47$, $b = 11$ → **Valid** ✓
+
+## Step 3: Five smallest valid $n$ values
+
+The first five valid values are: $27, 32, 37, 42, 47$
+
+## Step 4: Calculate the sum
+
+$$27 + 32 + 37 + 42 + 47 = 185$$
+
+Verification: $(27 + 47) + (32 + 42) + 37 = 74 + 74 + 37 = 185$ ✓
+
+**185**

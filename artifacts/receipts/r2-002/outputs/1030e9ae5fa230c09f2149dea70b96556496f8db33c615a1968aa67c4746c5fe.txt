@@ -1,0 +1,14 @@
+I'll verify this solution step by step.
+
+## Verification of Step 1-3
+✓ The coordinate system setup is correct: $\ell_1$ as $x$-axis, $\ell_2$ as $y$-axis, origin at intersection.
+✓ Point $P = (12, 3)$ is correct: distance 12 from $y$-axis, distance 3 from $x$-axis.
+✓ Centers at $(r_1, r_1)$ and $(r_2, r_2)$ is correct for circles tangent to both axes.
+
+## Verification of Step 4
+For $P$ on $\Gamma_1$:
+$$(12 - r_1)^2 + (3 - r_1)^2 = r_1^2$$
+
+Expanding:
+$$144 - 24r_1 + r_1^2 + 9 - 6r_1 + r_1^2 = r_1^2$$
+$$153 - 30r_1 + r_1^

@@ -1,0 +1,55 @@
+# Solving for Moons with All Three Characteristics
+
+## Step 1: Define Variables for Each Region
+
+For three overlapping sets (Blue, Icy, Large), there are 7 non-overlapping regions:
+1. Blue only
+2. Icy only
+3. Large only
+4. Blue and Icy, but not Large
+5. Blue and Large, but not Icy
+6. Icy and Large, but not Blue
+7. Blue AND Icy AND Large = **x** (what we're solving for)
+
+## Step 2: Assign Known Quantities to Their Regions
+
+**"Blue but not Icy" = 10**
+- This includes: (Blue only) + (Blue and Large, but not Icy)
+- Regions 1 and 5: 10 moons total
+
+**"Icy but not Large" = 8**
+- This includes: (Icy only) + (Blue and Icy, but not Large)
+- Regions 2 and 4: 8 moons total
+
+**"Large but not Blue" = 6**
+- This includes: (Large only) + (Icy and Large, but not Blue)
+- Regions 3 and 6: 6 moons total
+
+## Step 3: Express All Regions in Terms of x
+
+The three given conditions are **mutually exclusive** (a moon cannot satisfy two of them simultaneously):
+- These three categories cover regions: 1, 2, 3, 4, 5, 6
+- The uncovered region is only: 7 (the intersection of all three)
+
+## Step 4: Apply the Partition Principle
+
+All 29 moons must be distributed across all 7 regions:
+
+$$\text{(Regions 1+5)} + \text{(Regions 2+4)} + \text{(Regions 3+6)} + \text{(Region 7)} = 29$$
+
+## Step 5: Solve for x
+
+$$10 + 8 + 6 + x = 29$$
+
+Double-checking:
+- Sum of three conditions: 10 + 8 + 6 = 24
+- Total moons: 29
+- Remaining: 29 - 24 = 5
+
+$$24 + x = 29$$
+$$x = 5$$
+
+**Verification:** 
+- 10 (blue but not icy) + 8 (icy but not large) + 6 (large but not blue) + 5 (all three) = 29 ✓
+
+ANSWER: 5

@@ -1,0 +1,53 @@
+# Solution Plan for the Competition Problem
+
+## 1. Establish the Lower Bound (Necessity)
+
+**Step 1.1:** Prove that we need at least 2025 operations
+- Initially, we have 2026 distinct numbers
+- Each operation replaces exactly one number with a new value
+- In the best case, each operation reduces the count of distinct values by exactly 1
+- To go from 2026 distinct values down to 1 (all equal), we need at least 2025 reductions
+- Therefore: **minimum ≥ 2025 operations**
+
+**Step 1.2:** Verify this bound is tight
+- Show that it's theoretically possible to reduce distinct values by 1 per operation
+- This occurs when the replacement value (|max - min|) is not already on the blackboard
+
+## 2. Construct an Explicit Strategy (Sufficiency)
+
+**Step 2.1:** Design the Euclidean-inspired algorithm
+- Start with {1, 2, 3, ..., 2026}
+- In each operation:
+  - Identify max = 2026, min = 1
+  - Replace max with |2026 - 1| = 2025
+  - New set: {1, 2, 3, ..., 2025}
+
+**Step 2.2:** Repeat the process iteratively
+- Each iteration reduces the largest number by 1
+- Continue until all numbers converge to a single value
+- Track that no replacement value equals an existing value (ensuring distinct count decreases)
+
+**Step 2.3:** Show convergence to a specific final value
+- Prove that following this strategy leads all numbers to converge to gcd(1, 2, 3, ..., 2026) = 1
+- Or demonstrate the specific final common value depending on the algorithm variant
+
+## 3. Verify the Strategy Achieves Exactly 2025 Operations
+
+**Step 3.1:** Count operations in the constructed strategy
+- Operation 1: {1,2,...,2026} → {1,2,...,2025} (replace 2026 with 2025)
+- Operation 2: {1,2,...,2025} → {1,2,...,2024} (replace 2025 with 2024)
+- Continue this pattern...
+- Operation 2025: {1,2} → {1,1} (replace 2 with 1)
+
+**Step 3.2:** Confirm all numbers are equal after 2025 operations
+- Final state: all 2026 positions contain the same value
+- Verification: no further operations are possible (max = min)
+
+## 4. Final Answer
+
+**The minimum number of operations is exactly 2025**
+
+This is because:
+- **Lower bound:** We must reduce from 2026 distinct values to 1, requiring ≥ 2025 steps
+- **Upper bound:** An explicit algorithm achieves this in exactly 2025 operations
+- **Conclusion:** The answer is **n = 2025**

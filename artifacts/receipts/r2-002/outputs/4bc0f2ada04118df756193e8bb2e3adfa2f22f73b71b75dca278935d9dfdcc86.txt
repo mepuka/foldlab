@@ -1,0 +1,36 @@
+# Solution Plan
+
+1. **Understand the State Space**
+   - Represent each reachable configuration as an ordered pair (J, B) where J is Jacob's position and B is Bojac's position
+   - Each position is a cell (r, c) on the 8×8 grid, giving 64 possible positions per person
+   - Maximum theoretical states: 64 × 64 = 4,096 distinct ordered pairs
+
+2. **Analyze the Movement Relationship**
+   - Jacob moves in the called direction; Bojac moves 90° counterclockwise
+   - This creates a deterministic but asymmetric relationship between their movements
+   - Key insight: For any instruction sequence, once starting positions are fixed, the trajectory is fully determined
+
+3. **Determine Reachability from Fixed Starting Positions**
+   - For any fixed starting pair (J₀, B₀), execute all possible finite instruction sequences
+   - Track which ordered pairs (J, B) are visited
+   - Account for boundary effects: when movement would exit the grid, the person stays in place
+
+4. **Optimize Starting Positions**
+   - Test strategic starting positions (corners, edges, center, etc.)
+   - Hypothesis: certain starting positions may allow access to more of the state space
+   - Consider whether symmetric or asymmetric starting positions yield better coverage
+
+5. **Find the Optimal Instruction Sequence**
+   - For optimal starting positions, determine which instruction sequences maximize coverage
+   - Consider: repeating patterns (e.g., N-E-S-W cycles), systematic sweeps, or exhaustive direction sequences
+   - The sequence N-E-S-W repeated may create natural grid traversal
+
+6. **Calculate the Maximum Reachable Set**
+   - Compute the union of all visited states across all possible instruction sequences from optimal starting positions
+   - This gives the answer: the size of the maximum reachable set of ordered pairs
+
+7. **Verify the Result**
+   - Confirm that no state outside the computed set can be reached from any starting configuration
+   - Check boundary cases and movement limitations
+
+**Expected answer:** The maximum number of distinct ordered pairs reachable is likely **4,096** (all possible pairs) or a significant fraction thereof, depending on whether the counterclockwise rotation and boundary constraints limit coverage.

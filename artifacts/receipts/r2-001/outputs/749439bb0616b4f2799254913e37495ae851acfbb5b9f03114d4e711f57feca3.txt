@@ -1,0 +1,97 @@
+# Solution: Counting Divisors with Specific Congruences
+
+## 1. What We're Calculating
+
+We need to find the number of divisors $d$ of $17017^{17}$ such that:
+- $d \equiv 2 \pmod{3}$, AND
+- $d \equiv 1 \pmod{4}$
+
+Then compute this count modulo 1000.
+
+## 2. Express Divisors in Standard Form
+
+First, factor 17017:
+- $17017 = 7 \times 11 \times 13 \times 17$ ✓
+
+Therefore: $17017^{17} = 7^{17} \times 11^{17} \times 13^{17} \times 17^{17}$
+
+Any divisor has the form: $d = 7^a \times 11^b \times 13^c \times 17^e$ where $0 \leq a, b, c, e \leq 17$
+
+## 3. Analyze Modulo 3
+
+Find residues:
+- $7 \equiv 1 \pmod{3}$
+- $11 \equiv 2 \pmod{3}$
+- $13 \equiv 1 \pmod{3}$
+- $17 \equiv 2 \pmod{3}$
+
+Therefore:
+$$d \equiv 1^a \times 2^b \times 1^c \times 2^e \equiv 2^{b+e} \pmod{3}$$
+
+For $d \equiv 2 \pmod{3}$:
+- Since $2^1 \equiv 2 \pmod{3}$ and $2^2 \equiv 1 \pmod{3}$
+- We need **$b + e$ to be odd**
+
+## 4. Analyze Modulo 4
+
+Find residues:
+- $7 \equiv 3 \equiv -1 \pmod{4}$
+- $11 \equiv 3 \equiv -1 \pmod{4}$
+- $13 \equiv 1 \pmod{4}$
+- $17 \equiv 1 \pmod{4}$
+
+Therefore:
+$$d \equiv (-1)^a \times (-1)^b \times 1^c \times 1^e \equiv (-1)^{a+b} \pmod{4}$$
+
+For $d \equiv 1 \pmod{4}$:
+- Since $(-1)^{\text{even}} = 1$ and $(-1)^{\text{odd}} = -1$
+- We need **$a + b$ to be even**
+
+## 5. Combine Constraints
+
+We need:
+- $b + e$ is odd (opposite parity)
+- $a + b$ is even (same parity)
+
+**Case 1: $b$ is even**
+- From $a + b$ even: $a$ must be **even**
+- From $b + e$ odd: $e$ must be **odd**
+- $c$ has **no constraint**
+
+**Case 2: $b$ is odd**
+- From $a + b$ even: $a$ must be **odd**
+- From $b + e$ odd: $e$ must be **even**
+- $c$ has **no constraint**
+
+## 6. Count Valid Exponent Choices
+
+In $\{0, 1, 2, ..., 17\}$:
+- Even values: $\{0, 2, 4, 6, 8, 10, 12, 14, 16\}$ → **9 choices**
+- Odd values: $\{1, 3, 5, 7, 9, 11, 13, 15, 17\}$ → **9 choices**
+- All values: → **18 choices**
+
+## 7. Calculate Total Count
+
+**Case 1** ($a$ even, $b$ even, $e$ odd, $c$ unrestricted):
+$$9 \times 9 \times 18 \times 9 = 81 \times 162 = 13,122$$
+
+**Case 2** ($a$ odd, $b$ odd, $e$ even, $c$ unrestricted):
+$$9 \times 9 \times 18 \times 9 = 81 \times 162 = 13,122$$
+
+**Total:**
+$$N = 13,122 + 13,122 = 26,244$$
+
+## 8. Find the Remainder
+
+$$26,244 = 26 \times 1000 + 244$$
+
+Therefore: $N \equiv 244 \pmod{1000}$
+
+## Verification
+
+- Both cases are mutually exclusive and exhaustive ✓
+- Each case has valid choices for all four exponents ✓
+- The structure respects the independence of mod 3 and mod 4 conditions (by CRT) ✓
+- The calculation is symmetric, which makes sense given the symmetric roles of cases ✓
+
+**FINAL ANSWER: 244**

@@ -1,0 +1,3 @@
+```json
+{"template":"Carry out the plan step by step, showing all work. For each step, clearly state what you are computing and why. Double-check your arithmetic and logic. Finish by stating the final answer as: FINAL ANSWER: [integer]","params":{"max_tokens":3000,"thinking_budget":2000}}
+```

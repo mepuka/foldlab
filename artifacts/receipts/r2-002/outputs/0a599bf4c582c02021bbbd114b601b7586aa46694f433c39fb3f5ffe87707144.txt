@@ -1,0 +1,57 @@
+# Solution: Counting Ordered Triples with $a + b = c$ in $S$
+
+Let me work through this step-by-step, verifying each stage.
+
+## Step 1: Identify the Problem
+We need to count ordered pairs $(a,b) \in S \times S$ such that $a+b \in S$, where $S = \{n : 1 \leq n \leq 143, \gcd(n, 143) = 1\}$.
+
+## Step 2: Apply the Closure Property
+$a+b \in S$ requires $\gcd(a+b, 143) = 1$.
+
+Since $a, b \in S$: $\gcd(a, 143) = 1$ and $\gcd(b, 143) = 1$
+
+## Step 3: Factor 143 and Use CRT
+$$143 = 11 \times 13$$
+
+Therefore: $\gcd(a+b, 143) = 1$ if and only if:
+- $\gcd(a+b, 11) = 1$ **AND**
+- $\gcd(a+b, 13) = 1$
+
+This means $a+b \not\equiv 0 \pmod{11}$ and $a+b \not\equiv 0 \pmod{13}$.
+
+## Step 4: Count Coprime Elements
+
+**Modulo 11:**
+- Elements coprime to 11: $\{1, 2, 3, ..., 10\}$
+- Count: $\phi(11) = 10$ elements
+
+**Modulo 13:**
+- Elements coprime to 13: $\{1, 2, 3, ..., 12\}$
+- Count: $\phi(13) = 12$ elements
+
+## Step 5: Count Valid Pairs for Each Prime
+
+**Modulo 11:**
+- Total pairs where both $a, b$ coprime to 11: $10 \times 10 = 100$
+- Pairs where $a + b \equiv 0 \pmod{11}$: For each $a \in \{1,...,10\}$, there's exactly one $b \equiv -a \pmod{11}$, giving 10 pairs
+- Valid pairs: $100 - 10 = 90$
+
+**Modulo 13:**
+- Total pairs where both $a, b$ coprime to 13: $12 \times 12 = 144$
+- Pairs where $a + b \equiv 0 \pmod{13}$: For each $a \in \{1,...,12\}$, there's exactly one $b \equiv -a \pmod{13}$, giving 12 pairs
+- Valid pairs: $144 - 12 = 132$
+
+## Step 6: Apply Chinese Remainder Theorem
+
+By CRT, since the conditions modulo 11 and modulo 13 are independent, the total number of valid pairs $(a,b)$ is:
+
+$$\text{Total} = 90 \times 132$$
+
+Computing:
+$$90 \times 132 = 90 \times 100 + 90 \times 32 = 9000 + 2880 = 11,880$$
+
+## Final Answer
+
+**There are $\boxed{11,880}$ ordered pairs $(a,b) \in S \times S$ such that $a+b \in S$.**
+
+Equivalently, there are **11,880** ordered triples $(a,b,c)$ where $a,b,c \in S$ and $a+b=c$.

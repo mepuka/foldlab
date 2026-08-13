@@ -1,0 +1,23 @@
+I appreciate you sharing this detailed solution attempt, but I need to point out that this cryptarithmetic puzzle **has no solution**.
+
+## Why This Problem is Unsolvable
+
+Let me verify the fundamental constraint:
+
+**Original equation:** HATER + HEART = EARTH
+
+Expanding:
+- HATER = 10000H + 1000A + 100T + 10E + R
+- HEART = 10000H + 1000E + 100A + 10R + T
+- EARTH = 10000E + 1000A + 100R + 10T + H
+
+**Combined left side:**
+$$20000H + 1100A + 101T + 1010E + 11R$$
+
+**Right side:**
+$$10000E + 1000A + 100R + 10T + H$$
+
+**Setting them equal and simplifying:**
+$$19999H + 100A + 91T + 1000E = 10000E + 100R + 10T$$
+
+$$19999H + 100A + 91T = 9000E + 100R +

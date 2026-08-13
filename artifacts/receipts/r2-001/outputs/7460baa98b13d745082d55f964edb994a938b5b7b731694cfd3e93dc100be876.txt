@@ -1,0 +1,79 @@
+# Step-by-Step Solution
+
+## Step 1: Set up time equations
+- Patrick's time: $t$ hours
+- Tanya's time: $t - 1$ hours (starts 1 hour later)
+- Jose's time: $t - 2$ hours (starts 2 hours later)
+
+## Step 2: Write distance equations
+- Patrick: $D = p \cdot t$
+- Tanya: $D = (p + 2)(t - 1)$
+- Jose: $D = (p + 9)(t - 2)$
+
+## Step 3: Set up equality equations
+
+**Equation 1** (Patrick = Tanya):
+$$p \cdot t = (p + 2)(t - 1)$$
+
+**Equation 2** (Patrick = Jose):
+$$p \cdot t = (p + 9)(t - 2)$$
+
+## Step 4: Solve for $p$ using Equation 1
+
+$$pt = (p + 2)(t - 1)$$
+$$pt = pt - p + 2t - 2$$
+$$0 = -p + 2t - 2$$
+$$p = 2t - 2$$
+
+**Verification**: If $p = 2t - 2$, then:
+- LHS: $(2t - 2)t = 2t^2 - 2t$
+- RHS: $(2t - 2 + 2)(t - 1) = 2t(t - 1) = 2t^2 - 2t$ ✓
+
+## Step 5: Solve for $t$ using Equation 2
+
+$$pt = (p + 9)(t - 2)$$
+$$pt = pt - 2p + 9t - 18$$
+$$0 = -2p + 9t - 18$$
+$$2p = 9t - 18$$
+
+Substitute $p = 2t - 2$:
+$$2(2t - 2) = 9t - 18$$
+$$4t - 4 = 9t - 18$$
+$$14 = 5t$$
+$$t = \frac{14}{5} \text{ hours}$$
+
+## Step 6: Calculate $p$ and distance $D$
+
+$$p = 2t - 2 = 2 \cdot \frac{14}{5} - 2 = \frac{28}{5} - \frac{10}{5} = \frac{18}{5} \text{ mph}$$
+
+$$D = p \cdot t = \frac{18}{5} \cdot \frac{14}{5} = \frac{252}{25} \text{ miles}$$
+
+## Step 7: Verify all three people arrive at the same distance
+
+**Patrick**: $D = \frac{18}{5} \cdot \frac{14}{5} = \frac{252}{25}$ ✓
+
+**Tanya**: 
+- Speed: $\frac{18}{5} + 2 = \frac{28}{5}$ mph
+- Time: $\frac{14}{5} - 1 = \frac{9}{5}$ hours
+- Distance: $\frac{28}{5} \cdot \frac{9}{5} = \frac{252}{25}$ ✓
+
+**Jose**: 
+- Speed: $\frac{18}{5} + 9 = \frac{63}{5}$ mph
+- Time: $\frac{14}{5} - 2 = \frac{4}{5}$ hours
+- Distance: $\frac{63}{5} \cdot \frac{4}{5} = \frac{252}{25}$ ✓
+
+## Step 8: Reduce to lowest terms and find $m + n$
+
+$$D = \frac{252}{25}$$
+
+Check if this is in lowest terms:
+- $252 = 4 \cdot 63 = 2^2 \cdot 3^2 \cdot 7$
+- $25 = 5^2$
+
+Since $\gcd(252, 25) = 1$, the fraction is already in lowest terms.
+
+Therefore: $m = 252$ and $n = 25$
+
+$$m + n = 252 + 25 = 277$$
+
+FINAL ANSWER: [277]

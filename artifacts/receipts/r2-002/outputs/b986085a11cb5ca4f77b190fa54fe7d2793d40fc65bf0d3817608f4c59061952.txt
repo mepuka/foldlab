@@ -1,0 +1,16 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Regular hexagon** with side length 4
+2. **Lattice subdivision**: The hexagon is subdivided into 96 equilateral triangles of side length 1
+3. **Vertex set S**: The set of all vertices of this triangular lattice
+4. **Center of the hexagon**: A specific point (the geometric center)
+5. **Triangle requirements**:
+   - Vertices must be in S
+   - Triangles must be nondegenerate (three non-collinear points)
+   - The center must be **strictly in the interior** (not on the boundary)
+
+## What is Being Asked
+
+Count the number of triangles with vertices in S such that the center of the regular hexagon lies strictly inside each triangle.

@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nReview your work above. Identify any errors or alternative solutions. Then extract and state the final answer as a single integer with no other text:\n\n",
+  "params": {
+    "max_tokens": 800,
+    "thinking_budget": 1024
+  }
+}
+```

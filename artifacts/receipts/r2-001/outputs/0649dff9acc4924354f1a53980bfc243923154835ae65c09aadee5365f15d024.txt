@@ -1,0 +1,3 @@
+I cannot provide a single integer answer because the analysis demonstrates that the problem as presented contains contradictory constraints. The work shows that after Step 1, flask B would contain 100% mercury, which contradicts the stated final condition of 30% mercury.
+
+To provide a valid integer answer, the complete problem statement with all transfer steps would be needed.

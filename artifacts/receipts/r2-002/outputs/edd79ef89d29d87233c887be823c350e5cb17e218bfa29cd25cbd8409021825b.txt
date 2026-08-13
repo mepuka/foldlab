@@ -1,0 +1,86 @@
+# Solution: Finding Fixed Points of f(n)
+
+## Step 1-3: Analyze 1-digit numbers (n ∈ {1,2,...,9})
+
+For any 1-digit number $n$:
+- Base $b = n + 1$
+- $f(n) = n$ (a single digit remains itself in any base)
+
+**Count: 9 fixed points** (all single-digit numbers)
+
+---
+
+## Step 4: Analyze 2-digit numbers (n = 10a + c)
+
+Where $1 \leq a \leq 9$ and $0 \leq c \leq 9$
+
+**Setting up the equation:**
+- Base: $b = \max(a, c) + 1$
+- Fixed point condition: $ab + c = 10a + c$
+- Simplifying: $ab = 10a$
+- Therefore: $b = 10$ (since $a \geq 1$)
+
+**Constraint:** $\max(a, c) + 1 = 10 \Rightarrow \max(a, c) = 9$
+
+This means at least one of $a$ or $c$ must equal 9.
+
+**Case 1: $a = 9$**
+- $c$ can be any digit: $\{0, 1, 2, ..., 9\}$ → 10 choices
+- Numbers: 90, 91, 92, ..., 99
+
+**Case 2: $a \in \{1,2,...,8\}$ and $c = 9$**
+- $a$ has 8 choices
+- Numbers: 19, 29, 39, 49, 59, 69, 79, 89
+
+**Verification:** No overlap between cases since Case 1 requires $a=9$.
+
+**Count: 10 + 8 = 18 fixed points**
+
+---
+
+## Step 5: Analyze 3-digit numbers (n = 100a + 10b + c)
+
+Where $1 \leq a \leq 9$ and $0 \leq b, c \leq 9$
+
+**Setting up the equation:**
+- Base: $B = \max(a, b, c) + 1$
+- Fixed point condition: $aB^2 + bB + c = 100a + 10b + c$
+- Simplifying: $aB^2 + bB = 100a + 10b$
+- Rearranging: $a(B^2 - 100) + b(B - 10) = 0$
+
+**Factoring:** $a(B-10)(B+10) + b(B-10) = 0$
+$$(B-10)[a(B+10) + b] = 0$$
+
+Since $a \geq 1$ and $b \geq 0$, if $B \neq 10$:
+$$a(B+10) + b = 0$$
+This is impossible (left side always positive).
+
+**Therefore: $B = 10$, which requires $\max(a, b, c) = 9$**
+
+When $B = 10$: the equation becomes $0 = 0$ ✓
+
+**Counting numbers with at least one digit equal to 9:**
+
+Using complementary counting:
+- 3-digit numbers with no 9s: $a \in \{1,...,8\}$, $b,c \in \{0,...,8\}$
+  - Count: $8 \times 9 \times 9 = 648$
+  
+- Total 3-digit numbers: $9 \times 10 \times 10 = 900$
+
+- Numbers with at least one 9: $900 - 648 = 252$
+
+**Verification by inclusion-exclusion:**
+- Case 1 ($a = 9$): $10 \times 10 = 100$
+- Case 2 ($a < 9, b = 9$): $8 \times 10 = 80$
+- Case 3 ($a < 9, b < 9, c = 9$): $8 \times 9 = 72$
+- Total: $100 + 80 + 72 = 252$ ✓
+
+**Count: 252 fixed points**
+
+---
+
+## Step 6: Sum all cases
+
+$$\text{Total} = 9 + 18 + 252 = 279$$
+
+**279**

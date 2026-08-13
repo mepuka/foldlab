@@ -1,0 +1,74 @@
+# Solution: Finding all n < 1000 where s₂(n) = √s₄(n)
+
+## Problem Statement
+
+Find all integers $n < 1000$ such that $s_2(n) = \sqrt{s_4(n)}$, where:
+- $s_2(n)$ = sum of binary digits (count of 1's in binary representation)
+- $s_4(n)$ = sum of base-4 digits
+
+Then compute the sum of all such $n$.
+
+## Setting Up Constraints
+
+Let $a = s_2(n)$. The constraint becomes: $s_4(n) = a^2$
+
+**Maximum values for $n < 1000$:**
+- $999_{10} = 1111100111_2$ → $s_2(999) = 8$
+- $999_{10} = 33213_4$ → $s_4(999) = 3+3+2+1+3 = 12$
+
+Since we need $s_4(n) = a^2 \leq 12$ and $a = s_2(n) \leq 8$:
+- Valid values: $a \in \{1, 2, 3\}$ (since $4^2 = 16 > 12$)
+
+## Case a = 1: $s_2(n) = 1, s_4(n) = 1$
+
+Numbers with exactly one binary digit: $n = 2^k$
+
+Testing powers of 2 against $s_4(n) = 1$:
+- $n = 1 = 1_4$: $s_4(1) = 1$ ✓
+- $n = 2 = 2_4$: $s_4(2) = 2$ ✗
+- $n = 4 = 10_4$: $s_4(4) = 1$ ✓
+- $n = 8 = 20_4$: $s_4(8) = 2$ ✗
+- $n = 16 = 100_4$: $s_4(16) = 1$ ✓
+- $n = 32 = 200_4$: $s_4(32) = 2$ ✗
+- $n = 64 = 1000_4$: $s_4(64) = 1$ ✓
+- $n = 128 = 2000_4$: $s_4(128) = 2$ ✗
+- $n = 256 = 10000_4$: $s_4(256) = 1$ ✓
+- $n = 512 = 20000_4$: $s_4(512) = 2$ ✗
+
+**Valid for a=1:** $\{1, 4, 16, 64, 256\}$
+
+## Case a = 2: $s_2(n) = 2, s_4(n) = 4$
+
+Numbers with exactly two binary digits: $n = 2^i + 2^j$ where $i > j \geq 0$
+
+Testing systematically:
+- $n = 10 = 22_4$: $s_4(10) = 4$ ✓
+- $n = 34 = 202_4$: $s_4(34) = 4$ ✓
+- $n = 40 = 220_4$: $s_4(40) = 4$ ✓
+- $n = 130 = 2002_4$: $s_4(130) = 4$ ✓
+- $n = 136 = 2020_4$: $s_4(136) = 4$ ✓
+- $n = 160 = 2200_4$: $s_4(160) = 4$ ✓
+- $n = 514 = 20002_4$: $s_4(514) = 4$ ✓
+- $n = 520 = 20020_4$: $s_4(520) = 4$ ✓
+- $n = 544 = 20200_4$: $s_4(544) = 4$ ✓
+- $n = 640 = 22000_4$: $s_4(640) = 4$ ✓
+
+**Valid for a=2:** $\{10, 34, 40, 130, 136, 160, 514, 520, 544, 640\}$
+
+## Case a = 3: $s_2(n) = 3, s_4(n) = 9$
+
+Testing numbers with exactly three binary digits yields no solutions satisfying $s_4(n) = 9$ for $n < 1000$.
+
+## Computing the Sum
+
+All valid values:
+$$\{1, 4, 16, 64, 256, 10, 34, 40, 130, 136, 160, 514, 520, 544, 640\}$$
+
+Calculating by groups:
+- $a=1$: $1 + 4 + 16 + 64 + 256 = 341$
+- $a=2$ (first group): $10 + 34 + 40 + 130 + 136 + 160 = 510$
+- $a=2$ (second group): $514 + 520 + 544 + 640 = 2218$
+
+**Total:** $341 + 510 + 2218 = 3069$
+
+FINAL ANSWER: **3069**

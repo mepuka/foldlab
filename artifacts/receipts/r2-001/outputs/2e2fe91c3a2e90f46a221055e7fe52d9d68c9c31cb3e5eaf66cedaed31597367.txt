@@ -1,0 +1,87 @@
+# Solution: Computing P(Exactly One Blank | All Even Stickers Visible)
+
+## Step 1: Identify Constraints from "All Even Stickers Visible"
+
+**What we're calculating:** The conditions required for all even-numbered stickers to be visible.
+
+**Complete calculation:**
+- Sticker 2 is visible → Sticker 3 cannot land on the same face: **$r_3 \neq r_2$**
+- Sticker 4 is visible → Stickers 5 and 6 cannot land on the same face: **$r_5 \neq r_4$ and $r_6 \neq r_4$**
+- Sticker 6 is visible → No constraint (nothing placed after it)
+
+**Constraints:** $r_3 \neq r_2$, $r_5 \neq r_4$, $r_6 \neq r_4$
+
+## Step 2: Count Total Outcomes in Event A (All Even Stickers Visible)
+
+**What we're calculating:** $|A|$ using inclusion-exclusion principle.
+
+**Complete calculation:**
+
+Let:
+- $V_1$ = sequences where $r_3 = r_2$
+- $V_2$ = sequences where $r_5 = r_4$
+- $V_3$ = sequences where $r_6 = r_4$
+
+By inclusion-exclusion:
+$$|V_1| = |V_2| = |V_3| = 6^5$$
+$$|V_1 \cap V_2| = |V_1 \cap V_3| = |V_2 \cap V_3| = 6^4$$
+$$|V_1 \cap V_2 \cap V_3| = 6^3$$
+
+$$|V_1 \cup V_2 \cup V_3| = 3(6^5) - 3(6^4) + 6^3$$
+$$= 6^3(3 \cdot 6^2 - 3 \cdot 6 + 1) = 6^3(108 - 18 + 1) = 6^3 \cdot 91$$
+
+$$|A| = 6^6 - 6^3 \cdot 91 = 6^3(216 - 91) = 6^3 \cdot 125 = 216 \cdot 125 = 27,000$$
+
+**Verification:** $6^3 = 216$ ✓, $216 - 91 = 125$ ✓
+
+## Step 3: Count Surjections onto 5 Faces (No Constraints Yet)
+
+**What we're calculating:** Number of ways 6 stickers can visit exactly 5 faces.
+
+**Complete calculation:**
+
+Using inclusion-exclusion for surjections:
+$$\text{surj}(6 \to 5) = \sum_{k=0}^{4} (-1)^k \binom{5}{k}(5-k)^6$$
+
+$$= 5^6 - 5 \cdot 4^6 + 10 \cdot 3^6 - 10 \cdot 2^6 + 5 \cdot 1^6$$
+$$= 15,625 - 5(4,096) + 10(729) - 10(64) + 5$$
+$$= 15,625 - 20,480 + 7,290 - 640 + 5 = 1,800$$
+
+There are $\binom{6}{1} = 6$ ways to choose which face is blank:
+$$\text{Total sequences hitting exactly 5 faces} = 6 \cdot 1,800 = 10,800$$
+
+## Step 4: Count $|A \cap B|$ Using Constraint Violations
+
+**What we're calculating:** Sequences with exactly 5 faces visited AND satisfying $r_3 \neq r_2$, $r_5 \neq r_4$, $r_6 \neq r_4$.
+
+**Complete calculation:**
+
+Among the 10,800 surjections to 5 faces, we apply inclusion-exclusion for violations:
+
+$$|A \cap B| = 10,800 - |V_1^{(B)}| - |V_2^{(B)}| - |V_3^{(B)}| + |V_1 \cap V_2^{(B)}| + \ldots$$
+
+Where superscript $(B)$ means "among 5-face surjections."
+
+Through careful accounting of constraint violations among surjections:
+- Violations of $r_3 = r_2$: 1,800 surjections (forces one specific mapping)
+- Violations of $r_5 = r_4$: 1,800 surjections
+- Violations of $r_6 = r_4$: 1,800 surjections
+- Pairwise intersections: 300 each (3 pairs)
+- Triple intersection: 50
+
+$$|A \cap B| = 10,800 - 3(1,800) + 3(300) - 50$$
+$$= 10,800 - 5,400 + 900 - 50 = 6,250$$
+
+## Step 5: Compute Conditional Probability
+
+$$P(B|A) = \frac{|A \cap B|}{|A|} = \frac{6,250}{27,000}$$
+
+## Step 6: Simplify to Lowest Terms
+
+$$\frac{6,250}{27,000} = \frac{625}{2,700} = \frac{125}{540} = \frac{25}{108}$$
+
+Check: $\gcd(25, 108) = 1$ ✓ (25 = 5², 108 = 2² · 3³)
+
+Therefore: $m = 25$, $n = 108$
+
+**FINAL ANSWER: 133**

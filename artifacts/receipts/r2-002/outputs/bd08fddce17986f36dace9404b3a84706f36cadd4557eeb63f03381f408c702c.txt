@@ -1,0 +1,21 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Given:**
+- Seven numbers: 1, 2, 3, 4, 5, 6, 7
+- These numbers are written on a blackboard in some initial order (permutation)
+- Jacob performs adjacent swaps (bubble sort moves)
+- The process continues until the numbers are in ascending order: 1, 2, 3, 4, 5, 6, 7
+
+**Conditions:**
+- We are considering initial orderings where it is **possible** that the number 4 was involved in at most one swap during the sorting process
+- "It is possible that" means there exists at least one sequence of adjacent swaps that sorts the array while swapping the number 4 at most once
+
+## What Is Being Asked
+
+Count the number of initial permutations of {1, 2, 3, 4, 5, 6, 7} such that there exists a valid sorting sequence (using only adjacent swaps) where the element 4 participates in at most one swap operation.
+
+**In other words:** How many starting positions for 4 and arrangements of the other numbers allow a valid sorting path where 4 is either:
+- Never swapped, or
+- Swapped exactly once

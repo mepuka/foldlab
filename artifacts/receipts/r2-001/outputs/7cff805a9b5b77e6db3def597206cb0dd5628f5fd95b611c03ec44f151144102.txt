@@ -1,0 +1,23 @@
+# Analysis of the Competition Math Problem
+
+## Given Quantities and Conditions
+
+1. **Pentagon type**: The pentagon is equiangular (all interior angles are equal)
+   
+2. **Sum of squares of side lengths**: If the five sides have lengths $a, b, c, d, e$, then
+   $$a^2 + b^2 + c^2 + d^2 + e^2 = 308$$
+
+3. **Sum of squares of diagonal lengths**: The pentagon has 5 diagonals. If their lengths are $d_1, d_2, d_3, d_4, d_5$, then
+   $$d_1^2 + d_2^2 + d_3^2 + d_4^2 + d_5^2 = 800$$
+
+4. **Constraint from equiangular property**: Each interior angle of an equiangular pentagon equals $\frac{(5-2) \cdot 180°}{5} = 108°$
+
+## What is Being Asked
+
+Find the square of the perimeter of the pentagon, expressed in the form $m\sqrt{n}$ where:
+- $m$ and $n$ are positive integers
+- $n$ is square-free (not divisible by the square of any prime)
+
+Then report $m + n$.
+
+In other words, if the perimeter is $P = a + b + c + d + e$, find $P^2 = m\sqrt{n}$ and compute $m + n$.

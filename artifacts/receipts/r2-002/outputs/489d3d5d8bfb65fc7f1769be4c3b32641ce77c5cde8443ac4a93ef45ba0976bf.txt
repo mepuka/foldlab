@@ -1,0 +1,64 @@
+# Detailed Solution
+
+## Step 1: Identify the final position of 4
+In the sorted array [1,2,3,4,5,6,7], the element 4 is at position 4 (1-indexed).
+
+## Step 2: Determine valid starting positions for 4
+
+For 4 to reach position 4 with **at most 1 swap**:
+- Position 4: 0 swaps (already there)
+- Position 3: 1 swap (adjacent, swaps right to position 4)
+- Position 5: 1 swap (adjacent, swaps left to position 4)
+- Position 1, 2, 6, 7: Would require 2+ swaps ✗
+
+**Valid starting positions: {3, 4, 5}**
+
+## Step 3: Constraints on other numbers
+
+For bubble sort to work correctly:
+- **All of {1,2,3}** must be positioned **left of** 4's starting position
+- **All of {5,6,7}** must be positioned **right of** 4's starting position
+
+## Step 4: Analyze each case
+
+### Case 1: 4 starts at position 3
+- Positions available for {1,2,3}: positions 1-2 only (2 positions)
+- Number of elements needed: 3
+- **Impossible!** Cannot fit 3 elements in 2 positions
+- **Count: 0 arrangements**
+
+### Case 2: 4 starts at position 4
+- Positions 1-3: Must contain all of {1,2,3} ✓ (3 positions, 3 elements)
+- Position 4: Contains 4
+- Positions 5-7: Must contain all of {5,6,7} ✓ (3 positions, 3 elements)
+
+This partition is **perfect**!
+
+**Arrangements:**
+- Permutations of {1,2,3} in positions 1-3: 3! = 6
+- Permutations of {5,6,7} in positions 5-7: 3! = 6
+- **Count: 6 × 6 = 36 arrangements**
+
+### Case 3: 4 starts at position 5
+- Positions available for {1,2,3}: positions 1-4 (4 positions)
+- But we only have 3 elements in {1,2,3}
+- The 4th position needs one element, which must come from somewhere
+- If it comes from {5,6,7}, it violates the constraint that all of {5,6,7} must be right of position 5
+- **Impossible!** Cannot satisfy the positional constraints
+- **Count: 0 arrangements**
+
+## Step 5: Verify sorting sequences exist
+
+For Case 2, starting with any arrangement like [a,b,c,4,d,e,f] where {a,b,c} ⊂ {1,2,3} and {d,e,f} ⊂ {5,6,7}:
+- Elements {a,b,c} can be sorted within positions 1-3 using bubble sort without touching position 4 ✓
+- Element 4 remains at position 4 (already sorted) ✓
+- Elements {d,e,f} can be sorted within positions 5-7 using bubble sort without touching position 4 ✓
+- **All 36 arrangements are valid** ✓
+
+## Step 6: Sum valid permutations
+
+**Total = 0 + 36 + 0 = 36**
+
+---
+
+**Final Answer: 36**

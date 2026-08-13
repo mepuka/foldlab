@@ -1,0 +1,18 @@
+# Given Quantities and Conditions
+
+**Given Quantities:**
+- $n$ integers arranged in a circle
+- At least one integer equals $0$
+- The sum of all integers equals $24$
+
+**Conditions:**
+1. Each pair of adjacent integers (including the last and first, since they're in a circle) differs by exactly $1$
+   - If integers $a$ and $b$ are adjacent, then $|a - b| = 1$
+
+2. At least one of the $n$ integers is $0$
+
+3. The sum of all $n$ integers is exactly $24$
+
+# What is Being Asked
+
+**Find:** The smallest possible value of $n$ (the number of integers in the circle) such that all three conditions can simultaneously be satisfied.

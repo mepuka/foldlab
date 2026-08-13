@@ -1,0 +1,26 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Sequence Definition:**
+- $a_0, a_1, a_2, \ldots$ is a sequence of nonnegative integers
+- Each term satisfies: $0 \le a_n < 397$
+- Initial condition: $a_0 = 1$
+
+**Recurrence Relation:**
+- For all nonnegative integers $n$: 
+$$a_{n+1}(a_n + 1)^2 \equiv a_n \pmod{397}$$
+
+**Additional Constraint:**
+- The sequence is unique (satisfying all above conditions)
+- $a_{2026} = 9$ (specific value at index 2026)
+
+**Note on 397:**
+- 397 is prime
+
+## What is Being Asked
+
+Compute the remainder when $\displaystyle\sum_{i=0}^{2026} a_i$ is divided by 397.
+
+In other words, find:
+$$\left(\sum_{i=0}^{2026} a_i\right) \bmod 397$$

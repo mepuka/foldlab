@@ -1,0 +1,80 @@
+# Extended Solution
+
+## Step 1: Set up coordinate system
+- $A = (0, 0)$
+- $B = (0, 1)$ (since $AB = 1$)
+- $D = (a, 0)$ where $a = BC$ (unknown)
+- $C = (a, 1)$
+
+## Step 2: Express positions of $X$ and $Y$
+- $X = (x, 1)$ where $0 \leq x \leq a$ (on $\overline{BC}$)
+- $Y = (y, 0)$ where $0 \leq y \leq a$ (on $\overline{AD}$)
+
+## Step 3: Apply perpendicularity condition $\angle AXY = 90°$
+
+$$\overrightarrow{XA} = (0,0) - (x,1) = (-x, -1)$$
+$$\overrightarrow{XY} = (y,0) - (x,1) = (y-x, -1)$$
+
+Dot product equals zero:
+$$(-x)(y-x) + (-1)(-1) = 0$$
+$$-xy + x^2 + 1 = 0$$
+$$xy = x^2 + 1 \quad \text{...(Equation 1)}$$
+
+## Step 4: Apply perpendicularity condition $\angle XYC = 90°$
+
+$$\overrightarrow{YX} = (x,1) - (y,0) = (x-y, 1)$$
+$$\overrightarrow{YC} = (a,1) - (y,0) = (a-y, 1)$$
+
+Dot product equals zero:
+$$(x-y)(a-y) + 1 = 0 \quad \text{...(Equation 2)}$$
+
+## Step 5: Apply the ratio condition $AX : XY : YC = 1 : 2 : 1$
+
+Let $AX = k$, $XY = 2k$, $YC = k$.
+
+$$AX = \sqrt{x^2 + 1} = k$$
+$$XY = \sqrt{(y-x)^2 + 1} = 2k$$
+$$YC = \sqrt{(a-y)^2 + 1} = k$$
+
+From $AX = YC$:
+$$x^2 + 1 = (a-y)^2 + 1$$
+$$x = a - y \quad \text{...(Equation 3)}$$
+
+From $XY = 2 \cdot AX$:
+$$(y-x)^2 + 1 = 4(x^2 + 1)$$
+$$(y-x)^2 = 4x^2 + 3$$
+$$y^2 - 2xy - 3x^2 = 3 \quad \text{...(Equation 4)}$$
+
+## Step 6: Solve the system
+
+From Equation 1: $xy = x^2 + 1$, so $y = \frac{x^2 + 1}{x}$
+
+Substitute into Equation 4:
+$$y^2 - 2(x^2 + 1) - 3x^2 = 3$$
+$$y^2 = 5x^2 + 5 = 5(x^2 + 1)$$
+$$y = \sqrt{5(x^2 + 1)}$$
+
+Equating the two expressions for $y$:
+$$\frac{x^2 + 1}{x} = \sqrt{5(x^2 + 1)}$$
+
+Squaring both sides:
+$$\frac{(x^2 + 1)^2}{x^2} = 5(x^2 + 1)$$
+$$\frac{x^2 + 1}{x^2} = 5$$
+$$x^2 + 1 = 5x^2$$
+$$1 = 4x^2$$
+$$x = \frac{1}{2}$$
+
+Therefore:
+$$y = \frac{x^2 + 1}{x} = \frac{1/4 + 1}{1/2} = \frac{5/4}{1/2} = \frac{5}{2}$$
+
+$$a = x + y = \frac{1}{2} + \frac{5}{2} = 3$$
+
+## Step 7: Verify the solution
+
+- $AX = \sqrt{1/4 + 1} = \frac{\sqrt{5}}{2}$
+- $XY = \sqrt{(5/2 - 1/2)^2 + 1} = \sqrt{4 + 1} = \sqrt{5} = 2 \cdot \frac{\sqrt{5}}{2}$ ✓
+- $YC = \sqrt{(3 - 5/2)^2 + 1} = \sqrt{1/4 + 1} = \frac{\sqrt{5}}{2}$ ✓
+- Ratio: $1 : 2 : 1$ ✓
+- Both $X = (1/2, 1)$ and $Y = (5/2, 0)$ lie within their segments ✓
+
+**3**

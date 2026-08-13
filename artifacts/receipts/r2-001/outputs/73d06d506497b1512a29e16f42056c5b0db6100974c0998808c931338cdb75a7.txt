@@ -1,0 +1,29 @@
+# Plan for Solving the Problem
+
+1. **Set up the divisor relationship**
+   - Let the divisors of $n$ in descending order be: $d_1 = n > d_2 > d_3 > d_4 > d_5 > d_6 = 6$
+   - This means 6 is the 6th largest divisor of $n$
+
+2. **Identify divisors larger than 6**
+   - Since 6 is the 6th largest divisor, there are exactly 5 divisors of $n$ that are larger than 6
+   - These 5 divisors are: $n, d_2, d_3, d_4, d_5$ (all greater than 6)
+   - All other divisors of $n$ must be $\leq 6$
+
+3. **List possible divisors ≤ 6**
+   - The divisors of $n$ that are at most 6 are subsets of: {1, 2, 3, 6}
+   - Since 6 divides $n$, we know that 1, 2, 3, and 6 all divide $n$
+   - So $n$ must be divisible by $\text{lcm}(1,2,3,6) = 6$
+
+4. **Determine constraints on divisors between 6 and the next divisor**
+   - For 6 to be the 6th largest divisor, no divisor of $n$ can lie in the interval $(6, d_5)$
+   - The smallest divisor greater than 6 must be the 5th largest divisor
+
+5. **Find all valid values of $n$**
+   - Write $n = 6k$ for some positive integer $k$
+   - Use the constraint that exactly 5 divisors of $n$ exceed 6
+   - Systematically check small values of $n$ that are multiples of 6 to verify the divisor count condition
+
+6. **Verify and sum**
+   - For each candidate $n$, list all divisors in descending order
+   - Confirm that the 6th largest divisor equals exactly 6
+   - Sum all valid values of $n$

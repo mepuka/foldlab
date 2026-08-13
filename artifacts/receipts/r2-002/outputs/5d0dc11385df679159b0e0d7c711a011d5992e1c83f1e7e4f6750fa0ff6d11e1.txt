@@ -1,0 +1,23 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Initial Configuration**: A plane contains points $A$ and $B$ with $AB = 1$
+
+2. **First Rotation**: Point $A$ is rotated counterclockwise through an acute angle $\theta$ around point $B$ to obtain point $A'$
+   - Center of rotation: $B$
+   - Angle: $\theta$ (acute, so $0 < \theta < \frac{\pi}{2}$)
+   - Direction: counterclockwise
+   - Result: $BA' = BA = 1$ (distance preserved)
+
+3. **Second Rotation**: Point $B$ is rotated clockwise through angle $\theta$ around point $A'$ to obtain point $B'$
+   - Center of rotation: $A'$
+   - Angle: $\theta$ (same as first rotation)
+   - Direction: clockwise
+   - Result: $A'B' = A'B$ (distance preserved)
+
+4. **Final Constraint**: $AB' = \frac{4}{3}$
+
+## What is Being Asked
+
+Find $\cos \theta$, express it as $\frac{m}{n}$ where $\gcd(m,n) = 1$, and determine $m + n$.

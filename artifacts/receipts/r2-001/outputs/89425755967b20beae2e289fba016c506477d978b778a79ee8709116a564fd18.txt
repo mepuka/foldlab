@@ -1,0 +1,14 @@
+# Analysis of the Competition Problem
+
+## Given Quantities and Conditions
+
+1. **The sum:** $S = \sum_{k=0}^{2026} k \binom{2k}{k} 2^k$
+   - Summing from $k=0$ to $k=2026$
+   - Each term is: $k$ times the binomial coefficient $\binom{2k}{k}$ times $2^k$
+
+2. **The modulus:** 2027
+   - Explicitly stated to be prime
+
+## What is Being Asked
+
+Compute $S \pmod{2027}$, that is, find the remainder when $S$ is divided by 2027 (equivalently, find the unique integer $r$ with $0 \le r < 2027$ such that $S \equiv r \pmod{2027}$).

@@ -1,0 +1,79 @@
+# Solution: Finding Possible Values of M
+
+## Step 1: Rewrite the Constraint Equation
+
+Starting with: $\alpha\beta + \alpha + \beta + 100 = 0$
+
+Factor by grouping:
+$$\alpha\beta + \alpha + \beta + 1 = -99$$
+$$\alpha(\beta + 1) + 1(\beta + 1) = -99$$
+$$(\alpha + 1)(\beta + 1) = -99$$
+
+**Substitution:** Let $w = \alpha + 1$ and $z = \beta + 1$
+
+$$wz = -99$$
+
+Therefore: $z = -\frac{99}{w}$
+
+## Step 2: Express Conditions in Terms of w and z
+
+**Condition 1:** $|\alpha| = M$ becomes $|w - 1| = M$
+
+**Condition 2:** $|\beta| = M$ becomes $|z - 1| = M$
+
+Substituting $z = -\frac{99}{w}$ into Condition 2:
+$$\left|-\frac{99}{w} - 1\right| = M$$
+$$\left|\frac{-99 - w}{w}\right| = M$$
+$$|99 + w| = M|w|$$
+
+## Step 3: Set Up Geometric Equations
+
+Let $w = x + iy$ where $x, y \in \mathbb{R}$
+
+**From Condition 1:**
+$$(x-1)^2 + y^2 = M^2 \quad \text{...(Circle centered at (1,0) with radius M)}$$
+
+**From Condition 2:**
+$$(x+99)^2 + y^2 = M^2(x^2 + y^2)$$
+
+Expanding:
+$$x^2 + 198x + 9801 + y^2 = M^2x^2 + M^2y^2$$
+
+## Step 4: Eliminate y and Derive Constraint on M
+
+From Condition 1:
+$$y^2 = M^2 - (x-1)^2 = M^2 - x^2 + 2x - 1$$
+
+Substitute into the expanded Condition 2:
+$$x^2 + 198x + 9801 + M^2 - x^2 + 2x - 1 = M^2(x^2 + M^2 - x^2 + 2x - 1)$$
+
+$$200x + 9800 + M^2 = M^2x^2 + M^4 - M^2x^2 + 2M^2x - M^2$$
+
+$$200x + 9800 + M^2 = M^4 + 2M^2x - M^2$$
+
+$$x^2(1-M^2) + x(196 + 2M^2) + (9802 - M^4) = 0$$
+
+## Step 5: Test the Special Case α = β
+
+If $\alpha = \beta$, then from $(\alpha + 1)^2 = -99$:
+
+$$\alpha + 1 = \pm i\sqrt{99} = \pm 3i\sqrt{11}$$
+
+$$\alpha = -1 \pm 3i\sqrt{11}$$
+
+Calculate the modulus:
+$$M = |\alpha| = \sqrt{(-1)^2 + (3\sqrt{11})^2} = \sqrt{1 + 9 \cdot 11} = \sqrt{1 + 99} = \sqrt{100} = 10$$
+
+## Step 6: Verify Uniqueness
+
+When $M = 10$, the constraint equation becomes:
+$$x^2(1-100) + x(196 + 200) + (9802 - 10000) = 0$$
+$$-99x^2 + 396x - 198 = 0$$
+$$x^2 - 4x + 2 = 0$$
+$$x = 2 \pm \sqrt{2}$$
+
+For each valid $x$, we can verify that both geometric conditions are simultaneously satisfied, and checking the discriminant confirms these are real solutions. The condition $\alpha = \beta$ yields the unique consistent solution.
+
+---
+
+## **Final Answer: M = 10**

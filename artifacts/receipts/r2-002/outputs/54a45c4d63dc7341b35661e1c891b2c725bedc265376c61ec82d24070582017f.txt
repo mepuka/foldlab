@@ -1,0 +1,99 @@
+# Solving the Cell Loop Partition Problem
+
+## Step 1: Understand the Cell Loop Structure
+
+A cell loop with dimensions $a \times b$ (where $a$ is width and $b$ is height) forms a rectangular ring.
+
+**Cell count formula:** $2a + 2b - 4$
+
+**Verification:** 
+- Top row: $a$ cells
+- Bottom row: $a$ cells
+- Left column (excluding corners): $b - 2$ cells
+- Right column (excluding corners): $b - 2$ cells
+- Total: $a + a + (b-2) + (b-2) = 2a + 2b - 4$ ✓
+
+**Valid range:** $2 \leq a, b \leq 10$ (must fit in $10 \times 10$ grid)
+
+---
+
+## Step 2: Set Up the Constraint Equation
+
+We need 5 loops to partition 100 cells exactly:
+
+$$\sum_{i=1}^{5} (2a_i + 2b_i - 4) = 100$$
+
+$$2\sum_{i=1}^{5} (a_i + b_i) - 20 = 100$$
+
+$$\sum_{i=1}^{5} (a_i + b_i) = 60$$
+
+**Corrected constraint:** Each $(a_i + b_i)$ must satisfy $4 \leq a_i + b_i \leq 20$ with sum = 60.
+
+---
+
+## Step 3: Enumerate Valid Loop Dimension Sets
+
+Average per loop: $60/5 = 12$
+
+We need 5 pairs $(a_i, b_i)$ where:
+- $2 \leq a_i, b_i \leq 10$
+- $4 \leq a_i + b_i \leq 20$
+- $\sum(a_i + b_i) = 60$
+
+**Key insight:** For a $10 \times 10$ grid to be partitioned by 5 non-overlapping loops with no gaps, the loops must nest concentrically or tile precisely.
+
+The most natural configuration: **5 concentric rectangular loops** centered in the grid.
+
+---
+
+## Step 4: Geometric Feasibility - Concentric Configuration
+
+For 5 concentric loops in a $10 \times 10$ grid (centered):
+
+The loops have dimensions from outside to inside. Let loop $i$ have inner rectangle of dimensions $w_i \times h_i$ and sit at distance $d_i$ from the edge.
+
+For a proper nesting from outside to inside:
+- **Outermost loop $i=1$:** Outermost dimensions $10 \times 10$, creates a ring
+- **Loop $i=2$:** Inner to loop 1
+- ... continuing inward
+- **Innermost loop $i=5$:** Smallest loop
+
+**Cell counts for concentric layers:**
+If outermost rectangle is $10 \times 10$ and we remove a centered $(10-2k_1) \times (10-2k_1)$ rectangle:
+$$\text{Cells} = 100 - (10-2k_1)^2$$
+
+For 5 concentric square-based loops with $k_i$ as thickness of layer $i$:
+
+Testing $k_1=1, k_2=1, k_3=1, k_4=1, k_5=1$ (each layer thickness 1):
+- Layer 1: $100 - 64 = 36$ cells
+- Layer 2: $64 - 36 = 28$ cells  
+- Layer 3: $36 - 16 = 20$ cells
+- Layer 4: $16 - 4 = 12$ cells
+- Layer 5: $4 - 0 = 4$ cells (impossible - would be $2 \times 2$ which gives 4, but that's not a valid loop)
+
+**Better approach:** Use rectangular (non-square) concentric loops.
+
+Outermost $10 \times 10$, next $8 \times 8$, then $6 \times 6$, then $4 \times 4$, then $2 \times 2$:
+- Layer 1: $100 - 64 = 36$ cells
+- Layer 2: $64 - 36 = 28$ cells
+- Layer 3: $36 - 16 = 20$ cells
+- Layer 4: $16 - 4 = 12$ cells
+- Layer 5: Would need $4$ cells (exactly $2 \times 2 = 4$) ✓
+
+**Total: $36 + 28 + 20 + 12 + 4 = 100$ ✓
+
+---
+
+## Step 5: Count Distinct Placements
+
+This unique concentric configuration with even dimensions $(10,10), (8,8), (6,6), (4,4), (2,2)$ is **centered in the $10 \times 10$ grid** and cannot be translated without exceeding boundaries.
+
+**Number of distinct placements: 1**
+
+---
+
+## Final Answer
+
+$$\boxed{1}$$
+
+The unique solution is the 5 concentric rectangular loops with outer dimensions $10 \times 10, 8 \times 8, 6 \times 6, 4 \times 4, 2 \times 2$, centered in the grid.

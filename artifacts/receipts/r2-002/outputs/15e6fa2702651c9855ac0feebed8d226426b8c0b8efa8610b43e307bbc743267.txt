@@ -1,0 +1,22 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Starting point:** $(0,0,0)$
+
+**Ending point:** $(3,3,3)$
+
+**Allowed moves:** In each move, Kelvin can:
+- Increase the $x$-coordinate by 1, OR
+- Increase the $y$-coordinate by 1, OR
+- Increase the $z$-coordinate by 1, OR
+- Decrease the $z$-coordinate by 1
+
+**Coordinate constraints:** At all times, all coordinates must satisfy:
+$$0 \le x \le 3, \quad 0 \le y \le 3, \quad 0 \le z \le 3$$
+
+**Path constraint:** No point can be visited twice (the path must be self-avoiding)
+
+## What is Being Asked
+
+Compute the total number of distinct self-avoiding paths from $(0,0,0)$ to $(3,3,3)$ that respect all the above constraints.

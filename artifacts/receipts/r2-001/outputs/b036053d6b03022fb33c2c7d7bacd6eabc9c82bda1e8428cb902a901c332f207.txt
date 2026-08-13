@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nDouble-check your work above. What is the final answer? State ONLY a single integer with no other text, no words, no units, no punctuation, no explanation.",
+  "params": {
+    "max_tokens": 2048,
+    "thinking_budget": 1024
+  }
+}
+```

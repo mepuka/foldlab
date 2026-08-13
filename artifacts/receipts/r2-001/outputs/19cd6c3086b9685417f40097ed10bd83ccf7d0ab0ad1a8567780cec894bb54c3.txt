@@ -1,0 +1,94 @@
+# Solution: Counting Hamiltonian Paths on a 20×3 Torus Grid
+
+## Step 1: Recognize the Grid Structure
+
+The grid S is a **20×3 torus**:
+- Positions: (x, y) where x ∈ {0,1,...,19}, y ∈ {0,1,2}
+- Total cells: 20 × 3 = 60
+- The x-direction wraps around: x+1 (mod 20)
+- Three horizontal rows: y=0, y=1, y=2
+
+## Step 2: Identify Movement Constraints
+
+**Vertical moves:** (x,y) ↔ (x,y±1) — move between adjacent rows at same x-coordinate
+**Horizontal moves:** (x,y) → (x±1 mod 20, y) — move within a row
+
+Each move uses exactly one type.
+
+## Step 3: Determine Valid Path Structure
+
+A Hamiltonian path:
+- Visits all 60 cells exactly once
+- Must start at (x₁, 2) and end at (x₆₀, 0) [given constraint]
+- Must respect connectivity rules
+
+Each row has exactly 20 cells and must be completely traversed.
+
+## Step 4: Analyze Row-Crossing Constraints
+
+Starting at y=2 and ending at y=0 requires crossing between rows an **odd number of times**.
+
+**Key insight:** Within each row, we must traverse all 20 consecutive cells (using horizontal moves only). Between rows, we use exactly one vertical move.
+
+Since rows must be completely visited and we have 3 rows:
+- We need a sequence: Row 2 → Row 1 → Row 0 (2 vertical transitions minimum)
+- Or: Row 2 → Row 1 → Row 2 → Row 1 → Row 0 (4 vertical transitions)
+- Or similar patterns with odd transitions
+
+**Most efficient pattern:** 
+- Traverse all of Row 2: 20 cells
+- Move down to Row 1: 1 vertical move
+- Traverse all of Row 1: 20 cells  
+- Move down to Row 0: 1 vertical move
+- Traverse all of Row 0: 20 cells
+
+**Total: 60 moves** ✓
+
+## Step 5: Count Valid Patterns
+
+For the path Row 2 → Row 1 → Row 0:
+
+**Within Row 2:**
+- Start at some x₁, traverse all 20 x-values, end at position x₂
+- This is a Hamiltonian path in a cycle of 20 vertices
+- We can go left or right; we must visit all vertices
+- For a cycle, a path starting at x₁ must end at a neighbor: x₂ = x₁ ± 1 (mod 20)
+- There are **2 directions** (left or right) for each starting position
+
+**Between rows:**
+- Transition from (x₂, 2) to (x₂, 1): requires vertical move
+- This must happen at position x₂
+
+**Within Row 1:**
+- Start at x₂, traverse all 20 x-values, end at position x₃
+- Similarly, x₃ = x₂ ± 1 (mod 20)
+- There are **2 directions** for each starting position
+
+**Between rows:**
+- Transition from (x₃, 1) to (x₃, 0)
+
+**Within Row 0:**
+- Start at x₃, traverse all 20 x-values, end at position x₆₀
+- x₆₀ = x₃ ± 1 (mod 20)
+- There are **2 directions** for each starting position
+
+## Step 6: Apply Counting Principles
+
+**Step-by-step count:**
+
+1. Choose starting position x₁ in Row 2: **20 choices**
+
+2. Choose direction in Row 2 (left or right): **2 choices**
+   - Endpoint x₂ is determined as x₁ ± 1 (mod 20)
+
+3. Choose direction in Row 1 (left or right): **2 choices**
+   - Endpoint x₃ is determined as x₂ ± 1 (mod 20)
+
+4. Choose direction in Row 0 (left or right): **2 choices**
+   - Endpoint x₆₀ is determined as x₃ ± 1 (mod 20)
+
+**Total:** 20 × 2 × 2 × 2 = 20 × 8
+
+## Step 7: Compute Final Answer
+
+$$\text{Total Hamiltonian paths} = 20 \times 2 \times 2 \times 2 = \boxed{160}$$

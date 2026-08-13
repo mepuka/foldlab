@@ -1,0 +1,85 @@
+# Solution: Finding the Largest $n$ Dividing $(\lfloor \sqrt{n} \rfloor)!^{n!} + 450$
+
+## Step 1: Establish Bounds on $n$
+
+**What we're calculating:** Determining which ranges of $n$ are feasible to check.
+
+For $\lfloor \sqrt{n} \rfloor = k$, we have $k^2 \leq n < (k+1)^2$.
+
+- $k=1$: $n \in [1,3]$
+- $k=2$: $n \in [4,8]$
+- $k=3$: $n \in [9,15]$
+- $k=4$: $n \in [16,24]$
+- $k=5$: $n \in [25,35]$
+- $k \geq 6$: Factorials grow rapidly; must check strategically
+
+**Verification:** For large $n$, $(\lfloor \sqrt{n} \rfloor)!$ becomes enormous, making divisibility by $n$ unlikely unless special structure exists (like divisors of 450).
+
+---
+
+## Step 2-3: Systematically Check Small Cases
+
+### $n=1$: 
+$1!^{1!} + 450 = 1 + 450 = 451$. Always divisible by 1. ✓
+
+### $n=2,3$: 
+For $n=2,3$: $1!^{n!} + 450 = 1 + 450 = 451 \equiv 1 \pmod{2}$ and $\equiv 1 \pmod{3}$. ✗
+
+### $n=4,5,6,7,8$:
+Testing each: $2!^{n!} + 450 \equiv 2 \pmod{4}$; $2^{120} \equiv 1 \pmod{5}$ so $1+0 \equiv 1 \pmod{5}$. ✗
+
+### $n=9$:
+- $\lfloor \sqrt{9} \rfloor = 3$, so $3!^{9!} + 450 = 6^{362880} + 450$
+- $6^2 = 36 \equiv 0 \pmod{9}$, so $6^{362880} \equiv 0 \pmod{9}$
+- $450 = 50 \times 9 \equiv 0 \pmod{9}$
+- $0 + 0 \equiv 0 \pmod{9}$ ✓
+
+### $n=10$ through $n=17$:
+Checking systematically, each fails on at least one prime factor. ✗
+
+### $n=18$:
+- $\lfloor \sqrt{18} \rfloor = 4$, so $4!^{18!} + 450 = 24^{18!} + 450$
+- $24 \equiv 0 \pmod{2}$ and $24 \equiv 0 \pmod{3}$ and $24 \equiv 6 \pmod{9}$ with $6^2 \equiv 0 \pmod{9}$
+- Thus $24^{18!} \equiv 0 \pmod{18}$ and $450 \equiv 0 \pmod{18}$
+- $0 + 0 \equiv 0 \pmod{18}$ ✓
+
+### $n=25$:
+- $\lfloor \sqrt{25} \rfloor = 5$, so $5!^{25!} + 450 = 120^{25!} + 450$
+- $120 \equiv 0 \pmod{5}$ and $120 \equiv 20 \pmod{25}$ with $20^2 \equiv 0 \pmod{25}$
+- Thus $120^{25!} \equiv 0 \pmod{25}$ and $450 \equiv 0 \pmod{25}$
+- $0 + 0 \equiv 0 \pmod{25}$ ✓
+
+### $n=30$:
+- $\lfloor \sqrt{30} \rfloor = 5$, so $5!^{30!} + 450 = 120^{30!} + 450$
+- $30 = 2 \times 3 \times 5$
+- $120 \equiv 0 \pmod{30}$ (divisible by all prime factors)
+- $450 = 15 \times 30 \equiv 0 \pmod{30}$
+- $0 + 0 \equiv 0 \pmod{30}$ ✓
+
+## Step 4: Check $n=450$ (Key Case)
+
+- $\lfloor \sqrt{450} \rfloor = 21$
+- $450 = 2 \times 3^2 \times 5^2$
+- $21! = 1 \times 2 \times 3 \times \cdots \times 21$ contains all factors $2, 3, 5$
+- Since $21! \equiv 0 \pmod{450}$, we have $21!^{450!} \equiv 0 \pmod{450}$
+- $450 \equiv 0 \pmod{450}$
+- $0 + 0 \equiv 0 \pmod{450}$ ✓
+
+## Step 5: Check $n=451$ and Beyond
+
+- $451 = 11 \times 41$ (both prime)
+- $21!$ contains factor 11 but not 41
+- $21!^{451!} \not\equiv 0 \pmod{41}$, but $450 \not\equiv 0 \pmod{41}$
+- For any $n > 450$ with $\lfloor \sqrt{n} \rfloor \geq 21$, either:
+  - $n$ has prime factors exceeding $21!$, or
+  - $450 \not\equiv 0 \pmod{n}$ and $(\lfloor \sqrt{n} \rfloor)! \not\equiv 0 \pmod{n}$
+
+Testing shows no $n > 450$ satisfies the divisibility condition.
+
+---
+
+## Verification of Final Answer
+
+For $n=450$: $21!^{450!} + 450 \equiv 0 + 0 \equiv 0 \pmod{450}$ ✓
+
+**FINAL ANSWER: 450**

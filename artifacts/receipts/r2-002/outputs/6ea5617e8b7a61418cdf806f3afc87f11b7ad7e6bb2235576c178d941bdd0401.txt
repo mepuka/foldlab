@@ -1,0 +1,108 @@
+# Step-by-Step Solution
+
+## Step 1: Establish Coordinate System
+
+Place:
+- $A = (0, 0)$ at the origin
+- $E = (20, 0)$ on the positive $x$-axis
+
+Since $\angle A = 90°$: Side $AB \perp AE$ (perpendicular to $x$-axis)
+Since $\angle E = 90°$: Side $ED \perp AE$ (perpendicular to $x$-axis)
+
+## Step 2: Locate Vertices B and D
+
+- $B = (0, h)$ where $h = AB > 0$
+- $D = (20, k)$ where $k = DE > 0$
+- All vertices above the $x$-axis (same side)
+
+## Step 3: Use Angle Constraints at B and D
+
+**At vertex $B = (0, h)$:**
+- Vector $\vec{BA}$ points downward (direction $-90°$)
+- Interior angle $\angle B = 45°$
+- Vector $\vec{BC}$ points at direction $-90° + 45° = -45°$ (slope = $-1$, southeast)
+
+**At vertex $D = (20, k)$:**
+- Vector $\vec{ED}$ points upward (direction $90°$)
+- Interior angle $\angle D = 45°$
+- Vector $\vec{DC}$ points at direction $90° + 45° = 135°$ (slope = $-1$, northwest)
+
+## Step 4: Apply the $BC = 14\sqrt{2}$ Constraint
+
+From $B = (0, h)$ with direction slope $-1$:
+$$C = B + 14\sqrt{2} \cdot \left(\frac{1}{\sqrt{2}}, -\frac{1}{\sqrt{2}}\right) = (0, h) + (14, -14) = (14, h-14)$$
+
+**Double-check:** $|BC| = \sqrt{14^2 + 14^2} = 14\sqrt{2}$ ✓
+
+From $D = (20, k)$ with direction slope $-1$:
+$$C = D + s \cdot \left(-\frac{1}{\sqrt{2}}, \frac{1}{\sqrt{2}}\right)$$
+
+For both to give the same $C = (14, h-14)$:
+- $x$-coordinate: $20 - \frac{s}{\sqrt{2}} = 14 \Rightarrow s = 6\sqrt{2}$
+- $y$-coordinate: $k + 6 = h - 14 \Rightarrow k = h - 20$
+
+## Step 5: Enforce $DE < AB$
+
+$$DE < AB \Rightarrow k < h \Rightarrow h - 20 < h$$
+
+This is always true. However, we need $k > 0$:
+$$h - 20 > 0 \Rightarrow h > 20$$
+
+## Step 6: Verify Nonconvexity
+
+Sum of interior angles in pentagon: $(5-2) \times 180° = 540°$
+
+$$\angle C = 540° - 90° - 45° - 45° - 90° = 270°$$
+
+Since $\angle C = 270° > 180°$, the pentagon is **nonconvex** with a reflex angle at $C$. ✓
+
+## Step 7: Calculate the Pentagon's Area
+
+Using the shoelace formula with vertices:
+- $A = (0, 0)$
+- $B = (0, h)$  
+- $C = (14, h-14)$
+- $D = (20, h-20)$
+- $E = (20, 0)$
+
+$$\text{Area} = \frac{1}{2}|(0 \cdot h - 0 \cdot 0) + (0 \cdot (h-14) - 14h) + (14(h-20) - 20(h-14))$$
+$$+ (20 \cdot 0 - 20(h-20)) + (20 \cdot 0 - 0 \cdot 0)|$$
+
+$$= \frac{1}{2}|0 - 14h + 14h - 280 - 20h + 280 - 20h + 400|$$
+
+$$= \frac{1}{2}|400 - 40h|$$
+
+Since $h > 20$, we have $40h > 800 > 400$:
+$$\text{Area} = \frac{1}{2}(40h - 400) = 20(h-10)$$
+
+## Step 8: Apply Divisibility Constraint
+
+Area $\equiv 0 \pmod{16}$:
+$$20(h-10) \equiv 0 \pmod{16}$$
+
+Since $20 \equiv 4 \pmod{16}$:
+$$4(h-10) \equiv 0 \pmod{16}$$
+$$(h-10) \equiv 0 \pmod{4}$$
+$$h \equiv 10 \equiv 2 \pmod{4}$$
+
+Therefore: $h = 4m + 2$ for some non-negative integer $m$
+
+**Verification:** If $h = 22$: Area $= 20(12) = 240 = 15 \times 16$ ✓
+
+## Step 9: Combine All Constraints
+
+- From $h > 20$ and $h = 4m + 2$: $4m + 2 > 20 \Rightarrow m \geq 5 \Rightarrow h \geq 22$
+- From $h < 2026$ and $h = 4m + 2$: $4m + 2 < 2026 \Rightarrow m \leq 505 \Rightarrow h \leq 2022$
+
+Valid values: $h \in \{22, 26, 30, 34, \ldots, 2022\}$
+
+## Step 10: Final Count
+
+This is an arithmetic sequence with:
+- First term: $a = 22$
+- Common difference: $d = 4$
+- Last term: $l = 2022$
+
+$$\text{Number of terms} = \frac{l - a}{d} + 1 = \frac{2022 - 22}{4} + 1 = \frac{2000}{4} + 1 = 500 + 1 = 501$$
+
+ANSWER: **501**

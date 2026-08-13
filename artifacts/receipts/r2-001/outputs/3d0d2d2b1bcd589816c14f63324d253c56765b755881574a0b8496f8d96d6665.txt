@@ -1,0 +1,67 @@
+# Solution: Finding the Area of △BCY
+
+## Step 1: State What I'm Calculating
+I need to find the area of triangle BCY, where:
+- B and C are vertices of square ABCD
+- Y is a vertex of inscribed square WXYZ
+
+## Step 2: Complete Calculation with All Intermediate Steps
+
+**Coordinate System Setup:**
+- $A = (0, 0)$, $B = (12, 0)$, $C = (12, 12)$, $D = (0, 12)$
+
+**Locating W and X:**
+- $W = (0, 4)$ on $\overline{AD}$ with $AW = 4$
+- $X = (5, 0)$ on $\overline{AB}$ with $AX = 5$
+
+**Finding the side length of square WXYZ:**
+$$|WX| = \sqrt{(5-0)^2 + (0-4)^2} = \sqrt{25 + 16} = \sqrt{41}$$
+
+**Finding Y and Z:**
+The vector $\vec{WX} = (5, -4)$
+
+Rotating 90° counterclockwise to get the next side: $(5, -4) \rightarrow (4, 5)$
+
+Therefore:
+- $Y = X + (4, 5) = (5, 0) + (4, 5) = (9, 5)$
+- $Z = W + (4, 5) = (0, 4) + (4, 5) = (4, 9)$
+
+**Verification that WXYZ is a square:**
+All sides have length $\sqrt{41}$ and consecutive vectors are perpendicular. ✓
+
+**Calculating Area of △BCY:**
+
+With vertices $B = (12, 0)$, $C = (12, 12)$, $Y = (9, 5)$:
+
+Using the shoelace formula:
+$$\text{Area} = \frac{1}{2}|x_B(y_C - y_Y) + x_C(y_Y - y_B) + x_Y(y_B - y_C)|$$
+
+$$= \frac{1}{2}|12(12-5) + 12(5-0) + 9(0-12)|$$
+
+$$= \frac{1}{2}|12(7) + 12(5) + 9(-12)|$$
+
+$$= \frac{1}{2}|84 + 60 - 108|$$
+
+$$= \frac{1}{2}|36| = 18$$
+
+## Step 3: Verify Results Make Logical Sense
+
+The side $\overline{BC}$ is vertical (from $(12, 0)$ to $(12, 12)$) with length 12.
+
+The perpendicular distance from point $Y = (9, 5)$ to the line $x = 12$ is: $|12 - 9| = 3$
+
+Using base-height formula:
+$$\text{Area} = \frac{1}{2} \times 12 \times 3 = 18$$ ✓
+
+## Step 4: Check Answer by Substitution
+
+The coordinates of Y satisfy the constraints of being part of square WXYZ inscribed in square ABCD. The triangle BCY has a reasonable area relative to the 12×12 square ABCD.
+
+## Step 5: Confirm Final Answer
+
+The answer 18 is:
+- A reasonable integer
+- Verified by two independent methods (shoelace formula and base-height)
+- Geometrically sensible (3 units from B-C line, 12 units long)
+
+**FINAL ANSWER: 18**

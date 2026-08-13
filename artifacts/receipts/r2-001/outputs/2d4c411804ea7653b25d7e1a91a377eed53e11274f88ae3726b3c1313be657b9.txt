@@ -1,0 +1,108 @@
+# Solution: Finding Valid Digiroot Numbers
+
+## **Step 1: Set up the constraint equation**
+
+We need to find all $n < 1000$ where $s_2(n) = \sqrt{s_4(n)}$.
+
+Let $a = s_2(n)$ (the sum of binary digits).
+
+**Requirement:** $s_4(n) = a^2$ (must be a perfect square)
+
+This is consistent since if $a = s_2(n)$, then $\sqrt{a^2} = a$ ✓
+
+---
+
+## **Step 2: Determine the range of possible values for $a$**
+
+For $n < 1000$:
+- $999_{10} = 1111100111_2$
+- Count of 1's: 8
+- Therefore: $s_2(n) \leq 8$, so $a \in \{1, 2, 3, 4, 5, 6, 7, 8\}$
+
+---
+
+## **Step 3: Find constraint on $s_4(n)$ from base-4 representation**
+
+For $n < 1000$:
+- $999_{10} = 33213_4$ (verify: $3(256) + 3(64) + 2(16) + 1(4) + 3 = 999$ ✓)
+- $s_4(999) = 3 + 3 + 2 + 1 + 3 = 12$
+- So $s_4(n) \leq 12$
+
+For $s_4(n) = a^2 \leq 12$:
+- $a = 1$: $a^2 = 1$ ✓
+- $a = 2$: $a^2 = 4$ ✓  
+- $a = 3$: $a^2 = 9$ ✓
+- $a = 4$: $a^2 = 16 > 12$ ✗
+
+Only $a \in \{1, 2, 3\}$ are viable.
+
+---
+
+## **Step 4: Case $a = 1$: Find all $n < 1000$ with $s_2(n) = 1$ and $s_4(n) = 1$**
+
+Numbers with exactly one 1-bit: $n = 2^k$ for $k \geq 0$
+
+Testing each power of 2:
+- $n = 1 = 1_4$: $s_4(1) = 1$ ✓
+- $n = 2 = 2_4$: $s_4(2) = 2$ ✗
+- $n = 4 = 10_4$: $s_4(4) = 1$ ✓
+- $n = 8 = 20_4$: $s_4(8) = 2$ ✗
+- $n = 16 = 100_4$: $s_4(16) = 1$ ✓
+- $n = 32 = 200_4$: $s_4(32) = 2$ ✗
+- $n = 64 = 1000_4$: $s_4(64) = 1$ ✓
+- $n = 128 = 2000_4$: $s_4(128) = 2$ ✗
+- $n = 256 = 10000_4$: $s_4(256) = 1$ ✓
+- $n = 512 = 20000_4$: $s_4(512) = 2$ ✗
+
+**Valid for $a=1$:** $\{1, 4, 16, 64, 256\}$
+
+---
+
+## **Step 5: Case $a = 2$: Find all $n < 1000$ with $s_2(n) = 2$ and $s_4(n) = 4$**
+
+Numbers with exactly two 1-bits: $n = 2^i + 2^j$ where $i > j \geq 0$
+
+Systematic checking:
+- $n = 10 = 1010_2 = 22_4$: $s_4(10) = 4$ ✓
+- $n = 34 = 100010_2 = 202_4$: $s_4(34) = 4$ ✓
+- $n = 40 = 101000_2 = 220_4$: $s_4(40) = 4$ ✓
+- $n = 130 = 10000010_2 = 2002_4$: $s_4(130) = 4$ ✓
+- $n = 136 = 10001000_2 = 2020_4$: $s_4(136) = 4$ ✓
+- $n = 160 = 10100000_2 = 2200_4$: $s_4(160) = 4$ ✓
+- $n = 514 = 1000000010_2 = 20002_4$: $s_4(514) = 4$ ✓
+- $n = 520 = 1000001000_2 = 20020_4$: $s_4(520) = 4$ ✓
+- $n = 544 = 1000100000_2 = 20200_4$: $s_4(544) = 4$ ✓
+- $n = 640 = 1010000000_2 = 22000_4$: $s_4(640) = 4$ ✓
+
+**Valid for $a=2$:** $\{10, 34, 40, 130, 136, 160, 514, 520, 544, 640\}$
+
+---
+
+## **Step 6: Case $a = 3$: Find all $n < 1000$ with $s_2(n) = 3$ and $s_4(n) = 9$**
+
+After systematic checking of numbers with exactly three 1-bits (form $2^i + 2^j + 2^k$), no values satisfy $s_4(n) = 9$ for $n < 1000$.
+
+**Valid for $a=3$:** $\{\}$ (empty set)
+
+---
+
+## **Step 7: Sum all valid values**
+
+Sum = $(1 + 4 + 16 + 64 + 256) + (10 + 34 + 40 + 130 + 136 + 160 + 514 + 520 + 544 + 640)$
+
+First group: $1 + 4 + 16 + 64 + 256 = 341$
+
+Second group: $10 + 34 + 40 + 130 + 136 + 160 + 514 + 520 + 544 + 640 = 2728$
+
+Total: $341 + 2728 = 3069$
+
+---
+
+## **Verification**
+
+Checking a sample from each case:
+- $n = 1$: $s_2(1) = 1$, $s_4(1) = 1 = 1^2$ ✓
+- $n = 10$: $s_2(10) = 2$, $s_4(10) = 4 = 2^2$ ✓
+- $n = 256$: $s_2(256) = 1$, $s_4(256) = 1 = 1^2$ ✓
+
+**FINAL ANSWER: 3069**

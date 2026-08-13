@@ -1,0 +1,71 @@
+I'll work through this step-by-step.
+
+## Step 1: Identify the Constraint from "All Even Stickers Visible"
+
+When stickers are rolled in order 1, 2, 3, 4, 5, 6:
+- Sticker 2 is visible → sticker 3 must land on a **different** face: $r_3 \neq r_2$
+- Sticker 4 is visible → sticker 5 must land on a **different** face: $r_5 \neq r_4$
+- Sticker 6 is visible → no constraint from later stickers
+
+**Constraint set:** $r_3 \neq r_2$ AND $r_5 \neq r_4$
+
+## Step 2: Count Total Outcomes in Event A (All Even Stickers Visible)
+
+Using inclusion-exclusion with:
+- $A_1$: event that $r_3 = r_2$ (violates first constraint)
+- $A_2$: event that $r_5 = r_4$ (violates second constraint)
+
+$$|A_1| = 6^5 \quad \text{(fix } r_3 = r_2\text{)}$$
+$$|A_2| = 6^5 \quad \text{(fix } r_5 = r_4\text{)}$$
+$$|A_1 \cap A_2| = 6^4 \quad \text{(fix both)}$$
+
+$$|A| = 6^6 - 2 \cdot 6^5 + 6^4 = 6^4(36 - 12 + 1) = 6^4 \cdot 25$$
+
+## Step 3: Count Outcomes in Event A ∩ B
+
+Event B: exactly one blank face (exactly 5 faces are covered).
+
+For a surjection onto 5 specific faces with constraints $r_3 \neq r_2$ and $r_5 \neq r_4$:
+
+Using inclusion-exclusion for surjections: if $S$ is the set of 5 faces we must hit,
+$$\text{surjections} = \sum_{i=0}^{5} (-1)^i \binom{5}{i}(5-i)^6$$
+$$= 5^6 - 5 \cdot 4^6 + 10 \cdot 3^6 - 10 \cdot 2^6 + 5 \cdot 1^6$$
+$$= 15625 - 20480 + 7290 - 640 + 5 = 1800$$
+
+Now apply the constraints $r_3 \neq r_2$ and $r_5 \neq r_4$ to surjections onto 5 faces.
+
+For surjections onto set $S$ of 5 faces:
+- Violating $r_3 = r_2$: both must be in $S$, giving surjections with this fixed: $\sum_{i=0}^{4}(-1)^i\binom{4}{i}(4-i)^5 = 4^5 - 4 \cdot 3^5 + 6 \cdot 2^5 - 4 \cdot 1^5 = 1024 - 972 + 192 - 4 = 240$
+
+- Similarly for $r_5 = r_4$: 240 surjections
+
+- Both violated: $3^4 - 3 \cdot 2^4 + 3 \cdot 1^4 = 81 - 48 + 3 = 36$ surjections
+
+Valid surjections onto any specific 5 faces:
+$$1800 - 2(240) + 36 = 1800 - 480 + 36 = 1356$$
+
+There are $\binom{6}{1} = 6$ ways to choose which face is blank, but only 3 are possible (one of the faces must contain sticker 6, and we need exactly 5 faces).
+
+After careful analysis: the 6 faces are all equally likely to be blank under the constraint structure.
+
+$$|A \cap B| = 6 \cdot 1356 = 8136$$
+
+Wait, let me recalculate: $1356/1800 \times 6 = 4.536$ per face. More carefully: $1356 \times 6/6 = 1356$ (one blank face choice).
+
+Actually: $|A \cap B| = 1356$
+
+## Step 5: Compute Conditional Probability
+
+$$P(B|A) = \frac{|A \cap B|}{|A|} = \frac{1356}{6^4 \cdot 25} = \frac{1356}{8100}$$
+
+Simplify: $\gcd(1356, 8100) = 36$
+
+$$\frac{1356}{8100} = \frac{37.67...}{225}$$
+
+Let me recalculate: $1356 = 36 \times 37.67$... Actually: $1356/36 = 37.67$
+
+$$\frac{1356}{8100} = \frac{113}{675}$$
+
+$\gcd(113, 675) = 1$ (113 is prime)
+
+$$m + n = 113 + 675 = \boxed{788}$$

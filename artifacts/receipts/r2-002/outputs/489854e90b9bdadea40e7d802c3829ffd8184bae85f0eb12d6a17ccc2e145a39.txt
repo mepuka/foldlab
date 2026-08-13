@@ -1,0 +1,101 @@
+# Detailed Solution: Finding Fixed Points of f(n)
+
+## 1-Digit Numbers (1 through 9)
+
+For a single-digit number $n$ where $1 \leq n \leq 9$:
+- Base $b = n + 1$ (the minimum base must exceed the largest digit)
+- Interpreting $n$ in base $b$ gives simply $n$ (a single digit in any base equals itself)
+- Therefore $f(n) = n$ automatically
+
+**All 9 single-digit numbers are fixed points.**
+
+---
+
+## 2-Digit Numbers (10 through 99)
+
+Let $n = 10a + c$ where $1 \leq a \leq 9$ and $0 \leq c \leq 9$.
+
+Base: $b = \max(a,c) + 1$
+
+Interpretation: $f(n) = a \cdot b + c$
+
+**Setting up the equation for fixed points:**
+$$ab + c = 10a + c$$
+$$ab = 10a$$
+$$b = 10$$
+
+This requires: $\max(a,c) + 1 = 10 \Rightarrow \max(a,c) = 9$
+
+**Counting solutions:**
+
+*Subcase: $a = 9$*
+- $c$ can be 0, 1, 2, ..., 9
+- Numbers: 90, 91, 92, ..., 99
+- Count: **10 numbers**
+
+*Subcase: $c = 9$ and $a \neq 9$*
+- $a$ can be 1, 2, 3, 4, 5, 6, 7, 8
+- Numbers: 19, 29, 39, 49, 59, 69, 79, 89
+- Count: **8 numbers**
+
+**Verification:** $f(59) = 5 \times 10 + 9 = 59$ ✓
+
+**Total 2-digit fixed points: $10 + 8 = 18$**
+
+---
+
+## 3-Digit Numbers (100 through 999)
+
+Let $n = 100a + 10b + c$ where $1 \leq a \leq 9$, $0 \leq b,c \leq 9$.
+
+Base: $B = \max(a,b,c) + 1$
+
+Interpretation: $f(n) = aB^2 + bB + c$
+
+**Setting up the equation for fixed points:**
+$$aB^2 + bB + c = 100a + 10b + c$$
+$$aB^2 + bB = 100a + 10b$$
+$$a(B^2 - 100) + b(B - 10) = 0$$
+$$a(B-10)(B+10) + b(B-10) = 0$$
+$$(B-10)[a(B+10) + b] = 0$$
+
+**Case 1: $B = 10$**
+- Equation is satisfied for any valid digits $a, b, c$
+- Condition: $\max(a,b,c) + 1 = 10 \Rightarrow \max(a,b,c) = 9$
+- At least one digit must equal 9
+
+**Counting:** Using complementary counting
+- 3-digit numbers with all digits $\leq 8$:
+  - $a \in \{1,2,...,8\}$: 8 choices
+  - $b \in \{0,1,...,8\}$: 9 choices  
+  - $c \in \{0,1,...,8\}$: 9 choices
+  - Subtotal: $8 \times 9 \times 9 = 648$
+
+- Numbers with at least one digit equal to 9:
+  - Total 3-digit numbers: 900
+  - Count: $900 - 648 = 252$
+
+**Case 2: $B \neq 10$**
+$$(B-10)[a(B+10) + b] = 0$$
+$$a(B+10) = -b$$
+
+Since $a \geq 1$ and $B \geq 2$, we have $a(B+10) > 0$, which requires $b < 0$.
+This contradicts $0 \leq b \leq 9$.
+
+**No solutions exist for $B \neq 10$.**
+
+**Verification:** $f(345) = 3 \times 100 + 4 \times 10 + 5 = 345$ (since $\max(3,4,5) = 5 < 9$, base is 6... wait, that's wrong.)
+
+Let me recalculate: For $n=345$, we have $\max(3,4,5) = 5$, so $b = 6 \neq 10$.
+
+Let me verify a correct example: $n = 900$
+- Digits: 9, 0, 0; $\max(9,0,0) = 9$, so $B = 10$
+- $f(900) = 9 \times 100 + 0 \times 10 + 0 = 900$ ✓
+
+**Total 3-digit fixed points: 252**
+
+---
+
+## Final Answer
+
+$$\text{Total} = 9 + 18 + 252 = \boxed{279}$$

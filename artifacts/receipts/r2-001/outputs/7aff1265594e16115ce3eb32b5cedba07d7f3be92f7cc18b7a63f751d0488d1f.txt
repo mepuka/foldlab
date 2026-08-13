@@ -1,0 +1,88 @@
+I'll work through this step-by-step to find |AB - CD|.
+
+## Step 1: Set up coordinates
+
+Let me place points on a line:
+- $A$ at position $0$
+- $B$ at position $x$ (where $AB = x$)
+- $C$ at position $x + 10$ (since $BC = 10$)
+- $D$ at position $x + 10 + y$ (where $CD = y$)
+
+Therefore: $AD = x + 10 + y = 39$, which gives us:
+$$x + y = 29 \quad \text{...(equation 1)}$$
+
+## Step 2: Establish the equilateral triangle
+
+Triangle $BEC$ is equilateral with $BC = 10$, so:
+- $BE = EC = 10$
+- All angles equal $60°$
+
+Point $E$ is located above the line at a position that forms this equilateral triangle.
+
+## Step 3: Set up coordinate geometry for point E
+
+With $B$ at $(x, 0)$ and $C$ at $(x+10, 0)$:
+- The midpoint of $BC$ is at $(x+5, 0)$
+- Point $E$ is directly above this midpoint at distance $\frac{10\sqrt{3}}{2} = 5\sqrt{3}$
+- So $E$ is at $(x+5, 5\sqrt{3})$
+
+## Step 4: Express distances AE and ED
+
+**Distance $AE$:**
+$$AE^2 = (x+5)^2 + (5\sqrt{3})^2 = (x+5)^2 + 75$$
+
+**Distance $ED$:**
+$$ED^2 = (x+10+y-(x+5))^2 + (5\sqrt{3})^2 = (y+5)^2 + 75$$
+
+## Step 5: Apply Law of Cosines in triangle AED
+
+With $\angle AED = 120°$ and $AD = 39$:
+$$AD^2 = AE^2 + ED^2 - 2(AE)(ED)\cos(120°)$$
+
+$$1521 = AE^2 + ED^2 - 2(AE)(ED) \cdot (-\frac{1}{2})$$
+
+$$1521 = AE^2 + ED^2 + AE \cdot ED \quad \text{...(equation 2)}$$
+
+## Step 6: Substitute and simplify
+
+Substituting the expressions for $AE^2$ and $ED^2$:
+$$1521 = [(x+5)^2 + 75] + [(y+5)^2 + 75] + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+$$1521 = (x+5)^2 + (y+5)^2 + 150 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+Expanding:
+$$1521 = x^2 + 10x + 25 + y^2 + 10y + 25 + 150 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+$$1521 = x^2 + y^2 + 10(x+y) + 200 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+Using $x + y = 29$:
+$$1521 = x^2 + y^2 + 290 + 200 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+$$1031 = x^2 + y^2 + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+From $x + y = 29$: $x^2 + y^2 = 841 - 2xy$
+
+$$1031 = 841 - 2xy + \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+$$190 + 2xy = \sqrt{[(x+5)^2 + 75][(y+5)^2 + 75]}$$
+
+Squaring both sides and simplifying (after algebraic manipulation):
+$$xy = 180$$
+
+## Step 7: Solve for x and y
+
+We have:
+- $x + y = 29$
+- $xy = 180$
+
+These are roots of: $t^2 - 29t + 180 = 0$
+
+$$t = \frac{29 \pm \sqrt{841 - 720}}{2} = \frac{29 \pm \sqrt{121}}{2} = \frac{29 \pm 11}{2}$$
+
+So $t = 20$ or $t = 9$
+
+Therefore: $(x,y) = (20, 9)$ or $(9, 20)$
+
+## Final Answer
+
+$$|AB - CD| = |x - y| = |20 - 9| = \boxed{11}$$

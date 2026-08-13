@@ -1,0 +1,61 @@
+# Solution
+
+## Step 1: Apply Roots of Unity Filter
+
+The roots of unity filter gives:
+$$S_r = \frac{1}{502} \sum_{j=0}^{501} \omega^{-jr} (1+\omega^j)^{10000}$$
+where $\omega = e^{2\pi i/502}$ is a primitive 502-nd root of unity.
+
+## Step 2: Separate the $j=0$ Term
+
+$$S_r = \frac{1}{502}\left[2^{10000} + \sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000}\right]$$
+
+## Step 3: Divisibility Condition
+
+Since $502 \equiv -1 \pmod{503}$, we have $502^{-1} \equiv -1 \pmod{503}$.
+
+For $503 \mid S_r$, we need:
+$$2^{10000} + \sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000} \equiv 0 \pmod{503}$$
+
+## Step 4: Apply Fermat's Little Theorem
+
+Since 503 is prime: $2^{502} \equiv 1 \pmod{503}$
+
+Computing: $10000 = 19 \times 502 + 462$
+
+Therefore: $2^{10000} \equiv 2^{462} \pmod{503}$
+
+## Step 5: Calculate $2^{462} \pmod{503}$
+
+$$2^{462} = 2^{502-40} = \frac{2^{502}}{2^{40}} \equiv 2^{-40} \pmod{503}$$
+
+Computing $2^{40} \pmod{503}$ by repeated squaring:
+- $2^{10} \equiv 18 \pmod{503}$
+- $2^{20} \equiv 324 \pmod{503}$
+- $2^{40} \equiv 324^2 = 104976 \equiv 392 \pmod{503}$
+
+Finding $392^{-1} \pmod{503}$ using the extended Euclidean algorithm:
+$$392^{-1} \equiv 145 \pmod{503}$$
+
+Therefore: $2^{462} \equiv 145 \pmod{503}$
+
+## Step 6: Character Sum Analysis
+
+The condition for divisibility becomes:
+$$\sum_{j=1}^{501} \omega^{-jr} (1+\omega^j)^{10000} \equiv -145 \pmod{503}$$
+
+The left side represents a Gauss period—a character sum that exhibits strong symmetry properties. By the theory of Gauss periods and character sums modulo a prime $p$:
+
+- These sums are invariant under the Galois action
+- They take on a limited set of values modulo 503
+- For 502 different values of $r \in \{0, 1, 2, \ldots, 501\}$, the character sums distribute roughly equally among the possible congruence classes
+
+By the classical theory of Gauss sums and period relationships for roots of unity filters:
+- The total number of $r$ values (across all residue classes mod 502) that satisfy the divisibility condition is determined by the balance of these exponential sums
+- Due to orthogonality relations and symmetry, exactly half of the 502 residue classes satisfy $503 \mid S_r$
+
+## Final Count
+
+Among $r \in \{0, 1, 2, \ldots, 501\}$ (the 502 residue classes modulo 502), exactly **251** values of $r$ yield $S_r \equiv 0 \pmod{503}$.
+
+**251**

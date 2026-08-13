@@ -1,0 +1,65 @@
+# Extended Solution: Finding Minimum Divisors for Imbalanced M
+
+## Step 1: Establish the Imbalance Requirement
+
+For $M$ to be imbalanced, we need:
+- Number of divisors $d < 0.01M$ to exceed $0.99 \cdot \tau(M)$
+- Equivalently: number of divisors $d \geq 0.01M$ must be $\leq \lfloor 0.01\tau(M) \rfloor$
+
+Let's denote "large divisors" as those $\geq 0.01M$.
+
+**Critical observation**: We need $\lfloor 0.01\tau(M) \rfloor \geq 1$ for any imbalanced $M$ to exist (since $M$ itself is always a divisor and $M \geq 0.01M$).
+
+This requires: $\tau(M) \geq 100$
+
+## Step 2: Test $\tau(M) = 100$
+
+For $\tau(M) = 100$:
+- Large divisor threshold: $\lfloor 0.01 \cdot 100 \rfloor = 1$
+- We can have **at most 1 large divisor** (which must be $M$ itself)
+- All other 99 divisors must satisfy: $d < 0.01M$
+
+**Constraint**: If $M$ has smallest prime factor $p_{\min}$, then the second-largest divisor is $M/p_{\min}$.
+
+For imbalance: $M/p_{\min} < 0.01M$
+This requires: $p_{\min} > 100$
+
+The smallest prime greater than 100 is **101**.
+
+## Step 3: Construct Candidates with $\tau(M) = 100$
+
+**Option A**: $M = 101^{99}$ gives $\tau(M) = 100$
+- Divisors are $101^k$ for $k = 0,1,...,99$
+- Second-largest: $101^{98} = M/101 < 0.01M$ ✓
+- This works but $M$ is astronomically large
+
+**Option B**: $M = 2^{99} \cdot 101$ gives $\tau(M) = 100 \cdot 2 = 200$ (too many)
+
+**Option C**: We need a more compact form. Consider that for $\tau(M) = (a_1+1)(a_2+1)...$
+
+To get $\tau(M) = 100 = 100 \cdot 1 = 50 \cdot 2 = 25 \cdot 4 = 20 \cdot 5 = 10 \cdot 10 = ...$
+
+The most practical form with $\tau(M) = 100$ and small prime factors would be:
+- $M = 2^{99}$ (but 2 < 100, fails requirement)
+- $M = 2^{49} \cdot 3^{1}$ gives $\tau = 50 \cdot 2 = 100$, but $M/2$ would be $\geq 0.01M$ ✗
+- $M = 2^{24} \cdot 3^{3}$ gives $\tau = 25 \cdot 4 = 100$, but small primes cause issues ✗
+
+## Step 4: Verify $\tau(M) = 100$ is Achievable
+
+After systematic checking, any factorization with $\tau(M) = 100$ using standard small primes creates divisors that are too large relative to $0.01M$.
+
+The only reliable construction requires $M = p^{99}$ where $p > 100$, or equivalently we need $\tau(M) \geq 100$.
+
+## Step 5: Check if Smaller Values Work
+
+For $\tau(M) < 100$: The constraint $\lfloor 0.01\tau(M) \rfloor \geq 1$ fails when $\tau(M) < 100$.
+
+Therefore, the minimum possible value is $\tau(M) = 100$.
+
+However, verifying actual constructibility with $\tau(M) = 100$ shows that $M = 101^{99}$ is the minimal working example.
+
+But if the problem asks for the minimum $\tau(M)$ that **allows** an imbalanced number to exist with standard prime factorizations, the answer is:
+
+## Final Answer
+
+**100**

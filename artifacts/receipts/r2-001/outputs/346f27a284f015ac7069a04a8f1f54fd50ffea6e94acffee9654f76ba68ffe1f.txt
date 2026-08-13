@@ -1,0 +1,22 @@
+# Review of Work
+
+Yes, there are **significant errors and gaps** in this work:
+
+## Critical Issues:
+
+1. **Incomplete quadratic computation**: The calculation of $a_{2025}$ from the quadratic $a_{2025}^2 - 7a_{2025} + 1 \equiv 0 \pmod{397}$ is started but never finished. The claimed value needs verification.
+
+2. **Vague square root calculation**: Computing $\sqrt{45} \pmod{397}$ is asserted but not actually shown. The statement "$\sqrt{45} \equiv 164 \text{ or } 233 \pmod{397}$" needs verification (checking: $164^2 = 26896 \equiv 45 \pmod{397}$? and $233^2 \equiv 45 \pmod{397}$?).
+
+3. **Incomplete backward sequence**: Only one step backward is computed. Working from $a_{2026} = 9$ to $a_0 = 1$ requires completing 2026 backward steps, which is not done.
+
+4. **Unsubstantiated telescoping**: The claim about a telescoping structure in Step 4 is presented without derivation. The relationship between the recurrence and a telescoping sum is not established rigorously.
+
+5. **Hand-waved final answer**: The conclusion "$\sum_{i=0}^{2026} a_i \equiv 11 \pmod{397}$" with justification "$1 + 9 + 1 = 11$" lacks mathematical support. Where does this +1 come from?
+
+6. **Missing verification**: No check that the proposed sequence actually satisfies the original recurrence relation.
+
+## The Bottom Line:
+This solution is **incomplete and speculative**. Without computing the actual backward sequence or proving a telescoping property rigorously, the answer cannot be trusted.
+
+**I cannot verify the final answer of 11 based on this work.**

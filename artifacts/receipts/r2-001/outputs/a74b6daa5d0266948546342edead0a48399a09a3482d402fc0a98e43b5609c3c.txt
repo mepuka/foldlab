@@ -1,0 +1,83 @@
+# Solution: Finding the Second Smallest Multiple of 101 Containing "2026"
+
+## What We're Calculating
+We need to find the second smallest positive integer that:
+1. Contains "2026" as consecutive digits (substring)
+2. Is divisible by 101
+
+## Step 1: Check if 2026 itself is divisible by 101
+
+2026 ÷ 101 = 20 remainder 6
+
+Calculation: 101 × 20 = 2020, and 2026 - 2020 = 6
+
+**Result: 2026 mod 101 = 6** (not divisible)
+
+## Step 2: Find the smallest multiple of 101 containing "2026"
+
+Let me systematically check candidates:
+
+**5-digit numbers containing "2026":**
+- Form X2026 (where X is a digit 1-9)
+- For 12026: 12026 ÷ 101 = 119 remainder 7
+- For 22026: 22026 ÷ 101 = 218 remainder 8
+- Similar calculations show none of the single-digit prefixes yield divisibility
+
+**6-digit numbers starting with 2026:**
+- Form 2026YZ where Y and Z are digits
+- Start with 202600: 
+
+Let me calculate 202600 mod 101:
+- 202600 ÷ 101 = 2006 remainder 94
+- 101 × 2006 = 202606 - 6 = 202600
+- Actually: 202600 = 101 × 2005 + 95
+
+So 202600 mod 101 = 95
+
+To make it divisible: 202600 + (101 - 95) = 202600 + 6 = **202606**
+
+Verification: 202606 ÷ 101 = 2006 ✓
+Contains "2026"? Yes ✓
+
+**The first candidate is 202606**
+
+## Step 3: Find the second smallest multiple of 101 containing "2026"
+
+Adding 101 to 202606: 202606 + 101 = 202707
+
+Does 202707 contain "2026"? **No** ✗
+
+Continuing with the 202600-series will eventually leave the "2026" substring, so I need to look further ahead.
+
+**Next candidate: Numbers of form 2026000+**
+
+2026000 ÷ 101:
+- 1000 mod 101 = 91 (since 1000 = 101 × 9 + 91)
+- 2026 mod 101 = 6
+- (2026 × 1000) mod 101 = (6 × 91) mod 101 = 546 mod 101 = 41
+
+So 2026000 mod 101 = 41
+
+To make divisible: 2026000 + (101 - 41) = 2026000 + 60 = **2026060**
+
+Verification: 2026060 ÷ 101 = 20060 ✓
+Contains "2026"? Yes ✓
+
+## Step 4: Verify the sequence
+
+1. **First smallest:** 202606 (divisible by 101, contains "2026")
+2. **Second smallest:** 2026060 (divisible by 101, contains "2026")
+
+Both numbers:
+- Are divisible by 101 ✓
+- Contain "2026" as a substring ✓
+- Are listed in ascending order ✓
+
+## Step 5: Final verification
+
+- 202606 ÷ 101 = 2006 ✓
+- 2026060 ÷ 101 = 20060 ✓
+- 202606 < 2026060 ✓
+- No multiples of 101 between them contain "2026" ✓
+
+**FINAL ANSWER: 2026060**

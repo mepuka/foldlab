@@ -1,0 +1,25 @@
+# Solution Plan
+
+1. **Analyze the recurrence relation modulo 397**
+   - Rewrite $a_{n+1}(a_n + 1)^2 \equiv a_n \pmod{397}$
+   - Since 397 is prime, determine when solutions exist and are unique
+   - Find the formula: $a_{n+1} \equiv a_n(a_n + 1)^{-2} \pmod{397}$
+
+2. **Work backwards from the constraint $a_{2026} = 9$**
+   - Use the recurrence to find $a_{2025}, a_{2024}, \ldots$ sequentially
+   - Apply the inverse relation: $a_n \equiv a_{n+1}(a_n + 1)^2 \pmod{397}$
+   - Continue until reaching $a_0 = 1$ (verification step)
+
+3. **Identify the sequence structure**
+   - Determine if the sequence is eventually periodic
+   - Look for patterns or cycles that might simplify the sum calculation
+   - Check if the sequence stabilizes or repeats
+
+4. **Compute the sum $\sum_{i=0}^{2026} a_i$**
+   - If periodic with period $p$: use $\sum = q \cdot S_p + S_r$ where $q = \lfloor 2027/p \rfloor$ and $r = 2027 \bmod p$
+   - If not periodic: compute all terms directly and sum them
+   - Keep all arithmetic modulo 397
+
+5. **Reduce the final answer modulo 397**
+   - Ensure the sum is in the range $[0, 396]$
+   - Return the final remainder

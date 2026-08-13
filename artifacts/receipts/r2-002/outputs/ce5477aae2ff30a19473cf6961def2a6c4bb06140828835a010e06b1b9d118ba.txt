@@ -1,0 +1,81 @@
+# Solution: Finding all n where the 6th Largest Divisor is 6
+
+## Step 1: Establish the divisor structure
+
+If the 6th largest divisor is exactly 6, then:
+- n must have at least 6 divisors
+- Exactly 5 divisors are greater than 6
+- The next divisor below these 5 must be exactly 6
+- All remaining divisors are ≤ 6
+
+## Step 2: Identify divisors ≤ 6
+
+Since 6 is a divisor of n, both 2 and 3 must divide n.
+
+The possible divisors of n that are ≤ 6 are:
+- {1, 2, 3, 4, 5, 6} depending on n's factorization
+- Since 6 | n, at minimum we have {1, 2, 3, 6}
+
+## Step 3: Determine prime factorization structure
+
+Let n = 2^a · 3^b · (other primes), where a ≥ 1, b ≥ 1.
+
+We need exactly 5 divisors greater than 6.
+
+## Step 4: Systematically test candidates
+
+**Case: n = 2^a · 3 (only primes 2 and 3)**
+
+- n = 6 = 2·3: Divisors {1, 2, 3, 6} → only 4 divisors ✗
+
+- n = 12 = 2²·3: Divisors {1, 2, 3, 4, 6, 12} → 6 total
+  - Ordered: 12, 6, 4, 3, 2, 1
+  - 6th largest = 1 ✗
+
+- n = 24 = 2³·3: Divisors {1, 2, 3, 4, 6, 8, 12, 24}
+  - Divisors > 6: {8, 12, 24} → only 3 ✗
+
+- **n = 48 = 2⁴·3:** Divisors {1, 2, 3, 4, 6, 8, 12, 16, 24, 48}
+  - Divisors > 6: {8, 12, 16, 24, 48} → exactly 5 ✓
+  - Ordered: 48, 24, 16, 12, 8, 6, 4, 3, 2, 1
+  - **6th largest divisor = 6** ✓
+
+- n = 96 = 2⁵·3: Divisors {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 96}
+  - Divisors > 6: {8, 12, 16, 24, 32, 48, 96} → 7 divisors ✗
+
+**Case: n = 2·3^b**
+
+- n = 18 = 2·3²: Divisors {1, 2, 3, 6, 9, 18}
+  - Divisors > 6: {9, 18} → only 2 ✗
+
+- n = 54 = 2·3³: Divisors {1, 2, 3, 6, 9, 18, 27, 54}
+  - Divisors > 6: {9, 18, 27, 54} → only 4 ✗
+
+- n = 162 = 2·3⁴: Divisors {1, 2, 3, 6, 9, 18, 27, 54, 81, 162}
+  - Divisors > 6: {9, 18, 27, 54, 81, 162} → 6 divisors ✗
+
+**Case: n involves a third prime p**
+
+- n = 30 = 2·3·5: Divisors {1, 2, 3, 5, 6, 10, 15, 30}
+  - Divisors > 6: {10, 15, 30} → only 3 ✗
+
+- n = 60 = 2²·3·5: Divisors total 12, divisors > 6 include {10, 12, 15, 20, 30, 60}
+  - More than 5 divisors > 6 ✗
+
+- Other combinations with third primes either have too few or too many divisors > 6
+
+## Step 5: Verify the solution
+
+**n = 48:**
+- Divisors in descending order: 48, 24, 16, 12, 8, 6, 4, 3, 2, 1
+- Position 1: 48 > 6 ✓
+- Position 2: 24 > 6 ✓
+- Position 3: 16 > 6 ✓
+- Position 4: 12 > 6 ✓
+- Position 5: 8 > 6 ✓
+- Position 6: 6 = 6 ✓
+- Position 7 and beyond: all ≤ 6 ✓
+
+## Final Answer
+
+**48**

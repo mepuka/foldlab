@@ -1,0 +1,14 @@
+# Given Quantities and Conditions
+
+**Given:**
+- Two finite sets of integers $S$ and $T$
+- A definition: $S$ and $T$ are "cousins" if and only if:
+  1. $|S| = |T|$ (same cardinality)
+  2. $S \cap T = \emptyset$ (disjoint sets)
+  3. The elements of $S$ can be paired with elements of $T$ such that each pair differs by exactly 1
+- An example: $\{1,2,5\}$ and $\{0,3,4\}$ are cousins
+- The set $S$ has exactly **4040** cousins
+
+**What is being asked:**
+
+Find the minimum number of elements that $S$ must contain (i.e., minimize $|S|$) given that $S$ has exactly 4040 cousins.

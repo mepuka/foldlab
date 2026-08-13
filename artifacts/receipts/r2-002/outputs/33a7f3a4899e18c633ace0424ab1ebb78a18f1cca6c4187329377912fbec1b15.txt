@@ -1,0 +1,71 @@
+# Solution: Path Counting with Eulerian Path Analysis
+
+## Step 1: Set up the coordinate system
+- Bottom row at y=0: vertices at x = 0, 1, 2, ..., 10
+- Top row at y=1: vertices at x = 0, 1, 2, ..., 10
+- Start: A = (0,0)
+- End: B = (10,1)
+
+## Step 2: Identify all available segments
+
+**Horizontal segments:**
+- At y=0: (i,0)→(i+1,0) for i = 0 to 9 (10 segments)
+- At y=1: (i,1)→(i+1,1) for i = 0 to 9 (10 segments)
+
+**Vertical segments:**
+- (x,0)→(x,1) for x = 0 to 10 (11 segments)
+
+**Diagonal segments:**
+- (i,0)→(i+1,1) for i = 0 to 9 (10 segments)
+
+**Total: 41 segments**
+
+## Step 3: Analyze vertex degrees for Eulerian path
+
+For an Eulerian path to exist using each segment exactly once, we need at most two vertices of odd degree (the start and end points).
+
+**Degree calculation:**
+
+- **(0,0)**: Incident to horizontal right, vertical up, diagonal to (1,1)
+  - Degree = 3 (odd) ✓ [Start vertex]
+
+- **(x,0) for 0 < x < 10**: Incident to horizontal left, horizontal right, vertical up, diagonal to (x+1,1)
+  - Degree = 4 (even) ✓
+
+- **(10,0)**: Incident to horizontal left, vertical up
+  - Degree = 2 (even) ✓
+
+- **(0,1)**: Incident to horizontal right, vertical down
+  - Degree = 2 (even) ✓
+
+- **(x,1) for 0 < x < 10**: Incident to:
+  - Horizontal left from (x-1,1)
+  - Horizontal right to (x+1,1)
+  - Diagonal from (x-1,0) to (x,1)
+  - **Degree = 3 (odd)** ✗
+
+- **(10,1)**: Incident to horizontal left, vertical down, diagonal from (9,0)
+  - Degree = 3 (odd) ✓ [End vertex]
+
+## Step 4: Check Eulerian path condition
+
+An Eulerian path from (0,0) to (10,1) requires **exactly two odd-degree vertices** (the start and end).
+
+**Vertices with odd degree:**
+- (0,0): degree 3 ✓
+- (x,1) for x = 1, 2, ..., 9: degree 3 each (9 vertices) ✗
+- (10,1): degree 3 ✓
+
+**Total odd-degree vertices: 1 + 9 + 1 = 11**
+
+Since we have 11 odd-degree vertices (far more than the required 2), **no Eulerian path exists** that uses every segment exactly once while going from (0,0) to (10,1).
+
+## Step 5: Calculate N
+
+N = number of valid paths = **0**
+
+## Step 6: Find the answer
+
+√N = √0 = **0**
+
+Final answer (single integer only): **0**

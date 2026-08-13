@@ -1,0 +1,25 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+**Given Quantities:**
+- Pentagon $VENUS$ has area $84$
+- Triangle $SUN$ has area $24$
+
+**Given Conditions:**
+1. Pentagon $VENUS$ is convex
+2. $NV \parallel SU$ (segment $NV$ is parallel to segment $SU$)
+3. $SE \parallel UN$ (segment $SE$ is parallel to segment $UN$)
+
+## What is Being Asked
+
+Compute the **maximum possible area of triangle $EUV$**.
+
+---
+
+## Notes on Setup
+
+The pentagon has vertices in order $V, E, N, U, S$ (forming a convex pentagon). The problem involves:
+- A specific triangle $SUN$ with fixed area $24$
+- Two parallel conditions that constrain the positions of the vertices
+- The goal is to find how large triangle $EUV$ can be while respecting all constraints and maintaining the total pentagon area of $84$

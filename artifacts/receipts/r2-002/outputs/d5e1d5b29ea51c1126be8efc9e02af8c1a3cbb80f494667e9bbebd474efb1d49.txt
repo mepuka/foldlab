@@ -1,0 +1,82 @@
+# Detailed Solution
+
+## Step 1: Represent Divisors in Coordinate Form
+
+The divisors of $N = 2^9 \cdot 5^9$ have the form $2^a \cdot 5^b$ where $0 \le a \le 9$ and $0 \le b \le 9$.
+
+Each divisor $d = 2^a \cdot 5^b$ corresponds to a coordinate pair $(a,b)$.
+
+The complementary divisor is $\frac{N}{d} = 2^{9-a} \cdot 5^{9-b}$, which corresponds to $(9-a, 9-b)$.
+
+**Total divisors:** $10 \times 10 = 100$ pairs.
+
+## Step 2: Identify Self-Paired Elements
+
+Self-paired elements satisfy $(a,b) = (9-a, 9-b)$, which requires $a = 4.5$ and $b = 4.5$.
+
+Since these are not integers, **there are no self-paired elements**.
+
+Therefore, we have exactly **50 complementary pairs**.
+
+## Step 3: Understand the Downward Closure Condition
+
+The divisibility order on pairs is: $(a,b) \preceq (a',b')$ iff $a \le a'$ AND $b \le b'$ (product order).
+
+An order ideal $T$ must satisfy: if $(a,b) \in T$ and $(a',b') \preceq (a,b)$, then $(a',b') \in T$.
+
+**Characterization:** Any order ideal is uniquely determined by a non-decreasing sequence:
+$$m_0 \le m_1 \le m_2 \le \cdots \le m_9$$
+where $(a,b) \in T$ iff $a \le m_b$ (and $-1 \le m_i \le 9$).
+
+## Step 4: Enforce the Pairing Condition
+
+For each complementary pair, exactly one element must be in $T$.
+
+For a given sequence $\{m_b\}$:
+- $(a,b) \in T$ iff $a \le m_b$
+- $(a,b) \notin T$ iff $a > m_b$ (equivalently, $(a,b) \in \overline{T}$)
+
+The pairing condition requires: $(a,b) \in T \iff (9-a, 9-b) \notin T$
+
+This is equivalent to:
+$$a \le m_b \iff 9-a > m_{9-b}$$
+
+Since these are integers, this becomes:
+$$a \le m_b \iff a \ge 9 - m_{9-b}$$
+
+For this to hold for all $a \in [0,9]$:
+$$\boxed{m_b + m_{9-b} = 8} \text{ for all } b = 0, 1, \ldots, 9$$
+
+## Step 5: Characterize Valid Sequences
+
+From the constraint $m_b + m_{9-b} = 8$:
+- $m_0 + m_9 = 8 \Rightarrow m_9 = 8 - m_0$
+- $m_1 + m_8 = 8 \Rightarrow m_8 = 8 - m_1$
+- $m_2 + m_7 = 8 \Rightarrow m_7 = 8 - m_2$
+- $m_3 + m_6 = 8 \Rightarrow m_6 = 8 - m_3$
+- $m_4 + m_5 = 8 \Rightarrow m_5 = 8 - m_4$
+
+The non-decreasing condition requires:
+$$m_0 \le m_1 \le m_2 \le m_3 \le m_4 \le m_5 \le m_6 \le m_7 \le m_8 \le m_9$$
+
+Substituting the pairing relationships:
+$$m_0 \le m_1 \le m_2 \le m_3 \le m_4 \le (8-m_4) \le (8-m_3) \le (8-m_2) \le (8-m_1) \le (8-m_0)$$
+
+This simplifies to the condition:
+$$m_0 \le m_1 \le m_2 \le m_3 \le m_4 \le 4$$
+
+(The condition $m_4 \le 8 - m_4$ gives $m_4 \le 4$.)
+
+## Step 6: Count Valid Sequences
+
+We need to count non-decreasing sequences of length 5:
+$$-1 \le m_0 \le m_1 \le m_2 \le m_3 \le m_4 \le 4$$
+
+This is equivalent to choosing a multiset of size 5 from the set $\{-1, 0, 1, 2, 3, 4\}$ (6 elements).
+
+By stars and bars:
+$$\binom{5 + 6 - 1}{5} = \binom{10}{5} = \frac{10 \cdot 9 \cdot 8 \cdot 7 \cdot 6}{5 \cdot 4 \cdot 3 \cdot 2 \cdot 1} = \frac{30240}{120} = 252$$
+
+---
+
+**252**

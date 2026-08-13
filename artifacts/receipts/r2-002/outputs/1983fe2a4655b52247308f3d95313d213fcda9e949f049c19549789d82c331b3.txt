@@ -1,0 +1,48 @@
+# Solution: Finding Moons with All Three Characteristics
+
+## Step 1: Define Variables for Venn Diagram Regions
+
+For three overlapping sets (Blue, Icy, Large), there are 7 non-overlapping regions:
+- **x** = B ∩ I ∩ L (all three characteristics)
+- a = B only (blue, not icy, not large)
+- b = I only (icy, not blue, not large)
+- c = L only (large, not blue, not icy)
+- d = B ∩ I only (blue and icy, not large)
+- e = B ∩ L only (blue and large, not icy)
+- f = I ∩ L only (icy and large, not blue)
+
+## Step 2: Assign Known Quantities
+
+From the problem:
+- **"Blue but not icy" = 10**: This includes a + e
+  - a + e = 10
+
+- **"Icy but not large" = 8**: This includes b + d
+  - b + d = 8
+
+- **"Large but not blue" = 6**: This includes c + f
+  - c + f = 6
+
+## Step 3: Apply the Partition Principle
+
+All 29 moons must be distributed across all 7 regions:
+
+$$a + b + c + d + e + f + x = 29$$
+
+## Step 4: Substitute Known Relationships
+
+Rearrange the equation by grouping:
+$$(a + e) + (b + d) + (c + f) + x = 29$$
+
+Substitute the known values:
+$$10 + 8 + 6 + x = 29$$
+
+## Step 5: Solve for x
+
+$$24 + x = 29$$
+
+$$x = 5$$
+
+## Final Answer
+
+**5 moons have all three characteristics (blue, icy, AND large)**

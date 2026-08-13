@@ -1,0 +1,31 @@
+# Solution Plan for Finding Fixed Points of f(n)
+
+1. **Classify by number of digits**
+   - Separately analyze 1-digit, 2-digit, and 3-digit numbers
+   - Each category will have different constraints
+
+2. **One-digit numbers (n = 1 to 9)**
+   - For digit $d$: greatest digit is $d$, so $b = d+1$
+   - Check if $f(d) = d$ (the digit itself equals its value in base $d+1$)
+   - This is always true, so count all 9 numbers
+
+3. **Two-digit numbers (n = 10 to 99)**
+   - Write $n = 10a + c$ where $a \in \{1,\ldots,9\}$ and $c \in \{0,\ldots,9\}$
+   - Let $d = \max(a,c)$ and $b = d+1$
+   - Set up equation: $10a + c = ab + c$, which simplifies to $a(10-b) = 0$
+   - Since $a > 0$, need $b = 10$, meaning $d = 9$
+   - Find all 2-digit numbers where the greatest digit is 9
+
+4. **Three-digit numbers (n = 100 to 999)**
+   - Write $n = 100a + 10b + c$ where $a \in \{1,\ldots,9\}$, $b,c \in \{0,\ldots,9\}$
+   - Let $d = \max(a,b,c)$ and $\text{base} = d+1$
+   - Set up equation: $100a + 10b + c = a(d+1)^2 + b(d+1) + c$
+   - Simplify to: $a[100 - (d+1)^2] + b[10 - (d+1)] = 0$
+   - Since $a > 0$, analyze when this equation is satisfied for various values of $d$
+
+5. **Count valid numbers in each category**
+   - **1-digit**: 9 solutions
+   - **2-digit**: Count numbers from 19, 29, ..., 99 with greatest digit 9
+   - **3-digit**: Systematically check constraints for each possible value of $d$
+
+6. **Sum the counts** from all three categories to get the final answer

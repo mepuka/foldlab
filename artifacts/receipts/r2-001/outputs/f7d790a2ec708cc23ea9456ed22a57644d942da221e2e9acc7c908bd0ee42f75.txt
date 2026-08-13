@@ -1,0 +1,14 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **n is a positive integer**
+2. **n is divisible by 101** (i.e., 101 | n)
+3. **The decimal representation of n contains 2026 as a consecutive sequence of digits** (i.e., 2026 appears as a substring in the decimal digits of n)
+
+## What is Being Asked
+
+Find the **second smallest positive integer** that satisfies both conditions 2 and 3 above. In other words:
+- Identify all positive integers divisible by 101 whose decimal representation contains "2026" as consecutive digits
+- Order these integers from smallest to largest
+- Report the second element in this ordered sequence

@@ -1,0 +1,21 @@
+# Verification of Final Answer
+
+The final integer answer is **245**.
+
+## Quick Verification:
+
+Given the isosceles triangle with:
+- $AB = BC = c = 245$
+- $AC = b = 10$
+- Incenter $I$ with $AI = IC = 7$
+
+**Checking the perimeter ratio:**
+- $P_1 = AB + BC + AC = 245 + 245 + 10 = 500$
+- $P_2 = AI + IC + AC = 7 + 7 + 10 = 24$
+- $\frac{P_1}{P_2} = \frac{500}{24} = \frac{125}{6}$ ✓
+
+**Checking triangle inequality:**
+- $2c = 490 > b = 10$ ✓
+
+**Checking the AI formula:**
+$$AI = \frac{b\sqrt{c(2c+b)}}{2c+b} = \frac{10\sqrt{245(490+10)}}{500} = \frac{10\

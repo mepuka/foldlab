@@ -1,0 +1,32 @@
+# Problem Analysis
+
+## Given Quantities and Conditions:
+
+1. **Grid structure**: 10 squares arranged in a row
+2. **Each square**: Contains a diagonal connecting lower left vertex to upper right vertex
+3. **Starting point (A)**: Lower left corner at position (0, 0)
+4. **Ending point (B)**: Upper right corner at position (10, 1)
+5. **Movement constraints**:
+   - The bug moves along line segments from vertex to vertex
+   - No segment can be traversed twice
+   - No rightward movement along horizontal segments (cannot move right to left)
+   - No rightward movement along diagonal segments (cannot move right to left)
+
+## Vertices in the Grid:
+
+- Bottom row: (0,0), (1,0), (2,0), ..., (10,0) — 11 vertices
+- Top row: (0,1), (1,1), (2,1), ..., (10,1) — 11 vertices
+- Total: 22 vertices
+
+## Available Segments:
+
+For each of the 10 squares $i$ (where $i = 0, 1, ..., 9$):
+- Horizontal segment on top: $(i, 1) \to (i+1, 1)$ (rightward, allowed)
+- Horizontal segment on bottom: $(i, 0) \to (i+1, 0)$ (rightward, allowed)
+- Diagonal segment: $(i, 0) \to (i+1, 1)$ (rightward-upward, allowed)
+
+Plus: One initial vertical segment $(0,0) \to (0,1)$ connecting A to the rest of the grid
+
+## What is Being Asked:
+
+Find the total number $N$ of distinct paths the bug can take from $A$ to $B$ subject to the constraints (no repeated segments, no rightward movement along any segment), then compute $\sqrt{N}$.

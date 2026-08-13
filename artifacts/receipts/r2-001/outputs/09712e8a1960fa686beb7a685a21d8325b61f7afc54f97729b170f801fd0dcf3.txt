@@ -1,0 +1,26 @@
+# Solution Plan
+
+1. **Set up the constraint equation**
+   - Let $a = s_2(n)$ (sum of binary digits)
+   - Then $s_4(n) = a^2$ (must be a perfect square)
+   - We need: $s_2(n) = \sqrt{s_4(n)}$, which gives us $a = \sqrt{a^2}$ ✓
+
+2. **Determine the range of possible values for $a$**
+   - Since $n < 1000$, we have $s_2(n) \leq s_2(999) = s_2(1111100111_2) = 8$
+   - Therefore $a \in \{1, 2, 3, 4, 5, 6, 7, 8\}$
+
+3. **Find the constraint on $s_4(n)$ from base-4 representation**
+   - For $n < 1000$: $s_4(n) \leq s_4(999) = s_4(33213_4) = 3+3+2+1+3 = 12$
+   - We need $s_4(n) = a^2$, so:
+     - Valid pairs: $(a, a^2)$ where $a^2 \leq 12$
+     - This gives: $a \in \{1, 2, 3\}$ with $s_4(n) \in \{1, 4, 9\}$
+
+4. **For each valid value of $a$, enumerate all $n < 1000$ satisfying both conditions**
+   - Find all $n$ where $s_2(n) = a$ AND $s_4(n) = a^2$
+   - Case $a=1$: $s_2(n)=1, s_4(n)=1$ → $n$ has exactly one '1' bit in binary
+   - Case $a=2$: $s_2(n)=2, s_4(n)=4$ → $n$ has exactly two '1' bits in binary
+   - Case $a=3$: $s_2(n)=3, s_4(n)=9$ → $n$ has exactly three '1' bits in binary
+
+5. **Verify each candidate** satisfies both the binary and quaternary digit sum conditions
+
+6. **Sum all valid digiroots** to get the final answer

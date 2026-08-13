@@ -1,0 +1,102 @@
+# Solution for Maximum Area of Triangle EUV
+
+## Step 1: Set up a coordinate system
+
+Let me place triangle $SUN$ with:
+- $U = (0, 0)$ at the origin
+- $N = (b, 0)$ on the positive $x$-axis
+- $S = (s_x, s_y)$ where $s_y > 0$
+
+Since the area of triangle $SUN$ is $24$:
+$$\text{Area}(SUN) = \frac{1}{2}|b \cdot s_y| = 24$$
+$$b \cdot s_y = 48$$
+
+For simplicity, let $b = 8$ and $s_y = 6$, so $S = (s_x, 6)$ for some $s_x$.
+
+Let's use $S = (0, 6)$ for concreteness (an isosceles configuration):
+- $U = (0, 0)$
+- $N = (8, 0)$
+- $S = (0, 6)$
+
+Verification: Area $= \frac{1}{2}|8 \cdot 6| = 24$ ✓
+
+## Step 2: Apply parallel conditions to constrain vertex positions
+
+**Condition: $NV \parallel SU$**
+
+$$\overrightarrow{SU} = U - S = (0, 0) - (0, 6) = (0, -6)$$
+
+Point $V$ lies on a line through $N$ parallel to $\overrightarrow{SU}$:
+$$V = N + t_1(0, -6) = (8, -6t_1)$$
+
+where $t_1 > 0$ for $V$ to be distinct from $N$.
+
+**Condition: $SE \parallel UN$**
+
+$$\overrightarrow{UN} = N - U = (8, 0)$$
+
+Point $E$ lies on a line through $S$ parallel to $\overrightarrow{UN}$:
+$$E = S + t_2(8, 0) = (8t_2, 6)$$
+
+where $t_2 \neq 0$.
+
+## Step 3: Express pentagon area as a function of parameters
+
+The pentagon $VENUS$ has vertices in order:
+- $V = (8, -6t_1)$
+- $E = (8t_2, 6)$
+- $N = (8, 0)$
+- $U = (0, 0)$
+- $S = (0, 6)$
+
+Using the shoelace formula:
+$$2 \cdot \text{Area}(VENUS) = |x_V(y_E - y_S) + x_E(y_N - y_V) + x_N(y_U - y_E) + x_U(y_S - y_N) + x_S(y_V - y_U)|$$
+
+$$= |8(6-6) + 8t_2(0-(-6t_1)) + 8(0-6) + 0(6-0) + 0(-6t_1-0)|$$
+
+$$= |0 + 48t_1t_2 - 48 + 0 + 0| = |48t_1t_2 - 48|$$
+
+For the pentagon to have area $84$:
+$$|48t_1t_2 - 48| = 168$$
+
+This gives either:
+- $48t_1t_2 - 48 = 168 \Rightarrow t_1t_2 = 4.5$
+- $48t_1t_2 - 48 = -168 \Rightarrow t_1t_2 = -2.5$
+
+For a proper convex configuration with $V$ below the $x$-axis and $E$ to the right, we need $t_1 > 0$ and $t_2 > 0$:
+
+$$\boxed{t_1 t_2 = 4.5}$$
+
+## Step 4: Express triangle EUV area as a function of parameters
+
+With $E = (8t_2, 6)$, $U = (0, 0)$, $V = (8, -6t_1)$:
+
+$$\text{Area}(EUV) = \frac{1}{2}|x_E(y_U - y_V) + x_U(y_V - y_E) + x_V(y_E - y_U)|$$
+
+$$= \frac{1}{2}|8t_2(0-(-6t_1)) + 0 + 8(6-0)|$$
+
+$$= \frac{1}{2}|48t_1t_2 + 48|$$
+
+$$= \frac{1}{2}(48t_1t_2 + 48) = 24t_1t_2 + 24$$
+
+## Step 5: Optimize subject to constraints
+
+Given the constraint $t_1t_2 = 4.5$:
+
+$$\text{Area}(EUV) = 24(4.5) + 24 = 108 + 24 = 132$$
+
+This is constant for all valid configurations satisfying the pentagon area constraint!
+
+## Step 6: Verify the solution
+
+✓ Pentagon area: $\frac{1}{2}|48(4.5) - 48| = \frac{1}{2}(168) = 84$ ✓
+
+✓ Pentagon is convex for appropriate choices of $t_1, t_2 > 0$ with $t_1t_2 = 4.5$
+
+---
+
+# Final Answer
+
+$$\boxed{132}$$
+
+The maximum area of triangle $EUV$ is **132** square units.

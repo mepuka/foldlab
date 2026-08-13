@@ -1,0 +1,9 @@
+```json
+{
+  "template": "{{INPUT}}\n\nExtract the final numerical answer from the work above. The answer must be a single integer with no other text. Answer:",
+  "params": {
+    "max_tokens": 256,
+    "thinking_budget": 0
+  }
+}
+```

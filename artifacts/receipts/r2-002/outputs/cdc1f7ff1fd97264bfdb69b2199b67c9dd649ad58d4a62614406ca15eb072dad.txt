@@ -1,0 +1,33 @@
+# Solution Plan
+
+1. **Set up a coordinate system**
+   - Place $A$ at the origin $(0, 0)$
+   - Place $B$ at $(12, 0)$
+   - Place $D$ at $(0, 12)$
+   - Place $C$ at $(12, 12)$
+
+2. **Locate points $W$ and $X$**
+   - Since $W$ is on $\overline{AD}$ with $AW = 4$: $W = (0, 4)$
+   - Since $X$ is on $\overline{AB}$ with $AX = 5$: $X = (5, 0)$
+
+3. **Determine the side length of square $WXYZ$**
+   - Calculate $|WX| = \sqrt{(5-0)^2 + (0-4)^2} = \sqrt{25 + 16} = \sqrt{41}$
+   - This is the side length of square $WXYZ$
+
+4. **Find the direction vector and perpendicular direction**
+   - Vector $\overrightarrow{WX} = (5, -4)$
+   - For a square, rotate $\overrightarrow{WX}$ by $90°$ counterclockwise to get the direction toward $Z$
+   - Perpendicular vector (counterclockwise): $(4, 5)$ (normalized has length $\sqrt{41}$)
+
+5. **Locate point $Y$**
+   - From $X$, move in the perpendicular direction by distance $\sqrt{41}$:
+   $$Y = X + (4, 5) = (5, 0) + (4, 5) = (9, 5)$$
+   - Verify $Y$ is inside $ABCD$: $0 < 9 < 12$ and $0 < 5 < 12$ ✓
+
+6. **Calculate the area of $\triangle BCY$**
+   - Vertices: $B = (12, 0)$, $C = (12, 12)$, $Y = (9, 5)$
+   - Use the formula: $\text{Area} = \frac{1}{2}|x_B(y_C - y_Y) + x_C(y_Y - y_B) + x_Y(y_B - y_C)|$
+   - $\text{Area} = \frac{1}{2}|12(12 - 5) + 12(5 - 0) + 9(0 - 12)|$
+   - $\text{Area} = \frac{1}{2}|12(7) + 12(5) + 9(-12)| = \frac{1}{2}|84 + 60 - 108| = \frac{1}{2}(36) = 18$
+
+**Answer: The area of $\triangle BCY$ is $\boxed{18}$**

@@ -1,0 +1,37 @@
+# Competition Math Problem Analysis
+
+## Given Quantities and Conditions
+
+**Grid specification:**
+- 8 × 8 grid (64 cells total)
+
+**Starting conditions:**
+- Jacob and Bojac each start in some cell of the grid
+- Starting cells can be any cells (possibly the same, possibly different)
+- Starting positions are chosen optimally over "all possible starting positions"
+
+**Movement rules:**
+- Both listen to the same sequence of cardinal directions (N, S, E, W)
+- Jacob's behavior: moves one cell in the called direction
+- Bojac's behavior: moves one cell in the direction 90° counterclockwise from the called direction
+- Boundary condition: if either person cannot move without leaving the grid, that person stays still (doesn't move)
+
+**Direction correspondence for Bojac:**
+- Called N → Bojac moves W
+- Called E → Bojac moves N
+- Called S → Bojac moves E
+- Called W → Bojac moves S
+
+**Optimization context:**
+- Can choose starting positions optimally
+- Can choose instruction sequences optimally
+
+## What Is Being Asked
+
+**Find:** The maximum possible number of distinct ordered pairs (Jacob's position, Bojac's position) that can be reached, where:
+- The maximum is taken over all possible choices of:
+  - Starting positions for Jacob and Bojac
+  - Sequences of instructions
+- A pair is considered "reached" if it occurs at any point during the execution of instructions (including the initial configuration)
+
+In other words, what is the largest size of the set of distinct position pairs that could possibly be visited throughout some execution with optimal starting positions and instruction sequence?

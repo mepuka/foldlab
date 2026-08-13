@@ -1,0 +1,33 @@
+# Error Found
+
+In **Step 5-7**, there is a calculation error for $c$.
+
+From $6a + c = 1$ with $a = \frac{6}{23}$:
+$$c = 1 - 6a = 1 - \frac{36}{23} = -\frac{13}{23}$$
+
+**Not** $c = \frac{11}{23}$ as stated.
+
+This gives: $d = c - 1 = -\frac{13}{23} - 1 = -\frac{36}{23}$
+
+From the fourth equation:
+$$\frac{6}{23} \cdot \frac{42}{13} + \frac{18}{23} \cdot \frac{124}{39} + \frac{-13}{23}r - \frac{36}{23} = r$$
+
+Multiply by 23:
+$$\frac{6 \cdot 42}{13} + \frac{18 \cdot 124}{39} - 13r - 36 = 23r$$
+
+$$\frac{252}{13} + \frac{2232}{39} - 36 = 36r$$
+
+Convert to common denominator 39:
+$$\frac{756}{39} + \frac{2232}{39} - \frac{1404}{39} = 36r$$
+
+$$\frac{1584}{39} = 36r$$
+
+$$\frac{1584}{39 \cdot 36} = r$$
+
+$$\frac{1584}{1404} = r$$
+
+$$r = \frac{44}{39}$$
+
+**Final answer:**
+
+44

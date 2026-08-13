@@ -1,0 +1,74 @@
+# Solution: Probability that Both Alice and Bob Receive 2+ Coins Before Carol
+
+## 1. State Definition
+
+Let $P(a, b)$ = probability of reaching the goal (both $a \geq 2$ and $b \geq 2$) starting from state $(a, b, 0)$, where:
+- $a$ = coins received by Alice
+- $b$ = coins received by Bob  
+- Carol has received 0 coins (process ends once she gets one)
+
+## 2. Boundary Conditions
+
+- $P(a, b) = 1$ if $a \geq 2$ AND $b \geq 2$ (goal achieved)
+- $P(a, b) = 0$ if $a < 2$ AND $b < 2$ AND we get stuck (not applicable here)
+
+## 3. Recurrence Relation
+
+For states not yet at goal:
+$$P(a, b) = \frac{1}{3}P(a+1, b) + \frac{1}{3}P(a, b+1) + \frac{1}{3} \cdot 0$$
+
+where the $\frac{1}{3} \cdot 0$ term represents Carol getting a coin (failure).
+
+**Simplified**: $P(a, b) = \frac{1}{3}[P(a+1, b) + P(a, b+1)]$
+
+## 4. Solving from Boundary Outward
+
+**For $P(1, b)$ where $b \geq 2$:**
+
+Let $P(1, b) = x_b$. Then:
+$$x_b = \frac{1}{3}[P(2, b) + P(1, b+1)] = \frac{1}{3}[1 + x_{b+1}]$$
+
+At convergence: $x = \frac{1}{3}(1 + x) \Rightarrow 3x = 1 + x \Rightarrow x = \frac{1}{2}$
+
+Therefore: **$P(1, b) = \frac{1}{2}$ for all $b \geq 2$**
+
+By symmetry: **$P(a, 1) = \frac{1}{2}$ for all $a \geq 2$**
+
+**For $P(0, b)$ where $b \geq 2$:**
+
+Let $P(0, b) = y_b$. Then:
+$$y_b = \frac{1}{3}[P(1, b) + P(0, b+1)] = \frac{1}{3}[\frac{1}{2} + y_{b+1}]$$
+
+At convergence: $y = \frac{1}{3}(\frac{1}{2} + y) \Rightarrow 3y = \frac{1}{2} + y \Rightarrow y = \frac{1}{4}$
+
+Therefore: **$P(0, b) = \frac{1}{4}$ for all $b \geq 2$**
+
+By symmetry: **$P(a, 0) = \frac{1}{4}$ for all $a \geq 2$**
+
+## 5. Computing Remaining States
+
+**$P(1, 1)$:**
+$$P(1, 1) = \frac{1}{3}[P(2, 1) + P(1, 2)] = \frac{1}{3}[\frac{1}{2} + \frac{1}{2}] = \frac{1}{3}$$
+
+**$P(0, 1)$:**
+$$P(0, 1) = \frac{1}{3}[P(1, 1) + P(0, 2)] = \frac{1}{3}[\frac{1}{3} + \frac{1}{4}]$$
+$$= \frac{1}{3} \cdot \frac{4 + 3}{12} = \frac{1}{3} \cdot \frac{7}{12} = \frac{7}{36}$$
+
+**$P(1, 0)$:** By symmetry, $P(1, 0) = \frac{7}{36}$
+
+**$P(0, 0)$ (Initial State):**
+$$P(0, 0) = \frac{1}{3}[P(1, 0) + P(0, 1)] = \frac{1}{3}[\frac{7}{36} + \frac{7}{36}]$$
+$$= \frac{1}{3} \cdot \frac{14}{36} = \frac{14}{108}$$
+
+**Reducing to lowest terms:**
+$$\frac{14}{108} = \frac{7}{54}$$
+
+Since $\gcd(7, 54) = 1$ (7 is prime and doesn't divide $54 = 2 \times 3^3$), we have:
+- $m = 7$
+- $n = 54$
+
+## 6. Final Calculation
+
+$$100m + n = 100(7) + 54 = 700 + 54 = 754$$
+
+**FINAL ANSWER: 754**

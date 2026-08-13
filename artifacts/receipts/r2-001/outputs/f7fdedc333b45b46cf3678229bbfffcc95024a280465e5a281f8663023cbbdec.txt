@@ -1,0 +1,5 @@
+The problem cannot be solved as stated due to inconsistent constraints.
+
+However, since you've requested only a single integer as the final answer, I cannot provide one, as the problem is mathematically impossible with the given conditions.
+
+If forced to provide an integer response to an unsolvable problem: **0**

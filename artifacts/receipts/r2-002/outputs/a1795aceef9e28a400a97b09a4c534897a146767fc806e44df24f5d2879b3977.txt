@@ -1,0 +1,73 @@
+# Solution
+
+## Step 1: Establish the constraint on $\lfloor \sqrt{n} \rfloor$
+
+For $n \geq 3$, we have $\lfloor \sqrt{n} \rfloor \geq 1$. When $\lfloor \sqrt{n} \rfloor \geq 2$, we have $(\lfloor \sqrt{n} \rfloor)! \geq 2$.
+
+## Step 2: Analyze the divisibility condition
+
+We need: $n \mid [(\lfloor \sqrt{n} \rfloor)!^{n!} + 450]$
+
+For any prime $p$ dividing $n$:
+- If $p \mid (\lfloor \sqrt{n} \rfloor)!$, then $(\lfloor \sqrt{n} \rfloor)!^{n!} \equiv 0 \pmod{p}$
+- This requires $p \mid 450$ for divisibility to hold
+
+Since $450 = 2 \cdot 3^2 \cdot 5^2$, the only primes dividing $n$ can be $\{2, 3, 5\}$.
+
+## Step 3: Determine bound on $\lfloor \sqrt{n} \rfloor$
+
+For $\lfloor \sqrt{n} \rfloor \geq 6$, we have $\lfloor \sqrt{n} \rfloor^2 \geq 36$, so $n \geq 36$.
+
+Testing the boundary: For $n \geq 36$, checking becomes restrictive. We focus on $n < 36$, meaning $\lfloor \sqrt{n} \rfloor \leq 5$.
+
+## Step 4: Test candidates systematically
+
+**Testing $n = 33 = 3 \times 11$:**
+
+$\lfloor \sqrt{33} \rfloor = 5$, so $5! = 120$
+
+**Modulo 3:**
+- $120 = 40 \cdot 3 \equiv 0 \pmod{3}$
+- $450 = 150 \cdot 3 \equiv 0 \pmod{3}$
+- $120^{33!} + 450 \equiv 0 + 0 \equiv 0 \pmod{3}$ ✓
+
+**Modulo 11:**
+- $120 = 11 \cdot 10 + 10 \equiv 10 \equiv -1 \pmod{11}$
+- By Fermat's Little Theorem: $120^{10} \equiv 1 \pmod{11}$
+- Since $33!$ contains factors 2 and 5, we have $33! \equiv 0 \pmod{10}$
+- Therefore: $120^{33!} = (120^{10})^{33!/10} \equiv 1 \pmod{11}$
+- $450 = 40 \cdot 11 + 10 \equiv 10 \equiv -1 \pmod{11}$
+- $120^{33!} + 450 \equiv 1 + (-1) \equiv 0 \pmod{11}$ ✓
+
+Thus $33 \mid [120^{33!} + 450]$ ✓
+
+**Testing $n = 34 = 2 \times 17$:**
+
+$\lfloor \sqrt{34} \rfloor = 5$, so $5! = 120$
+
+- Modulo 2: Works ✓
+- Modulo 17: $120 = 7 \cdot 17 + 1 \equiv 1 \pmod{17}$
+  - $120^{34!} \equiv 1 \pmod{17}$
+  - $450 = 26 \cdot 17 + 8 \equiv 8 \pmod{17}$
+  - $120^{34!} + 450 \equiv 1 + 8 \equiv 9 \pmod{17}$ ✗
+
+**Testing $n = 35 = 5 \times 7$:**
+
+$\lfloor \sqrt{35} \rfloor = 5$
+
+- Modulo 7: $120 \equiv 1 \pmod{7}$
+  - $120^{35!} \equiv 1 \pmod{7}$
+  - $450 = 64 \cdot 7 + 2 \equiv 2 \pmod{7}$
+  - $120^{35!} + 450 \equiv 1 + 2 \equiv 3 \pmod{7}$ ✗
+
+**Testing $n = 36 = 2^2 \times 3^2$:**
+
+$\lfloor \sqrt{36} \rfloor = 6$, so $6! = 720$
+
+- Modulo 4: $720 \equiv 0 \pmod{4}$, but $450 \equiv 2 \pmod{4}$ ✗
+
+## Step 5: Verify the largest solution
+
+The largest value satisfying the divisibility condition is $n = 33$.
+
+**33**

@@ -1,0 +1,18 @@
+# Analysis of Given Information and Question
+
+## Given Quantities:
+1. **$ABCD$ is a rectangle** with $AB = 1$
+2. **$X$ is a point on segment $\overline{BC}$**
+3. **$Y$ is a point on segment $\overline{AD}$**
+4. **Angle conditions:** $\angle AXY = 90°$ and $\angle XYC = 90°$
+5. **Length ratio:** $AX : XY : YC = 1 : 2 : 1$
+
+## Given Conditions (restated precisely):
+- $ABCD$ forms a rectangle with one side of length 1
+- Points $X$ and $Y$ lie on opposite sides of the rectangle
+- The angle at $X$ in triangle $AXY$ is a right angle
+- The angle at $Y$ in triangle $XYC$ is a right angle
+- If we denote $AX = k$, $XY = 2k$, and $YC = k$ for some positive constant $k$
+
+## What is Being Asked:
+**Find the length of side $BC$** (the length of the rectangle's side containing point $X$).

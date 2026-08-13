@@ -1,0 +1,28 @@
+# Solution Plan
+
+1. **Set up a coordinate system** with $A$ at the origin and $E$ at $(0, 20)$ on the positive $y$-axis, using the right angle at $A$.
+
+2. **Locate point $B$** using $\angle A = 90°$: place $B$ at $(AB, 0)$ where $AB$ is a positive integer.
+
+3. **Find point $C$** using the angle condition at $B$ ($\angle B = 45°$) and the constraint $BC = 14\sqrt{2}$:
+   - Apply the $45°$ angle to determine $C$'s position
+   - This gives $C = (AB + 14, 14)$
+
+4. **Find point $D$** using the angle condition at $E$ ($\angle E = 90°$) and the constraint that $\angle D = 45°$:
+   - Use the right angle at $E$ to constrain $D$ to lie on a line from $E$
+   - Apply the $45°$ angle at $D$ to determine $DE$
+   - Express $D$ in terms of $DE$
+
+5. **Apply the constraint $DE < AB$** to establish an inequality on $DE$ (and thus on $AB$).
+
+6. **Calculate the area of pentagon $ABCDE$** using the coordinate vertices (likely via the shoelace formula).
+
+7. **Apply the divisibility condition**: set up the requirement that Area $\equiv 0 \pmod{16}$ and solve for constraints on $AB$.
+
+8. **Combine all constraints**:
+   - $AB$ is a positive integer
+   - $AB < 2026$
+   - $DE < AB$ (from step 5)
+   - Area is divisible by $16$ (from step 7)
+
+9. **Count valid integer values** of $AB$ satisfying all constraints simultaneously.

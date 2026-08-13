@@ -1,0 +1,34 @@
+# Solution Plan
+
+1. **Understand the State Space**
+   - Each state is an ordered pair of positions: (Jacob's cell, Bojac's cell)
+   - Total possible states: 64 × 64 = 4,096
+   - Determine which states are actually reachable given the movement constraints
+
+2. **Analyze the Movement System**
+   - When direction D is called, Jacob moves in D and Bojac moves 90° counterclockwise from D
+   - Their movements are **coupled but independent** (each can be blocked by boundaries separately)
+   - Key insight: The relative displacement between them depends on both the instruction sequence and boundary interactions
+
+3. **Characterize Reachable States**
+   - From any starting pair (J₀, B₀), apply all possible instruction sequences
+   - Track which state pairs can be reached without boundary constraints
+   - Account for how boundary blocking affects reachability
+
+4. **Exploit Symmetry and Independence**
+   - Consider whether Jacob and Bojac can be made to reach any position independently through clever instruction sequences
+   - Test if their movements can be decoupled to some degree
+   - Determine if certain relative positions are always unreachable
+
+5. **Find the Optimal Starting Configuration**
+   - Choose the starting positions (J₀, B₀) that maximize reachable states
+   - Consider central vs. corner positions as potential maximizers
+   - Verify the choice yields the largest reachable set
+
+6. **Count Maximum Reachable States**
+   - Enumerate all states reachable from the optimal starting configuration
+   - Use BFS/DFS through the instruction sequence space, or
+   - Derive the reachable set analytically using movement constraints
+   - Report the cardinality of this maximal reachable set
+
+**Expected Answer Format:** A specific integer representing the maximum number of distinct (Jacob position, Bojac position) pairs achievable in a single optimally-played game.

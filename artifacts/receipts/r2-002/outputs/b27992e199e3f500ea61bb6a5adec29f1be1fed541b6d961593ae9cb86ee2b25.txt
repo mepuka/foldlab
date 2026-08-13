@@ -1,0 +1,68 @@
+# Extended Verification of Solution
+
+## Step 1-2: Setup Verification ✓
+- Hemisphere: upper half of $x^2 + y^2 + z^2 = 200^2$ with $z \geq 0$
+- Sphere of radius 42 with center at $(p, 0, 42)$ resting on disk at point $(p, 0, 0)$
+
+## Step 3-4: Containment Constraint ✓
+For any point on the sphere to satisfy $x^2 + y^2 + z^2 \leq 200^2$, the farthest point from the origin must be within the hemisphere.
+
+Distance from origin to sphere's center:
+$$d_c = \sqrt{p^2 + 0^2 + 42^2} = \sqrt{p^2 + 1764}$$
+
+Farthest point from origin (along radial direction through center):
+$$d_{\max} = \sqrt{p^2 + 1764} + 42$$
+
+Constraint: $d_{\max} \leq 200$
+
+## Step 5: Solving the Inequality
+$$\sqrt{p^2 + 1764} + 42 \leq 200$$
+
+$$\sqrt{p^2 + 1764} \leq 158$$
+
+Squaring both sides (valid since both sides are positive):
+$$p^2 + 1764 \leq 158^2$$
+
+Computing $158^2$: 
+$$158^2 = (160-2)^2 = 25600 - 640 + 4 = 24964$$ ✓
+
+$$p^2 + 1764 \leq 24964$$
+
+$$p^2 \leq 23200$$
+
+$$p \leq \sqrt{23200}$$
+
+**Simplifying the radical:**
+- $23200 = 232 \times 100 = (4 \times 58) \times 100$
+- $\sqrt{23200} = \sqrt{400 \times 58} = 20\sqrt{58}$ ✓
+
+## Step 6: Area Calculations
+
+**Region $\mathcal{T}$** (disk of radius $20\sqrt{58}$):
+$$\text{Area}_{\mathcal{T}} = \pi(20\sqrt{58})^2 = \pi \times 400 \times 58 = 23200\pi$$
+
+**Disk** (radius 200):
+$$\text{Area}_{\text{disk}} = \pi(200)^2 = 40000\pi$$
+
+## Step 7: Ratio Computation
+
+$$\frac{\text{Area}_{\mathcal{T}}}{\text{Area}_{\text{disk}}} = \frac{23200\pi}{40000\pi} = \frac{23200}{40000}$$
+
+**Reducing to lowest terms:**
+- Prime factorization: $23200 = 2^5 \times 5^2 \times 29$
+- Prime factorization: $40000 = 2^6 \times 5^4$
+- $\gcd(23200, 40000) = 2^5 \times 5^2 = 800$
+
+$$\frac{23200}{40000} = \frac{23200 \div 800}{40000 \div 800} = \frac{29}{50}$$
+
+**Verification:** $\gcd(29, 50) = 1$ since 29 is prime and doesn't divide 50. ✓
+
+## Step 8: Final Answer
+
+$$p = 29, \quad q = 50$$
+
+$$p + q = 29 + 50 = 79$$
+
+---
+
+**79**

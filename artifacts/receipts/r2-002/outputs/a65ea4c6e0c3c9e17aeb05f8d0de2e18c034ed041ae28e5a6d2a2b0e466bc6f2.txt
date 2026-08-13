@@ -1,0 +1,12 @@
+# Problem Analysis
+
+## Given Quantities and Conditions
+
+1. **Parameters**: $a, b, c$ are integers
+2. **Constraint on $c$**: $c \le 2025$
+3. **The equation**: $|x^2 + ax + b| = c$
+4. **Solution requirement**: This equation has exactly 3 distinct integer solutions for $x$
+
+## What is Being Asked
+
+Find the number of possible values of $c$ for which there exist integers $a$ and $b$ such that $|x^2 + ax + b| = c$ has exactly 3 distinct integer solutions for $x$, with $c \le 2025$.

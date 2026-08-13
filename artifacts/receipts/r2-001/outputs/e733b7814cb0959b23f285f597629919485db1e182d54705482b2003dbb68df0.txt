@@ -1,0 +1,34 @@
+# Competition Math Problem Analysis
+
+## Given Quantities and Conditions
+
+**Setup:**
+- $8 \times 8$ grid (64 cells total)
+- Jacob starts at some cell (arbitrary choice)
+- Bojac starts at some cell (arbitrary choice, possibly different from Jacob)
+- A sequence of cardinal directions is called out
+
+**Movement Rules:**
+- When a direction $D$ is called:
+  - Jacob moves one cell in direction $D$
+  - Bojac moves one cell in direction $90°$ counterclockwise from $D$
+- If either person cannot move without leaving the grid, that person stays still instead
+
+**Direction Mappings (90° counterclockwise):**
+- North → West
+- East → North
+- South → East
+- West → South
+
+**Scope:**
+- Consider all possible starting positions for Jacob and Bojac
+- Consider all possible sequences of instructions
+
+## What is Being Asked
+
+Find the maximum possible number of **distinct ordered pairs** $(\text{Jacob's position}, \text{Bojac's position})$ that can be reached across all possible choices of:
+1. Jacob's starting position
+2. Bojac's starting position  
+3. Instruction sequence
+
+In other words, over all possible games (all initial configurations and all instruction sequences), what is the size of the largest set of reachable state pairs that can be achieved in a single game?

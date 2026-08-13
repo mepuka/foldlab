@@ -1,0 +1,18 @@
+# Verification of Final Answer
+
+The final integer answer to this problem is **195**.
+
+## Key Verification Points:
+
+1. **Area of original triangle ABC = 84** ✓
+   - Using Heron's formula with sides 13, 14, 15
+   - $K = \sqrt{21 \cdot 8 \cdot 7 \cdot 6} = 84$
+
+2. **Circumradius R = 65/8** ✓
+   - $R = \frac{13 \cdot 14 \cdot 15}{4 \cdot 84} = \frac{65}{8}$
+
+3. **Rotation angle θ correctly determined** ✓
+   - Original angle ∠ACB has $\cos(\angle ACB) = 3/5$
+   - Rotation to make A'C' ⊥ B'C' uses $\cos\theta = 4/5, \sin\theta = 3/5$
+
+4. **Hexagon formed by intersection of triangles ABC and A'B'C'

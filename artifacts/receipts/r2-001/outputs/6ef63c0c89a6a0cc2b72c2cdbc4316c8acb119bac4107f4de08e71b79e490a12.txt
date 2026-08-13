@@ -1,0 +1,77 @@
+# Solving the "SUNS" Subsequence Problem
+
+## 1. What I'm Calculating
+
+I need to count the number of subsequences spelling "SUNS" in the string "SUNSUNSUNSUNSUNSUNSUNSUNSUNSUN" (30 characters = "SUN" repeated 10 times).
+
+## 2. Identifying Valid Positions
+
+In the 30-character string:
+- **S positions**: {1, 4, 7, 10, 13, 16, 19, 22, 25, 28} = {3k+1 : k=0,1,...,9}
+- **U positions**: {2, 5, 8, 11, 14, 17, 20, 23, 26, 29} = {3k+2 : k=0,1,...,9}
+- **N positions**: {3, 6, 9, 12, 15, 18, 21, 24, 27, 30} = {3k+3 : k=0,1,...,9}
+
+Each set has exactly 10 elements.
+
+## 3. Formulating the Constraints
+
+For a valid "SUNS" subsequence, I need to select positions $(i_1, i_2, i_3, i_4)$ where:
+- $i_1 = 3a+1$ (S position, index $a \in \{0,1,...,9\}$)
+- $i_2 = 3b+2$ (U position, index $b \in \{0,1,...,9\}$)
+- $i_3 = 3c+3$ (N position, index $c \in \{0,1,...,9\}$)
+- $i_4 = 3d+1$ (S position, index $d \in \{0,1,...,9\}$)
+
+With strict inequality: $i_1 < i_2 < i_3 < i_4$
+
+This translates to:
+- $3a+1 < 3b+2$ ⟹ $a \leq b$
+- $3b+2 < 3c+3$ ⟹ $b \leq c$
+- $3c+3 < 3d+1$ ⟹ $d \geq c+1$ (equivalently $d > c$)
+
+## 4. Counting Valid Quadruples
+
+For each fixed value of $c$ (the N position index), I count:
+
+**Number of ways to choose $(a,b)$** with $a \leq b \leq c$:
+$$\sum_{b=0}^{c}(b+1) = \frac{(c+1)(c+2)}{2}$$
+
+**Number of ways to choose $d$** with $d > c$ (and $d \leq 9$):
+$$9 - c$$
+
+**Total for each $c$**: $\frac{(c+1)(c+2)}{2} \times (9-c)$
+
+## 5. Complete Calculation
+
+| $c$ | $(c+1)(c+2)/2$ | $9-c$ | Count |
+|-----|--------|-------|-------|
+| 0 | 1 | 9 | 9 |
+| 1 | 3 | 8 | 24 |
+| 2 | 6 | 7 | 42 |
+| 3 | 10 | 6 | 60 |
+| 4 | 15 | 5 | 75 |
+| 5 | 21 | 4 | 84 |
+| 6 | 28 | 3 | 84 |
+| 7 | 36 | 2 | 72 |
+| 8 | 45 | 1 | 45 |
+| 9 | 55 | 0 | 0 |
+
+## 6. Final Sum
+
+$$\text{Total} = 9 + 24 + 42 + 60 + 75 + 84 + 84 + 72 + 45 + 0$$
+
+Breaking into groups:
+- $9 + 24 + 42 = 75$
+- $60 + 75 = 135$
+- $84 + 84 = 168$
+- $72 + 45 = 117$
+
+$$\text{Total} = 75 + 135 + 168 + 117 = 495$$
+
+## 7. Verification
+
+This answer is reasonable because:
+- It's much less than the 4500 we'd get without ordering constraints
+- The symmetry visible in the table (84 appears twice for $c=5,6$) reflects the balanced structure
+- The maximum occurs at intermediate values, decreasing toward the boundaries
+
+**FINAL ANSWER: 495**

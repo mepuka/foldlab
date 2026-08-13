@@ -1,0 +1,56 @@
+# Extended Solution
+
+## Step 1: Count Total Adjacencies
+In an 8×8 grid:
+- **Horizontal adjacencies:** 8 rows × 7 pairs per row = **56**
+- **Vertical adjacencies:** 8 columns × 7 pairs per column = **56**
+- **Total edges:** 112
+
+## Step 2: Establish the Optimization Strategy
+To maximize the sum of absolute differences, we should separate large and small numbers. The optimal structure is a **checkerboard pattern**:
+- Place {1, 2, ..., 32} on one color (white)
+- Place {33, 34, ..., 64} on the other color (black)
+- All 112 edges connect white to black squares
+
+## Step 3: Analyze Degree Distribution
+In the checkerboard pattern, squares have different degrees (number of adjacent squares):
+- **Interior squares (36 total):** degree 4 each → **18 white, 18 black**
+- **Edge squares (24 total):** degree 3 each → **12 white, 12 black**
+- **Corner squares (4 total):** degree 2 each → **2 white, 2 black**
+
+## Step 4: Optimal Value Assignment
+To maximize $\sum_{\text{edges}} (b_{\text{edge}} - w_{\text{edge}})$, we assign:
+
+**On Black squares (assign {33,...,64}):**
+- Values {64, 63, ..., 47} on 18 degree-4 squares
+- Values {46, 45, ..., 35} on 12 degree-3 squares
+- Values {34, 33} on 2 degree-2 squares
+
+**On White squares (assign {1,...,32}):**
+- Values {32, 31, ..., 15} on 18 degree-4 squares
+- Values {14, 13, ..., 3} on 12 degree-3 squares
+- Values {2, 1} on 2 degree-2 squares
+
+## Step 5: Calculate the Sum
+
+**Black contribution:**
+$$4 \cdot \sum_{k=47}^{64} k + 3 \cdot \sum_{k=35}^{46} k + 2 \cdot \sum_{k=33}^{34} k$$
+
+$$= 4 \cdot \frac{(64+47) \times 18}{2} + 3 \cdot \frac{(46+35) \times 12}{2} + 2 \cdot (34+33)$$
+
+$$= 4(999) + 3(486) + 2(67) = 3996 + 1458 + 134 = 5588$$
+
+**White contribution:**
+$$4 \cdot \sum_{k=15}^{32} k + 3 \cdot \sum_{k=3}^{14} k + 2 \cdot \sum_{k=1}^{2} k$$
+
+$$= 4 \cdot \frac{(32+15) \times 18}{2} + 3 \cdot \frac{(14+3) \times 12}{2} + 2 \cdot (1+2)$$
+
+$$= 4(423) + 3(102) + 2(3) = 1692 + 306 + 6 = 2004$$
+
+**Maximum value:**
+$$M_{\max} = 5588 - 2004 = 3584$$
+
+## Step 6: Final Answer
+$$M_{\max} \pmod{1000} = 3584 \pmod{1000} = 584$$
+
+**584**

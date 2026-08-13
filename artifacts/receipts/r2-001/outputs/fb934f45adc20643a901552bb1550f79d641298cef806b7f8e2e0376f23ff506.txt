@@ -1,0 +1,9 @@
+```json
+{
+  "template": "<<<Extract the final answer from the working below. Look for the stated FINAL ANSWER or the last calculated numerical result. Return ONLY a single integer with no other text, symbols, or explanation.\n\n{{INPUT}}>>>",
+  "params": {
+    "max_tokens": 256,
+    "thinking_budget": 0
+  }
+}
+```

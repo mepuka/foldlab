@@ -1,0 +1,100 @@
+# Solution: Counting Integers of the Form a + b + ab
+
+## Step 1: Recognize the algebraic form
+
+**What we're calculating:** Factoring the expression $a + b + ab$
+
+**Complete calculation:**
+$$(a+1)(b+1) - 1 = ab + a + b + 1 - 1 = a + b + ab$$ ✓
+
+**Verification:** The factorization is correct. We need:
+- $a + b + ab \leq 100$ becomes $(a+1)(b+1) \leq 101$
+
+---
+
+## Step 2: Determine the range for products
+
+**What we're calculating:** Identifying constraints on $m = a+1$ and $n = b+1$
+
+**Complete calculation:**
+- Since $1 \leq a, b \leq 100$: we have $2 \leq m, n \leq 101$
+- Since $a \neq b$: we have $m \neq n$
+- Since $(a+1)(b+1) \leq 101$: we need $mn \leq 101$
+- Assume $m < n$ (to avoid double-counting)
+
+**Verification:** These constraints properly encode the original problem. ✓
+
+---
+
+## Step 3: Enumerate all valid products
+
+**What we're calculating:** Finding all products $mn$ where $2 \leq m < n$ and $mn \leq 101$
+
+**Complete calculation:**
+
+| $m$ | Range of $n$ | Products | Count |
+|-----|--------------|----------|-------|
+| 2 | $3 \leq n \leq 50$ | $6, 8, 10, ..., 100$ | 48 |
+| 3 | $4 \leq n \leq 33$ | $12, 15, 18, ..., 99$ | 30 |
+| 4 | $5 \leq n \leq 25$ | $20, 24, 28, ..., 100$ | 21 |
+| 5 | $6 \leq n \leq 20$ | $30, 35, 40, ..., 100$ | 15 |
+| 6 | $7 \leq n \leq 16$ | $42, 48, 54, ..., 96$ | 10 |
+| 7 | $8 \leq n \leq 14$ | $56, 63, 72, ..., 98$ | 7 |
+| 8 | $9 \leq n \leq 12$ | $72, 80, 88, 96$ | 4 |
+| 9 | $10 \leq n \leq 11$ | $90, 99$ | 2 |
+| $\geq 10$ | None | — | 0 |
+
+**Verification:** For $m=2, n=50$: $2 \times 50 = 100 \leq 101$ ✓; For $m=2, n=51$: $2 \times 51 = 102 > 101$ ✗
+
+---
+
+## Step 4: Identify which integers can be expressed as mn
+
+**What we're calculating:** Determining which integers from 6 to 101 CAN be written as $mn$ with $2 \leq m < n$
+
+**Analysis:** An integer $p$ in range $[6, 101]$ CANNOT be expressed as $mn$ (with $m < n$) if:
+- $p = 7$ (prime)
+- $p \in \{9, 25, 49\}$ (odd perfect squares)
+- $p$ is prime: $\{11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101\}$
+
+**Complete list of excluded integers:**
+$$\{7, 9, 11, 13, 17, 19, 23, 25, 29, 31, 37, 41, 43, 47, 49, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101\}$$
+
+**Count of excluded values:** 26
+
+**Verification:** These are exactly the values that have no factorization $mn$ with $2 \leq m < n \leq 101$. ✓
+
+---
+
+## Step 5: Convert products back to target integers
+
+**What we're calculating:** Computing $a + b + ab = (mn) - 1$ for each valid product
+
+**Complete calculation:**
+- Valid products: all integers in $[6, 101]$ except the 26 excluded values
+- Target integers: $(mn - 1)$ for each valid product
+- Target range: $[5, 100]$ 
+- Excluded target values: $\{6, 8, 10, 12, 16, 18, 22, 24, 28, 30, 36, 40, 42, 46, 48, 52, 58, 60, 66, 70, 72, 78, 82, 88, 96, 100\}$
+  (These are the excluded products minus 1)
+
+**Verification:** The mapping $p \to p-1$ is one-to-one. ✓
+
+---
+
+## Step 6: Count distinct values
+
+**What we're calculating:** Total number of distinct integers expressible as $a + b + ab$
+
+**Complete calculation:**
+- Total integers in range $[5, 100]$: $100 - 5 + 1 = 96$
+- Number of excluded values: $26$
+- Number of valid target integers: $96 - 26 = 70$
+
+**Final verification:** 
+- Range check: All 70 integers are in $[1, 100]$ ✓
+- Example: $a=1, b=2$ gives $1+2+2 = 5$ (from $mn = 2 \times 3 = 6$) ✓
+- Example: $a=2, b=3$ gives $2+3+6 = 11$ (from $mn = 3 \times 4 = 12$) ✓
+
+---
+
+**FINAL ANSWER: 70**
