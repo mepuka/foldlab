@@ -93,8 +93,8 @@ const sha256 = (...parts: ReadonlyArray<Uint8Array>): Head => {
 
 const utf8 = (s: string): Uint8Array => encoder.encode(s)
 const fromHex = (hex: string): Uint8Array => {
-  if (!/^[0-9a-f]{64}$/i.test(hex)) {
-    throw new RangeError("head must be exactly 32 hexadecimal bytes")
+  if (!/^[0-9a-f]{64}$/.test(hex)) {
+    throw new RangeError("head must be exactly 32 lowercase hexadecimal bytes")
   }
   const out = new Uint8Array(hex.length / 2)
   for (let i = 0; i < out.length; i++) {
