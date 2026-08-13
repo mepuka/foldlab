@@ -210,6 +210,11 @@ The design shelf — the recent research and design lanes, merged:
   Effect's `Layer` already gives, what breaks under reification, and
   the honest line between describing a system and attesting to what
   is running (Nix, Terraform, and Dhall confronted as prior art).
+- [docs/design/2026-08-14-learning-by-refutation.md](docs/design/2026-08-14-learning-by-refutation.md)
+  — the thesis, sharpened to a theorem: a typed refusal's (Law, Path)
+  pair is the version-space refinement, precomputed by the certifier;
+  content addressing makes negatives federate; one refusal value
+  teaches the human and steers the model.
 - [docs/research/2026-08-14-counterexample-algebra-dossier.md](docs/research/2026-08-14-counterexample-algebra-dossier.md)
   — why refusals teach: Gold's theorem (positive examples cannot
   correct an over-general learner), and foldlab's sharper version — a
