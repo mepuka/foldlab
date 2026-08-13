@@ -988,3 +988,23 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 33 — no dead ends, mechanized (2026-08-14)
+
+### D??. Completion reachability is a least fixpoint over the grammar's production edges
+
+Decided: project the closed `flb.type.v0` grammar into production results and
+required child nonterminals, then compute its least productive fixpoint. A
+post-fill template is completable only when every hole's nonterminal has a
+closed witness, the completed witness passes the certifier's structure walk,
+and every demanded ref digest belongs to the caller-provided snapshot of the
+locally resolvable catalog. Thus an empty catalog excludes the `ref` production
+but does not block templates that do not demand refs; a populated catalog makes
+only its exact member digests available. Alternatives: inspect the frontier
+table itself; search to an arbitrary tree-depth bound; treat any nonempty
+catalog as resolving every concrete ref. Why: table inspection is circular,
+bounded unfolding misses lawful recursive productions, and catalog cardinality
+does not prove membership. The finite production fixpoint terminates and its
+closed witness is checked by the admission grammar rather than trusted.
+**Load-bearing? yes** — this is the mechanical meaning of C4's “admits a closed
+completion” claim.
