@@ -44,7 +44,7 @@ nothing is claimed, so a suite's list of law names is a faithful
 statement of what was checked.
 
 **Walled boundary behavior**:
-Canonical JSON encoding and `applyKV` refuse excluded inputs as data; the four
+Canonical JSON encoding (including the 256-container bound) and `applyKV` refuse excluded inputs as data; the four
 algebra derivation gates withhold identity from unbranded declarations and
 unbranded value maps; fold-cache storage and fold handles reject structural
 costumes. `kvStep` reports an excluded payload as `undefined`; entity collection
@@ -64,7 +64,7 @@ not by analogy: its `projectKV` output goes straight into `stateDigest`,
 so the join stays outside Effect exactly where the digests are minted. Effect-shaped surfaces carry `Data.TaggedError`
 failures in the typed error channel (`stream.ts`: `MergeGap`,
 `MalformedPayload`, `CompactionBoundary`, and the rest). Internal
-canonical-encoder range violations throw `RangeError` — they are
+internal stream-writer range violations throw `RangeError` — they are
 programmer errors about the encoding domain, not refusals a caller
 repairs. The split is deliberate: Effect stays OUTSIDE the
 digest-minting path that the cross-language wall proves byte-identical

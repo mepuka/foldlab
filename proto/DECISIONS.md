@@ -967,6 +967,50 @@ The contract-suite semantics source and demo transport decisions were not
 reached. Findings-before-fixes forbids deciding or building later stages after
 the step-2 stop condition.
 
+## GitHub #51 — core generator strength and encoder depth (2026-08-13)
+
+### D??. Proof strings use valid Unicode scalars and replay histories carry u32 edges
+
+Decided: the generated fold and entity laws draw strings from the full valid
+Unicode-scalar domain, weighted with U+D7FF, U+E000, U+FFFD, and a
+supplementary scalar; unpaired surrogates remain rejection inputs rather than
+lawful values. Stream-event sequences remain mostly small for shrinking but
+also draw u32 edges, and history generators include an event-driven
+`0xffffffff + 1` branch used by every replay law. Deterministic coverage
+canaries prove those cases are actually drawn, and a wrap-dropping fold is
+refused by the banana-split law. Alternatives: keep Effect Schema's current
+ASCII-default arbitrary; put the edge cases only in fixtures; make all draws
+large. Why: the first two leave declared Unicode and modular behavior outside
+the generated proof, while the last destroys useful shrinking. **Load-bearing?
+yes** — the generated laws license replay and federation rights.
+
+### D??. Canonical encoding and constrained decoding share the 256-container bound
+
+Decided: `encodeJsonValue` refuses the 257th array or object container with
+`NonCanonicalValue`, matching constrained decode's existing bound, before
+recursive descent can exhaust the host stack. `putFoldCache` therefore keeps
+its documented total-return contract even for a 20,000-container hostile
+state. Alternatives: raise/remove the decoder bound; document a thrown
+`RangeError`; catch only inside the cache. Why: admission is part of identity,
+the cache is not the only digest-minting caller, and a host-dependent stack
+limit cannot define canonical data. **Load-bearing? yes** — encoder acceptance
+defines which values can mint digest-bearing bytes.
+
+### D??. A chain head has one lowercase hexadecimal spelling
+
+Decided: callers may extend or replay only a 64-character lowercase hex head,
+which is the spelling every SHA-256 producer in the package emits. Uppercase is
+refused instead of normalized. Alternatives: accept both cases; lowercase at
+every map lookup. Why: accepting two strings for the same 32 bytes lets chaining
+succeed while content-addressed maps miss, splitting byte identity from key
+identity. Refusal keeps one representation and exposes a caller defect at the
+first boundary. **Load-bearing? yes** — heads are storage and replay keys.
+
+Advisory audit: `packages/core/examples/tour.ts` runs the Effect-typed fold at
+the caller boundary and hands its admitted value to the pure `stateDigest`; it
+does not put Effect inside the digest-minting implementation. No second pure
+fold or hidden `runSync` was introduced to cosmetically separate those calls.
+
 ## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
 
 ### D??. FINDING: every representable concierge hole currently expects the same nonterminal

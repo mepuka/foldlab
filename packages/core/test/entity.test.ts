@@ -13,7 +13,6 @@
  */
 
 import { describe, expect, test } from "bun:test"
-import { Schema } from "effect"
 import * as FastCheck from "fast-check"
 import {
   composeEntities,
@@ -23,6 +22,7 @@ import {
   type Backing,
   type EntityView,
 } from "../src/entity.ts"
+import { arbitraryForUnicodeString } from "../src/foldArbitrary.ts"
 import { event, extend, headFrom, stateDigest, type StreamEvent } from "../src/stream.ts"
 
 // An agent-shaped mixed stream: three sessions interleaved.
@@ -37,17 +37,21 @@ const mixed: ReadonlyArray<StreamEvent> = [
 const correlate = (e: StreamEvent): string =>
   new TextDecoder().decode(e.payload).split("=")[0]!
 
-const entityEventPartSchema = Schema.Struct({
-  key: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(12)),
-  seq: Schema.Natural.check(
-    Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
-  ),
-  value: Schema.String.check(Schema.isMaxLength(32)),
-})
-const entityEventPartArbitrary = Schema.toArbitrary(entityEventPartSchema)(FastCheck)
-  .filter(({ key }) => !key.includes("=") && new TextDecoder().decode(new TextEncoder().encode(key)) === key)
+interface EntityEventPart {
+  readonly key: string
+  readonly seq: number
+  readonly value: string
+}
+
+const entityEventPartArbitrary: FastCheck.Arbitrary<EntityEventPart> = FastCheck.record({
+  key: arbitraryForUnicodeString({ minLength: 1, maxLength: 12 }),
+  seq: FastCheck.maxSafeNat(),
+  value: arbitraryForUnicodeString({ maxLength: 32 }),
+}).filter(({ key, value }) =>
+  !key.includes("=") && key.length <= 12 && value.length <= 32
+)
 const toHistory = (
-  parts: ReadonlyArray<typeof entityEventPartSchema.Type>,
+  parts: ReadonlyArray<EntityEventPart>,
 ): ReadonlyArray<StreamEvent> =>
   parts.map(({ key, seq, value }) => event("bus", seq, `${key}=${value}`))
 const entityHistoryArbitrary = FastCheck.array(entityEventPartArbitrary, { maxLength: 32 })
@@ -81,6 +85,15 @@ const rawEventArbitrary = FastCheck.record({
 const rawHistoryArbitrary = FastCheck.array(rawEventArbitrary, { maxLength: 24 })
 // One entity, so distinct payloads fold into a single meaning state.
 const oneEntity = (): string => "e"
+
+test("entity law inputs include valid non-ASCII and surrogate-adjacent keys", () => {
+  const parts = FastCheck.sample(entityEventPartArbitrary, { seed: 0x51_05, numRuns: 1_000 })
+  expect(parts.some(({ key, value }) =>
+    [...key, ...value].some((unit) => unit.codePointAt(0)! > 0x7f)
+  )).toBe(true)
+  expect(parts.some(({ key, value }) => `${key}${value}`.includes("\ud7ff"))).toBe(true)
+  expect(parts.some(({ key, value }) => `${key}${value}`.includes("\ue000"))).toBe(true)
+})
 
 describe("entity meaning-fold totality (C1)", () => {
   test("anchors() is total over arbitrary byte payloads", () => {
