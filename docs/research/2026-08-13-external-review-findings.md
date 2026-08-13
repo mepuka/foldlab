@@ -496,3 +496,67 @@ per item so the lanes do not collide.
    — as the cross-platform, cross-bounds replication of the R3 repair.
    Same jar (sha `33611081…ad4346`), all four obligations including
    both controls. Verdicts will be appended when they land.
+
+## Review cycle closed — issues filed, two cores certified clean (2026-08-13)
+
+Standing order in effect: confirmed findings are filed as GitHub issues on
+`mepuka/foldlab` with full evidence (executed repro or committed checker
+trace, file:line, severity, evidence branch). Eleven issues filed this cycle;
+every repro was re-run independently by the coordinator before filing.
+
+### The two results that matter
+
+- **The effector is certified clean against a binary-vs-proven-model gap.**
+  The register whose fencing safety is the machine-checked theorem (Apalache
+  inductive invariant, R4 lockstep) was attacked with executed Go tests on the
+  steal/commit CAS paths, the stale-read-then-mutate window, and the
+  expired-unsuperseded commit path. All held: a claim superseded by a higher
+  fence cannot land a commit below the highest fence (`ErrFenced`, because the
+  revision-CAS is the real linearization point — fence is authority, expiry is
+  liveness-only); terminal-outcome uniqueness holds; the one "resurrection"
+  runs as admin and is the admin-success negative control already gated in
+  `go/substrate/assumptions_test.go`, not a leak. Write-up:
+  `_bugs/EFFECTOR-CERTIFIED.md` on `worktree-agent-aaf7f65ab3380d246`.
+- **The model's safety laws survived the adversarial pass within bounds.** Y5
+  (2 creators — the R3 domain count, where the CAS-freshness \A-over-creators
+  clause is non-trivial) came back clean over 39,897 IndInv-satisfying states,
+  no counterexample to induction, no stuttering exemption. Both CTI families
+  are excluded structurally (each is the definitional negation of a named
+  invariant conjunct). Verdict: the residual risk was never in what the model
+  proves, only in what the gate checked it with (#8, #9) — both fixable,
+  neither a live violation. Write-up: `probes/BREAKER-VERDICT.md`.
+
+### Issue index
+
+Code defects (`bug` + `finding`):
+
+- #1 JR2 (high, exploitable) — journald wedges permanently on a lost CAS race; shown end-to-end at the daemon.
+- #2 JR1 (medium) — journal.Open adopts an unverified tail; verify-on-read hole.
+- #3 CG1 (medium) — journal content-identity non-injective on invalid UTF-8.
+- #4 C1 (high, latent) — entity collector poisoned by one NUL-key event; applySync unwalled.
+- #5 A1 (medium) — Declaration brand forgeable via Symbol.for; a law-violating algebra is certified.
+- #6 J1/M1/S1 (low) — TS-core canonicalization/identity/portability leaks.
+- #10 JR3 (medium) — position conflict misclassified as "unavailable" when the re-read fails; compounds JR2.
+- #11 A2 (medium) — mappedStep omits the source-match check mapped enforces; no forgery needed.
+
+Proof-mechanics (`proof-mechanics` + `finding`):
+
+- #7 FINDING-R3-001 — the R4 merge broke R3 re-checkability (Snowcat fails at HEAD); repair applied and certified.
+- #8 FINDING-BRIDGE-001 — half the R4 refinement bridge is asserted, not checked; reformulation tested, awaiting disposition.
+- #9 FINDING-BOUNDS-001 — catalog model constants silently truncate at 4; fix in flight.
+
+Bug tally: 9 confirmed (C1, CG1, JR1, JR2, JR3, A1, A2, J1, M1), 1 suspected
+(S1), 3 certified clean (effector A6 register, jcs canonical TS↔Go, stream KV
+algebra TS↔Go). Exploitable-today: the journal multi-writer path (JR1/JR2/JR3)
+in shipped journald; the rest latent until wired.
+
+### The pattern
+
+The walled cores (jcs, stream KV) and the proven core (effector) are lawful
+and compose — cross-language and model-to-binary. Every leak is a *second
+encoder* of a walled form (applySync, EntryDigest) or a *construction that
+re-incurred a proven obligation without re-proving it* (mapped/mappedStep on a
+forgeable-or-unchecked brand, applyMerge dedup, Open/cursor). This is the
+compositionality-of-proof thesis stated as a defect taxonomy: build on a
+lawful surface and the law is inherited; hand-roll a parallel path and it is
+not.
