@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { Effect, Exit } from "effect"
+import { Effect, Exit, Schema } from "effect"
+import * as FastCheck from "fast-check"
 import {
   applyKV,
   compact,
@@ -50,15 +51,42 @@ const concatFrames = (events: ReadonlyArray<StreamEvent>): Uint8Array => {
   return out
 }
 
-const xorshift = (seed: number): (() => number) => {
-  let state = seed >>> 0
-  return () => {
-    state ^= state << 13
-    state ^= state >>> 17
-    state ^= state << 5
-    return state >>> 0
-  }
-}
+const frameEventArbitrary: FastCheck.Arbitrary<StreamEvent> = Schema.toArbitrary(
+  Schema.Struct({
+    stream: Schema.String.check(Schema.isMaxLength(64)),
+    seq: Schema.Int.check(Schema.isBetween({
+      minimum: 0,
+      maximum: Number.MAX_SAFE_INTEGER,
+    })),
+    payload: Schema.Uint8Array.check(Schema.isMaxLength(512)),
+  }),
+)(FastCheck)
+
+const frameBatchArbitrary = FastCheck.array(frameEventArbitrary, {
+  minLength: 100,
+  maxLength: 100,
+})
+
+const fusionEventArbitrary: FastCheck.Arbitrary<StreamEvent> = Schema.toArbitrary(
+  Schema.Struct({
+    stream: Schema.Literal("source"),
+    seq: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER })),
+    payload: Schema.Uint8Array.check(Schema.isMaxLength(512)),
+  }),
+)(FastCheck)
+const prefixArbitrary = Schema.toArbitrary(
+  Schema.String.check(Schema.isMaxLength(16)),
+)(FastCheck)
+const fusionCaseArbitrary = FastCheck.record({
+  input: fusionEventArbitrary,
+  prefix: prefixArbitrary,
+  injectEquals: FastCheck.boolean(),
+  equalIndex: FastCheck.nat(),
+}).map(({ input, prefix, injectEquals, equalIndex }) => {
+  const payload = input.payload.slice()
+  if (payload.length > 0 && injectEquals) payload[equalIndex % payload.length] = 0x3d
+  return { input: { ...input, payload }, prefix }
+})
 
 const prefixDecision = (payload: Uint8Array, prefix: string): boolean => {
   const boundary = payload.indexOf("=".charCodeAt(0))
@@ -70,19 +98,27 @@ const prefixDecision = (payload: Uint8Array, prefix: string): boolean => {
 
 describe("stream deterministic properties", () => {
   test("canonical frames invert over 10,000 arbitrary byte payloads", () => {
-    const next = xorshift(0x5eed1234)
-    const streams = ["", "a", "β", "𐀀", "mixed-β-𐀀"]
-    const events: Array<StreamEvent> = []
-    for (let i = 0; i < 10_000; i++) {
-      const payload = new Uint8Array(next() % 65)
-      for (let j = 0; j < payload.length; j++) payload[j] = next()
-      const seq = next() * 0x10_0000 + (next() & 0xf_ffff)
-      events.push(rawEvent(streams[next() % streams.length]!, seq, payload))
-    }
-    const raw = concatFrames(events)
-    expect(shape(parseFrames(raw))).toEqual(shape(events))
-    expect(headFrom(streamSeed("property"), parseFrames(raw))).toBe(
-      headFrom(streamSeed("property"), events),
+    FastCheck.assert(
+      FastCheck.property(frameBatchArbitrary, (events) => {
+        const raw = concatFrames(events)
+        expect(shape(parseFrames(raw))).toEqual(shape(events))
+        expect(headFrom(streamSeed("property"), parseFrames(raw))).toBe(
+          headFrom(streamSeed("property"), events),
+        )
+      }),
+      {
+        seed: 0x5eed1234,
+        numRuns: 100,
+        endOnFailure: false,
+        verbose: 1,
+        examples: [[[
+          rawEvent("", 0, []),
+          rawEvent("\"\\/\b\f\n\r\t", Number.MAX_SAFE_INTEGER, [0, 0xff]),
+          rawEvent("\u0000", 1, [0x3d]),
+          rawEvent("", 2, [0xc0, 0xaf]),
+          rawEvent("𐀀", 3, new Uint8Array(512).fill(0xa5)),
+        ]]],
+      },
     )
   })
 
@@ -218,23 +254,30 @@ describe("transform byte properties", () => {
   })
 
   test("fusion equals sequential traversal over 10,000 arbitrary payloads", () => {
-    const next = xorshift(0xc0ffee)
-    for (let i = 0; i < 10_000; i++) {
-      const payload = new Uint8Array(next() % 65)
-      for (let j = 0; j < payload.length; j++) payload[j] = next()
-      if (payload.length > 0 && (next() & 1) === 0) {
-        payload[next() % payload.length] = 0x3d
-      }
-      const prefix = String.fromCharCode(0x61 + next() % 4).repeat(next() % 4)
-      const input = rawEvent("source", i, payload)
-      const before = payload.slice()
-      const transforms = [renameStream("z"), filterKeyPrefix(prefix), mapValueUpper()]
-      const fused = apply(compose(...transforms), [input])
-      const sequential = apply(transforms[2]!, apply(transforms[1]!, apply(transforms[0]!, [input])))
-      expect(shape(fused)).toEqual(shape(sequential))
-      expect((filterKeyPrefix(prefix)(input) !== null)).toBe(prefixDecision(payload, prefix))
-      expect([...input.payload]).toEqual([...before])
-    }
+    FastCheck.assert(
+      FastCheck.property(fusionCaseArbitrary, ({ input, prefix }) => {
+        const payload = input.payload
+        const before = payload.slice()
+        const rename = renameStream("z")
+        const filter = filterKeyPrefix(prefix)
+        const upper = mapValueUpper()
+        const fused = apply(compose(rename, filter, upper), [input])
+        const sequential = apply(upper, apply(filter, apply(rename, [input])))
+        expect(shape(fused)).toEqual(shape(sequential))
+        expect((filterKeyPrefix(prefix)(input) !== null)).toBe(prefixDecision(payload, prefix))
+        expect([...input.payload]).toEqual([...before])
+      }),
+      {
+        seed: 0x00c0ffee,
+        numRuns: 10_000,
+        endOnFailure: false,
+        verbose: 1,
+        examples: [[{
+          input: rawEvent("source", Number.MAX_SAFE_INTEGER, enc.encode("κ=Straße")),
+          prefix: "κ\u0000",
+        }]],
+      },
+    )
   })
 })
 

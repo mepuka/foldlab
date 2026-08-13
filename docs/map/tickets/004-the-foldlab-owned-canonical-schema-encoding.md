@@ -97,3 +97,21 @@ holes the build smoked out of the ratified laws, now closed):
    annotation is the node's only canonicalizable substance.
 8. **Opaque node**: `{"k":"opaque"}` = any well-formed v0 value, the
    honest escape hatch for contract self-description until 004-full.
+
+Addendum 3 (2026-08-13, from the language-frontier grilling —
+docs/research/2026-08-13-language-ontology-frontier.md):
+9. **Normalize-then-digest**: identity = SHA-256 over canonical bytes
+   of normalize(term), where normalize is the identity function today
+   and a SPECIFIED reduction once reducible constructs (binders,
+   aliases, imports, parameterized types) arrive — ratified now so
+   semantically identical grammars can never fork digests later. Any
+   future normalize ships termination + confluence arguments and a
+   fixture wall BEFORE touching identity. α-law: bound-variable names
+   are annotations and never move identity. Adopt Dhall's name once
+   normalization is real: the semantic integrity check.
+10. **The closure law**: every node kind admitted to the grammar must
+    preserve regularity of the induced tree language, with the
+    argument written in the node's spec. This keeps emptiness,
+    membership, and inclusion decidable — frontier liveness, legality,
+    and inter-agent subsumption stay theorems. Known trap to refuse:
+    cross-sibling constraints.

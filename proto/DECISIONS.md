@@ -467,3 +467,48 @@ structure while runtime algebra stays plain. Fast-check assertions leave
 `endOnFailure:false`, and a negative control proves shrinking reaches the
 minimized counterexample. **Load-bearing? no** — generator tuning may
 change without moving runtime identity.
+
+## Task 07 — property-test retrofit (2026-08-13)
+
+### D44. Inventory and classification before retrofit
+Inventory completed before test edits. The hand-rolled/randomized or
+non-fixture law suites eligible for fast-check are:
+
+1. `packages/core/test/stream.property.test.ts`: canonical-frame
+   inversion and transform fusion each use a 10,000-case xorshift loop.
+2. `packages/core/test/entity.test.ts`: EC1–EC4 run the laws over one
+   hand-built mixed history.
+3. `packages/core/test/fold.cache.test.ts`: cache-hit equality runs over
+   one hand-built history.
+4. `packages/core/test/fold.bindings.test.ts`: rechunk invariance uses a
+   hand-built history and three manually enumerated chunk sizes.
+5. `proto/ts/test/concierge.test.ts`: C1–C5 use constant requests,
+   hand-built partial/subtree matrices, and manually generated reachable
+   partials.
+
+`packages/core/test/fold.laws.test.ts` is already fast-check-based from
+Task 06 and needs no retrofit. Excluded deliberately: every `*.wall.test.ts`,
+`schema.wall.test.ts`, `stream.bindings.test.ts` (its inputs and expected
+heads are the frozen Go pin), `fold.fixture.test.ts`, proto round-trip and
+wire fixture walls, and the fixed malformed-input/exhaustive byte or rune
+enumerations in `stream.property.test.ts`. Alternatives: convert every loop
+or table mechanically (would replace exhaustive/frozen evidence with
+sampling); limit the inventory to code containing a PRNG (would leave EC,
+cache, rechunk, and C1–C5 without shrinking). **Load-bearing? no** — this is
+test organization, but the evidence-strength classification is binding for
+this task.
+
+### D45. Baseline domains and recorded seeds
+Decided: each retrofit first uses the exact old domain, with all old fixed
+cases retained as fast-check `examples` where sampling could miss one.
+Recorded seeds: stream frame inversion `0x5eed1234`; transform fusion
+`0x00c0ffee`; entity EC1–EC4 `0x07ec0001` through `0x07ec0004`; cache
+`0x07ca0001`; rechunk `0x07fb0001`; concierge C1–C5 `0x07c10001` through
+`0x07c50001`. `endOnFailure:false` remains explicit so counterexamples
+shrink. Effect Schema `Schema.toArbitrary(schema)(FastCheck)` derives
+StreamEvent-shaped carriers; grammar-aware partial-type generation remains
+hand-declared because flb.type.v0 partials have no Effect Schema declaration
+and recursive hole placement is the property under test. Alternatives:
+unrecorded default seeds; one global arbitrary divorced from each law's old
+domain. **Load-bearing? no** — seeds may move only with a stated reason and
+captured replay path.

@@ -42,7 +42,22 @@ holds every prior partial), and finish = zero holes = `type.create`
 unchanged. Holes never touch the catalog grammar or identity: a tree
 with holes cannot be cataloged. Later optimization if partials grow
 heavy, inside the laws: digest-addressed partials with refusal-on-miss
-(a recomputable cache, never a session). If
+(a recomputable cache, never a session).
+
+Amended 2026-08-13 (language-frontier grilling): the concierge's
+contract grows three ratified laws beyond C1–C5 — SENSIBILITY (every
+reachable partial state is well-formed, so every intermediate has a
+digest; `opaque` upgrades to a TYPED hole, making half-built grammars
+shareable by hash — which softens the tree-with-holes-cannot-be-
+cataloged rule into: partials are addressable, never catalogable),
+CONSTRUCTION REACHABILITY (every legal closed term is constructible
+from the empty hole), and the PREFIX PROPERTY (every offered fill
+admits a closed completion, discharged mechanically as tree-automaton
+emptiness — no dead ends, ever). Heritage: Hazelnut (POPL 2017) for
+the calculus; type-constrained generation (PLDI 2025) for the prefix
+property. The frontier becomes a DERIVED artifact: successor states of
+the tree automaton compiled from the declared grammar, never a
+hand-written table. If
 [The workflow abstraction](008-the-workflow-abstraction.md) has
 resolved by then, the prototype should interpret a program value
 rather than a hand-wired pipeline — the node-as-interpreter and

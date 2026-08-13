@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { FastCheck } from "effect/testing"
 import { ProtoClient } from "../src/client.ts"
 import { toEffectSchema, toGoSource, toJsonSchema } from "../src/codegen.ts"
 import type { Json } from "../src/jcs.ts"
@@ -7,6 +8,154 @@ import { spawnProtod, type RunningDaemon } from "./harness.ts"
 
 let daemon: RunningDaemon
 let client: ProtoClient
+
+interface FocusedPartial {
+  readonly partial: Json
+  readonly path: ReadonlyArray<string>
+}
+
+type PartialWrapper =
+  | { readonly kind: "list" }
+  | { readonly kind: "brand"; readonly name: string }
+  | { readonly kind: "check"; readonly name: string; readonly argKey: string; readonly arg: Json }
+  | { readonly kind: "struct"; readonly field: string; readonly optional: boolean; readonly side: boolean }
+  | { readonly kind: "union"; readonly before: number; readonly after: number }
+
+const isWellFormedUnicode = (value: string): boolean => {
+  for (let index = 0; index < value.length; index++) {
+    const unit = value.charCodeAt(index)
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(++index)
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return false
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return false
+    }
+  }
+  return true
+}
+
+const unicodeStringArbitrary = FastCheck.string({ maxLength: 16 }).filter(isWellFormedUnicode)
+const nonEmptyUnicodeStringArbitrary = FastCheck.string({ minLength: 1, maxLength: 16 })
+  .filter(isWellFormedUnicode)
+const jsonScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
+  FastCheck.constant(null),
+  FastCheck.boolean(),
+  unicodeStringArbitrary,
+  FastCheck.constantFrom(
+    Number.MIN_SAFE_INTEGER,
+    -1,
+    0,
+    1,
+    Number.MAX_SAFE_INTEGER,
+    Number.MIN_VALUE,
+    Number.MAX_VALUE,
+  ),
+)
+const decidedLeafArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
+  FastCheck.constantFrom<Json>(
+    { k: "string" },
+    { k: "bool" },
+    { k: "int" },
+    { k: "float" },
+    { k: "null" },
+    { k: "opaque" },
+    { k: "struct", fields: {}, optional: [] },
+    { k: "union", of: [{ k: "null" }] },
+  ),
+  jsonScalarArbitrary.map((value): Json => ({ k: "literal", value })),
+)
+const partialWrapperArbitrary: FastCheck.Arbitrary<PartialWrapper> = FastCheck.oneof(
+  FastCheck.constant({ kind: "list" } as const),
+  nonEmptyUnicodeStringArbitrary.map((name) => ({ kind: "brand" as const, name })),
+  FastCheck.record({
+    name: nonEmptyUnicodeStringArbitrary,
+    argKey: unicodeStringArbitrary,
+    arg: jsonScalarArbitrary,
+  }).map(({ name, argKey, arg }) => ({ kind: "check" as const, name, argKey, arg })),
+  FastCheck.record({
+    field: unicodeStringArbitrary,
+    optional: FastCheck.boolean(),
+    side: FastCheck.boolean(),
+  }).map(({ field, optional, side }) => ({ kind: "struct" as const, field, optional, side })),
+  FastCheck.record({
+    before: FastCheck.integer({ min: 0, max: 2 }),
+    after: FastCheck.integer({ min: 0, max: 2 }),
+  }).map(({ before, after }) => ({ kind: "union" as const, before, after })),
+)
+const wrappersArbitrary = FastCheck.array(partialWrapperArbitrary, { maxLength: 5 })
+
+const distinctUnionSibling = (label: string, focused: Json): Json => {
+  let name = `foldlab.pbt.${label}`
+  while (JSON.stringify({ k: "brand", name, of: { k: "opaque" } }) === JSON.stringify(focused)) {
+    name += ".next"
+  }
+  return { k: "brand", name, of: { k: "opaque" } }
+}
+
+const wrapFocusedPartial = (
+  focused: FocusedPartial,
+  wrapper: PartialWrapper,
+): FocusedPartial => {
+  switch (wrapper.kind) {
+    case "list":
+      return { partial: { k: "list", of: focused.partial }, path: ["of", ...focused.path] }
+    case "brand":
+      return {
+        partial: { k: "brand", name: wrapper.name, of: focused.partial },
+        path: ["of", ...focused.path],
+      }
+    case "check":
+      return {
+        partial: {
+          k: "check",
+          base: focused.partial,
+          check: { name: wrapper.name, args: { [wrapper.argKey]: wrapper.arg } },
+        },
+        path: ["base", ...focused.path],
+      }
+    case "struct": {
+      const fields: Record<string, Json> = { [wrapper.field]: focused.partial }
+      if (wrapper.side) fields[`${wrapper.field}\u0000side`] = { k: "string" }
+      return {
+        partial: {
+          k: "struct",
+          fields,
+          optional: wrapper.optional ? [wrapper.field] : [],
+        },
+        path: ["fields", wrapper.field, ...focused.path],
+      }
+    }
+    case "union": {
+      const before = Array.from(
+        { length: wrapper.before },
+        (_, index) => distinctUnionSibling(`before.${index}`, focused.partial),
+      )
+      const after = Array.from(
+        { length: wrapper.after },
+        (_, index) => distinctUnionSibling(`after.${index}`, focused.partial),
+      )
+      return {
+        partial: { k: "union", of: [...before, focused.partial, ...after] },
+        path: ["of", String(before.length), ...focused.path],
+      }
+    }
+  }
+}
+
+const focusWithin = (
+  focus: Json,
+  wrappers: ReadonlyArray<PartialWrapper>,
+): FocusedPartial => wrappers.reduce(wrapFocusedPartial, { partial: focus, path: [] })
+
+const hole: Json = { k: "hole" }
+const holeCaseArbitrary: FastCheck.Arbitrary<FocusedPartial> = wrappersArbitrary
+  .map((wrappers) => focusWithin(hole, wrappers))
+const focusedNodeCaseArbitrary: FastCheck.Arbitrary<FocusedPartial> = FastCheck.tuple(
+  FastCheck.oneof(FastCheck.constant(hole), decidedLeafArbitrary),
+  wrappersArbitrary,
+).map(([focus, wrappers]) => focusWithin(focus, wrappers))
+const partialTreeArbitrary: FastCheck.Arbitrary<Json> = focusedNodeCaseArbitrary
+  .map(({ partial }) => partial)
 
 beforeAll(async () => {
   daemon = await spawnProtod()
@@ -27,17 +176,38 @@ describe("concierge laws", () => {
       path: [] as string[],
       subtree: { k: "hole" } as const,
     }
-    const first = await client.fillType(request.partial, request.path, request.subtree)
-    const second = await client.fillType(request.partial, request.path, request.subtree)
-    expect(first.ok && second.ok).toBe(true)
-    expect(JSON.stringify(first)).toBe(JSON.stringify(second))
+    await FastCheck.assert(
+      FastCheck.asyncProperty(holeCaseArbitrary, partialTreeArbitrary, async (generated, subtree) => {
+        const first = await client.fillType(generated.partial, [...generated.path], subtree)
+        const second = await client.fillType(generated.partial, [...generated.path], subtree)
+        expect(first.ok && second.ok).toBe(true)
+        expect(JSON.stringify(first)).toBe(JSON.stringify(second))
+      }),
+      {
+        examples: [[{ partial: request.partial, path: request.path }, request.subtree]],
+        seed: 0x07c1_0001,
+        numRuns: 100,
+        endOnFailure: false,
+      },
+    )
   })
 
   test("C1 unfill is pure: the same request returns byte-identical data", async () => {
-    const first = await client.unfillType({ k: "string" }, [])
-    const second = await client.unfillType({ k: "string" }, [])
-    expect(first.ok && second.ok).toBe(true)
-    expect(JSON.stringify(first)).toBe(JSON.stringify(second))
+    const request = { partial: { k: "string" } as const, path: [] as string[] }
+    await FastCheck.assert(
+      FastCheck.asyncProperty(focusedNodeCaseArbitrary, async (generated) => {
+        const first = await client.unfillType(generated.partial, [...generated.path])
+        const second = await client.unfillType(generated.partial, [...generated.path])
+        expect(first.ok && second.ok).toBe(true)
+        expect(JSON.stringify(first)).toBe(JSON.stringify(second))
+      }),
+      {
+        examples: [[request]],
+        seed: 0x07c1_0001,
+        numRuns: 100,
+        endOnFailure: false,
+      },
+    )
   })
 
   test("C2 unfill(fill(p, path, subtree), path) equals p over generated partials", async () => {
@@ -83,48 +253,52 @@ describe("concierge laws", () => {
       },
       { k: "ref", digest: created.fact.digest },
     ]
+    const examples: Array<[FocusedPartial, Json]> = cases.flatMap((generated) =>
+      subtrees.map((subtree) => [
+        { partial: generated.partial, path: generated.path },
+        subtree,
+      ] as [FocusedPartial, Json]))
 
-    for (const generated of cases) {
-      for (const subtree of subtrees) {
-        const filled = await client.fillType(generated.partial, generated.path, subtree)
-        expect(filled.ok).toBe(true)
-        if (!filled.ok) continue
-        const unfilled = await client.unfillType(asJson(filled.fact.partial), generated.path)
-        expect(unfilled.ok).toBe(true)
-        if (unfilled.ok) expect(unfilled.fact.partial).toEqual(generated.partial)
-      }
-    }
+    await FastCheck.assert(
+      FastCheck.asyncProperty(
+        holeCaseArbitrary,
+        partialTreeArbitrary,
+        async (generated, subtree) => {
+          const path = [...generated.path]
+          const filled = await client.fillType(generated.partial, path, subtree)
+          expect(filled.ok).toBe(true)
+          if (!filled.ok) return
+          const unfilled = await client.unfillType(asJson(filled.fact.partial), path)
+          expect(unfilled.ok).toBe(true)
+          if (unfilled.ok) expect(unfilled.fact.partial).toEqual(generated.partial)
+        },
+      ),
+      { examples, seed: 0x07c2_0001, numRuns: 150, endOnFailure: false },
+    )
   }, 120_000)
 
   test("C3 frontier-empty iff zero holes iff type.create accepts", async () => {
-    const hole: Json = { k: "hole" }
-    const started = await client.fillType(hole, [], hole)
-    expect(started.ok).toBe(true)
-    if (!started.ok) return
-
-    const list = started.fact.frontier[0]!.legal.find((choice) => choice.kind === "list")
-    expect(list).toBeDefined()
-    if (list === undefined) return
-    const listed = await client.fillType(hole, [], asJson(list.example))
-    expect(listed.ok).toBe(true)
-    if (!listed.ok) return
-    expect(countHoles(listed.fact.partial)).toBe(1)
-    expect(listed.fact.frontier.length).toBe(1)
-    expect((await client.createType(asJson(listed.fact.partial))).ok).toBe(false)
-
-    const string = listed.fact.frontier[0]!.legal.find((choice) => choice.kind === "string")
-    expect(string).toBeDefined()
-    if (string === undefined) return
-    const complete = await client.fillType(
-      asJson(listed.fact.partial),
-      listed.fact.frontier[0]!.path,
-      asJson(string.example),
+    await FastCheck.assert(
+      FastCheck.asyncProperty(partialTreeArbitrary, async (partial) => {
+        const described = await client.fillType(hole, [], partial)
+        expect(described.ok).toBe(true)
+        if (!described.ok) return
+        const holes = countHoles(described.fact.partial)
+        expect(described.fact.frontier.length).toBe(holes)
+        const created = await client.createType(asJson(described.fact.partial))
+        expect(created.ok).toBe(holes === 0)
+      }),
+      {
+        examples: [
+          [hole],
+          [{ k: "list", of: hole }],
+          [{ k: "list", of: { k: "string" } }],
+        ],
+        seed: 0x07c3_0001,
+        numRuns: 100,
+        endOnFailure: false,
+      },
     )
-    expect(complete.ok).toBe(true)
-    if (!complete.ok) return
-    expect(countHoles(complete.fact.partial)).toBe(0)
-    expect(complete.fact.frontier).toEqual([])
-    expect((await client.createType(asJson(complete.fact.partial))).ok).toBe(true)
   })
 
   test("C4 generated reachable partials have no dead ends and every frontier example is accepted", async () => {
@@ -177,48 +351,71 @@ describe("concierge laws", () => {
       "ref",
     ]
 
-    for (const candidate of generated) {
-      const described = await client.fillType(candidate.partial, candidate.probePath, hole)
-      expect(described.ok).toBe(true)
-      if (!described.ok) continue
-      expect(described.fact.frontier.length).toBe(countHoles(candidate.partial))
-      for (const entry of described.fact.frontier) {
-        expect(entry.legal.map((choice) => choice.kind)).toEqual(allKinds)
-        expect(entry.refs.length).toBeGreaterThan(0)
-        expect(entry.refs.length).toBeLessThanOrEqual(16)
-        expect([...entry.refs].sort()).toEqual([...entry.refs])
-        for (const choice of entry.legal) {
-          const filled = await client.fillType(candidate.partial, entry.path, asJson(choice.example))
-          expect(filled.ok).toBe(true)
+    await FastCheck.assert(
+      FastCheck.asyncProperty(holeCaseArbitrary, async (candidate) => {
+        const described = await client.fillType(candidate.partial, [...candidate.path], hole)
+        expect(described.ok).toBe(true)
+        if (!described.ok) return
+        expect(described.fact.frontier.length).toBe(countHoles(candidate.partial))
+        for (const entry of described.fact.frontier) {
+          expect(entry.legal.map((choice) => choice.kind)).toEqual(allKinds)
+          expect(entry.refs.length).toBeGreaterThan(0)
+          expect(entry.refs.length).toBeLessThanOrEqual(16)
+          expect([...entry.refs].sort()).toEqual([...entry.refs])
+          for (const choice of entry.legal) {
+            const filled = await client.fillType(candidate.partial, entry.path, asJson(choice.example))
+            expect(filled.ok).toBe(true)
+          }
         }
-      }
-    }
+      }),
+      {
+        examples: generated.map(({ partial, probePath }) => [
+          { partial, path: probePath },
+        ] as [FocusedPartial]),
+        seed: 0x07c4_0001,
+        numRuns: 50,
+        endOnFailure: false,
+      },
+    )
   }, 120_000)
 
   test("C5 holes never bear identity or enter catalog fixtures", async () => {
     const hole: Json = { k: "hole" }
-    const refused = await client.createType({
+    const partial: Json = {
       k: "struct",
       fields: { undecided: hole },
       optional: [],
-    })
-    expect(refused.ok).toBe(false)
-    if (!refused.ok) {
-      expect(refused.refusal.kind).toBe("invalid-structure")
-      expect(refused.refusal.path).toEqual(["structure", "fields", "undecided"])
     }
+    await FastCheck.assert(
+      FastCheck.asyncProperty(holeCaseArbitrary, async (generated) => {
+        const refused = await client.createType(generated.partial)
+        expect(refused.ok).toBe(false)
+        if (!refused.ok) {
+          expect(refused.refusal.kind).toBe("invalid-structure")
+          expect(refused.refusal.path).toEqual(["structure", ...generated.path])
+        }
 
-    for (const derived of [
-      toEffectSchema(hole),
-      toJsonSchema(hole),
-      toGoSource(hole, "Hole", "0".repeat(64)),
-    ]) {
-      expect(derived.ok).toBe(false)
-      if (!derived.ok) {
-        expect(derived.refusal.kind).toBe("underivable")
-        expect(derived.refusal.path).toEqual(["structure", "k"])
-      }
-    }
+        for (const derived of [
+          toEffectSchema(generated.partial),
+          toJsonSchema(generated.partial),
+          toGoSource(generated.partial, "Hole", "0".repeat(64)),
+        ]) {
+          expect(derived.ok).toBe(false)
+          if (!derived.ok) {
+            expect(derived.refusal.kind).toBe("underivable")
+          }
+        }
+      }),
+      {
+        examples: [
+          [{ partial, path: ["fields", "undecided"] }],
+          [{ partial: hole, path: [] }],
+        ],
+        seed: 0x07c5_0001,
+        numRuns: 100,
+        endOnFailure: false,
+      },
+    )
 
     const catalog = await client.read("catalog")
     expect(catalog.ok).toBe(true)

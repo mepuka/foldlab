@@ -116,6 +116,25 @@ checks identity resolution only — the contract says so).
    and progress under contention are liveness machinery and are
    untested formally.
 
+## Stated limitations, ahead of their surfaces (2026-08-13)
+
+Recorded now so no future surface overclaims (evidence:
+docs/research/2026-08-13-language-ontology-frontier.md):
+
+- Positive-example-only grammar authoring is unlearnable in principle
+  (Gold 1967); any NL→DSL surface therefore requires the refusal
+  round-trip — the teaching loop is load-bearing, not UX.
+- Grammar-constrained decoding distorts an LLM's conditional
+  distribution (Grammar-Aligned Decoding, NeurIPS 2024): forced
+  validity is a syntactic claim, never a semantic one.
+- The semantic gap — whether an induced grammar/ontology means what
+  the description meant — is irreducible; foldlab's claim is
+  recomputability of what was built, never fidelity to intent.
+- Exploration bounds are minimum-cardinality, not small: the
+  canonical basis can be exponential and next-question computation is
+  coNP-complete; budgets and partial-basis refusals are the honest
+  interface to that edge.
+
 ## How to refute a claim
 
 Refutation is a contribution, and the machinery ships in the repo. A
