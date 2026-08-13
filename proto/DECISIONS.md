@@ -988,3 +988,16 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 38 — fresh KV identity (2026-08-13)
+
+### D??. The exported KV identity is a constructor result
+
+Decided: `emptyKV()` returns a new state and `Map` for every call, and
+`foldKV` calls that constructor at the start of every replay. Alternatives:
+freeze the exported singleton (insufficient because `Object.freeze` does not
+freeze a `Map`'s entries); proxy the map (changes ordinary `Map` semantics and
+still preserves a process-global identity); document the singleton as
+read-only (the runtime surface remains mutable). Why: the monoid law licenses
+an empty value, not shared mutable process state, and a consumer must be unable
+to poison any later consumer or fold. **Load-bearing? yes.**

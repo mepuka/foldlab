@@ -168,7 +168,7 @@ const seenWith = (
  * definition of what the meaning fold reads.
  */
 export const singletonSeqKV = (e: StreamEvent): SeqKVResult => {
-  const stepped = kvStep(emptyKV, e)
+  const stepped = kvStep(emptyKV(), e)
   if (stepped === undefined) {
     return { ok: false, refusal: { _tag: "MalformedPayload", stream: e.stream, seq: e.seq } }
   }
