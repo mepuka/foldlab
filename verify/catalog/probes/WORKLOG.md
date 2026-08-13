@@ -273,10 +273,85 @@ The planned `ASSUME` guards and `OverrunMirror` control are not in the
 worktree yet, so nothing to diff on those. `FINDING-BOUNDS-001.md`
 supplies the byte-identical-closure evidence for the `ASSUME`s.
 
+---
+
+## BOUND PROBES (clean at these bounds, to closure — never proof)
+
+| Probe | Bounds (D/C/V/cap) | Beyond baseline | Generated | Distinct | Depth | Verdict |
+|---|---|---|---:|---:|---:|---|
+| ratified cap2 | 2/2/2/1 | — (baseline) | 119,145 | 18,295 | 16 | clean |
+| `C2-cap2-creators3` | 2/**3**/2/1 | a **third concurrent CAS racer** | 1,267,549 | 161,231 | 17 | **clean** |
+| `T4-daemons4` | **4**/1/1/1 | — | 1,436,629 | 141,957 | 25 | clean |
+
+`C2` is the one that matters most: `NumCreators = 3` is the dimension
+that schedules a third creator racing the same authority journal, the
+most direct attack available on `Convergence` clause 1 and on the R3
+CAS-freshness clause. No violation at those bounds, to closure.
+
+B1-B4 (one dimension beyond the **gate**, not cap2) remain queued behind
+the gate-coverage run; they are expected to exceed the wall-clock budget
+and will be reported as depth-bounded prefixes, not closures.
+
+---
+
+## CTI HUNT against `IndInv`
+
+`probes/CTIProbe.tla` `EXTENDS Catalog` and reproduces `IndInv`,
+`AdmissionStep` and `MonotonicityStep` **verbatim** from
+`CatalogInd.tla` (copied rather than imported because `CatalogInd`
+EXTENDS the Apalache standard module, which TLC does not ship).
+
+It adds one variable, `probeStep`, which bounds exploration to exactly
+one transition — the definition of consecution — and has a second,
+deliberate effect: **because `probeStep` changes on every step, no step
+of this probe stutters**, so `[][A]_pvars` has no stuttering exemption.
+The action obligations are checked with teeth on every step, including
+steps that leave `vars` unchanged. That is the FINDING-BRIDGE-001 blind
+spot, closed inside the probe.
+
+### The two targeted families — both excluded by `IndInv`
+
+Method: `INIT` = the family, `INVARIANT` = `~IndInv`. A **clean** verdict
+means every state in the family falsifies `IndInv`, i.e. the family is
+excluded outright and no counterexample-to-induction can live in it.
+
+| Probe | Family | States enumerated | Verdict |
+|---|---|---:|---|
+| `Y1-family-a` | a mirror slot runs past its origin, or disagrees with it at a shared position | 1,093,248 | **clean — excluded** |
+| `Y2-family-b` | a busy creator with `exp > Len(catalog[at])` | 113,400 | **clean — excluded** |
+| `Y3-family-control` | same typed space, no family restriction | — | **violated (required)** — the typed space does contain `IndInv` states, so Y1/Y2 are not vacuous |
+
+Which conjunct does the excluding, stated precisely: family (a) is
+definitionally the negation of `LagIsAbsenceNeverWrongData`
+(`Catalog.tla:337-340`), and family (b) is definitionally the negation
+of `TypeOK`'s `p.exp <= Len(catalog[p.at])` (`Catalog.tla:304`). Both
+are conjuncts of `IndInv`, so the exclusion is **structural, not
+accidental**. The runs confirm the definitions were read correctly and
+that no interaction between conjuncts lets such a state slip through.
+
+Logs: `_runlogs/Y1-family-a.txt`, `Y2-family-b.txt`,
+`Y3-family-control.txt`.
+
+### `Y4` — independent TLC replication of consecution + action safety
+
+IN FLIGHT. `INIT` = every arbitrary **typed** state satisfying `IndInv`
+at 2 daemons / 2 values / 1 creator, catalogs up to length 2, mirrors up
+to length 1, data journals up to length 1; facts range over the full
+`Fact` record set, so `id` is **not** forced to equal `Digest(val)` and
+`Convergence`'s identity clause is exercised by the filter rather than
+assumed by the generator. One step, then `IndInv` (consecution) plus
+both action obligations.
+
+This re-derives Apalache obligations 2 and 4 by explicit enumeration
+under a different tool at smaller, fully stated bounds. Agreement is
+corroboration; disagreement would be a finding against whichever tool is
+wrong.
+
+---
+
 ## NOT YET ATTEMPTED
 
-- Bound probes B1-B4 (one dimension beyond the **gate**) — `C2` running,
-  B-series queued behind the gate-coverage run.
-- Counterexample-to-induction against `IndInv` at hand-built states,
-  prioritising (a) a mirror holding a fact its origin lacks at that
-  position and (b) a busy creator with `exp > Len(catalog[at])`.
+- Bound probes B1-B4 (one dimension beyond the **gate**).
+- Re-running the R4 Go branch-coverage assertion (needs
+  `mise x go@1.26.5`; not blocking, and the read-only scope note in
+  `FINDING-BRIDGE-001.md` stands).
