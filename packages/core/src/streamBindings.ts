@@ -15,8 +15,8 @@
  */
 
 import { Effect, Stream } from "effect"
-import type { Collector, EntityView, InvalidEntityAnchor, InvalidStreamEvent } from "./entity.ts"
-import { extend, type Head, type MalformedPayload, type StreamEvent } from "./stream.ts"
+import type { Collector, EntityView } from "./entity.ts"
+import { extend, type Head, type StreamEvent } from "./stream.ts"
 import type { Xform } from "./xform.ts"
 
 /** Lift a fused Xform pipeline onto a Stream (drop = empty substream). */
@@ -39,12 +39,8 @@ export const runCollect =
   (collector: Collector) =>
   <E, R>(
     self: Stream.Stream<StreamEvent, E, R>,
-  ): Effect.Effect<
-    ReadonlyArray<EntityView>,
-    E | MalformedPayload | InvalidStreamEvent | InvalidEntityAnchor,
-    R
-  > =>
+  ): Effect.Effect<ReadonlyArray<EntityView>, E, R> =>
     Effect.map(
-      Stream.runForEach(self, (e) => Effect.asVoid(collector.ingest(e))),
+      Stream.runForEach(self, (e) => Effect.sync(() => void collector.ingest(e))),
       () => collector.anchors().map((a) => collector.entity(a.key)!),
     )

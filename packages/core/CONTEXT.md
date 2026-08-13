@@ -14,9 +14,12 @@ The frozen Go-generated gzip frame (`fixtures/stream-wall.json`, via
 typed by a schema, judged by decoded values and heads, never compressed
 bytes.
 
-**Walled refusal seams**:
-Canonical JSON encoding, entity collection/composition, ambiguous merge replay,
-and fold-identity/cache admission refuse excluded inputs as data or withhold
-identity. Lower-level canonical writers (`encodeEvent`, `streamSeed`, `extend`,
-`stateDigest`, `parseFrames`, and `entitySeed`) retain their documented thrown
-range errors; Task 22 does not claim a package-wide error-channel migration.
+**Walled boundary behavior**:
+Canonical JSON encoding, `applyKV`, ambiguous merge replay, and
+fold-identity/cache admission refuse excluded inputs as data or withhold
+identity. `kvStep` reports an excluded payload as `undefined`; entity collection
+deliberately forgives that payload as a meaning no-op while its identity fold
+still commits the bytes. Lower-level canonical writers (`encodeEvent`,
+`streamSeed`, `extend`, `stateDigest`, `parseFrames`, and `entitySeed`) retain
+their documented thrown range errors; Task 22 does not claim a package-wide
+error-channel migration.

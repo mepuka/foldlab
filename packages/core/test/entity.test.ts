@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, test } from "bun:test"
-import { Effect, Schema } from "effect"
+import { Schema } from "effect"
 import * as FastCheck from "fast-check"
 import {
   composeEntities,
@@ -57,36 +57,6 @@ const compositionHistoryArbitrary = FastCheck.uniqueArray(entityEventPartArbitra
   minLength: 2,
   maxLength: 8,
 }).map(toHistory)
-
-const malformedPayloadCases: ReadonlyArray<ReadonlyArray<number>> = [
-  [0x00, 0x3d, 0x76], // NUL key
-  [0x6b, 0x3d, 0x00], // NUL value
-  [0xed, 0xa0, 0x80, 0x3d, 0x76], // UTF-8 encoding of a lone surrogate
-  [0x6b, 0x3d, 0xe2, 0x82], // truncated UTF-8 sequence
-]
-const malformedPayloadArbitrary = FastCheck.constantFrom(...malformedPayloadCases)
-  .map((payload) => Uint8Array.from(payload))
-
-const invalidAnchorArbitrary = FastCheck.oneof(
-  FastCheck.constant({ key: "high\ud800", head: "00".repeat(32) }),
-  FastCheck.constant({ key: "low\udc00", head: "00".repeat(32) }),
-  FastCheck.constant({ key: "contains=delimiter", head: "00".repeat(32) }),
-  FastCheck.string({ maxLength: 80 }).filter((head) => !/^[0-9a-f]{64}$/i.test(head))
-    .map((head) => ({ key: "valid", head })),
-)
-
-const invalidEventArbitrary = FastCheck.oneof(
-  FastCheck.integer({ max: -1 }).map((seq) => ({
-    stream: "bus",
-    seq,
-    payload: new TextEncoder().encode("key=value"),
-  })),
-  FastCheck.constant({
-    stream: "bus\ud800",
-    seq: 1,
-    payload: new TextEncoder().encode("key=value"),
-  }),
-)
 
 // A second, deliberately different backing implementation.
 const arrayBacking = (): Backing => {
@@ -157,143 +127,11 @@ describe("entity meaning-fold totality (C1)", () => {
 })
 
 describe("entity collector laws", () => {
-  test("C1: malformed payloads refuse without poisoning the backing", () => {
-    const backing = memoryBacking()
-    const collector = makeCollector(backing, () => "entity")
-    const nulKey: StreamEvent = {
-      stream: "bus",
-      seq: 1,
-      payload: Uint8Array.from([0x00, 0x3d, 0x76]),
-    }
-
-    const refusal = Effect.runSync(Effect.flip(collector.ingest(nulKey)))
-    expect(refusal._tag).toBe("MalformedPayload")
-    expect(backing.keys()).toEqual([])
-    expect(collector.anchors()).toEqual([])
-
-    for (const invalidLead of [0xff, 0xfe]) {
-      const invalid = makeCollector(memoryBacking(), () => "entity")
-      const invalidUtf8: StreamEvent = {
-        stream: "bus",
-        seq: 1,
-        payload: Uint8Array.from([invalidLead, 0x3d, 0x76]),
-      }
-      expect(Effect.runSync(Effect.flip(invalid.ingest(invalidUtf8)))._tag).toBe(
-        "MalformedPayload",
-      )
-      expect(invalid.entity("entity")).toBeUndefined()
-      expect(invalid.anchors()).toEqual([])
-    }
-
-    const composed = Effect.runSync(Effect.flip(composeEntities("root", [{
-      key: "child\0",
-      head: "00".repeat(32),
-    }])))
-    expect(composed._tag).toBe("InvalidEntityAnchor")
-  })
-
-  test("composition refuses non-scalar keys and malformed heads before encoding", () => {
-    for (const child of [
-      { key: "high\ud800", head: "00".repeat(32) },
-      { key: "low\udc00", head: "00".repeat(32) },
-      { key: "valid", head: "not-a-head" },
-    ]) {
-      const refusal = Effect.runSync(Effect.flip(composeEntities("root", [child])))
-      expect(refusal._tag).toBe("InvalidEntityAnchor")
-    }
-    const parent = Effect.runSync(Effect.flip(composeEntities("root\ud800", [])))
-    expect(parent._tag).toBe("InvalidEntityAnchor")
-  })
-
-  test("the composition refusal generator targets invalid keys and heads", () => {
-    FastCheck.assert(
-      FastCheck.property(invalidAnchorArbitrary, (child) => {
-        const refusal = Effect.runSync(Effect.flip(composeEntities("root", [child])))
-        expect(refusal._tag).toBe("InvalidEntityAnchor")
-      }),
-      { seed: 0x22c1_0005, numRuns: 250, endOnFailure: false },
-    )
-  })
-
-  test("collector reads and writes its backing only when the Effect executes", () => {
-    let correlations = 0
-    let gets = 0
-    let sets = 0
-    const backing: Backing = {
-      get: () => {
-        gets++
-        return undefined
-      },
-      set: () => {
-        sets++
-      },
-      keys: () => [],
-    }
-    const collector = makeCollector(backing, () => {
-      correlations++
-      return "entity"
-    })
-    const pending = collector.ingest(event("bus", 1, "key=value"))
-    expect(correlations).toBe(0)
-    expect(gets).toBe(0)
-    expect(sets).toBe(0)
-    Effect.runSync(pending)
-    expect(correlations).toBe(1)
-    expect(gets).toBe(1)
-    expect(sets).toBe(1)
-  })
-
-  test("collector refuses malformed event identity as data", () => {
-    for (const candidate of [
-      { stream: "bus", seq: -1, payload: new TextEncoder().encode("key=value") },
-      { stream: "bus\ud800", seq: 1, payload: new TextEncoder().encode("key=value") },
-    ]) {
-      const collector = makeCollector(memoryBacking(), () => "entity")
-      const refusal = Effect.runSync(Effect.flip(collector.ingest(candidate)))
-      expect(refusal._tag).toBe("InvalidStreamEvent")
-      expect(collector.anchors()).toEqual([])
-    }
-  })
-
-  test("the collector refusal generator targets malformed event identity", () => {
-    FastCheck.assert(
-      FastCheck.property(invalidEventArbitrary, (candidate) => {
-        const collector = makeCollector(memoryBacking(), () => "entity")
-        const refusal = Effect.runSync(Effect.flip(collector.ingest(candidate)))
-        expect(refusal._tag).toBe("InvalidStreamEvent")
-        expect(collector.anchors()).toEqual([])
-      }),
-      { seed: 0x22c1_0006, numRuns: 250, endOnFailure: false },
-    )
-  })
-
-  test("the entity refusal generator targets every payload boundary", () => {
-    FastCheck.assert(
-      FastCheck.property(malformedPayloadArbitrary, (payload) => {
-        const collector = makeCollector(memoryBacking(), () => "entity")
-        const refusal = Effect.runSync(Effect.flip(collector.ingest({
-          stream: "bus",
-          seq: 1,
-          payload,
-        })))
-        expect(refusal._tag).toBe("MalformedPayload")
-        expect(collector.entity("entity")).toBeUndefined()
-        expect(collector.anchors()).toEqual([])
-      }),
-      {
-        examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),
-        seed: 0x22c1_0001,
-        numRuns: 100,
-        endOnFailure: false,
-      },
-    )
-  })
-
   test("EC1: collector over the mixed stream = folds of each entity's subsequence", () => {
     FastCheck.assert(
       FastCheck.property(entityHistoryArbitrary, (history) => {
         const c = makeCollector(memoryBacking(), correlate)
-        for (const e of history) Effect.runSync(c.ingest(e))
+        for (const e of history) c.ingest(e)
         for (const key of new Set(history.map(correlate))) {
           const own = history.filter((e) => correlate(e) === key)
           const view = c.entity(key)!
@@ -311,8 +149,8 @@ describe("entity collector laws", () => {
         const a = makeCollector(memoryBacking(), correlate)
         const b = makeCollector(arrayBacking(), correlate)
         for (const e of history) {
-          Effect.runSync(a.ingest(e))
-          Effect.runSync(b.ingest(e))
+          a.ingest(e)
+          b.ingest(e)
         }
         expect(a.anchors()).toEqual(b.anchors())
       }),
@@ -324,9 +162,9 @@ describe("entity collector laws", () => {
     FastCheck.assert(
       FastCheck.property(entityHistoryArbitrary, (history) => {
         const inc = makeCollector(memoryBacking(), correlate)
-        for (const e of history) Effect.runSync(inc.ingest(e))
+        for (const e of history) inc.ingest(e)
         const batch = makeCollector(memoryBacking(), correlate)
-        for (const e of history) Effect.runSync(batch.ingest(e))
+        for (const e of history) batch.ingest(e)
         expect(inc.anchors()).toEqual(batch.anchors())
       }),
       { examples: [[mixed]], seed: 0x07ec_0003, numRuns: 250, endOnFailure: false },
@@ -337,17 +175,17 @@ describe("entity collector laws", () => {
     FastCheck.assert(
       FastCheck.property(compositionHistoryArbitrary, (history) => {
         const c = makeCollector(memoryBacking(), correlate)
-        for (const e of history) Effect.runSync(c.ingest(e))
+        for (const e of history) c.ingest(e)
         const kids = c.anchors().map(({ key, head }) => ({ key, head }))
 
-        const parent = Effect.runSync(composeEntities("root", kids))
-        const again = Effect.runSync(composeEntities("root", kids))
+        const parent = composeEntities("root", kids)
+        const again = composeEntities("root", kids)
         expect(again.head).toBe(parent.head)
         expect(stateDigest(again.state)).toBe(stateDigest(parent.state))
 
         // Order of children is committed: reversing them moves the parent head
         // (the chain remembers) while the state fold forgives (distinct keys).
-        const reversed = Effect.runSync(composeEntities("root", [...kids].reverse()))
+        const reversed = composeEntities("root", [...kids].reverse())
         expect(reversed.head).not.toBe(parent.head)
         expect(stateDigest(reversed.state)).toBe(stateDigest(parent.state))
 
@@ -356,7 +194,7 @@ describe("entity collector laws", () => {
         const grown = kids.map((k) => k.key === target.key
           ? { ...k, head: extend(k.head, event("bus", Number.MAX_SAFE_INTEGER, `${k.key}=grown`)) }
           : k)
-        expect(Effect.runSync(composeEntities("root", grown)).head).not.toBe(parent.head)
+        expect(composeEntities("root", grown).head).not.toBe(parent.head)
       }),
       { examples: [[mixed]], seed: 0x07ec_0004, numRuns: 250, endOnFailure: false },
     )

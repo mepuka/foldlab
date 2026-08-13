@@ -12,6 +12,7 @@ import {
   extend,
   foldKV,
   headFrom,
+  kvStep,
   parseFrames,
   put,
   replay,
@@ -340,8 +341,10 @@ describe("state and store adversaries", () => {
   test("the KV refusal generator targets every payload boundary", () => {
     FastCheck.assert(
       FastCheck.property(malformedPayloadArbitrary, (payload) => {
-        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, rawEvent("s", 1, payload))))
+        const input = rawEvent("s", 1, payload)
+        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, input)))
         expect(refusal._tag).toBe("MalformedPayload")
+        expect(kvStep(emptyKV, input)).toBeUndefined()
       }),
       {
         examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),
