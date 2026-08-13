@@ -257,6 +257,12 @@ export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
   return { entries, count: state.count + 1 }
 }
 
+/**
+ * The Effect error-channel sibling of pure `kvStep`: an excluded payload
+ * fails with `MalformedPayload`. This value is an `Effect`, not the `{ ok }`
+ * union returned by `foldSeqKV` in `kvSemilattice.ts`; interpret the Effect
+ * before inspecting success or refusal.
+ */
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
