@@ -931,6 +931,22 @@ mutate state instead of replies (already covered; misses the
 reply-only class the audit proved survivable). Why: a comparator that
 defaults a missing field to the expected value is a prover that
 cannot fail on that field. **Load-bearing? yes.**
+## GitHub issue 50 — backing-independent entity anchor order
+
+### D??. Collectors impose UTF-16 identity order at the backing seam
+
+Decided: `Collector.anchors()` copies and sorts every backing's key enumeration
+by explicit UTF-16 code-unit order before constructing anchor values. A
+`Backing.keys()` implementation may return storage, insertion, byte, or other
+order; that order is not semantic. Alternatives: require every backing to sort
+correctly (makes an unverified storage detail move parent commitments); keep the
+in-memory bare `.sort()` as the implicit authority (does not constrain other
+backings); choose UTF-8 byte order (diverges from the package's RFC 8785
+identity order). Why: EC2 says the backing is a seam, and EC4 commits the anchor
+sequence into a parent head. The regression uses U+1F600 and U+FFFD, whose
+UTF-16 and UTF-8 orders disagree, and proves both anchors and the composed head
+remain equal. **Load-bearing? yes** — ordering moves the parent chain head.
+
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
 ### D??. The tracer-bullet home is `proto/ts/src/cluster/`
