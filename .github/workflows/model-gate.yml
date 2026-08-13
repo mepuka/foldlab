@@ -1,0 +1,79 @@
+# The R2 model gate for the catalog + ingress laws — the canary, re-run.
+#
+# verify/catalog/run.sh is the whole gate: two clean closures of
+# Catalog.tla plus four REQUIRED refutations of CatalogBroken.tla, each on
+# exactly the law its config drops. A prover that cannot fail proves
+# nothing, so a broken spec coming back green fails the gate too.
+#
+# Why it runs on a schedule rather than per push: the tlaplus v1.8.0
+# release tag serves a ROLLING tla2tools.jar, so the toolchain under a
+# committed claim can move without anyone touching this repository.
+# run.sh pins by RECORDING the version and sha256 of the jar it actually
+# ran, and the cap2 closure — 119,145 states generated / 18,295 distinct /
+# depth 16 — is the cross-version canary. A jar that does not reproduce
+# the canary is a finding, not a nuisance.
+#
+# Runtime: the gate config alone is ~11min 23s of TLC on the recorded
+# machine (103,407,991 states generated, 12,707,989 distinct, depth 24);
+# the full six-verdict run is ~12 minutes there, and slower on a shared
+# runner at -workers 1. The timeout below is sized for that, not for the
+# recorded number.
+name: model-gate
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays, 05:17 UTC. Off the hour: GitHub's scheduler queues deepest
+    # on the hour, and a queued canary is a late canary.
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-gate
+  cancel-in-progress: false
+
+jobs:
+  r2-catalog:
+    name: R2 catalog + ingress (TLC)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      # run.sh resolves Java as $TLC_JAVA, then `mise x java@21`, then
+      # `java` on PATH. The runner has no mise, so this JDK is what it
+      # finds — the same Temurin 21 line the recorded results used.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # run.sh keeps its raw TLC transcripts in
+      # `mktemp -d "${TMPDIR:-/tmp}/catalog-tlc.XXXXXX"`, so pointing
+      # TMPDIR into the workspace collects them without changing the
+      # script. It downloads the pinned jar itself; the runner has curl
+      # and sha256sum, and nothing in the script wants a TTY.
+      - name: verify/catalog/run.sh
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tlc-out"
+          TMPDIR="$GITHUB_WORKSPACE/tlc-out" bash verify/catalog/run.sh 2>&1 \
+            | tee "$GITHUB_WORKSPACE/tlc-out/gate.log"
+
+      - name: Upload TLC output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: tlc-${{ github.run_id }}-${{ github.run_attempt }}
+          # The per-config transcripts and the gate log only. The metadirs
+          # beside them hold TLC's fingerprint set, which is large and
+          # tells no one anything.
+          path: |
+            tlc-out/gate.log
+            tlc-out/catalog-tlc.*/*.out.txt
+          if-no-files-found: warn
+          retention-days: 90
