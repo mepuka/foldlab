@@ -1,4 +1,4 @@
-# The lawful surface: an API enters the library only with the law that licenses it
+# The lawful surface: a public function enters a library only with the law that licenses it
 
 A public function in foldlab's libraries exists because a law writes
 it: a universal property whose uniqueness clause manufactures the

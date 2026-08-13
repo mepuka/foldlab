@@ -1,7 +1,7 @@
 # Operations
 
-How this repository is run now that `main` is public. Short on purpose:
-the gates are the policy, this is only the wiring around them.
+How this repository is run now that `main` is public. The gates are the
+policy; this file is only the wiring around them.
 
 ## Branch protection on `main`
 
@@ -18,7 +18,7 @@ the gates are the policy, this is only the wiring around them.
 - `model-gate.yml` is NOT required — it is a weekly canary on a rolling
   upstream jar, and a red canary is a finding to read, not a merge block.
 
-## Pins are law — decline the bots
+## Pins are law — no dependency bots
 
 Dependabot and Renovate are not enabled here and should not be. Every
 version in this repository is pinned exactly (`effect@4.0.0-rc.108`, Go
@@ -29,12 +29,12 @@ every recorded state count behind it: the JCS corpus, `stream-wall.json`,
 the wire fixtures, the R2 closure numbers. An automated PR that flips a
 pin is asking a bot to make a verification decision.
 
-So: re-pinning is deliberate. Move the pin by hand, re-run the battery
-and the affected model gates, and record what moved and what it cost —
-the same way `verify/catalog/run.sh` records the jar it actually ran
-rather than trusting the tag.
+Re-pinning is therefore deliberate. Move the pin by hand, re-run the
+battery and the affected model gates, and record what moved and what it
+cost — the same way `verify/catalog/run.sh` records the jar it actually
+ran rather than trusting the tag.
 
-## Flow
+## How work reaches `main`
 
 Executors work on their own branch or worktree — `codex/<task>`,
 `worktree-agent-*` — and `scratch/` is gitignored, so nothing in the
