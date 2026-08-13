@@ -6,7 +6,7 @@ import { GoJcsProbe } from "../../../packages/core/test/jcsProbe.ts"
 import {
   canonicalize,
   canonicalizeStructure,
-  normalizeStructure,
+  normalize,
   sha256Hex,
   structureDigest,
   type Json,
@@ -122,8 +122,8 @@ describe("proto JCS has the core/Go canonical identity domain", () => {
       optional: [],
     }
     const before = structuredClone(source)
-    const once = normalizeStructure(source)
-    const twice = normalizeStructure(once)
+    const once = normalize(source)
+    const twice = normalize(once)
     expect(source).toEqual(before)
     expect(twice).toEqual(once)
     expect(bytesOf(canonicalize(once))).toBe(bytesOf(canonicalize(twice)))

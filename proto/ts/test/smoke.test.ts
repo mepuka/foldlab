@@ -48,7 +48,7 @@ test("the smoke thread reads like an agent session", async () => {
     "type_unfill",
   ])
   expect(contract.ingress.note).toContain("NOT checked")
-  expect(contract.scheme).toBe("bytes-sha256-v1")
+  expect(contract.scheme).toBe("flb.type.v1")
 
   // 2 — create with a typo'd structure: the daemon refuses and teaches.
   const typoed = await session.createType({ k: "strng" })
@@ -86,7 +86,7 @@ test("the smoke thread reads like an agent session", async () => {
   expect(created.ok).toBe(true)
   if (!created.ok) throw new Error("ref+check create refused")
   expect(created.fact.created).toBe(true)
-  expect(created.fact.scheme).toBe("bytes-sha256-v1")
+  expect(created.fact.scheme).toBe("flb.type.v1")
   const typeDigest = created.fact.digest
 
   // 5 — publish a frame claiming the new type: admitted, and the reply
@@ -116,11 +116,16 @@ test("the smoke thread reads like an agent session", async () => {
   const catalog = await session.read("catalog")
   expect(catalog.ok).toBe(true)
   if (!catalog.ok) throw new Error("catalog read refused")
-  expect(catalog.fact.entries.length).toBe(2) // string, ref+check
-  const facts = catalog.fact.entries.map((e) => JSON.parse(e.payload))
+  expect(catalog.fact.entries.length).toBe(4) // two facts, each followed by its scheme bridge
+  const records = catalog.fact.entries.map((e) => JSON.parse(e.payload))
+  const facts = records.filter((record) => record.kind === undefined)
+  const bridges = records.filter((record) => record.kind === "flb.scheme-bridge.v0")
   expect(facts[0].digest).toBe(stringDigest)
   expect(facts[1].digest).toBe(typeDigest)
-  expect(facts.every((f: any) => f.scheme === "bytes-sha256-v1")).toBe(true)
+  expect(facts.every((f: any) => f.scheme === "flb.type.v1")).toBe(true)
+  expect(bridges).toHaveLength(2)
+  expect(bridges.every((bridge) => bridge.from.scheme === "bytes-sha256-v1")).toBe(true)
+  expect(bridges.every((bridge) => bridge.to.scheme === "flb.type.v1")).toBe(true)
 
   const data = await session.read("data")
   expect(data.ok).toBe(true)

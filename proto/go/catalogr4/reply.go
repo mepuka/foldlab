@@ -42,8 +42,8 @@ func decodeCreateFact(reply map[string]any) (createFact, error) {
 	if err != nil {
 		return createFact{}, err
 	}
-	if scheme != "bytes-sha256-v1" {
-		return createFact{}, fmt.Errorf("field %q = %q, want %q", "scheme", scheme, "bytes-sha256-v1")
+	if scheme != "flb.type.v1" {
+		return createFact{}, fmt.Errorf("field %q = %q, want %q", "scheme", scheme, "flb.type.v1")
 	}
 	if _, err := requireInteger(reply, "catalogSeq"); err != nil {
 		return createFact{}, err

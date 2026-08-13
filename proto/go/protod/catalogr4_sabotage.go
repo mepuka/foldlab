@@ -10,7 +10,7 @@ import "foldlab/canonical"
 // scheme tag. This file is absent from every normal build.
 type catalogR4AssertedIdentity struct{}
 
-func (catalogR4AssertedIdentity) Name() string { return "bytes-sha256-v1" }
+func (catalogR4AssertedIdentity) Name() string { return flbTypeV1Scheme }
 
 func (catalogR4AssertedIdentity) Derive(canonicalBytes []byte) string {
 	preimage := append([]byte("catalog-r4-asserted-identity:"), canonicalBytes...)

@@ -1823,6 +1823,23 @@ open event). Why: every daemon refusal must persist one truthful sort, and a
 changed kind table must mint a new manifest digest. **Load-bearing? yes** —
 archived refusal meaning and future corpus admission depend on this table.
 
+### D??. Session state evidence stays historical while new catalog commits use the owned scheme
+
+Decided at Task 36 integration: `flb.session.v0` state replies and the frozen
+session fixture retain their historical `bytes-sha256-v1` state-scheme tag;
+session commit sends a cloned request through the sole `certify(bytes)` seam,
+requires the resulting `flb.type.v1` digest to equal the replay-derived state
+digest, and records the owned catalog scheme in the commit event and reply.
+The certification append has already made the corresponding
+`flb.scheme-bridge.v0` durable before that reply. Alternatives: relabel the
+existing session fixture and every historical state fact as `flb.type.v1`
+(reinterpretation); bypass `certify(bytes)` with a second catalog-admission
+path; keep requiring a new catalog fact to use the predecessor scheme (blocks
+the owned-scheme transition). Why: historical evidence keeps the scheme it was
+minted under, while every post-transition catalog admission uses the one
+ratified owned identity seam. **Load-bearing? yes** — replay audit, catalog
+identity, and the append-only bridge must agree without rewriting history.
+
 ## Issue #9 — catalog bound honesty (2026-08-13)
 
 ### D??. Guard every constant and independently control each literal-domain ceiling
@@ -1879,3 +1896,85 @@ introduce new house synonyms (outside this repair). Why: a vocabulary bridge
 can teach recognition without licensing drift in repository prose.
 **Load-bearing? no** — wording may improve while the chosen house terms stay
 unchanged.
+
+## Task 36 — the owned canonical encoding (2026-08-14)
+
+### D??. Normalize is a pure copy-producing function over grammar-valid terms
+
+Decided: Go `normalize(any) (any, error)` returns a new type tree and has one
+rewrite clause today: recursively normalize union members, then sort them by
+canonical bytes. The validation walk uses normal-form bytes only for duplicate
+detection and never mutates the submitted tree; `walkPartial` remains explicitly
+position-preserving. The property gate runs 512 deterministic depth-4 terms
+(PCG seeds `0x36d20001/2`), compares bottom-up with fair top-down clause schedules,
+and carries an order-toggling idempotence mutant; the TS twin runs 512 terms at
+seed `0x36d20003`. The cost envelope counts production work independently of
+identity: an N-node grammar tree permits exactly one structural node visit and
+one cached canonical sort-key derivation per union member, with sort comparisons
+metered separately. The adversarial gate alternates nested structs and binary
+unions at four scales inside the 256-container decode domain; its independent
+shape walk supplies the bound, and an idempotent extra-pass mutant returns the
+same normal form but exceeds it. Alternatives: retain the rewrite inside `walkStructure`;
+normalize in place; make partials share the identity discipline. Why: the first
+two hide or leak normalization and the third breaks fill/unfill path inversion.
+**Load-bearing? yes** — every owned identity depends on this unique normal form.
+
+### D??. The owned scheme is named `flb.type.v1` and gets new, separate vectors
+
+Decided: the active scheme tag is exactly `flb.type.v1`; the predecessor remains
+`bytes-sha256-v1`. The old `types.json` corpus is re-derived through the extracted
+normalize using the predecessor scheme and is byte-identical; new nested,
+permuted-union, and ref-bearing vectors live in `owned-types-v1.json`. At the
+current first normalize clause the two hashes can be equal while their scheme
+claims remain different. Alternatives: call the new scheme `foldlab.schema.v1`;
+retag or rewrite `types.json`; bind identity to SchemaAST. Why: all three
+contradict ticket 004 D1 or erase the migration evidence. **Load-bearing? yes**
+— the scheme tag fixes the preimage contract, not merely the hash algorithm.
+
+### D??. Cycle checking follows resolved structures at the walk seam
+
+Decided: `walkRefGraph` takes the candidate, its refusal path, and a structure
+resolver; it tracks active and visited digest sets, refuses a back-edge as a
+W7-shaped `invalid-structure`, and permits acyclic sharing. Unknown references
+remain the catalog's more specific `unknown-ref` decision. Alternatives: rely
+only on append order; check self-refs only; implement SCC hashing now. Why: the
+first leaves the law accidental, the second misses multi-hop cycles, and the
+third builds the pre-ratified successor without a consumer. **Load-bearing?
+yes** — acyclicity is part of the `flb.type.v1` admissible domain.
+
+### D??. Scheme bridges are mixed evidence records in the catalog journal
+
+Decided: `flb.scheme-bridge.v0` is `{kind,from:{digest,scheme},to:{digest,scheme}}`
+and is appended immediately after the new owned catalog fact in the same
+journal. A successful response therefore witnesses both records in its catalog
+head. If the fact append succeeds but the bridge append fails, the in-memory and
+restart indexes retain the fact; retry appends only the missing bridge before
+replying. Rebuild strictly decodes known bridge records and rejects unknown
+evidence kinds. Alternatives: overwrite the predecessor fact; put bridges in a
+private second journal; embed the bridge inside the fact. Why: overwrite breaks
+append-only history, a private journal weakens auditability, and embedding is
+not a second evidence record. **Load-bearing? yes** — this is the migration law.
+
+### D??. The certifier trusted-base draft is scoped to the admission call graph
+
+Decided: the merge-time `VERIFICATION.md` draft will enumerate `dispatch.go`,
+`certify.go`, `catalog.go`, `walk.go`, `normalize.go`, `recursion.go`, `scheme.go`,
+`scheme_bridge.go`, and `refusal.go`, with the imported `go/canonical` and
+`go/journal` assumptions named rather than silently counted as local code. The
+TS twin is a wall, not part of the trusted certifier. Alternatives: a line count;
+list all of protod; list only `certify.go`. Why: those choices respectively rot,
+hide the real call graph, or omit the machinery that can betray admission.
+**Load-bearing? yes** — this bounds what the certification claim trusts.
+
+### D??. `certify` consumes the complete `type.create` request bytes
+
+Decided: the named seam is unexported
+`Daemon.certify(context, []byte) -> certificate | *Refusal | error`; its bytes
+include the request envelope, not only the nested structure, so malformed-body
+and missing-structure decisions cannot live on a second path. The error result
+is reserved for substrate failure. `catalog.commitCertified` is unexported and
+a static test permits its one production caller only in `certify.go`.
+Alternatives: name only the structure walk; keep envelope refusals in dispatch;
+export a convenience certifier. Why: each creates a second admission decision
+or an unlicensed public surface. **Load-bearing? yes** — Task 32 attaches outcome
+persistence at this seam.

@@ -13,6 +13,14 @@ spec did not fix is logged in `DECISIONS.md`.
   duplicate member names, lone surrogate escapes, and invalid UTF-8 refuse as
   data and cannot be repaired into an identity-bearing catalog value
   (`proto/go/protod/request_body_identity_test.go`).
+- `flb.type.v1` identity is SHA-256 over the RFC 8785 bytes of the owned
+  walk's normal form. Normalize is total on valid terms, structurally
+  terminating, confluent, and idempotent; the position-preserving
+  partial walk remains a separate discipline.
+- Every new certification dual-runs the attestation and owned schemes,
+  appending an owned catalog fact plus `flb.scheme-bridge.v0` evidence.
+  Neither record is rewritten in place, and `certify(bytes)` is the one
+  catalog-admission seam.
 - Refusals are data everywhere: daemon replies, client-local
   conditions, author-fold rejections, MCP tool results — one uniform
   shape, `local` marking the side that uttered it. Nothing throws

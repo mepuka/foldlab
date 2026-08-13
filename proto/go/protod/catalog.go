@@ -32,6 +32,7 @@ type catalog struct {
 	mu       sync.Mutex
 	journal  *journal.Journal
 	byDigest map[string]catalogFact
+	bridges  map[schemeBridge]bool
 }
 
 func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) {
@@ -39,12 +40,33 @@ func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) 
 	if err != nil {
 		return nil, err
 	}
-	c := &catalog{journal: opened, byDigest: map[string]catalogFact{}}
+	c := &catalog{
+		journal:  opened,
+		byDigest: map[string]catalogFact{},
+		bridges:  map[schemeBridge]bool{},
+	}
 	entries, _, err := opened.Read(ctx, journal.Cursor{Seq: -1, Head: genesis}, 0)
 	if err != nil {
 		return nil, fmt.Errorf("rebuild catalog index: %w", err)
 	}
 	for _, entry := range entries {
+		var envelope struct {
+			Kind string `json:"kind"`
+		}
+		if err := json.Unmarshal([]byte(entry.Payload), &envelope); err != nil {
+			return nil, fmt.Errorf("catalog entry %d is not JSON: %w", entry.Seq, err)
+		}
+		if envelope.Kind == schemeBridgeKind {
+			bridge, err := decodeSchemeBridge([]byte(entry.Payload))
+			if err != nil {
+				return nil, fmt.Errorf("catalog entry %d is not a scheme bridge: %w", entry.Seq, err)
+			}
+			c.bridges[bridge] = true
+			continue
+		}
+		if envelope.Kind != "" {
+			return nil, fmt.Errorf("catalog entry %d has unknown evidence kind %q", entry.Seq, envelope.Kind)
+		}
 		var fact catalogFact
 		if err := json.Unmarshal([]byte(entry.Payload), &fact); err != nil {
 			return nil, fmt.Errorf("catalog entry %d is not a fact: %w", entry.Seq, err)
@@ -60,6 +82,16 @@ func (c *catalog) resolve(digest string) bool {
 	defer c.mu.Unlock()
 	_, known := c.byDigest[digest]
 	return known
+}
+
+func (c *catalog) resolveStructure(digest string) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	fact, known := c.byDigest[digest]
+	if !known {
+		return nil, false
+	}
+	return fact.Structure, true
 }
 
 func (c *catalog) resolvableDigests(limit int) []string {
@@ -93,10 +125,11 @@ func (c *catalog) frontierSnapshot(limit int) (string, []string) {
 	return c.journal.Head().Head, digests
 }
 
-// create canonicalizes, derives, converges or appends. The refusal
+// commitCertified normalizes, canonicalizes, derives, converges or appends.
+// It is reachable only through certify(bytes). The refusal
 // return is data; error is reserved for substrate failure (JetStream
 // down), which surfaces as a NATS-level timeout, never a domain no.
-func (c *catalog) create(
+func (c *catalog) commitCertified(
 	ctx context.Context,
 	structure any,
 	asserted string,
@@ -124,14 +157,24 @@ func (c *catalog) create(
 			}, nil
 		}
 	}
+	if recursionRefusal := walkRefGraph(structure, []string{"structure"}, c.resolveStructure); recursionRefusal != nil {
+		return catalogFact{}, false, recursionRefusal, nil
+	}
 
-	bytes, err := canonicalBytes(structure)
+	normalized, err := normalize(structure)
+	if err != nil {
+		// walkStructure proved the input is inside normalize's domain.
+		return catalogFact{}, false, nil, err
+	}
+	bytes, err := canonicalBytes(normalized)
 	if err != nil {
 		// The walk admits only decoded JSON, so the canonical domain
 		// cannot be escaped here; treat failure as substrate.
 		return catalogFact{}, false, nil, err
 	}
+	attested := (bytesSHA256V1{}).Derive(bytes)
 	derived := activeScheme.Derive(bytes)
+	bridge := newSchemeBridge((bytesSHA256V1{}).Name(), attested, activeScheme.Name(), derived)
 	if asserted != "" && asserted != derived {
 		return catalogFact{}, false, &Refusal{
 			Kind:     KindDigestMismatch,
@@ -156,7 +199,12 @@ func (c *catalog) create(
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if existing, known := c.byDigest[derived]; known {
+	if existing, known := c.byDigest[derived]; known && existing.Scheme == activeScheme.Name() {
+		if !c.bridges[bridge] {
+			if err := c.appendBridge(ctx, bridge); err != nil {
+				return catalogFact{}, false, nil, err
+			}
+		}
 		return existing, false, nil, nil
 	}
 
@@ -181,7 +229,24 @@ func (c *catalog) create(
 	}
 	fact.seq = entry.Seq
 	c.byDigest[fact.Digest] = fact
+	if err := c.appendBridge(ctx, bridge); err != nil {
+		// The fact is already durable and indexed. A retry observes it and
+		// appends only the missing bridge before any successful reply.
+		return catalogFact{}, false, nil, err
+	}
 	return fact, true, nil, nil
+}
+
+func (c *catalog) appendBridge(ctx context.Context, bridge schemeBridge) error {
+	payload, err := canonicalBytes(bridge)
+	if err != nil {
+		return err
+	}
+	if _, _, err := c.journal.Append(ctx, string(payload)); err != nil {
+		return err
+	}
+	c.bridges[bridge] = true
+	return nil
 }
 
 func readCatalogHint() NextHint {

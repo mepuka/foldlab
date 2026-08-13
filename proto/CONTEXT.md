@@ -52,8 +52,22 @@ retains no authoring session.
 
 **Scheme**:
 The identity-derivation seam (W10). `bytes-sha256-v1`: SHA-256 over
-RFC 8785 canonical structure bytes. Ticket 004's exhaustive fold
-arrives as a second scheme with no wire change.
+RFC 8785 canonical structure bytes, retained as attestation-grade.
+`flb.type.v1`: SHA-256 over the RFC 8785 bytes of `normalize(term)` on
+the foldlab-owned walk. SchemaAST folds are derivation machinery and
+never an identity substrate.
+
+**Normal form**:
+The unique result of `normalize(term)` before `flb.type.v1` identity.
+The current reduction recursively normalizes type children and sorts
+union members by canonical bytes. The partial walk is the other
+reading discipline: it preserves positions and never normalizes.
+
+**Scheme bridge**:
+The append-only `flb.scheme-bridge.v0` evidence record linking one
+owned term's digest under a predecessor scheme to its digest under a
+successor. A bridge adds a fact; it never re-derives or rewrites a
+committed identity in place.
 
 **Author fold**:
 Effect Schema → flb.type.v0, partial by design: what v0 cannot express

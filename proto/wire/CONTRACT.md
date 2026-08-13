@@ -49,13 +49,17 @@ corpus-sized accept/refuse equivalence, not proof over all JSON values.
 {"structure": <flb.type.v0>, "assertedDigest": "<hex64>"?, "submitter": "<string>"?}
 ```
 
-Fact: `{"ok":true,"created":bool,"digest":hex64,"scheme":"bytes-sha256-v1",
+Fact: `{"ok":true,"created":bool,"digest":hex64,"scheme":"flb.type.v1",
 "catalogSeq":int,"catalogHead":hex64,"next":[hint...]}`
 
-The daemon canonicalizes the structure itself (RFC 8785) and derives
-the digest from those bytes (W1, W2). Same bytes converge:
+The daemon validates and normalizes the owned structure, canonicalizes
+the normal form itself (RFC 8785), and derives the digest from those
+bytes (W1, W2). Same normal form converges:
 `created:false` with the existing fact, never an error (W3). An
 asserted digest the daemon cannot re-derive refuses with both values.
+Each new certification appends the owned fact and then a canonical
+`flb.scheme-bridge.v0` record from `bytes-sha256-v1` to `flb.type.v1`;
+neither prior fact is ever rewritten.
 
 ### type.fill / type.unfill
 
@@ -266,10 +270,13 @@ remains a bounded residual outside the populated-catalog one-step repair.
 
 ## Identity
 
-Interim scheme `bytes-sha256-v1` (W10): SHA-256 over the RFC 8785
-canonical bytes of the structure. Every catalog fact is scheme-tagged;
-ticket 004's owned scheme (canonical(normalize(term)) over the
-flb.type.v0 walk) lands as a second scheme with no wire change.
+Owned scheme `flb.type.v1` (W10): SHA-256 over the RFC 8785 canonical
+bytes of `normalize(term)`. Normalize is total on grammar-valid terms,
+structurally terminating, confluent, and idempotent; its first clause
+sorts union members by canonical bytes after recursively normalizing
+them. The predecessor `bytes-sha256-v1` remains accepted as
+attestation-grade during the dual-run transition. Every catalog fact
+is scheme-tagged, and every transition is append-only bridge evidence.
 
 ## Fixtures (frozen)
 
@@ -294,3 +301,7 @@ grow only with a stated reply-domain reason; existing rows are frozen evidence.
 - `sessions.json` — one `flb.session.v0` dialogue with each canonical event
   (including its owned principal), per-prefix chain head, and normalized state
   digest (U3 R0).
+- `owned-types-v1.json` — the new owned-scheme normal forms and digests,
+  including nested, permuted-union, and ref-bearing terms.
+- `scheme-bridges.json` — canonical dual-scheme evidence records decoded
+  and re-derived by both runtimes.

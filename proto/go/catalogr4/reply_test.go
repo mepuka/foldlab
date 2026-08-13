@@ -100,7 +100,7 @@ func TestStrictReplyDecodingRejectsValuesOutsideTheDeclaredWireDomains(t *testin
 func validCreateReply() map[string]any {
 	return map[string]any{
 		"ok": true, "created": false, "digest": strings.Repeat("0", 64),
-		"scheme": "bytes-sha256-v1", "catalogSeq": float64(0),
+		"scheme": "flb.type.v1", "catalogSeq": float64(0),
 		"catalogHead": strings.Repeat("0", 64), "next": []any{},
 	}
 }

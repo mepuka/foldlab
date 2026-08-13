@@ -1,41 +1,41 @@
 {
-  "_provenance": "Hand-authored adversarial corpus required by GitHub #57. Go catalogr4 strict decoding is the independent oracle; proto/go/catalogr4/reply_conformance_test.go and proto/ts/test/reply-conformance.test.ts must agree on every row. Refusal rows gained the Task 30 operator-authorized persisted sort when that wire field became mandatory; otherwise frozen after the first green wall.",
+  "_provenance": "Hand-authored adversarial corpus required by GitHub #57. Go catalogr4 strict decoding is the independent oracle; proto/go/catalogr4/reply_conformance_test.go and proto/ts/test/reply-conformance.test.ts must agree on every row. Refusal rows gained the Task 30 operator-authorized persisted sort when that wire field became mandatory; create rows gained Task 36's ratified flb.type.v1 scheme when it became the active catalog identity; otherwise frozen after the first green wall.",
   "cases": [
     {
       "name": "create-valid",
       "kind": "create",
       "accept": true,
-      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","body":{"journal":"catalog"}}]}
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"flb.type.v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","body":{"journal":"catalog"}}]}
     },
     {
       "name": "create-extra-top-level",
       "kind": "create",
       "accept": false,
-      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[],"ghost":true}
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"flb.type.v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[],"ghost":true}
     },
     {
       "name": "create-extra-next-hint",
       "kind": "create",
       "accept": false,
-      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","ghost":true}]}
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"flb.type.v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","ghost":true}]}
     },
     {
       "name": "create-bad-digest",
       "kind": "create",
       "accept": false,
-      "value": {"ok":true,"created":false,"digest":"not-a-digest","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
+      "value": {"ok":true,"created":false,"digest":"not-a-digest","scheme":"flb.type.v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
     },
     {
       "name": "create-negative-sequence",
       "kind": "create",
       "accept": false,
-      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":-5,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"flb.type.v1","catalogSeq":-5,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
     },
     {
       "name": "create-empty-head",
       "kind": "create",
       "accept": false,
-      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"","next":[]}
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"flb.type.v1","catalogSeq":0,"catalogHead":"","next":[]}
     },
     {
       "name": "refusal-valid-daemon",

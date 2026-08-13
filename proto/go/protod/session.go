@@ -385,26 +385,33 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 		})
 	}
 
-	// type.create mutates union order during the current inline normalize. The
-	// session state remains position-preserving, so audit a clone and keep the
-	// meaning-fold carrier untouched.
-	fact, _, createRefusal, err := d.catalog.create(ctx, cloneJSON(stored.state), "", request.Submitter)
+	// Session commit enters through the same byte-owned certification seam as
+	// type.create. The session state remains position-preserving, so certify a
+	// cloned request and keep the meaning-fold carrier untouched.
+	createBody, err := json.Marshal(createRequest{
+		Structure: cloneJSON(stored.state), Submitter: request.Submitter,
+	})
+	if err != nil {
+		return nil
+	}
+	certificate, createRefusal, err := d.certify(ctx, createBody)
 	if err != nil {
 		return nil
 	}
 	if createRefusal != nil {
 		return refuse(createRefusal)
 	}
+	fact := certificate.Fact
 	stateDigest, err := sessionStateDigest(stored.state)
 	if err != nil {
 		return nil
 	}
-	if fact.Scheme != sessionStateScheme || fact.Digest != stateDigest {
+	if fact.Scheme != flbTypeV1Scheme || fact.Digest != stateDigest {
 		return refuse(&Refusal{
 			Kind:     KindDigestMismatch,
 			Law:      "L7: replay, normalize, canonicalize, and digest must equal the commit digest",
 			Got:      map[string]any{"digest": fact.Digest, "scheme": fact.Scheme},
-			Expected: map[string]any{"digest": stateDigest, "scheme": sessionStateScheme},
+			Expected: map[string]any{"digest": stateDigest, "scheme": flbTypeV1Scheme},
 			Next:     []NextHint{describeHint()},
 		})
 	}

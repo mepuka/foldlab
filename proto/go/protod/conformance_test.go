@@ -202,7 +202,7 @@ func TestConformance(t *testing.T) {
 
 	t.Run("W10 the catalog fact is scheme-tagged", func(t *testing.T) {
 		r := h.create(sample)
-		if r["scheme"] != "bytes-sha256-v1" {
+		if r["scheme"] != "flb.type.v1" {
 			t.Fatalf("create reply is not scheme-tagged: %v", r)
 		}
 		read := h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
@@ -215,7 +215,7 @@ func TestConformance(t *testing.T) {
 		if err := json.Unmarshal([]byte(payload), &fact); err != nil {
 			t.Fatalf("catalog payload is not a fact: %v", err)
 		}
-		if fact["scheme"] != "bytes-sha256-v1" {
+		if fact["scheme"] != "flb.type.v1" {
 			t.Fatalf("committed fact is not scheme-tagged: %v", fact)
 		}
 	})
@@ -802,4 +802,48 @@ func mustJSON(t *testing.T, value any) []byte {
 		t.Fatal(err)
 	}
 	return raw
+}
+
+func TestCertificationAppendsFactAndSchemeBridge(t *testing.T) {
+	h := acquire(t)
+	created := h.create(map[string]any{"k": "string"})
+	if created["ok"] != true || created["created"] != true {
+		t.Fatalf("create failed: %v", created)
+	}
+	digest := created["digest"].(string)
+	read := h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
+	entries := read["entries"].([]any)
+	if len(entries) != 2 {
+		t.Fatalf("one certification appended %d records, want fact + bridge", len(entries))
+	}
+
+	var fact map[string]any
+	if err := json.Unmarshal([]byte(entries[0].(map[string]any)["payload"].(string)), &fact); err != nil {
+		t.Fatalf("decode catalog fact: %v", err)
+	}
+	var bridge map[string]any
+	if err := json.Unmarshal([]byte(entries[1].(map[string]any)["payload"].(string)), &bridge); err != nil {
+		t.Fatalf("decode scheme bridge: %v", err)
+	}
+	if fact["digest"] != digest || fact["scheme"] != "flb.type.v1" {
+		t.Fatalf("wrong owned fact: %v", fact)
+	}
+	if bridge["kind"] != "flb.scheme-bridge.v0" {
+		t.Fatalf("wrong bridge kind: %v", bridge)
+	}
+	from := bridge["from"].(map[string]any)
+	to := bridge["to"].(map[string]any)
+	if from["scheme"] != "bytes-sha256-v1" || from["digest"] != digest ||
+		to["scheme"] != "flb.type.v1" || to["digest"] != digest {
+		t.Fatalf("wrong bridge: %v", bridge)
+	}
+
+	converged := h.create(map[string]any{"k": "string"})
+	if converged["ok"] != true || converged["created"] != false {
+		t.Fatalf("resubmission did not converge: %v", converged)
+	}
+	read = h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
+	if got := len(read["entries"].([]any)); got != 2 {
+		t.Fatalf("convergence duplicated bridge evidence: got %d records", got)
+	}
 }

@@ -169,7 +169,7 @@ func TestSessionJournalConformance(t *testing.T) {
 	if committed["ok"] != true {
 		t.Fatalf("session commit refused: %v", committed)
 	}
-	if committed["digest"] != committed["stateDigest"] || committed["scheme"] != "bytes-sha256-v1" {
+	if committed["digest"] != committed["stateDigest"] || committed["scheme"] != "flb.type.v1" {
 		t.Fatalf("L7 audit did not converge: %v", committed)
 	}
 	if committed["principal"] != "conformance-agent" {

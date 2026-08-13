@@ -300,7 +300,7 @@ describe("flb.session.v0", () => {
     expect(committed.ok).toBe(true)
     if (!committed.ok) throw new Error(JSON.stringify(committed.refusal))
     expect(committed.fact.digest).toBe(committed.fact.stateDigest)
-    expect(committed.fact.scheme).toBe("bytes-sha256-v1")
+    expect(committed.fact.scheme).toBe("flb.type.v1")
 
     const resumed = await JournalSession.resume(client, committed.fact.session)
     expect(resumed.ok).toBe(true)

@@ -42,25 +42,25 @@ export const sha256Hex = (input: string): string =>
 /** Normalize the one unordered collection in flb.type.v0. This is
  * deliberately grammar-aware: arrays in literals/check args remain
  * ordered JSON data, while union members sort by their canonical bytes. */
-export const normalizeStructure = (value: Json): Json => {
+export const normalize = (value: Json): Json => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return value
 
   switch (value["k"]) {
     case "list":
-      return { ...value, of: normalizeStructure(value["of"] as Json) }
+      return { ...value, of: normalize(value["of"] as Json) }
     case "struct": {
       const rawFields = value["fields"]
       if (typeof rawFields !== "object" || rawFields === null || Array.isArray(rawFields)) return value
       const fields: Record<string, Json> = {}
       for (const name of Object.keys(rawFields)) {
-        fields[name] = normalizeStructure(rawFields[name] as Json)
+        fields[name] = normalize(rawFields[name] as Json)
       }
       return { ...value, fields }
     }
     case "union": {
       const rawMembers = value["of"]
       if (!Array.isArray(rawMembers)) return value
-      const normalized = rawMembers.map(normalizeStructure)
+      const normalized = rawMembers.map(normalize)
       const members: Array<{ readonly value: Json; readonly canonical: string }> = []
       for (const member of normalized) {
         const encoded = canonicalize(member)
@@ -74,9 +74,9 @@ export const normalizeStructure = (value: Json): Json => {
       return { ...value, of: members.map((member) => member.value) }
     }
     case "brand":
-      return { ...value, of: normalizeStructure(value["of"] as Json) }
+      return { ...value, of: normalize(value["of"] as Json) }
     case "check":
-      return { ...value, base: normalizeStructure(value["base"] as Json) }
+      return { ...value, base: normalize(value["base"] as Json) }
     default:
       return value
   }
@@ -88,11 +88,14 @@ export const canonicalizeStructure = (structure: Json): CanonicalEncoding => {
   // Validate before walking: cycles, exotic prototypes, undefined members,
   // non-finite numbers, and invalid Unicode must never reach normalization.
   const admitted = canonicalize(structure)
-  return admitted.ok ? canonicalize(normalizeStructure(structure)) : admitted
+  return admitted.ok ? canonicalize(normalize(structure)) : admitted
 }
 
-/** The interim identity scheme, named to match the daemon (W10). */
-export const SCHEME = "bytes-sha256-v1"
+/** The owned identity scheme, named to match the daemon (W10). */
+export const SCHEME = "flb.type.v1"
+
+/** The transition's attestation-grade predecessor. */
+export const ATTESTATION_SCHEME = "bytes-sha256-v1"
 
 export type StructureDigestResult =
   | { readonly ok: true; readonly digest: string }
