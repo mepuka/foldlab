@@ -15,7 +15,7 @@ how D44–D48 got double-assigned once; the renumbering parenthetical
 under Task 09 is what that costs. So:
 
 1. A branch writes entries under its own `## Task NN` heading with
-   task-local placeholders (`D?a`, `D?b`, …). Whoever merges reads the
+   task-local placeholders (`D55`, `D56`, …). Whoever merges reads the
    last `### D` heading in this file, assigns the next free numbers,
    and records the renumbering in a parenthetical under the task
    heading.
@@ -720,3 +720,88 @@ Neither harness rewrites fixtures or patches implementations. Alternative:
 an always-on unbounded CI fuzz job; rejected because the requested normal gate
 is deterministic and bounded. **Load-bearing? no** — execution budget is an
 operational choice.
+
+## Task 16 — substrate assumption gate and certified envelope (2026-08-13)
+
+### D55. Cross-cutting substrate laws live in `go/substrate`
+Decided: the four JetStream assumptions get a test-only package at
+`go/substrate/assumptions_test.go`, below both journal and effector rather than
+being folded into either module's own law table. The common harness always
+starts one embedded, file-backed, non-clustered server; the create race has 32
+contenders, stale CAS is retried 16 times, and the read-after-ack hammer runs 8
+writers for 64 acknowledged writes each. Alternatives: duplicate the laws in
+`journal` and `effector`; place all four in `effector` even though three are raw
+KV properties; use an unbounded stress duration. Why: one pin-bump gate should
+name each external assumption once, and fixed bounds keep the normal gate
+deterministic while exercising genuine concurrency. **Load-bearing? no** — the
+package seam is organizational and the bounds may grow without changing the
+law.
+
+### D56. Finding: administrative delete and purge erase `Done` undetectably
+The first terminal-immutability law run against pinned nats-server v2.14.4 and
+nats.go v1.53.1 failed for both KV `Delete` and `Purge`. Minimized repro: open
+the current effector bucket, claim and commit one digest, perform the
+administrative operation with `LastRevision(doneRevision)`, then call
+`Lookup` and `Claim`. Both operations succeed; the next KV read is
+`ErrKeyNotFound` (not `ErrKeyDeleted`), effector `Lookup` returns `Unclaimed`
+without error, and a replacement claim succeeds at fence 1. Exact replay:
+`cd go && go test ./substrate -run '^TestTerminalImmutability$' -count=1 -v`.
+Decided: preserve the red executable repro and stop Task 16 before implementing
+the certified-envelope change or any production workaround, as the ticket's
+findings-before-fixes rule requires. Alternatives deliberately not taken:
+treat absence of destructive methods on `Effector` as immutability; make the
+test accept `ErrKeyNotFound`; patch `Claim` around the erased key. Why: all
+three would conceal that a principal with KV administration can reopen a
+terminal decision. **Load-bearing? yes** — this falsifies one of the four
+substrate assumptions beneath the effector safety claim and requires operator
+disposition before implementation may resume.
+
+### D56 disposition
+Operator-ratified layered enforcement. The terminal law flips from the red
+admin repro to the boundary the current proof can honestly require:
+application credentials cannot publish to register-bucket subjects, while a
+privileged admin `Delete`/`Purge` remains in the same test as a successful
+negative control that proves the underlying substrate still permits erasure.
+For embedded `DontListen` use, the trusted-base clause is executable: the gate
+recursively parses production `go/effector`, the `go/daemon` graduation target,
+and `proto/go/protod`, and fails on KV or stream delete/purge call sites.
+Alternatives: make the admin repro green by calling erasure "detected" (false
+today); change the register protocol inside Task 16 (would patch around the
+finding); claim NATS permissions distinguish KV Put from Delete/Purge (they
+cannot, because both publish to the same `$KV.<bucket>.<key>` subject). Why:
+applications use the daemon writ and need no direct register access, so denying
+the whole register subject family is an enforceable capability boundary; admin
+resurrection detection belongs to
+[ticket 017](../docs/map/tickets/017-done-outlives-the-register.md).
+**Load-bearing? yes** — unique terminal outcome is conditional on this boundary
+until ticket 017 adds independent evidence.
+
+### D57. Lifecycle refusal is one typed error with stable assumption names
+Decided: `Acquire` accepts three explicit zero-safe configuration facts on its
+existing `Options` interface (`JetStreamClustered`, `KVReplicas`,
+`MemoryStorage`) and refuses before server startup with `*LifecycleError`.
+The error unwraps to `ErrOutsideCertifiedEnvelope` and carries both the exact
+configuration and an `Assumption`: clustered JetStream and R>1 KV map to
+`linearizable-reads`; memory storage maps to `terminal-immutability`.
+`KVReplicas` zero means the existing/default R1 shape and one is explicit R1;
+only values above one are this ticket's refusal. Alternatives: expose raw
+`server.Options`/`KeyValueConfig` (a shallow pass-through interface); return
+untyped strings; start the server and inspect it after resources exist. Why:
+the daemon remains a deep lifecycle module, callers can branch on a stable law
+name, and unsupported configuration acquires nothing. **Load-bearing? yes** —
+the refusal is what prevents a proof from silently escaping its envelope.
+
+### D58. External clients are one restricted application credential class
+Decided: protod's anonymous client connection maps through `NoAuthUser` to an
+`application` user allowed to publish only `flb.req.>` / `flb.ing.>` and
+subscribe only to `_INBOX.>`; the daemon's in-process connection authenticates
+as `protod-internal` with a fresh random 256-bit password generated on every
+`Acquire`. Alternatives: static internal credentials (public source makes them
+application credentials too); let applications use JetStream/KV directly and
+attempt header-level deletion denial (NATS permissions are subject-based, so
+that cannot distinguish CAS writes from tombstones); remove the real loopback
+listener (breaks the tracer seam). Why: the permission shape is exactly the
+three-verb writ and denies every direct `$KV.E_>` and `$JS.API.>` route without
+adding a second client surface. Existing black-box conformance still connects
+without credentials and passes. **Load-bearing? yes** — this is the enforced
+half of the terminal-immutability disposition.

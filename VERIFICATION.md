@@ -129,16 +129,26 @@ checks identity resolution only — the contract says so).
    R1 differential lane above, the official Appendix B corpus, and the older
    golden conformance fixture
    ([fixtures/golden-conformance.json](fixtures/golden-conformance.json)).
-3. JetStream properties at the pinned versions in the single embedded
-   server configuration: atomic create-if-absent, revision CAS,
-   linearizable reads, no deletion of terminal values. These are
-   source-verified
-   ([docs/research/2026-08-12-jetstream-guarantees-source-verified.md](docs/research/2026-08-12-jetstream-guarantees-source-verified.md)),
-   not proved. Clustered or replicated JetStream configurations are
-   outside the certified envelope: the read-linearizability assumption
-   does not automatically transfer. Ticket 011 turns these
-   assumptions into an executable gate and makes the daemon refuse
-   configurations outside the envelope.
+3. JetStream properties at the pinned versions in the single embedded,
+   file-backed, R1 server configuration. The executable gate is
+   [go/substrate/assumptions_test.go](go/substrate/assumptions_test.go), one
+   named test per assumption: `TestAtomicCreateIfAbsent`, `TestRevisionCAS`,
+   `TestLinearizableReads`, and `TestTerminalImmutability`. The fourth
+   property is enforced only inside the certified capability envelope:
+   application credentials are refused KV `Delete` and `Purge`, and the same
+   gate scans production effector/daemon source for destructive register call
+   sites. Its required negative control proves privileged admin credentials
+   can still erase `Done`, after which `Lookup` reports `Unclaimed` and a new
+   fence-1 claim succeeds. Admin erasure is therefore a stated residual — not
+   prevented or detected today; [ticket 017](docs/map/tickets/017-done-outlives-the-register.md)
+   adds hash-chained outcome facts so it becomes detectable. Source context
+   remains in
+   [the source-verification report](docs/research/2026-08-12-jetstream-guarantees-source-verified.md).
+   `protod.Acquire` enforces the envelope: application credentials have only
+   the three-verb writ, and clustered JetStream, R>1 KV buckets, or in-memory
+   storage refuse before startup with a typed lifecycle error naming the
+   uncovered assumption
+   ([proto/go/protod/lifecycle_test.go](proto/go/protod/lifecycle_test.go)).
 4. Safety only. No liveness claim is made anywhere: leases, retries,
    and progress under contention are liveness machinery and are
    untested formally.
