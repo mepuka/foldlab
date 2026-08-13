@@ -1,0 +1,289 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed 8887361488700716694 with 1 worker on 8 cores with 3641MB heap and 64MB offheap memory [pid: 36836] (Mac OS X 26.2 aarch64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/Catalog.tla
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/Integers.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/Sequences.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/_TLCTrace.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/Naturals.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/TLC.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/TLCExt.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-8477478498573511232/FiniteSets.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Catalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Catalog
+Starting... (2026-08-13 04:54:33)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-13 04:54:34.
+Progress(11) at 2026-08-13 04:54:37: 51,209 states generated (51,209 s/min), 10,459 distinct states found (10,459 ds/min), 3,183 states left on queue.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 1.0E-10
+  based on the actual fingerprints:  val = 1.3E-11
+The coverage statistics at 2026-08-13 04:54:40 (see https://explain.tlapl.us/module-coverage-statistics for how to interpret the following statistics).
+<mirror line 129, col 3 to line 129, col 8 of module Catalog>: 24
+<catalog line 126, col 3 to line 126, col 9 of module Catalog>: 25
+<data line 132, col 3 to line 132, col 6 of module Catalog>: 9
+<creators line 134, col 3 to line 134, col 10 of module Catalog>: 80
+<Init line 176, col 1 to line 176, col 4 of module Catalog>: 1:1
+  line 177, col 17 to line 177, col 40 of module Catalog: 1:2
+  |line 177, col 36 to line 177, col 39 of module Catalog: 2
+  |line 177, col 24 to line 177, col 30 of module Catalog: 1
+  line 178, col 17 to line 178, col 60 of module Catalog: 1:2
+  |line 178, col 36 to line 178, col 59 of module Catalog: 2:4
+  ||line 178, col 55 to line 178, col 58 of module Catalog: 4
+  ||line 178, col 43 to line 178, col 49 of module Catalog: 2
+  |line 178, col 24 to line 178, col 30 of module Catalog: 1
+  line 179, col 17 to line 179, col 40 of module Catalog: 1:2
+  |line 179, col 36 to line 179, col 39 of module Catalog: 2
+  |line 179, col 24 to line 179, col 30 of module Catalog: 1
+  line 180, col 6 to line 180, col 48 of module Catalog: 1
+  |line 180, col 17 to line 180, col 48 of module Catalog: 1:2
+  ||line 180, col 37 to line 180, col 47 of module Catalog: 2
+  ||line 180, col 24 to line 180, col 31 of module Catalog: 1
+<CreateBegin line 197, col 1 to line 197, col 20 of module Catalog>: 374:47544
+  line 188, col 34 to line 188, col 60 of module Catalog: 193904
+  |line 188, col 35 to line 188, col 60 of module Catalog: 146360
+  line 198, col 25 to line 198, col 25 of module Catalog: 146360
+  line 198, col 28 to line 198, col 37 of module Catalog: 146360
+  line 147, col 3 to line 150, col 30 of module Catalog: 47544
+  line 199, col 13 to line 199, col 50 of module Catalog: 47544
+  |line 191, col 3 to line 195, col 47 of module Catalog: 47544
+  ||line 191, col 6 to line 191, col 45 of module Catalog: 47544
+  |||line 191, col 6 to line 191, col 14 of module Catalog: 47544
+  |||line 191, col 20 to line 191, col 45 of module Catalog: 47544
+  ||||line 174, col 26 to line 174, col 60 of module Catalog: 47544
+  |||||line 174, col 28 to line 174, col 31 of module Catalog: 85568
+  |||||line 174, col 41 to line 174, col 58 of module Catalog: 47544
+  ||||||line 169, col 3 to line 170, col 60 of module Catalog: 47544
+  |||||||line 169, col 3 to line 169, col 24 of module Catalog: 47544
+  ||||||||line 153, col 14 to line 153, col 38 of module Catalog: 47544
+  |||||||||line 153, col 16 to line 153, col 19 of module Catalog: 75152
+  |||||||||line 153, col 29 to line 153, col 36 of module Catalog: 47544
+  ||||||||line 169, col 9 to line 169, col 23 of module Catalog: 47544
+  |||||||line 170, col 5 to line 170, col 60 of module Catalog: 47544
+  ||||||||line 170, col 11 to line 170, col 60 of module Catalog: 47544:87416
+  |||||||||line 170, col 13 to line 170, col 36 of module Catalog: 47544
+  ||||||||||line 153, col 14 to line 153, col 38 of module Catalog: 47544
+  |||||||||||line 153, col 16 to line 153, col 19 of module Catalog: 39872
+  |||||||||||line 153, col 29 to line 153, col 36 of module Catalog: 47544
+  ||||||||||line 170, col 19 to line 170, col 35 of module Catalog: 47544
+  |||||||||line 170, col 46 to line 170, col 58 of module Catalog: 47544
+  ||||||line 174, col 54 to line 174, col 54 of module Catalog: 47544
+  ||||||line 174, col 57 to line 174, col 57 of module Catalog: 47544
+  ||||line 191, col 36 to line 191, col 41 of module Catalog: 47544
+  ||||line 191, col 44 to line 191, col 44 of module Catalog: 47544
+  ||line 192, col 10 to line 192, col 15 of module Catalog: 42784
+  ||line 193, col 10 to line 195, col 47 of module Catalog: 4760
+  |line 199, col 31 to line 199, col 31 of module Catalog: 4760
+  |line 199, col 34 to line 199, col 34 of module Catalog: 47544
+  |line 199, col 37 to line 199, col 37 of module Catalog: 47544
+  |line 199, col 40 to line 199, col 49 of module Catalog: 47544
+<CreateFinish line 226, col 1 to line 226, col 15 of module Catalog>: 262:24704
+  line 211, col 35 to line 211, col 60 of module Catalog: 61294
+  |line 211, col 35 to line 211, col 55 of module Catalog: 36590
+  line 227, col 26 to line 227, col 26 of module Catalog: 36590
+  line 227, col 29 to line 227, col 38 of module Catalog: 36590
+  line 228, col 55 to line 228, col 66 of module Catalog: 24704
+  line 228, col 18 to line 228, col 51 of module Catalog: 24704
+  |line 215, col 12 to line 215, col 36 of module Catalog: 9968
+  |line 214, col 12 to line 214, col 35 of module Catalog: 24704
+  |line 216, col 3 to line 224, col 50 of module Catalog: 24704
+  ||line 216, col 6 to line 216, col 58 of module Catalog: 24704
+  ||line 217, col 10 to line 223, col 44 of module Catalog: 9968
+  |||line 217, col 13 to line 217, col 28 of module Catalog: 9968
+  |||line 221, col 17 to line 223, col 44 of module Catalog: 9968:19936
+  ||||line 221, col 19 to line 223, col 42 of module Catalog: 9968
+  ||line 224, col 10 to line 224, col 50 of module Catalog: 14736:29472
+  |||line 224, col 12 to line 224, col 48 of module Catalog: 14736
+  |line 228, col 38 to line 228, col 38 of module Catalog: 24704
+  |line 228, col 41 to line 228, col 50 of module Catalog: 24704
+<MirrorAdvance line 236, col 1 to line 236, col 19 of module Catalog>: 2116:18724
+  line 237, col 6 to line 237, col 10 of module Catalog: 91904
+  |line 237, col 6 to line 237, col 6 of module Catalog: 73180
+  |line 237, col 10 to line 237, col 10 of module Catalog: 73180
+  line 238, col 6 to line 238, col 40 of module Catalog: 18724
+  |line 238, col 6 to line 238, col 22 of module Catalog: 36590
+  |line 238, col 26 to line 238, col 40 of module Catalog: 36590
+  line 239, col 9 to line 239, col 20 of module Catalog: 18724
+  line 241, col 15 to line 241, col 62 of module Catalog: 0
+  line 242, col 13 to line 243, col 69 of module Catalog: 18724
+  line 244, col 6 to line 244, col 42 of module Catalog: 18724
+<MirrorReset line 252, col 1 to line 252, col 17 of module Catalog>: 0:0
+  line 256, col 6 to line 256, col 45 of module Catalog: 0
+  line 257, col 6 to line 257, col 42 of module Catalog: 0
+<Publish line 267, col 1 to line 267, col 13 of module Catalog>: 15542:28172
+  line 268, col 6 to line 268, col 16 of module Catalog: 73180
+  line 268, col 21 to line 268, col 42 of module Catalog: 28172
+  |line 268, col 21 to line 268, col 32 of module Catalog: 73180
+  |line 268, col 36 to line 268, col 42 of module Catalog: 73180
+  line 269, col 9 to line 269, col 46 of module Catalog: 28172
+  |line 269, col 9 to line 269, col 20 of module Catalog: 28172
+  |line 269, col 25 to line 269, col 46 of module Catalog: 28172
+  ||line 269, col 25 to line 269, col 25 of module Catalog: 28172
+  ||line 269, col 31 to line 269, col 46 of module Catalog: 28172
+  |||line 173, col 21 to line 173, col 50 of module Catalog: 28172
+  ||||line 173, col 23 to line 173, col 26 of module Catalog: 45008
+  ||||line 173, col 36 to line 173, col 48 of module Catalog: 28172
+  |||||line 171, col 18 to line 171, col 44 of module Catalog: 28172
+  ||||||line 169, col 3 to line 170, col 60 of module Catalog: 28172
+  |||||||line 169, col 3 to line 169, col 24 of module Catalog: 28172
+  ||||||||line 153, col 14 to line 153, col 38 of module Catalog: 28172
+  |||||||||line 153, col 16 to line 153, col 19 of module Catalog: 37776
+  |||||||||line 153, col 29 to line 153, col 36 of module Catalog: 28172
+  ||||||||line 169, col 9 to line 169, col 23 of module Catalog: 28172
+  |||||||line 170, col 5 to line 170, col 60 of module Catalog: 28172
+  ||||||||line 170, col 11 to line 170, col 60 of module Catalog: 28172:48412
+  |||||||||line 170, col 13 to line 170, col 36 of module Catalog: 28172
+  ||||||||||line 153, col 14 to line 153, col 38 of module Catalog: 28172
+  |||||||||||line 153, col 16 to line 153, col 19 of module Catalog: 20240
+  |||||||||||line 153, col 29 to line 153, col 36 of module Catalog: 28172
+  ||||||||||line 170, col 19 to line 170, col 35 of module Catalog: 28172
+  |||||||||line 170, col 46 to line 170, col 58 of module Catalog: 28172
+  ||||||line 171, col 31 to line 171, col 40 of module Catalog: 28172
+  ||||||line 171, col 43 to line 171, col 43 of module Catalog: 28172
+  |||||line 173, col 47 to line 173, col 47 of module Catalog: 28172
+  |||line 269, col 45 to line 269, col 45 of module Catalog: 28172
+  line 270, col 16 to line 270, col 56 of module Catalog: 22504
+  line 271, col 16 to line 271, col 54 of module Catalog: 22504
+  line 272, col 13 to line 272, col 26 of module Catalog: 5668
+<TypeOK line 290, col 1 to line 290, col 6 of module Catalog>
+  line 291, col 3 to line 305, col 29 of module Catalog: 18295
+  |line 291, col 6 to line 297, col 67 of module Catalog: 18295
+  ||line 292, col 8 to line 297, col 67 of module Catalog: 36590
+  |||line 292, col 11 to line 292, col 61 of module Catalog: 36590
+  ||||line 292, col 40 to line 292, col 61 of module Catalog: 52836
+  ||||line 292, col 20 to line 292, col 36 of module Catalog: 36590
+  |||line 293, col 11 to line 293, col 54 of module Catalog: 36590
+  ||||line 293, col 37 to line 293, col 54 of module Catalog: 22504
+  ||||line 293, col 20 to line 293, col 33 of module Catalog: 36590
+  |||line 294, col 12 to line 294, col 49 of module Catalog: 36590
+  |||line 295, col 11 to line 295, col 29 of module Catalog: 36590
+  |||line 296, col 11 to line 297, col 67 of module Catalog: 36590
+  ||||line 297, col 13 to line 297, col 67 of module Catalog: 36590
+  |||||line 297, col 44 to line 297, col 67 of module Catalog: 28676
+  |||||line 297, col 22 to line 297, col 40 of module Catalog: 36590
+  ||||line 296, col 20 to line 296, col 32 of module Catalog: 36590
+  ||line 291, col 15 to line 291, col 21 of module Catalog: 18295
+  |line 298, col 6 to line 305, col 29 of module Catalog: 18295
+  ||line 299, col 17 to line 299, col 27 of module Catalog: 36590
+  ||line 300, col 8 to line 305, col 29 of module Catalog: 36590
+  |||line 300, col 11 to line 300, col 16 of module Catalog: 36590
+  |||line 301, col 15 to line 304, col 44 of module Catalog: 24704
+  |||line 305, col 15 to line 305, col 29 of module Catalog: 11886
+  ||line 298, col 15 to line 298, col 22 of module Catalog: 18295
+<Convergence line 313, col 1 to line 313, col 11 of module Catalog>
+  line 314, col 3 to line 319, col 27 of module Catalog: 18295
+  |line 314, col 6 to line 316, col 55 of module Catalog: 18295
+  ||line 315, col 8 to line 316, col 55 of module Catalog: 36590
+  |||line 316, col 10 to line 316, col 55 of module Catalog: 90852
+  ||||line 316, col 10 to line 316, col 46 of module Catalog: 90852
+  ||||line 316, col 51 to line 316, col 55 of module Catalog: 52836
+  |||line 315, col 20 to line 315, col 36 of module Catalog: 36590
+  ||line 314, col 15 to line 314, col 21 of module Catalog: 18295
+  |line 317, col 6 to line 319, col 27 of module Catalog: 18295
+  ||line 319, col 8 to line 319, col 27 of module Catalog: 34716
+  ||line 317, col 15 to line 318, col 68 of module Catalog: 18295
+  |||line 317, col 15 to line 317, col 28 of module Catalog: 18295
+  ||||line 160, col 19 to line 160, col 61 of module Catalog: 18295
+  |||||line 160, col 25 to line 160, col 61 of module Catalog: 18295
+  ||||||line 160, col 27 to line 160, col 43 of module Catalog: 36590
+  |||||||line 153, col 14 to line 153, col 38 of module Catalog: 36590
+  ||||||||line 153, col 16 to line 153, col 19 of module Catalog: 52836
+  ||||||||line 153, col 29 to line 153, col 36 of module Catalog: 36590
+  |||||||line 160, col 33 to line 160, col 42 of module Catalog: 36590
+  ||||||line 160, col 53 to line 160, col 59 of module Catalog: 18295
+  |||line 318, col 9 to line 318, col 68 of module Catalog: 18295
+  ||||line 318, col 15 to line 318, col 68 of module Catalog: 18295:42297
+  |||||line 318, col 17 to line 318, col 35 of module Catalog: 73180
+  ||||||line 153, col 14 to line 153, col 38 of module Catalog: 73180
+  |||||||line 153, col 16 to line 153, col 19 of module Catalog: 28676
+  |||||||line 153, col 29 to line 153, col 36 of module Catalog: 73180
+  ||||||line 318, col 23 to line 318, col 34 of module Catalog: 73180
+  |||||line 318, col 45 to line 318, col 51 of module Catalog: 18295
+  |||||line 318, col 60 to line 318, col 66 of module Catalog: 18295
+<NoAdmissionOnFaith line 325, col 1 to line 325, col 18 of module Catalog>
+  line 326, col 3 to line 326, col 74 of module Catalog: 18295
+  |line 326, col 22 to line 326, col 74 of module Catalog: 36590
+  ||line 326, col 48 to line 326, col 74 of module Catalog: 22504
+  |||line 326, col 48 to line 326, col 57 of module Catalog: 22504
+  |||line 326, col 63 to line 326, col 74 of module Catalog: 22504
+  ||||line 162, col 19 to line 162, col 49 of module Catalog: 22504
+  |||||line 162, col 21 to line 162, col 24 of module Catalog: 43312
+  |||||line 162, col 34 to line 162, col 47 of module Catalog: 22504
+  ||||||line 160, col 19 to line 160, col 61 of module Catalog: 22504
+  |||||||line 160, col 25 to line 160, col 61 of module Catalog: 22504:65816
+  ||||||||line 160, col 27 to line 160, col 43 of module Catalog: 45008
+  |||||||||line 153, col 14 to line 153, col 38 of module Catalog: 45008
+  ||||||||||line 153, col 16 to line 153, col 19 of module Catalog: 66544
+  ||||||||||line 153, col 29 to line 153, col 36 of module Catalog: 45008
+  |||||||||line 160, col 33 to line 160, col 42 of module Catalog: 45008
+  ||||||||line 160, col 53 to line 160, col 59 of module Catalog: 22504
+  ||line 326, col 31 to line 326, col 44 of module Catalog: 36590
+  |line 326, col 12 to line 326, col 18 of module Catalog: 18295
+<ResolvableOnlyViaCommitted line 332, col 1 to line 332, col 26 of module Catalog>
+  line 333, col 3 to line 333, col 60 of module Catalog: 18295
+  |line 333, col 22 to line 333, col 60 of module Catalog: 36590
+  ||line 333, col 22 to line 333, col 37 of module Catalog: 36590
+  |||line 173, col 21 to line 173, col 50 of module Catalog: 36590:99694
+  ||||line 173, col 23 to line 173, col 26 of module Catalog: 63104
+  ||||line 173, col 36 to line 173, col 48 of module Catalog: 36590
+  |||||line 171, col 18 to line 171, col 44 of module Catalog: 36590
+  ||||||line 169, col 3 to line 170, col 60 of module Catalog: 36590
+  |||||||line 169, col 3 to line 169, col 24 of module Catalog: 36590
+  ||||||||line 153, col 14 to line 153, col 38 of module Catalog: 36590
+  |||||||||line 153, col 16 to line 153, col 19 of module Catalog: 52836
+  |||||||||line 153, col 29 to line 153, col 36 of module Catalog: 36590
+  ||||||||line 169, col 9 to line 169, col 23 of module Catalog: 36590
+  |||||||line 170, col 5 to line 170, col 60 of module Catalog: 36590
+  ||||||||line 170, col 11 to line 170, col 60 of module Catalog: 36590:65266
+  |||||||||line 170, col 13 to line 170, col 36 of module Catalog: 36590
+  ||||||||||line 153, col 14 to line 153, col 38 of module Catalog: 36590
+  |||||||||||line 153, col 16 to line 153, col 19 of module Catalog: 28676
+  |||||||||||line 153, col 29 to line 153, col 36 of module Catalog: 36590
+  ||||||||||line 170, col 19 to line 170, col 35 of module Catalog: 36590
+  |||||||||line 170, col 46 to line 170, col 58 of module Catalog: 36590
+  ||||||line 171, col 31 to line 171, col 40 of module Catalog: 36590
+  ||||||line 171, col 43 to line 171, col 43 of module Catalog: 36590
+  |||||line 173, col 47 to line 173, col 47 of module Catalog: 36590
+  |||line 333, col 36 to line 333, col 36 of module Catalog: 36590
+  ||line 333, col 49 to line 333, col 60 of module Catalog: 36590
+  |||line 162, col 19 to line 162, col 49 of module Catalog: 36590
+  ||||line 162, col 21 to line 162, col 24 of module Catalog: 69432
+  ||||line 162, col 34 to line 162, col 47 of module Catalog: 36590
+  |||||line 160, col 19 to line 160, col 61 of module Catalog: 36590
+  ||||||line 160, col 25 to line 160, col 61 of module Catalog: 36590:106022
+  |||||||line 160, col 27 to line 160, col 43 of module Catalog: 73180
+  ||||||||line 153, col 14 to line 153, col 38 of module Catalog: 73180
+  |||||||||line 153, col 16 to line 153, col 19 of module Catalog: 105672
+  |||||||||line 153, col 29 to line 153, col 36 of module Catalog: 73180
+  ||||||||line 160, col 33 to line 160, col 42 of module Catalog: 73180
+  |||||||line 160, col 53 to line 160, col 59 of module Catalog: 36590
+  |line 333, col 12 to line 333, col 18 of module Catalog: 18295
+<LagIsAbsenceNeverWrongData line 337, col 1 to line 337, col 26 of module Catalog>
+  line 338, col 3 to line 340, col 69 of module Catalog: 18295
+  |line 338, col 22 to line 340, col 69 of module Catalog: 36590
+  ||line 339, col 5 to line 340, col 69 of module Catalog: 36590
+  |||line 339, col 8 to line 339, col 43 of module Catalog: 36590
+  |||line 340, col 8 to line 340, col 69 of module Catalog: 36590
+  ||||line 340, col 39 to line 340, col 69 of module Catalog: 28676
+  ||||line 340, col 17 to line 340, col 35 of module Catalog: 36590
+  ||line 338, col 31 to line 338, col 43 of module Catalog: 36590
+  |line 338, col 12 to line 338, col 18 of module Catalog: 18295
+<CatalogNaturallyBounded line 344, col 1 to line 344, col 23 of module Catalog>
+  line 345, col 3 to line 345, col 47 of module Catalog: 18295
+  |line 345, col 22 to line 345, col 47 of module Catalog: 36590
+  |line 345, col 12 to line 345, col 18 of module Catalog: 18295
+End of statistics.
+119145 states generated, 18295 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 16.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 8 and the 95th percentile is 5).
+Finished in 06s at (2026-08-13 04:54:40)
