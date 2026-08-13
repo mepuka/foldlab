@@ -583,3 +583,16 @@ this finding is dispositioned, following Task 07's widened-domain rule.
 Replay with `cd proto/ts && bun test test/codegen.test.ts`.
 **Load-bearing? yes** — refusal paths cannot depend on a JavaScript
 object's construction history if they are cross-target evidence.
+
+### D48 disposition (2026-08-13, operator-ratified)
+Canonical-order traversal. Every derivation target walks object fields
+in THE canonical key order — RFC 8785's UTF-16 code-unit sort, the
+same order identity's bytes use — so "first refusal path" is
+well-defined and construction history never leaks into evidence. One
+ordering law for identity and evidence. The Effect Schema target
+changes to match; the fix must verify the sorting targets use UTF-16
+code-unit order, not locale sort. Expected on the shrunk case: all
+targets refuse at structure/fields/a/k. The red generalized property
+stays red until the fix lands, unchanged. Future enhancement, separate
+ratification (wire-shape change): refusals carrying the complete set
+of underivable paths. Execution: scratch/codex/15-d48-canonical-traversal.md.
