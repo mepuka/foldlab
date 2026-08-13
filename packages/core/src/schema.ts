@@ -8,9 +8,10 @@
  * base64 gzip frame emitted by `go/cmd/streamfix` (Go stdlib gzip over the
  * canonical event encoding) and whose TYPE side is typed events. Decoding IS
  * ingestion from Go; encoding IS emission to Go. The language boundary
- * becomes a schema transformation, and the chain-head law survives the
- * crossing (test/schema.wall.test.ts: heads recomputed from the decoded
- * values equal the frozen Go fixture digests).
+ * becomes a schema transformation, and the chain-head law is walled at the
+ * crossing (test/schema.wall.test.ts: heads recomputed from decoded values
+ * equal Go's digests over the admitted corpus). A leading UTF-8 BOM remains
+ * a preserved finding (`FINDING-SCHEMA-BOM-001.md`), not part of that claim.
  *
  * Compression note, per the lane's law: identity is of canonical
  * UNCOMPRESSED bytes. The schema round-trip is judged by decoded values and
@@ -22,21 +23,58 @@ import { gunzipSync, gzipSync } from "node:zlib"
 import { Effect, Schema, SchemaGetter, SchemaIssue } from "effect"
 import { encodeEvent, parseFrames, type StreamEvent } from "./stream.ts"
 
+const maxU16 = 0xffff
+const maxU32 = 0xffff_ffff
+
+const utf8ScalarLength = (value: string): number | undefined => {
+  let bytes = 0
+  for (let index = 0; index < value.length; index++) {
+    const unit = value.charCodeAt(index)
+    if (unit <= 0x7f) {
+      bytes += 1
+    } else if (unit <= 0x7ff) {
+      bytes += 2
+    } else if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(index + 1)
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return undefined
+      bytes += 4
+      index += 1
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return undefined
+    } else {
+      bytes += 3
+    }
+  }
+  return bytes
+}
+
+const utf8TextWithin = (maximum: number, label: string) =>
+  Schema.makeFilter<string>((value) => {
+    const length = utf8ScalarLength(value)
+    if (length === undefined) return `${label} must contain only Unicode scalar values`
+    return length <= maximum ? undefined : `${label} exceeds ${maximum} UTF-8 bytes`
+  })
+
+const StreamText = Schema.String.check(utf8TextWithin(maxU16, "stream"))
+const PayloadText = Schema.String.check(utf8TextWithin(maxU32, "payload"))
+const strictDecoder = new TextDecoder("utf-8", { fatal: true })
+
 /**
  * The typed event as it crosses the boundary (payloads are UTF-8 text).
  *
- * Domain: `seq` is a non-negative SAFE integer — narrower than Go's u64,
- * because a JS number above 2^53 cannot round-trip. The bound is the
- * schema's, not a handler's, so an inadmissible sequence is refused at
- * decode as data rather than dying in `encodeEvent`'s `checkedSeq`: a
- * surface must not admit what its own canonical encoder refuses.
+ * Domain: stream and payload contain only Unicode scalar values and fit their
+ * canonical u16/u32 UTF-8 byte lengths; `seq` is a non-negative SAFE integer,
+ * narrower than Go's u64 because a JS number above 2^53 cannot round-trip.
+ * The bounds are the schema's, not a handler's, so an inadmissible event is
+ * refused as data before `encodeEvent`: a surface must not admit what its own
+ * canonical encoder refuses.
  */
 export const WireEvent = Schema.Struct({
-  stream: Schema.String,
+  stream: StreamText,
   seq: Schema.Int.check(
     Schema.isBetween({ minimum: 0, maximum: globalThis.Number.MAX_SAFE_INTEGER }),
   ),
-  payload: Schema.String,
+  payload: PayloadText,
 })
 
 export type WireEvent = typeof WireEvent.Type
@@ -72,19 +110,28 @@ export const GzipEventFrame = Schema.String.pipe(
     encode: SchemaGetter.encodeBase64(),
   }),
   Schema.decodeTo(Schema.Array(WireEvent), {
-    decode: SchemaGetter.transformOrFail((bytes: Uint8Array, options) =>
+    decode: SchemaGetter.transformOrFail((bytes: Uint8Array) =>
       Effect.try({
-        try: () =>
-          parseFrames(gunzipSync(new Uint8Array(bytes))).map((e) => ({
-            stream: e.stream,
-            seq: e.seq,
-            payload: new TextDecoder().decode(e.payload),
-          })),
+        try: () => parseFrames(gunzipSync(new Uint8Array(bytes))),
         catch: () =>
           new SchemaIssue.InvalidValue({
             message: "not a gzip frame of canonical stream events",
           }),
-      }),
+      }).pipe(
+        Effect.flatMap((events) =>
+          Effect.try({
+            try: () => events.map((event) => ({
+              stream: event.stream,
+              seq: event.seq,
+              payload: strictDecoder.decode(event.payload),
+            })),
+            catch: () =>
+              new SchemaIssue.InvalidValue({
+                message: "canonical event payload is not valid UTF-8 text",
+              }),
+          }),
+        ),
+      ),
     ),
     encode: SchemaGetter.transform((events: ReadonlyArray<WireEvent>) =>
       Uint8Array.from(

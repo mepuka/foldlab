@@ -191,6 +191,10 @@ tampering.
 - R0: frozen fixture walls ([fixtures/](fixtures/)), generated once by
   the Go side, recomputed by both sides forever.
 - R1: property and fuzz tests ([go/stream/](go/stream/)).
+- R0: the Effect Schema transport wall consumes four live Go-origin
+  rows: two non-ASCII text payloads reproduce the Go-computed heads,
+  while raw `ff` and `fe` payloads have distinct Go heads and both
+  refuse as typed schema failures instead of decoding to U+FFFD.
 - Empirical crash evidence: fleet runs under kill-9 storms and cold
   restarts with independently verifiable bundles
   ([docs/gauntlet/](docs/gauntlet/)).
@@ -199,13 +203,24 @@ tampering.
 
 - Divergence probes are owed per ADR-0007 where domains exceed the
   fixtures.
+- The schema wall's text face is deliberately narrower than canonical
+  stream events: stream events carry arbitrary payload bytes, while
+  `WireEvent` admits Unicode-scalar UTF-8 text only, within the
+  canonical u16/u32 field lengths and JavaScript's safe sequence range.
+  The live corpus is four directed rows, not an exhaustive UTF-8 proof.
+- FINDING, reported and not repaired: the pinned runtime's fatal
+  `TextDecoder` strips a leading UTF-8 BOM by default, so Go-origin
+  payload bytes `ef bb bf` and empty bytes have distinct Go heads but
+  decode to the same `WireEvent`. The opt-in red witness and choices
+  are in `packages/core/FINDING-SCHEMA-BOM-001.md`.
 - No dedicated model of CAS-append + crash recovery yet; the catalog
   model embeds an abstract CAS. Ticket 012 gives the journal its own
   model gate.
 
 ### Checkable at
 
-[fixtures/](fixtures/), [go/stream/](go/stream/), and
+[fixtures/](fixtures/), [go/stream/](go/stream/),
+[packages/core/test/schema.wall.test.ts](packages/core/test/schema.wall.test.ts), and
 [docs/gauntlet/](docs/gauntlet/).
 
 ## KV meaning fold — combine and join — R0/R1
@@ -235,13 +250,17 @@ order with distinct coordinates.
 - R1: generated property suites for identity, associativity, the
   concatenation homomorphism, arbitrary split points, and — for the
   join — idempotence, commutativity, associativity, permutation
-  invariance, and the projection law.
+  invariance, and the projection law. The join generators include both
+  sequence boundaries and stream-id prefixes; a separate generated refusal
+  corpus includes NaN, infinities, fractions, negatives, and the first unsafe
+  integer.
 - Negative controls, each refuted on exactly the law it drops:
   `combineKV` fails commutativity and idempotence with minimized
   counterexamples; ordering the witness `(stream, seq)` instead of
   `(seq, stream)` moves the frozen digest to `910950be...`; forcing the
   join's winner rule the wrong way turns six tests red; forcing every
-  merge source onto the dense path turns the duplicate refusals red.
+  merge source onto the dense path turns the duplicate refusals red; dropping
+  sequence admission makes the minimized NaN join non-commutative.
 - The generated law suite now derives commutativity and idempotence
   from a per-algebra claim, and refuses a false one: a last-write-wins
   register claiming commutativity fails that law while passing every
@@ -259,6 +278,11 @@ order with distinct coordinates.
   therefore no cross-language wall for it; its one wall-anchored claim
   is the projection, because the digest that has to come back was
   frozen by Go.
+- The witness sequence domain is `0..Number.MAX_SAFE_INTEGER`. Both folded
+  events and structurally supplied join states refuse other numbers as typed
+  data before comparison. This is not a u64 claim: current Go journal cursors
+  use platform `int`, while chain identity independently refuses above the same
+  exact-integer boundary through `canonical.EntryDigest`.
 - The projection law holds only on witness-ordered histories with
   distinct coordinates. A two-event counterexample off that domain is
   pinned, as is the count divergence under re-delivery.

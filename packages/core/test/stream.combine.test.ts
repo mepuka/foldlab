@@ -73,6 +73,21 @@ const admittedEvent: FastCheck.Arbitrary<StreamEvent> = FastCheck.record({
 const history = FastCheck.array(admittedEvent, { maxLength: 16 })
 
 describe("combineKV: the parallel-replay license", () => {
+  test("each empty identity owns a distinct Map", () => {
+    const first = emptyKV()
+    const second = emptyKV()
+    expect(first).not.toBe(second)
+    expect(first.entries).not.toBe(second.entries)
+  })
+
+  test("consumer mutation cannot poison a later fold's empty identity", () => {
+    const consumerEntries = emptyKV().entries as Map<string, string>
+    consumerEntries.set("poison", "shared")
+    const later = Effect.runSync(foldKV([]))
+    expect([...later.entries]).toEqual([])
+    expect(later.count).toBe(0)
+  })
+
   test("WALL: every split of the frozen corpus recombines to the frozen fold digest", () => {
     const frozen = fixture["foldStateDigest"] as Head
     expect(digest(Effect.runSync(foldKV(merged)))).toBe(frozen)
@@ -100,8 +115,8 @@ describe("combineKV: the parallel-replay license", () => {
     FastCheck.assert(
       FastCheck.property(history, (events) => {
         const state = Effect.runSync(foldKV(events))
-        expect(digest(combineKV(emptyKV, state))).toBe(stateDigest(state))
-        expect(digest(combineKV(state, emptyKV))).toBe(stateDigest(state))
+        expect(digest(combineKV(emptyKV(), state))).toBe(stateDigest(state))
+        expect(digest(combineKV(state, emptyKV()))).toBe(stateDigest(state))
       }),
       { seed: 0x14_06_10, numRuns: 300, endOnFailure: false, verbose: 1 },
     )
@@ -177,7 +192,7 @@ describe("combineKV: the rights it does NOT confer", () => {
 
     // Even the empty state is not absorbing in the general case: only the count
     // moves, and the count is inside the frozen digest preimage.
-    expect(digest(combineKV(emptyKV, emptyKV))).toBe(stateDigest(emptyKV))
+    expect(digest(combineKV(emptyKV(), emptyKV()))).toBe(stateDigest(emptyKV()))
   })
 
   test("the u32 count wall refuses, on both the value and the typed channel", () => {
@@ -186,7 +201,7 @@ describe("combineKV: the rights it does NOT confer", () => {
     const one: KVState = { entries: new Map([["b", "2"]]), count: 1 }
     expect(combineKV(heavy, one)).toBeUndefined()
     expect(combineKV(one, heavy)).toBeUndefined()
-    expect(defined(combineKV(heavy, emptyKV)).count).toBe(maxU32)
+    expect(defined(combineKV(heavy, emptyKV())).count).toBe(maxU32)
 
     const exit = Effect.runSyncExit(mergeKV(heavy, one))
     expect(Exit.isFailure(exit)).toBe(true)
@@ -196,14 +211,14 @@ describe("combineKV: the rights it does NOT confer", () => {
     expect(refusal.right).toBe(1)
 
     for (const bad of [-1, 0.5, Number.MAX_SAFE_INTEGER]) {
-      expect(combineKV({ entries: new Map(), count: bad }, emptyKV)).toBeUndefined()
-      expect(combineKV(emptyKV, { entries: new Map(), count: bad })).toBeUndefined()
+      expect(combineKV({ entries: new Map(), count: bad }, emptyKV())).toBeUndefined()
+      expect(combineKV(emptyKV(), { entries: new Map(), count: bad })).toBeUndefined()
     }
   })
 
   test("the result owns its map: mutating an input afterwards cannot move it", () => {
     const source = new Map([["a", "1"]])
-    const combined = defined(combineKV({ entries: source, count: 1 }, emptyKV))
+    const combined = defined(combineKV({ entries: source, count: 1 }, emptyKV()))
     source.set("a", "tampered")
     expect([...combined.entries]).toEqual([["a", "1"]])
   })

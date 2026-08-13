@@ -13,6 +13,37 @@ import { headFrom, mergeSeed, type StreamEvent } from "../src/stream.ts"
 import { foldFixtureEvents, primitiveFolds } from "./foldTestData.ts"
 
 describe("sound fold cache", () => {
+  test("cache writes return a typed refusal beyond the constrained JSON depth", () => {
+    const nested = (depth: number): unknown => {
+      let value: unknown = null
+      for (let index = 0; index < depth; index++) value = [value]
+      return value
+    }
+
+    expect(encodeFoldState(nested(256) as never).ok).toBe(true)
+
+    const atBoundary = putFoldCache(
+      emptyFoldCache(),
+      primitiveFolds.setUnion,
+      mergeSeed(),
+      nested(257) as ReadonlyArray<string>,
+    )
+    expect(atBoundary).toMatchObject({
+      ok: false,
+      refusal: {
+        _tag: "NonCanonicalValue",
+        reason: "nesting exceeds 256",
+      },
+    })
+
+    expect(() => putFoldCache(
+      emptyFoldCache(),
+      primitiveFolds.setUnion,
+      mergeSeed(),
+      nested(20_000) as ReadonlyArray<string>,
+    )).not.toThrow()
+  })
+
   test("a cache hit byte-equals a fresh fold", () => {
     FastCheck.assert(
       FastCheck.property(
