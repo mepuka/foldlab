@@ -10,6 +10,11 @@ type Stage = {
 const repo = resolve(import.meta.dir, "..")
 
 const stages: ReadonlyArray<Stage> = [
+  {
+    label: "bootstrap — Effect language-service prepare guard",
+    cwd: repo,
+    command: ["bun", "test", "./scripts/prepare-effect-language-service.test.ts"],
+  },
   { label: "root — typecheck", cwd: repo, command: ["bun", "run", "typecheck"] },
   { label: "root — tests", cwd: repo, command: ["bun", "test"] },
   { label: "workspace packages — test scripts", cwd: repo, command: ["bun", "run", "test:packages"] },

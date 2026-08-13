@@ -16,9 +16,9 @@
     }
   },
   "scripts": {
-    "prepare": "effect-language-service patch",
+    "prepare": "bun scripts/prepare-effect-language-service.ts",
     "dev": "bun packages/server/src/server.ts",
-    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc --noEmit",
+    "typecheck": "bun scripts/prepare-effect-language-service.ts --require && tsc -p packages/core/tsconfig.json --noEmit && tsc --noEmit",
     "test": "bun test",
     "test:packages": "bun run --filter './packages/*' test",
     "gates": "bun scripts/gates.ts",
