@@ -12,6 +12,8 @@ laws:
   a return value. Runtime lives behind the daemon's seam.
 - Schema identity is GREENFIELD (map ticket 004; ADR-0008 records the
   wipe): do not add digest-of-schema code here until 004 is ratified.
-- Dependency: `effect` at the pinned catalog version, nothing else.
+- Runtime dependency: `effect` at the pinned catalog version, nothing
+  else. devDependencies for testing are permitted (fast-check, exact
+  pin) — the no-new-dependency law governs the runtime surface.
   Confirm APIs against the pinned declarations and `repos/effect/`,
   never memory.
