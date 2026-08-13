@@ -207,6 +207,23 @@ against itself (a store trusting its own label). The principles are
 common; the discipline of holding them *simultaneously, at every
 edge, in two languages* is the actual project.
 
+**2026-08-13 (night) — the docs lanes converge, and the proof demos
+itself.** The PC side merged the four design dossiers onto main
+(closing the wave-2 hazard
+[#30 H1](https://github.com/mepuka/foldlab/issues/30)) and landed
+`docs/research/2026-08-14-tangible-examples.md`: the five concepts as
+worked examples, calibrated three ways (Effect developer, infra
+engineer, skeptical auditor), every output executed rather than
+narrated. The Terraform framing earns its keep — *"two streams can
+have identical `terraform show` output and different `git log`;
+foldlab gives you both digests so you can tell which kind of 'same'
+you have"* is the best one-sentence account of the two folds to date.
+And the review produced its own evidence: the committed
+`packages/core/examples/tour.ts` was written and executed on Windows;
+the Mac coordinator re-ran it during review and got **byte-identical
+digests** — the cross-platform determinism claim demonstrating itself
+inside the review of its own documentation.
+
 **2026-08-13 (evening) — the bug bash reports: five lanes, one day.**
 The Go concurrency lane proved the "flake" (#15) is a real eviction
 race — the register bucket keeps one message per subject, so writing
