@@ -7,6 +7,9 @@
   "exports": {
     "./*": "./src/*.ts"
   },
+  "scripts": {
+    "test": "bun test ./test"
+  },
   "dependencies": {
     "@foldlab/core": "workspace:*",
     "effect": "catalog:",
