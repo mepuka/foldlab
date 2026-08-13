@@ -16,6 +16,9 @@ Check these before guessing:
 - the nearest `AGENTS.md` and any project-local Effect practices doc
 - the project-pinned `effect` package source and version
 - current upstream Effect source when the installed package does not answer the question
+- At `4.0.0-rc.108`, inspect node annotations and accumulated `brands`
+  directly on `ast.annotations`; when checks exist, `SchemaAST.resolve`
+  and `resolveAt` instead select the last check's annotations.
 
 ## Branch Chooser
 
