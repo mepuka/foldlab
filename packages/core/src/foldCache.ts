@@ -7,7 +7,7 @@ import {
   type CanonicalEncoding,
   type FoldState,
 } from "./algebra.ts"
-import type { Fold } from "./fold.ts"
+import { isAdmittedFold, type Fold } from "./fold.ts"
 import type { Head } from "./stream.ts"
 
 interface CacheEntry {
@@ -55,7 +55,16 @@ const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable =>
 })
 
 const keyFor = <E, A extends FoldState>(fold: Fold<E, A>, head: Head): string | IdentityUnavailable =>
-  fold.digest === undefined
+  !isAdmittedFold(fold)
+    ? {
+      ok: false,
+      refusal: {
+        _tag: "IdentityUnavailable",
+        feature: "fold-cache",
+        reason: "the fold has no admitted identity",
+      },
+    }
+    : fold.digest === undefined
     ? identityRefusal(fold as unknown as Fold<unknown, FoldState>)
     : `${fold.digest}:${head}`
 

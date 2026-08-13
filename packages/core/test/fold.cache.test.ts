@@ -88,4 +88,26 @@ describe("sound fold cache", () => {
       },
     })
   })
+
+  test("a spread fold retaining an honest digest cannot poison the cache", () => {
+    const honest = primitiveFolds.sum
+    const forged = {
+      ...honest,
+      empty: 999,
+      extend: () => 999,
+      fold: () => 999,
+    }
+    const write = putFoldCache(emptyFoldCache(), forged, mergeSeed(), 999)
+    const refusal = {
+      ok: false,
+      refusal: {
+        _tag: "IdentityUnavailable",
+        feature: "fold-cache",
+        reason: "the fold has no admitted identity",
+      },
+    } as const
+    expect(write).toEqual(refusal)
+    expect(getFoldCache(emptyFoldCache(), forged, mergeSeed())).toEqual(refusal)
+    expect(getFoldCache(emptyFoldCache(), honest, mergeSeed())).toEqual({ ok: true, hit: false })
+  })
 })

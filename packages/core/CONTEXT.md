@@ -14,8 +14,9 @@ The frozen Go-generated gzip frame (`fixtures/stream-wall.json`, via
 typed by a schema, judged by decoded values and heads, never compressed
 bytes.
 
-**Total by refusal**:
-Every fold entry point in this package is total by refusal: an input either
-passes the entry point's walled decode or returns its typed refusal, so no value
-outside the canonical domain is silently accepted or collapsed and no excluded
-value receives an identity.
+**Walled refusal seams**:
+Canonical JSON encoding, entity collection/composition, ambiguous merge replay,
+and fold-identity/cache admission refuse excluded inputs as data or withhold
+identity. Lower-level canonical writers (`encodeEvent`, `streamSeed`, `extend`,
+`stateDigest`, `parseFrames`, and `entitySeed`) retain their documented thrown
+range errors; Task 22 does not claim a package-wide error-channel migration.
