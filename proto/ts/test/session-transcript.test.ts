@@ -5,7 +5,7 @@ import { Session } from "../src/session.ts"
 import { DescribeReply, localRefusal, type Reply } from "../src/wire.ts"
 import { spawnProtod } from "./harness.ts"
 
-test("W12: a read transcript preserves exact sent and claimed evidence and owns its log", async () => {
+test("GitHub #57: a read transcript preserves exact sent and claimed evidence and owns its log", async () => {
   const daemon = await spawnProtod()
   const connected = await ProtoClient.connect(daemon.url)
   if (!connected.ok) throw new Error(`connect refused: ${JSON.stringify(connected.refusal)}`)
@@ -36,7 +36,7 @@ test("W12: a read transcript preserves exact sent and claimed evidence and owns 
   }
 }, 120_000)
 
-test("W12: transcript steps are allocated at send time, not completion time", async () => {
+test("GitHub #57: transcript steps are allocated at send time, not completion time", async () => {
   const resolvers: Array<(reply: Reply<DescribeReply>) => void> = []
   const describe = () => new Promise<Reply<DescribeReply>>((resolve) => resolvers.push(resolve))
   const unsupported = async () => ({
