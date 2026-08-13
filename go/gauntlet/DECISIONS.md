@@ -47,3 +47,19 @@ accept a `move:*` prefix (still self-asserting); require every mutation receipt
 (strong but removes deterministic moves). Alternative for G-08: require
 `end_turn` (an unratified law contradicting existing evidence). **Load-bearing?
 yes for G-07; no for G-08.**
+
+## D5. Reconstruct the R2 corpus inside the gate
+
+Decided: keep competition-owned problem text gitignored. The negative-controls
+gate runs the checked-in corpus fetcher, which canonicalizes the named public
+dataset and refuses unless the bytes match `R2CorpusSHA256`; the same verified
+bytes then feed both committed R2 bundles. The gate also runs the
+self-declared-corpus and anchor-pin controls. Both real bundles currently
+violate frozen laws, so the gate accepts only the exact two known-red
+classifications in `FINDING-R2-ARTIFACTS-001.md`; a pass or different refusal
+fails the gate. It never labels either bundle verified.
+Alternatives: commit the problem text (ownership concern); leave R2 human-only
+(the demonstrated GitHub #58 coverage void); trust a manifest digest (the
+closed G-01 defect). Why: the fetch recipe plus verifier-owned digest is the
+ratified durable reference and keeps both provenance and automation explicit.
+**Load-bearing? yes.**

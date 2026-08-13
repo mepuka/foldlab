@@ -36,13 +36,13 @@ line by line; this is not inferred from names.
 | 12 | `verify/catalog/run-wire.sh` (D59 CreateAtomic bridge) | human invocation | **was NEVER** → now `negative-controls.yml` → `bridge`, reached through `run-r4.sh` |
 | 13 | `verify/catalog/run-r4.sh` (R4 lockstep) | human invocation | **was NEVER** → now `bridge`, weekly |
 | 14 | `verify/catalog/run-ind.sh` (R3 induction, Apalache) | human invocation | **NEVER, deliberately** — 1–2 h, ~183 MB toolchain download. Left out with its reason stated rather than added and cancelled by a timeout |
-| 15 | `verify/catalog/run-{ind,r4,wire}.ps1` | Windows only | **NEVER by construction** — no Windows runner exists. Three PowerShell twins of three bash gates, maintained by hand, checked by nobody. Finding N-2 |
-| 16 | `verify/catalog/probes/*.cfg` (B1–B4, C1–C2, T1–T4, W1–W2, `CTIProbe.tla`, `BridgeFix.tla`) | human invocation | **NEVER, and there is no runner at all.** #32 refers to `probes/run-probe.sh`; that file does not exist in this tree. Finding N-3 |
+| 15 | `verify/catalog/run-{ind,r4,wire}.ps1` | Windows only | **was NEVER** — now `negative-controls.yml` runs `run-r4.ps1` (and therefore `run-wire.ps1`) weekly; `windows-induction.yml` runs `run-ind.ps1` monthly |
+| 16 | `verify/catalog/probes/*.cfg` (B1–B4, C1–C2, T1–T4, W1–W2, `CTIProbe.tla`, `BridgeFix.tla`) | human invocation | breaker-only by contract; the cited `probes/run-probe.sh` has existed since `149ab34b4`, already an ancestor of the audited base |
 | 17 | `cmd/gauntletverify`, `cmd/realverify`, `cmd/transposeverify` against `artifacts/` | human invocation | **was NEVER** (#37 G-09) → now `controls`. Compiled by `gates.yml`, never run |
-| 18 | `cmd/climbverify` against `artifacts/receipts/r2-*` | human invocation | **NEVER, and currently impossible** — see finding N-4 |
+| 18 | `cmd/climbverify` against `artifacts/receipts/r2-*` | fetched corpus absent | **was impossible** — now `controls` reconstructs the competition-owned corpus, verifies the verifier-owned digest, and classifies both bundles' exact known-red refusals |
 | 19 | `FOLDLAB_JCS_FUZZ_RUNS` (`packages/core/test/jcs.differential.test.ts:15`) | env var | not a skip — a run-count knob, default 160, which THROWS on a bad value. Covered |
 | 20 | `bunfig.toml` `[test] root = "packages"` | any test outside `packages/` | structural: a test added at the repository root, in `scripts/`, or in `bench/` is silently undiscovered by `bun test`. No current instance |
-| 21 | `packages/{ai,client,codegen,server}` | — | **zero test files in four of five workspace packages.** `bun test` passes for them vacuously. Finding N-5 |
+| 21 | `packages/{ai,client,codegen,server}` | — | **resolved** — server has a public-route test; ai/client/codegen are exact empty promotion placeholders with explicit markers; `check-package-tests.ts` rejects any untested runtime body |
 | 22 | `proto/ts/bunfig.toml` `root = "."` | — | covered — `gates.yml` runs `bun test .` in `proto/ts` |
 | 23 | `bench/`, `docs/media/folding`, `docs/media/posters-v2` | — | outside every gate, by design (`bench/BENCH.md`) |
 
@@ -56,21 +56,20 @@ changes no exit code, so the mechanism intended to make the gap loud is exactly
 as quiet as the gap. The fix is not a better skip; it is what this lane built —
 a step that BUILDS the artifact, so the condition is always satisfied.
 
-**N-2 — three PowerShell gate twins that no gate reads.** `run-ind.ps1`,
-`run-r4.ps1`, `run-wire.ps1` mirror the bash gates for the PC lane. There is no
-Windows runner, so the two halves can drift silently, and the drift surfaces on
-the machine where the operator is trying to reproduce a claim. Either add a
-Windows job for the cheap one (`run-wire.ps1`), or record in
-`verify/catalog/README.md` that the `.ps1` files are unverified transcriptions.
+**N-2 — three PowerShell gate twins that no gate read (resolved).**
+`negative-controls.yml` runs `run-r4.ps1`, whose first act is `run-wire.ps1`,
+on a Windows runner every week and on dispatch. The expensive Apalache
+`run-ind.ps1` mirror has its own monthly Windows workflow and manual dispatch.
+All three scripts are invoked as gates rather than transcribed into YAML.
 
-**N-3 — #32 cites `probes/run-probe.sh`; it does not exist.** The
-`verify/catalog/probes/` directory holds seventeen configs, two TLA modules,
-three findings, and a verdict — and no runner. Whatever produced
-`BREAKER-VERDICT.md` and `FINDING-BOUNDS-001.md` was invoked by hand and left
-no script. This is the same class as the two fixtures with no generator (§3):
-evidence whose reproduction path was never written down.
+**N-3 — the reported missing breaker runner is stale, not reproduced.**
+`verify/catalog/probes/run-probe.sh` is tracked at `149ab34b4`, which is already
+an ancestor of the audited `72afae43d` base. It records the jar digest, exact
+TLC command, timestamps, exit, and verdict into `probes/_runlogs/`. Its header
+also correctly bounds it as a breaker probe, never a ratified `run.sh` gate.
+No replacement runner or claim promotion was invented.
 
-**N-4 — R2's corpus is the gitignored file its own gate digests.**
+**N-4 — R2's corpus was the gitignored file its own gate digested (resolved).**
 `.gitignore` excludes `artifacts/receipts/*/corpus.json`; `climb.go:215-222`
 reads exactly that file. Both R2 bundles in the tree are missing it:
 
@@ -80,17 +79,26 @@ climbverify: REFUSED: gauntlet: manifest refused: corpus: open
   ../artifacts/receipts/r2-001/corpus.json: no such file or directory
 ```
 
-This is a hard blocker on #37's G-09 advisory for the R2 lane specifically, and
-it interlocks with G-01: the corpus is simultaneously the ONLY anchor the R2
-gate has and the one file the repository does not carry. The other three lanes
-have no such problem — all six G1 bundles, both R1 and RG-A, verify green in
-about two seconds total (§2).
+That was a hard blocker on #37's G-09 advisory for the R2 lane specifically.
+The verifier-integrity repair now owns the ratified digest as
+`gauntlet.R2CorpusSHA256`; the manifest can repeat but cannot choose it.
+`negative-controls.yml` runs the checked-in fetcher, which refuses unless the
+reconstructed canonical bytes match that external pin, copies those verified
+bytes to the second bundle, and runs `climbverify` on both. That first honest
+run exposed `FINDING-R2-ARTIFACTS-001`: `r2-001` misses the holdout-gain floor
+and `r2-002` uses holdout evidence before final selection. The gate classifies
+only those exact refusals and fails on a pass or different failure.
+Competition-owned problem text remains uncommitted without leaving the invalid
+artifacts unexecuted. The self-declared-corpus test is the independent pin
+control.
 
-**N-5 — four of five workspace packages have zero tests.** `packages/ai`,
-`packages/client`, `packages/codegen`, `packages/server` ship no test file.
-`bun test` is green for them because there is nothing to run. `packages/server`
-is also where `SL1` is published to callers as a JSON field and checked by
-nobody (§4).
+**N-5 — four of five workspace packages had zero tests (resolved by policy).**
+`packages/server` now has an in-process HTTP test that binds health plus the
+SL1/SL4 public response laws. `packages/ai`, `packages/client`, and
+`packages/codegen` currently contain only `export {}` promotion placeholders;
+each carries the exact intentionally-test-free marker. `check-package-tests.ts`
+allows that marker only on the empty body and refuses a new runtime export
+until the package gains a test. Its self-test proves both refusal directions.
 
 **N-6 — a law-ID namespace collision, and a second one.** `C1` is two live
 laws: concierge `C1` (fill/unfill are byte-pure) and entity `C1` (meaning-fold
@@ -129,9 +137,10 @@ and Bun caches):
 | wasm wall — divergence classifier `--self-test` | 0 | green (4 controls) |
 | wasm wall — known divergence unchanged | 0 | green (27 scalars, exactly the allowlist) |
 | verifiers — G1 ×6, R1, RG-A ×3 | 2 | green (all VERIFIED) |
-| verifiers — R2 blocked, visibly | 1 | **exit 1 required**, corpus-missing message |
+| verifiers — R2 ×2 after pinned fetch | network + 2 | known red: exact GV8 and CL2/CL3 refusals classified; forged-corpus control refuses |
 | laws index `--self-test` | 0 | green (9 controls) |
-| laws index gate | 0 | green (65 laws) |
+| laws index gate | 0 | green (65 laws; SL1 now bound) |
+| package test-policy self-test + gate | 0 | green (3 controls; every package accounted for) |
 | **total** | **29 s warm** | |
 
 A cold CI runner adds module downloads and first builds; 3–6 minutes is the
@@ -169,10 +178,15 @@ WASM WALL DIVERGENCE: DRIFT — the case tables moved.
 
 and exit 1; restoring it returned exit 0.
 
-**The R2 gap is pinned, not omitted.** The step that cannot verify R2 asserts
-the exact refusal instead. If someone commits the corpus, the step fails and
-demands to be upgraded to a real gate. A gap that is asserted is tracked; a gap
-that is absent from the workflow is forgotten.
+**The R2 corpus is reconstructed, independently pinned, and then executed.**
+The corpus text remains gitignored because the problems are competition-owned.
+The checked-in fetcher is therefore part of the gate: it canonicalizes the
+named public dataset and refuses unless the bytes match the verifier-owned
+digest. The manifest's matching digest is only a cross-check. The workflow
+then runs both committed record bundles, accepts only their exact known-red
+classifications, and separately proves that a producer cannot substitute a
+forged corpus by changing its own manifest. Neither bundle is presented as
+verified; see `go/gauntlet/FINDING-R2-ARTIFACTS-001.md`.
 
 ### `bridge` — weekly and on dispatch
 
@@ -201,11 +215,13 @@ committed claim can move without anyone touching this repository. The canary is
 the point of running on a schedule. The cron is 05:43 UTC Monday, after
 `model-gate`'s 05:17, so the two TLC jobs do not contend.
 
-### What this workflow does NOT do
+### Windows and breaker disposition
 
-R3 (`run-ind.sh`) stays human-invoked: 1–2 hours and a ~183 MB toolchain. The
-probe configs (finding N-3) have no runner to call. Neither omission is
-disguised as coverage.
+The PowerShell R4/wire mirrors run weekly; the 1–2 hour, ~183 MB PowerShell R3
+induction mirror runs monthly. The breaker probes remain human-invoked because
+their own runner declares them non-ratified exploration, but they do have the
+recording runner the issue claimed was absent. Neither breaker evidence nor a
+manual invocation is promoted into a verification claim.
 
 ---
 
@@ -249,9 +265,8 @@ exercise and its own first regression test.
 `docs/LAWS.md` + `scripts/check-laws.ts`. 65 laws indexed across ten families.
 
 ```
-laws indexed: 65  (BOUND 41, UNBOUND 13, unenforced 11)
-test files scanned: 60
-laws with NO enforcing test: W9 GV3 GV6 GV9 RL1 RL7 TV1 TV2 TV5 TV8 SL1
+laws indexed: 65  (BOUND 42, UNBOUND 13, unenforced 10)
+laws with NO enforcing test: W9 GV3 GV6 GV9 RL1 RL7 TV1 TV2 TV5 TV8
 LAWS INDEX: CLEAN
 ```
 
@@ -264,8 +279,8 @@ ID anywhere in the file, and an end-to-end control showed why that is too weak
 holding the binding). The window is 30 lines; the widest real binding in the
 tree is 29 (`TV4`).
 
-**The eleven unenforced laws.** `W9` was expected (#33 A9). The other ten were
-not:
+**The ten remaining unenforced laws.** `W9` was expected (#33 A9). The other
+nine were not:
 
 - `GV3` (registers strictly digest-sorted, in bijection), `GV6` (replay digest
   equality), `GV9` (manifests canonical) — implemented in `verify.go`, never
@@ -283,8 +298,8 @@ not:
   strong template. RG-A is the best verifier in the repository AND has the
   most unbound laws; those facts are about different things, which is the
   argument for the index.
-- `SL1` is published to clients as a JSON field by `packages/server` and checked
-  by nobody.
+- `SL1` was the eleventh; it is now bound at the real HTTP route by
+  `packages/server/test/health.surface.test.ts`.
 
 The checker ships nine negative controls (`--self-test`), one per rule, plus one
 positive control asserting an honest index passes — a gate that only ever fails
@@ -303,45 +318,22 @@ file with no index row fails, so the index cannot go stale by omission.
 
 ---
 
-## 5. Verifier hardening — acceptance criteria for #37
+## 5. Verifier hardening — #37 disposition
 
-Findings before fixes: the verifier lanes belong to the PC, and this lane does
-not touch them. What follows is written to be buildable from without further
-design. Each criterion names the file, the change, and the control that proves
-the change works.
+The verifier-integrity repair was integrated into this gate branch before the
+R2 workflow was enabled. The sections below record the implemented decisions
+and any remaining findings.
 
-### G-01 — R2's external corpus pin
+### G-01 — R2's external corpus pin (implemented)
 
-Today `climb.go:215-222` hashes `corpus.json` against `man.CorpusSHA256`, a
-field of the same manifest. The bundle producer holds the only anchor, and a
-`--fake` rehearsal whose corpus literally reads "FAKE problem…" earns
-`R2 VERIFIED`.
-
-Acceptance criteria:
-
-1. `VerifyClimb` takes the expected corpus digest as an argument, sourced
-   OUTSIDE the bundle: a package-level constant beside the `R2` floors (the
-   same "spec's numbers" treatment `TestR2FloorsArePinned` already gives them)
-   with a `-corpus-sha256` flag on `climbverify` to override it for a
-   deliberately different corpus.
-2. The manifest field is not replaced but CROSS-CHECKED: if
-   `man.CorpusSHA256 != external`, refuse with both values, in the shape W1
-   already uses for asserted identity. A bundle that disagrees with the pin is
-   a finding about which corpus was actually run, and the refusal should say so.
-3. A missing external pin is a refusal, never a fallback to the manifest.
-   Silent degradation to the self-referential path reintroduces the hole under
-   a different name.
-4. Control, required: `TestClimbForeignCorpusRefused` — a bundle whose corpus
-   and `CorpusSHA256` agree with each other but not with the external pin must
-   refuse on `ErrManifest`, naming both digests. This is the exact probe that
-   passes today.
-5. Control, required (independence): the same bundle with the corpus RESTORED
-   must still pass every CL law, so the new refusal is shown to fire on the
-   pin and not on something it disturbed.
-6. Blocker to resolve first: `artifacts/receipts/*/corpus.json` is gitignored
-   (finding N-4). Either commit the corpora, or the external pin is
-   unverifiable in CI and the R2 lane stays human-invoked. Decide this before
-   writing code — it changes whether criterion 1's constant is checkable.
+`gauntlet.R2CorpusSHA256` is the verifier-owned anchor beside the frozen R2
+floors. `VerifyClimb` cross-checks the manifest against it and hashes the local
+corpus against it; there is no CLI override that could silently restore
+producer authority. Synthetic tests use an explicit helper pin so test data
+does not weaken the public gate. `TestClimbSelfDeclaredCorpusRefused` mutates
+both corpus and manifest together and proves the verifier still refuses, while
+the honest fixture tests establish independence. The CI fetch step makes the
+external pin checkable without committing competition-owned text.
 
 ### G-03 — G1 worker attribution bound to the journal
 

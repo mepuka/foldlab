@@ -239,12 +239,12 @@ bundle whose corpus is fabricated. A bound law is checkable, not sufficient.
 
 | Law | Statement | Enforcer | Status |
 | --- | --- | --- | --- |
-| `SL1` | `packages/server/src/server.ts` | — | — |
+| `SL1` | `packages/server/src/server.ts` | `packages/server/test/health.surface.test.ts::test("SL1: the machine probe is plain while the browser demos retain their laws"` | BOUND |
 
-"The chain remembers what the fold forgives" — stated twice in the demo
-server, once as a comment and once as a JSON field served to callers. No test.
-It is the only law in the repository that is published to a client and checked
-by nobody.
+"The chain remembers what the fold forgives" — stated in the demo server and
+served as a JSON field. The in-process HTTP test now binds that exact value at
+the public route while independently requiring unequal chain heads and equal
+fold-state digests through the response produced by the core operations.
 
 ## Families outside the ID scheme
 

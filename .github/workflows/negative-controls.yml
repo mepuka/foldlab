@@ -237,29 +237,44 @@ jobs:
         # report (heads, state digests, floors met) to stdout, and the run log
         # is where that belongs.
 
-      # The fourth lane, R2, CANNOT run here, and the reason is not laziness.
-      # `.gitignore` excludes `artifacts/receipts/*/corpus.json`, and
-      # `climb.go` reads exactly that file to check the corpus digest — so
-      # `climbverify` against a tracked R2 bundle fails on a MISSING FILE, not
-      # on a law. That interlocks with #37 G-01: the corpus is simultaneously
-      # the only anchor the R2 gate has and the one file the repository does
-      # not carry. Until the pin is externalized (or the corpus committed),
-      # this step pins the GAP: it requires the refusal, with its exact
-      # message. If someone lands the corpus, this step fails and must be
-      # upgraded to a real verification — which is the intended outcome.
-      - name: verifiers — R2 is blocked, and stays visibly blocked
+      # R2's competition-owned problem text stays gitignored. The checked-in
+      # fetcher reconstructs it from the named public dataset, refuses unless
+      # its canonical bytes match the verifier-owned digest, and only then
+      # writes corpus.json. The focused tests are the negative controls: a
+      # producer whose forged corpus and manifest agree is still refused.
+      #
+      # Running the two real bundles exposed FINDING-R2-ARTIFACTS-001. Keep
+      # executing them, but classify only the exact two ratified-law failures;
+      # a pass or a different refusal fails this gate and demands disposition.
+      - name: verifiers — R2 fetched, pinned, and known-red classified
         working-directory: go
         run: |
-          if go run ./cmd/climbverify ../artifacts/receipts/r2-001 > ../ci-logs/nc-climbverify.log 2>&1; then
-            cat ../ci-logs/nc-climbverify.log
-            echo "R2 now verifies. The corpus is present, so this step is stale:"
-            echo "replace it with a real climbverify gate over r2-001 and r2-002,"
-            echo "and re-read #37 G-01 before trusting the verdict."
+          fetched=0
+          for attempt in 1 2 3; do
+            if go run ./cmd/climb fetch ../artifacts/receipts/r2-001; then
+              fetched=1
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$fetched" -eq 1
+          cp ../artifacts/receipts/r2-001/corpus.json ../artifacts/receipts/r2-002/corpus.json
+          go test ./gauntlet -run '^(TestClimbSelfDeclaredCorpusRefused|TestR2CorpusAnchorIsPinned)$' -count=1
+          if go run ./cmd/climbverify ../artifacts/receipts/r2-001 > ../ci-logs/nc-r2-001.log 2>&1; then
+            cat ../ci-logs/nc-r2-001.log
+            echo "r2-001 unexpectedly passed; resolve FINDING-R2-ARTIFACTS-001 before changing this classifier"
             exit 1
           fi
-          cat ../ci-logs/nc-climbverify.log
-          grep -q "corpus: open .*corpus.json: no such file or directory" ../ci-logs/nc-climbverify.log
-          echo "R2 blocked as expected: the corpus the gate digests is gitignored (#37 G-01)"
+          cat ../ci-logs/nc-r2-001.log
+          grep -Fq "winner holdout 5 < seed holdout 6 + 1" ../ci-logs/nc-r2-001.log
+
+          if go run ./cmd/climbverify ../artifacts/receipts/r2-002 > ../ci-logs/nc-r2-002.log 2>&1; then
+            cat ../ci-logs/nc-r2-002.log
+            echo "r2-002 unexpectedly passed; resolve FINDING-R2-ARTIFACTS-001 before changing this classifier"
+            exit 1
+          fi
+          cat ../ci-logs/nc-r2-002.log
+          grep -Fq "holdout receipt precedes the final selection" ../ci-logs/nc-r2-002.log
 
       # --- the laws index --------------------------------------------------
       - name: laws index — the index gate can fail
@@ -267,6 +282,12 @@ jobs:
 
       - name: laws index — every law still points at its statement and its test
         run: bun scripts/check-laws.ts 2>&1 | tee ci-logs/nc-laws.log
+
+      - name: package test policy — the empty-placeholder exemption can fail
+        run: bun scripts/check-package-tests.ts --self-test 2>&1 | tee ci-logs/nc-package-tests-selftest.log
+
+      - name: package test policy — every runtime package has a test
+        run: bun scripts/check-package-tests.ts 2>&1 | tee ci-logs/nc-package-tests.log
 
       - name: Upload control output
         if: ${{ !cancelled() }}
@@ -323,5 +344,44 @@ jobs:
         with:
           name: bridge-r4-${{ github.run_id }}-${{ github.run_attempt }}
           path: r4-gate.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  windows-r4:
+    name: PowerShell wire + R4 twins (Windows)
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # This invokes the PowerShell gate itself rather than copying its TLC
+      # command into YAML. The cap2 count, honest refinement, and faithless
+      # refutation are the common semantic anchors shared with run-wire.sh.
+      - name: verify/catalog/run-r4.ps1 (runs run-wire.ps1 first)
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\ci-logs" | Out-Null
+          & "$env:GITHUB_WORKSPACE\verify\catalog\run-r4.ps1" *>&1 |
+            Tee-Object -FilePath "$env:GITHUB_WORKSPACE\ci-logs\windows-r4.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload PowerShell wire output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-r4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-logs/windows-r4.log
           if-no-files-found: warn
           retention-days: 90
