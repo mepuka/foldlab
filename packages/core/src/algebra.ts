@@ -189,8 +189,9 @@ const isDeclaration = <S>(value: Declaration<S> | undefined): value is Declarati
  * that merges without coordination.
  *
  * A claim here is a claim, not a proof, and it is carried OUTSIDE the canonical
- * spec on purpose. Every algebra digest in `fixtures/fold-pin.json` is the hash
- * of the spec's canonical bytes, so a field added to `AlgebraSpec` would move
+ * spec on purpose. Every algebra digest in
+ * `packages/core/fixtures/fold-pin.json` is the hash of the spec's canonical
+ * bytes, so a field added to `AlgebraSpec` would move
  * seven frozen digests to record something no consumer reads back. It rides
  * beside the spec instead, exactly as `generator` does — and like `generator`
  * it earns its keep by being read by the generated suites, which turn each

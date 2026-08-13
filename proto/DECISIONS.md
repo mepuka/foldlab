@@ -977,7 +977,10 @@ each boundary and assert typed refusal, never mere no-crash.
 Alternatives: leave the law implicit in tests; claim refusal
 everywhere (falsified by the ratified forgive-on-meaning design). Why:
 a boundary law that names its residuals is the only one a consumer
-can rely on. **Load-bearing? yes.**
+can rely on. This explicitly supersedes the short-lived universal “Total by
+refusal” wording: the forgive-on-meaning path, documented range errors, and
+pinned re-hosting gap make that universal statement false. **Load-bearing?
+yes.**
 
 ### D64. Fold and cache identity require brand-admitted declarations
 
@@ -1687,3 +1690,30 @@ does not license moving any existing digest). Why: the two existing artifacts
 already name the independent standard result and the cross-runtime excluded
 value. **Load-bearing? no** — the oracle artifacts may be consolidated later
 without changing the admitted domain.
+
+## Issue 28 — ledger and documentation integrity (2026-08-13)
+
+### D??. The claims ledger names only committed, reproducible evidence
+
+Decided: remove prose-only mutation outcomes from the negative-control claim,
+scope Go combine evidence to R0, and carry G1's attestation and choreographed-
+schedule bounds into `VERIFICATION.md`. The earlier unseeded refusal-split
+finding and raw-NUL source defect are already superseded at this integration
+head, so this repair does not revive their stale prose or churn the now-text
+test file. Alternatives: build mutation machinery solely to preserve stronger
+prose; leave caveats only in the gauntlet spec; replay obsolete fixes over
+later deterministic-refusal and safe-integer work. Why: the ledger is an index
+of evidence that exists and can be rerun at the current head, with the same
+bounds as its source. **Load-bearing? yes** — later work uses the ledger to
+decide which rights have actually been earned.
+
+### D??. Rosetta bridges keep their prohibition force
+
+Decided: every root glossary bridge keeps the external standard term and its
+explanation, but says “do not use for this concept in foldlab prose.”
+Alternatives: restore the terse pre-Rosetta `_Avoid_` lines (loses the bridge);
+retain the gloss alone (turns a repository instruction into narration);
+introduce new house synonyms (outside this repair). Why: a vocabulary bridge
+can teach recognition without licensing drift in repository prose.
+**Load-bearing? no** — wording may improve while the chosen house terms stay
+unchanged.

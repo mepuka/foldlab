@@ -17,14 +17,16 @@ CONTEXT.md that owns it.
 **Event**:
 One received fact — stream identity, position, payload. Arrival order
 across streams is not in the event.
-_Standard term_: message, record — we say event because a message is the
+_Standard term; do not use for this concept in foldlab prose_:
+message, record — we say event because a message is the
 transport framing that carried the fact, and a record is what a transform
 *produces*; the event is the received fact itself.
 
 **Canonical encoding**:
 THE byte form of a value. Everything that names, fingerprints, or ships a
 value goes through it, so there is exactly one identity.
-_Standard term_: serialization format, wire format — we say canonical
+_Standard term; do not use for this concept in foldlab prose_:
+serialization format, wire format — we say canonical
 encoding because there is exactly one such form per value; transport
 encodings are many, and none of them is it.
 
@@ -34,14 +36,16 @@ Unicode scalars, member names unique after unescaping, finite
 binary64, at most 256 nested containers. Acceptance is part of
 identity — a decoder that repairs its input is naming a different
 value than the one that arrived.
-_Standard term_: parse, deserialize — we say constrained decode because a
+_Standard term; do not use for this concept in foldlab prose_:
+parse, deserialize — we say constrained decode because a
 parser may repair its input; this decode refuses.
 
 **Chain head** (or **head**):
 A 32-byte commitment to an exact history prefix — the identity fold.
 Extending is O(1); recomputing from events is always possible, which is
 what makes any head a checkable claim.
-_Standard term_: hash, checksum — we say chain head because it commits to
+_Standard term; do not use for this concept in foldlab prose_:
+hash, checksum — we say chain head because it commits to
 an exact history prefix rather than to the bytes in hand, and it extends
 in O(1) as that history grows.
 
@@ -52,7 +56,8 @@ while differing in head: the chain remembers what the fold forgives.
 **Merge fact**:
 The committed linearization of a merge: the ordered picks, not the merged
 content. The content is derivable; the fact is what is stored and named.
-_Standard term_: merge result, merged stream — we say merge fact because
+_Standard term; do not use for this concept in foldlab prose_:
+merge result, merged stream — we say merge fact because
 what is stored and named is the ordered picks; the merged content is
 derived from them, never the other way round.
 
@@ -70,7 +75,8 @@ index entry, and the raw material of provenance.
 A test asserting that two implementations of the same algebra take equal
 inputs to equal digests — TS ≡ Go, batch ≡ stream, native ≡ wasm.
 Equivalence is by digest, never by trusting a port.
-_Standard term_: differential test, conformance test, golden-fixture test
+_Standard term; do not use for this concept in foldlab prose_:
+differential test, conformance test, golden-fixture test
 — we say wall because a change that moves a digest cannot pass it. A
 wall is not input validation: bytes are admitted by the **Certifier**,
 and the parse-don't-validate step is **Constrained decode**.
@@ -90,7 +96,8 @@ uncompressed bytes; nothing ever fingerprints a transport form.
 A per-event morphism between streams; dropping an event is a return value,
 not an exception. Two transforms are the same exactly when they take
 equal-head inputs to equal-head outputs.
-_Standard term_: mapper, processor — we say transform because sameness
+_Standard term; do not use for this concept in foldlab prose_:
+mapper, processor — we say transform because sameness
 here is judged by digest (equal-head inputs to equal-head outputs), not
 by what the function does inside.
 
@@ -102,7 +109,8 @@ efficiency claim of the transform algebra.
 The serialized description of a composed transform — an ordered list of
 primitive digests plus parameters. Programs are data: the same program runs
 in-process, over the wire, or via CLI, and is what the catalog stores.
-_Standard term_: pipeline config, job spec — we say pipeline program
+_Standard term; do not use for this concept in foldlab prose_:
+pipeline config, job spec — we say pipeline program
 because it is data the catalog stores and runs unchanged in-process, over
 the wire, or via CLI; a config is read by one runner.
 
@@ -114,7 +122,8 @@ product and mapped combinators. Behavior is a function; identity exists
 only where the same behavior also has a declaration. Anonymous algebras
 run fine and refuse identity: nothing without a canonical form is
 cacheable or catalogable.
-_Standard term_: Reducer — in effect v4 a `Reducer` is exactly this
+_Standard term; do not use for this concept in foldlab prose_:
+Reducer — in effect v4 a `Reducer` is exactly this
 shape, an `initialValue` plus a `combine` (`Reducer.ts`); classically it
 is a monoid instance. We say declared algebra because ours additionally
 carries a content address: the instance is itself canonical data, so it
@@ -143,7 +152,8 @@ a function claiming one ships the generated law suite that grants it
 (ADR-0010). ADR-0010's *lawful surface* is that policy stated for the
 public API: an admission rule about which functions may enter a library,
 each shipping its generated law tests (fast-check property suites).
-_Standard term_: law testing as an API admission policy — it is not a
+_Standard term; do not use for this concept in foldlab prose_:
+law testing as an API admission policy — it is not a
 smart constructor over values; the smart constructor here is the
 **Certifier**.
 
@@ -164,14 +174,16 @@ Lineage is a query over the journal, not a separate system.
 **Span**:
 A segment of journal traffic between anchors. Its id is the segment's chain
 head, so a span id is recomputable, not merely assigned.
-_Standard term_: trace segment — we say span because a span id is the
+_Standard term; do not use for this concept in foldlab prose_:
+trace segment — we say span because a span id is the
 segment's chain head and therefore recomputable; what a tracer calls a
 trace id is, here, the root anchor.
 
 **Certificate**:
 The derivation claim riding on a produced record: schema digest, program
 digest, input anchor, span head. Every field is recomputable by an auditor.
-_Standard term_: metadata, lineage tag — we say certificate because
+_Standard term; do not use for this concept in foldlab prose_:
+metadata, lineage tag — we say certificate because
 metadata is asserted, while every field of this claim is recomputable by
 an auditor.
 
@@ -191,7 +203,8 @@ bit (behavior, brands, defaults, meaning) lives on the tier its author
 chooses: a check (narrows the shape — moves identity) or an annotation (a
 claim — free, uncommitted). The lab does not decide a domain's semantics;
 it provides the tiers.
-_Standard term_: type, model, DTO — we say schema because a type is only
+_Standard term; do not use for this concept in foldlab prose_:
+type, model, DTO — we say schema because a type is only
 one side of it: the declared form carries a Type side, an Encoded side,
 and the transformation between them.
 
@@ -212,7 +225,8 @@ RFC 8785's UTF-16 code-unit sort over member names — the order
 identity's bytes already use, and therefore the order EVERY derivation
 target walks. It is what makes "the first path that refuses" a
 well-defined fact: construction history never leaks into evidence.
-_Standard term_: alphabetical order, locale sort — we say identity order
+_Standard term; do not use for this concept in foldlab prose_:
+alphabetical order, locale sort — we say identity order
 because neither of those is this order: it is RFC 8785's UTF-16
 code-unit sort, the one identity's own bytes already use.
 
@@ -222,7 +236,8 @@ The one proved entry point admitting bytes to the catalog:
 identity, and whatever closure laws the grammar declares. Whoever
 synthesized the bytes is permanently untrusted, the trusted base's size
 is published, and no second admission path is ever added.
-_Standard term_: validator — in Effect terms, the smart constructor at a
+_Standard term; do not use for this concept in foldlab prose_:
+validator — in Effect terms, the smart constructor at a
 process boundary: the single entry point doing the job of
 `Schema.decodeUnknownEffect` narrowed by `check`/`refine`, and the only
 way to obtain the admitted type. We say certifier because a validator
@@ -234,7 +249,8 @@ union-resolved. A record is {structural digest, canonical encoding bytes,
 submitter}; the daemon recomputes every digest it commits — an asserted
 identity it cannot derive is refused. Absence is a typed refusal, never a
 lookup miss.
-_Standard term_: registry — we say catalog because "registry" is
+_Standard term; do not use for this concept in foldlab prose_:
+registry — we say catalog because "registry" is
 rolled-back mint-era vocabulary (NEXT.md), and because this is a journal
 of created types rather than a mutable name-to-value table.
 
@@ -243,7 +259,8 @@ A derivation computed as a fold over a digest-anchored AST or program
 value — the meaning-side twin of the structural digest. Every derived
 surface (Go twin, JSON Schema, DDL, span preview, codec) is one; derived
 surfaces cannot drift because their input has committed identity.
-_Standard term_: code generator, compiler pass — we say semantic fold
+_Standard term; do not use for this concept in foldlab prose_:
+code generator, compiler pass — we say semantic fold
 because those are implementations of one: the derivation is a fold over
 an AST whose identity is already committed.
 
@@ -276,7 +293,8 @@ reading documentation. Daemon refusals persist their ontological `sort`:
 structural evidence remains true under its pinned grammar, while absence is a
 head-relative observation that later presence can repeal. A refusal is data:
 never an exception, never a null.
-_Standard term_: a typed error — the `E` of Effect's `Effect<A, E, R>`, a
+_Standard term; do not use for this concept in foldlab prose_:
+a typed error — the `E` of Effect's `Effect<A, E, R>`, a
 tagged union (`Data.TaggedError`) rather than a thrown value. We say
 refusal because the same shape is also the wire answer a daemon gives,
 where "error channel" would name a language feature the caller does not
