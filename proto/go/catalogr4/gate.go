@@ -44,8 +44,7 @@ func RunCorruptedControls(ctx context.Context, corpus []Schedule) (SensitivityRe
 // behavior while keeping the production files unchanged.
 func RunSabotageControl(ctx context.Context) (*Divergence, error) {
 	schedule := Schedule{
-		{Kind: CreateBegin, Creator: 1, Daemon: 1, Value: 1},
-		{Kind: CreateFinish, Creator: 1},
+		{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1},
 	}
 	result, err := Replay(ctx, schedule, ReplayOptions{})
 	if err != nil {

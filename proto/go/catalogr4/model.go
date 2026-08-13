@@ -21,6 +21,7 @@ type ActionKind string
 const (
 	CreateBegin   ActionKind = "CreateBegin"
 	CreateFinish  ActionKind = "CreateFinish"
+	CreateAtomic  ActionKind = "CreateAtomic"
 	MirrorAdvance ActionKind = "MirrorAdvance"
 	Publish       ActionKind = "Publish"
 )
@@ -41,6 +42,8 @@ func (a Action) String() string {
 		return fmt.Sprintf("CreateBegin(c=%d,d=%d,v=%d)", a.Creator, a.Daemon, a.Value)
 	case CreateFinish:
 		return fmt.Sprintf("CreateFinish(c=%d)", a.Creator)
+	case CreateAtomic:
+		return fmt.Sprintf("CreateAtomic(c=%d,d=%d,v=%d)", a.Creator, a.Daemon, a.Value)
 	case MirrorAdvance:
 		return fmt.Sprintf("MirrorAdvance(d=%d,o=%d)", a.Daemon, a.Origin)
 	case Publish:
@@ -135,6 +138,22 @@ type TraceStep struct {
 func Step(before State, action Action) (State, Outcome, error) {
 	next := before.Clone()
 	switch action.Kind {
+	case CreateAtomic:
+		if action.Creator < 1 || action.Creator > R2Creators ||
+			action.Daemon < 1 || action.Daemon > R2Daemons ||
+			action.Value < 1 || action.Value > R2Values {
+			return State{}, Outcome{}, fmt.Errorf("out-of-domain %s", action)
+		}
+		if before.Creators[action.Creator-1].Busy {
+			return State{}, Outcome{}, fmt.Errorf("disabled %s: creator is busy", action)
+		}
+		if before.resolves(action.Daemon, action.Value) {
+			return before, Outcome{Branch: "CreateAtomic.converged"}, nil
+		}
+		next.Catalog[action.Daemon-1] = append(
+			next.Catalog[action.Daemon-1], Fact{Value: action.Value})
+		return next, Outcome{Branch: "CreateAtomic.created"}, nil
+
 	case CreateBegin:
 		if action.Creator < 1 || action.Creator > R2Creators ||
 			action.Daemon < 1 || action.Daemon > R2Daemons ||
@@ -226,13 +245,8 @@ func EnabledActions(state State) []Action {
 		}
 		for daemon := 1; daemon <= R2Daemons; daemon++ {
 			for value := 1; value <= R2Values; value++ {
-				actions = append(actions, Action{Kind: CreateBegin, Creator: creator, Daemon: daemon, Value: value})
+				actions = append(actions, Action{Kind: CreateAtomic, Creator: creator, Daemon: daemon, Value: value})
 			}
-		}
-	}
-	for creator := 1; creator <= R2Creators; creator++ {
-		if state.Creators[creator-1].Busy {
-			actions = append(actions, Action{Kind: CreateFinish, Creator: creator})
 		}
 	}
 	for daemon := 1; daemon <= R2Daemons; daemon++ {

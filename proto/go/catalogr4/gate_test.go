@@ -32,3 +32,21 @@ func TestFindingMinimizesToFourActions(t *testing.T) {
 		t.Fatalf("minimized schedule has %d actions:\n%s", len(minimized), FormatSchedule(minimized))
 	}
 }
+
+func TestHonestCoarsenedCorpusHasZeroDivergences(t *testing.T) {
+	corpus, err := GenerateCorpus(DefaultCorpusConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := RunHonestCorpus(context.Background(), corpus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Divergence != nil {
+		t.Fatalf("coarsened wire map diverged at %s: %s",
+			report.Divergence.Action, report.Divergence.Detail)
+	}
+	if report.Attempted != report.Planned {
+		t.Fatalf("attempted %d of %d schedules", report.Attempted, report.Planned)
+	}
+}

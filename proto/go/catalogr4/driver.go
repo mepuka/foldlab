@@ -218,6 +218,26 @@ func Replay(ctx context.Context, schedule Schedule, options ReplayOptions) (Repl
 func (d *replayDriver) drive(step TraceStep) (string, error) {
 	action := step.Action
 	switch action.Kind {
+	case CreateAtomic:
+		reply, err := d.create(action.Daemon, action.Value,
+			fmt.Sprintf("catalog-r4-creator-%d", action.Creator))
+		if err != nil {
+			return "", err
+		}
+		if reply["ok"] != true {
+			return fmt.Sprintf("CreateAtomic returned a refusal: %s", compactJSON(reply)), nil
+		}
+		if detail := digestReplyMismatch(reply, action.Value); detail != "" {
+			return detail, nil
+		}
+		created, _ := reply["created"].(bool)
+		wantCreated := step.Outcome.Branch == "CreateAtomic.created"
+		if created != wantCreated {
+			return fmt.Sprintf("modeled %s, but type.create returned created:%t for value %d",
+				step.Outcome.Branch, created, action.Value), nil
+		}
+		return "", nil
+
 	case CreateBegin:
 		if step.Outcome.Branch == "CreateBegin.pending" {
 			d.pending[action.Creator-1] = action

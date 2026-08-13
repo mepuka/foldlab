@@ -1,7 +1,9 @@
 # R4 FINDING 001 — the split create action has no wire interposition seam
 
-Status: **OPEN; R4 NOT CLAIMED**. Found 2026-08-13 CDT after both required
-negative-control classes passed and before any honest pass count was claimed.
+Status: **DISPOSITION APPLIED**. The split-map replay remains correctly red;
+R4 is now claimed only against the separately named coarsened wire refinement
+(`CreateAtomic`). Found 2026-08-13 CDT after both required negative-control
+classes passed and before any honest pass count was claimed.
 
 ## Result
 
@@ -92,3 +94,15 @@ is recorded as an asset: it already covers the future multi-handler
 authority deployment. Rejected: a test-only interposition seam (the
 seam-enabled build is not the shipped binary); building multi-handler
 concurrency to satisfy a harness (inverted priorities).
+
+## Disposition evidence (2026-08-13)
+
+`CatalogWire.tla` now checks that every `CreateAtomic` step is a legal
+uninterrupted `CreateBegin;CreateFinish` trace (or the resolving Begin's
+stutter). The honest bridge closed at 281,269 distinct states; its faithless
+control violated `AtomicRefinement` at depth 2. The regenerated coarse corpus
+then ran both implementation negative-control classes before replaying all
+131 schedules / 3,079 steps with zero divergences. The exact, map-qualified
+claim and coverage are recorded in `README.md`. This does not make the old
+split replay green: its regression test remains the evidence that the
+split-CAS branch belongs at ticket 012's journal seam.

@@ -96,3 +96,45 @@ sampled trace; randomized delta debugging. Why: the four-action witness is
 small enough to audit and byte-stable across runs. **Load-bearing? no** — a
 stronger reducer may replace it without changing the finding.
 
+## D9. The public refinement map coarsens create to `CreateAtomic`
+
+Decided: retain the proved split `CreateBegin` / `CreateFinish` actions in
+`Catalog.tla`, but expose `CreateAtomic` as the executable wire action in
+`CatalogWire.tla` and the Go oracle. An appending atomic step maps to an
+uninterrupted Begin;Finish pair; an already-resolved atomic step maps to the
+stuttering resolving Begin. `MirrorAdvance` and `Publish` remain unchanged.
+Alternatives: add a test-only pause to protod; silently treat the fresh wire
+check as the earlier Begin snapshot; discard the split model. Why: the shipped
+wire request really is atomic, while the split model remains the safety proof
+and covers the future multi-handler deployment. The stale-CAS conformance
+branch moves to ticket 012's journal kernel. This supersedes D1 and D7 only
+for the resumed wire map; their finding history remains evidence.
+**Load-bearing? yes** — R4 is claimed only against this named map.
+
+## D10. TLC checks the coarse step against the split transition functions
+
+Decided: factor pure `CreateBeginResult` and `CreateFinishResults` operators
+out of `Catalog.tla` without changing its actions, then require every direct
+`CreateAtomic` step to equal their sequential composition. A split cap2
+closure canary pins the refactor at 119,145 generated / 18,295 distinct /
+depth 16. The honest bridge closes at the R2 gate domains; a config-selected
+faithless atomic identity must violate `AtomicRefinement`, with its trace
+committed beside the config. Alternatives: duplicate the split transition in
+the bridge; rely on a prose simulation argument. Why: one transition table
+prevents proof and bridge drift, and the required refutation proves TLC is
+actually observing the relation. **Load-bearing? yes** — this is the checked
+step that transfers R3 safety to the coarse map.
+
+## D11. Regenerate and gate the corpus in strict control-first order
+
+Decided: the coarse corpus has three deterministic branch witnesses followed
+by the same 128 seeded depth-24 walks. This yields 131 schedules / 3,079 steps
+and covers 1,077 distinct states, all 3 action disjuncts, and all 5 semantic
+branches. The single R4 command runs the formal bridge, tagged daemon
+sabotage, all 131 corrupted expected-state schedules, coverage, and only then
+131 honest schedules. Alternatives: retain the split corpus and project it;
+publish a pre-control honest count. Why: schedules must contain only drivable
+wire behaviors, and both failure modes must be demonstrated before a pass
+count has evidentiary value. This supersedes D2's five split witnesses while
+retaining its seed formula. **Load-bearing? yes** — these counts and this
+ordering bound the R4 claim.

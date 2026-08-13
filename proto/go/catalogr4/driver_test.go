@@ -41,7 +41,7 @@ func TestAtomicWireCreateCannotReplayTheModeledStaleConflict(t *testing.T) {
 
 func TestWireReplayCoversEveryNonFindingWitness(t *testing.T) {
 	witnesses := coverageWitnesses()
-	for index, schedule := range witnesses[:len(witnesses)-1] {
+	for index, schedule := range witnesses {
 		result, err := Replay(context.Background(), schedule, ReplayOptions{})
 		if err != nil {
 			t.Fatalf("witness %d: %v", index, err)

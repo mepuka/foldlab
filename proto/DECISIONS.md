@@ -805,3 +805,29 @@ three-verb writ and denies every direct `$KV.E_>` and `$JS.API.>` route without
 adding a second client surface. Existing black-box conformance still connects
 without credentials and passes. **Load-bearing? yes** — this is the enforced
 half of the terminal-immutability disposition.
+
+## Task 17 — catalog R4 lockstep conformance (2026-08-13)
+
+Harness-local decisions D1–D11 live in `verify/catalog/R4-DECISIONS.md`
+(the task's decisions-encountered log). This entry records the one
+repo-wide decision at merge.
+
+### D59. R4 is claimed against a coarsened, TLC-bridged wire refinement map
+
+Decided: the public conformance claim for the catalog is "R4 against the
+coarsened wire refinement (CreateAtomic); the split-CAS branch's
+conformance is ticket 012's obligation." `CatalogWire.tla` defines
+CreateAtomic and TLC checks (`AtomicRefinement`) that every atomic step
+is an uninterrupted legal Begin;Finish pair or the resolving Begin's
+stutter, so the split model's R3 safety transfers to the map actually
+drivable at the wire. The proved split actions in `Catalog.tla` are
+retained untouched (they cover the future multi-handler deployment);
+R4-FINDING-001 and its regression test remain red evidence. Alternatives:
+a test-only interposition seam in protod (the seam-enabled build is not
+the shipped binary); building multi-handler concurrency to satisfy a
+harness (inverted priorities); silently treating the fresh wire check as
+the earlier Begin snapshot (a false replay). Why: the shipped wire
+request really is atomic; the claim must name the map it was earned
+against. Details and sub-decisions: R4-DECISIONS D9–D11.
+**Load-bearing? yes** — every consumer of the R4 claim inherits exactly
+this map and no more.

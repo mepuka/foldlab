@@ -52,24 +52,15 @@ func coverageWitnesses() []Schedule {
 	return []Schedule{
 		{{Kind: Publish, Daemon: 1, Value: 1}},
 		{
-			{Kind: CreateBegin, Creator: 1, Daemon: 1, Value: 1},
-			{Kind: CreateFinish, Creator: 1},
-			{Kind: CreateBegin, Creator: 2, Daemon: 1, Value: 1},
+			{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1},
+			{Kind: CreateAtomic, Creator: 2, Daemon: 1, Value: 1},
 			{Kind: Publish, Daemon: 1, Value: 1},
 		},
 		{
-			{Kind: CreateBegin, Creator: 1, Daemon: 1, Value: 1},
-			{Kind: CreateFinish, Creator: 1},
+			{Kind: CreateAtomic, Creator: 1, Daemon: 1, Value: 1},
 			{Kind: MirrorAdvance, Daemon: 2, Origin: 1},
 			{Kind: Publish, Daemon: 2, Value: 1},
 		},
-		{
-			{Kind: CreateBegin, Creator: 1, Daemon: 1, Value: 1},
-			{Kind: CreateBegin, Creator: 2, Daemon: 1, Value: 1},
-			{Kind: CreateFinish, Creator: 1},
-			{Kind: CreateFinish, Creator: 2},
-		},
-		StaleDistinctValueConflictSchedule(),
 	}
 }
 
