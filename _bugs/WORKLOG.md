@@ -178,3 +178,44 @@ under `packages/core` so the effect catalog dep resolves).
   false — the confirming repro.
 - **Exploitable vs latent:** LATENT/transient (needs a GetMsg failure racing a
   lost CAS); a real contract defect regardless.
+
+## 2026-08-13 — CLEAN LANES (differential, executed)
+
+- **jcs canonical (TS `canonicalizeJson` vs Go `cmd/jcsprobe`):** adversarial
+  battery of 29 hand-picked inputs — number edge cases (`1e-7`, `1e21`,
+  `5e-324`, `2^53+1`, `-0`, `1e20`/`1e21` integer literals, `0.0000001`), astral
+  Unicode keys/values (`U+1D11E`), the `U+E000` vs `U+10000` key-ordering trap,
+  and degenerate `[]`/`{}`. Command: `_bugs/jcs_battery.ts` (run under
+  `packages/core` with `mise x go@1.26.5`). Result: **ALL AGREE — no
+  divergence.** Go's `json.Marshal` float path is ES-mimicking and matches TS
+  `JSON.stringify`; both sort object keys by UTF-16 code units.
+- **stream KV algebra (TS `applyKV`/`stateDigest` vs Go `KV.Apply`/`StateDigest`):**
+  refusal domains match by inspection AND the C1 payload crosses identically:
+  invalid UTF-8 refused both sides, empty key (`i<=0`) refused both, NUL in
+  key/value refused both, `u32` count cap identical (`>= 0xffffffff`). Both
+  `StateDigest` implementations sort keys by UTF-8 byte order (TS `keyBytes`
+  compare; Go `sort.Strings`) — they AGREE (unlike the jcs object-key path,
+  which is UTF-16 on both sides; each convention is internally cross-consistent).
+- **Reading:** the WALLED core (jcs, stream KV) is lawful and its law composes
+  cross-language. Every confirmed bug this session lives OUTSIDE the wall — in a
+  SECOND implementation of a walled operation (`entity.applySync`,
+  `canonical.EntryDigest`) or in a construction built ON the core that failed to
+  inherit its law (`mapped` trusting a forgeable digest, `applyMerge` dedup,
+  journal `Open`/cursor). That is the dossier spine: the proof composes where a
+  single lawful admission point is reused, and leaks exactly where a parallel
+  encoder or an un-recertified construction reappears.
+
+## 2026-08-13 — S1 SUSPECTED (schema.ts hard-couples the Bun runtime)
+
+- **Verdict:** SUSPECTED (by inspection; not executed under Node here).
+  `packages/core/src/schema.ts` calls the global `Bun.gunzipSync` (line 77) and
+  `Bun.gzipSync` (line 90) with no import and no runtime guard. Under Node.js
+  `Bun` is undefined -> `ReferenceError`, so `decodeFrame`/`encodeFrame` throw
+  for any non-Bun consumer of `@foldlab/core`.
+- **Severity:** LOW (portability/runtime-coupling; not a correctness divergence).
+- **Exploitable vs latent:** LATENT — the repo targets Bun and all gates are
+  `bun test`; no shipped Node consumer. A published library surface would break
+  under Node.
+- **Next experiment:** `node --experimental-strip-types -e "import('...schema.ts')"`
+  after a Node-resolvable install, then call `encodeFrame` and assert the
+  `ReferenceError: Bun is not defined`.
