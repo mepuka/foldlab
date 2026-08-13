@@ -17,6 +17,9 @@
 //	seed(s)     = SHA-256("playground.stream.v1:" + s)
 //	extend(h,e) = SHA-256(h || enc(e))
 //
+// "playground.*" is a former project name frozen into these hashed wire
+// prefixes. Renaming it would move every derived digest, so it stays.
+//
 // Identity is always of canonical UNCOMPRESSED bytes: compression is
 // transport, never identity (GzipEvents/GunzipEvents round-trip the canonical
 // bytes; nothing ever fingerprints a compressed frame).
