@@ -132,6 +132,9 @@ func (d *Daemon) buildFrontier(holes [][]string) []frontierEntry {
 	legal := frontierChoices(refs)
 	frontier := make([]frontierEntry, len(holes))
 	for index, path := range holes {
+		// Every representable hole currently expects T, so this uniform table
+		// is the frontier's total function. The C4 tripwire fails when the
+		// grammar gains a second hole-position kind.
 		frontier[index] = frontierEntry{
 			Path:  frozenPath(path),
 			Legal: legal,
