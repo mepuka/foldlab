@@ -988,3 +988,22 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Issue 16 — MCP pin conformance (stopped on FINDING-MCP-001, 2026-08-13)
+
+### D??. FINDING: raw-schema dynamic tools advertise but do not enforce input schemas
+
+Decided: stop after reproducing the issue's schema-validation correction at
+the public stdio JSON-RPC seam. Foldlab passes raw JSON Schema to
+`Tool.dynamic`; rc.108 deliberately stores it for advertisement while using
+`Schema.Unknown` for handler parameters, so a `type_create` call missing the
+advertised required `structure` property reaches protod and returns its typed
+`malformed` refusal instead of MCP `InvalidParams`. Alternatives deliberately
+not taken: add a second validator; derive Effect Schema alongside JSON Schema;
+or rewrite the red regression to bless daemon validation. Why: the first two
+change the ratified D22 trust boundary and require a new equivalence oracle;
+the third would erase a demonstrated contradiction between issue #16's
+correction and the pinned implementation. Evidence and disposition choices
+are in `ts/FINDING-MCP-001.md`. **Load-bearing? yes** — callers cannot know
+whether advertised schemas are enforced until the coordinator chooses the MCP
+validation boundary.

@@ -73,6 +73,49 @@ const spawnMcp = async (): Promise<McpProcess> => {
   }
 }
 
+const findingTest = process.env.FLB_RUN_MCP_INPUT_FINDING === "1" ? test : test.skip
+
+findingTest(
+  "FINDING-MCP-001: MCP rejects arguments that violate the served input schema before dispatch",
+  async () => {
+    const mcp = await spawnMcp()
+    try {
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 100,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "input-validation-control", version: "0.0.1" },
+        },
+      })
+      await mcp.next()
+      mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" })
+
+      mcp.send({ jsonrpc: "2.0", id: 101, method: "tools/list", params: {} })
+      const listed = await mcp.next()
+      const typeCreate = listed.result.tools.find((tool: any) => tool.name === "type_create")
+      expect(typeCreate.inputSchema.required).toContain("structure")
+
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 102,
+        method: "tools/call",
+        params: { name: "type_create", arguments: {} },
+      })
+      const invalid = await mcp.next()
+
+      // Independent control: the MCP server's advertised schema says
+      // `structure` is required, so dispatch must stop at InvalidParams.
+      expect(invalid.error?.code).toBe(-32602)
+    } finally {
+      await mcp.stop()
+    }
+  },
+  120_000,
+)
+
 test("tool schemas are derived from contract.describe, and refusals are data in results", async () => {
   const mcp = await spawnMcp()
   try {
