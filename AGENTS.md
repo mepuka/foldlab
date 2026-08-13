@@ -1,101 +1,54 @@
-# AGENTS.md — operating contract for coding agents in foldlab
+# foldlab agent contract
 
-Effect v4 (TypeScript/Bun) + Go lab. Streams are left folds twice over:
-folded with a hash you get IDENTITY (chain heads), folded with a state
-function you get MEANING. Every cross-language claim is a passing
-digest-equality test ("wall"), never a trusted port.
+This file is the single source of truth for repository agent instructions.
+Compatibility files such as `CLAUDE.md` only point here.
 
-## Gates — ALL must be green before you are done
+## Read first
 
-```
-bun run typecheck        # tsc --noEmit
-bun test                 # includes the cross-language walls
-cd go && gofmt -l .      # must print NOTHING
+- `CONTEXT.md` — canonical domain language and invariants
+- `README.md` — repository layout and runnable claims
+- `NEXT.md` — current design state and ratified direction
+- `docs/adr/` — architectural decisions
+- `docs/gauntlet/` — frozen specs, laws, and verification results
+
+Read the relevant scoped docs before editing. Performance work must also follow
+`bench/BENCH.md`.
+
+## Effect v4
+
+The workspace catalog pins the whole Effect family exactly to
+`4.0.0-rc.108`. The authoritative source is the official release tag at
+https://github.com/Effect-TS/effect/tree/effect%404.0.0-rc.108, which resolves
+to commit
+https://github.com/Effect-TS/effect/commit/bef7bf38ae4b73d5511043f707aed083de5da7cc.
+
+Do not use npm's unqualified `latest` tag for Effect; it currently tracks
+Effect v3. Confirm APIs against the pinned declarations in
+`node_modules/effect/dist/*.d.ts` and the pinned source above rather than
+memory. Schema is `effect/Schema`; do not add deprecated `@effect/schema`.
+
+## Non-negotiable rules
+
+- `fixtures/stream-wall.json` is frozen. A digest mismatch means the change is
+  wrong unless fixture regeneration was explicitly requested with a stated
+  reason.
+- Cross-language equivalence is proven by digest-equality walls, never by
+  trusting a port.
+- Keep the Go module stdlib-only unless a task explicitly requires otherwise.
+- Add no TypeScript runtime dependency unless the task justifies it.
+- Preserve user changes and avoid unrelated cleanup.
+
+## Required gates
+
+All must pass before completion:
+
+```text
+bun run typecheck
+bun test
+cd go && gofmt -l .
 cd go && go vet ./...
 cd go && go test ./...
 ```
 
-Optional (auto-skips when absent): `bun run build:wasm && bun test` builds
-the wasm wall into gitignored `dist/`.
-
-## Benchmarks
-
-Protocol lives in `bench/BENCH.md` — read it before making any performance
-claim. Short form: `bun run bench:go -- --save before` on the base, your
-change, `--save after`, then `bun run bench:compare -- before after`; only
-benchstat-significant deltas count, allocations are the metric, results are
-machine-specific and never committed (`bench/results/` is gitignored).
-Go benches live in `go/stream/bench_test.go` (deterministic corpora only),
-TS + wasm-boundary benches in `bench/stream.bench.ts` (mitata).
-
-Host is Windows; use forward slashes in paths, and don't assume a POSIX
-shell in package.json scripts (Bun's shell is fine).
-
-## The one hard rule
-
-`fixtures/stream-wall.json` is FROZEN. It was generated once by
-`go/cmd/streamfix`. If your change makes a digest mismatch, your change is
-wrong — the default reading is port drift; investigate your code, never
-edit the fixture. Regeneration requires a stated reason committed with the
-change, and is almost never the answer.
-
-Canonical encodings are pinned byte-for-byte in BOTH `go/stream/stream.go`
-and `packages/core/src/stream.ts`:
-
-```
-enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
-seed(s)     = SHA-256("playground.stream.v1:" + s)
-extend(h,e) = SHA-256(h || enc(e))
-```
-
-Change one side and you must change the other identically — and then the
-frozen fixture will tell you whether you actually did.
-
-## Layout
-
-Bun workspace monorepo: `packages/*` (TS), `go/` (its own module),
-`fixtures/` shared at root. The effect pin lives once in the root
-package.json catalog; packages reference `catalog:`.
-
-- `packages/core` — `@foldlab/core`: stream, xform, schema, entity,
-  streamBindings, mint. Its `test/` holds the walls.
-  - `src/stream.ts` ≡ `go/stream/stream.go` — the value wall (heads,
-    merge, fold, compaction, fork, gzip transport).
-  - `src/xform.ts` ≡ `go/stream/transform.go` — the transform wall (fused
-    per-event pipelines; `null`/`ok=false` drops).
-  - `src/schema.ts` — the Go wire frame as an Effect Schema (decode =
-    ingestion from Go).
-  - `src/entity.ts` — entities as quotients by correlation key.
-  - `src/streamBindings.ts` — Effect Stream orchestration; chunking is
-    transport and provably never moves a head.
-- `packages/mcp` — `@foldlab/mcp`: agentSurface + mcpMain (stdio entry;
-  `.mcp.json` at root mounts it).
-- `packages/server` — `@foldlab/server`: the HTTP surface.
-- `packages/codegen`, `packages/nats`, `packages/ai` — reserved, empty.
-- `go/cmd/wasmwall` + `packages/core/test/wasm.wall.test.ts` — same Go
-  source compiled to wasm, run in Bun, same digest. Boundary is data
-  (frames in, JSON out). `dist/` builds at root.
-- `packages/*/test/*.wall.test.ts` — the walls. `NEXT.md` — design state
-  and ratified decisions. `SLICE-*.md` — scoped, self-contained task
-  briefs.
-
-## Effect v4 — trust the pin, not your memory
-
-Pinned exact: `effect@4.0.0-beta.107`. v4 betas rename APIs between
-releases; ALWAYS confirm exports against `node_modules/effect/dist/*.d.ts`
-before using them. Known quirks at this pin: `Effect.reduce` takes a lazy
-zero (`() => z`); `Bun.gzipSync`/`gunzipSync` want a fresh
-`new Uint8Array(...)`; on refined schemas read annotations via
-`SchemaAST.resolve`/`resolveAt` (reading `ast.annotations` directly returns
-undefined once checks exist).
-
-## Style
-
-- Comments state what a law witnesses or a constraint the code can't show —
-  never narrate the code. Match the density and voice of the file you're in.
-- Go: stdlib only (`go.mod` has zero requires — keep it that way unless the
-  task brief says otherwise). Value semantics; no channels in per-event hot
-  paths; gofmt is law.
-- TS: no new runtime deps without the task brief saying so.
-- Tests are laws: name them for the property they witness, and prefer
-  digest equality over structural assertion.
+`gofmt -l .` must print nothing. The optional wasm wall is
+`bun run build:wasm && bun test`.

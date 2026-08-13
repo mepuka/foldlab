@@ -1,37 +1,4 @@
-# foldlab
+# Agent instructions
 
-Effect v4 + Go lab. `bun run typecheck && bun test` and the Go gate
-(`cd go && test -z "$(gofmt -l .)" && go vet ./... && go test ./...`) must
-stay green.
-
-## Effect v4
-
-- Pinned exact: `effect@4.0.0-beta.107`, `@effect/platform-bun@4.0.0-beta.107`.
-  v4 betas rename APIs between releases — confirm exports against
-  `node_modules/effect/dist/*.d.ts` before use.
-- Effect v4 source reference: the pinned package under
-  `node_modules/effect` is the authority; upstream is
-  github.com/Effect-TS/effect (tip may be NEWER than the pin).
-- Guides: https://github.com/kitlangton/effect-solutions
-  (`packages/website/docs`). The `effect-solutions` CLI has no win32 binary.
-- HTTP is `effect/unstable/http`; runtime layers from `@effect/platform-bun`;
-  Schema is `effect/Schema` + `SchemaGetter`/`SchemaIssue` (v4 rewrite —
-  Getters are effectful; `decodeEffect` carries `DecodingServices`).
-- Known pin quirks: `Effect.reduce` takes a LAZY zero (`() => z`);
-  `Bun.gzipSync`/`gunzipSync` want `Uint8Array<ArrayBuffer>` (wrap with
-  `new Uint8Array(...)`).
-
-## The wall discipline
-
-`fixtures/stream-wall.json` was generated ONCE by `go/cmd/streamfix` and is
-frozen. TS must reproduce every digest byte-identically (`bun test`). On
-mismatch, the DEFAULT reading is that a port drifted — investigate; never
-repin without a stated reason. Canonical encodings are pinned in
-`go/stream/stream.go` and `packages/core/src/stream.ts` (they must match,
-byte for byte).
-
-## Reference
-
-`.reference/core-concepts.md` is the theory compilation;
-`.reference/playground-mech/` mirrors the proof work (TLA+/Apalache model
-gate, effector theorems, mech checker) this lab builds on. Read-only.
+The canonical repository instructions are in [`AGENTS.md`](AGENTS.md). Read
+and follow that file before making changes.

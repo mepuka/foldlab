@@ -22,7 +22,7 @@ with no TypeScript anywhere.
   language in [CONTEXT.md](../../CONTEXT.md); committed decisions in
   `docs/adr/`; theory in `.reference/core-concepts.md`.
 - Every session: `bun run typecheck && bun test` and the Go gate stay
-  green (CLAUDE.md). Effect v4 pinned beta — confirm exports against
+  green (`AGENTS.md`). Effect v4 pinned beta — confirm exports against
   `node_modules/effect/dist/*.d.ts`; consult the `effect` skill.
 - Grilling tickets always run /grilling + /domain-modeling.
 - Standing preferences: walls before features (byte-identical fixtures,
