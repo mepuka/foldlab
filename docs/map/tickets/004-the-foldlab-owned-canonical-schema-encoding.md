@@ -77,3 +77,10 @@ its frozen fixture wall (lands with the build, beside the wrapper
 prototype); the migration decision for interim catalog digests
 (re-derive vs dual-record), deferred until the prototype shows real
 records.
+
+Addendum (2026-08-12, ratified): the owned structure's first cut exists
+as `flb.type.v0` — the tracer bullet's authoring grammar
+(proto/SPEC.md). It IS this ticket's build item, not a parallel interim:
+its shape encodes laws 3–5 (brand node, declared-check node, resolvable
+refs making the catalog a DAG), and it grows toward full SchemaAST
+coverage here. Never a second grammar.
