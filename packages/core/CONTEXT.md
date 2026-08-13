@@ -15,11 +15,11 @@ typed by a schema, judged by decoded values and heads, never compressed
 bytes.
 
 **Walled boundary behavior**:
-Canonical JSON encoding, `applyKV`, ambiguous merge replay, and
-fold-identity/cache admission refuse excluded inputs as data or withhold
-identity. `kvStep` reports an excluded payload as `undefined`; entity collection
-deliberately forgives that payload as a meaning no-op while its identity fold
-still commits the bytes. Lower-level canonical writers (`encodeEvent`,
-`streamSeed`, `extend`, `stateDigest`, `parseFrames`, and `entitySeed`) retain
-their documented thrown range errors; Task 22 does not claim a package-wide
-error-channel migration.
+Canonical JSON encoding and `applyKV` refuse excluded inputs as data; the four
+algebra derivation gates withhold identity from unbranded declarations and
+homomorphisms; fold-cache storage and fold handles reject structural costumes.
+`kvStep` reports an excluded payload as `undefined`; entity collection
+deliberately forgives it as a meaning no-op while its identity fold still
+commits the bytes. Lower-level canonical writers retain their documented range
+errors, and the algebra's genuine-declaration re-hosting residual remains
+explicitly outside this claim; Task 22 does not assert a package-wide migration.
