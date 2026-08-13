@@ -23,7 +23,7 @@ tracer bullet, own gates) and `verify/` (model gates) at root. Older
 
 Every wall below — a differential test: two implementations, one input,
 digests compared — is a passing test, not an intention (root `bun test`:
-113 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 13
+139 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 14
 files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
 in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 
