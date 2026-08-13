@@ -44,7 +44,8 @@ func TestSessionResumesExactlyAfterDaemonRestart(t *testing.T) {
 	})
 	moved := request(firstConn, protod.SubjectSessionMove, map[string]any{
 		"session": opened["session"], "expectedHead": opened["head"],
-		"op": "fill", "path": []any{}, "subtree": map[string]any{"k": "string"},
+		"principal": "restart-agent",
+		"op":        "fill", "path": []any{}, "subtree": map[string]any{"k": "string"},
 	})
 	firstConn.Close()
 	first.Release()
@@ -60,7 +61,7 @@ func TestSessionResumesExactlyAfterDaemonRestart(t *testing.T) {
 	}
 	t.Cleanup(secondConn.Close)
 	resumed := request(secondConn, protod.SubjectSessionState, map[string]any{"session": opened["session"]})
-	if resumed["ok"] != true || resumed["head"] != moved["head"] || resumed["stateDigest"] != moved["stateDigest"] {
+	if resumed["ok"] != true || resumed["head"] != moved["head"] || resumed["stateDigest"] != moved["stateDigest"] || resumed["principal"] != "restart-agent" {
 		t.Fatalf("restart did not resume the exact verified prefix:\n moved %v\nresumed %v", moved, resumed)
 	}
 }
@@ -89,7 +90,8 @@ func TestSessionJournalConformance(t *testing.T) {
 	}
 
 	moved := h.request(protod.SubjectSessionMove, map[string]any{
-		"session": session, "expectedHead": openHead, "op": "fill", "path": []any{},
+		"session": session, "expectedHead": openHead, "principal": "conformance-agent",
+		"op": "fill", "path": []any{},
 		"subtree": map[string]any{"k": "list", "of": map[string]any{"k": "hole"}},
 	})
 	if moved["ok"] != true || moved["head"] == openHead {
@@ -107,7 +109,8 @@ func TestSessionJournalConformance(t *testing.T) {
 	}
 
 	stale := h.request(protod.SubjectSessionMove, map[string]any{
-		"session": session, "expectedHead": openHead, "op": "fill", "path": []any{"of"},
+		"session": session, "expectedHead": openHead, "principal": "conformance-agent",
+		"op": "fill", "path": []any{"of"},
 		"subtree": map[string]any{"k": "string"},
 	})
 	staleRefusal := h.refusal(stale, "session-stale")
@@ -121,8 +124,27 @@ func TestSessionJournalConformance(t *testing.T) {
 		t.Fatalf("stale move appended: %v", stateAfterStale)
 	}
 
+	missingPrincipal := h.request(protod.SubjectSessionMove, map[string]any{
+		"session": session, "expectedHead": currentHead,
+		"op": "fill", "path": []any{"of"}, "subtree": map[string]any{"k": "string"},
+	})
+	h.refusal(missingPrincipal, "malformed")
+	incompatiblePrincipal := h.request(protod.SubjectSessionMove, map[string]any{
+		"session": session, "expectedHead": currentHead, "principal": "other-agent",
+		"op": "fill", "path": []any{"of"}, "subtree": map[string]any{"k": "string"},
+	})
+	principalRefusal := h.refusal(incompatiblePrincipal, "session-principal")
+	if principalRefusal["got"] != "other-agent" || principalRefusal["expected"] != "conformance-agent" {
+		t.Fatalf("principal refusal does not name the ownership coordinate: %v", principalRefusal)
+	}
+	stateAfterPrincipal := h.request(protod.SubjectSessionState, map[string]any{"session": session})
+	if stateAfterPrincipal["head"] != currentHead || stateAfterPrincipal["principal"] != "conformance-agent" {
+		t.Fatalf("principal refusals changed journal-authoritative state: %v", stateAfterPrincipal)
+	}
+
 	filled := h.request(protod.SubjectSessionMove, map[string]any{
-		"session": session, "expectedHead": currentHead, "op": "fill", "path": []any{"of"},
+		"session": session, "expectedHead": currentHead, "principal": "conformance-agent",
+		"op": "fill", "path": []any{"of"},
 		"subtree": map[string]any{"k": "bool"},
 	})
 	if filled["ok"] != true || len(filled["frontier"].([]any)) != 0 {
@@ -132,14 +154,26 @@ func TestSessionJournalConformance(t *testing.T) {
 
 	missingCommitHead := h.request(protod.SubjectSessionCommit, map[string]any{"session": session})
 	h.refusal(missingCommitHead, "malformed")
+	missingCommitPrincipal := h.request(protod.SubjectSessionCommit, map[string]any{
+		"session": session, "expectedHead": filledHead,
+	})
+	h.refusal(missingCommitPrincipal, "malformed")
+	incompatibleCommitPrincipal := h.request(protod.SubjectSessionCommit, map[string]any{
+		"session": session, "expectedHead": filledHead, "principal": "other-agent",
+	})
+	h.refusal(incompatibleCommitPrincipal, "session-principal")
 	committed := h.request(protod.SubjectSessionCommit, map[string]any{
-		"session": session, "expectedHead": filledHead, "submitter": "conformance-agent",
+		"session": session, "expectedHead": filledHead, "principal": "conformance-agent",
+		"submitter": "conformance-agent",
 	})
 	if committed["ok"] != true {
 		t.Fatalf("session commit refused: %v", committed)
 	}
 	if committed["digest"] != committed["stateDigest"] || committed["scheme"] != "bytes-sha256-v1" {
 		t.Fatalf("L7 audit did not converge: %v", committed)
+	}
+	if committed["principal"] != "conformance-agent" {
+		t.Fatalf("commit lost its journal-authoritative principal: %v", committed)
 	}
 
 	read := h.request(protod.SubjectJournalRead, map[string]any{"journal": session})
@@ -149,6 +183,16 @@ func TestSessionJournalConformance(t *testing.T) {
 	entries := read["entries"].([]any)
 	if len(entries) != 4 { // open, two fills, commit; stale/malformed attempts never append
 		t.Fatalf("unexpected session history: %v", entries)
+	}
+	for index, raw := range entries[1:] {
+		entry := raw.(map[string]any)
+		var event map[string]any
+		if err := json.Unmarshal([]byte(entry["payload"].(string)), &event); err != nil {
+			t.Fatal(err)
+		}
+		if event["principal"] != "conformance-agent" {
+			t.Fatalf("journal move %d lost principal: %v", index+1, event)
+		}
 	}
 
 	reserved := h.request("flb.ing."+session, map[string]any{

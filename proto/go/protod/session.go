@@ -29,10 +29,11 @@ const (
 )
 
 type sessionJournal struct {
-	mu      sync.Mutex
-	journal *journal.Journal
-	cursor  journal.Cursor
-	state   any
+	mu        sync.Mutex
+	journal   *journal.Journal
+	cursor    journal.Cursor
+	principal string
+	state     any
 }
 
 type sessionOpenRequest struct {
@@ -44,6 +45,7 @@ type sessionOpenRequest struct {
 type sessionMoveRequest struct {
 	Session      string   `json:"session"`
 	ExpectedHead string   `json:"expectedHead"`
+	Principal    string   `json:"principal"`
 	Op           string   `json:"op"`
 	Path         []string `json:"path"`
 	Subtree      any      `json:"subtree"`
@@ -56,6 +58,7 @@ type sessionStateRequest struct {
 type sessionCommitRequest struct {
 	Session      string `json:"session"`
 	ExpectedHead string `json:"expectedHead"`
+	Principal    string `json:"principal"`
 	Submitter    string `json:"submitter"`
 }
 
@@ -70,6 +73,7 @@ type sessionStateReply struct {
 	Session     string          `json:"session"`
 	Head        string          `json:"head"`
 	Step        int             `json:"step"`
+	Principal   string          `json:"principal"`
 	Partial     any             `json:"partial"`
 	StateDigest string          `json:"stateDigest"`
 	StateScheme string          `json:"stateScheme"`
@@ -84,6 +88,7 @@ type sessionCommitReply struct {
 	Session     string     `json:"session"`
 	Head        string     `json:"head"`
 	Step        int        `json:"step"`
+	Principal   string     `json:"principal"`
 	StateDigest string     `json:"stateDigest"`
 	Digest      string     `json:"digest"`
 	Scheme      string     `json:"scheme"`
@@ -98,6 +103,7 @@ type sessionEvent struct {
 	Grammar     string   `json:"grammar,omitempty"`
 	Seed        any      `json:"seed,omitempty"`
 	Author      string   `json:"author,omitempty"`
+	Principal   string   `json:"principal,omitempty"`
 	Path        []string `json:"path,omitempty"`
 	Subtree     any      `json:"subtree,omitempty"`
 	Digest      string   `json:"digest,omitempty"`
@@ -119,11 +125,14 @@ func (e sessionEvent) MarshalJSON() ([]byte, error) {
 		value["seed"] = e.Seed
 		value["author"] = e.Author
 	case "fill":
+		value["principal"] = e.Principal
 		value["path"] = e.Path
 		value["subtree"] = e.Subtree
 	case "unfill":
+		value["principal"] = e.Principal
 		value["path"] = e.Path
 	case "commit":
+		value["principal"] = e.Principal
 		value["digest"] = e.Digest
 		value["scheme"] = e.Scheme
 		value["catalogSeq"] = e.CatalogSeq
@@ -227,6 +236,7 @@ func (d *Daemon) serveSessionOpen(ctx context.Context, body []byte) any {
 			return nil
 		}
 		stored.cursor = journal.Cursor{Seq: int(entry.Seq), Head: opened.Head().Head}
+		stored.principal = request.Author
 		stored.state = cloneJSON(request.Seed)
 	}
 	return d.sessionReply(session, stored)
@@ -237,8 +247,11 @@ func (d *Daemon) serveSessionMove(ctx context.Context, body []byte) any {
 	if refusal := decodeBody(body, &request); refusal != nil {
 		return refuse(refusal)
 	}
-	if refusal := requireSessionFields(body, "session", "expectedHead", "op", "path"); refusal != nil {
+	if refusal := requireSessionFields(body, "session", "expectedHead", "principal", "op", "path"); refusal != nil {
 		return refuse(refusal)
+	}
+	if request.Principal == "" {
+		return refuse(malformedSessionField("principal", request.Principal, "the non-empty principal established by session.open author"))
 	}
 	if request.Op == "fill" {
 		if refusal := requireSessionFields(body, "subtree"); refusal != nil {
@@ -259,9 +272,12 @@ func (d *Daemon) serveSessionMove(ctx context.Context, body []byte) any {
 	if err := stored.refresh(ctx); err != nil {
 		return nil
 	}
-	contextValue := map[string]any{"op": request.Op, "path": request.Path}
+	contextValue := map[string]any{"principal": request.Principal, "op": request.Op, "path": request.Path}
 	if request.Op == "fill" {
 		contextValue["subtree"] = request.Subtree
+	}
+	if request.Principal != stored.principal {
+		return refuse(d.sessionPrincipalMismatch(request.Session, SubjectSessionMove, request.Principal, contextValue, stored))
 	}
 	if request.ExpectedHead != stored.cursor.Head {
 		return refuse(d.sessionStale(request.Session, SubjectSessionMove, request.ExpectedHead, contextValue, stored))
@@ -287,7 +303,8 @@ func (d *Daemon) serveSessionMove(ctx context.Context, body []byte) any {
 		return refuse(unknown)
 	}
 	event := sessionEvent{
-		Kind: request.Op, Path: frozenPath(request.Path), Retention: retentionTier(request.Op),
+		Kind: request.Op, Principal: request.Principal,
+		Path: frozenPath(request.Path), Retention: retentionTier(request.Op),
 	}
 	if request.Op == "fill" {
 		event.Subtree = cloneJSON(request.Subtree)
@@ -330,8 +347,11 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 	if refusal := decodeBody(body, &request); refusal != nil {
 		return refuse(refusal)
 	}
-	if refusal := requireSessionFields(body, "session", "expectedHead"); refusal != nil {
+	if refusal := requireSessionFields(body, "session", "expectedHead", "principal"); refusal != nil {
 		return refuse(refusal)
+	}
+	if request.Principal == "" {
+		return refuse(malformedSessionField("principal", request.Principal, "the non-empty principal established by session.open author"))
 	}
 	stored, refusal, err := d.lookupSession(ctx, request.Session)
 	if err != nil {
@@ -345,7 +365,10 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 	if err := stored.refresh(ctx); err != nil {
 		return nil
 	}
-	contextValue := map[string]any{"op": "commit", "submitter": request.Submitter}
+	contextValue := map[string]any{"principal": request.Principal, "op": "commit", "submitter": request.Submitter}
+	if request.Principal != stored.principal {
+		return refuse(d.sessionPrincipalMismatch(request.Session, SubjectSessionCommit, request.Principal, contextValue, stored))
+	}
 	if request.ExpectedHead != stored.cursor.Head {
 		return refuse(d.sessionStale(request.Session, SubjectSessionCommit, request.ExpectedHead, contextValue, stored))
 	}
@@ -358,7 +381,7 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 			Kind: KindInvalidStructure,
 			Law:  "flb.session.v0 commits only a zero-hole state; frontier-empty is exactly catalogable",
 			Path: result.holes[0], Got: cloneJSON(stored.state), Expected: "a partial with no holes",
-			Next: d.sessionMoveHints(request.Session, stored.cursor.Head, stored.state),
+			Next: d.sessionMoveHints(request.Session, stored.cursor.Head, stored.principal, stored.state),
 		})
 	}
 
@@ -386,7 +409,8 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 		})
 	}
 	event := sessionEvent{
-		Kind: "commit", Digest: fact.Digest, Scheme: fact.Scheme,
+		Kind: "commit", Principal: request.Principal,
+		Digest: fact.Digest, Scheme: fact.Scheme,
 		CatalogSeq: fact.seq, CatalogHead: d.catalog.journal.Head().Head,
 		Retention: retentionTier("commit"),
 	}
@@ -395,6 +419,7 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 	}
 	return sessionCommitReply{
 		OK: true, Session: request.Session, Head: stored.cursor.Head, Step: stored.cursor.Seq,
+		Principal:   stored.principal,
 		StateDigest: stateDigest, Digest: fact.Digest, Scheme: fact.Scheme,
 		CatalogSeq: fact.seq, CatalogHead: event.CatalogHead,
 		Next: []NextHint{{
@@ -453,13 +478,15 @@ func (s *sessionJournal) refresh(ctx context.Context) error {
 		return err
 	}
 	state := s.state
+	principal := s.principal
 	for _, entry := range entries {
-		state, err = applySessionEvent(state, []byte(entry.Payload))
+		state, principal, err = applySessionEvent(state, principal, []byte(entry.Payload))
 		if err != nil {
 			return fmt.Errorf("session event %d: %w", entry.Seq, err)
 		}
 	}
 	s.state = state
+	s.principal = principal
 	s.cursor = cursor
 	return nil
 }
@@ -480,53 +507,67 @@ func (s *sessionJournal) append(ctx context.Context, event sessionEvent, nextSta
 	return nil
 }
 
-func applySessionEvent(state any, payload []byte) (any, error) {
+func applySessionEvent(state any, principal string, payload []byte) (any, string, error) {
 	var event sessionEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	switch event.Kind {
 	case "open":
 		if state != nil {
-			return nil, errors.New("a session contains more than one open event")
+			return nil, "", errors.New("a session contains more than one open event")
 		}
 		if event.Version != sessionVersion || event.Grammar != sessionGrammarDigest() {
-			return nil, errors.New("session open names an unsupported version or grammar")
+			return nil, "", errors.New("session open names an unsupported version or grammar")
+		}
+		if event.Author == "" {
+			return nil, "", errors.New("session open has no author-of-record principal")
 		}
 		if _, refusal := walkPartial(event.Seed, []string{"seed"}); refusal != nil {
-			return nil, errors.New("session open seed is not a partial")
+			return nil, "", errors.New("session open seed is not a partial")
 		}
-		return cloneJSON(event.Seed), nil
+		return cloneJSON(event.Seed), event.Author, nil
 	case "fill":
 		if state == nil {
-			return nil, errors.New("fill precedes open")
+			return nil, "", errors.New("fill precedes open")
+		}
+		if event.Principal == "" || event.Principal != principal {
+			return nil, "", errors.New("stored fill principal differs from session open author")
 		}
 		updated, refusal := replaceTypeNode(state, event.Path, event.Subtree, true)
 		if refusal != nil {
-			return nil, errors.New("stored fill is not applicable")
+			return nil, "", errors.New("stored fill is not applicable")
 		}
 		if _, refusal := walkPartial(updated, []string{}); refusal != nil {
-			return nil, errors.New("stored fill produces an invalid partial")
+			return nil, "", errors.New("stored fill produces an invalid partial")
 		}
-		return updated, nil
+		return updated, principal, nil
 	case "unfill":
 		if state == nil {
-			return nil, errors.New("unfill precedes open")
+			return nil, "", errors.New("unfill precedes open")
+		}
+		if event.Principal == "" || event.Principal != principal {
+			return nil, "", errors.New("stored unfill principal differs from session open author")
 		}
 		updated, refusal := replaceTypeNode(state, event.Path, map[string]any{"k": "hole"}, false)
 		if refusal != nil {
-			return nil, errors.New("stored unfill is not applicable")
+			return nil, "", errors.New("stored unfill is not applicable")
 		}
 		if _, refusal := walkPartial(updated, []string{}); refusal != nil {
-			return nil, errors.New("stored unfill produces an invalid partial")
+			return nil, "", errors.New("stored unfill produces an invalid partial")
 		}
-		return updated, nil
-	case "commit", "refusal", "read", "utterance", "proposal", "adoption":
+		return updated, principal, nil
+	case "commit":
+		if state == nil || event.Principal == "" || event.Principal != principal {
+			return nil, "", errors.New("stored commit principal differs from session open author")
+		}
+		return state, principal, nil
+	case "refusal", "read", "utterance", "proposal", "adoption":
 		// The journal admits transcript traffic beyond the meaning fold. These
 		// entries remain in the identity chain and are forgiven by the carrier.
-		return state, nil
+		return state, principal, nil
 	default:
-		return state, nil
+		return state, principal, nil
 	}
 }
 
@@ -543,38 +584,63 @@ func (d *Daemon) sessionReply(name string, stored *sessionJournal) any {
 	frontier := buildFrontierFromSnapshot(result.holes, refs)
 	return sessionStateReply{
 		OK: true, Session: name, Head: stored.cursor.Head, Step: stored.cursor.Seq,
-		Partial: cloneJSON(stored.state), StateDigest: digest, StateScheme: sessionStateScheme,
+		Principal: stored.principal,
+		Partial:   cloneJSON(stored.state), StateDigest: digest, StateScheme: sessionStateScheme,
 		CatalogHead: catalogHead, Frontier: frontier,
 		Anchor: sessionAnchor{Key: name, Head: stored.cursor.Head, StateDigest: digest},
-		Next:   sessionNextHints(name, stored.cursor.Head, frontier),
+		Next:   sessionNextHints(name, stored.cursor.Head, stored.principal, frontier),
 	}
 }
 
-func (d *Daemon) sessionMoveHints(name, head string, partial any) []NextHint {
+func (d *Daemon) sessionMoveHints(name, head, principal string, partial any) []NextHint {
 	result, refusal := walkPartial(partial, []string{})
 	if refusal != nil {
 		return []NextHint{describeHint()}
 	}
 	_, refs := d.catalog.frontierSnapshot(frontierRefLimit)
 	frontier := buildFrontierFromSnapshot(result.holes, refs)
-	return sessionNextHints(name, head, frontier)
+	return sessionNextHints(name, head, principal, frontier)
 }
 
-func sessionNextHints(name, head string, frontier []frontierEntry) []NextHint {
+func sessionNextHints(name, head, principal string, frontier []frontierEntry) []NextHint {
 	if len(frontier) == 0 {
 		return []NextHint{{
 			Subject: SubjectSessionCommit, Note: "frontier is empty; commit the replay-audited type",
-			Body: map[string]any{"session": name, "expectedHead": head},
+			Body: map[string]any{"session": name, "expectedHead": head, "principal": principal},
 		}}
 	}
 	choice := frontier[0].Legal[0]
 	return []NextHint{{
 		Subject: SubjectSessionMove, Note: "fill the first remaining hole at the current head",
 		Body: map[string]any{
-			"session": name, "expectedHead": head, "op": "fill",
+			"session": name, "expectedHead": head, "principal": principal, "op": "fill",
 			"path": frontier[0].Path, "subtree": choice.Example,
 		},
 	}}
+}
+
+func (d *Daemon) sessionPrincipalMismatch(
+	name, subject, got string,
+	moveContext map[string]any,
+	stored *sessionJournal,
+) *Refusal {
+	retry := map[string]any{
+		"session": name, "expectedHead": stored.cursor.Head, "principal": stored.principal,
+	}
+	for key, value := range moveContext {
+		if key != "principal" && (key != "submitter" || value != "") {
+			retry[key] = value
+		}
+	}
+	return &Refusal{
+		Kind: KindSessionPrincipal,
+		Law:  "flb.session.v0 mutators carry exactly the asserted principal established by session.open author",
+		Path: []string{"principal"}, Got: got, Expected: stored.principal,
+		Next: []NextHint{
+			{Subject: SubjectSessionState, Note: "read the journal-authoritative principal and current state", Body: map[string]any{"session": name}},
+			{Subject: subject, Note: "retry only as the session's author-of-record principal", Body: retry},
+		},
+	}
 }
 
 func (d *Daemon) sessionStale(

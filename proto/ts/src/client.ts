@@ -198,6 +198,7 @@ export class ProtoClient {
   async moveSession(
     session: string,
     expectedHead: string,
+    principal: string,
     move:
       | { readonly op: "fill"; readonly path: ReadonlyArray<string>; readonly subtree: Json }
       | { readonly op: "unfill"; readonly path: ReadonlyArray<string> },
@@ -205,6 +206,7 @@ export class ProtoClient {
     const body: Record<string, Json> = {
       session,
       expectedHead,
+      principal,
       op: move.op,
       path: [...move.path],
     }
@@ -219,9 +221,10 @@ export class ProtoClient {
   async commitSession(
     session: string,
     expectedHead: string,
+    principal: string,
     submitter?: string,
   ): Promise<Reply<SessionCommitReply>> {
-    const body: Record<string, Json> = { session, expectedHead }
+    const body: Record<string, Json> = { session, expectedHead, principal }
     if (submitter !== undefined) body["submitter"] = submitter
     return this.request(SUBJECT_SESSION_COMMIT, body, SessionCommitReply)
   }

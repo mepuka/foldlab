@@ -18,7 +18,9 @@ import {
   sessionRetentionTier,
 } from "../src/session.ts"
 import {
+  SUBJECT_SESSION_COMMIT,
   SUBJECT_SESSION_MOVE,
+  SessionCommitReply,
   SessionStateReply,
 } from "../src/wire.ts"
 import { spawnProtod, type RunningDaemon } from "./harness.ts"
@@ -91,12 +93,12 @@ describe("flb.session.v0", () => {
         throw new Error("fixture path is not a string array")
       }
       const moved = kind === "fill"
-        ? await client.moveSession(current.session, current.head, {
+        ? await client.moveSession(current.session, current.head, "fixture-agent", {
           op: "fill",
           path,
           subtree: requiredJsonField(event, "subtree"),
         })
-        : await client.moveSession(current.session, current.head, {
+        : await client.moveSession(current.session, current.head, "fixture-agent", {
           op: "unfill",
           path,
         })
@@ -127,7 +129,7 @@ describe("flb.session.v0", () => {
     if (missing.ok) throw new Error("missing expectedHead admitted")
     expect(missing.refusal.kind).toBe("malformed")
 
-    const stale = await client.moveSession(original.session, original.head, {
+    const stale = await client.moveSession(original.session, original.head, original.principal, {
       op: "fill",
       path: ["of"],
       subtree: { k: "string" },
@@ -137,13 +139,14 @@ describe("flb.session.v0", () => {
     expect(stale.refusal.kind).toBe("session-stale")
     expect(stale.refusal.got).toEqual({
       expectedHead: original.head,
-      context: { op: "fill", path: ["of"], subtree: { k: "string" } },
+      context: { principal: original.principal, op: "fill", path: ["of"], subtree: { k: "string" } },
     })
     const expected = asJsonObject(stale.refusal.expected)
     expect(expected["currentHead"]).toBe(session.state.head)
     expect(stale.refusal.next[1]?.body).toEqual({
       session: original.session,
       expectedHead: session.state.head,
+      principal: original.principal,
       op: "fill",
       path: ["of"],
       subtree: { k: "string" },
@@ -153,6 +156,39 @@ describe("flb.session.v0", () => {
     expect(unchanged.ok).toBe(true)
     if (!unchanged.ok) throw new Error(JSON.stringify(unchanged.refusal))
     expect(unchanged.fact.head).toBe(session.state.head)
+
+    const missingPrincipal = await client.request(
+      SUBJECT_SESSION_MOVE,
+      {
+        session: original.session,
+        expectedHead: session.state.head,
+        op: "fill",
+        path: ["of"],
+        subtree: { k: "string" },
+      },
+      SessionStateReply,
+    )
+    expect(missingPrincipal.ok).toBe(false)
+    if (missingPrincipal.ok) throw new Error("missing principal admitted")
+    expect(missingPrincipal.refusal.kind).toBe("malformed")
+
+    const incompatiblePrincipal = await client.moveSession(
+      original.session,
+      session.state.head,
+      "other-agent",
+      { op: "fill", path: ["of"], subtree: { k: "string" } },
+    )
+    expect(incompatiblePrincipal.ok).toBe(false)
+    if (incompatiblePrincipal.ok) throw new Error("incompatible principal admitted")
+    expect(incompatiblePrincipal.refusal.kind).toBe("session-principal")
+    expect(incompatiblePrincipal.refusal.got).toBe("other-agent")
+    expect(incompatiblePrincipal.refusal.expected).toBe(original.principal)
+
+    const stillUnchanged = await client.sessionState(original.session)
+    expect(stillUnchanged.ok).toBe(true)
+    if (!stillUnchanged.ok) throw new Error(JSON.stringify(stillUnchanged.refusal))
+    expect(stillUnchanged.fact.head).toBe(session.state.head)
+    expect(stillUnchanged.fact.principal).toBe(original.principal)
   }, 120_000)
 
   test("L2 witnesses equal states with unequal heads and U4 stays history-pure", async () => {
@@ -230,6 +266,30 @@ describe("flb.session.v0", () => {
     if (!filled.ok) throw new Error(JSON.stringify(filled.refusal))
     expect(filled.fact.stateDigest).toBe(structureDigest(structure))
 
+    const missingPrincipal = await client.request(
+      SUBJECT_SESSION_COMMIT,
+      { session: session.state.session, expectedHead: session.state.head },
+      SessionCommitReply,
+    )
+    expect(missingPrincipal.ok).toBe(false)
+    if (missingPrincipal.ok) throw new Error("missing commit principal admitted")
+    expect(missingPrincipal.refusal.kind).toBe("malformed")
+
+    const incompatiblePrincipal = await client.commitSession(
+      session.state.session,
+      session.state.head,
+      "other-agent",
+    )
+    expect(incompatiblePrincipal.ok).toBe(false)
+    if (incompatiblePrincipal.ok) throw new Error("incompatible commit principal admitted")
+    expect(incompatiblePrincipal.refusal.kind).toBe("session-principal")
+
+    const afterRefusals = await client.sessionState(session.state.session)
+    expect(afterRefusals.ok).toBe(true)
+    if (!afterRefusals.ok) throw new Error(JSON.stringify(afterRefusals.refusal))
+    expect(afterRefusals.fact.head).toBe(session.state.head)
+    expect(afterRefusals.fact.principal).toBe("commit-auditor")
+
     const committed = await session.commit("session-test")
     expect(committed.ok).toBe(true)
     if (!committed.ok) throw new Error(JSON.stringify(committed.refusal))
@@ -242,6 +302,7 @@ describe("flb.session.v0", () => {
     expect(resumed.fact.state.head).toBe(committed.fact.head)
     expect(resumed.fact.state.stateDigest).toBe(committed.fact.stateDigest)
     expect(resumed.fact.state.partial).toEqual(structure)
+    expect(resumed.fact.state.principal).toBe("commit-auditor")
 
     const read = await client.read(committed.fact.session)
     expect(read.ok).toBe(true)

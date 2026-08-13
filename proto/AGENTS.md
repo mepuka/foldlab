@@ -15,6 +15,10 @@ spec did not fix is logged in `DECISIONS.md`.
   across any seam.
 - The writ is three verbs (read / publish / request). The session
   facade and the MCP tools compose them and add no capability.
+- Session ownership is journal-authoritative: `open.author` establishes one
+  asserted principal coordinate, and every fill, unfill, or commit carries that
+  exact principal. Missing or incompatible principals refuse before append;
+  concurrent clients under the same principal remain legal.
 - Heads are claims: every read is verified by the reader
   (`ProtoClient.read` folds locally; the Go conformance test refolds).
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.

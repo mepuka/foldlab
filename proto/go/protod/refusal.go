@@ -18,7 +18,8 @@ const (
 	KindUnknownRequest   = "unknown-request"   // request subject has no handler
 	// session-stale is head-relative and therefore joins Task 30's absence
 	// sort when that independent lane merges; it must never enter a corpus.
-	KindSessionStale = "session-stale" // expectedHead is not the session's current head
+	KindSessionStale     = "session-stale"     // expectedHead is not the session's current head
+	KindSessionPrincipal = "session-principal" // mutator principal differs from the session's open.author
 )
 
 // NextHint teaches the caller what to do next (W7): a subject plus a

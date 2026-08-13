@@ -137,6 +137,7 @@ export class JournalSession {
     const moved = await this.client.moveSession(
       this.currentState.session,
       this.currentState.head,
+      this.currentState.principal,
       { op: "fill", path, subtree },
     )
     if (moved.ok) this.currentState = moved.fact
@@ -147,6 +148,7 @@ export class JournalSession {
     const moved = await this.client.moveSession(
       this.currentState.session,
       this.currentState.head,
+      this.currentState.principal,
       { op: "unfill", path },
     )
     if (moved.ok) this.currentState = moved.fact
@@ -160,7 +162,12 @@ export class JournalSession {
   }
 
   async commit(submitter?: string): Promise<Reply<SessionCommitReply>> {
-    return this.client.commitSession(this.currentState.session, this.currentState.head, submitter)
+    return this.client.commitSession(
+      this.currentState.session,
+      this.currentState.head,
+      this.currentState.principal,
+      submitter,
+    )
   }
 }
 

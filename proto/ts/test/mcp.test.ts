@@ -121,6 +121,10 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       expect(served).toBeDefined()
       expect(served.inputSchema).toEqual(tool.inputSchema)
     }
+    for (const name of ["session_move", "session_commit"]) {
+      const tool = tools.find((candidate) => candidate.name === name)
+      expect(tool?.inputSchema.required).toContain("principal")
+    }
     await client.fact.close()
 
     // A typo'd create through the MCP seam: the refusal arrives as DATA

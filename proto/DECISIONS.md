@@ -1049,3 +1049,39 @@ that can only refuse; implement task 32's record in this lane; leave retention
 implicit in prose. Why: the fallback enforces G4 without expanding the ratified
 four-request session surface or crossing an active lane. **Load-bearing? yes**
 — silent compaction would destroy teaching evidence forbidden by issue #24.
+
+## Task 37 Addendum 1 — principal ownership repair (2026-08-14)
+
+### D??. `open.author` is the asserted session owner; every mutator repeats it
+
+Decided: the non-empty `author` on the immutable open event establishes one
+session-owned `principal` string. Every fill, unfill, and commit request and
+journal event carries that string exactly; a missing principal is malformed and
+an unequal principal returns `session-principal` before expected-head CAS or
+append. Replay recovers the principal beside the partial, state/commit facts
+return it, and all generated retry bodies carry it. Concurrent clients using the
+same principal remain legal and race through the existing expected-head gate;
+overlapping edits still require the effector disposition stated by Addendum 1.
+Alternatives: retain author only on open (the confirmed unattributed-history
+defect); allow arbitrary per-move principals (contradicts one author of record);
+add `auth_basis` and transport authentication here (the estate map records that
+machinery as missing and this loopback daemon cannot prove it); derive principal
+from submitter (an independently unauthenticated catalog claim). Why: the journal
+now answers who owns every state transition after restart without inventing an
+authentication claim the substrate cannot discharge. **Load-bearing? yes** —
+this is an asserted ownership coordinate, explicitly not authenticated identity;
+real authentication remains the J9 residual and must precede trusting it as a
+person.
+
+### D??. Addendum 1 authorizes the session fixture's principal-bearing revision
+
+Decided: update only `proto/wire/fixtures/sessions.json` so every post-open move
+carries `principal:"fixture-agent"`, then recompute its canonical event bytes and
+per-prefix chain heads with the existing TS identity implementation; keep the
+open event, session key, grammar digest, state scheme, and every state digest
+unchanged. Alternatives: add a second fixture (leaves the authoritative dialogue
+outside the new replay domain); keep old head pins (would certify events replay
+now rejects); regenerate unrelated wire fixtures. Why: Addendum 1 changes the
+identity bytes of session moves and expressly requires propagation through the
+fixture, while no other frozen authority moved. **Load-bearing? yes** — U3 R0
+must pin the actual principal-bearing journal grammar.

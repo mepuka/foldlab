@@ -93,10 +93,11 @@ exactly when `type.create` accepts the partial (C3).
 
 ```json
 {"grammar":"<current grammar digest>","seed":<partial>?,"author":"<non-empty>"}
-{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>",
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>","principal":"<open.author>",
  "op":"fill"|"unfill","path":["..."],"subtree":<partial>?}
 {"session":"flb_session_v0_<hex64>"}
-{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>","submitter":"<string>"?}
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>",
+ "principal":"<open.author>","submitter":"<string>"?}
 ```
 
 These are respectively `session.open`, `session.move`, `session.state`, and
@@ -104,12 +105,18 @@ These are respectively `session.open`, `session.move`, `session.state`, and
 and its suffix names one reserved journal. `open` defaults `seed` to a root
 hole; identical open data converges on the same journal.
 
-`expectedHead` is mandatory on every state-changing move (fill, unfill,
-commit). A stale head returns `session-stale` with the current head/state and
-the exact refused move context plus a filled retry body. It never invokes the
-effector: session traffic is evidence guarded by journal position-CAS.
+`expectedHead` and `principal` are mandatory on every state-changing move
+(fill, unfill, commit). `open.author` establishes the session's one asserted
+owner coordinate. Missing principal is malformed; an unequal one returns
+`session-principal`; both refuse before append. Concurrent clients may write
+under that same principal and still race only through expected-head CAS. A stale
+head returns `session-stale` with the current head/state and the exact refused
+move context plus a filled retry body. It never invokes the effector: session
+traffic is evidence guarded by journal position-CAS. This is ownership, not
+authentication: the present loopback daemon has no `auth_basis`, and real
+principal authentication remains a separate required gate.
 
-State facts carry `session`, `head`, `step`, `partial`, `stateDigest`,
+State facts carry `session`, `head`, `step`, `principal`, `partial`, `stateDigest`,
 `stateScheme`, `catalogHead`, `frontier`, `anchor:{key,head,stateDigest}`, and
 `next`. The frontier is computed solely from the partial and the catalog
 snapshot named by `catalogHead`; session history is not an input. Commit first
@@ -119,7 +126,9 @@ catalog digest (L7). The commit journal event additionally records `scheme`,
 `catalogSeq`, and `catalogHead`; a future scheme is a dual record/bridge, never
 an in-place reinterpretation of this fact.
 
-Every session event carries a retention mark. Fill/unfill/refusal/read traces
+Every session event carries a retention mark. Each fill, unfill, and commit event
+also carries `principal`, so restart and replay re-establish ownership from the
+journal rather than process memory. Fill/unfill/refusal/read traces
 are `compactible`; open/utterance/proposal traffic is `irreducible`; commit and
 adoption facts are `never-discardable`. Actual compaction is blocked in this
 build: until `flb.certification.v0` exists, structural refusals cannot export to
@@ -185,6 +194,7 @@ same shape with `local:true` for its own conditions (`unreachable`,
 | `bad-cursor` | read cursor does not verify against the journal (W6) |
 | `unknown-request` | request subject has no handler (W9) |
 | `session-stale` | mandatory expectedHead is not the session's current head (G3) |
+| `session-principal` | a mutator principal differs from the asserted owner established by `open.author` |
 | `compaction-blocked` | refusal-corpus sealing is unavailable, so session compaction cannot proceed (G4) |
 
 ## flb.type.v0 specifics pinned by this implementation
@@ -238,5 +248,6 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
-- `sessions.json` — one `flb.session.v0` dialogue with each canonical event,
-  per-prefix chain head, and normalized state digest (U3 R0).
+- `sessions.json` — one `flb.session.v0` dialogue with each canonical event
+  (including its owned principal), per-prefix chain head, and normalized state
+  digest (U3 R0).

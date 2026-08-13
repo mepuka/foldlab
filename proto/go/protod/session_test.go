@@ -10,6 +10,63 @@ import (
 	"foldlab/canonical"
 )
 
+func TestSessionMutationsRequireTheOwnedPrincipalBeforeAppend(t *testing.T) {
+	open := func(author string) (*Daemon, sessionStateReply) {
+		daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(daemon.Release)
+		body, err := json.Marshal(map[string]any{
+			"grammar": sessionGrammarDigest(), "author": author,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		opened, ok := daemon.serveSessionOpen(context.Background(), body).(sessionStateReply)
+		if !ok {
+			t.Fatalf("open did not return state")
+		}
+		return daemon, opened
+	}
+
+	t.Run("missing principal refuses without append", func(t *testing.T) {
+		daemon, opened := open("owner")
+		move, _ := json.Marshal(map[string]any{
+			"session": opened.Session, "expectedHead": opened.Head,
+			"op": "unfill", "path": []any{},
+		})
+		response := daemon.serveSessionMove(context.Background(), move)
+		refused, ok := response.(refusalReply)
+		if !ok || refused.Refusal.Kind != KindMalformed {
+			t.Fatalf("missing principal was not a malformed refusal: %#v", response)
+		}
+		stateBody, _ := json.Marshal(map[string]any{"session": opened.Session})
+		state := daemon.serveSessionState(context.Background(), stateBody).(sessionStateReply)
+		if state.Head != opened.Head || state.Step != opened.Step {
+			t.Fatalf("missing-principal request appended: %#v", state)
+		}
+	})
+
+	t.Run("incompatible principal refuses without append", func(t *testing.T) {
+		daemon, opened := open("owner")
+		move, _ := json.Marshal(map[string]any{
+			"session": opened.Session, "expectedHead": opened.Head,
+			"principal": "intruder", "op": "unfill", "path": []any{},
+		})
+		response := daemon.serveSessionMove(context.Background(), move)
+		refused, ok := response.(refusalReply)
+		if !ok || refused.Refusal.Kind != "session-principal" {
+			t.Fatalf("incompatible principal was not refused: %#v", response)
+		}
+		stateBody, _ := json.Marshal(map[string]any{"session": opened.Session})
+		state := daemon.serveSessionState(context.Background(), stateBody).(sessionStateReply)
+		if state.Head != opened.Head || state.Step != opened.Step {
+			t.Fatalf("incompatible-principal request appended: %#v", state)
+		}
+	})
+}
+
 func TestSessionExpectedHeadRaceAdmitsExactlyOneMove(t *testing.T) {
 	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
 	if err != nil {
@@ -37,7 +94,8 @@ func TestSessionExpectedHeadRaceAdmitsExactlyOneMove(t *testing.T) {
 			<-start
 			move, marshalErr := json.Marshal(map[string]any{
 				"session": opened.Session, "expectedHead": opened.Head,
-				"op": "fill", "path": []any{}, "subtree": map[string]any{"k": kind},
+				"principal": "race-agent",
+				"op":        "fill", "path": []any{}, "subtree": map[string]any{"k": kind},
 			})
 			if marshalErr != nil {
 				replies <- marshalErr
@@ -102,6 +160,7 @@ func TestSessionFixtureRederivesEveryPrefix(t *testing.T) {
 	}
 
 	state := any(nil)
+	principal := ""
 	previous := genesis
 	for index, step := range fixture.Steps {
 		if step.Step != index {
@@ -128,7 +187,7 @@ func TestSessionFixtureRederivesEveryPrefix(t *testing.T) {
 			t.Fatalf("step %d head drift: got %s want %s", index, digest, step.Head)
 		}
 		previous = digest
-		state, err = applySessionEvent(state, bytes)
+		state, principal, err = applySessionEvent(state, principal, bytes)
 		if err != nil {
 			t.Fatalf("step %d does not fold (L1): %v", index, err)
 		}
@@ -263,13 +322,17 @@ func TestSessionStateDigestNormalizesUnionPositions(t *testing.T) {
 func foldSessionEvents(t *testing.T, events []sessionEvent) (any, string) {
 	t.Helper()
 	state := any(nil)
+	principal := ""
 	previous := genesis
 	for index, event := range events {
+		if event.Kind == "fill" || event.Kind == "unfill" || event.Kind == "commit" {
+			event.Principal = principal
+		}
 		payload, err := canonicalBytes(event)
 		if err != nil {
 			t.Fatal(err)
 		}
-		state, err = applySessionEvent(state, payload)
+		state, principal, err = applySessionEvent(state, principal, payload)
 		if err != nil {
 			t.Fatalf("prefix %d failed L1: %v", index, err)
 		}

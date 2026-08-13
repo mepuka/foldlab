@@ -24,10 +24,11 @@
         "kind": "fill",
         "path": [],
         "subtree": { "k": "list", "of": { "k": "hole" } },
+        "principal": "fixture-agent",
         "retention": "compactible"
       },
-      "canonical": "{\"kind\":\"fill\",\"path\":[],\"retention\":\"compactible\",\"subtree\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}",
-      "head": "a2df9ddd059b7ea3a08331a0d0315ee2fce25a4396ed4e2866fc5fc754b6c441",
+      "canonical": "{\"kind\":\"fill\",\"path\":[],\"principal\":\"fixture-agent\",\"retention\":\"compactible\",\"subtree\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}",
+      "head": "9e9b51904cd6c6ebac988b47ef82432555ab9bdd8705361ba5c2a11d077b47d4",
       "stateDigest": "a363ec31db276ab927f5d55d36f581705d4599069a8e5550a9cceb0986b051c4"
     },
     {
@@ -36,10 +37,11 @@
         "kind": "fill",
         "path": ["of"],
         "subtree": { "k": "string" },
+        "principal": "fixture-agent",
         "retention": "compactible"
       },
-      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"retention\":\"compactible\",\"subtree\":{\"k\":\"string\"}}",
-      "head": "bb7bb028f9a80523be8940f9567ce33192ad46b5c39cc5c7d83a11f27dd2e0a0",
+      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"principal\":\"fixture-agent\",\"retention\":\"compactible\",\"subtree\":{\"k\":\"string\"}}",
+      "head": "ed23390124dd9470c7d88cd64cdaaa8336fc1e1a0c59f5d8ffff1847d5fb2431",
       "stateDigest": "7f46cbacd9bdc7d61ee5e962bb03ad4b3617a1a33e172afd1bbeb462a78924ae"
     },
     {
@@ -47,10 +49,11 @@
       "event": {
         "kind": "unfill",
         "path": ["of"],
+        "principal": "fixture-agent",
         "retention": "compactible"
       },
-      "canonical": "{\"kind\":\"unfill\",\"path\":[\"of\"],\"retention\":\"compactible\"}",
-      "head": "be73bdce588d8678618d4c325e0ba3fd2f2609c46c69e39d502fc65873cbbc2f",
+      "canonical": "{\"kind\":\"unfill\",\"path\":[\"of\"],\"principal\":\"fixture-agent\",\"retention\":\"compactible\"}",
+      "head": "34a1d5fa9156f4052a7313b2f0a4011b2cc5c22e2a250617455d35846d5c22da",
       "stateDigest": "a363ec31db276ab927f5d55d36f581705d4599069a8e5550a9cceb0986b051c4"
     },
     {
@@ -59,10 +62,11 @@
         "kind": "fill",
         "path": ["of"],
         "subtree": { "k": "bool" },
+        "principal": "fixture-agent",
         "retention": "compactible"
       },
-      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"retention\":\"compactible\",\"subtree\":{\"k\":\"bool\"}}",
-      "head": "8bc5b0eff2d8313c857b301fa00ae1671dc956f94c455f61a37132fbe7cfdb6e",
+      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"principal\":\"fixture-agent\",\"retention\":\"compactible\",\"subtree\":{\"k\":\"bool\"}}",
+      "head": "61645781ceceeb109fc6d24c926949c1710261c47c43d570bd23e8d2b6ac0424",
       "stateDigest": "63790fd3da6730089c85e0bd5e1e8e07cedc291ceb86ee045593f4d9819fbdf3"
     }
   ]

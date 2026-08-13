@@ -113,6 +113,7 @@ func vSessionStateReply() map[string]any {
 		"session":     vKind("string"),
 		"head":        vDigest(),
 		"step":        vKind("int"),
+		"principal":   vKind("string"),
 		"partial":     vPartial(),
 		"stateDigest": vDigest(),
 		"stateScheme": vKind("string"),
@@ -224,11 +225,12 @@ func describeReply() map[string]any {
 				map[string]any{
 					"name":    "session_move",
 					"subject": SubjectSessionMove,
-					"note": "append one fill or unfill under mandatory expectedHead; stale heads refuse with " +
-						"the current head and the exact move context, and sessions never use the effector",
+					"note": "append one fill or unfill under mandatory expectedHead and the session's open.author principal; " +
+						"stale heads refuse with the current head and exact move context, and sessions never use the effector",
 					"body": vStruct(map[string]any{
 						"session":      vKind("string"),
 						"expectedHead": vDigest(),
+						"principal":    vKind("string"),
 						"op":           vKind("string"),
 						"path":         vList(vKind("string")),
 						"subtree":      vPartial(),
@@ -247,11 +249,12 @@ func describeReply() map[string]any {
 				map[string]any{
 					"name":    "session_commit",
 					"subject": SubjectSessionCommit,
-					"note": "at a zero-hole state, replay then normalize/canonicalize/digest and require equality " +
-						"with the daemon-derived type.create result before recording the commit fact",
+					"note": "under the session's open.author principal, replay a zero-hole state then normalize/canonicalize/digest " +
+						"and require equality with the daemon-derived type.create result before recording the commit fact",
 					"body": vStruct(map[string]any{
 						"session":      vKind("string"),
 						"expectedHead": vDigest(),
+						"principal":    vKind("string"),
 						"submitter":    vKind("string"),
 					}, "submitter"),
 					"reply": vStruct(map[string]any{
@@ -259,6 +262,7 @@ func describeReply() map[string]any {
 						"session":     vKind("string"),
 						"head":        vDigest(),
 						"step":        vKind("int"),
+						"principal":   vKind("string"),
 						"stateDigest": vDigest(),
 						"digest":      vDigest(),
 						"scheme":      vKind("string"),
