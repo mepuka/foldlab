@@ -3,7 +3,9 @@
 [![gates](https://github.com/mepuka/foldlab/actions/workflows/gates.yml/badge.svg?branch=main)](https://github.com/mepuka/foldlab/actions/workflows/gates.yml)
 
 foldlab is a lab for verifiable computation over streams, built with
-Effect (TypeScript) and Go.
+Effect (TypeScript) and Go. Created and directed by
+[Mepuka Kessy](https://github.com/mepuka). Licensed
+[Apache-2.0](LICENSE).
 
 ```
 $ bun packages/core/examples/tour.ts

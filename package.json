@@ -1,6 +1,7 @@
 {
   "name": "foldlab",
   "license": "Apache-2.0",
+  "author": "Mepuka Kessy (https://github.com/mepuka)",
   "private": true,
   "type": "module",
   "description": "Effect v4 + Go lab: stream folds, chain identity, and the commitment algebra.",
