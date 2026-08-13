@@ -3,6 +3,7 @@
 // the author fold, and land on the SAME digest the Go side pinned. The
 // wall certifies its corpus (ADR-0007): the fixture set.
 import { describe, expect, test } from "bun:test"
+import { Schema } from "effect"
 import { FastCheck } from "effect/testing"
 import { foldSchema } from "../src/author.ts"
 import {
@@ -12,7 +13,7 @@ import {
   type Derived,
   type Resolve,
 } from "../src/codegen.ts"
-import type { Json } from "../src/jcs.ts"
+import { canonicalizeStructure, structureDigest, type Json } from "../src/jcs.ts"
 
 const vectors: Array<{ name: string; structure: Json; canonical: string; digest: string }> = (
   await import("../../wire/fixtures/types.json", { with: { type: "json" } })
@@ -20,6 +21,99 @@ const vectors: Array<{ name: string; structure: Json; canonical: string; digest:
 
 // Refs resolve inside the fixture corpus itself: digest → structure.
 const resolve: Resolve = (digest) => vectors.find((v) => v.digest === digest)?.structure
+
+interface CheckSemanticVector {
+  readonly name: string
+  readonly authored: Schema.Top
+  readonly structure: Record<string, Json>
+  readonly accepted: unknown
+  readonly refused: unknown
+  readonly jsonConstraint: Record<string, Json>
+}
+
+// Independent, fixed examples for the owned check names. These expectations
+// do not come from CHECK_TABLE, CHECK_BUILDERS, or a derive/re-fold cycle: a
+// symmetric table bug cannot rewrite the expected structure or boundary
+// examples along with itself.
+const checkSemanticVectors: ReadonlyArray<CheckSemanticVector> = [
+  {
+    name: "minLength",
+    authored: Schema.String.check(Schema.isMinLength(2)),
+    structure: { k: "check", base: { k: "string" }, check: { name: "minLength", args: { min: 2 } } },
+    accepted: "ab",
+    refused: "a",
+    jsonConstraint: { type: "string", minLength: 2 },
+  },
+  {
+    name: "maxLength",
+    authored: Schema.String.check(Schema.isMaxLength(2)),
+    structure: { k: "check", base: { k: "string" }, check: { name: "maxLength", args: { max: 2 } } },
+    accepted: "ab",
+    refused: "abc",
+    jsonConstraint: { type: "string", maxLength: 2 },
+  },
+  {
+    name: "pattern",
+    authored: Schema.String.check(Schema.isPattern(/^[A-Z]+$/)),
+    structure: {
+      k: "check",
+      base: { k: "string" },
+      check: { name: "pattern", args: { source: "^[A-Z]+$", flags: "" } },
+    },
+    accepted: "ABC",
+    refused: "abc",
+    jsonConstraint: { type: "string", pattern: "^[A-Z]+$" },
+  },
+  {
+    name: "greaterThan",
+    authored: Schema.Number.check(Schema.isGreaterThan(1)),
+    structure: {
+      k: "check",
+      base: { k: "float" },
+      check: { name: "greaterThan", args: { exclusiveMin: 1 } },
+    },
+    accepted: 2,
+    refused: 1,
+    jsonConstraint: { type: "number", exclusiveMinimum: 1 },
+  },
+  {
+    name: "min",
+    authored: Schema.Number.check(Schema.isGreaterThanOrEqualTo(1)),
+    structure: { k: "check", base: { k: "float" }, check: { name: "min", args: { min: 1 } } },
+    accepted: 1,
+    refused: 0,
+    jsonConstraint: { type: "number", minimum: 1 },
+  },
+  {
+    name: "lessThan",
+    authored: Schema.Number.check(Schema.isLessThan(5)),
+    structure: {
+      k: "check",
+      base: { k: "float" },
+      check: { name: "lessThan", args: { exclusiveMax: 5 } },
+    },
+    accepted: 4,
+    refused: 5,
+    jsonConstraint: { type: "number", exclusiveMaximum: 5 },
+  },
+  {
+    name: "max",
+    authored: Schema.Number.check(Schema.isLessThanOrEqualTo(5)),
+    structure: { k: "check", base: { k: "float" }, check: { name: "max", args: { max: 5 } } },
+    accepted: 5,
+    refused: 6,
+    jsonConstraint: { type: "number", maximum: 5 },
+  },
+]
+
+const assertFixedCheckRow = (
+  actual: Json,
+  expected: CheckSemanticVector,
+): void => {
+  if (canonicalizeStructure(actual) !== canonicalizeStructure(expected.structure)) {
+    throw new Error(`${expected.name} did not match its fixed canonical check row`)
+  }
+}
 
 interface DerivationTarget {
   readonly name: string
@@ -31,7 +125,7 @@ const derivationTargets: ReadonlyArray<DerivationTarget> = [
   { name: "json-schema", derive: toJsonSchema },
   {
     name: "go",
-    derive: (structure) => toGoSource(structure, "Generated", "0".repeat(64)),
+    derive: (structure) => toGoSource(structure, "Generated", structureDigest(structure)),
   },
 ]
 
@@ -138,6 +232,46 @@ describe("the round-trip wall: derive → compile → re-fold → same digest", 
       expect(refolded.digest).toBe(vector.digest)
     })
   }
+})
+
+describe("owned check names have an independent semantic corpus", () => {
+  for (const vector of checkSemanticVectors) {
+    test(`${vector.name}: fixed structure, behavior, and JSON constraint`, () => {
+      const folded = foldSchema(vector.authored)
+      expect(folded.ok).toBe(true)
+      if (!folded.ok) return
+      expect(() => assertFixedCheckRow(folded.structure, vector)).not.toThrow()
+
+      const derived = toEffectSchema(vector.structure)
+      expect(derived.ok).toBe(true)
+      if (!derived.ok) return
+      const accepts = Schema.is(derived.value)
+      expect(accepts(vector.accepted)).toBe(true)
+      expect(accepts(vector.refused)).toBe(false)
+
+      const json = toJsonSchema(vector.structure)
+      expect(json).toMatchObject({ ok: true, value: vector.jsonConstraint })
+    })
+  }
+
+  test("fixed canonical rows refute a dual-table max→min args-key mutant", () => {
+    const vector = checkSemanticVectors.find(({ name }) => name === "maxLength")!
+    const folded = foldSchema(vector.authored)
+    expect(folded.ok).toBe(true)
+    if (!folded.ok) return
+
+    // This is the shape a symmetric CHECK_TABLE/CHECK_BUILDERS drift could
+    // round-trip successfully. The fixed row is outside both tables, so it
+    // catches the mutant before a self-roundtrip can cancel the disagreement.
+    const mutant: Record<string, Json> = {
+      k: "check",
+      base: { k: "string" },
+      check: { name: "maxLength", args: { min: 2 } },
+    }
+    expect(() => assertFixedCheckRow(mutant, vector)).toThrow(
+      "maxLength did not match its fixed canonical check row",
+    )
+  })
 })
 
 describe("cross-target codegen laws", () => {
@@ -255,6 +389,25 @@ describe("json-schema target", () => {
 })
 
 describe("go target", () => {
+  test("refuses an asserted digest that does not match the generated structure", () => {
+    const structure: Json = { k: "bool" }
+    const asserted = "f".repeat(64)
+    const expected = structureDigest(structure)
+    const derived = toGoSource(structure, "Boolean", asserted)
+
+    expect(derived).toEqual({
+      ok: false,
+      refusal: {
+        kind: "digest-mismatch",
+        law: "codegen refuses to emit a permanent artifact whose asserted digest it cannot re-derive",
+        got: asserted,
+        expected,
+        next: [],
+        local: true,
+      },
+    })
+  })
+
   test("D46: a hole nested under a union refuses identically in every target", () => {
     const structure: Json = { k: "union", of: [{ k: "hole" }] }
     const results = [
