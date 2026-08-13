@@ -3,76 +3,66 @@
 [![gates](https://github.com/mepuka/foldlab/actions/workflows/gates.yml/badge.svg?branch=main)](https://github.com/mepuka/foldlab/actions/workflows/gates.yml)
 
 foldlab is a lab for verifiable computation over streams, built with
-Effect (TypeScript) and Go. Every value has one canonical byte form,
-and a value's identity is a SHA-256 digest over those bytes, so any
-claim — a type's identity, a history's head, a cross-language port's
-equivalence — can be recomputed by anyone rather than taken on trust.
-Equivalence between implementations (TypeScript ≡ Go, batch ≡ stream,
-native ≡ wasm) is established by digest equality over frozen fixtures:
-digest pins generated once by the Go side and recomputed by both sides
-thereafter.
+Effect (TypeScript) and Go.
 
-## Why "foldlab"
+```
+$ bun packages/core/examples/tour.ts
 
-The name is literal: everything here is a left fold — one accumulator
-carried across a sequence, one element at a time. A stream is folded
-twice over: a hash fold, whose result (the chain head) is the
-history's identity — a running Merkle-style hash chain, not a reducer
-anyone writes — and a state fold, whose result is the history's
-meaning, which is an ordinary `Stream.runFold` over the events with
-your own reducer. The repo names them the identity fold and the
-meaning fold. Two histories can agree in state while differing in head;
-the chain remembers what the fold forgives, and that gap is what makes
-provenance a computable fact instead of an attestation.
+two histories, same two facts, different order
 
-The same fold-shape recurs at every level, because algebraic data
-types and event streams reduce the same way: a fold over structure
-(a value's parts) and a fold over time (an identity's events) are the
-same catamorphism, the one recursion scheme that collapses a structure
-into a single value. An entity is the fold of one correlation key's
-events; composition is a fold of child anchors; a schema's identity is
-a fold over its AST; code generation is a semantic fold over that same
-AST, so derived artifacts cannot drift from their source. The lab
-exists to make each of these folds checkable.
+  A head           c0f9c11ccb06bc3c18f4de601b85f44aaf682c83f09090a2c536fa1488d40816
+  B head           cbf009894aea951acfd7e7f8157c514fd5144aa6efd7960698855c464533c7ff
+  A state digest   62ca5ca464cbce85942499596ae21def9299236f26b68a29f3aaec37cc44733f
+  B state digest   62ca5ca464cbce85942499596ae21def9299236f26b68a29f3aaec37cc44733f
+  heads equal?     false
+  states equal?    true
+```
 
-## The theory in brief
+Two histories record the same two facts in opposite orders. They agree
+about what they mean and disagree about which they are, and both
+answers are digests any reader can recompute from the same events
+rather than claims anyone has to accept.
+[The first ten minutes](docs/tutorial/first-ten-minutes.md) walks that
+command and three others.
 
-Three sorts organize the whole system: evidence, decisions, and
-absence. Evidence is anything recomputable from bytes — facts, folds,
-catalogs — and is never owned: it federates freely because equal bytes
-give equal digests anywhere. Decisions are anything two parties could
-legitimately dispute — named bindings, fork adoptions, committed
-orderings — and each one single-homes behind the effector: it has
-exactly one writer, a commitment register per unit of work:
-`Register ::= Absent | Claim(fence, owner, lease) | Done(fence, result)`.
-Absence is the one uniform failure: a digest not yet present is a typed
-refusal — a tagged value in the error channel, not an exception and not
-a null — and senders own retry.
+foldlab is a lab rather than a product: nothing here is published,
+`proto/` is a tracer bullet carrying its own gates, and the repository
+takes responsibility for one thing above all — that every claim it
+makes is recorded in [VERIFICATION.md](VERIFICATION.md) with its rung,
+its bounds, and its residuals. A claim absent from that ledger is not
+made.
 
-The register's safety (no commit below the highest fence; exactly one
-terminal outcome) is a machine-checked theorem — Apalache inductive
-invariant, unbounded, independent of process identity — replayed in
-lockstep against the running Go implementation across 15,378
-schedules. The register is also where a running program becomes a
-fact: a live Effect program is codata (more can always happen), and
-commitment through the register turns it into data — one value, one
-history.
+## The registers
 
-A second theorem falls out of the sort: presence of evidence is
-monotone (append-only journals only grow), so ingress can admit
-records with a plain check and no lock. Creation instead checks
-absence, an observation that can go stale, and therefore writes
-through a compare-and-swap. The catalog and ingress protocol carrying
-both results are model-checked with TLC, the explicit-state TLA+ model
-checker: 12,707,989 distinct states at the gate bounds, four
-invariants held, four sabotaged variants each refuted. The same
-protocol is conformance-tested against the running daemon (R4, the
-ladder's rung for lockstep against the running binary): 131 schedules
-replayed lockstep with zero divergences against the named coarsened
-wire map, controls first. The inductive proof above the bounded check
-(R3) is in re-proof at repaired hypothesis bounds — the claim is
-deliberately HELD until those verdicts land; the ladder and its honest
-status live in [VERIFICATION.md](VERIFICATION.md).
+Each document answers one kind of question. Reading the wrong one first
+is the usual way in.
+
+| Register | Document | The question it answers |
+| --- | --- | --- |
+| Tutorial | [docs/tutorial/first-ten-minutes.md](docs/tutorial/first-ten-minutes.md) | What does this do? Four commands and their real output, with every term named only after it has been touched. |
+| Explanation | [docs/explanation/why-two-folds.md](docs/explanation/why-two-folds.md), [docs/explanation/theory.md](docs/explanation/theory.md) | Why is it built this way? Why a chain head is kept when the fold state already answers; the three sorts and the fold-shape behind them. |
+| Language reference | [CONTEXT.md](CONTEXT.md) | What does this word mean here? The ubiquitous language — folds, heads, journals, catalogs, refusals. Consulted during work, not read front to back. |
+| Wire reference | [proto/wire/CONTRACT.md](proto/wire/CONTRACT.md), [proto/SPEC.md](proto/SPEC.md) | What is on the wire? Subjects, body shapes, the refusal kinds, and the ratified laws (W1–W10) with their frozen fixtures. |
+| Claims ledger | [VERIFICATION.md](VERIFICATION.md) | What is actually proven, and where does the evidence stop? Every claim with its rung, bounds, assumptions, and the file where it is checkable. |
+
+Landmarks below those five:
+
+- [proto/go/protod/](proto/go/protod/) — the daemon: catalog,
+  ingress, refusals, and the black-box conformance suite.
+- [proto/ts/src/mcp.ts](proto/ts/src/mcp.ts) — the MCP derivation;
+  [proto/ts/test/smoke.test.ts](proto/ts/test/smoke.test.ts) — a full
+  agent session, typo to self-repair to verified read.
+- [verify/catalog/](verify/catalog/) — the TLA+ model gate:
+  `Catalog.tla`, the four counterexample traces from the sabotaged
+  variants, and the run record in its README.
+- [docs/map/tickets/009-the-verification-ladder.md](docs/map/tickets/009-the-verification-ladder.md)
+  — which contract sits on which proof rung, and what each rung's
+  gate requires.
+- [docs/adr/](docs/adr/) — the committed decisions;
+  [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
+  campaigns (crash storms, fleet runs), each with a frozen spec and a
+  frozen verifier that checks the exported run bundle by recomputation.
+- [go/effector/](go/effector/) — the proven register, as running Go.
 
 ## The MCP surface
 
@@ -91,33 +81,6 @@ example, so an agent repairs its own mistake without documentation.
 This surface is the first of a planned family of tools for the agent
 era whose guarantees are recomputable rather than reputational: every
 reply carries facts the agent, or anyone auditing it, can re-derive.
-
-## Where to look
-
-- [VERIFICATION.md](VERIFICATION.md) — the claims ledger: every
-  verification claim with its rung, bounds, assumptions, and the file
-  where it is checkable.
-- [CONTEXT.md](CONTEXT.md) — the ubiquitous language: folds, heads,
-  journals, catalogs, refusals.
-- [proto/SPEC.md](proto/SPEC.md) and
-  [proto/wire/CONTRACT.md](proto/wire/CONTRACT.md) — the ratified
-  laws (W1–W10) and the wire contract with its frozen fixtures.
-- [proto/go/protod/](proto/go/protod/) — the daemon: catalog,
-  ingress, refusals, and the black-box conformance suite.
-- [proto/ts/src/mcp.ts](proto/ts/src/mcp.ts) — the MCP derivation;
-  [proto/ts/test/smoke.test.ts](proto/ts/test/smoke.test.ts) — a full
-  agent session, typo to self-repair to verified read.
-- [verify/catalog/](verify/catalog/) — the TLA+ model gate:
-  `Catalog.tla`, the four counterexample traces from the sabotaged
-  variants, and the run record in its README.
-- [docs/map/tickets/009-the-verification-ladder.md](docs/map/tickets/009-the-verification-ladder.md)
-  — which contract sits on which proof rung, and what each rung's
-  gate requires.
-- [docs/adr/](docs/adr/) — the committed decisions;
-  [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
-  campaigns (crash storms, fleet runs), each with a frozen spec and a
-  frozen verifier that checks the exported run bundle by recomputation.
-- [go/effector/](go/effector/) — the proven register, as running Go.
 
 ## Long differential fuzz runs
 
