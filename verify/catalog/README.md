@@ -53,7 +53,7 @@ create needs a CAS and ingress doesn't.
 | `CLIMB.md` | failed candidates, strengthening rationale, commands, verdicts |
 | `run-ind.sh` / `.ps1` | the R3 obligation gate: exit-code checked, refutability canary first |
 | `R3-DECISIONS.md` / `WORKLOG.md` / `_runlogs/` | repair decisions and verbatim per-run records |
-| `BOUNDS-DECISIONS.md` | issue #9 decisions: complete constant domain and independent guard controls |
+| [proto/DECISIONS.md](../../proto/DECISIONS.md) | issue #9 decisions: complete constant domain and independent guard controls |
 | `probes/` | BREAKER proof-mechanics probes: FINDING-BRIDGE-001, FINDING-BOUNDS-001, verdict, configs, runlogs |
 | `run.sh` | the gate: 2 clean closures + 3 bound rejections + 4 required refutations, or FAIL |
 | `run-wire.ps1` / `.sh` | split canary + honest atomic bridge + required bridge refutation |
@@ -144,6 +144,16 @@ set at 12.7M states; the cap2 run's estimate is 2.6E-11. Stated because
 The gate additionally requires that no `states generated` summary appears in
 any of these outputs. This makes rejection, rather than a later invariant
 failure over a silently truncated model, the checked behavior.
+
+Fresh integration rerun: 2026-08-13 CDT, OpenJDK `21.0.2+13-58` provisioned
+by `mise`, TLC `2026.08.11.125311`, jar sha256
+`ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f`,
+flags `-workers 1 -fp 1 -deadlock`. `Catalog.cap2` reproduced
+119,145 / 18,295 / depth 16 in 2s; `Catalog` reproduced 103,407,991 /
+12,707,989 / depth 24 in 27m 02s. Each guard control was rejected on its
+own false assumption with no state summary, and all four faithless controls
+were refuted on the named violation shown below. Exact command:
+`TLC_JAVA=<OpenJDK-21-java> TLA_TOOLS_JAR=<recorded-jar> bash run.sh`.
 
 ### Negative controls — all four refuted, each on its own law
 

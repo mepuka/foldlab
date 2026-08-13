@@ -988,3 +988,33 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Issue #9 — catalog bound honesty (2026-08-13)
+
+### D??. Guard every constant and independently control each literal-domain ceiling
+
+Decided: state the complete configured domain explicitly. `NumDaemons`,
+`NumCreators`, and `NumVals` must each belong to the model's named
+`LiteralDomain` (`1..4`); `DataCap` must be a natural number; and all four
+fault-selection switches must be Boolean. Each size guard has an otherwise
+valid overrun config in `run.sh`, and the gate requires its assumption failure
+before state generation. Alternatives: one config with all three sizes at 5
+(one surviving assumption could mask deletion of the others); add controls for
+`DataCap` and Boolean typing (those do not encounter the reported silent
+literal-domain truncation, and malformed switches already fail when
+evaluated). Why: the three formerly green truncations must each remain
+independently repealable, while the named domain keeps a future widening local
+to one model definition. **Load-bearing? yes** — deleting any size guard must
+turn its own control green and fail the gate.
+
+### D??. The natural catalog bound names the explored value domain
+
+Decided: `CatalogNaturallyBounded` uses `Cardinality(Vals)`, with
+`FiniteSets` imported. At every current legal config this equals `NumVals`, so
+the clean closures are inertness controls. Alternative: retain `NumVals`
+because the new assumption equates it to the domain cardinality. Rejected: a
+future change can separate the configured number from the actual domain again;
+the invariant must name the semantic quantity it certifies. Why: the guard
+prevents today's silent overrun, while the invariant remains honest if the
+literal domain later widens. **Load-bearing? yes** — this is the semantic half
+of FINDING-BOUNDS-001.

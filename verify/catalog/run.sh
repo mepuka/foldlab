@@ -4,7 +4,7 @@
 # Runs TLC on the ratified spec (Catalog.tla: two configs, both must be
 # clean to closure) and on the four faithless variants (CatalogBroken.tla:
 # each MUST be refuted, on the exact invariant its config names — a prover
-# that cannot fail proves nothing).  Three independent bound canaries must
+# that cannot fail proves nothing).  Three independent bound guard controls must
 # also be rejected by the exact ASSUME each violates.  The gate PASSES only
 # on all nine verdicts together.
 #

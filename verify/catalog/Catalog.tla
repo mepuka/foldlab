@@ -65,6 +65,9 @@
 (*   - W2 (canonicalization) and W5 (read-your-admissions) collapse in     *)
 (*     this abstraction: values ARE canonical, appends ARE durable reads.  *)
 (*     They are not claimed.                                               *)
+(*   - Apalache requires literal finite domains here.  Daemon, creator,    *)
+(*     and value counts are therefore explicitly limited to 1..4; a config *)
+(*     outside that domain is rejected instead of silently truncated.      *)
 (***************************************************************************)
 EXTENDS FiniteSets, Integers, Sequences
 
@@ -92,15 +95,18 @@ CONSTANTS
   \* ResolutionMonotonicity
   ResettingMirror
 
-\* Apalache needs literal ranges below, so the configured domain sizes must
-\* stay within the largest value those ranges can express.  Reject a config
-\* that claims a wider model instead of silently checking the four-element
-\* truncation.  The remaining constants do not size literal domains: DataCap
-\* is an explicit journal cutoff (0 means unbounded), and the four switches
-\* are Boolean choices in every config.
-ASSUME NumDaemons  \in 1..4
-ASSUME NumCreators \in 1..4
-ASSUME NumVals     \in 1..4
+\* Apalache needs a literal finite range. Keep its ceiling in one definition
+\* so widening the executable domain does not require coordinated model edits.
+LiteralDomain == 1..4
+
+\* The configured domain sizes must stay within that expressible range.
+\* Reject a config that claims a wider model instead of silently checking the
+\* four-element truncation.  The remaining constants do not size literal
+\* domains: DataCap is an explicit journal cutoff (0 means unbounded), and the
+\* four switches are Boolean choices in every config.
+ASSUME NumDaemons  \in LiteralDomain
+ASSUME NumCreators \in LiteralDomain
+ASSUME NumVals     \in LiteralDomain
 ASSUME DataCap     \in Nat
 ASSUME BlindIngress      \in BOOLEAN
 ASSUME ForgedMirror      \in BOOLEAN
@@ -110,9 +116,9 @@ ASSUME ResettingMirror   \in BOOLEAN
 \* Filtered from literal ranges rather than 1..N: Apalache does not accept
 \* integer ranges with symbolic bounds.  The assumptions above make each
 \* filter semantically identical to 1..NumX for both TLC and Apalache.
-Daemons  == { d \in 1..4 : d <= NumDaemons }
-Creators == { c \in 1..4 : c <= NumCreators }
-Vals     == { v \in 1..4 : v <= NumVals }
+Daemons  == { d \in LiteralDomain : d <= NumDaemons }
+Creators == { c \in LiteralDomain : c <= NumCreators }
+Vals     == { v \in LiteralDomain : v <= NumVals }
 
 (***************************************************************************)
 (* Identity.  Content-addressing: equal bytes <=> equal digest, so the     *)
