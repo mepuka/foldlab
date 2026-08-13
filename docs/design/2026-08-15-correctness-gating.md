@@ -42,7 +42,7 @@ line by line; this is not inferred from names.
 | 18 | `cmd/climbverify` against `artifacts/receipts/r2-*` | fetched corpus absent | **was impossible** — now `controls` reconstructs the competition-owned corpus, verifies the verifier-owned digest, and classifies both bundles' exact known-red refusals |
 | 19 | `FOLDLAB_JCS_FUZZ_RUNS` (`packages/core/test/jcs.differential.test.ts:15`) | env var | not a skip — a run-count knob, default 160, which THROWS on a bad value. Covered |
 | 20 | `bunfig.toml` `[test] root = "packages"` | any test outside `packages/` | structural: a test added at the repository root, in `scripts/`, or in `bench/` is silently undiscovered by `bun test`. No current instance |
-| 21 | `packages/{ai,client,codegen,server}` | — | **resolved** — server has a public-route test; ai/client/codegen are exact empty promotion placeholders with explicit markers; `check-package-tests.ts` rejects any untested runtime body |
+| 21 | `packages/{ai,client,codegen,server}` | — | **resolved** — server has a public-route test; ai/client/codegen are exact empty promotion placeholders with explicit markers; every workspace manifest exposes an executable `test` script; `check-package-tests.ts` rejects a missing script or untested runtime body |
 | 22 | `proto/ts/bunfig.toml` `root = "."` | — | covered — `gates.yml` runs `bun test .` in `proto/ts` |
 | 23 | `bench/`, `docs/media/folding`, `docs/media/posters-v2` | — | outside every gate, by design (`bench/BENCH.md`) |
 
@@ -96,9 +96,12 @@ control.
 `packages/server` now has an in-process HTTP test that binds health plus the
 SL1/SL4 public response laws. `packages/ai`, `packages/client`, and
 `packages/codegen` currently contain only `export {}` promotion placeholders;
-each carries the exact intentionally-test-free marker. `check-package-tests.ts`
-allows that marker only on the empty body and refuses a new runtime export
-until the package gains a test. Its self-test proves both refusal directions.
+each carries the exact intentionally-test-free marker. Every workspace package
+exposes `bun run test`: core and server execute their real tests, while each
+empty placeholder executes its own narrow policy check. `check-package-tests.ts`
+allows the marker only on the empty body and refuses both a new runtime export
+and a package without an executable test script. Its self-test proves both
+refusal directions, and `gates.yml` executes all five scripts.
 
 **N-6 — a law-ID namespace collision, and a second one.** `C1` is two live
 laws: concierge `C1` (fill/unfill are byte-pure) and entity `C1` (meaning-fold
@@ -144,8 +147,9 @@ and Bun caches):
 | verifiers — R2 ×2 after pinned fetch | network + 2 | known red: exact GV8 and CL2/CL3 refusals classified; forged-corpus control refuses |
 | laws index `--self-test` | 0 | green (13 controls) |
 | laws index gate | 0 | green (71 laws; one unenforced) |
-| package test-policy self-test + gate | 0 | green (3 controls; every package accounted for) |
-| **total** | **29 s warm** | |
+| package test-policy self-test + gate | 0 | green (6 controls; every package accounted for) |
+| workspace package scripts | root battery | green (five independently runnable package entrypoints) |
+| **total** | **≈32 s warm** | |
 
 A cold CI runner adds module downloads and first builds; 3–6 minutes is the
 realistic figure, against a 20-minute timeout.
@@ -424,6 +428,8 @@ that R2 accepts, so the fix is porting a check that exists twice.
 | `scripts/wasm-wall-divergence.ts` | per-scalar divergence classifier + 4 self-test controls |
 | `fixtures/wasm-wall-known-divergence.json` | the 27 known-divergent scalars, frozen, with corpus domain and a deletion condition |
 | `scripts/check-laws.ts` | the laws-index gate + 13 self-test controls |
+| `scripts/gates.{sh,ps1,ts}` | one shared root + proto gate plan with Unix and Windows entrypoints and a planted-failure control |
+| `packages/*/package.json` | independently runnable package test scripts; placeholders invoke only their exact empty-package policy |
 | `docs/LAWS.md` | 71 context-qualified laws → statement → enforcing test or explicit design boundary |
 | `docs/FREEZING.md` | the freezing protocol, the inventory, the dangling-pointer correction |
 | this document | the audit and the design |

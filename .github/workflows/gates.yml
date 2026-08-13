@@ -66,6 +66,12 @@ jobs:
       - name: root — bun test
         run: bun test 2>&1 | tee ci-logs/root-test.log
 
+      # Each workspace package must also be runnable at its package.json
+      # boundary. Empty promotion placeholders execute the narrow policy
+      # check; packages with runtime behavior execute their own real tests.
+      - name: root — workspace package test scripts
+        run: bun run test:packages 2>&1 | tee ci-logs/root-package-tests.log
+
       # --- go ------------------------------------------------------------
       - name: go — gofmt -l .
         working-directory: go

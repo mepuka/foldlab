@@ -20,6 +20,8 @@
     "dev": "bun packages/server/src/server.ts",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc --noEmit",
     "test": "bun test",
+    "test:packages": "bun run --filter './packages/*' test",
+    "gates": "bun scripts/gates.ts",
     "build:wasm": "bun scripts/build-wasm.ts",
     "bench": "bun bench/stream.bench.ts",
     "bench:go": "bun scripts/bench-go.ts",

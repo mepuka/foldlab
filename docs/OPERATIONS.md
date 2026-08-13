@@ -3,6 +3,28 @@
 How this repository is run now that `main` is public. The gates are the
 policy; this file is only the wiring around them.
 
+## Local gate entrypoints
+
+Run the complete root and tracer-bullet battery from either host shell:
+
+```text
+bash scripts/gates.sh
+pwsh -File scripts/gates.ps1
+```
+
+Both wrappers invoke the same `scripts/gates.ts` plan, so the Windows and Unix
+commands cannot drift into separate transcriptions. `bun run gates` invokes
+that same plan directly. Each entrypoint accepts `--self-test`; the control
+first accepts a known-successful subprocess and then requires a planted exit
+23 to be preserved; a second control requires a zero-exit formatting command
+that prints a filename to be refused.
+
+Every workspace package also exposes `bun run test` from its own directory.
+The empty `ai`, `client`, and `codegen` promotion placeholders run the exact
+empty-package policy rather than claiming laws they do not have; `core` and
+`server` run their package-owned tests. `bun run test:packages` executes all
+five scripts and is part of the repository gate.
+
 ## Branch protection on `main`
 
 - Require the `gate battery` check (the one job in `gates.yml`) green
