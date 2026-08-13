@@ -1,15 +1,16 @@
-// RFC 8785 canonicalization and the identity fold, TS side. This must
-// take equal inputs to equal bytes/digests as go/canonical — the wire
-// fixture wall (test/wall.test.ts) is the proof, never trust.
+// RFC 8785 identity adapter and the identity fold, TS side. The canonical
+// encoder lives in packages/core and is directly walled to go/canonical;
+// proto must not carry an independent serializer with a different domain.
 import { createHash } from "node:crypto"
+import {
+  encodeJsonValue,
+  type CanonicalEncoding,
+  type JsonValue,
+} from "../../../packages/core/src/jcs.ts"
 
 export const GENESIS = "0".repeat(64)
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
-
-/** UTF-16 code unit order — JS default string comparison, which is what
- * RFC 8785 specifies for member sorting. */
-const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
 const utf8 = new TextEncoder()
 
@@ -26,22 +27,14 @@ export const compareCanonicalBytes = (left: string, right: string): number => {
   return leftBytes.length - rightBytes.length
 }
 
-/** Canonical bytes of a JSON value (RFC 8785). JSON.stringify already
- * matches JCS for strings (minimal escapes) and numbers (ES shortest
- * form); the work is member ordering and domain policing. */
-export const canonicalize = (value: Json): string => {
-  if (value === null || typeof value === "boolean") return JSON.stringify(value)
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new Error("number is not finite")
-    if (Object.is(value, -0)) throw new Error("negative zero is outside the canonical domain")
-    return JSON.stringify(value)
-  }
-  if (typeof value === "string") return JSON.stringify(value)
-  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`
-  const keys = Object.keys(value).sort(byCodeUnit)
-  const members = keys.map((key) => `${JSON.stringify(key)}:${canonicalize(value[key] as Json)}`)
-  return `{${members.join(",")}}`
-}
+export type { CanonicalEncoding }
+export type CanonicalRefusal = Extract<CanonicalEncoding, { readonly ok: false }>["refusal"]
+
+/** Canonical bytes or a typed domain refusal. This is an adapter, not a
+ * second implementation: packages/core's encoder is the sole TS RFC 8785
+ * serializer and its differential wall binds these bytes to Go. */
+export const canonicalize = (value: Json): CanonicalEncoding =>
+  encodeJsonValue(value as JsonValue)
 
 export const sha256Hex = (input: string): string =>
   createHash("sha256").update(input, "utf8").digest("hex")
@@ -67,9 +60,18 @@ export const normalizeStructure = (value: Json): Json => {
     case "union": {
       const rawMembers = value["of"]
       if (!Array.isArray(rawMembers)) return value
-      const members = rawMembers.map(normalizeStructure)
-      members.sort((left, right) => compareCanonicalBytes(canonicalize(left), canonicalize(right)))
-      return { ...value, of: members }
+      const normalized = rawMembers.map(normalizeStructure)
+      const members: Array<{ readonly value: Json; readonly canonical: string }> = []
+      for (const member of normalized) {
+        const encoded = canonicalize(member)
+        // Structure identity preflights the complete input before normalization,
+        // so this branch is unreachable there. Direct diagnostic callers still
+        // receive a pure result instead of a serialization exception.
+        if (!encoded.ok) return { ...value, of: normalized }
+        members.push({ value: member, canonical: encoded.bytes })
+      }
+      members.sort((left, right) => compareCanonicalBytes(left.canonical, right.canonical))
+      return { ...value, of: members.map((member) => member.value) }
     }
     case "brand":
       return { ...value, of: normalizeStructure(value["of"] as Json) }
@@ -82,13 +84,26 @@ export const normalizeStructure = (value: Json): Json => {
 
 /** Canonical bytes of a structure after applying its grammar-level
  * unordered-collection normalization. */
-export const canonicalizeStructure = (structure: Json): string =>
-  canonicalize(normalizeStructure(structure))
+export const canonicalizeStructure = (structure: Json): CanonicalEncoding => {
+  // Validate before walking: cycles, exotic prototypes, undefined members,
+  // non-finite numbers, and invalid Unicode must never reach normalization.
+  const admitted = canonicalize(structure)
+  return admitted.ok ? canonicalize(normalizeStructure(structure)) : admitted
+}
 
 /** The interim identity scheme, named to match the daemon (W10). */
 export const SCHEME = "bytes-sha256-v1"
 
-export const structureDigest = (structure: Json): string => sha256Hex(canonicalizeStructure(structure))
+export type StructureDigestResult =
+  | { readonly ok: true; readonly digest: string }
+  | { readonly ok: false; readonly refusal: CanonicalRefusal }
+
+export const structureDigest = (structure: Json): StructureDigestResult => {
+  const canonical = canonicalizeStructure(structure)
+  return canonical.ok
+    ? { ok: true, digest: sha256Hex(canonical.bytes) }
+    : canonical
+}
 
 export interface ChainEntry {
   readonly seq: number
@@ -110,7 +125,10 @@ export interface InvalidSequenceRefusal {
 
 export type EntryDigestResult =
   | { readonly ok: true; readonly digest: string }
-  | { readonly ok: false; readonly refusal: InvalidUnicodeRefusal | InvalidSequenceRefusal }
+  | {
+    readonly ok: false
+    readonly refusal: InvalidUnicodeRefusal | InvalidSequenceRefusal | CanonicalRefusal
+  }
 
 const invalidUnicode = (field: "payload" | "prev"): InvalidUnicodeRefusal => ({
   _tag: "InvalidUnicode",
@@ -153,10 +171,10 @@ export const entryDigest = (entry: ChainEntry): EntryDigestResult => {
     unicodeScalarRefusal(entry.prev, "prev") ??
     sequenceRefusal(entry.seq)
   if (refusal !== undefined) return { ok: false, refusal }
-  return {
-    ok: true,
-    digest: sha256Hex(canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq })),
-  }
+  const canonical = canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq })
+  return canonical.ok
+    ? { ok: true, digest: sha256Hex(canonical.bytes) }
+    : canonical
 }
 
 /** The verify-on-read chain fold (W6): heads are claims; this recomputes

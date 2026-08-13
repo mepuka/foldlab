@@ -4,6 +4,12 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
 import { ProtoClient } from "../src/client.ts"
 import { structureDigest, type Json } from "../src/jcs.ts"
+
+const digestOf = (structure: Json): string => {
+  const identity = structureDigest(structure)
+  if (!identity.ok) throw new Error(identity.refusal.reason)
+  return identity.digest
+}
 import { Session } from "../src/session.ts"
 import { spawnProtod, type RunningDaemon } from "./harness.ts"
 
@@ -61,7 +67,7 @@ test("the smoke thread reads like an agent session", async () => {
   if (!repaired.ok) throw new Error("repair failed")
   expect(repaired.fact.created).toBe(true)
   const stringDigest = repaired.fact.digest
-  expect(stringDigest).toBe(structureDigest({ k: "string" }))
+  expect(stringDigest).toBe(digestOf({ k: "string" }))
 
   // 4 — create a type with a ref to the cataloged digest plus a
   // declared check (the DAG grows; checks are declared metadata).
@@ -131,7 +137,7 @@ test("the smoke thread reads like an agent session", async () => {
   if (refused.ok) throw new Error("the lie was believed")
   expect(refused.refusal.kind).toBe("digest-mismatch")
   expect(refused.refusal.got).toBe(lie)
-  expect(refused.refusal.expected).toBe(structureDigest({ k: "bool" }))
+  expect(refused.refusal.expected).toBe(digestOf({ k: "bool" }))
 
   // The transcript witnessed the whole thread, in order.
   const verbs = session.transcript.map((t) => t.verb)
