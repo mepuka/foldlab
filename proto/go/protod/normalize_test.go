@@ -90,6 +90,148 @@ func TestNormalizeLawHarnessRejectsANonIdempotentControl(t *testing.T) {
 	}
 }
 
+func TestNormalizeCostGrowsWithTheGrammarTree(t *testing.T) {
+	// Forty alternating layers stay inside constrained decode's 256-container
+	// domain while making any redundant fixed-point traversal visible.
+	for _, depth := range []int{1, 8, 24, 40} {
+		term := adversarialNormalizeTerm(depth)
+		if _, refusal := walkStructure(term, []string{"structure"}); refusal != nil {
+			t.Fatalf("depth %d: adversary left the grammar domain: %+v", depth, refusal)
+		}
+		normalized, withinBound, work, envelope, err := normalizeWithinCostEnvelope(term, normalizeWithWork)
+		if err != nil {
+			t.Fatalf("depth %d: normalize: %v", depth, err)
+		}
+		if !withinBound {
+			t.Fatalf("depth %d: normalize work %+v exceeded independent envelope %+v", depth, work, envelope)
+		}
+		ordinary, err := normalize(term)
+		if err != nil {
+			t.Fatalf("depth %d: ordinary normalize: %v", depth, err)
+		}
+		if got, want := mustCanonicalTest(t, normalized), mustCanonicalTest(t, ordinary); got != want {
+			t.Fatalf("depth %d: metered normalize changed identity\n got %s\nwant %s", depth, got, want)
+		}
+	}
+}
+
+func TestNormalizeCostCanaryRejectsIdentityPreservingExtraPass(t *testing.T) {
+	term := adversarialNormalizeTerm(32)
+	honest, honestWithinBound, _, _, err := normalizeWithinCostEnvelope(term, normalizeWithWork)
+	if err != nil {
+		t.Fatalf("honest normalize: %v", err)
+	}
+	if !honestWithinBound {
+		t.Fatal("cost canary rejected honest single-pass normalize")
+	}
+
+	extraPassMutant := func(value any) (any, normalizeWork, error) {
+		once, first, err := normalizeWithWork(value)
+		if err != nil {
+			return nil, normalizeWork{}, err
+		}
+		twice, second, err := normalizeWithWork(once)
+		return twice, first.plus(second), err
+	}
+	mutated, mutantWithinBound, work, envelope, err := normalizeWithinCostEnvelope(term, extraPassMutant)
+	if err != nil {
+		t.Fatalf("extra-pass mutant: %v", err)
+	}
+	if got, want := mustCanonicalTest(t, mutated), mustCanonicalTest(t, honest); got != want {
+		t.Fatalf("control changed identity instead of cost\n got %s\nwant %s", got, want)
+	}
+	if mutantWithinBound {
+		t.Fatalf("cost canary admitted identity-preserving extra-pass mutant: work=%+v envelope=%+v", work, envelope)
+	}
+}
+
+type normalizeCostEnvelope struct {
+	nodeVisits     int
+	unionSortKeys  int
+	unionSortComps int
+}
+
+func normalizeWithinCostEnvelope(
+	value any,
+	normalizer func(any) (any, normalizeWork, error),
+) (any, bool, normalizeWork, normalizeCostEnvelope, error) {
+	nodes, unionMembers, comparisonBound := independentNormalizeCost(value)
+	envelope := normalizeCostEnvelope{
+		nodeVisits:     nodes,
+		unionSortKeys:  unionMembers,
+		unionSortComps: comparisonBound,
+	}
+	normalized, work, err := normalizer(value)
+	if err != nil {
+		return nil, false, work, envelope, err
+	}
+	withinBound := work.nodeVisits <= envelope.nodeVisits &&
+		work.unionSortKeys <= envelope.unionSortKeys &&
+		work.unionSortComps <= envelope.unionSortComps
+	return normalized, withinBound, work, envelope, nil
+}
+
+// independentNormalizeCost walks only the input grammar shape. It neither
+// calls normalize nor shares normalize's implementation, so its envelope
+// cannot grow merely because the implementation repeats work. The adversary
+// uses binary unions; insertion sorting needs at most one comparison for each.
+func independentNormalizeCost(value any) (nodes, unionMembers, comparisonBound int) {
+	node := value.(map[string]any)
+	nodes = 1
+	addChild := func(child any) {
+		childNodes, childMembers, childComparisons := independentNormalizeCost(child)
+		nodes += childNodes
+		unionMembers += childMembers
+		comparisonBound += childComparisons
+	}
+	switch node["k"] {
+	case "list", "brand":
+		addChild(node["of"])
+	case "check":
+		addChild(node["base"])
+	case "struct":
+		for _, field := range node["fields"].(map[string]any) {
+			addChild(field)
+		}
+	case "union":
+		members := node["of"].([]any)
+		unionMembers += len(members)
+		if len(members) > 1 {
+			comparisonBound += len(members) - 1
+		}
+		for _, member := range members {
+			addChild(member)
+		}
+	}
+	return nodes, unionMembers, comparisonBound
+}
+
+func adversarialNormalizeTerm(depth int) any {
+	term := any(map[string]any{"k": "string"})
+	for level := 0; level < depth; level++ {
+		term = map[string]any{
+			"k": "struct",
+			"fields": map[string]any{
+				"nested": map[string]any{
+					"k": "union",
+					"of": []any{
+						map[string]any{"k": "brand", "name": "Deep", "of": term},
+						map[string]any{"k": "brand", "name": "Leaf", "of": map[string]any{"k": "null"}},
+					},
+				},
+				"sibling": map[string]any{
+					"k": "struct",
+					"fields": map[string]any{
+						"left":  map[string]any{"k": "bool"},
+						"right": map[string]any{"k": "int"},
+					},
+				},
+			},
+		}
+	}
+	return term
+}
+
 func normalizeIsIdempotent(
 	t *testing.T,
 	normalizer func(any) (any, error),

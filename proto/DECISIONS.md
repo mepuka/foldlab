@@ -1000,7 +1000,13 @@ detection and never mutates the submitted tree; `walkPartial` remains explicitly
 position-preserving. The property gate runs 512 deterministic depth-4 terms
 (PCG seeds `0x36d20001/2`), compares bottom-up with fair top-down clause schedules,
 and carries an order-toggling idempotence mutant; the TS twin runs 512 terms at
-seed `0x36d20003`. Alternatives: retain the rewrite inside `walkStructure`;
+seed `0x36d20003`. The cost envelope counts production work independently of
+identity: an N-node grammar tree permits exactly one structural node visit and
+one cached canonical sort-key derivation per union member, with sort comparisons
+metered separately. The adversarial gate alternates nested structs and binary
+unions at four scales inside the 256-container decode domain; its independent
+shape walk supplies the bound, and an idempotent extra-pass mutant returns the
+same normal form but exceeds it. Alternatives: retain the rewrite inside `walkStructure`;
 normalize in place; make partials share the identity discipline. Why: the first
 two hide or leak normalization and the third breaks fill/unfill path inversion.
 **Load-bearing? yes** — every owned identity depends on this unique normal form.
