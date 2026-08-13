@@ -3,7 +3,9 @@
 [![gates](https://github.com/mepuka/foldlab/actions/workflows/gates.yml/badge.svg?branch=main)](https://github.com/mepuka/foldlab/actions/workflows/gates.yml)
 
 foldlab is a lab for verifiable computation over streams, built with
-Effect (TypeScript) and Go.
+Effect (TypeScript) and Go. Created and directed by
+[Mepuka Kessy](https://github.com/mepuka). Licensed
+[Apache-2.0](LICENSE).
 
 ```
 $ bun packages/core/examples/tour.ts
@@ -227,6 +229,27 @@ A coordinator seat runs continuous review over the parallel build —
 monitoring lanes, bug-bash lanes, and first-consumer dogfooding — and
 this log gets the results as they land. Newest first. Every finding
 links to its issue; every claim there carries executed evidence.
+
+**2026-08-13 (late) — the flywheel measured, licensed, and told.** A
+dogfood lane drove the concierge as a **true stdio MCP client** — 21
+JSON-RPC messages captured verbatim
+(`demo/mcp-concierge-session.md`): **11 tool calls from first intent
+to a certified, content-addressed type** (clean path: 7), 1–6 ms per
+call. The first refusal is the best evidence in the transcript: asked
+for "a record type," the model wrote `"k":"record"` — the human's own
+word leaking into structure — and repaired it in one round-trip from
+`expected` alone. Identity-is-content proven twice live (identical
+resubmit and reordered union both converge to one digest). Findings
+filed: every tool mislabeled `destructiveHint:true` including pure
+reads ([#40](https://github.com/mepuka/foldlab/issues/40)), and
+`unknown-ref` is the one refusal that doesn't teach its own repair
+([#41](https://github.com/mepuka/foldlab/issues/41)), plus live
+confirmation on [#17](https://github.com/mepuka/foldlab/issues/17)
+that the missing outputSchema is one mapping away from data the
+daemon already serves. The repo is now licensed
+**Apache-2.0** with NOTICE — foldlab is created and directed by
+[Mepuka Kessy](https://github.com/mepuka) — and the story went public:
+[the concierge flywheel, on mepuka.com](https://mepuka.com/blog/foldlab-concierge-flywheel).
 
 ### The five structures, and why they keep showing up
 
