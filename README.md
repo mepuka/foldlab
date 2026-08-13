@@ -148,6 +148,73 @@ the built wasm wall pins the 27 reported drift scalars. CI now builds that
 wall and carries a missing-artifact canary, so a fresh checkout cannot turn
 the cross-runtime evidence into a silent skip ([#27](https://github.com/mepuka/foldlab/issues/27)).
 
+### The five structures, and why they keep showing up
+
+Everything in this repository — and every finding below — is built from
+five data structures you already use, wearing house names. Knowing the
+five makes every entry in this log readable.
+
+1. **The append-only log** (house: *the journal*). Events, in order,
+   never edited — the same shape as a git history or a Kafka topic.
+   Every question in the system starts here, because "what happened,
+   in order" is the one fact everything else can be recomputed from.
+
+2. **The reducer** (house: *the meaning fold*). Run `Array.reduce`
+   over the log and you get current state — exactly what every Redux
+   store and every `Stream.runFold` does. Fold the same events, get
+   the same state, every time.
+
+3. **The hash chain** (house: *the identity fold*, its result *the
+   chain head*). Feed the same events through a running SHA-256
+   instead — the way each git commit hashes its parent — and you get
+   a 32-byte name for *exactly this history*. Two logs can reduce to
+   the same state yet have different heads; the repo's favorite
+   sentence, "the chain remembers what the fold forgives," is just
+   that observation. State tells you where you are; the head tells
+   you every step of how you got there.
+
+4. **The content-addressed store** (house: *the catalog*, *the fold
+   cache*). Name things by the hash of what they are — git objects,
+   the Nix store, a CDN etag. Entries are immutable, so there is
+   nothing to invalidate, ever: if the name matches, the content is
+   the content. Caching, deduplication, and "have we seen this
+   before?" all collapse into one lookup.
+
+5. **The version-checked register** (house: *the effector*). A
+   compare-and-swap slot with a monotonically increasing token — the
+   optimistic-locking pattern of every database version column, plus
+   the fencing tokens distributed-systems books recommend. It is the
+   *one* place in the system where writers coordinate. Everything
+   else merges freely.
+
+Why do the same five keep arising, here and everywhere else? Because
+they are the minimal answers to the only five questions a distributed
+system ever asks: *what happened?* (the log), *what does it mean?*
+(the reducer), *is it the same?* (the hash), *have we done this
+before?* (the store), *who decides?* (the register). Any system that
+answers those questions honestly reinvents these shapes — git, Kafka,
+Redis, Nix, and every event-sourced app each hold two or three of
+them. This repo's bet is simply to hold **all five under one
+discipline**: everything is canonical bytes, so everything has a
+digest; everything with a digest can be cached, compared, federated,
+and replayed; and the mathematics of folds (a tagged union has
+exactly *one* structure-respecting fold) turns those habits into
+guarantees. Same input, same bytes, same hash — and anything derived
+that way is safe to share between two languages, two machines, or
+two strangers, because "do we agree?" becomes "do the digests
+match?", which is decidable.
+
+That unification is also why the findings below cluster the way they
+do. Almost every bug this watch has caught is one of the five
+structures betraying its principle at an edge: a hash built from
+bytes that were quietly *repaired* rather than refused (a name that
+lies), a reducer with two adjacent error dialects (a fold that
+answers two ways), a register bucket that deletes the history a
+watcher was owed (a log that forgot), a verifier that checks a bundle
+against itself (a store trusting its own label). The principles are
+common; the discipline of holding them *simultaneously, at every
+edge, in two languages* is the actual project.
+
 **2026-08-13 (evening) — the bug bash reports: five lanes, one day.**
 The Go concurrency lane proved the "flake" (#15) is a real eviction
 race — the register bucket keeps one message per subject, so writing
