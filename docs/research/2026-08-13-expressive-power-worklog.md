@@ -1,3 +1,7 @@
+<!-- Provenance: the expressive-power team's session worklog, moved from the
+repo root at cleanup. Deliverables: docs/research/2026-08-13-expressive-power-dossier.md
+and the docs/design/ 2026-08-13 set. Kept as the working record behind them. -->
+
 # WORKLOG — expressive-power team
 
 Mission: map the novel expressive power foldlab unlocks; recommend the ONE
