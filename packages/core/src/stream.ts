@@ -22,6 +22,9 @@
  *   enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
  *   seed(s)     = SHA-256("playground.stream.v1:" + s)
  *   extend(h,e) = SHA-256(h || enc(e))
+ *
+ * `playground.*` is a former project name frozen into these hashed wire
+ * prefixes. Renaming it would move every derived digest, so it stays.
  */
 
 import { createHash } from "node:crypto"
