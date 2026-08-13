@@ -115,6 +115,27 @@ Graduation map (no-redesign claim): go/ → go/daemon + go/cmd;
 ts/client → packages/client; ts/author → packages/core; ts/codegen →
 packages/codegen; ts/mcp → packages/ai; wire fixtures → fixtures/.
 
+## Ratified amendments (2026-08-12, post-build grilling of DECISIONS.md)
+
+Codex-executed rework; fixture regeneration is AUTHORIZED for these,
+with this section as the stated reason:
+
+1. **Refs are Declarations** (supersedes the builder's `flb.ref`
+   identity-bearing annotation, D13): in TS authoring a ref is modeled
+   as a Declaration whose required identifier IS the digest — covered
+   by the existing carve-out. The general law: an annotation is
+   identity-bearing exactly when it is the node's only canonicalizable
+   substance.
+2. **Order never moves identity in unordered collections** (supersedes
+   D10; ratifies D9's principle): union members are canonically sorted
+   by their canonical bytes before digesting; `optional` stays
+   UTF-16-sorted. The sort is grammar law, stated in CONTRACT.md.
+3. **`{"k":"opaque"}` joins the grammar** (supersedes the
+   `flb.v0.opaque` brand convention, D21): a first-class node meaning
+   "any well-formed v0 value, not structurally described here";
+   json-schema target renders `{}`. Full self-description stays
+   deferred to 004-full.
+
 ## Non-goals (out of scope, on purpose)
 
 Effector operations and named bindings; replica roles live (the Role

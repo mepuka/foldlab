@@ -84,3 +84,16 @@ as `flb.type.v0` — the tracer bullet's authoring grammar
 its shape encodes laws 3–5 (brand node, declared-check node, resolvable
 refs making the catalog a DAG), and it grows toward full SchemaAST
 coverage here. Never a second grammar.
+
+Addendum 2 (2026-08-12, from the bullet's DECISIONS.md grilling —
+holes the build smoked out of the ratified laws, now closed):
+6. **Array-order law**: in unordered collections, order never moves
+   identity — union members canonically sorted by canonical bytes,
+   optional-lists UTF-16-sorted. (The grammar spec must state a sort
+   wherever an array's order is not semantic; JCS sorts objects only.)
+7. **Refs are Declarations**: a cross-type reference is a Declaration
+   whose identifier is the digest; no second annotation exception. The
+   annotation law generalizes: identity-bearing exactly when the
+   annotation is the node's only canonicalizable substance.
+8. **Opaque node**: `{"k":"opaque"}` = any well-formed v0 value, the
+   honest escape hatch for contract self-description until 004-full.
