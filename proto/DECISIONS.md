@@ -988,3 +988,24 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Issue 45 — record-width acceptance finding (2026-08-13)
+
+### D??. FINDING: four public faces assign three semantics to one extra key
+
+Decided: preserve the minimized `contract.describe`-derived witness as an
+opt-in red equality law and stop before changing any language. JSON Schema's
+`additionalProperties:false` normatively refuses the extra key (bounded keyword
+observation; no independent validator is licensed), generated Effect and Go
+accept then drop it through executed decoders, and live protod admits and
+preserves it in verified canonical journal bytes under D5. Alternatives
+deliberately not taken: open only the JSON Schema; make ingress strict; declare
+Effect/Go's loss equivalent to protod's preserved content. Why: each local patch
+would silently choose a record language while leaving another public face or
+frame identity divergent. The ratification choices are closed-refuse,
+open-ignore, and open-with-declared-rest; the last is recommended because it
+alone preserves D5's content constraint, but it is a load-bearing owned-grammar
+and identity-scheme change not ratified by D5 itself. Evidence, bounds, and
+reproduction are in `ts/FINDING-ACCEPTANCE-WIDTH-001.md`. **Load-bearing? yes**
+— this choice fixes the denotation of every struct for the certifier, all
+derivation targets, L-ACCEPT, and the future inferrer's S-boundary.
