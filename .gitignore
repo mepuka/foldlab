@@ -5,3 +5,4 @@ bench/results/
 .env
 artifacts/receipts/*/corpus.json
 go/*.exe
+scratch/

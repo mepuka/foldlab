@@ -36,14 +36,21 @@ verification.
 
 ## Positions and next climbs, in order
 
-1. **Catalog + ingress state machine** (laws W1–W5) — the first climb,
-   IN FLIGHT: TLA+ spec with concurrent creators, publishers, and
-   replication lag. Prove: no admission on faith (every admitted
-   frame's digest committed first); convergence (same bytes → one
-   fact, any interleaving, any daemon); resolution monotonicity
-   (evidence never un-resolves; lag is absence, never wrong data).
-   Target R2 now; R3 next; R4 attaches to the tracer daemon's
-   conformance harness once proto/ lands. Spec home: `verify/catalog/`.
+1. **Catalog + ingress state machine** (laws W1–W5) — **R2 CLAIMED**
+   (2026-08-12, `verify/catalog/`): TLC 2.19 clean to closure at the
+   gate caps (2 daemons / 3 values / 2 creators: 12,707,989 distinct
+   states, depth 24) and cap2 (18,295); invariants Convergence,
+   NoAdmissionOnFaith (+ AdmissionSeesResolution),
+   LagIsAbsenceNeverWrongData, ResolutionMonotonicity. FOUR negative
+   controls, each refuted on exactly its dropped law, counterexample
+   traces committed. Bounded claim per the gate: certified at the
+   stated caps only. Architectural insight surfaced by the model:
+   presence is monotone (a stale positive resolve-check can never
+   become wrong — monotonicity is the theorem licensing atomic
+   ingress); absence is anti-monotone, hence create needs the CAS.
+   Next: R3 (Apalache; candidate stated in CatalogInd.tla, NOT
+   claimed — codex task 04); R4 attaches to protod's conformance
+   harness.
 2. **Concierge algebra** (bullet two) — R1 inside its build: property
    tests for `unfill ∘ fill = identity`, frontier-empty ⇔ catalogable,
    and NO DEAD ENDS (every hole admits ≥1 legal fill), by induction on
