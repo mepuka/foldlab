@@ -1,7 +1,9 @@
 # NEXT — the session brief
 
-State as of 2026-08-12 (post mint-rollback), so the next session starts
-mid-stride. Theory background:
+State as of 2026-08-13 (post tracer bullet, catalog model gate, fold
+algebra, and the JCS differential lane), so the next session starts
+mid-stride. Every claim with a rung and its bounds:
+[VERIFICATION.md](VERIFICATION.md). Theory background:
 [.reference/core-concepts.md](.reference/core-concepts.md). Proof heritage:
 `.reference/playground-mech/`. Ubiquitous language: [CONTEXT.md](CONTEXT.md).
 Committed decisions: `docs/adr/`. Live planning: `docs/map/`. Agent
@@ -10,13 +12,17 @@ operating contract: [AGENTS.md](AGENTS.md).
 ## Where the repo stands
 
 Monorepo: `packages/core/src/` (stream, xform, schema, entity,
-streamBindings), the narrow-writ client scaffold in `packages/client/`,
-HTTP demo in `packages/server/`; `packages/{codegen,ai}` reserved.
-`go/` and `fixtures/` at root. Older `src/...` paths below read through
-that mapping.
+streamBindings, jcs, and the fold algebra — algebra, fold, foldLaws,
+foldCache, foldBindings, foldArbitrary), the narrow-writ client
+scaffold in `packages/client/`, HTTP demo in `packages/server/`;
+`packages/{codegen,ai}` reserved. `go/`, `fixtures/`, `proto/` (the
+tracer bullet, own gates) and `verify/` (model gates) at root. Older
+`src/...` paths below read through that mapping.
 
-Every wall below is a passing test, not an intention (`bun test` 33 pass
-+ 1 wasm skip without `dist/`, `tsc` clean, Go gate green):
+Every wall below is a passing test, not an intention (root `bun test`:
+113 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 13
+files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
+in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 
 - **Value wall**: `src/stream.ts` ≡ `go/stream` byte-identically over the
   frozen fixture (chain heads, merge facts, fold digests, compaction, forks,
@@ -50,6 +56,46 @@ Every wall below is a passing test, not an intention (`bun test` 33 pass
   `bun run build:wasm` produces gitignored `dist/`; the test auto-skips
   without it. Module is ~3.7MB (fine in Bun; browser story wants
   TinyGo/wasm-opt later).
+- **Fold algebra (ticket 014, 2026-08-13)**: `packages/core/src/`
+  {`algebra`, `fold`, `foldLaws`, `foldCache`, `foldBindings`} —
+  algebras, steps and homomorphisms are DECLARED data, so a fold's
+  identity is the digest over (algebra declaration, step digest) and a
+  result keyed by (fold digest, head) is an immutable truth with no
+  invalidation logic. Anonymous algebras and steps run and refuse
+  identity. The deliverable is the wall FACTORY: every declared fold
+  generates its own associativity, identity, third-homomorphism split,
+  banana-split (`zip`) and homomorphism-commutation (`map`) suite —
+  ADR-0010's first embodiment. Single-implementation pinned fixtures
+  until the Go twin exists: ADR-0001 forbids claiming a cross-language
+  wall before a second implementation.
+- **JCS differential (2026-08-13)**: `packages/core/src/jcs.ts` ≡
+  `go/canonical` under bidirectional fuzz — persistent probes on both
+  sides, so every generated candidate and every fast-check shrink runs
+  BOTH real implementations, never a port of one. Refereed by an
+  INDEPENDENT oracle: RFC 8785 Appendix B's 26 rows, committed with
+  provenance in `fixtures/jcs-rfc8785.json`. Constrained decode became
+  a public seam (one value, valid UTF-8 and scalars, names unique after
+  unescaping, finite binary64, 256-container depth): decode acceptance
+  is part of identity.
+- **Tracer daemon (`proto/`, 2026-08-13)**: laws W1–W10 witnessed
+  black-box over NATS subjects — no asserted identity, canonical-or-
+  refused, convergence by content address, create-before-publish,
+  verify-on-read, replies that teach, refusals as data, the three-verb
+  writ, scheme-tagged facts. Plus the stateless concierge (fill /
+  unfill / frontier, laws C1–C5) and MCP tools derived from
+  `contract.describe` at startup, so no hand-written tool list can
+  drift. Its graduation map is in `proto/AGENTS.md`; the code has not
+  moved yet.
+- **Catalog + ingress model gate (`verify/catalog/`, 2026-08-13)**: the
+  first claim here that is a machine-checked theorem rather than a
+  digest equality. R2 TLC clean to closure at the gate caps
+  (12,707,989 distinct states, depth 24); R3 Apalache inductive
+  invariant at fixed domains with unbounded trace length. Four TLC
+  negative controls and two Apalache controls, each refuted on exactly
+  the law it dropped, traces committed. The insight the model
+  surfaced: presence is monotone, which is what licenses lock-free
+  ingress, while absence is anti-monotone, which is why create needs
+  the CAS.
 
 Division of labor, on purpose: **Schema** is the typed, annotated, public
 face; **Effect Stream** is orchestration (and the program value IS the DAG —
@@ -154,7 +200,12 @@ canonical bytes.
    identifier; anonymous checks and identifier-less declarations
    refuse. Align with Effect's semantics, never their bytes. Interim
    catalog identity: digest over submitted canonical bytes.
-5. **AGENT FIRST** (ratified constraint): the primary producer and
+5. **The lawful surface** (ADR-0010): a public function enters a
+   library only with the law that licenses it — a universal property's
+   uniqueness clause, or a proved equation whose two sides it collapses
+   — and ships with the generated law tests. Convenience with no
+   licensing law is refused from the public surface.
+6. **AGENT FIRST** (ratified constraint): the primary producer and
    consumer of the system is an agent, and the primary interface is the
    daemon's request surface — agents create types, resolve digests, and
    query lineage as tool calls. Human views are projections of the
@@ -196,25 +247,44 @@ statement and a divergence probe.
 
 ## Backlog, ordered (tight: the ratified path and its obligations, only)
 
-1. The wrapper prototype (map ticket 003, unblocked): the Go daemon
-   (embedded NATS + journal + effector + catalog) behind the narrow-writ
-   interface, with the TS authoring adapter as its first consumer.
-2. The foldlab-owned canonical schema encoding (map ticket 004, critical
-   path): the daemon must recompute schema digests from bytes alone.
-3. The workflow abstraction (map ticket 008) — the one remaining
+Landed since this list was last written: ticket 003's tracer bullet
+(both bullets, in `proto/`), ticket 009's first climb (R2 and R3, plus
+the hardening tickets 010–013 it cut), ticket 014's fold algebra, and
+the JCS differential lane. Tickets 015 and 016 were cut; both gate on
+004.
+
+1. The foldlab-owned canonical schema encoding (map ticket 004,
+   critical path): the daemon must recompute schema digests from bytes
+   alone. Interim identity stays `bytes-sha256-v1` over submitted
+   canonical bytes. Everything downstream waits here — the certificate
+   (005), the grammar foundry (015), the ontology explorer (016).
+2. The workflow abstraction (map ticket 008) — the one remaining
    ungrilled decision on the path: program as digestable catalog data;
    run as durable journaled fact.
-4. Derived-node conformance test on embedded NATS: the collector's first
+3. Catalog R4 lockstep against protod (map ticket 010): the
+   model-to-binary bridge. `Catalog.tla`'s stated abstractions (the
+   resolve index as a pure fold, digests as the identity function) are
+   exactly where implementation drift hides, and R4 is the only thing
+   that closes them.
+4. Graduate `proto/` along its own no-redesign map (`proto/AGENTS.md`):
+   go → `go/daemon` + `go/cmd`, ts/client → `packages/client`,
+   ts/author → `packages/core`, ts/codegen → `packages/codegen`,
+   ts/mcp → `packages/ai`, wire fixtures → `fixtures/`. Until this
+   runs, `go/daemon/` is a contract with no code beneath it.
+5. The hardening program (map tickets 011, 012, 013): executable
+   substrate assumptions with an `Acquire` that refuses out-of-envelope
+   configurations; the journal's own model gate, composed into the
+   catalog model as a refinement; the effector's proof artifacts ported
+   out of untracked heritage into `verify/effector/` — the one place
+   VERIFICATION.md asserts a claim without shipping its evidence.
+6. Derived-node conformance test on embedded NATS: the collector's first
    real backing is NATS KV through the Go twin — anchors as
    revision-CAS'd KV entries. (KV `Watch` live plane is DONE:
    `go/effector/watch.go` + WL1–WL4.)
-5. The verification ladder (map ticket 009): first climb is the
-   catalog+ingress model gate (TLA+ spec → TLC → Apalache → lockstep
-   against the tracer daemon), following the effector's proven
-   pipeline; concierge algebra properties land inside bullet two.
 
 Anything not listed here (lowering, codecs, entity census, effectful
-getters) waits behind the map's gates.
+getters, the fold algebra's consumer-gated `range`) waits behind the
+map's gates.
 
 ## Go notes for the operator (from conversation)
 
