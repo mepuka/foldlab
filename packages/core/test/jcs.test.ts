@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { encodeFoldState } from "../src/algebra.ts"
-import { canonicalizeJson, decodeJson } from "../src/jcs.ts"
+import { canonicalizeJson, decodeJson, encodeJsonValue, type JsonValue } from "../src/jcs.ts"
 
 const utf8 = (value: string): Uint8Array => new TextEncoder().encode(value)
 const rfc = await Bun.file(new URL("../../../fixtures/jcs-rfc8785.json", import.meta.url)).json() as {
@@ -56,5 +56,36 @@ describe("RFC 8785 canonical JSON", () => {
 
   test("constrained decode refuses invalid UTF-8", () => {
     expect(decodeJson(new Uint8Array([0x22, 0xff, 0x22])).ok).toBe(false)
+  })
+})
+
+describe("non-plain objects are outside the canonical domain (J1)", () => {
+  test.each([
+    [new Date(0), "Date"],
+    [new Map([["a", 1]]), "Map"],
+    [new Set([1, 2]), "Set"],
+    [/re/, "RegExp"],
+  ])("encodeJsonValue refuses a %s smuggled past the type", (value) => {
+    const result = encodeJsonValue(value as unknown as JsonValue)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.refusal._tag).toBe("NonCanonicalValue")
+  })
+
+  test("a prototype-carrying instance does not collide with an empty object", () => {
+    class Widget {
+      constructor(readonly id = 7) {}
+    }
+    expect(encodeJsonValue({})).toEqual({ ok: true, bytes: "{}" })
+    // Before the fix Date/Map/instances all serialize as {}, colliding the
+    // "unique equality witness"; the refusal keeps them out of the domain.
+    expect(encodeJsonValue(new Widget() as unknown as JsonValue).ok).toBe(false)
+    expect(encodeJsonValue(new Date(0) as unknown as JsonValue).ok).toBe(false)
+  })
+
+  test("plain and null-prototype objects remain in the domain", () => {
+    expect(encodeJsonValue({ a: 1 })).toEqual({ ok: true, bytes: '{"a":1}' })
+    // The constrained decoder mints null-prototype objects; they must still encode.
+    const nullProto = Object.assign(Object.create(null) as Record<string, JsonValue>, { a: 1 })
+    expect(encodeJsonValue(nullProto)).toEqual({ ok: true, bytes: '{"a":1}' })
   })
 })
