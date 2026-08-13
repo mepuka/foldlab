@@ -39,18 +39,27 @@ if (
   process.exit(2)
 }
 
-try {
-  entryDigest({ seq: 0, prev: GENESIS, payload: vector.tsLoneSurrogate })
+const loneSurrogate = entryDigest({ seq: 0, prev: GENESIS, payload: vector.tsLoneSurrogate })
+if (loneSurrogate.ok) {
   console.error("CG1 gate: proto/ts entryDigest accepted a lone surrogate")
   process.exit(1)
-} catch (error) {
-  console.log(`ts-lone-surrogate-refused=true error=${String(error)}`)
 }
+if (loneSurrogate.refusal._tag !== "InvalidUnicode" || loneSurrogate.refusal.field !== "payload") {
+  console.error("CG1 gate: proto/ts entryDigest did not return the typed Unicode refusal")
+  process.exit(2)
+}
+console.log(
+  `ts-lone-surrogate-refused=true tag=${loneSurrogate.refusal._tag} field=${loneSurrogate.refusal.field} reason=${loneSurrogate.refusal.reason}`,
+)
 
-const replacementDigest = entryDigest({
+const replacement = entryDigest({
   seq: 0,
   prev: GENESIS,
   payload: vector.tsReplacementScalar,
 })
-console.log(`ts-replacement-scalar-digest=${replacementDigest}`)
+if (!replacement.ok) {
+  console.error(`CG1 gate: proto/ts refused the replacement scalar: ${replacement.refusal.reason}`)
+  process.exit(2)
+}
+console.log(`ts-replacement-scalar-digest=${replacement.digest}`)
 console.log("CG1 GATE PASS: both identity implementations refuse outside their Unicode domain")

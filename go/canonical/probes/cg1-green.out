@@ -6,7 +6,7 @@ Output:
 
   go-invalid-ff-refused=true field=payload
   go-invalid-fe-refused=true field=payload
-  ts-lone-surrogate-refused=true error=InvalidUnicodeError: payload is not valid Unicode
+  ts-lone-surrogate-refused=true tag=InvalidUnicode field=payload reason=payload is not valid Unicode
   ts-replacement-scalar-digest=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
   CG1 GATE PASS: both identity implementations refuse outside their Unicode domain
 

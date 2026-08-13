@@ -20,7 +20,7 @@ bun run go/canonical/probes/cg1.ts
 ```text
 go-invalid-ff-refused=true field=payload
 go-invalid-fe-refused=true field=payload
-ts-lone-surrogate-refused=true error=InvalidUnicodeError: payload is not valid Unicode
+ts-lone-surrogate-refused=true tag=InvalidUnicode field=payload reason=payload is not valid Unicode
 ts-replacement-scalar-digest=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
 CG1 GATE PASS: both identity implementations refuse outside their Unicode domain
 ```
@@ -46,9 +46,10 @@ scoped suites as well.
   scope: both runtime commands, crashstorm, transfleet, six gauntlet files, and
   all four `proto/go` callers. The post-rebase call graph compiles and tests as
   one API; no old one-result or two-result call remains.
-- TypeScript `entryDigest` rejects lone high/low surrogates in `payload` and
-  `prev` with `InvalidUnicodeError`. `foldChain` converts that exception into
-  its established refusal-as-data result.
+- TypeScript `entryDigest` returns a discriminated `EntryDigestResult` and
+  represents lone high/low surrogates in `payload` or `prev` as an
+  `InvalidUnicode` refusal value. `foldChain` propagates its reason without an
+  exception crossing the exported identity seam.
 - Existing valid-domain fixtures and digests remain byte-identical. No fixture
   was regenerated.
 
@@ -82,6 +83,13 @@ gap refusal as `*stream.MergeGap`, matching TypeScript's established
 Go retains its allocation-free dense lookup path. The established
 `fixtures/stream-wall.json` merge corpus is byte-identical and was not
 regenerated.
+
+The fixed vector is supplemented by a deterministic fast-check law (seed
+`0x6d31cafe`, 500 runs). It generates the source name, unique sparse sequence
+coordinates, source order, duplicate source position, insertion position, and
+payload. Every duplicate case fails without a merged value and names the exact
+first/duplicate indexes; removing the duplicate preserves unique sparse replay
+in reverse pick order.
 
 ## Non-claims
 

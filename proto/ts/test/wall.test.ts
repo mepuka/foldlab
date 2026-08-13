@@ -29,9 +29,10 @@ describe("chain fixtures re-derive", async () => {
     test(vector.name, () => {
       let prev = GENESIS
       vector.payloads.forEach((payload, seq) => {
-        const digest = entryDigest({ seq, prev, payload })
-        expect(digest).toBe(vector.entryDigests[seq]!)
-        prev = digest
+        const result = entryDigest({ seq, prev, payload })
+        expect(result).toEqual({ ok: true, digest: vector.entryDigests[seq]! })
+        if (!result.ok) throw new Error(result.refusal.reason)
+        prev = result.digest
       })
       expect(prev).toBe(vector.head)
 
@@ -76,9 +77,11 @@ describe("concierge request/reply fixtures re-derive", async () => {
 
 describe("the fold refuses what it cannot verify", () => {
   test("a tampered payload is caught by the chain fold", () => {
+    const first = entryDigest({ seq: 0, prev: GENESIS, payload: "a" })
+    if (!first.ok) throw new Error(first.refusal.reason)
     const honest = [
       { seq: 0, prev: GENESIS, payload: "a" },
-      { seq: 1, prev: entryDigest({ seq: 0, prev: GENESIS, payload: "a" }), payload: "b" },
+      { seq: 1, prev: first.digest, payload: "b" },
     ]
     expect(foldChain(honest).ok).toBe(true)
     const tampered = [{ ...honest[0]!, payload: "A" }, honest[1]!]
