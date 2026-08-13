@@ -118,6 +118,11 @@ export type StepSpec =
   }
   | {
     readonly v: "foldlab.step.v1"
+    readonly op: "structureMatches"
+    readonly pattern: FoldState
+  }
+  | {
+    readonly v: "foldlab.step.v1"
     readonly op: "product"
     readonly of: ReadonlyArray<StepSpec>
   }
@@ -679,6 +684,185 @@ const readPayloadNumber = (event: StreamEvent, path: ReadonlyArray<string>): num
     : null
 }
 
+const ownKeysAre = (value: Record<string, unknown>, expected: ReadonlyArray<string>): boolean => {
+  const actual = Object.keys(value).sort(byCodeUnit)
+  const wanted = [...expected].sort(byCodeUnit)
+  return actual.length === wanted.length && actual.every((key, index) => key === wanted[index])
+}
+
+const asObject = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined
+
+const canonicalEqual = (left: unknown, right: unknown): boolean => {
+  const leftEncoded = encodeFoldState(left as FoldState)
+  const rightEncoded = encodeFoldState(right as FoldState)
+  return leftEncoded.ok && rightEncoded.ok && leftEncoded.bytes === rightEncoded.bytes
+}
+
+const isJsonScalar = (value: unknown): boolean =>
+  value === null || typeof value === "string" || typeof value === "boolean" ||
+  (typeof value === "number" && Number.isFinite(value) && !Object.is(value, -0))
+
+/** Validate the decided side of a wildcard match. Catalog payloads have already
+ * crossed the daemon's certifier, but the declared step is total over arbitrary
+ * stream bytes, so a hole must not turn malformed input into a match. */
+const isStructure = (value: unknown, allowHoles = false): boolean => {
+  const node = asObject(value)
+  if (node === undefined || typeof node["k"] !== "string") return false
+  switch (node["k"]) {
+    case "hole":
+      return allowHoles && ownKeysAre(node, ["k"])
+    case "string":
+    case "bool":
+    case "int":
+    case "float":
+    case "null":
+    case "opaque":
+      return ownKeysAre(node, ["k"])
+    case "literal":
+      return ownKeysAre(node, ["k", "value"]) && isJsonScalar(node["value"])
+    case "list":
+      return ownKeysAre(node, ["k", "of"]) && isStructure(node["of"], allowHoles)
+    case "struct": {
+      if (!(ownKeysAre(node, ["k", "fields"]) || ownKeysAre(node, ["k", "fields", "optional"]))) {
+        return false
+      }
+      const fields = asObject(node["fields"])
+      if (fields === undefined || !Object.values(fields).every((field) =>
+        isStructure(field, allowHoles))) return false
+      if (!("optional" in node)) return true
+      const optional = node["optional"]
+      return Array.isArray(optional) && optional.every((name) =>
+        typeof name === "string" && Object.prototype.hasOwnProperty.call(fields, name)) &&
+        new Set(optional).size === optional.length &&
+        optional.every((name, index) => index === 0 || byCodeUnit(optional[index - 1], name) < 0)
+    }
+    case "union":
+      return ownKeysAre(node, ["k", "of"]) && Array.isArray(node["of"]) &&
+        node["of"].length > 0 && node["of"].every((member) => isStructure(member, allowHoles))
+    case "brand":
+      return ownKeysAre(node, ["k", "name", "of"]) &&
+        typeof node["name"] === "string" && node["name"].length > 0 &&
+        isStructure(node["of"], allowHoles)
+    case "check": {
+      if (!ownKeysAre(node, ["k", "base", "check"]) ||
+        !isStructure(node["base"], allowHoles)) return false
+      const check = asObject(node["check"])
+      return check !== undefined && ownKeysAre(check, ["name", "args"]) &&
+        typeof check["name"] === "string" && check["name"].length > 0 &&
+        asObject(check["args"]) !== undefined
+    }
+    case "ref":
+      return ownKeysAre(node, ["k", "digest"]) && typeof node["digest"] === "string" &&
+        /^[0-9a-f]{64}$/.test(node["digest"])
+    default:
+      return false
+  }
+}
+
+const matchUnordered = (
+  patterns: ReadonlyArray<unknown>,
+  candidates: ReadonlyArray<unknown>,
+): boolean => {
+  if (patterns.length !== candidates.length) return false
+  const visit = (index: number, remaining: ReadonlyArray<unknown>): boolean => {
+    if (index === patterns.length) return remaining.length === 0
+    const pattern = patterns[index]
+    for (let candidateIndex = 0; candidateIndex < remaining.length; candidateIndex++) {
+      if (!structureMatches(pattern, remaining[candidateIndex])) continue
+      const rest = [...remaining.slice(0, candidateIndex), ...remaining.slice(candidateIndex + 1)]
+      if (visit(index + 1, rest)) return true
+    }
+    return false
+  }
+  // Match decided members before holes so a wildcard cannot consume the only
+  // candidate available to a more specific member.
+  return visit(0, [...candidates])
+}
+
+/** The query language is the grammar itself: a hole is the sole wildcard and
+ * every decided node co-walks the corresponding candidate node. */
+function structureMatches(pattern: unknown, candidate: unknown): boolean {
+  const patternNode = asObject(pattern)
+  const candidateNode = asObject(candidate)
+  if (patternNode === undefined || candidateNode === undefined) return false
+  if (patternNode["k"] === "hole") return ownKeysAre(patternNode, ["k"]) && isStructure(candidate)
+  if (patternNode["k"] !== candidateNode["k"] || typeof patternNode["k"] !== "string") return false
+
+  switch (patternNode["k"]) {
+    case "string":
+    case "bool":
+    case "int":
+    case "float":
+    case "null":
+    case "opaque":
+      return ownKeysAre(patternNode, ["k"]) && ownKeysAre(candidateNode, ["k"])
+    case "literal":
+      return ownKeysAre(patternNode, ["k", "value"]) &&
+        ownKeysAre(candidateNode, ["k", "value"]) &&
+        canonicalEqual(patternNode["value"], candidateNode["value"])
+    case "list":
+      return ownKeysAre(patternNode, ["k", "of"]) && ownKeysAre(candidateNode, ["k", "of"]) &&
+        structureMatches(patternNode["of"], candidateNode["of"])
+    case "struct": {
+      const patternFields = asObject(patternNode["fields"])
+      const candidateFields = asObject(candidateNode["fields"])
+      if (patternFields === undefined || candidateFields === undefined) return false
+      const patternNames = Object.keys(patternFields).sort(byCodeUnit)
+      const candidateNames = Object.keys(candidateFields).sort(byCodeUnit)
+      if (patternNames.length !== candidateNames.length ||
+        !patternNames.every((name, index) => name === candidateNames[index])) return false
+      const patternHasOptional = "optional" in patternNode
+      if (patternHasOptional !== ("optional" in candidateNode) ||
+        (patternHasOptional && !canonicalEqual(patternNode["optional"], candidateNode["optional"]))) {
+        return false
+      }
+      return patternNames.every((name) => structureMatches(patternFields[name], candidateFields[name]))
+    }
+    case "union": {
+      const patterns = patternNode["of"]
+      const candidates = candidateNode["of"]
+      if (!Array.isArray(patterns) || !Array.isArray(candidates)) return false
+      const decided = patterns.filter((member) => asObject(member)?.["k"] !== "hole")
+      const holes = patterns.filter((member) => asObject(member)?.["k"] === "hole")
+      return matchUnordered([...decided, ...holes], candidates)
+    }
+    case "brand":
+      return patternNode["name"] === candidateNode["name"] &&
+        ownKeysAre(patternNode, ["k", "name", "of"]) &&
+        ownKeysAre(candidateNode, ["k", "name", "of"]) &&
+        structureMatches(patternNode["of"], candidateNode["of"])
+    case "check":
+      return ownKeysAre(patternNode, ["k", "base", "check"]) &&
+        ownKeysAre(candidateNode, ["k", "base", "check"]) &&
+        canonicalEqual(patternNode["check"], candidateNode["check"]) &&
+        structureMatches(patternNode["base"], candidateNode["base"])
+    case "ref":
+      return ownKeysAre(patternNode, ["k", "digest"]) &&
+        ownKeysAre(candidateNode, ["k", "digest"]) &&
+        patternNode["digest"] === candidateNode["digest"]
+    default:
+      return false
+  }
+}
+
+const readCatalogMatch = (event: StreamEvent, pattern: FoldState): ReadonlyArray<string> => {
+  let decoded: unknown
+  try {
+    decoded = JSON.parse(decoder.decode(event.payload))
+  } catch {
+    return []
+  }
+  const fact = asObject(decoded)
+  if (fact === undefined || typeof fact["digest"] !== "string" ||
+    !/^[0-9a-f]{64}$/.test(fact["digest"]) || !structureMatches(pattern, fact["structure"])) {
+    return []
+  }
+  return [fact["digest"]]
+}
+
 /**
  * The declared readings of a stream event, each total over every event the
  * declared event shape can produce: a constant, the payload's byte length, the
@@ -717,6 +901,35 @@ export const steps = {
     return declaredStep(
       { v: "foldlab.step.v1", op: "payloadNumber", path: fields },
       (event) => readPayloadNumber(event, fields),
+    )
+  },
+  /**
+   * Reads one certified catalog-fact payload into either its singleton digest
+   * set or the empty set. The pattern is canonical declaration data; holes are
+   * wildcards and all decided nodes co-walk the flb.type.v0 structure. Combined
+   * with the declared `setUnion` join, arrival order and duplicate delivery are
+   * licensed by generated semilattice laws rather than by this function.
+   */
+  structureMatches: (pattern: FoldState): Step<StreamEvent, ReadonlyArray<string>> => {
+    const encoded = encodeFoldState(pattern)
+    if (!encoded.ok) {
+      return {
+        apply: () => [],
+        eventGenerator: streamEvents,
+        identityIssue: "structureMatches pattern is outside the RFC 8785 domain",
+      }
+    }
+    const snapshot = JSON.parse(encoded.bytes) as FoldState
+    if (!isStructure(snapshot, true)) {
+      return {
+        apply: () => [],
+        eventGenerator: streamEvents,
+        identityIssue: "structureMatches pattern is not a well-formed flb.type.v0 partial",
+      }
+    }
+    return declaredStep(
+      { v: "foldlab.step.v1", op: "structureMatches", pattern: snapshot },
+      (event) => readCatalogMatch(event, snapshot),
     )
   },
 } as const

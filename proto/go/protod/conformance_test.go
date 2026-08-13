@@ -312,8 +312,10 @@ func TestConformance(t *testing.T) {
 
 	t.Run("W7 facts teach: every ok reply carries next hints", func(t *testing.T) {
 		for subject, body := range map[string]any{
-			"flb.req.type.create":  map[string]any{"structure": sample},
-			"flb.req.journal.read": map[string]any{"journal": "catalog"},
+			"flb.req.type.create":   map[string]any{"structure": sample},
+			"flb.req.type.get":      map[string]any{"digest": sampleDigest},
+			"flb.req.catalog.query": map[string]any{"pattern": map[string]any{"k": "hole"}},
+			"flb.req.journal.read":  map[string]any{"journal": "catalog"},
 		} {
 			r := h.request(subject, body)
 			if r["ok"] != true {
@@ -337,8 +339,8 @@ func TestConformance(t *testing.T) {
 		}
 		contract := r["contract"].(map[string]any)
 		requests := contract["requests"].([]any)
-		if len(requests) != 5 {
-			t.Fatalf("expected 5 request kinds, got %d", len(requests))
+		if len(requests) != 7 {
+			t.Fatalf("expected 7 request kinds, got %d", len(requests))
 		}
 		names := map[string]bool{}
 		for _, raw := range requests {
@@ -354,6 +356,9 @@ func TestConformance(t *testing.T) {
 		}
 		if !names["type_fill"] || !names["type_unfill"] {
 			t.Fatalf("contract omits concierge request kinds: %v", names)
+		}
+		if !names["type_get"] || !names["catalog_query"] {
+			t.Fatalf("contract omits catalog read request kinds: %v", names)
 		}
 	})
 

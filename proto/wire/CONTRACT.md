@@ -12,8 +12,10 @@ the daemon is a bug in one of them.
 | surface | subject | pattern |
 |---|---|---|
 | create a type | `flb.req.type.create` | request/reply |
+| get one type certificate | `flb.req.type.get` | request/reply |
 | fill one type hole | `flb.req.type.fill` | request/reply |
 | unfill one type node | `flb.req.type.unfill` | request/reply |
+| query the catalog by structure | `flb.req.catalog.query` | request/reply |
 | read a journal | `flb.req.journal.read` | request/reply |
 | describe the contract | `flb.req.contract.describe` | request/reply |
 | publish a frame | `flb.ing.<journal>` | request/reply (the reply admits or refuses) |
@@ -43,6 +45,36 @@ The daemon canonicalizes the structure itself (RFC 8785) and derives
 the digest from those bytes (W1, W2). Same bytes converge:
 `created:false` with the existing fact, never an error (W3). An
 asserted digest the daemon cannot re-derive refuses with both values.
+
+### type.get / catalog.query
+
+```json
+{"digest":"<hex64>"}
+{"pattern":<flb.type.partial.v0>}
+```
+
+`type.get` returns one certificate row, or typed `unknown-identity` absence:
+
+```json
+{"ok":true,"digest":hex64,"scheme":"bytes-sha256-v1",
+ "structure":<flb.type.v0>,"catalogSeq":int,"catalogHead":hex64,"next":[...]}
+```
+
+`catalog.query` declares the fold
+`setUnion(structureMatches(pattern))`. A hole is a wildcard; every decided
+node co-walks the corresponding grammar node, including unordered union
+members. The result is sorted by digest and cached at the immutable key
+`(queryDigest, overCatalogHead)`:
+
+```json
+{"ok":true,"results":[<certificate row>...],
+ "overCatalogHead":hex64,"queryDigest":hex64,"next":[...]}
+```
+
+Every row re-certifies by deriving `digest` from `structure`; completeness is
+checked by folding the catalog journal to `overCatalogHead`. These are new
+REQUEST kinds, not new writ verbs. The concierge's lexicographic-16 `refs`
+remains unchanged until its separately grilled consumer-wiring task.
 
 ### type.fill / type.unfill
 
@@ -194,3 +226,6 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
+- `catalog-query.json` — one Go-generated query result with its catalog
+  entries, query digest, prefix head, and certificate rows; both runtimes
+  independently re-derive U2 soundness and completeness.

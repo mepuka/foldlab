@@ -4,23 +4,28 @@
 // local failures (unreachable, timeout, malformed reply) become local
 // refusal values (W8). Nothing here ever retries silently.
 import { connect, type NatsConnection } from "@nats-io/transport-node"
-import { foldChain, GENESIS, type ChainEntry, type Json } from "./jcs.ts"
+import { foldChain, GENESIS, SCHEME, structureDigest, type ChainEntry, type Json } from "./jcs.ts"
 import {
   AdmitReply,
+  CatalogQueryReply,
   ConciergeReply,
   CreateReply,
   DescribeReply,
   INGRESS_PREFIX,
   ReadReply,
+  SUBJECT_CATALOG_QUERY,
   SUBJECT_CONTRACT_DESCRIBE,
   SUBJECT_JOURNAL_READ,
   SUBJECT_TYPE_CREATE,
   SUBJECT_TYPE_FILL,
+  SUBJECT_TYPE_GET,
   SUBJECT_TYPE_UNFILL,
+  TypeGetReply,
   decodeReply,
   localRefusal,
   type Refusal,
   type Reply,
+  type CatalogRow,
 } from "./wire.ts"
 import { Schema } from "effect"
 
@@ -37,6 +42,32 @@ export interface VerifiedRead {
 }
 
 const REQUEST_TIMEOUT_MS = 15_000
+
+const certificateRefusal = (row: CatalogRow): Refusal | undefined => {
+  if (row.scheme !== SCHEME) {
+    return localRefusal("verify-failed", "U2: a catalog row uses an identity scheme this client cannot re-derive", {
+      path: ["results", row.digest, "scheme"],
+      got: row.scheme,
+      expected: SCHEME,
+    })
+  }
+  let derived: string
+  try {
+    derived = structureDigest(row.structure as unknown as Json)
+  } catch (error) {
+    return localRefusal("verify-failed", "U2: a catalog row's structure is outside the canonical identity domain", {
+      path: ["results", row.digest, "structure"],
+      got: String(error),
+    })
+  }
+  return derived === row.digest
+    ? undefined
+    : localRefusal("verify-failed", "U2: search rows are certificates — the structure must re-derive its digest", {
+      path: ["results", row.digest, "digest"],
+      got: row.digest,
+      expected: derived,
+    })
+}
 
 export class ProtoClient {
   private constructor(private readonly connection: NatsConnection) {}
@@ -153,6 +184,23 @@ export class ProtoClient {
     return this.request(SUBJECT_TYPE_CREATE, body, CreateReply)
   }
 
+  async getType(digest: string): Promise<Reply<TypeGetReply>> {
+    const reply = await this.request(SUBJECT_TYPE_GET, { digest }, TypeGetReply)
+    if (!reply.ok) return reply
+    const refusal = certificateRefusal(reply.fact)
+    return refusal === undefined ? reply : { ok: false, refusal }
+  }
+
+  async queryCatalog(pattern: Json): Promise<Reply<CatalogQueryReply>> {
+    const reply = await this.request(SUBJECT_CATALOG_QUERY, { pattern }, CatalogQueryReply)
+    if (!reply.ok) return reply
+    for (const row of reply.fact.results) {
+      const refusal = certificateRefusal(row)
+      if (refusal !== undefined) return { ok: false, refusal }
+    }
+    return reply
+  }
+
   async fillType(
     partial: Json,
     path: ReadonlyArray<string>,
@@ -179,10 +227,23 @@ export class ProtoClient {
 
 export {
   SUBJECT_TYPE_CREATE,
+  SUBJECT_TYPE_GET,
   SUBJECT_TYPE_FILL,
   SUBJECT_TYPE_UNFILL,
+  SUBJECT_CATALOG_QUERY,
   SUBJECT_JOURNAL_READ,
   SUBJECT_CONTRACT_DESCRIBE,
   INGRESS_PREFIX,
 }
-export type { Refusal, Reply, AdmitReply, ConciergeReply, CreateReply, DescribeReply, ReadReply }
+export type {
+  Refusal,
+  Reply,
+  AdmitReply,
+  CatalogQueryReply,
+  CatalogRow,
+  ConciergeReply,
+  CreateReply,
+  DescribeReply,
+  ReadReply,
+  TypeGetReply,
+}

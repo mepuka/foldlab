@@ -31,10 +31,12 @@ test("the smoke thread reads like an agent session", async () => {
   if (!described.ok) throw new Error("describe refused")
   const contract = described.fact.contract
   expect(contract.requests.map((r) => r.name).sort()).toEqual([
+    "catalog_query",
     "contract_describe",
     "journal_read",
     "type_create",
     "type_fill",
+    "type_get",
     "type_unfill",
   ])
   expect(contract.ingress.note).toContain("NOT checked")

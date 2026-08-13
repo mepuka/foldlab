@@ -9,6 +9,7 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 
+	"foldlab/canonical"
 	"foldlab/journal"
 )
 
@@ -26,12 +27,15 @@ type catalogFact struct {
 	Structure any    `json:"structure"`
 	Submitter string `json:"submitter"`
 	seq       int64
+	head      string
 }
 
 type catalog struct {
 	mu       sync.Mutex
 	journal  *journal.Journal
 	byDigest map[string]catalogFact
+	facts    []catalogFact
+	queries  map[string][]catalogRow
 }
 
 func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) {
@@ -39,7 +43,12 @@ func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) 
 	if err != nil {
 		return nil, err
 	}
-	c := &catalog{journal: opened, byDigest: map[string]catalogFact{}}
+	c := &catalog{
+		journal:  opened,
+		byDigest: map[string]catalogFact{},
+		facts:    []catalogFact{},
+		queries:  map[string][]catalogRow{},
+	}
 	entries, _, err := opened.Read(ctx, journal.Cursor{Seq: -1, Head: genesis}, 0)
 	if err != nil {
 		return nil, fmt.Errorf("rebuild catalog index: %w", err)
@@ -49,8 +58,14 @@ func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) 
 		if err := json.Unmarshal([]byte(entry.Payload), &fact); err != nil {
 			return nil, fmt.Errorf("catalog entry %d is not a fact: %w", entry.Seq, err)
 		}
+		head, err := canonical.EntryDigest(entry)
+		if err != nil {
+			return nil, fmt.Errorf("catalog entry %d has no canonical head: %w", entry.Seq, err)
+		}
 		fact.seq = entry.Seq
+		fact.head = head
 		c.byDigest[fact.Digest] = fact
+		c.facts = append(c.facts, fact)
 	}
 	return c, nil
 }
@@ -163,7 +178,12 @@ func (c *catalog) create(
 		return catalogFact{}, false, nil, err
 	}
 	fact.seq = entry.Seq
+	fact.head, err = canonical.EntryDigest(entry)
+	if err != nil {
+		return catalogFact{}, false, nil, err
+	}
 	c.byDigest[fact.Digest] = fact
+	c.facts = append(c.facts, fact)
 	return fact, true, nil, nil
 }
 

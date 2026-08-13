@@ -988,3 +988,82 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 34 — catalog query fold (2026-08-14)
+
+### D??. The read kinds are `type.get` and `catalog.query`, both ordinary REQUESTs
+
+Decided: the two subjects are `flb.req.type.get` and
+`flb.req.catalog.query`; the query body is the shape-only first slice
+`{"pattern": <partial>}` and its reply names `queryDigest` and
+`overCatalogHead`. Both client conveniences issue exactly one REQUEST and add
+no verb or authority protocol, so the three-verb writ remains unchanged.
+Alternatives: call the query `type.query` (the fold is over the catalog, not
+one type); ship the design dossier's four-mode `by` union now (provenance and
+attribute modes are gated and unbuilt); add GET as a fourth writ verb. Why:
+the noun names the journal being folded, the narrow body makes the shipped
+claim exact, and W9 already says a missing capability is a missing daemon
+request kind. **Load-bearing? yes** — callers and the derived MCP surface
+commit to these wire names and shapes.
+
+### D??. Certificate positions name the committing prefix, not the latest head
+
+Decided: every certificate row is exactly `{digest, scheme, structure,
+catalogSeq, catalogHead}`, where `catalogHead` is the entry digest at
+`catalogSeq`; the query separately carries the current `overCatalogHead`.
+`submitter` remains in the catalog journal fact but is not promoted into the
+certificate promised by this task. Alternatives: stamp every row with the
+query's latest head (loses the row's exact position); include submitter (an
+untrusted author claim outside the ticket's certificate shape); return only
+digests (search becomes hints). Why: a caller can re-derive both the row's
+identity and its exact committing prefix, while completeness remains an
+explicit property of the whole query head. **Load-bearing? yes** — this is the
+U2 certificate contract.
+
+### D??. Structure matching is an exact grammar co-walk with one wildcard
+
+Decided: `{"k":"hole"}` matches any valid decided node; all other pattern
+data matches exactly. Struct field sets and optional lists are exact, brands,
+checks, literals and refs retain their identity-bearing data, and union
+members match as an unordered one-to-one set with decided members considered
+before holes. Alternatives: make struct patterns field-subsets (a second query
+language not specified by the grammar); compare union positions (contradicts
+the grammar's unordered identity law); let holes match malformed values (the
+step would cease to be total over its declared input domain). Why: a pattern
+is a partial structure, not a parallel predicate language, and the matcher is
+the co-walk required by the ticket. **Load-bearing? yes** — it defines the
+query's meaning and therefore its digest.
+
+### D??. Query cache keys are `(query digest, catalog head)`; the claim stays beside the frozen algebra spec
+
+Decided: Go reproduces the TypeScript fold identity preimage for
+`defineFold(setUnion, structureMatches(pattern))`, folds only facts rebuilt
+from the verified catalog journal, sorts the resulting set by digest, and
+caches it under `(queryDigest, overCatalogHead)` without invalidation. The
+setUnion commutative/idempotent claim remains beside `AlgebraSpec`, where Task
+31 placed and generated-tested it. The required hypothetical-field probe
+encoded every existing algebra before and after adding `laws` inside its
+canonical spec: all 7/7 moved (`sum` 68→115 bytes, `count` 70→117, `max` and
+`min` 74→120, `any` and `all` 59→105, `setUnion` 92→138). Therefore the claim
+cannot enter `AlgebraSpec`; it stays beside the admitted declaration. The
+actual pre/post byte probe for `packages/core/fixtures/fold-pin.json` is SHA-256
+`eb12b6c0d2b7d4945549a7eb9f7d5a6e7860b87eb1d4d13448006a7d4f1a18a4`
+(Git blob `51ed240c84ad153dc7137a3a1cea3e3a194d9906`), unchanged; no frozen
+digest moved. Alternatives: cache by pattern object identity (not portable);
+invalidate one mutable key as the catalog grows; put law flags into the
+canonical algebra spec (the walled-edge probe already proves that moves frozen
+identity). Why: the key is an immutable truth, and the generated semilattice
+laws — not inspection — license order and duplicate independence.
+**Load-bearing? yes** — it is the law that makes federated query replay honest.
+
+Bounded identity audit after GH #23/#24 ratification: this task hashes only RFC
+8785 canonical bytes of foldlab-owned `foldlab.fold.v1`,
+`foldlab.algebra.v1`, and `foldlab.step.v1` declaration data, with the owned
+`flb.type.v0` partial copied into the step. It introduces no normalization,
+does not inspect an Effect/vendor AST, does not mint a structure-identity
+scheme, and performs no migration. A future normalization change remains a new
+scheme and dual-record concern outside this task; reordering behavior-equivalent
+partial union members can therefore name distinct query values today without
+moving any type identity. **Load-bearing? yes** — the query cache may rely on
+same digest meaning same computation, but this task does not claim the converse
+behavioral quotient.

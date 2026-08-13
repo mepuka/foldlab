@@ -15,8 +15,10 @@ import (
 
 const (
 	SubjectTypeCreate       = "flb.req.type.create"
+	SubjectTypeGet          = "flb.req.type.get"
 	SubjectTypeFill         = "flb.req.type.fill"
 	SubjectTypeUnfill       = "flb.req.type.unfill"
+	SubjectCatalogQuery     = "flb.req.catalog.query"
 	SubjectJournalRead      = "flb.req.journal.read"
 	SubjectContractDescribe = "flb.req.contract.describe"
 	subjectRequestWildcard  = "flb.req.>"
@@ -51,10 +53,14 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 	switch msg.Subject {
 	case SubjectTypeCreate:
 		reply = d.serveCreate(ctx, msg.Data)
+	case SubjectTypeGet:
+		reply = d.serveTypeGet(msg.Data)
 	case SubjectTypeFill:
 		reply = d.serveFill(msg.Data)
 	case SubjectTypeUnfill:
 		reply = d.serveUnfill(msg.Data)
+	case SubjectCatalogQuery:
+		reply = d.serveCatalogQuery(msg.Data)
 	case SubjectJournalRead:
 		reply = d.serveRead(ctx, msg.Data)
 	case SubjectContractDescribe:
@@ -66,8 +72,10 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 			Got:  msg.Subject,
 			Expected: []string{
 				SubjectTypeCreate,
+				SubjectTypeGet,
 				SubjectTypeFill,
 				SubjectTypeUnfill,
+				SubjectCatalogQuery,
 				SubjectJournalRead,
 				SubjectContractDescribe,
 			},

@@ -99,6 +99,16 @@ func vConciergeReply() map[string]any {
 	})
 }
 
+func vCatalogRow() map[string]any {
+	return vStruct(map[string]any{
+		"digest":      vDigest(),
+		"scheme":      vKind("string"),
+		"structure":   vBrand("flb.type.v0", vOpaque()),
+		"catalogSeq":  vKind("int"),
+		"catalogHead": vDigest(),
+	})
+}
+
 func describeReply() map[string]any {
 	return map[string]any{
 		"ok": true,
@@ -131,6 +141,24 @@ func describeReply() map[string]any {
 					}),
 				},
 				map[string]any{
+					"name":    "type_get",
+					"subject": SubjectTypeGet,
+					"note": "read one catalog certificate by digest; the row carries the committed structure " +
+						"and its exact catalog position so a caller can re-derive every claim",
+					"body": vStruct(map[string]any{
+						"digest": vDigest(),
+					}),
+					"reply": vStruct(map[string]any{
+						"ok":          vKind("bool"),
+						"digest":      vDigest(),
+						"scheme":      vKind("string"),
+						"structure":   vBrand("flb.type.v0", vOpaque()),
+						"catalogSeq":  vKind("int"),
+						"catalogHead": vDigest(),
+						"next":        vList(vNextHint()),
+					}),
+				},
+				map[string]any{
 					"name":    "type_fill",
 					"subject": SubjectTypeFill,
 					"note": "stateless guided construction: replace the hole at path with subtree, " +
@@ -142,6 +170,22 @@ func describeReply() map[string]any {
 						"subtree": vPartial(),
 					}),
 					"reply": vConciergeReply(),
+				},
+				map[string]any{
+					"name":    "catalog_query",
+					"subject": SubjectCatalogQuery,
+					"note": "fold the catalog journal with declared setUnion over structureMatches(pattern); " +
+						"holes are wildcards and every result is a re-derivable certificate",
+					"body": vStruct(map[string]any{
+						"pattern": vPartial(),
+					}),
+					"reply": vStruct(map[string]any{
+						"ok":              vKind("bool"),
+						"results":         vList(vCatalogRow()),
+						"overCatalogHead": vDigest(),
+						"queryDigest":     vDigest(),
+						"next":            vList(vNextHint()),
+					}),
 				},
 				map[string]any{
 					"name":    "type_unfill",

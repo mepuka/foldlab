@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +18,71 @@ import (
 
 	"foldlab/canonical"
 )
+
+func TestCatalogQueryFixtureRederives(t *testing.T) {
+	var fixture struct {
+		Provenance      string                 `json:"_provenance"`
+		Pattern         any                    `json:"pattern"`
+		QueryDigest     string                 `json:"queryDigest"`
+		OverCatalogHead string                 `json:"overCatalogHead"`
+		Entries         []canonical.ChainEntry `json:"entries"`
+		Results         []catalogRow           `json:"results"`
+	}
+	loadFixture(t, "catalog-query.json", &fixture)
+	if !strings.Contains(fixture.Provenance, "generated once by the Go query fixture") {
+		t.Fatalf("query fixture lacks provenance: %q", fixture.Provenance)
+	}
+
+	headAt := make(map[int64]string, len(fixture.Entries))
+	cursor := canonical.Genesis
+	got := make([]string, 0)
+	for _, entry := range fixture.Entries {
+		if entry.Prev != cursor {
+			t.Fatalf("entry %d prev = %s, want %s", entry.Seq, entry.Prev, cursor)
+		}
+		head, err := canonical.EntryDigest(entry)
+		if err != nil {
+			t.Fatalf("entry %d digest: %v", entry.Seq, err)
+		}
+		headAt[entry.Seq] = head
+		cursor = head
+		var fact catalogFact
+		if err := json.Unmarshal([]byte(entry.Payload), &fact); err != nil {
+			t.Fatalf("entry %d fact: %v", entry.Seq, err)
+		}
+		if structureMatch(fixture.Pattern, fact.Structure) {
+			got = append(got, fact.Digest)
+		}
+	}
+	if cursor != fixture.OverCatalogHead {
+		t.Fatalf("query head = %s, want %s", cursor, fixture.OverCatalogHead)
+	}
+	queryDigest, err := catalogQueryDigest(fixture.Pattern)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if queryDigest != fixture.QueryDigest {
+		t.Fatalf("query digest = %s, want %s", queryDigest, fixture.QueryDigest)
+	}
+	sort.Strings(got)
+	want := make([]string, len(fixture.Results))
+	for index, row := range fixture.Results {
+		bytes, err := canonicalBytes(row.Structure)
+		if err != nil {
+			t.Fatalf("row %d structure: %v", index, err)
+		}
+		if activeScheme.Derive(bytes) != row.Digest {
+			t.Fatalf("row %d digest does not re-derive", index)
+		}
+		if headAt[row.CatalogSeq] != row.CatalogHead {
+			t.Fatalf("row %d catalog position does not re-derive", index)
+		}
+		want[index] = row.Digest
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("query fold = %v, fixture = %v", got, want)
+	}
+}
 
 func loadFixture(t *testing.T, name string, into any) {
 	t.Helper()

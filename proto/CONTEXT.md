@@ -88,6 +88,20 @@ The generalized law that for one structure all targets derive or all
 refuse at the same path. It quantifies over future targets too, so
 adding a target means joining the property, not extending a list.
 
+**Catalog query**:
+A declared `setUnion(structureMatches(pattern))` fold over the verified catalog
+journal. The pattern is a partial structure and holes are its only wildcards;
+the query is named by its fold digest and its immutable result by
+`(query digest, catalog head)`. Rows are certificates carrying enough structure
+and catalog position for the caller to re-derive them; completeness requires
+re-folding to the named head.
+
+**Catalog certificate row**:
+`{digest, scheme, structure, catalogSeq, catalogHead}` for one committed type.
+The digest re-derives from the structure and the head re-derives at the stated
+catalog prefix. It deliberately excludes `submitter`, which remains an
+untrusted author claim in the journal fact rather than part of the certificate.
+
 **Ready line**:
 The single JSON line protod prints once its surfaces are live:
 `{"ready":true,"url":"nats://..."}`. Harnesses parse it; humans read it.

@@ -289,6 +289,60 @@ func buildConcierge() []conciergeVector {
 	return vectors
 }
 
+func requestJSON(conn *nats.Conn, subject string, body any) map[string]any {
+	message, err := conn.Request(subject, []byte(mustCanonical(body)), 20*time.Second)
+	if err != nil {
+		panic(err)
+	}
+	var reply map[string]any
+	if err := json.Unmarshal(message.Data, &reply); err != nil {
+		panic(err)
+	}
+	if reply["ok"] != true {
+		panic(fmt.Sprintf("%s refused: %s", subject, message.Data))
+	}
+	return reply
+}
+
+func buildCatalogQuery() map[string]any {
+	store, err := os.MkdirTemp("", "flb-wirefix-query-")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(store)
+
+	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store})
+	if err != nil {
+		panic(err)
+	}
+	defer daemon.Release()
+	conn, err := nats.Connect(daemon.URL())
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	for _, structure := range []any{
+		m("k", "string"),
+		m("k", "list", "of", m("k", "string")),
+		m("k", "list", "of", m("k", "bool")),
+		m("k", "brand", "name", "QueryFixtureId", "of", m("k", "string")),
+	} {
+		requestJSON(conn, "flb.req.type.create", m("structure", structure, "submitter", "queryfix"))
+	}
+	pattern := m("k", "list", "of", m("k", "hole"))
+	query := requestJSON(conn, "flb.req.catalog.query", m("pattern", pattern))
+	read := requestJSON(conn, "flb.req.journal.read", m("journal", "catalog"))
+	return m(
+		"_provenance", "generated once by the Go query fixture implementation; frozen R0 evidence, independently re-derived by TypeScript",
+		"pattern", pattern,
+		"queryDigest", query["queryDigest"],
+		"overCatalogHead", query["overCatalogHead"],
+		"entries", read["entries"],
+		"results", query["results"],
+	)
+}
+
 func writeFixture(dir, name string, value any, force bool) error {
 	path := filepath.Join(dir, name)
 	if !force {
@@ -312,12 +366,14 @@ func main() {
 	chains := buildChains(types)
 	frames := buildFrames(types)
 	concierge := buildConcierge()
+	catalogQuery := buildCatalogQuery()
 
 	for name, value := range map[string]any{
-		"types.json":     types,
-		"chains.json":    chains,
-		"frames.json":    frames,
-		"concierge.json": concierge,
+		"types.json":         types,
+		"chains.json":        chains,
+		"frames.json":        frames,
+		"concierge.json":     concierge,
+		"catalog-query.json": catalogQuery,
 	} {
 		if err := writeFixture(*dir, name, value, *force); err != nil {
 			fmt.Fprintf(os.Stderr, "wirefix: %v\n", err)

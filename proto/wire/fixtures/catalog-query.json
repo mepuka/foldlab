@@ -1,0 +1,59 @@
+{
+  "_provenance": "generated once by the Go query fixture implementation; frozen R0 evidence, independently re-derived by TypeScript",
+  "entries": [
+    {
+      "payload": "{\"digest\":\"3b67b844b3d096bc06a752cfdb4ff7ba292aa25662d6ee36e65135df797f2fc0\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"k\":\"string\"},\"submitter\":\"queryfix\"}",
+      "prev": "0000000000000000000000000000000000000000000000000000000000000000",
+      "seq": 0
+    },
+    {
+      "payload": "{\"digest\":\"7f46cbacd9bdc7d61ee5e962bb03ad4b3617a1a33e172afd1bbeb462a78924ae\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"k\":\"list\",\"of\":{\"k\":\"string\"}},\"submitter\":\"queryfix\"}",
+      "prev": "0bed35ce0c0b1e6274e2d53c993f803985931f94364adbe3a5868515b9e4ac9a",
+      "seq": 1
+    },
+    {
+      "payload": "{\"digest\":\"63790fd3da6730089c85e0bd5e1e8e07cedc291ceb86ee045593f4d9819fbdf3\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"k\":\"list\",\"of\":{\"k\":\"bool\"}},\"submitter\":\"queryfix\"}",
+      "prev": "f5eb4c3b2cfe94d5d8f0ca25002390319ebdcd411e208dfe77c09fee06bc1d54",
+      "seq": 2
+    },
+    {
+      "payload": "{\"digest\":\"9e82df9aa9937decb2f0a54d61f13facc3d4121bf22fb83c0c0f21434c1794aa\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"k\":\"brand\",\"name\":\"QueryFixtureId\",\"of\":{\"k\":\"string\"}},\"submitter\":\"queryfix\"}",
+      "prev": "026b95d17285e42a0bafd988786d2d31ee65cd682976082b5af5ddc4bb4abe3d",
+      "seq": 3
+    }
+  ],
+  "overCatalogHead": "429709a990bd5d4976fbe19848699f83b9f0082c2c1fc7835701e37d1dc4bb27",
+  "pattern": {
+    "k": "list",
+    "of": {
+      "k": "hole"
+    }
+  },
+  "queryDigest": "144fdcb391bd9f07369ddd065ed4dd5337e33e32f3ea173101c4edcf2e92a103",
+  "results": [
+    {
+      "catalogHead": "026b95d17285e42a0bafd988786d2d31ee65cd682976082b5af5ddc4bb4abe3d",
+      "catalogSeq": 2,
+      "digest": "63790fd3da6730089c85e0bd5e1e8e07cedc291ceb86ee045593f4d9819fbdf3",
+      "scheme": "bytes-sha256-v1",
+      "structure": {
+        "k": "list",
+        "of": {
+          "k": "bool"
+        }
+      }
+    },
+    {
+      "catalogHead": "f5eb4c3b2cfe94d5d8f0ca25002390319ebdcd411e208dfe77c09fee06bc1d54",
+      "catalogSeq": 1,
+      "digest": "7f46cbacd9bdc7d61ee5e962bb03ad4b3617a1a33e172afd1bbeb462a78924ae",
+      "scheme": "bytes-sha256-v1",
+      "structure": {
+        "k": "list",
+        "of": {
+          "k": "string"
+        }
+      }
+    }
+  ]
+}

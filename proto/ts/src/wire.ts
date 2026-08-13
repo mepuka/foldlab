@@ -6,8 +6,10 @@ import { Result, Schema } from "effect"
 // ——— subjects (must match proto/wire/CONTRACT.md and the Go side) ———
 
 export const SUBJECT_TYPE_CREATE = "flb.req.type.create"
+export const SUBJECT_TYPE_GET = "flb.req.type.get"
 export const SUBJECT_TYPE_FILL = "flb.req.type.fill"
 export const SUBJECT_TYPE_UNFILL = "flb.req.type.unfill"
+export const SUBJECT_CATALOG_QUERY = "flb.req.catalog.query"
 export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
 export const INGRESS_PREFIX = "flb.ing."
@@ -49,6 +51,35 @@ export const CreateReply = Schema.Struct({
   next: Schema.Array(NextHint),
 })
 export type CreateReply = typeof CreateReply.Type
+
+export const CatalogRow = Schema.Struct({
+  digest: Schema.String,
+  scheme: Schema.String,
+  structure: Schema.Json,
+  catalogSeq: Schema.Int,
+  catalogHead: Schema.String,
+})
+export type CatalogRow = typeof CatalogRow.Type
+
+export const TypeGetReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  digest: Schema.String,
+  scheme: Schema.String,
+  structure: Schema.Json,
+  catalogSeq: Schema.Int,
+  catalogHead: Schema.String,
+  next: Schema.Array(NextHint),
+})
+export type TypeGetReply = typeof TypeGetReply.Type
+
+export const CatalogQueryReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  results: Schema.Array(CatalogRow),
+  overCatalogHead: Schema.String,
+  queryDigest: Schema.String,
+  next: Schema.Array(NextHint),
+})
+export type CatalogQueryReply = typeof CatalogQueryReply.Type
 
 export const FrontierChoice = Schema.Struct({
   kind: Schema.String,

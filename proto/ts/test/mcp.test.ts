@@ -95,11 +95,13 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
     const listed = await mcp.next()
     const tools: any[] = listed.result.tools
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "catalog_query",
       "contract_describe",
       "journal_read",
       "publish",
       "type_create",
       "type_fill",
+      "type_get",
       "type_unfill",
     ])
 
