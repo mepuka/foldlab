@@ -4,12 +4,14 @@ import * as FastCheck from "fast-check"
 import {
   applyKV,
   compact,
+  emptyKV,
   encodeEvent,
   encodeFact,
   event,
   extend,
   foldKV,
   headFrom,
+  kvStep,
   parseFrames,
   put,
   replay,
@@ -87,6 +89,15 @@ const fusionCaseArbitrary = FastCheck.record({
   if (payload.length > 0 && injectEquals) payload[equalIndex % payload.length] = 0x3d
   return { input: { ...input, payload }, prefix }
 })
+
+const malformedPayloadCases: ReadonlyArray<ReadonlyArray<number>> = [
+  [0x00, 0x3d, 0x76],
+  [0x6b, 0x3d, 0x00],
+  [0xed, 0xa0, 0x80, 0x3d, 0x76],
+  [0x6b, 0x3d, 0xe2, 0x82],
+]
+const malformedPayloadArbitrary = FastCheck.constantFrom(...malformedPayloadCases)
+  .map((payload) => Uint8Array.from(payload))
 
 const prefixDecision = (payload: Uint8Array, prefix: string): boolean => {
   const boundary = payload.indexOf("=".charCodeAt(0))
@@ -282,6 +293,23 @@ describe("transform byte properties", () => {
 })
 
 describe("state and store adversaries", () => {
+  test("the KV refusal generator targets every payload boundary", () => {
+    FastCheck.assert(
+      FastCheck.property(malformedPayloadArbitrary, (payload) => {
+        const input = rawEvent("s", 1, payload)
+        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, input)))
+        expect(refusal._tag).toBe("MalformedPayload")
+        expect(kvStep(emptyKV, input)).toBeUndefined()
+      }),
+      {
+        examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),
+        seed: 0x22c1_0003,
+        numRuns: 100,
+        endOnFailure: false,
+      },
+    )
+  })
+
   test("KV rejects delimiter collisions, invalid UTF-8, and count overflow", () => {
     const payloads = [
       enc.encode("missing"),

@@ -5,6 +5,7 @@ import {
   emptyFoldCache,
   getFoldCache,
   putFoldCache,
+  type FoldCache,
 } from "../src/foldCache.ts"
 import { defineFold } from "../src/fold.ts"
 import { arbitraryForEvent } from "../src/foldArbitrary.ts"
@@ -86,6 +87,124 @@ describe("sound fold cache", () => {
         feature: "fold-cache",
         reason: "step spec is outside the RFC 8785 domain",
       },
+    })
+  })
+
+  test("a spread fold retaining an honest digest cannot poison the cache", () => {
+    const honest = primitiveFolds.sum
+    const forged = {
+      ...honest,
+      empty: 999,
+      extend: () => 999,
+      fold: () => 999,
+    }
+    const write = putFoldCache(emptyFoldCache(), forged, mergeSeed(), 999)
+    const refusal = {
+      ok: false,
+      refusal: {
+        _tag: "IdentityUnavailable",
+        feature: "fold-cache",
+        reason: "the fold has no admitted identity",
+      },
+    } as const
+    expect(write).toEqual(refusal)
+    expect(getFoldCache(emptyFoldCache(), forged, mergeSeed())).toEqual(refusal)
+    expect(getFoldCache(emptyFoldCache(), honest, mergeSeed())).toEqual({ ok: true, hit: false })
+  })
+
+  test("an unbranded declaration costume cannot mint an honest cache key", () => {
+    const honest = primitiveFolds.sum
+    const declaration = algebras.sum.declaration!
+    const costume = defineFold<StreamEvent, number>({
+      empty: 0,
+      combine: () => 999,
+      declaration: {
+        [Symbol.for("@foldlab/core/Declaration")]: true,
+        spec: declaration.spec,
+        encoding: declaration.encoding,
+        digest: declaration.digest,
+      },
+    } as unknown as Algebra<number>, steps.payloadLength)
+
+    expect(costume.digest).toBeUndefined()
+    expect(putFoldCache(emptyFoldCache(), costume, mergeSeed(), 999)).toEqual({
+      ok: false,
+      refusal: {
+        _tag: "IdentityUnavailable",
+        feature: "fold-cache",
+        reason: "the algebra declaration is not admitted",
+      },
+    })
+    expect(getFoldCache(emptyFoldCache(), honest, mergeSeed())).toEqual({ ok: true, hit: false })
+  })
+
+  test("cache storage is opaque and structurally fabricated caches refuse", () => {
+    const honest = primitiveFolds.sum
+    const head = mergeSeed()
+    const key = `${honest.digest}:${head}`
+    const empty = emptyFoldCache()
+    const exposed = (empty as unknown as {
+      readonly entries?: Map<string, { readonly bytes: string }>
+    }).entries
+    expect(exposed).toBeUndefined()
+    exposed?.set(key, { bytes: "999" })
+    expect(getFoldCache(empty, honest, head)).toEqual({ ok: true, hit: false })
+
+    const fabricated = {
+      entries: new Map([[key, { bytes: "999" }]]),
+    } as unknown as FoldCache
+    expect(getFoldCache(fabricated, honest, head)).toEqual({
+      ok: false,
+      refusal: {
+        _tag: "CacheUnavailable",
+        feature: "fold-cache",
+        reason: "the cache was not issued by emptyFoldCache or putFoldCache",
+      },
+    })
+  })
+
+  test("an existing cache key is idempotent but cannot be overwritten", () => {
+    const honest = primitiveFolds.sum
+    const head = mergeSeed()
+    const first = putFoldCache(emptyFoldCache(), honest, head, 1)
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+
+    const same = putFoldCache(first.cache, honest, head, 1)
+    expect(same).toEqual({ ok: true, cache: first.cache, bytes: "1" })
+    expect(putFoldCache(first.cache, honest, head, 999)).toEqual({
+      ok: false,
+      refusal: {
+        _tag: "CacheConflict",
+        feature: "fold-cache",
+        reason: "the cache key already names different canonical bytes",
+      },
+    })
+    expect(getFoldCache(first.cache, honest, head)).toEqual({
+      ok: true,
+      hit: true,
+      value: 1,
+      bytes: "1",
+    })
+  })
+
+  test("KNOWN GAP: a genuine declaration re-host can poison its honest digest peer", () => {
+    const honest = primitiveFolds.max
+    const rehosted = defineFold<StreamEvent, number | null>({
+      empty: null,
+      combine: () => 999,
+      declaration: algebras.max.declaration!,
+    }, steps.sequenceNumber)
+    expect(rehosted.digest).toBe(honest.digest)
+
+    const write = putFoldCache(emptyFoldCache(), rehosted, mergeSeed(), 999)
+    expect(write.ok).toBe(true)
+    if (!write.ok) return
+    expect(getFoldCache(write.cache, honest, mergeSeed())).toEqual({
+      ok: true,
+      hit: true,
+      value: 999,
+      bytes: "999",
     })
   })
 })

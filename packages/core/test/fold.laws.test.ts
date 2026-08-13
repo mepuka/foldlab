@@ -9,9 +9,12 @@ import * as FastCheck from "fast-check"
 import {
   algebras,
   encodeFoldState,
+  hasAdmittedDeclaration,
   homomorphisms,
   mapped,
   mappedStep,
+  product,
+  productStep,
   steps,
   type Algebra,
   type DeclaredHom,
@@ -70,6 +73,47 @@ registerLaws(
  * gap the brand does NOT close.
  */
 describe("lawful-surface admission (A1/A2)", () => {
+  test("the adversarial generator targets all four declaration admission gates", () => {
+    FastCheck.assert(
+      FastCheck.property(FastCheck.integer(), (value) => {
+        const algebraDeclaration = algebras.max.declaration!
+        const stepDeclaration = steps.sequenceNumber.declaration!
+        const forgedAlgebra = {
+          empty: null,
+          combine: () => value,
+          declaration: {
+            [Symbol.for("@foldlab/core/Declaration")]: true,
+            spec: algebraDeclaration.spec,
+            encoding: algebraDeclaration.encoding,
+            digest: algebraDeclaration.digest,
+          },
+        } as unknown as Algebra<number | null>
+        const forgedStep = {
+          apply: () => value,
+          declaration: {
+            [Symbol.for("@foldlab/core/Declaration")]: true,
+            spec: stepDeclaration.spec,
+            encoding: stepDeclaration.encoding,
+            digest: stepDeclaration.digest,
+          },
+        } as unknown as Step<StreamEvent, number | null>
+
+        expect(mapped(homomorphisms.isPositiveFromMax, forgedAlgebra).declaration).toBeUndefined()
+        expect(mappedStep(homomorphisms.isPositiveFromMax, forgedStep).declaration).toBeUndefined()
+        expect(product(forgedAlgebra, algebras.max).declaration).toBeUndefined()
+        expect(productStep<StreamEvent, readonly [number | null, number | null]>(
+          forgedStep,
+          steps.sequenceNumber,
+        ).declaration).toBeUndefined()
+        expect(hasAdmittedDeclaration(forgedAlgebra)).toBe(false)
+        expect(hasAdmittedDeclaration(forgedStep)).toBe(false)
+        expect(hasAdmittedDeclaration(algebras.max)).toBe(true)
+        expect(hasAdmittedDeclaration(steps.sequenceNumber)).toBe(true)
+      }),
+      { seed: 0x22c1_0005, numRuns: 250, endOnFailure: false },
+    )
+  })
+
   test("A1: the Declaration brand is file-private, not re-mintable from the global registry", () => {
     const decl = algebras.max.declaration!
     const brands = Object.getOwnPropertySymbols(decl)

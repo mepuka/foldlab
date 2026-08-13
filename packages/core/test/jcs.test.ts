@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import * as FastCheck from "fast-check"
 import { encodeFoldState } from "../src/algebra.ts"
 import { canonicalizeJson, decodeJson, encodeJsonValue, type JsonValue } from "../src/jcs.ts"
 
@@ -17,6 +18,21 @@ const floatFromBits = (bits: string): number => {
   view.setBigUint64(0, BigInt(`0x${bits}`))
   return view.getFloat64(0)
 }
+
+class AdversarialBox {
+  constructor(readonly value: number) {}
+}
+
+const nonPlainObjectArbitrary: FastCheck.Arbitrary<JsonValue> = FastCheck.oneof(
+  FastCheck.integer().map((value) => new AdversarialBox(value) as unknown as JsonValue),
+  FastCheck.integer().map((value) => new Date(value) as unknown as JsonValue),
+  FastCheck.array(FastCheck.tuple(FastCheck.string(), FastCheck.integer()), { maxLength: 8 })
+    .map((entries) => new Map(entries) as unknown as JsonValue),
+  FastCheck.integer().map((value) => Object.assign(
+    Object.create({ inherited: value }) as Record<string, JsonValue>,
+    { own: value },
+  )),
+)
 
 describe("RFC 8785 canonical JSON", () => {
   test("Appendix B serializes negative zero as zero", () => {
@@ -60,6 +76,17 @@ describe("RFC 8785 canonical JSON", () => {
 })
 
 describe("non-plain objects are outside the canonical domain (J1)", () => {
+  test("the adversarial generator targets non-plain prototypes", () => {
+    FastCheck.assert(
+      FastCheck.property(nonPlainObjectArbitrary, (value) => {
+        const result = encodeJsonValue(value)
+        expect(result.ok).toBe(false)
+        if (!result.ok) expect(result.refusal._tag).toBe("NonCanonicalValue")
+      }),
+      { seed: 0x22c1_0004, numRuns: 250, endOnFailure: false },
+    )
+  })
+
   test.each([
     [new Date(0), "Date"],
     [new Map([["a", 1]]), "Map"],

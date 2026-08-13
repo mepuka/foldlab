@@ -134,6 +134,15 @@ export interface Step<E, A extends FoldState> {
   readonly identityIssue?: string
 }
 
+/**
+ * Private-brand authenticity licenses treating the attached declaration as
+ * module-minted canonical data. This says nothing about the carrier behavior.
+ */
+export const hasAdmittedDeclaration = <S>(
+  value: { readonly declaration?: Declaration<S> },
+): value is { readonly declaration: Declaration<S> } =>
+  isDeclaration(value.declaration)
+
 export type EventGeneratorSpec = { readonly kind: "streamEvent" }
 
 // File-private brand, for the same reason as `DeclarationTypeId`: the closed

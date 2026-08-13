@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto"
 import {
   encodeFoldState,
+  hasAdmittedDeclaration,
   mapped,
   mappedStep,
   product,
@@ -19,6 +20,10 @@ export interface FoldIdentity {
 }
 
 export type StepInput<E, A extends FoldState> = Step<E, A> | ((event: E) => A)
+const foldsRegistry = new WeakSet<object>()
+
+export const isAdmittedFold = <E, A extends FoldState>(fold: Fold<E, A>): boolean =>
+  foldsRegistry.has(fold)
 
 /**
  * FreeMonoid.lift licenses `fold`; the monoid action licenses O(1) `extend`;
@@ -43,7 +48,7 @@ const foldIdentity = <E, A extends FoldState>(
   algebra: Algebra<A>,
   step: Step<E, A>,
 ): FoldIdentity | undefined => {
-  if (algebra.declaration === undefined || step.declaration === undefined) return undefined
+  if (!hasAdmittedDeclaration(algebra) || !hasAdmittedDeclaration(step)) return undefined
   const preimage = encodeFoldState({
     v: "foldlab.fold.v1",
     algebra: algebra.declaration.spec,
@@ -84,5 +89,6 @@ export const defineFold = <E, A extends FoldState>(
     map: <B extends FoldState>(hom: DeclaredHom<A, B>): Fold<E, B> =>
       defineFold(mapped(hom, algebra), mappedStep(hom, step)),
   }
-  return self
+  foldsRegistry.add(self)
+  return Object.freeze(self)
 }

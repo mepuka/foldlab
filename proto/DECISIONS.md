@@ -873,3 +873,42 @@ referenced by the merge fact. Why: either winner policy makes an identity
 coordinate ambiguous, a density rule rejects lawful sparse sources, and
 pick-only validation lets an invalid supplied source change admissibility with
 an unrelated fact. **Load-bearing? yes.**
+## Task 22 — the TS refusal-domain wall (2026-08-13)
+
+The batch's original four applications consolidated to the parallel
+review team's fixes at merge time (C1 045616863; A1/A2 f1434c991;
+J1/S1 243caeb54; M1 re-homed to task 23, D62). What this lane owns is
+recorded here.
+
+### D63. packages/core names total-by-refusal as its boundary law
+
+Decided: the package's CONTEXT.md states the walled-boundary law: the
+canonical encoder and applyKV refuse excluded inputs as data; the four
+algebra gates withhold identity from unbranded values; fold-cache
+storage and fold handles reject structural costumes; kvStep reports
+exclusion as `undefined`, which the entity collector deliberately
+FORGIVES as a meaning no-op while the identity fold commits the bytes.
+Stated non-claims: the genuine-declaration re-hosting residual (pinned
+as a KNOWN GAP test, reaching the digest-keyed cache) and no
+package-wide error-channel migration. Adversarial generators target
+each boundary and assert typed refusal, never mere no-crash.
+Alternatives: leave the law implicit in tests; claim refusal
+everywhere (falsified by the ratified forgive-on-meaning design). Why:
+a boundary law that names its residuals is the only one a consumer
+can rely on. **Load-bearing? yes.**
+
+### D64. Fold and cache identity require brand-admitted declarations
+
+Decided: foldIdentity derives only when BOTH the algebra's and step's
+declarations pass `hasAdmittedDeclaration` (the module-private brand
+check); fold handles register in a module-private WeakSet and the
+fold cache accepts only admitted folds, so a structural costume can
+neither mint a fold identity nor poison the digest-keyed cache. The
+brand check authenticates module-minted declaration DATA and
+deliberately certifies nothing about carrier behavior — the
+re-hosting residual remains pinned, not silently claimed closed.
+Alternatives: trust `declaration !== undefined` (the A2 defect shape
+at the cache seam); brand the Algebra/Step value itself (deferred
+with the review team's KNOWN GAP reasoning — no cross-process
+consumer builds on the brand yet). Why: every certification path
+admits via the same check, including the cache. **Load-bearing? yes.**
