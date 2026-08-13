@@ -166,3 +166,47 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   choreographed); TS Layer correctness REDUCES to daemon's (R0/R1 adapter surface,
   no independent guarantee); replay determinism precondition.
 - Committing + pushing.
+
+### Burst 6 — wider map: full cluster/workflow correspondence (Parts A-D, done)
+- Retask: widen the workflow-replay map. Extended the design doc with Parts A-D.
+- Read REAL mechanics (per coordinator's confirmed inventory): Singleton
+  (:46 make; :34 double-register=defect; run on shard-owning runner),
+  Entity (:71; EntityAddress{shardId,entityType,entityId}), Snowflake
+  (:47 timestamp+machineId+sequence bigint), MessageStorage (:48 Context.Service
+  saveRequest/saveReply/repliesFor/unprocessedMessages; layerNoop:1048/
+  layerMemory:1056/Sql), DurableClock (:28 make+DurableDeferred<Void> wake),
+  DurableDeferred (:38; token :412; deferredDone sets Exit once), DurableQueue
+  (:46 PersistedQueue-backed), EventLogRemote (remote replica sync),
+  EventLog (:603 makeEntryIdUnsafe timestamp ids), ClusterCron (:43 built on
+  Singleton), Runners/RunnerHealth (topology).
+- SHARPEST CORRESPONDENCES FOUND:
+  - Singleton != effector: DIFFERENT AXES. Singleton = lease-based PLACEMENT
+    (who runs now); effector = proven COMMITMENT (whose result counts forever,
+    fenced R3/R4). foldlab replaces the commitment half, NOT placement. This
+    bounds how much of the cluster stack foldlab can claim.
+  - cluster Entity != foldlab Entity: assigned actor address + opaque live state
+    vs recomputable chain-head identity + auditable fold state. Complementary.
+  - MessageStorage = THE cleanest seam: JournalMessageStorage:Layer<MessageStorage,
+    never,ProtoClient> swaps persistence under unchanged ClusterWorkflowEngine
+    (which REQUIRES MessageStorage) -> exactly-once upgrade flows up via one swap.
+  - Snowflake vs digest = DIVERGENCE (mint-time-and-place vs recompute-from-
+    content); NOT substitutable; root of all other divergences.
+  - DurableDeferred ~ effector Claim->Done: same terminal-uniqueness SHAPE, but
+    assigned token + storage-once vs recomputable key + fence-proven once. Fence
+    dimension ADDED not matched.
+- MECHANIC THAT DOES NOT MAP CLEANLY: DurableQueue (work buffer, no recomputable
+  identity/chain head) — flagged as not a clean inheritance.
+- Part A: 8 agent-first use cases (A1 durable task, A2 zero-instrument provenance,
+  A3 kill-9 byte-exact, A4 cross-runtime tool, A5 third-party auditable run,
+  A6 human-in-loop=DurableDeferred, A7 OTLP/Langfuse integration, A8 MCP-drives-
+  workflow integration), each with guarantee-leaned-on + label.
+- Part D SEAM MAP: D.1 substitution (table, all inherited; MessageStorage/
+  Activity/Singleton-commitment-half/Entity-state/DurableClock/DurableDeferred);
+  D.2 divergence (ids, journal ownership, placement-vs-commitment, safety-vs-
+  liveness); D.3 interop (EventLogRemote bridge, OTLP export, cross-key handoff
+  to saga/2PC on the ratified one-workflow-one-register default). Closed with the
+  compositionality frontier: proof EXTENDS inside one register over det-or-
+  journaled activities on a daemon journal; STOPS at 4 boundaries (cross-register
+  atomicity, liveness, placement, nondeterministic-effect reproducibility).
+- Housekeeping done: cross-linked Part-1 replay mapping into dossier P5.
+- Committing + pushing.
