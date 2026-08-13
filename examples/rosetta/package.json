@@ -5,7 +5,8 @@
   "type": "module",
   "description": "The Rosetta demo: foldlab's core theorem, in Effect-community vocabulary.",
   "scripts": {
-    "start": "bun rosetta.ts"
+    "start": "bun rosetta.ts",
+    "parallel-kv": "bun parallel-kv.ts"
   },
   "dependencies": {
     "@foldlab/core": "workspace:*",
