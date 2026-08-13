@@ -172,6 +172,7 @@ func VerifyReal(dir string, floors RealFloors) (RealReport, error) {
 		)
 	}
 	rowByKey := make(map[string]planRow, len(planLines))
+	templateByVariantStep := make(map[string]string, man.K*man.L)
 	var naiveMicro int64
 	usedWorks := make(map[string]bool, len(planLines))
 	for i, line := range planLines {
@@ -194,6 +195,11 @@ func VerifyReal(dir string, floors RealFloors) (RealReport, error) {
 		if _, dup := rowByKey[key]; dup {
 			return report, fmt.Errorf("%w: duplicate plan row %s", ErrPlan, key)
 		}
+		variantStep := strconv.Itoa(row.Variant) + "/" + strconv.Itoa(row.Step)
+		if prior, ok := templateByVariantStep[variantStep]; ok && prior != row.Template {
+			return report, fmt.Errorf("%w: variant %d step %d changes template across questions", ErrPlan, row.Variant, row.Step)
+		}
+		templateByVariantStep[variantStep] = row.Template
 		// Pinned input wiring: step 0 consumes the seeded question digest;
 		// step s consumes exactly the recorded result of step s-1.
 		if row.Step == 0 {
@@ -239,6 +245,25 @@ func VerifyReal(dir string, floors RealFloors) (RealReport, error) {
 		usedWorks[work] = true
 		rowByKey[key] = row
 	}
+	variantShapes := make(map[string]int, man.K)
+	for variant := 0; variant < man.K; variant++ {
+		templates := make([]string, man.L)
+		for step := 0; step < man.L; step++ {
+			template, ok := templateByVariantStep[strconv.Itoa(variant)+"/"+strconv.Itoa(step)]
+			if !ok {
+				return report, fmt.Errorf("%w: variant %d step %d has no template", ErrPlan, variant, step)
+			}
+			templates[step] = template
+		}
+		shape, err := digestOf(map[string]any{"templates": templates})
+		if err != nil {
+			return report, err
+		}
+		if prior, dup := variantShapes[shape]; dup {
+			return report, fmt.Errorf("%w: variants %d and %d have identical template shapes", ErrPlan, prior, variant)
+		}
+		variantShapes[shape] = variant
+	}
 	// Every receipt must be demanded by the plan — no padding the journal.
 	if len(usedWorks) != len(factByWork) {
 		return report, fmt.Errorf(
@@ -254,19 +279,9 @@ func VerifyReal(dir string, floors RealFloors) (RealReport, error) {
 	if err != nil {
 		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
-	kills := 0
-	for n, line := range stormLines {
-		var event stormLine
-		if err := strictDecode(line, &event); err != nil {
-			return report, fmt.Errorf("%w: storm line %d: %v", ErrFloor, n, err)
-		}
-		switch event.Action {
-		case "kill":
-			kills++
-		case "spawn", "resume":
-		default:
-			return report, fmt.Errorf("%w: storm line %d unknown action %q", ErrFloor, n, event.Action)
-		}
+	kills, _, err := verifyStorm(stormLines, map[string]bool{"worker": true}, false)
+	if err != nil {
+		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
 	report.Kills = kills
 

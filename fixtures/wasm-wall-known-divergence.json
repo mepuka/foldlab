@@ -1,0 +1,43 @@
+{
+  "_provenance": "generated once by scripts/wasm-wall-divergence.ts --emit; frozen. Regeneration requires -force-equivalent intent: a stated reason recorded per docs/FREEZING.md, and a re-statement of the corpus domain below. This fixture is NOT a specification of correct behaviour — it is a frozen record of a known DEFECT's exact extent, so that a new defect cannot hide inside it.",
+  "issue": "#27 (the wasm wall is red: TS/Bun case tables vs Go case tables)",
+  "corpusDomain": "Every Unicode scalar 0..0x10FFFF excluding the surrogate range, retained only where String.prototype.toUpperCase changes the scalar under the recording engine (1552 entries), each submitted as the payload \"a=<scalar>\" through compose(renameStream(\"z\"), filterKeyPrefix(\"a\"), mapValueUpper()). Malformed-UTF-8 and non-key-value entries from the wall test are NOT in this corpus: they carry no case mapping and so cannot attribute a case-table divergence. Nothing outside this domain is claimed.",
+  "recordedAt": "2026-08-13",
+  "recordedWith": {
+    "bun": "1.3.14",
+    "go": "go1.26.5",
+    "goUnicodeTables": "15.0.0",
+    "platform": "darwin/arm64"
+  },
+  "cause": "packages/core/src/xform.ts mapValueUpper delegates to the JS engine's String.prototype.toUpperCase (Bun/JSC ICU, Unicode 16+); go/stream uses Go's stdlib unicode tables (Unicode 15.0.0). These 27 scalars gained an uppercase mapping in Unicode 16. Both sides KEEP the same events; only case-mapped content differs. Neither table is pinned anywhere, which is the finding.",
+  "expectedDisposition": "NEXT.md's owed fix — pin MapValueUpper to ASCII-only on BOTH sides plus non-ASCII law tests — removes the external-table dependency from the digest path entirely. When that lands, this fixture and its gate are DELETED, not re-frozen: an allowlist that outlives its defect is a licence.",
+  "scalars": [
+    "U+019B",
+    "U+0264",
+    "U+1C8A",
+    "U+A7CD",
+    "U+A7DB",
+    "U+10D70",
+    "U+10D71",
+    "U+10D72",
+    "U+10D73",
+    "U+10D74",
+    "U+10D75",
+    "U+10D76",
+    "U+10D77",
+    "U+10D78",
+    "U+10D79",
+    "U+10D7A",
+    "U+10D7B",
+    "U+10D7C",
+    "U+10D7D",
+    "U+10D7E",
+    "U+10D7F",
+    "U+10D80",
+    "U+10D81",
+    "U+10D82",
+    "U+10D83",
+    "U+10D84",
+    "U+10D85"
+  ]
+}

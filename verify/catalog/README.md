@@ -1,7 +1,9 @@
 # The catalog model gate
 
 Climb 1 of the verification ladder (ticket 009): the catalog + ingress
-state machine — laws W1, W3, W4 of `proto/SPEC.md` plus resolution
+state machine — registry laws `catalog-model:W1`, `catalog-model:W3`, and
+`catalog-model:W4` (source-local W1, W3, W4 in the frozen model, projected
+from `proto/SPEC.md`) plus resolution
 monotonicity under replication lag, over the ownership model ratified in
 ticket 002 (evidence / decisions / absence; per-daemon authority
 catalogs; union resolution; lag is absence) and ADR-0009 (a replica is a
@@ -127,8 +129,8 @@ set at 12.7M states; the cap2 run's estimate is 2.6E-11. Stated because
 
 | Config | Law dropped | Required violation | Found at | Trace |
 |---|---|---|---|---|
-| `CatalogBroken.cfg` | W4 resolve-check | `NoAdmissionOnFaith` | depth 2, 14 states | `CatalogBroken.cex.txt` |
-| `CatalogBroken.assert.cfg` | W1 derived identity | `Convergence` | depth 3, 27 states | `CatalogBroken.assert.cex.txt` |
+| `CatalogBroken.cfg` | `catalog-model:W4` resolve-check | `NoAdmissionOnFaith` | depth 2, 14 states | `CatalogBroken.cex.txt` |
+| `CatalogBroken.assert.cfg` | `catalog-model:W1` derived identity | `Convergence` | depth 3, 27 states | `CatalogBroken.assert.cex.txt` |
 | `CatalogBroken.forge.cfg` | ADR-0009 verified mirror | `LagIsAbsenceNeverWrongData` | depth 4, 237 states | `CatalogBroken.forge.cex.txt` |
 | `CatalogBroken.reset.cfg` | ADR-0009 durable prefix | `ResolutionMonotonicity` (action) | depth 5, 856 states | `CatalogBroken.reset.cex.txt` |
 

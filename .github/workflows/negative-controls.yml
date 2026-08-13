@@ -1,0 +1,387 @@
+# The negative-controls battery — the gate for the gates.
+#
+# `AGENTS.md`: "A prover that cannot fail proves nothing. Every gate ships its
+# negative controls, each refuted on exactly the law it dropped." The controls
+# exist and are good. Until this file, not one of them compiled in any
+# automated gate (#32): six non-default build tags, the R4 lockstep driver, the
+# D59 CreateAtomic wire bridge, and the wasm wall were all human-invoked, and
+# `gates.yml` — which is otherwise an exact transcript of the local battery —
+# never touches them. An uncompiled control rots silently: a refactor breaks
+# its build, and the next human-invoked run fails on compilation instead of on
+# the control, which is a strictly less informative failure arriving strictly
+# later.
+#
+# Two tiers, split on cost rather than on importance:
+#
+#   controls  per push and PR. Everything that needs only Go and Bun: the six
+#             tagged variants, the reply-mutant gate once per tag, the sabotage
+#             and corrupted controls, the R4 corpus coverage assertion, the
+#             honest replay, the wasm wall EXECUTED, and the laws index.
+#             Measured at 1m10s of real work on the recording machine.
+#   bridge    weekly. `run-r4.sh`, which begins by running `run-wire.sh` — so
+#             the D59 bridge and the R4 lockstep are one job, run once. TLC
+#             dominates and lands in the same weekly tier `model-gate.yml`
+#             already established for the same reason: a rolling upstream jar
+#             makes the schedule the point, and a 4-minute model check does not
+#             belong on every PR.
+#
+# The wasm wall is RED today (#27: 27 Unicode scalars diverge because Bun's
+# case tables are Unicode 16+ and Go's are 15.0.0, and neither is pinned).
+# Findings before fixes: the red test stays red as the evidence. So this
+# workflow does not run the wall and hope — it runs
+# `scripts/wasm-wall-divergence.ts`, which attributes the divergence to
+# individual scalars and compares that SET against a frozen allowlist. The
+# known 27 keep the job green and stay tracked; a 28th fails it loud. The two
+# wall tests that are NOT about case tables are run and must pass.
+#
+# Every step that asserts something ships its own refutation, in the job:
+#   - the reply-mutant harness is run with NO tag and must FAIL
+#     ("reply-mutant mode requires one catalogr4_reply_* build tag");
+#   - the sabotage control is run with NO tag and must FAIL
+#     ("the AssertedIdentity sabotage went undetected");
+#   - both index gates ship `--self-test` modes that plant one defect per rule.
+# A green run of this workflow therefore certifies that the controls can still
+# fail, which is the only thing that makes the other gates' green mean anything.
+name: negative-controls
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Mondays, 05:43 UTC — after model-gate's 05:17 so the two TLC jobs do not
+    # contend for the same shared runners, and off the hour because GitHub's
+    # scheduler queues deepest there.
+    - cron: "43 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: negative-controls-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controls:
+    name: build-tagged controls, the wasm wall, the laws index
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same pins as gates.yml, for the same reason: bun 1.3.14 is what
+      # @types/bun pins, and Go comes from go/go.mod so there is one place to
+      # re-pin. The wasm wall's answer depends on BOTH toolchains' Unicode
+      # tables (#27), so a drift in either pin is exactly what the divergence
+      # gate below is watching for.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+
+      - name: Prepare log directory
+        run: mkdir -p ci-logs
+
+      - name: root — bun install
+        run: bun install --frozen-lockfile 2>&1 | tee ci-logs/nc-install.log
+
+      # --- the six non-default build tags ---------------------------------
+      # Five live in proto/go; the sixth is GOOS=js GOARCH=wasm, built by the
+      # wasm step below. The seventh tag in the tree, `!(js && wasm)`, is the
+      # wasmwall stub and is already compiled by gates.yml's `go build`/`go vet`
+      # in go/, so it is not repeated here.
+      #
+      # Compilation alone is the floor, not the gate: the point of building
+      # every variant is that a refactor cannot break a control's BUILD without
+      # this job going red. The behavioural runs follow.
+      - name: proto/go — compile all five tagged variants
+        working-directory: proto/go
+        run: |
+          for tag in \
+            catalogr4_sabotage \
+            catalogr4_reply_created \
+            catalogr4_reply_converged \
+            catalogr4_reply_admitted \
+            catalogr4_reply_refused
+          do
+            echo "== compiling -tags $tag"
+            go build -tags "$tag" ./...
+          done
+
+      # --- the controls can fail (run these FIRST) -------------------------
+      # Cheap and decisive, in the spirit of run-ind.sh's refutability canary:
+      # if the harness cannot report an absent control, nothing below means
+      # anything, so spend the two seconds before the twenty minutes.
+      - name: canary — the mutant harness refuses to run untagged
+        working-directory: proto/go
+        run: |
+          if go run ./catalogr4/cmd -mode reply-mutant > ../../ci-logs/nc-canary-mutant.log 2>&1; then
+            cat ../../ci-logs/nc-canary-mutant.log
+            echo "CANARY FAILED: an untagged reply-mutant run came back green;"
+            echo "RunReplyMutantControl is not wired to the build tags."
+            exit 1
+          fi
+          grep -q "reply-mutant mode requires one catalogr4_reply_\* build tag" \
+            ../../ci-logs/nc-canary-mutant.log
+          echo "canary ok: untagged reply-mutant refuses, naming the missing tag"
+
+      - name: canary — the sabotage control cannot pass untagged
+        working-directory: proto/go
+        run: |
+          if go run ./catalogr4/cmd -mode sabotage > ../../ci-logs/nc-canary-sabotage.log 2>&1; then
+            cat ../../ci-logs/nc-canary-sabotage.log
+            echo "CANARY FAILED: the sabotage control passed WITHOUT the"
+            echo "catalogr4_sabotage tag — it is detecting something other than"
+            echo "the planted AssertedIdentity behaviour."
+            exit 1
+          fi
+          grep -q "the AssertedIdentity sabotage went undetected" \
+            ../../ci-logs/nc-canary-sabotage.log
+          echo "canary ok: untagged sabotage is undetectable, as it must be"
+
+      # --- the R4 controls, per tag ---------------------------------------
+      - name: R4 — sabotage control (catalogr4_sabotage)
+        working-directory: proto/go
+        run: go run -tags catalogr4_sabotage ./catalogr4/cmd -mode sabotage 2>&1 | tee ../../ci-logs/nc-sabotage.log
+
+      # One run per tag. Each tagged binary changes only the decoded reply
+      # shape on one branch; the daemon state and the model expectation stay
+      # honest, so the divergence the driver reports names the branch that was
+      # mutated. Four branches, four tags, four separate refutations — a single
+      # control that broke all four would prove nothing about which law each
+      # covers (verify/AGENTS.md's independence rule).
+      - name: R4 — reply-mutant gate, once per tag
+        working-directory: proto/go
+        run: |
+          for tag in \
+            catalogr4_reply_created \
+            catalogr4_reply_converged \
+            catalogr4_reply_admitted \
+            catalogr4_reply_refused
+          do
+            echo "== reply mutant: $tag (must be caught)"
+            go run -tags "$tag" ./catalogr4/cmd -mode reply-mutant
+          done 2>&1 | tee ../../ci-logs/nc-reply-mutants.log
+
+      - name: R4 — corrupted controls across the corpus
+        working-directory: proto/go
+        run: go run ./catalogr4/cmd -mode corrupted 2>&1 | tee ../../ci-logs/nc-corrupted.log
+
+      # The coverage assertion is the anti-vacuity check on the corpus itself:
+      # 131 schedules / 3,079 driven steps / 1,077 …, plus 3/3 and 5/5 branch
+      # coverage. A corpus that stopped covering a ratified branch would let
+      # every control above pass while checking less.
+      - name: R4 — corpus determinism + ratified-branch coverage
+        working-directory: proto/go
+        run: |
+          go test ./catalogr4 -run '^TestCorpusIsDeterministicAndCoversEveryRatifiedBranch$' -count=1 \
+            2>&1 | tee ../../ci-logs/nc-coverage-test.log
+          go run ./catalogr4/cmd -mode coverage 2>&1 | tee ../../ci-logs/nc-coverage.log
+
+      - name: R4 — honest replay
+        working-directory: proto/go
+        run: go run ./catalogr4/cmd -mode honest 2>&1 | tee ../../ci-logs/nc-honest.log
+
+      # --- the wasm wall, EXECUTED ----------------------------------------
+      # dist/ is gitignored, which is why the wall auto-skipped into a green
+      # `0 fail` on every fresh checkout (#27). Building it here is the whole
+      # fix for the invisibility half of that issue.
+      - name: "wasm — build dist/ (the sixth build tag: js && wasm)"
+        run: bun run build:wasm 2>&1 | tee ci-logs/nc-build-wasm.log
+
+      # These two wall assertions are NOT about case tables and must pass. The
+      # third — the cased-scalar wall — is the known red, and is gated by the
+      # divergence classifier instead.
+      - name: wasm wall — the frozen pin, across both crossings
+        run: bun test packages/core/test/wasm.wall.test.ts -t "reproduces the frozen pin" 2>&1 | tee ci-logs/nc-wall-pin.log
+
+      - name: wasm wall — garbage refuses as data
+        run: bun test packages/core/test/wasm.wall.test.ts -t "garbage refuses as data" 2>&1 | tee ci-logs/nc-wall-refuse.log
+
+      - name: wasm wall — the divergence classifier can fail
+        run: bun scripts/wasm-wall-divergence.ts --self-test 2>&1 | tee ci-logs/nc-divergence-selftest.log
+
+      # The gate for #27's known red. Exit 0 only when the observed divergent
+      # scalar set is EXACTLY the frozen allowlist. A new divergence fails; an
+      # allowlisted scalar that converged also fails, because an allowlist that
+      # only grows is a record of nothing.
+      - name: wasm wall — known divergence is still exactly the known divergence
+        run: bun scripts/wasm-wall-divergence.ts 2>&1 | tee ci-logs/nc-divergence.log
+
+      # --- the gauntlet verifiers, against the committed bundles ------------
+      # #37 G-09: no CI job runs ANY verifier against artifacts/. The four
+      # verifier binaries compile under gates.yml's `go build`, and that is all
+      # that has ever happened to them — the ledger rows they underwrite
+      # (VERIFICATION.md's gauntlet lanes) rest on human-invoked runs recorded
+      # in docs/gauntlet/*-attempts.md. Three of the four lanes run green in
+      # about two seconds against bundles already in the tree, so there is no
+      # cost argument for the omission.
+      - name: verifiers — G1 (six bundles), R1, RG-A (three bundles)
+        working-directory: go
+        run: |
+          go run ./cmd/gauntletverify \
+            ../artifacts/gauntlet/g1-alpha ../artifacts/gauntlet/g1-beta ../artifacts/gauntlet/g1-gamma \
+            ../artifacts/gauntlet/final-alpha ../artifacts/gauntlet/final-beta ../artifacts/gauntlet/final-gamma
+          go run ./cmd/realverify ../artifacts/receipts/r1-001
+          go run ./cmd/transposeverify \
+            ../artifacts/transposition/rga-final ../artifacts/transposition/rga-complete \
+            ../artifacts/transposition/rga-live
+        # tee is deliberately absent here: these binaries print the whole
+        # report (heads, state digests, floors met) to stdout, and the run log
+        # is where that belongs.
+
+      # R2's competition-owned problem text stays gitignored. The checked-in
+      # fetcher reconstructs it from the named public dataset, refuses unless
+      # its canonical bytes match the verifier-owned digest, and only then
+      # writes corpus.json. The focused tests are the negative controls: a
+      # producer whose forged corpus and manifest agree is still refused.
+      #
+      # Running the two real bundles exposed FINDING-R2-ARTIFACTS-001. Keep
+      # executing them, but classify only the exact two ratified-law failures;
+      # a pass or a different refusal fails this gate and demands disposition.
+      - name: verifiers — R2 fetched, pinned, and known-red classified
+        working-directory: go
+        run: |
+          fetched=0
+          for attempt in 1 2 3; do
+            if go run ./cmd/climb fetch ../artifacts/receipts/r2-001; then
+              fetched=1
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$fetched" -eq 1
+          cp ../artifacts/receipts/r2-001/corpus.json ../artifacts/receipts/r2-002/corpus.json
+          go test ./gauntlet -run '^(TestClimbSelfDeclaredCorpusRefused|TestR2CorpusAnchorIsPinned)$' -count=1
+          if go run ./cmd/climbverify ../artifacts/receipts/r2-001 > ../ci-logs/nc-r2-001.log 2>&1; then
+            cat ../ci-logs/nc-r2-001.log
+            echo "r2-001 unexpectedly passed; resolve FINDING-R2-ARTIFACTS-001 before changing this classifier"
+            exit 1
+          fi
+          cat ../ci-logs/nc-r2-001.log
+          grep -Fq "winner holdout 5 < seed holdout 6 + 1" ../ci-logs/nc-r2-001.log
+
+          if go run ./cmd/climbverify ../artifacts/receipts/r2-002 > ../ci-logs/nc-r2-002.log 2>&1; then
+            cat ../ci-logs/nc-r2-002.log
+            echo "r2-002 unexpectedly passed; resolve FINDING-R2-ARTIFACTS-001 before changing this classifier"
+            exit 1
+          fi
+          cat ../ci-logs/nc-r2-002.log
+          grep -Fq "holdout receipt precedes the final selection" ../ci-logs/nc-r2-002.log
+
+      # --- the laws index --------------------------------------------------
+      - name: laws index — the index gate can fail
+        run: bun scripts/check-laws.ts --self-test 2>&1 | tee ci-logs/nc-laws-selftest.log
+
+      - name: laws index — every law still points at its statement and its test
+        run: bun scripts/check-laws.ts 2>&1 | tee ci-logs/nc-laws.log
+
+      - name: package test policy — the empty-placeholder exemption can fail
+        run: bun scripts/check-package-tests.ts --self-test 2>&1 | tee ci-logs/nc-package-tests-selftest.log
+
+      - name: package test policy — every runtime package has a test
+        run: bun scripts/check-package-tests.ts 2>&1 | tee ci-logs/nc-package-tests.log
+
+      - name: Upload control output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: negative-controls-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ci-logs/
+            fixtures/wasm-wall-known-divergence.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  bridge:
+    name: D59 wire bridge + R4 lockstep (TLC)
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+
+      # run-wire.sh resolves Java as `mise x java@21 -- java` when mise is on
+      # PATH and plain `java` otherwise. The runner has no mise, so this JDK is
+      # what it finds — the same Temurin 21 line model-gate.yml uses.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # run-r4.sh's FIRST act is to run run-wire.sh, so the D59 CreateAtomic
+      # bridge and the R4 lockstep are one invocation, not two. Calling the
+      # script rather than transcribing its steps is deliberate: the script is
+      # the gate, and a yml copy of its contents would be a second gate free to
+      # drift from the first.
+      #
+      # What run-wire.sh checks, in order: the split-model refactor canary
+      # (Catalog.cap2 must reproduce 119,145 states generated / 18,295 distinct
+      # — a jar that does not is a finding), the honest CreateAtomic refinement
+      # closing clean, and the FAITHLESS bridge being refuted on
+      # "Action property AtomicRefinement is violated". A faithless bridge
+      # coming back green fails the gate too.
+      - name: verify/catalog/run-r4.sh (runs run-wire.sh first)
+        run: bash verify/catalog/run-r4.sh 2>&1 | tee r4-gate.log
+
+      - name: Upload bridge output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: bridge-r4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: r4-gate.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  windows-r4:
+    name: PowerShell wire + R4 twins (Windows)
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go/go.mod
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # This invokes the PowerShell gate itself rather than copying its TLC
+      # command into YAML. The cap2 count, honest refinement, and faithless
+      # refutation are the common semantic anchors shared with run-wire.sh.
+      - name: verify/catalog/run-r4.ps1 (runs run-wire.ps1 first)
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\ci-logs" | Out-Null
+          & "$env:GITHUB_WORKSPACE\verify\catalog\run-r4.ps1" *>&1 |
+            Tee-Object -FilePath "$env:GITHUB_WORKSPACE\ci-logs\windows-r4.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload PowerShell wire output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-r4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-logs/windows-r4.log
+          if-no-files-found: warn
+          retention-days: 90

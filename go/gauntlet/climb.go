@@ -50,6 +50,10 @@ var R2 = ClimbFloors{
 	HoldoutGainMin: 1,
 }
 
+// R2CorpusSHA256 is the verifier-owned benchmark anchor from the ratified
+// R2 contract. A bundle's manifest may repeat it, but cannot choose it.
+const R2CorpusSHA256 = "8ce15a57d0d8a6b8bba1efb7f04ceeb64358a8d2e8227c6651d90af8c9fae5f2"
+
 var (
 	ErrScore     = errors.New("gauntlet: score refused (CL1)")
 	ErrSelection = errors.New("gauntlet: selection refused (CL2/CL3)")
@@ -180,6 +184,10 @@ func climbNormalize(text string) string {
 // VerifyClimb checks an R2 bundle against RL1-RL7 and CL1-CL5 at the
 // given floors.
 func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
+	return verifyClimbAgainstCorpus(dir, floors, R2CorpusSHA256)
+}
+
+func verifyClimbAgainstCorpus(dir string, floors ClimbFloors, corpusSHA256 string) (ClimbReport, error) {
 	var report ClimbReport
 
 	var man climbManifest
@@ -189,6 +197,12 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 	if man.Model == "" || man.Seed == "" || !hex64.MatchString(man.SeedCandidate) ||
 		!hex64.MatchString(man.CorpusSHA256) {
 		return report, fmt.Errorf("%w: model/seed/seed_candidate/corpus_sha256 must be set", ErrManifest)
+	}
+	if !hex64.MatchString(corpusSHA256) {
+		return report, fmt.Errorf("%w: verifier corpus pin is malformed", ErrManifest)
+	}
+	if man.CorpusSHA256 != corpusSHA256 {
+		return report, fmt.Errorf("%w: manifest corpus digest does not match verifier pin", ErrManifest)
 	}
 	if man.Prices.InputNanoPerTok < 0 || man.Prices.OutputNanoPerTok < 0 ||
 		man.Caps.MaxCalls < 1 || man.Caps.MaxOutputTokens < 1 || man.Caps.MaxSpendNano < 1 {
@@ -217,7 +231,7 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 		return report, fmt.Errorf("%w: corpus: %v", ErrManifest, err)
 	}
 	sum := sha256.Sum256(corpusRaw)
-	if hex.EncodeToString(sum[:]) != man.CorpusSHA256 {
+	if hex.EncodeToString(sum[:]) != corpusSHA256 {
 		return report, fmt.Errorf("%w: corpus digest mismatch", ErrManifest)
 	}
 	var corpus []corpusQuestion
@@ -757,20 +771,32 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 	}
 	claimed := make(map[string]bool, len(ledgerLines))
 	owners := make(map[string]bool)
+	nonces := make(map[string]bool, len(ledgerLines))
+	ownerByDigestFence := make(map[string]string, len(ledgerLines))
 	for n, line := range ledgerLines {
+		if !isCanonical(line) {
+			return report, fmt.Errorf("%w: ledger line %d is not canonical", ErrFleet, n)
+		}
 		var claim ledgerLine
 		if err := strictDecode(line, &claim); err != nil {
 			return report, fmt.Errorf("%w: ledger line %d: %v", ErrFleet, n, err)
 		}
-		if !hex64.MatchString(claim.Digest) || !validOwner.MatchString(claim.Owner) {
+		if !hex64.MatchString(claim.Digest) || !validOwner.MatchString(claim.Owner) ||
+			claim.At <= 0 || claim.Fence < 1 || claim.Nonce == "" || nonces[claim.Nonce] {
 			return report, fmt.Errorf("%w: ledger line %d malformed", ErrFleet, n)
 		}
+		nonces[claim.Nonce] = true
 		if _, ok := factByWork[claim.Digest]; !ok {
 			return report, fmt.Errorf("%w: ledger line %d claims unknown work", ErrFleet, n)
 		}
 		if claimed[claim.Digest] {
 			return report, fmt.Errorf("%w: ledger line %d second claim for %s", ErrFleet, n, claim.Digest)
 		}
+		key := claim.Digest + "/" + strconv.FormatUint(claim.Fence, 10)
+		if prior, ok := ownerByDigestFence[key]; ok && prior != claim.Owner {
+			return report, fmt.Errorf("%w: ledger line %d shares (digest,fence) across owners", ErrFleet, n)
+		}
+		ownerByDigestFence[key] = claim.Owner
 		claimed[claim.Digest] = true
 		owners[claim.Owner] = true
 	}
@@ -787,19 +813,9 @@ func VerifyClimb(dir string, floors ClimbFloors) (ClimbReport, error) {
 	if err != nil {
 		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
-	kills := 0
-	for n, line := range stormLines {
-		var event stormLine
-		if err := strictDecode(line, &event); err != nil {
-			return report, fmt.Errorf("%w: storm line %d: %v", ErrFloor, n, err)
-		}
-		switch event.Action {
-		case "kill":
-			kills++
-		case "spawn", "resume":
-		default:
-			return report, fmt.Errorf("%w: storm line %d unknown action %q", ErrFloor, n, event.Action)
-		}
+	kills, _, err := verifyStorm(stormLines, map[string]bool{"worker": true}, false)
+	if err != nil {
+		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
 	report.Kills = kills
 

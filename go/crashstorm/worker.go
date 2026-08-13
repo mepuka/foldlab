@@ -95,6 +95,10 @@ func RunWorker(
 			if outcome.Result != step.Result {
 				return fmt.Errorf("committed result for step %d disagrees with derivation", position)
 			}
+			step.Worker, err = committedOwner(bundle, step.Digest, outcome.Fence)
+			if err != nil {
+				return err
+			}
 			if appendStep(ctx, openedJournal, cursor, step) {
 				head, err := canonical.EntryDigest(canonical.ChainEntry{
 					Seq: int64(position), Prev: cursor.Head, Payload: mustStepPayload(step),
@@ -136,6 +140,7 @@ func RunWorker(
 			time.Sleep(5 * time.Millisecond)
 			continue
 		}
+		step.Worker = owner
 		if appendStep(ctx, openedJournal, cursor, step) {
 			head, err := canonical.EntryDigest(canonical.ChainEntry{
 				Seq: int64(position), Prev: cursor.Head, Payload: mustStepPayload(step),
@@ -255,10 +260,25 @@ func decodeAndVerifyStep(payload, salt string, position int, previousResult stri
 	if err != nil {
 		return Step{}, err
 	}
-	if step != want {
+	if step.Digest != want.Digest || step.Result != want.Result || step.Step != want.Step ||
+		!validOwnerName(step.Worker) {
 		return Step{}, fmt.Errorf("step %d payload disagrees with pinned derivation", position)
 	}
 	return step, nil
+}
+
+func validOwnerName(owner string) bool {
+	if owner == "" {
+		return false
+	}
+	for _, c := range owner {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c == '_' || c == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func readPace(path string) time.Duration {

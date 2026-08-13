@@ -1,0 +1,45 @@
+name: windows-induction
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Monthly: the full Apalache induction mirror takes 1–2 hours and
+    # downloads a ~183 MB toolchain. It is still executed, not merely kept.
+    - cron: "23 6 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-induction
+  cancel-in-progress: false
+
+jobs:
+  induction:
+    name: PowerShell R3 induction twin (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: verify/catalog/run-ind.ps1
+        run: |
+          & "$env:GITHUB_WORKSPACE\verify\catalog\run-ind.ps1"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload PowerShell induction output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-induction-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verify/catalog/_runlogs/gate-*/**
+          if-no-files-found: warn
+          retention-days: 90

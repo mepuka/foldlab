@@ -28,6 +28,7 @@ type Step struct {
 	Digest string `json:"digest"`
 	Result string `json:"result"`
 	Step   int    `json:"step"`
+	Worker string `json:"worker"`
 }
 
 type Register struct {
@@ -181,6 +182,27 @@ func readLedgerEvents(bundle string) ([]LedgerEvent, error) {
 		}
 	}
 	return events, nil
+}
+
+func committedOwner(bundle, digest string, fence uint64) (string, error) {
+	events, err := readLedgerEvents(bundle)
+	if err != nil {
+		return "", err
+	}
+	owner := ""
+	for _, event := range events {
+		if event.Digest != digest || event.Fence != fence {
+			continue
+		}
+		if owner != "" && owner != event.Owner {
+			return "", fmt.Errorf("committed (%s,%d) appears under multiple ledger owners", digest, fence)
+		}
+		owner = event.Owner
+	}
+	if owner == "" {
+		return "", fmt.Errorf("committed (%s,%d) has no physical ledger owner", digest, fence)
+	}
+	return owner, nil
 }
 
 func writeCanonicalFile(path string, value any) error {

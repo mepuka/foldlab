@@ -41,6 +41,7 @@ var G1 = Floors{
 
 var (
 	ErrManifest       = errors.New("gauntlet: manifest refused")
+	ErrG1Manifest     = fmt.Errorf("%w (GV9)", ErrManifest)
 	ErrChain          = errors.New("gauntlet: chain refused (GV1)")
 	ErrSemantics      = errors.New("gauntlet: semantics refused (GV2)")
 	ErrCommitment     = errors.New("gauntlet: commitment refused (GV3)")
@@ -90,6 +91,7 @@ type stepPayload struct {
 	Digest string `json:"digest"`
 	Result string `json:"result"`
 	Step   int    `json:"step"`
+	Worker string `json:"worker"`
 }
 
 type registerLine struct {
@@ -126,16 +128,16 @@ func Verify(dir string, floors Floors) (Report, error) {
 
 	var man manifest
 	if err := readCanonicalJSON(filepath.Join(dir, "manifest.json"), &man); err != nil {
-		return report, fmt.Errorf("%w: %v", ErrManifest, err)
+		return report, fmt.Errorf("%w: %v", ErrG1Manifest, err)
 	}
 	if !hex64.MatchString(man.Salt) {
-		return report, fmt.Errorf("%w: salt is not 64 hex chars", ErrManifest)
+		return report, fmt.Errorf("%w: salt is not 64 hex chars", ErrG1Manifest)
 	}
 	if !hex64.MatchString(man.StateDigest) {
-		return report, fmt.Errorf("%w: state_digest is not 64 hex chars", ErrManifest)
+		return report, fmt.Errorf("%w: state_digest is not 64 hex chars", ErrG1Manifest)
 	}
 	if man.Steps < 1 {
-		return report, fmt.Errorf("%w: steps must be positive", ErrManifest)
+		return report, fmt.Errorf("%w: steps must be positive", ErrG1Manifest)
 	}
 
 	// GV1 + GV2: walk the journal, verifying chain and recomputing the
@@ -154,6 +156,7 @@ func Verify(dir string, floors Floors) (Report, error) {
 	head := canonical.Genesis
 	digests := make([]string, man.Steps)
 	results := make([]string, man.Steps)
+	workers := make([]string, man.Steps)
 	prevResult := ""
 	for i, line := range journalLines {
 		if !isCanonical(line) {
@@ -190,6 +193,9 @@ func Verify(dir string, floors Floors) (Report, error) {
 		if step.Step != i {
 			return report, fmt.Errorf("%w: step %d payload says step %d", ErrSemantics, i, step.Step)
 		}
+		if !validOwner.MatchString(step.Worker) {
+			return report, fmt.Errorf("%w: step %d worker %q is invalid", ErrSemantics, i, step.Worker)
+		}
 		base, err := digestOf(map[string]any{"salt": man.Salt, "step": i})
 		if err != nil {
 			return report, err
@@ -210,6 +216,7 @@ func Verify(dir string, floors Floors) (Report, error) {
 		}
 		digests[i] = step.Digest
 		results[i] = step.Result
+		workers[i] = step.Worker
 		prevResult = step.Result
 	}
 	report.Head = head
@@ -227,8 +234,10 @@ func Verify(dir string, floors Floors) (Report, error) {
 		)
 	}
 	resultByDigest := make(map[string]string, man.Steps)
+	workerByDigest := make(map[string]string, man.Steps)
 	for i, d := range digests {
 		resultByDigest[d] = results[i]
+		workerByDigest[d] = workers[i]
 	}
 	fenceByDigest := make(map[string]uint64, man.Steps)
 	steals := 0
@@ -321,6 +330,12 @@ func Verify(dir string, floors Floors) (Report, error) {
 				ErrLedger, digest,
 			)
 		}
+		if ownerByDigestFence[key] != workerByDigest[digest] {
+			return report, fmt.Errorf(
+				"%w: digest %s journaled by %q but committed fence ran under %q",
+				ErrLedger, digest, workerByDigest[digest], ownerByDigestFence[key],
+			)
+		}
 	}
 	dupRuns := totalRuns - man.Steps
 	if dupRuns < 0 {
@@ -367,7 +382,7 @@ func Verify(dir string, floors Floors) (Report, error) {
 	// GV7: the counterfactual cone.
 	var cf cfClaim
 	if err := readCanonicalJSON(filepath.Join(dir, "counterfactual.json"), &cf); err != nil {
-		return report, fmt.Errorf("%w: %v", ErrCounterfactual, err)
+		return report, fmt.Errorf("%w: %v", ErrG1Manifest, err)
 	}
 	if cf.Position != man.CfPosition {
 		return report, fmt.Errorf("%w: position disagrees with manifest", ErrCounterfactual)
@@ -424,21 +439,9 @@ func Verify(dir string, floors Floors) (Report, error) {
 	if err != nil {
 		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
-	kills, restarts := 0, 0
-	for n, line := range stormLines {
-		var event stormLine
-		if err := strictDecode(line, &event); err != nil {
-			return report, fmt.Errorf("%w: storm line %d: %v", ErrFloor, n, err)
-		}
-		switch event.Action {
-		case "kill":
-			kills++
-		case "restart-server":
-			restarts++
-		case "spawn":
-		default:
-			return report, fmt.Errorf("%w: storm line %d unknown action %q", ErrFloor, n, event.Action)
-		}
+	kills, restarts, err := verifyStorm(stormLines, ownersSeen, true)
+	if err != nil {
+		return report, fmt.Errorf("%w: %v", ErrFloor, err)
 	}
 	report.Kills = kills
 	report.ServerRestarts = restarts
@@ -459,6 +462,46 @@ func Verify(dir string, floors Floors) (Report, error) {
 	}
 
 	return report, nil
+}
+
+// verifyStorm binds attested adversary events to known actors and rejects
+// impossible timestamps. Server restarts have one pinned target; all worker
+// actions must resolve to an actor supplied by the verifier's evidence.
+func verifyStorm(lines [][]byte, workerTargets map[string]bool, allowServerRestart bool) (int, int, error) {
+	kills, restarts := 0, 0
+	var previousAt int64
+	for n, line := range lines {
+		if !isCanonical(line) {
+			return 0, 0, fmt.Errorf("storm line %d is not canonical", n)
+		}
+		var event stormLine
+		if err := strictDecode(line, &event); err != nil {
+			return 0, 0, fmt.Errorf("storm line %d: %v", n, err)
+		}
+		if event.At <= 0 || (n > 0 && event.At < previousAt) {
+			return 0, 0, fmt.Errorf("storm line %d timestamp %d is not positive and ordered", n, event.At)
+		}
+		previousAt = event.At
+		switch event.Action {
+		case "kill":
+			if !workerTargets[event.Target] {
+				return 0, 0, fmt.Errorf("storm line %d kill target %q is not a known worker", n, event.Target)
+			}
+			kills++
+		case "spawn", "resume":
+			if !workerTargets[event.Target] {
+				return 0, 0, fmt.Errorf("storm line %d %s target %q is not a known worker", n, event.Action, event.Target)
+			}
+		case "restart-server":
+			if !allowServerRestart || event.Target != "nats-server" {
+				return 0, 0, fmt.Errorf("storm line %d restart target %q is not the pinned server", n, event.Target)
+			}
+			restarts++
+		default:
+			return 0, 0, fmt.Errorf("storm line %d unknown action %q", n, event.Action)
+		}
+	}
+	return kills, restarts, nil
 }
 
 func digestOf(v any) (string, error) {
