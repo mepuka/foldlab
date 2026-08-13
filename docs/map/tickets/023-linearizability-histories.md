@@ -13,7 +13,7 @@ Every schedule in the R4 corpus issues one blocking request and
 extracts state before the next action: client histories never
 overlap, so the corpus provides zero linearizability evidence in the
 Herlihy–Wing sense — final-state agreement is not history
-linearizability (external review, FINDING-RESPONSE-001 part b). This
+linearizability (external-review advisory recorded in GitHub issue #33 A5). This
 is a new obligation class, not a refutation: nothing claims
 linearizability today, and the mutex-protected daemon core is
 plausibly linearizable — plausibly is the word this ticket exists to

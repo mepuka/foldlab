@@ -12,8 +12,8 @@ blocked-by: []
 R4's lockstep evidence proves protod agrees with the hand-restated Go
 oracle over the sampled corpus. Nothing independently establishes that
 the oracle still denotes the checked TLA relation — the producer's
-restated semantics referee their own conformance (external review,
-FINDING-ORACLE-001; the eXtreme-Modelling caveat recorded at R4's
+restated semantics referee their own conformance (external-review advisory
+recorded in GitHub issue #33 A5; the eXtreme-Modelling caveat recorded at R4's
 birth, matured into an obligation). The existing controls each mutate
 a different seam (TLA bridge, daemon identity, comparator); none
 mutates this one.
