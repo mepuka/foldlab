@@ -66,9 +66,9 @@ const emptyView = (key: string): EntityView => ({
  * outside the walled domain (non-UTF-8, NUL key/value, count overflow) is
  * FORGIVEN as a meaning no-op — the identity fold (head) still commits to it,
  * so the chain remembers what meaning drops and `anchors()` stays total over
- * arbitrary bytes. There is one meaning-fold, not two: a second decoder here
- * with its own leniencies would let payloads the wall refuses reach stored
- * state and collide distinct bytes onto one meaning.
+ * arbitrary bytes. The meaning fold has exactly one walled decoder, so
+ * distinct payloads never collide onto one replacement character and no
+ * NUL-bearing key can reach `stateDigest`.
  */
 const applySync = (state: KVState, e: StreamEvent): KVState => kvStep(state, e) ?? state
 
