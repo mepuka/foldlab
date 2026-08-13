@@ -458,11 +458,12 @@ per item so the lanes do not collide.
    sentence is corrected to: creating case checked as an action
    property, resolving case checked as a state invariant. Implementation
    lands in the Mac lanes (they hold the probes, controls, and canary
-   discipline in flight). PC replication before ratification: all seven
+   discipline in flight). PC replication before ratification: all eight
    W/X probes rerun on Windows, verdicts and closure counts exact
-   (W1 clean 9,133/863/d11; W2 violated d2; X1 clean 9,133/863;
-   X2 violated d2; X3 clean 119,145/18,295; X4 violated; X5 clean
-   163,101/21,977). Note for the gate scripts: TLC on Windows rejects
+   (W1 clean 9,133/863/d11; W2 violated d2; W3 violated d2;
+   X1 clean 9,133/863; X2 violated d2; X3 clean 119,145/18,295;
+   X4 violated; X5 clean 163,101/21,977). Note for the gate scripts:
+   TLC on Windows rejects
    path-qualified module names — invoke with `-DTLA-Library=probes` and
    the bare module name.
 2. **Proposal 2 — RATIFIED as a strengthening.** `AdmittedStaysResolvableAtD`
@@ -560,3 +561,202 @@ forgeable-or-unchecked brand, applyMerge dedup, Open/cursor). This is the
 compositionality-of-proof thesis stated as a defect taxonomy: build on a
 lawful surface and the law is inherited; hand-roll a parallel path and it is
 not.
+
+## Independent PC audit (2026-08-13, Windows — exact refs and literature lane)
+
+Formal/code audit target: `origin/main` at `448421c4a`; this section was rebased
+over the later docs-only operator/review commits through `fe63ffed4`. The live proof branches
+were observed at exact refs `d76e39488` (PROVER), `8c670960c` (HARDENER), and
+`eefb2a3cc` (BREAKER); branch names are mutable, so the findings below cite
+these snapshots. Independent lanes covered formal falsification, response and
+history semantics, literature transfer, and the Standards/Spec review axes.
+No ratified TLA, gate, or ledger file was changed.
+
+### Reproduced, not merely read
+
+- `run-wire.ps1` closed the cap2 split canary at 119,145 generated / 18,295
+  distinct / depth 16; the honest wire bridge at 4,306,627 generated / 281,269
+  distinct / depth 17; and the faithless bridge refuted
+  `AtomicRefinement` at 2 / 2 / depth 2.
+- `go test ./catalogr4/...` passed. The live R4 Go-oracle corpus reproduced 131
+  schedules / 3,079 steps / 1,077 states, all 3 Go-oracle action disjuncts and
+  5 semantic branches; tagged daemon sabotage was caught, 131/131 corrupted
+  expected-state schedules diverged, and 131/131 honest schedules completed
+  with zero divergence.
+- BREAKER's stuttering probes were rerun independently at exact ref
+  `149ab34b`: the resolving branch was reachable at depth 2; a false creating
+  obligation failed at 2 / 2 / depth 2; a knowingly false resolving-branch
+  obligation closed cleanly at 9,133 / 863 / depth 11. The state-level honest
+  reformulation closed at the same count and its broken control failed at
+  depth 2. The local-resolvability honest property closed at 119,145 / 18,295 /
+  depth 16; reset refuted it at depth 6 while the weaker admission property
+  remained clean. `NumVals = 4` and `NumVals = 9` each produced 1,757 / 457 /
+  depth 10.
+- The R3 failure was reproduced with Apalache 0.61.0, recorded jar SHA
+  `33611081...ad4346`: the advertised base command exits `ERROR (120)` in
+  Snowcat at `Catalog.tla:142`, before an obligation is checked. Separate TLC
+  reachability probes found an `IndInv` state with catalog length 3 at
+  10,700 / 2,861 / depth 7 and one with data length 3 at 3,434 / 1,045 /
+  depth 6. These establish that the committed `Gen(2)` hypothesis was a strict
+  subset; they do not establish that the repaired invariant is false.
+
+### FINDING-R3-EVIDENCE-002 — the negative-control certificate is not shipped
+
+`verify/AGENTS.md:19-23` requires every model control to be refuted on exactly
+its dropped law and commit the trace beside its config as `*.cex.txt`. When
+independence between two laws is claimed, the other law must be retained and
+shown passing. Current main has no R3
+counterexample trace. Its committed `_apalache-out` contains a preflight type
+error, base and consecution `NoError` logs, and an incomplete state-safety log;
+it contains no action-safety or control verdict. `README.md:163-188` reports the
+blind control only through composite `SafetySteps`, with no shipped run showing
+that `MonotonicityStep` remains green.
+
+The same specificity issue exists in the R2 forged-mirror control. Its committed
+state at `CatalogBroken.forge.cex.txt:36-44` has authority fact `(val=1,id=1)`
+and mirror fact `(val=1,id=2)`. That state violates not only
+`LagIsAbsenceNeverWrongData`, but also `ResolvableOnlyViaCommitted` and
+`Convergence`; `CatalogBroken.forge.cfg` checks neither unrelated law. The trace
+still proves TLC detects forged mirror content, but it does not license
+`VERIFICATION.md:48-50`'s statement that every sabotage violates exactly its
+dropped law.
+
+This is an evidence-contract failure, not a catalog-safety counterexample. For
+the R3 half, PROVER ref `d76e39488` adds named controls and verbatim run
+infrastructure, but that in-flight repair is not merged and its full set was
+still running at the snapshot. The R2 forged-mirror specificity repair belongs
+to the separate HARDENER lane and was also unmerged.
+
+### FINDING-ORACLE-001 — the TLA-to-Go oracle seam has no independent referee
+
+`proto/go/catalogr4/model.go:1-2` accurately says that the executable oracle
+*restates* `Catalog.tla`; schedules and expected states both come from its
+hand-written `Step` relation at `model.go:138-239`. No gate parses TLC states or
+otherwise compares those Go transitions with `CatalogWire.tla`.
+`R4-DECISIONS.md` D1 already marks drift at this seam load-bearing.
+
+The present controls exercise different seams: `CatalogWireBroken` mutates the
+TLA bridge; the tagged daemon mutates identity derivation; and
+`RunCorruptedControls` changes the expected observation after Go `Step`
+(`driver.go:198-200,554-574`). They demonstrate TLA-bridge sensitivity, one
+binary identity-mutation sensitivity, and comparator sensitivity respectively,
+but not Go-oracle/TLA equivalence. Thus the
+reproduced 131/131 result establishes agreement between protod and the
+hand-restated Go oracle over the sampled corpus. It does not independently
+establish that the oracle still denotes the checked TLA relation. No divergence
+between the two was found or is asserted.
+
+The proposed refuter is a small transition certificate containing spec digest,
+bounds, pre-state, action/result, optional macro intermediate, post-state,
+observations, and journal heads, validated against the authoritative TLA
+relation or a separately reviewed checker. Corrupt each field independently;
+generating producer and checker from the same unreviewed transition code is not
+an independent oracle. Such a certificate validates the supplied transcript's
+transition/observation consistency; proving that the transcript came from a real
+daemon additionally needs authenticated capture/attestation or an auditor
+re-run.
+
+### FINDING-RESPONSE-001 — state coverage is not response-branch sensitivity
+
+`CatalogWire.tla` has no result variable or external action label, and the Go
+corrupted controls mutate only post-state observations. Exact code paths expose
+two response-only mutants the present comparator accepts:
+
+- in `CreateAtomic.converged`, `created, _ := reply["created"].(bool)` maps a
+  missing or non-Boolean field to `false`, the expected converged result;
+- in `Publish.refused`, the only reply assertion is
+  `refusal.kind == "unknown-identity"`; changing top-level `ok` or `admitted`,
+  or other refusal metadata, leaves that check green.
+
+The 5/5 branch count remains true, but it is state/model branch reachability,
+not proof that every public response branch is independently killable. A
+directed reply-only mutant per branch is the exact control. This finding sizes
+the response-shape claim; it does not refute the ratified post-state binary
+lockstep result and does not say that the honest daemon emitted a bad reply.
+
+The 131 schedules also issue one blocking NATS request and extract state before
+the next action, so their client invocation/response histories do not overlap.
+They provide no Herlihy-Wing linearizability evidence. The smallest new test is
+two clients at the same daemon with overlapping create and publish of an
+initially unresolved digest, a recorded event history, a search for a legal
+sequentialization preserving real-time precedence and full results, and a
+result-flip control that leaves final state unchanged. A cross-daemon version
+must first establish that the receiving daemon has mirrored the fact. This is a
+new engineering obligation, not a claim that the current mutex-protected core
+is non-linearizable.
+
+### FINDING-GATE-001 — published canaries are printed but not all enforced
+
+The exact counts above are currently intact, but the advertised commands can
+miss later evidence shrinkage:
+
+- `run-r4.ps1:10-20` runs the four command modes, while coverage mode only
+  prints JSON. The 131 / 3,079 / 1,077 and 3/3 + 5/5 assertions live in
+  `model_test.go:8-54`; `run-r4` does not execute that test. The required
+  repository `go test` gate does execute it, so the defect is that the advertised
+  standalone R4 command is not self-enforcing—not that no assertion exists.
+- `run.sh:17-20` calls 119,145 / 18,295 / depth 16 a cross-version cap2 canary,
+  but `expect_clean` at lines 87-96 checks only the clean verdict and prints the
+  summary. It never compares the counts or depth.
+
+These are fail-fast defects, not current model failures. A gate that includes
+the existing Go coverage test and exact TLC summary assertions closes them
+without changing a claim.
+
+### Literature transfer — precise next obligations
+
+Primary sources sharpen four abstractions without inflating the present rung:
+
+1. Lamport's `[A]_v` and Abadi-Lamport refinement make stuttering relative to a
+   chosen state expression. `CreateBegin` changes only creator bookkeeping, so
+   it is visibly unchanged under `Visible = <<catalog, mirror, data>>` by direct
+   inspection, but that observation is not named in the bridge. A state-level
+   `BeginVisibleStutter` predicate plus a visible-state control would make the
+   claim executable.
+2. Lynch-Vaandrager finite abstract moves match the existing one-atomic-step to
+   `Begin;Finish` composition, provided the move carries the same completed-
+   operation label/result trace. At the current finite domains this can license
+   bounded macro-step trace refinement for the sequential operation alphabet,
+   not separate invocation/response-history refinement. Result labels are the
+   missing formal vocabulary, not a reason to redesign the state safety model.
+3. Herlihy-Wing linearizability is a property of invocation/response histories
+   preserving real-time precedence. It cannot be inferred from the present
+   sequential replay corpus, even when every final state matches.
+4. Translation validation and proof-carrying-code methodology suggest a small
+   checker for each sampled transition instead of treating the producer's
+   restated semantics as its own referee.
+
+The full source-anchored hypotheses, exact refuters, scope limits, symmetry and
+cutoff obligations, evidence-semilattice corollary, explicit digest-injectivity
+assumption, and optional Merkle companion are in
+`docs/research/2026-08-13-catalog-refinement-literature.md`. It is a research
+dossier, not a claims-ledger entry.
+
+### Code review axes (kept separate)
+
+**Standards.** Current `VERIFICATION.md` still claims R3 despite main being
+non-rerunnable and the historical hypothesis under-covering `IndInv`; this
+violates the rule that claims are sized to current evidence. R4's resolving
+branch is exempted by the stuttering form, so the current formulation does not
+support README's claim that TLC checks that branch directly. Operator
+ratification item 1 above supplies the disposition: check it with the state
+invariant. A possible process issue is the bounds section saying a fix is in
+flight before a recorded operator disposition; authorship may itself be the
+disposition, so this is not classified as a hard violation.
+
+**Spec.** The in-flight cutoff rationale at lines 403-406 says data is only
+pointwise, but `AdmissionStep` uses `Len` and `SubSeq` over the whole history.
+PROVER ref `d76e39488` supersedes that text with an explicit append-only-data
+premise; main does not. Lines 427-430 also say "all four cex traces" while
+listing five (forge, blind, assert, reset, bridge); the intended phrase is
+"four R2 traces plus the bridge trace," becoming five R2 traces plus bridge if
+the overrun control lands.
+
+### Scope and disposition
+
+No formal repair, ledger edit, or claim upgrade is made here. The exact
+remaining operator decisions are: whether to suspend/reword the stale R3 entry
+until the repaired certificate merges; how to make each R2/R3 control
+independent; whether R4 is intentionally model-binary consensus or requires a
+TLA-linked transition validator; and which public reply fields belong to the R4
+conformance contract.
