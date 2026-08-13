@@ -125,22 +125,8 @@ func tailCursor(ctx context.Context, stream jetstream.Stream) (Cursor, error) {
 	if err != nil {
 		return Cursor{}, fmt.Errorf("read journal tail: %w", err)
 	}
-	position, err := positionFromStreamSequence(raw.Sequence)
-	if err != nil {
-		return Cursor{}, err
-	}
-	entry, err := decodeEntry(raw.Data)
-	if err != nil {
-		return Cursor{}, fmt.Errorf("decode journal tail: %w", err)
-	}
-	digest, err := canonical.EntryDigest(entry)
-	if err != nil {
-		return Cursor{}, tampered(position, "%v", err)
-	}
-	if canonical.DigestHex(raw.Data) != digest {
-		return Cursor{}, tampered(position, "wire bytes are not canonical")
-	}
-	return Cursor{Seq: position, Head: digest}, nil
+	_, cursor, err := verifyStoredEntry(raw)
+	return cursor, err
 }
 
 func (j *Journal) Head() Cursor {
@@ -192,6 +178,9 @@ func (j *Journal) Read(
 	if err != nil {
 		return nil, from, err
 	}
+	if err := j.verifyReadCursor(ctx, from, info); err != nil {
+		return nil, from, err
+	}
 
 	entries := make([]canonical.ChainEntry, 0)
 	cursor := from
@@ -209,27 +198,16 @@ func (j *Journal) Read(
 			return entries, cursor, getErr
 		}
 
-		entry, decodeErr := decodeEntry(raw.Data)
-		if decodeErr != nil {
-			return entries, cursor, tampered(position, "invalid entry JSON: %v", decodeErr)
-		}
-		if entry.Seq != int64(position) {
-			return entries, cursor, tampered(position, "seq is %d", entry.Seq)
+		entry, storedCursor, verifyErr := verifyStoredEntry(raw)
+		if verifyErr != nil {
+			return entries, cursor, verifyErr
 		}
 		if entry.Prev != cursor.Head {
 			return entries, cursor, tampered(position, "prev does not match the verified head")
 		}
 
-		digest, digestErr := canonical.EntryDigest(entry)
-		if digestErr != nil {
-			return entries, cursor, tampered(position, "%v", digestErr)
-		}
-		if canonical.DigestHex(raw.Data) != digest {
-			return entries, cursor, tampered(position, "wire bytes are not canonical")
-		}
-
 		entries = append(entries, entry)
-		cursor = Cursor{Seq: position, Head: digest}
+		cursor = storedCursor
 		nextStreamSeq++
 	}
 
@@ -237,6 +215,66 @@ func (j *Journal) Read(
 		j.cursor = cursor
 	}
 	return entries, cursor, nil
+}
+
+func (j *Journal) verifyReadCursor(
+	ctx context.Context,
+	from Cursor,
+	info *jetstream.StreamInfo,
+) error {
+	if from.Seq == -1 {
+		if from.Head != canonical.Genesis {
+			return tampered(-1, "head does not match genesis")
+		}
+		return nil
+	}
+	position, err := cursorPosition(int64(from.Seq))
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrTampered, err)
+	}
+	streamSequence := uint64(position) + 1
+	if streamSequence > info.State.LastSeq {
+		return tampered(position, "cursor is beyond the journal tail")
+	}
+	raw, err := j.stream.GetMsg(ctx, streamSequence)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrMsgNotFound) {
+			return tampered(position, "message is missing")
+		}
+		return err
+	}
+	_, stored, err := verifyStoredEntry(raw)
+	if err != nil {
+		return err
+	}
+	if stored != from {
+		return tampered(position, "head does not match the stored entry")
+	}
+	return nil
+}
+
+func verifyStoredEntry(
+	raw *jetstream.RawStreamMsg,
+) (canonical.ChainEntry, Cursor, error) {
+	position, err := positionFromStreamSequence(raw.Sequence)
+	if err != nil {
+		return canonical.ChainEntry{}, Cursor{}, err
+	}
+	entry, err := decodeEntry(raw.Data)
+	if err != nil {
+		return canonical.ChainEntry{}, Cursor{}, tampered(position, "invalid entry JSON: %v", err)
+	}
+	if entry.Seq != int64(position) {
+		return canonical.ChainEntry{}, Cursor{}, tampered(position, "seq is %d", entry.Seq)
+	}
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return canonical.ChainEntry{}, Cursor{}, tampered(position, "%v", err)
+	}
+	if canonical.DigestHex(raw.Data) != digest {
+		return canonical.ChainEntry{}, Cursor{}, tampered(position, "wire bytes are not canonical")
+	}
+	return entry, Cursor{Seq: position, Head: digest}, nil
 }
 
 func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (AppendOutcome, error) {

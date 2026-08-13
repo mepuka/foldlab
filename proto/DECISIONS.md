@@ -988,3 +988,21 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Issue #39 — read-tail verification (2026-08-13)
+
+### D??. Read admits a caller cursor only through the stored-entry verifier
+
+Decided: `Journal.Read` accepts genesis only as `{seq:-1, head:GENESIS}` and
+accepts every non-genesis cursor only when the message stored at that exact
+position passes the shared position/canonical-byte/digest verifier and yields
+the submitted head. The daemon therefore refuses an unissued cursor as
+`bad-cursor` before the TypeScript reader can fold an empty suffix and label
+caller input `verified`. Tail adoption, read, and conflict recovery retain one
+stored-entry verification path (D60). Alternatives: rename or omit
+`fact.verified` only for an empty suffix; trust a later entry's `prev` to expose
+a false cursor; validate only when the cursor is currently at the tail. Why:
+all three alternatives leave either a misleading public shape or another
+zero-entry path that can echo or adopt unverified caller input. **Load-bearing?
+yes** — W6's honesty depends on every value named `verified` having crossed
+this admission seam.
