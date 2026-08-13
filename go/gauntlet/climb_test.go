@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -37,14 +38,15 @@ var climbTestFloors = ClimbFloors{
 const climbSeed = "r2-self-test"
 
 type climbFixture struct {
-	dir      string
-	seed     string // candidate digests
-	c1, c2   string
-	c3       string
-	devIDs   []string
-	holdIDs  []string
-	journal  []string // canonical payloads in order (pre-chain)
-	planRows []string
+	dir       string
+	corpusSHA string
+	seed      string // candidate digests
+	c1, c2    string
+	c3        string
+	devIDs    []string
+	holdIDs   []string
+	journal   []string // canonical payloads in order (pre-chain)
+	planRows  []string
 }
 
 func climbStep(t *testing.T, template string) map[string]any {
@@ -257,7 +259,7 @@ func buildClimbBundle(t *testing.T) climbFixture {
 			owner = "w2"
 		}
 		ledger = append(ledger, string(mustCanonical(t, map[string]any{
-			"at": 1, "digest": work, "fence": i + 1, "nonce": "n", "owner": owner,
+			"at": 1, "digest": work, "fence": i + 1, "nonce": "n-" + strconv.Itoa(i+1), "owner": owner,
 		})))
 		i++
 	}
@@ -284,7 +286,7 @@ func buildClimbBundle(t *testing.T) climbFixture {
 	})))
 
 	return climbFixture{
-		dir: dir, seed: seedD, c1: c1D, c2: c2D, c3: c3D,
+		dir: dir, corpusSHA: corpusSHA, seed: seedD, c1: c1D, c2: c2D, c3: c3D,
 		devIDs: devIDs, holdIDs: holdIDs, journal: payloads, planRows: planRows,
 	}
 }
@@ -322,7 +324,7 @@ func journalPayloads(t *testing.T, dir string) []string {
 
 func TestClimbValidBundlePasses(t *testing.T) {
 	fx := buildClimbBundle(t)
-	report, err := VerifyClimb(fx.dir, climbTestFloors)
+	report, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err != nil {
 		t.Fatalf("valid bundle refused: %v", err)
 	}
@@ -366,7 +368,7 @@ func TestClimbSelectionTamperRefused(t *testing.T) {
 		}
 	}
 	rechain(t, fx.dir, payloads)
-	_, err := VerifyClimb(fx.dir, climbTestFloors)
+	_, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrSelection) {
 		t.Fatalf("selection tamper not refused as CL2: %v", err)
 	}
@@ -385,7 +387,7 @@ func TestClimbHoldoutBeforeSelectionRefused(t *testing.T) {
 	}
 	reordered := append([]string{moved}, payloads[:last]...)
 	rechain(t, fx.dir, reordered)
-	_, err := VerifyClimb(fx.dir, climbTestFloors)
+	_, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrSelection) {
 		t.Fatalf("holdout-before-selection not refused as CL3: %v", err)
 	}
@@ -404,7 +406,7 @@ func TestClimbMissingLineageRefused(t *testing.T) {
 		kept = append(kept, p)
 	}
 	rechain(t, fx.dir, kept)
-	_, err := VerifyClimb(fx.dir, climbTestFloors)
+	_, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrLineage) {
 		t.Fatalf("missing lineage not refused as CL4: %v", err)
 	}
@@ -434,7 +436,7 @@ func TestClimbOutputTamperRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = entries
-	_, err = VerifyClimb(fx.dir, climbTestFloors)
+	_, err = verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrScore) {
 		t.Fatalf("output tamper not refused as CL1: %v", err)
 	}
@@ -465,7 +467,7 @@ func TestClimbSplitTamperRefused(t *testing.T) {
 	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = VerifyClimb(fx.dir, climbTestFloors)
+	_, err = verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrPlan) {
 		t.Fatalf("split tamper not refused: %v", err)
 	}
@@ -488,9 +490,96 @@ func TestClimbSingleWorkerRefused(t *testing.T) {
 	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err = VerifyClimb(fx.dir, climbTestFloors)
+	_, err = verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrFleet) {
 		t.Fatalf("single worker not refused as CL5: %v", err)
+	}
+}
+
+func TestClimbSelfDeclaredCorpusRefused(t *testing.T) {
+	fx := buildClimbBundle(t)
+	corpusPath := filepath.Join(fx.dir, "corpus.json")
+	data, err := os.ReadFile(corpusPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var corpus []map[string]any
+	mustUnmarshal(t, data, &corpus)
+	for _, question := range corpus {
+		question["problem"] = "FAKE problem supplied by the bundle"
+	}
+	mutated, err := json.Marshal(corpus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(corpusPath, mutated, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(fx.dir, "manifest.json")
+	manifest, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	mustUnmarshal(t, manifest, &m)
+	m["corpus_sha256"] = canonical.DigestHex(mutated)
+	if err := os.WriteFile(path, mustCanonical(t, m), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
+	if err == nil || !errors.Is(err, ErrManifest) {
+		t.Fatalf("self-declared corpus pin not refused: %v", err)
+	}
+}
+
+func TestClimbGhostStormTargetRefused(t *testing.T) {
+	fx := buildClimbBundle(t)
+	rewriteStormTarget(t, fx.dir, "kill", "ghost-that-never-existed")
+	_, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
+	if err == nil || !errors.Is(err, ErrFloor) {
+		t.Fatalf("ghost storm target not refused: %v", err)
+	}
+}
+
+func TestClimbZeroedLedgerEvidenceRefused(t *testing.T) {
+	fx := buildClimbBundle(t)
+	path := filepath.Join(fx.dir, "ledger.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for i, line := range lines {
+		var claim map[string]any
+		mustUnmarshal(t, []byte(line), &claim)
+		claim["at"] = float64(0)
+		claim["fence"] = float64(0)
+		claim["nonce"] = ""
+		lines[i] = string(mustCanonical(t, claim))
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA)
+	if err == nil || !errors.Is(err, ErrFleet) {
+		t.Fatalf("zeroed ledger evidence not refused: %v", err)
+	}
+}
+
+func TestClimbTruncatedStopReasonRemainsAuditable(t *testing.T) {
+	fx := buildClimbBundle(t)
+	payloads := journalPayloads(t, fx.dir)
+	for i, payload := range payloads {
+		var fact map[string]any
+		mustUnmarshal(t, []byte(payload), &fact)
+		if fact["kind"] == "receipt" {
+			fact["stop"] = "max_tokens"
+			payloads[i] = string(mustCanonical(t, fact))
+		}
+	}
+	rechain(t, fx.dir, payloads)
+	if _, err := verifyClimbAgainstCorpus(fx.dir, climbTestFloors, fx.corpusSHA); err != nil {
+		t.Fatalf("recorded truncation is legal output evidence, not a completion claim: %v", err)
 	}
 }
 
@@ -498,7 +587,7 @@ func TestClimbGainFloorRefused(t *testing.T) {
 	fx := buildClimbBundle(t)
 	strict := climbTestFloors
 	strict.DevGainMin = 10 // fixture gain is 3
-	_, err := VerifyClimb(fx.dir, strict)
+	_, err := verifyClimbAgainstCorpus(fx.dir, strict, fx.corpusSHA)
 	if err == nil || !errors.Is(err, ErrFloor) {
 		t.Fatalf("dev gain floor not refused: %v", err)
 	}
@@ -514,5 +603,12 @@ func TestR2FloorsArePinned(t *testing.T) {
 	}
 	if R2 != want {
 		t.Fatalf("R2 floors drifted: %+v", R2)
+	}
+}
+
+func TestR2CorpusAnchorIsPinned(t *testing.T) {
+	const want = "8ce15a57d0d8a6b8bba1efb7f04ceeb64358a8d2e8227c6651d90af8c9fae5f2"
+	if R2CorpusSHA256 != want {
+		t.Fatalf("R2 corpus anchor drifted: %s", R2CorpusSHA256)
 	}
 }
