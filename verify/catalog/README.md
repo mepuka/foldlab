@@ -216,3 +216,52 @@ laws, not a nuisance: commit the trace beside the spec like the
 
 The R3 commands above are a separate gate: four `NoError` verdicts and
 two required `Error` verdicts. Any flipped verdict fails the claim.
+
+## R4 attempt (FINDING, 2026-08-13 — NOT CLAIMED)
+
+The ticket-010 harness lives in `proto/go/catalogr4/`; its decisions log is
+`R4-DECISIONS.md`, and the minimized red evidence is
+`R4-FINDING-001.md`. It drives two real protod instances over NATS, uses only
+the narrow writ for actions and observations, locally verifies every journal
+head, and extracts resolve verdicts through the stateless concierge. Replica
+roles remain unbuilt, so `MirrorAdvance` uses the explicitly limited
+re-create-and-project substitute described in the decisions log; it does not
+claim the ADR-0009 prefix mechanism.
+
+The sampling method is five deterministic branch-witness schedules followed
+by 128 depth-24 uniform random walks over the stable enabled-action list.
+Walk `i` uses xorshift64 seed
+`0x17ca0001 + i * 0x9e3779b97f4a7c15`. This produced 133 schedules and 3,089
+model steps at the exact R2 domains (2 daemons / 3 values / 2 creators / data
+cap 2).
+
+Coverage and sensitivity are deliberately adjacent:
+
+| Measure | Result |
+|---|---:|
+| Corrupted expected-state sensitivity | **133 / 133 caught** |
+| Tagged protod sabotage (`AssertedIdentity`) | **caught** on first committed fact |
+| R2 distinct-state coverage | **1,326 / 12,707,989 = 0.010434381%** |
+| TLA action-disjunct coverage | **4 / 4**; untouched: none |
+| Semantic action-branch coverage | **7 / 7**; untouched: none |
+
+The low state percentage is a scope finding, not hidden by the 100%
+sensitivity number. Both negative-control classes ran before honest replay.
+
+Honest replay then stopped on directed schedule 5 after 17 driven steps. The
+four-action minimized witness has two creators snapshot an empty daemon
+catalog for different values; creator 2 appends value 2; creator 1's modeled
+Finish conflicts at the stale expected length, while the atomic wire
+`type.create` performs a fresh check and returns `created:true` for value 1.
+Observed authority catalog `[2,1]` therefore differs from modeled `[2]`.
+
+This is a refinement-seam finding, not a W1/W3 safety violation: the current
+wire request is atomic and serialized, so ticket 010's split Begin/Finish
+schedule cannot be interposed step-for-step through the public surface. Per
+the task's stop rule, no fix was attempted, no zero-divergence count exists,
+and ticket 009 / `VERIFICATION.md` remain unchanged. R4 is **not claimed**.
+
+Run the ordered gate from the repository root with
+`powershell -File verify/catalog/run-r4.ps1` (or
+`bash verify/catalog/run-r4.sh`). The first three phases pass and publish the
+controls/coverage; the honest phase reproduces the finding and exits 1.
