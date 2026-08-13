@@ -86,8 +86,112 @@ The blind publish step appends digest 1 to `data[1]`, although daemon 1
 does not resolve 1. This violates `AdmissionStep`; the negative control
 therefore proves the action-safety harness can fail.
 
-## Result
+## Result (2026-08-13, first pass — superseded, see the repair below)
 
 Candidate B is inductive for arbitrary trace length and unbounded data
 journals at the configured 2-daemon, 3-value, 2-creator domains. R3 is
 claimed at exactly that scope. R4 remains the model-to-binary bridge.
+
+--------------------------------------------------------------------------
+
+# The hypothesis-bound repair (2026-08-13, second pass)
+
+An audit of the first pass found two defects that are not about the
+invariant at all — they are about what the harness could express and
+what it could still run. Both are recorded here because the next person
+to move `IndInv` will meet them again.
+
+## Preflight, again: the R3 obligations had stopped running entirely
+
+`FINDING-R3-001`. The R4 commit `0701b8b` added the wire-bridge
+accessors `ModelState`, `CatalogOf`, `MirrorOf`, `DataOf`, `CreatorsOf`,
+`Become` to `Catalog.tla` and rewrote `CreateBegin`/`CreateFinish`
+through them, without type annotations. Snowcat then refused the module:
+
+```text
+[Catalog.tla:142:18-142:21]: Cannot apply s to the argument 1 in s[1].
+[Catalog.tla:142:1-142:21]: Error when computing the type of CatalogOf
+```
+
+Every R3 obligation — clean runs and negative controls alike — died at
+the type checker before any proof ran (`EXITCODE: ERROR (120)`,
+`_runlogs/base-01-baseline.log`). A gate that cannot run cannot fail,
+which is the same defect class as a control that cannot be refuted. The
+committed verdicts were real: obligation 1 reproduces `NoError` against
+`Catalog.tla` as of the R3 claim commit `be3ebf8`
+(`_runlogs/baseline-preR4-ob1-base.log`).
+
+Fix: annotations only, exactly as in the first preflight above. The
+certificate that nothing but types moved is the TLC cap2 closure, which
+must reproduce bit-for-bit: **119,145 generated / 18,295 distinct /
+depth 16** (`_runlogs/annot-canary-cap2.log`). It did.
+
+A trap worth its own line: prose inside a `.tla` comment must not
+contain the literal annotation token, or Snowcat counts the sentence as
+a second annotation on the declaration that follows
+(`Found 2 @type annotations in front of some declaration`).
+
+## The induction hypothesis could not express a full catalog
+
+The first pass built the hypothesis with `catalog = Gen(2)` while
+`NumVals = 3`. `Gen(k)` bounds what the hypothesis can EXPRESS —
+sequences of length <= k, functions of <= k entries, the bound recursing
+unchanged into nested structures (upstream `ValueGenerator.scala`:
+`genSeq` asserts `len <= bound`, `genFun` recurses with the same bound).
+`CatalogNaturallyBounded` — itself a conjunct of `IndInv` — permits
+`Len(catalog[d]) = 3`, and a length-3 catalog is reachable.
+
+So a state satisfying every conjunct of `IndInv` was unrepresentable in
+`IndInit`, and consecution and action safety were discharged over a
+strict subset of the invariant. Uncovered: every transition OUT of a
+full catalog. Nothing was wrong with Candidate B; the harness simply
+never asked it the last question.
+
+This is the failure mode that makes `Gen` dangerous: it does not warn,
+it does not narrow the printed claim, and the run comes back green. The
+only defence is to derive each variable's natural maximum from the
+invariants and compare. At these domains:
+
+| Variable | Natural maximum | Bound | Verdict |
+|---|---|---|---|
+| `catalog` | 3 (`CatalogNaturallyBounded`, `NumVals = 3`) | `Gen(3)` | exact — was `Gen(2)`, the defect |
+| `mirror` | 3 (prefix of `catalog[o]` by `LagIsAbsenceNeverWrongData`) | `Gen(4)` | above maximum |
+| `creators` | 2 (`|Creators|`) | `Gen(4)` | above maximum |
+| `data` | unbounded (`DataCap = 0`) | `Gen(2)` | CUTOFF — argued, see below |
+
+## The one bound no `Gen(k)` can cover: `data`
+
+Data journals are unbounded in the R3 domains, so the `data` bound is a
+cutoff and needs an argument, not a number. The argument is written out
+in `CatalogInd.tla`'s header and in `R3-DECISIONS.md` D3; in one line:
+`data` is read by no guard, occurs only pointwise in `TypeOK` and
+`NoAdmissionOnFaith`, and `CommittedIds` is monotone — so truncating
+every journal to `<<>>` preserves `IndInv`, disables no action, and
+preserves every violation, because only the newly appended entry can
+newly violate anything. Pre-state depth 0 suffices; `Gen(2)` covers it
+with one to spare.
+
+The argument stands on a premise worth naming here too, because it is
+the part a future edit breaks silently: **`data` is append-only**.
+`data'` is written in exactly one place — `Publish`'s `Append` — and no
+action rewrites, reorders, removes, or compacts an existing entry. That
+is what makes `AdmissionStep`'s `Len` and `SubSeq` conjuncts
+structurally true rather than something the cutoff has to survive: they
+constrain the earlier entries, and they are satisfied by every step the
+relation admits. Add a compaction, reindex, or replay-truncation action
+and the cutoff becomes unsound while every other line of the argument
+still reads as valid.
+
+`IndInitDataDeep` re-runs consecution at `data = Gen(3)` as the
+insensitivity control. It corroborates the argument; the argument is
+what licenses the bound.
+
+## Result (repaired)
+
+The verdicts at the repaired bounds, the timings, and the run record are
+in `README.md`; the chronological log with every command is
+`WORKLOG.md`. R3's scope is unchanged in substance — 2 daemons, 3
+values, 2 creators, unbounded data journals, arbitrary trace length —
+but it is now discharged over a hypothesis that can express every state
+`IndInv` admits at those domains, which is what the first pass did not
+do.
