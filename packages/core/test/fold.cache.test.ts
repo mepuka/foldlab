@@ -112,6 +112,32 @@ describe("sound fold cache", () => {
     expect(getFoldCache(emptyFoldCache(), honest, mergeSeed())).toEqual({ ok: true, hit: false })
   })
 
+  test("an unbranded declaration costume cannot mint an honest cache key", () => {
+    const honest = primitiveFolds.sum
+    const declaration = algebras.sum.declaration!
+    const costume = defineFold<StreamEvent, number>({
+      empty: 0,
+      combine: () => 999,
+      declaration: {
+        [Symbol.for("@foldlab/core/Declaration")]: true,
+        spec: declaration.spec,
+        encoding: declaration.encoding,
+        digest: declaration.digest,
+      },
+    } as unknown as Algebra<number>, steps.payloadLength)
+
+    expect(costume.digest).toBeUndefined()
+    expect(putFoldCache(emptyFoldCache(), costume, mergeSeed(), 999)).toEqual({
+      ok: false,
+      refusal: {
+        _tag: "IdentityUnavailable",
+        feature: "fold-cache",
+        reason: "the algebra declaration is not admitted",
+      },
+    })
+    expect(getFoldCache(emptyFoldCache(), honest, mergeSeed())).toEqual({ ok: true, hit: false })
+  })
+
   test("cache storage is opaque and structurally fabricated caches refuse", () => {
     const honest = primitiveFolds.sum
     const head = mergeSeed()

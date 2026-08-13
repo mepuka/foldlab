@@ -134,6 +134,18 @@ export interface Step<E, A extends FoldState> {
   readonly identityIssue?: string
 }
 
+/** Private-brand admission exposed without revealing the brand itself. */
+export const isDeclaredAlgebra = <A extends FoldState>(
+  algebra: Algebra<A>,
+): algebra is Algebra<A> & { readonly declaration: Declaration<AlgebraSpec> } =>
+  isDeclaration(algebra.declaration)
+
+/** Private-brand admission exposed without revealing the brand itself. */
+export const isDeclaredStep = <E, A extends FoldState>(
+  step: Step<E, A>,
+): step is Step<E, A> & { readonly declaration: Declaration<StepSpec> } =>
+  isDeclaration(step.declaration)
+
 export type EventGeneratorSpec = { readonly kind: "streamEvent" }
 
 // File-private brand, for the same reason as `DeclarationTypeId`: the closed
