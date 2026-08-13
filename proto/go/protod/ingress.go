@@ -45,12 +45,12 @@ func (d *Daemon) handleIngress(msg *nats.Msg) {
 
 func (d *Daemon) serveIngress(ctx context.Context, subject string, body []byte) any {
 	name := strings.TrimPrefix(subject, ingressPrefix)
-	if !validJournalName.MatchString(name) || name == catalogJournalName {
+	if !validJournalName.MatchString(name) || name == catalogJournalName || strings.HasPrefix(name, sessionJournalPrefix) {
 		return refuse(&Refusal{
 			Kind:     KindBadJournal,
 			Law:      "ingress subjects name a data journal; the catalog is written only by the daemon, through type.create",
 			Got:      name,
-			Expected: "a name matching ^[A-Za-z0-9_-]+$, not \"catalog\"",
+			Expected: "a name matching ^[A-Za-z0-9_-]+$ outside daemon-reserved catalog/session names",
 			Example:  ingressPrefix + "data",
 			Next:     []NextHint{describeHint()},
 		})

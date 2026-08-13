@@ -988,3 +988,64 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 37 — the session journal (2026-08-14)
+
+### D??. Session names address a canonical open event under a reserved house prefix
+
+Decided: one session is the journal `flb_session_v0_<digest>`, where `digest` is
+SHA-256 over the RFC 8785 bytes of its full `open` event. The open carries a
+digest over an owned grammar descriptor that commits every v0 production's
+required/optional fields and child sorts, not only the kind names. The
+underscore spelling obeys the existing journal-name grammar; generic ingress
+refuses the prefix, while `session.open` is the only creator. Alternatives:
+random session ids; hash only author/seed; use dotted `flb.session.v0` names
+outside the house regex; digest only the current kind list. Why: identical open
+facts converge, the journal remains directly readable, and a production-shape
+change cannot masquerade as the same grammar. **Load-bearing? yes** — U3's
+identity and cross-version replay both depend on what the key commits.
+
+### D??. The O(1) extension cache is derived and head-keyed, never authority
+
+Decided: each loaded session journal has a process-local `(verified cursor,
+partial)` cache protected by the session's append lock. Cache miss/restart
+replays from genesis; cache hit applies one move to the current carrier and
+advances one journal position. Generic ingress cannot write the reserved
+journal, so every admitted mutation passes through mandatory `expectedHead`
+position-CAS. Alternatives: replay the entire journal on every move (violates
+the L3 extension claim); treat the cache as durable state (creates a second
+authority); route sessions through the effector (spends decision coordination
+on evidence). Why: the journal remains the sole source of truth while the
+meaning fold extends without history-length work. **Load-bearing? yes** — this
+is the implementation of L1/L3 and G3 together.
+
+### D??. Task 37 records the current digest scheme and owes a future bridge
+
+Decided: every prefix state and L7 commit audit is explicitly tagged
+`bytes-sha256-v1`, computed as SHA-256 over RFC 8785 bytes of the current
+normalize (including canonical union-member order). Task 36 is not merged at
+this lane's base, so no `flb.type.v1` record is invented here. When that scheme
+lands, an old session commit remains an immutable old-scheme fact and gains a
+dual-record bridge; it is never reinterpreted or overwritten. Alternatives:
+read whichever scheme is active after a future merge; anticipate task 36's
+unmerged record shape; omit the scheme from state replies. Why: all three make
+historical state digests silently change or claim a contract this base does not
+have. **Load-bearing? yes** — L7 is meaningful only when both equal digests name
+the same scheme.
+
+### D??. Retention is recorded now; compaction remains a typed domain refusal
+
+Decided: session events carry `compactible`, `irreducible`, or
+`never-discardable`; fill/unfill/refusal/read are trace traffic, open and
+utterance/proposal are replay roots, and commit/adoption are permanent spine
+facts. Both Go and TypeScript expose a compaction planning path that returns the
+marks plus `compaction-blocked`; it cannot discard bytes until task 32 supplies
+`flb.certification.v0`, structural-refusal export, and the corpus digest sealing
+the prefix. Because task 30 is not present at this base, its classifier is not
+copied here; at integration both `session-stale` and build-relative
+`compaction-blocked` join the absence sort and never enter the structural
+corpus. Alternatives: compact without export; add a fifth daemon request
+that can only refuse; implement task 32's record in this lane; leave retention
+implicit in prose. Why: the fallback enforces G4 without expanding the ratified
+four-request session surface or crossing an active lane. **Load-bearing? yes**
+— silent compaction would destroy teaching evidence forbidden by issue #24.

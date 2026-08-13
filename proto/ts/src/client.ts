@@ -12,11 +12,17 @@ import {
   DescribeReply,
   INGRESS_PREFIX,
   ReadReply,
+  SessionCommitReply,
+  SessionStateReply,
   SUBJECT_CONTRACT_DESCRIBE,
   SUBJECT_JOURNAL_READ,
   SUBJECT_TYPE_CREATE,
   SUBJECT_TYPE_FILL,
   SUBJECT_TYPE_UNFILL,
+  SUBJECT_SESSION_COMMIT,
+  SUBJECT_SESSION_MOVE,
+  SUBJECT_SESSION_OPEN,
+  SUBJECT_SESSION_STATE,
   decodeReply,
   localRefusal,
   type Refusal,
@@ -175,6 +181,50 @@ export class ProtoClient {
       ConciergeReply,
     )
   }
+
+  async openSession(options: {
+    readonly grammar: string
+    readonly author: string
+    readonly seed?: Json
+  }): Promise<Reply<SessionStateReply>> {
+    const body: Record<string, Json> = {
+      grammar: options.grammar,
+      author: options.author,
+    }
+    if (options.seed !== undefined) body["seed"] = options.seed
+    return this.request(SUBJECT_SESSION_OPEN, body, SessionStateReply)
+  }
+
+  async moveSession(
+    session: string,
+    expectedHead: string,
+    move:
+      | { readonly op: "fill"; readonly path: ReadonlyArray<string>; readonly subtree: Json }
+      | { readonly op: "unfill"; readonly path: ReadonlyArray<string> },
+  ): Promise<Reply<SessionStateReply>> {
+    const body: Record<string, Json> = {
+      session,
+      expectedHead,
+      op: move.op,
+      path: [...move.path],
+    }
+    if (move.op === "fill") body["subtree"] = move.subtree
+    return this.request(SUBJECT_SESSION_MOVE, body, SessionStateReply)
+  }
+
+  async sessionState(session: string): Promise<Reply<SessionStateReply>> {
+    return this.request(SUBJECT_SESSION_STATE, { session }, SessionStateReply)
+  }
+
+  async commitSession(
+    session: string,
+    expectedHead: string,
+    submitter?: string,
+  ): Promise<Reply<SessionCommitReply>> {
+    const body: Record<string, Json> = { session, expectedHead }
+    if (submitter !== undefined) body["submitter"] = submitter
+    return this.request(SUBJECT_SESSION_COMMIT, body, SessionCommitReply)
+  }
 }
 
 export {
@@ -183,6 +233,20 @@ export {
   SUBJECT_TYPE_UNFILL,
   SUBJECT_JOURNAL_READ,
   SUBJECT_CONTRACT_DESCRIBE,
+  SUBJECT_SESSION_OPEN,
+  SUBJECT_SESSION_MOVE,
+  SUBJECT_SESSION_STATE,
+  SUBJECT_SESSION_COMMIT,
   INGRESS_PREFIX,
 }
-export type { Refusal, Reply, AdmitReply, ConciergeReply, CreateReply, DescribeReply, ReadReply }
+export type {
+  Refusal,
+  Reply,
+  AdmitReply,
+  ConciergeReply,
+  CreateReply,
+  DescribeReply,
+  ReadReply,
+  SessionStateReply,
+  SessionCommitReply,
+}

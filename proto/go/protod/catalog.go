@@ -76,6 +76,23 @@ func (c *catalog) resolvableDigests(limit int) []string {
 	return digests
 }
 
+// frontierSnapshot captures exactly the catalog fact on which a frontier may
+// depend. Holding the catalog lock across the head read and ref copy prevents
+// a reply from pairing one head with another head's resolvable set.
+func (c *catalog) frontierSnapshot(limit int) (string, []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	digests := make([]string, 0, len(c.byDigest))
+	for digest := range c.byDigest {
+		digests = append(digests, digest)
+	}
+	sort.Strings(digests)
+	if len(digests) > limit {
+		digests = digests[:limit]
+	}
+	return c.journal.Head().Head, digests
+}
+
 // create canonicalizes, derives, converges or appends. The refusal
 // return is data; error is reserved for substrate failure (JetStream
 // down), which surfaces as a NATS-level timeout, never a domain no.

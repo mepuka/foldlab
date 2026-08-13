@@ -16,6 +16,9 @@ const (
 	KindUnknownJournal   = "unknown-journal"   // read addresses a journal that does not exist
 	KindBadCursor        = "bad-cursor"        // read cursor does not verify against the journal (W6)
 	KindUnknownRequest   = "unknown-request"   // request subject has no handler
+	// session-stale is head-relative and therefore joins Task 30's absence
+	// sort when that independent lane merges; it must never enter a corpus.
+	KindSessionStale = "session-stale" // expectedHead is not the session's current head
 )
 
 // NextHint teaches the caller what to do next (W7): a subject plus a

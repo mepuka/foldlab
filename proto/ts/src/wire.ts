@@ -10,6 +10,10 @@ export const SUBJECT_TYPE_FILL = "flb.req.type.fill"
 export const SUBJECT_TYPE_UNFILL = "flb.req.type.unfill"
 export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
+export const SUBJECT_SESSION_OPEN = "flb.req.session.open"
+export const SUBJECT_SESSION_MOVE = "flb.req.session.move"
+export const SUBJECT_SESSION_STATE = "flb.req.session.state"
+export const SUBJECT_SESSION_COMMIT = "flb.req.session.commit"
 export const INGRESS_PREFIX = "flb.ing."
 
 // ——— shapes ———
@@ -70,6 +74,42 @@ export const ConciergeReply = Schema.Struct({
   next: Schema.Array(NextHint),
 })
 export type ConciergeReply = typeof ConciergeReply.Type
+
+export const SessionAnchor = Schema.Struct({
+  key: Schema.String,
+  head: Schema.String,
+  stateDigest: Schema.String,
+})
+export interface SessionAnchor extends Schema.Schema.Type<typeof SessionAnchor> {}
+
+export const SessionStateReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  head: Schema.String,
+  step: Schema.Int,
+  partial: Schema.Json,
+  stateDigest: Schema.String,
+  stateScheme: Schema.String,
+  catalogHead: Schema.String,
+  frontier: Schema.Array(FrontierEntry),
+  anchor: SessionAnchor,
+  next: Schema.Array(NextHint),
+})
+export interface SessionStateReply extends Schema.Schema.Type<typeof SessionStateReply> {}
+
+export const SessionCommitReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  head: Schema.String,
+  step: Schema.Int,
+  stateDigest: Schema.String,
+  digest: Schema.String,
+  scheme: Schema.String,
+  catalogSeq: Schema.Int,
+  catalogHead: Schema.String,
+  next: Schema.Array(NextHint),
+})
+export interface SessionCommitReply extends Schema.Schema.Type<typeof SessionCommitReply> {}
 
 export const WireEntry = Schema.Struct({
   seq: Schema.Int,

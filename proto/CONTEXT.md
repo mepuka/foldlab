@@ -97,6 +97,19 @@ The session facade's ordered record of every verb, subject, sent body,
 and received reply — what makes an agent thread auditable after the
 fact. Sugar strictly above the writ.
 
+**Session journal**:
+One content-addressed `flb.session.v0` construction history under the reserved
+`flb_session_v0_` journal prefix. Its identity fold remembers exact open,
+fill/unfill, and commit traffic; its meaning fold carries the current partial.
+A move always names `expectedHead`, while reads derive state and frontier from
+the verified journal rather than treating cached state as authority.
+
+**Session retention mark**:
+The storage tier carried by a session event: trace traffic is compactible,
+utterances/proposals are irreducible, and adoption/commit facts are never
+discardable. Until the refusal-corpus seam can export structural refusals and
+seal their corpus digest, compaction is a typed refusal rather than data loss.
+
 ## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
 
 Recorded from the MCP deep-read at the pin against spec revision

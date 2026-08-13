@@ -1,0 +1,69 @@
+{
+  "version": "flb.session.v0",
+  "grammarDigest": "d5ff3590cfc2f5758747d464d2cc3dcc5f6b271c94f1c427bdb2b21c9608f633",
+  "stateScheme": "bytes-sha256-v1",
+  "session": "flb_session_v0_1190cc9e3cc8c720cdcd1c4763121a68c2506a61dc8de8ff546f377b1f0b6768",
+  "steps": [
+    {
+      "step": 0,
+      "event": {
+        "version": "flb.session.v0",
+        "kind": "open",
+        "grammar": "d5ff3590cfc2f5758747d464d2cc3dcc5f6b271c94f1c427bdb2b21c9608f633",
+        "seed": { "k": "hole" },
+        "author": "fixture-agent",
+        "retention": "irreducible"
+      },
+      "canonical": "{\"author\":\"fixture-agent\",\"grammar\":\"d5ff3590cfc2f5758747d464d2cc3dcc5f6b271c94f1c427bdb2b21c9608f633\",\"kind\":\"open\",\"retention\":\"irreducible\",\"seed\":{\"k\":\"hole\"},\"version\":\"flb.session.v0\"}",
+      "head": "86cafb6654e3dd5b0cd66b64024459f6a8cc94ac9eb17ecaf585883cb59fbe26",
+      "stateDigest": "8d7ab8a6a054a7bf2bd98cf978e5d8182ade7055a622f3b39fcb49f0aef0a840"
+    },
+    {
+      "step": 1,
+      "event": {
+        "kind": "fill",
+        "path": [],
+        "subtree": { "k": "list", "of": { "k": "hole" } },
+        "retention": "compactible"
+      },
+      "canonical": "{\"kind\":\"fill\",\"path\":[],\"retention\":\"compactible\",\"subtree\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}",
+      "head": "a2df9ddd059b7ea3a08331a0d0315ee2fce25a4396ed4e2866fc5fc754b6c441",
+      "stateDigest": "a363ec31db276ab927f5d55d36f581705d4599069a8e5550a9cceb0986b051c4"
+    },
+    {
+      "step": 2,
+      "event": {
+        "kind": "fill",
+        "path": ["of"],
+        "subtree": { "k": "string" },
+        "retention": "compactible"
+      },
+      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"retention\":\"compactible\",\"subtree\":{\"k\":\"string\"}}",
+      "head": "bb7bb028f9a80523be8940f9567ce33192ad46b5c39cc5c7d83a11f27dd2e0a0",
+      "stateDigest": "7f46cbacd9bdc7d61ee5e962bb03ad4b3617a1a33e172afd1bbeb462a78924ae"
+    },
+    {
+      "step": 3,
+      "event": {
+        "kind": "unfill",
+        "path": ["of"],
+        "retention": "compactible"
+      },
+      "canonical": "{\"kind\":\"unfill\",\"path\":[\"of\"],\"retention\":\"compactible\"}",
+      "head": "be73bdce588d8678618d4c325e0ba3fd2f2609c46c69e39d502fc65873cbbc2f",
+      "stateDigest": "a363ec31db276ab927f5d55d36f581705d4599069a8e5550a9cceb0986b051c4"
+    },
+    {
+      "step": 4,
+      "event": {
+        "kind": "fill",
+        "path": ["of"],
+        "subtree": { "k": "bool" },
+        "retention": "compactible"
+      },
+      "canonical": "{\"kind\":\"fill\",\"path\":[\"of\"],\"retention\":\"compactible\",\"subtree\":{\"k\":\"bool\"}}",
+      "head": "8bc5b0eff2d8313c857b301fa00ae1671dc956f94c455f61a37132fbe7cfdb6e",
+      "stateDigest": "63790fd3da6730089c85e0bd5e1e8e07cedc291ceb86ee045593f4d9819fbdf3"
+    }
+  ]
+}

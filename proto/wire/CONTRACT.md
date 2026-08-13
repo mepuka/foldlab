@@ -16,10 +16,15 @@ the daemon is a bug in one of them.
 | unfill one type node | `flb.req.type.unfill` | request/reply |
 | read a journal | `flb.req.journal.read` | request/reply |
 | describe the contract | `flb.req.contract.describe` | request/reply |
+| open a construction session | `flb.req.session.open` | request/reply |
+| append a session move | `flb.req.session.move` | request/reply |
+| resume session state | `flb.req.session.state` | request/reply |
+| commit a decided session | `flb.req.session.commit` | request/reply |
 | publish a frame | `flb.ing.<journal>` | request/reply (the reply admits or refuses) |
 
-`<journal>` matches `^[A-Za-z0-9_-]+$` and is never `catalog` — the
-catalog is written only by the daemon, through `type.create`. Requests
+`<journal>` matches `^[A-Za-z0-9_-]+$` and is never `catalog` or a name
+beginning `flb_session_v0_` — those journals are written only by the
+daemon through their request kinds. Requests
 on unknown `flb.req.*` subjects are answered with an `unknown-request`
 refusal (data, not silence). Requests without a reply inbox are dropped:
 there is nowhere to teach into.
@@ -84,6 +89,43 @@ the catalog supplies a truthful example. `refs` is the lexicographically
 first 16 resolvable digests. An empty frontier means zero holes and is
 exactly when `type.create` accepts the partial (C3).
 
+### flb.session.v0
+
+```json
+{"grammar":"<current grammar digest>","seed":<partial>?,"author":"<non-empty>"}
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>",
+ "op":"fill"|"unfill","path":["..."],"subtree":<partial>?}
+{"session":"flb_session_v0_<hex64>"}
+{"session":"flb_session_v0_<hex64>","expectedHead":"<hex64>","submitter":"<string>"?}
+```
+
+These are respectively `session.open`, `session.move`, `session.state`, and
+`session.commit`. The session name is SHA-256 over the canonical `open` event,
+and its suffix names one reserved journal. `open` defaults `seed` to a root
+hole; identical open data converges on the same journal.
+
+`expectedHead` is mandatory on every state-changing move (fill, unfill,
+commit). A stale head returns `session-stale` with the current head/state and
+the exact refused move context plus a filled retry body. It never invokes the
+effector: session traffic is evidence guarded by journal position-CAS.
+
+State facts carry `session`, `head`, `step`, `partial`, `stateDigest`,
+`stateScheme`, `catalogHead`, `frontier`, `anchor:{key,head,stateDigest}`, and
+`next`. The frontier is computed solely from the partial and the catalog
+snapshot named by `catalogHead`; session history is not an input. Commit first
+replays the verified journal, normalizes and canonicalizes the zero-hole state,
+and requires its current `bytes-sha256-v1` digest to equal the daemon-derived
+catalog digest (L7). The commit journal event additionally records `scheme`,
+`catalogSeq`, and `catalogHead`; a future scheme is a dual record/bridge, never
+an in-place reinterpretation of this fact.
+
+Every session event carries a retention mark. Fill/unfill/refusal/read traces
+are `compactible`; open/utterance/proposal traffic is `irreducible`; commit and
+adoption facts are `never-discardable`. Actual compaction is blocked in this
+build: until `flb.certification.v0` exists, structural refusals cannot export to
+the corpus and no corpus digest can seal the summarized prefix. The typed
+`compaction-blocked` path retains the complete session.
+
 ### journal.read
 
 ```json
@@ -142,6 +184,8 @@ same shape with `local:true` for its own conditions (`unreachable`,
 | `unknown-journal` | read addresses a journal that does not exist (lag is absence) |
 | `bad-cursor` | read cursor does not verify against the journal (W6) |
 | `unknown-request` | request subject has no handler (W9) |
+| `session-stale` | mandatory expectedHead is not the session's current head (G3) |
+| `compaction-blocked` | refusal-corpus sealing is unavailable, so session compaction cannot proceed (G4) |
 
 ## flb.type.v0 specifics pinned by this implementation
 
@@ -194,3 +238,5 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
+- `sessions.json` — one `flb.session.v0` dialogue with each canonical event,
+  per-prefix chain head, and normalized state digest (U3 R0).
