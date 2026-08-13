@@ -14,6 +14,46 @@ import { toJsonSchema } from "./codegen.ts"
 import type { Json } from "./jcs.ts"
 import { Refusal as RefusalSchema, type Contract, type Refusal } from "./wire.ts"
 
+const DaemonRefusal = RefusalSchema.pipe(
+  Schema.fieldsAssign({
+    kind: Schema.Literals([
+      "malformed",
+      "invalid-structure",
+      "unknown-ref",
+      "digest-mismatch",
+      "unknown-identity",
+      "bad-journal",
+      "unknown-journal",
+      "bad-cursor",
+      "unknown-request",
+    ]),
+  }),
+)
+
+const ClientLocalRefusal = RefusalSchema.pipe(
+  Schema.fieldsAssign({
+    kind: Schema.Literals([
+      "unreachable",
+      "malformed-reply",
+      "verify-failed",
+      "beyond-v0",
+      "underivable",
+    ]),
+  }),
+)
+
+/** The daemon's existing reply is already an envelope: every fact has
+ * ok:true, while refusals have ok:false plus refusal. The record rest
+ * preserves contract-derived fact fields verbatim; the fixed fields make
+ * the complete refusal vocabulary visible to validating MCP clients. */
+const McpOutputEnvelope = Schema.StructWithRest(
+  Schema.Struct({
+    ok: Schema.Boolean,
+    refusal: Schema.optionalKey(Schema.Union([DaemonRefusal, ClientLocalRefusal])),
+  }),
+  [Schema.Record(Schema.String, Schema.Unknown)],
+)
+
 export interface DerivedTool {
   readonly name: string
   readonly description: string
@@ -68,7 +108,7 @@ export const mcpLayer = (
     Tool.dynamic(tool.name, {
       description: tool.description,
       parameters: tool.inputSchema as any,
-      success: Schema.Unknown,
+      success: McpOutputEnvelope,
     }),
   )
   const toolkit = Toolkit.make(...tools)

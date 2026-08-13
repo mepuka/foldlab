@@ -988,3 +988,21 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 29 — MCP output envelope (2026-08-14)
+
+### D??. The advertised envelope is the existing reply object, open over fact fields
+
+Decided: every dynamic MCP tool uses one `StructWithRest` output schema that
+requires the existing `ok` discriminant, permits the contract-derived fact
+fields as unknown rest properties, and optionally declares a refusal as a
+union of two refinements of the shared wire `Refusal`: the nine daemon kinds
+and the five already-lawful client-local kinds. Alternatives: retain
+`Schema.Unknown` or use a top-level fact/refusal union (both are dropped by
+the pinned `registerToolkit` object guard); add a new nested `fact` envelope
+(would change the daemon reply passthrough); enumerate only the nine daemon
+kinds (would turn an existing local refusal into a tool-result encoding
+defect). Why: the schema must advertise every value that can already cross
+the seam while leaving each contract-derived fact byte-for-byte unchanged.
+**Load-bearing? yes** — this shape simultaneously carries W8 and determines
+whether validating MCP clients can see the refusal contract.

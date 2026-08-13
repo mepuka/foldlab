@@ -3,9 +3,34 @@
 // derived at startup, not authored. Refusals surface as data in tool
 // results, never as MCP protocol errors.
 import { afterAll, beforeAll, expect, test } from "bun:test"
+import { Schema } from "effect"
+import { Tool } from "effect/unstable/ai"
 import { ProtoClient } from "../src/client.ts"
 import { toolsFromContract } from "../src/mcp.ts"
+import { Refusal as RefusalSchema } from "../src/wire.ts"
 import { spawnProtod, type RunningDaemon } from "./harness.ts"
+
+const DAEMON_REFUSAL_KINDS = [
+  "malformed",
+  "invalid-structure",
+  "unknown-ref",
+  "digest-mismatch",
+  "unknown-identity",
+  "bad-journal",
+  "unknown-journal",
+  "bad-cursor",
+  "unknown-request",
+] as const
+
+const enumsIn = (value: unknown): ReadonlyArray<ReadonlyArray<unknown>> => {
+  if (Array.isArray(value)) return value.flatMap(enumsIn)
+  if (typeof value !== "object" || value === null) return []
+  const object = value as Record<string, unknown>
+  return [
+    ...(Array.isArray(object.enum) ? [object.enum] : []),
+    ...Object.values(object).flatMap(enumsIn),
+  ]
+}
 
 let daemon: RunningDaemon
 
@@ -73,6 +98,18 @@ const spawnMcp = async (): Promise<McpProcess> => {
   }
 }
 
+test("registerToolkit drops bare-union and Unknown output schemas", () => {
+  const bareUnion = Schema.Union([
+    Schema.Struct({ ok: Schema.Literal(true) }),
+    Schema.Struct({ ok: Schema.Literal(false), refusal: RefusalSchema }),
+  ])
+
+  // Pinned registerToolkit advertises success schemas only when this
+  // derived top-level type is "object". These are the mutant controls.
+  expect(Tool.getJsonSchemaFromSchema(Schema.Unknown).type).toBeUndefined()
+  expect(Tool.getJsonSchemaFromSchema(bareUnion).type).toBeUndefined()
+})
+
 test("tool schemas are derived from contract.describe, and refusals are data in results", async () => {
   const mcp = await spawnMcp()
   try {
@@ -102,6 +139,18 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       "type_fill",
       "type_unfill",
     ])
+    for (const tool of tools) {
+      expect(tool.outputSchema).toBeDefined()
+      expect(tool.outputSchema.type).toBe("object")
+      expect(enumsIn(tool.outputSchema)).toContainEqual([...DAEMON_REFUSAL_KINDS])
+    }
+
+    // Digest-addressed resources may ship only behind exact-match routing.
+    // The current MCP face serves none, so no slash-normalizing route exists.
+    mcp.send({ jsonrpc: "2.0", id: 15, method: "resources/list", params: {} })
+    const resources = await mcp.next()
+    expect(resources.error).toBeUndefined()
+    expect(resources.result.resources).toEqual([])
 
     // The wall: the served schemas equal what the contract derives —
     // the MCP surface cannot drift from the daemon's self-description.
