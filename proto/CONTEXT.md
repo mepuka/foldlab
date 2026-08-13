@@ -96,3 +96,19 @@ The single JSON line protod prints once its surfaces are live:
 The session facade's ordered record of every verb, subject, sent body,
 and received reply — what makes an agent thread auditable after the
 fact. Sugar strictly above the writ.
+
+## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
+
+Recorded from the MCP deep-read at the pin against spec revision
+2026-07-28; these bind every foldlab MCP surface:
+
+- No per-connection variance of the served tool/resource/prompt list
+  (the spec forbids it; the pin's EnabledWhen gating is not used).
+- Digest-addressed resource URIs require exact-match routing proven
+  by a conformance test before any resource ships — a repaired URI
+  names a different value.
+- Nothing depends on transport sessions, subscriptions, or
+  server-initiated requests: the pin speaks a legacy protocol era
+  with a stated removal window, and session state belongs in the
+  journal, where it is recomputable evidence rather than transport
+  state.
