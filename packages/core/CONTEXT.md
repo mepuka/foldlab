@@ -21,5 +21,6 @@ homomorphisms; fold-cache storage and fold handles reject structural costumes.
 `kvStep` reports an excluded payload as `undefined`; entity collection
 deliberately forgives it as a meaning no-op while its identity fold still
 commits the bytes. Lower-level canonical writers retain their documented range
-errors, and the algebra's genuine-declaration re-hosting residual remains
-explicitly outside this claim; Task 22 does not assert a package-wide migration.
+errors. The algebra's genuine-declaration re-hosting residual also reaches the
+digest-keyed cache and remains a pinned known gap outside this claim; Task 22
+does not assert a package-wide error-channel migration.

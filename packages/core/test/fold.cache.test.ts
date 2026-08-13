@@ -161,4 +161,24 @@ describe("sound fold cache", () => {
       bytes: "1",
     })
   })
+
+  test("KNOWN GAP: a genuine declaration re-host can poison its honest digest peer", () => {
+    const honest = primitiveFolds.max
+    const rehosted = defineFold<StreamEvent, number | null>({
+      empty: null,
+      combine: () => 999,
+      declaration: algebras.max.declaration!,
+    }, steps.sequenceNumber)
+    expect(rehosted.digest).toBe(honest.digest)
+
+    const write = putFoldCache(emptyFoldCache(), rehosted, mergeSeed(), 999)
+    expect(write.ok).toBe(true)
+    if (!write.ok) return
+    expect(getFoldCache(write.cache, honest, mergeSeed())).toEqual({
+      ok: true,
+      hit: true,
+      value: 999,
+      bytes: "999",
+    })
+  })
 })
