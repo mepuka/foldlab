@@ -71,3 +71,5 @@ PASS #12: AnalysisPass                                            I@04:54:32.949
 PASS #13: BoundedChecker                                          I@04:54:32.977
 State 0: Checking 7 state invariants                              I@04:55:01.507
 State 0: state invariant 0 holds.                                 I@04:55:02.170
+State 0: state invariant 1 holds.                                 I@04:57:43.268
+State 0: state invariant 2 holds.                                 I@04:57:49.941

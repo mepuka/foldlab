@@ -111,6 +111,8 @@ Ids == Vals
 
 \* @typeAlias: fact = { val: Int, id: Int };
 \* @typeAlias: creator = { busy: Bool, at: Int, val: Int, exp: Int };
+\* The `vars` tuple read as an explicit state value (see ModelState below).
+\* @typeAlias: mstate = <<Int -> Seq($fact), Int -> (Int -> Seq($fact)), Int -> Seq(Int), Int -> $creator>>;
 CatalogAliases == TRUE
 
 \* A catalog fact: the canonical structure value and its identity.
@@ -133,16 +135,29 @@ VARIABLES
   \* @type: Int -> $creator;            creator processes
   creators
 
+\* @type: $mstate;
 vars == <<catalog, mirror, data, creators>>
 
 \* The existing vars tuple is also the explicit state value used by
 \* CatalogWire.tla. Accessors let the bridge apply the proved split halves to
 \* a bounded intermediate state without copying their transition table.
+\* The type annotations below are TYPE COMMENTS ONLY, added 2026-08-13 so
+\* that Apalache's Snowcat can type the accessors (FINDING-R3-001: without
+\* them Catalog.tla does not type-check, and every R3 obligation dies before
+\* any proof runs).  TLC ignores them; the cap2 closure canary
+\* (119,145 / 18,295 / depth 16) is what certifies the transition relation
+\* did not move.
+\* @type: $mstate;
 ModelState == vars
+\* @type: ($mstate) => (Int -> Seq($fact));
 CatalogOf(s)  == s[1]
+\* @type: ($mstate) => (Int -> (Int -> Seq($fact)));
 MirrorOf(s)   == s[2]
+\* @type: ($mstate) => (Int -> Seq(Int));
 DataOf(s)     == s[3]
+\* @type: ($mstate) => (Int -> $creator);
 CreatorsOf(s) == s[4]
+\* @type: ($mstate) => Bool;
 Become(s) ==
   /\ catalog' = CatalogOf(s)
   /\ mirror' = MirrorOf(s)
@@ -164,13 +179,15 @@ CommittedIds   == { f.id : f \in CommittedFacts }
 \* The resolve index as the ratified law states it: a pure fold of the
 \* journals the daemon holds — its own, plus every mirrored prefix.
 \* Union resolution, ticket 002 #5.
-\* @type: (Int) => Set($fact);
+\* @type: ($mstate, Int) => Set($fact);
 LocalFactsIn(s, d) ==
   Range(CatalogOf(s)[d]) \cup
     UNION { Range(MirrorOf(s)[d][o]) : o \in Daemons \ {d} }
+\* @type: (Int) => Set($fact);
 LocalFacts(d) == LocalFactsIn(ModelState, d)
 \* @type: (Int) => Set(Int);
 ResolvableIds(d) == { f.id : f \in LocalFacts(d) }
+\* @type: ($mstate, Int) => Set(Int);
 ResolvableIdsIn(s, d) == { f.id : f \in LocalFactsIn(s, d) }
 
 Init ==
@@ -185,8 +202,10 @@ Init ==
 (* position.  A resolvable digest converges: created:false, the existing   *)
 (* fact — an observable no-op (W3).                                        *)
 (***************************************************************************)
+\* @type: (Int, $mstate) => Bool;
 CreateBeginEnabled(c, before) == ~CreatorsOf(before)[c].busy
 
+\* @type: (Int, Int, Int, $mstate) => $mstate;
 CreateBeginResult(c, d, v, before) ==
   IF Digest(v) \in ResolvableIdsIn(before, d)
     THEN before      \* W3 converge: existing fact, no append
@@ -208,8 +227,10 @@ CreateBegin(c, d, v) ==
 (* the resolve-check's freshness on the OWN journal.  Mirror growth since  *)
 (* Begin is deliberately not detected (see header).                        *)
 (***************************************************************************)
+\* @type: (Int, $mstate) => Bool;
 CreateFinishEnabled(c, before) == CreatorsOf(before)[c].busy
 
+\* @type: (Int, $mstate) => Set($mstate);
 CreateFinishResults(c, before) ==
   LET d == CreatorsOf(before)[c].at
       v == CreatorsOf(before)[c].val IN

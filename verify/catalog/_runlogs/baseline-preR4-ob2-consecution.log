@@ -70,3 +70,11 @@ PASS #12: AnalysisPass                                            I@04:54:33.068
   > Introduced expression grades                                  I@04:54:33.124
 PASS #13: BoundedChecker                                          I@04:54:33.124
 State 0: Checking 14 state invariants                             I@04:55:02.274
+State 0: state invariant 0 holds.                                 I@04:55:03.479
+State 0: state invariant 1 holds.                                 I@04:55:06.429
+State 0: state invariant 2 holds.                                 I@04:55:25.669
+State 0: state invariant 3 holds.                                 I@04:56:48.408
+State 0: state invariant 4 holds.                                 I@04:56:52.375
+State 0: state invariant 5 holds.                                 I@04:56:53.716
+State 0: state invariant 6 holds.                                 I@04:56:53.784
+State 0: state invariant 7 holds.                                 I@04:57:14.840
