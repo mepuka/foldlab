@@ -22,10 +22,6 @@ const (
 	retentionCompactible  = "compactible"
 	retentionIrreducible  = "irreducible"
 	retentionNeverDiscard = "never-discardable"
-
-	// This build-relative refusal is absence-sort when Task 30's classifier
-	// merges: the corpus seam may appear at a later build and repeal it.
-	KindCompactionBlocked = "compaction-blocked"
 )
 
 type sessionJournal struct {
@@ -767,13 +763,13 @@ func sessionRetentionPlan(events []sessionEvent) []retentionMark {
 // corpus digest must seal the compacted prefix; absence traces may die with it.
 // Proceeding without that evidence would violate G4's ratified amendment.
 func sessionCompaction(name string, events []sessionEvent) ([]retentionMark, *Refusal) {
-	return sessionRetentionPlan(events), &Refusal{
+	return sessionRetentionPlan(events), classifyRefusal(&Refusal{
 		Kind:     KindCompactionBlocked,
 		Law:      "G4: session compaction refuses until structural refusals can be sealed into the refusal corpus",
 		Got:      map[string]any{"session": name, "marked": len(events)},
 		Expected: "the flb.certification.v0 corpus seam and its emitted corpus digest",
 		Next:     []NextHint{{Subject: SubjectSessionState, Note: "retain the full session and continue without compaction", Body: map[string]any{"session": name}}},
-	}
+	})
 }
 
 func requireSessionFields(body []byte, fields ...string) *Refusal {

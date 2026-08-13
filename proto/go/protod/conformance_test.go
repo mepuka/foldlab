@@ -80,8 +80,8 @@ func (h *harness) create(structure any) reply {
 }
 
 // refusal asserts the uniform refusal shape (W7, W8): ok:false, a kind,
-// a law sentence, next hints, and local:false — arrived as data in a
-// reply, never as a NATS error.
+// its persisted ontology sort, a law sentence, next hints, and local:false —
+// arrived as data in a reply, never as a NATS error.
 func (h *harness) refusal(r reply, kind string) map[string]any {
 	h.t.Helper()
 	if r["ok"] != false {
@@ -93,6 +93,13 @@ func (h *harness) refusal(r reply, kind string) map[string]any {
 	}
 	if refusal["kind"] != kind {
 		h.t.Fatalf("refusal kind is %v, want %q (law: %v)", refusal["kind"], kind, refusal["law"])
+	}
+	sort, ok := protod.RefusalSortOf(kind)
+	if !ok {
+		h.t.Fatalf("daemon kind %q is absent from the frozen refusal sort table", kind)
+	}
+	if refusal["sort"] != string(sort) {
+		h.t.Fatalf("refusal sort is %v, want %q for kind %q", refusal["sort"], sort, kind)
 	}
 	law, _ := refusal["law"].(string)
 	if law == "" {
@@ -351,6 +358,11 @@ func TestConformance(t *testing.T) {
 		}
 		if contract["ingress"] == nil || contract["refusal"] == nil {
 			t.Fatalf("contract misses ingress or refusal: %v", contract)
+		}
+		refusalSchema := contract["refusal"].(map[string]any)
+		refusalFields := refusalSchema["fields"].(map[string]any)
+		if refusalFields["sort"] == nil {
+			t.Fatalf("described refusal omits persisted sort: %v", refusalSchema)
 		}
 		if !names["type_fill"] || !names["type_unfill"] {
 			t.Fatalf("contract omits concierge request kinds: %v", names)
@@ -658,11 +670,25 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 		t.Fatalf("connect: %v", err)
 	}
 	h := &harness{t: t, conn: conn}
-	created := h.create(sampleStructure())
+	structure := sampleStructure()
+	digest := digestOf(t, structure)
+	frame := map[string]any{
+		"type": digest, "payload": map[string]any{"id": "s-2", "celsius": 3},
+	}
+	archivedBytes := h.requestBytes("flb.ing.data", mustJSON(t, frame))
+	var archived reply
+	if err := json.Unmarshal(archivedBytes, &archived); err != nil {
+		t.Fatalf("decode archived refusal: %v", err)
+	}
+	h.refusal(archived, protod.KindUnknownIdentity)
+
+	created := h.create(structure)
 	if created["ok"] != true {
 		t.Fatalf("create: %v", created)
 	}
-	digest := created["digest"].(string)
+	if created["digest"] != digest {
+		t.Fatalf("created digest = %v, want %s", created["digest"], digest)
+	}
 	conn.Close()
 	first.Release()
 
@@ -678,9 +704,14 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	defer conn2.Close()
 	h2 := &harness{t: t, conn: conn2}
 
-	admit := h2.request("flb.ing.data", map[string]any{
-		"type": digest, "payload": map[string]any{"id": "s-2", "celsius": 3},
-	})
+	// The archived bytes retain their historical absence sort after restart,
+	// even though the identical request now admits because presence repealed it.
+	var afterRestart reply
+	if err := json.Unmarshal(archivedBytes, &afterRestart); err != nil {
+		t.Fatalf("decode archived refusal after restart: %v", err)
+	}
+	h2.refusal(afterRestart, protod.KindUnknownIdentity)
+	admit := h2.request("flb.ing.data", frame)
 	if admit["ok"] != true {
 		t.Fatalf("identity did not survive restart: %v", admit)
 	}
@@ -691,4 +722,13 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	if fmt.Sprintf("%v", resubmit["digest"]) != digest {
 		t.Fatalf("digest moved across restart")
 	}
+}
+
+func mustJSON(t *testing.T, value any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
 }

@@ -297,6 +297,9 @@ func TestSessionRetentionMarksAndCompactionRefusal(t *testing.T) {
 	if refusal.Kind != KindCompactionBlocked || refusal.Expected == nil {
 		t.Fatalf("compaction did not refuse on the absent corpus seam: %+v", refusal)
 	}
+	if refusal.Sort != RefusalAbsence {
+		t.Fatalf("compaction refusal sort = %q, want absence", refusal.Sort)
+	}
 }
 
 func TestSessionStateDigestNormalizesUnionPositions(t *testing.T) {

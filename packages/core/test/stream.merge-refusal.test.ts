@@ -12,12 +12,12 @@ import {
 } from "../src/stream.ts"
 
 interface MergeRefusalVector {
-  readonly source: string
-  readonly events: ReadonlyArray<{ readonly seq: number; readonly payload: string }>
+  readonly sources: ReadonlyArray<{
+    readonly source: string
+    readonly events: ReadonlyArray<{ readonly seq: number; readonly payload: string }>
+  }>
   readonly picks: MergeFact["picks"]
-  readonly duplicateSeq: number
-  readonly firstIndex: number
-  readonly duplicateIndex: number
+  readonly offenders: MergeDuplicateSequence["offenders"]
 }
 
 const vector = JSON.parse(
@@ -26,34 +26,22 @@ const vector = JSON.parse(
 
 describe("the shared merge-refusal wall", () => {
   test("M1: a source carrying a duplicate sequence is refused before replay", () => {
-    const events: ReadonlyArray<StreamEvent> = vector.events.map(({ seq, payload }) =>
-      event(vector.source, seq, payload))
+    const sources = new Map<string, ReadonlyArray<StreamEvent>>(vector.sources.map((source) => [
+      source.source,
+      source.events.map(({ seq, payload }) => event(source.source, seq, payload)),
+    ]))
     const refusal = Effect.runSync(Effect.flip(applyMerge(
       { picks: vector.picks },
-      new Map([[vector.source, events]]),
+      sources,
     )))
 
     expect(refusal).toBeInstanceOf(MergeDuplicateSequence)
     if (!(refusal instanceof MergeDuplicateSequence)) throw refusal
-    expect(refusal.source).toBe(vector.source)
-    expect(refusal.seq).toBe(vector.duplicateSeq)
-    expect(refusal.firstIndex).toBe(vector.firstIndex)
-    expect(refusal.duplicateIndex).toBe(vector.duplicateIndex)
+    expect(refusal.offenders).toEqual(vector.offenders)
   })
 
-  /**
-   * The other half of a cross-language finding recorded in
-   * go/stream/merge_paths_test.go. When two sources each repeat a coordinate,
-   * BOTH refusals are true and an implementation must pick one to return. This
-   * side is deterministic: sources arrive in a `ReadonlyMap`, replay walks it in
-   * insertion order, and the first duplicated source is always the one named.
-   * The Go twin takes `map[string][]Event`, which has no order at all, and its
-   * randomized iteration names either source across identical calls — measured
-   * at roughly 1750/250 over 2000 runs. So the two implementations agree that
-   * the input is refused and can disagree about the refusal VALUE, which the
-   * lane treats as data. Reported, not repaired.
-   */
-  test("FINDING: this side names the first duplicated source, deterministically", () => {
+  /** Issue #21 regression: discovery order cannot choose the refusal value. */
+  test("all duplicate-bearing sources are listed independent of insertion order", () => {
     const alpha = [event("alpha", 1, "a=1"), event("alpha", 1, "a=2")]
     const beta = [event("beta", 1, "b=1"), event("beta", 1, "b=2")]
     const picks = [{ stream: "alpha", seq: 1 }]
@@ -64,14 +52,16 @@ describe("the shared merge-refusal wall", () => {
         new Map([["alpha", alpha], ["beta", beta]]),
       )))
       expect(first).toBeInstanceOf(MergeDuplicateSequence)
-      expect((first as MergeDuplicateSequence).source).toBe("alpha")
+      expect((first as MergeDuplicateSequence).offenders).toEqual([
+        { source: "alpha", seq: 1, indexes: [0, 1] },
+        { source: "beta", seq: 1, indexes: [0, 1] },
+      ])
 
-      // Insertion order is the whole rule: swapping it swaps the answer.
       const second = Effect.runSync(Effect.flip(applyMerge(
         { picks },
         new Map([["beta", beta], ["alpha", alpha]]),
       )))
-      expect((second as MergeDuplicateSequence).source).toBe("beta")
+      expect((second as MergeDuplicateSequence).offenders).toEqual((first as MergeDuplicateSequence).offenders)
     }
   })
 
@@ -120,10 +110,7 @@ describe("the shared merge-refusal wall", () => {
           new Map([[source, events]]),
         )))
         expect(refusal).toEqual(new MergeDuplicateSequence({
-          source,
-          seq,
-          firstIndex,
-          duplicateIndex,
+          offenders: [{ source, seq, indexes: [firstIndex, duplicateIndex] }],
         }))
 
         const replayed = Effect.runSync(applyMerge(

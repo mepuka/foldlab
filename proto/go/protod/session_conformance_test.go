@@ -225,14 +225,14 @@ func blackBoxSessionGrammarDigest(t *testing.T) string {
 			map[string]any{"k": "union", "required": []any{"k", "of"}, "children": map[string]any{"of": "non-empty-unique-unordered-T-array"}},
 		},
 	}
-	raw, err := canonical.Canonicalize(mustJSON(t, descriptor))
+	raw, err := canonical.Canonicalize(mustSessionJSON(t, descriptor))
 	if err != nil {
 		t.Fatal(err)
 	}
 	return canonical.DigestHex(raw)
 }
 
-func mustJSON(t *testing.T, value any) []byte {
+func mustSessionJSON(t *testing.T, value any) []byte {
 	t.Helper()
 	raw, err := json.Marshal(value)
 	if err != nil {

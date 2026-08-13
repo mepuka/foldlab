@@ -1,0 +1,18 @@
+{
+  "grammar": "flb.type.v0",
+  "grammarDigest": "b48c29004d0bc5794c8431b4e2eb7f85557a31da6a8293373118fbb1e67ba072",
+  "sortByKind": {
+    "malformed": "structural",
+    "invalid-structure": "structural",
+    "digest-mismatch": "structural",
+    "bad-cursor": "structural",
+    "unknown-request": "structural",
+    "bad-journal": "structural",
+    "unknown-ref": "absence",
+    "unknown-identity": "absence",
+    "unknown-journal": "absence",
+    "session-stale": "absence",
+    "session-principal": "structural",
+    "compaction-blocked": "absence"
+  }
+}

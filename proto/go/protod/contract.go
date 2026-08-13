@@ -58,6 +58,7 @@ func vNextHint() map[string]any {
 func vRefusal() map[string]any {
 	return vStruct(map[string]any{
 		"kind":     vKind("string"),
+		"sort":     vKind("string"),
 		"law":      vKind("string"),
 		"path":     vList(vKind("string")),
 		"got":      vOpaque(),

@@ -395,10 +395,11 @@
         ],
         "path": [
           "partial"
-        ]
+        ],
+        "sort": "structural"
       }
     },
-    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a hole at the requested path\",\"got\":{\"k\":\"string\"},\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[],\"subtree\":{\"k\":\"bool\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\"]}}"
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a hole at the requested path\",\"got\":{\"k\":\"string\"},\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[],\"subtree\":{\"k\":\"bool\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\"],\"sort\":\"structural\"}}"
   },
   {
     "name": "fill-unknown-ref-refusal",
@@ -446,10 +447,11 @@
         "path": [
           "partial",
           "digest"
-        ]
+        ],
+        "sort": "absence"
       }
     },
-    "replyCanonical": "{\"ok\":false,\"refusal\":{\"expected\":\"a digest already committed to the catalog\",\"got\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"kind\":\"unknown-ref\",\"law\":\"W4/DAG: every ref in a partial must already resolve — no forward refs, no admission on faith\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"k\":\"ref\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"digest\"]}}"
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"expected\":\"a digest already committed to the catalog\",\"got\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"kind\":\"unknown-ref\",\"law\":\"W4/DAG: every ref in a partial must already resolve — no forward refs, no admission on faith\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"k\":\"ref\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"digest\"],\"sort\":\"absence\"}}"
   },
   {
     "name": "unfill-invalid-path-refusal",
@@ -499,9 +501,10 @@
         "path": [
           "partial",
           "of"
-        ]
+        ],
+        "sort": "structural"
       }
     },
-    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a child path on list, struct, union, brand, or check\",\"got\":[\"of\"],\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[\"of\"]},\"note\":\"repair the field named by the refusal and retry this stateless unfill\",\"subject\":\"flb.req.type.unfill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"of\"]}}"
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a child path on list, struct, union, brand, or check\",\"got\":[\"of\"],\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[\"of\"]},\"note\":\"repair the field named by the refusal and retry this stateless unfill\",\"subject\":\"flb.req.type.unfill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"of\"],\"sort\":\"structural\"}}"
   }
 ]
