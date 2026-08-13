@@ -1,0 +1,15 @@
+=== J1: jcs encodeValue accepts non-JSON objects, folds to {} ===
+Date  -> {"ok":true,"bytes":"{}"}
+Map   -> {"ok":true,"bytes":"{}"}
+{}    -> {"ok":true,"bytes":"{}"}
+COLLISION Date==={}: true
+COLLISION Map(a=1)==={}: true
+Money(100) -> {"ok":true,"bytes":"{\"cents\":100}"} (cents is enumerable own prop)
+
+=== A1: algebra Declaration brand is forgeable via Symbol.for ===
+impostor combine is max?  false
+mapped() certified impostor (declaration present, no identityIssue): true / undefined
+  -> the digest gate admitted a source whose combine is NOT the declared algebra
+
+=== M1: applyMerge duplicate seqs within one source silently last-write-win ===
+picked payload for seq=1: SECOND (no refusal of the duplicate seq)
