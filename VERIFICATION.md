@@ -191,6 +191,10 @@ tampering.
 - R0: frozen fixture walls ([fixtures/](fixtures/)), generated once by
   the Go side, recomputed by both sides forever.
 - R1: property and fuzz tests ([go/stream/](go/stream/)).
+- R0: the Effect Schema transport wall consumes four live Go-origin
+  rows: two non-ASCII text payloads reproduce the Go-computed heads,
+  while raw `ff` and `fe` payloads have distinct Go heads and both
+  refuse as typed schema failures instead of decoding to U+FFFD.
 - Empirical crash evidence: fleet runs under kill-9 storms and cold
   restarts with independently verifiable bundles
   ([docs/gauntlet/](docs/gauntlet/)).
@@ -199,13 +203,24 @@ tampering.
 
 - Divergence probes are owed per ADR-0007 where domains exceed the
   fixtures.
+- The schema wall's text face is deliberately narrower than canonical
+  stream events: stream events carry arbitrary payload bytes, while
+  `WireEvent` admits Unicode-scalar UTF-8 text only, within the
+  canonical u16/u32 field lengths and JavaScript's safe sequence range.
+  The live corpus is four directed rows, not an exhaustive UTF-8 proof.
+- FINDING, reported and not repaired: the pinned runtime's fatal
+  `TextDecoder` strips a leading UTF-8 BOM by default, so Go-origin
+  payload bytes `ef bb bf` and empty bytes have distinct Go heads but
+  decode to the same `WireEvent`. The opt-in red witness and choices
+  are in `packages/core/FINDING-SCHEMA-BOM-001.md`.
 - No dedicated model of CAS-append + crash recovery yet; the catalog
   model embeds an abstract CAS. Ticket 012 gives the journal its own
   model gate.
 
 ### Checkable at
 
-[fixtures/](fixtures/), [go/stream/](go/stream/), and
+[fixtures/](fixtures/), [go/stream/](go/stream/),
+[packages/core/test/schema.wall.test.ts](packages/core/test/schema.wall.test.ts), and
 [docs/gauntlet/](docs/gauntlet/).
 
 ## KV meaning fold — combine and join — R0/R1

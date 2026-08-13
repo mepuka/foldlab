@@ -12,7 +12,10 @@ it is wrong; it never diverges "for TS convenience".
 The frozen Go-generated gzip frame (`fixtures/stream-wall.json`, via
 `go/cmd/streamfix`) that `schema.wall.test.ts` decodes: Go→TS ingestion
 typed by a schema, judged by decoded values and heads, never compressed
-bytes.
+bytes. The same wall also runs the bounded live Go-origin corpus from
+`go/cmd/schemawallprobe`: valid non-ASCII text must reproduce Go's head;
+malformed text payload bytes must refuse, with their distinct Go heads
+remaining distinct rather than collapsing through replacement characters.
 
 **Combine (KV)**:
 `combineKV` in `stream.ts`, twinned as `CombineKV` in `go/stream` — the
