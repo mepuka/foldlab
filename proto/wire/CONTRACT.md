@@ -98,6 +98,10 @@ reply says so in `note`, and the reader recomputes the chain locally
 (entry digest = SHA-256 of the canonical bytes of
 `{"payload":...,"prev":...,"seq":...}`, chained from all-zero genesis).
 A cursor that does not verify refuses (`bad-cursor`) and leaks nothing.
+The daemon verifies the supplied cursor against the stored entry even when the
+returned suffix is empty. The reader accepts a fact only when its `journal`
+both matches this grammar and equals the exact journal requested; chain linkage
+alone cannot prove that attribution.
 
 ### ingress frame
 
@@ -130,6 +134,9 @@ bytes).
 `local` is `false` in every daemon refusal; the TS client emits the
 same shape with `local:true` for its own conditions (`unreachable`,
 `malformed-reply`, `verify-failed`, `beyond-v0`, `underivable`).
+`unreachable` reports only that no reply arrived before the client's deadline;
+it does not claim whether the network failed or a reachable daemon stayed
+silent.
 
 | kind | law it names |
 |---|---|
