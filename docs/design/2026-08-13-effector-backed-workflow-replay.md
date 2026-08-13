@@ -542,6 +542,23 @@ storage/idempotency promise; `JournalMessageStorage`'s is a **recomputable fact*
 engine through one service swap — no engine reimplementation. This is the highest-
 leverage seam in the cluster stack.
 
+**Disposition — RECOMMENDED FIRST CONCRETE SLICE for ticket 020 (recommendation
+to the operator; this doc does not edit the ratified ticket).** `JournalMessageStorage`
+is the lowest-risk, highest-leverage entry point into the whole workflow arc:
+one service swap, the exactly-once upgrade flows to the entire engine via Effect's
+own dependency injection (`ClusterWorkflowEngine.layer` already *requires*
+`MessageStorage`, `:790`), no engine reimplementation, and it respects the narrow
+writ — `JournalMessageStorage` requires only `ProtoClient` and *requests* the
+daemon (ADR-0003/ADR-0006, ticket 002), implementing no CAS in TS. Crucially, it
+gives the effector/fold substrate its **first real cross-process consumer**,
+retiring the missing-consumer risk the dossier named (§4 of the dossier; the
+mint-rollback shape). **Honest caveat, stated plainly:** this slice is
+*foldlab-persistence under stock placement* — it still requires `Sharding` for
+runner placement, because foldlab replaces **commitment, not placement** (Part C,
+Singleton vs effector). That is not a gap; it is the design being honest about its
+own boundary. The operator owns whether this becomes 020's first slice; this doc
+only recommends it.
+
 **Sharding/ShardId vs shard-by-correlation-key — aligned in principle, different
 layer.** cluster `Sharding` assigns shards to runners and rebalances (topology).
 foldlab's "shard by correlation key, fuse inside" (NEXT.md Go notes) partitions
@@ -621,11 +638,18 @@ compositionality-of-proof payoff operationalized across the cluster stack.
 
 ### D.3 Interop seams — foldlab and other systems COEXIST
 
-- **`EventJournal` / `EventLogRemote` as a bridge.** foldlab can be the
-  authority-of-record while an Effect-native `EventLog` is a local-first
-  cache/UI/projection synced via `EventLogRemote` (`eventlog/EventLogRemote.ts`) —
-  with the identity caveat that entry ids differ (D.2), so the bridge maps between
-  a foldlab head and an `EntryId`, it does not unify them.
+- **`EventJournal` / `EventLogRemote` as a bridge — NOTED SEAM, not a spike.**
+  foldlab can be the authority-of-record while an Effect-native `EventLog` is a
+  local-first cache/UI/projection synced via `EventLogRemote`
+  (`eventlog/EventLogRemote.ts`). **Identity-mismatch caveat:** `EventLog` entry
+  ids are millisecond-timestamp based (`EventLog.ts:603`, `makeEntryIdUnsafe({ msecs })`),
+  not hash-chained heads — this is the Snowflake-vs-digest divergence (D.2) at the
+  journal level. A bridge therefore **maps** between a foldlab head and an
+  `EntryId`; it does **not unify** them. **Disposition: leave as a noted seam, do
+  not build.** Constructing the bridge ahead of a real Effect-`EventLog`-interop
+  consumer is exactly the no-machinery-before-consumer anti-pattern (AGENTS.md;
+  the mint rollback); it is consumer-gated and stays a map entry until such a
+  consumer appears.
 - **OTLP/Langfuse export (ticket 006).** The journal *is* the trace; export is a
   projection, so foldlab coexists with any existing observability backend (A7).
 - **The cross-key atomicity boundary (ratified default: one workflow = one

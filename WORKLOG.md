@@ -210,3 +210,21 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   atomicity, liveness, placement, nondeterministic-effect reproducibility).
 - Housekeeping done: cross-linked Part-1 replay mapping into dossier P5.
 - Committing + pushing.
+
+### Burst 7 — record two dispositions (closure, done)
+- Coordinator verified both crown-jewel correspondences in source and ratified
+  the "foldlab is NOT a clustering replacement" cap as the map's keystone.
+- Recorded disposition 1: EventJournal/EventLogRemote bridge = NOTED SEAM, not a
+  spike. Identity mismatch (EventLog.ts:603 msecs EntryId vs hash-chained head) =
+  Snowflake-vs-digest divergence at journal level; a bridge maps not unifies;
+  consumer-gated (no-machinery-before-consumer). Written into D.3.
+- Recorded disposition 2: JournalMessageStorage = RECOMMENDED FIRST CONCRETE SLICE
+  for ticket 020 (recommendation to operator, did NOT edit ticket 020). Lowest-
+  risk/highest-leverage: one service swap via Effect DI (engine already requires
+  MessageStorage), narrow-writ-respecting (requires ProtoClient, requests daemon),
+  first real cross-process consumer of the effector/fold substrate = retires the
+  missing-consumer risk. Honest caveat recorded: foldlab-persistence-under-stock-
+  placement (still requires Sharding) — correct because foldlab replaces
+  commitment not placement.
+- Design arc complete (dossier -> workflow-replay design -> wider map -> closure).
+- Committing + pushing. DONE.
