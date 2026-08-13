@@ -534,3 +534,15 @@ Go source was changed. Replay with
 the disposition must decide whether Go union derivation propagates an
 `underivable` child or whether the C5/codegen contract is intentionally
 narrower than stated before implementation resumes.
+
+### D46 disposition (2026-08-13, operator-ratified)
+Fix plus generalized law. `toGoSource` must refuse hole-bearing
+structures (`underivable` at the hole's path, the same refusal shape as
+the other targets) — sketch status licenses imprecision about legal
+inputs, never admission of illegal ones. The wall factory gains the
+generalized law this finding exposes: CROSS-TARGET DERIVABILITY
+CONSISTENCY — for any structure, every derivation target agrees
+(all derive, or all refuse at the same path), generated as a property
+over all current and future targets. The shrunk counterexample becomes
+a permanent regression case; the red C5 property stays red until the
+fix lands. Execution: scratch/codex/14-d46-fix.md.
