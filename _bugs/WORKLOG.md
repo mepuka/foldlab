@@ -257,3 +257,67 @@ demarcation. Tests in `go/effector/zz_bugbreaker_test.go`.
   journal's `Open`/`Read` split (JR1) and `applySync`/`EntryDigest` second
   encoders (C1/CG1), where a parallel path re-incurred an obligation and dropped
   it.
+
+---
+
+# ISSUE-READY BLOCKS (standing order: coordinator files after independent re-run)
+
+## BUG(medium): journal.appendEntry returns a raw jetstream error, not ErrConflict, when the post-conflict re-read fails (JR3)
+
+- **Location:** `go/journal/journal.go:238-241` (the `stored, getErr := j.stream.GetMsg(...); if getErr != nil { return "", err }` branch inside `appendEntry`).
+- **Repro:** `mise x go@1.26.5 -- go test ./journal/ -run TestBUG_JR3 -v`
+  (`go/journal/zz_bugbreaker_test.go`; wraps the real `jetstream.JetStream` so
+  only the losing writer's re-read `GetMsg` fails).
+- **Verbatim output excerpt:**
+  ```
+  loser append error: nats: nats: API error: code=400 err_code=10071 description=wrong last sequence: 1
+  CONFIRMED: a real position conflict is returned as a raw non-ErrConflict error; errors.Is(err, ErrConflict) misses it
+  ```
+  `errors.Is(err, journal.ErrConflict)` is false; the caller receives the raw
+  wrong-last-sequence `*jetstream.APIError`.
+- **Consequence:** a genuine position conflict is mis-typed. `journald.reasonFor`
+  (go/cmd/journald/main.go:162) maps it to `"unavailable"` instead of
+  `"conflict"`, so a client cannot distinguish "someone beat me to this
+  position" (retry after resync) from a transient outage. Compounds JR2 (the
+  loser is already wedged; now it is wedged AND mislabeled).
+- **Exploitable vs latent:** LATENT/transient — needs a `GetMsg` failure racing
+  a lost CAS (transient NATS error, timeout, or ctx cancel in that window). Real
+  contract defect regardless of trigger rarity.
+- **Suggested direction (NOT applied):** in the `getErr != nil` branch, return
+  `fmt.Errorf("%w at position %d (occupancy re-read failed: %v)", ErrConflict, entry.Seq, getErr)`
+  — the position IS occupied (the CAS proved it); the re-read failure only
+  blocks the idempotent-duplicate check, so the conservative classification is
+  ErrConflict, not the raw error.
+
+## BUG(medium): mapped()/mappedStep admit a law-violating source via a forgeable Declaration digest (A1 — elevation of issue #5)
+
+- **Location:** `packages/core/src/algebra.ts:95` (`DeclarationTypeId = Symbol.for("@foldlab/core/Declaration")`) and `algebra.ts:314-316` (the `source.declaration.digest === hom.source.declaration.digest` compatibility gate in `mapped`; same pattern in `mappedStep`).
+- **Repro:** `bash _bugs/run.sh _bugs/a1_impersonation.ts` (output `_bugs/a1_impersonation.out`).
+- **Verbatim output excerpt:**
+  ```
+  impostor.combine(-3,5) = -3  (real max would be 5)
+  homomorphism law holds for impostor?  false  (lhs=false rhs=true)
+  mapped() CERTIFIED the impostor:
+    declaration present: true
+    identityIssue      : undefined
+  CONFIRMED: a law-VIOLATING source was admitted as a declared homomorphism source (digest consensus != law)
+  ```
+- **Why it matters (dossier spine):** the digest gate proves CONSENSUS of a
+  token, not the LAW. Two independent leaks stack: (1) `Symbol.for` makes the
+  Declaration brand globally reconstructable, so any code mints a `Declaration`;
+  (2) even with an unforgeable brand, `mapped` never re-derives the source's
+  `combine` against the declared spec — it trusts the digest. A source whose
+  `combine` is not `max` is certified as the homomorphism's declared source and
+  its "replay-free derived view" right is granted on a forged token. This is the
+  single sharpest compositionality-of-proof leak found: the certifier's
+  admission witness is not the thing the proof is about.
+- **Exploitable vs latent:** LATENT — `algebras`/`homomorphisms` are a closed
+  registry; no shipped path admits an externally-supplied `Algebra`/`Step`.
+  Reachable the moment any caller accepts a foreign algebra and trusts its
+  `declaration`.
+- **Suggested direction (NOT applied):** make the brand a module-private
+  `Symbol()` (not `Symbol.for`) so `Declaration` cannot be constructed outside
+  the module; AND have `mapped`/`mappedStep` accept only `Algebra`/`Step` values
+  minted by the module's own `declaredAlgebra`/`declaredStep` (identity/registry
+  check), rather than trusting a digest field. Digest equality can stay as a
+  fast-path but must not be the sole admission.

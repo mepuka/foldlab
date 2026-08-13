@@ -1,0 +1,6 @@
+impostor.combine(-3,5) = -3  (real max would be 5)
+homomorphism law holds for impostor?  false  (lhs=false rhs=true)
+mapped() CERTIFIED the impostor:
+  declaration present: true
+  identityIssue      : undefined
+CONFIRMED: a law-VIOLATING source was admitted as a declared homomorphism source (digest consensus != law)
