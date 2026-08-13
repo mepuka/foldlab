@@ -16,14 +16,16 @@ planning: `docs/map/`. Agent operating contract: [AGENTS.md](AGENTS.md).
 Monorepo: `packages/core/src/` (stream, xform, schema, entity,
 streamBindings, jcs, and the fold algebra — algebra, fold, foldLaws,
 foldCache, foldBindings, foldArbitrary), the narrow-writ client
-scaffold in `packages/client/`, HTTP demo in `packages/server/`;
+scaffold in `packages/client/`, HTTP demo in `packages/server/`, the
+federated fold cache as Effect services in `packages/cache/`
+(docs/design/2026-08-14-federated-fold-cache.md);
 `packages/{codegen,ai}` reserved. `go/`, `fixtures/`, `proto/` (the
 tracer bullet, own gates) and `verify/` (model gates) at root. Older
 `src/...` paths below read through that mapping.
 
 Every wall below — a differential test: two implementations, one input,
 digests compared — is a passing test, not an intention (root `bun test`:
-139 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 14
+157 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 15
 files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
 in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 

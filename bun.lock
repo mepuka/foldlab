@@ -23,6 +23,17 @@
         "effect": "catalog:",
       },
     },
+    "packages/cache": {
+      "name": "@foldlab/cache",
+      "version": "0.0.0",
+      "dependencies": {
+        "@foldlab/core": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "fast-check": "4.9.0",
+      },
+    },
     "packages/client": {
       "name": "@foldlab/client",
       "version": "0.0.0",
@@ -71,6 +82,8 @@
     "@effect/platform-node-shared": ["@effect/platform-node-shared@4.0.0-rc.108", "", { "dependencies": { "@types/ws": "^8.18.1", "ws": "^8.21.0" }, "peerDependencies": { "effect": "^4.0.0-rc.108" } }, "sha512-g5dSRR+tHzFcWav5A6zbug78oV8WPJL5BJqgKlKtow0cQ2IpULcLZaP2xCYR3RJDvz5SETREmPCJ+BNONIsalw=="],
 
     "@foldlab/ai": ["@foldlab/ai@workspace:packages/ai"],
+
+    "@foldlab/cache": ["@foldlab/cache@workspace:packages/cache"],
 
     "@foldlab/client": ["@foldlab/client@workspace:packages/client"],
 

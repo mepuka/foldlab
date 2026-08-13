@@ -1,0 +1,17 @@
+{
+  "name": "@foldlab/cache",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The federated fold cache: a fold-through service, its storage seam, and coordination-free merge.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@foldlab/core": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "fast-check": "4.9.0"
+  }
+}

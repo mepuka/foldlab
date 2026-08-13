@@ -125,7 +125,32 @@ const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable =>
   },
 })
 
-const keyFor = <E, A extends FoldState>(fold: Fold<E, A>, head: Head): string | IdentityUnavailable =>
+/**
+ * The name a result is filed under: the fold's digest and the history head,
+ * together.
+ *
+ * The pair is the whole licensing law. A fold is a function of the computation
+ * and the history it ran over, and both of those already have names, so the two
+ * names taken together name exactly one result — which is what makes the key
+ * safe to hand to a store that has never seen the fold and cannot recompute it.
+ * Two nodes deriving a key for the same fold over the same history derive the
+ * same string; two entries under one key that differ in bytes are not a merge
+ * conflict but proof that one of them is corrupt.
+ *
+ * Exported so a store outside this module files entries under the same name
+ * this module reads them by. A caller assembling the string itself would be a
+ * second key rule, free to drift from this one, and drift here does not surface
+ * as an error — it surfaces as a cache that silently never hits, or worse,
+ * hits on the wrong thing.
+ *
+ * Refuses with `IdentityUnavailable`, as a returned value, for a fold with no
+ * admitted name — the same refusal the read and write sides return, for the
+ * same reason.
+ */
+export const foldCacheKey = <E, A extends FoldState>(
+  fold: Fold<E, A>,
+  head: Head,
+): string | IdentityUnavailable =>
   !isAdmittedFold(fold)
     ? {
       ok: false,
@@ -189,7 +214,7 @@ export const putFoldCache = <E, A extends FoldState>(
 ): CacheWrite => {
   const current = cacheStorage.get(cache)
   if (current === undefined) return unavailableCache()
-  const key = keyFor(fold, head)
+  const key = foldCacheKey(fold, head)
   if (typeof key !== "string") return key
   const encoded = encodeFoldState(value)
   if (!encoded.ok) return encoded
@@ -228,7 +253,7 @@ export const getFoldCache = <E, A extends FoldState>(
 ): CacheRead<A> => {
   const entries = cacheStorage.get(cache)
   if (entries === undefined) return unavailableCache()
-  const key = keyFor(fold, head)
+  const key = foldCacheKey(fold, head)
   if (typeof key !== "string") return key
   const entry = entries.get(key)
   if (entry === undefined) return { ok: true, hit: false }
