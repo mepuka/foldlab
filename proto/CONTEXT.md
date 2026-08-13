@@ -27,6 +27,26 @@ The daemon's one pass over a submitted flb.type.v0 value: grammar
 validation, teachable refusal construction, and ref collection for
 catalog resolution. Strictness is what makes refusals teachable.
 
+**Hole**:
+The authoring-only node `{"k":"hole"}`. It marks one undecided type
+position in a partial and never bears identity. _Avoid_: placeholder
+(too broad), null (a decided value type).
+
+**Partial type**:
+An flb.type.v0 tree whose type-node positions may contain holes. It is
+the complete state passed through each stateless concierge request;
+union positions retain their order until final creation.
+
+**Frontier**:
+The deterministic list of a partial's holes, each with its path,
+currently legal kinds and accepted example subtrees, plus a bounded
+list of resolvable ref digests. Empty means the partial is decided.
+
+**Concierge step**:
+One pure `type.fill` or `type.unfill` request. It rewrites exactly one
+type-node path and returns the updated partial and frontier; the daemon
+retains no authoring session.
+
 **Scheme**:
 The identity-derivation seam (W10). `bytes-sha256-v1`: SHA-256 over
 RFC 8785 canonical structure bytes. Ticket 004's exhaustive fold

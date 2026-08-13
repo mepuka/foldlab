@@ -5,10 +5,14 @@
 package protod
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/nats-io/nats.go"
 
 	"foldlab/canonical"
 )
@@ -94,6 +98,65 @@ func TestFrameFixturesRederive(t *testing.T) {
 		}
 		if string(bytes) != vector.Canonical {
 			t.Errorf("%s: canonical bytes drifted\n got %s\nwant %s", vector.Name, bytes, vector.Canonical)
+		}
+	}
+}
+
+func TestConciergeFixturesRederiveAndReplay(t *testing.T) {
+	var vectors []struct {
+		Name             string `json:"name"`
+		Subject          string `json:"subject"`
+		Request          any    `json:"request"`
+		RequestCanonical string `json:"requestCanonical"`
+		Reply            any    `json:"reply"`
+		ReplyCanonical   string `json:"replyCanonical"`
+	}
+	loadFixture(t, "concierge.json", &vectors)
+	if len(vectors) == 0 {
+		t.Fatal("no concierge vectors")
+	}
+
+	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+	if err != nil {
+		t.Fatalf("acquire fixture daemon: %v", err)
+	}
+	t.Cleanup(daemon.Release)
+	conn, err := nats.Connect(daemon.URL())
+	if err != nil {
+		t.Fatalf("connect fixture client: %v", err)
+	}
+	t.Cleanup(conn.Close)
+
+	for _, vector := range vectors {
+		requestBytes, err := canonicalBytes(vector.Request)
+		if err != nil {
+			t.Fatalf("%s: canonicalize request: %v", vector.Name, err)
+		}
+		if string(requestBytes) != vector.RequestCanonical {
+			t.Errorf("%s: request bytes drifted\n got %s\nwant %s", vector.Name, requestBytes, vector.RequestCanonical)
+		}
+		replyBytes, err := canonicalBytes(vector.Reply)
+		if err != nil {
+			t.Fatalf("%s: canonicalize reply fixture: %v", vector.Name, err)
+		}
+		if string(replyBytes) != vector.ReplyCanonical {
+			t.Errorf("%s: reply fixture bytes drifted\n got %s\nwant %s", vector.Name, replyBytes, vector.ReplyCanonical)
+		}
+
+		message, err := conn.Request(vector.Subject, requestBytes, 20*time.Second)
+		if err != nil {
+			t.Fatalf("%s: replay request: %v", vector.Name, err)
+		}
+		var actual any
+		if err := json.Unmarshal(message.Data, &actual); err != nil {
+			t.Fatalf("%s: parse replay reply: %v", vector.Name, err)
+		}
+		actualBytes, err := canonicalBytes(actual)
+		if err != nil {
+			t.Fatalf("%s: canonicalize replay reply: %v", vector.Name, err)
+		}
+		if string(actualBytes) != vector.ReplyCanonical {
+			t.Errorf("%s: replay reply drifted\n got %s\nwant %s", vector.Name, actualBytes, vector.ReplyCanonical)
 		}
 	}
 }

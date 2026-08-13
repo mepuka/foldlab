@@ -67,6 +67,8 @@ const toSchemaNode = (
       return Schema.Null
     case "opaque":
       return Schema.Unknown
+    case "hole":
+      return underivable([...path, "k"], "hole", "holes are authoring-only and never derive from catalog data")
     case "literal":
       return Schema.Literal(n["value"] as any)
     case "list": {
@@ -156,6 +158,8 @@ const toJsonSchemaNode = (
       return { type: "null" }
     case "opaque":
       return {}
+    case "hole":
+      return underivable([...path, "k"], "hole", "holes are authoring-only and never derive from catalog data")
     case "literal":
       return { const: n["value"] ?? null }
     case "list": {
@@ -253,6 +257,8 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       return "any // null"
     case "opaque":
       return "any // opaque"
+    case "hole":
+      return underivable([...path, "k"], "hole", "holes are authoring-only and never derive from catalog data")
     case "literal":
       return `any // literal ${JSON.stringify(n["value"] ?? null)}`
     case "union":

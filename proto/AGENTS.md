@@ -21,6 +21,10 @@ spec did not fix is logged in `DECISIONS.md`.
   A digest mismatch means a port drifted; never edit a fixture.
 - The MCP tool surface is derived from `contract.describe` at startup;
   there is no hand-written tool list to drift.
+- Concierge laws C1-C5 are walls: fill/unfill are pure, unfill is the
+  same-path inverse of fill, frontier-empty exactly matches create
+  acceptance, advertised examples never dead-end, and holes never bear
+  identity (`go/protod/conformance_test.go`, `ts/test/concierge.test.ts`).
 
 ## Gates
 
@@ -40,7 +44,8 @@ written.
 - `wire/` — CONTRACT.md (the seam as data) + frozen byte fixtures.
 - `go/` — module `foldlab/proto` (`replace foldlab => ../../go`).
   Public API: `protod.Acquire/URL/Release` — lifecycle only. Internal
-  seams: dispatch, catalog, walk (flb.type.v0), ingress, refusal,
+  seams: dispatch, catalog, walk (flb.type.v0 + partials), concierge,
+  ingress, refusal,
   scheme (W10), contract. `cmd/protod` (ready line on stdout, serves
   until stdin closes), `cmd/wirefix` (fixture generator, run once).
 - `ts/` — package `@foldlab/proto` (effect 4.0.0-rc.108 exact +
@@ -50,7 +55,8 @@ written.
   `src/codegen.ts` (effect-schema / json-schema / go targets),
   `src/mcp.ts` + `src/mcp-main.ts`, `src/session.ts` (transcript
   sugar). Tests: fixture wall, author fold, round-trip wall, MCP wall,
-  end-to-end smoke thread.
+  concierge wall, end-to-end smoke thread. `wire/fixtures/concierge.json`
+  pins public fill/unfill request and reply bytes, including refusals.
 
 ## Graduation map (no-redesign claim)
 

@@ -99,6 +99,8 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       "journal_read",
       "publish",
       "type_create",
+      "type_fill",
+      "type_unfill",
     ])
 
     // The wall: the served schemas equal what the contract derives —
@@ -170,6 +172,127 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
     const readReply = read.result.structuredContent ?? JSON.parse(read.result.content[0].text)
     expect(readReply.ok).toBe(true)
     expect(readReply.entries.length).toBe(1)
+
+    // The concierge session is driven from contract-derived MCP tools
+    // and frontier data alone: start at a bare hole, choose the list
+    // example, fill its child, undo once, finish, create, publish, read.
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 7,
+      method: "tools/call",
+      params: {
+        name: "type_fill",
+        arguments: { partial: { k: "hole" }, path: [], subtree: { k: "hole" } },
+      },
+    })
+    const started = await mcp.next()
+    const startedReply = started.result.structuredContent ?? JSON.parse(started.result.content[0].text)
+    expect(startedReply.ok).toBe(true)
+    const root = startedReply.frontier[0]
+    const list = root.legal.find((choice: any) => choice.kind === "list")
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 8,
+      method: "tools/call",
+      params: {
+        name: "type_fill",
+        arguments: { partial: startedReply.partial, path: root.path, subtree: list.example },
+      },
+    })
+    const listFilled = await mcp.next()
+    const listedReply =
+      listFilled.result.structuredContent ?? JSON.parse(listFilled.result.content[0].text)
+    expect(listedReply.ok).toBe(true)
+    const child = listedReply.frontier[0]
+    const string = child.legal.find((choice: any) => choice.kind === "string")
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 9,
+      method: "tools/call",
+      params: {
+        name: "type_fill",
+        arguments: { partial: listedReply.partial, path: child.path, subtree: string.example },
+      },
+    })
+    const finished = await mcp.next()
+    const finishedReply = finished.result.structuredContent ?? JSON.parse(finished.result.content[0].text)
+    expect(finishedReply.ok).toBe(true)
+    expect(finishedReply.frontier).toEqual([])
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 10,
+      method: "tools/call",
+      params: {
+        name: "type_unfill",
+        arguments: { partial: finishedReply.partial, path: child.path },
+      },
+    })
+    const undone = await mcp.next()
+    const undoneReply = undone.result.structuredContent ?? JSON.parse(undone.result.content[0].text)
+    expect(undoneReply.ok).toBe(true)
+    expect(undoneReply.frontier[0].path).toEqual(child.path)
+
+    const repaired = undoneReply.frontier[0].legal.find((choice: any) => choice.kind === "string")
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 11,
+      method: "tools/call",
+      params: {
+        name: "type_fill",
+        arguments: {
+          partial: undoneReply.partial,
+          path: undoneReply.frontier[0].path,
+          subtree: repaired.example,
+        },
+      },
+    })
+    const refilled = await mcp.next()
+    const refilledReply = refilled.result.structuredContent ?? JSON.parse(refilled.result.content[0].text)
+    expect(refilledReply.ok).toBe(true)
+    expect(refilledReply.frontier).toEqual([])
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 12,
+      method: "tools/call",
+      params: { name: "type_create", arguments: { structure: refilledReply.partial } },
+    })
+    const conciergeCreated = await mcp.next()
+    const conciergeCreateReply =
+      conciergeCreated.result.structuredContent ?? JSON.parse(conciergeCreated.result.content[0].text)
+    expect(conciergeCreateReply.ok).toBe(true)
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 13,
+      method: "tools/call",
+      params: {
+        name: "publish",
+        arguments: {
+          journal: "concierge",
+          frame: { type: conciergeCreateReply.digest, payload: ["guided"] },
+        },
+      },
+    })
+    const conciergeAdmitted = await mcp.next()
+    const conciergeAdmitReply =
+      conciergeAdmitted.result.structuredContent ?? JSON.parse(conciergeAdmitted.result.content[0].text)
+    expect(conciergeAdmitReply.ok).toBe(true)
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 14,
+      method: "tools/call",
+      params: { name: "journal_read", arguments: { journal: "concierge" } },
+    })
+    const conciergeRead = await mcp.next()
+    const conciergeReadReply =
+      conciergeRead.result.structuredContent ?? JSON.parse(conciergeRead.result.content[0].text)
+    expect(conciergeReadReply.ok).toBe(true)
+    expect(conciergeReadReply.entries.length).toBe(1)
   } finally {
     await mcp.stop()
   }

@@ -7,6 +7,7 @@ import { connect, type NatsConnection } from "@nats-io/transport-node"
 import { foldChain, GENESIS, type ChainEntry, type Json } from "./jcs.ts"
 import {
   AdmitReply,
+  ConciergeReply,
   CreateReply,
   DescribeReply,
   INGRESS_PREFIX,
@@ -14,6 +15,8 @@ import {
   SUBJECT_CONTRACT_DESCRIBE,
   SUBJECT_JOURNAL_READ,
   SUBJECT_TYPE_CREATE,
+  SUBJECT_TYPE_FILL,
+  SUBJECT_TYPE_UNFILL,
   decodeReply,
   localRefusal,
   type Refusal,
@@ -149,7 +152,37 @@ export class ProtoClient {
     if (options.submitter !== undefined) body["submitter"] = options.submitter
     return this.request(SUBJECT_TYPE_CREATE, body, CreateReply)
   }
+
+  async fillType(
+    partial: Json,
+    path: ReadonlyArray<string>,
+    subtree: Json,
+  ): Promise<Reply<ConciergeReply>> {
+    return this.request(
+      SUBJECT_TYPE_FILL,
+      { partial, path: [...path], subtree },
+      ConciergeReply,
+    )
+  }
+
+  async unfillType(
+    partial: Json,
+    path: ReadonlyArray<string>,
+  ): Promise<Reply<ConciergeReply>> {
+    return this.request(
+      SUBJECT_TYPE_UNFILL,
+      { partial, path: [...path] },
+      ConciergeReply,
+    )
+  }
 }
 
-export { SUBJECT_TYPE_CREATE, SUBJECT_JOURNAL_READ, SUBJECT_CONTRACT_DESCRIBE, INGRESS_PREFIX }
-export type { Refusal, Reply, AdmitReply, CreateReply, DescribeReply, ReadReply }
+export {
+  SUBJECT_TYPE_CREATE,
+  SUBJECT_TYPE_FILL,
+  SUBJECT_TYPE_UNFILL,
+  SUBJECT_JOURNAL_READ,
+  SUBJECT_CONTRACT_DESCRIBE,
+  INGRESS_PREFIX,
+}
+export type { Refusal, Reply, AdmitReply, ConciergeReply, CreateReply, DescribeReply, ReadReply }

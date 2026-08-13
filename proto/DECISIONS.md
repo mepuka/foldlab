@@ -328,3 +328,59 @@ honest inverse of the first-class node). Why: the transport boundary
 already limits values to JSON, while `unknown` is the safe,
 permissive TypeScript face and round-trips without another convention.
 **Load-bearing? no.**
+
+## Stateless type concierge (2026-08-12)
+
+### D32. Concierge entry is idempotent root fill, not a planning verb
+Decided: start with `type.fill` over root hole → root hole. There is no
+`type.plan` and a hole is not advertised as a legal choice because it
+would make no progress. Alternatives: a dedicated session/planning
+request; client-only initial frontier. Why: the writ already has a
+request verb and the fill operation can truthfully describe the bare
+partial without creating server state. **Load-bearing? maybe** — the
+wire remains stateless either way, but agents now rely on this entry
+recipe.
+
+### D33. Paths are string arrays over grammar child edges
+Decided: root `[]`; list/brand `of`; check `base`; struct
+`fields/<name>`; union `of/<canonical decimal index>`. Frontier order
+is depth-first, with struct names in UTF-16 order and union positions
+left in partial order. Alternatives: JSON Pointer; opaque hole ids;
+integer union path components. Why: this is JSON-native, directly
+mirrors the grammar, and makes C2's same-path inverse explicit without
+inventing identity for holes. **Load-bearing? yes** — paths are wire
+law and transcript data.
+
+### D34. Frontier legal choices carry accepted minimal examples
+Decided: each entry is `{path, legal:[{kind,example}], refs}`. Every
+final grammar kind is offered because every type-node position accepts
+every kind; compound examples contain a child hole, struct is empty,
+and literal uses null. Ref is offered only when an existing digest can
+make its example truthful. Alternatives: kind names only; a separate
+kind-to-template table; context-specific rules. Why: an agent can take
+the advertised value literally and C4 can test every choice as data.
+**Load-bearing? yes** — this is the no-dead-end guarantee.
+
+### D35. Frontier ref catalogs are sorted and capped at 16
+Decided: advertise the lexicographically first 16 resolvable digests;
+omit ref entirely when none exists. Alternatives: every digest;
+recent-first; pagination. Why: replies stay bounded and deterministic
+without pretending an unknown digest is fillable. **Load-bearing? no**
+— pagination can replace the cap without changing fill semantics.
+
+### D36. Partial unions preserve position; final unions normalize
+Decided: the partial walk validates union members in submitted order
+and permits duplicate holes; `type.create` alone recursively sorts
+complete members by canonical UTF-8 bytes and refuses duplicates.
+Alternatives: normalize after every step (moves paths); assign hole
+ids (would let authoring placeholders bear identity). Why: C2 needs a
+stable same-path inverse while catalog identity still needs the
+ratified order-insensitive normal form. **Load-bearing? yes.**
+
+### D37. Concierge fixtures are public request/reply pairs
+Decided: `concierge.json` contains canonical fill/unfill requests and
+their fact or refusal replies. Go replays them through a live NATS
+daemon; TS independently re-canonicalizes both sides. Alternatives:
+partial values only; duplicating cases in the old type fixture. Why:
+the new seam includes frontier teaching and refusals, not just grammar
+bytes. **Load-bearing? no.**

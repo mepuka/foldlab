@@ -38,6 +38,10 @@ func vOpaque() map[string]any {
 	return vKind("opaque")
 }
 
+func vPartial() map[string]any {
+	return vBrand("flb.partial.v0", vOpaque())
+}
+
 func vDigest() map[string]any {
 	return vBrand("flb.digest",
 		vCheck(vKind("string"), "pattern", map[string]any{"source": "^[0-9a-f]{64}$"}))
@@ -71,6 +75,30 @@ func vCursor() map[string]any {
 	}, "head")
 }
 
+func vFrontierChoice() map[string]any {
+	return vStruct(map[string]any{
+		"kind":    vKind("string"),
+		"example": vPartial(),
+	})
+}
+
+func vFrontierEntry() map[string]any {
+	return vStruct(map[string]any{
+		"path":  vList(vKind("string")),
+		"legal": vList(vFrontierChoice()),
+		"refs":  vList(vDigest()),
+	})
+}
+
+func vConciergeReply() map[string]any {
+	return vStruct(map[string]any{
+		"ok":       vKind("bool"),
+		"partial":  vPartial(),
+		"frontier": vList(vFrontierEntry()),
+		"next":     vList(vNextHint()),
+	})
+}
+
 func describeReply() map[string]any {
 	return map[string]any{
 		"ok": true,
@@ -101,6 +129,30 @@ func describeReply() map[string]any {
 						"catalogHead": vKind("string"),
 						"next":        vList(vNextHint()),
 					}),
+				},
+				map[string]any{
+					"name":    "type_fill",
+					"subject": SubjectTypeFill,
+					"note": "stateless guided construction: replace the hole at path with subtree, " +
+						"revalidate the whole partial, and return every remaining hole as a truthful frontier; " +
+						"the partial is the entire state and travels in every request and reply",
+					"body": vStruct(map[string]any{
+						"partial": vPartial(),
+						"path":    vList(vKind("string")),
+						"subtree": vPartial(),
+					}),
+					"reply": vConciergeReply(),
+				},
+				map[string]any{
+					"name":    "type_unfill",
+					"subject": SubjectTypeUnfill,
+					"note": "stateless mechanical undo: replace the type node at path with a hole, " +
+						"revalidate the whole partial, and return its truthful frontier; an empty path unfills the root",
+					"body": vStruct(map[string]any{
+						"partial": vPartial(),
+						"path":    vList(vKind("string")),
+					}),
+					"reply": vConciergeReply(),
 				},
 				map[string]any{
 					"name":    "journal_read",

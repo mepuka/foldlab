@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -61,6 +62,20 @@ func (c *catalog) resolve(digest string) bool {
 	return known
 }
 
+func (c *catalog) resolvableDigests(limit int) []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	digests := make([]string, 0, len(c.byDigest))
+	for digest := range c.byDigest {
+		digests = append(digests, digest)
+	}
+	sort.Strings(digests)
+	if len(digests) > limit {
+		digests = digests[:limit]
+	}
+	return digests
+}
+
 // create canonicalizes, derives, converges or appends. The refusal
 // return is data; error is reserved for substrate failure (JetStream
 // down), which surfaces as a NATS-level timeout, never a domain no.
@@ -75,12 +90,12 @@ func (c *catalog) create(
 		return catalogFact{}, false, walkRefusal, nil
 	}
 	for _, ref := range result.refs {
-		if !c.resolve(ref) {
+		if !c.resolve(ref.digest) {
 			return catalogFact{}, false, &Refusal{
 				Kind:     KindUnknownRef,
 				Law:      "W4/DAG: refs must resolve to cataloged digests — no forward refs, no cycles, no admission on faith",
-				Path:     []string{"structure"},
-				Got:      ref,
+				Path:     ref.path,
+				Got:      ref.digest,
 				Expected: "a digest already committed to the catalog",
 				Next: []NextHint{
 					{

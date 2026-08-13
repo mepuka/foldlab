@@ -57,6 +57,23 @@ describe("frame fixtures re-derive", async () => {
   }
 })
 
+describe("concierge request/reply fixtures re-derive", async () => {
+  const vectors: Array<{
+    name: string
+    request: Json
+    requestCanonical: string
+    reply: Json
+    replyCanonical: string
+  }> = await fixture("concierge.json")
+  test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
+  for (const vector of vectors) {
+    test(vector.name, () => {
+      expect(canonicalize(vector.request)).toBe(vector.requestCanonical)
+      expect(canonicalize(vector.reply)).toBe(vector.replyCanonical)
+    })
+  }
+})
+
 describe("the fold refuses what it cannot verify", () => {
   test("a tampered payload is caught by the chain fold", () => {
     const honest = [

@@ -1,0 +1,507 @@
+[
+  {
+    "name": "fill-bare-hole",
+    "subject": "flb.req.type.fill",
+    "request": {
+      "partial": {
+        "k": "hole"
+      },
+      "path": [],
+      "subtree": {
+        "k": "hole"
+      }
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"k\":\"hole\"}}",
+    "reply": {
+      "frontier": [
+        {
+          "legal": [
+            {
+              "example": {
+                "k": "string"
+              },
+              "kind": "string"
+            },
+            {
+              "example": {
+                "k": "bool"
+              },
+              "kind": "bool"
+            },
+            {
+              "example": {
+                "k": "int"
+              },
+              "kind": "int"
+            },
+            {
+              "example": {
+                "k": "float"
+              },
+              "kind": "float"
+            },
+            {
+              "example": {
+                "k": "null"
+              },
+              "kind": "null"
+            },
+            {
+              "example": {
+                "k": "opaque"
+              },
+              "kind": "opaque"
+            },
+            {
+              "example": {
+                "k": "literal",
+                "value": null
+              },
+              "kind": "literal"
+            },
+            {
+              "example": {
+                "k": "list",
+                "of": {
+                  "k": "hole"
+                }
+              },
+              "kind": "list"
+            },
+            {
+              "example": {
+                "fields": {},
+                "k": "struct",
+                "optional": []
+              },
+              "kind": "struct"
+            },
+            {
+              "example": {
+                "k": "union",
+                "of": [
+                  {
+                    "k": "hole"
+                  }
+                ]
+              },
+              "kind": "union"
+            },
+            {
+              "example": {
+                "k": "brand",
+                "name": "Brand",
+                "of": {
+                  "k": "hole"
+                }
+              },
+              "kind": "brand"
+            },
+            {
+              "example": {
+                "base": {
+                  "k": "hole"
+                },
+                "check": {
+                  "args": {},
+                  "name": "check"
+                },
+                "k": "check"
+              },
+              "kind": "check"
+            }
+          ],
+          "path": [],
+          "refs": []
+        }
+      ],
+      "next": [
+        {
+          "body": {
+            "partial": {
+              "k": "hole"
+            },
+            "path": [],
+            "subtree": {
+              "k": "string"
+            }
+          },
+          "note": "fill the first remaining hole with any advertised legal example",
+          "subject": "flb.req.type.fill"
+        },
+        {
+          "body": {},
+          "note": "request the daemon's contract; every subject and body shape is described there",
+          "subject": "flb.req.contract.describe"
+        }
+      ],
+      "ok": true,
+      "partial": {
+        "k": "hole"
+      }
+    },
+    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"float\"},\"kind\":\"float\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"hole\"}}"
+  },
+  {
+    "name": "fill-list-child",
+    "subject": "flb.req.type.fill",
+    "request": {
+      "partial": {
+        "k": "list",
+        "of": {
+          "k": "hole"
+        }
+      },
+      "path": [
+        "of"
+      ],
+      "subtree": {
+        "k": "string"
+      }
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"path\":[\"of\"],\"subtree\":{\"k\":\"string\"}}",
+    "reply": {
+      "frontier": [],
+      "next": [
+        {
+          "body": {
+            "structure": {
+              "k": "list",
+              "of": {
+                "k": "string"
+              }
+            }
+          },
+          "note": "frontier is empty; finish by creating this decided type",
+          "subject": "flb.req.type.create"
+        },
+        {
+          "body": {},
+          "note": "request the daemon's contract; every subject and body shape is described there",
+          "subject": "flb.req.contract.describe"
+        }
+      ],
+      "ok": true,
+      "partial": {
+        "k": "list",
+        "of": {
+          "k": "string"
+        }
+      }
+    },
+    "replyCanonical": "{\"frontier\":[],\"next\":[{\"body\":{\"structure\":{\"k\":\"list\",\"of\":{\"k\":\"string\"}}},\"note\":\"frontier is empty; finish by creating this decided type\",\"subject\":\"flb.req.type.create\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"string\"}}}"
+  },
+  {
+    "name": "unfill-list-child",
+    "subject": "flb.req.type.unfill",
+    "request": {
+      "partial": {
+        "k": "list",
+        "of": {
+          "k": "string"
+        }
+      },
+      "path": [
+        "of"
+      ]
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"string\"}},\"path\":[\"of\"]}",
+    "reply": {
+      "frontier": [
+        {
+          "legal": [
+            {
+              "example": {
+                "k": "string"
+              },
+              "kind": "string"
+            },
+            {
+              "example": {
+                "k": "bool"
+              },
+              "kind": "bool"
+            },
+            {
+              "example": {
+                "k": "int"
+              },
+              "kind": "int"
+            },
+            {
+              "example": {
+                "k": "float"
+              },
+              "kind": "float"
+            },
+            {
+              "example": {
+                "k": "null"
+              },
+              "kind": "null"
+            },
+            {
+              "example": {
+                "k": "opaque"
+              },
+              "kind": "opaque"
+            },
+            {
+              "example": {
+                "k": "literal",
+                "value": null
+              },
+              "kind": "literal"
+            },
+            {
+              "example": {
+                "k": "list",
+                "of": {
+                  "k": "hole"
+                }
+              },
+              "kind": "list"
+            },
+            {
+              "example": {
+                "fields": {},
+                "k": "struct",
+                "optional": []
+              },
+              "kind": "struct"
+            },
+            {
+              "example": {
+                "k": "union",
+                "of": [
+                  {
+                    "k": "hole"
+                  }
+                ]
+              },
+              "kind": "union"
+            },
+            {
+              "example": {
+                "k": "brand",
+                "name": "Brand",
+                "of": {
+                  "k": "hole"
+                }
+              },
+              "kind": "brand"
+            },
+            {
+              "example": {
+                "base": {
+                  "k": "hole"
+                },
+                "check": {
+                  "args": {},
+                  "name": "check"
+                },
+                "k": "check"
+              },
+              "kind": "check"
+            }
+          ],
+          "path": [
+            "of"
+          ],
+          "refs": []
+        }
+      ],
+      "next": [
+        {
+          "body": {
+            "partial": {
+              "k": "list",
+              "of": {
+                "k": "hole"
+              }
+            },
+            "path": [
+              "of"
+            ],
+            "subtree": {
+              "k": "string"
+            }
+          },
+          "note": "fill the first remaining hole with any advertised legal example",
+          "subject": "flb.req.type.fill"
+        },
+        {
+          "body": {},
+          "note": "request the daemon's contract; every subject and body shape is described there",
+          "subject": "flb.req.contract.describe"
+        }
+      ],
+      "ok": true,
+      "partial": {
+        "k": "list",
+        "of": {
+          "k": "hole"
+        }
+      }
+    },
+    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"float\"},\"kind\":\"float\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[\"of\"],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"path\":[\"of\"],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}"
+  },
+  {
+    "name": "fill-non-hole-refusal",
+    "subject": "flb.req.type.fill",
+    "request": {
+      "partial": {
+        "k": "string"
+      },
+      "path": [],
+      "subtree": {
+        "k": "bool"
+      }
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"string\"},\"path\":[],\"subtree\":{\"k\":\"bool\"}}",
+    "reply": {
+      "ok": false,
+      "refusal": {
+        "example": [
+          "fields",
+          "name"
+        ],
+        "expected": "a hole at the requested path",
+        "got": {
+          "k": "string"
+        },
+        "kind": "invalid-structure",
+        "law": "concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses",
+        "local": false,
+        "next": [
+          {
+            "body": {
+              "partial": {
+                "k": "string"
+              },
+              "path": [],
+              "subtree": {
+                "k": "bool"
+              }
+            },
+            "note": "repair the field named by the refusal and retry this stateless fill",
+            "subject": "flb.req.type.fill"
+          },
+          {
+            "body": {},
+            "note": "request the daemon's contract; every subject and body shape is described there",
+            "subject": "flb.req.contract.describe"
+          }
+        ],
+        "path": [
+          "partial"
+        ]
+      }
+    },
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a hole at the requested path\",\"got\":{\"k\":\"string\"},\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[],\"subtree\":{\"k\":\"bool\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\"]}}"
+  },
+  {
+    "name": "fill-unknown-ref-refusal",
+    "subject": "flb.req.type.fill",
+    "request": {
+      "partial": {
+        "k": "hole"
+      },
+      "path": [],
+      "subtree": {
+        "digest": "9999999999999999999999999999999999999999999999999999999999999999",
+        "k": "ref"
+      }
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"k\":\"ref\"}}",
+    "reply": {
+      "ok": false,
+      "refusal": {
+        "expected": "a digest already committed to the catalog",
+        "got": "9999999999999999999999999999999999999999999999999999999999999999",
+        "kind": "unknown-ref",
+        "law": "W4/DAG: every ref in a partial must already resolve — no forward refs, no admission on faith",
+        "local": false,
+        "next": [
+          {
+            "body": {
+              "partial": {
+                "k": "hole"
+              },
+              "path": [],
+              "subtree": {
+                "digest": "9999999999999999999999999999999999999999999999999999999999999999",
+                "k": "ref"
+              }
+            },
+            "note": "repair the field named by the refusal and retry this stateless fill",
+            "subject": "flb.req.type.fill"
+          },
+          {
+            "body": {},
+            "note": "request the daemon's contract; every subject and body shape is described there",
+            "subject": "flb.req.contract.describe"
+          }
+        ],
+        "path": [
+          "partial",
+          "digest"
+        ]
+      }
+    },
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"expected\":\"a digest already committed to the catalog\",\"got\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"kind\":\"unknown-ref\",\"law\":\"W4/DAG: every ref in a partial must already resolve — no forward refs, no admission on faith\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"digest\":\"9999999999999999999999999999999999999999999999999999999999999999\",\"k\":\"ref\"}},\"note\":\"repair the field named by the refusal and retry this stateless fill\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"digest\"]}}"
+  },
+  {
+    "name": "unfill-invalid-path-refusal",
+    "subject": "flb.req.type.unfill",
+    "request": {
+      "partial": {
+        "k": "string"
+      },
+      "path": [
+        "of"
+      ]
+    },
+    "requestCanonical": "{\"partial\":{\"k\":\"string\"},\"path\":[\"of\"]}",
+    "reply": {
+      "ok": false,
+      "refusal": {
+        "example": [
+          "fields",
+          "name"
+        ],
+        "expected": "a child path on list, struct, union, brand, or check",
+        "got": [
+          "of"
+        ],
+        "kind": "invalid-structure",
+        "law": "concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses",
+        "local": false,
+        "next": [
+          {
+            "body": {
+              "partial": {
+                "k": "string"
+              },
+              "path": [
+                "of"
+              ]
+            },
+            "note": "repair the field named by the refusal and retry this stateless unfill",
+            "subject": "flb.req.type.unfill"
+          },
+          {
+            "body": {},
+            "note": "request the daemon's contract; every subject and body shape is described there",
+            "subject": "flb.req.contract.describe"
+          }
+        ],
+        "path": [
+          "partial",
+          "of"
+        ]
+      }
+    },
+    "replyCanonical": "{\"ok\":false,\"refusal\":{\"example\":[\"fields\",\"name\"],\"expected\":\"a child path on list, struct, union, brand, or check\",\"got\":[\"of\"],\"kind\":\"invalid-structure\",\"law\":\"concierge paths address type nodes through flb.type.v0 child edges; a missing node or metadata position refuses\",\"local\":false,\"next\":[{\"body\":{\"partial\":{\"k\":\"string\"},\"path\":[\"of\"]},\"note\":\"repair the field named by the refusal and retry this stateless unfill\",\"subject\":\"flb.req.type.unfill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"path\":[\"partial\",\"of\"]}}"
+  }
+]

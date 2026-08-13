@@ -5,6 +5,7 @@
 package protod_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -48,15 +49,21 @@ func acquire(t *testing.T) *harness {
 
 func (h *harness) requestRaw(subject string, body []byte) reply {
 	h.t.Helper()
+	raw := h.requestBytes(subject, body)
+	var r reply
+	if err := json.Unmarshal(raw, &r); err != nil {
+		h.t.Fatalf("reply on %s is not JSON: %v\n%s", subject, err, raw)
+	}
+	return r
+}
+
+func (h *harness) requestBytes(subject string, body []byte) []byte {
+	h.t.Helper()
 	msg, err := h.conn.Request(subject, body, requestTimeout)
 	if err != nil {
 		h.t.Fatalf("request %s: %v", subject, err)
 	}
-	var r reply
-	if err := json.Unmarshal(msg.Data, &r); err != nil {
-		h.t.Fatalf("reply on %s is not JSON: %v\n%s", subject, err, msg.Data)
-	}
-	return r
+	return msg.Data
 }
 
 func (h *harness) request(subject string, body any) reply {
@@ -327,11 +334,13 @@ func TestConformance(t *testing.T) {
 		}
 		contract := r["contract"].(map[string]any)
 		requests := contract["requests"].([]any)
-		if len(requests) != 3 {
-			t.Fatalf("expected 3 request kinds, got %d", len(requests))
+		if len(requests) != 5 {
+			t.Fatalf("expected 5 request kinds, got %d", len(requests))
 		}
+		names := map[string]bool{}
 		for _, raw := range requests {
 			request := raw.(map[string]any)
+			names[request["name"].(string)] = true
 			body := request["body"].(map[string]any)
 			if body["k"] == nil {
 				t.Fatalf("request body is not an flb.type.v0 node: %v", request)
@@ -339,6 +348,9 @@ func TestConformance(t *testing.T) {
 		}
 		if contract["ingress"] == nil || contract["refusal"] == nil {
 			t.Fatalf("contract misses ingress or refusal: %v", contract)
+		}
+		if !names["type_fill"] || !names["type_unfill"] {
+			t.Fatalf("contract omits concierge request kinds: %v", names)
 		}
 	})
 
@@ -418,6 +430,209 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("opaque create failed: %v", r)
 		}
 	})
+}
+
+func TestConciergeStartsFromABareHole(t *testing.T) {
+	h := acquire(t)
+	hole := map[string]any{"k": "hole"}
+
+	started := h.request("flb.req.type.fill", map[string]any{
+		"partial": hole,
+		"path":    []any{},
+		"subtree": hole,
+	})
+	if started["ok"] != true {
+		t.Fatalf("bare-hole start refused: %v", started)
+	}
+	frontier, ok := started["frontier"].([]any)
+	if !ok || len(frontier) != 1 {
+		t.Fatalf("bare-hole start must return one frontier entry: %v", started)
+	}
+	entry := frontier[0].(map[string]any)
+	if path := entry["path"].([]any); len(path) != 0 {
+		t.Fatalf("root hole path is %v, want []", path)
+	}
+	legal, ok := entry["legal"].([]any)
+	if !ok || len(legal) == 0 {
+		t.Fatalf("root frontier advertises no legal fills: %v", entry)
+	}
+
+	created := h.create(hole)
+	refusal := h.refusal(created, "invalid-structure")
+	if refusal["path"] == nil {
+		t.Fatalf("hole refusal does not locate the hole: %v", refusal)
+	}
+}
+
+func TestConciergeFillUnfillAreInverse(t *testing.T) {
+	h := acquire(t)
+	partial := map[string]any{
+		"k":  "list",
+		"of": map[string]any{"k": "hole"},
+	}
+	path := []any{"of"}
+
+	filled := h.request("flb.req.type.fill", map[string]any{
+		"partial": partial,
+		"path":    path,
+		"subtree": map[string]any{"k": "string"},
+	})
+	if filled["ok"] != true {
+		t.Fatalf("fill refused: %v", filled)
+	}
+	unfilled := h.request("flb.req.type.unfill", map[string]any{
+		"partial": filled["partial"],
+		"path":    path,
+	})
+	if unfilled["ok"] != true {
+		t.Fatalf("unfill refused: %v", unfilled)
+	}
+	if fmt.Sprint(unfilled["partial"]) != fmt.Sprint(partial) {
+		t.Fatalf("unfill(fill(p)) = %v, want %v", unfilled["partial"], partial)
+	}
+	frontier := unfilled["frontier"].([]any)
+	if len(frontier) != 1 {
+		t.Fatalf("restored partial has frontier %v, want one hole", frontier)
+	}
+}
+
+func TestConciergeConformance(t *testing.T) {
+	h := acquire(t)
+	hole := map[string]any{"k": "hole"}
+
+	t.Run("C1 fill and unfill are byte-pure", func(t *testing.T) {
+		fillBody, err := json.Marshal(map[string]any{
+			"partial": hole,
+			"path":    []any{},
+			"subtree": hole,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if first, second := h.requestBytes("flb.req.type.fill", fillBody), h.requestBytes("flb.req.type.fill", fillBody); !bytes.Equal(first, second) {
+			t.Fatalf("same fill request returned different bytes:\n%s\n%s", first, second)
+		}
+
+		unfillBody, err := json.Marshal(map[string]any{
+			"partial": map[string]any{"k": "string"},
+			"path":    []any{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if first, second := h.requestBytes("flb.req.type.unfill", unfillBody), h.requestBytes("flb.req.type.unfill", unfillBody); !bytes.Equal(first, second) {
+			t.Fatalf("same unfill request returned different bytes:\n%s\n%s", first, second)
+		}
+	})
+
+	t.Run("C3 frontier empty means the decided partial creates", func(t *testing.T) {
+		partial := map[string]any{"k": "list", "of": hole}
+		open := h.request("flb.req.type.fill", map[string]any{
+			"partial": partial,
+			"path":    []any{"of"},
+			"subtree": hole,
+		})
+		if open["ok"] != true || len(open["frontier"].([]any)) != 1 {
+			t.Fatalf("open partial frontier is not one hole: %v", open)
+		}
+		h.refusal(h.create(partial), "invalid-structure")
+
+		complete := h.request("flb.req.type.fill", map[string]any{
+			"partial": partial,
+			"path":    []any{"of"},
+			"subtree": map[string]any{"k": "string"},
+		})
+		if complete["ok"] != true || len(complete["frontier"].([]any)) != 0 {
+			t.Fatalf("decided partial frontier is not empty: %v", complete)
+		}
+		created := h.create(complete["partial"])
+		if created["ok"] != true {
+			t.Fatalf("frontier-empty partial did not create: %v", created)
+		}
+	})
+
+	t.Run("C4 every advertised root fill is accepted", func(t *testing.T) {
+		created := h.create(map[string]any{"k": "bool"})
+		if created["ok"] != true {
+			t.Fatalf("seed catalog type: %v", created)
+		}
+		started := h.request("flb.req.type.fill", map[string]any{
+			"partial": hole,
+			"path":    []any{},
+			"subtree": hole,
+		})
+		entry := started["frontier"].([]any)[0].(map[string]any)
+		legal := entry["legal"].([]any)
+		if len(legal) != 13 {
+			t.Fatalf("frontier advertises %d kinds, want 13: %v", len(legal), legal)
+		}
+		refs := entry["refs"].([]any)
+		if len(refs) == 0 || len(refs) > 16 {
+			t.Fatalf("frontier refs violate availability/cap: %v", refs)
+		}
+		for _, raw := range legal {
+			choice := raw.(map[string]any)
+			filled := h.request("flb.req.type.fill", map[string]any{
+				"partial": hole,
+				"path":    []any{},
+				"subtree": choice["example"],
+			})
+			if filled["ok"] != true {
+				t.Fatalf("advertised kind %v refused: %v", choice["kind"], filled)
+			}
+		}
+	})
+
+	t.Run("new refusal cases teach through the uniform shape", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			subject string
+			body    any
+			kind    string
+		}{
+			{name: "fill missing partial", subject: "flb.req.type.fill", body: map[string]any{"path": []any{}, "subtree": hole}, kind: "malformed"},
+			{name: "fill missing path", subject: "flb.req.type.fill", body: map[string]any{"partial": hole, "subtree": hole}, kind: "malformed"},
+			{name: "fill missing subtree", subject: "flb.req.type.fill", body: map[string]any{"partial": hole, "path": []any{}}, kind: "malformed"},
+			{name: "unfill missing partial", subject: "flb.req.type.unfill", body: map[string]any{"path": []any{}}, kind: "malformed"},
+			{name: "unfill missing path", subject: "flb.req.type.unfill", body: map[string]any{"partial": hole}, kind: "malformed"},
+			{name: "fill non-hole", subject: "flb.req.type.fill", body: map[string]any{"partial": map[string]any{"k": "string"}, "path": []any{}, "subtree": map[string]any{"k": "bool"}}, kind: "invalid-structure"},
+			{name: "fill invalid path", subject: "flb.req.type.fill", body: map[string]any{"partial": map[string]any{"k": "list", "of": hole}, "path": []any{"wat"}, "subtree": map[string]any{"k": "bool"}}, kind: "invalid-structure"},
+			{name: "fill invalid subtree", subject: "flb.req.type.fill", body: map[string]any{"partial": hole, "path": []any{}, "subtree": map[string]any{"k": "wat"}}, kind: "invalid-structure"},
+			{name: "fill unknown ref", subject: "flb.req.type.fill", body: map[string]any{"partial": hole, "path": []any{}, "subtree": map[string]any{"k": "ref", "digest": strings.Repeat("9", 64)}}, kind: "unknown-ref"},
+			{name: "unfill invalid path", subject: "flb.req.type.unfill", body: map[string]any{"partial": map[string]any{"k": "string"}, "path": []any{"of"}}, kind: "invalid-structure"},
+		}
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				refusal := h.refusal(h.request(testCase.subject, testCase.body), testCase.kind)
+				if refusal["expected"] == nil && refusal["example"] == nil {
+					t.Fatalf("refusal teaches neither expected nor example: %v", refusal)
+				}
+			})
+		}
+	})
+}
+
+func TestConciergePartialIsTheEntireState(t *testing.T) {
+	first := acquire(t)
+	second := acquire(t)
+	hole := map[string]any{"k": "hole"}
+
+	started := first.request("flb.req.type.fill", map[string]any{
+		"partial": hole,
+		"path":    []any{},
+		"subtree": map[string]any{"k": "list", "of": hole},
+	})
+	if started["ok"] != true {
+		t.Fatalf("first daemon refused: %v", started)
+	}
+	continued := second.request("flb.req.type.fill", map[string]any{
+		"partial": started["partial"],
+		"path":    started["frontier"].([]any)[0].(map[string]any)["path"],
+		"subtree": map[string]any{"k": "string"},
+	})
+	if continued["ok"] != true || len(continued["frontier"].([]any)) != 0 {
+		t.Fatalf("second daemon could not continue from request state alone: %v", continued)
+	}
 }
 
 // The catalog index survives a daemon restart over the same store: the

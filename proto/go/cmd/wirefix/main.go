@@ -6,14 +6,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
+
+	"github.com/nats-io/nats.go"
 
 	"foldlab/canonical"
+	"foldlab/proto/protod"
 )
 
 type typeVector struct {
@@ -34,6 +39,15 @@ type frameVector struct {
 	Name      string `json:"name"`
 	Frame     any    `json:"frame"`
 	Canonical string `json:"canonical"`
+}
+
+type conciergeVector struct {
+	Name             string `json:"name"`
+	Subject          string `json:"subject"`
+	Request          any    `json:"request"`
+	RequestCanonical string `json:"requestCanonical"`
+	Reply            any    `json:"reply"`
+	ReplyCanonical   string `json:"replyCanonical"`
 }
 
 func mustCanonical(value any) string {
@@ -176,6 +190,97 @@ func buildFrames(types []typeVector) []frameVector {
 	}
 }
 
+func buildConcierge() []conciergeVector {
+	store, err := os.MkdirTemp("", "flb-wirefix-concierge-")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(store)
+
+	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store})
+	if err != nil {
+		panic(err)
+	}
+	defer daemon.Release()
+	conn, err := nats.Connect(daemon.URL())
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	hole := m("k", "hole")
+	listHole := m("k", "list", "of", hole)
+	cases := []struct {
+		name    string
+		subject string
+		request any
+	}{
+		{
+			name:    "fill-bare-hole",
+			subject: "flb.req.type.fill",
+			request: m("partial", hole, "path", []any{}, "subtree", hole),
+		},
+		{
+			name:    "fill-list-child",
+			subject: "flb.req.type.fill",
+			request: m("partial", listHole, "path", []any{"of"}, "subtree", m("k", "string")),
+		},
+		{
+			name:    "unfill-list-child",
+			subject: "flb.req.type.unfill",
+			request: m(
+				"partial", m("k", "list", "of", m("k", "string")),
+				"path", []any{"of"},
+			),
+		},
+		{
+			name:    "fill-non-hole-refusal",
+			subject: "flb.req.type.fill",
+			request: m(
+				"partial", m("k", "string"),
+				"path", []any{},
+				"subtree", m("k", "bool"),
+			),
+		},
+		{
+			name:    "fill-unknown-ref-refusal",
+			subject: "flb.req.type.fill",
+			request: m(
+				"partial", hole,
+				"path", []any{},
+				"subtree", m("k", "ref", "digest", "9999999999999999999999999999999999999999999999999999999999999999"),
+			),
+		},
+		{
+			name:    "unfill-invalid-path-refusal",
+			subject: "flb.req.type.unfill",
+			request: m("partial", m("k", "string"), "path", []any{"of"}),
+		},
+	}
+
+	vectors := make([]conciergeVector, 0, len(cases))
+	for _, fixture := range cases {
+		requestCanonical := mustCanonical(fixture.request)
+		message, err := conn.Request(fixture.subject, []byte(requestCanonical), 20*time.Second)
+		if err != nil {
+			panic(err)
+		}
+		var reply any
+		if err := json.Unmarshal(message.Data, &reply); err != nil {
+			panic(err)
+		}
+		vectors = append(vectors, conciergeVector{
+			Name:             fixture.name,
+			Subject:          fixture.subject,
+			Request:          fixture.request,
+			RequestCanonical: requestCanonical,
+			Reply:            reply,
+			ReplyCanonical:   mustCanonical(reply),
+		})
+	}
+	return vectors
+}
+
 func writeFixture(dir, name string, value any, force bool) error {
 	path := filepath.Join(dir, name)
 	if !force {
@@ -192,17 +297,19 @@ func writeFixture(dir, name string, value any, force bool) error {
 
 func main() {
 	force := flag.Bool("force", false, "overwrite frozen fixtures (requires a stated reason in the commit)")
-	dir := flag.String("dir", filepath.Join("..", "..", "..", "wire", "fixtures"), "fixture output directory")
+	dir := flag.String("dir", filepath.Join("..", "wire", "fixtures"), "fixture output directory")
 	flag.Parse()
 
 	types := buildTypes()
 	chains := buildChains(types)
 	frames := buildFrames(types)
+	concierge := buildConcierge()
 
 	for name, value := range map[string]any{
-		"types.json":  types,
-		"chains.json": chains,
-		"frames.json": frames,
+		"types.json":     types,
+		"chains.json":    chains,
+		"frames.json":    frames,
+		"concierge.json": concierge,
 	} {
 		if err := writeFixture(*dir, name, value, *force); err != nil {
 			fmt.Fprintf(os.Stderr, "wirefix: %v\n", err)

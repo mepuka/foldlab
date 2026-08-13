@@ -21,19 +21,35 @@ var v0Kinds = []string{
 	"literal", "list", "struct", "union", "brand", "check", "ref",
 }
 
+var partialKinds = append(append([]string{}, v0Kinds...), "hole")
+
+type refUse struct {
+	digest string
+	path   []string
+}
+
 type walkResult struct {
-	refs []string // every ref digest encountered, in walk order
+	refs  []refUse // every ref encountered, with its exact digest path
+	holes [][]string
 }
 
 func walkStructure(value any, path []string) (*walkResult, *Refusal) {
-	result := &walkResult{refs: []string{}}
-	if r := walkNode(value, path, result); r != nil {
+	return walk(value, path, false)
+}
+
+func walkPartial(value any, path []string) (*walkResult, *Refusal) {
+	return walk(value, path, true)
+}
+
+func walk(value any, path []string, allowHoles bool) (*walkResult, *Refusal) {
+	result := &walkResult{refs: []refUse{}, holes: [][]string{}}
+	if r := walkNode(value, path, result, allowHoles); r != nil {
 		return nil, r
 	}
 	return result, nil
 }
 
-func walkNode(value any, path []string, result *walkResult) *Refusal {
+func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Refusal {
 	node, ok := value.(map[string]any)
 	if !ok {
 		return structureRefusal(path,
@@ -48,14 +64,29 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 	}
 	kind, ok := kindValue.(string)
 	if !ok {
+		expected := v0Kinds
+		if allowHoles {
+			expected = partialKinds
+		}
 		return structureRefusal(append(path, "k"),
 			"flb.type.v0: \"k\" is a string naming the kind",
-			kindValue, v0Kinds, map[string]any{"k": "string"})
+			kindValue, expected, map[string]any{"k": "string"})
 	}
 
 	switch kind {
 	case "string", "bool", "int", "float", "null", "opaque":
 		return checkKeys(node, path, kind, "k")
+	case "hole":
+		if r := checkKeys(node, path, kind, "k"); r != nil {
+			return r
+		}
+		if !allowHoles {
+			return structureRefusal(path,
+				"C5: holes are authoring-only — a tree containing a hole never enters the catalog and never bears identity",
+				node, "a decided flb.type.v0 node", map[string]any{"k": "string"})
+		}
+		result.holes = append(result.holes, frozenPath(path))
+		return nil
 	case "literal":
 		if r := checkKeys(node, path, kind, "k", "value"); r != nil {
 			return r
@@ -86,9 +117,9 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 				node, `{"k":"list","of":T}`,
 				map[string]any{"k": "list", "of": map[string]any{"k": "string"}})
 		}
-		return walkNode(of, append(path, "of"), result)
+		return walkNode(of, append(path, "of"), result, allowHoles)
 	case "struct":
-		return walkStruct(node, path, result)
+		return walkStruct(node, path, result, allowHoles)
 	case "union":
 		if r := checkKeys(node, path, kind, "k", "of"); r != nil {
 			return r
@@ -100,15 +131,22 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 				node["of"], "a non-empty array of types",
 				map[string]any{"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "null"}}})
 		}
+		for index, member := range members {
+			if r := walkNode(member, append(path, "of", fmt.Sprintf("%d", index)), result, allowHoles); r != nil {
+				return r
+			}
+		}
+		// Partials have no identity. Preserve their union positions so a
+		// fill followed by unfill at the same path is an exact inverse.
+		if allowHoles {
+			return nil
+		}
 		type canonicalMember struct {
 			value any
 			bytes []byte
 		}
 		canonical := make([]canonicalMember, len(members))
 		for index, member := range members {
-			if r := walkNode(member, append(path, "of", fmt.Sprintf("%d", index)), result); r != nil {
-				return r
-			}
 			memberBytes, err := canonicalBytes(member)
 			if err != nil {
 				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
@@ -153,9 +191,9 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 				node, `{"k":"brand","name":<string>,"of":T}`,
 				map[string]any{"k": "brand", "name": "UserId", "of": map[string]any{"k": "string"}})
 		}
-		return walkNode(of, append(path, "of"), result)
+		return walkNode(of, append(path, "of"), result, allowHoles)
 	case "check":
-		return walkCheck(node, path, result)
+		return walkCheck(node, path, result, allowHoles)
 	case "ref":
 		if r := checkKeys(node, path, kind, "k", "digest"); r != nil {
 			return r
@@ -167,16 +205,23 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 				node["digest"], "64 lowercase hex characters",
 				map[string]any{"k": "ref", "digest": "0000000000000000000000000000000000000000000000000000000000000000"})
 		}
-		result.refs = append(result.refs, digest)
+		result.refs = append(result.refs, refUse{
+			digest: digest,
+			path:   frozenPath(append(path, "digest")),
+		})
 		return nil
 	default:
+		expected := v0Kinds
+		if allowHoles {
+			expected = partialKinds
+		}
 		return structureRefusal(append(path, "k"),
 			"flb.type.v0: unknown kind refuses — the grammar grows under ticket 004, never by admission on faith",
-			kind, v0Kinds, map[string]any{"k": "string"})
+			kind, expected, map[string]any{"k": "string"})
 	}
 }
 
-func walkStruct(node map[string]any, path []string, result *walkResult) *Refusal {
+func walkStruct(node map[string]any, path []string, result *walkResult, allowHoles bool) *Refusal {
 	if r := checkKeys(node, path, "struct", "k", "fields", "optional"); r != nil {
 		return r
 	}
@@ -191,9 +236,11 @@ func walkStruct(node map[string]any, path []string, result *walkResult) *Refusal
 	for name := range fields {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	sort.Slice(names, func(i, j int) bool {
+		return utf16Less(names[i], names[j])
+	})
 	for _, name := range names {
-		if r := walkNode(fields[name], append(path, "fields", name), result); r != nil {
+		if r := walkNode(fields[name], append(path, "fields", name), result, allowHoles); r != nil {
 			return r
 		}
 	}
@@ -238,7 +285,7 @@ func walkStruct(node map[string]any, path []string, result *walkResult) *Refusal
 	return nil
 }
 
-func walkCheck(node map[string]any, path []string, result *walkResult) *Refusal {
+func walkCheck(node map[string]any, path []string, result *walkResult, allowHoles bool) *Refusal {
 	if r := checkKeys(node, path, "check", "k", "base", "check"); r != nil {
 		return r
 	}
@@ -249,7 +296,7 @@ func walkCheck(node map[string]any, path []string, result *walkResult) *Refusal 
 			node, `{"k":"check","base":T,"check":{"name":<string>,"args":{...}}}`,
 			exampleCheck())
 	}
-	if r := walkNode(base, append(path, "base"), result); r != nil {
+	if r := walkNode(base, append(path, "base"), result, allowHoles); r != nil {
 		return r
 	}
 	checkValue, ok := node["check"].(map[string]any)
@@ -315,13 +362,10 @@ func utf16Less(left, right string) bool {
 }
 
 func structureRefusal(path []string, law string, got, expected, example any) *Refusal {
-	// Path slices share backing arrays with the walk; copy before they escape.
-	frozen := make([]string, len(path))
-	copy(frozen, path)
 	return &Refusal{
 		Kind:     KindInvalidStructure,
 		Law:      law,
-		Path:     frozen,
+		Path:     frozenPath(path),
 		Got:      got,
 		Expected: expected,
 		Example:  example,
@@ -333,6 +377,12 @@ func structureRefusal(path []string, law string, got, expected, example any) *Re
 			describeHint(),
 		},
 	}
+}
+
+func frozenPath(path []string) []string {
+	frozen := make([]string, len(path))
+	copy(frozen, path)
+	return frozen
 }
 
 func exampleCheck() map[string]any {

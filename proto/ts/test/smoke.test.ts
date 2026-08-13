@@ -34,6 +34,8 @@ test("the smoke thread reads like an agent session", async () => {
     "contract_describe",
     "journal_read",
     "type_create",
+    "type_fill",
+    "type_unfill",
   ])
   expect(contract.ingress.note).toContain("NOT checked")
   expect(contract.scheme).toBe("bytes-sha256-v1")

@@ -12,6 +12,8 @@ the daemon is a bug in one of them.
 | surface | subject | pattern |
 |---|---|---|
 | create a type | `flb.req.type.create` | request/reply |
+| fill one type hole | `flb.req.type.fill` | request/reply |
+| unfill one type node | `flb.req.type.unfill` | request/reply |
 | read a journal | `flb.req.journal.read` | request/reply |
 | describe the contract | `flb.req.contract.describe` | request/reply |
 | publish a frame | `flb.ing.<journal>` | request/reply (the reply admits or refuses) |
@@ -41,6 +43,46 @@ The daemon canonicalizes the structure itself (RFC 8785) and derives
 the digest from those bytes (W1, W2). Same bytes converge:
 `created:false` with the existing fact, never an error (W3). An
 asserted digest the daemon cannot re-derive refuses with both values.
+
+### type.fill / type.unfill
+
+```json
+{"partial": <flb.type.partial.v0>, "path": ["edge", "..."], "subtree": <flb.type.partial.v0>}
+{"partial": <flb.type.partial.v0>, "path": ["edge", "..."]}
+```
+
+`type.fill` replaces the hole at `path` with `subtree`; `type.unfill`
+replaces the type node at `path` with `{"k":"hole"}`. Root is `[]`.
+Child paths are `of` for list/brand, `base` for check,
+`fields/<name>` for struct, and `of/<decimal-index>` for union. Paths
+address type nodes only — metadata positions refuse.
+
+Fact for both:
+
+```json
+{"ok":true,"partial":<flb.type.partial.v0>,"frontier":[
+  {"path":["..."],"legal":[{"kind":"string","example":{"k":"string"}}],
+   "refs":["<resolvable digest>"]}
+],"next":[hint...]}
+```
+
+The entire authoring state is in the request and reply; the daemon
+stores no session. Repeating the same request against the same catalog
+returns byte-identical data (C1), and unfill at the same path is the
+inverse of fill (C2). To enter the concierge without another verb,
+fill the root hole with a root hole:
+
+```json
+{"partial":{"k":"hole"},"path":[],"subtree":{"k":"hole"}}
+```
+
+The frontier contains every hole in deterministic depth-first order;
+struct fields use UTF-16 name order and union positions preserve their
+partial order. Every `legal[].example` is directly accepted at that
+path (C4). All final v0 kinds are advertised; `ref` appears only when
+the catalog supplies a truthful example. `refs` is the lexicographically
+first 16 resolvable digests. An empty frontier means zero holes and is
+exactly when `type.create` accepts the partial (C3).
 
 ### journal.read
 
@@ -123,6 +165,11 @@ same shape with `local:true` for its own conditions (`unreachable`,
   annotation is that digest. General annotations remain uncommitted:
   a Declaration identifier bears identity because it is the node's only
   canonicalizable substance.
+- `{"k":"hole"}` exists only in `flb.type.partial.v0`. It has no
+  digest, never enters `type.create`, the catalog, generated code, or
+  the identity fixtures (C5). Partials preserve union positions so
+  fill/unfill has an exact inverse; `type.create` performs the final
+  canonical member sort and duplicate refusal.
 
 ## Identity
 
@@ -144,3 +191,6 @@ independently (`proto/go/protod/wall_test.go`,
 - `chains.json` — journal chain vectors: payloads → entry digests → head.
 - `frames.json` — ingress frames with canonical bytes (unicode, number
   normalization).
+- `concierge.json` — public fill/unfill request/reply pairs, including
+  successful steps and teachable refusals; Go also replays each pair
+  against a live daemon.

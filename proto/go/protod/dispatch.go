@@ -15,6 +15,8 @@ import (
 
 const (
 	SubjectTypeCreate       = "flb.req.type.create"
+	SubjectTypeFill         = "flb.req.type.fill"
+	SubjectTypeUnfill       = "flb.req.type.unfill"
 	SubjectJournalRead      = "flb.req.journal.read"
 	SubjectContractDescribe = "flb.req.contract.describe"
 	subjectRequestWildcard  = "flb.req.>"
@@ -49,17 +51,27 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 	switch msg.Subject {
 	case SubjectTypeCreate:
 		reply = d.serveCreate(ctx, msg.Data)
+	case SubjectTypeFill:
+		reply = d.serveFill(msg.Data)
+	case SubjectTypeUnfill:
+		reply = d.serveUnfill(msg.Data)
 	case SubjectJournalRead:
 		reply = d.serveRead(ctx, msg.Data)
 	case SubjectContractDescribe:
 		reply = describeReply()
 	default:
 		reply = refuse(&Refusal{
-			Kind:     KindUnknownRequest,
-			Law:      "W9: a missing capability is a missing request kind on the daemon — this subject has no handler",
-			Got:      msg.Subject,
-			Expected: []string{SubjectTypeCreate, SubjectJournalRead, SubjectContractDescribe},
-			Next:     []NextHint{describeHint()},
+			Kind: KindUnknownRequest,
+			Law:  "W9: a missing capability is a missing request kind on the daemon — this subject has no handler",
+			Got:  msg.Subject,
+			Expected: []string{
+				SubjectTypeCreate,
+				SubjectTypeFill,
+				SubjectTypeUnfill,
+				SubjectJournalRead,
+				SubjectContractDescribe,
+			},
+			Next: []NextHint{describeHint()},
 		})
 	}
 	d.respond(msg, reply)

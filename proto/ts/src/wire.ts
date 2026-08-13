@@ -6,6 +6,8 @@ import { Result, Schema } from "effect"
 // ——— subjects (must match proto/wire/CONTRACT.md and the Go side) ———
 
 export const SUBJECT_TYPE_CREATE = "flb.req.type.create"
+export const SUBJECT_TYPE_FILL = "flb.req.type.fill"
+export const SUBJECT_TYPE_UNFILL = "flb.req.type.unfill"
 export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
 export const INGRESS_PREFIX = "flb.ing."
@@ -47,6 +49,27 @@ export const CreateReply = Schema.Struct({
   next: Schema.Array(NextHint),
 })
 export type CreateReply = typeof CreateReply.Type
+
+export const FrontierChoice = Schema.Struct({
+  kind: Schema.String,
+  example: Schema.Json,
+})
+export type FrontierChoice = typeof FrontierChoice.Type
+
+export const FrontierEntry = Schema.Struct({
+  path: Schema.Array(Schema.String),
+  legal: Schema.Array(FrontierChoice),
+  refs: Schema.Array(Schema.String),
+})
+export type FrontierEntry = typeof FrontierEntry.Type
+
+export const ConciergeReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  partial: Schema.Json,
+  frontier: Schema.Array(FrontierEntry),
+  next: Schema.Array(NextHint),
+})
+export type ConciergeReply = typeof ConciergeReply.Type
 
 export const WireEntry = Schema.Struct({
   seq: Schema.Int,
