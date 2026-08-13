@@ -4,12 +4,13 @@
 // to drift (drift is structurally impossible; a daemon that grows a
 // request kind grows a tool).
 //
-// Tool results carry the daemon's replies verbatim: facts and refusals
-// alike are DATA in the tool result, never MCP protocol errors (W8
-// holds across the MCP seam too).
-import { Effect, Layer, Schema, Sink, Stdio, Stream } from "effect"
+// Tool results carry facts and refusals as DATA, never MCP protocol errors
+// (W8 holds across the MCP seam too). Request/publish facts remain verbatim;
+// journal reads expose ProtoClient's verified cursor instead of forwarding the
+// daemon's head claim.
+import { Effect, Layer, Result, Schema, Sink, Stdio, Stream } from "effect"
 import { McpProtocol, McpServer, Tool, Toolkit } from "effect/unstable/ai"
-import type { ProtoClient } from "./client.ts"
+import { SUBJECT_JOURNAL_READ, type ProtoClient } from "./client.ts"
 import { toJsonSchema } from "./codegen.ts"
 import type { Json } from "./jcs.ts"
 import { Refusal as RefusalSchema, type Contract, type Refusal } from "./wire.ts"
@@ -18,7 +19,7 @@ export interface DerivedTool {
   readonly name: string
   readonly description: string
   readonly subject: string
-  readonly kind: "request" | "publish"
+  readonly kind: "request" | "read" | "publish"
   readonly inputSchema: Record<string, Json>
 }
 
@@ -36,7 +37,7 @@ export const toolsFromContract = (
       name: request.name,
       description: `${request.note} (subject: ${request.subject})`,
       subject: request.subject,
-      kind: "request",
+      kind: request.subject === SUBJECT_JOURNAL_READ ? "read" : "request",
       inputSchema: input.value,
     })
   }
@@ -57,6 +58,17 @@ export const toolsFromContract = (
   return { ok: true, tools }
 }
 
+const JournalReadArguments = Schema.Struct({
+  journal: Schema.String,
+  from: Schema.optionalKey(
+    Schema.Struct({
+      seq: Schema.Int,
+      head: Schema.String,
+    }),
+  ),
+  max: Schema.optionalKey(Schema.Int),
+})
+
 /** Build the MCP server layer over a connected client: derive tools
  * from the live contract, register them in a Toolkit, and serve MCP
  * over the provided Stdio. */
@@ -76,12 +88,23 @@ export const mcpLayer = (
   for (const tool of derived) {
     handlers[tool.name] = (payload) =>
       Effect.promise(async () => {
-        // The daemon's reply travels VERBATIM: a fact stays a fact, a
-        // refusal stays {ok:false, refusal} — the MCP seam adds nothing.
+        // Refusals stay {ok:false, refusal}. Facts remain verbatim except for
+        // READ, whose whole purpose is to replace the daemon's head claim with
+        // the client's locally verified cursor.
         if (tool.kind === "publish") {
           const body = payload as { journal: string; frame: Json }
           const reply = await client.publish(body.journal, body.frame)
           return reply.ok ? reply.fact : { ok: false, refusal: reply.refusal }
+        }
+        if (tool.kind === "read") {
+          const argumentsResult = Schema.decodeUnknownResult(JournalReadArguments)(payload)
+          if (Result.isSuccess(argumentsResult)) {
+            const body = argumentsResult.success
+            const reply = await client.read(body.journal, body.from, body.max)
+            return reply.ok
+              ? { ok: true, ...reply.fact }
+              : { ok: false, refusal: reply.refusal }
+          }
         }
         const reply = await client.request(tool.subject, (payload as Json) ?? {}, Schema.Unknown)
         return reply.ok ? reply.fact : { ok: false, refusal: reply.refusal }

@@ -191,6 +191,15 @@ tampering.
 - R0: frozen fixture walls ([fixtures/](fixtures/)), generated once by
   the Go side, recomputed by both sides forever.
 - R1: property and fuzz tests ([go/stream/](go/stream/)).
+- R1: journal cursor controls reject forged genesis, tail, and future anchors
+  against stored entries, including a causal append-after-refusal check
+  ([go/journal/read_cursor_verification_test.go](go/journal/read_cursor_verification_test.go)).
+- R1: the public TypeScript reader rejects an evidence-free cursor against a
+  real daemon and rejects valid-other-journal plus invalid-journal reply
+  substitutions over an independent real NATS responder. The stdio MCP wall
+  requires the same locally verified cursor and excludes the raw daemon head
+  ([proto/ts/test/client-read-verification.test.ts](proto/ts/test/client-read-verification.test.ts),
+  [proto/ts/test/mcp.test.ts](proto/ts/test/mcp.test.ts)).
 - Empirical crash evidence: fleet runs under kill-9 storms and cold
   restarts with independently verifiable bundles
   ([docs/gauntlet/](docs/gauntlet/)).
@@ -202,6 +211,9 @@ tampering.
 - No dedicated model of CAS-append + crash recovery yet; the catalog
   model embeds an abstract CAS. Ticket 012 gives the journal its own
   model gate.
+- The new read controls cover one embedded, file-backed daemon and two exact
+  attribution corruptions; they do not claim remote-silence diagnosis or
+  multi-daemon journal ownership.
 
 ### Checkable at
 

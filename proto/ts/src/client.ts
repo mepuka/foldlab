@@ -37,6 +37,7 @@ export interface VerifiedRead {
 }
 
 const REQUEST_TIMEOUT_MS = 15_000
+const JOURNAL_NAME = /^[A-Za-z0-9_-]+$/
 
 export class ProtoClient {
   private constructor(private readonly connection: NatsConnection) {}
@@ -78,7 +79,7 @@ export class ProtoClient {
         ok: false,
         refusal: localRefusal(
           "unreachable",
-          "the request found no reply — absence of an answer is a local condition, not a daemon refusal",
+          "the request produced no reply before its client deadline — this does not distinguish network failure from remote silence",
           { got: String(error), expected: subject },
         ),
       }
@@ -106,6 +107,30 @@ export class ProtoClient {
       ReadReply,
     )
     if (!reply.ok) return reply
+    if (!JOURNAL_NAME.test(reply.fact.journal)) {
+      return {
+        ok: false,
+        refusal: localRefusal(
+          "verify-failed",
+          "W6: a verified read is attributed only to a journal name in the public grammar",
+          {
+            got: reply.fact.journal,
+            expected: "a name matching ^[A-Za-z0-9_-]+$",
+            path: ["journal"],
+          },
+        ),
+      }
+    }
+    if (reply.fact.journal !== journal) {
+      return {
+        ok: false,
+        refusal: localRefusal(
+          "verify-failed",
+          "W6: a verified read belongs to the exact journal the caller requested",
+          { got: reply.fact.journal, expected: journal, path: ["journal"] },
+        ),
+      }
+    }
     const fold = foldChain(reply.fact.entries, from)
     if (!fold.ok) {
       return {

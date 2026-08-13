@@ -9,6 +9,7 @@ import { join } from "node:path"
 const PROTO_GO = new URL("../../go", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")
 
 let building: Promise<string> | undefined
+let buildingReadReplyServer: Promise<string> | undefined
 
 export const buildProtod = (): Promise<string> => {
   building ??= (async () => {
@@ -31,6 +32,68 @@ export const buildProtod = (): Promise<string> => {
 export interface RunningDaemon {
   readonly url: string
   stop(): Promise<void>
+}
+
+const buildReadReplyServer = (): Promise<string> => {
+  buildingReadReplyServer ??= (async () => {
+    const dir = mkdtempSync(join(tmpdir(), "flb-read-reply-bin-"))
+    const bin = join(dir, process.platform === "win32" ? "readreplyserver.exe" : "readreplyserver")
+    const proc = Bun.spawn(["go", "build", "-o", bin, "./internal/readreplyserver"], {
+      cwd: PROTO_GO,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const code = await proc.exited
+    if (code !== 0) {
+      throw new Error(`go build readreplyserver failed: ${await new Response(proc.stderr).text()}`)
+    }
+    return bin
+  })()
+  return buildingReadReplyServer
+}
+
+export const spawnReadReplyServer = async (reply: unknown): Promise<RunningDaemon> => {
+  const bin = await buildReadReplyServer()
+  const proc = Bun.spawn([bin], {
+    env: { ...process.env, FOLDLAB_TEST_READ_REPLY: JSON.stringify(reply) },
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  })
+  const reader = proc.stdout.getReader()
+  const decoder = new TextDecoder()
+  let buffered = ""
+  const deadline = Date.now() + 30_000
+  while (!buffered.includes("\n")) {
+    if (Date.now() > deadline) {
+      proc.kill()
+      throw new Error(`read-reply server never printed its ready line: ${buffered}`)
+    }
+    const chunk = await reader.read()
+    if (chunk.done) {
+      throw new Error(`read-reply server exited before ready: ${await new Response(proc.stderr).text()}`)
+    }
+    buffered += decoder.decode(chunk.value)
+  }
+  const readyLine = buffered.slice(0, buffered.indexOf("\n"))
+  const ready = JSON.parse(readyLine)
+  if (ready.ready !== true || typeof ready.url !== "string") {
+    proc.kill()
+    throw new Error(`unexpected read-reply server ready line: ${readyLine}`)
+  }
+
+  return {
+    url: ready.url,
+    async stop() {
+      proc.stdin.end()
+      const exited = await Promise.race([
+        proc.exited,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 10_000)),
+      ])
+      if (exited === null) proc.kill()
+      await proc.exited
+    },
+  }
 }
 
 export const spawnProtod = async (): Promise<RunningDaemon> => {

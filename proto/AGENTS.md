@@ -15,12 +15,16 @@ spec did not fix is logged in `DECISIONS.md`.
   across any seam.
 - The writ is three verbs (read / publish / request). The session
   facade and the MCP tools compose them and add no capability.
-- Heads are claims: every read is verified by the reader
-  (`ProtoClient.read` folds locally; the Go conformance test refolds).
+- Heads are claims: every read is verified by the reader, including the
+  supplied cursor's stored anchor and the exact requested journal attribution
+  (`ProtoClient.read` folds locally; the Go conformance test refolds;
+  `client-read-verification.test.ts` carries the corrupted-reply controls).
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.
   A digest mismatch means a port drifted; never edit a fixture.
 - The MCP tool surface is derived from `contract.describe` at startup;
-  there is no hand-written tool list to drift.
+  there is no hand-written tool list to drift. Its `journal_read` tool is the
+  READ verb and therefore returns the client's verified cursor, never the
+  daemon's unverified head claim.
 - Concierge laws C1-C5 are walls: fill/unfill are pure, unfill is the
   same-path inverse of fill, frontier-empty exactly matches create
   acceptance, advertised examples never dead-end, and holes never bear

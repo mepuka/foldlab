@@ -269,6 +269,9 @@ inputSchema) is pin-free and would survive a rewrite of the serving
 layer.
 
 ### D23. Tool results carry daemon replies verbatim; refusals are not MCP errors
+SUPERSEDED IN PART BY: Issues #52–#54 — daemon refusals and non-read facts remain
+verbatim, while `journal_read` exposes the `ProtoClient.read` verified fact
+rather than forwarding the daemon's unverified head claim.
 Decided: a tool call returns the daemon's fact or `{ok:false,refusal}`
 as structured content; MCP protocol errors are reserved for transport
 (bad params shape, unknown tool). Why: W8 across the MCP seam — an LLM
@@ -831,6 +834,78 @@ request really is atomic; the claim must name the map it was earned
 against. Details and sub-decisions: R4-DECISIONS D9–D11.
 **Load-bearing? yes** — every consumer of the R4 claim inherits exactly
 this map and no more.
+
+## Issues #52–#54 — client-read and MCP verification integrity (2026-08-13)
+
+### D??. Every caller cursor is admitted through stored journal evidence
+
+Decided: `Journal.Read` accepts genesis only as
+`{seq:-1, head:GENESIS}` and accepts every non-genesis cursor only when the
+stored entry at that exact position passes the same position, canonical-byte,
+and digest verifier used by tail adoption and suffix reads. This subsumes the
+narrow #34 candidate's safety outcome: an unissued observation cannot enter
+the writer cursor, while a genuine stored cursor still supports empty-tail and
+resume reads. Alternatives: reject every empty suffix in the client (also
+rejects honest tail reads); remember cursors only inside one client process
+(cannot verify persisted cursors); port #34's separation alone (prevents writer
+poisoning but still lets the daemon and client call fabricated evidence
+verified). Why: the journal is the authority that can inspect the claimed
+anchor, and the public client must receive a refusal before it can rename
+caller input. **Load-bearing? yes** — W6 requires every returned verified
+cursor to have stored evidence.
+
+### D??. Read verification binds chain evidence to the requested journal
+
+Decided: after decoding a read fact and before folding entries,
+`ProtoClient.read` requires the returned journal to match
+`^[A-Za-z0-9_-]+$` and equal the exact requested journal. Either mismatch is a
+local `verify-failed` refusal at `journal`. Alternatives: rely on the daemon's
+request validation (does not constrain a substituted reply); treat a
+well-linked chain as journal-independent proof (the exploit); classify the
+reply as merely malformed (loses the fact that its shape decoded but its claim
+failed). Why: chain linkage proves history bytes, not the authority name to
+which those bytes are attributed. **Load-bearing? yes** — without this bind a
+valid chain for B is accepted as a verified read of A.
+
+### D??. MCP classifies the contract's journal subject as the READ verb
+
+Decided: contract derivation marks the request whose subject is
+`flb.req.journal.read` as `read`; valid tool arguments decode through an Effect
+Schema and dispatch to `ProtoClient.read`. The MCP result retains the existing
+flat `{ok:true,...}` convention but replaces raw `seq`/`head` claims with the
+client's `verified` cursor. Invalid tool arguments retain the generic request
+path so the daemon remains the source of its typed malformed refusal.
+Alternatives: keep `Schema.Unknown` request dispatch (bypasses W6); duplicate
+the chain fold in MCP (a second verifier that can drift); hand-author a tool
+outside `contract.describe` (breaks the derived-surface law). Why: MCP composes
+the three-verb writ and must add no weaker fourth face. **Load-bearing? yes** —
+agents otherwise consume the one read path that skips the repository's
+headline verification guarantee.
+
+### D??. A request timeout reports observation, not an invented remote cause
+
+Decided: the existing local `unreachable` kind remains for compatibility, but
+its law now states only that no reply arrived before the client deadline and
+explicitly says that evidence does not distinguish network failure from a
+reachable daemon's silence. Alternatives: add `remote-silent` (the client has
+no independent witness); probe another subject and infer daemon intent (a
+different request does not explain this one); keep saying absence is purely a
+local condition (the false #52 label). Why: refusal text must not assert a
+cause the boundary cannot observe. **Load-bearing? maybe** — a future
+transport acknowledgement or daemon operation id could license a distinct
+remote-silence fact.
+
+### D??. Corrupted read replies use a transport-real, verifier-independent control
+
+Decided: `proto/go/internal/readreplyserver` serves caller-selected replies
+over a real NATS connection for the TypeScript negative controls, while the
+honest controls continue to spawn real protod. The responder contains no chain
+or journal validation logic. Alternatives: mock `ProtoClient.request` (tests
+an implementation detail); sabotage the production daemon (adds a forbidden
+runtime path); assert only honest daemon output (a verifier that cannot fail).
+Why: valid-other-journal and invalid-journal substitutions must reach the
+public `ProtoClient.read` seam without sharing its oracle. **Load-bearing? no**
+— the harness may move while the two corrupted-reply controls remain.
 
 ## Task 23 — cross-language identity-domain closure (2026-08-13)
 
