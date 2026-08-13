@@ -1,0 +1,4 @@
+walled applyKV NUL key: refused = true
+ingested NUL key OK; now anchors():
+  anchors() THREW: RangeError KV entry is outside the state-digest domain
+collision: heads differ = true | stateDigest same = true
