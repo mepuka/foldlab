@@ -35,7 +35,7 @@ fence) and unique terminal outcome, for the register
   counterexample files into `verify/effector/`. Until it lands, the
   running code and its tests are at [go/effector/](go/effector/).
 
-## Catalog + ingress — R2 + R3 + R4
+## Catalog + ingress — R2 + R4; R3 in re-proof at repaired bounds
 
 Claim: no admission on faith (every admitted frame's type digest was
 committed before admission), convergence (equal bytes yield one fact
@@ -46,22 +46,43 @@ monotonicity (the resolvable set never shrinks), and mirror integrity
 - R2: TLC 2.19, bounds 2 daemons / 3 values / 2 creators / data cap 2:
   12,707,989 distinct states to closure, depth 24. All four invariants
   held. Four sabotaged variants (blind ingress, asserted identity,
-  forged mirror, resetting mirror) each violated exactly the law it
-  dropped, at depths 2/3/4/5; traces committed. A bounded check
-  certifies only its bounds.
-- R3: Apalache 0.61.0 proved base, consecution, state safety, and action
-  safety from arbitrary `IndInv` states at fixed domains of 2 daemons / 3
-  values / 2 creators, with unbounded trace length and data-journal depth.
-  Removing CAS freshness produces a duplicate authority fact; blind ingress
-  separately violates admission safety. Both negative controls failed as
-  required.
+  forged mirror, resetting mirror) were each refuted, at depths
+  2/3/4/5; traces committed. Specificity caveat (external review,
+  FINDING-R3-EVIDENCE-002): the forged-mirror trace violates two other
+  laws besides the one checked, so "exactly its dropped law" is not
+  yet licensed for every control; per-clause controls are in flight on
+  the hardening lane. A bounded check certifies only its bounds.
+- R3 — IN RE-PROOF, claim held (external review C4, 2026-08-13): the
+  original run's induction hypothesis was generated at catalog `Gen(2)`
+  while reachable IndInv states have catalog length 3, so consecution
+  and action safety were discharged over a strict subset; the
+  state-safety obligation was additionally a tautology (now a labeled
+  drift tripwire). The R4 merge also briefly broke Apalache
+  re-checkability (untyped accessors; FINDING-R3-001) — repaired with
+  certified-inert type annotations, so the obligations run at HEAD
+  again. The repaired hypothesis (catalog `Gen(3)` = the exact natural
+  maximum; mirror/creators above theirs; data at a written cutoff
+  argument with an empirical insensitivity control) is committed in
+  `CatalogInd.tla` with its bounds stated as part of the claim;
+  obligations 1 (base) re-verified NoError; consecution and action
+  safety plus both negative controls are re-running on two platforms
+  (macOS at the argued bounds, Windows independently at wider bounds).
+  This entry upgrades to a claim only when those verdicts land.
 - **R4 against the coarsened wire refinement (CreateAtomic); the split-CAS
   branch's conformance is ticket 012's obligation.** TLC checked that every
   coarse atomic create is a legal uninterrupted split Begin;Finish trace (or
   the resolving Begin's stutter) at the R2 domains: 281,269 distinct wire
   states to closure, depth 17. The faithless bridge control violated
-  `AtomicRefinement` at depth 2. This is the named map by which the split
-  model's R3 safety transfers to the public wire model.
+  `AtomicRefinement` at depth 2. Bridge instrument note
+  (FINDING-BRIDGE-001, disposition operator-ratified): the action
+  property can only check the CREATING half — `[][_]_vars` discharges
+  stuttering steps, so the resolving half is checked by the state
+  invariant `ResolvingCreateAgrees` (sensitivity control: a
+  stutter-faking create result, caught at depth 2). The binary lockstep
+  layer was never affected: both no-op branches are driven in the
+  corpus with post-state comparison. This is the named map by which the
+  split model's R3 safety transfers to the public wire model — the
+  transfer inherits R3's status above until its re-proof lands.
 - R4 binary evidence: three directed schedules plus 128 deterministic
   depth-24 uniform random walks, 131 schedules / 3,079 steps total, replayed
   against fresh real protod instances over embedded NATS with **zero
