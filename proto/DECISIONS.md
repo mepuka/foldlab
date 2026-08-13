@@ -512,3 +512,25 @@ and recursive hole placement is the property under test. Alternatives:
 unrecorded default seeds; one global arbitrary divorced from each law's old
 domain. **Load-bearing? no** — seeds may move only with a stated reason and
 captured replay path.
+
+### D46. Widening found a hole-bearing union that Go codegen accepts
+The exact pre-retrofit domains passed first, followed by the widened
+stream, entity, cache, rechunk, and concierge C1–C4 domains. Concierge
+C5 then failed at seed `0x07c50001` after six cases and shrank once
+(`path: "5:1"`) to:
+
+```json
+{"partial":{"k":"union","of":[{"k":"hole"}]},"path":["of","0"]}
+```
+
+`toEffectSchema` and `toJsonSchema` both return `underivable` at
+`structure/of/0/k`; `toGoSource` instead returns success and emits
+`type Hole any // union`. This violates C5's existing statement that
+holes never bear identity or enter derived artifacts. Decided: preserve
+the shrunk case in the widened property and stop without changing
+codegen, as Task 07 requires for a widened-domain finding. No fixture or
+Go source was changed. Replay with
+`cd proto/ts && bun test test/concierge.test.ts`. **Load-bearing? yes** —
+the disposition must decide whether Go union derivation propagates an
+`underivable` child or whether the C5/codegen contract is intentionally
+narrower than stated before implementation resumes.
