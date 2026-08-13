@@ -1,10 +1,13 @@
 {
   "name": "foldlab",
+  "license": "Apache-2.0",
   "private": true,
   "type": "module",
   "description": "Effect v4 + Go lab: stream folds, chain identity, and the commitment algebra.",
   "workspaces": {
-    "packages": ["packages/*"],
+    "packages": [
+      "packages/*"
+    ],
     "catalog": {
       "effect": "4.0.0-rc.108",
       "@effect/platform-bun": "4.0.0-rc.108"
