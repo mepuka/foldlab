@@ -190,30 +190,32 @@ jobs:
         run: go run ./catalogr4/cmd -mode honest 2>&1 | tee ../../ci-logs/nc-honest.log
 
       # --- the wasm wall, EXECUTED ----------------------------------------
+      # The strict command must first prove the absent-artifact path is red.
+      # This runs before the build in a fresh checkout and matches the exact
+      # refusal, so an unrelated command failure cannot satisfy the canary.
+      - name: canary — the WASM gate refuses an absent dist
+        run: |
+          if bun run test:wasm > ci-logs/nc-wall-unbuilt.log 2>&1; then
+            cat ci-logs/nc-wall-unbuilt.log
+            echo "CANARY FAILED: the WASM gate passed without dist/"
+            exit 1
+          fi
+          cat ci-logs/nc-wall-unbuilt.log
+          grep -Fq "WASM WALL UNBUILT: dist/stream.wasm or dist/wasm_exec.js is missing" \
+            ci-logs/nc-wall-unbuilt.log
+
       # dist/ is gitignored, which is why the wall auto-skipped into a green
-      # `0 fail` on every fresh checkout (#27). Building it here is the whole
-      # fix for the invisibility half of that issue.
+      # `0 fail` on every fresh checkout (#27). The canary makes that absence
+      # loud; this build makes the wall executable for the positive gate.
       - name: "wasm — build dist/ (the sixth build tag: js && wasm)"
         run: bun run build:wasm 2>&1 | tee ci-logs/nc-build-wasm.log
 
-      # These two wall assertions are NOT about case tables and must pass. The
-      # third — the cased-scalar wall — is the known red, and is gated by the
-      # divergence classifier instead.
-      - name: wasm wall — the frozen pin, across both crossings
-        run: bun test packages/core/test/wasm.wall.test.ts -t "reproduces the frozen pin" 2>&1 | tee ci-logs/nc-wall-pin.log
-
-      - name: wasm wall — garbage refuses as data
-        run: bun test packages/core/test/wasm.wall.test.ts -t "garbage refuses as data" 2>&1 | tee ci-logs/nc-wall-refuse.log
-
-      - name: wasm wall — the divergence classifier can fail
-        run: bun scripts/wasm-wall-divergence.ts --self-test 2>&1 | tee ci-logs/nc-divergence-selftest.log
-
-      # The gate for #27's known red. Exit 0 only when the observed divergent
-      # scalar set is EXACTLY the frozen allowlist. A new divergence fails; an
-      # allowlisted scalar that converged also fails, because an allowlist that
-      # only grows is a record of nothing.
-      - name: wasm wall — known divergence is still exactly the known divergence
-        run: bun scripts/wasm-wall-divergence.ts 2>&1 | tee ci-logs/nc-divergence.log
+      # One public command is the local/CI seam. It runs the two wall assertions
+      # unaffected by #27, the classifier's four controls, and the exact known-
+      # divergence check. Missing dist, a novel divergence, or an unexpectedly
+      # converged allowlisted scalar is non-zero.
+      - name: wasm wall — executable gate with classified known divergence
+        run: bun run test:wasm 2>&1 | tee ci-logs/nc-wasm-wall.log
 
       # --- the gauntlet verifiers, against the committed bundles ------------
       # #37 G-09: no CI job runs ANY verifier against artifacts/. The four

@@ -25,8 +25,8 @@ line by line; this is not inferred from names.
 
 | # | Surface | Skip condition | Covered by |
 | --- | --- | --- | --- |
-| 1 | `packages/core/test/wasm.wall.test.ts:92` `describe.if(built)` | `built = existsSync(dist/stream.wasm) && existsSync(dist/wasm_exec.js)`; `dist/` is gitignored | **was NEVER** — `gates.yml` runs `bun test` but never `build:wasm`, so the wall reported `0 fail` unrun. Now `negative-controls.yml` → `controls` |
-| 2 | `packages/core/test/wasm.wall.test.ts:158-159` `describe.if(!built)` + `test.skip` | the "loud skip" branch | **NEVER, and cannot fail by construction** — a `test.skip` inside a `describe.if` is a no-op that reports as a skip whether or not anything is wrong. See finding N-1 |
+| 1 | `packages/core/test/wasm.wall.test.ts` artifact-backed wall suite | `built = existsSync(dist/stream.wasm) && existsSync(dist/wasm_exec.js)`; `dist/` is gitignored | **was NEVER** — `gates.yml` runs `bun test` but never `build:wasm`, so the wall reported `0 fail` unrun. Now `negative-controls.yml` → `controls` |
+| 2 | `packages/core/test/wasm.wall.test.ts` strict missing-artifact path | `FOLDLAB_REQUIRE_WASM=1`, selected by `bun run test:wasm` | **resolved** — the explicit wall command refuses before test-name filtering; `negative-controls.yml` proves the same command fails with absent `dist/` before building it |
 | 3 | `go/canonical/differential_fuzz_test.go:264` `t.Skip` | fuzz input > 1 MiB | seeds covered by `gates.yml`; the fuzz ENGINE is never run (no `-fuzz` anywhere in CI), so the skip only ever trims seed-corpus replays |
 | 4 | build tag `catalogr4_sabotage` (`proto/go/protod/catalogr4_sabotage.go:1`) | tag absent | **was NEVER** → now `controls` |
 | 5–8 | build tags `catalogr4_reply_{created,converged,admitted,refused}` (`proto/go/catalogr4/reply_mutant_*.go:1`) | tag absent | **was NEVER** → now `controls`, one run per tag |
@@ -48,13 +48,16 @@ line by line; this is not inferred from names.
 
 ### New findings from the audit
 
-**N-1 — the loud skip is itself silent.** `wasm.wall.test.ts` tries to make the
+**N-1 — the loud skip was itself silent (resolved).** `wasm.wall.test.ts` tried to make the
 absence visible: when `built` is false it declares a second suite whose single
 test is `test.skip("dist/ missing — run \`bun run build:wasm\` first")`. A
 skipped test cannot fail. In CI it prints as one more skip among many and
 changes no exit code, so the mechanism intended to make the gap loud is exactly
-as quiet as the gap. The fix is not a better skip; it is what this lane built —
-a step that BUILDS the artifact, so the condition is always satisfied.
+as quiet as the gap. Ordinary root tests retain that documented optional skip,
+but the explicit `bun run test:wasm` seam selects strict mode and refuses before
+test-name filtering when either artifact is absent. The workflow first invokes
+that command on a fresh checkout as a negative control, matches the exact
+refusal, then builds `dist/` and runs the same public command as the real gate.
 
 **N-2 — three PowerShell gate twins that no gate read (resolved).**
 `negative-controls.yml` runs `run-r4.ps1`, whose first act is `run-wire.ps1`,
@@ -135,11 +138,9 @@ and Bun caches):
 | R4 corrupted controls | 9 | green |
 | R4 corpus determinism + branch coverage | 1 | green (131 schedules) |
 | R4 honest replay | 11 | green (131 planned / 131 attempted / 3,079 driven steps) |
+| `bun run test:wasm` with absent `dist/` | 0 | required red, exact refusal matched |
 | `bun run build:wasm` | 0 (2.6 cold cross-compile) | green |
-| wasm wall — frozen pin | 0 | green |
-| wasm wall — garbage refuses as data | 1 | green |
-| wasm wall — divergence classifier `--self-test` | 0 | green (4 controls) |
-| wasm wall — known divergence unchanged | 0 | green (27 scalars, exactly the allowlist) |
+| `bun run test:wasm` | 1 | recording host green: pin + refusal + 4 controls + exact 27-scalar allowlist; Windows currently stops on #27 platform drift |
 | verifiers — G1 ×6, R1, RG-A ×3 | 2 | green (all VERIFIED) |
 | verifiers — R2 ×2 after pinned fetch | network + 2 | known red: exact GV8 and CL2/CL3 refusals classified; forged-corpus control refuses |
 | laws index `--self-test` | 0 | green (13 controls) |
@@ -152,13 +153,14 @@ realistic figure, against a 20-minute timeout.
 
 Three design decisions worth arguing with:
 
-**The job ships its own refutations, first.** Two canaries run before anything
-expensive, in the spirit of `run-ind.sh`'s refutability canary: the mutant
+**The job ships its own refutations, first.** Three canaries run before their
+expensive counterparts, in the spirit of `run-ind.sh`'s refutability canary: the mutant
 harness is invoked with NO build tag and must fail, and the sabotage control is
 invoked with NO tag and must fail. Both messages are grepped, not just the exit
-code. This is the step that makes the rest of the job mean something — it
-proves the controls are still wired to the tags rather than to something that
-happens to be true.
+code. The strict WASM command likewise runs before `dist/` is built and must
+refuse with its exact absent-artifact message. These steps make the rest of the
+job mean something — they prove the controls are still wired to the condition
+they claim to refute rather than to something that happens to be true.
 
 **The known-red wall is gated by a classifier, not by hope.** #27 is a finding,
 so the red test stays red (findings before fixes). But a permanently red wall
@@ -421,11 +423,13 @@ that R2 accepts, so the fix is porting a check that exists twice.
 | Artifact | What it is |
 | --- | --- |
 | `.github/workflows/negative-controls.yml` | two jobs; six build tags, R4 lockstep, D59 bridge, wasm wall, three verifier lanes, both index gates |
+| `scripts/test-wasm.ts` | one strict local/CI command for the executable WASM wall and its known-red classifier |
 | `scripts/wasm-wall-divergence.ts` | per-scalar divergence classifier + 4 self-test controls |
 | `fixtures/wasm-wall-known-divergence.json` | the 27 known-divergent scalars, frozen, with corpus domain and a deletion condition |
 | `scripts/check-laws.ts` | the laws-index gate + 13 self-test controls |
 | `docs/LAWS.md` | 71 context-qualified laws → statement → enforcing test or explicit design boundary |
 | `docs/FREEZING.md` | the freezing protocol, the inventory, the dangling-pointer correction |
+| `docs/design/issue-59-DECISIONS.md` | the strict-gate/default-root boundary decision |
 | this document | the audit and the design |
 
 Nothing here fixes #27's underlying divergence, #37 findings outside the

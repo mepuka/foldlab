@@ -58,8 +58,9 @@ gates run from `verify/*/run.sh`:
   `xformPipelineHead` byte-identically. Same Go source, three runtimes, one
   digest. Boundary is data: one entry point, base64 gzip frames in, JSON
   {head, kept, frames} out; errors return as data, nothing throws across.
-  `bun run build:wasm` produces gitignored `dist/`; the test auto-skips
-  without it. Module is ~3.7MB (fine in Bun; browser story wants
+  `bun run build:wasm` produces gitignored `dist/`; ordinary root tests
+  auto-skip without it, while `bun run test:wasm` is the strict local/CI wall
+  gate and refuses that absence. Module is ~3.7MB (fine in Bun; browser story wants
   TinyGo/wasm-opt later).
 - **Fold algebra (ticket-014, 2026-08-13)**: `packages/core/src/`
   {`algebra`, `fold`, `foldLaws`, `foldCache`, `foldBindings`} —

@@ -21,6 +21,7 @@
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc --noEmit",
     "test": "bun test",
     "build:wasm": "bun scripts/build-wasm.ts",
+    "test:wasm": "bun scripts/test-wasm.ts",
     "bench": "bun bench/stream.bench.ts",
     "bench:go": "bun scripts/bench-go.ts",
     "bench:compare": "bun scripts/bench-compare.ts"

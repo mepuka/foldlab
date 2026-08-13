@@ -18,7 +18,7 @@ cannot defend is worse than an empty box.
 - [ ] `cd proto/ts && bun install && bunx tsc --noEmit && bun test .`
 
 Off the battery, and only if this PR touches them: `bun run build:wasm
-&& bun test` (wasm wall), `bash verify/catalog/run.sh` (R2, ~12 min of
+&& bun run test:wasm` (wasm wall), `bash verify/catalog/run.sh` (R2, ~12 min of
 TLC — `model-gate.yml` runs it weekly), the long JCS fuzz variants in
 README.md.
 

@@ -10,7 +10,9 @@
  * and the head TS recomputes from the RETURNED frames must equal the head
  * Go computed inside the module, so the law survives both crossings.
  *
- * Auto-skips until `bun run build:wasm` has produced dist/.
+ * Ordinary root runs auto-skip until `bun run build:wasm` has produced dist/.
+ * The public WASM gate sets FOLDLAB_REQUIRE_WASM=1, which turns a missing
+ * artifact into a refusal instead of a false-green skip.
  */
 
 import { describe, expect, test } from "bun:test"
@@ -37,9 +39,18 @@ import {
   renameStream,
 } from "../src/xform.ts"
 
-const wasmPath = join(import.meta.dir, "../../../dist/stream.wasm")
-const loaderPath = join(import.meta.dir, "../../../dist/wasm_exec.js")
+const dist = process.env["FOLDLAB_WASM_DIST_DIR"] ?? join(import.meta.dir, "../../../dist")
+const wasmPath = join(dist, "stream.wasm")
+const loaderPath = join(dist, "wasm_exec.js")
 const built = existsSync(wasmPath) && existsSync(loaderPath)
+const required = process.env["FOLDLAB_REQUIRE_WASM"] === "1"
+
+if (required && !built) {
+  throw new Error(
+    "WASM WALL UNBUILT: dist/stream.wasm or dist/wasm_exec.js is missing. " +
+      "Run `bun run build:wasm` first.",
+  )
+}
 
 const fixture = JSON.parse(
   readFileSync(join(import.meta.dir, "../../../fixtures/stream-wall.json"), "utf8"),
@@ -89,7 +100,7 @@ const loadWall = async (): Promise<(frameBase64: string) => WallResult> => {
   return (frameBase64) => JSON.parse(entry(frameBase64)) as WallResult
 }
 
-describe.if(built)("the wasm wall", () => {
+if (built) describe("the wasm wall", () => {
   test("Go-in-wasm reproduces the frozen pin, and the head survives both crossings", async () => {
     const run = await loadWall()
     const merged = Effect.runSync(applyMerge(fact, sources))
@@ -155,6 +166,6 @@ describe.if(built)("the wasm wall", () => {
   })
 })
 
-describe.if(!built)("the wasm wall (skipped)", () => {
+if (!built) describe("the wasm wall (skipped)", () => {
   test.skip("dist/ missing — run `bun run build:wasm` first", () => {})
 })
