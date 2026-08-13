@@ -321,3 +321,129 @@ enforced envelope plus the unguarded library seam; C6's residue is the
 consumer question ADR-0010 already carries; C7's residue is one
 misleading comment and a TS-only blind spot demonstrable by mutation.
 C8 is withdrawn.
+
+## Live proof-team findings (2026-08-13, Mac session — for the PC team)
+
+Three Opus teams run in isolated worktrees on the Mac under a
+15-minute consultation loop: a PROVER (R3 repair and completion), a
+HARDENER (model robustness), and a BREAKER (adversarial probes plus
+audit duty over the other two). Discipline in force: no verdict
+without verbatim checker output on disk, canary state-counts are
+sacred, findings before fixes. Evidence branches (pushed to origin):
+`worktree-agent-a832c002de4e1234c` (PROVER),
+`worktree-agent-a0f6f6a10c577aa55` (HARDENER),
+`worktree-agent-ad1028e2ec230ef75` (BREAKER).
+
+### FINDING-R3-001 — the R4 merge broke R3's re-checkability (repaired, repair certified)
+
+The R4 claim commit (`0701b8b`) added untyped wire-bridge accessors
+(`ModelState`/`CatalogOf`/`MirrorOf`/`DataOf`/`CreatorsOf`/`Become`)
+to `Catalog.tla`. Apalache's Snowcat now fails type-checking before
+any proof obligation runs: every R3 obligation at HEAD exits
+`ERROR (120)` ("Cannot apply s to the argument 1 in s[1]"). A gate
+that cannot run cannot fail. Verified both directions: obligation 1
+against the pre-R4 spec returns `NoError` in 3s (the historical
+verdicts were real); the identical command at HEAD dies in Snowcat.
+Repair applied on the PROVER branch: `@type` annotations only —
+certified inert by the exact cap2 TLC canary (119,145 / 18,295 /
+depth 16; TLC ignores annotations, so any drift would have meant more
+than types moved) and by obligation 1 returning `NoError` at HEAD.
+Trap for future editors, recorded in R3-DECISIONS: prose inside a
+`.tla` comment must not contain a literal `@type` token — Snowcat
+counts it as a second annotation on the next declaration.
+
+### FINDING-BRIDGE-001 — half the R4 bridge is asserted, not checked
+
+`AtomicRefinement == [][CreateAtomicRefinesSplit]_vars`, and
+`[P]_vars == P \/ UNCHANGED vars`. `CreateAtomic`'s resolving branch
+IS `UNCHANGED vars`, so TLC discharges it as a stutter and never
+consults the bridge there — while `CatalogWire.tla`'s header and
+README's "How R4 attaches" both say the relation is checked directly.
+Proven mechanically (probe module extends CatalogWire, edits nothing;
+cap2 bounds):
+
+- W3 reachability witness: "no reachable state enables the resolving
+  branch" — violated at depth 2, so the branch is exercised;
+- W2 positive control: a false obligation about the CREATING branch —
+  violated at depth 2, so the harness can fail there;
+- W1 the finding: a knowingly FALSE obligation about the RESOLVING
+  branch (`StutterOnlyAtomic => FALSE`) — CLEAN to closure
+  (9,133 / 863 / depth 11).
+
+The resolving case looks true by inspection (both sides reduce to
+`~creators[c].busy /\ UNCHANGED vars`), so this is not evidence of an
+unsound bridge — it is a prover-that-cannot-fail defect in the
+just-claimed R4 gate. The same mechanism exempts `Publish`'s refusal
+branch from both action properties. Write-up with a proposed
+checkable reformulation (the resolving case as a state-level
+implication TLC evaluates on every reachable state):
+`verify/catalog/probes/FINDING-BRIDGE-001.md` on the BREAKER branch.
+Disposition is the operator's; nothing ratified was modified.
+
+### FINDING-BOUNDS-001 — configs silently truncate at 4
+
+`Catalog.tla` builds every domain as `{ x \in 1..4 : x <= NumX }`:
+any config value above 4 silently yields 4 with no warning, and
+`CatalogNaturallyBounded` is stated against the CONSTANT (`<= NumVals`)
+rather than the actual value domain — so raising `NumVals` past 4
+both fails to widen the model and loosens the invariant meant to
+certify the natural bound. Evidence: `NumVals = 4` and `NumVals = 9`
+produce byte-identical closures (1,757 generated / 457 distinct /
+depth 10). A future "checked at 6 values" claim would come back green
+covering nothing new. Fix in flight on the HARDENER branch: `ASSUME`
+guards on all constants; the semantic fix is stating the invariant
+against `Cardinality(Vals)`.
+
+### Repairs and hardening in flight
+
+- PROVER: hypothesis bounds repaired — `catalog = Gen(3)` (the exact
+  natural maximum; the committed Gen(2) under-covered IndInv, claim
+  C4), `mirror = Gen(4)` / `creators = Gen(4)` justified against
+  natural maxima rather than raised, `data = Gen(2)` under a written
+  cutoff argument (data appears only pointwise in TypeOK,
+  NoAdmissionOnFaith, and AdmissionStep; no guard reads it at
+  DataCap = 0; CommittedIds monotonicity confines any new violation to
+  the appended entry) with a `Gen(3)` consecution run as the stated
+  empirical insensitivity control. Obligation set restructured to
+  3 obligations + 3 controls: the tautologous StateSafety check (claim
+  C4) is demoted to a labeled drift-tripwire; a new control 6b
+  requires the blind config to return `NoError` on
+  `MonotonicityStep`, proving the control refutes exactly its own
+  law. `run-ind.sh` written: portable sha256, recorded jar shas,
+  per-run verbatim logs; controls run as single named invariants
+  because Apalache reports violations by conjunct index, which
+  renumbers under edits. Full repaired obligation set is running.
+- HARDENER: `run.sh` sha256 portability landed (`sha256sum` →
+  `shasum -a 256` fallback). Queued behind an untouched-baseline rule
+  (no spec edit until both baselines land): the ASSUME guards;
+  `AdmissionStep`/`MonotonicityStep` stated once in `Catalog.tla`
+  (closing the duplication that could let R3 silently check a
+  different law than TLC); `LagIsAbsenceNeverWrongData` split into
+  named clauses `LagPrefixLength` / `LagPrefixContent` (conjunction
+  unchanged) plus a new `OverrunMirror` faithless constant so a mirror
+  fabricating PAST its origin's head is refutable — a second constant
+  rather than a widened `ForgedMirror`, so the existing depth-4
+  content refutation survives; each control refuted on exactly its
+  clause, the other checked and passing (independence). All four cex
+  traces will be regenerated same-jar with recorded counts as
+  canaries (forge 237/76/4, blind 14/2, assert 27/3, reset 856/5,
+  bridge 2/2/2).
+- Cross-checks that came back clean: the cap2 canary reproduces
+  byte-exact on macOS in three independent worktrees (first non-Windows
+  runs of the gate); the tla2tools jar hashes to the recorded
+  `ab323b79…46c05f`; the Apalache 0.61.0 jar hashes to the recorded
+  `33611081…ad4346`; BREAKER's vacuity audit found no invariant clause
+  quantifying over an empty set, the stale-CAS conflict branch firing
+  14,736 times at cap2, and `MirrorReset` dead at the gate config by
+  design (covered by its negative control).
+
+### Ledger edits owed at merge (operator-owned; proposed, not made)
+
+- VERIFICATION.md's R3 entry: state the Gen bounds inside the claim
+  sentence; note FINDING-R3-001 (R3 restored re-runnable at HEAD);
+  count 3 obligations + 3 controls.
+- VERIFICATION.md's "four sabotaged variants … at depths 2/3/4/5"
+  becomes five variants once `CatalogBroken.overrun.cfg` lands.
+- The R4 entry owes a FINDING-BRIDGE-001 disposition: either the
+  reformulated checkable bridge, or a stated-abstraction note that the
+  resolving case is discharged by inspection, not by TLC.
