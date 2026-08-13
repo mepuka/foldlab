@@ -149,6 +149,71 @@ describe("cross-target codegen laws", () => {
       endOnFailure: false,
     })
   })
+
+  test("D48: the shrunk struct refuses at the canonical first field in every target", () => {
+    const structure: Json = {
+      k: "struct",
+      fields: {
+        "β": { k: "hole" },
+        a: { k: "hole" },
+      },
+      optional: [],
+    }
+
+    for (const target of derivationTargets) {
+      const result = target.derive(structure)
+      expect(result.ok).toBe(false)
+      if (result.ok) throw new Error(`${target.name} derived the D48 counterexample`)
+      expect(result.refusal.path).toEqual(["structure", "fields", "a", "k"])
+    }
+  })
+
+  test("field traversal follows UTF-16 code-unit order through an astral key", () => {
+    const maxCodePointFromStringEscapesFixture = "\u{10ffff}"
+    const cases: ReadonlyArray<{
+      readonly fields: Record<string, Json>
+      readonly firstHole: string
+    }> = [
+      {
+        fields: Object.fromEntries([
+          [maxCodePointFromStringEscapesFixture, { k: "hole" }],
+          ["β", { k: "hole" }],
+          ["a", { k: "hole" }],
+        ]),
+        firstHole: "a",
+      },
+      {
+        fields: Object.fromEntries([
+          [maxCodePointFromStringEscapesFixture, { k: "hole" }],
+          ["β", { k: "hole" }],
+          ["a", { k: "string" }],
+        ]),
+        firstHole: "β",
+      },
+      {
+        fields: Object.fromEntries([
+          [maxCodePointFromStringEscapesFixture, { k: "hole" }],
+          ["β", { k: "string" }],
+          ["a", { k: "string" }],
+        ]),
+        firstHole: maxCodePointFromStringEscapesFixture,
+      },
+    ]
+
+    expect([maxCodePointFromStringEscapesFixture, "β", "a"].sort()).toEqual([
+      "a",
+      "β",
+      maxCodePointFromStringEscapesFixture,
+    ])
+    for (const { fields, firstHole } of cases) {
+      for (const target of derivationTargets) {
+        const result = target.derive({ k: "struct", fields, optional: [] })
+        expect(result.ok).toBe(false)
+        if (result.ok) throw new Error(`${target.name} skipped a hole in canonical traversal`)
+        expect(result.refusal.path).toEqual(["structure", "fields", firstHole, "k"])
+      }
+    }
+  })
 })
 
 describe("json-schema target", () => {

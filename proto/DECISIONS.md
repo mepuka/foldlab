@@ -596,3 +596,20 @@ targets refuse at structure/fields/a/k. The red generalized property
 stays red until the fix lands, unchanged. Future enhancement, separate
 ratification (wire-shape change): refusals carrying the complete set
 of underivable paths. Execution: scratch/codex/15-d48-canonical-traversal.md.
+
+## Task 15 — canonical traversal in every derivation target (2026-08-13)
+
+### D49. One field-name traversal orders every derivation target
+Decided: Effect Schema, JSON Schema, and Go struct derivation all call
+`fieldNamesInIdentityOrder`, which uses JavaScript's default string sort:
+RFC 8785 UTF-16 code-unit order. Alternatives: change only the Effect
+Schema loop and leave duplicated target-local sorts (permits future drift);
+use `localeCompare` (locale-dependent and not identity order); collect every
+failure path (the separately ratified future wire-shape change from D48).
+Why: the same operation now defines output order and the first refusal path
+for every target, and future targets have one traversal seam to join. The
+unchanged cross-target property passes; permanent probes pin the exact D48
+`β`/`a` counterexample and the ordering `a < β < U+10FFFF`, using the
+surrogate pair from `fixtures/golden-conformance.json`'s string-escape
+corpus. No fixture changed. **Load-bearing? yes** — a new target that walks
+fields elsewhere can reintroduce construction history into evidence.

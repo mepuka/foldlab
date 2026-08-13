@@ -34,6 +34,11 @@ const node = (value: Json): Record<string, Json> | undefined =>
     ? (value as Record<string, Json>)
     : undefined
 
+// Law: evidence paths use identity's RFC 8785 UTF-16 code-unit key order;
+// construction history never leaks.
+const fieldNamesInIdentityOrder = (fields: Record<string, Json>): ReadonlyArray<string> =>
+  Object.keys(fields).sort()
+
 // ——— effect-schema target ———
 
 /** name → builder over (args). Inverse of the author fold's table. */
@@ -80,7 +85,7 @@ const toSchemaNode = (
       const fields = node(n["fields"] as Json) ?? {}
       const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
       const built: Record<string, any> = {}
-      for (const name of Object.keys(fields)) {
+      for (const name of fieldNamesInIdentityOrder(fields)) {
         const field = toSchemaNode(fields[name] as Json, [...path, "fields", name], resolve)
         if (field instanceof Fail) return field
         built[name] = optional.has(name) ? Schema.optionalKey(field) : field
@@ -172,7 +177,7 @@ const toJsonSchemaNode = (
       const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
       const properties: Record<string, Json> = {}
       const required: string[] = []
-      for (const name of Object.keys(fields).sort()) {
+      for (const name of fieldNamesInIdentityOrder(fields)) {
         const property = toJsonSchemaNode(fields[name] as Json, [...path, "fields", name])
         if (property instanceof Fail) return property
         properties[name] = property
@@ -291,7 +296,7 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       const fields = node(n["fields"] as Json) ?? {}
       const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
       const lines: string[] = ["struct {"]
-      for (const name of Object.keys(fields).sort()) {
+      for (const name of fieldNamesInIdentityOrder(fields)) {
         const field = toGoType(fields[name] as Json, [...path, "fields", name])
         if (field instanceof Fail) return field
         const parts = field.split(" //")
