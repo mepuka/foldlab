@@ -157,15 +157,23 @@ func buildChains(types []typeVector) []chainVector {
 	))
 
 	simple := []string{"a", "b", "c"}
-	simpleDigests, simpleHead := canonical.BuildChain(simple)
+	simpleDigests, simpleHead := mustBuildChain(simple)
 
 	catalogPayloads := []string{mustCanonical(record), framePayload}
-	catalogDigests, catalogHead := canonical.BuildChain(catalogPayloads)
+	catalogDigests, catalogHead := mustBuildChain(catalogPayloads)
 
 	return []chainVector{
 		{Name: "simple", Payloads: simple, EntryDigests: simpleDigests, Head: simpleHead},
 		{Name: "catalog-then-frame", Payloads: catalogPayloads, EntryDigests: catalogDigests, Head: catalogHead},
 	}
+}
+
+func mustBuildChain(payloads []string) ([]string, string) {
+	digests, head, err := canonical.BuildChain(payloads)
+	if err != nil {
+		panic(err)
+	}
+	return digests, head
 }
 
 func buildFrames(types []typeVector) []frameVector {

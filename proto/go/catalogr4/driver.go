@@ -514,7 +514,11 @@ func verifiedPayloads(reply map[string]any, journalName string) ([]string, error
 			return nil, fmt.Errorf("read %s entry %d payload is not a string", journalName, index)
 		}
 		payloads[index] = payload
-		wantPrev = canonical.EntryDigest(canonical.ChainEntry{Seq: index, Prev: wantPrev, Payload: payload})
+		digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: index, Prev: wantPrev, Payload: payload})
+		if err != nil {
+			return nil, fmt.Errorf("read %s entry %d is outside the canonical domain: %w", journalName, index, err)
+		}
+		wantPrev = digest
 	}
 	if reply["head"] != wantPrev {
 		return nil, fmt.Errorf("read %s claims head %v, recomputed %s", journalName, reply["head"], wantPrev)

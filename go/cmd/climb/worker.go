@@ -132,7 +132,11 @@ func openEngine(bundle string, fake bool) (*engine, map[string]mutRec, [][]strin
 			if wire.Prev != e.head {
 				return nil, nil, nil, fmt.Errorf("journal chain broken at seq %d", wire.Seq)
 			}
-			e.head = canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("corrupt journal at seq %d: %w", wire.Seq, err)
+			}
+			e.head = digest
 			e.nextSeq = wire.Seq + 1
 			var peek struct {
 				Kind string `json:"kind"`
@@ -249,7 +253,11 @@ func (e *engine) journalAppend(payload map[string]any) error {
 	if err := e.journal.Sync(); err != nil {
 		return err
 	}
-	e.head = canonical.EntryDigest(canonical.ChainEntry{Seq: e.nextSeq, Prev: e.head, Payload: string(p)})
+	digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: e.nextSeq, Prev: e.head, Payload: string(p)})
+	if err != nil {
+		return err
+	}
+	e.head = digest
 	e.nextSeq++
 	return nil
 }

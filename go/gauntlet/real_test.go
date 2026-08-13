@@ -60,7 +60,7 @@ func buildRealBundle(t *testing.T) string {
 			"output_tokens": 40, "result": result, "stop": "end_turn",
 		}))
 		wire := mustCanonical(t, map[string]any{"payload": payload, "prev": head, "seq": seqNo})
-		head = canonical.EntryDigest(canonical.ChainEntry{Seq: seqNo, Prev: head, Payload: payload})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: seqNo, Prev: head, Payload: payload})
 		journal = append(journal, string(wire))
 		seqNo++
 	}
@@ -154,7 +154,7 @@ func TestRealDoubleBuyRefused(t *testing.T) {
 	var rebuilt []string
 	for i, p := range payloads {
 		wire := mustCanonical(t, map[string]any{"payload": p, "prev": head, "seq": i})
-		head = canonical.EntryDigest(canonical.ChainEntry{Seq: i, Prev: head, Payload: p})
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: i, Prev: head, Payload: p})
 		rebuilt = append(rebuilt, string(wire))
 	}
 	if err := os.WriteFile(path, []byte(strings.Join(rebuilt, "\n")+"\n"), 0o644); err != nil {

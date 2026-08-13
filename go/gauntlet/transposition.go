@@ -355,7 +355,7 @@ func pathTreeNodes(n int) *big.Int {
 
 func genesisHead() string { return canonical.Genesis }
 
-func entryHead(w wireEntry) string {
+func entryHead(w wireEntry) (string, error) {
 	return canonical.EntryDigest(canonical.ChainEntry{Seq: w.Seq, Prev: w.Prev, Payload: w.Payload})
 }
 
@@ -376,7 +376,11 @@ func walkChain(lines [][]byte) (string, error) {
 		if wire.Prev != head {
 			return "", fmt.Errorf("%w: entry %d prev does not match head", ErrChain, i)
 		}
-		head = entryHead(wire)
+		digest, err := entryHead(wire)
+		if err != nil {
+			return "", fmt.Errorf("%w: entry %d: %v", ErrChain, i, err)
+		}
+		head = digest
 	}
 	return head, nil
 }

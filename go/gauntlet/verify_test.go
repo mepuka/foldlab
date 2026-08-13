@@ -63,7 +63,7 @@ func buildBundle(t *testing.T) string {
 		}))
 		entry := canonical.ChainEntry{Seq: i, Prev: head, Payload: payload}
 		wire := mustCanonical(t, map[string]any{"payload": payload, "prev": head, "seq": i})
-		head = canonical.EntryDigest(entry)
+		head = mustEntryDigest(t, entry)
 		journal = append(journal, string(wire))
 		prevResult = results[i]
 	}
@@ -146,6 +146,15 @@ func buildBundle(t *testing.T) string {
 		"state_digest": mustDigest(t, cfState),
 	})))
 	return dir
+}
+
+func mustEntryDigest(t testing.TB, entry canonical.ChainEntry) string {
+	t.Helper()
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		t.Fatalf("EntryDigest(%+v): %v", entry, err)
+	}
+	return digest
 }
 
 func resultFor(digests, results []string, d string) string {

@@ -130,7 +130,10 @@ func tailCursor(ctx context.Context, stream jetstream.Stream) (Cursor, error) {
 	if err != nil {
 		return Cursor{}, fmt.Errorf("decode journal tail: %w", err)
 	}
-	digest := canonical.EntryDigest(entry)
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return Cursor{}, tampered(position, "%v", err)
+	}
 	if canonical.DigestHex(raw.Data) != digest {
 		return Cursor{}, tampered(position, "wire bytes are not canonical")
 	}
@@ -211,7 +214,10 @@ func (j *Journal) Read(
 			return entries, cursor, tampered(position, "prev does not match the verified head")
 		}
 
-		digest := canonical.EntryDigest(entry)
+		digest, digestErr := canonical.EntryDigest(entry)
+		if digestErr != nil {
+			return entries, cursor, tampered(position, "%v", digestErr)
+		}
 		if canonical.DigestHex(raw.Data) != digest {
 			return entries, cursor, tampered(position, "wire bytes are not canonical")
 		}
@@ -241,7 +247,10 @@ func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (
 	if err != nil {
 		return "", err
 	}
-	digest := canonical.EntryDigest(entry)
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		return "", err
+	}
 	message := nats.NewMsg(j.subject)
 	message.Data = wire
 	message.Header.Set("Nats-Msg-Id", digest)

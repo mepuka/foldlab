@@ -81,9 +81,27 @@ func mustAppend(t *testing.T, j *journal.Journal, payload string) canonical.Chai
 	return e
 }
 
+func mustEntryDigest(t testing.TB, entry canonical.ChainEntry) string {
+	t.Helper()
+	digest, err := canonical.EntryDigest(entry)
+	if err != nil {
+		t.Fatalf("EntryDigest(%+v): %v", entry, err)
+	}
+	return digest
+}
+
+func mustBuildChain(t testing.TB, payloads []string) ([]string, string) {
+	t.Helper()
+	digests, head, err := canonical.BuildChain(payloads)
+	if err != nil {
+		t.Fatalf("BuildChain: %v", err)
+	}
+	return digests, head
+}
+
 func rawPublish(t *testing.T, js jetstream.JetStream, name string, e canonical.ChainEntry, expectSeq uint64) (*jetstream.PubAck, error) {
 	t.Helper()
-	return rawPublishBytes(t, js, name, entryWire(t, e), canonical.EntryDigest(e), expectSeq)
+	return rawPublishBytes(t, js, name, entryWire(t, e), mustEntryDigest(t, e), expectSeq)
 }
 
 func rawPublishBytes(t *testing.T, js jetstream.JetStream, name string, data []byte, msgID string, expectSeq uint64) (*jetstream.PubAck, error) {
@@ -280,7 +298,7 @@ func TestAppendReadRoundTrip(t *testing.T) {
 			t.Fatalf("entry %d: read %+v != appended %+v", i, e, entries[i])
 		}
 	}
-	digests, head := canonical.BuildChain(payloads)
+	digests, head := mustBuildChain(t, payloads)
 	if cursor.Head != head {
 		t.Fatalf("cursor head: %s, want fold head %s", cursor.Head, head)
 	}
@@ -428,7 +446,7 @@ func TestUncertainRetryDuplicate(t *testing.T) {
 	}
 	// and the journal can continue appending past the absorbed retry
 	next := mustAppend(t, j, "twice")
-	if next.Seq != 1 || next.Prev != canonical.EntryDigest(e) {
+	if next.Seq != 1 || next.Prev != mustEntryDigest(t, e) {
 		t.Fatalf("chain broken after duplicate: %+v", next)
 	}
 }
@@ -463,7 +481,7 @@ func TestResumeCursor(t *testing.T) {
 			t.Fatalf("entry %d: %q, want %q (no skip, no re-read)", i, e.Payload, payloads[i])
 		}
 	}
-	_, head := canonical.BuildChain(payloads)
+	_, head := mustBuildChain(t, payloads)
 	if c2.Head != head || c2.Seq != 4 {
 		t.Fatalf("final cursor %+v, want seq 4 head %s", c2, head)
 	}
@@ -571,7 +589,7 @@ func TestReopenContinues(t *testing.T) {
 			t.Fatalf("entry %d: %+v, want %q", i, e, want[i])
 		}
 	}
-	_, head := canonical.BuildChain(want)
+	_, head := mustBuildChain(t, want)
 	if cursor.Head != head {
 		t.Fatalf("head after reopen: %s, want %s", cursor.Head, head)
 	}

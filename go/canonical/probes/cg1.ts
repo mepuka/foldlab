@@ -31,23 +31,26 @@ if (goProbe.exitCode !== 0) {
   console.error(goProbe.stderr.toString().trim())
   process.exit(goProbe.exitCode)
 }
-if (!goOutput.includes("go-collision=true")) {
-  console.error("CG1 Go collision no longer reproduces")
+if (
+  !goOutput.includes("go-invalid-ff-refused=true field=payload") ||
+  !goOutput.includes("go-invalid-fe-refused=true field=payload")
+) {
+  console.error("CG1 gate: Go did not return typed invalid-UTF-8 refusals")
   process.exit(2)
 }
 
 try {
-  const loneDigest = entryDigest({ seq: 0, prev: GENESIS, payload: vector.tsLoneSurrogate })
-  const replacementDigest = entryDigest({
-    seq: 0,
-    prev: GENESIS,
-    payload: vector.tsReplacementScalar,
-  })
-  console.log(`ts-lone-high-surrogate=${loneDigest}`)
-  console.log(`ts-replacement-scalar=${replacementDigest}`)
-  console.log("ts-lone-surrogate-accepted=true")
-  console.log("CG1 RED: proto/ts entryDigest minted identity for a lone surrogate")
+  entryDigest({ seq: 0, prev: GENESIS, payload: vector.tsLoneSurrogate })
+  console.error("CG1 gate: proto/ts entryDigest accepted a lone surrogate")
   process.exit(1)
 } catch (error) {
-  console.log(`CG1 no longer reproduces: proto/ts refused lone surrogate: ${String(error)}`)
+  console.log(`ts-lone-surrogate-refused=true error=${String(error)}`)
 }
+
+const replacementDigest = entryDigest({
+  seq: 0,
+  prev: GENESIS,
+  payload: vector.tsReplacementScalar,
+})
+console.log(`ts-replacement-scalar-digest=${replacementDigest}`)
+console.log("CG1 GATE PASS: both identity implementations refuse outside their Unicode domain")

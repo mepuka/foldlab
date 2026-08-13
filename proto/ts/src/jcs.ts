@@ -96,10 +96,36 @@ export interface ChainEntry {
   readonly payload: string
 }
 
+export class InvalidUnicodeError extends Error {
+  readonly field: "payload" | "prev"
+
+  constructor(field: "payload" | "prev") {
+    super(`${field} is not valid Unicode`)
+    this.name = "InvalidUnicodeError"
+    this.field = field
+  }
+}
+
+const assertUnicodeScalarString = (value: string, field: "payload" | "prev"): void => {
+  for (let index = 0; index < value.length; index++) {
+    const unit = value.charCodeAt(index)
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const low = value.charCodeAt(index + 1)
+      if (!(low >= 0xdc00 && low <= 0xdfff)) throw new InvalidUnicodeError(field)
+      index++
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      throw new InvalidUnicodeError(field)
+    }
+  }
+}
+
 /** Digest of one chain entry: SHA-256 over the canonical bytes of
  * {payload, prev, seq} — byte-identical to go/canonical.EntryDigest. */
-export const entryDigest = (entry: ChainEntry): string =>
-  sha256Hex(canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq }))
+export const entryDigest = (entry: ChainEntry): string => {
+  assertUnicodeScalarString(entry.payload, "payload")
+  assertUnicodeScalarString(entry.prev, "prev")
+  return sha256Hex(canonicalize({ payload: entry.payload, prev: entry.prev, seq: entry.seq }))
+}
 
 /** The verify-on-read chain fold (W6): heads are claims; this recomputes
  * one locally. Returns the verified head, or the seq/reason of the first
@@ -118,7 +144,14 @@ export const foldChain = (
     if (entry.prev !== cursor.head) {
       return { ok: false, seq: entry.seq, reason: "prev does not match the verified head" }
     }
-    cursor = { seq: entry.seq, head: entryDigest(entry) }
+    try {
+      cursor = { seq: entry.seq, head: entryDigest(entry) }
+    } catch (error) {
+      if (error instanceof InvalidUnicodeError) {
+        return { ok: false, seq: entry.seq, reason: error.message }
+      }
+      throw error
+    }
   }
   return { ok: true, seq: cursor.seq, head: cursor.head }
 }

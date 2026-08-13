@@ -1,104 +1,108 @@
-# CG1 — cross-language chain-identity refusal mismatch
+# CG1 — cross-language chain-identity refusal closure
 
-Status: **CONFIRMED, RED, STOPPED without a fix** on 2026-08-13.
+Status: **CLOSED, GREEN** under Task 23 Addendum 1 on 2026-08-13.
 
-## Executable evidence
+## Evidence sequence
 
-From the repository root:
+The pre-fix finding remains captured in `cg1.out`: distinct invalid Go byte
+strings `ff` and `fe` collided after U+FFFD substitution, while the real
+`proto/ts` `entryDigest` minted identity for a lone high surrogate. The red
+probe exited 1. That finding triggered the original stop condition and was not
+reconstructed after the fix.
+
+Addendum 1 authorized a coordinated API migration and the exact `proto/ts`
+scope extension. The same vector is now a normal cross-language gate:
 
 ```text
 bun run go/canonical/probes/cg1.ts
 ```
 
-The command intentionally exits 1 while the finding reproduces. It reads
-`cg1-vector.json`, runs the actual exported Go `canonical.EntryDigest` through
-`cg1-go`, and calls the actual `proto/ts/src/jcs.ts` `entryDigest`; neither is a
-test-local port. The captured run is in `cg1.out`.
+```text
+go-invalid-ff-refused=true field=payload
+go-invalid-fe-refused=true field=payload
+ts-lone-surrogate-refused=true error=InvalidUnicodeError: payload is not valid Unicode
+ts-replacement-scalar-digest=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
+CG1 GATE PASS: both identity implementations refuse outside their Unicode domain
+```
+
+Exit code: `0`; captured in `cg1-green.out`. The gate executes the actual Go
+`canonical.EntryDigest` and actual `proto/ts/src/jcs.ts` `entryDigest`; neither
+side is a port. `go/canonical/entry_refusal_test.go` and
+`proto/ts/test/identity-refusal.test.ts` promote the shared vector into their
+scoped suites as well.
+
+## Implemented closure
+
+- Go `EntryDigest` returns `(string, error)` and refuses invalid UTF-8 in both
+  `payload` and `prev` with `*InvalidUTF8Error` naming the field.
+- Go `BuildChain` returns `([]string, string, error)`, propagates the typed
+  refusal, and returns no partial identity on failure.
+- Every root-Go and `proto/go` caller now handles the error; verifiers propagate
+  refusals, runtime paths return errors, and fixture-only tests/helpers fail
+  explicitly on their known-valid inputs.
+- The stop-time audit against `origin/main@fe63ffed41a1c59bd6e1db0137d4e7f077b0f41a`
+  found 26 `EntryDigest` calls and 9 `BuildChain` calls across 18 files. The
+  authorized migration includes all 14 files that were outside the original
+  scope: both runtime commands, crashstorm, transfleet, six gauntlet files, and
+  all four `proto/go` callers. The post-rebase call graph compiles and tests as
+  one API; no old one-result or two-result call remains.
+- TypeScript `entryDigest` rejects lone high/low surrogates in `payload` and
+  `prev` with `InvalidUnicodeError`. `foldChain` converts that exception into
+  its established refusal-as-data result.
+- Existing valid-domain fixtures and digests remain byte-identical. No fixture
+  was regenerated.
+
+## M1 — shared merge-refusal closure
+
+Task 23 Addendum 2 extended this closure to the merge boundary. Both real
+implementations initially failed the same frozen vector,
+`go/stream/testdata/m1-duplicate-seq.json`:
 
 ```text
-go-invalid-ff=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
-go-invalid-fe=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
-go-collision=true
-ts-lone-high-surrogate=a9ab2d9c8d6fc8144c61ef397005add940c5137f2c75d385112a09967774a6f1
-ts-replacement-scalar=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
-ts-lone-surrogate-accepted=true
-CG1 RED: proto/ts entryDigest minted identity for a lone surrogate
+cd go && go test ./stream -run TestApplyMergeRefusesSharedDuplicateSequenceVector -count=1
+--- FAIL: TestApplyMergeRefusesSharedDuplicateSequenceVector (0.00s)
+    merge_refusal_test.go:45: duplicate source sequence was accepted as []stream.Event{...alpha@3 "b=middle"..., ...alpha@7 "a=last"...}
+FAIL
 ```
-
-Exit code: `1`.
-
-Observed:
-
-- Go gives byte strings `ff` and `fe` the same entry digest,
-  `19b4e8fa...da4d6c26`, because both are replaced by U+FFFD.
-- TypeScript mints `a9ab2d9c...774a6f1` for a lone high surrogate instead of
-  refusing it. Its digest for the replacement scalar is
-  `19b4e8fa...da4d6c26`.
-
-This refutes Task 23's premise that the TypeScript chain-identity lane already
-refuses lone surrogates. `packages/core` constrained byte decode does refuse
-them, but that is not the `proto/ts` chain-entry identity function exercised by
-the cross-language wall.
-
-## Why implementation stopped
-
-Task 23 requires stopping if TypeScript refusal behavior disagrees. It also
-limits source edits to `go/journal` and `go/canonical`. A real Go typed refusal
-cannot be added inside that scope without either breaking the build or leaving
-the unsafe public minting path available:
-
-```go
-var ErrInvalidUTF8 = errors.New("chain entry contains invalid UTF-8")
-
-func EntryDigest(entry ChainEntry) (string, error)
-func BuildChain(payloads []string) ([]string, string, error)
-```
-
-Against `origin/main@fe63ffed41a1c59bd6e1db0137d4e7f077b0f41a`, the two
-functions have 26 `EntryDigest` calls and 9 `BuildChain` calls across 18 files.
-Four files are in scope (`go/canonical/{canonical.go,conformance_test.go}` and
-`go/journal/{journal.go,journal_test.go}`); these 14 required migration files
-are not:
 
 ```text
-go/cmd/climb/worker.go
-go/cmd/realrun/main.go
-go/crashstorm/worker.go
-go/gauntlet/climb_test.go
-go/gauntlet/real_test.go
-go/gauntlet/transposition.go
-go/gauntlet/transposition_test.go
-go/gauntlet/verify.go
-go/gauntlet/verify_test.go
-go/transfleet/worker.go
-proto/go/catalogr4/driver.go
-proto/go/cmd/wirefix/main.go
-proto/go/protod/conformance_test.go
-proto/go/protod/wall_test.go
+bun test packages/core/test/stream.merge-refusal.test.ts
+Expected: "Failure"
+Received: "Success"
+0 pass
+1 fail
 ```
 
-A panic or sentinel digest would not be a typed refusal. Adding a new checked
-function while retaining `EntryDigest(ChainEntry) string` would leave the
-public identity-minting path that violates the law. Neither is a fix.
+The vector is now a shared green gate. Go returns
+`*stream.MergeDuplicateSequence`; TypeScript fails the Effect with
+`MergeDuplicateSequence`. Both refusals name the source, repeated sequence,
+first event index, and duplicate event index. Go also exposes the pre-existing
+gap refusal as `*stream.MergeGap`, matching TypeScript's established
+`MergeGap`. Sparse unique sources still resolve in arbitrary source order, and
+Go retains its allocation-free dense lookup path. The established
+`fixtures/stream-wall.json` merge corpus is byte-identical and was not
+regenerated.
 
-## Operator choices
+## Non-claims
 
-1. Ratify a coordinated Go API migration plus the `proto/ts` refusal change,
-   then make this probe exit 0 and promote the vector into the cross-language
-   wall.
-2. Merge the independently complete JR1/JR2/JR3 journal repair now and leave
-   this executable red finding as the CG1 gate for a separately scoped task.
+This gate proves refusal agreement for the recorded invalid-domain boundary
+and that the valid frozen corpora did not move. It does not claim exhaustive
+equivalence over every malformed runtime string. The Go and TypeScript
+representations differ—invalid UTF-8 bytes versus unpaired UTF-16 surrogates—so
+the vector witnesses their corresponding excluded domains, not identical raw
+inputs. Network JSON already excludes invalid UTF-8 independently.
 
-No fixture, digest, production Go canonical code, or TypeScript source was
-changed here. This finding does not claim that valid-UTF-8 journal entries move
-identity, that network JSON admits invalid UTF-8, or that the existing frozen
-corpora contain an invalid-domain value.
+The M1 vector proves refusal agreement for a duplicate in one sparse source.
+It does not claim source-event ordering is semantically meaningful or impose a
+dense-sequence requirement: unique sparse coordinates remain lawful. It does
+not alter merge-fact identity or any existing valid merge output.
 
 ## Proposed merge-time DECISIONS entries
 
-These entries are intentionally not written to `proto/DECISIONS.md`, which is
-outside Task 23's edit scope. The merger must replace each placeholder with the
-next free repository-wide number and record any renumbering under Task 23.
+Task 23 keeps its decision evidence here rather than editing the
+repository-wide `proto/DECISIONS.md`. The merger must replace each placeholder
+with the next free repository-wide number and record any renumbering under
+Task 23.
 
 ### D<merge-1>. Every stored journal head is verified before cursor adoption
 
@@ -121,3 +125,16 @@ shared refusal vector proves both domains agree. Alternatives: panic; return a
 sentinel digest; add a checked twin while retaining the unsafe export; fix only
 one runtime. Why: all four alternatives leave either an untyped failure, an
 identity collision, or a cross-language domain mismatch. **Load-bearing? yes.**
+
+### D<merge-3>. Merge replay refuses duplicate source sequence coordinates
+
+Decided: each source supplied to `ApplyMerge` / `applyMerge` must contain at
+most one event for each sequence coordinate. Both runtimes refuse duplicates
+before resolving picks with a typed `MergeDuplicateSequence` carrying the
+source, sequence, and both event indexes; one frozen vector licenses the shared
+boundary. Unique sparse coordinates remain valid. Alternatives: first-write-
+wins; last-write-wins; require all sources to be dense; validate only events
+referenced by the merge fact. Why: either winner policy makes an identity
+coordinate ambiguous, a density rule rejects lawful sparse sources, and
+pick-only validation lets an invalid supplied source change admissibility with
+an unrelated fact. **Load-bearing? yes.**

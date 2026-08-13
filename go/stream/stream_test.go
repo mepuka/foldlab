@@ -2,6 +2,7 @@ package stream
 
 import (
 	"bytes"
+	"errors"
 	"sync"
 	"testing"
 )
@@ -107,28 +108,35 @@ func TestSameKeySwapChangesTheFold(t *testing.T) {
 func TestMergeGapIsExplicit(t *testing.T) {
 	alpha, beta := corpus()
 	sources := map[string][]Event{"alpha": alpha, "beta": beta}
-	if _, err := ApplyMerge(MergeFact{Picks: []Pick{{"alpha", 9}}}, sources); err == nil {
-		t.Fatalf("missing pick did not error")
+	_, err := ApplyMerge(MergeFact{Picks: []Pick{{"alpha", 9}}}, sources)
+	var gap *MergeGap
+	if !errors.As(err, &gap) {
+		t.Fatalf("missing pick error = %T %v, want *MergeGap", err, err)
+	}
+	if gap.Index != 0 || gap.Pick != (Pick{"alpha", 9}) {
+		t.Fatalf("gap = %#v", gap)
 	}
 }
 
-// Sparse sources retain the map semantics: arbitrary ordering is valid and
-// duplicate positions resolve to the last source event.
+// Sparse sources retain arbitrary ordering without changing pick lookup.
 func TestMergeIndexesSparseSources(t *testing.T) {
 	source := []Event{
 		ev("alpha", 7, "a=first"),
 		ev("alpha", 3, "b=middle"),
-		ev("alpha", 7, "a=last"),
+		ev("alpha", 11, "c=last"),
 	}
-	merged, err := ApplyMerge(MergeFact{Picks: []Pick{{"alpha", 3}, {"alpha", 7}}}, map[string][]Event{"alpha": source})
+	merged, err := ApplyMerge(MergeFact{Picks: []Pick{{"alpha", 3}, {"alpha", 7}, {"alpha", 11}}}, map[string][]Event{"alpha": source})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := string(merged[0].Payload); got != "b=middle" {
 		t.Fatalf("sparse position resolved to %q", got)
 	}
-	if got := string(merged[1].Payload); got != "a=last" {
-		t.Fatalf("duplicate position resolved to %q", got)
+	if got := string(merged[1].Payload); got != "a=first" {
+		t.Fatalf("sparse position resolved to %q", got)
+	}
+	if got := string(merged[2].Payload); got != "c=last" {
+		t.Fatalf("sparse position resolved to %q", got)
 	}
 }
 

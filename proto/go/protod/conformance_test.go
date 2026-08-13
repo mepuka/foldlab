@@ -289,7 +289,10 @@ func TestConformance(t *testing.T) {
 			entry := raw.(map[string]any)
 			payloads[index] = entry["payload"].(string)
 		}
-		_, head := canonical.BuildChain(payloads)
+		_, head, err := canonical.BuildChain(payloads)
+		if err != nil {
+			t.Fatalf("recompute journal head: %v", err)
+		}
 		if head != read["head"] {
 			t.Fatalf("claimed head %v does not recompute locally (%v)", read["head"], head)
 		}

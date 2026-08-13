@@ -199,7 +199,11 @@ func worker(bundle string) error {
 			if wire.Prev != head {
 				return fmt.Errorf("journal chain broken at seq %d", wire.Seq)
 			}
-			head = canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			digest, err := canonical.EntryDigest(canonical.ChainEntry{Seq: wire.Seq, Prev: wire.Prev, Payload: wire.Payload})
+			if err != nil {
+				return fmt.Errorf("corrupt journal at seq %d: %w", wire.Seq, err)
+			}
+			head = digest
 			var receipt struct {
 				Digest       string `json:"digest"`
 				InputTokens  int64  `json:"input_tokens"`
@@ -299,9 +303,13 @@ func worker(bundle string) error {
 					if err := journal.Sync(); err != nil {
 						return err
 					}
-					head = canonical.EntryDigest(canonical.ChainEntry{
+					digest, err := canonical.EntryDigest(canonical.ChainEntry{
 						Seq: nextSeq, Prev: head, Payload: string(payload),
 					})
+					if err != nil {
+						return err
+					}
+					head = digest
 					nextSeq++
 					calls++
 					spendMicro += inTok*priceInMicro + outTok*priceOutMicro

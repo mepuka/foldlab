@@ -253,9 +253,13 @@ func (w *worker) appendDiscovery(ctx context.Context, state State, payload strin
 		_, appendErr := w.journal.AppendEntry(opCtx, entry)
 		cancel()
 		if appendErr == nil {
+			head, err := canonical.EntryDigest(entry)
+			if err != nil {
+				return err
+			}
 			w.cursor = journal.Cursor{
 				Seq:  entry.Seq,
-				Head: canonical.EntryDigest(entry),
+				Head: head,
 			}
 			decoded, _, err := decodePayload(payload, w.salt)
 			if err != nil {

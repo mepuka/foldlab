@@ -25,6 +25,16 @@ type ChainEntry struct {
 	Payload string
 }
 
+// InvalidUTF8Error refuses a chain-entry field outside the canonical Unicode
+// domain. Identity never repairs such a field or substitutes U+FFFD.
+type InvalidUTF8Error struct {
+	Field string
+}
+
+func (err *InvalidUTF8Error) Error() string {
+	return fmt.Sprintf("chain entry %s is not valid UTF-8", err.Field)
+}
+
 func Canonicalize(jsonBytes []byte) ([]byte, error) {
 	value, err := Decode(jsonBytes)
 	if err != nil {
@@ -220,7 +230,13 @@ func DigestHex(input []byte) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func EntryDigest(entry ChainEntry) string {
+func EntryDigest(entry ChainEntry) (string, error) {
+	if !utf8.ValidString(entry.Payload) {
+		return "", &InvalidUTF8Error{Field: "payload"}
+	}
+	if !utf8.ValidString(entry.Prev) {
+		return "", &InvalidUTF8Error{Field: "prev"}
+	}
 	var encoded bytes.Buffer
 	encoded.WriteString(`{"payload":`)
 	appendJSONString(&encoded, entry.Payload)
@@ -229,22 +245,25 @@ func EntryDigest(entry ChainEntry) string {
 	encoded.WriteString(`,"seq":`)
 	encoded.WriteString(strconv.Itoa(entry.Seq))
 	encoded.WriteByte('}')
-	return DigestHex(encoded.Bytes())
+	return DigestHex(encoded.Bytes()), nil
 }
 
-func BuildChain(payloads []string) (entryDigests []string, head string) {
+func BuildChain(payloads []string) (entryDigests []string, head string, err error) {
 	entryDigests = make([]string, len(payloads))
 	head = Genesis
 	for seq, payload := range payloads {
-		digest := EntryDigest(ChainEntry{
+		digest, err := EntryDigest(ChainEntry{
 			Seq:     seq,
 			Prev:    head,
 			Payload: payload,
 		})
+		if err != nil {
+			return nil, "", err
+		}
 		entryDigests[seq] = digest
 		head = digest
 	}
-	return entryDigests, head
+	return entryDigests, head, nil
 }
 
 func appendCanonical(output *bytes.Buffer, value any) error {

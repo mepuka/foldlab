@@ -123,7 +123,7 @@ func TestEntryDigestLiteral(t *testing.T) {
 	if canonical.Genesis != "0000000000000000000000000000000000000000000000000000000000000000" {
 		t.Fatalf("Genesis constant wrong: %s", canonical.Genesis)
 	}
-	got := canonical.EntryDigest(canonical.ChainEntry{Seq: 0, Prev: canonical.Genesis, Payload: "p"})
+	got := mustEntryDigest(t, canonical.ChainEntry{Seq: 0, Prev: canonical.Genesis, Payload: "p"})
 	const want = "d5a1b56d653004c5659c1aae4dc41470dfd2a3656f14f2966d2f01c4287340b4"
 	if got != want {
 		t.Fatalf("entry digest literal: got %s want %s", got, want)
@@ -137,13 +137,13 @@ func TestChainFoldConsistency(t *testing.T) {
 	for i := range payloads {
 		payloads[i] = fmt.Sprintf("p%d-%d-é <&>\U0001F680", i, rand.Int64())
 	}
-	digests, head := canonical.BuildChain(payloads)
+	digests, head := mustBuildChain(t, payloads)
 	if len(digests) != len(payloads) {
 		t.Fatalf("length: got %d want %d", len(digests), len(payloads))
 	}
 	prev := canonical.Genesis
 	for i, p := range payloads {
-		want := canonical.EntryDigest(canonical.ChainEntry{Seq: i, Prev: prev, Payload: p})
+		want := mustEntryDigest(t, canonical.ChainEntry{Seq: i, Prev: prev, Payload: p})
 		if digests[i] != want {
 			t.Fatalf("entry %d (payload %q): got %s want %s", i, p, digests[i], want)
 		}
@@ -164,7 +164,7 @@ func TestEntryDigestAgreesWithCanonicalize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("canonicalize: %v", err)
 	}
-	got, want := canonical.EntryDigest(e), canonical.DigestHex(c)
+	got, want := mustEntryDigest(t, e), canonical.DigestHex(c)
 	if got != want {
 		t.Fatalf("EntryDigest %s != DigestHex(Canonicalize(entry)) %s (canonical %q)", got, want, c)
 	}
@@ -172,7 +172,7 @@ func TestEntryDigestAgreesWithCanonicalize(t *testing.T) {
 
 func TestChains(t *testing.T) {
 	for i, cc := range loadFixture(t).Chains {
-		digests, head := canonical.BuildChain(cc.Payloads)
+		digests, head := mustBuildChain(t, cc.Payloads)
 		if len(digests) != cc.Length {
 			t.Fatalf("chain %d: length: got %d want %d", i, len(digests), cc.Length)
 		}

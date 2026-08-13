@@ -92,11 +92,15 @@ func RunWorker(
 				return fmt.Errorf("committed result for step %d disagrees with derivation", position)
 			}
 			if appendStep(ctx, openedJournal, cursor, step) {
+				head, err := canonical.EntryDigest(canonical.ChainEntry{
+					Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
+				})
+				if err != nil {
+					return err
+				}
 				cursor = journal.Cursor{
-					Seq: position,
-					Head: canonical.EntryDigest(canonical.ChainEntry{
-						Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
-					}),
+					Seq:  position,
+					Head: head,
 				}
 				position++
 				previousResult = step.Result
@@ -129,11 +133,15 @@ func RunWorker(
 			continue
 		}
 		if appendStep(ctx, openedJournal, cursor, step) {
+			head, err := canonical.EntryDigest(canonical.ChainEntry{
+				Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
+			})
+			if err != nil {
+				return err
+			}
 			cursor = journal.Cursor{
-				Seq: position,
-				Head: canonical.EntryDigest(canonical.ChainEntry{
-					Seq: position, Prev: cursor.Head, Payload: mustStepPayload(step),
-				}),
+				Seq:  position,
+				Head: head,
 			}
 			position++
 			previousResult = step.Result
