@@ -931,6 +931,24 @@ mutate state instead of replies (already covered; misses the
 reply-only class the audit proved survivable). Why: a comparator that
 defaults a missing field to the expected value is a prover that
 cannot fail on that field. **Load-bearing? yes.**
+## GitHub issue 49 — constrained payload-number decode
+
+### D??. Declared payload readers share the canonical admission boundary
+
+Decided: `steps.payloadNumber` decodes event payload bytes through the existing
+`decodeJson` constrained decoder before walking its declared field path. An
+excluded payload produces the step's existing `null` meaning-no-op; the
+identity fold still commits the original bytes. Alternatives: retain
+`JSON.parse` as a looser payload language (would admit duplicate members and
+over-depth values that the package's identity boundary refuses); canonicalize
+before reading (unnecessary—the step reads meaning while identity separately
+commits the event bytes); add a second parser local to the step (two policies
+can drift). Why: this was the sole `JSON.parse` on a digest-producing source
+path and contradicted the module's already-ratified constrained-decode
+boundary. The regression pins duplicate-member and depth-300 refusals, a valid
+numeric control, and the resulting fold state. **Load-bearing? yes** — parser
+admission decides which payload meanings may affect a declared fold state.
+
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
 ### D??. The tracer-bullet home is `proto/ts/src/cluster/`

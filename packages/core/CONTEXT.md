@@ -49,7 +49,9 @@ algebra derivation gates withhold identity from unbranded declarations and
 unbranded value maps; fold-cache storage and fold handles reject structural
 costumes. `kvStep` reports an excluded payload as `undefined`; entity collection
 deliberately forgives it as a meaning no-op while its identity fold still
-commits the bytes. Lower-level canonical writers retain their documented range
+commits the bytes. Declared payload-reading steps use that same constrained
+decoder; duplicate-member, over-depth, and other excluded payloads cannot enter
+fold state through a looser host parser. Lower-level canonical writers retain their documented range
 errors. The algebra's residual — a genuine declaration re-hosted onto foreign
 behavior — also reaches the digest-keyed cache and remains a pinned known gap
 outside this claim, which does not assert a package-wide error-channel
