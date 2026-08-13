@@ -258,6 +258,44 @@ statement and a divergence probe.
 
 ## Backlog, ordered (tight: the ratified path and its obligations, only)
 
+## The build order (operator-ratified 2026-08-14)
+
+Full demand inventory and dependency graph:
+[docs/design/2026-08-14-estate-structures-map.md](docs/design/2026-08-14-estate-structures-map.md).
+The KV combine memo
+(docs/research/2026-08-14-CRITICAL-MEMO-kv-combine-and-bootstrap.md)
+delivered the semilattice laws and the parallel-replay license.
+
+SHORT TERM (dispatchable now, in order — codex specs in scratch/codex/):
+1. Land the review-team branches (kv-combine-laws MERGED; packages/
+   cache under review; systems-as-data + dossier docs to main).
+2. Task 30 + addendum: refusal sort split + corpus-grade refusal
+   determinism (#18, #21).
+3. Task 32: refusal persistence — flb.certification.v0 with required
+   catalog_head (after 30).
+4. Task 33: no-dead-ends mechanized (completion-reachability over the
+   grammar; ticket 003's laws in source).
+5. Task 34: the catalog query fold (queries as values keyed
+   (query digest, catalog head); type.get; the fold tower's second
+   consumer).
+6. Ticket 026: the scale gauntlet (RG-A tradition; the last magnitude
+   claim).
+7. Housekeeping lane: tasks 26, 27, 29, 35 (Rosetta code surfaces,
+   watch one-clock, MCP output envelope, frame-schema drift).
+
+MEDIUM TERM (each behind one named gate):
+- Ticket 004 field-level grill — THE critical path (certify(),
+  certificates 005, scale.v0 016, workflow.v0 008, cycle rule).
+- Session journal (sessions dossier's four owed grillings first).
+- Ticket 012 journal model — unlocks 017, 019, split-CAS R4, and the
+  parked withTransaction question (un-parks task 25).
+- R3 upgrade + issue #9 when the Gen(3) verdicts and HARDENER guards
+  land.
+
+The pattern: short term is evidence machinery on existing primitives,
+no decisions pending; medium term is identity machinery, each item
+behind a grill. Nothing on either list is speculative.
+
 Landed since this list was last written: ticket 003's tracer bullet
 (both bullets, in `proto/`), ticket 009's first climb (R2; R3 repaired
 and in re-proof, claim held), ticket 010's R4 lockstep (claimed on the
