@@ -45,6 +45,13 @@ suite turns each claim into a property test and generates nothing where
 nothing is claimed, so a suite's list of law names is a faithful
 statement of what was checked.
 
+**Entity anchor order**:
+The collector normalizes backing keys by UTF-16 code-unit order before
+constructing anchors. A backing may enumerate in storage order, byte order, or
+any other order; enumeration is transport and cannot move an entity-of-entities
+commitment. This is the same identity ordering discipline used by canonical
+JSON object names, applied explicitly at the backing seam.
+
 **Walled boundary behavior**:
 Canonical JSON encoding and `applyKV` refuse excluded inputs as data; the four
 algebra derivation gates withhold identity from unbranded declarations and

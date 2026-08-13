@@ -71,6 +71,24 @@ const arrayBacking = (): Backing => {
   }
 }
 
+const byteOrderedBacking = (): Backing => {
+  const entries = new Map<string, EntityView>()
+  const encoder = new TextEncoder()
+  const byUtf8Bytes = (left: string, right: string): number => {
+    const a = encoder.encode(left)
+    const b = encoder.encode(right)
+    for (let index = 0; index < Math.min(a.length, b.length); index++) {
+      if (a[index] !== b[index]) return a[index]! - b[index]!
+    }
+    return a.length - b.length
+  }
+  return {
+    get: (key) => entries.get(key),
+    set: (key, view) => void entries.set(key, view),
+    keys: () => [...entries.keys()].sort(byUtf8Bytes),
+  }
+}
+
 // Raw byte payloads, INCLUDING bytes the walled meaning-fold refuses: NUL
 // (0x00), lone continuation bytes (invalid UTF-8), and the '=' separator.
 const rawByteArbitrary = FastCheck.uint8Array({ maxLength: 8 })
@@ -156,6 +174,22 @@ describe("entity collector laws", () => {
       }),
       { examples: [[mixed]], seed: 0x07ec_0002, numRuns: 250, endOnFailure: false },
     )
+  })
+
+  test("EC2: backing enumeration order cannot move anchors or their parent commitment", () => {
+    const history = [event("bus", 1, "😀=one"), event("bus", 2, "�=two")]
+    const codeUnit = makeCollector(memoryBacking(), correlate)
+    const byteOrdered = makeCollector(byteOrderedBacking(), correlate)
+    for (const item of history) {
+      codeUnit.ingest(item)
+      byteOrdered.ingest(item)
+    }
+
+    expect(byteOrdered.anchors()).toEqual(codeUnit.anchors())
+    const children = (collector: ReturnType<typeof makeCollector>) =>
+      collector.anchors().map(({ key, head }) => ({ key, head }))
+    expect(composeEntities("root", children(byteOrdered)).head)
+      .toBe(composeEntities("root", children(codeUnit)).head)
   })
 
   test("EC3: incremental ingestion equals batch recomputation", () => {

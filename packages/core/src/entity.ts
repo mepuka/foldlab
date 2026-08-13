@@ -40,6 +40,7 @@ export interface EntityView {
 export interface Backing {
   get(key: string): EntityView | undefined
   set(key: string, view: EntityView): void
+  /** Enumeration order is not semantic; the collector imposes identity order. */
   keys(): ReadonlyArray<string>
 }
 
@@ -48,6 +49,9 @@ const copyView = (view: EntityView): EntityView => ({
   ...view,
   state: { entries: new Map(view.state.entries), count: view.state.count },
 })
+
+const byUtf16CodeUnit = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0
 
 export const memoryBacking = (): Backing => {
   const m = new Map<string, EntityView>()
@@ -115,8 +119,8 @@ export const makeCollector = (
     return found === undefined ? undefined : copyView(found)
   },
   anchors: () =>
-    backing
-      .keys()
+    [...backing.keys()]
+      .sort(byUtf16CodeUnit)
       .map((key) => backing.get(key)!)
       .map((v) => ({ key: v.key, head: v.head, state: stateDigest(v.state) })),
 })
