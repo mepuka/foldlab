@@ -305,12 +305,10 @@ func walkCheck(node map[string]any, path []string, result *walkResult, allowHole
 			"flb.type.v0: a check node declares serializable metadata — a name and args; code with no canonical form cannot claim identity",
 			node["check"], `{"name":<string>,"args":{...}}`, exampleCheck())
 	}
-	for key := range checkValue {
-		if key != "name" && key != "args" {
-			return structureRefusal(append(path, "check", key),
-				"flb.type.v0: a declared check carries exactly \"name\" and \"args\"",
-				key, []string{"name", "args"}, exampleCheck())
-		}
+	if extra := unknownKeysInIdentityOrder(checkValue, "name", "args"); len(extra) > 0 {
+		return structureRefusal(append(path, "check", extra[0]),
+			"flb.type.v0: a declared check carries exactly \"name\" and \"args\"",
+			extra[0], []string{"name", "args"}, exampleCheck())
 	}
 	name, ok := checkValue["name"].(string)
 	if !ok || name == "" {
@@ -327,6 +325,16 @@ func walkCheck(node map[string]any, path []string, result *walkResult, allowHole
 }
 
 func checkKeys(node map[string]any, path []string, kind string, allowed ...string) *Refusal {
+	extra := unknownKeysInIdentityOrder(node, allowed...)
+	if len(extra) == 0 {
+		return nil
+	}
+	return structureRefusal(append(path, extra[0]),
+		fmt.Sprintf("flb.type.v0: a %q node carries exactly its declared keys — unknown keys refuse", kind),
+		extra, allowed, nil)
+}
+
+func unknownKeysInIdentityOrder(node map[string]any, allowed ...string) []string {
 	allowedSet := make(map[string]bool, len(allowed))
 	for _, key := range allowed {
 		allowedSet[key] = true
@@ -337,13 +345,10 @@ func checkKeys(node map[string]any, path []string, kind string, allowed ...strin
 			extra = append(extra, key)
 		}
 	}
-	if len(extra) == 0 {
-		return nil
-	}
-	sort.Strings(extra)
-	return structureRefusal(append(path, extra[0]),
-		fmt.Sprintf("flb.type.v0: a %q node carries exactly its declared keys — unknown keys refuse", kind),
-		extra, allowed, nil)
+	sort.Slice(extra, func(i, j int) bool {
+		return utf16Less(extra[i], extra[j])
+	})
+	return extra
 }
 
 // utf16Less mirrors go/canonical's member ordering (RFC 8785): compare
