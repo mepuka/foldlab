@@ -531,8 +531,8 @@ two refutations honored.
 ## 3.1 Gold 1967 — the actual result, not the folklore
 
 E. M. Gold, "Language identification in the limit," *Information and Control*
-10(5):447–474, 1967. [fetched: bibliographic details and the class results
-confirmed this session; the theorem statement is inherited.]
+10(5):447–474, 1967. [fetched: original Table I and Theorems I.4–I.5
+read this session.]
 
 The protocol: a learner receives an infinite presentation of a target language
 `L` from a known class `C` and emits a guess after each datum; it *identifies `L`
@@ -544,7 +544,8 @@ The result, stated with its hypotheses: a class is *superfinite* if it contains
 every finite language over the alphabet plus at least one infinite language. **No
 superfinite class is identifiable in the limit from text.** From an informant,
 identification succeeds for the regular, context-free, context-sensitive,
-primitive recursive, and recursively enumerable classes.
+and primitive recursive classes, but not for the recursive or recursively
+enumerable classes.
 
 Three things the folklore gets wrong and this dossier does not repeat:
 
@@ -1213,9 +1214,10 @@ design.
   https://people.eecs.berkeley.edu/~dawnsong/teaching/s10/papers/angluin87.pdf
   would not text-extract, so the theorem's verbatim wording is inherited.
 - E. M. Gold, "Language identification in the limit," *Information and Control*
-  10(5):447–474, 1967 — bibliographic details and the superfinite/text and
-  informant class results confirmed via search this session;
-  https://www.semanticscholar.org/paper/Language-Identification-in-the-Limit-Gold/20cc59e8879305cbe18409c77464eff272e1cf55
+  10(5):447–474, 1967 — Table I (p. 452), Theorem I.4 (pp. 467–468), and
+  Theorem I.5 (pp. 468–469) read in the original paper;
+  https://doi.org/10.1016/S0019-9958(67)91165-5 and
+  https://home.uni-leipzig.de/gkobele/courses/2023.WS/Colloq/files/Gold67.pdf
 - O. Polozov & S. Gulwani, "FlashMeta: A Framework for Inductive Program
   Synthesis," *OOPSLA 2015*, October 2015 —
   https://www.microsoft.com/en-us/research/publication/flashmeta-framework-inductive-program-synthesis/
