@@ -112,3 +112,7 @@ Recorded from the MCP deep-read at the pin against spec revision
   with a stated removal window, and session state belongs in the
   journal, where it is recomputable evidence rather than transport
   state.
+- Every tool carries `_meta["foldlab.dev/nats-subject"]`, derived from
+  the same live contract as its name and schema. This is the structural
+  bridge from NATS subjects in verbatim `next` hints to callable MCP
+  tool names; clients never parse descriptions to recover it.
