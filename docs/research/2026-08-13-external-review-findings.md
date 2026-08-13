@@ -760,3 +760,101 @@ until the repaired certificate merges; how to make each R2/R3 control
 independent; whether R4 is intentionally model-binary consensus or requires a
 TLA-linked transition validator; and which public reply fields belong to the R4
 conformance contract.
+
+## Proof-delta follow-up (2026-08-13, exact `b9386781486`)
+
+This follow-up audits the merged proof delta `fe63ffed41a1..b9386781486` after
+the PROVER and bridge-repair lanes landed. It is a historical snapshot at that
+exact ref, not a claim about later commits. No formal spec, gate, ledger, or
+operator ratification was changed by this audit.
+
+### Fresh execution evidence
+
+The audit used Apalache 0.61.0 (jar SHA-256 `33611081...ad4346`), TLC
+`2026.08.11.125311` (jar SHA-256 `ab323b79...46c05f`), and Java 21. The exact
+fresh commands were:
+
+```text
+mise x java@21 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=Init --inv=IndInv --length=0 CatalogInd.tla
+mise x java@21 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.blind.cfg --init=Init --inv=AdmissionStep --length=1 CatalogInd.tla
+powershell -File verify/catalog/run-wire.ps1
+go run -tags catalogr4_sabotage ./catalogr4/cmd -mode sabotage
+go run ./catalogr4/cmd -mode corrupted
+go run ./catalogr4/cmd -mode coverage
+go run ./catalogr4/cmd -mode honest
+go test ./catalogr4/...
+```
+
+- The Apalache base type-checked and returned `NoError`, exit 0. The short
+  blind refutability canary named `AdmissionStep`, returned `Error`, and exited
+  12. This was not the complete repaired R3 gate.
+- `run-wire.ps1` reproduced the split canary at 119,145 generated / 18,295
+  distinct / depth 16; the honest bridge closed at 4,306,627 / 281,269 /
+  depth 17; the faithless creating bridge violated `AtomicRefinement` at
+  depth 2.
+- The R4 executable caught the tagged sabotage and all 131/131 corrupted
+  expected states, covered 3/3 action disjuncts and 5/5 semantic branches,
+  then completed 131 schedules / 3,079 steps with zero honest divergence.
+  `go test ./catalogr4/...` passed.
+
+The full repaired R3 consecution, action-safety, data-depth, and
+negative-control set was not reexecuted in this audit; the ledger correctly
+kept R3 held.
+
+### Fixed / live / stale classification
+
+| Prior issue | Status at `b9386781486` | Exact evidence |
+|---|---|---|
+| `FINDING-R3-001`, Snowcat failure | Fixed | Typed accessors in `Catalog.tla`; fresh base returned `NoError`. |
+| C4 catalog `Gen(2)` undercoverage | Mechanical defect fixed; proof still held | `CatalogInd.tla` now uses catalog `Gen(3)`; the full repaired certificate had not landed. |
+| State safety counted as an obligation | Fixed in spec and ledger; stale prose remained | `CatalogInd.tla` labels it a drift tripwire, while the catalog README still counted it. |
+| Unargued data `Gen(2)` cutoff | Argument repaired; empirical/full verdict pending | The repair names append-only Premise A and adds `IndInitDataDeep`; no completed deeper-control verdict was committed. |
+| `FINDING-BRIDGE-001`, resolving half unchecked | Honest predicate fixed; sensitivity evidence still live | `ResolvingCreateAgrees` is checked in the honest config, but its X2 control was not shipped or gated. |
+| R2 exact-control specificity | Still live | The ledger correctly caveats the forged-mirror control; ticket and overview prose did not. |
+| `FINDING-BOUNDS-001` | Still live | Domains still filter `1..4`; `CatalogNaturallyBounded` still compares with `NumVals`. |
+| A bounds-above-four refutation of the current 2/3/2 claim | Stale as a current refutation | The published current domain stays below four; the defect remains future generalization debt. |
+| TLA-to-Go oracle independence | Still live | The Go `Step` relation remains an unvalidated restatement of the TLA relation. |
+
+### Five actionable residues
+
+1. **Claim text contradicts the held ledger.** `VERIFICATION.md:55-70`
+   correctly holds R3, but `verify/catalog/README.md:141-188,227-228`,
+   `verify/catalog/CLIMB.md:189-197`, `NEXT.md:89-95`, and ticket 009
+   lines 52-58 still publish the historical proof or say the repaired proof is
+   discharged. Ticket 009 lines 45-47 also retains the R2 exact-law claim that
+   the ledger explicitly caveats.
+2. **The resolving-bridge negative control is not a shipped gate.** The honest
+   config checks `ResolvingCreateAgrees`, but `CatalogWireBroken.cfg` and
+   `run-wire.ps1` refute only `AtomicRefinement`; no tracked BridgeFix/X2
+   config and trace backs the sensitivity sentence in the ledger.
+3. **The ratified Publish-refusal strengthening is absent.** Operator
+   ratification item 2 above says `AdmittedStaysResolvableAtD` enters the
+   invariant set with `ResettingMirror` as its control. Neither the invariant
+   nor that control is present at the audited ref, leaving the analogous
+   stuttering-refusal instrument outstanding.
+4. **The executable wall still has no independent model oracle.** The harness
+   derives schedules and expected observations from its hand-written Go
+   `Step`; the separately checked TLA bridge does not certify each Go
+   transition. The sampled result therefore establishes binary-to-Go-
+   restatement agreement, not independent TLA-to-binary conformance.
+5. **The silent domain truncation remains.** `Catalog.tla:98-100` still filters
+   identities from `1..4`, and `CatalogNaturallyBounded` uses `NumVals` rather
+   than `Cardinality(Vals)`. This does not refute the current 2/3/2 run but can
+   make a future wider claim silently check only four identities.
+
+### Literature-sized nonclaims
+
+- **H1:** no bounded response-observing macro-step trace-refinement claim yet;
+  the bridge still lacks an explicit public observation and operation-result
+  label map.
+- **H2:** no linearizability claim; the 131 client histories contain no
+  overlapping invocations and responses.
+- **H3:** 5/5 model-branch reachability is not one independently killable
+  response mutant per semantic branch.
+- **H9:** do not call the Go restatement an independent TLA oracle until each
+  carried transition/result/observation can be checked against the
+  authoritative relation, for example by a proof-carrying trace certificate
+  and a Go/TLA drift control.
+
+These are scope limits and missing evidence instruments, not observed honest-
+model or honest-binary divergences.

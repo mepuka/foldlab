@@ -678,9 +678,12 @@ concurrent linearizability.
    defining real-time history obligation has not been tested. This says nothing
    about whether one request uses internal daemon concurrency.
 4. **Do not repeat the historical R3 ledger entry as a current proof.** The old
-   `Gen(2)` hypothesis under-covered `IndInv`, current HEAD fails Snowcat after
-   R4, and the repair at exact ref `d76e3948` is not merged. Re-certification on
-   merged HEAD is required.
+   `Gen(2)` hypothesis under-covered `IndInv`. The mechanical repair is now
+   merged: Snowcat re-checkability is restored, the catalog hypothesis is
+   `Gen(3)`, the data cutoff has a named append-only premise and a deeper
+   insensitivity control, and state safety is counted only as a tripwire. R3
+   nevertheless remains held until the repaired consecution, action-safety,
+   and negative-control verdicts land as one merged certificate.
 5. **After repair, do not infer arbitrary daemon/value/creator cardinalities
    from R3.** One-step consecution can remove the trace-length bound while the
    model parameters remain fixed finite domains.
