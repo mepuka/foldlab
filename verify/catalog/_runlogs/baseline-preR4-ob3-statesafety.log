@@ -75,3 +75,15 @@ State 0: state invariant 1 holds.                                 I@04:57:43.268
 State 0: state invariant 2 holds.                                 I@04:57:49.941
 State 0: state invariant 3 holds.                                 I@05:01:46.154
 State 0: state invariant 4 holds.                                 I@05:02:48.874
+State 0: state invariant 5 holds.                                 I@05:05:22.848
+State 0: state invariant 6 holds.                                 I@05:05:26.933
+Step 0: picking a transition out of 1 transition(s)               I@05:05:27.165
+The outcome is: NoError                                           I@05:05:30.542
+Checker reports no error up to computation length 0               I@05:05:30.555
+It took me 0 days  0 hours 11 min  0 sec                          I@05:05:30.573
+Total time: 660.269 sec                                           I@05:05:30.575
+EXITCODE: OK
+### ---------------------------------------------------------------
+### exit code: 0
+### wall clock: 661s
+### finished: 2026-08-13T10:05:30Z
