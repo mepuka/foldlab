@@ -98,5 +98,11 @@ reply carries facts the agent, or anyone auditing it, can re-derive.
   with their frozen verifiers.
 - [go/effector/](go/effector/) — the proven register, as running Go.
 
+Long JCS differential fuzzing runs the real TypeScript and Go implementations
+against each candidate. From PowerShell, use
+`$env:FOLDLAB_JCS_FUZZ_RUNS=100000; bun test packages/core/test/jcs.differential.test.ts; Remove-Item Env:FOLDLAB_JCS_FUZZ_RUNS`;
+for Go's native fuzzer, use
+`cd go; go test ./canonical -run=^$ -fuzz=FuzzJCSDifferential -fuzztime=10m`.
+
 Pinned: `effect@4.0.0-rc.108` ([source tag](https://github.com/Effect-TS/effect/tree/effect%404.0.0-rc.108)),
 Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`.
