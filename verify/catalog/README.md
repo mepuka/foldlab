@@ -45,9 +45,10 @@ the deliberately weakened run that must be refuted on the law it dropped.
 
 | File | What |
 |---|---|
-| `Catalog.tla` | the ratified laws; four Boolean constants select faithless variants |
+| `Catalog.tla` | the ratified laws; explicit constant guards; four Boolean constants select faithless variants |
 | `Catalog.cfg` | gate bounds: 2 daemons, 3 values, 2 creators, data cap 2, closure |
 | `Catalog.cap2.cfg` | cheap pin: 2 daemons, 2 values, 2 creators, data cap 1 |
+| `Catalog.overrun-*.cfg` | three independent controls: each literal-domain ceiling must reject on its own |
 | `CatalogBroken.tla` | one-line `EXTENDS Catalog` — the faithless re-export |
 | `CatalogBroken*.cfg` | four negative controls, one dropped law each |
 | `CatalogBroken*.cex.txt` | the four refutations, committed verbatim |
@@ -59,8 +60,9 @@ the deliberately weakened run that must be refuted on the law it dropped.
 | `CLIMB.md` | failed candidates, strengthening rationale, commands, verdicts |
 | `run-ind.sh` / `.ps1` | the R3 obligation gate: exit-code checked, refutability canary first |
 | `R3-DECISIONS.md` / `WORKLOG.md` / `_runlogs/` | repair decisions and verbatim per-run records |
+| [proto/DECISIONS.md](../../proto/DECISIONS.md) | issue #9 decisions: complete constant domain and independent guard controls |
 | `probes/` | BREAKER proof-mechanics probes: FINDING-BRIDGE-001, FINDING-BOUNDS-001, verdict, configs, runlogs |
-| `run.sh` | the gate: 2 clean closures + 4 required refutations, or FAIL |
+| `run.sh` | the gate: 2 clean closures + 3 bound rejections + 4 required refutations, or FAIL |
 | `run-wire.ps1` / `.sh` | split canary + honest atomic bridge + required bridge refutation |
 | `run-r4.ps1` / `.sh` | ordered R4 gate: bridge, both binary controls, coverage, honest replay |
 
@@ -93,6 +95,14 @@ everything checked here — that is what R3 exists to close. W2
 (canonicalization) and W5 (read-your-admissions) collapse in this
 abstraction (values are canonical, appends are durable) and are **not**
 claimed.
+
+The three literal domains are expressible only at sizes 1 through 4,
+which the module now states as executable assumptions. A config claiming a
+fifth daemon, creator, or value is rejected before state generation; the gate
+runs one otherwise-valid config per dimension so that no guard can be deleted
+without turning its own control green. `CatalogNaturallyBounded` is stated
+against `Cardinality(Vals)`, the domain TLC actually explores, rather than the
+configured number.
 
 ## TLC results (RUN, 2026-08-12)
 
@@ -129,6 +139,28 @@ The depth of the complete state graph search is 24.
 (That fingerprint-collision estimate is a property of TLC's hashed state
 set at 12.7M states; the cap2 run's estimate is 2.6E-11. Stated because
 "exhaustive" at this scale is exhaustive-modulo-fingerprinting.)
+
+### Bound controls — all three rejected before state generation
+
+| Config | Sole invalid constant | Required result |
+|---|---|---|
+| `Catalog.overrun-daemons.cfg` | `NumDaemons = 5` | false assumption |
+| `Catalog.overrun-creators.cfg` | `NumCreators = 5` | false assumption |
+| `Catalog.overrun-vals.cfg` | `NumVals = 5` | false assumption |
+
+The gate additionally requires that no `states generated` summary appears in
+any of these outputs. This makes rejection, rather than a later invariant
+failure over a silently truncated model, the checked behavior.
+
+Fresh integration rerun: 2026-08-13 CDT, OpenJDK `21.0.2+13-58` provisioned
+by `mise`, TLC `2026.08.11.125311`, jar sha256
+`ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f`,
+flags `-workers 1 -fp 1 -deadlock`. `Catalog.cap2` reproduced
+119,145 / 18,295 / depth 16 in 2s; `Catalog` reproduced 103,407,991 /
+12,707,989 / depth 24 in 27m 02s. Each guard control was rejected on its
+own false assumption with no state summary, and all four faithless controls
+were refuted on the named violation shown below. Exact command:
+`TLC_JAVA=<OpenJDK-21-java> TLA_TOOLS_JAR=<recorded-jar> bash run.sh`.
 
 ### Negative controls — all four refuted, each on its own law
 

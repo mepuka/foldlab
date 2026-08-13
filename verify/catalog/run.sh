@@ -4,8 +4,9 @@
 # Runs TLC on the ratified spec (Catalog.tla: two configs, both must be
 # clean to closure) and on the four faithless variants (CatalogBroken.tla:
 # each MUST be refuted, on the exact invariant its config names — a prover
-# that cannot fail proves nothing).  The gate PASSES only on all six
-# verdicts together.
+# that cannot fail proves nothing).  Three independent bound guard controls must
+# also be rejected by the exact ASSUME each violates.  The gate PASSES only
+# on all nine verdicts together.
 #
 # Toolchain pin, stated honestly: the recorded runs (README.md, *.cex.txt)
 # used TLC 2.19 of 08 August 2024 (rev 5a47802), tla2tools.jar
@@ -143,9 +144,28 @@ expect_violation() { # <cfg-base> <required violation text>
   fi
 }
 
+expect_assumption_rejection() { # <cfg-base> <dimension guarded by this config>
+  echo "== $1.cfg (out of range: TLC must reject the $2 guard)"
+  run_tlc "$1" Catalog
+  if grep -Eq "Error: Assumption .* is false\." "$OUT/$1.out.txt" &&
+     ! grep -q "states generated" "$OUT/$1.out.txt"; then
+    echo "   rejected as required"
+  else
+    echo "   GATE FAILURE: the out-of-range config was not rejected by its"
+    echo "   own guard; the model may have silently truncated that domain."
+    echo "   See $OUT/$1.out.txt"
+    FAILED=1
+  fi
+}
+
 echo "-- ratified model (Catalog.tla); the gate config takes ~11 min --"
 expect_clean  Catalog.cap2
 expect_clean  Catalog
+echo
+echo "-- bound guards (each capped dimension must reject independently) --"
+expect_assumption_rejection Catalog.overrun-daemons  NumDaemons
+expect_assumption_rejection Catalog.overrun-creators NumCreators
+expect_assumption_rejection Catalog.overrun-vals     NumVals
 echo
 echo "-- negative controls (CatalogBroken.tla) --"
 # Registry citation catalog-model:W4 (source-local ID remains W4 in Catalog.tla).
@@ -157,7 +177,7 @@ expect_violation CatalogBroken.reset  "Action property ResolutionMonotonicity is
 
 echo
 if [ "$FAILED" -eq 0 ]; then
-  echo "R2 GATE: PASS (2 clean closures, 4 required refutations; caps as configured)"
+  echo "R2 GATE: PASS (2 clean closures, 3 bound rejections, 4 required refutations; caps as configured)"
   echo "Raw TLC output kept in $OUT"
 else
   echo "R2 GATE: FAIL — see the outputs above."
