@@ -45,7 +45,9 @@ const COPY = [
     accent: 1,
   },
   {
-    text: "the CAS proved the position occupied",
+    // Capitalised exactly as the comment reads at journal.go:284. Copy lines are
+    // reproduced byte-for-byte, never restyled to match their neighbours.
+    text: "The CAS proved the position occupied",
     source: "go/journal/journal.go:284",
     accent: 5,
   },
