@@ -1,6 +1,7 @@
 /**
- * The declared fold algebra. Behavior is carried by plain functions, and a name
- * is carried by a separate canonical declaration; identity exists only where a
+ * The declared fold algebra. In Effect v4 terms its behavior is a `Reducer`
+ * (`initialValue` plus `combine`; classically a monoid instance), and a name is
+ * carried by a separate canonical declaration; identity exists only where a
  * value has both.
  *
  * A value earns a declaration when its own description encodes canonically and
@@ -11,7 +12,7 @@
  */
 
 import { createHash } from "node:crypto"
-import { encodeJsonValue, type CanonicalEncoding as JcsCanonicalEncoding } from "./jcs.ts"
+import { decodeJson, encodeJsonValue, type CanonicalEncoding as JcsCanonicalEncoding } from "./jcs.ts"
 import type { StreamEvent } from "./stream.ts"
 
 /**
@@ -201,7 +202,14 @@ export interface AlgebraLaws {
 }
 
 /** No claim beyond the monoid: the conservative default for anything derived. */
-const noExtraLaws: AlgebraLaws = { commutative: false, idempotent: false }
+const noExtraLaws: AlgebraLaws = Object.freeze({ commutative: false, idempotent: false })
+
+/** Module-issued claims are immutable and never shared between algebras. */
+const ownedLaws = (laws: AlgebraLaws): AlgebraLaws => Object.freeze({ ...laws })
+
+/** Module-issued algebra records are process-wide descriptors, not work state. */
+const ownedAlgebra = <A extends FoldState>(algebra: Algebra<A>): Algebra<A> =>
+  Object.freeze(algebra)
 
 /**
  * A carrier with a neutral value and a way to combine two values into one.
@@ -366,15 +374,16 @@ const declaredAlgebra = <A extends FoldState>(
   laws: AlgebraLaws,
 ): Algebra<A> => {
   const declared = declaration(spec)
-  return declared === undefined
+  const claims = ownedLaws(laws)
+  return ownedAlgebra(declared === undefined
     ? {
       empty,
       combine,
       generator,
-      laws,
+      laws: claims,
       identityIssue: "algebra spec is outside the RFC 8785 domain",
     }
-    : { empty, combine, generator, laws, declaration: declared }
+    : { empty, combine, generator, laws: claims, declaration: declared })
 }
 
 const normalizeSet = (values: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -447,7 +456,7 @@ const setUnion = declaredAlgebra<ReadonlyArray<string>>(
     op: "setUnion",
     semantics: "sorted-unique-unicode-strings-utf16",
   },
-  [],
+  Object.freeze([] as Array<string>),
   (left, right) => normalizeSet([...left, ...right]),
   stringSetGenerator,
   join,
@@ -471,11 +480,13 @@ const setUnion = declaredAlgebra<ReadonlyArray<string>>(
  * that can re-deliver. Every one of those claims is a generated property test,
  * not a remark.
  */
-export const algebras = { sum, count, max, min, any, all, setUnion } as const
+export const algebras = Object.freeze({ sum, count, max, min, any, all, setUnion } as const)
 
 const algebraIssue = (members: ReadonlyArray<Algebra<FoldState>>): string | undefined => {
   const first = members.find((member) => !isDeclaration(member.declaration))
-  return first === undefined ? undefined : first.identityIssue ?? "a product member is anonymous"
+  return first === undefined
+    ? undefined
+    : first.identityIssue ?? "a product member has no declared spec, so no content address"
 }
 
 /**
@@ -505,15 +516,15 @@ const algebraIssue = (members: ReadonlyArray<Algebra<FoldState>>): string | unde
 export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
   ...members: Ms
 ): Algebra<ProductState<Ms>> => {
-  const empty = members.map((member) => member.empty) as ProductState<Ms>
+  const empty = Object.freeze(members.map((member) => member.empty)) as ProductState<Ms>
   const combine = (left: ProductState<Ms>, right: ProductState<Ms>): ProductState<Ms> =>
     members.map((member, index) =>
       member.combine(left[index] as FoldState, right[index] as FoldState)
     ) as ProductState<Ms>
-  const laws: AlgebraLaws = {
+  const laws = ownedLaws({
     commutative: members.every((member) => member.laws?.commutative === true),
     idempotent: members.every((member) => member.laws?.idempotent === true),
-  }
+  })
   const generators = members.map((member) => member.generator)
   const generatorSpecs: Array<GeneratorSpec> = []
   for (const candidate of generators) {
@@ -524,13 +535,13 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
     : undefined
   const issue = algebraIssue(members)
   if (issue !== undefined) {
-    return {
+    return ownedAlgebra({
       empty,
       combine,
       ...(generator === undefined ? {} : { generator }),
       laws,
       identityIssue: issue,
-    }
+    })
   }
   const spec: AlgebraSpec = {
     v: "foldlab.algebra.v1",
@@ -538,7 +549,7 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
     of: members.flatMap((member) => isDeclaration(member.declaration) ? [member.declaration.spec] : []),
   }
   const declared = declaration(spec)
-  return declared === undefined
+  return ownedAlgebra(declared === undefined
     ? {
       empty,
       combine,
@@ -552,7 +563,7 @@ export const product = <const Ms extends ReadonlyArray<Algebra<FoldState>>>(
       ...(generator === undefined ? {} : { generator }),
       laws,
       declaration: declared,
-    }
+    })
 }
 
 const positiveSpec: HomSpec = {
@@ -574,15 +585,15 @@ const positiveDeclaration: Declaration<HomSpec> = {
  * as preserving structure. Each entry's preservation law is checked by the
  * generated suites against the source algebra's declared generator.
  */
-export const homomorphisms = {
-  isPositiveFromMax: {
-    [DeclaredHomTypeId]: true,
+export const homomorphisms = Object.freeze({
+  isPositiveFromMax: Object.freeze({
+    [DeclaredHomTypeId]: true as const,
     source: max,
     target: any,
     map: (value: number | null): boolean => value !== null && value > 0,
     declaration: positiveDeclaration,
-  },
-} as const
+  }),
+} as const)
 
 /**
  * Names the target algebra as a view of the source through a declared map, so
@@ -604,19 +615,19 @@ export const mapped = <A extends FoldState, B extends FoldState>(
   // A mapped view combines with the TARGET's combine, unchanged, so it holds
   // exactly the target's claims — nothing is inherited from the source, whose
   // combine no longer runs.
-  const laws = hom.target.laws ?? noExtraLaws
+  const laws = ownedLaws(hom.target.laws ?? noExtraLaws)
   const compatible = isDeclaredHom(hom) &&
     isDeclaration(source.declaration) &&
     isDeclaration(hom.source.declaration) &&
     source.declaration.digest === hom.source.declaration.digest
   if (!compatible || !isDeclaration(hom.target.declaration)) {
-    return {
+    return ownedAlgebra({
       empty: hom.target.empty,
       combine: hom.target.combine,
       ...(hom.target.generator === undefined ? {} : { generator: hom.target.generator }),
       laws,
       identityIssue: source.identityIssue ?? "homomorphism source does not match the algebra declaration",
-    }
+    })
   }
   const spec: AlgebraSpec = {
     v: "foldlab.algebra.v1",
@@ -626,7 +637,7 @@ export const mapped = <A extends FoldState, B extends FoldState>(
     target: hom.target.declaration.spec,
   }
   const declared = declaration(spec)
-  return declared === undefined
+  return ownedAlgebra(declared === undefined
     ? {
       empty: hom.target.empty,
       combine: hom.target.combine,
@@ -640,7 +651,7 @@ export const mapped = <A extends FoldState, B extends FoldState>(
       ...(hom.target.generator === undefined ? {} : { generator: hom.target.generator }),
       laws,
       declaration: declared,
-    }
+    })
 }
 
 const streamEvents: EventGeneratorSpec = { kind: "streamEvent" }
@@ -659,15 +670,10 @@ const declaredStep = <A extends FoldState>(
     : { apply, eventGenerator: streamEvents, declaration: declared }
 }
 
-const decoder = new TextDecoder("utf-8", { fatal: true })
-
 const readPayloadNumber = (event: StreamEvent, path: ReadonlyArray<string>): number | null => {
-  let value: unknown
-  try {
-    value = JSON.parse(decoder.decode(event.payload))
-  } catch {
-    return null
-  }
+  const decoded = decodeJson(event.payload)
+  if (!decoded.ok) return null
+  let value: unknown = decoded.value
   for (const field of path) {
     if (typeof value !== "object" || value === null || Array.isArray(value)) return null
     value = Object.prototype.hasOwnProperty.call(value, field)
@@ -685,7 +691,7 @@ const readPayloadNumber = (event: StreamEvent, path: ReadonlyArray<string>): num
  * sequence number, whether the payload is non-empty, the stream name as a
  * one-member set, and a numeric field read out of a JSON payload.
  */
-export const steps = {
+export const steps = Object.freeze({
   constOne: declaredStep({ v: "foldlab.step.v1", op: "constOne" }, () => 1),
   payloadLength: declaredStep(
     { v: "foldlab.step.v1", op: "payloadLength" },
@@ -719,7 +725,7 @@ export const steps = {
       (event) => readPayloadNumber(event, fields),
     )
   },
-} as const
+} as const)
 
 /**
  * Reads one event with several steps at once and returns their results in the
@@ -747,7 +753,7 @@ export const productStep = <E, const As extends ReadonlyArray<FoldState>>(
       apply,
       ...(eventGenerator === undefined ? {} : { eventGenerator }),
       identityIssue: members.find((member) => !isDeclaration(member.declaration))?.identityIssue ??
-        "a product step is anonymous",
+        "a product step has no declared spec, so no content address",
     }
   }
   const spec: StepSpec = {
@@ -785,7 +791,7 @@ export const mappedStep = <E, A extends FoldState, B extends FoldState>(
     return {
       apply,
       ...(source.eventGenerator === undefined ? {} : { eventGenerator: source.eventGenerator }),
-      identityIssue: source.identityIssue ?? "the source step is anonymous",
+      identityIssue: source.identityIssue ?? "the source step has no declared spec, so no content address",
     }
   }
   const spec: StepSpec = {

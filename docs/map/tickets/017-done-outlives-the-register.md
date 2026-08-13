@@ -26,8 +26,10 @@ the first in a tamper-evident journal — detectable by recomputation,
 by anyone. The chain remembers what the register can be made to
 forget. (The theory anticipated this shape: encapsulation already
 collapses a completed stream to `Done(f, ⟨exit, anchor⟩)` as one
-adoptable FACT — .reference/core-concepts §6. This ticket makes that
-the effector's own outcome discipline.)
+adoptable FACT. The public explanation's
+[three sorts](../../explanation/theory.md#the-three-sorts) restate the
+register-to-fact transition; this ticket makes it the effector's own
+outcome discipline.)
 
 Grill before building — the core question is a new protocol step's
 atomicity: the journal append and the register's finish are two writes.

@@ -19,6 +19,27 @@ import type {
 } from "./algebra.ts"
 import type { StreamEvent } from "./stream.ts"
 
+const surrogateAdjacent = FastCheck.constantFrom("\ud7ff", "\ue000", "\ufffd", "\ud83d\ude00")
+const unicodeScalar = FastCheck.oneof(
+  { weight: 7, arbitrary: FastCheck.string({ unit: "binary", minLength: 1, maxLength: 1 }) },
+  { weight: 1, arbitrary: surrogateAdjacent },
+)
+
+/**
+ * Strings for proof inputs. `Schema.String` currently compiles to fast-check's
+ * ASCII-default string arbitrary, so the proof layer owns this explicit
+ * Unicode-scalar generator instead. The weighted fixed values keep both sides
+ * of the surrogate range and a supplementary scalar in every deterministic
+ * sample campaign without ever generating an unpaired surrogate.
+ */
+export const arbitraryForUnicodeString = (
+  constraints: { readonly minLength?: number; readonly maxLength: number },
+): FastCheck.Arbitrary<string> => FastCheck.string({
+  unit: unicodeScalar,
+  ...(constraints.minLength === undefined ? {} : { minLength: constraints.minLength }),
+  maxLength: constraints.maxLength,
+})
+
 const boundedInteger = (minimum: number, maximum: number) =>
   Schema.Int.check(Schema.isBetween({ minimum, maximum }))
 
@@ -36,22 +57,23 @@ const compileGenerator = (spec: GeneratorSpec): FastCheck.Arbitrary<FoldState> =
     case "boolean":
       return Schema.toArbitrary(Schema.Boolean)(FastCheck)
     case "stringSet":
-      return Schema.toArbitrary(
-        Schema.Array(Schema.String).check(Schema.isMaxLength(8)),
-      )(FastCheck).map(normalizeSet)
+      return FastCheck.array(arbitraryForUnicodeString({ maxLength: 12 }), { maxLength: 8 })
+        .map(normalizeSet)
     case "product":
       return FastCheck.tuple(...spec.of.map(compileGenerator))
   }
 }
 
-const streamEventSchema = Schema.Struct({
-  stream: Schema.String.check(Schema.isMaxLength(12)),
-  seq: Schema.Natural.check(Schema.isBetween({ minimum: 0, maximum: 1_000 })),
-  payload: Schema.Uint8Array.check(Schema.isMaxLength(32)),
-})
+const streamSequence = FastCheck.oneof(
+  { weight: 7, arbitrary: FastCheck.integer({ min: 0, max: 1_000 }) },
+  { weight: 1, arbitrary: FastCheck.constantFrom(0x7fff_ffff, 0xffff_fffe, 0xffff_ffff) },
+)
 
-const streamEventArbitrary: FastCheck.Arbitrary<StreamEvent> =
-  Schema.toArbitrary(streamEventSchema)(FastCheck)
+const streamEventArbitrary: FastCheck.Arbitrary<StreamEvent> = FastCheck.record({
+  stream: arbitraryForUnicodeString({ maxLength: 12 }),
+  seq: streamSequence,
+  payload: FastCheck.uint8Array({ maxLength: 32 }),
+})
 
 /**
  * Compiles a carrier's declared generator description into random values of
@@ -71,10 +93,10 @@ export const arbitraryForValue = <A extends FoldState>(
  * Compiles a step's declared event shape into random events.
  *
  * The events are drawn from the same structure a real stream event has, and
- * every part is bounded — a short stream name, a sequence number inside a small
- * range, a short payload of arbitrary bytes — so histories stay small enough to
- * shrink to a readable counterexample while payloads remain free to be
- * unreadable, which is the case a total step has to survive.
+ * every part is bounded — a short Unicode stream name, a sequence number drawn
+ * mostly from a small range plus the u32 edges, and a short payload of
+ * arbitrary bytes. Histories therefore shrink to readable counterexamples
+ * while still reaching modular wrap and unreadable payloads.
  */
 export const arbitraryForEvent = <E>(
   spec: EventGeneratorSpec,
@@ -82,5 +104,32 @@ export const arbitraryForEvent = <E>(
   switch (spec.kind) {
     case "streamEvent":
       return streamEventArbitrary as FastCheck.Arbitrary<unknown> as FastCheck.Arbitrary<E>
+  }
+}
+
+/**
+ * Compiles the histories used by laws that claim something about replay.
+ * Ordinary shrinking histories remain the dominant case, while one weighted
+ * branch always crosses the u32 boundary through events. That makes modular
+ * semantics reachable by the banana-split, split, and map-commutation gates
+ * instead of only by carrier-value laws.
+ */
+export const arbitraryForHistory = <E>(
+  spec: EventGeneratorSpec,
+  event: FastCheck.Arbitrary<E>,
+  maximumLength: number,
+): FastCheck.Arbitrary<ReadonlyArray<E>> => {
+  switch (spec.kind) {
+    case "streamEvent": {
+      const overflow = FastCheck.tuple(streamEventArbitrary, streamEventArbitrary)
+        .map(([left, right]) => [
+          { ...left, seq: 0xffff_ffff },
+          { ...right, seq: 1 },
+        ] as ReadonlyArray<StreamEvent>)
+      return FastCheck.oneof(
+        { weight: 7, arbitrary: FastCheck.array(event, { maxLength: maximumLength }) },
+        { weight: 1, arbitrary: overflow as FastCheck.Arbitrary<ReadonlyArray<E>> },
+      )
+    }
   }
 }

@@ -10,7 +10,7 @@
 
 import * as FastCheck from "fast-check"
 import { encodeFoldState, type DeclaredHom, type FoldState } from "./algebra.ts"
-import { arbitraryForEvent, arbitraryForValue } from "./foldArbitrary.ts"
+import { arbitraryForEvent, arbitraryForHistory, arbitraryForValue } from "./foldArbitrary.ts"
 import type { Fold } from "./fold.ts"
 
 /**
@@ -158,7 +158,7 @@ export const makeFoldLawSuite = <
   const event = options.fixtures.length === 0
     ? generatedEvent
     : FastCheck.oneof(generatedEvent, FastCheck.constantFrom(...options.fixtures))
-  const history = FastCheck.array(event, { maxLength: 24 })
+  const history = arbitraryForHistory(fold.step.eventGenerator, event, 24)
   const laws: Array<FoldLawCase> = [
     {
       name: "monoid identity",

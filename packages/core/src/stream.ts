@@ -1,13 +1,14 @@
 /**
  * The stream-journal lane, TS half — byte-identical mirror of `go/stream`
- * (the cross-language wall: packages/mech/fixtures/stream-wall.json, pinned
+ * (the cross-language wall: fixtures/stream-wall.json at the repository root, pinned
  * once from the Go side).
  *
  * The one idea underneath the whole lane: an event stream is a left fold
- * twice over. Folded with a hash you get IDENTITY (the chain head commits to
- * the exact history); folded with a state function you get MEANING (what the
- * history did). The two folds disagree on purpose — the chain remembers what
- * the fold forgives — and every law in this lane is about which of the two a
+ * twice over. Folded with a hash you get IDENTITY, a running Merkle-style hash
+ * chain (the chain head commits to the exact history); folded with a state
+ * function you get MEANING (what the history did). The two folds disagree on
+ * purpose — the chain remembers what the fold forgives — and every law in this
+ * lane is about which of the two a
  * given operation must preserve:
  *
  *   fingerprint  identity of canonical bytes; heads extend in O(1)
@@ -21,6 +22,9 @@
  *   enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
  *   seed(s)     = SHA-256("playground.stream.v1:" + s)
  *   extend(h,e) = SHA-256(h || enc(e))
+ *
+ * `playground.*` is a former project name frozen into these hashed wire
+ * prefixes. Renaming it would move every derived digest, so it stays.
  */
 
 import { createHash } from "node:crypto"
@@ -93,8 +97,8 @@ const sha256 = (...parts: ReadonlyArray<Uint8Array>): Head => {
 
 const utf8 = (s: string): Uint8Array => encoder.encode(s)
 const fromHex = (hex: string): Uint8Array => {
-  if (!/^[0-9a-f]{64}$/i.test(hex)) {
-    throw new RangeError("head must be exactly 32 hexadecimal bytes")
+  if (!/^[0-9a-f]{64}$/.test(hex)) {
+    throw new RangeError("head must be exactly 32 lowercase hexadecimal bytes")
   }
   const out = new Uint8Array(hex.length / 2)
   for (let i = 0; i < out.length; i++) {
@@ -219,7 +223,8 @@ export interface KVState {
   readonly count: number
 }
 
-export const emptyKV: KVState = { entries: new Map(), count: 0 }
+/** A fresh identity for the KV meaning fold; callers never share a mutable Map. */
+export const emptyKV = (): KVState => ({ entries: new Map(), count: 0 })
 
 const strictDecoder = new TextDecoder("utf-8", { fatal: true })
 
@@ -253,6 +258,12 @@ export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
   return { entries, count: state.count + 1 }
 }
 
+/**
+ * The Effect error-channel sibling of pure `kvStep`: an excluded payload
+ * fails with `MalformedPayload`. This value is an `Effect`, not the `{ ok }`
+ * union returned by `foldSeqKV` in `kvSemilattice.ts`; interpret the Effect
+ * before inspecting success or refusal.
+ */
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
@@ -267,7 +278,7 @@ export const applyKV = (
 export const foldKV = (
   events: ReadonlyArray<StreamEvent>,
 ): Effect.Effect<KVState, MalformedPayload> =>
-  Effect.reduce(events, () => emptyKV, applyKV)
+  Effect.reduce(events, emptyKV, applyKV)
 
 /** Combining two states would carry the event count past the u32 it is stored in. */
 export class KVCountOverflow extends Data.TaggedError("KVCountOverflow")<{
@@ -284,7 +295,7 @@ export class KVCountOverflow extends Data.TaggedError("KVCountOverflow")<{
  * This is a MONOID and nothing more, which is exactly the license parallel
  * replay needs and exactly the license federation does not get:
  *
- *   identity      combineKV(emptyKV, s) = combineKV(s, emptyKV) = s
+ *   identity      combineKV(emptyKV(), s) = combineKV(s, emptyKV()) = s
  *   associative   grouping does not matter, so a history may be cut anywhere
  *   homomorphic   combineKV(foldKV(xs), foldKV(ys)) = foldKV(xs ++ ys)
  *
@@ -324,7 +335,7 @@ export const combineKV = (left: KVState, right: KVState): KVState | undefined =>
  * naming both counts, so a parallel replay that overran the digest's u32 says
  * which two halves did it.
  */
-export const mergeKV = (
+export const combineKVEffect = (
   left: KVState,
   right: KVState,
 ): Effect.Effect<KVState, KVCountOverflow> =>

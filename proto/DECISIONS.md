@@ -1077,6 +1077,39 @@ before ratifying the empty-catalog teaching promise would destroy the pinned
 counterexample and risk claiming that a daemon can synthesize an unknown
 referenced structure. **Load-bearing? yes** — this is the remaining W7 repair
 loop when no catalog candidate exists.
+## GitHub issue 49 — constrained payload-number decode
+
+### D??. Declared payload readers share the canonical admission boundary
+
+Decided: `steps.payloadNumber` decodes event payload bytes through the existing
+`decodeJson` constrained decoder before walking its declared field path. An
+excluded payload produces the step's existing `null` meaning-no-op; the
+identity fold still commits the original bytes. Alternatives: retain
+`JSON.parse` as a looser payload language (would admit duplicate members and
+over-depth values that the package's identity boundary refuses); canonicalize
+before reading (unnecessary—the step reads meaning while identity separately
+commits the event bytes); add a second parser local to the step (two policies
+can drift). Why: this was the sole `JSON.parse` on a digest-producing source
+path and contradicted the module's already-ratified constrained-decode
+boundary. The regression pins duplicate-member and depth-300 refusals, a valid
+numeric control, and the resulting fold state. **Load-bearing? yes** — parser
+admission decides which payload meanings may affect a declared fold state.
+
+## GitHub issue 50 — backing-independent entity anchor order
+
+### D??. Collectors impose UTF-16 identity order at the backing seam
+
+Decided: `Collector.anchors()` copies and sorts every backing's key enumeration
+by explicit UTF-16 code-unit order before constructing anchor values. A
+`Backing.keys()` implementation may return storage, insertion, byte, or other
+order; that order is not semantic. Alternatives: require every backing to sort
+correctly (makes an unverified storage detail move parent commitments); keep the
+in-memory bare `.sort()` as the implicit authority (does not constrain other
+backings); choose UTF-8 byte order (diverges from the package's RFC 8785
+identity order). Why: EC2 says the backing is a seam, and EC4 commits the anchor
+sequence into a parent head. The regression uses U+1F600 and U+FFFD, whose
+UTF-16 and UTF-8 orders disagree, and proves both anchors and the composed head
+remain equal. **Load-bearing? yes** — ordering moves the parent chain head.
 
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
@@ -1135,6 +1168,49 @@ The regression executes the advertised request against a real daemon and
 requires acceptance. **Load-bearing? no** — this chooses one truthful example
 from an already bounded advertised set; it does not change identity, admission,
 or candidate membership.
+## GitHub #51 — core generator strength and encoder depth (2026-08-13)
+
+### D??. Proof strings use valid Unicode scalars and replay histories carry u32 edges
+
+Decided: the generated fold and entity laws draw strings from the full valid
+Unicode-scalar domain, weighted with U+D7FF, U+E000, U+FFFD, and a
+supplementary scalar; unpaired surrogates remain rejection inputs rather than
+lawful values. Stream-event sequences remain mostly small for shrinking but
+also draw u32 edges, and history generators include an event-driven
+`0xffffffff + 1` branch used by every replay law. Deterministic coverage
+canaries prove those cases are actually drawn, and a wrap-dropping fold is
+refused by the banana-split law. Alternatives: keep Effect Schema's current
+ASCII-default arbitrary; put the edge cases only in fixtures; make all draws
+large. Why: the first two leave declared Unicode and modular behavior outside
+the generated proof, while the last destroys useful shrinking. **Load-bearing?
+yes** — the generated laws license replay and federation rights.
+
+### D??. Canonical encoding and constrained decoding share the 256-container bound
+
+Decided: `encodeJsonValue` refuses the 257th array or object container with
+`NonCanonicalValue`, matching constrained decode's existing bound, before
+recursive descent can exhaust the host stack. `putFoldCache` therefore keeps
+its documented total-return contract even for a 20,000-container hostile
+state. Alternatives: raise/remove the decoder bound; document a thrown
+`RangeError`; catch only inside the cache. Why: admission is part of identity,
+the cache is not the only digest-minting caller, and a host-dependent stack
+limit cannot define canonical data. **Load-bearing? yes** — encoder acceptance
+defines which values can mint digest-bearing bytes.
+
+### D??. A chain head has one lowercase hexadecimal spelling
+
+Decided: callers may extend or replay only a 64-character lowercase hex head,
+which is the spelling every SHA-256 producer in the package emits. Uppercase is
+refused instead of normalized. Alternatives: accept both cases; lowercase at
+every map lookup. Why: accepting two strings for the same 32 bytes lets chaining
+succeed while content-addressed maps miss, splitting byte identity from key
+identity. Refusal keeps one representation and exposes a caller defect at the
+first boundary. **Load-bearing? yes** — heads are storage and replay keys.
+
+Advisory audit: `packages/core/examples/tour.ts` runs the Effect-typed fold at
+the caller boundary and hands its admitted value to the pure `stateDigest`; it
+does not put Effect inside the digest-minting implementation. No second pure
+fold or hidden `runSync` was introduced to cosmetically separate those calls.
 
 ## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
 
@@ -1319,3 +1395,117 @@ verified); return the backing array (consumer-erased audit). Why: this is the
 minimum record that can later migrate to `flb.session.v0` without inventing
 missing evidence. **Load-bearing? yes** — audit meaning depends on ownership,
 ordering, and preserving both sides of verification.
+## Task 48 — core-owned public values (2026-08-13)
+
+### D??. Module descriptors are frozen; mutable work state is copied or constructed
+
+Decided: process-wide algebra, law, and registry descriptors are frozen;
+each algebra owns a distinct frozen law record; array identities are frozen;
+and identities containing `Map` plus entity views are constructed or copied
+at every public ownership boundary. This branch includes Task 38's
+`emptyKV()` constructor because it is based before that independent fix and
+the enriched identity must not silently depend on merge order. Alternatives:
+trust TypeScript `readonly` (erased at runtime); shallow-freeze every value
+(does not protect `Map` contents); deep-freeze caller-owned inputs (seizes
+ownership the API was not given); copy every primitive and descriptor on every
+read (allocation without a mutable carrier to isolate). Why: callers may
+mutate values they receive, but that mutation must never rewrite a later fold,
+digest preimage, generated law selection, or collector anchor. **Load-bearing?
+yes.**
+
+## GitHub issue #47 — KV witness numeric domain (2026-08-13)
+
+### D??. The KV witness admits only non-negative JavaScript safe integers
+
+Decided: `singletonSeqKV` checks every event sequence and `combineSeqKV`
+checks every entry and seen coordinate in both structurally supplied states;
+numbers outside `0..Number.MAX_SAFE_INTEGER` return the existing plain-function
+ok-union shape with an `InvalidSequence` refusal before witness comparison.
+The semilattice claim is explicitly limited to that admitted domain. Current Go
+journal callers do not justify widening it: their cursor carrier is platform
+`int`, their chain carrier is `int64`, and every stored identity passes through
+`canonical.EntryDigest`, which already refuses above the same safe-integer
+boundary. Alternatives: change `SeqEntry.seq` and every digest/wire consumer to
+`bigint` (an unratified public and identity change); document the limit without
+enforcing it (the NaN commutativity counterexample survives); validate only
+events (public structural states bypass the gate). Why: a number has already
+lost adjacent u64 identity coordinates by the time this seam receives it, so
+refusal is the only narrow closure that preserves exact identity. **Load-bearing?
+yes** — without the gate, `compareWitness` selects its left input for both
+orders at NaN and the module's headline commutativity law is false.
+
+## Issue 46 — lossless Schema transport wall (2026-08-13)
+
+### D??. The text schema refuses malformed UTF-8 and invalid encoder inputs
+
+Decided: `parseFrames` retains the canonical stream domain of arbitrary
+payload bytes, while `GzipEventFrame` truthfully narrows its `WireEvent` face
+to Unicode-scalar UTF-8 text. Decode uses a fatal UTF-8 decoder and returns a
+typed Schema issue; encode validates stream and payload scalar values and their
+canonical u16/u32 UTF-8 byte lengths in `WireEvent` before the eager canonical
+encoder callback runs. Alternatives: replacement decoding (collides distinct
+bytes at U+FFFD); base64 payloads (a wire-shape redesign not authorized by
+issue 46); narrow `parseFrames` itself (would reject lawful canonical binary
+events outside this text view); catch `RangeError` around the callback (too
+late, because the public Effect constructor already threw). Why: a schema must
+not admit a value its encoder rejects, and a text view must never repair bytes
+into a different identity. **Load-bearing? yes** — this is the Go-to-TypeScript
+identity boundary.
+
+### D??. Sharp schema rows are live Go-origin evidence, not a frozen-fixture rewrite
+
+Decided: a stdlib-only `go/cmd/schemawallprobe` emits two non-ASCII and two
+malformed-payload frames with their independently computed Go heads. The TS
+wall reproduces heads for admitted text and requires typed refusal for raw
+`ff`/`fe`, while also proving the malformed source heads differ. The existing
+`fixtures/stream-wall.json` remains byte-identical and untouched. Alternatives:
+construct malformed frames only in TypeScript (not an independent wall); add
+rows to the frozen fixture without regeneration authority; duplicate #38's
+broader stream/xform corpus. Why: the live Go oracle covers this exact schema
+seam without treating gzip transport bytes as identity or expanding into the
+other #38 lanes. **Load-bearing? yes** — both-sides-agree is not independent
+evidence, and the original ASCII-only wall could not fail on this defect.
+
+### D??. FINDING: fatal TextDecoder still strips leading BOM bytes
+
+Decided: preserve and stop on `FINDING-SCHEMA-BOM-001`. A live Go-origin pair
+proves `ef bb bf` and empty payloads have distinct canonical heads, while the
+pinned runtime's fatal decoder admits both and maps both to the empty string
+because `ignoreBOM` defaults false. The issue-authorized malformed-byte and
+constructor fixes remain, but the widened valid-UTF-8 case is not repaired
+before operator disposition. Alternatives and the opt-in red command are in
+`packages/core/FINDING-SCHEMA-BOM-001.md`. Why: U+FEFF is a Unicode scalar, so
+silently stripping it contradicts the stated text domain; choosing preservation
+or typed exclusion changes that public domain and must be explicit.
+**Load-bearing? yes** — this is another distinct-byte collision at the same
+identity boundary.
+
+## Task 26 — Rosetta code surfaces (2026-08-14)
+
+### D??. The typed KV combine names its operation and its error channel
+
+Decided: the Effect-returning sibling of `combineKV` is
+`combineKVEffect`. `combine` names the associative segment-recombination
+operation; `Effect` names the typed refusal channel. The unreleased `mergeKV`
+name is removed without an alias. Alternatives: retain `mergeKV` (collides
+with the committed-interleaving meaning of Merge); `combineKVTyped` (names a
+property every TypeScript value already has); retain a compatibility alias
+(freezes the misleading name into a second public path). Why: one operation
+keeps one domain name across its pure and Effect dialects, while the suffix
+makes their different refusal channels visible at the call site.
+**Load-bearing? no** — this is surface vocabulary, changed before release.
+
+## GitHub issue #14 — Rosetta integration (2026-08-14)
+
+### D??. The router layer is the executable oracle for the health audience split
+
+Decided: export the server's `Routes` layer and launch the Bun listener only
+when `server.ts` is the main module, so a test can send Fetch `Request` values
+through the real router. The regression pins the machine-facing `/health` body
+to `ok` and also pins the two browser-facing demo law strings. Alternatives:
+inspect source text (would test spelling, not routing); spawn the fixed-port
+server (introduces a port race); change the string without a regression (the
+accepted audience split could drift again). Why: one in-process handler tests
+both halves of the ratified split without opening a socket or adding a runtime
+dependency. **Load-bearing? no** — this is a testability seam for an already
+ratified response contract.

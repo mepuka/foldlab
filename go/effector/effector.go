@@ -1,3 +1,9 @@
+// Package effector implements the authority register: one value per work
+// digest, advanced by revision compare-and-swap. A monotonically increasing
+// fence, never the holder's identity or clock, decides which commit may land;
+// once an outcome is committed it is terminal. Watch exposes recoverable
+// chatter about register changes and is never an authority source — callers
+// read the register to decide.
 package effector
 
 import (

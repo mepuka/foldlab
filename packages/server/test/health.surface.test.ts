@@ -9,7 +9,7 @@ describe("the HTTP audience split", () => {
     try {
       const health = await handler(new Request("http://localhost/health"))
       expect(health.status).toBe(200)
-      expect(await health.text()).toBe("foldlab: two folds, one law")
+      expect(await health.text()).toBe("ok")
 
       const merge = await handler(new Request("http://localhost/demo/merge"))
       const mergeBody = await merge.json() as {

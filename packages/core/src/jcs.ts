@@ -61,6 +61,7 @@ const encodeValue = (
   value: JsonValue,
   path: string,
   ancestors: Set<object>,
+  depth: number,
 ): CanonicalEncoding => {
   if (value === null || typeof value === "boolean") {
     return { ok: true, bytes: JSON.stringify(value) }
@@ -74,13 +75,14 @@ const encodeValue = (
     return { ok: true, bytes: JSON.stringify(value) }
   }
   if (Array.isArray(value)) {
+    if (depth >= maxJsonDepth) return refuseEncoding(path, `nesting exceeds ${maxJsonDepth}`)
     if (ancestors.has(value)) return refuseEncoding(path, "cyclic values are outside the canonical domain")
     ancestors.add(value)
     const parts: Array<string> = []
     for (let index = 0; index < value.length; index++) {
       const member = value[index]
       if (member === undefined) return refuseEncoding(`${path}/${index}`, "undefined is outside the canonical domain")
-      const encoded = encodeValue(member, `${path}/${index}`, ancestors)
+      const encoded = encodeValue(member, `${path}/${index}`, ancestors, depth + 1)
       if (!encoded.ok) return encoded
       parts.push(encoded.bytes)
     }
@@ -88,6 +90,7 @@ const encodeValue = (
     return { ok: true, bytes: `[${parts.join(",")}]` }
   }
   const record = value as { readonly [key: string]: JsonValue }
+  if (depth >= maxJsonDepth) return refuseEncoding(path, `nesting exceeds ${maxJsonDepth}`)
   const prototype = Object.getPrototypeOf(record)
   if (prototype !== null && prototype !== Object.prototype) {
     // A Date, Map, Set, or class instance smuggled past the JsonValue type
@@ -104,7 +107,7 @@ const encodeValue = (
     if (hasUnpairedSurrogate(key)) return refuseEncoding(`${path}/${key}`, "member name is not valid Unicode")
     const member = record[key]
     if (member === undefined) return refuseEncoding(`${path}/${key}`, "undefined is outside the canonical domain")
-    const encoded = encodeValue(member, `${path}/${key}`, ancestors)
+    const encoded = encodeValue(member, `${path}/${key}`, ancestors, depth + 1)
     if (!encoded.ok) return encoded
     members.push(`${JSON.stringify(key)}:${encoded.bytes}`)
   }
@@ -114,7 +117,7 @@ const encodeValue = (
 
 /** RFC 8785 serialization makes canonical bytes a unique equality witness. */
 export const encodeJsonValue = (value: JsonValue): CanonicalEncoding =>
-  encodeValue(value, "$", new Set())
+  encodeValue(value, "$", new Set(), 0)
 
 class JsonParserFailure extends Error {
   constructor(readonly offset: number, message: string) {
@@ -369,7 +372,11 @@ export const decodeJson = (input: Uint8Array): JsonDecode => {
   }
 }
 
-/** Constrained decode followed by RFC 8785 serialization licenses canonicalizing bytes. */
+/**
+ * Canonicalizes admitted JSON bytes: constrained decode must yield exactly one
+ * value, whose RFC 8785 encoding is unique. Excluded bytes return the decode
+ * refusal unchanged.
+ */
 export const canonicalizeJson = (input: Uint8Array): CanonicalJson => {
   const decoded = decodeJson(input)
   return decoded.ok ? encodeJsonValue(decoded.value) : decoded

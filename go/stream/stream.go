@@ -1,7 +1,7 @@
 // Package stream is the stream-journal lane: the engineering substrate the
 // agent-streaming conversation needs — fingerprinting, merge, fork,
 // compaction, replay, compression — each stated as a small algebra whose laws
-// are CHECKED, here and byte-identically in packages/mech/src/stream.ts (the
+// are CHECKED, here and byte-identically in packages/core/src/stream.ts (the
 // cross-language wall, P2a fixture tradition).
 //
 // The one idea underneath all six concepts: an event stream is a left fold
@@ -16,6 +16,9 @@
 //	enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
 //	seed(s)     = SHA-256("playground.stream.v1:" + s)
 //	extend(h,e) = SHA-256(h || enc(e))
+//
+// "playground.*" is a former project name frozen into these hashed wire
+// prefixes. Renaming it would move every derived digest, so it stays.
 //
 // Identity is always of canonical UNCOMPRESSED bytes: compression is
 // transport, never identity (GzipEvents/GunzipEvents round-trip the canonical
