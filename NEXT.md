@@ -89,10 +89,14 @@ in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 - **Catalog + ingress model gate (`verify/catalog/`, 2026-08-13)**: the
   first claim here that is a machine-checked theorem rather than a
   digest equality. R2 TLC clean to closure at the gate caps
-  (12,707,989 distinct states, depth 24); R3 Apalache inductive
-  invariant at fixed domains with unbounded trace length. Four TLC
-  negative controls and two Apalache controls, each refuted on exactly
-  the law it dropped, traces committed. The insight the model
+  (12,707,989 distinct states, depth 24); R4 lockstep conformance
+  against the running daemon, zero divergences over 131 schedules on
+  the named coarsened wire map, controls first. R3's inductive claim
+  is HELD: the original hypothesis under-covered its own invariant
+  (external review C4), the repaired bounds are committed, and the
+  re-proof is running on two platforms — VERIFICATION.md carries the
+  honest status. Negative controls refuted throughout (with the
+  per-control specificity caveat recorded in the ledger). The insight the model
   surfaced: presence is monotone, which is what licenses lock-free
   ingress, while absence is anti-monotone, which is why create needs
   the CAS.
@@ -248,10 +252,23 @@ statement and a divergence probe.
 ## Backlog, ordered (tight: the ratified path and its obligations, only)
 
 Landed since this list was last written: ticket 003's tracer bullet
-(both bullets, in `proto/`), ticket 009's first climb (R2 and R3, plus
-the hardening tickets 010–013 it cut), ticket 014's fold algebra, and
-the JCS differential lane. Tickets 015 and 016 were cut; both gate on
-004.
+(both bullets, in `proto/`), ticket 009's first climb (R2; R3 repaired
+and in re-proof, claim held), ticket 010's R4 lockstep (claimed on the
+named coarsened map), ticket 011's substrate assumption gate (the
+envelope refuses what the proofs do not cover), ticket 014's fold
+algebra, the JCS differential lane, and the 2026-08-13 external review
+cycle: eleven filed findings fixed and closed same-day, the refusal
+walls (one meaning-fold; unforgeable brands; cross-language identity
+domains closed at a shared frozen vector), and the effector CERTIFIED
+clean against its machine-checked theorem on the running binary
+(docs/research/2026-08-13-effector-certified.md). Tickets 015 and 016
+were cut; both gate on 004. Newer tickets 017-021 (journaled outcomes,
+register store, NATS resolution, the Effect surface, JS-runtime
+resolution) live in docs/map/tickets/; ticket 020's phase 1
+(JournalMessageStorage — durable Effect workflows on the proven
+journal, browser demo) is grilled, ratified, and specced. Design
+dossiers live in docs/design/ (the WorkflowEngine correspondence and
+product dialogue are the 020 anchors).
 
 1. The foldlab-owned canonical schema encoding (map ticket 004,
    critical path): the daemon must recompute schema digests from bytes
@@ -261,22 +278,22 @@ the JCS differential lane. Tickets 015 and 016 were cut; both gate on
 2. The workflow abstraction (map ticket 008) — the one remaining
    ungrilled decision on the path: program as digestable catalog data;
    run as durable journaled fact.
-3. Catalog R4 lockstep against protod (map ticket 010): the
-   model-to-binary bridge. `Catalog.tla`'s stated abstractions (the
-   resolve index as a pure fold, digests as the identity function) are
-   exactly where implementation drift hides, and R4 is the only thing
-   that closes them.
+3. DONE — catalog R4 lockstep landed (ticket 010 closed): claimed
+   against the coarsened wire refinement with both bridge halves
+   machine-checked; the split-CAS branch's conformance is ticket 012's
+   obligation, and the oracle-referee gap (no independent check that
+   the Go oracle denotes the TLA relation) is a proposed follow-on.
 4. Graduate `proto/` along its own no-redesign map (`proto/AGENTS.md`):
    go → `go/daemon` + `go/cmd`, ts/client → `packages/client`,
    ts/author → `packages/core`, ts/codegen → `packages/codegen`,
    ts/mcp → `packages/ai`, wire fixtures → `fixtures/`. Until this
    runs, `go/daemon/` is a contract with no code beneath it.
-5. The hardening program (map tickets 011, 012, 013): executable
-   substrate assumptions with an `Acquire` that refuses out-of-envelope
-   configurations; the journal's own model gate, composed into the
-   catalog model as a refinement; the effector's proof artifacts ported
-   out of untracked heritage into `verify/effector/` — the one place
-   VERIFICATION.md asserts a claim without shipping its evidence.
+5. The hardening program: ticket 011 LANDED (the substrate assumption
+   gate refuses out-of-envelope configurations); ticket 012 (the
+   journal's own model gate, composed into the catalog model as a
+   refinement — now also carrying the split-CAS conformance obligation
+   and the D60 one-verifier law) and ticket 013 (the effector's proof
+   artifacts into `verify/effector/`) remain open.
 6. Derived-node conformance test on embedded NATS: the collector's first
    real backing is NATS KV through the Go twin — anchors as
    revision-CAS'd KV entries. (KV `Watch` live plane is DONE:
