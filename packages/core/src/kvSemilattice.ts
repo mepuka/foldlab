@@ -27,12 +27,13 @@
  *                 on histories that are strictly increasing in witness order
  *                 with distinct coordinates
  *
- * The first three hold over the whole witness-consistent domain — the domain
- * in which a coordinate names one event, which is what the journal's
- * position-CAS enforces and what `MergeDuplicateSequence` refuses to work
- * without. The projection law is the one with a real precondition, and the
- * frozen wall corpus satisfies it: `projectKV(foldSeqKV(merged))` reproduces
- * the frozen `foldStateDigest` byte for byte.
+ * The first three hold over the admitted witness-consistent domain — safe
+ * unsigned sequence numbers where one coordinate names one event. That is
+ * what the journal's position-CAS enforces and what `MergeDuplicateSequence`
+ * refuses to work without. The projection law has the further ordering
+ * precondition, and the frozen wall corpus satisfies it:
+ * `projectKV(foldSeqKV(merged))` reproduces the frozen `foldStateDigest` byte
+ * for byte.
  *
  * WALL STATUS: single-implementation, TypeScript only. There is no Go twin and
  * therefore no cross-language wall for anything in this file — the same
@@ -95,7 +96,15 @@ export const emptySeqKV: SeqKVState = { entries: new Map(), seen: new Map() }
  * Equal coordinate with EQUAL value is not a conflict and never refuses —
  * absorbing the same fact twice is precisely what idempotence is.
  */
+/** A runtime number cannot name an exact coordinate in the admitted domain. */
+export interface InvalidSequenceRefusal {
+  readonly _tag: "InvalidSequence"
+  readonly seq: number
+  readonly reason: "seq is not a safe unsigned integer"
+}
+
 export type SeqKVRefusal =
+  | InvalidSequenceRefusal
   | {
     readonly _tag: "MalformedPayload"
     readonly stream: string
@@ -114,6 +123,25 @@ export type SeqKVResult =
   | { readonly ok: true; readonly state: SeqKVState }
   | { readonly ok: false; readonly refusal: SeqKVRefusal }
 
+const checkedSeq = (seq: number): InvalidSequenceRefusal | undefined =>
+  Number.isSafeInteger(seq) && seq >= 0
+    ? undefined
+    : { _tag: "InvalidSequence", seq, reason: "seq is not a safe unsigned integer" }
+
+const checkedState = (state: SeqKVState): InvalidSequenceRefusal | undefined => {
+  for (const entry of state.entries.values()) {
+    const refusal = checkedSeq(entry.seq)
+    if (refusal !== undefined) return refusal
+  }
+  for (const seqs of state.seen.values()) {
+    for (const seq of seqs) {
+      const refusal = checkedSeq(seq)
+      if (refusal !== undefined) return refusal
+    }
+  }
+  return undefined
+}
+
 /**
  * The witness order: sequence number first, stream id second, streams compared
  * by their UTF-8 bytes exactly as `stateDigest` compares keys.
@@ -129,8 +157,10 @@ export type SeqKVResult =
  * tie-break — and it reproduces the frozen digest on that same corpus.
  * `test/kvSemilattice.test.ts` runs both and shows the split.
  *
- * Sequence numbers are safe integers by the lane's contract, so comparing them
- * as numbers is comparing them as the u64 coordinates they encode to.
+ * Sequence numbers are safe unsigned integers by the lane's contract, so
+ * comparing them as numbers is comparing them exactly. `singletonSeqKV` and
+ * `combineSeqKV` make that precondition load-bearing before this comparator is
+ * reached. This module does not claim the rest of the u64 domain.
  */
 export const compareWitness = (left: SeqEntry, right: SeqEntry): number => {
   if (left.seq !== right.seq) return left.seq < right.seq ? -1 : 1
@@ -168,6 +198,8 @@ const seenWith = (
  * definition of what the meaning fold reads.
  */
 export const singletonSeqKV = (e: StreamEvent): SeqKVResult => {
+  const sequenceRefusal = checkedSeq(e.seq)
+  if (sequenceRefusal !== undefined) return { ok: false, refusal: sequenceRefusal }
   const stepped = kvStep(emptyKV, e)
   if (stepped === undefined) {
     return { ok: false, refusal: { _tag: "MalformedPayload", stream: e.stream, seq: e.seq } }
@@ -204,6 +236,8 @@ export const singletonSeqKV = (e: StreamEvent): SeqKVResult => {
  * domain instead of over everything.
  */
 export const combineSeqKV = (left: SeqKVState, right: SeqKVState): SeqKVResult => {
+  const sequenceRefusal = checkedState(left) ?? checkedState(right)
+  if (sequenceRefusal !== undefined) return { ok: false, refusal: sequenceRefusal }
   const entries = new Map(left.entries)
   for (const [key, incoming] of right.entries) {
     const held = entries.get(key)

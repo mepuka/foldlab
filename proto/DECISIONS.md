@@ -988,3 +988,24 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## GitHub issue #47 — KV witness numeric domain (2026-08-13)
+
+### D??. The KV witness admits only non-negative JavaScript safe integers
+
+Decided: `singletonSeqKV` checks every event sequence and `combineSeqKV`
+checks every entry and seen coordinate in both structurally supplied states;
+numbers outside `0..Number.MAX_SAFE_INTEGER` return the existing plain-function
+ok-union shape with an `InvalidSequence` refusal before witness comparison.
+The semilattice claim is explicitly limited to that admitted domain. Current Go
+journal callers do not justify widening it: their cursor carrier is platform
+`int`, their chain carrier is `int64`, and every stored identity passes through
+`canonical.EntryDigest`, which already refuses above the same safe-integer
+boundary. Alternatives: change `SeqEntry.seq` and every digest/wire consumer to
+`bigint` (an unratified public and identity change); document the limit without
+enforcing it (the NaN commutativity counterexample survives); validate only
+events (public structural states bypass the gate). Why: a number has already
+lost adjacent u64 identity coordinates by the time this seam receives it, so
+refusal is the only narrow closure that preserves exact identity. **Load-bearing?
+yes** — without the gate, `compareWitness` selects its left input for both
+orders at NaN and the module's headline commutativity law is false.

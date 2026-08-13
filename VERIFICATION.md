@@ -235,13 +235,17 @@ order with distinct coordinates.
 - R1: generated property suites for identity, associativity, the
   concatenation homomorphism, arbitrary split points, and — for the
   join — idempotence, commutativity, associativity, permutation
-  invariance, and the projection law.
+  invariance, and the projection law. The join generators include both
+  sequence boundaries and stream-id prefixes; a separate generated refusal
+  corpus includes NaN, infinities, fractions, negatives, and the first unsafe
+  integer.
 - Negative controls, each refuted on exactly the law it drops:
   `combineKV` fails commutativity and idempotence with minimized
   counterexamples; ordering the witness `(stream, seq)` instead of
   `(seq, stream)` moves the frozen digest to `910950be...`; forcing the
   join's winner rule the wrong way turns six tests red; forcing every
-  merge source onto the dense path turns the duplicate refusals red.
+  merge source onto the dense path turns the duplicate refusals red; dropping
+  sequence admission makes the minimized NaN join non-commutative.
 - The generated law suite now derives commutativity and idempotence
   from a per-algebra claim, and refuses a false one: a last-write-wins
   register claiming commutativity fails that law while passing every
@@ -259,6 +263,11 @@ order with distinct coordinates.
   therefore no cross-language wall for it; its one wall-anchored claim
   is the projection, because the digest that has to come back was
   frozen by Go.
+- The witness sequence domain is `0..Number.MAX_SAFE_INTEGER`. Both folded
+  events and structurally supplied join states refuse other numbers as typed
+  data before comparison. This is not a u64 claim: current Go journal cursors
+  use platform `int`, while chain identity independently refuses above the same
+  exact-integer boundary through `canonical.EntryDigest`.
 - The projection law holds only on witness-ordered histories with
   distinct coordinates. A two-event counterexample off that domain is
   pinned, as is the count divergence under re-delivery.
