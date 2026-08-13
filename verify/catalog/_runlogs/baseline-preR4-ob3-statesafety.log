@@ -73,3 +73,5 @@ State 0: Checking 7 state invariants                              I@04:55:01.507
 State 0: state invariant 0 holds.                                 I@04:55:02.170
 State 0: state invariant 1 holds.                                 I@04:57:43.268
 State 0: state invariant 2 holds.                                 I@04:57:49.941
+State 0: state invariant 3 holds.                                 I@05:01:46.154
+State 0: state invariant 4 holds.                                 I@05:02:48.874
