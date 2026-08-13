@@ -3,7 +3,19 @@
 // string and digest re-derives here independently; a mismatch means
 // this port drifted — never edit the fixture.
 import { describe, expect, test } from "bun:test"
-import { canonicalize, entryDigest, foldChain, sha256Hex, GENESIS, type Json } from "../src/jcs.ts"
+import { Result, Schema } from "effect"
+import { SchemeBridge } from "../src/wire.ts"
+import {
+  canonicalize,
+  entryDigest,
+  foldChain,
+  normalize,
+  sha256Hex,
+  structureDigest,
+  GENESIS,
+  SCHEME,
+  type Json,
+} from "../src/jcs.ts"
 
 const fixture = async (name: string): Promise<any> =>
   (await import(`../../wire/fixtures/${name}`, { with: { type: "json" } })).default
@@ -19,6 +31,58 @@ describe("type fixtures re-derive byte-identically", async () => {
       expect(sha256Hex(canonical)).toBe(vector.digest)
     })
   }
+})
+
+describe("flb.type.v1 shared identity vectors", async () => {
+  const ownedFixture: {
+    scheme: string
+    vectors: Array<{
+      name: string
+      structure: Json
+      normalized: Json
+      canonical: string
+      digest: string
+    }>
+  } = await fixture("owned-types-v1.json")
+
+  test("scheme and corpus are pinned", () => {
+    expect(ownedFixture.scheme).toBe(SCHEME)
+    expect(ownedFixture.vectors.length).toBeGreaterThanOrEqual(4)
+  })
+  for (const vector of ownedFixture.vectors) {
+    test(vector.name, () => {
+      expect(normalize(vector.structure)).toEqual(vector.normalized)
+      expect(canonicalize(normalize(vector.structure))).toBe(vector.canonical)
+      expect(structureDigest(vector.structure)).toBe(vector.digest)
+    })
+  }
+  test("permuted unions converge", () => {
+    const byName = new Map(ownedFixture.vectors.map((vector) => [vector.name, vector.digest]))
+    expect(byName.get("union-forward")).toBe(byName.get("union-reversed"))
+  })
+})
+
+describe("scheme bridge fixtures decode and re-derive", async () => {
+  const vectors: Array<{ name: string; record: Json; canonical: string; digest: string }> =
+    await fixture("scheme-bridges.json")
+  test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
+  for (const vector of vectors) {
+    test(vector.name, () => {
+      const decoded = Schema.decodeUnknownResult(SchemeBridge)(vector.record)
+      expect(Result.isSuccess(decoded)).toBe(true)
+      const canonical = canonicalize(vector.record)
+      expect(canonical).toBe(vector.canonical)
+      expect(sha256Hex(canonical)).toBe(vector.digest)
+    })
+  }
+  test("strict decoder refuses a malformed digest", () => {
+    const malformed: Json = {
+      kind: "flb.scheme-bridge.v0",
+      from: { scheme: "bytes-sha256-v1", digest: "not-a-digest" },
+      to: { scheme: "flb.type.v1", digest: "a".repeat(64) },
+    }
+    expect(Result.isFailure(Schema.decodeUnknownResult(SchemeBridge)(malformed))).toBe(true)
+  })
 })
 
 describe("chain fixtures re-derive", async () => {

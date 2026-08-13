@@ -400,8 +400,22 @@ func (d *replayDriver) readCatalog(daemon int) ([]int, error) {
 	}
 	values := make([]int, 0, len(entries))
 	for index, payload := range entries {
+		var record map[string]any
+		if err := json.Unmarshal([]byte(payload), &record); err != nil {
+			return nil, fmt.Errorf("catalog entry %d is not a record: %w", index, err)
+		}
+		if kind, present := record["kind"]; present {
+			if kind != "flb.scheme-bridge.v0" {
+				return nil, fmt.Errorf("catalog entry %d has unexpected evidence kind %q", index, kind)
+			}
+			if err := verifySchemeBridgeRecord(record); err != nil {
+				return nil, fmt.Errorf("catalog entry %d is not valid bridge evidence: %w", index, err)
+			}
+			continue
+		}
 		var fact struct {
 			Digest    string `json:"digest"`
+			Scheme    string `json:"scheme"`
 			Structure any    `json:"structure"`
 		}
 		if err := json.Unmarshal([]byte(payload), &fact); err != nil {
@@ -410,6 +424,9 @@ func (d *replayDriver) readCatalog(daemon int) ([]int, error) {
 		value := valueForDigest(fact.Digest)
 		if value == 0 {
 			return nil, fmt.Errorf("catalog entry %d has unexpected digest %q", index, fact.Digest)
+		}
+		if fact.Scheme != "flb.type.v1" {
+			return nil, fmt.Errorf("catalog entry %d has unexpected scheme %q", index, fact.Scheme)
 		}
 		raw, err := json.Marshal(fact.Structure)
 		if err != nil {
@@ -425,6 +442,35 @@ func (d *replayDriver) readCatalog(daemon int) ([]int, error) {
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+func verifySchemeBridgeRecord(record map[string]any) error {
+	if err := requireExactKeys(record, "from", "kind", "to"); err != nil {
+		return err
+	}
+	from, ok := record["from"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("field %q is %T, want object", "from", record["from"])
+	}
+	to, ok := record["to"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("field %q is %T, want object", "to", record["to"])
+	}
+	for name, identity := range map[string]map[string]any{"from": from, "to": to} {
+		if err := requireExactKeys(identity, "digest", "scheme"); err != nil {
+			return fmt.Errorf("field %q: %w", name, err)
+		}
+		digest, err := requireString(identity, "digest")
+		if err != nil || valueForDigest(digest) == 0 {
+			return fmt.Errorf("field %q.digest = %q, want a corpus digest", name, digest)
+		}
+	}
+	fromScheme, _ := requireString(from, "scheme")
+	toScheme, _ := requireString(to, "scheme")
+	if fromScheme != "bytes-sha256-v1" || toScheme != "flb.type.v1" {
+		return fmt.Errorf("scheme pair = %q -> %q, want bytes-sha256-v1 -> flb.type.v1", fromScheme, toScheme)
+	}
+	return nil
 }
 
 func (d *replayDriver) readData(daemon int) ([]int, error) {

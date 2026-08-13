@@ -321,7 +321,7 @@ export const toGoSource = (structure: Json, typeName: string, digest: string): D
   if (goType instanceof Fail) return { ok: false, refusal: goType.refusal }
   const source = [
     "// Code derived from a cataloged flb.type.v0 structure. DO NOT EDIT.",
-    `// digest: ${digest} (bytes-sha256-v1)`,
+    `// digest: ${digest} (flb.type.v1)`,
     "package flbtypes",
     "",
     `type ${goIdent(typeName)} ${goType}`,

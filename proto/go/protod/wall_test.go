@@ -40,7 +40,58 @@ func TestTypeFixturesRederive(t *testing.T) {
 		t.Fatal("no type vectors")
 	}
 	for _, vector := range vectors {
-		bytes, err := canonicalBytes(vector.Structure)
+		normalized, err := normalize(vector.Structure)
+		if err != nil {
+			t.Fatalf("%s: normalize: %v", vector.Name, err)
+		}
+		bytes, err := canonicalBytes(normalized)
+		if err != nil {
+			t.Fatalf("%s: canonicalize: %v", vector.Name, err)
+		}
+		if string(bytes) != vector.Canonical {
+			t.Errorf("%s: canonical bytes drifted\n got %s\nwant %s", vector.Name, bytes, vector.Canonical)
+		}
+		if derived := (bytesSHA256V1{}).Derive(bytes); derived != vector.Digest {
+			t.Errorf("%s: digest drifted: got %s want %s", vector.Name, derived, vector.Digest)
+		}
+		// Every fixture structure is a valid flb.type.v0 node.
+		if _, refusal := walkStructure(vector.Structure, []string{"structure"}); refusal != nil {
+			t.Errorf("%s: fixture structure refused: %+v", vector.Name, refusal)
+		}
+	}
+}
+
+func TestOwnedTypeV1FixturesRederive(t *testing.T) {
+	var fixture struct {
+		Scheme  string `json:"scheme"`
+		Vectors []struct {
+			Name       string `json:"name"`
+			Structure  any    `json:"structure"`
+			Normalized any    `json:"normalized"`
+			Canonical  string `json:"canonical"`
+			Digest     string `json:"digest"`
+		} `json:"vectors"`
+	}
+	loadFixture(t, "owned-types-v1.json", &fixture)
+	if fixture.Scheme != flbTypeV1Scheme || activeScheme.Name() != fixture.Scheme {
+		t.Fatalf("owned scheme drifted: fixture=%q active=%q", fixture.Scheme, activeScheme.Name())
+	}
+	if len(fixture.Vectors) < 4 {
+		t.Fatalf("owned identity corpus is too small: %d", len(fixture.Vectors))
+	}
+	digests := map[string]string{}
+	for _, vector := range fixture.Vectors {
+		if _, refusal := walkStructure(vector.Structure, []string{"structure"}); refusal != nil {
+			t.Fatalf("%s: fixture structure refused: %+v", vector.Name, refusal)
+		}
+		normalized, err := normalize(vector.Structure)
+		if err != nil {
+			t.Fatalf("%s: normalize: %v", vector.Name, err)
+		}
+		if got, want := mustCanonicalTest(t, normalized), mustCanonicalTest(t, vector.Normalized); got != want {
+			t.Fatalf("%s: normal form drifted\n got %s\nwant %s", vector.Name, got, want)
+		}
+		bytes, err := canonicalBytes(normalized)
 		if err != nil {
 			t.Fatalf("%s: canonicalize: %v", vector.Name, err)
 		}
@@ -50,10 +101,10 @@ func TestTypeFixturesRederive(t *testing.T) {
 		if derived := activeScheme.Derive(bytes); derived != vector.Digest {
 			t.Errorf("%s: digest drifted: got %s want %s", vector.Name, derived, vector.Digest)
 		}
-		// Every fixture structure is a valid flb.type.v0 node.
-		if _, refusal := walkStructure(vector.Structure, []string{"structure"}); refusal != nil {
-			t.Errorf("%s: fixture structure refused: %+v", vector.Name, refusal)
-		}
+		digests[vector.Name] = vector.Digest
+	}
+	if digests["union-forward"] != digests["union-reversed"] {
+		t.Fatalf("normalize did not collapse permuted unions: %v", digests)
 	}
 }
 

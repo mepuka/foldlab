@@ -36,13 +36,17 @@ seam; no NATS error ever carries a domain "no" (W8).
 {"structure": <flb.type.v0>, "assertedDigest": "<hex64>"?, "submitter": "<string>"?}
 ```
 
-Fact: `{"ok":true,"created":bool,"digest":hex64,"scheme":"bytes-sha256-v1",
+Fact: `{"ok":true,"created":bool,"digest":hex64,"scheme":"flb.type.v1",
 "catalogSeq":int,"catalogHead":hex64,"next":[hint...]}`
 
-The daemon canonicalizes the structure itself (RFC 8785) and derives
-the digest from those bytes (W1, W2). Same bytes converge:
+The daemon validates and normalizes the owned structure, canonicalizes
+the normal form itself (RFC 8785), and derives the digest from those
+bytes (W1, W2). Same normal form converges:
 `created:false` with the existing fact, never an error (W3). An
 asserted digest the daemon cannot re-derive refuses with both values.
+Each new certification appends the owned fact and then a canonical
+`flb.scheme-bridge.v0` record from `bytes-sha256-v1` to `flb.type.v1`;
+neither prior fact is ever rewritten.
 
 ### type.fill / type.unfill
 
@@ -173,10 +177,13 @@ same shape with `local:true` for its own conditions (`unreachable`,
 
 ## Identity
 
-Interim scheme `bytes-sha256-v1` (W10): SHA-256 over the RFC 8785
-canonical bytes of the structure. Every catalog fact is scheme-tagged;
-ticket 004's exhaustive fold lands as a second scheme with no wire
-change.
+Owned scheme `flb.type.v1` (W10): SHA-256 over the RFC 8785 canonical
+bytes of `normalize(term)`. Normalize is total on grammar-valid terms,
+structurally terminating, confluent, and idempotent; its first clause
+sorts union members by canonical bytes after recursively normalizing
+them. The predecessor `bytes-sha256-v1` remains accepted as
+attestation-grade during the dual-run transition. Every catalog fact
+is scheme-tagged, and every transition is append-only bridge evidence.
 
 ## Fixtures (frozen)
 
@@ -194,3 +201,7 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
+- `owned-types-v1.json` — the new owned-scheme normal forms and digests,
+  including nested, permuted-union, and ref-bearing terms.
+- `scheme-bridges.json` — canonical dual-scheme evidence records decoded
+  and re-derived by both runtimes.

@@ -78,22 +78,7 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 }
 
 func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
-	var request createRequest
-	if refusal := decodeBody(body, &request); refusal != nil {
-		return refuse(refusal)
-	}
-	if request.Structure == nil {
-		return refuse(&Refusal{
-			Kind:     KindMalformed,
-			Law:      "type.create carries the submitted structure in \"structure\"",
-			Path:     []string{"structure"},
-			Expected: "an flb.type.v0 node",
-			Example:  map[string]any{"structure": map[string]any{"k": "string"}},
-			Next:     []NextHint{describeHint()},
-		})
-	}
-	fact, created, refusal, err := d.catalog.create(
-		ctx, request.Structure, request.AssertedDigest, request.Submitter)
+	certificate, refusal, err := d.certify(ctx, body)
 	if err != nil {
 		// Substrate failure: drop the reply and let the requester time
 		// out — an internal error must never masquerade as a domain no.
@@ -102,10 +87,11 @@ func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
 	if refusal != nil {
 		return refuse(refusal)
 	}
+	fact := certificate.Fact
 	head := d.catalog.journal.Head()
 	return createReply{
 		OK:          true,
-		Created:     created,
+		Created:     certificate.Created,
 		Digest:      fact.Digest,
 		Scheme:      fact.Scheme,
 		CatalogSeq:  fact.seq,

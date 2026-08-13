@@ -136,8 +136,9 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 				return r
 			}
 		}
-		// Partials have no identity. Preserve their union positions so a
-		// fill followed by unfill at the same path is an exact inverse.
+		// The partial walk is position-preserving: partials have no identity,
+		// and a fill followed by unfill at the same path is an exact inverse.
+		// Identity normalization is the separate normalize function.
 		if allowHoles {
 			return nil
 		}
@@ -147,17 +148,22 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 		}
 		canonical := make([]canonicalMember, len(members))
 		for index, member := range members {
-			memberBytes, err := canonicalBytes(member)
+			normalizedMember, err := normalize(member)
+			if err != nil {
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+					"flb.type.v0: every union member must have an identity normal form",
+					member, "a normalizable type node", map[string]any{"k": "string"})
+			}
+			memberBytes, err := canonicalBytes(normalizedMember)
 			if err != nil {
 				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
 					"flb.type.v0: every union member must have canonical JSON bytes",
 					member, "a canonicalizable type node", map[string]any{"k": "string"})
 			}
-			canonical[index] = canonicalMember{value: member, bytes: memberBytes}
+			canonical[index] = canonicalMember{value: normalizedMember, bytes: memberBytes}
 		}
-		// Law: order never moves identity in an unordered collection.
-		// Normalize union members by their canonical bytes before the
-		// enclosing structure is encoded and digested.
+		// Duplicate detection uses normal-form bytes. This local ordering is
+		// validation only; it never rewrites the submitted term.
 		sort.Slice(canonical, func(i, j int) bool {
 			return bytes.Compare(canonical[i].bytes, canonical[j].bytes) < 0
 		})
@@ -168,9 +174,6 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 					canonical[index].value, "a member with distinct canonical bytes",
 					map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}})
 			}
-		}
-		for index := range canonical {
-			members[index] = canonical[index].value
 		}
 		return nil
 	case "brand":

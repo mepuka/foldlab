@@ -1,0 +1,73 @@
+{
+  "scheme": "flb.type.v1",
+  "vectors": [
+    {
+      "name": "nested-struct",
+      "structure": {
+        "k": "struct",
+        "fields": {
+          "items": {
+            "k": "list",
+            "of": {
+              "k": "union",
+              "of": [{ "k": "string" }, { "k": "null" }]
+            }
+          },
+          "id": { "k": "brand", "name": "ItemId", "of": { "k": "string" } }
+        },
+        "optional": []
+      },
+      "normalized": {
+        "k": "struct",
+        "fields": {
+          "items": {
+            "k": "list",
+            "of": {
+              "k": "union",
+              "of": [{ "k": "null" }, { "k": "string" }]
+            }
+          },
+          "id": { "k": "brand", "name": "ItemId", "of": { "k": "string" } }
+        },
+        "optional": []
+      },
+      "canonical": "{\"fields\":{\"id\":{\"k\":\"brand\",\"name\":\"ItemId\",\"of\":{\"k\":\"string\"}},\"items\":{\"k\":\"list\",\"of\":{\"k\":\"union\",\"of\":[{\"k\":\"null\"},{\"k\":\"string\"}]}}},\"k\":\"struct\",\"optional\":[]}",
+      "digest": "fe92dc1eb46ac7dc6860fece0f42baa51088e6e8e7b188f6ad0df11a94f834fc"
+    },
+    {
+      "name": "union-forward",
+      "structure": { "k": "union", "of": [{ "k": "string" }, { "k": "null" }] },
+      "normalized": { "k": "union", "of": [{ "k": "null" }, { "k": "string" }] },
+      "canonical": "{\"k\":\"union\",\"of\":[{\"k\":\"null\"},{\"k\":\"string\"}]}",
+      "digest": "8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff"
+    },
+    {
+      "name": "union-reversed",
+      "structure": { "k": "union", "of": [{ "k": "null" }, { "k": "string" }] },
+      "normalized": { "k": "union", "of": [{ "k": "null" }, { "k": "string" }] },
+      "canonical": "{\"k\":\"union\",\"of\":[{\"k\":\"null\"},{\"k\":\"string\"}]}",
+      "digest": "8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff"
+    },
+    {
+      "name": "ref-bearing",
+      "structure": {
+        "k": "check",
+        "base": {
+          "k": "ref",
+          "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "check": { "name": "declared", "args": { "min": 1 } }
+      },
+      "normalized": {
+        "k": "check",
+        "base": {
+          "k": "ref",
+          "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "check": { "name": "declared", "args": { "min": 1 } }
+      },
+      "canonical": "{\"base\":{\"digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"declared\"},\"k\":\"check\"}",
+      "digest": "fbb45bdea2e76c2a306a07da61a9ebb5657b4f05c4a4f10ce1279b67a108ae3a"
+    }
+  ]
+}

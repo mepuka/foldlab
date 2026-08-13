@@ -1,0 +1,18 @@
+[
+  {
+    "name": "bytes-sha256-v1-to-flb-type-v1",
+    "record": {
+      "kind": "flb.scheme-bridge.v0",
+      "from": {
+        "scheme": "bytes-sha256-v1",
+        "digest": "8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff"
+      },
+      "to": {
+        "scheme": "flb.type.v1",
+        "digest": "8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff"
+      }
+    },
+    "canonical": "{\"from\":{\"digest\":\"8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff\",\"scheme\":\"bytes-sha256-v1\"},\"kind\":\"flb.scheme-bridge.v0\",\"to\":{\"digest\":\"8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff\",\"scheme\":\"flb.type.v1\"}}",
+    "digest": "e29ca90447d35fe3fc0244e2520dbf12f0cc4cc966060790bb9a3d5ad78d9c44"
+  }
+]

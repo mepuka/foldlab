@@ -50,6 +50,21 @@ export const CreateReply = Schema.Struct({
 })
 export type CreateReply = typeof CreateReply.Type
 
+const SchemeDigest = Schema.String.check(Schema.isPattern(/^[0-9a-f]{64}$/))
+
+export const SchemeIdentity = Schema.Struct({
+  digest: SchemeDigest,
+  scheme: Schema.String,
+})
+export interface SchemeIdentity extends Schema.Schema.Type<typeof SchemeIdentity> {}
+
+export const SchemeBridge = Schema.Struct({
+  kind: Schema.Literal("flb.scheme-bridge.v0"),
+  from: SchemeIdentity,
+  to: SchemeIdentity,
+})
+export interface SchemeBridge extends Schema.Schema.Type<typeof SchemeBridge> {}
+
 export const FrontierChoice = Schema.Struct({
   kind: Schema.String,
   example: Schema.Json,

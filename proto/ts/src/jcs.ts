@@ -49,32 +49,32 @@ export const sha256Hex = (input: string): string =>
 /** Normalize the one unordered collection in flb.type.v0. This is
  * deliberately grammar-aware: arrays in literals/check args remain
  * ordered JSON data, while union members sort by their canonical bytes. */
-export const normalizeStructure = (value: Json): Json => {
+export const normalize = (value: Json): Json => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return value
 
   switch (value["k"]) {
     case "list":
-      return { ...value, of: normalizeStructure(value["of"] as Json) }
+      return { ...value, of: normalize(value["of"] as Json) }
     case "struct": {
       const rawFields = value["fields"]
       if (typeof rawFields !== "object" || rawFields === null || Array.isArray(rawFields)) return value
       const fields: Record<string, Json> = {}
       for (const name of Object.keys(rawFields)) {
-        fields[name] = normalizeStructure(rawFields[name] as Json)
+        fields[name] = normalize(rawFields[name] as Json)
       }
       return { ...value, fields }
     }
     case "union": {
       const rawMembers = value["of"]
       if (!Array.isArray(rawMembers)) return value
-      const members = rawMembers.map(normalizeStructure)
+      const members = rawMembers.map(normalize)
       members.sort((left, right) => compareCanonicalBytes(canonicalize(left), canonicalize(right)))
       return { ...value, of: members }
     }
     case "brand":
-      return { ...value, of: normalizeStructure(value["of"] as Json) }
+      return { ...value, of: normalize(value["of"] as Json) }
     case "check":
-      return { ...value, base: normalizeStructure(value["base"] as Json) }
+      return { ...value, base: normalize(value["base"] as Json) }
     default:
       return value
   }
@@ -83,10 +83,13 @@ export const normalizeStructure = (value: Json): Json => {
 /** Canonical bytes of a structure after applying its grammar-level
  * unordered-collection normalization. */
 export const canonicalizeStructure = (structure: Json): string =>
-  canonicalize(normalizeStructure(structure))
+  canonicalize(normalize(structure))
 
-/** The interim identity scheme, named to match the daemon (W10). */
-export const SCHEME = "bytes-sha256-v1"
+/** The owned identity scheme, named to match the daemon (W10). */
+export const SCHEME = "flb.type.v1"
+
+/** The transition's attestation-grade predecessor. */
+export const ATTESTATION_SCHEME = "bytes-sha256-v1"
 
 export const structureDigest = (structure: Json): string => sha256Hex(canonicalizeStructure(structure))
 

@@ -422,11 +422,19 @@ describe("concierge laws", () => {
     if (catalog.ok) {
       for (const entry of catalog.fact.entries) {
         const fact = JSON.parse(entry.payload)
-        expect(JSON.stringify(fact.structure)).not.toContain('"k":"hole"')
+        if (fact.kind === undefined) {
+          expect(JSON.stringify(fact.structure)).not.toContain('"k":"hole"')
+        }
       }
     }
 
-    for (const name of ["types.json", "chains.json", "frames.json"]) {
+    for (const name of [
+      "types.json",
+      "owned-types-v1.json",
+      "scheme-bridges.json",
+      "chains.json",
+      "frames.json",
+    ]) {
       const text = await Bun.file(new URL("../../wire/fixtures/" + name, import.meta.url)).text()
       expect(text).not.toContain('"k": "hole"')
     }
