@@ -1,13 +1,14 @@
 /**
  * The stream-journal lane, TS half — byte-identical mirror of `go/stream`
- * (the cross-language wall: packages/mech/fixtures/stream-wall.json, pinned
+ * (the cross-language wall: fixtures/stream-wall.json at the repository root, pinned
  * once from the Go side).
  *
  * The one idea underneath the whole lane: an event stream is a left fold
- * twice over. Folded with a hash you get IDENTITY (the chain head commits to
- * the exact history); folded with a state function you get MEANING (what the
- * history did). The two folds disagree on purpose — the chain remembers what
- * the fold forgives — and every law in this lane is about which of the two a
+ * twice over. Folded with a hash you get IDENTITY, a running Merkle-style hash
+ * chain (the chain head commits to the exact history); folded with a state
+ * function you get MEANING (what the history did). The two folds disagree on
+ * purpose — the chain remembers what the fold forgives — and every law in this
+ * lane is about which of the two a
  * given operation must preserve:
  *
  *   fingerprint  identity of canonical bytes; heads extend in O(1)
@@ -21,6 +22,9 @@
  *   enc(event)  = len(stream) u16 BE || stream utf8 || seq u64 BE || len(payload) u32 BE || payload
  *   seed(s)     = SHA-256("playground.stream.v1:" + s)
  *   extend(h,e) = SHA-256(h || enc(e))
+ *
+ * `playground.*` is a former project name frozen into these hashed wire
+ * prefixes. Renaming it would move every derived digest, so it stays.
  */
 
 import { createHash } from "node:crypto"
@@ -254,6 +258,12 @@ export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
   return { entries, count: state.count + 1 }
 }
 
+/**
+ * The Effect error-channel sibling of pure `kvStep`: an excluded payload
+ * fails with `MalformedPayload`. This value is an `Effect`, not the `{ ok }`
+ * union returned by `foldSeqKV` in `kvSemilattice.ts`; interpret the Effect
+ * before inspecting success or refusal.
+ */
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
@@ -325,7 +335,7 @@ export const combineKV = (left: KVState, right: KVState): KVState | undefined =>
  * naming both counts, so a parallel replay that overran the digest's u32 says
  * which two halves did it.
  */
-export const mergeKV = (
+export const combineKVEffect = (
   left: KVState,
   right: KVState,
 ): Effect.Effect<KVState, KVCountOverflow> =>

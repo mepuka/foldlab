@@ -1151,3 +1151,33 @@ silently stripping it contradicts the stated text domain; choosing preservation
 or typed exclusion changes that public domain and must be explicit.
 **Load-bearing? yes** — this is another distinct-byte collision at the same
 identity boundary.
+
+## Task 26 — Rosetta code surfaces (2026-08-14)
+
+### D??. The typed KV combine names its operation and its error channel
+
+Decided: the Effect-returning sibling of `combineKV` is
+`combineKVEffect`. `combine` names the associative segment-recombination
+operation; `Effect` names the typed refusal channel. The unreleased `mergeKV`
+name is removed without an alias. Alternatives: retain `mergeKV` (collides
+with the committed-interleaving meaning of Merge); `combineKVTyped` (names a
+property every TypeScript value already has); retain a compatibility alias
+(freezes the misleading name into a second public path). Why: one operation
+keeps one domain name across its pure and Effect dialects, while the suffix
+makes their different refusal channels visible at the call site.
+**Load-bearing? no** — this is surface vocabulary, changed before release.
+
+## GitHub issue #14 — Rosetta integration (2026-08-14)
+
+### D??. The router layer is the executable oracle for the health audience split
+
+Decided: export the server's `Routes` layer and launch the Bun listener only
+when `server.ts` is the main module, so a test can send Fetch `Request` values
+through the real router. The regression pins the machine-facing `/health` body
+to `ok` and also pins the two browser-facing demo law strings. Alternatives:
+inspect source text (would test spelling, not routing); spawn the fixed-port
+server (introduces a port race); change the string without a regression (the
+accepted audience split could drift again). Why: one in-process handler tests
+both halves of the ratified split without opening a socket or adding a runtime
+dependency. **Load-bearing? no** — this is a testability seam for an already
+ratified response contract.

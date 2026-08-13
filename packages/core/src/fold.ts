@@ -1,9 +1,10 @@
 /**
  * The fold: an algebra and a step lifted to run over a whole history.
  *
- * Nothing else goes into one. The step decides what each event contributes and
- * the algebra decides how contributions combine, so two folds built from the
- * same declared pair compute the same answers and answer to the same name. As
+ * Nothing else goes into one. The step — the `f` in `foldMap` — decides what
+ * each event contributes and the algebra decides how contributions combine,
+ * so two folds built from the same declared pair compute the same answers and
+ * answer to the same name. As
  * everywhere in this package, the declarations carry the name and the plain
  * functions carry the behavior — a fold missing a name still folds.
  */
@@ -89,7 +90,9 @@ export interface Fold<E, A extends FoldState> {
 }
 
 const normalizeStep = <E, A extends FoldState>(input: StepInput<E, A>): Step<E, A> =>
-  typeof input === "function" ? { apply: input, identityIssue: "the step is anonymous" } : input
+  typeof input === "function"
+    ? { apply: input, identityIssue: "the step has no declared spec, so no content address" }
+    : input
 
 const foldIdentity = <E, A extends FoldState>(
   algebra: Algebra<A>,

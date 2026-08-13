@@ -1,6 +1,7 @@
 /**
- * The declared fold algebra. Behavior is carried by plain functions, and a name
- * is carried by a separate canonical declaration; identity exists only where a
+ * The declared fold algebra. In Effect v4 terms its behavior is a `Reducer`
+ * (`initialValue` plus `combine`; classically a monoid instance), and a name is
+ * carried by a separate canonical declaration; identity exists only where a
  * value has both.
  *
  * A value earns a declaration when its own description encodes canonically and
@@ -483,7 +484,9 @@ export const algebras = Object.freeze({ sum, count, max, min, any, all, setUnion
 
 const algebraIssue = (members: ReadonlyArray<Algebra<FoldState>>): string | undefined => {
   const first = members.find((member) => !isDeclaration(member.declaration))
-  return first === undefined ? undefined : first.identityIssue ?? "a product member is anonymous"
+  return first === undefined
+    ? undefined
+    : first.identityIssue ?? "a product member has no declared spec, so no content address"
 }
 
 /**
@@ -750,7 +753,7 @@ export const productStep = <E, const As extends ReadonlyArray<FoldState>>(
       apply,
       ...(eventGenerator === undefined ? {} : { eventGenerator }),
       identityIssue: members.find((member) => !isDeclaration(member.declaration))?.identityIssue ??
-        "a product step is anonymous",
+        "a product step has no declared spec, so no content address",
     }
   }
   const spec: StepSpec = {
@@ -788,7 +791,7 @@ export const mappedStep = <E, A extends FoldState, B extends FoldState>(
     return {
       apply,
       ...(source.eventGenerator === undefined ? {} : { eventGenerator: source.eventGenerator }),
-      identityIssue: source.identityIssue ?? "the source step is anonymous",
+      identityIssue: source.identityIssue ?? "the source step has no declared spec, so no content address",
     }
   }
   const spec: StepSpec = {

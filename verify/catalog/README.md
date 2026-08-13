@@ -6,8 +6,9 @@ monotonicity under replication lag, over the ownership model ratified in
 ticket 002 (evidence / decisions / absence; per-daemon authority
 catalogs; union resolution; lag is absence) and ADR-0009 (a replica is a
 verified mirror holding a prefix at origin positions). Style and
-discipline follow the effector model gate
-(`.reference/playground-mech/specs`, `docs/research/effector-model-gate.md`):
+discipline follow the effector model gate from the untracked predecessor
+repository (not a path in this checkout) and its checked-in research account
+(`docs/research/effector-model-gate.md`):
 the transition table stated once, faithless variants selected by
 constants, every refutation committed beside its config, and every claim
 sized to its bounds — a bounded check certifies only its bounds
@@ -35,6 +36,10 @@ behaviour — presence can't go stale the way absence can, which is why
 create needs a CAS and ingress doesn't.
 
 ## Files
+
+The model calls a law-disabled configuration a **faithless variant**; the gate
+calls the same artifact a **negative control**. Both names mean one concept:
+the deliberately weakened run that must be refuted on the law it dropped.
 
 | File | What |
 |---|---|

@@ -6,8 +6,9 @@
  * SL1 — the chain remembers what the fold forgives. /demo/merge returns two
  * linearizations of the same sources whose fold state digests are EQUAL and
  * whose merged heads DIFFER; /demo/fork returns two heads sharing one
- * parent. See .reference/core-concepts.md for the theory and
- * .reference/playground-mech for the proofs behind it.
+ * parent. The theory and original proof artifacts live in an untracked
+ * predecessor repository; the checkable claims in this checkout are indexed
+ * by VERIFICATION.md.
  */
 
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun"
@@ -95,18 +96,20 @@ const forkDemo = Effect.suspend(() => {
     childA,
     childB,
     segmentsStored: store.size,
-    note: "fork resolution is fenced commitment; see the effector lane in .reference/playground-mech",
+    note: "fork resolution is fenced commitment; the effector is the authority register",
   })
 })
 
-const Routes = Layer.mergeAll(
-  HttpRouter.add("GET", "/health", HttpServerResponse.text("foldlab: two folds, one law")),
+export const Routes = Layer.mergeAll(
+  HttpRouter.add("GET", "/health", HttpServerResponse.text("ok")),
   HttpRouter.add("GET", "/demo/merge", mergeDemo),
   HttpRouter.add("GET", "/demo/fork", forkDemo),
 )
 
-HttpRouter.serve(Routes).pipe(
-  Layer.provide(BunHttpServer.layer({ port: 3123 })),
-  Layer.launch,
-  BunRuntime.runMain,
-)
+if (import.meta.main) {
+  HttpRouter.serve(Routes).pipe(
+    Layer.provide(BunHttpServer.layer({ port: 3123 })),
+    Layer.launch,
+    BunRuntime.runMain,
+  )
+}
