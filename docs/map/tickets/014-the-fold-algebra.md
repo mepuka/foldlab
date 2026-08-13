@@ -39,6 +39,24 @@ Build, in packages/core, in this order:
    import; bounded experiment first per dossier C10.
 
 Every function ships WITH its generated law tests — the wall factory
-is the deliverable as much as the functions. Codex-built against this
-ticket once the API shape is grilled; the API grilling (names, Effect
-service shape, where Monoid lives) is the open question here.
+is the deliverable as much as the functions.
+
+## Ratified (2026-08-13 grilling)
+
+1. ADR-0010 governs: this ticket is the lawful surface's first
+   embodiment.
+2. **Algebras are declared data.** A small grammar of monoid
+   primitives plus combinators (product; map by declared
+   homomorphism), canonically encoded and digested — the declared-
+   checks law one level up. Step functions likewise: a declared step
+   registry gives a fold its identity; anonymous monoids and steps
+   work locally but REFUSE identity — usable, never cacheable or
+   cataloged. Nothing without a canonical form claims identity.
+3. **Pure core + Effect adapters**, mirroring stream.ts /
+   streamBindings.ts: the algebra is plain values and functions; the
+   Effect Stream adapter carries the rechunk-invariance law; a Go twin
+   derives later from the same declared grammar (single-implementation
+   pinned fixtures until then — per ADR-0001, no cross-language wall
+   is claimed before a second implementation exists).
+
+Build handed to codex: scratch/codex/06-fold-algebra.md.
