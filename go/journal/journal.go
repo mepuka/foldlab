@@ -92,20 +92,9 @@ func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, e
 		return nil, fmt.Errorf("%w: %s", ErrBadStream, reason)
 	}
 
-	cursor := Cursor{Seq: -1, Head: canonical.Genesis}
-	if info.State.Msgs > 0 {
-		raw, getErr := stream.GetMsg(ctx, info.State.LastSeq)
-		if getErr != nil {
-			return nil, fmt.Errorf("read journal tail: %w", getErr)
-		}
-		entry, decodeErr := decodeEntry(raw.Data)
-		if decodeErr != nil {
-			return nil, fmt.Errorf("decode journal tail: %w", decodeErr)
-		}
-		cursor = Cursor{
-			Seq:  int(raw.Sequence) - 1,
-			Head: canonical.EntryDigest(entry),
-		}
+	cursor, err := tailCursor(ctx, stream)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Journal{
@@ -114,6 +103,37 @@ func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, e
 		subject: subject,
 		cursor:  cursor,
 	}, nil
+}
+
+// tailCursor resyncs a cursor from the stream's current tail, verifying the
+// tail's byte-canonicality exactly as Read does (JL5): a tail Read would refuse
+// as ErrTampered is refused here too, so Open fails fast instead of adopting a
+// head Read rejects. An empty stream yields the genesis cursor. Open and the
+// post-conflict resync path share it, adopting the tail on identical terms.
+// Note it verifies only the tail's canonicality, not that the tail chains from
+// genesis — a canonical-but-forged tail still passes (issue #2 disposition).
+func tailCursor(ctx context.Context, stream jetstream.Stream) (Cursor, error) {
+	info, err := stream.Info(ctx)
+	if err != nil {
+		return Cursor{}, err
+	}
+	if info.State.Msgs == 0 {
+		return Cursor{Seq: -1, Head: canonical.Genesis}, nil
+	}
+	raw, err := stream.GetMsg(ctx, info.State.LastSeq)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("read journal tail: %w", err)
+	}
+	position := int(raw.Sequence) - 1
+	entry, err := decodeEntry(raw.Data)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("decode journal tail: %w", err)
+	}
+	digest := canonical.EntryDigest(entry)
+	if canonical.DigestHex(raw.Data) != digest {
+		return Cursor{}, tampered(position, "wire bytes are not canonical")
+	}
+	return Cursor{Seq: position, Head: digest}, nil
 }
 
 func (j *Journal) Head() Cursor {
