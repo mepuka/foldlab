@@ -1,0 +1,72 @@
+### label:    baseline-preR4-ob2-consecution
+### started:  2026-08-13T09:54:29Z
+### workdir:  /private/tmp/claude-501/-Users-pooks-Dev-foldlab/2363d184-5451-4888-919a-b82dd299f7f8/scratchpad/preR4
+### jar:      apalache-0.61.0/lib/apalache.jar  sha256 33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346
+### java:     openjdk version "21.0.2" 2024-01-16
+### cmd:      mise x java@21 -- java -jar $APALACHE_JAR check --config=CatalogInd.cfg --init=IndInit --inv=IndInv --length=1 CatalogInd.tla
+### ---------------------------------------------------------------
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: /private/tmp/claude-501/-Users-pooks-Dev-foldlab/2363d184-5451-4888-919a-b82dd299f7f8/scratchpad/preR4/_apalache-out/CatalogInd.tla/2026-08-13T04-54-30_3945314840226800384
+# APALACHE version: 0.61.0 | build: 831d473                       I@04:54:30.312
+  > CatalogInd.cfg: Loading TLC configuration                     I@04:54:30.314
+  > Using next predicate(s) Next from the TLC config              I@04:54:30.393
+checker.init overrides the value from the TLC configuration.      W@04:54:30.394
+Tuning:                                                           I@04:54:30.395
+PASS #0: SanyParser                                               I@04:54:30.586
+PASS #1: TypeCheckerSnowcat                                       I@04:54:31.127
+ > Running Snowcat .::.                                           I@04:54:31.127
+ > Your types are purrfect!                                       I@04:54:32.201
+ > All expressions are typed                                      I@04:54:32.201
+PASS #2: ConfigurationPass                                        I@04:54:32.202
+  > CatalogInd.cfg: found INVARIANTS: IndInv                      I@04:54:32.378
+  > Set the initialization predicate to IndInit                   I@04:54:32.380
+  > Set the transition predicate to Next                          I@04:54:32.380
+  > Set the constant initialization predicate to CInit            I@04:54:32.381
+  > Set an invariant to IndInv                                    I@04:54:32.381
+PASS #3: DesugarerPass                                            I@04:54:32.391
+  > Desugaring...                                                 I@04:54:32.391
+PASS #4: InlinePass                                               I@04:54:32.436
+Leaving only relevant operators: CInit, CInitPrimed, IndInit, IndInitPrimed, IndInv, Next I@04:54:32.436
+PASS #5: TemporalPass                                             I@04:54:32.668
+  > Rewriting temporal operators...                               I@04:54:32.669
+  > No temporal property specified, nothing to encode             I@04:54:32.669
+PASS #6: InlinePass                                               I@04:54:32.669
+Leaving only relevant operators: CInit, CInitPrimed, IndInit, IndInitPrimed, IndInv, Next I@04:54:32.669
+PASS #7: PrimingPass                                              I@04:54:32.697
+  > Introducing CInitPrimed for CInit'                            I@04:54:32.702
+  > Introducing IndInitPrimed for IndInit'                        I@04:54:32.703
+PASS #8: VCGen                                                    I@04:54:32.710
+  > Producing verification conditions from the invariant IndInv   I@04:54:32.712
+  > VCGen produced 14 verification condition(s)                   I@04:54:32.716
+PASS #9: PreprocessingPass                                        I@04:54:32.722
+  > Before preprocessing: unique renaming                         I@04:54:32.722
+ > Applying standard transformations:                             I@04:54:32.729
+  > PrimePropagation                                              I@04:54:32.730
+  > Desugarer                                                     I@04:54:32.741
+  > UniqueRenamer                                                 I@04:54:32.764
+  > Normalizer                                                    I@04:54:32.778
+  > SetMembershipSimplifier                                       I@04:54:32.793
+  > Keramelizer                                                   I@04:54:32.812
+  > After preprocessing: UniqueRenamer                            I@04:54:32.846
+PASS #10: TransitionFinderPass                                    I@04:54:32.892
+  > Found 1 initializing transitions                              I@04:54:32.928
+  > Found 10 transitions                                          I@04:54:32.941
+  > Found constant initializer CInit                              I@04:54:32.942
+  > Applying unique renaming                                      I@04:54:32.946
+PASS #11: OptimizationPass                                        I@04:54:32.964
+ > Applying optimizations:                                        I@04:54:32.970
+  > ConstSimplifier                                               I@04:54:32.970
+  > ExprOptimizer                                                 I@04:54:32.992
+  > SetMembershipSimplifier                                       I@04:54:33.006
+  > ConstSimplifier                                               I@04:54:33.011
+PASS #12: AnalysisPass                                            I@04:54:33.068
+ > Marking skolemizable existentials and sets to be expanded...   I@04:54:33.071
+  > Skolemization                                                 I@04:54:33.072
+  > Expansion                                                     I@04:54:33.075
+  > Remove unused let-in defs                                     I@04:54:33.081
+ > Running analyzers...                                           I@04:54:33.086
+  > Introduced expression grades                                  I@04:54:33.124
+PASS #13: BoundedChecker                                          I@04:54:33.124
+State 0: Checking 14 state invariants                             I@04:55:02.274

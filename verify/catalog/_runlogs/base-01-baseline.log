@@ -1,0 +1,30 @@
+### label:  base-01-baseline
+### started: 2026-08-13T09:52:46Z
+### cwd:    verify/catalog
+### jar:    tools/apalache-0.61.0/lib/apalache.jar  sha256 33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346
+### java:   openjdk version "21.0.2" 2024-01-16
+### cmd:    mise x java@21 -- java -jar tools/apalache-0.61.0/lib/apalache.jar check --config=CatalogInd.cfg --init=Init --inv=IndInv --length=0 CatalogInd.tla
+### ---------------------------------------------------------------
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a832c002de4e1234c/verify/catalog/_apalache-out/CatalogInd.tla/2026-08-13T04-52-47_5437476726512274140
+# APALACHE version: 0.61.0 | build: 831d473                       I@04:52:47.541
+  > CatalogInd.cfg: Loading TLC configuration                     I@04:52:47.543
+  > Using next predicate(s) Next from the TLC config              I@04:52:47.578
+checker.init overrides the value from the TLC configuration.      W@04:52:47.579
+Tuning:                                                           I@04:52:47.579
+PASS #0: SanyParser                                               I@04:52:47.674
+PASS #1: TypeCheckerSnowcat                                       I@04:52:47.897
+ > Running Snowcat .::.                                           I@04:52:47.897
+[Catalog.tla:142:18-142:21]: Cannot apply s to the argument 1 in s[1]. E@04:52:48.046
+[Catalog.tla:142:1-142:21]: Error when computing the type of CatalogOf E@04:52:48.056
+ > Snowcat asks you to fix the types. Meow.                       I@04:52:48.061
+Checker has found an error                                        I@04:52:48.073
+It took me 0 days  0 hours  0 min  0 sec                          I@04:52:48.073
+Total time: 0.531 sec                                             I@04:52:48.073
+EXITCODE: ERROR (120)
+### ---------------------------------------------------------------
+### exit code: 120
+### wall clock: 1s
+### finished: 2026-08-13T09:52:48Z
