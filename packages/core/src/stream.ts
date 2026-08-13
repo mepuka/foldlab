@@ -200,30 +200,45 @@ export const emptyKV: KVState = { entries: new Map(), count: 0 }
 
 const strictDecoder = new TextDecoder("utf-8", { fatal: true })
 
+/**
+ * One meaning-fold step, pure. `undefined` NAMES the walled refusal domain —
+ * a payload that is not valid UTF-8, not a `key=value` fact, carries a NUL in
+ * either half, or would overflow the u32 count. It is the single definition of
+ * "what the meaning fold admits": the Effect-typed `applyKV` turns `undefined`
+ * into a typed `MalformedPayload`, while the entity collector's synchronous
+ * fold forgives it as a no-op. There is one meaning-fold, not two.
+ */
+export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
+  let text: string
+  try {
+    text = strictDecoder.decode(e.payload)
+  } catch {
+    return undefined
+  }
+  const eq = text.indexOf("=")
+  if (eq <= 0) return undefined
+  const key = text.slice(0, eq)
+  const value = text.slice(eq + 1)
+  if (
+    key.includes("\0") || value.includes("\0") ||
+    !Number.isSafeInteger(state.count) || state.count < 0 || state.count >= maxU32
+  ) {
+    return undefined
+  }
+  const entries = new Map(state.entries)
+  entries.set(key, value)
+  return { entries, count: state.count + 1 }
+}
+
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
 ): Effect.Effect<KVState, MalformedPayload> =>
   Effect.suspend(() => {
-    let text: string
-    try {
-      text = strictDecoder.decode(e.payload)
-    } catch {
-      return Effect.fail(new MalformedPayload({ event: e }))
-    }
-    const eq = text.indexOf("=")
-    if (eq <= 0) return Effect.fail(new MalformedPayload({ event: e }))
-    const key = text.slice(0, eq)
-    const value = text.slice(eq + 1)
-    if (
-      key.includes("\0") || value.includes("\0") ||
-      !Number.isSafeInteger(state.count) || state.count < 0 || state.count >= maxU32
-    ) {
-      return Effect.fail(new MalformedPayload({ event: e }))
-    }
-    const entries = new Map(state.entries)
-    entries.set(key, value)
-    return Effect.succeed({ entries, count: state.count + 1 })
+    const next = kvStep(state, e)
+    return next === undefined
+      ? Effect.fail(new MalformedPayload({ event: e }))
+      : Effect.succeed(next)
   })
 
 export const foldKV = (
