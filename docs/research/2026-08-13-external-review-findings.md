@@ -390,9 +390,10 @@ both fails to widen the model and loosens the invariant meant to
 certify the natural bound. Evidence: `NumVals = 4` and `NumVals = 9`
 produce byte-identical closures (1,757 generated / 457 distinct /
 depth 10). A future "checked at 6 values" claim would come back green
-covering nothing new. Fix in flight on the HARDENER branch: `ASSUME`
-guards on all constants; the semantic fix is stating the invariant
-against `Cardinality(Vals)`.
+covering nothing new. Resolved on `codex/catalog-bound-guards`: executable
+`ASSUME` guards reject all out-of-range constants, three independent overrun
+configs make the literal-domain guards repealable, and the invariant is
+stated against `Cardinality(Vals)`.
 
 ### Repairs and hardening in flight
 
@@ -583,5 +584,5 @@ not.
 | S1 Bun coupling | #6 | 243caeb54 | FIXED |
 | FINDING-R3-001 re-checkability | #7 | 6b713a639 (annotations certified inert) | FIXED |
 | FINDING-BRIDGE-001 vacuous half | #8 | b93867814 (ResolvingCreateAgrees in the gate) | FIXED; strengthenings with HARDENER |
-| FINDING-BOUNDS-001 truncation | #9 | HARDENER ASSUME guards | IN FLIGHT (last open issue) |
+| FINDING-BOUNDS-001 truncation | #9 | `codex/catalog-bound-guards` | FIXED; three independent guard controls |
 | Effector A6 register | — | certified clean on the running binary | docs/research/2026-08-13-effector-certified.md |

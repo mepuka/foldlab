@@ -66,7 +66,7 @@
 (*     this abstraction: values ARE canonical, appends ARE durable reads.  *)
 (*     They are not claimed.                                               *)
 (***************************************************************************)
-EXTENDS Integers, Sequences
+EXTENDS FiniteSets, Integers, Sequences
 
 CONSTANTS
   \* @type: Int;  number of daemons, 1-based ids
@@ -92,9 +92,24 @@ CONSTANTS
   \* ResolutionMonotonicity
   ResettingMirror
 
+\* Apalache needs literal ranges below, so the configured domain sizes must
+\* stay within the largest value those ranges can express.  Reject a config
+\* that claims a wider model instead of silently checking the four-element
+\* truncation.  The remaining constants do not size literal domains: DataCap
+\* is an explicit journal cutoff (0 means unbounded), and the four switches
+\* are Boolean choices in every config.
+ASSUME NumDaemons  \in 1..4
+ASSUME NumCreators \in 1..4
+ASSUME NumVals     \in 1..4
+ASSUME DataCap     \in Nat
+ASSUME BlindIngress      \in BOOLEAN
+ASSUME ForgedMirror      \in BOOLEAN
+ASSUME AssertedIdentity  \in BOOLEAN
+ASSUME ResettingMirror   \in BOOLEAN
+
 \* Filtered from literal ranges rather than 1..N: Apalache does not accept
-\* integer ranges with symbolic bounds.  The filter is semantically
-\* identical for TLC.
+\* integer ranges with symbolic bounds.  The assumptions above make each
+\* filter semantically identical to 1..NumX for both TLC and Apalache.
 Daemons  == { d \in 1..4 : d <= NumDaemons }
 Creators == { c \in 1..4 : c <= NumCreators }
 Vals     == { v \in 1..4 : v <= NumVals }
@@ -363,7 +378,7 @@ LagIsAbsenceNeverWrongData ==
 \* Convergence bounds every catalog by the value space — the state space
 \* is finite with NO artificial catalog cap.  Checked, not assumed.
 CatalogNaturallyBounded ==
-  \A d \in Daemons : Len(catalog[d]) <= NumVals
+  \A d \in Daemons : Len(catalog[d]) <= Cardinality(Vals)
 
 \* W4, the admission-time half: an admitting step appends exactly one
 \* frame, disturbs no prior frame, and its claim was resolvable at d in

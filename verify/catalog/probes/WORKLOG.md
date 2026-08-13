@@ -269,9 +269,11 @@ are TLC trace-exploration artefacts sitting in the **ratified**
 directory. They should be gitignored or moved; they are generated
 output, not evidence.
 
-The planned `ASSUME` guards and `OverrunMirror` control are not in the
-worktree yet, so nothing to diff on those. `FINDING-BOUNDS-001.md`
-supplies the byte-identical-closure evidence for the `ASSUME`s.
+Historical checkpoint: at this point the planned `ASSUME` guards and
+`OverrunMirror` control were not in that worktree, so there was nothing to
+diff. `FINDING-BOUNDS-001.md` supplies the byte-identical-closure evidence for
+the `ASSUME`s. The bound guards later landed on
+`codex/catalog-bound-guards`; `OverrunMirror` remains separate from issue #9.
 
 ---
 
