@@ -1,0 +1,166 @@
+// Package protod is the tracer-bullet daemon: the runtime owner behind
+// the system's one seam. The interface is data on subjects — canonical
+// frames and requests in, facts and typed refusals out. Lifecycle
+// (Acquire → URL → Release) is the only Go API a caller sees; every
+// other seam in this package is internal.
+package protod
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"strconv"
+	"sync"
+	"time"
+
+	"github.com/nats-io/nats-server/v2/server"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
+
+	"foldlab/journal"
+)
+
+// Options configures an acquired daemon. StoreDir is required (tests
+// pass temp dirs; tracer data is disposable). Listen defaults to
+// "127.0.0.1:0" — a random port on loopback.
+type Options struct {
+	StoreDir string
+	Listen   string
+}
+
+// Daemon owns the embedded NATS server, the catalog, and every journal
+// it is authority for. It writes only journals it owns (ADR-0009).
+type Daemon struct {
+	server  *server.Server
+	conn    *nats.Conn
+	js      jetstream.JetStream
+	catalog *catalog
+
+	mu       sync.Mutex
+	journals map[string]*journal.Journal
+
+	url  string
+	subs []*nats.Subscription
+}
+
+// Acquire starts the embedded NATS server (JetStream on StoreDir),
+// opens the catalog, and subscribes the request and ingress surfaces.
+// The daemon serves clients over a real loopback listener; its own
+// connection is in-process.
+func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
+	if opts.StoreDir == "" {
+		return nil, errors.New("protod: StoreDir is required")
+	}
+	listen := opts.Listen
+	if listen == "" {
+		listen = "127.0.0.1:0"
+	}
+	host, portText, err := net.SplitHostPort(listen)
+	if err != nil {
+		return nil, fmt.Errorf("protod: invalid listen address %q: %w", listen, err)
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		return nil, fmt.Errorf("protod: invalid listen port %q: %w", portText, err)
+	}
+	if port == 0 {
+		port = server.RANDOM_PORT
+	}
+
+	natsServer, err := server.NewServer(&server.Options{
+		ServerName: "flb-protod",
+		Host:       host,
+		Port:       port,
+		JetStream:  true,
+		StoreDir:   opts.StoreDir,
+		NoLog:      true,
+		NoSigs:     true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("protod: create embedded nats-server: %w", err)
+	}
+	go natsServer.Start()
+	if !natsServer.ReadyForConnections(10 * time.Second) {
+		natsServer.Shutdown()
+		natsServer.WaitForShutdown()
+		return nil, errors.New("protod: embedded nats-server did not become ready")
+	}
+
+	release := func() {
+		natsServer.Shutdown()
+		natsServer.WaitForShutdown()
+	}
+
+	conn, err := nats.Connect("", nats.InProcessServer(natsServer))
+	if err != nil {
+		release()
+		return nil, fmt.Errorf("protod: connect in-process: %w", err)
+	}
+	js, err := jetstream.New(conn)
+	if err != nil {
+		conn.Close()
+		release()
+		return nil, fmt.Errorf("protod: create JetStream context: %w", err)
+	}
+
+	openedCatalog, err := openCatalog(ctx, js)
+	if err != nil {
+		conn.Close()
+		release()
+		return nil, fmt.Errorf("protod: open catalog: %w", err)
+	}
+
+	d := &Daemon{
+		server:   natsServer,
+		conn:     conn,
+		js:       js,
+		catalog:  openedCatalog,
+		journals: map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
+		url:      natsServer.ClientURL(),
+	}
+
+	requestSub, err := conn.Subscribe(subjectRequestWildcard, d.handleRequest)
+	if err != nil {
+		conn.Close()
+		release()
+		return nil, fmt.Errorf("protod: subscribe requests: %w", err)
+	}
+	ingressSub, err := conn.Subscribe(ingressWildcard, d.handleIngress)
+	if err != nil {
+		conn.Close()
+		release()
+		return nil, fmt.Errorf("protod: subscribe ingress: %w", err)
+	}
+	d.subs = []*nats.Subscription{requestSub, ingressSub}
+	return d, nil
+}
+
+// URL is the client-facing NATS URL of the embedded server.
+func (d *Daemon) URL() string { return d.url }
+
+// Release drains the surfaces and shuts the embedded server down.
+func (d *Daemon) Release() {
+	for _, sub := range d.subs {
+		_ = sub.Unsubscribe()
+	}
+	d.conn.Close()
+	d.server.Shutdown()
+	d.server.WaitForShutdown()
+}
+
+// openJournal opens (or creates) a journal this daemon is authority
+// for. The catalog handle is shared with the catalog seam.
+func (d *Daemon) openJournal(ctx context.Context, name string) (*journal.Journal, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if opened := d.journals[name]; opened != nil {
+		return opened, nil
+	}
+	opened, err := journal.Open(ctx, d.js, name)
+	if err != nil {
+		return nil, err
+	}
+	d.journals[name] = opened
+	return opened, nil
+}

@@ -1,0 +1,230 @@
+[
+  {
+    "name": "leaf-string",
+    "structure": {
+      "k": "string"
+    },
+    "canonical": "{\"k\":\"string\"}",
+    "digest": "3b67b844b3d096bc06a752cfdb4ff7ba292aa25662d6ee36e65135df797f2fc0"
+  },
+  {
+    "name": "leaf-bool",
+    "structure": {
+      "k": "bool"
+    },
+    "canonical": "{\"k\":\"bool\"}",
+    "digest": "0c1ffc280256132e234ff9bddd2e2a6044c4e82ba06d6e97e059684cc56b3697"
+  },
+  {
+    "name": "leaf-int",
+    "structure": {
+      "k": "int"
+    },
+    "canonical": "{\"k\":\"int\"}",
+    "digest": "fba0840e5b717b29d9d4c1d10a2cb34e8826656d11bad47b1ee6b3d71beb1577"
+  },
+  {
+    "name": "leaf-float",
+    "structure": {
+      "k": "float"
+    },
+    "canonical": "{\"k\":\"float\"}",
+    "digest": "beea355664ce9e7867cebc2f4df0a438ac4c309f7498e748873246ed14e78ea4"
+  },
+  {
+    "name": "leaf-null",
+    "structure": {
+      "k": "null"
+    },
+    "canonical": "{\"k\":\"null\"}",
+    "digest": "5d1480744600a3aff4a2532f7b2485b710504387754b712f3a86bdfd85f60b76"
+  },
+  {
+    "name": "literal-string",
+    "structure": {
+      "k": "literal",
+      "value": "on"
+    },
+    "canonical": "{\"k\":\"literal\",\"value\":\"on\"}",
+    "digest": "ac4faf6a4465ca9767ddbfa371bb33524a4f86532f508f1ebf19faf02db6efdd"
+  },
+  {
+    "name": "literal-number-normalizes",
+    "structure": {
+      "k": "literal",
+      "value": 10
+    },
+    "canonical": "{\"k\":\"literal\",\"value\":10}",
+    "digest": "d8d3aea45d1c85a3d6a8697193426ea9b9c14ab053587b1ad7ed5967020a710a"
+  },
+  {
+    "name": "literal-bool",
+    "structure": {
+      "k": "literal",
+      "value": true
+    },
+    "canonical": "{\"k\":\"literal\",\"value\":true}",
+    "digest": "2c5b1bd098f472e2e3086e115baf29f8a0db965d19c60be5bd093d34d968c471"
+  },
+  {
+    "name": "literal-null",
+    "structure": {
+      "k": "literal",
+      "value": null
+    },
+    "canonical": "{\"k\":\"literal\",\"value\":null}",
+    "digest": "d64efa890fe0b80fa96df884b60e8b37869e745589dc4231df961ab4318e5fbe"
+  },
+  {
+    "name": "list-of-string",
+    "structure": {
+      "k": "list",
+      "of": {
+        "k": "string"
+      }
+    },
+    "canonical": "{\"k\":\"list\",\"of\":{\"k\":\"string\"}}",
+    "digest": "7f46cbacd9bdc7d61ee5e962bb03ad4b3617a1a33e172afd1bbeb462a78924ae"
+  },
+  {
+    "name": "struct-utf16-key-order",
+    "structure": {
+      "fields": {
+        "Z": {
+          "k": "int"
+        },
+        "a": {
+          "k": "string"
+        },
+        "é": {
+          "k": "bool"
+        }
+      },
+      "k": "struct",
+      "optional": [
+        "é"
+      ]
+    },
+    "canonical": "{\"fields\":{\"Z\":{\"k\":\"int\"},\"a\":{\"k\":\"string\"},\"é\":{\"k\":\"bool\"}},\"k\":\"struct\",\"optional\":[\"é\"]}",
+    "digest": "b7f397d6c790fb718827c75484d49781ef6bc8295cd7d8fe282ca475a164ea70"
+  },
+  {
+    "name": "union",
+    "structure": {
+      "k": "union",
+      "of": [
+        {
+          "k": "string"
+        },
+        {
+          "k": "null"
+        }
+      ]
+    },
+    "canonical": "{\"k\":\"union\",\"of\":[{\"k\":\"string\"},{\"k\":\"null\"}]}",
+    "digest": "3d3cbdd410da272e7b1bac04faa3163a8608f62878c5693aef339b23501e8d8f"
+  },
+  {
+    "name": "brand",
+    "structure": {
+      "k": "brand",
+      "name": "UserId",
+      "of": {
+        "k": "string"
+      }
+    },
+    "canonical": "{\"k\":\"brand\",\"name\":\"UserId\",\"of\":{\"k\":\"string\"}}",
+    "digest": "039ba515782810a3b8ed12ba1facef306c8d382fe2128040be91ea4185a3e9b0"
+  },
+  {
+    "name": "check-min-length",
+    "structure": {
+      "base": {
+        "k": "string"
+      },
+      "check": {
+        "args": {
+          "min": 1
+        },
+        "name": "minLength"
+      },
+      "k": "check"
+    },
+    "canonical": "{\"base\":{\"k\":\"string\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
+    "digest": "8f12d111b7e730b86408c9bdefc5ae837f5df6657f9ad63db0d9b65ca44b6e8a"
+  },
+  {
+    "name": "sensor-reading",
+    "structure": {
+      "fields": {
+        "celsius": {
+          "k": "float"
+        },
+        "count": {
+          "k": "int"
+        },
+        "id": {
+          "k": "brand",
+          "name": "SensorId",
+          "of": {
+            "k": "string"
+          }
+        },
+        "mode": {
+          "k": "union",
+          "of": [
+            {
+              "k": "literal",
+              "value": "on"
+            },
+            {
+              "k": "literal",
+              "value": "off"
+            }
+          ]
+        },
+        "note": {
+          "k": "string"
+        }
+      },
+      "k": "struct",
+      "optional": [
+        "note"
+      ]
+    },
+    "canonical": "{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"on\"},{\"k\":\"literal\",\"value\":\"off\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]}",
+    "digest": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011"
+  },
+  {
+    "name": "ref-with-check",
+    "structure": {
+      "base": {
+        "digest": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011",
+        "k": "ref"
+      },
+      "check": {
+        "args": {
+          "min": 1
+        },
+        "name": "minLength"
+      },
+      "k": "check"
+    },
+    "canonical": "{\"base\":{\"digest\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
+    "digest": "26ed25681cc6afa620830a500a379c5ecf28418fe3f2460a58fcdf1ce7a204b1"
+  },
+  {
+    "name": "string-escapes",
+    "structure": {
+      "fields": {
+        "naïve \"quoted\"\n\ttab": {
+          "k": "string"
+        }
+      },
+      "k": "struct",
+      "optional": []
+    },
+    "canonical": "{\"fields\":{\"naïve \\\"quoted\\\"\\n\\ttab\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[]}",
+    "digest": "dd90ffdcd326d4b22bf53ae11827a8ad617f96868674fa8a392b1ff9b3b39aa5"
+  }
+]

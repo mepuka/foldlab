@@ -1,0 +1,14 @@
+{
+  "name": "@foldlab/proto",
+  "private": true,
+  "type": "module",
+  "description": "Tracer bullet TS side: three-verb client, author fold, codegen, MCP, session facade.",
+  "dependencies": {
+    "effect": "4.0.0-rc.108",
+    "@nats-io/transport-node": "3.4.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "^5.9.2"
+  }
+}

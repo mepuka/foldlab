@@ -1,0 +1,29 @@
+[
+  {
+    "name": "plain",
+    "frame": {
+      "payload": {
+        "celsius": 21.5,
+        "count": 3,
+        "id": "s-1",
+        "mode": "on"
+      },
+      "type": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011"
+    },
+    "canonical": "{\"payload\":{\"celsius\":21.5,\"count\":3,\"id\":\"s-1\",\"mode\":\"on\"},\"type\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\"}"
+  },
+  {
+    "name": "unicode-and-number-normalization",
+    "frame": {
+      "payload": {
+        "celsius": 1,
+        "count": 1000000,
+        "id": "s-☃",
+        "mode": "off",
+        "note": "line\nbreak \"q\""
+      },
+      "type": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011"
+    },
+    "canonical": "{\"payload\":{\"celsius\":1,\"count\":1000000,\"id\":\"s-☃\",\"mode\":\"off\",\"note\":\"line\\nbreak \\\"q\\\"\"},\"type\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\"}"
+  }
+]

@@ -1,0 +1,71 @@
+// The TS side of the fixture wall: proto/wire/fixtures was generated
+// once by the Go side (cmd/wirefix) and frozen. Every canonical byte
+// string and digest re-derives here independently; a mismatch means
+// this port drifted — never edit the fixture.
+import { describe, expect, test } from "bun:test"
+import { canonicalize, entryDigest, foldChain, sha256Hex, GENESIS, type Json } from "../src/jcs.ts"
+
+const fixture = async (name: string): Promise<any> =>
+  (await import(`../../wire/fixtures/${name}`, { with: { type: "json" } })).default
+
+describe("type fixtures re-derive byte-identically", async () => {
+  const vectors: Array<{ name: string; structure: Json; canonical: string; digest: string }> =
+    await fixture("types.json")
+  test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
+  for (const vector of vectors) {
+    test(vector.name, () => {
+      const canonical = canonicalize(vector.structure)
+      expect(canonical).toBe(vector.canonical)
+      expect(sha256Hex(canonical)).toBe(vector.digest)
+    })
+  }
+})
+
+describe("chain fixtures re-derive", async () => {
+  const vectors: Array<{ name: string; payloads: string[]; entryDigests: string[]; head: string }> =
+    await fixture("chains.json")
+  test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
+  for (const vector of vectors) {
+    test(vector.name, () => {
+      let prev = GENESIS
+      vector.payloads.forEach((payload, seq) => {
+        const digest = entryDigest({ seq, prev, payload })
+        expect(digest).toBe(vector.entryDigests[seq]!)
+        prev = digest
+      })
+      expect(prev).toBe(vector.head)
+
+      // The same law through the read-side fold.
+      const entries = vector.payloads.map((payload, seq) => ({
+        seq,
+        prev: vector.entryDigests[seq - 1] ?? GENESIS,
+        payload,
+      }))
+      const fold = foldChain(entries)
+      expect(fold).toEqual({ ok: true, seq: vector.payloads.length - 1, head: vector.head })
+    })
+  }
+})
+
+describe("frame fixtures re-derive", async () => {
+  const vectors: Array<{ name: string; frame: Json; canonical: string }> = await fixture("frames.json")
+  test("corpus is non-empty", () => expect(vectors.length).toBeGreaterThan(0))
+  for (const vector of vectors) {
+    test(vector.name, () => {
+      expect(canonicalize(vector.frame)).toBe(vector.canonical)
+    })
+  }
+})
+
+describe("the fold refuses what it cannot verify", () => {
+  test("a tampered payload is caught by the chain fold", () => {
+    const honest = [
+      { seq: 0, prev: GENESIS, payload: "a" },
+      { seq: 1, prev: entryDigest({ seq: 0, prev: GENESIS, payload: "a" }), payload: "b" },
+    ]
+    expect(foldChain(honest).ok).toBe(true)
+    const tampered = [{ ...honest[0]!, payload: "A" }, honest[1]!]
+    const fold = foldChain(tampered)
+    expect(fold.ok).toBe(false)
+  })
+})

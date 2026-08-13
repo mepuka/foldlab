@@ -1,0 +1,28 @@
+[
+  {
+    "name": "simple",
+    "payloads": [
+      "a",
+      "b",
+      "c"
+    ],
+    "entryDigests": [
+      "1fa9d6737e72df0ed29722783b96d508bae55560695eaacd5cf4fb0d3d3c238b",
+      "c2ac792d912155f8ea3b2b3b132180eff86c1993e224ca0168e00247840a6fdc",
+      "ef9a869d8c74970786b042dbb3dd683fc33adfaf73001ed0437dfb0a35b9413d"
+    ],
+    "head": "ef9a869d8c74970786b042dbb3dd683fc33adfaf73001ed0437dfb0a35b9413d"
+  },
+  {
+    "name": "catalog-then-frame",
+    "payloads": [
+      "{\"digest\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"on\"},{\"k\":\"literal\",\"value\":\"off\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]},\"submitter\":\"wirefix\"}",
+      "{\"payload\":{\"celsius\":21.5,\"count\":3,\"id\":\"s-1\",\"mode\":\"on\"},\"type\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\"}"
+    ],
+    "entryDigests": [
+      "5a41696846ca2ddf7e3903357a52722753398c451701971f60e91830bc4f340b",
+      "0f60339d6583390cba710144b7f9bb86f32d2eb8f179c716dc38cf1205d0423d"
+    ],
+    "head": "0f60339d6583390cba710144b7f9bb86f32d2eb8f179c716dc38cf1205d0423d"
+  }
+]

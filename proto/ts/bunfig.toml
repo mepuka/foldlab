@@ -1,0 +1,4 @@
+# proto/ts is its own island: test discovery stays here, independent of
+# the workspace root's bunfig (which scopes to packages/).
+[test]
+root = "."
