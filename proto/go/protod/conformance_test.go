@@ -638,6 +638,43 @@ func TestConciergePartialIsTheEntireState(t *testing.T) {
 	}
 }
 
+func TestUnknownRefRefusalTeachesOneStepRepair(t *testing.T) {
+	h := acquire(t)
+	created := h.create(map[string]any{"k": "string"})
+	if created["ok"] != true {
+		t.Fatalf("seed catalog type: %v", created)
+	}
+	knownDigest := created["digest"].(string)
+	badDigest := strings.Repeat("9", 64)
+
+	refusal := h.refusal(h.request("flb.req.type.fill", map[string]any{
+		"partial": map[string]any{"k": "hole"},
+		"path":    []any{},
+		"subtree": map[string]any{"k": "ref", "digest": badDigest},
+	}), "unknown-ref")
+	example := refusal["example"].(map[string]any)
+	if example["digest"] != knownDigest {
+		t.Fatalf("refusal example is not catalog-resolvable: %v", example)
+	}
+
+	next := refusal["next"].([]any)
+	hint := next[0].(map[string]any)
+	if hint["subject"] != "flb.req.type.fill" {
+		t.Fatalf("first repair hint is not an executable fill: %v", hint)
+	}
+	body, ok := hint["body"].(map[string]any)
+	if !ok {
+		t.Fatalf("first repair hint has no filled body: %v", hint)
+	}
+	subtree, ok := body["subtree"].(map[string]any)
+	if !ok || subtree["digest"] != knownDigest {
+		t.Fatalf("repair echoes the unresolved digest instead of selecting catalog digest %s: %v", knownDigest, hint)
+	}
+	if repaired := h.request(hint["subject"].(string), body); repaired["ok"] != true {
+		t.Fatalf("advertised one-step repair refused: %v", repaired)
+	}
+}
+
 // The catalog index survives a daemon restart over the same store: the
 // resolve index is rebuilt by verify-on-read, not held in memory only.
 func TestCatalogRebuildsFromStore(t *testing.T) {

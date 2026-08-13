@@ -143,6 +143,13 @@ same shape with `local:true` for its own conditions (`unreachable`,
 | `bad-cursor` | read cursor does not verify against the journal (W6) |
 | `unknown-request` | request subject has no handler (W9) |
 
+For a concierge `unknown-ref`, a populated catalog makes the refusal's
+first repair executable: `example` is a resolvable digest and `next[0]`
+is a `type.fill` body whose offending ref position has been re-holed and
+filled with that example. Candidates use the frontier's deterministic,
+bounded digest order. With no catalog candidate, the refusal retains the
+create/retry/read teaching path because no honest replacement exists yet.
+
 ## flb.type.v0 specifics pinned by this implementation
 
 - Nodes are strict: unknown `"k"` refuses; unknown keys refuse.
