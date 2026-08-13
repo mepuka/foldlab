@@ -1,0 +1,41 @@
+### BREAKER probe: B3-gate-datacap3
+### module: Catalog.tla
+### started: 2026-08-13T10:25:35Z
+### jar sha256: ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f
+### command: mise x java@21 -- java -Xmx12g -XX:+UseParallelGC -DTLA-Library=probes -cp tools/tla2tools.jar tlc2.TLC -workers 4 -fp 1 -deadlock -depth 22 -config probes/B3-gate-datacap3.cfg Catalog.tla
+###
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed -4942564518512466613 with 4 workers on 8 cores with 10923MB heap and 64MB offheap memory [pid: 51532] (Mac OS X 26.2 aarch64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/Catalog.tla
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/Integers.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/Sequences.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/_TLCTrace.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/Naturals.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/TLC.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/TLCExt.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-18242106212692090399/FiniteSets.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Catalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Catalog
+Starting... (2026-08-13 05:25:38)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-13 05:25:39.
+Progress(7) at 2026-08-13 05:25:42: 13,201 states generated (13,201 s/min), 3,607 distinct states found (3,607 ds/min), 2,475 states left on queue.
+Progress(12) at 2026-08-13 05:26:42: 1,523,093 states generated (1,509,892 s/min), 322,925 distinct states found (319,318 ds/min), 188,291 states left on queue.
+Progress(13) at 2026-08-13 05:27:42: 3,033,058 states generated (1,509,965 s/min), 622,025 distinct states found (299,100 ds/min), 351,909 states left on queue.
+Progress(13) at 2026-08-13 05:28:42: 4,584,224 states generated (1,551,166 s/min), 928,836 distinct states found (306,811 ds/min), 516,024 states left on queue.
+Progress(14) at 2026-08-13 05:29:42: 6,517,981 states generated (1,933,757 s/min), 1,296,976 distinct states found (368,140 ds/min), 705,322 states left on queue.
+Progress(14) at 2026-08-13 05:30:42: 8,324,694 states generated (1,806,713 s/min), 1,636,031 distinct states found (339,055 ds/min), 872,648 states left on queue.
+Progress(14) at 2026-08-13 05:31:42: 10,059,070 states generated (1,734,376 s/min), 1,968,124 distinct states found (332,093 ds/min), 1,044,443 states left on queue.
+Progress(15) at 2026-08-13 05:32:42: 11,862,461 states generated (1,803,391 s/min), 2,299,311 distinct states found (331,187 ds/min), 1,202,042 states left on queue.
+Progress(15) at 2026-08-13 05:33:42: 13,764,114 states generated (1,901,653 s/min), 2,651,837 distinct states found (352,526 ds/min), 1,377,256 states left on queue.
+Progress(15) at 2026-08-13 05:34:42: 15,544,649 states generated (1,780,535 s/min), 2,973,391 distinct states found (321,554 ds/min), 1,522,367 states left on queue.
+Progress(15) at 2026-08-13 05:35:42: 17,113,339 states generated (1,568,690 s/min), 3,261,868 distinct states found (288,477 ds/min), 1,660,386 states left on queue.

@@ -332,26 +332,58 @@ that no interaction between conjuncts lets such a state slip through.
 Logs: `_runlogs/Y1-family-a.txt`, `Y2-family-b.txt`,
 `Y3-family-control.txt`.
 
-### `Y4` — independent TLC replication of consecution + action safety
+### `Y4` / `Y5` — independent TLC replication of consecution + action safety
 
-IN FLIGHT. `INIT` = every arbitrary **typed** state satisfying `IndInv`
-at 2 daemons / 2 values / 1 creator, catalogs up to length 2, mirrors up
-to length 1, data journals up to length 1; facts range over the full
+Both **CLEAN — no counterexample to induction.** `INIT` = every
+arbitrary **typed** state satisfying `IndInv`; facts range over the full
 `Fact` record set, so `id` is **not** forced to equal `Digest(val)` and
 `Convergence`'s identity clause is exercised by the filter rather than
 assumed by the generator. One step, then `IndInv` (consecution) plus
-both action obligations.
+both action obligations, with no stuttering exemption.
+
+| Probe | Creators | IndInv-satisfying init states | Generated | Distinct | Verdict |
+|---|---:|---:|---:|---:|---|
+| `Y4-consecution` | 1 | 5,029 | 26,353 | 12,638 | **clean** |
+| `Y5-consecution-2creators` | **2** | **39,897** | 265,117 | 101,734 | **clean** (14m36s) |
+
+`Y5` is the decisive one: at 2 creators the freshness clause is a
+non-trivial `\A` over creators, so a step by creator 1 must preserve
+creator 2's remembered absence-check — the exact shape that refuted
+PROVER's candidate A. 39,897 hand-typed `IndInv` states, one step each,
+no CTI.
 
 This re-derives Apalache obligations 2 and 4 by explicit enumeration
-under a different tool at smaller, fully stated bounds. Agreement is
-corroboration; disagreement would be a finding against whichever tool is
-wrong.
+under a **different tool**. Stated honestly: at **strictly smaller
+bounds** than Apalache's (2 values not 3, mirrors capped at length 1 vs
+`Gen(4)`), so it is corroboration, not replication. Disagreement would
+have been a finding against whichever tool was wrong; there was none.
 
 ---
 
-## NOT YET ATTEMPTED
+## BOUND PROBES BEYOND THE GATE (depth-bounded prefixes, never closure)
 
-- Bound probes B1-B4 (one dimension beyond the **gate**).
+Per coordinator guidance, these were run as time-boxed BFS prefixes, not
+chased to closure. A clean prefix says only "no violation in the states
+reached at this depth in this wall-clock".
+
+| Probe | Bounds (D/C/V/cap) | Beyond gate | Prefix reached | Verdict |
+|---|---|---|---|---|
+| `B1-gate-daemons3` | **3**/2/3/2 | +1 daemon (mirror mesh 2->6) | depth 11, 595,617 distinct | clean prefix |
+| `B2-gate-creators3` | 2/**3**/3/2 | +1 CAS racer | depth 11, 840,151 distinct | clean prefix |
+| `B3-gate-datacap3` | 2/2/3/**3** | deeper data journals | depth 15, 3,261,868 distinct | clean prefix |
+| `B4-gate-vals4` | 2/2/**4**/2 | exhausts the value dim (F-01: 4 is the max expressible) | depth 14, 3,634,647 distinct | clean prefix |
+
+None reaches closure in budget, and none is presented as more than a
+prefix. `B3` is the one the R3 induction claims to cover unboundedly (it
+ran `DataCap = 0`); a clean deep prefix here is consistent with that
+claim, not a substitute for it.
+
+## NOT ATTEMPTED (out of budget / scope)
+
+- B1-B4 to closure — deliberately not chased.
 - Re-running the R4 Go branch-coverage assertion (needs
-  `mise x go@1.26.5`; not blocking, and the read-only scope note in
+  `mise x go@1.26.5`; not blocking; the read-only scope note in
   `FINDING-BRIDGE-001.md` stands).
+- The gate-config coverage run was started but **killed before closure**
+  to free cores for `Y5`; the cap2 coverage already delivered the
+  vacuity verdict, so no coverage conclusion depended on it.

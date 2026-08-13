@@ -1,0 +1,33 @@
+### BREAKER probe: B1-gate-daemons3
+### module: Catalog.tla
+### started: 2026-08-13T10:37:48Z
+### jar sha256: ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f
+### command: mise x java@21 -- java -Xmx12g -XX:+UseParallelGC -DTLA-Library=probes -cp tools/tla2tools.jar tlc2.TLC -workers 4 -fp 1 -deadlock  -config probes/B1-gate-daemons3.cfg Catalog.tla
+###
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed 8885404028550824947 with 4 workers on 8 cores with 10923MB heap and 64MB offheap memory [pid: 57668] (Mac OS X 26.2 aarch64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/Catalog.tla
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/Integers.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/Sequences.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/_TLCTrace.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/Naturals.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/TLC.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/TLCExt.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file /private/var/folders/_2/d22zd5lj2_v9xrps05xl2sr80000gn/T/tlc-1589006559612862368/FiniteSets.tla (jar:file:/Users/pooks/Dev/foldlab/.claude/worktrees/agent-ad1028e2ec230ef75/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Catalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Catalog
+Starting... (2026-08-13 05:37:48)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-13 05:37:49.
+Progress(9) at 2026-08-13 05:37:52: 237,787 states generated (237,787 s/min), 52,452 distinct states found (52,452 ds/min), 38,294 states left on queue.
+Progress(11) at 2026-08-13 05:38:52: 1,872,010 states generated (1,634,223 s/min), 370,068 distinct states found (317,616 ds/min), 258,794 states left on queue.
+Progress(11) at 2026-08-13 05:39:52: 3,093,761 states generated (1,221,751 s/min), 595,617 distinct states found (225,549 ds/min), 411,941 states left on queue.
