@@ -100,3 +100,17 @@ contract owing its conformance law. Scored like everything else: if
 the spec turns out to leave latitude anywhere we assumed totality,
 that is a finding against this candidate and the wall stays
 load-bearing.
+
+## Resolution (2026-08-13)
+
+Scored — full record:
+[docs/research/2026-08-13-js-runtime-scorecard.md](../../research/2026-08-13-js-runtime-scorecard.md).
+Nine of twelve confirmed/partial. Through-line: strong form REFUTED
+(ECMA-262 Note 2 is non-normative; RoundMVResult is
+implementation-defined — the falsifiability clause fired as designed);
+weak form ratified — spec-total where total, cited-latitude walls
+where not, engine walls load-bearing BECAUSE the note is optional.
+Execution: scratch/codex/21 (jcs Node fix, -0 drift alignment,
+node:zlib runnability, three-way lane, pins, grep gate, ledger
+scope statements). Deferred with options recorded: NATS transport
+backpressure posture; Windows CI runner.
