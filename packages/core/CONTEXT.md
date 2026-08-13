@@ -25,3 +25,17 @@ errors. The algebra's residual — a genuine declaration re-hosted onto foreign
 behavior — also reaches the digest-keyed cache and remains a pinned known gap
 outside this claim, which does not assert a package-wide error-channel
 migration.
+
+**Error discipline** (law):
+Three dialects, on purpose. Pure synchronous modules twinned with Go —
+`jcs`, `algebra`, `foldCache`, `foldLaws` — return ok-unions
+(`{ ok: false, refusal }`), because that path mints digests and must run
+as plain functions. Effect-shaped surfaces carry `Data.TaggedError`
+failures in the typed error channel (`stream.ts`: `MergeGap`,
+`MalformedPayload`, `CompactionBoundary`, and the rest). Internal
+canonical-encoder range violations throw `RangeError` — they are
+programmer errors about the encoding domain, not refusals a caller
+repairs. The split is deliberate: Effect stays OUTSIDE the
+digest-minting path that the cross-language wall proves byte-identical
+to Go, since unification would put `Effect.runSync` inside it.
+Unifying the three is a stated non-goal, not an unfinished migration.

@@ -10,7 +10,9 @@ Compatibility files such as `CLAUDE.md` only point here.
 - `README.md` — repository layout and runnable claims
 - `NEXT.md` — current design state and ratified direction
 - `docs/adr/` — architectural decisions
-- `docs/gauntlet/` — frozen specs, laws, and verification results
+- `docs/gauntlet/` — frozen specs, laws, and verification results.
+  Disambiguation: inside that directory "climb" names an optimization
+  run by a climber agent, not a rung of the verification ladder.
 
 ## Scoped contracts
 

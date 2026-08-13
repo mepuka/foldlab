@@ -484,8 +484,9 @@ cached-source-plus-`hom.map` path has no named combinator or consumer
 is recomputable*, never that it *means what you meant* (VERIFICATION.md;
 language-ontology frontier). The field's word is "grounded"; ours is
 "recomputable" — strictly stronger *and strictly narrower*. Do not let
-"verifiable" be heard as "correct." For the grammar foundry, grammar-constrained
-decoding distorts the model's conditional distribution (GAD, NeurIPS 2024):
+"verifiable" be heard as "correct." For the grammar generator (ticket 015, "the
+grammar foundry"), grammar-constrained decoding distorts the model's
+conditional distribution (GAD, NeurIPS 2024):
 forced validity is syntactic, never semantic; and positive-example-only authoring
 is unlearnable (Gold 1967), so the C1–C5 refusal round-trip is load-bearing, not
 UX.

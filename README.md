@@ -17,8 +17,11 @@ thereafter.
 The name is literal: everything here is a left fold — one accumulator
 carried across a sequence, one element at a time. A stream is folded
 twice over: a hash fold, whose result (the chain head) is the
-history's identity, and a state fold, whose result is the history's
-meaning. Two histories can agree in state while differing in head;
+history's identity — a running Merkle-style hash chain, not a reducer
+anyone writes — and a state fold, whose result is the history's
+meaning, which is an ordinary `Stream.runFold` over the events with
+your own reducer. The repo names them the identity fold and the
+meaning fold. Two histories can agree in state while differing in head;
 the chain remembers what the fold forgives, and that gap is what makes
 provenance a computable fact instead of an attestation.
 
@@ -39,11 +42,12 @@ absence. Evidence is anything recomputable from bytes — facts, folds,
 catalogs — and is never owned: it federates freely because equal bytes
 give equal digests anywhere. Decisions are anything two parties could
 legitimately dispute — named bindings, fork adoptions, committed
-orderings — and each one single-homes behind the effector, a
-commitment register per unit of work: `Register ::= Absent |
-Claim(fence, owner, lease) | Done(fence, result)`. Absence is the one
-uniform failure: a digest not yet present is a typed refusal, and
-senders own retry.
+orderings — and each one single-homes behind the effector: it has
+exactly one writer, a commitment register per unit of work:
+`Register ::= Absent | Claim(fence, owner, lease) | Done(fence, result)`.
+Absence is the one uniform failure: a digest not yet present is a typed
+refusal — a tagged value in the error channel, not an exception and not
+a null — and senders own retry.
 
 The register's safety (no commit below the highest fence; exactly one
 terminal outcome) is a machine-checked theorem — Apalache inductive
@@ -110,8 +114,9 @@ reply carries facts the agent, or anyone auditing it, can re-derive.
   — which contract sits on which proof rung, and what each rung's
   gate requires.
 - [docs/adr/](docs/adr/) — the committed decisions;
-  [docs/gauntlet/](docs/gauntlet/) — the crash-storm and fleet runs
-  with their frozen verifiers.
+  [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
+  campaigns (crash storms, fleet runs), each with a frozen spec and a
+  frozen verifier that checks the exported run bundle by recomputation.
 - [go/effector/](go/effector/) — the proven register, as running Go.
 
 ## Long differential fuzz runs

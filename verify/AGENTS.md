@@ -44,5 +44,6 @@ rung definitions. Scoped laws:
   caps, R3 inductive invariant, four faithless controls. R4 is ticket
   010.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence
-  out of untracked heritage), `journal/` (ticket 012, composed into the
-  catalog model as a refinement).
+  out of `.reference/`, an untracked predecessor repository absent from
+  this checkout), `journal/` (ticket 012, composed into the catalog
+  model as a refinement).

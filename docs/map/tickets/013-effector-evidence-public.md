@@ -10,9 +10,9 @@ blocked-by: []
 ## Question
 
 The repository's strongest claim — the effector theorem — currently
-points at proof artifacts in untracked heritage material
-(`.reference/playground-mech/specs/`). A public claim requires public
-evidence. Two parts:
+points at proof artifacts in `.reference/playground-mech/specs/` —
+`.reference/` being an untracked predecessor repository, absent from
+this checkout. A public claim requires public evidence. Two parts:
 
 1. **Port the evidence.** Bring Effector.tla, EffectorInd.tla, the
    TLC configs, the refuted two-key spec WITH its counterexample, and
