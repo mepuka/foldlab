@@ -103,6 +103,34 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       "type_unfill",
     ])
 
+    const annotationsOf = (name: string) => {
+      const annotations = tools.find((tool) => tool.name === name)?.annotations
+      return {
+        readOnlyHint: annotations?.readOnlyHint,
+        destructiveHint: annotations?.destructiveHint,
+        idempotentHint: annotations?.idempotentHint,
+      }
+    }
+    for (const name of ["contract_describe", "journal_read"]) {
+      expect(annotationsOf(name)).toEqual({
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: false,
+      })
+    }
+    for (const name of ["type_create", "type_fill", "type_unfill"]) {
+      expect(annotationsOf(name)).toEqual({
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+      })
+    }
+    expect(annotationsOf("publish")).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    })
+
     // The wall: the served schemas equal what the contract derives —
     // the MCP surface cannot drift from the daemon's self-description.
     const client = (await ProtoClient.connect(daemon.url)) as any
@@ -116,7 +144,31 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       const served = tools.find((t) => t.name === tool.name)
       expect(served).toBeDefined()
       expect(served.inputSchema).toEqual(tool.inputSchema)
+      expect(annotationsOf(tool.name)).toEqual(tool.annotations)
     }
+
+    // Optimistic annotations are closed allow-lists. A future request
+    // remains a destructive, non-idempotent mutation until its law is
+    // explicitly classified here.
+    const template = described.fact.contract.requests[0]
+    const futureDerived = toolsFromContract({
+      ...described.fact.contract,
+      requests: [
+        ...described.fact.contract.requests,
+        {
+          ...template,
+          name: "future_mutation",
+          subject: "flb.req.future.mutation",
+        },
+      ],
+    })
+    expect(futureDerived.ok).toBe(true)
+    if (!futureDerived.ok) throw new Error("future derivation refused")
+    expect(futureDerived.tools.find((tool) => tool.name === "future_mutation")?.annotations).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    })
     await client.fact.close()
 
     // A typo'd create through the MCP seam: the refusal arrives as DATA

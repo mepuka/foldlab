@@ -931,6 +931,28 @@ mutate state instead of replies (already covered; misses the
 reply-only class the audit proved survivable). Why: a comparator that
 defaults a missing field to the expected value is a prover that
 cannot fail on that field. **Load-bearing? yes.**
+
+## Issue 40 — contract-derived MCP tool annotations (2026-08-13)
+
+### D66. Optimistic MCP annotations are a closed law-backed allow-list
+
+Decided: `contract_describe` and `journal_read` advertise read-only and
+non-destructive; `type_create` (W3) and `type_fill`/`type_unfill` (C1)
+advertise non-destructive and idempotent because repeated calls converge
+without an additional state effect. `publish`, and any future request name
+not explicitly licensed by a module law, advertise the conservative mutation
+class: destructive and non-idempotent. Read-only tools do not also claim
+idempotence: the MCP hint is defined for non-read-only tools, and a journal
+read's result can truthfully change as appends arrive. `openWorldHint` remains
+the pinned framework default because issue 40 did not ratify that independent
+dimension. Alternatives: infer optimism from request versus publish alone
+(would misclassify future mutations); mirror Effect's framework defaults
+(reported every tool as destructive); mark every pure handler read-only
+(confuses absence of local state with absence of daemon mutation). Why: only
+semantic laws license optimistic safety hints, while the closed fallback keeps
+new contract growth safe until it is classified. **Load-bearing? yes** — MCP
+clients use these hints when choosing and approving tool calls.
+
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
 ### D??. The tracer-bullet home is `proto/ts/src/cluster/`

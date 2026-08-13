@@ -20,6 +20,39 @@ export interface DerivedTool {
   readonly subject: string
   readonly kind: "request" | "publish"
   readonly inputSchema: Record<string, Json>
+  readonly annotations: McpToolAnnotations
+}
+
+export interface McpToolAnnotations {
+  readonly readOnlyHint: boolean
+  readonly destructiveHint: boolean
+  readonly idempotentHint: boolean
+}
+
+const READ_ONLY: McpToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: false,
+}
+
+const CONSERVATIVE_MUTATION: McpToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: false,
+}
+
+const CONVERGENT_MUTATION: McpToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+}
+
+const annotationsForRequest = (name: string): McpToolAnnotations => {
+  if (name === "contract_describe" || name === "journal_read") return READ_ONLY
+  if (name === "type_create" || name === "type_fill" || name === "type_unfill") {
+    return CONVERGENT_MUTATION
+  }
+  return CONSERVATIVE_MUTATION
 }
 
 /** Derive the tool list from a contract reply. Failures are refusal
@@ -38,6 +71,7 @@ export const toolsFromContract = (
       subject: request.subject,
       kind: "request",
       inputSchema: input.value,
+      annotations: annotationsForRequest(request.name),
     })
   }
   const frame = toJsonSchema(contract.ingress.frame as Json)
@@ -53,6 +87,7 @@ export const toolsFromContract = (
       required: ["journal", "frame"],
       additionalProperties: false,
     },
+    annotations: CONSERVATIVE_MUTATION,
   })
   return { ok: true, tools }
 }
@@ -69,7 +104,10 @@ export const mcpLayer = (
       description: tool.description,
       parameters: tool.inputSchema as any,
       success: Schema.Unknown,
-    }),
+    })
+      .annotate(Tool.Readonly, tool.annotations.readOnlyHint)
+      .annotate(Tool.Destructive, tool.annotations.destructiveHint)
+      .annotate(Tool.Idempotent, tool.annotations.idempotentHint),
   )
   const toolkit = Toolkit.make(...tools)
   const handlers: Record<string, (payload: unknown) => Effect.Effect<unknown>> = {}
