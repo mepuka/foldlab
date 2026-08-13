@@ -74,6 +74,54 @@ wire map, controls first. The inductive proof above the bounded check
 deliberately HELD until those verdicts land; the ladder and its honest
 status live in [VERIFICATION.md](VERIFICATION.md).
 
+## What does this have to do with Effect?
+
+Everything here is written against [Effect](https://effect.website),
+and not for convenience. Effect is the most widely learned projection
+of the discipline this repo is built on: **make the computation a
+value.** An `Effect<A, E, R>` is not a running computation — it is a
+description of one, with its failure modes (`E`) and its requirements
+(`R`) carried in the type. Errors are data — the typed refusal,
+before we digest it. A `Layer` is a description of how a system is
+assembled. A `Schema` is a description of a data shape, interpretable
+into codecs, generators, and documentation. Every one of these is the
+same move: reify the thing, so it composes by algebra instead of by
+side effect. More and more developers are learning exactly this way
+of thinking, in TypeScript, where they already work.
+
+foldlab takes the same move one step further: **give the descriptions
+identity.** Canonical bytes, then a digest — so a fold, a grammar, a
+topology, or a refusal is not just a value you can compose but a
+value two machines, two languages, or two strangers can name, cache,
+compare, and verify. Effect made computations values; foldlab makes
+the values addressable. That is the entire relationship, and it is
+why every house concept has an exact Effect-vocabulary name: the
+meaning fold is `Stream.runFold`; the certifier is a smart
+constructor at the process boundary; a declared algebra is Effect
+v4's own `Reducer` with a content address; the wall is a differential
+test that two implementations of one reducer agree byte-for-byte.
+
+And structured concurrency — the part of Effect most developers
+learn first — is closer to a Merkle tree than it looks. Structured
+concurrency organizes running work into a tree: every fiber has a
+parent, children cannot outlive their scope, and the parent's outcome
+is computed from its children's outcomes. That is a fold over a tree,
+evaluated bottom-up. A Merkle tree is the **same fold with a
+different algebra**: a parent's digest is computed from its
+children's digests. One shape, two projections — join the children's
+*results* and you have the runtime tree (structured concurrency);
+hash the children's *identities* and you have the provenance tree
+(Merkle). Both enforce the same law, and it is the law that matters:
+**no orphans.** A fiber cannot leak past its scope for the same
+reason a reference cannot dangle in a content-addressed DAG — the
+whole is accountable for its parts. That correspondence is why
+deterministic workflow replay works at all: a structured execution is
+a tree, a tree folds to a digest, and a digest can be journaled,
+compared, and replayed. A live fiber tree is codata — more can always
+happen; closing the scope is the fold arriving at its root, and
+commitment through the register (above) is what turns that closed
+tree into data: one value, one history.
+
 ## The MCP surface
 
 MCP (Model Context Protocol) is the open protocol that lets an LLM
