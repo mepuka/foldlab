@@ -4,10 +4,11 @@
  * once from the Go side).
  *
  * The one idea underneath the whole lane: an event stream is a left fold
- * twice over. Folded with a hash you get IDENTITY (the chain head commits to
- * the exact history); folded with a state function you get MEANING (what the
- * history did). The two folds disagree on purpose — the chain remembers what
- * the fold forgives — and every law in this lane is about which of the two a
+ * twice over. Folded with a hash you get IDENTITY, a running Merkle-style hash
+ * chain (the chain head commits to the exact history); folded with a state
+ * function you get MEANING (what the history did). The two folds disagree on
+ * purpose — the chain remembers what the fold forgives — and every law in this
+ * lane is about which of the two a
  * given operation must preserve:
  *
  *   fingerprint  identity of canonical bytes; heads extend in O(1)
