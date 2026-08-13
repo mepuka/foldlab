@@ -613,3 +613,70 @@ unchanged cross-target property passes; permanent probes pin the exact D48
 surrogate pair from `fixtures/golden-conformance.json`'s string-escape
 corpus. No fixture changed. **Load-bearing? yes** — a new target that walks
 fields elsewhere can reintroduce construction history into evidence.
+## Task 09 — JCS differential fuzz lane (2026-08-13)
+
+(Entries renumbered D50–D54 at merge: the task-09 branch diverged
+early and reused D44–D48, which the retrofit lane had already
+assigned. Content unchanged.)
+
+### D50. Three minimized findings were reported before repair
+The initial probes stopped on: `-0` (both implementations refused, while RFC
+8785 Appendix B says `0`); `"\ud800"` (core TS refused while Go repaired it to
+U+FFFD and accepted); and `{"":0,"":1}` (both parsers accepted the duplicate
+name and kept the last value). These were reported as findings before any
+canonicalizer change. The resumed task deliberately repairs them: negative
+zero serializes to `0`, lone surrogates refuse, and duplicate names refuse
+after escape decoding. Alternative: preserve the narrower pre-Task-09 domain;
+rejected because it contradicts the RFC vector and leaves ambiguous inputs in
+the identity preimage. **Load-bearing? yes** — all three change which byte
+streams may name values.
+
+### D51. Constrained decode is a public seam with one shared finite bound
+Decided: both decoders require valid UTF-8, valid Unicode scalar strings,
+unique object names after unescaping, finite IEEE-754 binary64 numbers,
+exactly one JSON value, and at most 256 nested arrays/objects. TypeScript uses
+a small recursive parser so duplicate names cannot disappear through
+`JSON.parse`; Go combines a token walk (for duplicate detection) with raw
+string-escape validation before `encoding/json` can repair invalid Unicode.
+Alternative: scan only for duplicate-looking source text around the stock
+parsers; rejected because `"a"` and `"\u0061"` are the same name and string
+syntax is context-sensitive. The shared depth limit keeps adversarial input
+from becoming an unbounded call-stack claim. **Load-bearing? yes** — decode
+acceptance is part of canonical identity.
+
+### D52. Differential probes are persistent and bidirectional
+Decided: Bun's fast-check lane holds one `go run ./cmd/jcsprobe` process, and
+Go's deterministic/native-fuzz lanes hold one Bun `jcs-probe.ts` process.
+Every generated candidate and every fast-check shrink therefore executes both
+real implementations; neither side compares against a port of the other.
+Replies carry only acceptance plus canonical bytes, so error-message wording
+does not become wire law. Alternatives: spawn once per candidate (too slow to
+shrink usefully); precompute expected output (not differential); share one
+implementation (would erase the wall). **Load-bearing? no** — process and
+protocol organization can change while the byte comparison remains.
+
+### D53. Bounded seeds and corpus are explicit
+The normal Bun gate runs 160 generated JSON values at seed `0x09c50001` and
+160 arbitrary byte streams at `0x09c50002`, with fast-check 4.9.0 shrinking
+enabled (`endOnFailure: false`). The Go gate runs 160 deterministic cases from
+PCG seeds `0x09c50003`/`0x09c50004`; its native fuzz target always replays 26
+sharp corpus entries. The corpus covers ±(2^53) neighbors, `-0`, 1e21 and
+1e-7/1e-6 boundaries, long mantissas, control characters, surrogate pairs,
+lone escapes, duplicate/escape-equivalent keys, invalid UTF-8, trailing
+values, and depths 128/257. RFC 8785 Appendix B's 26 published bit patterns
+live separately in `fixtures/jcs-rfc8785.json` as the independent oracle.
+Alternative: one undifferentiated random-byte generator; rejected because it
+mostly generates trivial refusals and does not guarantee the known sharp
+classes. **Load-bearing? no** — corpus growth strengthens the claim without
+moving runtime identity.
+
+### D54. Long fuzzing changes budget, not semantics
+Decided: `FOLDLAB_JCS_FUZZ_RUNS` raises the Bun run count while retaining the
+recorded seeds; Go uses its native `-fuzz`/`-fuzztime` controls and automatic
+corpus minimization. Both commands are in the root README. A mismatch stops
+immediately: fast-check reports minimized bytes, seed, path, and shrink count;
+Go records its minimized fuzz input and the failure prints hex and base64.
+Neither harness rewrites fixtures or patches implementations. Alternative:
+an always-on unbounded CI fuzz job; rejected because the requested normal gate
+is deterministic and bounded. **Load-bearing? no** — execution budget is an
+operational choice.

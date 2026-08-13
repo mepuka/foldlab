@@ -4,6 +4,7 @@
  */
 
 import { createHash } from "node:crypto"
+import { encodeJsonValue, type CanonicalEncoding as JcsCanonicalEncoding } from "./jcs.ts"
 import type { StreamEvent } from "./stream.ts"
 
 export type FoldState =
@@ -135,90 +136,14 @@ export type ProductState<Ms extends ReadonlyArray<Algebra<FoldState>>> = {
   readonly [K in keyof Ms]: AlgebraState<Ms[K]>
 }
 
-export type CanonicalEncoding =
-  | { readonly ok: true; readonly bytes: string }
-  | {
-    readonly ok: false
-    readonly refusal: {
-      readonly _tag: "NonCanonicalValue"
-      readonly path: string
-      readonly reason: string
-    }
-  }
+export type CanonicalEncoding = JcsCanonicalEncoding
 
 const byCodeUnit = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0
 
-const hasUnpairedSurrogate = (value: string): boolean => {
-  for (let index = 0; index < value.length; index++) {
-    const unit = value.charCodeAt(index)
-    if (unit >= 0xd800 && unit <= 0xdbff) {
-      index++
-      const next = value.charCodeAt(index)
-      if (!(next >= 0xdc00 && next <= 0xdfff)) return true
-    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
-      return true
-    }
-  }
-  return false
-}
-
-const refuseEncoding = (path: string, reason: string): CanonicalEncoding => ({
-  ok: false,
-  refusal: { _tag: "NonCanonicalValue", path, reason },
-})
-
-const encodeValue = (
-  value: FoldState,
-  path: string,
-  ancestors: Set<object>,
-): CanonicalEncoding => {
-  if (value === null || typeof value === "boolean") {
-    return { ok: true, bytes: JSON.stringify(value) }
-  }
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return refuseEncoding(path, "number is not finite")
-    if (Object.is(value, -0)) return refuseEncoding(path, "negative zero is outside the canonical domain")
-    return { ok: true, bytes: JSON.stringify(value) }
-  }
-  if (typeof value === "string") {
-    if (hasUnpairedSurrogate(value)) return refuseEncoding(path, "string is not valid Unicode")
-    return { ok: true, bytes: JSON.stringify(value) }
-  }
-  if (Array.isArray(value)) {
-    if (ancestors.has(value)) return refuseEncoding(path, "cyclic values are outside the canonical domain")
-    ancestors.add(value)
-    const parts: Array<string> = []
-    for (let index = 0; index < value.length; index++) {
-      const member = value[index]
-      if (member === undefined) return refuseEncoding(`${path}/${index}`, "undefined is outside the canonical domain")
-      const encoded = encodeValue(member, `${path}/${index}`, ancestors)
-      if (!encoded.ok) return encoded
-      parts.push(encoded.bytes)
-    }
-    ancestors.delete(value)
-    return { ok: true, bytes: `[${parts.join(",")}]` }
-  }
-  const record = value as { readonly [key: string]: FoldState }
-  if (ancestors.has(record)) return refuseEncoding(path, "cyclic values are outside the canonical domain")
-  ancestors.add(record)
-  const keys = Object.keys(record).sort(byCodeUnit)
-  const members: Array<string> = []
-  for (const key of keys) {
-    if (hasUnpairedSurrogate(key)) return refuseEncoding(`${path}/${key}`, "member name is not valid Unicode")
-    const member = record[key]
-    if (member === undefined) return refuseEncoding(`${path}/${key}`, "undefined is outside the canonical domain")
-    const encoded = encodeValue(member, `${path}/${key}`, ancestors)
-    if (!encoded.ok) return encoded
-    members.push(`${JSON.stringify(key)}:${encoded.bytes}`)
-  }
-  ancestors.delete(record)
-  return { ok: true, bytes: `{${members.join(",")}}` }
-}
-
 /** RFC 8785 uniqueness licenses canonical bytes as the equality witness for fold states. */
 export const encodeFoldState = (value: FoldState): CanonicalEncoding =>
-  encodeValue(value, "$", new Set())
+  encodeJsonValue(value)
 
 const declaration = <S extends AlgebraSpec | StepSpec | HomSpec>(
   spec: S,

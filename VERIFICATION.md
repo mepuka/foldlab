@@ -86,6 +86,33 @@ frozen fixture ([proto/wire/fixtures/](proto/wire/fixtures/)).
 Byte-coarse identity is a stated limitation; the owned encoding with
 ratified semantic laws is ticket 004.
 
+## RFC 8785 canonical JSON — R1 differential
+
+Claim: `packages/core` and `go/canonical` either refuse the same input byte
+stream or emit byte-identical RFC 8785 output. Their constrained decoders
+accept exactly one valid UTF-8/I-JSON value, reject duplicate member names
+after unescaping, reject lone surrogates and non-finite binary64 values, and
+share a 256-container nesting bound.
+
+- Independent oracle: all 26 IEEE-754 rows from RFC 8785 Appendix B are
+  committed with provenance in
+  [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json) and checked by both
+  implementations.
+- Normal gates: Bun fast-check runs 160 generated values and 160 arbitrary
+  byte streams at recorded seeds, while a persistent Go probe evaluates every
+  candidate and every shrink. Go runs 160 deterministic PCG cases, the shared
+  sharp corpus, and every native-fuzz seed against a persistent Bun probe
+  ([packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts),
+  [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go)).
+- Corpus domain: ±(2^53) neighbors, negative zero, 1e21 and small-exponent
+  boundaries, long mantissas, control characters, surrogate pairs and lone
+  escapes, duplicate keys, invalid UTF-8, trailing values, and depths on both
+  sides of the shared limit. A green bounded run certifies this corpus and its
+  generated sample, not all byte streams.
+- Long local variants are documented in [README.md](README.md). Native Go
+  fuzz failures enter Go's minimized corpus; fast-check failures report the
+  minimized bytes, seed, replay path, and shrink count before stopping.
+
 ## Tracer conformance — R0/R1, single daemon
 
 The daemon's laws (W1–W10) are each witnessed by black-box tests over
@@ -98,9 +125,9 @@ checks identity resolution only — the contract says so).
 ## Standing assumptions
 
 1. SHA-256 collision resistance. Identity claims reduce to it.
-2. RFC 8785 canonicalization agreement across implementations —
-   mitigated, not assumed silently: golden conformance fixtures
-   including string-escape and number-normalization rows
+2. RFC 8785 canonicalization agreement across implementations — tested by the
+   R1 differential lane above, the official Appendix B corpus, and the older
+   golden conformance fixture
    ([fixtures/golden-conformance.json](fixtures/golden-conformance.json)).
 3. JetStream properties at the pinned versions in the single embedded
    server configuration: atomic create-if-absent, revision CAS,
