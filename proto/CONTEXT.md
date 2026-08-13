@@ -113,6 +113,9 @@ The storage tier carried by a session event: trace traffic is compactible,
 utterances/proposals are irreducible, and adoption/commit facts are never
 discardable. Until the refusal-corpus seam can export structural refusals and
 seal their corpus digest, compaction is a typed refusal rather than data loss.
+When enabled, absence refusals die with their head-relative trace while the
+state digest and sealed corpus digest remain as evidence of the summarized
+prefix.
 
 ## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
 

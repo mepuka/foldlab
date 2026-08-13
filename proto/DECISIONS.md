@@ -1041,7 +1041,9 @@ utterance/proposal are replay roots, and commit/adoption are permanent spine
 facts. Both Go and TypeScript expose a compaction planning path that returns the
 marks plus `compaction-blocked`; it cannot discard bytes until task 32 supplies
 `flb.certification.v0`, structural-refusal export, and the corpus digest sealing
-the prefix. Because task 30 is not present at this base, its classifier is not
+the prefix. Eventual compaction lets head-relative absence refusals die with the
+trace but preserves the prefix state digest beside that corpus digest as durable
+evidence. Because task 30 is not present at this base, its classifier is not
 copied here; at integration both `session-stale` and build-relative
 `compaction-blocked` join the absence sort and never enter the structural
 corpus. Alternatives: compact without export; add a fifth daemon request

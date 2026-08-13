@@ -130,9 +130,11 @@ Every session event carries a retention mark. Each fill, unfill, and commit even
 also carries `principal`, so restart and replay re-establish ownership from the
 journal rather than process memory. Fill/unfill/refusal/read traces
 are `compactible`; open/utterance/proposal traffic is `irreducible`; commit and
-adoption facts are `never-discardable`. Actual compaction is blocked in this
-build: until `flb.certification.v0` exists, structural refusals cannot export to
-the corpus and no corpus digest can seal the summarized prefix. The typed
+adoption facts are `never-discardable`. Before a session prefix can compact,
+its structural refusals export to the `flb.certification.v0` corpus, absence
+refusals die with the head-relative trace, and both the state digest and corpus
+digest remain as evidence of what was summarized. Actual compaction is blocked
+in this build because that corpus-sealing seam does not exist. The typed
 `compaction-blocked` path retains the complete session.
 
 ### journal.read
