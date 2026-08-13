@@ -10,12 +10,21 @@
       "devDependencies": {
         "@effect/language-service": "0.87.2",
         "@types/bun": "1.3.14",
+        "bun-types": "1.3.14",
         "mitata": "^1.0.34",
         "typescript": "^5.9.2",
       },
     },
     "packages/ai": {
       "name": "@foldlab/ai",
+      "version": "0.0.0",
+      "dependencies": {
+        "@foldlab/core": "workspace:*",
+        "effect": "catalog:",
+      },
+    },
+    "packages/client": {
+      "name": "@foldlab/client",
       "version": "0.0.0",
       "dependencies": {
         "@foldlab/core": "workspace:*",
@@ -34,23 +43,6 @@
       "name": "@foldlab/core",
       "version": "0.0.0",
       "dependencies": {
-        "effect": "catalog:",
-      },
-    },
-    "packages/mcp": {
-      "name": "@foldlab/mcp",
-      "version": "0.0.0",
-      "dependencies": {
-        "@effect/platform-bun": "catalog:",
-        "@foldlab/core": "workspace:*",
-        "effect": "catalog:",
-      },
-    },
-    "packages/nats": {
-      "name": "@foldlab/nats",
-      "version": "0.0.0",
-      "dependencies": {
-        "@foldlab/core": "workspace:*",
         "effect": "catalog:",
       },
     },
@@ -77,13 +69,11 @@
 
     "@foldlab/ai": ["@foldlab/ai@workspace:packages/ai"],
 
+    "@foldlab/client": ["@foldlab/client@workspace:packages/client"],
+
     "@foldlab/codegen": ["@foldlab/codegen@workspace:packages/codegen"],
 
     "@foldlab/core": ["@foldlab/core@workspace:packages/core"],
-
-    "@foldlab/mcp": ["@foldlab/mcp@workspace:packages/mcp"],
-
-    "@foldlab/nats": ["@foldlab/nats@workspace:packages/nats"],
 
     "@foldlab/server": ["@foldlab/server@workspace:packages/server"],
 

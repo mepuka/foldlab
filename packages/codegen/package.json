@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The derive lane: twins generated from minted declarations.",
+  "description": "Derivation targets: Go twins generated from cataloged declarations.",
   "exports": {
     "./*": "./src/*.ts"
   },

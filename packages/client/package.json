@@ -1,9 +1,9 @@
 {
-  "name": "@foldlab/nats",
+  "name": "@foldlab/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "NATS subject bindings and the derived node.",
+  "description": "The narrow-writ authoring adapter: read, publish, request.",
   "exports": {
     "./*": "./src/*.ts"
   },

@@ -5,13 +5,19 @@ Compatibility files such as `CLAUDE.md` only point here.
 
 ## Read first
 
-- `CONTEXT.md` — canonical domain language and invariants
+- `CONTEXT.md` — canonical domain language and invariants (seam-level
+  only; module vocabulary lives in each module's own `CONTEXT.md`)
 - `README.md` — repository layout and runnable claims
 - `NEXT.md` — current design state and ratified direction
 - `docs/adr/` — architectural decisions
 - `docs/gauntlet/` — frozen specs, laws, and verification results
 
-Read the relevant scoped docs before editing. Performance work must also follow
+## Scoped contracts
+
+Module directories carry their own `AGENTS.md` (enforceable laws) and
+`CONTEXT.md` (module-local vocabulary hidden behind the seam). Read the
+scoped files before editing inside: `go/` (substrate), `go/daemon/`,
+`packages/core/`, `packages/client/`. Performance work must also follow
 `bench/BENCH.md`.
 
 ## Effect v4

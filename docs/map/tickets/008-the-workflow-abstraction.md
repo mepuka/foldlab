@@ -12,7 +12,7 @@ blocked-by: []
 Define the workflow abstraction, both faces at once:
 
 - **Static — program as value.** A canonical, digestable encoding of a
-  step DAG (the ratified "program encoding IS registry data"): the
+  step DAG (the ratified "program encoding IS catalog data"): the
   combinator tree is the topology, the digest is the certificate's
   program digest, and the same program runs over the node's
   interpreter, wasm, or CLI. R2's pipeline specs are this, hand-rolled.

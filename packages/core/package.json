@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Stream folds, chain identity, transforms, entities, and the fence.",
+  "description": "Stream folds, chain identity, transforms, and entities.",
   "exports": {
     "./*": "./src/*.ts"
   },

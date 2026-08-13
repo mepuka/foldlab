@@ -1,9 +1,11 @@
 # foldlab
 
-Streams, entities, and agent-minted types over one discipline: every value
+Streams, entities, and cataloged types over one discipline: every value
 has a canonical byte form, identity is a digest over those bytes, and every
 cross-boundary claim is a checkable digest equality. This file is the
-glossary; design state lives in NEXT.md, decisions in docs/adr/.
+seam-level glossary — module-local vocabulary lives in each module's own
+CONTEXT.md and may not leak here; design state lives in NEXT.md,
+decisions in docs/adr/.
 
 ## Language
 
@@ -74,7 +76,7 @@ efficiency claim of the transform algebra.
 **Pipeline program**:
 The serialized description of a composed transform — an ordered list of
 primitive digests plus parameters. Programs are data: the same program runs
-in-process, over the wire, or via CLI, and is what the registry stores.
+in-process, over the wire, or via CLI, and is what the catalog stores.
 _Avoid_: pipeline config, job spec
 
 ### Entities and provenance
@@ -101,38 +103,41 @@ The derivation claim riding on a produced record: schema digest, program
 digest, input anchor, span head. Every field is recomputable by an auditor.
 _Avoid_: metadata, lineage tag
 
-### The fence
+### Schemas and identity
+
+The fence vocabulary (mint, registry, handle, binding, lane) was rolled
+back 2026-08-12, and the schema-identity machinery was wiped the same
+day (see NEXT.md; ADR-0008). Identity was then re-ratified greenfield —
+the laws live in map ticket 004; the build (the owned structure's spec
+and its fixture wall) is pending.
 
 **Schema**:
 The declared form of a boundary crossing: a Type side, an Encoded side,
 and the transformation between them — never merely a type. Its identity
 commits the SHAPES of both sides and nothing else; every other semantic
 bit (behavior, brands, defaults, meaning) lives on the tier its author
-chooses: a check (narrows the shape — moves identity), an annotation (a
-claim — free, uncommitted), or a binding (a claim promoted to fact by a
-law). The lab does not decide a domain's semantics; it provides the tiers.
+chooses: a check (narrows the shape — moves identity) or an annotation (a
+claim — free, uncommitted). The lab does not decide a domain's semantics;
+it provides the tiers.
 _Avoid_: type (one side of a schema), model, DTO
 
-**Mint**:
-The committed operation by which a type, transform, or binding enters the
-world: it must typecheck, receive a digest in the registry, and pass its
-law before anything may depend on it. Types are minted, never written as
-free text.
-
-**Registry**:
-The ledger of minted schemas, transforms, and bindings, addressed by
-digest. A reference that does not resolve is a typed refusal, not a lookup
-miss.
-
-**Handle**:
-What mint returns and the only reference agents may compose with — a
-structural digest plus its verified bindings.
-
 **Structural digest**:
-A schema's identity: a digest over the representation of BOTH its sides,
-Type and Encoded, with every annotation stripped. Checks participate —
-narrowing a domain is a new schema — annotations and deployment facts
-never do: a schema on two subjects is one schema.
+A schema's identity: SHA-256 over the RFC 8785 bytes of a foldlab-owned
+canonical structure, produced by an exhaustive fold of the authoring
+AST (ticket 004). Both sides enter; declared checks and brands move
+identity; annotations never do, except a Declaration's required
+identifier; anonymous checks and identifier-less declarations refuse.
+Deployment facts never move identity: a schema on two subjects is one
+schema. Interim, until the build lands: a digest over submitted
+canonical bytes.
+
+**Catalog**:
+The journal of created types: per-daemon authority, mirrored elsewhere,
+union-resolved. A record is {structural digest, canonical encoding bytes,
+submitter}; the daemon recomputes every digest it commits — an asserted
+identity it cannot derive is refused. Absence is a typed refusal, never a
+lookup miss.
+_Avoid_: registry (mint-era term)
 
 **Semantic fold**:
 A derivation computed as a fold over a digest-anchored AST or program
@@ -141,19 +146,7 @@ surface (Go twin, JSON Schema, DDL, span preview, codec) is one; derived
 surfaces cannot drift because their input has committed identity.
 _Avoid_: code generator, compiler pass (those are implementations of one)
 
-**Binding**:
-A law-gated deployment fact about a schema — subject, codec, correlation
-key, commutativity class — committed to the registry only after its checker
-passes. The annotation on the schema is the claim; the registry record is
-the fact.
-_Avoid_: annotation (an annotation is only the authoring surface)
-
 **Commutativity class**:
 Whether events of a type commute under the meaning fold — the type-level
 fact that decides entity boundaries and licenses reordering. It never
 licenses reordering the identity fold.
-
-**Lane**:
-One of the two ways work enters: **compose** (existing primitives, no
-toolchain, instant verification) or **derive** (new twin generated and
-walled before use).
