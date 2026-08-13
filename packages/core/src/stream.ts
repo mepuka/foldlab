@@ -219,7 +219,8 @@ export interface KVState {
   readonly count: number
 }
 
-export const emptyKV: KVState = { entries: new Map(), count: 0 }
+/** A fresh identity for the KV meaning fold; callers never share a mutable Map. */
+export const emptyKV = (): KVState => ({ entries: new Map(), count: 0 })
 
 const strictDecoder = new TextDecoder("utf-8", { fatal: true })
 
@@ -267,7 +268,7 @@ export const applyKV = (
 export const foldKV = (
   events: ReadonlyArray<StreamEvent>,
 ): Effect.Effect<KVState, MalformedPayload> =>
-  Effect.reduce(events, () => emptyKV, applyKV)
+  Effect.reduce(events, emptyKV, applyKV)
 
 /** Combining two states would carry the event count past the u32 it is stored in. */
 export class KVCountOverflow extends Data.TaggedError("KVCountOverflow")<{
@@ -284,7 +285,7 @@ export class KVCountOverflow extends Data.TaggedError("KVCountOverflow")<{
  * This is a MONOID and nothing more, which is exactly the license parallel
  * replay needs and exactly the license federation does not get:
  *
- *   identity      combineKV(emptyKV, s) = combineKV(s, emptyKV) = s
+ *   identity      combineKV(emptyKV(), s) = combineKV(s, emptyKV()) = s
  *   associative   grouping does not matter, so a history may be cut anywhere
  *   homomorphic   combineKV(foldKV(xs), foldKV(ys)) = foldKV(xs ++ ys)
  *
