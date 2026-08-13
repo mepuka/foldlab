@@ -14,6 +14,8 @@ import { toJsonSchema } from "./codegen.ts"
 import type { Json } from "./jcs.ts"
 import { Refusal as RefusalSchema, type Contract, type Refusal } from "./wire.ts"
 
+const NATS_SUBJECT_META_KEY = "foldlab.dev/nats-subject"
+
 export interface DerivedTool {
   readonly name: string
   readonly description: string
@@ -107,7 +109,8 @@ export const mcpLayer = (
     })
       .annotate(Tool.Readonly, tool.annotations.readOnlyHint)
       .annotate(Tool.Destructive, tool.annotations.destructiveHint)
-      .annotate(Tool.Idempotent, tool.annotations.idempotentHint),
+      .annotate(Tool.Idempotent, tool.annotations.idempotentHint)
+      .annotate(Tool.Meta, { [NATS_SUBJECT_META_KEY]: tool.subject }),
   )
   const toolkit = Toolkit.make(...tools)
   const handlers: Record<string, (payload: unknown) => Effect.Effect<unknown>> = {}

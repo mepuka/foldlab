@@ -131,10 +131,66 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       idempotentHint: false,
     })
 
+    const unknownDigest = "9".repeat(64)
+    const unknownRefFill = {
+      partial: { k: "hole" },
+      path: [],
+      subtree: {
+        k: "struct",
+        fields: { currency: { k: "ref", digest: unknownDigest } },
+        optional: [],
+      },
+    }
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 15,
+      method: "tools/call",
+      params: { name: "type_fill", arguments: unknownRefFill },
+    })
+    const companionRefused = await mcp.next()
+    expect(companionRefused.error).toBeUndefined()
+    const companionReply =
+      companionRefused.result.structuredContent ?? JSON.parse(companionRefused.result.content[0].text)
+    expect(companionReply.refusal.kind).toBe("unknown-ref")
+    expect(companionReply.refusal.path).toEqual(["partial", "fields", "currency", "digest"])
+
+    // The daemon teaches in its NATS namespace, which is deliberately
+    // not the MCP tool namespace. The tool's public metadata must make
+    // that mapping structural rather than leaving clients to parse a
+    // prose description.
+    const repairSubject = companionReply.refusal.next[0].subject
+    expect(repairSubject).toBe("flb.req.type.fill")
+    expect(tools.some((tool) => tool.name === repairSubject)).toBe(false)
+    const repairTool = tools.find(
+      (tool) => tool._meta?.["foldlab.dev/nats-subject"] === repairSubject,
+    )
+    expect(repairTool?.name).toBe("type_fill")
+    expect(companionReply.refusal.next.map((hint: any) => hint.subject)).toEqual([
+      "flb.req.type.fill",
+      "flb.req.contract.describe",
+    ])
+    expect(companionReply.refusal.next[0].body).toEqual(unknownRefFill)
+
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 16,
+      method: "tools/call",
+      params: { name: repairTool.name, arguments: companionReply.refusal.next[0].body },
+    })
+    const replayed = await mcp.next()
+    const replayedReply = replayed.result.structuredContent ?? JSON.parse(replayed.result.content[0].text)
+    expect(replayedReply).toEqual(companionReply)
+
     // The wall: the served schemas equal what the contract derives —
     // the MCP surface cannot drift from the daemon's self-description.
     const client = (await ProtoClient.connect(daemon.url)) as any
     expect(client.ok).toBe(true)
+    const directCompanionReply = await client.fact.fillType(
+      unknownRefFill.partial,
+      unknownRefFill.path,
+      unknownRefFill.subtree,
+    )
+    expect(companionReply).toEqual(directCompanionReply)
     const described = await client.fact.describe()
     expect(described.ok).toBe(true)
     const derived = toolsFromContract(described.fact.contract)
@@ -145,6 +201,7 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
       expect(served).toBeDefined()
       expect(served.inputSchema).toEqual(tool.inputSchema)
       expect(annotationsOf(tool.name)).toEqual(tool.annotations)
+      expect(served._meta).toEqual({ "foldlab.dev/nats-subject": tool.subject })
     }
 
     // Optimistic annotations are closed allow-lists. A future request
@@ -349,3 +406,102 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
     await mcp.stop()
   }
 }, 120_000)
+
+test.skipIf(process.env.FLB_RUN_MCP_PATH_FINDING !== "1")(
+  "FINDING-MCP-PATH-001: fill refusal paths locate the reconstructed partial, not the request body",
+  async () => {
+    const mcp = await spawnMcp()
+    try {
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "path-finding", version: "0.0.1" },
+        },
+      })
+      await mcp.next()
+      mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" })
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "type_fill",
+          arguments: {
+            partial: { k: "hole" },
+            path: [],
+            subtree: {
+              k: "struct",
+              fields: { currency: { k: "ref", digest: "9".repeat(64) } },
+              optional: [],
+            },
+          },
+        },
+      })
+      const response = await mcp.next()
+      const reply = response.result.structuredContent ?? JSON.parse(response.result.content[0].text)
+      expect(reply.refusal.kind).toBe("unknown-ref")
+
+      // Red by design. The current reply is
+      // ["partial","fields","currency","digest"] after the daemon
+      // reconstructs the result. This is the request-body-relative path
+      // an MCP caller would need in order to edit its submitted arguments.
+      expect(reply.refusal.path).toEqual(["subtree", "fields", "currency", "digest"])
+    } finally {
+      await mcp.stop()
+    }
+  },
+  120_000,
+)
+
+test.skipIf(process.env.FLB_RUN_MCP_EMPTY_CATALOG_FINDING !== "1")(
+  "FINDING-MCP-EMPTY-CATALOG-001: fill overwrites unknown-ref resolver hints with an identical retry",
+  async () => {
+    const mcp = await spawnMcp()
+    try {
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "empty-catalog-finding", version: "0.0.1" },
+        },
+      })
+      await mcp.next()
+      mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" })
+      mcp.send({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "type_fill",
+          arguments: {
+            partial: { k: "hole" },
+            path: [],
+            subtree: { k: "ref", digest: "9".repeat(64) },
+          },
+        },
+      })
+      const response = await mcp.next()
+      const reply = response.result.structuredContent ?? JSON.parse(response.result.content[0].text)
+      expect(reply.refusal.kind).toBe("unknown-ref")
+
+      // Red by design. firstUnknownRef constructs these three resolver
+      // routes, but teachFill currently replaces them with the same
+      // failing fill body plus contract.describe.
+      expect(reply.refusal.next.map((hint: any) => hint.subject)).toEqual([
+        "flb.req.type.create",
+        "flb.req.type.fill",
+        "flb.req.journal.read",
+      ])
+    } finally {
+      await mcp.stop()
+    }
+  },
+  120_000,
+)

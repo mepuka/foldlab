@@ -953,6 +953,51 @@ semantic laws license optimistic safety hints, while the closed fallback keeps
 new contract growth safe until it is classified. **Load-bearing? yes** — MCP
 clients use these hints when choosing and approving tool calls.
 
+## Issue 41 companions — MCP repair namespace and path provenance (2026-08-13)
+
+### D??. NATS subject-to-MCP tool mapping rides in tool metadata
+
+Decided: every contract-derived MCP tool carries its NATS subject as
+`_meta["foldlab.dev/nats-subject"]`. The mapping comes from the same
+`contract.describe` entry as the tool name and input schema, and rc.108's
+`Tool.Meta` passes it structurally through `tools/list`. Daemon replies remain
+verbatim under D23. Alternatives: parse the subject suffix or prose tool
+description (not a structural contract); rewrite every `next[].subject` into an
+MCP name (violates D23 and creates an MCP refusal dialect); change the daemon to
+speak MCP names (leaks an adapter namespace into the wire contract). Why: W7's
+repair hint can now be resolved mechanically without changing the authority
+that uttered it. **Load-bearing? yes** — this is the cross-namespace repair
+bridge.
+
+### D??. FINDING: fill refusal paths name the reconstructed partial, not the request body
+
+Decided: preserve and stop on `FINDING-MCP-PATH-001`. A digest submitted at
+`subtree/fields/currency/digest` is publicly reported by MCP at
+`partial/fields/currency/digest`, because the daemon walks the reconstructed
+partial after replacement and has discarded request-field provenance. The MCP
+reply equals the direct client reply, so adapter translation would violate D23;
+the frozen concierge fixture pins the existing reconstructed-partial path, so a
+daemon repair requires an explicit wire/fixture ratification. Alternatives and
+the opt-in red command are recorded in `ts/FINDING-MCP-PATH-001.md`. Why: silently
+choosing either path dialect would redefine public evidence semantics.
+**Load-bearing? yes** — mechanical self-repair depends on knowing which submitted
+field a refusal path addresses.
+
+### D??. FINDING: empty-catalog fill overwrites unknown-ref resolver hints
+
+Decided: preserve and stop on `FINDING-MCP-EMPTY-CATALOG-001`. The lower-level
+unknown-ref refusal constructs create/retry/catalog-read hints, but `teachFill`
+and `teachUnfill` replace them with a retry that carries the unchanged bad body
+plus `contract.describe`; replay through MCP returns the same refusal. The
+frozen `fill-unknown-ref-refusal` concierge vector pins this reply and issue 41
+does not authorize regeneration. Alternatives and the opt-in red command are
+recorded in `ts/FINDING-MCP-EMPTY-CATALOG-001.md`; the populated-catalog repair
+on its separate central branch is intentionally out of scope here. Why: fixing
+before ratifying the empty-catalog teaching promise would destroy the pinned
+counterexample and risk claiming that a daemon can synthesize an unknown
+referenced structure. **Load-bearing? yes** — this is the remaining W7 repair
+loop when no catalog candidate exists.
+
 ## Task 25 — JournalMessageStorage (stopped on FINDING-WRIT-001, 2026-08-13)
 
 ### D??. The tracer-bullet home is `proto/ts/src/cluster/`
