@@ -195,8 +195,14 @@ serialized `type.create` request. `CatalogWire.tla` names that public map:
 `CreateAtomic`, `Publish`, and `MirrorAdvance`. A non-stuttering
 `CreateAtomic` step must equal an uninterrupted legal
 `CreateBegin;CreateFinish` pair; an already-resolved atomic create must equal
-the split model's stuttering `CreateBegin`. `AtomicRefinement` checks that
-relation directly. `MirrorAdvance` and `Publish` are the unchanged split
+the split model's stuttering `CreateBegin`. The two halves are checked by two
+different instruments (FINDING-BRIDGE-001 disposition, operator-ratified):
+the creating half directly by the action property `AtomicRefinement`; the
+resolving half by the state invariant `ResolvingCreateAgrees`, because
+`[][_]_vars` discharges stuttering steps and can never evaluate an action
+property on them — the state-invariant form is evaluated on every reachable
+state and its sensitivity control (a stutter-faking `CreateBeginResult`) is
+caught at depth 2. `MirrorAdvance` and `Publish` are the unchanged split
 actions, so every wire-model behavior is a split-model behavior up to
 stuttering. R3 safety therefore transfers to this coarse map at R3's fixed
 domains. The split stale-CAS branch remains proved but is not publicly

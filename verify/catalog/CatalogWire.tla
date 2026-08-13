@@ -6,10 +6,15 @@
 (* Catalog.tla: they cover the future multi-handler authority and their    *)
 (* stale-CAS branch belongs to ticket 012's journal-kernel conformance.    *)
 (*                                                                         *)
-(* AtomicRefinement is the bridge: a resolving create is the split model's *)
-(* stuttering CreateBegin; every creating step is an uninterrupted legal  *)
-(* CreateBegin;CreateFinish pair. Therefore every wire step is a split     *)
-(* behavior up to stuttering and CatalogInd's R3 safety transfers.         *)
+(* The bridge, in two checked halves (FINDING-BRIDGE-001 disposition,      *)
+(* operator-ratified 2026-08-13): every CREATING step is an uninterrupted  *)
+(* legal CreateBegin;CreateFinish pair — checked DIRECTLY by the action    *)
+(* property AtomicRefinement.  A RESOLVING create is the split model's     *)
+(* stuttering CreateBegin — [][_]_vars discharges stutters, so that half   *)
+(* is checked as the STATE invariant ResolvingCreateAgrees, which TLC      *)
+(* evaluates on every reachable state and no subscript can exempt.         *)
+(* Together every wire behavior is a split behavior up to stuttering and   *)
+(* CatalogInd's R3 safety transfers.                                       *)
 (*                                                                         *)
 (* BrokenAtomicBridge is a TLC sensitivity control. It makes the direct    *)
 (* atomic action append a creator-chosen wrong id while SplitComposition   *)
@@ -52,5 +57,19 @@ WireNext ==
   \/ \E d \in Daemons, i \in Ids : Publish(d, i)
 
 WireSpec == Init /\ [][WireNext]_vars
+
+(***************************************************************************)
+(* The resolving-create half of the bridge, as a state invariant (probe-   *)
+(* tested text from BridgeFix.tla X1/X2: clean on the honest model; a      *)
+(* stutter-faking CreateBeginResult is caught at depth 2).  Wherever       *)
+(* CreateAtomic's resolving branch is enabled, CreateBegin is enabled for  *)
+(* the same triple and its result IS the current state — it really does    *)
+(* stutter.                                                                *)
+(***************************************************************************)
+ResolvingCreateAgrees ==
+  \A c \in Creators, d \in Daemons, v \in Vals :
+    (~creators[c].busy /\ Digest(v) \in ResolvableIds(d)) =>
+      /\ CreateBeginEnabled(c, ModelState)
+      /\ CreateBeginResult(c, d, v, ModelState) = ModelState
 
 =============================================================================
