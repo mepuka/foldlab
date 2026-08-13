@@ -1,6 +1,6 @@
 /**
  * The stream-journal lane, TS half — byte-identical mirror of `go/stream`
- * (the cross-language wall: packages/mech/fixtures/stream-wall.json, pinned
+ * (the cross-language wall: fixtures/stream-wall.json at the repository root, pinned
  * once from the Go side).
  *
  * The one idea underneath the whole lane: an event stream is a left fold
