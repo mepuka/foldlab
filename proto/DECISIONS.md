@@ -1566,3 +1566,24 @@ the other; RFC 8785 UTF-16 member-name order. Why: source ids are encoded as
 UTF-8 bytes in the canonical event frame and are not JSON member names; using
 that existing domain gives both runtimes one explicit comparator.
 **Load-bearing? yes** — changing it changes the corpus-grade refusal value.
+## GitHub issue #15 — Watch retention finding (2026-08-13)
+
+### D??. FINDING: `History:1` contradicts a lossless reading of WL1/WL2
+
+Decided: no production disposition is taken on this branch. An already-created
+Watch consumer paused across `Claim;Commit` sees only `Committed` with the
+production `History:1` shape; the one-field `History:2` control sees `Held,
+Committed`. JetStream stream coordinates independently show revision 1 was
+evicted (`msgs=1 first=2 last=2`) in the first run and retained
+(`msgs=2 first=1 last=2`) in the control. The issue owner's latest comment
+explicitly makes this a spec choice. Alternatives awaiting ratification: deepen
+history and keep WL1/WL2 lossless; weaken WL1/WL2 to the existing best-effort
+chatter contract; or give Watch its own durable retention/gap contract.
+Recommended: ratify best-effort chatter and make the laws conditional on
+delivery, because finite KV history (pinned NATS maximum 64) cannot establish an
+unbounded losslessness law; build a separate durable feed if a consumer needs
+every transition. The opt-in red command, ordinary-gate causal control, and
+decision evidence are in
+[`go/effector/FINDING-WATCH-EVICTION-001.md`](../go/effector/FINDING-WATCH-EVICTION-001.md).
+**Load-bearing? yes** — changing retention or law strength changes what every
+Watch consumer is entitled to infer.
