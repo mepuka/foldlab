@@ -114,7 +114,7 @@ export interface Declaration<S> {
  * that forgery at runtime rather than trusting its copied digest.
  */
 const isDeclaration = <S>(value: Declaration<S> | undefined): value is Declaration<S> =>
-  value !== undefined &&
+  typeof value === "object" && value !== null &&
   (value as { readonly [DeclarationTypeId]?: unknown })[DeclarationTypeId] === true
 
 /** Identity and associativity license every `combine` exposed by an Algebra. */
@@ -335,11 +335,16 @@ export const mapped = <A extends FoldState, B extends FoldState>(
   hom: DeclaredHom<A, B>,
   source: Algebra<A>,
 ): Algebra<B> => {
-  const compatible = isDeclaredHom(hom) &&
-    isDeclaration(source.declaration) &&
-    isDeclaration(hom.source.declaration) &&
-    source.declaration.digest === hom.source.declaration.digest
-  if (!compatible || !isDeclaration(hom.target.declaration)) {
+  const sourceDeclaration = source.declaration
+  const homSourceDeclaration = hom.source.declaration
+  const homTargetDeclaration = hom.target.declaration
+  if (
+    !isDeclaredHom(hom) ||
+    !isDeclaration(sourceDeclaration) ||
+    !isDeclaration(homSourceDeclaration) ||
+    !isDeclaration(homTargetDeclaration) ||
+    sourceDeclaration.digest !== homSourceDeclaration.digest
+  ) {
     return {
       empty: hom.target.empty,
       combine: hom.target.combine,
@@ -351,8 +356,8 @@ export const mapped = <A extends FoldState, B extends FoldState>(
     v: "foldlab.algebra.v1",
     op: "mapped",
     hom: hom.declaration.spec,
-    source: source.declaration.spec,
-    target: hom.target.declaration.spec,
+    source: sourceDeclaration.spec,
+    target: homTargetDeclaration.spec,
   }
   const declared = declaration(spec)
   return declared === undefined

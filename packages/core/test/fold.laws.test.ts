@@ -233,6 +233,29 @@ describe("fold construction rights", () => {
     })
   })
 
+  test("A1: a globally branded declaration cannot license a mapped algebra", () => {
+    const source = algebras.max
+    const forged = {
+      [Symbol.for("@foldlab/core/Declaration")]: true as const,
+      spec: source.declaration!.spec,
+      encoding: source.declaration!.encoding,
+      digest: source.declaration!.digest,
+    }
+    const impostor: Algebra<number | null> = {
+      empty: null,
+      combine: (left) => left,
+      declaration: forged as never,
+    }
+
+    const derived = mapped(homomorphisms.isPositiveFromMax, impostor)
+    expect(derived.declaration).toBeUndefined()
+    expect(derived.identityIssue).toBe("homomorphism source does not match the algebra declaration")
+
+    const realBrand = Object.getOwnPropertySymbols(source.declaration!)[0]!
+    expect(Symbol.keyFor(realBrand)).toBeUndefined()
+    expect(realBrand).not.toBe(Symbol.for("@foldlab/core/Declaration"))
+  })
+
   test("fast-check shrinks a failure to its minimized counterexample", () => {
     const result = FastCheck.check(
       FastCheck.property(FastCheck.integer({ min: 0, max: 100 }), (value) => value < 0),

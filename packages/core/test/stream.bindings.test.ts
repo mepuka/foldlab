@@ -76,7 +76,7 @@ describe("stream bindings", () => {
       Stream.fromIterable(merged()).pipe(runCollect(viaStream)),
     )
     const batch = makeCollector(memoryBacking(), (e) => e.stream)
-    for (const e of merged()) batch.ingest(e)
+    for (const e of merged()) Effect.runSync(batch.ingest(e))
     expect(viaStream.anchors()).toEqual(batch.anchors())
     expect(views.length).toBe(2)
   })

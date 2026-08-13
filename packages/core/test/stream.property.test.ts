@@ -3,7 +3,9 @@ import { Effect, Exit, Schema } from "effect"
 import * as FastCheck from "fast-check"
 import {
   applyKV,
+  applyMerge,
   compact,
+  emptyKV,
   encodeEvent,
   encodeFact,
   event,
@@ -87,6 +89,22 @@ const fusionCaseArbitrary = FastCheck.record({
   if (payload.length > 0 && injectEquals) payload[equalIndex % payload.length] = 0x3d
   return { input: { ...input, payload }, prefix }
 })
+
+const malformedPayloadCases: ReadonlyArray<ReadonlyArray<number>> = [
+  [0x00, 0x3d, 0x76],
+  [0x6b, 0x3d, 0x00],
+  [0xed, 0xa0, 0x80, 0x3d, 0x76],
+  [0x6b, 0x3d, 0xe2, 0x82],
+]
+const malformedPayloadArbitrary = FastCheck.constantFrom(...malformedPayloadCases)
+  .map((payload) => Uint8Array.from(payload))
+
+const mergeDuplicateSeedSchema = Schema.Struct({
+  seq: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER })),
+  payload: Schema.Uint8Array.check(Schema.isMaxLength(32)),
+  marker: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xff })),
+})
+const mergeDuplicateArbitrary = Schema.toArbitrary(mergeDuplicateSeedSchema)(FastCheck)
 
 const prefixDecision = (payload: Uint8Array, prefix: string): boolean => {
   const boundary = payload.indexOf("=".charCodeAt(0))
@@ -282,6 +300,58 @@ describe("transform byte properties", () => {
 })
 
 describe("state and store adversaries", () => {
+  test("M1: duplicate source sequences are a typed merge refusal", () => {
+    const duplicate = new Map<string, ReadonlyArray<StreamEvent>>([
+      ["source", [
+        event("source", 1, "key=FIRST"),
+        event("source", 1, "key=SECOND"),
+      ]],
+    ])
+    const refusal = Effect.runSync(Effect.flip(applyMerge({
+      picks: [{ stream: "source", seq: 1 }],
+    }, duplicate)))
+    expect(refusal._tag).toBe("MergeDuplicate")
+    if (refusal._tag !== "MergeDuplicate") return
+    expect(refusal.source).toBe("source")
+    expect(refusal.seq).toBe(1)
+  })
+
+  test("the merge refusal generator targets duplicate source positions", () => {
+    FastCheck.assert(
+      FastCheck.property(mergeDuplicateArbitrary, ({ seq, payload, marker }) => {
+        const distinctPayload = new Uint8Array(payload.length + 1)
+        distinctPayload.set(payload)
+        distinctPayload[payload.length] = marker
+        const sources = new Map<string, ReadonlyArray<StreamEvent>>([
+          ["source", [
+            { stream: "source", seq, payload },
+            { stream: "source", seq, payload: distinctPayload },
+          ]],
+        ])
+        const refusal = Effect.runSync(Effect.flip(applyMerge({
+          picks: [{ stream: "source", seq }],
+        }, sources)))
+        expect(refusal._tag).toBe("MergeDuplicate")
+      }),
+      { seed: 0x22c1_0002, numRuns: 250, endOnFailure: false },
+    )
+  })
+
+  test("the KV refusal generator targets every payload boundary", () => {
+    FastCheck.assert(
+      FastCheck.property(malformedPayloadArbitrary, (payload) => {
+        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, rawEvent("s", 1, payload))))
+        expect(refusal._tag).toBe("MalformedPayload")
+      }),
+      {
+        examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),
+        seed: 0x22c1_0003,
+        numRuns: 100,
+        endOnFailure: false,
+      },
+    )
+  })
+
   test("KV rejects delimiter collisions, invalid UTF-8, and count overflow", () => {
     const payloads = [
       enc.encode("missing"),
