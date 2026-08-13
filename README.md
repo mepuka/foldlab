@@ -344,7 +344,11 @@ The decision-preparedness scout ranked twenty decisions the build
 order will force, twelve of them this-week class
 ([#35](https://github.com/mepuka/foldlab/issues/35)) — top regret
 forecast: the refusal corpus is being born next week with three
-unratified choices. Good news verified along the way: task 24's four
+unratified choices. The
+[current status re-audit](docs/research/2026-08-13-decision-preparedness-status.md)
+keeps all twenty rows, separates merged evidence from completed branch-only
+work, and names the remaining ratifications and integration repairs. Good news
+verified along the way: task 24's four
 reply mutants each fire exactly once and are caught; the per-test
 in-process NATS pattern is why the suite has no shared-state flakes;
 zero frozen digests moved through all of it.
