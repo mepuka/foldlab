@@ -976,15 +976,18 @@ already contains a resolvable digest, the refusal re-holes that ref node and
 puts an immediately executable `type.fill` request using the first digest from
 the same sorted, 16-item candidate set used by the frontier at `next[0]`.
 `example` carries the same ref. If the candidate set is empty, the existing
-create/retry/read hints remain because inventing a replacement would assert
-identity. Alternatives: echo the failed request (the reported infinite repair
-loop); require an extra unfill/frontier/fill sequence; return every catalog
-digest; select insertion order. Why: W7 requires self-repair without source
-reading, while bounded sorted selection is deterministic and already licensed
-by the frontier seam. The regression executes the advertised request against a
-real daemon and requires acceptance. **Load-bearing? no** — this chooses one
-truthful example from an already bounded advertised set; it does not change
-identity, admission, or candidate membership.
+wire-frozen retry/describe fallback remains because inventing a replacement
+would assert identity; the generic concierge teacher currently masks the
+internal create/read advice in that case, a separate residual rather than a
+claim of this repair. Alternatives: always echo the failed request (the
+reported infinite repair loop even when candidates exist); require an extra
+unfill/frontier/fill sequence; return every catalog digest; select insertion
+order. Why: W7 requires self-repair without source reading, while bounded
+sorted selection is deterministic and already licensed by the frontier seam.
+The regression executes the advertised request against a real daemon and
+requires acceptance. **Load-bearing? no** — this chooses one truthful example
+from an already bounded advertised set; it does not change identity, admission,
+or candidate membership.
 
 ## Task 28 — frontier legality per hole (stopped on FINDING-FRONTIER-001, 2026-08-13)
 

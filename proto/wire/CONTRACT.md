@@ -148,7 +148,9 @@ first repair executable: `example` is a resolvable digest and `next[0]`
 is a `type.fill` body whose offending ref position has been re-holed and
 filled with that example. Candidates use the frontier's deterministic,
 bounded digest order. With no catalog candidate, the refusal retains the
-create/retry/read teaching path because no honest replacement exists yet.
+wire-frozen retry/describe fallback because no honest replacement exists yet;
+making its internal create/read advice survive the generic concierge teacher
+remains a bounded residual outside the populated-catalog one-step repair.
 
 ## flb.type.v0 specifics pinned by this implementation
 
