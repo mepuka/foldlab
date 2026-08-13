@@ -1,0 +1,23 @@
+{
+  "name": "@foldlab/media-posters-v2",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Posters that draw the idea instead of tabulating its outputs. Designed at 1600x900, judged at the 900px width a reader actually sees.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts",
+    "render:all": "node scripts/render.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.509",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.509"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "sharp": "0.34.4",
+    "typescript": "5.9.3"
+  }
+}
