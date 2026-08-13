@@ -92,3 +92,17 @@ hazards list, ranked. Then the coordinator does the needs
 determination: which items become envelope clauses + law tests (task
 16's pattern), which become VERIFICATION residuals, which are
 refuted and recorded as such.
+
+## Resolution (2026-08-13)
+
+Corpus read and scored — full scorecard:
+[docs/research/2026-08-13-nats-vendor-corpus-scorecard.md](../../research/2026-08-13-nats-vendor-corpus-scorecard.md).
+Priors: Register 1 landed (5 of 7 confirmed/partial with mechanisms),
+Register 2 aimed one layer high (real failures are server-side and
+mostly loud), Register 3 was unanswerable by a vendor corpus. Scariest
+confirmation: acked ≠ synced — the two-minute failsafe and the
+kill-9/pull-the-plug boundary (exactly where G1 stopped). Most
+important novel: persist-mode-async passes both shape gates today.
+Hardening batch: scratch/codex/19; sync-mode pin is the one operator
+decision. Stated residual gap: 1,311 slide frames unread (candidate
+targeted vision pass).
