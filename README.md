@@ -142,6 +142,13 @@ reply carries facts the agent, or anyone auditing it, can re-derive.
 
 ## Where to look
 
+Start with the ledger and the language, then pick a shelf. The design
+shelf is where the last two days of parallel work landed: each
+document was produced by a dispatched research lane, reviewed by a
+second, and merged with its evidence intact — the dates in the
+filenames are dispatch dates, and every claim inside carries the file,
+line, or executed output that backs it.
+
 - [VERIFICATION.md](VERIFICATION.md) — the claims ledger: every
   verification claim with its rung, bounds, assumptions, and the file
   where it is checkable.
@@ -166,6 +173,49 @@ reply carries facts the agent, or anyone auditing it, can re-derive.
   campaigns (crash storms, fleet runs), each with a frozen spec and a
   frozen verifier that checks the exported run bundle by recomputation.
 - [go/effector/](go/effector/) — the proven register, as running Go.
+
+The design shelf — the recent research and design lanes, merged:
+
+- [docs/research/2026-08-14-tangible-examples.md](docs/research/2026-08-14-tangible-examples.md)
+  — the five concepts as worked, executed examples, each calibrated
+  three ways (Effect developer, infra engineer, skeptical auditor).
+  The best on-ramp in the repository; its companion scripts
+  ([packages/core/examples/tour.ts](packages/core/examples/tour.ts),
+  [proto/ts/examples/refusals.ts](proto/ts/examples/refusals.ts)) run
+  with one command and reproduce byte-identically across Windows and
+  macOS.
+- [docs/design/2026-08-14-mcp-surface-deep-read.md](docs/design/2026-08-14-mcp-surface-deep-read.md)
+  — every MCP protocol feature vs. what the pinned Effect rc.108
+  server actually implements, feature by feature with file:line, and
+  what foldlab can safely build on (tools with typed refusal
+  envelopes; not sessions, not sampling).
+- [docs/design/2026-08-14-concierge-sessions-and-catalog.md](docs/design/2026-08-14-concierge-sessions-and-catalog.md)
+  — guided construction that survives time: an authoring dialogue as
+  an event stream, so "redo the type" is a branch from a prefix and
+  the type catalog is searchable by digest, shape, provenance, and
+  semantics.
+- [docs/design/2026-08-14-the-language-surface.md](docs/design/2026-08-14-the-language-surface.md)
+  — what was said, separately from what we decided it meant:
+  transcripts as evidence, interpretations as decisions with
+  provenance, and exactly where determinism lives when a model sits
+  in the loop.
+- [docs/design/2026-08-14-systems-as-data.md](docs/design/2026-08-14-systems-as-data.md)
+  — a service topology as a canonical value with a digest: what
+  Effect's `Layer` already gives, what breaks under reification, and
+  the honest line between describing a system and attesting to what
+  is running (Nix, Terraform, and Dhall confronted as prior art).
+- [docs/research/2026-08-14-counterexample-algebra-dossier.md](docs/research/2026-08-14-counterexample-algebra-dossier.md)
+  — why refusals teach: Gold's theorem (positive examples cannot
+  correct an over-general learner), and foldlab's sharper version — a
+  typed refusal refutes a whole class at once, so the system
+  accumulates capability outside the model's weights.
+- [docs/design/2026-08-14-federated-fold-cache.md](docs/design/2026-08-14-federated-fold-cache.md)
+  — the fold cache as Effect services and Layers: content-keyed,
+  immutable, coordination-free to federate, with eviction that can
+  shrink the cache but never wrong it.
+- [docs/design/2026-08-14-estate-structures-map.md](docs/design/2026-08-14-estate-structures-map.md)
+  — the demand inventory: every structure the laws require, working
+  backwards, with the build-first ranking the current wave follows.
 
 ## Long differential fuzz runs
 
