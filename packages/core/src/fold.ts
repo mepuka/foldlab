@@ -90,7 +90,9 @@ export interface Fold<E, A extends FoldState> {
 }
 
 const normalizeStep = <E, A extends FoldState>(input: StepInput<E, A>): Step<E, A> =>
-  typeof input === "function" ? { apply: input, identityIssue: "the step is anonymous" } : input
+  typeof input === "function"
+    ? { apply: input, identityIssue: "the step has no declared spec, so no content address" }
+    : input
 
 const foldIdentity = <E, A extends FoldState>(
   algebra: Algebra<A>,
