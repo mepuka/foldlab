@@ -4,7 +4,7 @@
 // The transcript is what makes a thread auditable after the fact:
 // verb, subject, sent, received, in order.
 import type { ProtoClient, Cursor } from "./client.ts"
-import type { Json } from "./jcs.ts"
+import { GENESIS, type Json } from "./jcs.ts"
 import type { Reply } from "./wire.ts"
 import {
   INGRESS_PREFIX,
@@ -21,29 +21,60 @@ export interface TranscriptEntry {
   readonly subject: string
   readonly sent: Json
   readonly received: unknown
+  readonly endpoint: string
+  readonly startedAt: number
+  readonly completedAt: number | null
+}
+
+export interface SessionClient extends Pick<
+  ProtoClient,
+  "describe" | "createType" | "fillType" | "unfillType" | "publish" | "read"
+> {
+  readonly endpoint: string
 }
 
 export class Session {
   private readonly entries: TranscriptEntry[] = []
 
-  constructor(private readonly client: ProtoClient) {}
+  constructor(private readonly client: SessionClient) {}
 
   get transcript(): ReadonlyArray<TranscriptEntry> {
-    return this.entries
+    return Object.freeze(structuredClone(this.entries))
   }
 
-  private record<A>(verb: TranscriptEntry["verb"], subject: string, sent: Json, reply: Reply<A>): Reply<A> {
-    this.entries.push({ step: this.entries.length, verb, subject, sent, received: reply })
+  private async record<A>(
+    verb: TranscriptEntry["verb"],
+    subject: string,
+    sent: Json,
+    run: () => Promise<Reply<A>>,
+  ): Promise<Reply<A>> {
+    const step = this.entries.length
+    const startedAt = Date.now()
+    const base = {
+      step,
+      verb,
+      subject,
+      sent: structuredClone(sent),
+      endpoint: this.client.endpoint,
+      startedAt,
+    }
+    this.entries.push({ ...base, received: { pending: true }, completedAt: null })
+    const reply = await run()
+    this.entries[step] = {
+      ...base,
+      received: structuredClone(reply),
+      completedAt: Date.now(),
+    }
     return reply
   }
 
   async describe() {
-    return this.record("request", SUBJECT_CONTRACT_DESCRIBE, {}, await this.client.describe())
+    return this.record("request", SUBJECT_CONTRACT_DESCRIBE, {}, () => this.client.describe())
   }
 
   async createType(structure: Json, options: { assertedDigest?: string; submitter?: string } = {}) {
     const sent: Json = { structure, ...options }
-    return this.record("request", SUBJECT_TYPE_CREATE, sent, await this.client.createType(structure, options))
+    return this.record("request", SUBJECT_TYPE_CREATE, sent, () => this.client.createType(structure, options))
   }
 
   async startType() {
@@ -57,7 +88,7 @@ export class Session {
       "request",
       SUBJECT_TYPE_FILL,
       sent,
-      await this.client.fillType(partial, path, subtree),
+      () => this.client.fillType(partial, path, subtree),
     )
   }
 
@@ -67,16 +98,17 @@ export class Session {
       "request",
       SUBJECT_TYPE_UNFILL,
       sent,
-      await this.client.unfillType(partial, path),
+      () => this.client.unfillType(partial, path),
     )
   }
 
   async publish(journal: string, frame: Json) {
-    return this.record("publish", INGRESS_PREFIX + journal, frame, await this.client.publish(journal, frame))
+    return this.record("publish", INGRESS_PREFIX + journal, frame, () => this.client.publish(journal, frame))
   }
 
   async read(journal: string, from?: Cursor, max = 0) {
-    const sent: Json = { journal, from: from ? { seq: from.seq, head: from.head } : null, max }
-    return this.record("read", SUBJECT_JOURNAL_READ, sent, await this.client.read(journal, from, max))
+    const cursor = from ?? { seq: -1, head: GENESIS }
+    const sent: Json = { journal, from: { seq: cursor.seq, head: cursor.head }, max }
+    return this.record("read", SUBJECT_JOURNAL_READ, sent, () => this.client.read(journal, cursor, max))
   }
 }

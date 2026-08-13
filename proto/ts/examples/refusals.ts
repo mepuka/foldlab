@@ -56,7 +56,8 @@ console.log("\nlocal structureDigest({k:'bool'}) =", structureDigest({ k: "bool"
 // the journal into being.
 show("REFUSAL 4: read of a journal that does not exist", await session.read("nope"))
 
-// 6 — W6: heads are claims. A cursor the daemon never issued does not verify.
+// 6 — W6: heads are claims. The daemon first binds a supplied cursor to its
+// stored entry; the client then verifies the returned suffix before adoption.
 show("REFUSAL 5: read from a cursor that does not verify",
   await client.read("catalog", { seq: -1, head: "a".repeat(64) }, 0))
 

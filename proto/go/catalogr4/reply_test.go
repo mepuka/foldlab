@@ -53,6 +53,29 @@ func TestStrictReplyDecodingRejectsMissingAndMistypedBranchFields(t *testing.T) 
 	}
 }
 
+func TestStrictReplyDecodingRejectsValuesOutsideTheDeclaredWireDomains(t *testing.T) {
+	tests := []struct {
+		name   string
+		field  string
+		value  any
+		needle string
+	}{
+		{name: "digest grammar", field: "digest", value: "not-a-digest", needle: `field "digest"`},
+		{name: "negative catalog sequence", field: "catalogSeq", value: float64(-5), needle: `field "catalogSeq"`},
+		{name: "catalog head grammar", field: "catalogHead", value: "", needle: `field "catalogHead"`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reply := validCreateReply()
+			reply[test.field] = test.value
+			_, err := decodeCreateFact(reply)
+			if err == nil || !strings.Contains(err.Error(), test.needle) {
+				t.Fatalf("error = %v, want refusal naming %q", err, test.needle)
+			}
+		})
+	}
+}
+
 func validCreateReply() map[string]any {
 	return map[string]any{
 		"ok": true, "created": false, "digest": strings.Repeat("0", 64),

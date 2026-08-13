@@ -4,6 +4,7 @@
 import { expect, test } from "bun:test"
 import { ProtoClient } from "../src/client.ts"
 import { GENESIS } from "../src/jcs.ts"
+import { DescribeReply, SUBJECT_CONTRACT_DESCRIBE } from "../src/wire.ts"
 import { spawnProtod, spawnReadReplyServer } from "./harness.ts"
 
 test("an evidence-free cursor is refused and cannot poison the catalog writer", async () => {
@@ -64,3 +65,73 @@ test.each([
   },
   120_000,
 )
+
+test("a read refuses a claimed sequence that disagrees with the locally folded sequence", async () => {
+  const responder = await spawnReadReplyServer({
+    ok: true,
+    journal: "requested_journal",
+    entries: [],
+    seq: 0,
+    head: GENESIS,
+    note: "forged truncation costume",
+    next: [],
+  })
+  const connected = await ProtoClient.connect(responder.url)
+  if (!connected.ok) throw new Error(`connect refused: ${JSON.stringify(connected.refusal)}`)
+  const client = connected.fact
+
+  try {
+    const read = await client.read("requested_journal")
+    expect(read.ok).toBe(false)
+    if (!read.ok) {
+      expect(read.refusal.kind).toBe("verify-failed")
+      expect(read.refusal.path).toEqual(["seq"])
+      expect(read.refusal.next.length).toBeGreaterThan(0)
+    }
+  } finally {
+    await client.close()
+    await responder.stop()
+  }
+}, 120_000)
+
+test("caller-side writ errors are teachable data, never connectivity failures", async () => {
+  const daemon = await spawnProtod()
+  const connected = await ProtoClient.connect(daemon.url)
+  if (!connected.ok) throw new Error(`connect refused: ${JSON.stringify(connected.refusal)}`)
+  const client = connected.fact
+
+  try {
+    for (const journal of ["", "a b", "a.b", "*"]) {
+      const published = await client.publish(journal, { payload: "x" })
+      expect(published.ok, `publish ${JSON.stringify(journal)}`).toBe(false)
+      if (!published.ok) {
+        expect(published.refusal.kind).toBe("bad-journal")
+        expect(published.refusal.local).toBe(true)
+        expect(published.refusal.next.length).toBeGreaterThan(0)
+      }
+
+      const read = await client.read(journal)
+      expect(read.ok, `read ${JSON.stringify(journal)}`).toBe(false)
+      if (!read.ok) {
+        expect(read.refusal.kind).toBe("bad-journal")
+        expect(read.refusal.local).toBe(true)
+        expect(read.refusal.next.length).toBeGreaterThan(0)
+      }
+    }
+
+    const oversized = await client.request(
+      SUBJECT_CONTRACT_DESCRIBE,
+      { padding: "x".repeat(2_000_000) },
+      DescribeReply,
+    )
+    expect(oversized.ok).toBe(false)
+    if (!oversized.ok) {
+      expect(oversized.refusal.kind).toBe("malformed")
+      expect(oversized.refusal.local).toBe(true)
+      expect(oversized.refusal.next.length).toBeGreaterThan(0)
+    }
+  } finally {
+    await client.close()
+    await daemon.stop()
+  }
+}, 120_000)

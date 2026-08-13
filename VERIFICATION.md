@@ -384,14 +384,23 @@ NATS subjects.
 
 ### Evidence
 
-60 TypeScript tests, the Go conformance suite, all nine refusal kinds,
-restart survival ([proto/](proto/)).
+The TypeScript and Go conformance suites, all nine refusal kinds, restart
+survival, and the issue #57 shared reply corpus ([proto/](proto/)). The corpus
+contains twelve fixed create/admit/refusal values: both decoders agree on
+three admissions and nine rejections spanning recursive excess fields,
+daemon `local:true` costumes, bad digest/head coordinates, and negative
+sequence positions. Client controls additionally execute journal attribution,
+claimed-sequence/head verification, repair-bearing local refusals, injective
+MCP derivation, and owned send-ordered transcripts against real or controlled
+daemon seams.
 
 ### Bounds and residuals
 
 Unexercised, by stated scope: replica roles (ratified in ADR-0009,
 unbuilt), union resolution across daemons, ingress payload conformance
-(admission checks identity resolution only — the contract says so).
+(admission checks identity resolution only — the contract says so). The reply
+wall is corpus-sized accept/refuse equivalence for the create/admit/refusal
+branches, not exhaustive equivalence over all JSON or every future reply kind.
 
 ### Checkable at
 

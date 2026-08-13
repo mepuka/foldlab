@@ -23,6 +23,16 @@ spec did not fix is logged in `DECISIONS.md`.
   supplied cursor's stored anchor and the exact requested journal attribution
   (`ProtoClient.read` folds locally; the Go conformance test refolds;
   `client-read-verification.test.ts` carries the corrupted-reply controls).
+- Reply decoding is recursively strict in both runtimes: excess fields refuse,
+  digest/head strings are lowercase hex64, sequence positions are safe
+  integers, and a daemon refusal can never claim `local:true`. The shared
+  `wire/reply-conformance.json` corpus is accepted or refused identically by
+  the Go catalog decoder and the Effect Schema client decoder.
+- Every client-local refusal carries at least one explicit next action; a
+  verb-aware caller replaces the default contract-inspection action with its
+  directed repair. Nothing retries for the caller. Session transcripts reserve
+  steps at send time, retain exact sent and claimed wire facts plus verified
+  read facts, endpoint and times, and expose only owned snapshots.
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.
   A digest mismatch means a port drifted; never edit a fixture.
 - The MCP tool surface is derived from `contract.describe` at startup;
@@ -78,6 +88,8 @@ written.
   sugar). Tests: fixture wall, author fold, round-trip wall, MCP wall,
   concierge wall, end-to-end smoke thread. `wire/fixtures/concierge.json`
   pins public fill/unfill request and reply bytes, including refusals.
+  `wire/reply-conformance.json` is the issue #57 adversarial reply corpus with
+  its independent Go-decoder provenance embedded in the file.
 
 ## Graduation map (no-redesign claim)
 

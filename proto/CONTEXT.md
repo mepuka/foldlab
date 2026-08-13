@@ -93,9 +93,11 @@ The single JSON line protod prints once its surfaces are live:
 `{"ready":true,"url":"nats://..."}`. Harnesses parse it; humans read it.
 
 **Transcript**:
-The session facade's ordered record of every verb, subject, sent body,
-and received reply — what makes an agent thread auditable after the
-fact. Sugar strictly above the writ.
+The session facade's send-ordered, owned record of every verb, subject,
+exact sent body, complete received reply, endpoint attribution, and start /
+completion time. A verified read retains both the daemon's claimed wire fact
+and the locally verified cursor. Returned transcripts are snapshots, so a
+consumer cannot erase the record. Sugar strictly above the writ.
 
 ## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
 

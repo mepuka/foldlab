@@ -1,0 +1,77 @@
+{
+  "_provenance": "Hand-authored adversarial corpus required by GitHub #57. Go catalogr4 strict decoding is the independent oracle; proto/go/catalogr4/reply_conformance_test.go and proto/ts/test/reply-conformance.test.ts must agree on every row. Frozen after first green wall.",
+  "cases": [
+    {
+      "name": "create-valid",
+      "kind": "create",
+      "accept": true,
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","body":{"journal":"catalog"}}]}
+    },
+    {
+      "name": "create-extra-top-level",
+      "kind": "create",
+      "accept": false,
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[],"ghost":true}
+    },
+    {
+      "name": "create-extra-next-hint",
+      "kind": "create",
+      "accept": false,
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[{"subject":"flb.req.journal.read","note":"read it","ghost":true}]}
+    },
+    {
+      "name": "create-bad-digest",
+      "kind": "create",
+      "accept": false,
+      "value": {"ok":true,"created":false,"digest":"not-a-digest","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
+    },
+    {
+      "name": "create-negative-sequence",
+      "kind": "create",
+      "accept": false,
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":-5,"catalogHead":"0000000000000000000000000000000000000000000000000000000000000000","next":[]}
+    },
+    {
+      "name": "create-empty-head",
+      "kind": "create",
+      "accept": false,
+      "value": {"ok":true,"created":false,"digest":"0000000000000000000000000000000000000000000000000000000000000000","scheme":"bytes-sha256-v1","catalogSeq":0,"catalogHead":"","next":[]}
+    },
+    {
+      "name": "refusal-valid-daemon",
+      "kind": "refusal",
+      "accept": true,
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"create before publish","next":[],"local":false}}
+    },
+    {
+      "name": "refusal-local-costume",
+      "kind": "refusal",
+      "accept": false,
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"costume","next":[],"local":true}}
+    },
+    {
+      "name": "refusal-extra-field",
+      "kind": "refusal",
+      "accept": false,
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"create before publish","next":[],"local":false,"ghost":true}}
+    },
+    {
+      "name": "admit-valid",
+      "kind": "admit",
+      "accept": true,
+      "value": {"ok":true,"admitted":true,"journal":"catalog_r4_data","seq":0,"head":"0000000000000000000000000000000000000000000000000000000000000000","note":"identity only","next":[]}
+    },
+    {
+      "name": "admit-extra-field",
+      "kind": "admit",
+      "accept": false,
+      "value": {"ok":true,"admitted":true,"journal":"catalog_r4_data","seq":0,"head":"0000000000000000000000000000000000000000000000000000000000000000","note":"identity only","next":[],"ghost":true}
+    },
+    {
+      "name": "admit-bad-head",
+      "kind": "admit",
+      "accept": false,
+      "value": {"ok":true,"admitted":true,"journal":"catalog_r4_data","seq":0,"head":"BAD","note":"identity only","next":[]}
+    }
+  ]
+}

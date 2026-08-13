@@ -3,8 +3,11 @@ package catalogr4
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
 )
+
+var wireHex64 = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 type createFact struct {
 	Created bool
@@ -31,6 +34,9 @@ func decodeCreateFact(reply map[string]any) (createFact, error) {
 	if err != nil {
 		return createFact{}, err
 	}
+	if !wireHex64.MatchString(digest) {
+		return createFact{}, fmt.Errorf("field %q = %q, want 64 lowercase hex characters", "digest", digest)
+	}
 	scheme, err := requireString(reply, "scheme")
 	if err != nil {
 		return createFact{}, err
@@ -41,8 +47,12 @@ func decodeCreateFact(reply map[string]any) (createFact, error) {
 	if _, err := requireInteger(reply, "catalogSeq"); err != nil {
 		return createFact{}, err
 	}
-	if _, err := requireString(reply, "catalogHead"); err != nil {
+	catalogHead, err := requireString(reply, "catalogHead")
+	if err != nil {
 		return createFact{}, err
+	}
+	if !wireHex64.MatchString(catalogHead) {
+		return createFact{}, fmt.Errorf("field %q = %q, want 64 lowercase hex characters", "catalogHead", catalogHead)
 	}
 	if err := requireHints(reply, "next"); err != nil {
 		return createFact{}, err
@@ -71,8 +81,12 @@ func decodeAdmitFact(reply map[string]any, journal string) error {
 	if _, err := requireInteger(reply, "seq"); err != nil {
 		return err
 	}
-	if _, err := requireString(reply, "head"); err != nil {
+	head, err := requireString(reply, "head")
+	if err != nil {
 		return err
+	}
+	if !wireHex64.MatchString(head) {
+		return fmt.Errorf("field %q = %q, want 64 lowercase hex characters", "head", head)
 	}
 	if _, err := requireString(reply, "note"); err != nil {
 		return err
@@ -192,8 +206,8 @@ func requireInteger(value map[string]any, field string) (int64, error) {
 		return 0, fmt.Errorf("missing field %q", field)
 	}
 	got, ok := raw.(float64)
-	if !ok || math.Trunc(got) != got || got < 0 {
-		return 0, fmt.Errorf("field %q is %v (%T), want a non-negative integer", field, raw, raw)
+	if !ok || math.Trunc(got) != got || got < 0 || got > 9007199254740991 {
+		return 0, fmt.Errorf("field %q is %v (%T), want a safe non-negative integer", field, raw, raw)
 	}
 	return int64(got), nil
 }

@@ -176,6 +176,20 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
     expect(readReply.verified).toEqual({ seq: 0, head: admittedReply.head })
     expect(readReply.head).toBeUndefined()
 
+    mcp.send({
+      jsonrpc: "2.0",
+      id: 61,
+      method: "tools/call",
+      params: { name: "journal_read", arguments: { journal: 7 } },
+    })
+    const malformedRead = await mcp.next()
+    const malformedReadReply = malformedRead.result.structuredContent ??
+      JSON.parse(malformedRead.result.content[0].text)
+    expect(malformedReadReply.ok).toBe(false)
+    expect(malformedReadReply.refusal.kind).toBe("malformed")
+    expect(malformedReadReply.refusal.local).toBe(true)
+    expect(malformedReadReply.refusal.next.length).toBeGreaterThan(0)
+
     // The concierge session is driven from contract-derived MCP tools
     // and frontier data alone: start at a bare hole, choose the list
     // example, fill its child, undo once, finish, create, publish, read.

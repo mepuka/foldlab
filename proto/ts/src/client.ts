@@ -32,6 +32,8 @@ export interface Cursor {
 export interface VerifiedRead {
   readonly journal: string
   readonly entries: ReadonlyArray<ChainEntry>
+  /** The daemon's complete wire claim, retained as re-verifiable evidence. */
+  readonly claimed: ReadReply
   /** The cursor this client recomputed locally — not the daemon's claim. */
   readonly verified: Cursor
 }
@@ -39,19 +41,48 @@ export interface VerifiedRead {
 const REQUEST_TIMEOUT_MS = 15_000
 const JOURNAL_NAME = /^[A-Za-z0-9_-]+$/
 
+const repairHint = (subject: string, body: Json, note: string) => ({ subject, body, note })
+
+const badJournal = (journal: string, verb: "publish" | "read"): Refusal => {
+  const example = "data"
+  const subject = verb === "publish" ? INGRESS_PREFIX + example : SUBJECT_JOURNAL_READ
+  const body: Json = verb === "publish"
+    ? { type: "0".repeat(64), payload: null }
+    : { journal: example, from: { seq: -1, head: GENESIS }, max: 0 }
+  return localRefusal(
+    "bad-journal",
+    "W9: journal names use only ASCII letters, digits, underscore, and hyphen",
+    {
+      got: journal,
+      expected: "a non-empty name matching ^[A-Za-z0-9_-]+$",
+      path: ["journal"],
+      example,
+      next: [repairHint(subject, body, `correct the journal name, then explicitly ${verb}`)],
+    },
+  )
+}
+
 export class ProtoClient {
-  private constructor(private readonly connection: NatsConnection) {}
+  private constructor(
+    private readonly connection: NatsConnection,
+    readonly endpoint: string,
+  ) {}
 
   static async connect(url: string): Promise<Reply<ProtoClient>> {
     try {
       const connection = await connect({ servers: url, maxReconnectAttempts: 0 })
-      return { ok: true, fact: new ProtoClient(connection) }
+      return { ok: true, fact: new ProtoClient(connection, url) }
     } catch (error) {
       return {
         ok: false,
         refusal: localRefusal("unreachable", "no daemon answered at this URL", {
           got: String(error),
           expected: url,
+          next: [repairHint(
+            SUBJECT_CONTRACT_DESCRIBE,
+            {},
+            "restore a connection to this endpoint, then explicitly describe the daemon contract",
+          )],
         }),
       }
     }
@@ -68,9 +99,34 @@ export class ProtoClient {
     body: Json,
     fact: S,
   ): Promise<Reply<S["Type"]>> {
+    let payload: string
+    try {
+      payload = JSON.stringify(body)
+    } catch (error) {
+      return {
+        ok: false,
+        refusal: localRefusal("malformed", "W9: a request body must be JSON data", {
+          got: String(error),
+          expected: subject,
+          next: [repairHint(subject, {}, "replace the body with JSON data, then explicitly retry")],
+        }),
+      }
+    }
+    const maxPayload = this.connection.info?.max_payload
+    const payloadBytes = new TextEncoder().encode(payload).byteLength
+    if (maxPayload !== undefined && payloadBytes > maxPayload) {
+      return {
+        ok: false,
+        refusal: localRefusal("malformed", "W9: a request body must fit the connected daemon's payload bound", {
+          got: payloadBytes,
+          expected: maxPayload,
+          next: [repairHint(subject, {}, "reduce or chunk the body at a licensed seam, then explicitly retry")],
+        }),
+      }
+    }
     let raw: Uint8Array
     try {
-      const reply = await this.connection.request(subject, JSON.stringify(body), {
+      const reply = await this.connection.request(subject, payload, {
         timeout: REQUEST_TIMEOUT_MS,
       })
       raw = reply.data
@@ -80,16 +136,25 @@ export class ProtoClient {
         refusal: localRefusal(
           "unreachable",
           "the request produced no reply before its client deadline — this does not distinguish network failure from remote silence",
-          { got: String(error), expected: subject },
+          {
+            got: String(error),
+            expected: subject,
+            next: [repairHint(subject, body, "restore reachability, then explicitly retry this request")],
+          },
         ),
       }
     }
-    return decodeReply(fact, raw)
+    return decodeReply(
+      fact,
+      raw,
+      repairHint(subject, body, "inspect the malformed response, then explicitly retry this request"),
+    )
   }
 
   /** VERB 2 of 3 — PUBLISH: a canonical frame to a designated ingress
    * subject. Request/reply: the reply admits or refuses. */
   async publish(journal: string, frame: Json): Promise<Reply<AdmitReply>> {
+    if (!JOURNAL_NAME.test(journal)) return { ok: false, refusal: badJournal(journal, "publish") }
     return this.request(INGRESS_PREFIX + journal, frame, AdmitReply)
   }
 
@@ -101,9 +166,11 @@ export class ProtoClient {
     from: Cursor = { seq: -1, head: GENESIS },
     max = 0,
   ): Promise<Reply<VerifiedRead>> {
+    if (!JOURNAL_NAME.test(journal)) return { ok: false, refusal: badJournal(journal, "read") }
+    const readBody: Json = { journal, from: { seq: from.seq, head: from.head }, max }
     const reply = await this.request(
       SUBJECT_JOURNAL_READ,
-      { journal, from: { seq: from.seq, head: from.head }, max },
+      readBody,
       ReadReply,
     )
     if (!reply.ok) return reply
@@ -117,6 +184,7 @@ export class ProtoClient {
             got: reply.fact.journal,
             expected: "a name matching ^[A-Za-z0-9_-]+$",
             path: ["journal"],
+            next: [repairHint(SUBJECT_JOURNAL_READ, readBody, "refuse the substituted attribution and explicitly reread the requested journal")],
           },
         ),
       }
@@ -127,7 +195,12 @@ export class ProtoClient {
         refusal: localRefusal(
           "verify-failed",
           "W6: a verified read belongs to the exact journal the caller requested",
-          { got: reply.fact.journal, expected: journal, path: ["journal"] },
+          {
+            got: reply.fact.journal,
+            expected: journal,
+            path: ["journal"],
+            next: [repairHint(SUBJECT_JOURNAL_READ, readBody, "refuse the substituted attribution and explicitly reread the requested journal")],
+          },
         ),
       }
     }
@@ -138,7 +211,26 @@ export class ProtoClient {
         refusal: localRefusal(
           "verify-failed",
           "W6: heads are claims — the returned entries do not fold to a verifiable chain",
-          { got: fold.reason, path: [journal, String(fold.seq)] },
+          {
+            got: fold.reason,
+            path: [journal, String(fold.seq)],
+            next: [repairHint(SUBJECT_JOURNAL_READ, readBody, "retain the last verified cursor and explicitly reread from it")],
+          },
+        ),
+      }
+    }
+    if (fold.seq !== reply.fact.seq) {
+      return {
+        ok: false,
+        refusal: localRefusal(
+          "verify-failed",
+          "W6: sequence positions are claims — the daemon's claimed sequence does not match the locally folded one",
+          {
+            got: reply.fact.seq,
+            expected: fold.seq,
+            path: ["seq"],
+            next: [repairHint(SUBJECT_JOURNAL_READ, readBody, "retain the locally folded sequence and explicitly reread from the prior verified cursor")],
+          },
         ),
       }
     }
@@ -148,7 +240,11 @@ export class ProtoClient {
         refusal: localRefusal(
           "verify-failed",
           "W6: heads are claims — the daemon's claimed head does not match the locally recomputed one",
-          { got: reply.fact.head, expected: fold.head },
+          {
+            got: reply.fact.head,
+            expected: fold.head,
+            next: [repairHint(SUBJECT_JOURNAL_READ, readBody, "retain the locally folded head and explicitly reread from the prior verified cursor")],
+          },
         ),
       }
     }
@@ -157,6 +253,7 @@ export class ProtoClient {
       fact: {
         journal: reply.fact.journal,
         entries: reply.fact.entries,
+        claimed: reply.fact,
         verified: { seq: fold.seq, head: fold.head },
       },
     }

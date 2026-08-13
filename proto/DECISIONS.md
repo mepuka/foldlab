@@ -1178,3 +1178,55 @@ black-box control drives both a public request reply and real internal
 JetStream traffic. **Load-bearing? yes** — user permissions are shared by a
 credential, while confidentiality is per connection; without distinct account
 namespaces, `_INBOX.>` authorizes every application's and the daemon's replies.
+
+## GitHub issue #57 — strict reply/client/transcript conformance (2026-08-13)
+
+### D??. One adversarial reply corpus binds the two public decoders
+
+Decided: Effect Schema decoding uses recursive excess-property refusal and the
+same declared coordinate bounds as the Go `catalogr4` decoder; every row in
+`wire/reply-conformance.json` must receive the same accept/refuse verdict from
+both. The Go decoder is the independent oracle for this corpus, not another
+port of the TypeScript Schema. Alternatives: keep permissive TypeScript decode
+(silently repairs evidence); write two unrelated corpora (cannot compare the
+same value); claim exhaustive language equivalence (larger than the evidence).
+Why: the public client may adopt only the wire value that arrived, including
+the daemon-only `local:false` trust coordinate. **Load-bearing? yes** — reply
+admission determines which facts can become client state.
+
+### D??. Caller errors are local, teachable, and never retried implicitly
+
+Decided: the client validates journal names and the negotiated NATS payload
+bound before publishing, and every local refusal carries a non-empty `next`
+action that preserves the caller's choice to retry. The central fallback is
+contract inspection; verb-aware callers replace it with a directed repair.
+Malformed reply hints are supplied by the verb-specific caller. Alternatives:
+let NATS token errors become `unreachable`; retry automatically; emit empty
+hints. Why: input errors are not network facts, and an automated retry would
+invent authority. The author/codegen refusals use the contract-inspection
+fallback until a more specific local action exists. **Load-bearing? yes** —
+refusal kind and repair direction are public data.
+
+### D??. MCP derivation refuses non-injective tool names
+
+Decided: contract-derived request and ingress kinds must map injectively to MCP
+tool names; any collision makes derivation return one local malformed-reply
+refusal before a handler is registered. Alternatives: last-write wins (lets a
+daemon contract redirect a tool); first-write wins (same ambiguity); suffix
+names by encounter order (construction history becomes API). Why: the tool
+surface is data derived from an untrusted daemon reply, so honest-current-name
+tests alone do not prove structural drift resistance. **Load-bearing? yes** —
+tool name determines which writ verb an agent invokes.
+
+### D??. A transcript owns exact evidence and orders by send
+
+Decided: a session reserves its step before invoking the client, records the
+exact wire body (including the genesis cursor), the complete claimed reply and
+locally verified cursor, endpoint attribution, and start/completion times; the
+getter returns a frozen deep snapshot. Endpoint is attribution only, not an
+authenticated daemon identity. Alternatives: completion order (reorders
+concurrency); store only the verified projection (loses the claim being
+verified); return the backing array (consumer-erased audit). Why: this is the
+minimum record that can later migrate to `flb.session.v0` without inventing
+missing evidence. **Load-bearing? yes** — audit meaning depends on ownership,
+ordering, and preserving both sides of verification.

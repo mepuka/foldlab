@@ -30,6 +30,14 @@ Every reply is either the request's **fact** shape or the uniform
 **refusal** `{"ok":false,"refusal":{...}}`. Nothing throws across the
 seam; no NATS error ever carries a domain "no" (W8).
 
+Reply decoding is recursively exact: unknown properties refuse instead of
+being stripped. Digest and head coordinates are 64 lowercase hexadecimal
+characters; published sequence coordinates are safe non-negative integers
+(`journal.read.from.seq` alone also admits the genesis coordinate `-1`). A
+daemon refusal must carry `local:false`. Go and TypeScript apply these laws to
+the shared adversarial corpus in `reply-conformance.json`; its claim is
+corpus-sized accept/refuse equivalence, not proof over all JSON values.
+
 ### type.create
 
 ```json
@@ -134,6 +142,9 @@ bytes).
 `local` is `false` in every daemon refusal; the TS client emits the
 same shape with `local:true` for its own conditions (`unreachable`,
 `malformed-reply`, `verify-failed`, `beyond-v0`, `underivable`).
+Every local refusal carries at least one `next` action and never performs that
+action implicitly; daemon refusals may use an empty list when absence itself is
+the complete fact.
 `unreachable` reports only that no reply arrived before the client's deadline;
 it does not claim whether the network failed or a reachable daemon stayed
 silent.
@@ -201,3 +212,8 @@ independently (`proto/go/protod/wall_test.go`,
 - `concierge.json` — public fill/unfill request/reply pairs, including
   successful steps and teachable refusals; Go also replays each pair
   against a live daemon.
+
+`reply-conformance.json` sits beside the generated identity fixtures but is a
+hand-authored adversarial conformance corpus. Its `_provenance` field records
+the first freeze, independent Go oracle, and both executable readers. It may
+grow only with a stated reply-domain reason; existing rows are frozen evidence.

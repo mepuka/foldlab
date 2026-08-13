@@ -402,7 +402,11 @@ describe("go target", () => {
         law: "codegen refuses to emit a permanent artifact whose asserted digest it cannot re-derive",
         got: asserted,
         expected,
-        next: [],
+        next: [{
+          subject: "flb.req.contract.describe",
+          note: "inspect the current contract before choosing an explicit repair; no action was retried",
+          body: {},
+        }],
         local: true,
       },
     })
@@ -427,7 +431,11 @@ describe("go target", () => {
       law: "codegen cannot derive this structure: holes are authoring-only and never derive from catalog data",
       path: ["structure", "of", "0", "k"],
       got: "hole",
-      next: [],
+      next: [{
+        subject: "flb.req.contract.describe",
+        note: "inspect the current contract before choosing an explicit repair; no action was retried",
+        body: {},
+      }],
       local: true,
     })
   })

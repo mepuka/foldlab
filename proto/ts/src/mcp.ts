@@ -13,7 +13,16 @@ import { McpProtocol, McpServer, Tool, Toolkit } from "effect/unstable/ai"
 import { SUBJECT_JOURNAL_READ, type ProtoClient } from "./client.ts"
 import { toJsonSchema } from "./codegen.ts"
 import type { Json } from "./jcs.ts"
-import { Refusal as RefusalSchema, type Contract, type Refusal } from "./wire.ts"
+import {
+  Refusal as RefusalSchema,
+  CursorSeq,
+  Hex64,
+  NonNegativeInt,
+  SUBJECT_CONTRACT_DESCRIBE,
+  localRefusal,
+  type Contract,
+  type Refusal,
+} from "./wire.ts"
 
 export interface DerivedTool {
   readonly name: string
@@ -30,7 +39,31 @@ export const toolsFromContract = (
   contract: Contract,
 ): { ok: true; tools: DerivedTool[] } | { ok: false; refusal: Refusal } => {
   const tools: DerivedTool[] = []
-  for (const request of contract.requests) {
+  const names = new Map<string, ReadonlyArray<string>>()
+  const nameCollision = (name: string, path: ReadonlyArray<string>): Refusal | undefined => {
+    const first = names.get(name)
+    if (first === undefined) {
+      names.set(name, path)
+      return undefined
+    }
+    return localRefusal(
+      "malformed-reply",
+      "W10: every contract operation must derive one injective MCP tool name",
+      {
+        got: { name, first: [...first], duplicate: [...path] },
+        expected: "a name used by exactly one request or ingress operation",
+        path: [...path],
+        next: [{
+          subject: SUBJECT_CONTRACT_DESCRIBE,
+          note: "repair the daemon contract so every operation name is unique, then describe it again",
+          body: {},
+        }],
+      },
+    )
+  }
+  for (const [index, request] of contract.requests.entries()) {
+    const duplicate = nameCollision(request.name, ["contract", "requests", String(index), "name"])
+    if (duplicate !== undefined) return { ok: false, refusal: duplicate }
     const input = toJsonSchema(request.body as Json)
     if (!input.ok) return { ok: false, refusal: input.refusal }
     tools.push({
@@ -41,6 +74,8 @@ export const toolsFromContract = (
       inputSchema: input.value,
     })
   }
+  const ingressDuplicate = nameCollision(contract.ingress.name, ["contract", "ingress", "name"])
+  if (ingressDuplicate !== undefined) return { ok: false, refusal: ingressDuplicate }
   const frame = toJsonSchema(contract.ingress.frame as Json)
   if (!frame.ok) return { ok: false, refusal: frame.refusal }
   tools.push({
@@ -62,11 +97,11 @@ const JournalReadArguments = Schema.Struct({
   journal: Schema.String,
   from: Schema.optionalKey(
     Schema.Struct({
-      seq: Schema.Int,
-      head: Schema.String,
+      seq: CursorSeq,
+      head: Hex64,
     }),
   ),
-  max: Schema.optionalKey(Schema.Int),
+  max: Schema.optionalKey(NonNegativeInt),
 })
 
 /** Build the MCP server layer over a connected client: derive tools
@@ -97,13 +132,33 @@ export const mcpLayer = (
           return reply.ok ? reply.fact : { ok: false, refusal: reply.refusal }
         }
         if (tool.kind === "read") {
-          const argumentsResult = Schema.decodeUnknownResult(JournalReadArguments)(payload)
+          const argumentsResult = Schema.decodeUnknownResult(
+            JournalReadArguments,
+            { onExcessProperty: "error" },
+          )(payload)
           if (Result.isSuccess(argumentsResult)) {
             const body = argumentsResult.success
             const reply = await client.read(body.journal, body.from, body.max)
             return reply.ok
               ? { ok: true, ...reply.fact }
               : { ok: false, refusal: reply.refusal }
+          }
+          return {
+            ok: false,
+            refusal: localRefusal(
+              "malformed",
+              "W8: journal_read arguments must decode before the verified read verb runs",
+              {
+                got: payload,
+                expected: String(argumentsResult.failure),
+                path: [],
+                next: [{
+                  subject: SUBJECT_JOURNAL_READ,
+                  note: "correct the journal_read arguments, then explicitly retry the verified read",
+                  body: { journal: "catalog", from: { seq: -1, head: "0".repeat(64) }, max: 0 },
+                }],
+              },
+            ),
           }
         }
         const reply = await client.request(tool.subject, (payload as Json) ?? {}, Schema.Unknown)
@@ -152,6 +207,6 @@ export const processStdioLayer = (): Layer.Layer<Stdio.Stdio> =>
 /** Decode an unknown reply piece as a refusal, if it is one — used by
  * MCP clients inspecting tool results. */
 export const asRefusal = (value: unknown): Refusal | undefined => {
-  const decoded = Schema.decodeUnknownResult(RefusalSchema)(value)
+  const decoded = Schema.decodeUnknownResult(RefusalSchema, { onExcessProperty: "error" })(value)
   return decoded._tag === "Success" ? decoded.success : undefined
 }

@@ -14,6 +14,14 @@ export const INGRESS_PREFIX = "flb.ing."
 
 // ——— shapes ———
 
+export const Hex64 = Schema.String.check(Schema.isPattern(/^[0-9a-f]{64}$/))
+export const NonNegativeInt = Schema.Int.check(
+  Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+)
+export const CursorSeq = Schema.Int.check(
+  Schema.isBetween({ minimum: -1, maximum: Number.MAX_SAFE_INTEGER }),
+)
+
 export const NextHint = Schema.Struct({
   subject: Schema.String,
   note: Schema.String,
@@ -21,7 +29,7 @@ export const NextHint = Schema.Struct({
 })
 export type NextHint = typeof NextHint.Type
 
-export const Refusal = Schema.Struct({
+const RefusalFields = {
   kind: Schema.String,
   law: Schema.String,
   path: Schema.optionalKey(Schema.Array(Schema.String)),
@@ -29,23 +37,32 @@ export const Refusal = Schema.Struct({
   expected: Schema.optionalKey(Schema.Unknown),
   example: Schema.optionalKey(Schema.Unknown),
   next: Schema.Array(NextHint),
+} as const
+
+export const Refusal = Schema.Struct({
+  ...RefusalFields,
   local: Schema.Boolean,
 })
 export type Refusal = typeof Refusal.Type
 
+export const DaemonRefusal = Schema.Struct({
+  ...RefusalFields,
+  local: Schema.Literal(false),
+})
+
 export const RefusalReply = Schema.Struct({
   ok: Schema.Literal(false),
-  refusal: Refusal,
+  refusal: DaemonRefusal,
 })
 export type RefusalReply = typeof RefusalReply.Type
 
 export const CreateReply = Schema.Struct({
   ok: Schema.Literal(true),
   created: Schema.Boolean,
-  digest: Schema.String,
+  digest: Hex64,
   scheme: Schema.String,
-  catalogSeq: Schema.Int,
-  catalogHead: Schema.String,
+  catalogSeq: NonNegativeInt,
+  catalogHead: Hex64,
   next: Schema.Array(NextHint),
 })
 export type CreateReply = typeof CreateReply.Type
@@ -59,7 +76,7 @@ export type FrontierChoice = typeof FrontierChoice.Type
 export const FrontierEntry = Schema.Struct({
   path: Schema.Array(Schema.String),
   legal: Schema.Array(FrontierChoice),
-  refs: Schema.Array(Schema.String),
+  refs: Schema.Array(Hex64),
 })
 export type FrontierEntry = typeof FrontierEntry.Type
 
@@ -72,8 +89,8 @@ export const ConciergeReply = Schema.Struct({
 export type ConciergeReply = typeof ConciergeReply.Type
 
 export const WireEntry = Schema.Struct({
-  seq: Schema.Int,
-  prev: Schema.String,
+  seq: NonNegativeInt,
+  prev: Hex64,
   payload: Schema.String,
 })
 export type WireEntry = typeof WireEntry.Type
@@ -82,8 +99,8 @@ export const ReadReply = Schema.Struct({
   ok: Schema.Literal(true),
   journal: Schema.String,
   entries: Schema.Array(WireEntry),
-  seq: Schema.Int,
-  head: Schema.String,
+  seq: CursorSeq,
+  head: Hex64,
   note: Schema.String,
   next: Schema.Array(NextHint),
 })
@@ -93,8 +110,8 @@ export const AdmitReply = Schema.Struct({
   ok: Schema.Literal(true),
   admitted: Schema.Boolean,
   journal: Schema.String,
-  seq: Schema.Int,
-  head: Schema.String,
+  seq: NonNegativeInt,
+  head: Hex64,
   note: Schema.String,
   next: Schema.Array(NextHint),
 })
@@ -142,14 +159,20 @@ export type Reply<A> =
   | { readonly ok: true; readonly fact: A }
   | { readonly ok: false; readonly refusal: Refusal }
 
+const defaultLocalNext = (): ReadonlyArray<NextHint> => [{
+  subject: SUBJECT_CONTRACT_DESCRIBE,
+  note: "inspect the current contract before choosing an explicit repair; no action was retried",
+  body: {},
+}]
+
 export const localRefusal = (
   kind: string,
   law: string,
-  extra?: Partial<Pick<Refusal, "got" | "expected" | "path" | "example">>,
+  extra?: Partial<Pick<Refusal, "got" | "expected" | "path" | "example" | "next">>,
 ): Refusal => ({
   kind,
   law,
-  next: [],
+  next: defaultLocalNext(),
   local: true,
   ...extra,
 })
@@ -160,6 +183,7 @@ export const localRefusal = (
 export const decodeReply = <S extends Schema.Codec<any, any, never, never>>(
   fact: S,
   raw: Uint8Array | string,
+  repair?: NextHint,
 ): Reply<S["Type"]> => {
   let parsed: unknown
   try {
@@ -170,28 +194,30 @@ export const decodeReply = <S extends Schema.Codec<any, any, never, never>>(
       ok: false,
       refusal: localRefusal("malformed-reply", "the reply is not JSON", {
         got: String(error),
+        ...(repair === undefined ? {} : { next: [repair] }),
       }),
     }
   }
   if (typeof parsed === "object" && parsed !== null && (parsed as { ok?: unknown }).ok === false) {
-    const refused = Schema.decodeUnknownResult(RefusalReply)(parsed)
+    const refused = Schema.decodeUnknownResult(RefusalReply, { onExcessProperty: "error" })(parsed)
     if (Result.isSuccess(refused)) return { ok: false, refusal: refused.success.refusal }
     return {
       ok: false,
       refusal: localRefusal(
         "malformed-reply",
         "the daemon said no, but its refusal does not carry the uniform shape",
-        { got: parsed },
+        { got: parsed, ...(repair === undefined ? {} : { next: [repair] }) },
       ),
     }
   }
-  const decoded = Schema.decodeUnknownResult(fact)(parsed)
+  const decoded = Schema.decodeUnknownResult(fact, { onExcessProperty: "error" })(parsed)
   if (Result.isSuccess(decoded)) return { ok: true, fact: decoded.success }
   return {
     ok: false,
     refusal: localRefusal("malformed-reply", "the reply does not carry the declared fact shape", {
       got: parsed,
       expected: String(decoded.failure),
+      ...(repair === undefined ? {} : { next: [repair] }),
     }),
   }
 }
