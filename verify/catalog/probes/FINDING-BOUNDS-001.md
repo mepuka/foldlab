@@ -1,9 +1,15 @@
 # FINDING BOUNDS 001 — the constant bounds truncate at 4, and `CatalogNaturallyBounded` cannot notice
 
-Status: **OPEN — findings before fixes.** No ratified file was edited.
+Status: **RESOLVED — semantic bound plus independent guard controls.**
 Found 2026-08-13 by the BREAKER team while probing one dimension beyond
 the R2 gate bounds. Passed to the HARDENER team as the rationale for the
 `ASSUME` guards already in their plan.
+
+Resolved 2026-08-13 on `codex/catalog-bound-guards`: the invariant now uses
+`Cardinality(Vals)`; every constant has an executable type/range assumption;
+and three otherwise-valid configs independently require TLC to reject each
+capped dimension before generating a state. The original paired green runs
+below remain the preserved pre-fix evidence.
 
 Severity: **audit hazard.** No ratified claim is false at the ratified
 bounds — 2 daemons / 3 values / 2 creators are all within the expressible
@@ -124,8 +130,8 @@ ASSUME NumVals     \in 1..4
 
 TLC evaluates `ASSUME`s before checking and fails the run outright, so a
 config claiming 6 values becomes a loud error instead of a fast green.
-The HARDENER team is adding these; this finding is the rationale and the
-evidence.
+The resolved gate runs three independent overrun configs; this finding is
+their rationale and preserves the evidence that made the guards necessary.
 
 The semantic fix alone is insufficient — it makes the invariant honest
 but still lets a `NumVals = 9` config run to a green, merely-narrower

@@ -110,6 +110,11 @@ ticket 013 lands the proof artifacts.
   | forged mirror | 4 |
   | resetting mirror | 5 |
 
+  The model rejects any configured daemon, creator, or value-domain size
+  outside `1..4` before state generation. Three independent overrun configs
+  are part of the gate, and the natural catalog bound is checked against
+  `Cardinality(Vals)`, the domain actually explored.
+
 - **R4 against the coarsened wire refinement (CreateAtomic); the
   split-CAS branch's conformance is ticket 012's obligation.** TLC
   checked that every coarse atomic create is a legal uninterrupted
@@ -152,6 +157,10 @@ ticket 013 lands the proof artifacts.
   laws besides the one checked, so "exactly its dropped law" is not yet
   licensed for every control; per-clause controls are in flight on the
   hardening lane. A bounded check certifies only its bounds.
+- Bound honesty: the R2 and R3 configurations are inside the model's explicit
+  `1..4` daemon/creator/value ceilings. Widening a claim past those ceilings
+  requires widening the literal domains; merely raising a config constant is
+  mechanically rejected.
 - Bridge instrument note (FINDING-BRIDGE-001, disposition
   operator-ratified): the action property can only check the CREATING
   half — `[][_]_vars` discharges stuttering steps, so the resolving
