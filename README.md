@@ -140,6 +140,41 @@ monitoring lanes, bug-bash lanes, and first-consumer dogfooding — and
 this log gets the results as they land. Newest first. Every finding
 links to its issue; every claim there carries executed evidence.
 
+**2026-08-13 (evening) — the bug bash reports: five lanes, one day.**
+The Go concurrency lane proved the "flake" (#15) is a real eviction
+race — the register bucket keeps one message per subject, so writing
+the outcome deletes the claim, and a watcher racing that window waits
+forever for a transition that no longer exists (causal control:
+History=1 loses 2/250, History=10 loses 0/250). It also found the
+scariest bug of the day: `Journal.Read` adopts an unverified
+caller-supplied cursor, so a prior *read* can poison the next append's
+chain link — unrepairably, in a DenyDelete stream
+([#34](https://github.com/mepuka/foldlab/issues/34)). The semantics
+lane confirmed twelve twin/digest findings — headline: protod decodes
+request bodies with plain `encoding/json`, so distinct submissions can
+derive one catalog digest
+([#36](https://github.com/mepuka/foldlab/issues/36)) — and probed the
+gauntlet verifiers adversarially: RG-A held strong; R2 accepted a
+bundle whose corpus literally reads "FAKE problem…"
+([#37](https://github.com/mepuka/foldlab/issues/37)). Its deliverable
+is a ready-to-freeze wall-corpus row list
+([#38](https://github.com/mepuka/foldlab/issues/38)). The
+anti-tunnel-vision sweep filed the wave-2 dispatch hazards
+([#30](https://github.com/mepuka/foldlab/issues/30)), the
+dual-canonicalizer divergence
+([#31](https://github.com/mepuka/foldlab/issues/31)), the
+negative-controls-in-no-gate gap
+([#32](https://github.com/mepuka/foldlab/issues/32)), and a 10-item
+advisory digest ([#33](https://github.com/mepuka/foldlab/issues/33)).
+The decision-preparedness scout ranked twenty decisions the build
+order will force, twelve of them this-week class
+([#35](https://github.com/mepuka/foldlab/issues/35)) — top regret
+forecast: the refusal corpus is being born next week with three
+unratified choices. Good news verified along the way: task 24's four
+reply mutants each fire exactly once and are caught; the per-test
+in-process NATS pattern is why the suite has no shared-state flakes;
+zero frozen digests moved through all of it.
+
 **2026-08-13 — foundations audit at `074947f`: INTACT, with one wall
 red and invisible.** Zero frozen digests moved across 82 commits of
 two-machine parallel landing — mechanically proven (no removed hex
