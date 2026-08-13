@@ -1042,3 +1042,35 @@ and identity-scheme change not ratified by D5 itself. Evidence, bounds, and
 reproduction are in `ts/FINDING-ACCEPTANCE-WIDTH-001.md`. **Load-bearing? yes**
 — this choice fixes the denotation of every struct for the certifier, all
 derivation targets, L-ACCEPT, and the future inferrer's S-boundary.
+
+## Issue 55 — total codegen and injective Go names (2026-08-13)
+
+### D??. Go identifiers use readable and encoded disjoint ranges
+
+Decided: ordinary lower-camel JSON field names retain their exported Go
+spellings and already-exported type names remain unchanged; every other name
+uses `X_` followed by one fixed-width hexadecimal group per UTF-16 code unit.
+The `X_` range is reserved, so readable names that would enter it are encoded
+too. Alternatives: replace invalid characters with `_` (not injective and can
+emit Go's blank identifier); refuse non-ASCII, punctuation, or empty field
+names (would make the Go target refuse structures the other targets derive,
+breaking the standing cross-target law); encode every name (injective but
+needlessly breaks existing readable consumer names). Why: the Go target must
+preserve every grammar-legal field distinctly even before the future codec
+wall exists, while JSON tags retain the original wire names. **Load-bearing?
+no** — D27 keeps this target a sketch, and identifier spelling is outside
+structural identity.
+
+### D??. Derivation-only metadata failures share one local refusal
+
+Decided: pattern regular expressions and struct `optional` metadata are read
+once by shared codegen guards before target-specific lowering; malformed data
+returns the same `underivable` refusal and path from all three targets. On the
+required `9d26415` base, live protod already refuses a non-array `optional` at
+`structure/optional`, so issue #55's claim that this shape is daemon-admitted
+is stale; the raw codegen guard remains because its public input is untrusted
+JSON. Alternatives: rely only on daemon admission (cached/direct callers can
+still throw); catch exceptions independently in each target (paths and laws
+can drift); widen the daemon grammar (unlicensed). Why: derivation failures are
+data and cross-target consistency includes refusal paths. **Load-bearing? no**
+— this enforces existing laws without changing the owned grammar.

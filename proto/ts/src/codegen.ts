@@ -39,13 +39,65 @@ const node = (value: Json): Record<string, Json> | undefined =>
 const fieldNamesInIdentityOrder = (fields: Record<string, Json>): ReadonlyArray<string> =>
   Object.keys(fields).sort()
 
+/** Pattern metadata is executable in one target, so every target validates it
+ * before lowering and agrees on the same refusal instead of one throwing. */
+const patternFor = (
+  check: Record<string, Json> | undefined,
+  path: ReadonlyArray<string>,
+): RegExp | Fail | undefined => {
+  if (check?.["name"] !== "pattern") return undefined
+  const args = node(check["args"] as Json) ?? {}
+  const source = args["source"]
+  const flags = args["flags"] ?? ""
+  if (typeof source !== "string") {
+    return underivable(
+      [...path, "check", "args", "source"],
+      source,
+      "pattern source must be a string",
+    )
+  }
+  if (typeof flags !== "string") {
+    return underivable(
+      [...path, "check", "args", "flags"],
+      flags,
+      "pattern flags must be a string",
+    )
+  }
+  try {
+    return new RegExp(source, flags)
+  } catch {
+    return underivable(
+      [...path, "check", "args", "source"],
+      source,
+      "pattern source and flags do not form a regular expression",
+    )
+  }
+}
+
+/** `readonly` types do not validate catalog bytes. Keep raw callers total and
+ * give every target the same evidence path for malformed struct metadata. */
+const optionalFields = (
+  n: Record<string, Json>,
+  path: ReadonlyArray<string>,
+): ReadonlySet<string> | Fail => {
+  const optional = n["optional"]
+  if (optional === undefined) return new Set()
+  if (!Array.isArray(optional)) {
+    return underivable(
+      [...path, "optional"],
+      optional,
+      "struct optional metadata must be an array",
+    )
+  }
+  return new Set(optional.map(String))
+}
+
 // ——— effect-schema target ———
 
 /** name → builder over (args). Inverse of the author fold's table. */
 const CHECK_BUILDERS: Record<string, (args: Record<string, Json>) => any> = {
   minLength: (a) => Schema.isMinLength(a["min"] as number),
   maxLength: (a) => Schema.isMaxLength(a["max"] as number),
-  pattern: (a) => Schema.isPattern(new RegExp(a["source"] as string, (a["flags"] as string) ?? "")),
   greaterThan: (a) => Schema.isGreaterThan(a["exclusiveMin"] as number),
   min: (a) => Schema.isGreaterThanOrEqualTo(a["min"] as number),
   lessThan: (a) => Schema.isLessThan(a["exclusiveMax"] as number),
@@ -83,7 +135,8 @@ const toSchemaNode = (
     }
     case "struct": {
       const fields = node(n["fields"] as Json) ?? {}
-      const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
+      const optional = optionalFields(n, path)
+      if (optional instanceof Fail) return optional
       const built: Record<string, any> = {}
       for (const name of fieldNamesInIdentityOrder(fields)) {
         const field = toSchemaNode(fields[name] as Json, [...path, "fields", name], resolve)
@@ -112,6 +165,9 @@ const toSchemaNode = (
       if (base instanceof Fail) return base
       const check = node(n["check"] as Json)
       const name = String(check?.["name"])
+      const pattern = patternFor(check, path)
+      if (pattern instanceof Fail) return pattern
+      if (pattern !== undefined) return base.check(Schema.isPattern(pattern))
       const builder = CHECK_BUILDERS[name]
       if (builder === undefined) {
         return underivable([...path, "check", "name"], name, "this check name has no v0 builder")
@@ -174,7 +230,8 @@ const toJsonSchemaNode = (
     }
     case "struct": {
       const fields = node(n["fields"] as Json) ?? {}
-      const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
+      const optional = optionalFields(n, path)
+      if (optional instanceof Fail) return optional
       const properties: Record<string, Json> = {}
       const required: string[] = []
       for (const name of fieldNamesInIdentityOrder(fields)) {
@@ -203,6 +260,8 @@ const toJsonSchemaNode = (
       const base = toJsonSchemaNode(n["base"] as Json, [...path, "base"])
       if (base instanceof Fail) return base
       const check = node(n["check"] as Json)
+      const pattern = patternFor(check, path)
+      if (pattern instanceof Fail) return pattern
       const args = node(check?.["args"] as Json) ?? {}
       switch (check?.["name"]) {
         case "minLength":
@@ -240,10 +299,37 @@ export const toJsonSchema = (structure: Json): Derived<Record<string, Json>> => 
 
 // ——— go target (source text; verified by re-parse in the bullet) ———
 
-const goIdent = (name: string): string => {
-  const cleaned = name.replace(/[^A-Za-z0-9_]/g, "_")
-  const first = cleaned.charAt(0)
-  return (first >= "0" && first <= "9" ? "F_" : "") + cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+const encodedGoIdent = (name: string): string => {
+  // One fixed-width hex group per UTF-16 code unit is injective over every JS
+  // string. X_ is reserved: readable names that would enter that prefix use
+  // this encoding too, keeping the two ranges disjoint.
+  let encoded = "X_"
+  for (let index = 0; index < name.length; index++) {
+    encoded += name.charCodeAt(index).toString(16).padStart(4, "0")
+  }
+  return encoded
+}
+
+const goFieldIdent = (name: string): string => {
+  if (/^[a-z][A-Za-z0-9_]*$/.test(name)) {
+    const readable = name.charAt(0).toUpperCase() + name.slice(1)
+    if (!readable.startsWith("X_")) return readable
+  }
+  return encodedGoIdent(name)
+}
+
+const goTypeIdent = (name: string): string =>
+  /^[A-Z][A-Za-z0-9_]*$/.test(name) && !name.startsWith("X_")
+    ? name
+    : encodedGoIdent(name)
+
+const splitTrailingGoComment = (
+  source: string,
+): { readonly type: string; readonly comment?: string } => {
+  const marker = source.lastIndexOf(" //")
+  return marker > source.lastIndexOf("\n")
+    ? { type: source.slice(0, marker), comment: source.slice(marker + 3).trimStart() }
+    : { type: source }
 }
 
 const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
@@ -277,7 +363,7 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
     case "list": {
       const of = toGoType(n["of"] as Json, [...path, "of"])
       if (of instanceof Fail) return of
-      return `[]${of.split(" //")[0]}`
+      return `[]${splitTrailingGoComment(of).type}`
     }
     case "brand": {
       const of = toGoType(n["of"] as Json, [...path, "of"])
@@ -288,22 +374,25 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       const base = toGoType(n["base"] as Json, [...path, "base"])
       if (base instanceof Fail) return base
       const check = node(n["check"] as Json)
+      const pattern = patternFor(check, path)
+      if (pattern instanceof Fail) return pattern
       return `${base.split(" //")[0]} // check ${check?.["name"]}`
     }
     case "ref":
       return `any // ref ${n["digest"]}`
     case "struct": {
       const fields = node(n["fields"] as Json) ?? {}
-      const optional = new Set((n["optional"] as Json[] | undefined ?? []).map(String))
+      const optional = optionalFields(n, path)
+      if (optional instanceof Fail) return optional
       const lines: string[] = ["struct {"]
       for (const name of fieldNamesInIdentityOrder(fields)) {
         const field = toGoType(fields[name] as Json, [...path, "fields", name])
         if (field instanceof Fail) return field
-        const parts = field.split(" //")
-        const goType = optional.has(name) ? `*${parts[0]}` : parts[0]
+        const parts = splitTrailingGoComment(field)
+        const goType = optional.has(name) ? `*${parts.type}` : parts.type
         const omit = optional.has(name) ? ",omitempty" : ""
-        const comment = parts[1] !== undefined ? ` //${parts[1]}` : ""
-        lines.push(`\t${goIdent(name)} ${goType} \`json:"${name}${omit}"\`${comment}`)
+        const comment = parts.comment !== undefined ? ` // ${parts.comment}` : ""
+        lines.push(`\t${goFieldIdent(name)} ${goType} \`json:"${name}${omit}"\`${comment}`)
       }
       lines.push("}")
       return lines.join("\n")
@@ -335,7 +424,7 @@ export const toGoSource = (structure: Json, typeName: string, digest: string): D
     `// digest: ${actualDigest} (${SCHEME})`,
     "package flbtypes",
     "",
-    `type ${goIdent(typeName)} ${goType}`,
+    `type ${goTypeIdent(typeName)} ${goType}`,
     "",
   ].join("\n")
   return { ok: true, value: source }
