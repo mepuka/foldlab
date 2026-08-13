@@ -83,3 +83,20 @@ source where needed; Node docs; engine conformance suites), novel
 hazards ranked, then the coordinator's determination: portability
 rule ratification, the three-way identity lane, CI matrix scope, and
 what VERIFICATION.md must state about runtime scope per claim.
+
+## Pre-registered through-line candidate (coordinator, before the scout returns)
+
+Spec-determinism as law: identity-bearing modules restricted to
+spec-total operations (ECMA-262 leaves them zero latitude) are
+cross-engine-equal by theorem of the spec, not by testing. If the
+scout's spec citations hold, the determination should ratify: (1) a
+spec-total allowlist for identity modules, mechanically gated; (2)
+ADR-0001 generalized from cross-language to cross-EVALUATOR (every
+engine is an adapter under one wall factory); (3) engine walls demoted
+to negative controls on the engines — they exist to catch an engine
+violating its own spec. Runtime-dependence localizes in the effects/
+services layer by construction (ticket 020's Layers), each service
+contract owing its conformance law. Scored like everything else: if
+the spec turns out to leave latitude anywhere we assumed totality,
+that is a finding against this candidate and the wall stays
+load-bearing.
