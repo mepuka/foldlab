@@ -166,3 +166,139 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   choreographed); TS Layer correctness REDUCES to daemon's (R0/R1 adapter surface,
   no independent guarantee); replay determinism precondition.
 - Committing + pushing.
+
+### Burst 6 — wider map: full cluster/workflow correspondence (Parts A-D, done)
+- Retask: widen the workflow-replay map. Extended the design doc with Parts A-D.
+- Read REAL mechanics (per coordinator's confirmed inventory): Singleton
+  (:46 make; :34 double-register=defect; run on shard-owning runner),
+  Entity (:71; EntityAddress{shardId,entityType,entityId}), Snowflake
+  (:47 timestamp+machineId+sequence bigint), MessageStorage (:48 Context.Service
+  saveRequest/saveReply/repliesFor/unprocessedMessages; layerNoop:1048/
+  layerMemory:1056/Sql), DurableClock (:28 make+DurableDeferred<Void> wake),
+  DurableDeferred (:38; token :412; deferredDone sets Exit once), DurableQueue
+  (:46 PersistedQueue-backed), EventLogRemote (remote replica sync),
+  EventLog (:603 makeEntryIdUnsafe timestamp ids), ClusterCron (:43 built on
+  Singleton), Runners/RunnerHealth (topology).
+- SHARPEST CORRESPONDENCES FOUND:
+  - Singleton != effector: DIFFERENT AXES. Singleton = lease-based PLACEMENT
+    (who runs now); effector = proven COMMITMENT (whose result counts forever,
+    fenced R3/R4). foldlab replaces the commitment half, NOT placement. This
+    bounds how much of the cluster stack foldlab can claim.
+  - cluster Entity != foldlab Entity: assigned actor address + opaque live state
+    vs recomputable chain-head identity + auditable fold state. Complementary.
+  - MessageStorage = THE cleanest seam: JournalMessageStorage:Layer<MessageStorage,
+    never,ProtoClient> swaps persistence under unchanged ClusterWorkflowEngine
+    (which REQUIRES MessageStorage) -> exactly-once upgrade flows up via one swap.
+  - Snowflake vs digest = DIVERGENCE (mint-time-and-place vs recompute-from-
+    content); NOT substitutable; root of all other divergences.
+  - DurableDeferred ~ effector Claim->Done: same terminal-uniqueness SHAPE, but
+    assigned token + storage-once vs recomputable key + fence-proven once. Fence
+    dimension ADDED not matched.
+- MECHANIC THAT DOES NOT MAP CLEANLY: DurableQueue (work buffer, no recomputable
+  identity/chain head) — flagged as not a clean inheritance.
+- Part A: 8 agent-first use cases (A1 durable task, A2 zero-instrument provenance,
+  A3 kill-9 byte-exact, A4 cross-runtime tool, A5 third-party auditable run,
+  A6 human-in-loop=DurableDeferred, A7 OTLP/Langfuse integration, A8 MCP-drives-
+  workflow integration), each with guarantee-leaned-on + label.
+- Part D SEAM MAP: D.1 substitution (table, all inherited; MessageStorage/
+  Activity/Singleton-commitment-half/Entity-state/DurableClock/DurableDeferred);
+  D.2 divergence (ids, journal ownership, placement-vs-commitment, safety-vs-
+  liveness); D.3 interop (EventLogRemote bridge, OTLP export, cross-key handoff
+  to saga/2PC on the ratified one-workflow-one-register default). Closed with the
+  compositionality frontier: proof EXTENDS inside one register over det-or-
+  journaled activities on a daemon journal; STOPS at 4 boundaries (cross-register
+  atomicity, liveness, placement, nondeterministic-effect reproducibility).
+- Housekeeping done: cross-linked Part-1 replay mapping into dossier P5.
+- Committing + pushing.
+
+### Burst 7 — record two dispositions (closure, done)
+- Coordinator verified both crown-jewel correspondences in source and ratified
+  the "foldlab is NOT a clustering replacement" cap as the map's keystone.
+- Recorded disposition 1: EventJournal/EventLogRemote bridge = NOTED SEAM, not a
+  spike. Identity mismatch (EventLog.ts:603 msecs EntryId vs hash-chained head) =
+  Snowflake-vs-digest divergence at journal level; a bridge maps not unifies;
+  consumer-gated (no-machinery-before-consumer). Written into D.3.
+- Recorded disposition 2: JournalMessageStorage = RECOMMENDED FIRST CONCRETE SLICE
+  for ticket 020 (recommendation to operator, did NOT edit ticket 020). Lowest-
+  risk/highest-leverage: one service swap via Effect DI (engine already requires
+  MessageStorage), narrow-writ-respecting (requires ProtoClient, requests daemon),
+  first real cross-process consumer of the effector/fold substrate = retires the
+  missing-consumer risk. Honest caveat recorded: foldlab-persistence-under-stock-
+  placement (still requires Sharding) — correct because foldlab replaces
+  commitment not placement.
+- Design arc complete (dossier -> workflow-replay design -> wider map -> closure).
+- Committing + pushing. DONE.
+
+### Burst 8 — the theoretical capstone: docs/design/2026-08-13-the-unified-fold.md (done)
+- Retask: theory capstone unifying everything as ONE catamorphism. 4 parts.
+- Noted: .reference/core-concepts.md does NOT exist at this pin; grounded Part 1
+  in README "Why foldlab"/"theory in brief" + CONTEXT.md + source I'd read.
+- Part 1 THE UNIFICATION: catamorphism = unique fold out of initial algebra
+  (Bird-Meertens). Three faces = one structure:
+  Face A ADT = initial algebra of polynomial functor (algebra.ts AlgebraSpec
+  :52-65 IS the grammar; product :245-284); structural digest = AST fold
+  (CONTEXT/004, ASPIRATIONAL; interim bytes-sha256-v1 SHIPPED).
+  Face B Merkle = SAME catamorphism into canonicalize-then-SHA256 algebra;
+  head = headFrom/extend left fold (stream.ts:112-116), structural digest folds
+  tree into same hashing algebra (jcs:108). SHIPPED.
+  Face C free monoid = event stream; time-fold = unique monoid hom (fold.ts:60-88);
+  uniqueness=>invalidation-free cache, hom=>parallel replay. R1 shipped, universal
+  property=argument toward R5.
+  UNIFICATION: head(identity) + state(meaning) = two catamorphisms over ONE shape
+  (X*) at two algebras; "chain remembers what fold forgives" = head INJECTIVE
+  (collision resistance) vs meaning-hom LOSSY = ker(ĝ); Freyd/Rutten μF->νF
+  minimization-map kernel (resonances 3). Honest edge: 004 semantic laws
+  ASPIRATIONAL, recursion hole, meta-theorem argument-not-mechanized.
+- Part 2 byte-guaranteed codegen: type=cataloged value by structural digest;
+  certifier=one lawful fold (certify(bytes)->Certificate|Refusal, ESOP 2012
+  translation-validation); codegen=semantic fold (toEffectSchema/toJsonSchema/
+  toGoSource SHIPPED in proto, GBNF/FSM ASPIRATIONAL 015); byte-guaranteed via
+  constrained decode (jcs:341) + canonical bytes served by digest, grounded in
+  number-determinism dossier (45.8% latitude closed by RFC8785+constrained
+  decode+JCS wall). Edges: Gold (teaching loop load-bearing), GAD NeurIPS 2024
+  (validity syntactic), semantic gap.
+- Part 3 four use cases: multiagent comm (content-address ontology, union
+  resolution, teaching refusals, byte-guarantee=>can't emit invalid); local DSLs
+  + generated translation (homomorphism, GF parse∘linearize=id, ASPIRATIONAL 015);
+  streaming (xform.ts fusion SHIPPED); aggregation (free-monoid fold = through-
+  line to Part 1, foldCache/foldLaws SHIPPED, consumer-gated 020).
+- Part 4 frontier (one para): proof EXTENDS wherever a derived artifact is a
+  catamorphism over digest-anchored input (inherits committed identity, can't
+  drift, parse∘linearize walls); STOPS at the semantic gap (induced grammar
+  meaning intent is irreducible) — recomputability of what was built, never
+  fidelity to intent. The honest cap, like commitment-not-placement.
+- Appendix: full grounding ledger (repo instances + labels + literature).
+- Committing + pushing. Capstone done.
+
+### Burst 9 — issue #13 product dialogue (done)
+- Read issue #13 (body Q1-7 + follow-up A/B/C). Wrote
+  docs/design/2026-08-13-workflow-engine-product-dialogue.md.
+- PINNED Effect-team grounding (strict ground rule): ClusterWorkflowEngine rides
+  Sharding+MessageStorage (:1-6/:790); Sharding = ownership+routing+health checks;
+  SINGLERUNNER = their OWN single-process layer BUT "still requires a SQL client"
+  (:1-11) => the wedge is the SQL dependency, not single-node (sharpens Q1/Q7);
+  MessageStorage = pluggable backend "tracks duplicate requests" (dedup exactly-
+  once), noop/memory for local/test; MessageStorage.test.ts = memory-only NOT a
+  TCK (B2 verified gap); Activity stores/replays result; Workflow identity =
+  tag+idempotency-key (Q5). EXTERNAL (labelled): EffectTS_ X post (Cluster =
+  production-grade multi-node at scale); durable-exec surveys (render/zenml).
+- SHARPEST answers: Q7 minimal demo = reuse STOCK ClusterWorkflowEngine +
+  SingleRunner + swap SqlMessageStorage->JournalMessageStorage (build ONE thing,
+  their engine/examples unchanged). Q3 wedge = auditor-who-trusts-neither
+  recomputes exactly-once (proof is the product). Part 2A = concierge lifts to
+  workflow construction (C4 no-dead-ends on PROGRAMS) BUT only for a REGULAR
+  fragment (loops/recursion break decidability) - flagged open.
+- HONEST 'we can't'/'worse' answers: Q4 arbitrary-effect determinism is
+  UNDECIDABLE (strong form impossible; only refuse non-canonical RESULTS today +
+  certifier verdict under a DSL); Q2 three WORSE cells (canonical-bytes
+  strictness, no-silent-hot-patch rigidity, inherited unstable churn); Q5 branch-
+  not-mutate rigidity; B2 TCK is a proposal not a thing we built.
+- Part 3 grounding (today's session): C1 lane collisions = 3 lost CAS races the
+  effector refuses by construction (issue #12 claim-first protocol = proven
+  Claim); C2 approval gate = human holding a Claim, lease-expiry escalation =
+  D2 steal-by-fence-not-clock (already proven); C3 two-fold split as LLM-nondet
+  discipline (chain remembers bytes, meaning forgives, retry=new fact, concierge
+  = certified construction). Honest edge: retrospective mapping, engine unbuilt.
+- Coordinated: referenced architecture team's deep-module map (B3 deletion test),
+  did not duplicate module interfaces.
+- Committing + pushing. Awaiting coordinator synthesis pointer to #13.

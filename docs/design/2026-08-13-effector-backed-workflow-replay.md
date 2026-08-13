@@ -377,3 +377,304 @@ transaction the single-key proof does not cover.** Two candidate resolutions:
   GV6 `:94`, GV7 `:96`, precondition `:36-38`, result `:120`, storm caveat
   `:136`). ADR-0003 (boundary is data), ADR-0005 (journal load-bearing),
   ADR-0006 (derivation over porting), ticket 002 (narrow writ).
+
+---
+
+# The wider map (Parts A–D): the full cluster/workflow correspondence
+
+Extension, 2026-08-13, same discipline. The operator asked the map widened:
+model concrete use cases, map the *other* workflow and cluster mechanics onto the
+effector/journal, and draw the seam map — where the inherited proof extends
+across a boundary and where it stops. Module inventory confirmed against
+`repos/effect/packages/effect/src/unstable/{workflow,cluster,eventlog}` at
+rc.108. Provisional ruling from last burst treated as ratified for this doc's
+scope: **one workflow = one register** (single-key inheritance); genuine
+cross-register atomicity needs its own gate (Part D interop seam 3).
+
+## Part A — Use-case catalog (agent-first)
+
+The primary consumer is an agent (NEXT.md precept 6). Each case names the flow,
+the foldlab guarantee it leans on, and its label.
+
+**A1 — Durable multi-step agent task, every step a citable fact.** An agent runs
+a plan as a `Workflow` of `Activity` steps; each committed step is a
+`Done(fence, result)` journal fact addressable by digest. Leans on:
+**exactly-once + recomputable replay.** Label: RATIFIED-UNBUILT (kernel SHIPPED —
+G1 proves the chained-effect replay).
+
+**A2 — Zero-instrumentation provenance.** The agent writes ordinary
+`Effect.withSpan`; under `FoldlabTracer` the span id *is* the segment chain head,
+so lineage is a query over the journal, no tracing code. Leans on:
+**provenance-for-free** (dossier P3). Label: RATIFIED-UNBUILT (ticket 020).
+
+**A3 — Kill-9-resilient pipeline that resumes byte-exact.** A long agent pipeline
+survives worker kills and server restarts and resumes to a byte-exact final
+state. Leans on: **recomputable replay.** Label: kernel SHIPPED (G1 GV6, ratified
+2026-08-12); the workflow wrapper RATIFIED-UNBUILT.
+
+**A4 — Cross-runtime agent tool.** An agent authors a type/program once and runs
+it in-process (TS), on the daemon (Go), or in wasm, with digest-equal results —
+the tool's behavior is a recomputable fact independent of where it ran. Leans on:
+**cross-language equivalence** (dossier P4). Label: substrate SHIPPED (walls); the
+agent-facing surface RATIFIED-UNBUILT.
+
+**A5 — Third-party auditable agent run.** An auditor holding only the exported
+run bundle recomputes the entire history, every commitment, and a counterfactual
+— the G1 verifier generalized to agent traffic. Leans on: **recomputable replay +
+exactly-once + provenance.** Label: the verifier pattern SHIPPED for the G1
+workload; agent-traffic instance RATIFIED-UNBUILT.
+
+**A6 — Human-in-the-loop approval as a durable promise.** An agent workflow
+suspends awaiting a human decision, modeled as a `DurableDeferred` that resolves
+**once, terminally** (Part B) — an absence until decided, a single committed
+outcome after. Leans on: **exactly-once terminal outcome + absence-as-typed-
+refusal.** Label: RATIFIED-UNBUILT.
+
+**A7 — INTEGRATION: OTLP/Langfuse export from the journal (ticket 006).** No
+separate tracing system: the journal *is* the trace, and OTLP/Langfuse export is
+a projection/derivation over it (ADR-0005; dossier P3). An existing observability
+stack consumes recomputable spans. Leans on: **provenance-for-free.** Label:
+RATIFIED-UNBUILT (ticket 006).
+
+**A8 — INTEGRATION: the MCP agent surface driving a workflow.** The agent's tool
+calls (create type, publish, read) *are* workflow activities; the concierge's C4
+fluency (every advertised move accepted — dossier P7) composes with the
+workflow's exactly-once commitment, so an agent authors and runs in one lawful
+surface. Leans on: **exactly-once + teaching refusals.** Label: MCP surface
+SHIPPED in `proto/`; the workflow binding RATIFIED-UNBUILT.
+
+## Part B — The other workflow mechanics → effector/journal
+
+**Activity** (`workflow/Activity.ts:36,123`) → **effector `Done(fence,result)`**
+at the exactly-once boundary (Part 1). Clean substitution; **inherits** effector
+R3/R4. Established above.
+
+**DurableClock** (`workflow/DurableClock.ts:28`, `make({name, duration})` `:42`,
+with a `DurableDeferred<Void>` wake signal) → **time as a journaled fact.** A
+sleep schedules its wake through the `WorkflowEngine` and awaits the durable
+deferred (`:5-7`); foldlab commits the *wake time* as a fact, so replay reads it
+rather than re-reading the wall clock. This is the deterministic-in-the-digest
+precondition (Part 1.4) made concrete: a clock read — otherwise the canonical
+nondeterministic effect — becomes a committed value. **Clean substitution;
+inherits** journal verify-on-read for the wake fact. Honest edge: only the
+*recorded* wake is safety; whether the timer *fires on time* is **liveness** and
+unproven.
+
+**DurableDeferred** (`workflow/DurableDeferred.ts:38`, `token` `:412`; engine
+`deferredDone` sets an `Exit` `WorkflowEngine.ts:180`) → **effector `Claim→Done`.
+Grill of the correspondence:** a `DurableDeferred` is Absent until `deferredDone`
+sets a terminal `Exit` **exactly once**, after which all waiters observe that
+`Exit` — which is precisely the effector's *unique-terminal-outcome* safety
+property. So the **shape matches**: single terminal resolution, resolves once.
+**The delta, stated honestly:** the `DurableDeferred` is keyed by an *assigned*
+token (workflow name / execution id / deferred name, `:314-345`) and carries **no
+fence**; its once-ness is enforced by the engine's storage. The effector keys by
+*content* and protects the terminal write with a **proven monotone fence** (no
+commit below the highest linearized fence, R3). So this is a **substitution that
+upgrades**: the same terminal-uniqueness shape, but foldlab replaces
+storage-enforced once-ness with fence-*proven* once-ness against stale writers,
+and an assigned token with a recomputable key. The fence dimension is *added*, not
+merely matched — say so rather than claiming a 1:1 map.
+
+**DurableQueue** (`workflow/DurableQueue.ts:46`, backed by
+`persistence/PersistedQueue`) → **≈ a journal, loosely.** A workflow offers a
+payload to a named queue; a persisted worker takes and runs it. It is an
+append-and-consume *work buffer*, not an identity log. **Does not map cleanly:**
+foldlab's journal is a hash-chained, verify-on-read *identity* structure; a
+`DurableQueue` has no recomputable identity for its items and no chain head. A
+foldlab analog would be a journal of offer-facts consumed by effector-guarded
+workers, but that rebuilds the primitive rather than substituting for it — flag
+as *not a clean inheritance*.
+
+## Part C — Cluster mechanics → foldlab substrate
+
+**Singleton vs the effector Register — the crown jewel, and they are DIFFERENT.**
+`Singleton.make(name, run, options)` (`cluster/Singleton.ts:46`) runs `run` on
+**the runner that currently owns the singleton's shard**; double-registration in
+the same shard group is a **defect** (`:34`); the fiber is interrupted and the
+registration removed on teardown (`:5-7`). This is an **availability/placement**
+guarantee — *at most one live instance now* — enforced by **shard ownership
+(lease-based)**, not a machine-checked safety invariant; under a partition or
+rebalance the ownership assumption is exactly the classic single-writer problem.
+The effector Register is a **commitment/safety** guarantee — *exactly one terminal
+result forever* — protected by a **proven monotone fence** (R3 inductive
+invariant, R4 lockstep). Verdict: **not the same, not weaker — different axes.**
+Singleton answers "who runs it now"; the effector answers "whose result counts,
+forever." The effector supplies precisely the safety a Singleton's placement
+*assumes*. Consequence for the claim: foldlab **replaces Singleton's commitment
+half, not its placement half** — you cannot drop the effector in for Singleton and
+get process placement, and you cannot trust Singleton's convention for
+commit-safety.
+
+**cluster Entity vs foldlab Entity — same word, different concept.** A cluster
+`Entity` (`cluster/Entity.ts:71`) is an addressable stateful actor — an
+`RpcGroup` protocol addressed by `EntityAddress{shardId, entityType, entityId}`
+(`cluster/EntityAddress.ts:24`), placed on a shard, one live handler per id. A
+foldlab entity is the **quotient of event traffic by a correlation key**,
+identified by a **recomputable chain head + state digest**, both folds maintained,
+backing-independent (`packages/core/src/entity.ts:29-135`). The delta: cluster
+Entity identity is an **assigned** string id plus shard placement, and its state
+is opaque live memory; foldlab entity identity is a **recomputable** head over its
+exact history, and its state is a fold anyone can re-derive and audit. They are
+**complementary, not substitutes**: a cluster Entity's handler could fold its
+inbox into a foldlab entity to gain recomputable state and provenance — routing
+from one, identity from the other.
+
+**MessageStorage as THE pluggable persistence seam — the cleanest integration.**
+`MessageStorage` is a `Context.Service` (`cluster/MessageStorage.ts:48`) with
+`saveRequest` `:52`, `saveReply` `:66`, `repliesFor` `:85`, `unprocessedMessages`
+`:135`, and stock drivers `layerNoop` `:1048` / `layerMemory` `:1056` /
+`SqlMessageStorage`. Because `ClusterWorkflowEngine.layer` *requires*
+`MessageStorage` (`ClusterWorkflowEngine.ts:790`), a foldlab **`JournalMessageStorage`**
+Layer swaps the entire persistence substrate under the unchanged engine:
+
+```ts
+// Proposed (RATIFIED-UNBUILT). saveReply commits a Done fact (effector-guarded);
+// repliesFor reads committed results (a persisted reply is returned, not re-run);
+// saveRequest appends the request as evidence; unprocessedMessages = journal
+// entries with no committed reply. Mirrors the driver shape of layerMemory (:1056).
+export const JournalMessageStorage: Layer.Layer<MessageStorage, never, ProtoClient>
+```
+
+**Substitution that upgrades:** `SqlMessageStorage`'s exactly-once is a
+storage/idempotency promise; `JournalMessageStorage`'s is a **recomputable fact**
+(verify-on-read + effector fence). And the upgrade flows up to the whole workflow
+engine through one service swap — no engine reimplementation. This is the highest-
+leverage seam in the cluster stack.
+
+**Disposition — RECOMMENDED FIRST CONCRETE SLICE for ticket 020 (recommendation
+to the operator; this doc does not edit the ratified ticket).** `JournalMessageStorage`
+is the lowest-risk, highest-leverage entry point into the whole workflow arc:
+one service swap, the exactly-once upgrade flows to the entire engine via Effect's
+own dependency injection (`ClusterWorkflowEngine.layer` already *requires*
+`MessageStorage`, `:790`), no engine reimplementation, and it respects the narrow
+writ — `JournalMessageStorage` requires only `ProtoClient` and *requests* the
+daemon (ADR-0003/ADR-0006, ticket 002), implementing no CAS in TS. Crucially, it
+gives the effector/fold substrate its **first real cross-process consumer**,
+retiring the missing-consumer risk the dossier named (§4 of the dossier; the
+mint-rollback shape). **Honest caveat, stated plainly:** this slice is
+*foldlab-persistence under stock placement* — it still requires `Sharding` for
+runner placement, because foldlab replaces **commitment, not placement** (Part C,
+Singleton vs effector). That is not a gap; it is the design being honest about its
+own boundary. The operator owns whether this becomes 020's first slice; this doc
+only recommends it.
+
+**Sharding/ShardId vs shard-by-correlation-key — aligned in principle, different
+layer.** cluster `Sharding` assigns shards to runners and rebalances (topology).
+foldlab's "shard by correlation key, fuse inside" (NEXT.md Go notes) partitions
+by the same key principle but for **in-process fold locality**, not distributed
+placement. Same partitioning idea, different layer (distributed ownership vs
+data-locality). **Mostly orthogonal/complementary:** foldlab's correlation-key
+quotient is its identity primitive regardless of whether a cluster Sharding sits
+underneath; foldlab could run *on* Sharding (a shard = a set of keys) without
+either owning the other.
+
+**Snowflake vs digests — a DIVERGENCE, name it.** `Snowflake` is a branded
+`bigint` from timestamp + machineId + sequence (`cluster/Snowflake.ts:47,73-75`):
+**assigned, temporal, machine-local, roughly sortable, non-recomputable** — the id
+encodes *when and where* it was minted, and machineId is what prevents collision.
+A foldlab digest is a **recomputable content address** — the id encodes *what it
+is*, and equal content yields an equal id anywhere, forever. These are opposite id
+philosophies (mint-time-and-place vs recompute-from-content); you **cannot
+substitute a digest for a Snowflake** because their jobs differ (cheap monotone
+ordering vs content equality). Where cluster uses Snowflake for message ordering,
+foldlab uses chain position + head. This id divergence is the root of every other
+divergence below.
+
+**Runners / RunnerHealth — orthogonal.** These are physical process topology and
+liveness tracking. foldlab is silent on topology (ADR-0003: the boundary is data;
+the daemon owns the runtime). foldlab neither models nor replaces runner
+topology; it assumes a daemon and speaks data to it. State the orthogonality
+plainly so nobody claims foldlab "handles clustering."
+
+**ClusterCron — inherits Singleton's split.** `ClusterCron.make({ cron, ... })`
+(`cluster/ClusterCron.ts:43`) turns a `Cron` schedule into a Layer coordinating
+one recurring job, built on a **Singleton** for initial scheduling plus persisted
+entity messages, skipping stale runs (`:4-38`). So it inherits the same
+placement/commitment split: a foldlab scheduled job would journal each **fire as a
+`Done` fact** (commitment, effector-guarded, clean) while the **which-runner-
+fires** decision stays placement (Singleton/topology, orthogonal).
+
+## Part D — The seam map
+
+Three seam kinds. For each mechanic: what is upgraded, and whether the guarantee
+is **inherited** (discharged once at the effector/journal, not re-proven above) or
+**re-proven / handed off**.
+
+### D.1 Substitution seams — foldlab replaces a stock component *with a proof/recomputability upgrade*
+
+| stock | foldlab | upgrade | inherited? |
+|---|---|---|---|
+| `MessageStorage` (`:48`) | `JournalMessageStorage` | exactly-once: storage promise → recomputable fact | **inherited** (effector R3/R4 + journal walls); engine unchanged |
+| `Activity` (`:36`) | effector `Done(fence,result)` | step commit: framework promise → proven fence | **inherited** (Part 1; G1) |
+| Singleton's *commitment half* (`:46`) | effector Register | terminal-uniqueness: lease convention → proven fence | **inherited** — but *only* the commitment half (placement is not replaced) |
+| cluster `Entity` *state* (`:71`) | foldlab entity fold (`entity.ts`) | state: opaque live memory → recomputable + provenance-bearing | **inherited** (fold laws, dossier §1) |
+| `DurableClock` (`:28`) | journaled wake fact | clock read: nondeterministic → committed fact | **inherited** (safety of the recorded wake only) |
+| `DurableDeferred` (`:38`) | effector `Claim→Done` | once-ness: storage-enforced → fence-proven (+ recomputable key) | **inherited**, fence dimension *added* |
+
+The pattern: every substitution discharges its obligation **at the effector or
+journal and inherits upward** — the workflow author re-proves nothing. This is the
+compositionality-of-proof payoff operationalized across the cluster stack.
+
+### D.2 Divergence seams — fundamentally different; the integrator must CHOOSE foldlab's model
+
+- **Ids: Snowflake (assigned/temporal) vs digest (recomputable content
+  address).** Not a substitution — opposite philosophies (Part C). Choosing
+  foldlab means choosing content-addressed identity everywhere an id appears.
+- **Journal ownership: daemon-owned (ADR-0003/0009 — data over NATS, authority /
+  read-only replica, verify-on-read) vs Effect-native `EventJournal`/`EventLog`
+  (in-process, timestamp entry ids `EventLog.ts:603`, encrypted remote sync via
+  `EventLogRemote.ts`).** Both are append-only event logs, but identity and trust
+  differ (recompute-from-bytes vs timestamp id + encryption/remote-auth). You
+  choose *where authority lives* and *what identity means*.
+- **Placement vs commitment: Singleton (who runs now, lease-based) vs effector
+  (whose result counts, proven).** The integrator must decide which question they
+  are answering; foldlab answers only the second.
+- **Safety-only vs liveness.** Cluster is engineered for liveness — rebalancing,
+  `RunnerHealth`, retries, singleton placement. foldlab proves *safety* and is
+  *silent* on liveness (VERIFICATION.md assumption 4; G1's storm is choreographed,
+  `:136`). An integrator who needs progress guarantees supplies them *on top*
+  (cluster's machinery); foldlab will not provide them.
+
+### D.3 Interop seams — foldlab and other systems COEXIST
+
+- **`EventJournal` / `EventLogRemote` as a bridge — NOTED SEAM, not a spike.**
+  foldlab can be the authority-of-record while an Effect-native `EventLog` is a
+  local-first cache/UI/projection synced via `EventLogRemote`
+  (`eventlog/EventLogRemote.ts`). **Identity-mismatch caveat:** `EventLog` entry
+  ids are millisecond-timestamp based (`EventLog.ts:603`, `makeEntryIdUnsafe({ msecs })`),
+  not hash-chained heads — this is the Snowflake-vs-digest divergence (D.2) at the
+  journal level. A bridge therefore **maps** between a foldlab head and an
+  `EntryId`; it does **not unify** them. **Disposition: leave as a noted seam, do
+  not build.** Constructing the bridge ahead of a real Effect-`EventLog`-interop
+  consumer is exactly the no-machinery-before-consumer anti-pattern (AGENTS.md;
+  the mint rollback); it is consumer-gated and stays a map entry until such a
+  consumer appears.
+- **OTLP/Langfuse export (ticket 006).** The journal *is* the trace; export is a
+  projection, so foldlab coexists with any existing observability backend (A7).
+- **The cross-key atomicity boundary (ratified default: one workflow = one
+  register).** Inside a single workflow register, over deterministic-or-journaled
+  activities, the proof is inherited (D.1). Two *independently homed* decisions
+  that must be all-or-nothing exceed the single-key proof and **hand off to a saga
+  / 2PC / another coordination system.** That hand-off is an interop seam: foldlab
+  proves each register's commitment; the cross-register transaction is the other
+  system's job, and its atomicity is *not* a foldlab guarantee.
+
+### The compositionality frontier (the map an integrator navigates)
+
+**The inherited proof EXTENDS** down one path and one path only: *inside a single
+workflow register, over activities that are deterministic-in-the-digest or journal
+their outputs as facts, on a daemon-owned verify-on-read journal, backed by the
+effector's proven fence.* Along that path an integrator gets exactly-once,
+byte-exact replay, and recomputable provenance **for free** — discharged once,
+inherited everywhere above.
+
+**The inherited proof STOPS at four boundaries**, each of which returns the
+integrator to unproven territory they must own: (1) **cross-register atomicity**
+(→ saga/2PC, D.3); (2) **liveness** — progress, lease reclamation, fair
+scheduling (→ cluster machinery, D.2); (3) **placement** — which process runs a
+job (→ Singleton/Sharding, orthogonal, Part C); (4) **reproducibility of a
+genuinely nondeterministic effect** — replay returns the *journaled* result, never
+a guarantee that re-calling would agree (Part 1.4; the semantic-gap edge). Cross
+any of the four and the guarantee is *record-consistency*, not *reproducibility* —
+and the doc says so rather than letting "verifiable" leak across the line.

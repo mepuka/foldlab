@@ -277,7 +277,14 @@ re-executes effects against a moved world. `TestClock`/`Layer` help but there is
 no "replay this exact run" because the run was never a value. foldlab makes the
 journal the source of truth (ADR-0005). **Status: RATIFIED-UNBUILT** (ticket 020
 phase 2; needs the run journaled — ticket 008, ASPIRATIONAL). **Consumer: named —
-`@effect/vitest` integration (ticket 020).**
+`@effect/vitest` integration (ticket 020).** **Design worked out in
+`docs/design/2026-08-13-effector-backed-workflow-replay.md`:** the rc.108
+durable-execution seam is `effect/unstable/workflow` `WorkflowEngine.activityExecute`
+returning `Workflow.Result = Complete | Suspended`, and replay = the effector
+Register mapped onto that disjunction (`Done(fence,result) → Complete`, activity
+not re-executed); the byte-exact-replay + exactly-once kernel is the G1
+crash-storm gauntlet, PASSED, with the deterministic-in-the-digest precondition
+stated there.
 
 ### P6 — Schema you can name, cache, diff by digest, and derive from
 **Inherits:** identity commits *shape* only; every derived surface is a semantic
