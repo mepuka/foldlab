@@ -70,7 +70,7 @@ scoped suites as well.
 ## M1 — shared merge-refusal closure
 
 Task 23 Addendum 2 extended this closure to the merge boundary. Both real
-implementations initially failed the same frozen vector,
+implementations initially failed the original single-source form of the vector,
 `go/stream/testdata/m1-duplicate-seq.json`:
 
 ```text
@@ -88,22 +88,27 @@ Received: "Success"
 1 fail
 ```
 
-The vector is now a shared green gate. Go returns
+The vector became a shared green gate in Task 23. Task 30 Addendum 1 then
+strengthened the refusal value from one chosen offender to every
+duplicate-bearing `(source, seq, indexes)` tuple. Go returns
 `*stream.MergeDuplicateSequence`; TypeScript fails the Effect with
-`MergeDuplicateSequence`. Both refusals name the source, repeated sequence,
-first event index, and duplicate event index. Go also exposes the pre-existing
-gap refusal as `*stream.MergeGap`, matching TypeScript's established
-`MergeGap`. Sparse unique sources still resolve in arbitrary source order, and
-Go retains its allocation-free dense lookup path. The established
-`fixtures/stream-wall.json` merge corpus is byte-identical and was not
-regenerated.
+`MergeDuplicateSequence`; both now return the same complete list sorted by
+UTF-8 source bytes and sequence, including every event index at a coordinate.
+The updated M1 vector deliberately presents sources out of order and includes
+the BMP/supplementary pair whose UTF-8 and UTF-16 orders differ. Go also
+exposes the pre-existing gap refusal as `*stream.MergeGap`, matching
+TypeScript's established `MergeGap`. Sparse unique sources still resolve in
+arbitrary source order, and Go retains its allocation-free dense lookup path.
+The established `fixtures/stream-wall.json` merge corpus is byte-identical and
+was not regenerated.
 
-The fixed vector is supplemented by a deterministic fast-check law (seed
+The shared vector is supplemented by a deterministic fast-check law (seed
 `0x6d31cafe`, 500 runs). It generates the source name, unique sparse sequence
 coordinates, source order, duplicate source position, insertion position, and
-payload. Every duplicate case fails without a merged value and names the exact
-first/duplicate indexes; removing the duplicate preserves unique sparse replay
-in reverse pick order.
+payload. Every duplicate case fails without a merged value and names all exact
+indexes; removing the duplicate preserves unique sparse replay in reverse pick
+order. Multi-source regressions reverse input insertion order and repeat Go's
+randomized map walk, proving neither can move the complete sorted refusal.
 
 ## Non-claims
 
@@ -114,10 +119,11 @@ representations differ—invalid UTF-8 bytes versus unpaired UTF-16 surrogates�
 the vector witnesses their corresponding excluded domains, not identical raw
 inputs. Network JSON already excludes invalid UTF-8 independently.
 
-The M1 vector proves refusal agreement for a duplicate in one sparse source.
-It does not claim source-event ordering is semantically meaningful or impose a
-dense-sequence requirement: unique sparse coordinates remain lawful. It does
-not alter merge-fact identity or any existing valid merge output.
+The M1 vector proves refusal agreement for multiple duplicate coordinates in
+multiple sparse sources and pins their cross-language order. It does not claim
+source-event ordering is semantically meaningful or impose a dense-sequence
+requirement: unique sparse coordinates remain lawful. It does not alter
+merge-fact identity or any existing valid merge output.
 
 The sequence gate does not claim Go can represent JavaScript's `NaN`,
 infinities, fractions, negative zero, or non-number runtime costumes;
@@ -162,8 +168,9 @@ identity collision, or a cross-language domain mismatch. **Load-bearing? yes.**
 
 Decided: each source supplied to `ApplyMerge` / `applyMerge` must contain at
 most one event for each sequence coordinate. Both runtimes refuse duplicates
-before resolving picks with a typed `MergeDuplicateSequence` carrying the
-source, sequence, and both event indexes; one frozen vector licenses the shared
+before resolving picks with a typed `MergeDuplicateSequence`; Task 30's
+disposition makes it carry every duplicate-bearing source/sequence and all its
+event indexes in one deterministic list. One frozen vector licenses the shared
 boundary. Unique sparse coordinates remain valid. Alternatives: first-write-
 wins; last-write-wins; require all sources to be dense; validate only events
 referenced by the merge fact. Why: either winner policy makes an identity

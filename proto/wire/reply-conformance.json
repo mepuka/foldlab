@@ -1,5 +1,5 @@
 {
-  "_provenance": "Hand-authored adversarial corpus required by GitHub #57. Go catalogr4 strict decoding is the independent oracle; proto/go/catalogr4/reply_conformance_test.go and proto/ts/test/reply-conformance.test.ts must agree on every row. Frozen after first green wall.",
+  "_provenance": "Hand-authored adversarial corpus required by GitHub #57. Go catalogr4 strict decoding is the independent oracle; proto/go/catalogr4/reply_conformance_test.go and proto/ts/test/reply-conformance.test.ts must agree on every row. Refusal rows gained the Task 30 operator-authorized persisted sort when that wire field became mandatory; otherwise frozen after the first green wall.",
   "cases": [
     {
       "name": "create-valid",
@@ -41,19 +41,19 @@
       "name": "refusal-valid-daemon",
       "kind": "refusal",
       "accept": true,
-      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"create before publish","next":[],"local":false}}
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","sort":"absence","law":"create before publish","next":[],"local":false}}
     },
     {
       "name": "refusal-local-costume",
       "kind": "refusal",
       "accept": false,
-      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"costume","next":[],"local":true}}
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","sort":"absence","law":"costume","next":[],"local":true}}
     },
     {
       "name": "refusal-extra-field",
       "kind": "refusal",
       "accept": false,
-      "value": {"ok":false,"refusal":{"kind":"unknown-identity","law":"create before publish","next":[],"local":false,"ghost":true}}
+      "value": {"ok":false,"refusal":{"kind":"unknown-identity","sort":"absence","law":"create before publish","next":[],"local":false,"ghost":true}}
     },
     {
       "name": "admit-valid",

@@ -272,8 +272,10 @@ name.
 The value returned when something is not admitted — an absent digest, a
 rejected encoding, a law that did not hold. It is tagged, and it carries
 both what was wrong and a legal next step, so a sender can repair without
-reading documentation. A refusal is data: never an exception, never a
-null.
+reading documentation. Daemon refusals persist their ontological `sort`:
+structural evidence remains true under its pinned grammar, while absence is a
+head-relative observation that later presence can repeal. A refusal is data:
+never an exception, never a null.
 _Standard term_: a typed error — the `E` of Effect's `Effect<A, E, R>`, a
 tagged union (`Data.TaggedError`) rather than a thrown value. We say
 refusal because the same shape is also the wire answer a daemon gives,

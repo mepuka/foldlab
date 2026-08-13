@@ -1233,7 +1233,6 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
-
 ## Task ?? — codegen certified identity and check corpus (#42/#43, 2026-08-13)
 
 ### D??. Permanent Go artifacts re-derive a supplied digest before emission
@@ -1526,3 +1525,44 @@ scheme (too late, because the original bytes are already gone); restrict only
 Why: constrained decode is the repository's only byte-to-value admission law;
 a repairing decoder names a value that did not arrive. **Load-bearing? yes** —
 request admission determines which bytes may create type identity.
+
+## Task 30 — refusal sorts and corpus-grade duplicate refusals (2026-08-14)
+
+### D62 disposition. Duplicate refusal lists every offender
+
+Decided: issue #21's ratified LIST ALL OFFENDERS disposition supersedes D62's
+single-offender refusal shape. `MergeDuplicateSequence` now carries every
+duplicate-bearing `(source, seq, indexes)` tuple, sorted by source then
+sequence, in both runtimes. Alternatives: sort sources before choosing one;
+pick the first source reached by the merge fact; retain insertion/map order.
+Why: every alternative still suppresses true offenders or makes the refusal
+depend on representation order; a complete sorted value is deterministic and
+safe to retain as evidence. **Load-bearing? yes.**
+
+### D??. Refusal sort is persisted and the total table has a grammar digest
+
+Decided: every daemon W7 refusal persists `sort`; the Go emitter derives it
+from the total nine-kind table, TypeScript requires and round-trips it, and
+strict Go comparison requires the field. The table is frozen as the canonical
+`{grammar, sortByKind}` manifest for `flb.type.v0`, digest
+`ea71a32bea23660b72438167ff44def9a50be917fc087aeef8a84ee5f6fd3a88`.
+The tracer has no independently content-addressed grammar artifact yet, so this
+smallest manifest pin makes any re-sort mint a new digest without inventing the
+future certification record. Client-local refusals remain outside the daemon
+sort table. Alternatives: the superseded server-side-only code property;
+persist the sort but leave the table unversioned; classify client-local kinds
+without ontology authority. Why: Addendum 2 requires archived meaning to ride
+with the datum and forbids a later code edit from silently rewriting the table;
+the manifest digest is the narrow pin available before Task 32 adds
+`grammar_digest` to certification records. **Load-bearing? yes.**
+
+### D??. Duplicate-refusal source order is UTF-8 byte order
+
+Decided: `(source, seq)` ordering compares source UTF-8 bytes first and the
+unsigned sequence second; indexes remain ascending event positions. The shared
+M1 vector pins a BMP/supplementary pair that reverses under UTF-16 ordering.
+Alternatives: Go's native order on one side and JavaScript's native order on
+the other; RFC 8785 UTF-16 member-name order. Why: source ids are encoded as
+UTF-8 bytes in the canonical event frame and are not JSON member names; using
+that existing domain gives both runtimes one explicit comparator.
+**Load-bearing? yes** — changing it changes the corpus-grade refusal value.

@@ -164,13 +164,33 @@ export class MergeGap extends Data.TaggedError("MergeGap")<{
   readonly index: number
 }> {}
 
-/** A source contains two events claiming the same identity coordinate. */
-export class MergeDuplicateSequence extends Data.TaggedError("MergeDuplicateSequence")<{
+export interface MergeDuplicateOffender {
   readonly source: string
   readonly seq: number
-  readonly firstIndex: number
-  readonly duplicateIndex: number
+  readonly indexes: ReadonlyArray<number>
+}
+
+/** Sources contain events claiming the same identity coordinates. */
+export class MergeDuplicateSequence extends Data.TaggedError("MergeDuplicateSequence")<{
+  readonly offenders: ReadonlyArray<MergeDuplicateOffender>
 }> {}
+
+const compareBytes = (left: Uint8Array, right: Uint8Array): number => {
+  const length = Math.min(left.length, right.length)
+  for (let index = 0; index < length; index++) {
+    const difference = left[index]! - right[index]!
+    if (difference !== 0) return difference
+  }
+  return left.length - right.length
+}
+
+const compareDuplicateOffenders = (
+  left: MergeDuplicateOffender,
+  right: MergeDuplicateOffender,
+): number => {
+  const sourceOrder = compareBytes(streamBytes(left.source), streamBytes(right.source))
+  return sourceOrder === 0 ? left.seq - right.seq : sourceOrder
+}
 
 /**
  * Replay a merge fact over source streams — deterministic, and total only
@@ -183,22 +203,25 @@ export const applyMerge = (
 ): Effect.Effect<Array<StreamEvent>, MergeGap | MergeDuplicateSequence> =>
   Effect.suspend<Array<StreamEvent>, MergeGap | MergeDuplicateSequence, never>(() => {
     const index = new Map<string, Map<number, { readonly event: StreamEvent; readonly index: number }>>()
+    const offenders: Array<MergeDuplicateOffender> = []
     for (const [name, events] of sources) {
       const bySeq = new Map<number, { readonly event: StreamEvent; readonly index: number }>()
+      const indexesBySeq = new Map<number, Array<number>>()
       for (let i = 0; i < events.length; i++) {
         const event = events[i]!
-        const first = bySeq.get(event.seq)
-        if (first !== undefined) {
-          return Effect.fail(new MergeDuplicateSequence({
-            source: name,
-            seq: event.seq,
-            firstIndex: first.index,
-            duplicateIndex: i,
-          }))
-        }
-        bySeq.set(event.seq, { event, index: i })
+        const indexes = indexesBySeq.get(event.seq)
+        if (indexes === undefined) indexesBySeq.set(event.seq, [i])
+        else indexes.push(i)
+        if (!bySeq.has(event.seq)) bySeq.set(event.seq, { event, index: i })
+      }
+      for (const [seq, indexes] of indexesBySeq) {
+        if (indexes.length > 1) offenders.push({ source: name, seq, indexes })
       }
       index.set(name, bySeq)
+    }
+    if (offenders.length > 0) {
+      offenders.sort(compareDuplicateOffenders)
+      return Effect.fail(new MergeDuplicateSequence({ offenders }))
     }
     const out: Array<StreamEvent> = []
     for (let i = 0; i < m.picks.length; i++) {

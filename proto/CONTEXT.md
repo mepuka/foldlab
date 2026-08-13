@@ -20,7 +20,10 @@ The machine-readable name of the one law that said no (`malformed`,
 `unknown-identity`, `bad-journal`, `unknown-journal`, `bad-cursor`,
 `unknown-request`; client-local: `unreachable`, `malformed-reply`,
 `verify-failed`, `beyond-v0`, `underivable`). The `local` flag names
-the side that uttered it.
+the side that uttered it. Every daemon refusal persists its `sort`:
+`structural` is permanent under its pinned grammar, while `absence` is a
+head-relative observation that later presence can repeal. Client-local kinds
+are outside that daemon table.
 
 **Structure walk**:
 The daemon's one pass over a submitted flb.type.v0 value: grammar
