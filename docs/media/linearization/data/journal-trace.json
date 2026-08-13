@@ -1,0 +1,87 @@
+{
+  "clip": "journal-linearizes",
+  "source": "go/journal/journal.go via go/cmd/lineartrace",
+  "law": "JL2 create-only CAS at the tail",
+  "stream": "J_linearize",
+  "actors": [
+    {
+      "id": "W",
+      "label": "W"
+    },
+    {
+      "id": "L",
+      "label": "L"
+    }
+  ],
+  "events": [
+    {
+      "t_ms": 0,
+      "actor": "W",
+      "op": "open",
+      "outcome": "cursor",
+      "position": -1,
+      "head": "0000000000000000000000000000000000000000000000000000000000000000",
+      "note": "genesis: both handles propose the same next position"
+    },
+    {
+      "t_ms": 0,
+      "actor": "L",
+      "op": "open",
+      "outcome": "cursor",
+      "position": -1,
+      "head": "0000000000000000000000000000000000000000000000000000000000000000",
+      "note": "genesis: both handles propose the same next position"
+    },
+    {
+      "t_ms": 0,
+      "actor": "W",
+      "op": "append",
+      "outcome": "stored",
+      "position": 0,
+      "head": "1fa9d6737e72df0ed29722783b96d508bae55560695eaacd5cf4fb0d3d3c238b",
+      "payload": "a",
+      "note": "expected-sequence CAS met; the tail advanced"
+    },
+    {
+      "t_ms": 1,
+      "actor": "L",
+      "op": "append",
+      "outcome": "conflict",
+      "position": 0,
+      "payload": "b",
+      "err_kind": "ErrConflict",
+      "err_text": "journal position is already occupied at position 0",
+      "note": "the CAS proved the position occupied"
+    },
+    {
+      "t_ms": 1,
+      "actor": "L",
+      "op": "resync",
+      "outcome": "cursor",
+      "position": 0,
+      "head": "1fa9d6737e72df0ed29722783b96d508bae55560695eaacd5cf4fb0d3d3c238b",
+      "note": "the cursor adopted the verified tail"
+    },
+    {
+      "t_ms": 1,
+      "actor": "L",
+      "op": "append",
+      "outcome": "stored",
+      "position": 1,
+      "head": "b09cc45fbbc31b2479f2bae9d65122ad3e4d1da210390b86f5ab850d8d333dd6",
+      "payload": "c",
+      "note": "chained onto the winner at the next position"
+    },
+    {
+      "t_ms": 1,
+      "actor": "stream",
+      "op": "read",
+      "outcome": "verified",
+      "position": 1,
+      "head": "b09cc45fbbc31b2479f2bae9d65122ad3e4d1da210390b86f5ab850d8d333dd6",
+      "payload": "[\"a\",\"c\"]",
+      "note": "one chain, no fork at any sequence number"
+    }
+  ],
+  "recorded_by": "go run ./cmd/lineartrace"
+}

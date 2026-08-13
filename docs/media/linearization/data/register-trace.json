@@ -1,0 +1,94 @@
+{
+  "clip": "register-linearizes",
+  "source": "go/effector/effector.go via go/cmd/lineartrace",
+  "law": "EL3 fencing (safety, not clock)",
+  "key": "work.a611111111111111111111111111111111111111111111111111111111111111",
+  "actors": [
+    {
+      "id": "A",
+      "label": "A"
+    },
+    {
+      "id": "B",
+      "label": "B"
+    },
+    {
+      "id": "C",
+      "label": "C"
+    }
+  ],
+  "events": [
+    {
+      "t_ms": 1,
+      "actor": "A",
+      "op": "claim",
+      "outcome": "refused",
+      "revision": 1,
+      "err_kind": "ErrHeld",
+      "err_text": "effector claim is held: a611111111111111111111111111111111111111111111111111111111111111",
+      "note": "the key was already held at this revision"
+    },
+    {
+      "t_ms": 1,
+      "actor": "B",
+      "op": "claim",
+      "outcome": "granted",
+      "fence": 1,
+      "revision": 1,
+      "note": "revision-CAS admitted one claimant"
+    },
+    {
+      "t_ms": 201,
+      "actor": "B",
+      "op": "lease-lapse",
+      "outcome": "lapsed",
+      "fence": 1,
+      "revision": 1,
+      "note": "the lease expired; the fence did not move"
+    },
+    {
+      "t_ms": 201,
+      "actor": "C",
+      "op": "steal",
+      "outcome": "granted",
+      "fence": 2,
+      "revision": 2,
+      "note": "the steal is a revision-CAS; fences strictly increase"
+    },
+    {
+      "t_ms": 202,
+      "actor": "B",
+      "op": "commit",
+      "outcome": "refused",
+      "fence": 1,
+      "revision": 2,
+      "result": "late-work",
+      "first": false,
+      "err_kind": "ErrFenced",
+      "err_text": "effector claim was superseded: digest a611111111111111111111111111111111111111111111111111111111111111 has fence 2, not 1",
+      "note": "Commit never inspects expiry; fence is the sole authority"
+    },
+    {
+      "t_ms": 202,
+      "actor": "C",
+      "op": "commit",
+      "outcome": "landed",
+      "fence": 2,
+      "revision": 3,
+      "result": "the-effect",
+      "first": true,
+      "note": "claim -\u003e outcome on the same key, one revision-CAS"
+    },
+    {
+      "t_ms": 202,
+      "actor": "register",
+      "op": "lookup",
+      "outcome": "committed",
+      "fence": 2,
+      "revision": 3,
+      "result": "the-effect",
+      "note": "one terminal outcome, at the highest fence"
+    }
+  ],
+  "recorded_by": "go run ./cmd/lineartrace"
+}
