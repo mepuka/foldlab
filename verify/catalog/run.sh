@@ -99,10 +99,29 @@ summary() { # <file>
   grep -E "states generated, .* distinct" "$1" | tail -1
 }
 
+assert_cap2_canary() { # <file>
+  local file="$1"
+  local counts generated distinct depth
+  counts=$(grep -Eo '[0-9]+ states generated, [0-9]+ distinct states found' "$file" | tail -1 || true)
+  generated=$(printf '%s\n' "$counts" | awk '{print $1}')
+  distinct=$(printf '%s\n' "$counts" | awk '{print $4}')
+  depth=$(grep -Eo 'The depth of the complete state graph search is [0-9]+' "$file" | tail -1 | awk '{print $10}' || true)
+  if [ "$generated" = "119145" ] && [ "$distinct" = "18295" ] && [ "$depth" = "16" ]; then
+    echo "   canary exact: generated=$generated distinct=$distinct depth=$depth"
+    return 0
+  fi
+  echo "   GATE FAILURE: cap2 canary drifted: generated=${generated:-missing}" \
+    "distinct=${distinct:-missing} depth=${depth:-missing}; want 119145 / 18295 / 16"
+  return 1
+}
+
 expect_clean() { # <cfg-base>
   echo "== $1.cfg (ratified: must be clean to closure)"
   if run_tlc "$1" Catalog && grep -q "No error has been found" "$OUT/$1.out.txt"; then
     echo "   clean: $(summary "$OUT/$1.out.txt")"
+    if [ "$1" = "Catalog.cap2" ] && ! assert_cap2_canary "$OUT/$1.out.txt"; then
+      FAILED=1
+    fi
   else
     echo "   GATE FAILURE: expected a clean closure; see $OUT/$1.out.txt"
     echo "   (a real counterexample in Catalog.tla is a FINDING about the"

@@ -164,6 +164,7 @@ func (d *replayDriver) request(daemon int, subject string, body any) (map[string
 	if err := json.Unmarshal(reply.Data, &decoded); err != nil {
 		return nil, fmt.Errorf("decode reply on %s: %w", subject, err)
 	}
+	applyReplyMutant(subject, decoded)
 	return decoded, nil
 }
 
@@ -224,17 +225,17 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if reply["ok"] != true {
-			return fmt.Sprintf("CreateAtomic returned a refusal: %s", compactJSON(reply)), nil
+		fact, err := decodeCreateFact(reply)
+		if err != nil {
+			return fmt.Sprintf("CreateAtomic reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 		}
-		if detail := digestReplyMismatch(reply, action.Value); detail != "" {
+		if detail := digestReplyMismatch(fact.Digest, action.Value); detail != "" {
 			return detail, nil
 		}
-		created, _ := reply["created"].(bool)
 		wantCreated := step.Outcome.Branch == "CreateAtomic.created"
-		if created != wantCreated {
+		if fact.Created != wantCreated {
 			return fmt.Sprintf("modeled %s, but type.create returned created:%t for value %d",
-				step.Outcome.Branch, created, action.Value), nil
+				step.Outcome.Branch, fact.Created, action.Value), nil
 		}
 		return "", nil
 
@@ -247,10 +248,14 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if reply["ok"] != true || reply["created"] != false {
-			return fmt.Sprintf("CreateBegin convergence returned %s, want ok:true created:false", compactJSON(reply)), nil
+		fact, err := decodeCreateFact(reply)
+		if err != nil {
+			return fmt.Sprintf("CreateBegin convergence reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 		}
-		if detail := digestReplyMismatch(reply, action.Value); detail != "" {
+		if fact.Created {
+			return fmt.Sprintf("CreateBegin convergence returned %s, want created:false", compactJSON(reply)), nil
+		}
+		if detail := digestReplyMismatch(fact.Digest, action.Value); detail != "" {
 			return detail, nil
 		}
 		return "", nil
@@ -265,19 +270,19 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if reply["ok"] != true {
-			return fmt.Sprintf("CreateFinish returned a refusal: %s", compactJSON(reply)), nil
+		fact, err := decodeCreateFact(reply)
+		if err != nil {
+			return fmt.Sprintf("CreateFinish reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 		}
-		if detail := digestReplyMismatch(reply, pending.Value); detail != "" {
+		if detail := digestReplyMismatch(fact.Digest, pending.Value); detail != "" {
 			return detail, nil
 		}
-		created, _ := reply["created"].(bool)
 		wantCreated := step.Outcome.Branch == "CreateFinish.appended"
-		if created != wantCreated {
+		if fact.Created != wantCreated {
 			return fmt.Sprintf(
 				"modeled %s, but atomic type.create returned created:%t for value %d; "+
 					"the wire surface did not preserve the Begin-time absence snapshot",
-				step.Outcome.Branch, created, pending.Value), nil
+				step.Outcome.Branch, fact.Created, pending.Value), nil
 		}
 		return "", nil
 
@@ -288,13 +293,14 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if reply["ok"] != true {
-			return fmt.Sprintf("mirror substitute was refused: %s", compactJSON(reply)), nil
+		fact, err := decodeCreateFact(reply)
+		if err != nil {
+			return fmt.Sprintf("mirror substitute reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 		}
-		if detail := digestReplyMismatch(reply, value); detail != "" {
+		if detail := digestReplyMismatch(fact.Digest, value); detail != "" {
 			return detail, nil
 		}
-		if created, _ := reply["created"].(bool); created {
+		if fact.Created {
 			d.substituteFacts[action.Daemon-1][value] = true
 		}
 		d.substituteMirrors[action.Daemon-1][action.Origin-1] = append(
@@ -311,12 +317,16 @@ func (d *replayDriver) drive(step TraceStep) (string, error) {
 			return "", err
 		}
 		if step.Outcome.Branch == "Publish.admitted" {
-			if reply["ok"] != true || reply["admitted"] != true {
-				return fmt.Sprintf("model admitted publish, protod returned %s", compactJSON(reply)), nil
+			if err := decodeAdmitFact(reply, dataJournalName); err != nil {
+				return fmt.Sprintf("Publish admitted reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
 			}
 			return "", nil
 		}
-		if refusalKind(reply) != "unknown-identity" {
+		refusal, err := decodeRefusalFact(reply)
+		if err != nil {
+			return fmt.Sprintf("Publish refusal reply shape diverged: %v; reply=%s", err, compactJSON(reply)), nil
+		}
+		if refusal.Kind != "unknown-identity" {
 			return fmt.Sprintf("model refused unknown identity, protod returned %s", compactJSON(reply)), nil
 		}
 		return "", nil
@@ -541,9 +551,8 @@ func refusalKind(reply map[string]any) string {
 	return kind
 }
 
-func digestReplyMismatch(reply map[string]any, value int) string {
+func digestReplyMismatch(got string, value int) string {
 	want := r2Values[value-1].Digest
-	got, _ := reply["digest"].(string)
 	if got == want {
 		return ""
 	}
