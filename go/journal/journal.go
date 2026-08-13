@@ -255,15 +255,31 @@ func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (
 		return "", err
 	}
 
-	stored, getErr := j.stream.GetMsg(ctx, uint64(entry.Seq+1))
-	if getErr != nil {
-		return "", err
-	}
-	if canonical.DigestHex(stored.Data) == digest {
+	// The CAS proved the position occupied. If our own bytes already landed the
+	// append is an idempotent duplicate; otherwise a rival holds the position.
+	if stored, getErr := j.stream.GetMsg(ctx, uint64(entry.Seq+1)); getErr == nil &&
+		canonical.DigestHex(stored.Data) == digest {
 		j.recordAccepted(entry, digest)
 		return Duplicate, nil
 	}
+	// A rival won the position (or the confirmatory re-read failed — occupancy is
+	// proven by the CAS either way). Resync the cursor from the tail so this
+	// writer recovers through Append alone, then report the conflict.
+	j.resyncCursor(ctx)
 	return "", fmt.Errorf("%w at position %d", ErrConflict, entry.Seq)
+}
+
+// resyncCursor advances the cursor to the stream tail after a lost CAS,
+// best-effort: a failed or tampered tail leaves the cursor untouched, since
+// Read remains the verification authority. The caller holds j.mu.
+func (j *Journal) resyncCursor(ctx context.Context) {
+	tail, err := tailCursor(ctx, j.stream)
+	if err != nil {
+		return
+	}
+	if tail.Seq > j.cursor.Seq {
+		j.cursor = tail
+	}
 }
 
 func (j *Journal) recordAccepted(entry canonical.ChainEntry, digest string) {
