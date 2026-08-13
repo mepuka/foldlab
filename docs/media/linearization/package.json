@@ -1,0 +1,27 @@
+{
+  "name": "@foldlab/media-linearization",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Short Remotion clips: how racing operations become one lawful order.",
+  "scripts": {
+    "trace": "cd ../../../go && go run ./cmd/lineartrace -out ../docs/media/linearization/data",
+    "studio": "remotion studio src/index.ts",
+    "render:register": "remotion render src/index.ts RegisterLinearizes out/register-linearizes.mp4 --codec h264 --crf 17 --overwrite",
+    "render:journal": "remotion render src/index.ts JournalLinearizes out/journal-linearizes.mp4 --codec h264 --crf 17 --overwrite",
+    "gif:register": "remotion render src/index.ts RegisterLinearizes out/register-linearizes.gif --codec gif --every-nth-frame 3 --width 640 --overwrite",
+    "gif:journal": "remotion render src/index.ts JournalLinearizes out/journal-linearizes.gif --codec gif --every-nth-frame 3 --width 640 --overwrite",
+    "stills": "remotion still src/index.ts RegisterLinearizes out/stills/register-01-race-resolved-f078.png --frame 78 --overwrite && remotion still src/index.ts RegisterLinearizes out/stills/register-02-fenced-refusal-f235.png --frame 235 --overwrite && remotion still src/index.ts RegisterLinearizes out/stills/register-03-terminal-outcome-f320.png --frame 320 --overwrite && remotion still src/index.ts JournalLinearizes out/stills/journal-01-conflict-f078.png --frame 78 --overwrite && remotion still src/index.ts JournalLinearizes out/stills/journal-02-resync-f120.png --frame 120 --overwrite && remotion still src/index.ts JournalLinearizes out/stills/journal-03-verified-chain-f210.png --frame 210 --overwrite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.509",
+    "@remotion/google-fonts": "4.0.509",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.509"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
