@@ -182,6 +182,43 @@ func TestConformance(t *testing.T) {
 		}
 	})
 
+	t.Run("W2 constrained decode refuses inputs that encoding/json repairs", func(t *testing.T) {
+		before := h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
+		beforeEntries := len(before["entries"].([]any))
+		invalidUTF8 := append([]byte(`{"structure":{"k":"literal","value":"`), 0xff)
+		invalidUTF8 = append(invalidUTF8, []byte(`"}}`)...)
+		cases := []struct {
+			name string
+			body []byte
+		}{
+			{
+				name: "duplicate member",
+				body: []byte(`{"structure":{"k":"string","k":"bool"}}`),
+			},
+			{
+				name: "escape-equivalent duplicate member",
+				body: []byte(`{"structure":{"k":"string"},"\u0073tructure":{"k":"bool"}}`),
+			},
+			{
+				name: "lone surrogate escape",
+				body: []byte(`{"structure":{"k":"literal","value":"\ud800"}}`),
+			},
+			{name: "raw invalid UTF-8", body: invalidUTF8},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				if _, err := canonical.Decode(tc.body); err == nil {
+					t.Fatal("canonical decoder oracle admitted the invalid body")
+				}
+				h.refusal(h.requestRaw("flb.req.type.create", tc.body), "malformed")
+			})
+		}
+		after := h.request("flb.req.journal.read", map[string]any{"journal": "catalog"})
+		if afterEntries := len(after["entries"].([]any)); afterEntries != beforeEntries {
+			t.Fatalf("refused bodies moved the catalog: entries %d -> %d", beforeEntries, afterEntries)
+		}
+	})
+
 	t.Run("W3 same bytes converge, never error", func(t *testing.T) {
 		r := h.create(sample)
 		if r["ok"] != true || r["created"] != false {

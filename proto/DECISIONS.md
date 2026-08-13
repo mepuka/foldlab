@@ -988,3 +988,19 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 40 — constrained protod request decode (2026-08-13)
+
+### D??. Exact request bytes pass canonical.Decode before typed decoding
+
+Decided: the shared daemon body decoder first runs `canonical.Decode` on the
+exact submitted bytes and only then performs the request-specific typed JSON
+decode. Every request and ingress frame therefore inherits the same valid
+UTF-8/Unicode, unique-name, finite-binary64, depth, and single-value domain as
+identity. Alternatives: pre-scan only duplicate names and UTF-8 (would create
+a second, incomplete constraint list); canonicalize the generic decoded value
+and decode those derived bytes (unnecessarily changes number spellings before
+the typed pass); retain `encoding/json` as the admission parser (repairs the
+reported counterexamples). Why: the repository already owns one constrained
+decoder, and a decoder that repairs input cannot guard a content-addressed
+boundary. **Load-bearing? yes.**

@@ -121,16 +121,19 @@ func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
 	}
 }
 
-// decodeBody parses a request body strictly enough to be teachable:
-// invalid JSON or a non-object refuses as data, never as silence.
+// decodeBody constrains the exact submitted bytes before the typed shape pass:
+// invalid/ambiguous JSON or a non-object refuses as data, never as silence.
 func decodeBody(body []byte, into any) *Refusal {
-	var probe any
-	if err := json.Unmarshal(body, &probe); err != nil {
+	probe, err := canonical.Decode(body)
+	if err != nil {
 		return &Refusal{
-			Kind:     KindMalformed,
-			Law:      "W2: requests are JSON — this body does not parse",
-			Got:      truncateForReply(body),
-			Expected: "a JSON object",
+			Kind: KindMalformed,
+			Law:  "W2: constrained decode admits exactly one unambiguous JSON value — this body is outside that domain",
+			Got: map[string]any{
+				"body":   truncateForReply(body),
+				"reason": err.Error(),
+			},
+			Expected: "one JSON object with valid UTF-8/Unicode, unique member names, finite binary64 numbers, bounded nesting, and no trailing value",
 			Next:     []NextHint{describeHint()},
 		}
 	}
