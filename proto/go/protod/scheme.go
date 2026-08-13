@@ -7,8 +7,9 @@ import (
 )
 
 // Scheme is the identity-derivation seam (W10). The interim scheme
-// digests the canonical structure bytes; ticket 004's exhaustive fold
-// lands here as a second scheme with no wire change.
+// digests the canonical structure bytes; the owned scheme — a digest
+// over the normalized flb.type.v0 walk — lands here as a second
+// scheme with no wire change.
 type scheme interface {
 	Name() string
 	Derive(canonicalBytes []byte) string

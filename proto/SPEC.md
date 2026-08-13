@@ -62,7 +62,8 @@ One thread, both directions, no trust anywhere:
   capability is a missing request kind on the daemon.
 - W10 Every catalog fact is scheme-tagged (`bytes-sha256-v1` interim).
   The identity derivation is an internal seam (`Scheme`) so ticket
-  004's exhaustive fold lands as a second scheme with no wire change.
+  004's owned scheme — SHA-256 over canonical(normalize(term)) on the
+  flb.type.v0 walk — lands as a second scheme with no wire change.
 
 ## The authoring grammar — `flb.type.v0` (first cut of the owned structure, ratified)
 

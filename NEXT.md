@@ -202,14 +202,15 @@ canonical bytes.
    beta-rename risk is confined to the adapter layer.
 3. **The journal is load-bearing for LLM traffic** (ADR-0005): records
    are events, lineage is a query.
-4. **Schema identity: laws ratified, build pending** (ticket 004,
-   grilled 2026-08-12): identity = SHA-256 over RFC 8785 bytes of a
-   foldlab-owned structure from an exhaustive fold of the pinned
-   SchemaAST; both sides enter; declared checks and brands move
-   identity; annotations are claims except a Declaration's required
-   identifier; anonymous checks and identifier-less declarations
-   refuse. Align with Effect's semantics, never their bytes. Interim
-   catalog identity: digest over submitted canonical bytes.
+4. **Schema identity: RESOLVED, build dispatched** (ticket 004
+   resolution, 2026-08-14): identity = SHA-256 over the RFC 8785
+   bytes of the NORMALIZED flb.type.v0 structure — the owned walk,
+   immune to vendor churn; the SchemaAST fold is derivation
+   machinery, never identity. Both sides enter; declared checks and
+   brands move identity; annotations are claims except a
+   Declaration's required identifier. Align with Effect's semantics,
+   never their bytes. Interim catalog identity: digest over submitted
+   canonical bytes, attestation-grade.
 5. **The lawful surface** (ADR-0010): a public function enters a
    library only with the law that licenses it — a universal property's
    uniqueness clause, or a proved equation whose two sides it collapses
@@ -304,6 +305,9 @@ MEDIUM TERM (each behind one named gate):
 The pattern: short term is evidence machinery on existing primitives,
 no decisions pending; medium term is identity machinery, each item
 behind a grill. Nothing on either list is speculative.
+
+NOTE: the ratified build order above supersedes the numbered backlog
+below where they disagree; the backlog remains as context.
 
 Landed since this list was last written: ticket 003's tracer bullet
 (both bullets, in `proto/`), ticket 009's first climb (R2; R3 repaired
