@@ -88,6 +88,14 @@ const encodeValue = (
     return { ok: true, bytes: `[${parts.join(",")}]` }
   }
   const record = value as { readonly [key: string]: JsonValue }
+  const prototype = Object.getPrototypeOf(record)
+  if (prototype !== null && prototype !== Object.prototype) {
+    // A Date, Map, Set, or class instance smuggled past the JsonValue type
+    // would otherwise serialize by its enumerable own keys — usually `{}` —
+    // colliding distinct values onto one canonical witness. Only plain and
+    // null-prototype objects (what the constrained decoder mints) are canonical.
+    return refuseEncoding(path, "non-plain objects are outside the canonical domain")
+  }
   if (ancestors.has(record)) return refuseEncoding(path, "cyclic values are outside the canonical domain")
   ancestors.add(record)
   const keys = Object.keys(record).sort(byCodeUnit)

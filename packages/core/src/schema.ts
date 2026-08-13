@@ -18,6 +18,7 @@
  * across encoders; the type does not.
  */
 
+import { gunzipSync, gzipSync } from "node:zlib"
 import { Effect, Schema, SchemaGetter, SchemaIssue } from "effect"
 import { encodeEvent, parseFrames, type StreamEvent } from "./stream.ts"
 
@@ -74,7 +75,7 @@ export const GzipEventFrame = Schema.String.pipe(
     decode: SchemaGetter.transformOrFail((bytes: Uint8Array, options) =>
       Effect.try({
         try: () =>
-          parseFrames(Bun.gunzipSync(new Uint8Array(bytes))).map((e) => ({
+          parseFrames(gunzipSync(new Uint8Array(bytes))).map((e) => ({
             stream: e.stream,
             seq: e.seq,
             payload: new TextDecoder().decode(e.payload),
@@ -87,7 +88,7 @@ export const GzipEventFrame = Schema.String.pipe(
     ),
     encode: SchemaGetter.transform((events: ReadonlyArray<WireEvent>) =>
       Uint8Array.from(
-        Bun.gzipSync(new Uint8Array(concatFrames(toStreamEvents(events)))),
+        gzipSync(new Uint8Array(concatFrames(toStreamEvents(events)))),
       ),
     ),
   }),
