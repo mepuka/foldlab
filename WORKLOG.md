@@ -87,3 +87,40 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   determinism deadline, safety-only, pre-graduation transport.
   Appendix: rc.108 signature ledger with file:line citations.
 - Committed + pushed after each burst.
+
+### Burst 4 — coordinator re-steer: compositionality of proof (done)
+- Re-steer: make compositionality of proof the SPINE; harden P1/P2 with the
+  free-monoid fundamental theorem in ONE statement; place three-sort ontology
+  with CALM; label theorems by rung reached (arguments toward R5, not claims);
+  fold concierge C1-C5 into P7; frame recommendation AS sharpening of 020;
+  grill the homomorphism zero-replay view (paper vs rc.108 surface).
+- Hunted + cited C1-C5 EXACTLY (proto/wire/CONTRACT.md :70/:71/:84/:81/:168;
+  conformance_test.go :503/:528/:554 = C1/C3/C4; mcp.test.ts:177-216 full
+  authoring session from frontier data alone). C4 = every advertised example
+  accepted = no-lie-in-the-offer; C3 = empty frontier <=> create accepts =
+  termination correspondence. Frontier is DERIVED (grammar->tree automaton),
+  so fluency is inherited not hand-maintained.
+- REWROTE dossier around the spine:
+  §1 Thesis: inheritance + closure defs; §1.1 free-monoid fundamental theorem
+  (fold = unique monoid hom ĝ:X*->M; P1 coherence-free = uniqueness, P2
+  splittable = homomorphism, TWO faces of ONE property; chain-remembers =
+  ker(ĝ)); rung = universal property is the ARGUMENT toward R5 (mathlib
+  FreeMonoid.lift, resonances C1), R1 per-instance walls = shipped evidence.
+  §1.2 digest propagation = executable proof composition (product/zip/map
+  table; digest present <=> every sub-proof present; else typed refusal names
+  broken sub-part). GRILL: by-construction inheritance (unmechanized meta-thm)
+  + re-wallable instances; NOT machine-checked composition.
+  §1.3 zero-replay derived view GRILL: law SHIPPED+walled (map commutation),
+  derivation reachable by hand (getFoldCache + hom.map, O(1)), BUT ergonomic
+  fold.map(hom).fold path REPLAYS; the zero-replay combinator/consumer is
+  RATIFIED-UNBUILT (020's derived-view surface). Split verdict stated.
+  §1.4 CALM places coordination cost: evidence monotone->lock-free ingress,
+  absence anti-monotone->CAS; catalog split R2+R3 SHIPPED, CALM = external
+  ancestor (argument), placement corollary = resonances C3 aspirational.
+  §1.5 concierge = proof-carrying interactive fluency (C1-C5).
+  §2 power map reweighted (each: inherits? composes?), concierge folded into P7.
+  §3 recommendation reframed AS sharpening of 020, cast in inheritance frame
+  (builder inherits recomputable span id for free from fold law).
+  §4 edge: added meta-theorem-unproved + zero-replay-consumer-unbuilt edges.
+  Appendix: added C1-C5 + rung labels for free-monoid/CALM.
+- Answered coordinator's 3 questions in-line via the rewrite. Committing.
