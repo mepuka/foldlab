@@ -124,3 +124,45 @@ Worktree root: /Users/pooks/Dev/foldlab/.claude/worktrees/agent-a09df0cf34f2ff0a
   §4 edge: added meta-theorem-unproved + zero-replay-consumer-unbuilt edges.
   Appendix: added C1-C5 + rung labels for free-monoid/CALM.
 - Answered coordinator's 3 questions in-line via the rewrite. Committing.
+
+### Burst 5 — effector-backed workflow replay design doc (done)
+- Retask: docs/design/2026-08-13-effector-backed-workflow-replay.md, 3 parts.
+- SEAM-LOCATION FINDING (Part 1 start): rc.108 HAS durable execution, under
+  effect/unstable/ (NOT separate @effect/workflow packages at this pin — the
+  vendored monorepo has no workflow/cluster package; they live in core effect
+  under unstable/). Subsystems: unstable/workflow (Workflow, Activity,
+  WorkflowEngine, DurableDeferred), unstable/cluster (ClusterWorkflowEngine
+  backed by Sharding+MessageStorage), unstable/eventlog (EventJournal).
+  Label: SHIPPED-UNSTABLE. Persistence seam = WorkflowEngine Context.Service;
+  replay point = activityExecute(activity, attempt): Effect<Workflow.Result>,
+  Result = Complete | Suspended.
+- Key confirmations: WorkflowEngine.ts:37 (Context.Service) /:146 activityExecute;
+  Workflow.ts:482 Result=Complete|Suspended; Activity.ts:123 make;
+  ClusterWorkflowEngine.ts:790 layer<WorkflowEngine,never,Sharding|MessageStorage>;
+  EventJournal.ts:40; Layer.provideMerge Layer.ts:1550 (/provide:1432/merge:1299);
+  Effect.withSpan Effect.ts:8276; Scope.addFinalizer Scope.ts:375;
+  Context.Service Context.ts:201 / Context.Reference :1312; Tracer.Tracer :631.
+- Part 1: effector Register (Done|Claim|Absent) ⟷ Workflow.Result (Complete|
+  Suspended); Done(fence,result)->Complete = activity NOT re-executed. Grounded
+  exactly-once + byte-exact replay in G1 crash-storm (PASSED 2026-08-12; GV3/GV4
+  fencing :83-90, GV6 replay :94, GV7 counterfactual :96). Distinguishing claim
+  vs Temporal/Cluster: determinism+exactly-once are RECOMPUTABLE FACTS (verifier
+  needs only the bundle), not framework promises. Honest precondition:
+  deterministic-in-the-digest (G1 :36-38); nondeterministic effects journal
+  their outputs as facts (results-in-the-record; config-hashed key).
+- Part 2: hook points H1 Layer/Context DI (primary) / H2 WorkflowEngine+Activity
+  (exactly-once, commit at ACTIVITY boundary not every withSpan) / H3 Tracer.Tracer
+  (recomputable span id) / H4 Scope finalizers (lease cleanup, safety only) /
+  H5 Effect.withSpan (naming not commitment). One-Layer surface: WorkflowEngineLayer
+  Layer<WorkflowEngine, never, ProtoClient>; dev writes stock Effect.
+- Part 3: composition ProtoClient ⊳ (Journal ⊗ Effector) ⊳ WorkflowRuntime via
+  Layer.provideMerge (mirrors ClusterWorkflowEngine idiom). Hard constraints:
+  C-A ADR-0003 data-not-FFI; C-B narrow writ (TS requests, never implements CAS);
+  C-C the payoff = effector R3/R4 + journal verify-on-read INHERITED, exactly-once
+  does NOT reappear per-workflow. OPEN QUESTION flagged: a workflow composing TWO
+  effector-homed decisions -> single-key proof doesn't cover cross-key atomicity;
+  recommend (a) one-workflow-one-register default, flag (b) saga/2PC as out of
+  scope needing its own gate. Edges: safety-only (no liveness; G1 storm
+  choreographed); TS Layer correctness REDUCES to daemon's (R0/R1 adapter surface,
+  no independent guarantee); replay determinism precondition.
+- Committing + pushing.
