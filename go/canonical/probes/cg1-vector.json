@@ -1,0 +1,5 @@
+{
+  "goInvalidUtf8Hex": ["ff", "fe"],
+  "tsLoneSurrogate": "\ud800",
+  "tsReplacementScalar": "�"
+}
