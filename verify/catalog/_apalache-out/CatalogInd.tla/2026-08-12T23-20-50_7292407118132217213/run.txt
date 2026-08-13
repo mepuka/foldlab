@@ -1,1 +1,0 @@
- check --config=CatalogInd.cfg --init=Init --inv=IndInv --length=0 CatalogInd.tla
