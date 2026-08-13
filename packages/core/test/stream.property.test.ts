@@ -208,7 +208,7 @@ describe("transform byte properties", () => {
     }
   })
 
-  test("every isolated byte follows Go replacement-rune semantics", () => {
+  test("every isolated byte follows the table-free ASCII law", () => {
     const upper = mapValueUpper()
     for (let byte = 0; byte <= 0xff; byte++) {
       const input = rawEvent("s", 1, [0x6b, 0x3d, byte])
@@ -216,20 +216,20 @@ describe("transform byte properties", () => {
       expect(got).not.toBeNull()
       const want = byte < 0x80
         ? [0x6b, 0x3d, byte >= 0x61 && byte <= 0x7a ? byte - 0x20 : byte]
-        : [0x6b, 0x3d, 0xef, 0xbf, 0xbd]
+        : [0x6b, 0x3d, byte]
       expect([...(got as StreamEvent).payload]).toEqual(want)
       expect([...input.payload]).toEqual([0x6b, 0x3d, byte])
     }
   })
 
-  test("simple Unicode casing includes width growth, expansions, and Greek exceptions", () => {
+  test("Unicode and malformed UTF-8 are preserved while adjacent ASCII changes", () => {
     const cases: Array<[string, string]> = [
       ["key=Straße", "key=STRAßE"],
-      ["key=ɐtail", "key=ⱯTAIL"],
-      ["key=ﬃ", "key=ﬃ"],
-      ["key=ᾀ", "key=ᾈ"],
-      ["key=ᾳ", "key=ᾼ"],
-      ["key=ῳ", "key=ῼ"],
+      ["key=ɐtail", "key=ɐTAIL"],
+      ["key=ﬃaz", "key=ﬃAZ"],
+      ["key=ᾀaz", "key=ᾀAZ"],
+      ["key=ᾳaz", "key=ᾳAZ"],
+      ["key=ῳaz", "key=ῳAZ"],
     ]
     const upper = mapValueUpper()
     for (const [input, want] of cases) {
@@ -245,9 +245,29 @@ describe("transform byte properties", () => {
     ]) {
       const input = rawEvent("s", 1, [0x6b, 0x3d, ...value])
       const got = mapValueUpper()(input) as StreamEvent
-      expect([...got.payload.slice(0, 2)]).toEqual([0x6b, 0x3d])
-      expect(got.payload.length).toBe(2 + value.length * 3)
+      expect([...got.payload]).toEqual([0x6b, 0x3d, ...value])
       expect([...input.payload]).toEqual([0x6b, 0x3d, ...value])
+    }
+  })
+
+  test("every Unicode scalar is byte-preserved without consulting a case table", () => {
+    const upper = mapValueUpper()
+    for (let rune = 0x80; rune <= 0x10ffff; rune++) {
+      if (rune >= 0xd800 && rune <= 0xdfff) continue
+      const value = enc.encode(String.fromCodePoint(rune))
+      const input = rawEvent("s", 1, Uint8Array.from([0x6b, 0x3d, ...value, 0x61]))
+      const got = upper(input) as StreamEvent
+      if (got.payload.length !== input.payload.length) {
+        throw new Error(`U+${rune.toString(16)} changed encoded width`)
+      }
+      for (let offset = 0; offset < value.length; offset++) {
+        if (got.payload[offset + 2] !== value[offset]) {
+          throw new Error(`U+${rune.toString(16)} changed at byte ${offset}`)
+        }
+      }
+      if (got.payload.at(-1) !== 0x41) {
+        throw new Error(`U+${rune.toString(16)} prevented adjacent ASCII uppercasing`)
+      }
     }
   })
 

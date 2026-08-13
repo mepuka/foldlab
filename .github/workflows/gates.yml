@@ -61,6 +61,11 @@ jobs:
       - name: root — bun run typecheck
         run: bun run typecheck 2>&1 | tee ci-logs/root-typecheck.log
 
+      # The native/TS/wasm wall is not optional in CI. The test also carries a
+      # CI-only missing-artifact canary, so deleting this step turns green red.
+      - name: root — bun run build:wasm
+        run: bun run build:wasm 2>&1 | tee ci-logs/root-wasm-build.log
+
       # Spawns the persistent Go probe: every generated value and every
       # fast-check shrink candidate crosses the real TS↔Go seam.
       - name: root — bun test

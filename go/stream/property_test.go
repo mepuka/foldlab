@@ -111,9 +111,12 @@ func referenceMapValueUpper(event Event) Event {
 	if i < 0 {
 		return event
 	}
-	payload := make([]byte, 0, len(event.Payload))
-	payload = append(payload, event.Payload[:i+1]...)
-	payload = append(payload, bytes.ToUpper(event.Payload[i+1:])...)
+	payload := append([]byte(nil), event.Payload...)
+	for j := i + 1; j < len(payload); j++ {
+		if 'a' <= payload[j] && payload[j] <= 'z' {
+			payload[j] -= 'a' - 'A'
+		}
+	}
 	event.Payload = payload
 	return event
 }
@@ -282,7 +285,8 @@ func TestPropertyFoldKVMatchesReference(t *testing.T) {
 	}
 }
 
-// The optimized uppercase path is bytes.ToUpper over the value and never the key.
+// The optimized uppercase path follows the table-free ASCII oracle over the
+// value and never the key.
 func TestPropertyMapValueUpperMatchesReference(t *testing.T) {
 	property := func(key, value []byte) bool {
 		payload := make([]byte, 0, len(key)+1+len(value))
@@ -345,32 +349,31 @@ func TestMapValueUpperEveryASCIIPair(t *testing.T) {
 	}
 }
 
-// Every Unicode scalar witnesses encoding width growth as well as case mapping.
-func TestMapValueUpperEveryUnicodeRune(t *testing.T) {
+// Non-ASCII bytes are outside this transform's deliberately table-free domain.
+func TestMapValueUpperPreservesEveryUnicodeRune(t *testing.T) {
 	upper := MapValueUpper()
-	for r := rune(0); r <= unicode.MaxRune; r++ {
+	for r := rune(utf8.RuneSelf); r <= unicode.MaxRune; r++ {
 		if !utf8.ValidRune(r) {
 			continue
 		}
 		payload := utf8.AppendRune([]byte{'k', '='}, r)
 		event := Event{Payload: payload}
 		got, ok := upper(event)
-		want := referenceMapValueUpper(event)
-		if !ok || !bytes.Equal(got.Payload, want.Payload) {
-			t.Fatalf("upper(U+%04X) = % x, want % x", r, got.Payload, want.Payload)
+		if !ok || !bytes.Equal(got.Payload, event.Payload) {
+			t.Fatalf("upper(U+%04X) = % x, want byte-identical % x", r, got.Payload, event.Payload)
 		}
 	}
 }
 
-// All isolated non-ASCII bytes exercise replacement-rune growth and clipping.
-func TestMapValueUpperEveryInvalidLeadingByte(t *testing.T) {
+// Malformed UTF-8 is data too: every isolated non-ASCII byte stays byte-identical.
+func TestMapValueUpperPreservesEveryNonASCIIByte(t *testing.T) {
 	upper := MapValueUpper()
 	for value := utf8.RuneSelf; value <= 0xff; value++ {
 		event := Event{Payload: []byte{'k', '=', byte(value), 'a'}}
 		got, ok := upper(event)
-		want := referenceMapValueUpper(event)
-		if !ok || !bytes.Equal(got.Payload, want.Payload) {
-			t.Fatalf("upper(% x) = % x, want % x", event.Payload, got.Payload, want.Payload)
+		want := []byte{'k', '=', byte(value), 'A'}
+		if !ok || !bytes.Equal(got.Payload, want) {
+			t.Fatalf("upper(% x) = % x, want % x", event.Payload, got.Payload, want)
 		}
 	}
 }

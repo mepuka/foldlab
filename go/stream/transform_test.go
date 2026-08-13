@@ -70,8 +70,8 @@ func TestComposeStopsAfterDrop(t *testing.T) {
 	}
 }
 
-// XL4: value mapping retains bytes.ToUpper semantics for ASCII, Unicode,
-// invalid UTF-8, and payloads with no value boundary.
+// XL4: value mapping uppercases ASCII in the value only and preserves every
+// non-ASCII byte, including malformed UTF-8.
 func TestMapValueUpperMatchesByteSemantics(t *testing.T) {
 	payloads := [][]byte{
 		[]byte("key=lower"),
@@ -90,7 +90,12 @@ func TestMapValueUpperMatchesByteSemantics(t *testing.T) {
 		}
 		want := payload
 		if i := bytes.IndexByte(payload, '='); i >= 0 {
-			want = append(append([]byte(nil), payload[:i+1]...), bytes.ToUpper(payload[i+1:])...)
+			want = append([]byte(nil), payload...)
+			for j := i + 1; j < len(want); j++ {
+				if 'a' <= want[j] && want[j] <= 'z' {
+					want[j] -= 'a' - 'A'
+				}
+			}
 		}
 		if !bytes.Equal(got.Payload, want) {
 			t.Fatalf("upper(%q) = %q, want %q", payload, got.Payload, want)

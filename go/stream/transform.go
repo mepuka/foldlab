@@ -2,8 +2,6 @@ package stream
 
 import (
 	"bytes"
-	"unicode"
-	"unicode/utf8"
 )
 
 // An Xform is one stream-to-stream transformation: a per-event morphism,
@@ -63,24 +61,19 @@ func FilterKeyPrefix(prefix string) Xform {
 }
 
 func appendUpper(dst, src []byte) []byte {
-	for len(src) > 0 {
-		if c := src[0]; c < utf8.RuneSelf {
-			if 'a' <= c && c <= 'z' {
-				c -= 'a' - 'A'
-			}
-			dst = append(dst, c)
-			src = src[1:]
-			continue
+	for _, c := range src {
+		if 'a' <= c && c <= 'z' {
+			c -= 'a' - 'A'
 		}
-		r, size := utf8.DecodeRune(src)
-		dst = utf8.AppendRune(dst, unicode.ToUpper(r))
-		src = src[size:]
+		dst = append(dst, c)
 	}
 	return dst
 }
 
-// MapValueUpper uppercases the value half of key=value payloads, allocating
-// a fresh payload (xforms never mutate their input).
+// MapValueUpper uppercases ASCII a-z bytes in the value half of key=value
+// payloads, allocating a fresh payload (xforms never mutate their input).
+// Non-ASCII bytes are preserved verbatim: digest behavior depends on no
+// runtime Unicode table.
 func MapValueUpper() Xform {
 	return func(e Event) (Event, bool) {
 		i := bytes.IndexByte(e.Payload, '=')

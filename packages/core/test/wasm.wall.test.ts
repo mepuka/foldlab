@@ -10,7 +10,8 @@
  * and the head TS recomputes from the RETURNED frames must equal the head
  * Go computed inside the module, so the law survives both crossings.
  *
- * Auto-skips until `bun run build:wasm` has produced dist/.
+ * Local source-only runs skip until `bun run build:wasm` has produced dist/.
+ * CI must build the artifact first and fails loudly if it is absent.
  */
 
 import { describe, expect, test } from "bun:test"
@@ -40,6 +41,7 @@ import {
 const wasmPath = join(import.meta.dir, "../../../dist/stream.wasm")
 const loaderPath = join(import.meta.dir, "../../../dist/wasm_exec.js")
 const built = existsSync(wasmPath) && existsSync(loaderPath)
+const inCI = process.env["CI"] !== undefined
 
 const fixture = JSON.parse(
   readFileSync(join(import.meta.dir, "../../../fixtures/stream-wall.json"), "utf8"),
@@ -89,72 +91,88 @@ const loadWall = async (): Promise<(frameBase64: string) => WallResult> => {
   return (frameBase64) => JSON.parse(entry(frameBase64)) as WallResult
 }
 
-describe.if(built)("the wasm wall", () => {
-  test("Go-in-wasm reproduces the frozen pin, and the head survives both crossings", async () => {
-    const run = await loadWall()
-    const merged = Effect.runSync(applyMerge(fact, sources))
-    const res = run(gzipEvents(merged))
+if (built) {
+  describe("the wasm wall", () => {
+    test("Go-in-wasm reproduces the frozen pin, and the head survives both crossings", async () => {
+      const run = await loadWall()
+      const merged = Effect.runSync(applyMerge(fact, sources))
+      const res = run(gzipEvents(merged))
 
-    expect(res.error).toBeUndefined()
-    expect(res.kept).toBe(fixture["xformPipelineKept"] as number)
-    expect(res.head).toBe(fixture["xformPipelineHead"] as string)
+      expect(res.error).toBeUndefined()
+      expect(res.kept).toBe(fixture["xformPipelineKept"] as number)
+      expect(res.head).toBe(fixture["xformPipelineHead"] as string)
 
-    // Round trip: gunzip the RETURNED frames and recompute the head in TS.
-    const returned = parseFrames(new Uint8Array(Bun.gunzipSync(Buffer.from(res.gzipBase64, "base64"))))
-    expect(headFrom(streamSeed("t"), returned)).toBe(fixture["xformPipelineHead"] as string)
+      // Round trip: gunzip the RETURNED frames and recompute the head in TS.
+      const returned = parseFrames(new Uint8Array(Bun.gunzipSync(Buffer.from(res.gzipBase64, "base64"))))
+      expect(headFrom(streamSeed("t"), returned)).toBe(fixture["xformPipelineHead"] as string)
+    })
+
+    test("the 27 reported Unicode drifts and malformed UTF-8 agree byte-for-byte", async () => {
+      const run = await loadWall()
+      const encoder = new TextEncoder()
+      const corpus: Array<StreamEvent> = []
+      let seq = 1
+      const unicode16Drifts = [
+        0x019b,
+        0x0264,
+        0x1c8a,
+        0xa7cd,
+        0xa7db,
+        ...Array.from({ length: 0x10d85 - 0x10d70 + 1 }, (_, i) => 0x10d70 + i),
+      ]
+      expect(unicode16Drifts).toHaveLength(27)
+      for (const rune of [0x00b5, 0x00e9, 0x0250, 0x1f80, ...unicode16Drifts]) {
+        corpus.push({
+          stream: "source",
+          seq: seq++,
+          payload: encoder.encode(`a=${String.fromCodePoint(rune)}az`),
+        })
+      }
+      for (const value of [
+        [0xff],
+        [0xc0, 0xaf],
+        [0xe2, 0x82],
+        [0xed, 0xa0, 0x80],
+        [0xf4, 0x90, 0x80, 0x80],
+      ]) {
+        corpus.push({
+          stream: "source",
+          seq: seq++,
+          payload: Uint8Array.from([0x61, 0x3d, ...value]),
+        })
+      }
+      corpus.push({ stream: "source", seq: seq++, payload: encoder.encode("not-key-value") })
+      corpus.push({ stream: "source", seq: seq++, payload: encoder.encode("=empty-key") })
+
+      const pipeline = compose(
+        renameStream("z"),
+        filterKeyPrefix("a"),
+        mapValueUpper(),
+      )
+      const expected = apply(pipeline, corpus)
+      const res = run(gzipEvents(corpus))
+      expect(res.error).toBeUndefined()
+      expect(res.kept).toBe(expected.length)
+      expect(res.head).toBe(headFrom(streamSeed("t"), expected))
+
+      const returned = parseFrames(new Uint8Array(Bun.gunzipSync(Buffer.from(res.gzipBase64, "base64"))))
+      expect(returned.map((e) => Buffer.from(encodeEvent(e)).toString("hex"))).toEqual(
+        expected.map((e) => Buffer.from(encodeEvent(e)).toString("hex")),
+      )
+    })
+
+    test("garbage refuses as data — no exception crosses the boundary", async () => {
+      const run = await loadWall()
+      expect(run("not base64!!").error).toBeDefined()
+      expect(run(Buffer.from("not a gzip frame").toString("base64")).error).toBeDefined()
+    })
   })
-
-  test("every cased Unicode scalar and malformed UTF-8 sequence agrees byte-for-byte", async () => {
-    const run = await loadWall()
-    const encoder = new TextEncoder()
-    const corpus: Array<StreamEvent> = []
-    let seq = 1
-    for (let rune = 0; rune <= 0x10ffff; rune++) {
-      if (rune >= 0xd800 && rune <= 0xdfff) continue
-      const value = String.fromCodePoint(rune)
-      if (value.toUpperCase() === value) continue
-      corpus.push({ stream: "source", seq: seq++, payload: encoder.encode("a=" + value) })
-    }
-    for (const value of [
-      [0xff],
-      [0xc0, 0xaf],
-      [0xe2, 0x82],
-      [0xed, 0xa0, 0x80],
-      [0xf4, 0x90, 0x80, 0x80],
-    ]) {
-      corpus.push({
-        stream: "source",
-        seq: seq++,
-        payload: Uint8Array.from([0x61, 0x3d, ...value]),
-      })
-    }
-    corpus.push({ stream: "source", seq: seq++, payload: encoder.encode("not-key-value") })
-    corpus.push({ stream: "source", seq: seq++, payload: encoder.encode("=empty-key") })
-
-    const pipeline = compose(
-      renameStream("z"),
-      filterKeyPrefix("a"),
-      mapValueUpper(),
-    )
-    const expected = apply(pipeline, corpus)
-    const res = run(gzipEvents(corpus))
-    expect(res.error).toBeUndefined()
-    expect(res.kept).toBe(expected.length)
-    expect(res.head).toBe(headFrom(streamSeed("t"), expected))
-
-    const returned = parseFrames(new Uint8Array(Bun.gunzipSync(Buffer.from(res.gzipBase64, "base64"))))
-    expect(returned.map((e) => Buffer.from(encodeEvent(e)).toString("hex"))).toEqual(
-      expected.map((e) => Buffer.from(encodeEvent(e)).toString("hex")),
-    )
+} else if (inCI) {
+  test("CI cannot skip the wasm wall when its artifact is absent", () => {
+    throw new Error("dist/stream.wasm and dist/wasm_exec.js must exist in CI")
   })
-
-  test("garbage refuses as data — no exception crosses the boundary", async () => {
-    const run = await loadWall()
-    expect(run("not base64!!").error).toBeDefined()
-    expect(run(Buffer.from("not a gzip frame").toString("base64")).error).toBeDefined()
+} else {
+  describe("the wasm wall (skipped locally)", () => {
+    test.skip("dist/ missing — run `bun run build:wasm` first", () => {})
   })
-})
-
-describe.if(!built)("the wasm wall (skipped)", () => {
-  test.skip("dist/ missing — run `bun run build:wasm` first", () => {})
-})
+}

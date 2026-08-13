@@ -988,3 +988,19 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 39 — table-free uppercase wall (2026-08-13)
+
+### D??. MapValueUpper is ASCII-only and the wasm wall is mandatory in CI
+
+Decided: both twins uppercase only byte values `0x61` through `0x7a` after
+the first `=` and preserve every other byte verbatim. CI builds the Go wasm
+artifact before running the Bun suite; a CI-only canary fails if either
+artifact is absent, while local source-only runs retain their explicit skip.
+Alternatives: pin a Unicode data package (a new dependency and a recurring
+table-upgrade migration); follow one host runtime (not cross-runtime); commit
+the generated wasm binary (duplicates a derived artifact in source control);
+leave the wall conditional everywhere (a prover that cannot fail). Why: ASCII
+is the already-ratified domain in `NEXT.md`, is independently specified by byte
+bounds, and removes both external Unicode tables from the digest path.
+**Load-bearing? yes.**
