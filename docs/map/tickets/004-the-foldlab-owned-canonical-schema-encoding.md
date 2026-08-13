@@ -2,7 +2,7 @@
 id: 004
 title: The foldlab-owned canonical schema encoding
 type: wayfinder:grilling
-status: open
+status: resolved
 assignee:
 blocked-by: []
 ---

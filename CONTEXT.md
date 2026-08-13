@@ -196,14 +196,16 @@ one side of it: the declared form carries a Type side, an Encoded side,
 and the transformation between them.
 
 **Structural digest**:
-A schema's identity: SHA-256 over the RFC 8785 bytes of a foldlab-owned
-canonical structure, produced by an exhaustive fold of the authoring
-AST (ticket 004). Both sides enter; declared checks and brands move
+A schema's identity: SHA-256 over the RFC 8785 bytes of the
+NORMALIZED foldlab-owned structure — the flb.type.v0 walk the
+certifier already owns (ticket 004 resolution, 2026-08-14: identity
+runs on the owned walk; any vendor-AST fold is derivation machinery,
+never identity). Both sides enter; declared checks and brands move
 identity; annotations never do, except a Declaration's required
 identifier; anonymous checks and identifier-less declarations refuse.
 Deployment facts never move identity: a schema on two subjects is one
-schema. Interim, until the build lands: a digest over submitted
-canonical bytes.
+schema. Interim, until the owned scheme ships: a digest over
+submitted canonical bytes, honestly attestation-grade.
 
 **Identity order**:
 RFC 8785's UTF-16 code-unit sort over member names — the order

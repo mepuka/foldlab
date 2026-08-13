@@ -175,8 +175,8 @@ same shape with `local:true` for its own conditions (`unreachable`,
 
 Interim scheme `bytes-sha256-v1` (W10): SHA-256 over the RFC 8785
 canonical bytes of the structure. Every catalog fact is scheme-tagged;
-ticket 004's exhaustive fold lands as a second scheme with no wire
-change.
+ticket 004's owned scheme (canonical(normalize(term)) over the
+flb.type.v0 walk) lands as a second scheme with no wire change.
 
 ## Fixtures (frozen)
 
