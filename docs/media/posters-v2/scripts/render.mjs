@@ -11,7 +11,8 @@
 // transform a README applies.
 //
 //   usage:  node scripts/render.mjs                 → out/two-folds-v2{,_preview}.png
-//           node scripts/render.mjs --sketch NAME   → sketches/NAME{,_preview}.png
+//           node scripts/render.mjs ID              → out/ID{,_preview}.png
+//           node scripts/render.mjs ID --sketch N   → sketches/N{,_preview}.png
 import { execFileSync } from "node:child_process";
 import { mkdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -22,7 +23,7 @@ import sharp from "sharp";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ENTRY = path.join("src", "index.ts");
 
-const STILL_ID = "two-folds-v2";
+const DEFAULT_ID = "two-folds-v2";
 const CANVAS = { width: 1600, height: 900 };
 const PREVIEW_WIDTH = 900;
 const PREVIEW = { width: 900, height: 506 }; // round(900 * 900/1600) = 506
@@ -33,6 +34,10 @@ const sketch = sketchAt === -1 ? null : argv[sketchAt + 1];
 if (sketchAt !== -1 && !sketch) {
   throw new Error("--sketch needs a name");
 }
+
+// The first bare word is the still to render. Everything else is a flag.
+const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--sketch");
+const STILL_ID = positional[0] ?? DEFAULT_ID;
 
 const dir = path.join(ROOT, sketch ? "sketches" : "out");
 const stem = sketch ?? STILL_ID;
