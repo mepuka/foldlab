@@ -183,7 +183,7 @@ const toJsonSchemaNode = (
         properties[name] = property
         if (!optional.has(name)) required.push(name)
       }
-      return { type: "object", properties, required, additionalProperties: false }
+      return { type: "object", properties, required, additionalProperties: n["open"] === true }
     }
     case "union": {
       const members: Json[] = []

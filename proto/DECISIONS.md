@@ -988,3 +988,18 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 35 — frame-schema drift (2026-08-14)
+
+### D??. Contract struct openness is an opt-in per-node boolean
+
+Decided: a contract-described struct is closed when `open` is absent and open
+only when it carries `"open":true`; the ingress frame is the first open node.
+JSON Schema codegen maps that bit to `additionalProperties`, independently at
+every struct node. Alternatives: make every described struct open globally;
+emit `open:false` on every closed node; render the frame as opaque; special-case
+the ingress frame in TypeScript. Why: the opt-in bit is the smallest Go→TS
+representation, preserves existing closed nodes byte-for-byte, and keeps the
+daemon's self-description—not a target-specific name—as the source of the
+admission law. **Load-bearing? yes** — removing or globalizing the bit recreates
+the served-schema/daemon disagreement or weakens unrelated closed contracts.

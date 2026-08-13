@@ -3,8 +3,10 @@
 // derived at startup, not authored. Refusals surface as data in tool
 // results, never as MCP protocol errors.
 import { afterAll, beforeAll, expect, test } from "bun:test"
+import { toJsonSchema } from "../src/codegen.ts"
 import { ProtoClient } from "../src/client.ts"
 import { toolsFromContract } from "../src/mcp.ts"
+import type { Json } from "../src/jcs.ts"
 import { spawnProtod, type RunningDaemon } from "./harness.ts"
 
 let daemon: RunningDaemon
@@ -72,6 +74,125 @@ const spawnMcp = async (): Promise<McpProcess> => {
     },
   }
 }
+
+// Independent consumer of the emitted JSON Schema subset used by the
+// contract. It tests admission, rather than asserting schema syntax.
+const jsonSchemaAdmits = (schema: Record<string, Json>, value: unknown): boolean => {
+  if (Object.keys(schema).length === 0) return true
+  if ("const" in schema && value !== schema["const"]) return false
+  if (Array.isArray(schema["anyOf"])) {
+    return schema["anyOf"].some((member) =>
+      jsonSchemaAdmits(member as Record<string, Json>, value),
+    )
+  }
+  switch (schema["type"]) {
+    case "string":
+      return typeof value === "string" &&
+        (typeof schema["pattern"] !== "string" || new RegExp(schema["pattern"]).test(value))
+    case "boolean":
+      return typeof value === "boolean"
+    case "integer":
+      return typeof value === "number" && Number.isInteger(value)
+    case "number":
+      return typeof value === "number" && Number.isFinite(value)
+    case "null":
+      return value === null
+    case "array":
+      return Array.isArray(value) &&
+        (typeof schema["items"] !== "object" || schema["items"] === null ||
+          value.every((item) => jsonSchemaAdmits(schema["items"] as Record<string, Json>, item)))
+    case "object": {
+      if (typeof value !== "object" || value === null || Array.isArray(value)) return false
+      const record = value as Record<string, unknown>
+      const required = (schema["required"] as Json[] | undefined ?? []).map(String)
+      if (required.some((name) => !(name in record))) return false
+      const properties = schema["properties"] as Record<string, Record<string, Json>> | undefined ?? {}
+      for (const [name, member] of Object.entries(record)) {
+        const property = properties[name]
+        if (property !== undefined) {
+          if (!jsonSchemaAdmits(property, member)) return false
+        } else if (schema["additionalProperties"] === false) {
+          return false
+        }
+      }
+      return true
+    }
+    default:
+      return true
+  }
+}
+
+const assertAdmissionAgreement = (
+  schema: Record<string, Json>,
+  value: unknown,
+  daemonAdmitted: boolean,
+): void => {
+  if (jsonSchemaAdmits(schema, value) !== daemonAdmitted) {
+    throw new Error("frame-schema drift: served-schema admission disagrees with daemon admission")
+  }
+}
+
+test("publish schema and daemon agree on open frames; the closed mutant is caught", async () => {
+  const connected = await ProtoClient.connect(daemon.url)
+  expect(connected.ok).toBe(true)
+  if (!connected.ok) throw new Error("connect refused")
+  const client = connected.fact
+  try {
+    const described = await client.describe()
+    expect(described.ok).toBe(true)
+    if (!described.ok) throw new Error("describe refused")
+    const derived = toolsFromContract(described.fact.contract)
+    expect(derived.ok).toBe(true)
+    if (!derived.ok) throw new Error("contract did not derive")
+    const publish = derived.tools.find((tool) => tool.name === "publish")!
+
+    const created = await client.createType({ k: "literal", value: "schema-drift-frame" })
+    expect(created.ok).toBe(true)
+    if (!created.ok) throw new Error("create refused")
+    const frame = {
+      type: created.fact.digest,
+      payload: "schema-drift",
+      trace: "extra-frame-key",
+    }
+    const toolInput = { journal: "schema_drift", frame }
+    const admitted = await client.publish(toolInput.journal, frame)
+    expect(admitted.ok).toBe(true)
+    assertAdmissionAgreement(publish.inputSchema, toolInput, admitted.ok)
+
+    const read = await client.read(toolInput.journal)
+    expect(read.ok).toBe(true)
+    if (!read.ok) throw new Error("read refused")
+    expect(JSON.parse(read.fact.entries[0]!.payload).trace).toBe("extra-frame-key")
+
+    const closed = toJsonSchema({
+      k: "struct",
+      fields: { value: { k: "string" } },
+      optional: [],
+    })
+    expect(closed.ok).toBe(true)
+    if (!closed.ok) throw new Error("closed struct did not derive")
+    expect(jsonSchemaAdmits(closed.value, { value: "kept", extra: true })).toBe(false)
+    const typeCreate = derived.tools.find((tool) => tool.name === "type_create")!
+    expect(
+      jsonSchemaAdmits(typeCreate.inputSchema, {
+        structure: { k: "string" },
+        extra: true,
+      }),
+    ).toBe(false)
+
+    const mutantContract = structuredClone(described.fact.contract) as any
+    delete mutantContract.ingress.frame.open
+    const mutant = toolsFromContract(mutantContract)
+    expect(mutant.ok).toBe(true)
+    if (!mutant.ok) throw new Error("mutant contract did not derive")
+    const mutantPublish = mutant.tools.find((tool) => tool.name === "publish")!
+    expect(() => assertAdmissionAgreement(mutantPublish.inputSchema, toolInput, admitted.ok)).toThrow(
+      "frame-schema drift",
+    )
+  } finally {
+    await client.close()
+  }
+}, 120_000)
 
 test("tool schemas are derived from contract.describe, and refusals are data in results", async () => {
   const mcp = await spawnMcp()

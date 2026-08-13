@@ -245,6 +245,30 @@ describe("json-schema target", () => {
     expect(opaque).toMatchObject({ ok: true, value: {} })
   })
 
+  test("struct openness is per-node", () => {
+    const derived = toJsonSchema({
+      k: "struct",
+      open: true,
+      fields: {
+        name: { k: "string" },
+        closed: {
+          k: "struct",
+          fields: { value: { k: "int" } },
+          optional: [],
+        },
+      },
+      optional: [],
+    })
+    expect(derived.ok).toBe(true)
+    if (!derived.ok) return
+    expect(derived.value["additionalProperties"]).toBe(true)
+    expect(
+      (derived.value["properties"] as Record<string, Record<string, Json>>)["closed"]?.[
+        "additionalProperties"
+      ],
+    ).toBe(false)
+  })
+
   test("derivation failure is a refusal value, not a throw", () => {
     const derived = toJsonSchema({ k: "wat" })
     expect(derived.ok).toBe(false)

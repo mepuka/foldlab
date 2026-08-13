@@ -27,6 +27,12 @@ func vStruct(fields map[string]any, optional ...string) map[string]any {
 	return map[string]any{"k": "struct", "fields": fields, "optional": optional}
 }
 
+func vOpenStruct(fields map[string]any, optional ...string) map[string]any {
+	structure := vStruct(fields, optional...)
+	structure["open"] = true
+	return structure
+}
+
 func vCheck(base map[string]any, name string, args map[string]any) map[string]any {
 	return map[string]any{
 		"k": "check", "base": base,
@@ -192,7 +198,7 @@ func describeReply() map[string]any {
 				"example":        ingressPrefix + "data",
 				"note": "publish a canonical frame claiming a cataloged type; request/reply — " +
 					"the reply admits or refuses; " + admitNote,
-				"frame": vStruct(map[string]any{
+				"frame": vOpenStruct(map[string]any{
 					"type":    vDigest(),
 					"payload": vOpaque(),
 				}, "payload"),

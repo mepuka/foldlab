@@ -260,6 +260,7 @@ func TestConformance(t *testing.T) {
 	t.Run("W5 an admit reply means durably appended and readable", func(t *testing.T) {
 		admit := h.request("flb.ing.data", map[string]any{
 			"type": sampleDigest, "payload": map[string]any{"id": "s-1", "celsius": 21.5},
+			"trace": "frame-extra-is-content",
 		})
 		if admit["ok"] != true || admit["admitted"] != true {
 			t.Fatalf("publish refused: %v", admit)
@@ -278,6 +279,14 @@ func TestConformance(t *testing.T) {
 		}
 		if read["head"] != admit["head"] {
 			t.Fatalf("admit head %v != read head %v", admit["head"], read["head"])
+		}
+		stored := entries[0].(map[string]any)["payload"].(string)
+		var frame map[string]any
+		if err := json.Unmarshal([]byte(stored), &frame); err != nil {
+			t.Fatalf("stored frame is not JSON: %v", err)
+		}
+		if frame["trace"] != "frame-extra-is-content" {
+			t.Fatalf("extra frame key was not admitted as content: %v", frame)
 		}
 	})
 
@@ -351,6 +360,11 @@ func TestConformance(t *testing.T) {
 		}
 		if contract["ingress"] == nil || contract["refusal"] == nil {
 			t.Fatalf("contract misses ingress or refusal: %v", contract)
+		}
+		ingress := contract["ingress"].(map[string]any)
+		frame := ingress["frame"].(map[string]any)
+		if frame["open"] != true {
+			t.Fatalf("contract describes an ingress frame closed to keys the daemon admits: %v", frame)
 		}
 		if !names["type_fill"] || !names["type_unfill"] {
 			t.Fatalf("contract omits concierge request kinds: %v", names)
