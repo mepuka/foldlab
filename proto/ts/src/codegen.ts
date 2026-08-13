@@ -6,7 +6,7 @@
 // digest (test/codegen.test.ts, over the frozen fixture corpus).
 import { Schema } from "effect"
 import { ref } from "./author.ts"
-import type { Json } from "./jcs.ts"
+import { SCHEME, structureDigest, type Json } from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
 
 export type Derived<A> =
@@ -319,9 +319,20 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
 export const toGoSource = (structure: Json, typeName: string, digest: string): Derived<string> => {
   const goType = toGoType(structure, ["structure"])
   if (goType instanceof Fail) return { ok: false, refusal: goType.refusal }
+  const actualDigest = structureDigest(structure)
+  if (digest !== actualDigest) {
+    return {
+      ok: false,
+      refusal: localRefusal(
+        "digest-mismatch",
+        "codegen refuses to emit a permanent artifact whose asserted digest it cannot re-derive",
+        { got: digest, expected: actualDigest },
+      ),
+    }
+  }
   const source = [
     "// Code derived from a cataloged flb.type.v0 structure. DO NOT EDIT.",
-    `// digest: ${digest} (bytes-sha256-v1)`,
+    `// digest: ${actualDigest} (${SCHEME})`,
     "package flbtypes",
     "",
     `type ${goIdent(typeName)} ${goType}`,

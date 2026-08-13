@@ -988,3 +988,36 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task ?? — codegen certified identity and check corpus (#42/#43, 2026-08-13)
+
+### D??. Permanent Go artifacts re-derive a supplied digest before emission
+
+Decided: `toGoSource` retains its current `(structure, typeName, digest)`
+compatibility seam, derives the structure first, then recomputes the
+`bytes-sha256-v1` digest and returns a typed `digest-mismatch` refusal if the
+pair disagrees. The generated banner uses only the recomputed value. Invalid
+structures keep their earlier `underivable` precedence, so the cross-target
+refusal-path law does not move. Alternatives: accept a `Certified` value (not
+yet present on this mainline architecture); remove the digest argument and
+silently recompute (loses evidence that a caller supplied a false pairing);
+keep stamping the caller value (the defect). Why: recompute-and-refuse is the
+smallest existing seam that enforces the repository's no-asserted-identity law
+without anticipating the promoted codegen service. **Load-bearing? yes** — a
+permanent artifact must not carry an identity that its own structure does not
+have.
+
+### D??. Check-table coverage is fixed semantic rows, not self-roundtrip
+
+Decided: all seven current owned check names are pinned in a test-local corpus
+with (1) the exact canonical check node expected from authoring, (2) one
+accepted and one refused boundary value executed by the derived Effect Schema,
+and (3) the exact JSON Schema constraint. A maxLength `max`→`min` args-key
+mutant proves the fixed canonical-row oracle fails independently of both hand-
+kept tables. Alternatives: add rows to frozen `proto/wire/fixtures` (forbidden
+without regeneration authority); rely on derive→re-fold (a symmetric bug
+cancels); claim the planned Go-daemon L-ACCEPT differential (not built here).
+Why: the fixed rows cover the six previously absent kinds without overstating
+the proof. The claim remains corpus-sized: these examples do not ratify or
+replace L-ACCEPT. **Load-bearing? yes** — this is the independent evidence that
+prevents two agreeing tables from silently renaming identity-bearing args.
