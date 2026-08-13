@@ -447,3 +447,52 @@ against `Cardinality(Vals)`.
 - The R4 entry owes a FINDING-BRIDGE-001 disposition: either the
   reformulated checkable bridge, or a stated-abstraction note that the
   resolving case is discharged by inspection, not by TLC.
+
+## Operator ratifications (2026-08-13, recorded by the PC coordinator)
+
+Relayed from the operator in session; implementation ownership stated
+per item so the lanes do not collide.
+
+1. **FINDING-BRIDGE-001, Proposal 1 — RATIFIED.** `ResolvingCreateAgrees`
+   enters `CatalogWire.cfg`'s INVARIANTS; the README "How R4 attaches"
+   sentence is corrected to: creating case checked as an action
+   property, resolving case checked as a state invariant. Implementation
+   lands in the Mac lanes (they hold the probes, controls, and canary
+   discipline in flight). PC replication before ratification: all seven
+   W/X probes rerun on Windows, verdicts and closure counts exact
+   (W1 clean 9,133/863/d11; W2 violated d2; X1 clean 9,133/863;
+   X2 violated d2; X3 clean 119,145/18,295; X4 violated; X5 clean
+   163,101/21,977). Note for the gate scripts: TLC on Windows rejects
+   path-qualified module names — invoke with `-DTLA-Library=probes` and
+   the bare module name.
+2. **Proposal 2 — RATIFIED as a strengthening.** `AdmittedStaysResolvableAtD`
+   enters the ratified invariant set with `ResettingMirror` as its named
+   negative control (the X4/X5 pair is the evidence it is strictly
+   stronger than `NoAdmissionOnFaith` over identical behaviors). The
+   `Publish` refusal branch receives the same state-invariant treatment
+   where its checkable content is prime-free. Binding consequence,
+   answering OBSERVATION-STRONGER-ADMISSION's ownership question: future
+   replica resync design must preserve this law — a drop-and-refetch
+   resync that erases local resolvability is now a ratified-law
+   violation, and if replica reality ever demands it, that returns as a
+   grill, never a silent weakening.
+3. **Bridge disposition scope (three layers, for the eventual ledger
+   edit at merge):** (a) TLA bridge, resolving half — was asserted, not
+   checked; repaired by Proposal 1. (b) Binary lockstep layer — NOT
+   affected: `CreateAtomic.converged` and `Publish.refused` are driven
+   branches in the 131-schedule corpus with post-state comparison and
+   corrupted-expectation sensitivity on both; a proof-mechanics defect,
+   not a binary defect. (c) The claim text — "checks that relation
+   directly" was the only false statement; it gets the correction.
+4. **TS refusal-domain batch — RATIFIED and dispatched (PC side).**
+   C1/M1/J1/A1 fixed as one law (every packages/core fold entry point
+   total by refusal) with regression-first discipline and an
+   adversarial generator flip; spec at scratch/codex/22 (PC), branch
+   codex/ts-refusal-wall when in flight. packages/core only; verify/
+   remains Mac-lane territory.
+5. **C4 status (PC side):** an independent widened-hypothesis run is in
+   flight on Windows at catalog `Gen(3)` / mirror `Gen(6)` / data
+   `Gen(4)` — deliberately wider than the PROVER's argued-cutoff bounds
+   — as the cross-platform, cross-bounds replication of the R3 repair.
+   Same jar (sha `33611081…ad4346`), all four obligations including
+   both controls. Verdicts will be appended when they land.
