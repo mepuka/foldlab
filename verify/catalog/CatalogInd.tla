@@ -1,8 +1,8 @@
 ------------------------------ MODULE CatalogInd ------------------------------
 (***************************************************************************)
-(* R3 PREPARATION — NOT CLAIMED.  The inductive-invariant candidate for    *)
-(* the catalog + ingress laws, structured after EffectorInd.tla            *)
-(* (.reference/playground-mech): the R3 climb will check it with Apalache  *)
+(* R3 CLAIMED 2026-08-13.  The inductive invariant for the catalog +       *)
+(* ingress laws, structured after EffectorInd.tla                           *)
+(* (.reference/playground-mech), was checked with Apalache                  *)
 (* under DataCap = 0 (data journals UNBOUNDED; catalogs and mirrors are    *)
 (* bounded by Convergence itself, not by a cap) via the standard           *)
 (* decomposition:                                                          *)
@@ -20,10 +20,9 @@
 (*   6. CONTROL: obligation 4 under BlindIngress = TRUE MUST fail (the     *)
 (*      refuted ingress refuted again at the induction level).             *)
 (*                                                                         *)
-(* Until those obligations run green, IndInv is a CANDIDATE: the clauses   *)
-(* below are believed inductive but are claimed only as TLC-checked state  *)
-(* invariants at the R2 bounds (they are conjunctions of the checked       *)
-(* invariants plus the pending-create discipline).                         *)
+(* All six obligations ran with Apalache 0.61.0: 1-4 NoError; 5-6 Error   *)
+(* as required.  README.md and CLIMB.md record commands, bounds, timings,  *)
+(* and the failed-candidate witnesses.                                      *)
 (***************************************************************************)
 EXTENDS Catalog, Apalache
 

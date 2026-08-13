@@ -36,9 +36,10 @@ verification.
 
 ## Positions and next climbs, in order
 
-1. **Catalog + ingress state machine** (laws W1–W5) — **R2 CLAIMED**
-   (2026-08-12, `verify/catalog/`): TLC 2.19 clean to closure at the
-   gate caps (2 daemons / 3 values / 2 creators: 12,707,989 distinct
+1. **Catalog + ingress state machine** (laws W1–W5) — **R3 CLAIMED**
+   (2026-08-13, `verify/catalog/`): R2 remains TLC 2.19 clean to
+   closure at the gate caps (2 daemons / 3 values / 2 creators:
+   12,707,989 distinct
    states, depth 24) and cap2 (18,295); invariants Convergence,
    NoAdmissionOnFaith (+ AdmissionSeesResolution),
    LagIsAbsenceNeverWrongData, ResolutionMonotonicity. FOUR negative
@@ -48,9 +49,16 @@ verification.
    presence is monotone (a stale positive resolve-check can never
    become wrong — monotonicity is the theorem licensing atomic
    ingress); absence is anti-monotone, hence create needs the CAS.
-   Next: R3 (Apalache; candidate stated in CatalogInd.tla, NOT
-   claimed — codex task 04); R4 attaches to protod's conformance
-   harness.
+   R3: Apalache 0.61.0 proved base, consecution, state safety, and
+   action safety from arbitrary `IndInv` states with unbounded trace
+   length and data-journal depth at fixed domains (2 daemons / 3 values /
+   2 creators). The CAS-freshness clause is load-bearing: removing it
+   produces a duplicate authority fact; blind ingress separately
+   violates admission safety. Both controls failed as required. Evidence
+   and commands: `verify/catalog/README.md`; hill climb:
+   `verify/catalog/CLIMB.md`. Next: R4 ticket 010 attaches the proved
+   transition table to protod by lockstep trace replay, including
+   corrupted-schedule controls.
 2. **Concierge algebra** (bullet two) — R1 inside its build: property
    tests for `unfill ∘ fill = identity`, frontier-empty ⇔ catalogable,
    and NO DEAD ENDS (every hole admits ≥1 legal fill), by induction on

@@ -44,7 +44,9 @@ create needs a CAS and ingress doesn't.
 | `CatalogBroken.tla` | one-line `EXTENDS Catalog` — the faithless re-export |
 | `CatalogBroken*.cfg` | four negative controls, one dropped law each |
 | `CatalogBroken*.cex.txt` | the four refutations, committed verbatim |
-| `CatalogInd.tla`/`.cfg` | R3 preparation: inductive-invariant candidate, NOT CLAIMED |
+| `CatalogInd.tla`/`.cfg` | R3 inductive invariant and fixed proof domains |
+| `CatalogInd.blind.cfg` | R3 negative control: W4 deliberately disabled |
+| `CLIMB.md` | failed candidates, strengthening rationale, commands, verdicts |
 | `run.sh` | the gate: 2 clean closures + 4 required refutations, or FAIL |
 
 ## What R2 claims, exactly
@@ -131,23 +133,60 @@ mirror advances then empties, shrinking daemon 2's resolvable set from
 in its checked set and does NOT violate it — losing a prefix and forging
 one are different sins, and the model separates them.
 
-## What R3 will add
+## R3 inductive proof (CLAIMED, 2026-08-13)
 
-`CatalogInd.tla` states the inductive-invariant candidate: the five
-checked state invariants plus the **CAS-freshness clause** (a pending
-create whose expected position still holds has a still-true
-absence-check on its own journal — the catalog analogue of the
-effector's `fresh => snapshot current`). The R3 climb will discharge,
-with Apalache at `DataCap = 0` (data journals unbounded; catalogs need
-no cap by Convergence), the standard four obligations — base,
-consecution, state safety, action safety — plus two must-fail controls:
-consecution without the CAS-freshness clause, and action safety under
-`BlindIngress`. Until those run, the candidate is a candidate; nothing
-in this directory claims R3.
+`CatalogInd.tla` strengthens the five R2 state invariants with one
+**CAS-freshness clause**: a pending create whose expected own-journal
+position still holds still has a true absence-check on that journal.
+This is the catalog analogue of the effector's
+`fresh => snapshot current`; it is what makes a delayed `CreateFinish`
+safe without re-reading.
+
+Apalache checked arbitrary typed states satisfying `IndInv`, not the
+reachable set. `DataCap = 0`, so trace length and data-journal depth are
+unbounded. The proof fixes the configured cardinalities at 2 daemons,
+3 values, and 2 creators; it does **not** claim arbitrary cardinality.
+Catalog and mirror length need no artificial cap because
+`Convergence` and `CatalogNaturallyBounded` bound them by the finite
+value domain.
+
+Toolchain: Apalache 0.61.0 (build 831d473), jar sha256
+`33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346`,
+on Temurin/OpenJDK 21.0.2 via `mise x java@21.0.2`. The commands below
+use `APALACHE_JAR` for the verified release jar.
+
+| # | Obligation | Init / invariant / length | Verdict | Time |
+|---|---|---|---|---:|
+| 1 | base: `Init => IndInv` | `Init` / `IndInv` / 0 | NoError | 4.164s |
+| 2 | consecution: `IndInv /\ Next => IndInv'` | `IndInit` / `IndInv` / 1 | NoError | 26m35s |
+| 3 | state safety | `IndInit` / `StateSafety` / 0 | NoError | 3m23s |
+| 4 | action safety: admission + monotonicity | `IndInit` / `SafetySteps` / 1 | NoError | 6m52s |
+| 5 | CONTROL: consecution without CAS freshness | `IndInitSansFreshness` / `IndInvSansFreshness` / 1 | **Error, required** | 6m34s |
+| 6 | CONTROL: action safety with blind ingress | `IndInit` / `SafetySteps` / 1, blind config | **Error, required** | 4m58s |
+
+The two controls fail on exactly their planted gap. Without freshness,
+an arbitrary otherwise-safe state may contain value 1 once in daemon
+2's authority journal while a pending creator for value 1 still carries
+`exp = 1`; `CreateFinish` appends a duplicate and breaks Convergence.
+Under blind ingress, daemon 1 appends digest 1 while its own catalog and
+mirrors are empty, breaking `AdmissionStep`. `CLIMB.md` keeps the full
+hill-climb account and compact witnesses.
+
+Exact commands:
+
+```bash
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=Init --inv=IndInv --length=0 CatalogInd.tla
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=IndInit --inv=IndInv --length=1 CatalogInd.tla
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=IndInit --inv=StateSafety --length=0 CatalogInd.tla
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=IndInit --inv=SafetySteps --length=1 CatalogInd.tla
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.cfg --init=IndInitSansFreshness --inv=IndInvSansFreshness --length=1 CatalogInd.tla
+mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.blind.cfg --init=IndInit --inv=SafetySteps --length=1 CatalogInd.tla
+```
 
 ## How R4 attaches
 
-The tracer daemon (proto/) implements the same create path
+R3 proves the transition table, not that the binary refines it. The
+tracer daemon (proto/) implements the same create path
 (canonicalize → derive → resolve-check → CAS-append) and the same
 ingress refusal on the real journal substrate. R4 is lockstep trace
 replay in the effector heritage's mold: enumerate schedules from this
@@ -174,3 +213,6 @@ minutes; `Catalog.cap2.cfg` alone is ~1s. If TLC ever finds a real
 counterexample in `Catalog.tla`, that is a FINDING about the ratified
 laws, not a nuisance: commit the trace beside the spec like the
 `*.cex.txt` files and lead with it.
+
+The R3 commands above are a separate gate: four `NoError` verdicts and
+two required `Error` verdicts. Any flipped verdict fails the claim.
