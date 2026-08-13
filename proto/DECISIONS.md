@@ -912,3 +912,22 @@ at the cache seam); brand the Algebra/Step value itself (deferred
 with the review team's KNOWN GAP reasoning — no cross-process
 consumer builds on the brand yet). Why: every certification path
 admits via the same check, including the cache. **Load-bearing? yes.**
+
+## Task 24 — gate self-enforcement (2026-08-13)
+
+### D65. Response branches carry directed reply-only mutants; gates assert their own canaries
+
+Decided: every public response branch of the R4 harness (created,
+converged, admitted, refused) has a build-tagged mutant that changes
+ONLY the reply shape, and the ordered gate must catch each before any
+honest count; the comparator decodes replies strictly (a missing or
+mistyped field is a divergence, never a default). run-r4 executes the
+coverage-assertion test itself, and run.sh compares the cap2 canary's
+generated/distinct/depth numbers against the recorded values instead
+of only the clean verdict — evidence shrinkage now fails the
+advertised command. Alternatives: trust the repository test gate to
+catch shrinkage (the advertised standalone command then lies);
+mutate state instead of replies (already covered; misses the
+reply-only class the audit proved survivable). Why: a comparator that
+defaults a missing field to the expected value is a prover that
+cannot fail on that field. **Load-bearing? yes.**
