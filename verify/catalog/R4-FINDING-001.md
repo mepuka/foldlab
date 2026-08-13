@@ -77,3 +77,18 @@ multi-handler authority deployment real and define its retry/result behavior.
 This task makes no such design change: its rule was findings before fixes and
 no daemon modification except the tagged sabotage build.
 
+## Disposition (2026-08-13, operator-ratified)
+
+Coarsen the refinement map; the split moves to the journal. Wire
+conformance resumes against a COARSENED executable model in which
+create is one atomic action, derived from the proved model by
+composing Begin;Finish — with a bridging check in TLA that the atomic
+action implements the sequential composition, so R3 safety transfers.
+All coarsened-model behaviors are wire-drivable; R4's gate applies to
+that map. The stale-CAS branch's conformance obligation moves to
+ticket 012's journal kernel, where begin/finish are real separate
+operations (expected-seq append racing). The model's extra generality
+is recorded as an asset: it already covers the future multi-handler
+authority deployment. Rejected: a test-only interposition seam (the
+seam-enabled build is not the shipped binary); building multi-handler
+concurrency to satisfy a harness (inverted priorities).
