@@ -148,8 +148,10 @@ expect_clean  Catalog.cap2
 expect_clean  Catalog
 echo
 echo "-- negative controls (CatalogBroken.tla) --"
+# Registry citation catalog-model:W4 (source-local ID remains W4 in Catalog.tla).
 expect_violation CatalogBroken        "Invariant NoAdmissionOnFaith is violated"
 expect_violation CatalogBroken.forge  "Invariant LagIsAbsenceNeverWrongData is violated"
+# Registry citation catalog-model:W1 (source-local ID remains W1 in Catalog.tla).
 expect_violation CatalogBroken.assert "Invariant Convergence is violated"
 expect_violation CatalogBroken.reset  "Action property ResolutionMonotonicity is violated"
 

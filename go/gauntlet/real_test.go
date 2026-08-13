@@ -138,6 +138,47 @@ func TestRealValidBundlePasses(t *testing.T) {
 	}
 }
 
+func TestRL1NonCanonicalJournalRefused(t *testing.T) {
+	t.Run("non-canonical bytes", func(t *testing.T) {
+		dir := buildRealBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		lines[0] = strings.Replace(lines[0], "{", "{ ", 1)
+		if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err = VerifyReal(dir, realTestFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("non-canonical journal not refused as RL1: %v", err)
+		}
+	})
+
+	t.Run("broken previous-head link", func(t *testing.T) {
+		dir := buildRealBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		var wire map[string]any
+		mustUnmarshal(t, []byte(lines[0]), &wire)
+		wire["prev"] = strings.Repeat("f", 64)
+		lines[0] = string(mustCanonical(t, wire))
+		if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err = VerifyReal(dir, realTestFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("broken journal link not refused as RL1: %v", err)
+		}
+	})
+}
+
 func TestRealDoubleBuyRefused(t *testing.T) {
 	dir := buildRealBundle(t)
 	// Append a second receipt for an already-bought digest (re-chained).

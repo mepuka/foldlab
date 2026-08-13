@@ -40,7 +40,8 @@ rung definitions. Scoped laws:
 
 ## Layout
 
-- `catalog/` — catalog + ingress (SPEC laws W1–W5): R2 at the gate
+- `catalog/` — catalog + ingress (`catalog-model:W1`–`catalog-model:W5`
+  in the laws registry; source-local W1–W5 remain frozen in the spec): R2 at the gate
   caps, R3 inductive invariant, four faithless controls. R4 is ticket
   010.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence

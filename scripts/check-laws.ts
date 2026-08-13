@@ -25,8 +25,9 @@
  *   bun scripts/check-laws.ts              # the gate
  *   bun scripts/check-laws.ts --self-test  # the negative controls
  *
- * A gate that cannot fail proves nothing (AGENTS.md). `--self-test` plants one
- * defect per rule and requires each to be caught by that rule alone.
+ * A gate that cannot fail proves nothing (AGENTS.md). `--self-test` runs two
+ * positive controls and plants one defect per failure rule, requiring each
+ * attack to be caught by that rule alone.
  */
 
 import { readFileSync, existsSync } from "node:fs"
@@ -47,8 +48,17 @@ type Row = {
   readonly stmtPath: string
   readonly stmtAnchor: string
   readonly enforcers: ReadonlyArray<Enforcer>
-  readonly status: "BOUND" | "UNBOUND" | "NONE"
+  readonly status: "BOUND" | "UNBOUND" | "DESIGN" | "NONE"
 }
+
+const AMBIGUOUS_REGISTRY = new Map<string, ReadonlyArray<string>>([
+  ["C1", ["concierge:C1", "entity:C1"]],
+  ["W1", ["proto-wire:W1", "catalog-model:W1"]],
+  ["W2", ["proto-wire:W2", "catalog-model:W2"]],
+  ["W3", ["proto-wire:W3", "catalog-model:W3"]],
+  ["W4", ["proto-wire:W4", "catalog-model:W4"]],
+  ["W5", ["proto-wire:W5", "catalog-model:W5"]],
+])
 
 // ------------------------------------------------------------------- parsing
 const backticked = (cell: string): ReadonlyArray<string> =>
@@ -64,9 +74,15 @@ export const parseIndex = (markdown: string): ReadonlyArray<Row> => {
     if (law === undefined) continue
     // The status-vocabulary table at the top has no law in column one that
     // parses as an ID; skip anything that is not a law token.
-    if (!/^(?:[a-z]+-)?(?:EC|EL|WL|GV|RL|TV|CL|SL|W|C)[0-9]+$/.test(law)) continue
+    if (!/^(?:[a-z][a-z0-9-]*:)?(?:EC|EL|WL|GV|RL|TV|CL|SL|W|C)[0-9]+$/.test(law)) continue
     const rawStatus = cells[3]!
-    const status = rawStatus === "BOUND" ? "BOUND" : rawStatus === "UNBOUND" ? "UNBOUND" : "NONE"
+    const status = rawStatus === "BOUND"
+      ? "BOUND"
+      : rawStatus === "UNBOUND"
+        ? "UNBOUND"
+        : rawStatus === "DESIGN"
+          ? "DESIGN"
+          : "NONE"
     const [stmtPath, stmtAnchorRaw] = (backticked(cells[1]!)[0] ?? "").split("#")
     const enforcers = backticked(cells[2]!).map((spec) => {
       const at = spec.indexOf("::")
@@ -74,17 +90,38 @@ export const parseIndex = (markdown: string): ReadonlyArray<Row> => {
         ? { path: spec, selector: "" }
         : { path: spec.slice(0, at), selector: spec.slice(at + 2) }
     })
-    // `entity-C1` scans as `entity-C1`; a plain `C1` scans as `C1`.
+    const scanToken = law.includes(":") ? law.slice(law.lastIndexOf(":") + 1) : law
     rows.push({
       law,
-      scanToken: law,
+      scanToken,
       stmtPath: stmtPath ?? "",
-      stmtAnchor: stmtAnchorRaw ?? law.replace(/^[a-z]+-/, ""),
+      stmtAnchor: stmtAnchorRaw ?? scanToken,
       enforcers,
       status,
     })
   }
   return rows
+}
+
+export const checkRegistryIds = (rows: ReadonlyArray<Row>): ReadonlyArray<string> => {
+  const violations: Array<string> = []
+  for (const [token, required] of AMBIGUOUS_REGISTRY) {
+    const actual = rows.filter((row) => row.scanToken === token).map((row) => row.law)
+    for (const law of actual) {
+      if (!required.includes(law)) {
+        violations.push(
+          `${law}: ${token} is ambiguous and must use one of the context-qualified registry IDs ` +
+            required.join(" or "),
+        )
+      }
+    }
+    for (const law of required) {
+      if (!actual.includes(law)) {
+        violations.push(`${law}: required context-qualified registry entry is missing`)
+      }
+    }
+  }
+  return violations
 }
 
 /** How far a law ID may sit from the test it binds, in lines. See `namesLawNear`. */
@@ -127,10 +164,15 @@ export const checkRows = (
   // literal that names a test. That is the binding the index calls BOUND for
   // TS; for Go the binding is the named func plus the ID somewhere in the file.
   const namedInSomeTest = (id: string): string | undefined => {
-    const re = new RegExp(
+    const callRe = new RegExp(
       String.raw`(?:t\.Run|test|describe|it)\(\s*"[^"]*\b${id}\b[^"]*"`,
     )
-    for (const [path, content] of testFiles) if (re.test(content)) return path
+    const goFuncRe = new RegExp(
+      String.raw`\bfunc\s+Test[A-Za-z0-9_]*${id}(?![0-9])[A-Za-z0-9_]*\s*\(`,
+    )
+    for (const [path, content] of testFiles) {
+      if (callRe.test(content) || goFuncRe.test(content)) return path
+    }
     return undefined
   }
 
@@ -150,10 +192,10 @@ export const checkRows = (
     }
 
     // --- status/enforcer agreement ----------------------------------------
-    if (row.status === "NONE" && row.enforcers.length > 0) {
-      v(`${row.law}: status is — but the row names ${row.enforcers.length} enforcer(s)`)
+    if ((row.status === "NONE" || row.status === "DESIGN") && row.enforcers.length > 0) {
+      v(`${row.law}: status is ${row.status} but the row names ${row.enforcers.length} enforcer(s)`)
     }
-    if (row.status !== "NONE" && row.enforcers.length === 0) {
+    if (row.status !== "NONE" && row.status !== "DESIGN" && row.enforcers.length === 0) {
       v(`${row.law}: status is ${row.status} but the row names no enforcer`)
     }
 
@@ -293,6 +335,12 @@ if (process.argv.includes("--self-test")) {
     ),
   )
   bad += ok(
+    "a Go row claiming NO enforcement while a Test function now names the law",
+    checkRows(honestRows, honestFiles, files({ "z_test.go": "func TestEC2Refused(t *testing.T) {}" })).some(
+      (s) => s.includes("left the index claiming a hole"),
+    ),
+  )
+  bad += ok(
     "a row claiming UNBOUND whose enforcer does name the law",
     checkRows(
       parseIndex("| `EC1` | `spec.md` | `x_test.go::func TestEC1` | UNBOUND |"),
@@ -306,12 +354,36 @@ if (process.argv.includes("--self-test")) {
       s.includes("duplicate row"),
     ),
   )
+  const completeRegistry = parseIndex(
+    "| `concierge:C1` | `spec.md` | `x_test.go::func TestC1` | BOUND |\n" +
+      "| `entity:C1` | `spec.md` | `x_test.go::func TestC1` | BOUND |\n" +
+      [...AMBIGUOUS_REGISTRY]
+        .filter(([token]) => token.startsWith("W"))
+        .flatMap(([, ids]) => ids.map((id) => `| \`${id}\` | \`spec.md\` | — | DESIGN |`))
+        .join("\n"),
+  )
+  bad += ok(
+    "a complete context-qualified collision registry must PASS",
+    checkRegistryIds(completeRegistry).length === 0,
+  )
+  bad += ok(
+    "an ambiguous source-local ID left unqualified",
+    checkRegistryIds([...completeRegistry, ...parseIndex("| `C1` | `spec.md` | — | DESIGN |")]).some(
+      (s) => s.includes("is ambiguous"),
+    ),
+  )
+  bad += ok(
+    "one missing side of a context-qualified collision",
+    checkRegistryIds(completeRegistry.filter((row) => row.law !== "entity:C1")).some(
+      (s) => s.includes("entity:C1") && s.includes("missing"),
+    ),
+  )
 
   if (bad > 0) {
-    console.error(`SELF-TEST FAIL: ${bad} control(s) did not fire; this gate proves nothing.`)
+    console.error(`SELF-TEST FAIL: ${bad} control(s) missed their required verdict; this gate proves nothing.`)
     process.exit(1)
   }
-  console.log("SELF-TEST PASS: 9 controls, each refuted on its own rule.")
+  console.log("SELF-TEST PASS: 13 controls (2 positive, 11 attacks refuted on their own rules).")
   process.exit(0)
 }
 
@@ -353,7 +425,7 @@ for (const p of testPaths) {
   if (c !== undefined) testFiles.set(p, c)
 }
 
-const violations = checkRows(rows, files, testFiles)
+const violations = [...checkRows(rows, files, testFiles), ...checkRegistryIds(rows)]
 const counts = rows.reduce<Record<string, number>>((acc, r) => {
   acc[r.status] = (acc[r.status] ?? 0) + 1
   return acc
@@ -361,7 +433,8 @@ const counts = rows.reduce<Record<string, number>>((acc, r) => {
 
 console.log(
   `laws indexed: ${rows.length}  (BOUND ${counts["BOUND"] ?? 0}, ` +
-    `UNBOUND ${counts["UNBOUND"] ?? 0}, unenforced ${counts["NONE"] ?? 0})`,
+    `UNBOUND ${counts["UNBOUND"] ?? 0}, DESIGN ${counts["DESIGN"] ?? 0}, ` +
+    `unenforced ${counts["NONE"] ?? 0})`,
 )
 console.log(`test files scanned: ${testFiles.size}`)
 console.log(`families known to the reverse scan: ${FAMILIES.join(" ")}`)

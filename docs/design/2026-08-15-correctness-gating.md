@@ -108,6 +108,10 @@ the proto wire laws in `proto/SPEC.md` AND the catalog model's SPEC laws in
 namespace, and it is why `scripts/check-laws.ts` scopes its reverse scan to
 test files rather than the whole tree.
 
+**#61 follow-up:** the registry now requires `concierge:C1` / `entity:C1`
+and `proto-wire:W1` / `catalog-model:W1` (through W5). These are index aliases,
+not silent edits to the frozen source-local IDs.
+
 ---
 
 ## 2. The negative-controls workflow
@@ -138,8 +142,8 @@ and Bun caches):
 | wasm wall — known divergence unchanged | 0 | green (27 scalars, exactly the allowlist) |
 | verifiers — G1 ×6, R1, RG-A ×3 | 2 | green (all VERIFIED) |
 | verifiers — R2 ×2 after pinned fetch | network + 2 | known red: exact GV8 and CL2/CL3 refusals classified; forged-corpus control refuses |
-| laws index `--self-test` | 0 | green (9 controls) |
-| laws index gate | 0 | green (65 laws; SL1 now bound) |
+| laws index `--self-test` | 0 | green (13 controls) |
+| laws index gate | 0 | green (71 laws; one unenforced) |
 | package test-policy self-test + gate | 0 | green (3 controls; every package accounted for) |
 | **total** | **29 s warm** | |
 
@@ -262,11 +266,12 @@ exercise and its own first regression test.
 
 ## 4. The laws index
 
-`docs/LAWS.md` + `scripts/check-laws.ts`. 65 laws indexed across ten families.
+`docs/LAWS.md` + `scripts/check-laws.ts`. After the #61 enforcement follow-up,
+71 context-qualified registry entries are indexed across ten families.
 
 ```
-laws indexed: 65  (BOUND 42, UNBOUND 13, unenforced 10)
-laws with NO enforcing test: W9 GV3 GV6 GV9 RL1 RL7 TV1 TV2 TV5 TV8
+laws indexed: 71  (BOUND 56, UNBOUND 11, DESIGN 3, unenforced 1)
+laws with NO enforcing test: proto-wire:W9
 LAWS INDEX: CLEAN
 ```
 
@@ -279,31 +284,21 @@ ID anywhere in the file, and an end-to-end control showed why that is too weak
 holding the binding). The window is 30 lines; the widest real binding in the
 tree is 29 (`TV4`).
 
-**The ten remaining unenforced laws.** `W9` was expected (#33 A9). The other
-nine were not:
+**#61 closure.** GV1 and GV2 now have separate controls, with GV2 rebuilding
+the outer chain around a semantically wrong payload. GV3, GV6, GV9, RL1, and
+TV1/TV2/TV5/TV8 each have a one-artifact public-verifier control. GV9's
+G1-specific manifest refusal names its law while preserving `errors.Is` for
+the shared manifest class. RL7 is classified `DESIGN`: it excludes output
+quality from the claim and cannot honestly have a quality mutant.
+`catalog-model:W2` and W5 are likewise design-only because the model explicitly
+does not claim them; catalog-model:W3 remains honestly UNBOUND. The only `—`
+row is `proto-wire:W9`. SL4, published and asserted at the server route on the
+adopted base, is now bound beside SL1.
 
-- `GV3` (registers strictly digest-sorted, in bijection), `GV6` (replay digest
-  equality), `GV9` (manifests canonical) — implemented in `verify.go`, never
-  refuted. `GV9` is further adrift: `ErrManifest` is the only error class in
-  that file carrying no law ID.
-- `GV1` and `GV2` share one test, which accepts EITHER `ErrChain` or
-  `ErrSemantics` — so neither has a control that fires on it alone, and the two
-  cannot be shown independent. That is a weaker position than "unenforced"
-  looks like from the outside.
-- `RL1` (chain + canonical bytes, "as always") has no control in the R1 lane at
-  all; its confidence is inherited from other lanes.
-- `RL7` is a scope boundary and is not mechanically checkable — listed so its
-  absence is not mistaken for an oversight.
-- `TV1`, `TV2`, `TV5`, `TV8` — four of the eight laws in the lane #37 calls the
-  strong template. RG-A is the best verifier in the repository AND has the
-  most unbound laws; those facts are about different things, which is the
-  argument for the index.
-- `SL1` was the eleventh; it is now bound at the real HTTP route by
-  `packages/server/test/health.surface.test.ts`.
-
-The checker ships nine negative controls (`--self-test`), one per rule, plus one
-positive control asserting an honest index passes — a gate that only ever fails
-is as useless as one that only ever passes. End-to-end verification: removing
+The checker ships thirteen self-controls: two positive controls (an honest
+index and a complete collision registry) plus eleven attacks covering every
+rule, including Go test-name discovery and both collision directions. A gate
+that only ever fails is as useless as one that only ever passes. End-to-end verification: removing
 `CL1`'s only mention from `climb_test.go` produced
 
 ```
@@ -428,11 +423,11 @@ that R2 accepts, so the fix is porting a check that exists twice.
 | `.github/workflows/negative-controls.yml` | two jobs; six build tags, R4 lockstep, D59 bridge, wasm wall, three verifier lanes, both index gates |
 | `scripts/wasm-wall-divergence.ts` | per-scalar divergence classifier + 4 self-test controls |
 | `fixtures/wasm-wall-known-divergence.json` | the 27 known-divergent scalars, frozen, with corpus domain and a deletion condition |
-| `scripts/check-laws.ts` | the laws-index gate + 9 self-test controls |
-| `docs/LAWS.md` | 65 laws → statement → enforcing test |
+| `scripts/check-laws.ts` | the laws-index gate + 13 self-test controls |
+| `docs/LAWS.md` | 71 context-qualified laws → statement → enforcing test or explicit design boundary |
 | `docs/FREEZING.md` | the freezing protocol, the inventory, the dangling-pointer correction |
 | this document | the audit and the design |
 
-Nothing here fixes #27's underlying divergence, #37's verifier holes, or the
-two fixtures with no generator. Those stay findings. What changed is that they
-are now findings a gate can see.
+Nothing here fixes #27's underlying divergence, #37 findings outside the
+explicit #61 law-control set, or the two fixtures with no generator. Those
+stay findings. What changed is that they are now findings a gate can see.

@@ -41,6 +41,7 @@ var G1 = Floors{
 
 var (
 	ErrManifest       = errors.New("gauntlet: manifest refused")
+	ErrG1Manifest     = fmt.Errorf("%w (GV9)", ErrManifest)
 	ErrChain          = errors.New("gauntlet: chain refused (GV1)")
 	ErrSemantics      = errors.New("gauntlet: semantics refused (GV2)")
 	ErrCommitment     = errors.New("gauntlet: commitment refused (GV3)")
@@ -127,16 +128,16 @@ func Verify(dir string, floors Floors) (Report, error) {
 
 	var man manifest
 	if err := readCanonicalJSON(filepath.Join(dir, "manifest.json"), &man); err != nil {
-		return report, fmt.Errorf("%w: %v", ErrManifest, err)
+		return report, fmt.Errorf("%w: %v", ErrG1Manifest, err)
 	}
 	if !hex64.MatchString(man.Salt) {
-		return report, fmt.Errorf("%w: salt is not 64 hex chars", ErrManifest)
+		return report, fmt.Errorf("%w: salt is not 64 hex chars", ErrG1Manifest)
 	}
 	if !hex64.MatchString(man.StateDigest) {
-		return report, fmt.Errorf("%w: state_digest is not 64 hex chars", ErrManifest)
+		return report, fmt.Errorf("%w: state_digest is not 64 hex chars", ErrG1Manifest)
 	}
 	if man.Steps < 1 {
-		return report, fmt.Errorf("%w: steps must be positive", ErrManifest)
+		return report, fmt.Errorf("%w: steps must be positive", ErrG1Manifest)
 	}
 
 	// GV1 + GV2: walk the journal, verifying chain and recomputing the
@@ -381,7 +382,7 @@ func Verify(dir string, floors Floors) (Report, error) {
 	// GV7: the counterfactual cone.
 	var cf cfClaim
 	if err := readCanonicalJSON(filepath.Join(dir, "counterfactual.json"), &cf); err != nil {
-		return report, fmt.Errorf("%w: %v", ErrCounterfactual, err)
+		return report, fmt.Errorf("%w: %v", ErrG1Manifest, err)
 	}
 	if cf.Position != man.CfPosition {
 		return report, fmt.Errorf("%w: position disagrees with manifest", ErrCounterfactual)

@@ -178,6 +178,43 @@ func writeFile(t *testing.T, dir, name, content string) {
 	}
 }
 
+// rewriteJournalPayload re-canonicalizes every payload and rebuilds the
+// outer chain after one payload mutation. Controls using it therefore cannot
+// fall through to the chain law: only the payload law under test may fire.
+func rewriteJournalPayload(t *testing.T, dir string, at int, mutate func(map[string]any)) {
+	t.Helper()
+	path := filepath.Join(dir, "journal.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	payloads := make([]string, len(lines))
+	for i, line := range lines {
+		var wire map[string]any
+		mustUnmarshal(t, []byte(line), &wire)
+		payloads[i] = wire["payload"].(string)
+	}
+	var payload map[string]any
+	mustUnmarshal(t, []byte(payloads[at]), &payload)
+	mutate(payload)
+	payloads[at] = string(mustCanonical(t, payload))
+
+	head := canonical.Genesis
+	rebuilt := make([]string, len(payloads))
+	for i, payload := range payloads {
+		rebuilt[i] = string(mustCanonical(t, map[string]any{
+			"payload": payload,
+			"prev":    head,
+			"seq":     i,
+		}))
+		head = mustEntryDigest(t, canonical.ChainEntry{Seq: int64(i), Prev: head, Payload: payload})
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(rebuilt, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestValidBundlePasses(t *testing.T) {
 	dir := buildBundle(t)
 	report, err := Verify(dir, testFloors)
@@ -189,25 +226,102 @@ func TestValidBundlePasses(t *testing.T) {
 	}
 }
 
-func TestTamperedJournalRefused(t *testing.T) {
+func TestGV1BrokenChainRefused(t *testing.T) {
+	t.Run("non-canonical outer bytes", func(t *testing.T) {
+		dir := buildBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		lines[0] = strings.Replace(lines[0], "{", "{ ", 1)
+		if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err = Verify(dir, testFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("non-canonical journal not refused as GV1: %v", err)
+		}
+	})
+
+	t.Run("canonical bytes with broken position", func(t *testing.T) {
+		dir := buildBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, _ := os.ReadFile(path)
+		// Rewrite the first entry's wire seq: still canonical JSON, but the
+		// position no longer matches — the chain law must catch it.
+		tampered := strings.Replace(string(data), "\"seq\":0}", "\"seq\":1}", 1)
+		if tampered == string(data) {
+			t.Fatal("tamper pattern did not match — test is broken, not the verifier")
+		}
+		if err := os.WriteFile(path, []byte(tampered), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err := Verify(dir, testFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("broken chain not refused as GV1: %v", err)
+		}
+	})
+}
+
+func TestGV2WrongSemanticsRefusedWithValidChain(t *testing.T) {
 	dir := buildBundle(t)
-	path := filepath.Join(dir, "journal.ndjson")
-	data, _ := os.ReadFile(path)
-	// Rewrite the first entry's wire seq: still canonical JSON, but the
-	// position no longer matches — the chain law must catch it.
-	tampered := strings.Replace(string(data), "\"seq\":0}", "\"seq\":1}", 1)
-	if tampered == string(data) {
-		t.Fatal("tamper pattern did not match — test is broken, not the verifier")
+	rewriteJournalPayload(t, dir, 0, func(payload map[string]any) {
+		payload["result"] = strings.Repeat("0", 64)
+	})
+	_, err := Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrSemantics) {
+		t.Fatalf("wrong pinned semantics not refused as GV2: %v", err)
 	}
-	if err := os.WriteFile(path, []byte(tampered), 0o644); err != nil {
+}
+
+func TestGV3UnsortedRegistersRefused(t *testing.T) {
+	dir := buildBundle(t)
+	path := filepath.Join(dir, "registers.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
 		t.Fatal(err)
 	}
-	_, err := Verify(dir, testFloors)
-	if err == nil {
-		t.Fatal("tampered journal accepted")
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	lines[0], lines[1] = lines[1], lines[0]
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	if !errors.Is(err, ErrChain) && !errors.Is(err, ErrSemantics) {
-		t.Fatalf("wrong refusal class: %v", err)
+	_, err = Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrCommitment) {
+		t.Fatalf("unsorted registers not refused as GV3: %v", err)
+	}
+}
+
+func TestGV6WrongReplayDigestRefused(t *testing.T) {
+	dir := buildBundle(t)
+	rewriteManifest(t, dir, func(m map[string]any) {
+		m["state_digest"] = strings.Repeat("ab", 32)
+	})
+	_, err := Verify(dir, testFloors)
+	if err == nil || !errors.Is(err, ErrReplay) {
+		t.Fatalf("wrong replay digest not refused as GV6: %v", err)
+	}
+}
+
+func TestGV9NonCanonicalManifestRefused(t *testing.T) {
+	for _, name := range []string{"manifest.json", "counterfactual.json"} {
+		t.Run(name, func(t *testing.T) {
+			dir := buildBundle(t)
+			path := filepath.Join(dir, name)
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			_, err = Verify(dir, testFloors)
+			if err == nil || !errors.Is(err, ErrG1Manifest) || !errors.Is(err, ErrManifest) || !strings.Contains(err.Error(), "GV9") {
+				t.Fatalf("non-canonical %s not refused as GV9: %v", name, err)
+			}
+		})
 	}
 }
 

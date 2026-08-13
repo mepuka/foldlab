@@ -63,3 +63,17 @@ Alternatives: commit the problem text (ownership concern); leave R2 human-only
 closed G-01 defect). Why: the fetch recipe plus verifier-owned digest is the
 ratified durable reference and keeps both provenance and automation explicit.
 **Load-bearing? yes.**
+
+# Law-enforcement decisions — GitHub #61
+
+## D6. Qualify registry IDs; do not rename frozen source IDs
+
+Decided: the laws index uses `proto-wire:W1` / `catalog-model:W1` and
+`concierge:C1` / `entity:C1` as context-qualified registry identifiers. The
+checker requires both sides of every known collision. Coordinator-owned
+specifications retain their source-local `W1`–`W5` and `C1` tokens.
+Alternatives: leave citations context-dependent (the reported ambiguity); edit
+the frozen specs and every downstream fixture/test (a contract change not
+ratified by this task). Why: aliases make new citations unambiguous without
+claiming authority to rewrite the laws. Actual source-ID renaming remains a
+coordinator-ratification boundary. **Load-bearing? yes.**

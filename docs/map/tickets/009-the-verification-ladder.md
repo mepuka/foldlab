@@ -36,7 +36,7 @@ verification.
 
 ## Positions and next climbs, in order
 
-1. **Catalog + ingress state machine** (laws W1–W5) — **R2 + R4 claimed; R3 claim HELD, in re-proof at repaired bounds** (C4: original hypothesis under-covered IndInv at catalog Gen(2); repaired to Gen(3) with argued data cutoff; verdicts pending on two platforms)
+1. **Catalog + ingress state machine** (registry IDs `catalog-model:W1`–`catalog-model:W5`; source-local W1–W5 remain frozen) — **R2 + R4 claimed; R3 claim HELD, in re-proof at repaired bounds** (C4: original hypothesis under-covered IndInv at catalog Gen(2); repaired to Gen(3) with argued data cutoff; verdicts pending on two platforms)
    (2026-08-13, `verify/catalog/`): R2 remains TLC 2.19 clean to
    closure at the gate caps (2 daemons / 3 values / 2 creators:
    12,707,989 distinct

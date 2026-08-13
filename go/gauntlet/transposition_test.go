@@ -123,6 +123,98 @@ func TestTranspositionValidBundlePasses(t *testing.T) {
 	}
 }
 
+func TestTV1NonCanonicalJournalRefused(t *testing.T) {
+	t.Run("non-canonical bytes", func(t *testing.T) {
+		dir := buildTransBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		lines[0] = strings.Replace(lines[0], "{", "{ ", 1)
+		if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err = VerifyTransposition(dir, transTestFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("non-canonical journal not refused as TV1: %v", err)
+		}
+	})
+
+	t.Run("broken previous-head link", func(t *testing.T) {
+		dir := buildTransBundle(t)
+		path := filepath.Join(dir, "journal.ndjson")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+		var wire map[string]any
+		mustUnmarshal(t, []byte(lines[0]), &wire)
+		wire["prev"] = strings.Repeat("f", 64)
+		lines[0] = string(mustCanonical(t, wire))
+		if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err = VerifyTransposition(dir, transTestFloors)
+		if err == nil || !errors.Is(err, ErrChain) {
+			t.Fatalf("broken journal link not refused as TV1: %v", err)
+		}
+	})
+}
+
+func TestTV2WrongSemanticsRefusedWithValidChain(t *testing.T) {
+	dir := buildTransBundle(t)
+	rewriteJournalPayload(t, dir, 0, func(payload map[string]any) {
+		payload["result"] = strings.Repeat("0", 64)
+	})
+	_, err := VerifyTransposition(dir, transTestFloors)
+	if err == nil || !errors.Is(err, ErrSemantics) {
+		t.Fatalf("wrong pinned semantics not refused as TV2: %v", err)
+	}
+}
+
+func TestTV5ZeroFenceRefused(t *testing.T) {
+	dir := buildTransBundle(t)
+	path := filepath.Join(dir, "registers.ndjson")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	var register map[string]any
+	mustUnmarshal(t, []byte(lines[0]), &register)
+	register["fence"] = float64(0)
+	lines[0] = string(mustCanonical(t, register))
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = VerifyTransposition(dir, transTestFloors)
+	if err == nil || !errors.Is(err, ErrCommitment) {
+		t.Fatalf("zero-fence commitment not refused as TV5: %v", err)
+	}
+}
+
+func TestTV8WrongReplayDigestRefused(t *testing.T) {
+	dir := buildTransBundle(t)
+	path := filepath.Join(dir, "manifest.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest map[string]any
+	mustUnmarshal(t, data, &manifest)
+	manifest["state_digest"] = strings.Repeat("ab", 32)
+	if err := os.WriteFile(path, mustCanonical(t, manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = VerifyTransposition(dir, transTestFloors)
+	if err == nil || !errors.Is(err, ErrReplay) {
+		t.Fatalf("wrong replay digest not refused as TV8: %v", err)
+	}
+}
+
 func TestTranspositionSurplusExpansionRefused(t *testing.T) {
 	dir := buildTransBundle(t)
 	// Worker a runs one extra expansion of a state b owns at fence 1:
