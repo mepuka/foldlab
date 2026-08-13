@@ -16,9 +16,48 @@ Compatibility files such as `CLAUDE.md` only point here.
 
 Module directories carry their own `AGENTS.md` (enforceable laws) and
 `CONTEXT.md` (module-local vocabulary hidden behind the seam). Read the
-scoped files before editing inside: `go/` (substrate), `go/daemon/`,
-`packages/core/`, `packages/client/`. Performance work must also follow
-`bench/BENCH.md`.
+scoped files before editing inside: `go/` (substrate), `go/daemon/`
+(contract only — the code lives in `proto/` until graduation),
+`packages/core/`, `packages/client/`, `proto/` (the tracer bullet, with
+its own gates and `DECISIONS.md`), `verify/` (model gates). Performance
+work must also follow `bench/BENCH.md`.
+
+## Working precepts
+
+How this repository is worked. Each line is law, not narration.
+
+- **Three tiers.** A coordinator judges, grills, and owns specs;
+  research fleets scout and return dossiers; executors loop against
+  coordinator-owned specs and stop at gates. An executor never edits
+  the spec it builds against.
+- **Concepts are ratified before machinery exists.** Grill one decision
+  at a time, recommended option first. No build starts on an ungrilled
+  decision — un-ratified machinery gets deleted later at higher cost
+  than the grilling would have been.
+- **Findings before fixes.** A widened-domain or fuzz failure is
+  REPORTED with a minimized counterexample and STOPPED on. The red test
+  stays red as evidence until the operator ratifies a disposition;
+  repairing first destroys the finding.
+- **Walls need independent oracles.** Both-sides-agree is not
+  verification: two implementations sharing a bug agree, which is how
+  `-0` survived until RFC 8785's Appendix B was made the referee. Name
+  an oracle outside both sides, or the wall proves only consensus.
+- **A prover that cannot fail proves nothing.** Every gate ships its
+  negative controls, each refuted on exactly the law it dropped, traces
+  committed (`verify/AGENTS.md`).
+- **Claims are sized to their evidence.** A rung is claimed only with
+  its gate met and its bounds stated, and it is recorded in
+  `VERIFICATION.md` — a claim absent from that ledger is not made.
+- **Every task keeps a DECISIONS log**: one entry per decision the spec
+  did not fix — decided / alternatives / why / load-bearing flag.
+  Numbering rule in `proto/DECISIONS.md`.
+- **The primary checkout stays on `main`.** All work happens in
+  worktrees.
+- **`scratch/` is the executor handoff queue**, gitignored by design. A
+  spec that must survive belongs in `docs/` or a ticket instead.
+- **The public surface is lawful** (ADR-0010): a function enters a
+  library only with the law that licenses it, and ships with the
+  generated law tests.
 
 ## Effect v4
 
