@@ -2,8 +2,7 @@
 
 import {
   encodeFoldState,
-  isDeclaredAlgebra,
-  isDeclaredStep,
+  hasAdmittedDeclaration,
   type CanonicalEncoding,
   type FoldState,
 } from "./algebra.ts"
@@ -67,11 +66,11 @@ const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable =>
   refusal: {
     _tag: "IdentityUnavailable",
     feature: "fold-cache",
-    reason: !isDeclaredAlgebra(fold.algebra)
+    reason: !hasAdmittedDeclaration(fold.algebra)
       ? fold.algebra.identityIssue ?? (fold.algebra.declaration === undefined
         ? "the algebra is anonymous"
         : "the algebra declaration is not admitted")
-      : !isDeclaredStep(fold.step)
+      : !hasAdmittedDeclaration(fold.step)
       ? fold.step.identityIssue ?? (fold.step.declaration === undefined
         ? "the step is anonymous"
         : "the step declaration is not admitted")

@@ -134,17 +134,14 @@ export interface Step<E, A extends FoldState> {
   readonly identityIssue?: string
 }
 
-/** Private-brand admission exposed without revealing the brand itself. */
-export const isDeclaredAlgebra = <A extends FoldState>(
-  algebra: Algebra<A>,
-): algebra is Algebra<A> & { readonly declaration: Declaration<AlgebraSpec> } =>
-  isDeclaration(algebra.declaration)
-
-/** Private-brand admission exposed without revealing the brand itself. */
-export const isDeclaredStep = <E, A extends FoldState>(
-  step: Step<E, A>,
-): step is Step<E, A> & { readonly declaration: Declaration<StepSpec> } =>
-  isDeclaration(step.declaration)
+/**
+ * Private-brand authenticity licenses treating the attached declaration as
+ * module-minted canonical data. This says nothing about the carrier behavior.
+ */
+export const hasAdmittedDeclaration = <S>(
+  value: { readonly declaration?: Declaration<S> },
+): value is { readonly declaration: Declaration<S> } =>
+  isDeclaration(value.declaration)
 
 export type EventGeneratorSpec = { readonly kind: "streamEvent" }
 

@@ -9,6 +9,7 @@ import * as FastCheck from "fast-check"
 import {
   algebras,
   encodeFoldState,
+  hasAdmittedDeclaration,
   homomorphisms,
   mapped,
   mappedStep,
@@ -104,6 +105,10 @@ describe("lawful-surface admission (A1/A2)", () => {
           forgedStep,
           steps.sequenceNumber,
         ).declaration).toBeUndefined()
+        expect(hasAdmittedDeclaration(forgedAlgebra)).toBe(false)
+        expect(hasAdmittedDeclaration(forgedStep)).toBe(false)
+        expect(hasAdmittedDeclaration(algebras.max)).toBe(true)
+        expect(hasAdmittedDeclaration(steps.sequenceNumber)).toBe(true)
       }),
       { seed: 0x22c1_0005, numRuns: 250, endOnFailure: false },
     )
