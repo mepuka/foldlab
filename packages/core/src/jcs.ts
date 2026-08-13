@@ -369,7 +369,11 @@ export const decodeJson = (input: Uint8Array): JsonDecode => {
   }
 }
 
-/** Constrained decode followed by RFC 8785 serialization licenses canonicalizing bytes. */
+/**
+ * Canonicalizes admitted JSON bytes: constrained decode must yield exactly one
+ * value, whose RFC 8785 encoding is unique. Excluded bytes return the decode
+ * refusal unchanged.
+ */
 export const canonicalizeJson = (input: Uint8Array): CanonicalJson => {
   const decoded = decodeJson(input)
   return decoded.ok ? encodeJsonValue(decoded.value) : decoded
