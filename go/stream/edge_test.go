@@ -149,7 +149,7 @@ func TestHeadFrameAllocationBoundary(t *testing.T) {
 	base := StreamSeed("boundary")
 	fixed := len(base) + eventFrameOverhead + len("s")
 	for _, payloadLen := range []int{0, inlineHeadFrameSize - fixed - 1, inlineHeadFrameSize - fixed, inlineHeadFrameSize - fixed + 1, 4096} {
-		event := Event{Stream: "s", Seq: ^uint64(0), Payload: bytes.Repeat([]byte{'x'}, payloadLen)}
+		event := Event{Stream: "s", Seq: maxSafeSequence, Payload: bytes.Repeat([]byte{'x'}, payloadLen)}
 		want := referenceExtend(base, event)
 		if got := Extend(base, event); got != want {
 			t.Fatalf("Extend payload=%d crossed the allocation seam", payloadLen)
@@ -165,7 +165,7 @@ func TestEncodeFactMatchesReferenceAtBoundaries(t *testing.T) {
 	facts := []MergeFact{
 		{},
 		{Picks: []Pick{{Stream: "", Seq: 0}}},
-		{Picks: []Pick{{Stream: "β", Seq: ^uint64(0)}, {Stream: "alpha", Seq: 1}}},
+		{Picks: []Pick{{Stream: "β", Seq: maxSafeSequence}, {Stream: "alpha", Seq: 1}}},
 		{Picks: []Pick{{Stream: string(bytes.Repeat([]byte{'s'}, maxEncodedStreamLen)), Seq: 7}}},
 	}
 	for _, fact := range facts {
@@ -197,17 +197,17 @@ func TestCanonicalWireDomainRejectsInvalidValues(t *testing.T) {
 	}
 }
 
-// The dense merge path remains a map lookup across uint64 wrap and gaps.
+// The dense merge path remains a map lookup across the common sequence ceiling and gaps.
 func TestMergeDensePathAtSequenceBoundary(t *testing.T) {
 	source := []Event{
-		ev("s", ^uint64(0), "a=max"),
+		ev("s", maxSafeSequence, "a=max"),
 		ev("s", 0, "a=zero"),
 	}
-	fact := MergeFact{Picks: []Pick{{Stream: "s", Seq: 0}, {Stream: "s", Seq: ^uint64(0)}}}
+	fact := MergeFact{Picks: []Pick{{Stream: "s", Seq: 0}, {Stream: "s", Seq: maxSafeSequence}}}
 	got, gotErr := ApplyMerge(fact, map[string][]Event{"s": source})
 	want, wantErr := referenceApplyMerge(fact, map[string][]Event{"s": source})
 	if (gotErr != nil) != (wantErr != nil) || !eventsEqual(got, want) {
-		t.Fatalf("dense uint64 boundary differs: %#v, %v; want %#v, %v", got, gotErr, want, wantErr)
+		t.Fatalf("dense common boundary differs: %#v, %v; want %#v, %v", got, gotErr, want, wantErr)
 	}
 }
 

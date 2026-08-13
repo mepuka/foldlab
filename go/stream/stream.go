@@ -36,8 +36,8 @@ import (
 
 // An Event is one received fact: stream identity, position, payload. Arrival
 // order across streams is NOT in the event — order is what merge facts commit.
-// Stream is valid UTF-8 by contract; transports validate it before an event
-// reaches the allocation-free identity path.
+// Stream is valid UTF-8 and Seq is an unsigned safe integer (at most 2^53-1)
+// by contract; transports validate both before an event reaches identity.
 type Event struct {
 	Stream  string
 	Seq     uint64
@@ -46,6 +46,7 @@ type Event struct {
 
 const (
 	eventFrameOverhead      = 2 + 8 + 4
+	maxSafeSequence         = uint64(1<<53 - 1)
 	maxEncodedStreamLen     = 1<<16 - 1
 	maxEncodedPayloadLen    = 1<<32 - 1
 	maxPooledCanonicalBytes = 1 << 20
@@ -54,6 +55,7 @@ const (
 func fastEncodedEventLen(e Event) (int, bool) {
 	size := uint64(eventFrameOverhead) + uint64(len(e.Stream)) + uint64(len(e.Payload))
 	ok := utf8.ValidString(e.Stream) &&
+		e.Seq <= maxSafeSequence &&
 		len(e.Stream) <= maxEncodedStreamLen &&
 		uint64(len(e.Payload)) <= maxEncodedPayloadLen &&
 		size <= uint64(^uint(0)>>1)
@@ -68,6 +70,9 @@ func checkedEncodedEventLen(e Event) (int, error) {
 	if !utf8.ValidString(e.Stream) {
 		return 0, fmt.Errorf("stream: stream ID is not valid UTF-8")
 	}
+	if e.Seq > maxSafeSequence {
+		return 0, fmt.Errorf("stream: sequence %d is not a safe unsigned integer", e.Seq)
+	}
 	if len(e.Stream) > maxEncodedStreamLen {
 		return 0, fmt.Errorf("stream: stream length %d exceeds u16", len(e.Stream))
 	}
@@ -78,7 +83,7 @@ func checkedEncodedEventLen(e Event) (int, error) {
 }
 
 func encodedEventLen(e Event) int {
-	if len(e.Stream) > maxEncodedStreamLen || uint64(len(e.Payload)) > maxEncodedPayloadLen {
+	if !utf8.ValidString(e.Stream) || e.Seq > maxSafeSequence || len(e.Stream) > maxEncodedStreamLen || uint64(len(e.Payload)) > maxEncodedPayloadLen {
 		panic("stream: event is outside the canonical encoding domain")
 	}
 	maxInt := int(^uint(0) >> 1)
@@ -109,8 +114,8 @@ func (h Head) Hex() string { return fmt.Sprintf("%x", h[:]) }
 
 // StreamSeed is the empty-history head of one named stream.
 func StreamSeed(stream string) Head {
-	if !utf8.ValidString(stream) {
-		panic("stream: stream ID is not valid UTF-8")
+	if !utf8.ValidString(stream) || len(stream) > maxEncodedStreamLen {
+		panic("stream: stream ID is outside the canonical encoding domain")
 	}
 	return sha256.Sum256([]byte("playground.stream.v1:" + stream))
 }
@@ -181,6 +186,9 @@ func EncodeFact(m MergeFact) []byte {
 		}
 		if len(pick.Stream) > maxEncodedStreamLen {
 			panic(fmt.Sprintf("stream: pick %d stream length %d exceeds u16", i, len(pick.Stream)))
+		}
+		if pick.Seq > maxSafeSequence {
+			panic(fmt.Sprintf("stream: pick %d sequence %d is not a safe unsigned integer", i, pick.Seq))
 		}
 		if size > maxInt-10 || len(pick.Stream) > maxInt-size-10 {
 			panic("stream: canonical merge fact length overflows int")
@@ -507,7 +515,7 @@ func (st Store) Replay(head Head, root Head) ([]Event, error) {
 		segs = append(segs, s)
 		h = s.Parent
 	}
-	var out []Event
+	out := make([]Event, 0)
 	for i := len(segs) - 1; i >= 0; i-- {
 		out = append(out, cloneEvents(segs[i].Events)...)
 	}
@@ -584,7 +592,7 @@ func decodeEvents(raw []byte) ([]Event, error) {
 		lastStream      string
 		haveLastStream  bool
 		streams         map[string]string
-		out             []Event
+		out             = make([]Event, 0)
 	)
 	for off := 0; off < len(raw); {
 		if len(raw)-off < 2 {
@@ -623,6 +631,9 @@ func decodeEvents(raw []byte) ([]Event, error) {
 		}
 		off += idLen
 		seq := binary.BigEndian.Uint64(raw[off:])
+		if seq > maxSafeSequence {
+			return nil, fmt.Errorf("stream: sequence %d is not a safe unsigned integer", seq)
+		}
 		off += 8
 		payLen := binary.BigEndian.Uint32(raw[off:])
 		off += 4

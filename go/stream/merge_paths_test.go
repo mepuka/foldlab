@@ -267,7 +267,7 @@ func TestApplyMergeRefusesEveryDuplicateWhateverTheSourceShape(t *testing.T) {
 // the arithmetic the fast path stands on.
 func TestApplyMergeDensePathRefusesPicksBelowTheFirstCoordinate(t *testing.T) {
 	source := []Event{ev("s", 10, "a=0"), ev("s", 11, "b=1"), ev("s", 12, "c=2")}
-	for _, seq := range []uint64{0, 9, 13, ^uint64(0)} {
+	for _, seq := range []uint64{0, 9, 13, maxSafeSequence} {
 		fact := MergeFact{Picks: []Pick{{Stream: "s", Seq: seq}}}
 		merged, err := ApplyMerge(fact, map[string][]Event{"s": source})
 		if _, ok := err.(*MergeGap); !ok {

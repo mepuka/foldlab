@@ -41,10 +41,10 @@ func FuzzMapValueUpperMatchesReference(f *testing.F) {
 
 func FuzzCanonicalPathsMatchReference(f *testing.F) {
 	f.Add("alpha", uint64(0), []byte{})
-	f.Add("", ^uint64(0), []byte{0, 0xff})
+	f.Add("", maxSafeSequence, []byte{0, 0xff})
 	f.Add("β", uint64(1), bytes.Repeat([]byte{'x'}, inlineHeadFrameSize))
 	f.Fuzz(func(t *testing.T, stream string, seq uint64, payload []byte) {
-		if len(stream) > 1024 || len(payload) > 8192 || !utf8.ValidString(stream) {
+		if len(stream) > 1024 || len(payload) > 8192 || !utf8.ValidString(stream) || seq > maxSafeSequence {
 			return
 		}
 		event := Event{Stream: stream, Seq: seq, Payload: payload}
@@ -68,7 +68,7 @@ func FuzzDecodeEventsIsCanonicalInverse(f *testing.F) {
 		{0},
 		make([]byte, eventFrameOverhead),
 		func() []byte {
-			event := Event{Stream: "alpha", Seq: ^uint64(0), Payload: []byte{0, 0xff, '='}}
+			event := Event{Stream: "alpha", Seq: maxSafeSequence, Payload: []byte{0, 0xff, '='}}
 			return EncodeEvent(event)
 		}(),
 	} {

@@ -1004,3 +1004,25 @@ leave the wall conditional everywhere (a prover that cannot fail). Why: ASCII
 is the already-ratified domain in `NEXT.md`, is independently specified by byte
 bounds, and removes both external Unicode tables from the digest path.
 **Load-bearing? yes.**
+
+## Task 42 — stream twin boundaries (2026-08-13)
+
+### D??. The Go carrier does not widen the cross-runtime identity domain
+
+Decided: event and merge-pick sequences are canonical only from zero through
+`2^53-1`, the largest unsigned integer represented exactly by both runtimes.
+Go refuses a wider `uint64` before bytes or a digest; its transport-returning
+paths use errors and its direct identity constructors retain their established
+panic dialect. Transform construction preflights the target and returns the
+existing drop/refusal value (`false` / `null`) for invalid Unicode or an
+over-width stream ID. Empty replay and decompression allocate an empty slice at
+their producers. A new shared row pins the maximum decimal, frame, seed, and
+head against manually encoded big-endian bytes plus an independent SHA-256
+calculation. Alternatives: expose all `uint64` values and redesign TypeScript
+identity around `bigint` (public and wire migration); silently truncate or
+round (identity collision); validate only during gzip or JSON rendering (leaves
+digest and in-memory paths divergent); normalize `nil` only at marshal time
+(preserves the semantic boundary split). Why: one canonical domain and one
+empty-list representation remove the three observed twin-dependent outcomes
+without moving any existing valid bytes or the frozen stream fixture.
+**Load-bearing? yes.**

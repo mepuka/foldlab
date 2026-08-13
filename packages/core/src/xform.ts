@@ -14,7 +14,7 @@
  * the fused per-event hot path a derived collector or NATS node runs.
  */
 
-import type { StreamEvent } from "./stream.ts"
+import { streamSeed, type StreamEvent } from "./stream.ts"
 
 export type Xform = (e: StreamEvent) => StreamEvent | null
 
@@ -41,9 +41,14 @@ export const apply = (
   return out
 }
 
-export const renameStream =
-  (to: string): Xform =>
-  (e) => ({ ...e, stream: to })
+export const renameStream = (to: string): Xform => {
+  try {
+    streamSeed(to)
+  } catch {
+    return () => null
+  }
+  return (e) => ({ ...e, stream: to })
+}
 
 const equal = "=".charCodeAt(0)
 

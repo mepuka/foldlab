@@ -160,6 +160,7 @@ func generatedEvents(data []byte) []Event {
 		for range 8 {
 			seq = seq<<8 | uint64(next())
 		}
+		seq %= maxSafeSequence + 1
 		payloadLen := int(next() % 48)
 		payload := make([]byte, payloadLen)
 		for j := range payload {
@@ -217,7 +218,7 @@ func generatedMerge(data []byte) (MergeFact, map[string][]Event) {
 		}
 	}
 	if len(data) > 1 && data[len(data)-1]&1 != 0 {
-		picks = append(picks, Pick{Stream: "missing", Seq: ^uint64(0)})
+		picks = append(picks, Pick{Stream: "missing", Seq: maxSafeSequence})
 	}
 	return MergeFact{Picks: picks}, sources
 }
@@ -232,6 +233,7 @@ func quickConfig(seed int64) *quick.Config {
 // Canonical bytes and both head paths agree with an intentionally simple oracle.
 func TestPropertyCanonicalPathsMatchReference(t *testing.T) {
 	property := func(stream string, seq uint64, payload []byte) bool {
+		seq %= maxSafeSequence + 1
 		event := Event{Stream: stream, Seq: seq, Payload: payload}
 		if !bytes.Equal(EncodeEvent(event), referenceEncodeEvent(event)) {
 			return false
@@ -408,7 +410,7 @@ func TestDecodeEventsRejectsMalformedLengths(t *testing.T) {
 			t.Fatalf("decodeEvents(% x) unexpectedly succeeded", raw)
 		}
 	}
-	event := Event{Seq: ^uint64(0), Payload: []byte{}}
+	event := Event{Seq: maxSafeSequence, Payload: []byte{}}
 	got, err := decodeEvents(EncodeEvent(event))
 	if err != nil || !eventsEqual(got, []Event{event}) {
 		t.Fatalf("empty-field boundary round trip = %#v, %v", got, err)
@@ -419,7 +421,7 @@ func TestDecodeEventsRejectsMalformedLengths(t *testing.T) {
 func TestDecodeEventsRejectsEveryPartialFrame(t *testing.T) {
 	events := []Event{
 		{Stream: "", Seq: 0, Payload: nil},
-		{Stream: "alpha", Seq: ^uint64(0), Payload: []byte{0, 0xff, '='}},
+		{Stream: "alpha", Seq: maxSafeSequence, Payload: []byte{0, 0xff, '='}},
 		{Stream: "β", Seq: 7, Payload: bytes.Repeat([]byte{0xa5}, 257)},
 	}
 	var raw []byte

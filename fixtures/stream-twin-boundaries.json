@@ -1,0 +1,13 @@
+{
+  "scheme": "stream-twin-boundaries-v1",
+  "oracle": "unsigned decimal to u64 big-endian bytes; SHA-256 over the pinned seed and frame",
+  "maxSafeSequence": "9007199254740991",
+  "firstRefusedSequence": "9007199254740992",
+  "event": {
+    "stream": "s",
+    "payloadHex": "",
+    "frameHex": "000173001fffffffffffff00000000",
+    "seedHex": "a38fdd5180622484b62c745081cef9a84f3d999cb58045a929a77d4f78a8d922",
+    "headHex": "284d06b0f240dc41f66d7711d87a38ebd280f1ff7c931fe8f6eff94f2145a068"
+  }
+}

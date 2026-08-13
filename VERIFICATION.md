@@ -190,6 +190,10 @@ tampering.
 
 - R0: frozen fixture walls ([fixtures/](fixtures/)), generated once by
   the Go side, recomputed by both sides forever.
+- R0: the independently encoded common-domain boundary row
+  ([fixtures/stream-twin-boundaries.json](fixtures/stream-twin-boundaries.json))
+  pins `2^53-1` decimal, event bytes, seed, and head in both runtimes; both
+  refuse `2^53`, invalid rename targets, and non-canonical stream identities.
 - R1: property and fuzz tests ([go/stream/](go/stream/)).
 - Empirical crash evidence: fleet runs under kill-9 storms and cold
   restarts with independently verifiable bundles
@@ -199,6 +203,10 @@ tampering.
 
 - Divergence probes are owed per ADR-0007 where domains exceed the
   fixtures.
+- Sequence identity is claimed only on the cross-runtime exact domain
+  `0..2^53-1`; Go's wider `uint64` carrier is not a wider wire domain.
+- Empty replay and decompression are claimed as allocated lists (`[]`), never
+  Go `nil` / JSON `null`.
 - No dedicated model of CAS-append + crash recovery yet; the catalog
   model embeds an abstract CAS. Ticket 012 gives the journal its own
   model gate.

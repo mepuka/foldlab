@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { Effect, Exit, Schema } from "effect"
 import * as FastCheck from "fast-check"
 import {
@@ -32,6 +34,21 @@ import {
 
 const enc = new TextEncoder()
 const dec = new TextDecoder("utf-8", { fatal: true })
+const twinBoundary = JSON.parse(
+  readFileSync(join(import.meta.dir, "../../../fixtures/stream-twin-boundaries.json"), "utf8"),
+) as {
+  readonly scheme: string
+  readonly oracle: string
+  readonly maxSafeSequence: string
+  readonly firstRefusedSequence: string
+  readonly event: {
+    readonly stream: string
+    readonly payloadHex: string
+    readonly frameHex: string
+    readonly seedHex: string
+    readonly headHex: string
+  }
+}
 
 const rawEvent = (
   stream: string,
@@ -52,6 +69,9 @@ const concatFrames = (events: ReadonlyArray<StreamEvent>): Uint8Array => {
   }
   return out
 }
+
+const hex = (bytes: Uint8Array): string =>
+  [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("")
 
 const frameEventArbitrary: FastCheck.Arbitrary<StreamEvent> = Schema.toArbitrary(
   Schema.Struct({
@@ -108,6 +128,26 @@ const prefixDecision = (payload: Uint8Array, prefix: string): boolean => {
 }
 
 describe("stream deterministic properties", () => {
+  test("the common maximum sequence has pinned bytes and head; 2^53 refuses", () => {
+    expect(twinBoundary.scheme).toBe("stream-twin-boundaries-v1")
+    expect(twinBoundary.oracle.length).toBeGreaterThan(0)
+    const maxSafe = Number(twinBoundary.maxSafeSequence)
+    const firstRefused = Number(twinBoundary.firstRefusedSequence)
+    expect(maxSafe).toBe(Number.MAX_SAFE_INTEGER)
+    expect(firstRefused).toBe(Number.MAX_SAFE_INTEGER + 1)
+    expect(twinBoundary.event.payloadHex).toBe("")
+    const admitted = rawEvent(twinBoundary.event.stream, maxSafe, [])
+    expect(streamSeed(twinBoundary.event.stream)).toBe(twinBoundary.event.seedHex)
+    expect(hex(encodeEvent(admitted))).toBe(twinBoundary.event.frameHex)
+    expect(extend(streamSeed(twinBoundary.event.stream), admitted)).toBe(
+      twinBoundary.event.headHex,
+    )
+    expect(() => encodeEvent({ ...admitted, seq: firstRefused })).toThrow()
+    expect(() => encodeFact({
+      picks: [{ stream: twinBoundary.event.stream, seq: firstRefused }],
+    })).toThrow()
+  })
+
   test("canonical frames invert over 10,000 arbitrary byte payloads", () => {
     FastCheck.assert(
       FastCheck.property(frameBatchArbitrary, (events) => {
@@ -186,6 +226,12 @@ describe("stream deterministic properties", () => {
 })
 
 describe("transform byte properties", () => {
+  test("rename refuses an invalid stream target before it can reach identity", () => {
+    const input = rawEvent("source", 1, enc.encode("a=1"))
+    expect(renameStream("\ud800")(input)).toBeNull()
+    expect(renameStream("s".repeat(0x1_0000))(input)).toBeNull()
+  })
+
   test("the key grammar is the first byte '=' boundary", () => {
     const cases: Array<[Uint8Array, string, boolean]> = [
       [enc.encode("a=value"), "a", true],

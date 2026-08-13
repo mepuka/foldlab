@@ -2,6 +2,7 @@ package stream
 
 import (
 	"bytes"
+	"unicode/utf8"
 )
 
 // An Xform is one stream-to-stream transformation: a per-event morphism,
@@ -43,9 +44,15 @@ func Apply(f Xform, events []Event) []Event {
 	return out
 }
 
-// RenameStream retags events onto another stream identity.
+// RenameStream retags events onto another stream identity. A target outside
+// the canonical stream-ID domain produces the transform refusal value
+// (ok=false) before it can reach the identity fold.
 func RenameStream(to string) Xform {
+	valid := utf8.ValidString(to) && len(to) <= maxEncodedStreamLen
 	return func(e Event) (Event, bool) {
+		if !valid {
+			return Event{}, false
+		}
 		e.Stream = to
 		return e, true
 	}
