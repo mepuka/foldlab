@@ -1,0 +1,4 @@
+# Test discovery stays inside the workspace: repos/ is vendored
+# read-only reference source (AGENTS.md), never part of our gates.
+[test]
+root = "packages"

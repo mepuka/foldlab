@@ -27,9 +27,16 @@ Effect v3. Confirm APIs against the pinned declarations in
 `node_modules/effect/dist/*.d.ts` and the pinned source above rather than
 memory. Schema is `effect/Schema`; do not add deprecated `@effect/schema`.
 
-General reference for Effect idioms and API orientation:
-https://github.com/Effect-TS/effect/blob/main/LLMS.md (describes upstream
-tip; the pin above stays the authority when they disagree).
+The pinned release is VENDORED at `repos/effect/` (git subtree, squashed
+from the tag's commit above; update via `git subtree pull` at the new tag
+when the pin moves). Treat it as read-only reference material: inspect
+`repos/effect/` for idiomatic usage, tests, module structure, and API
+design, and prefer examples from that source over generated guesses or
+web search. `repos/effect/LLMS.md` and `repos/effect/ai-docs/` are the
+in-repo orientation docs (upstream copy:
+https://github.com/Effect-TS/effect/blob/main/LLMS.md). It is outside
+every gate: `bunfig.toml` scopes test discovery to `packages/`, and
+nothing may import from `repos/`.
 
 ## Non-negotiable rules
 
