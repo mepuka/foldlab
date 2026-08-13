@@ -269,6 +269,72 @@ export const foldKV = (
 ): Effect.Effect<KVState, MalformedPayload> =>
   Effect.reduce(events, () => emptyKV, applyKV)
 
+/** Combining two states would carry the event count past the u32 it is stored in. */
+export class KVCountOverflow extends Data.TaggedError("KVCountOverflow")<{
+  readonly left: number
+  readonly right: number
+}> {}
+
+/**
+ * The meaning fold's missing `combine`: the last-write-wins map union, with
+ * `right` read as the LATER half of one history. `undefined` names the same
+ * kind of walled refusal `kvStep` names — here, a summed event count outside
+ * the u32 the state digest stores it in.
+ *
+ * This is a MONOID and nothing more, which is exactly the license parallel
+ * replay needs and exactly the license federation does not get:
+ *
+ *   identity      combineKV(emptyKV, s) = combineKV(s, emptyKV) = s
+ *   associative   grouping does not matter, so a history may be cut anywhere
+ *   homomorphic   combineKV(foldKV(xs), foldKV(ys)) = foldKV(xs ++ ys)
+ *
+ * The homomorphism is unconditional over the admitted domain — the law test
+ * checks it against the frozen wall corpus at EVERY split point, and the
+ * resulting `stateDigest` is the frozen `foldStateDigest` byte for byte. That
+ * is the whole parallel-replay right: split, fold the pieces on separate
+ * cores or hosts, combine, and the answer the wall already froze comes back.
+ *
+ * It is NOT commutative and NOT idempotent, and both failures are structural
+ * rather than incidental. Order IS the semantics of last-write-wins, so
+ * `combineKV(a, b)` and `combineKV(b, a)` disagree wherever `a` and `b` write
+ * the same key; and `count` is a sum, so `combineKV(s, s)` double-counts every
+ * event `s` already admitted. `test/stream.combine.test.ts` pins both with
+ * minimized counterexamples rather than leaving them to inspection. A fold
+ * that federates without a committed order needs the join-semilattice in
+ * `kvSemilattice.ts`, whose price — carrying every event's identity
+ * coordinate — this monoid does not pay.
+ */
+export const combineKV = (left: KVState, right: KVState): KVState | undefined => {
+  if (
+    !Number.isSafeInteger(left.count) || left.count < 0 ||
+    !Number.isSafeInteger(right.count) || right.count < 0
+  ) {
+    return undefined
+  }
+  const count = left.count + right.count
+  if (count > maxU32) return undefined
+  const entries = new Map(left.entries)
+  for (const [key, value] of right.entries) entries.set(key, value)
+  return { entries, count }
+}
+
+/**
+ * `combineKV` on the typed channel, the way `applyKV` is `kvStep` on the typed
+ * channel: the one refusal the union can carry becomes a `KVCountOverflow`
+ * naming both counts, so a parallel replay that overran the digest's u32 says
+ * which two halves did it.
+ */
+export const mergeKV = (
+  left: KVState,
+  right: KVState,
+): Effect.Effect<KVState, KVCountOverflow> =>
+  Effect.suspend(() => {
+    const next = combineKV(left, right)
+    return next === undefined
+      ? Effect.fail(new KVCountOverflow({ left: left.count, right: right.count }))
+      : Effect.succeed(next)
+  })
+
 /**
  * Canonical fingerprint of the fold STATE: sorted keys, so two histories
  * that converge to the same state digest identically even when their chain

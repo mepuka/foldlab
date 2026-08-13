@@ -41,6 +41,40 @@ describe("the shared merge-refusal wall", () => {
     expect(refusal.duplicateIndex).toBe(vector.duplicateIndex)
   })
 
+  /**
+   * The other half of a cross-language finding recorded in
+   * go/stream/merge_paths_test.go. When two sources each repeat a coordinate,
+   * BOTH refusals are true and an implementation must pick one to return. This
+   * side is deterministic: sources arrive in a `ReadonlyMap`, replay walks it in
+   * insertion order, and the first duplicated source is always the one named.
+   * The Go twin takes `map[string][]Event`, which has no order at all, and its
+   * randomized iteration names either source across identical calls — measured
+   * at roughly 1750/250 over 2000 runs. So the two implementations agree that
+   * the input is refused and can disagree about the refusal VALUE, which the
+   * lane treats as data. Reported, not repaired.
+   */
+  test("FINDING: this side names the first duplicated source, deterministically", () => {
+    const alpha = [event("alpha", 1, "a=1"), event("alpha", 1, "a=2")]
+    const beta = [event("beta", 1, "b=1"), event("beta", 1, "b=2")]
+    const picks = [{ stream: "alpha", seq: 1 }]
+
+    for (let run = 0; run < 50; run++) {
+      const first = Effect.runSync(Effect.flip(applyMerge(
+        { picks },
+        new Map([["alpha", alpha], ["beta", beta]]),
+      )))
+      expect(first).toBeInstanceOf(MergeDuplicateSequence)
+      expect((first as MergeDuplicateSequence).source).toBe("alpha")
+
+      // Insertion order is the whole rule: swapping it swaps the answer.
+      const second = Effect.runSync(Effect.flip(applyMerge(
+        { picks },
+        new Map([["beta", beta], ["alpha", alpha]]),
+      )))
+      expect((second as MergeDuplicateSequence).source).toBe("beta")
+    }
+  })
+
   test("M1 generated law: duplicate coordinates always refuse, unique sparse sources still replay", () => {
     const generatedCase = FastCheck.record({
       source: FastCheck.string({ minLength: 1, maxLength: 12 }),
