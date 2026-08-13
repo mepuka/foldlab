@@ -21,7 +21,7 @@ with no TypeScript anywhere.
 
 - Domain: foldlab — verifiable computation over streams. Ubiquitous
   language in [CONTEXT.md](../../CONTEXT.md); committed decisions in
-  `docs/adr/`; theory in `.reference/core-concepts.md`.
+  `docs/adr/`; theory in [the public explanation register](../explanation/theory.md).
 - Every session: `bun run typecheck && bun test` and the Go gate stay
   green (`AGENTS.md`). Effect v4 pinned beta — confirm exports against
   `node_modules/effect/dist/*.d.ts`; consult the `effect` skill.

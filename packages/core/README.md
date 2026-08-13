@@ -23,3 +23,19 @@ refusal dialect without browsing `src/`.
 operation with `KVCountOverflow` in Effect's typed error channel. A committed
 stream interleaving is a different concept and lives under `MergeFact` /
 `applyMerge`.
+
+## Executable Rosetta bridge
+
+Issue #14's vocabulary bridge is kept checkable, not only described:
+
+| Accepted obligation | Durable evidence |
+| --- | --- |
+| Common Effect names beside foldlab's house names | Root `CONTEXT.md` and the module headers in `src/algebra.ts`, `src/fold.ts`, and `src/stream.ts` |
+| One shape, one fold, three consequences | `bun examples/rosetta/rosetta.ts`; pinned by `test/rosetta.demo.test.ts` |
+| First-consumer parallel KV replay | `bun examples/rosetta/parallel-kv.ts`; pinned by `test/parallel-kv.example.test.ts` |
+| Deliberate refusal dialects | This entry map, module `CONTEXT.md`, and `test/error-channel.surface.test.ts` |
+| Machine probe versus browser-demo prose | `packages/server/test/health.surface.test.ts` |
+
+Both demos are root-workspace members, so `bun run typecheck` checks the same
+imports a consumer executes. The tests assert the exact digests and every
+narrated payoff without freezing console formatting.
