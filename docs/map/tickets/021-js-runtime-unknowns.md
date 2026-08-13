@@ -2,7 +2,7 @@
 id: 021
 title: JS runtime unknowns — Bun, Node, and the engines under Effect
 type: wayfinder:research
-status: open
+status: closed
 assignee:
 blocked-by: []
 ---

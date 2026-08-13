@@ -4,7 +4,9 @@ title: Done outlives the register — journaled outcomes and resurrection detect
 type: wayfinder:build
 status: open
 assignee:
-blocked-by: [016-note: dispositioned from task 16's red finding]
+blocked-by: [012]
+# Origin note: dispositioned from the substrate-gate red finding
+# (admin deletion erases Done); journaled outcomes need the journal model.
 ---
 
 ## Question

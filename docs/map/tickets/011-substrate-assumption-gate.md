@@ -2,7 +2,7 @@
 id: 011
 title: The substrate assumption gate and the certified envelope
 type: wayfinder:build
-status: open
+status: closed
 assignee:
 blocked-by: []
 ---

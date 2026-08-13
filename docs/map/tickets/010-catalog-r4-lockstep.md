@@ -2,7 +2,7 @@
 id: 010
 title: Catalog R4 — lockstep conformance against protod
 type: wayfinder:build
-status: open
+status: closed
 assignee:
 blocked-by: [009]
 ---

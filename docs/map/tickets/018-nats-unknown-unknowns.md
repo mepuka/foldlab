@@ -2,7 +2,7 @@
 id: 018
 title: NATS/JetStream unknown unknowns — the pre-registered anxiety ledger
 type: wayfinder:research
-status: open
+status: closed
 assignee:
 blocked-by: []
 ---

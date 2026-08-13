@@ -53,8 +53,13 @@ records with a plain check and no lock, while creation checks absence
 — which can rot — and therefore writes through a compare-and-swap.
 The catalog and ingress protocol carrying both results are
 model-checked with TLC: 12,707,989 distinct states at the gate
-bounds, four invariants held, four sabotaged variants refuted on
-exactly the law each dropped.
+bounds, four invariants held, four sabotaged variants each refuted.
+The same protocol is conformance-tested against the running daemon
+(R4): 131 schedules replayed lockstep with zero divergences against
+the named coarsened wire map, controls first. The inductive proof
+above the bounded check (R3) is in re-proof at repaired hypothesis
+bounds — the claim is deliberately HELD until those verdicts land;
+the ladder and its honest status live in VERIFICATION.md.
 
 ## The MCP surface
 

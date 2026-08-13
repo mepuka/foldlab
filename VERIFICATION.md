@@ -131,6 +131,15 @@ ratified semantic laws is ticket 004.
 
 ## RFC 8785 canonical JSON — R1 differential
 
+- Identity-domain closure (2026-08-13): chain-entry identity refuses
+  invalid UTF-8 and unpaired surrogates in BOTH runtimes, and refuses
+  sequence positions outside JavaScript's exact-integer range; a
+  shared frozen vector proves the Go and TypeScript refusal domains
+  agree, including the accepted 2^53-1 edge. Checkable at:
+  [go/canonical/probes/](go/canonical/probes/) (the two-runtime gate
+  and its retained red finding) plus the entry-refusal suites in both
+  languages.
+
 Claim: `packages/core` and `go/canonical` either refuse the same input byte
 stream or emit byte-identical RFC 8785 output. Their constrained decoders
 accept exactly one valid UTF-8/I-JSON value, reject duplicate member names

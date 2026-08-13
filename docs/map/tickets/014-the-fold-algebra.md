@@ -2,7 +2,7 @@
 id: 014
 title: The fold algebra — free functions from universal properties
 type: wayfinder:build
-status: open
+status: closed
 assignee:
 blocked-by: []
 ---

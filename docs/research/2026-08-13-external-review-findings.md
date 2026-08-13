@@ -560,3 +560,28 @@ forgeable-or-unchecked brand, applyMerge dedup, Open/cursor). This is the
 compositionality-of-proof thesis stated as a defect taxonomy: build on a
 lawful surface and the law is inherited; hand-roll a parallel path and it is
 not.
+
+## Closure table (2026-08-13, end of cycle — supersedes "Disposition owed")
+
+| Claim / finding | Issue | Landed | Status |
+|---|---|---|---|
+| C1 collector poisoning | #4 | 045616863 (one walled kvStep, forgive-on-meaning) | FIXED |
+| C2 / JR1 unverified tail | #2 | 2505e76c7 (tailCursor, one adoption path) | FIXED (fail-fast scope per refuter) |
+| C3 frame-schema drift | — | remains open; owned by the proto contract lane | OPEN |
+| C4 R3 hypothesis bounds | #7 | R3 repair merged 6b713a639; claim HELD pending re-proof verdicts (two platforms) | REPAIRED, RE-PROOF RUNNING |
+| C5 linearizable-reads naming | — | residuals tracked (test rename, library-seam Replicas gate) | OPEN (residuals) |
+| C6 tower consumer | — | answered by design: ticket 020 phase 1 (JournalMessageStorage), task 25 | DESIGN RATIFIED |
+| C7 two-fold law TS blind spot | — | "(tested)" comment + TS mutation gap remain queued | OPEN (residuals) |
+| C8 refusal dead-ends | — | REFUTED by the refutation pass | WITHDRAWN |
+| JR2 wedged writer | #1 | 2505e76c7 | FIXED |
+| JR3 conflict mislabel | #10 | 2505e76c7 | FIXED |
+| CG1 identity non-injective | #3 | journal-gate containment 2505e76c7; canonical-boundary closure dd658a214 | FIXED |
+| A1 forgeable brand | #5 | f1434c991 | FIXED |
+| A2 mappedStep gate | #11 | f1434c991 (+ cache binding 531ca6d56) | FIXED |
+| J1 encodeValue domain | #6 | 243caeb54 | FIXED |
+| M1 merge duplicate seqs | #6 | dd658a214 (both runtimes + shared vector) | FIXED |
+| S1 Bun coupling | #6 | 243caeb54 | FIXED |
+| FINDING-R3-001 re-checkability | #7 | 6b713a639 (annotations certified inert) | FIXED |
+| FINDING-BRIDGE-001 vacuous half | #8 | b93867814 (ResolvingCreateAgrees in the gate) | FIXED; strengthenings with HARDENER |
+| FINDING-BOUNDS-001 truncation | #9 | HARDENER ASSUME guards | IN FLIGHT (last open issue) |
+| Effector A6 register | — | certified clean on the running binary | docs/research/2026-08-13-effector-certified.md |

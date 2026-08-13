@@ -50,6 +50,9 @@ create needs a CAS and ingress doesn't.
 | `CatalogWireBroken.tla`/`.cfg` | bridge sensitivity control: a faithless atomic identity |
 | `CatalogWireBroken.cex.txt` | verbatim bridge-control refutation |
 | `CLIMB.md` | failed candidates, strengthening rationale, commands, verdicts |
+| `run-ind.sh` / `.ps1` | the R3 obligation gate: exit-code checked, refutability canary first |
+| `R3-DECISIONS.md` / `WORKLOG.md` / `_runlogs/` | repair decisions and verbatim per-run records |
+| `probes/` | BREAKER proof-mechanics probes: FINDING-BRIDGE-001, FINDING-BOUNDS-001, verdict, configs, runlogs |
 | `run.sh` | the gate: 2 clean closures + 4 required refutations, or FAIL |
 | `run-wire.ps1` / `.sh` | split canary + honest atomic bridge + required bridge refutation |
 | `run-r4.ps1` / `.sh` | ordered R4 gate: bridge, both binary controls, coverage, honest replay |
@@ -138,7 +141,7 @@ mirror advances then empties, shrinking daemon 2's resolvable set from
 in its checked set and does NOT violate it — losing a prefix and forging
 one are different sins, and the model separates them.
 
-## R3 inductive proof (CLAIMED, 2026-08-13)
+## R3 inductive proof (IN RE-PROOF at repaired bounds — claim HELD, 2026-08-13)
 
 `CatalogInd.tla` strengthens the five R2 state invariants with one
 **CAS-freshness clause**: a pending create whose expected own-journal
@@ -147,13 +150,23 @@ This is the catalog analogue of the effector's
 `fresh => snapshot current`; it is what makes a delayed `CreateFinish`
 safe without re-reading.
 
-Apalache checked arbitrary typed states satisfying `IndInv`, not the
-reachable set. `DataCap = 0`, so trace length and data-journal depth are
-unbounded. The proof fixes the configured cardinalities at 2 daemons,
+Apalache checks arbitrary typed states satisfying `IndInv`, not the
+reachable set. THE HYPOTHESIS `Gen` BOUNDS ARE PART OF THE CLAIM
+(external review C4): the original run generated `catalog = Gen(2)`
+while reachable IndInv states carry catalogs of length 3, so
+consecution and action safety were discharged over a strict subset —
+that run's verdicts (the table below) are retained as history, not as
+the claim. The repaired hypothesis in `CatalogInd.tla` states every
+bound with its justification: `catalog = Gen(3)` (the exact natural
+maximum), `mirror = Gen(4)` and `creators = Gen(4)` (above their
+natural maxima), `data = Gen(2)` under the written append-only cutoff
+argument with `IndInitDataDeep` as its empirical insensitivity
+control. The proof fixes the configured cardinalities at 2 daemons,
 3 values, and 2 creators; it does **not** claim arbitrary cardinality.
-Catalog and mirror length need no artificial cap because
-`Convergence` and `CatalogNaturallyBounded` bound them by the finite
-value domain.
+Re-proof at these bounds is running on two platforms (`run-ind.sh` /
+`run-ind.ps1` is the gate; `WORKLOG.md` and `_runlogs/` carry the
+verbatim records). The claim upgrades in VERIFICATION.md only when
+those verdicts land.
 
 Toolchain: Apalache 0.61.0 (build 831d473), jar sha256
 `33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346`,
@@ -164,7 +177,7 @@ use `APALACHE_JAR` for the verified release jar.
 |---|---|---|---|---:|
 | 1 | base: `Init => IndInv` | `Init` / `IndInv` / 0 | NoError | 4.164s |
 | 2 | consecution: `IndInv /\ Next => IndInv'` | `IndInit` / `IndInv` / 1 | NoError | 26m35s |
-| 3 | state safety | `IndInit` / `StateSafety` / 0 | NoError | 3m23s |
+| 3 | state safety (now a labeled TRIPWIRE, not an obligation — its conjuncts are a subset of IndInv's, so it cannot fail; retained against drift) | `IndInit` / `StateSafety` / 0 | NoError | 3m23s |
 | 4 | action safety: admission + monotonicity | `IndInit` / `SafetySteps` / 1 | NoError | 6m52s |
 | 5 | CONTROL: consecution without CAS freshness | `IndInitSansFreshness` / `IndInvSansFreshness` / 1 | **Error, required** | 6m34s |
 | 6 | CONTROL: action safety with blind ingress | `IndInit` / `SafetySteps` / 1, blind config | **Error, required** | 4m58s |
@@ -224,8 +237,10 @@ counterexample in `Catalog.tla`, that is a FINDING about the ratified
 laws, not a nuisance: commit the trace beside the spec like the
 `*.cex.txt` files and lead with it.
 
-The R3 commands above are a separate gate: four `NoError` verdicts and
-two required `Error` verdicts. Any flipped verdict fails the claim.
+The R3 obligations are a separate gate, now `run-ind.sh` /
+`run-ind.ps1`: three live obligations (base, consecution, action
+safety) plus the labeled tripwire, and the required `Error` controls.
+Any flipped verdict fails the claim.
 
 The R4 command first reruns the split closure canary, the honest atomic
 refinement, and its faithless control. It then runs the tagged daemon sabotage
