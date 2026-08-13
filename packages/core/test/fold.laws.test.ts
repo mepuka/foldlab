@@ -363,6 +363,17 @@ describe("fold construction rights", () => {
     expect(number.apply(event("json", 3, "not-json"))).toBeNull()
   })
 
+  test("payloadNumber cannot bypass constrained decode on a digest path", () => {
+    const score = steps.payloadNumber(["score"])
+    const duplicate = event("json", 1, "{\"score\":1,\"score\":2}")
+    expect(score.apply(duplicate)).toBeNull()
+    expect(defineFold(algebras.max, score).fold([duplicate])).toBeNull()
+
+    const tooDeep = `{\"score\":3,\"deep\":${"[".repeat(300)}null${"]".repeat(300)}}`
+    expect(score.apply(event("json", 2, tooDeep))).toBeNull()
+    expect(score.apply(event("json", 3, "{\"score\":4}"))).toBe(4)
+  })
+
   test("payloadNumber snapshots its identity-bearing path", () => {
     const path = ["metrics", "score"]
     const number = steps.payloadNumber(path)

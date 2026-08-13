@@ -171,6 +171,14 @@ describe("stream deterministic properties", () => {
     expect(() => parseFrames(unsafe)).toThrow()
   })
 
+  test("chain heads have one lowercase canonical spelling", () => {
+    const seed = streamSeed("canonical-head")
+    expect(() => extend(seed.toUpperCase(), event("s", 1, "a=1"))).toThrow(
+      "head must be exactly 32 lowercase hexadecimal bytes",
+    )
+    expect(extend(seed, event("s", 1, "a=1"))).toMatch(/^[0-9a-f]{64}$/)
+  })
+
   test("canonical writers reject values their fixed fields cannot represent", () => {
     const valid = rawEvent("a", 1, [])
     for (const seq of [-1, 0.5, Number.MAX_SAFE_INTEGER + 1]) {
@@ -297,9 +305,9 @@ describe("state and store adversaries", () => {
     FastCheck.assert(
       FastCheck.property(malformedPayloadArbitrary, (payload) => {
         const input = rawEvent("s", 1, payload)
-        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV, input)))
+        const refusal = Effect.runSync(Effect.flip(applyKV(emptyKV(), input)))
         expect(refusal._tag).toBe("MalformedPayload")
-        expect(kvStep(emptyKV, input)).toBeUndefined()
+        expect(kvStep(emptyKV(), input)).toBeUndefined()
       }),
       {
         examples: malformedPayloadCases.map((payload) => [Uint8Array.from(payload)]),

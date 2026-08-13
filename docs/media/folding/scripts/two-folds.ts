@@ -31,7 +31,7 @@ const payloads = ["status=new", "qty=2", "status=paid", "shipped", "region=eu"]
 const history: ReadonlyArray<StreamEvent> = payloads.map((p, i) => event("orders", i, p))
 
 let head = streamSeed("orders")
-let state: KVState = emptyKV
+let state: KVState = emptyKV()
 const frames: Array<{
   seq: number
   payload: string
@@ -61,7 +61,7 @@ for (const e of history) {
 const out = {
   _provenance: "bun docs/media/folding/scripts/two-folds.ts",
   seed: streamSeed("orders"),
-  emptyStateDigest: stateDigest(emptyKV),
+  emptyStateDigest: stateDigest(emptyKV()),
   frames,
   finalHead: head,
   finalStateDigest: stateDigest(state),

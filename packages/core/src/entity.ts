@@ -40,14 +40,27 @@ export interface EntityView {
 export interface Backing {
   get(key: string): EntityView | undefined
   set(key: string, view: EntityView): void
+  /** Enumeration order is not semantic; the collector imposes identity order. */
   keys(): ReadonlyArray<string>
 }
+
+/** Copy the only mutable member before a view crosses an ownership boundary. */
+const copyView = (view: EntityView): EntityView => ({
+  ...view,
+  state: { entries: new Map(view.state.entries), count: view.state.count },
+})
+
+const byUtf16CodeUnit = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0
 
 export const memoryBacking = (): Backing => {
   const m = new Map<string, EntityView>()
   return {
-    get: (k) => m.get(k),
-    set: (k, v) => void m.set(k, v),
+    get: (k) => {
+      const found = m.get(k)
+      return found === undefined ? undefined : copyView(found)
+    },
+    set: (k, v) => void m.set(k, copyView(v)),
     keys: () => [...m.keys()].sort(),
   }
 }
@@ -99,12 +112,15 @@ export const makeCollector = (
       events: prev.events + 1,
     }
     backing.set(key, next)
-    return next
+    return copyView(next)
   },
-  entity: (key) => backing.get(key),
+  entity: (key) => {
+    const found = backing.get(key)
+    return found === undefined ? undefined : copyView(found)
+  },
   anchors: () =>
-    backing
-      .keys()
+    [...backing.keys()]
+      .sort(byUtf16CodeUnit)
       .map((key) => backing.get(key)!)
       .map((v) => ({ key: v.key, head: v.head, state: stateDigest(v.state) })),
 })
