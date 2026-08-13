@@ -9,5 +9,8 @@
   },
   "dependencies": {
     "effect": "catalog:"
+  },
+  "devDependencies": {
+    "fast-check": "4.9.0"
   }
 }
