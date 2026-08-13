@@ -121,14 +121,16 @@ func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
 	}
 }
 
-// decodeBody parses a request body strictly enough to be teachable:
-// invalid JSON or a non-object refuses as data, never as silence.
+// decodeBody admits request bytes through the same constrained JSON domain
+// that bears catalog identity. The typed decode runs only over bytes derived
+// from that admitted value, so encoding/json cannot silently repair duplicate
+// names, invalid UTF-8, or lone surrogate escapes before identity is derived.
 func decodeBody(body []byte, into any) *Refusal {
-	var probe any
-	if err := json.Unmarshal(body, &probe); err != nil {
+	probe, err := canonical.Decode(body)
+	if err != nil {
 		return &Refusal{
 			Kind:     KindMalformed,
-			Law:      "W2: requests are JSON — this body does not parse",
+			Law:      "W2: requests are constrained JSON — this body has no canonical value",
 			Got:      truncateForReply(body),
 			Expected: "a JSON object",
 			Next:     []NextHint{describeHint()},
@@ -143,7 +145,17 @@ func decodeBody(body []byte, into any) *Refusal {
 			Next:     []NextHint{describeHint()},
 		}
 	}
-	if err := json.Unmarshal(body, into); err != nil {
+	canonicalBody, err := canonical.CanonicalizeValue(probe)
+	if err != nil {
+		return &Refusal{
+			Kind:     KindMalformed,
+			Law:      "W2: requests are constrained JSON — this value has no canonical encoding",
+			Got:      probe,
+			Expected: "a canonical JSON object",
+			Next:     []NextHint{describeHint()},
+		}
+	}
+	if err := json.Unmarshal(canonicalBody, into); err != nil {
 		return &Refusal{
 			Kind: KindMalformed,
 			Law:  "request fields must carry their declared shapes",

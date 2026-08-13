@@ -417,6 +417,10 @@ sequence positions. Client controls additionally execute journal attribution,
 claimed-sequence/head verification, repair-bearing local refusals, injective
 MCP derivation, and owned send-ordered transcripts against real or controlled
 daemon seams.
+The request-admission control submits duplicate member names, a lone surrogate
+escape, and raw invalid UTF-8 through a real NATS `type.create` request. Each
+must return `malformed` before mutation, while the existing hostile-formatting
+control proves lawful alternate formatting retains the same identity.
 
 ### Bounds and residuals
 
@@ -425,6 +429,9 @@ unbuilt), union resolution across daemons, ingress payload conformance
 (admission checks identity resolution only — the contract says so). The reply
 wall is corpus-sized accept/refuse equivalence for the create/admit/refusal
 branches, not exhaustive equivalence over all JSON or every future reply kind.
+The request-byte claim is likewise bounded to the three sharp constrained-
+decode classes plus the existing generated and differential canonical corpus;
+it is not an exhaustive proof over all byte strings.
 
 ### Checkable at
 

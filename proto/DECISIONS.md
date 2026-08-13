@@ -1509,3 +1509,20 @@ accepted audience split could drift again). Why: one in-process handler tests
 both halves of the ratified split without opening a socket or adding a runtime
 dependency. **Load-bearing? no** — this is a testability seam for an already
 ratified response contract.
+
+## GitHub issue #36 — request-byte identity admission (2026-08-13)
+
+### D??. Typed request projection follows constrained decode
+
+Decided: every daemon request body is decoded once through
+`canonical.Decode`; only the canonical encoding of that admitted value may be
+projected into the request's Go struct. Duplicate member names, lone-surrogate
+escapes, and invalid UTF-8 therefore return the ordinary typed `malformed`
+refusal before catalog walking or mutation. Alternatives: preflight the raw
+bytes and then decode those same raw bytes again with `encoding/json` (leaves
+a second repairing decoder on the identity path); repair in the catalog
+scheme (too late, because the original bytes are already gone); restrict only
+`type.create` (the shared request seam would remain internally inconsistent).
+Why: constrained decode is the repository's only byte-to-value admission law;
+a repairing decoder names a value that did not arrive. **Load-bearing? yes** —
+request admission determines which bytes may create type identity.

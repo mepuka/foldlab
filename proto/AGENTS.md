@@ -9,6 +9,10 @@ spec did not fix is logged in `DECISIONS.md`.
 
 - No asserted identity: the daemon re-derives every digest it commits
   (`proto/go/protod/conformance_test.go`).
+- Request bodies cross constrained decode before any typed projection:
+  duplicate member names, lone surrogate escapes, and invalid UTF-8 refuse as
+  data and cannot be repaired into an identity-bearing catalog value
+  (`proto/go/protod/request_body_identity_test.go`).
 - Refusals are data everywhere: daemon replies, client-local
   conditions, author-fold rejections, MCP tool results — one uniform
   shape, `local` marking the side that uttered it. Nothing throws
