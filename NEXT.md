@@ -283,12 +283,21 @@ SHORT TERM (dispatchable now, in order — codex specs in scratch/codex/):
 7. Housekeeping lane: tasks 26, 27, 29, 35 (Rosetta code surfaces,
    watch one-clock, MCP output envelope, frame-schema drift).
 
+SHORT TERM, WAVE 2 (grills RESOLVED 2026-08-14 on issues #23/#24 —
+operator + Mac seat; the critical path builds now):
+8. Task 36: the owned canonical encoding (ticket 004 resolution —
+   identity on the owned walk, normalize named with idempotence,
+   recursion banned with the Unison successor pre-ratified,
+   dual-record scheme bridges, certify() named).
+9. Task 37: the session journal (flb.session.v0 — expectedHead
+   non-optional, retention tiers with the corpus-sealing amendment,
+   frontier purity with its negative control).
+
 MEDIUM TERM (each behind one named gate):
-- Ticket 004 field-level grill — THE critical path (certify(),
-  certificates 005, scale.v0 016, workflow.v0 008, cycle rule).
-- Session journal (sessions dossier's four owed grillings first).
 - Ticket 012 journal model — unlocks 017, 019, split-CAS R4, and the
   parked withTransaction question (un-parks task 25).
+- Certificates (005), scale.v0 (016), workflow.v0 (008) — read from
+  task 36's outputs; activate as 36 lands.
 - R3 upgrade + issue #9 when the Gen(3) verdicts and HARDENER guards
   land.
 
