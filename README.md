@@ -1,24 +1,47 @@
 # foldlab
 
-Verifiable computation over streams. Every value has a canonical byte
-form, identity is a digest over those bytes, and every cross-boundary
-claim — TS ≡ Go, batch ≡ stream, native ≡ wasm — is proven by digest
-equality over frozen fixtures, never by trusting a port. A Go daemon
-owns the runtime (embedded NATS, hash-chained journal, fenced
-exactly-once effector); TypeScript is the typed authoring face.
+foldlab is a lab for verifiable computation over streams, built with
+Effect (TypeScript) and Go. Every value has one canonical byte form,
+and a value's identity is a SHA-256 digest over those bytes, so any
+claim — a type's identity, a history's head, a cross-language port's
+equivalence — can be recomputed by anyone rather than taken on trust.
+Equivalence between implementations (TypeScript ≡ Go, batch ≡ stream,
+native ≡ wasm) is established by digest equality over frozen fixtures.
+
+A Go daemon owns the runtime: an embedded NATS server, a hash-chained
+append-only journal, a content-addressed type catalog, and the
+effector — a single-key commitment register whose safety is a
+machine-checked theorem (Apalache inductive invariant, unbounded;
+15,378 schedules replayed in lockstep against the running Go). The
+catalog and ingress protocol are model-checked with TLC: 12,707,989
+distinct states at the gate bounds, four invariants held, four
+sabotaged variants refuted on exactly the law each dropped. TypeScript
+is the authoring adapter: Effect Schema types what crosses the seam,
+agents author types directly over MCP, and the client's whole surface
+is three verbs — read, publish, request.
 
 Glossary: [CONTEXT.md](CONTEXT.md) · design state: [NEXT.md](NEXT.md) ·
-decisions: [docs/adr/](docs/adr/) · agent contract: [AGENTS.md](AGENTS.md)
+decisions: [docs/adr/](docs/adr/) · verification ladder:
+[docs/map/tickets/009](docs/map/tickets/009-the-verification-ladder.md) ·
+agent contract: [AGENTS.md](AGENTS.md)
 
-## Verify
+## How to verify the claims
+
+The test gates:
 
 ```bash
 bun run typecheck && bun test
 cd go && gofmt -l . && go vet ./... && go test ./...
 ```
 
-Don't take the README's word — recompute a fleet run's claims from its
-bundle bytes alone:
+The catalog model gate reruns the TLC check from scratch (fetches the
+pinned tla2tools; needs Java 21):
+
+```bash
+verify/catalog/run.sh
+```
+
+A fleet run's claims recompute from its bundle bytes alone:
 
 ```bash
 cd go && go run ./cmd/gauntletverify ../artifacts/gauntlet/final-alpha
