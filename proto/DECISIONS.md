@@ -546,3 +546,40 @@ CONSISTENCY — for any structure, every derivation target agrees
 over all current and future targets. The shrunk counterexample becomes
 a permanent regression case; the red C5 property stays red until the
 fix lands. Execution: scratch/codex/14-d46-fix.md.
+
+## Task 14 — D46 fix and cross-target law (2026-08-13)
+
+### D47. A sketch target still validates every child before sketching
+Decided: Go unions remain represented as `any // union`, but
+`toGoType` first visits every union member in index order and propagates
+the first `underivable` refusal. Alternatives: teach the sketch a full
+sum representation (outside the bullet's promise); pre-scan the whole
+tree separately (duplicates each target's recursive walk). Why: sketch
+status licenses an imprecise representation only after the input has
+been shown derivable. The permanent D46 regression asserts that all
+three public targets return byte-shape-identical refusals at
+`structure/of/0/k`. The unchanged concierge C5 file hash is
+`8fa874a427b7e4d0b28c666476da9351e5357c1c`; its red property went green
+with only this production change. No Go-side source or fixture changed.
+**Load-bearing? yes** — every future sketch target must recursively
+validate children it does not represent precisely.
+
+### D48. The generalized law found target-dependent struct traversal
+The new target-list law, CROSS-TARGET DERIVABILITY CONSISTENCY, covers
+all current node forms, resolvable refs, nested and multiple holes, and
+quantifies every pair of targets from one list. At seed `0x14d46001` it
+failed after 113 cases and shrank once (`path: "112:1"`) to:
+
+```json
+{"k":"struct","fields":{"β":{"k":"hole"},"a":{"k":"hole"}},"optional":[]}
+```
+
+Effect Schema derivation walks insertion order and refuses at
+`structure/fields/β/k`; JSON Schema and Go sort field names and refuse
+at `structure/fields/a/k`. All agree that derivation refuses, but not at
+the same path, violating the newly ratified law. Decided: preserve the
+red generalized property and stop without normalizing traversal until
+this finding is dispositioned, following Task 07's widened-domain rule.
+Replay with `cd proto/ts && bun test test/codegen.test.ts`.
+**Load-bearing? yes** — refusal paths cannot depend on a JavaScript
+object's construction history if they are cross-target evidence.

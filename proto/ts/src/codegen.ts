@@ -261,8 +261,14 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       return underivable([...path, "k"], "hole", "holes are authoring-only and never derive from catalog data")
     case "literal":
       return `any // literal ${JSON.stringify(n["value"] ?? null)}`
-    case "union":
+    case "union": {
+      const members = (n["of"] as Json[]) ?? []
+      for (let index = 0; index < members.length; index++) {
+        const member = toGoType(members[index] as Json, [...path, "of", String(index)])
+        if (member instanceof Fail) return member
+      }
       return "any // union"
+    }
     case "list": {
       const of = toGoType(n["of"] as Json, [...path, "of"])
       if (of instanceof Fail) return of
