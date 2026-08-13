@@ -1,16 +1,38 @@
-/** Generated property suites: every right claimed by Fold has its licensing law. */
+/**
+ * Generated property suites: every right a fold claims arrives with the law
+ * that licenses it.
+ *
+ * The suites are derived from what a fold declares about itself rather than
+ * written beside it, so a fold cannot claim a right whose law nobody checks,
+ * and the inputs cannot drift away from the values the algebra actually
+ * accumulates.
+ */
 
 import * as FastCheck from "fast-check"
 import { encodeFoldState, type DeclaredHom, type FoldState } from "./algebra.ts"
 import { arbitraryForEvent, arbitraryForValue } from "./foldArbitrary.ts"
 import type { Fold } from "./fold.ts"
 
+/**
+ * One law, ready to run: its name, the seed its cases are drawn from, and a
+ * check that throws on the first counterexample it finds, shrunk.
+ *
+ * The seed is fixed and reported, so a failure is reproducible rather than a
+ * story about one unlucky run, and two runs of a green suite exercise the same
+ * cases.
+ */
 export interface FoldLawCase {
   readonly name: string
   readonly seed: number
   readonly check: () => void
 }
 
+/**
+ * Either the laws to run, or a refusal to pretend. `LawInputsUnavailable` names
+ * the missing half — a fold with no way to generate values or no way to
+ * generate events would otherwise yield a suite that passes by checking
+ * nothing, which is worse than no suite at all.
+ */
 export type FoldLawSuite =
   | { readonly ok: true; readonly laws: ReadonlyArray<FoldLawCase> }
   | {
@@ -21,6 +43,16 @@ export type FoldLawSuite =
     }
   }
 
+/**
+ * What a suite needs besides the fold. The fixtures are real events from the
+ * caller's own history: they are folded into the generated pool so the laws are
+ * checked against states the fold genuinely reaches, not only against states
+ * random generation happens to produce.
+ *
+ * The optional declared map and partner fold add the laws that exist only when
+ * there is something to map into or pair with. Seeds and run count have fixed
+ * defaults, so a suite left unconfigured is still reproducible.
+ */
 export interface FoldLawOptions<
   E,
   A extends FoldState,
@@ -35,6 +67,10 @@ export interface FoldLawOptions<
   readonly numRuns?: number
 }
 
+// States are judged only by their canonical bytes, never by reference or by
+// field-wise comparison. A state that cannot be encoded equals nothing at all,
+// itself included, so an unencodable result fails a law rather than slipping
+// through as a match.
 const equal = (left: FoldState, right: FoldState): boolean => {
   const leftBytes = encodeFoldState(left)
   const rightBytes = encodeFoldState(right)
@@ -48,8 +84,31 @@ const assertProperty = (
 ): void => FastCheck.assert(property, { seed, numRuns, endOnFailure: false, verbose: 1 })
 
 /**
- * Identity/associativity grant monoid use; random split grants parallel replay;
- * banana-split grants zip; homomorphism commutation grants map without replay.
+ * Builds the property suite for one fold: the laws that license what that fold
+ * claims to be allowed to do.
+ *
+ * Combining with the neutral value must change nothing and grouping must not
+ * matter — together these are what license using the algebra as an accumulator
+ * at all. Cutting a history at a random point, folding both halves, and
+ * combining them must agree with folding it whole, which is what licenses
+ * folding a history in pieces; the cut is retried under several seeds so the
+ * law is not judged on one lucky split. Pairing two folds must agree with
+ * running each alone over the same events — the law recorded here as
+ * banana-split, meaning simply that one pass returning two answers gives what
+ * two passes would have. Where a declared map is supplied, it must carry the
+ * neutral value across and survive combining, and the mapped fold must agree
+ * with mapping the source's answer; that pair is what licenses reading a mapped
+ * result without folding again.
+ *
+ * Refuses with `LawInputsUnavailable` when the algebra declares no way to
+ * generate values or the step declares no way to generate events, rather than
+ * returning a suite that would pass vacuously.
+ *
+ * Generated inputs are mixed with the caller's fixtures and with states the
+ * fold actually reaches over them, so the laws are exercised on real histories
+ * as well as random ones. With no partner fold given, the pairing law pairs the
+ * fold with itself, which is still a genuine check that pairing preserves each
+ * answer.
  */
 export const makeFoldLawSuite = <
   E,
