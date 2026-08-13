@@ -37,6 +37,10 @@ create needs a CAS and ingress doesn't.
 
 ## Files
 
+The model calls a law-disabled configuration a **faithless variant**; the gate
+calls the same artifact a **negative control**. Both names mean one concept:
+the deliberately weakened run that must be refuted on the law it dropped.
+
 | File | What |
 |---|---|
 | `Catalog.tla` | the ratified laws; four Boolean constants select faithless variants |
