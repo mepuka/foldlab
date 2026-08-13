@@ -321,3 +321,25 @@ demarcation. Tests in `go/effector/zz_bugbreaker_test.go`.
   minted by the module's own `declaredAlgebra`/`declaredStep` (identity/registry
   check), rather than trusting a digest field. Digest equality can stay as a
   fast-path but must not be the sole admission.
+
+## 2026-08-13 — JR2 ELEVATED to shown end-to-end at the journald daemon (JR2+JR3 compound)
+
+- **Command:** `mise x go@1.26.5 -- go test ./cmd/journald/ -run TestBUG_JR -v`
+  (`go/cmd/journald/zz_bugbreaker_test.go`, white-box: constructs the real
+  `*daemon` and drives its real `serve` method as a client; a competing writer
+  is injected on the shared JetStream).
+- **JR2 shown:** a client `open`s "wf" (daemon caches the handle); a competing
+  writer wins seq 0; the client's `append` returns `reason:"conflict"`, and a
+  RETRY returns `reason:"conflict"` AGAIN — the daemon's cached cursor is wedged
+  at `seq=-1` though the stream tail is seq 0. Only a `read` request heals it
+  (resyncs `j.cursor`), after which `append` succeeds. Severity raised from
+  reasoned (library-level JR2) to SHOWN end-to-end: an append-only journald
+  client is stuck on a healthy journal until it happens to issue a read.
+- **JR3 compound shown:** with the post-conflict re-read `GetMsg` armed to fail,
+  the same real position conflict is surfaced to the client as
+  `reason:"unavailable"` (detail: the raw `wrong last sequence` APIError) instead
+  of `reason:"conflict"` — the client cannot tell "retry after resync" from a
+  transient outage.
+- **Exploitable vs latent:** EXPLOITABLE — this is the multi-writer topology the
+  journal is built for; the wedge is in shipped daemon code
+  (`cmd/journald/main.go` caches one handle per name and never Reads on append).
