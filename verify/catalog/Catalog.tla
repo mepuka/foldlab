@@ -135,6 +135,20 @@ VARIABLES
 
 vars == <<catalog, mirror, data, creators>>
 
+\* The existing vars tuple is also the explicit state value used by
+\* CatalogWire.tla. Accessors let the bridge apply the proved split halves to
+\* a bounded intermediate state without copying their transition table.
+ModelState == vars
+CatalogOf(s)  == s[1]
+MirrorOf(s)   == s[2]
+DataOf(s)     == s[3]
+CreatorsOf(s) == s[4]
+Become(s) ==
+  /\ catalog' = CatalogOf(s)
+  /\ mirror' = MirrorOf(s)
+  /\ data' = DataOf(s)
+  /\ creators' = CreatorsOf(s)
+
 \* @type: (Seq($fact)) => Set($fact);
 Range(s)  == { s[i] : i \in DOMAIN s }
 \* @type: (Seq($fact)) => Set(Int);
@@ -151,10 +165,13 @@ CommittedIds   == { f.id : f \in CommittedFacts }
 \* journals the daemon holds — its own, plus every mirrored prefix.
 \* Union resolution, ticket 002 #5.
 \* @type: (Int) => Set($fact);
-LocalFacts(d) ==
-  Range(catalog[d]) \cup UNION { Range(mirror[d][o]) : o \in Daemons \ {d} }
+LocalFactsIn(s, d) ==
+  Range(CatalogOf(s)[d]) \cup
+    UNION { Range(MirrorOf(s)[d][o]) : o \in Daemons \ {d} }
+LocalFacts(d) == LocalFactsIn(ModelState, d)
 \* @type: (Int) => Set(Int);
 ResolvableIds(d) == { f.id : f \in LocalFacts(d) }
+ResolvableIdsIn(s, d) == { f.id : f \in LocalFactsIn(s, d) }
 
 Init ==
   /\ catalog  = [d \in Daemons |-> <<>>]
@@ -168,14 +185,18 @@ Init ==
 (* position.  A resolvable digest converges: created:false, the existing   *)
 (* fact — an observable no-op (W3).                                        *)
 (***************************************************************************)
+CreateBeginEnabled(c, before) == ~CreatorsOf(before)[c].busy
+
+CreateBeginResult(c, d, v, before) ==
+  IF Digest(v) \in ResolvableIdsIn(before, d)
+    THEN before      \* W3 converge: existing fact, no append
+    ELSE [before EXCEPT ![4][c] =
+           [busy |-> TRUE, at |-> d, val |-> v,
+            exp |-> Len(CatalogOf(before)[d])]]
+
 CreateBegin(c, d, v) ==
-  /\ ~creators[c].busy
-  /\ IF Digest(v) \in ResolvableIds(d)
-       THEN UNCHANGED vars      \* W3 converge: existing fact, no append
-       ELSE /\ creators' = [creators EXCEPT ![c] =
-                 [busy |-> TRUE, at |-> d, val |-> v,
-                  exp |-> Len(catalog[d])]]
-            /\ UNCHANGED <<catalog, mirror, data>>
+  /\ CreateBeginEnabled(c, ModelState)
+  /\ Become(CreateBeginResult(c, d, v, ModelState))
 
 (***************************************************************************)
 (* create, second half: the CAS-append.  Lands only if the journal is      *)
@@ -187,22 +208,24 @@ CreateBegin(c, d, v) ==
 (* the resolve-check's freshness on the OWN journal.  Mirror growth since  *)
 (* Begin is deliberately not detected (see header).                        *)
 (***************************************************************************)
-\* @type: (Int, Int, $fact) => Bool;
-DoAppend(c, d, f) ==
-  /\ catalog'  = [catalog EXCEPT ![d] = Append(@, f)]
-  /\ creators' = [creators EXCEPT ![c] = IdleCreator]
-  /\ UNCHANGED <<mirror, data>>
+CreateFinishEnabled(c, before) == CreatorsOf(before)[c].busy
+
+CreateFinishResults(c, before) ==
+  LET d == CreatorsOf(before)[c].at
+      v == CreatorsOf(before)[c].val IN
+  IF Len(CatalogOf(before)[d]) = CreatorsOf(before)[c].exp
+    THEN IF AssertedIdentity
+           THEN { [before EXCEPT
+                     ![1][d] = Append(@, [val |-> v, id |-> i]),
+                     ![4][c] = IdleCreator] : i \in Ids }
+           ELSE { [before EXCEPT
+                    ![1][d] = Append(@, MkFact(v)),
+                    ![4][c] = IdleCreator] }  \* W1: derived identity
+    ELSE { [before EXCEPT ![4][c] = IdleCreator] }  \* conflict
 
 CreateFinish(c) ==
-  /\ creators[c].busy
-  /\ LET d == creators[c].at
-         v == creators[c].val IN
-     IF Len(catalog[d]) = creators[c].exp
-       THEN IF AssertedIdentity
-              THEN \E i \in Ids : DoAppend(c, d, [val |-> v, id |-> i])
-              ELSE DoAppend(c, d, MkFact(v))    \* W1: id derived, never taken
-       ELSE /\ creators' = [creators EXCEPT ![c] = IdleCreator]  \* conflict
-            /\ UNCHANGED <<catalog, mirror, data>>
+  /\ CreateFinishEnabled(c, ModelState)
+  /\ \E next \in CreateFinishResults(c, ModelState) : Become(next)
 
 (***************************************************************************)
 (* Replication: a mirror copies its origin's next fact, at the origin's    *)

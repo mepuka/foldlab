@@ -36,7 +36,7 @@ verification.
 
 ## Positions and next climbs, in order
 
-1. **Catalog + ingress state machine** (laws W1–W5) — **R3 CLAIMED**
+1. **Catalog + ingress state machine** (laws W1–W5) — **R3 + R4 CLAIMED**
    (2026-08-13, `verify/catalog/`): R2 remains TLC 2.19 clean to
    closure at the gate caps (2 daemons / 3 values / 2 creators:
    12,707,989 distinct
@@ -56,9 +56,15 @@ verification.
    produces a duplicate authority fact; blind ingress separately
    violates admission safety. Both controls failed as required. Evidence
    and commands: `verify/catalog/README.md`; hill climb:
-   `verify/catalog/CLIMB.md`. Next: R4 ticket 010 attaches the proved
-   transition table to protod by lockstep trace replay, including
-   corrupted-schedule controls.
+   `verify/catalog/CLIMB.md`. **R4 against the coarsened wire refinement
+   (CreateAtomic); the split-CAS branch's conformance is ticket 012's
+   obligation.** TLC closed the bridge at 281,269 distinct wire states and
+   refuted its faithless control at depth 2. The executable gate then caught
+   the tagged daemon sabotage and all 131/131 corrupted schedules before an
+   honest zero-divergence replay of 131 schedules / 3,079 steps. Coverage:
+   1,077 raw states (0.008474984% of the R2 closure), 3/3 coarse disjuncts,
+   and 5/5 semantic branches. Replica transport remains outside this claim;
+   `MirrorAdvance` is the documented re-create-and-project substitute.
 2. **Concierge algebra** (bullet two) — R1 inside its build: property
    tests for `unfill ∘ fill = identity`, frontier-empty ⇔ catalogable,
    and NO DEAD ENDS (every hole admits ≥1 legal fill), by induction on

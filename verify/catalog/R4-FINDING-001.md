@@ -1,0 +1,108 @@
+# R4 FINDING 001 — the split create action has no wire interposition seam
+
+Status: **DISPOSITION APPLIED**. The split-map replay remains correctly red;
+R4 is now claimed only against the separately named coarsened wire refinement
+(`CreateAtomic`). Found 2026-08-13 CDT after both required negative-control
+classes passed and before any honest pass count was claimed.
+
+## Result
+
+The model snapshots absence at `CreateBegin` and makes `CreateFinish` a CAS at
+that remembered catalog length. The current daemon offers one atomic,
+serialized `type.create` request. There is no public or handed-substrate seam
+at which the harness can pause that request after its resolve-check and before
+its append.
+
+The minimal disagreement is:
+
+```text
+CreateBegin(c=1,d=1,v=1)  # model snapshots catalog length 0
+CreateBegin(c=2,d=1,v=2)  # model snapshots catalog length 0
+CreateFinish(c=2)          # model and protod append v2
+CreateFinish(c=1)          # model: stale CAS conflict; protod: created:true v1
+```
+
+After step four, the model authority catalog is `[v2]`; the journal read from
+the real daemon is `[v2,v1]`, and the pure resolve probe returns `{v1,v2}`
+rather than `{v2}`. The driver's exact diagnostic is:
+
+```text
+modeled CreateFinish.conflict, but atomic type.create returned created:true
+for value 1; the wire surface did not preserve the Begin-time absence snapshot
+```
+
+This is a **refinement-seam finding**, not evidence that the sequential daemon
+violates W1 or W3. The atomic request can linearize at Finish and legitimately
+append v1. What fails is ticket 010's required step-for-step mapping from the
+proved split transition table to the current public binary. Treating the
+fresh check as the earlier Begin would be a false replay; silently projecting
+the append away would be worse.
+
+## Reproduce the red evidence
+
+From `proto/go`:
+
+```text
+go run ./catalogr4/cmd -mode honest
+```
+
+The command prints the expected and observed states plus the minimized
+schedule, then exits 1. The regression test
+`TestAtomicWireCreateCannotReplayTheModeledStaleConflict` keeps detection
+green in the ordinary Go suite without laundering the R4 command's red
+verdict into a conformance pass.
+
+## Controls and coverage run first
+
+```text
+go run -tags catalogr4_sabotage ./catalogr4/cmd -mode sabotage
+go run ./catalogr4/cmd -mode corrupted
+go run ./catalogr4/cmd -mode coverage
+```
+
+- tagged daemon sabotage: caught on its first wrong committed digest;
+- corrupted expected states: 133/133 caught;
+- generated corpus: 133 schedules / 3,089 model steps;
+- spec-state coverage: 1,326 / 12,707,989 = 0.010434381%;
+- action coverage: 4/4 TLA disjuncts, 7/7 semantic branches.
+
+The honest runner stopped on directed schedule 5 after 17 driven steps, as
+required. It did not continue to manufacture a zero-divergence count.
+
+## Disposition needed before R4 resumes
+
+Choose and ratify a refinement boundary. Plausible directions are: expose a
+substrate interposition point that does not alter production semantics;
+change the executable model/refinement map so create is atomic at the wire
+boundary while separately testing the journal CAS kernel; or make a
+multi-handler authority deployment real and define its retry/result behavior.
+This task makes no such design change: its rule was findings before fixes and
+no daemon modification except the tagged sabotage build.
+
+## Disposition (2026-08-13, operator-ratified)
+
+Coarsen the refinement map; the split moves to the journal. Wire
+conformance resumes against a COARSENED executable model in which
+create is one atomic action, derived from the proved model by
+composing Begin;Finish — with a bridging check in TLA that the atomic
+action implements the sequential composition, so R3 safety transfers.
+All coarsened-model behaviors are wire-drivable; R4's gate applies to
+that map. The stale-CAS branch's conformance obligation moves to
+ticket 012's journal kernel, where begin/finish are real separate
+operations (expected-seq append racing). The model's extra generality
+is recorded as an asset: it already covers the future multi-handler
+authority deployment. Rejected: a test-only interposition seam (the
+seam-enabled build is not the shipped binary); building multi-handler
+concurrency to satisfy a harness (inverted priorities).
+
+## Disposition evidence (2026-08-13)
+
+`CatalogWire.tla` now checks that every `CreateAtomic` step is a legal
+uninterrupted `CreateBegin;CreateFinish` trace (or the resolving Begin's
+stutter). The honest bridge closed at 281,269 distinct states; its faithless
+control violated `AtomicRefinement` at depth 2. The regenerated coarse corpus
+then ran both implementation negative-control classes before replaying all
+131 schedules / 3,079 steps with zero divergences. The exact, map-qualified
+claim and coverage are recorded in `README.md`. This does not make the old
+split replay green: its regression test remains the evidence that the
+split-CAS branch belongs at ticket 012's journal seam.

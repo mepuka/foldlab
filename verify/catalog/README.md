@@ -46,8 +46,13 @@ create needs a CAS and ingress doesn't.
 | `CatalogBroken*.cex.txt` | the four refutations, committed verbatim |
 | `CatalogInd.tla`/`.cfg` | R3 inductive invariant and fixed proof domains |
 | `CatalogInd.blind.cfg` | R3 negative control: W4 deliberately disabled |
+| `CatalogWire.tla`/`.cfg` | coarsened `CreateAtomic` wire model and its checked split-trace refinement |
+| `CatalogWireBroken.tla`/`.cfg` | bridge sensitivity control: a faithless atomic identity |
+| `CatalogWireBroken.cex.txt` | verbatim bridge-control refutation |
 | `CLIMB.md` | failed candidates, strengthening rationale, commands, verdicts |
 | `run.sh` | the gate: 2 clean closures + 4 required refutations, or FAIL |
+| `run-wire.ps1` / `.sh` | split canary + honest atomic bridge + required bridge refutation |
+| `run-r4.ps1` / `.sh` | ordered R4 gate: bridge, both binary controls, coverage, honest replay |
 
 ## What R2 claims, exactly
 
@@ -185,25 +190,24 @@ mise x java@21.0.2 -- java -jar "$APALACHE_JAR" check --config=CatalogInd.blind.
 
 ## How R4 attaches
 
-R3 proves the transition table, not that the binary refines it. The
-tracer daemon (proto/) implements the same create path
-(canonicalize → derive → resolve-check → CAS-append) and the same
-ingress refusal on the real journal substrate. R4 is lockstep trace
-replay in the effector heritage's mold: enumerate schedules from this
-transition table (Begin/Finish interleavings, mirror advances at chosen
-lag points, publishes at chosen daemons), drive them against the real
-daemon on embedded NATS, assert step-for-step agreement — admit/refuse
-verdicts, `created:false` convergences, CAS conflicts — and prove the
-harness can fail with corrupted-schedule controls (a schedule mutated to
-predict admission of an uncataloged digest must be caught every time).
-The interposition seam already exists: the daemon's journal is handed to
-it, so the harness can stall a creator between resolve-check and append
-without touching the code under test.
+R3 proves the split transition table, while protod exposes create as one
+serialized `type.create` request. `CatalogWire.tla` names that public map:
+`CreateAtomic`, `Publish`, and `MirrorAdvance`. A non-stuttering
+`CreateAtomic` step must equal an uninterrupted legal
+`CreateBegin;CreateFinish` pair; an already-resolved atomic create must equal
+the split model's stuttering `CreateBegin`. `AtomicRefinement` checks that
+relation directly. `MirrorAdvance` and `Publish` are the unchanged split
+actions, so every wire-model behavior is a split-model behavior up to
+stuttering. R3 safety therefore transfers to this coarse map at R3's fixed
+domains. The split stale-CAS branch remains proved but is not publicly
+wire-drivable; ticket 012 owns its conformance at the journal kernel, where
+expected-sequence append is a real separate operation.
 
 ## Running it
 
 ```bash
 bash verify/catalog/run.sh
+bash verify/catalog/run-r4.sh
 ```
 
 Two clean closures plus four required refutations, or the gate fails —
@@ -216,3 +220,100 @@ laws, not a nuisance: commit the trace beside the spec like the
 
 The R3 commands above are a separate gate: four `NoError` verdicts and
 two required `Error` verdicts. Any flipped verdict fails the claim.
+
+The R4 command first reruns the split closure canary, the honest atomic
+refinement, and its faithless control. It then runs the tagged daemon sabotage
+and every corrupted expected-state control before printing coverage or
+starting honest replay.
+
+## R4 first attempt (FINDING, 2026-08-13 — RETAINED EVIDENCE)
+
+The ticket-010 harness lives in `proto/go/catalogr4/`; its decisions log is
+`R4-DECISIONS.md`, and the minimized red evidence is
+`R4-FINDING-001.md`. It drives two real protod instances over NATS, uses only
+the narrow writ for actions and observations, locally verifies every journal
+head, and extracts resolve verdicts through the stateless concierge. Replica
+roles remain unbuilt, so `MirrorAdvance` uses the explicitly limited
+re-create-and-project substitute described in the decisions log; it does not
+claim the ADR-0009 prefix mechanism.
+
+The sampling method is five deterministic branch-witness schedules followed
+by 128 depth-24 uniform random walks over the stable enabled-action list.
+Walk `i` uses xorshift64 seed
+`0x17ca0001 + i * 0x9e3779b97f4a7c15`. This produced 133 schedules and 3,089
+model steps at the exact R2 domains (2 daemons / 3 values / 2 creators / data
+cap 2).
+
+Coverage and sensitivity are deliberately adjacent:
+
+| Measure | Result |
+|---|---:|
+| Corrupted expected-state sensitivity | **133 / 133 caught** |
+| Tagged protod sabotage (`AssertedIdentity`) | **caught** on first committed fact |
+| R2 distinct-state coverage | **1,326 / 12,707,989 = 0.010434381%** |
+| TLA action-disjunct coverage | **4 / 4**; untouched: none |
+| Semantic action-branch coverage | **7 / 7**; untouched: none |
+
+The low state percentage is a scope finding, not hidden by the 100%
+sensitivity number. Both negative-control classes ran before honest replay.
+
+Honest replay then stopped on directed schedule 5 after 17 driven steps. The
+four-action minimized witness has two creators snapshot an empty daemon
+catalog for different values; creator 2 appends value 2; creator 1's modeled
+Finish conflicts at the stale expected length, while the atomic wire
+`type.create` performs a fresh check and returns `created:true` for value 1.
+Observed authority catalog `[2,1]` therefore differs from modeled `[2]`.
+
+This is a refinement-seam finding, not a W1/W3 safety violation: the current
+wire request is atomic and serialized, so ticket 010's split Begin/Finish
+schedule cannot be interposed step-for-step through the public surface. Per
+the task's stop rule, no fix was attempted, no zero-divergence count exists,
+and ticket 009 / `VERIFICATION.md` remained unchanged at that point. The
+operator-ratified disposition and resumed coarse-map evidence follow below.
+
+The old split replay remains a regression test and still reproduces the
+finding. It is deliberately not the executable alphabet used by the resumed
+R4 gate.
+
+## R4 against the coarsened wire refinement (CLAIMED, 2026-08-13)
+
+**R4 against the coarsened wire refinement (CreateAtomic); the split-CAS
+branch's conformance is ticket 012's obligation.**
+
+The resumed gate ran at the exact R2 domains: 2 daemons, 3 values, 2 creator
+identities, and data cap 2. The bridge used TLC
+`2026.08.11.125311` (rev `0894c34`), jar sha256
+`ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f`,
+Oracle Java 21.0.2, and `-workers 1 -fp 1 -deadlock`. The split-model canary
+remained exactly 119,145 generated / 18,295 distinct / depth 16. The honest
+wire model closed at **4,306,627 generated / 281,269 distinct / depth 17** in
+4m08s. Its faithless `CreateAtomic` control appended `[val |-> 1, id |-> 2]`
+and violated `AtomicRefinement` at depth 2 (2 generated / 2 distinct); the
+verbatim trace is `CatalogWireBroken.cex.txt`.
+
+The executable corpus is three deterministic branch-witness schedules plus
+128 depth-24 uniform random walks. Walk `i` uses xorshift64 seed
+`0x17ca0001 + i * 0x9e3779b97f4a7c15`; each choice is uniform over the stable
+enabled-action enumeration. The gate ran the tagged sabotage first, then one
+corrupted expected state for every schedule, and only then the honest replay.
+
+| Measure | Result |
+|---|---:|
+| Honest lockstep replay | **0 divergences; 131 / 131 schedules, 3,079 steps** |
+| Corrupted expected-state sensitivity | **131 / 131 caught** |
+| Tagged protod sabotage (`AssertedIdentity`) | **caught** on first atomic create |
+| Raw model-state coverage | **1,077 / 12,707,989 = 0.008474984%** |
+| Coarsened action-disjunct coverage | **3 / 3**; untouched: none |
+| Semantic action-branch coverage | **5 / 5**; untouched: none |
+
+The state percentage is reported against the split R2 closure and is a sampled
+binary-conformance measure, not an exhaustive claim. State extraction used
+only the narrow writ and verified every returned journal head. As in the
+first attempt, `MirrorAdvance` uses the named re-create-and-project substitute
+because replica roles are unbuilt; this R4 claim does not cover verified
+origin-position copy, prefix preservation, replica read-only enforcement,
+lag transport, or authority/mirror storage separation.
+
+Run the full ordered gate from the repository root with
+`powershell -File verify/catalog/run-r4.ps1` or
+`bash verify/catalog/run-r4.sh`.

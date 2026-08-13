@@ -35,7 +35,7 @@ fence) and unique terminal outcome, for the register
   counterexample files into `verify/effector/`. Until it lands, the
   running code and its tests are at [go/effector/](go/effector/).
 
-## Catalog + ingress — R2 claimed, R3 in flight, R4 pending
+## Catalog + ingress — R2 + R3 + R4
 
 Claim: no admission on faith (every admitted frame's type digest was
 committed before admission), convergence (equal bytes yield one fact
@@ -49,16 +49,38 @@ monotonicity (the resolvable set never shrinks), and mirror integrity
   forged mirror, resetting mirror) each violated exactly the law it
   dropped, at depths 2/3/4/5; traces committed. A bounded check
   certifies only its bounds.
+- R3: Apalache 0.61.0 proved base, consecution, state safety, and action
+  safety from arbitrary `IndInv` states at fixed domains of 2 daemons / 3
+  values / 2 creators, with unbounded trace length and data-journal depth.
+  Removing CAS freshness produces a duplicate authority fact; blind ingress
+  separately violates admission safety. Both negative controls failed as
+  required.
+- **R4 against the coarsened wire refinement (CreateAtomic); the split-CAS
+  branch's conformance is ticket 012's obligation.** TLC checked that every
+  coarse atomic create is a legal uninterrupted split Begin;Finish trace (or
+  the resolving Begin's stutter) at the R2 domains: 281,269 distinct wire
+  states to closure, depth 17. The faithless bridge control violated
+  `AtomicRefinement` at depth 2. This is the named map by which the split
+  model's R3 safety transfers to the public wire model.
+- R4 binary evidence: three directed schedules plus 128 deterministic
+  depth-24 uniform random walks, 131 schedules / 3,079 steps total, replayed
+  against fresh real protod instances over embedded NATS with **zero
+  divergences**. Before that honest run, the tagged asserted-identity daemon
+  was caught and **131/131** corrupted expected-state schedules diverged.
+  Coverage: 1,077 raw model states (0.008474984% of the 12,707,989-state R2
+  closure), 3/3 coarse action disjuncts, 5/5 semantic branches.
 - Model abstractions, stated: digests are modeled as the identity
   function on values (content addressing plus the collision-resistance
-  assumption below); the resolve index is a definition (a pure fold of
-  the journal), so drift between the model's index and the
-  implementation's is outside R2 — that is the R4 bridge, ticket 010.
-- R3: inductive candidate stated in
-  [verify/catalog/CatalogInd.tla](verify/catalog/CatalogInd.tla), not
-  claimed; the climb is in progress.
+  assumption below); the harness maps those values to real derived digests.
+  The resolve index is a definition (a pure fold of the journal); R4 samples
+  that abstraction against state extracted through the narrow writ.
+- R4's `MirrorAdvance` is a named re-create-and-project substitute while
+  replica roles are unbuilt. It exercises derivation and union resolution,
+  but not ADR-0009 origin-position copy, prefix preservation, replica
+  read-only enforcement, lag transport, or authority/mirror separation.
 - Checkable at: [verify/catalog/](verify/catalog/) (spec, configs,
-  counterexample traces, run record).
+  counterexample traces, run record) and
+  [proto/go/catalogr4/](proto/go/catalogr4/) (executable oracle and driver).
 
 ## Journal and chain walls — R0/R1, model pending
 

@@ -61,3 +61,14 @@ runs AFTER tickets 011 (executable substrate assumptions) and 010
 (catalog R4) — those close proof-to-reality gaps; this one closes a
 proof-to-proof gap, and R4's lockstep work will expose the journal's
 exact observable interface before it gets modeled.
+
+## Received obligation (2026-08-13, from R4-FINDING-001)
+
+The catalog model's split-create (Begin/Finish, stale-CAS conflict) is
+undrivable at the wire — protod serializes create — so its conformance
+obligation lands HERE, where the seam is real: go/journal's
+expected-seq append under concurrent appenders is the begin/finish
+racing the branch models. This model's R4 must drive that racing
+directly against the journal API (which exposes the split naturally,
+as the effector's did). See verify/catalog/R4-FINDING-001.md for the
+full disposition.
