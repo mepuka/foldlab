@@ -35,6 +35,19 @@ func (err *InvalidUTF8Error) Error() string {
 	return fmt.Sprintf("chain entry %s is not valid UTF-8", err.Field)
 }
 
+// InvalidSequenceError refuses an entry position outside the common Go/JS
+// identity domain. Go can represent larger platform ints; the canonical wall
+// deliberately stops at JavaScript's exact-integer boundary.
+type InvalidSequenceError struct {
+	Seq int
+}
+
+func (err *InvalidSequenceError) Error() string {
+	return fmt.Sprintf("chain entry seq %d is not a safe unsigned integer", err.Seq)
+}
+
+const maxSafeSequence int64 = 1<<53 - 1
+
 func Canonicalize(jsonBytes []byte) ([]byte, error) {
 	value, err := Decode(jsonBytes)
 	if err != nil {
@@ -236,6 +249,9 @@ func EntryDigest(entry ChainEntry) (string, error) {
 	}
 	if !utf8.ValidString(entry.Prev) {
 		return "", &InvalidUTF8Error{Field: "prev"}
+	}
+	if entry.Seq < 0 || int64(entry.Seq) > maxSafeSequence {
+		return "", &InvalidSequenceError{Seq: entry.Seq}
 	}
 	var encoded bytes.Buffer
 	encoded.WriteString(`{"payload":`)

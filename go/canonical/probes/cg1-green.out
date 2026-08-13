@@ -6,8 +6,14 @@ Output:
 
   go-invalid-ff-refused=true field=payload
   go-invalid-fe-refused=true field=payload
+  go-invalid-sequence-refused=true seq=-1
+  go-invalid-sequence-refused=true seq=9007199254740992
+  go-valid-max-sequence-digest=d2338eb081d537359a754aa421eae568c07c95da25f41cd19d945135bf6b5b42 seq=9007199254740991
   ts-lone-surrogate-refused=true tag=InvalidUnicode field=payload reason=payload is not valid Unicode
+  ts-invalid-sequence-refused=true tag=InvalidSequence seq=-1
+  ts-invalid-sequence-refused=true tag=InvalidSequence seq=9007199254740992
+  cross-language-valid-max-sequence-digest=d2338eb081d537359a754aa421eae568c07c95da25f41cd19d945135bf6b5b42 seq=9007199254740991
   ts-replacement-scalar-digest=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
-  CG1 GATE PASS: both identity implementations refuse outside their Unicode domain
+  CG1 GATE PASS: both identity implementations agree on their Unicode and sequence domains
 
 Exit code: 0

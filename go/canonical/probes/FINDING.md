@@ -20,9 +20,15 @@ bun run go/canonical/probes/cg1.ts
 ```text
 go-invalid-ff-refused=true field=payload
 go-invalid-fe-refused=true field=payload
+go-invalid-sequence-refused=true seq=-1
+go-invalid-sequence-refused=true seq=9007199254740992
+go-valid-max-sequence-digest=d2338eb081d537359a754aa421eae568c07c95da25f41cd19d945135bf6b5b42 seq=9007199254740991
 ts-lone-surrogate-refused=true tag=InvalidUnicode field=payload reason=payload is not valid Unicode
+ts-invalid-sequence-refused=true tag=InvalidSequence seq=-1
+ts-invalid-sequence-refused=true tag=InvalidSequence seq=9007199254740992
+cross-language-valid-max-sequence-digest=d2338eb081d537359a754aa421eae568c07c95da25f41cd19d945135bf6b5b42 seq=9007199254740991
 ts-replacement-scalar-digest=19b4e8fa2dd74b761cf77894f1e4cf7fb008c95f69cfa055e7a74378da4d6c26
-CG1 GATE PASS: both identity implementations refuse outside their Unicode domain
+CG1 GATE PASS: both identity implementations agree on their Unicode and sequence domains
 ```
 
 Exit code: `0`; captured in `cg1-green.out`. The gate executes the actual Go
@@ -50,6 +56,13 @@ scoped suites as well.
   represents lone high/low surrogates in `payload` or `prev` as an
   `InvalidUnicode` refusal value. `foldChain` propagates its reason without an
   exception crossing the exported identity seam.
+- Both implementations share the exact sequence domain `0..2^53-1`. Go
+  returns `*InvalidSequenceError` for the integer costumes it can represent;
+  TypeScript returns `InvalidSequence` data for negative zero, non-finite,
+  fractional, negative, unsafe, and non-number runtime values before entering
+  the throwing general-purpose canonicalizer. `foldChain` performs this domain
+  check before sequence arithmetic. The shared gate refuses `-1` and `2^53`
+  on both sides and byte-compares the digest at the accepted `2^53-1` edge.
 - Existing valid-domain fixtures and digests remain byte-identical. No fixture
   was regenerated.
 
@@ -105,6 +118,12 @@ It does not claim source-event ordering is semantically meaningful or impose a
 dense-sequence requirement: unique sparse coordinates remain lawful. It does
 not alter merge-fact identity or any existing valid merge output.
 
+The sequence gate does not claim Go can represent JavaScript's `NaN`,
+infinities, fractions, negative zero, or non-number runtime costumes; Go's
+`ChainEntry.Seq` is an `int`. TypeScript negative controls cover those local
+representations. The common cross-language claim is limited to exactly
+representable integer positions `0..2^53-1`.
+
 ## Proposed merge-time DECISIONS entries
 
 Task 23 keeps its decision evidence here rather than editing the
@@ -126,10 +145,12 @@ resume and recovery. **Load-bearing? yes.**
 ### D<merge-2>. Chain-entry identity refuses invalid Unicode in both runtimes
 
 Decided: chain-entry identity never substitutes a replacement scalar or mints
-an identity outside the canonical Unicode domain. The Go `EntryDigest` and
+an identity outside the canonical Unicode and safe-unsigned sequence domains.
+The Go `EntryDigest` and
 `BuildChain` APIs return typed errors and every caller propagates or handles
-them; the TypeScript chain-entry identity lane refuses lone surrogates; a
-shared refusal vector proves both domains agree. Alternatives: panic; return a
+them; the TypeScript chain-entry identity lane refuses lone surrogates and
+invalid runtime numbers as data; a shared refusal vector proves both domains
+agree, including the accepted `2^53-1` edge. Alternatives: panic; return a
 sentinel digest; add a checked twin while retaining the unsafe export; fix only
 one runtime. Why: all four alternatives leave either an untyped failure, an
 identity collision, or a cross-language domain mismatch. **Load-bearing? yes.**
