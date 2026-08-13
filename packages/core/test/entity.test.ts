@@ -71,6 +71,61 @@ const arrayBacking = (): Backing => {
   }
 }
 
+// Raw byte payloads, INCLUDING bytes the walled meaning-fold refuses: NUL
+// (0x00), lone continuation bytes (invalid UTF-8), and the '=' separator.
+const rawByteArbitrary = FastCheck.uint8Array({ maxLength: 8 })
+const rawEventArbitrary = FastCheck.record({
+  seq: FastCheck.integer({ min: 0, max: 1_000 }),
+  payload: rawByteArbitrary,
+}).map(({ seq, payload }): StreamEvent => ({ stream: "raw", seq, payload }))
+const rawHistoryArbitrary = FastCheck.array(rawEventArbitrary, { maxLength: 24 })
+// One entity, so distinct payloads fold into a single meaning state.
+const oneEntity = (): string => "e"
+
+describe("entity meaning-fold totality (C1)", () => {
+  test("anchors() is total over arbitrary byte payloads", () => {
+    FastCheck.assert(
+      FastCheck.property(rawHistoryArbitrary, (history) => {
+        const c = makeCollector(memoryBacking(), oneEntity)
+        for (const e of history) c.ingest(e)
+        expect(() => c.anchors()).not.toThrow()
+      }),
+      {
+        examples: [[[{ stream: "raw", seq: 1, payload: new Uint8Array([0x00, 0x3d, 0x76]) }]]],
+        seed: 0x07ec_00c1,
+        numRuns: 500,
+        endOnFailure: false,
+      },
+    )
+  })
+
+  test("one NUL-key event does not permanently poison the collector", () => {
+    const c = makeCollector(memoryBacking(), oneEntity)
+    c.ingest({ stream: "raw", seq: 1, payload: new Uint8Array([0x00, 0x3d, 0x76]) }) // "\0=v"
+    expect(() => c.anchors()).not.toThrow()
+    // A later clean fact still resolves; the poison did not persist.
+    c.ingest(event("raw", 2, "a=b"))
+    const anchors = c.anchors()
+    expect(anchors).toHaveLength(1)
+    expect(anchors[0]!.key).toBe("e")
+  })
+
+  test("distinct invalid bytes do not collide in meaning, yet the chain remembers them", () => {
+    const withFirstByte = (b: number): EntityView => {
+      const c = makeCollector(memoryBacking(), oneEntity)
+      return c.ingest({ stream: "raw", seq: 1, payload: new Uint8Array([b, 0x3d, 0x76]) }) // <b>"=v"
+    }
+    const a = withFirstByte(0xff)
+    const b = withFirstByte(0xfe)
+    // The identity fold commits to the exact bytes: heads differ.
+    expect(a.head).not.toBe(b.head)
+    // The meaning fold FORGIVES both (neither is a lawful key=value), so no
+    // lossy U+FFFD collision writes a spurious shared key.
+    expect(stateDigest(a.state)).toBe(stateDigest(b.state))
+    expect(a.state.count).toBe(0)
+  })
+})
+
 describe("entity collector laws", () => {
   test("EC1: collector over the mixed stream = folds of each entity's subsequence", () => {
     FastCheck.assert(

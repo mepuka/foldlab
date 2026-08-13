@@ -19,6 +19,7 @@
 
 import {
   extend,
+  kvStep,
   stateDigest,
   streamSeed,
   type Head,
@@ -60,14 +61,16 @@ const emptyView = (key: string): EntityView => ({
   events: 0,
 })
 
-const applySync = (state: KVState, e: StreamEvent): KVState => {
-  const text = new TextDecoder().decode(e.payload)
-  const eq = text.indexOf("=")
-  if (eq <= 0) return state // non-fact payloads fold as no-ops on meaning
-  const entries = new Map(state.entries)
-  entries.set(text.slice(0, eq), text.slice(eq + 1))
-  return { entries, count: state.count + 1 }
-}
+/**
+ * The entity meaning-fold: delegates to the one walled `kvStep`. A payload
+ * outside the walled domain (non-UTF-8, NUL key/value, count overflow) is
+ * FORGIVEN as a meaning no-op — the identity fold (head) still commits to it,
+ * so the chain remembers what meaning drops and `anchors()` stays total over
+ * arbitrary bytes. Previously a second, unwalled decoder lived here; it lossily
+ * mapped invalid bytes to U+FFFD (colliding distinct payloads) and admitted NUL
+ * keys that later made `stateDigest` throw.
+ */
+const applySync = (state: KVState, e: StreamEvent): KVState => kvStep(state, e) ?? state
 
 export interface Collector {
   /** Fold one event into its entity: O(1), both folds extended. */
