@@ -324,6 +324,25 @@ Decided: the binary serves until stdin closes (portable for Windows
 test harnesses) or interrupt. Same pattern as journald's implicit
 stdin lifetime, made explicit. **Load-bearing? no.**
 
+## Issue 44 — service-lifetime finding (2026-08-13)
+
+### D?? FINDING: the explicit service-mode name is not ratified
+
+Decided: preserve D29 as the default and stop before adding a public flag.
+The real binary exits cleanly immediately after its ready line when stdin is
+already EOF; that behavior is now process-tested as D29's negative control.
+The missing capability is a second, explicit foreground service lifetime that
+ignores stdin EOF and stops on context cancellation or an operating-system
+interrupt. Recommendation for the required grill: name it `--serve` and state
+explicitly that it does not daemonize. Alternatives: `--detach` (short, but
+conventionally promises fork/reparent/stdio behavior this process will not
+provide); `--no-stdin-shutdown` (mechanically precise, user-intent opaque);
+silently change the default (breaks the Windows harness shutdown contract).
+Why: D29 ratifies only the default, the branch-only DX dossier proposes
+`--detach` or `--no-stdin-shutdown`, and issue #44 proposes `--detach` or
+`--serve`; no authority selects among them. **Load-bearing? yes** — the chosen
+name is a public CLI contract and determines what service managers may infer.
+
 ## Pin findings (recorded for the next builder)
 
 - At 4.0.0-rc.108, `ast.annotations` on a checked schema still carries
