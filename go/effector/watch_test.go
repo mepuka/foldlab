@@ -18,21 +18,24 @@ import (
 
 func collect(
 	t *testing.T,
+	c context.Context,
 	feed <-chan effector.Transition,
 	n int,
 ) []effector.Transition {
 	t.Helper()
 	out := make([]effector.Transition, 0, n)
-	deadline := time.After(10 * time.Second)
 	for len(out) < n {
 		select {
 		case transition, ok := <-feed:
 			if !ok {
+				if c.Err() != nil {
+					t.Fatalf("context ended after %d of %d transitions", len(out), n)
+				}
 				t.Fatalf("feed closed after %d of %d transitions", len(out), n)
 			}
 			out = append(out, transition)
-		case <-deadline:
-			t.Fatalf("timed out after %d of %d transitions", len(out), n)
+		case <-c.Done():
+			t.Fatalf("context ended after %d of %d transitions", len(out), n)
 		}
 	}
 	return out
@@ -59,7 +62,10 @@ func TestWatchObservesClaimThenCommit(t *testing.T) {
 		t.Fatalf("commit: %v", err)
 	}
 
-	seen := collect(t, feed, 2)
+	// The feed and its wait share one bound: the context that created the
+	// feed. A second wall clock near 10s races the ordered consumer's 5s x 2
+	// inactivity recovery at the exact moment it recreates and redelivers.
+	seen := collect(t, c, feed, 2)
 	held, committed := seen[0], seen[1]
 	if held.State != effector.Held || held.Claim == nil {
 		t.Fatalf("first transition is not a held claim: %+v", held)
@@ -106,7 +112,7 @@ func TestWatchObservesStealChain(t *testing.T) {
 		t.Fatalf("commit: %v", err)
 	}
 
-	seen := collect(t, feed, 3)
+	seen := collect(t, c, feed, 3)
 	fences := []uint64{0, 0, 0}
 	for i, transition := range seen {
 		if transition.Claim != nil {
@@ -145,7 +151,7 @@ func TestLateWatcherCatchesUp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("watch: %v", err)
 	}
-	catchUp := collect(t, feed, 1)[0]
+	catchUp := collect(t, c, feed, 1)[0]
 	if !catchUp.Initial {
 		t.Fatalf("catch-up transition must be Initial: %+v", catchUp)
 	}
@@ -158,7 +164,7 @@ func TestLateWatcherCatchesUp(t *testing.T) {
 	if _, err := e.Claim(c, after, "late", time.Minute); err != nil {
 		t.Fatalf("live claim: %v", err)
 	}
-	live := collect(t, feed, 1)[0]
+	live := collect(t, c, feed, 1)[0]
 	if live.Initial || live.Digest != after || live.State != effector.Held {
 		t.Fatalf("live transition is wrong: %+v", live)
 	}
@@ -177,15 +183,19 @@ func TestWatchEndsWithContextRegisterRemains(t *testing.T) {
 		t.Fatalf("watch: %v", err)
 	}
 	cancel()
-	deadline := time.After(10 * time.Second)
 	for {
 		select {
 		case _, ok := <-feed:
 			if !ok {
+				if c.Err() != nil {
+					t.Fatal("context ended before feed closed after cancel")
+				}
 				goto closed
 			}
-		case <-deadline:
-			t.Fatal("feed did not close after cancel")
+		case <-c.Done():
+			// The cancelable child drives feed closure; its 30s parent is the
+			// one shared test bound. Another 10s clock would race recovery.
+			t.Fatal("context ended before feed closed after cancel")
 		}
 	}
 closed:
