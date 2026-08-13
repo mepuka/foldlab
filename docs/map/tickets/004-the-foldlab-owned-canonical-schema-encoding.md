@@ -118,26 +118,26 @@ docs/research/2026-08-13-language-ontology-frontier.md):
 
 ## Resolution (2026-08-14, operator + Mac seat, grilled on issue #23)
 
-D1 — IDENTITY RUNS ON THE OWNED WALK. flb.type.v0's canonical walk is
+ticket-004/D1 — IDENTITY RUNS ON THE OWNED WALK. flb.type.v0's canonical walk is
 the identity substrate; the SchemaAST fold (foldlab.schema.v1) is
 DERIVATION machinery — first member of the semantic fold family, its
 exhaustiveness check celebrated there — never identity. Vendor churn
 cannot reach the digest. bytes-sha256-v1 remains honestly
 attestation-grade until the owned scheme ships.
-D2 — NORMALIZE IS NAMED. identity = SHA-256(canonical(normalize(term))).
+ticket-004/D2 — NORMALIZE IS NAMED. identity = SHA-256(canonical(normalize(term))).
 The certify-path union-member sort IS normalize's first clause; the
 partial-walk position-preserving discipline is the OTHER reading and
 both are now named. Required properties of any normalize: total,
 terminating, confluent, IDEMPOTENT (property-tested). Every normalize
 change is a new scheme.
-D3 — RECURSION IS BANNED AS STATED LAW (one-line test now); the
+ticket-004/D3 — RECURSION IS BANNED AS STATED LAW (one-line test now); the
 Unison SCC rule (hash the SCC, order members by cycle-removed hashes,
 address digest.n) is PRE-RATIFIED as the designated successor. No
 cycle machinery until a consumer exists (workflow.v0 is the first
 plausible one).
-D4 — DUAL-RECORD. A commit names a digest under a scheme; re-derive
+ticket-004/D4 — DUAL-RECORD. A commit names a digest under a scheme; re-derive
 is refuted by the append-only axiom. Scheme bridges (old digest, new
 digest, scheme pair) are themselves evidence records.
-D5 — the trusted-base statement takes the EXECUTABLE-ASSUMPTION form:
+ticket-004/D5 — the trusted-base statement takes the EXECUTABLE-ASSUMPTION form:
 file list, per file (a) what could betray us, (b) which wall or
 control catches it, (c) which substrate assumptions it leans on.

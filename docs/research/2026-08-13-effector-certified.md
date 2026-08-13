@@ -1,14 +1,20 @@
 <!-- Promoted from the bug-breaker evidence branch (worktree-agent-aaf7f65ab3380d246 @ dca06c265, _bugs/). Executable repros remain on that branch; the regression tests merged to main encode the confirmed findings. -->
 
-# Effector (A6 register) — CERTIFIED against its machine-checked theorem
+# Effector (A6 register) — historical running-binary audit
 
-**Result:** the register whose SAFETY is a machine-checked theorem (Apalache
-inductive invariant, R4 lockstep) survived an executed adversarial attack on the
-**running Go binary** with **no gap**. This is a positive
-compositionality-of-proof result: the proven model composes faithfully into the
-shipped code.
+> **Public-evidence status:** the branch-local attack artifacts and the
+> historical R3/R4 model artifacts cited below are not shipped in this
+> repository. The checkable evidence here is the EL0–EL10 Go suite. Per
+> `VERIFICATION.md` and ticket 013, treat the formal claim as HELD until
+> the specs, harness, controls, and fresh run records are public.
 
-**One-line reading:** the fencing theorem composes into the binary because every
+**Historical result reported by the evidence branch:** the register survived an
+executed adversarial attack on the **running Go binary** with **no gap** against
+the branch's model comparison. In this checkout the reproducible conclusion is
+narrower: EL0–EL10 pass on the running code; formal model-to-binary composition
+is not a public claim until ticket 013 lands its evidence.
+
+**One-line historical reading:** the fencing argument composes into the binary because every
 state change funnels through **one lawful admission point** — a revision-CAS on a
 single authority key — and the one premise the code cannot enforce (substrate
 immutability) is **lifted into an executable credential gate** rather than
@@ -75,7 +81,7 @@ re-incurred a proof obligation and dropped it:
   law-violating source.
 
 The effector is the **inverse**: one admission point, reused everywhere, so the
-theorem's guarantee is inherited rather than re-derived — and the single
+branch report found the guarantee inherited rather than re-derived — and the single
 obligation the substrate cannot discharge is made an explicit, executable
 credential law (`substrate/assumptions_test.go`) instead of an unstated
 assumption. **That is what "the proof composes" looks like in a binary.**

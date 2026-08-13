@@ -43,7 +43,8 @@ rung definitions. Scoped laws:
 - `catalog/` — catalog + ingress (SPEC laws W1–W5): R2 at the gate
   caps, R3 inductive invariant, four faithless controls. R4 is ticket
   010.
-- Owed: `effector/` (ticket 013 ports the proven register's evidence
-  out of `.reference/`, an untracked predecessor repository absent from
-  this checkout), `journal/` (ticket 012, composed into the catalog
+- Owed: `effector/` (ticket 013 ports the historical register-model
+  evidence out of `.reference/`, an untracked predecessor repository
+  absent from this checkout; the formal claim is held until then),
+  `journal/` (ticket 012, composed into the catalog
   model as a refinement).

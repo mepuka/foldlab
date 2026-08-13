@@ -62,7 +62,8 @@ Landmarks below those five:
   [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
   campaigns (crash storms, fleet runs), each with a frozen spec and a
   frozen verifier that checks the exported run bundle by recomputation.
-- [go/effector/](go/effector/) — the proven register, as running Go.
+- [go/effector/](go/effector/) — the running register and its EL0–EL10
+  executable contract; public formal artifacts remain ticket 013.
 
 ## What does this have to do with Effect?
 
@@ -176,7 +177,8 @@ line, or executed output that backs it.
   [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
   campaigns (crash storms, fleet runs), each with a frozen spec and a
   frozen verifier that checks the exported run bundle by recomputation.
-- [go/effector/](go/effector/) — the proven register, as running Go.
+- [go/effector/](go/effector/) — the running register and its EL0–EL10
+  executable contract; public formal artifacts remain ticket 013.
 
 The design shelf — the recent research and design lanes, merged:
 

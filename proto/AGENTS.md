@@ -5,7 +5,12 @@ edited. This file states the bullet's enforceable laws and the
 graduation map. Vocabulary lives in `CONTEXT.md`; every decision the
 spec did not fix is logged in `DECISIONS.md`.
 
-## Laws (each is a test; see SPEC.md W1–W10 for the full sentences)
+## Laws (see SPEC.md W1–W10 for the full sentences)
+
+`docs/laws/INDEX.md` maps every W, concierge C, EC, EL, and WL law to
+its executable evidence and stated bound; the root Go gate rejects a
+missing law or stale test marker. A named law without an indexed test is
+held, not silently supported by a nearby comment.
 
 - No asserted identity: the daemon re-derives every digest it commits
   (`proto/go/protod/conformance_test.go`).
@@ -51,6 +56,11 @@ Root gates must stay untouched and green (`bun run typecheck`,
 `bun test`, the Go gate in `go/`). Tracer data is disposable: all
 JetStream stores live in temp dirs; nothing outside `proto/` is
 written.
+
+Every NATS-backed top-level test acquires a fresh in-process daemon and
+temporary store and releases it in cleanup. Tests never share a fixed
+port, embedded server, or durable state; intentional subtests may share
+only their enclosing test's explicitly ordered scenario.
 
 ## Layout
 

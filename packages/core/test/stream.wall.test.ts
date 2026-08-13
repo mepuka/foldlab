@@ -61,6 +61,14 @@ describe("the stream wall: TS digests vs frozen Go fixtures", () => {
     expect(headFrom(streamSeed("beta"), beta)).toBe(fixture["betaHead"] as Head)
   })
 
+  test("textual heads admit only the canonical lowercase spelling", () => {
+    const head = streamSeed("alpha")
+    expect(() => headFrom(head.toUpperCase(), alpha.slice(0, 1)))
+      .toThrow("head must be exactly 32 lowercase hexadecimal bytes")
+    expect(() => headFrom(head.toUpperCase(), []))
+      .toThrow("head must be exactly 32 lowercase hexadecimal bytes")
+  })
+
   test("merge fact digest, merged head, fold state", () => {
     expect(factDigest(fact)).toBe(fixture["mergeFactDigest"] as Head)
     const merged = Effect.runSync(applyMerge(fact, sources))

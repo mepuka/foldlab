@@ -6,6 +6,8 @@ Format per entry: what was decided / alternatives / why /
 Scope, stated: this began as the tracer bullet's log and is now the
 repository's decision log — entries from D38 on cover `packages/core`,
 `go/canonical`, and the verification lane as well as `proto/`.
+Its decision namespace is `proto/D<n>`; bare `D<n>` headings below are
+retained historical spelling, not globally unique identifiers.
 
 ## Numbering rule (added 2026-08-13, after the D44–D48 collision)
 
@@ -30,8 +32,8 @@ under Task 09 is what that costs. So:
 5. D-numbers, map tickets (`docs/map/tickets/NNN`), ADRs
    (`docs/adr/NNNN`), and task numbers (`scratch/`) are four
    independent sequences that collide constantly at the same small
-   integers. Always cite with the prefix — "D46", "ticket 014",
-   "ADR-0010", "Task 09" — never as a bare number.
+   integers. Always cite with the namespace or kind — "proto/D46",
+   "ticket 014", "ADR-0010", "Task 09" — never as a bare number.
 
 ## Wire and subjects
 
@@ -808,7 +810,8 @@ half of the terminal-immutability disposition.
 
 ## Task 17 — catalog R4 lockstep conformance (2026-08-13)
 
-Harness-local decisions D1–D11 live in `verify/catalog/R4-DECISIONS.md`
+Harness-local decisions `catalog-r4/D1`–`catalog-r4/D11` live in
+`verify/catalog/R4-DECISIONS.md`
 (the task's decisions-encountered log). This entry records the one
 repo-wide decision at merge.
 
@@ -828,7 +831,7 @@ the shipped binary); building multi-handler concurrency to satisfy a
 harness (inverted priorities); silently treating the fresh wire check as
 the earlier Begin snapshot (a false replay). Why: the shipped wire
 request really is atomic; the claim must name the map it was earned
-against. Details and sub-decisions: R4-DECISIONS D9–D11.
+against. Details and sub-decisions: `catalog-r4/D9`–`catalog-r4/D11`.
 **Load-bearing? yes** — every consumer of the R4 claim inherits exactly
 this map and no more.
 
@@ -988,3 +991,67 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## GitHub #33 — anti-tunnel integrity (2026-08-13)
+
+### D??. Decision IDs are namespace-qualified at every cross-file citation
+
+Decided: the repository log is `proto/D<n>`, catalog proof logs are
+`catalog-r3/D<n>` and `catalog-r4/D<n>`, ticket 004 decisions are
+`ticket-004/D<n>`, and the refusal-corpus map rows are `estate-D<n>`.
+Existing bare headings may remain inside a file after that file declares its
+namespace; references leaving the local table use the qualified form.
+Alternatives: globally renumber every historical decision; rely on nearby prose
+to disambiguate. Why: renumbering rots citations, while four live D1 values
+already make proximity an unreliable key. **Load-bearing? yes** — decisions are
+evidence only when a citation identifies one record.
+
+### D??. The public effector contract is EL0–EL10; its formal claim is held
+
+Decided: bind current builds to the shipped EL0–EL10 tests and mark the
+historical R3/R4 claim HELD until ticket 013 commits the specs, harness,
+controls, and fresh run records. Alternatives: reconstruct a transition-table
+spec from tests in this task; continue calling absent predecessor artifacts a
+public theorem. Why: tests can state an executable contract but cannot recreate
+or independently verify the missing model evidence. **Load-bearing? yes** — a
+claim must be checkable at the path the ledger names.
+
+### D??. Named laws have a checked index with explicit held states
+
+Decided: `docs/laws/INDEX.md` is the complete checked index for W1–W10,
+C1–C5, EC1–EC4, EL0–EL10, and WL1–WL4. The root gate requires the exact set and
+an executable test marker for every row, and carries a stale-marker negative
+control. `effector/WL1` and `effector/WL2` remain indexed but HELD by issue #15:
+the newer coordinator evidence shows `History:1` eviction can lose a transition,
+so changing a deadline or sharing a server would mask the finding. Alternatives:
+omit held laws; treat comments as tests; fix #15 without its required spec
+decision. Why: an obligation does not disappear when refuted, and an index that
+cannot represent “held” would overclaim. **Load-bearing? yes.**
+
+### D??. Canonical textual identities and refusal tags have one spelling
+
+Decided: textual stream heads accept exactly 64 lowercase hexadecimal
+characters, matching the repository's canonical digest spelling, and the
+Effect-channel stream error is `MalformedEventPayload` so it cannot collide
+with the structurally incompatible semilattice `MalformedPayload` value.
+Alternatives: normalize uppercase; leave same-tag shapes to import context;
+rename the semilattice refusal (overlaps the completed issue #28 binary-source
+repair). Why: aliases at an identity boundary and incompatible values under one
+discriminator both erase information. **Load-bearing? yes** for identity;
+**no** for which honest tag received the longer name.
+
+### D??. Executable assumptions and isolated in-process NATS are repository laws
+
+Decided: assumption claims name trusted files, betrayal modes, their detecting
+wall/control, and imported assumptions. NATS-backed top-level tests each own a
+fresh `DontListen`/`InProcessServer` server and temp store; ordered subtests may
+share only their enclosing scenario. Alternatives: prose-only assumptions;
+fixed ports; one suite-global server reset by convention. Why: a hidden shared
+server lets one test lend state to another, while boot churn is a measurement
+cost and not a correctness license. **Load-bearing? yes.**
+
+Bounded residual: this task does not consolidate canonicalizer copies, embedded
+NATS harness helpers, or the transfleet fork, and does not rename the broader
+Session vocabulary. No new behavioral counterexample in those inventories was
+produced here; wholesale refactors would overlap active lanes and manufacture a
+larger proof obligation than issue #33 authorizes.

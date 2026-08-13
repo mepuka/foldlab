@@ -44,6 +44,11 @@ How this repository is worked. Each line is law, not narration.
   verification: two implementations sharing a bug agree, which is how
   `-0` survived until RFC 8785's Appendix B was made the referee. Name
   an oracle outside both sides, or the wall proves only consensus.
+- **Assumptions are executable.** A claim that depends on a substrate,
+  credential, topology, or runtime assumption names the trusted files,
+  what each could betray, the wall or negative control that catches it,
+  and any lower assumptions it imports. Prose-only assumptions do not
+  license a claim.
 - **A prover that cannot fail proves nothing.** Every gate ships its
   negative controls, each refuted on exactly the law it dropped, traces
   committed (`verify/AGENTS.md`).
@@ -106,7 +111,13 @@ bun test
 cd go && gofmt -l .
 cd go && go vet ./...
 cd go && go test ./...
+cd proto/go && gofmt -l .
+cd proto/go && go vet ./...
+cd proto/go && go test ./...
+cd proto/ts && bun install --frozen-lockfile
+cd proto/ts && bunx tsc --noEmit
+cd proto/ts && bun test .
 ```
 
-`gofmt -l .` must print nothing. The optional wasm wall is
+Both `gofmt -l .` commands must print nothing. The optional wasm wall is
 `bun run build:wasm && bun test`.

@@ -63,7 +63,10 @@ as plain functions. `kvSemilattice` joins them for the same reason and
 not by analogy: its `projectKV` output goes straight into `stateDigest`,
 so the join stays outside Effect exactly where the digests are minted. Effect-shaped surfaces carry `Data.TaggedError`
 failures in the typed error channel (`stream.ts`: `MergeGap`,
-`MalformedPayload`, `CompactionBoundary`, and the rest). Internal
+`MalformedEventPayload`, `CompactionBoundary`, and the rest). The pure
+semilattice value remains `MalformedPayload`; the distinct tag is
+intentional because its `{stream, seq}` shape is not the Effect error's
+`{event}` shape. Internal
 canonical-encoder range violations throw `RangeError` — they are
 programmer errors about the encoding domain, not refusals a caller
 repairs. The split is deliberate: Effect stays OUTSIDE the

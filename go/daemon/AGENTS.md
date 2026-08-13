@@ -47,6 +47,6 @@ anywhere yet.
 | Ingress refuses what does not resolve | GRADUATED, NARROWED | SPEC laws W4/W8 — `proto/go/protod/ingress.go`. Two ratified narrowings: admission checks identity resolution only, never payload conformance (`proto/SPEC.md`), and the never-a-silent-drop absolute has two carve-outs — a request with no reply inbox, and substrate failure (DECISIONS D3, D4) |
 | Authority journal imports nothing | GRADUATED (authority half) | `proto/go/protod/protod.go` writes only journals it owns |
 | Replica is a verified read-only mirror | UNBUILT | ADR-0009 ratified it; a stated non-goal of the tracer's scope |
-| Decisions go through the effector | UNBUILT here | The proven register lives in `go/effector/`, i.e. beside the daemon rather than behind its seam; effector operations are a stated tracer non-goal |
+| Decisions go through the effector | UNBUILT here | The running EL0–EL10 register lives in `go/effector/`, i.e. beside the daemon rather than behind its seam; its public formal evidence remains ticket 013, and effector operations are a stated tracer non-goal |
 | Evidence is served, never owned | GRADUATED | SPEC law W6, verify-on-read — `proto/go/protod/read.go` |
 | Stdlib + pinned nats only; gofmt/vet/test | GRADUATED | `proto/go/go.mod`, gates in `proto/AGENTS.md` |

@@ -12,9 +12,11 @@ blocked-by: []
 R4's lockstep evidence proves protod agrees with the hand-restated Go
 oracle over the sampled corpus. Nothing independently establishes that
 the oracle still denotes the checked TLA relation — the producer's
-restated semantics referee their own conformance (external review,
-FINDING-ORACLE-001; the eXtreme-Modelling caveat recorded at R4's
-birth, matured into an obligation). The existing controls each mutate
+restated semantics referee their own conformance. This is an inference
+from shipped evidence, not a missing finding: `catalog-r4/D1` in
+`verify/catalog/R4-DECISIONS.md` says the executable oracle restates
+`Catalog.tla`, while `catalog-r4/D6` enumerates controls at other seams.
+The existing controls each mutate
 a different seam (TLA bridge, daemon identity, comparator); none
 mutates this one.
 

@@ -59,8 +59,9 @@ the whole model: **evidence** (anything recomputable from bytes —
 facts, folds, anchors, catalogs) is never owned and federates freely;
 **decisions** (anything two parties could legitimately disagree on —
 named pointers, fork adoptions, committed merge orders) are
-single-homed per digest behind the effector, whose safety is a proven
-theorem; **absence** (lag, never-created, refused) is a typed refusal,
+single-homed per digest behind the effector, whose shipped EL0–EL10
+suite checks the running contract (the historical formal claim is HELD
+pending ticket 013); **absence** (lag, never-created, refused) is a typed refusal,
 and senders own retry.
 
 1. **The client's writ is NARROW.** The TS adapter may READ anything

@@ -317,9 +317,11 @@ envelope refuses what the proofs do not cover), ticket 014's fold
 algebra, the JCS differential lane, and the 2026-08-13 external review
 cycle: eleven filed findings fixed and closed same-day, the refusal
 walls (one meaning-fold; unforgeable brands; cross-language identity
-domains closed at a shared frozen vector), and the effector CERTIFIED
-clean against its machine-checked theorem on the running binary
-(docs/research/2026-08-13-effector-certified.md). Tickets 015 and 016
+domains closed at a shared frozen vector), and the effector's shipped
+EL0–EL10 suite survived the running-binary audit
+(`docs/research/2026-08-13-effector-certified.md`). Its historical
+machine-checked R3/R4 results are HELD in `VERIFICATION.md` until ticket
+013 ships the public artifacts. Tickets 015 and 016
 were cut; both gate on 004. Newer tickets 017-021 (journaled outcomes,
 register store, NATS resolution, the Effect surface, JS-runtime
 resolution) live in docs/map/tickets/; ticket 020's phase 1

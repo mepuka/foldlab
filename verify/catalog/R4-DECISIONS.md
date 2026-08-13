@@ -5,7 +5,9 @@ task 17. The harness home is `proto/go/catalogr4/`; the only file added to
 the daemon package is the tagged sabotage build
 `proto/go/protod/catalogr4_sabotage.go`.
 
-## D1. The executable oracle restates `Catalog.tla` at the R2 bounds
+Decision IDs in this file are namespaced `catalog-r4/D<n>`.
+
+## catalog-r4/D1 — The executable oracle restates `Catalog.tla` at the R2 bounds
 
 Decided: the harness has a small Go state machine with exactly 2 daemons,
 3 values, 2 creators, data cap 2, and the four-action alphabet
@@ -18,7 +20,7 @@ is deliberately direct and reviewable; it does not import daemon behavior.
 **Load-bearing? yes** — a drift from `Catalog.tla` would invalidate every
 comparison.
 
-## D2. Sampling is directed branch witnesses plus seeded uniform walks
+## catalog-r4/D2 — Sampling is directed branch witnesses plus seeded uniform walks
 
 Decided: five short directed schedules guarantee every semantic branch,
 then 128 deterministic walks run to depth 24. Walk `i` uses xorshift64 with
@@ -29,7 +31,7 @@ DPOR. Why: 12.7M fresh embedded-daemon replays are not the requested claim,
 and state coverage makes the sampling shortfall explicit. **Load-bearing?
 yes** — the method and seeds are part of the bounded empirical claim.
 
-## D3. Every schedule receives fresh real daemons
+## catalog-r4/D3 — Every schedule receives fresh real daemons
 
 Decided: each replay acquires two real `protod` instances, each with its own
 embedded NATS and temporary JetStream store. Alternatives: reset and reuse;
@@ -37,7 +39,7 @@ different journal names in one long-lived daemon. Why: no prior schedule may
 lend catalog resolution or journal entries to the next one. **Load-bearing?
 no** — an independently verified reset could replace process freshness.
 
-## D4. State extraction stays inside the narrow writ
+## catalog-r4/D4 — State extraction stays inside the narrow writ
 
 Decided: catalog and data state are read with `journal.read`; every claimed
 head is recomputed from the returned entries. Resolve verdicts are read
@@ -49,7 +51,7 @@ by publishing (would mutate on presence). Why: the writ sufficing to audit the
 daemon is part of R4's claim. **Load-bearing? yes** — the frontier has a cap of
 16, so this probe is complete only because R2 has 3 values.
 
-## D5. `MirrorAdvance` uses a named, lossy substitute
+## catalog-r4/D5 — `MirrorAdvance` uses a named, lossy substitute
 
 Decided: because replica roles are unbuilt, advancing `mirror[d][o]` recreates
 the origin structure at daemon `d` through `type.create`, records it in a
@@ -62,7 +64,7 @@ prefix preservation, replica read-only enforcement, lag transport, or
 authority/mirror storage separation. **Load-bearing? yes** — R4 cannot cover
 ADR-0009's replica law until the real role exists.
 
-## D6. Negative controls precede honest pass counts
+## catalog-r4/D6 — Negative controls precede honest pass counts
 
 Decided: the corpus-wide expected-state control mutates one post-step
 observation in every schedule (cycling catalog, mirror, data, and resolve) at
@@ -74,7 +76,7 @@ honest production file under a runtime flag. Why: both controls drive real
 NATS replies, while no sabotage enters a normal build. **Load-bearing? yes**
 — a harness that cannot fail does not establish conformance.
 
-## D7. Create halves are mapped by deferring the wire request to Finish
+## catalog-r4/D7 — Create halves are mapped by deferring the wire request to Finish
 
 Decided: an absent `CreateBegin` stages its body in harness state; its
 `CreateFinish` sends the real `type.create`. A resolving Begin sends a create
@@ -87,7 +89,7 @@ mapping that agrees on the non-racing traces. **Load-bearing? yes** — the
 first stale different-value conflict proves this mapping cannot realize the
 full model alphabet; see `R4-FINDING-001.md`.
 
-## D8. Divergence is minimized by deterministic action deletion
+## catalog-r4/D8 — Divergence is minimized by deterministic action deletion
 
 Decided: after the first honest disagreement, attempt action removals in
 source order; keep a removal only when the remaining schedule is model-enabled
@@ -96,7 +98,7 @@ sampled trace; randomized delta debugging. Why: the four-action witness is
 small enough to audit and byte-stable across runs. **Load-bearing? no** — a
 stronger reducer may replace it without changing the finding.
 
-## D9. The public refinement map coarsens create to `CreateAtomic`
+## catalog-r4/D9 — The public refinement map coarsens create to `CreateAtomic`
 
 Decided: retain the proved split `CreateBegin` / `CreateFinish` actions in
 `Catalog.tla`, but expose `CreateAtomic` as the executable wire action in
@@ -107,11 +109,12 @@ Alternatives: add a test-only pause to protod; silently treat the fresh wire
 check as the earlier Begin snapshot; discard the split model. Why: the shipped
 wire request really is atomic, while the split model remains the safety proof
 and covers the future multi-handler deployment. The stale-CAS conformance
-branch moves to ticket 012's journal kernel. This supersedes D1 and D7 only
+branch moves to ticket 012's journal kernel. This supersedes
+`catalog-r4/D1` and `catalog-r4/D7` only
 for the resumed wire map; their finding history remains evidence.
 **Load-bearing? yes** — R4 is claimed only against this named map.
 
-## D10. TLC checks the coarse step against the split transition functions
+## catalog-r4/D10 — TLC checks the coarse step against the split transition functions
 
 Decided: factor pure `CreateBeginResult` and `CreateFinishResults` operators
 out of `Catalog.tla` without changing its actions, then require every direct
@@ -125,7 +128,7 @@ prevents proof and bridge drift, and the required refutation proves TLC is
 actually observing the relation. **Load-bearing? yes** — this is the checked
 step that transfers R3 safety to the coarse map.
 
-## D11. Regenerate and gate the corpus in strict control-first order
+## catalog-r4/D11 — Regenerate and gate the corpus in strict control-first order
 
 Decided: the coarse corpus has three deterministic branch witnesses followed
 by the same 128 seeded depth-24 walks. This yields 131 schedules / 3,079 steps
@@ -135,6 +138,6 @@ sabotage, all 131 corrupted expected-state schedules, coverage, and only then
 131 honest schedules. Alternatives: retain the split corpus and project it;
 publish a pre-control honest count. Why: schedules must contain only drivable
 wire behaviors, and both failure modes must be demonstrated before a pass
-count has evidentiary value. This supersedes D2's five split witnesses while
+count has evidentiary value. This supersedes `catalog-r4/D2`'s five split witnesses while
 retaining its seed formula. **Load-bearing? yes** — these counts and this
 ordering bound the R4 claim.

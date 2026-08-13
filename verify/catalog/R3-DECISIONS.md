@@ -5,7 +5,9 @@ R3 induction hypothesis after the Gen-bound audit finding. Every verdict
 cited here names its verbatim log under `_runlogs/`; `WORKLOG.md` is the
 chronological record and `README.md` carries the run record.
 
-## D1. `catalog = Gen(3)`, because 3 is the natural maximum, not because 3 passed
+Decision IDs in this file are namespaced `catalog-r3/D<n>`.
+
+## catalog-r3/D1 — `catalog = Gen(3)`, because 3 is the natural maximum, not because 3 passed
 
 Decided: raise the hypothesis bound on `catalog` from `Gen(2)` to
 `Gen(3)`.
@@ -31,7 +33,7 @@ the invariants being proved, so a hypothesis that cannot express the
 states it permits is not an induction over it).
 **Load-bearing? yes** — this is the audit finding itself.
 
-## D2. `mirror = Gen(4)` and `creators = Gen(4)` are STATED, not raised
+## catalog-r3/D2 — `mirror = Gen(4)` and `creators = Gen(4)` are STATED, not raised
 
 Decided: leave both at `Gen(4)` and record why each is already at or
 above its natural maximum.
@@ -51,7 +53,7 @@ CHECKED and WRITTEN, which is what this entry is.
 **Load-bearing? yes** — if either natural maximum were mis-derived, the
 same silent-subset defect would remain, one variable over.
 
-## D3. `data = Gen(2)` is a CUTOFF, licensed by an argument, corroborated by a run
+## catalog-r3/D3 — `data = Gen(2)` is a CUTOFF, licensed by an argument, corroborated by a run
 
 Decided: keep `data = Gen(2)` and license it with an explicit cutoff
 argument written into `CatalogInd.tla`'s header, `README.md`, and here —
@@ -129,7 +131,7 @@ claim's whole value is that it holds for arbitrary trace length.
 **Load-bearing? yes** — without the argument the claim's words
 ("unbounded data-journal depth") do not follow from what ran.
 
-## D4. Obligation 3 is relabelled a TRIPWIRE and removed from the count
+## catalog-r3/D4 — Obligation 3 is relabelled a TRIPWIRE and removed from the count
 
 Decided: keep the `IndInit => StateSafety` run in the gate, label it a
 drift tripwire everywhere it appears, and stop counting it among the
@@ -156,7 +158,7 @@ not claimed to), and it would delete the tripwire's actual value. The
 honest move is to keep the check and stop miscounting it.
 **Load-bearing? yes** — the obligation count is part of the claim.
 
-## D5. The type annotations that restored re-checkability are not a spec change
+## catalog-r3/D5 — The type annotations that restored re-checkability are not a spec change
 
 Decided: add `@type` annotations to the six wire-bridge accessors and
 the four state-parameterised create helpers in `Catalog.tla` (see
@@ -179,7 +181,7 @@ the transition relation and ratified laws did not move").
 **Load-bearing? no** — any equally inert route to a type-checkable
 `Catalog.tla` would serve; the canary is what makes the route safe.
 
-## D6. The gate runs the whole set and fails on any flipped verdict
+## catalog-r3/D6 — The gate runs the whole set and fails on any flipped verdict
 
 Decided: `run-ind.sh` is the R3 gate, mirroring `run.sh`'s contract —
 required `NoError` verdicts, required `Error` verdicts grepped for the

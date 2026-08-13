@@ -163,7 +163,7 @@ invariants and compare. At these domains:
 
 Data journals are unbounded in the R3 domains, so the `data` bound is a
 cutoff and needs an argument, not a number. The argument is written out
-in `CatalogInd.tla`'s header and in `R3-DECISIONS.md` D3; in one line:
+in `CatalogInd.tla`'s header and in `catalog-r3/D3`; in one line:
 `data` is read by no guard, occurs only pointwise in `TypeOK` and
 `NoAdmissionOnFaith`, and `CommittedIds` is monotone — so truncating
 every journal to `<<>>` preserves `IndInv`, disables no action, and

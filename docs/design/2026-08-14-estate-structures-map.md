@@ -112,6 +112,10 @@ the demand signal that produced the finding.
 
 ## D — Refusal corpus and the evidence/absence sort split
 
+Bare `D<n>` row labels inside this section are namespaced
+`estate-D<n>`; they are not `ticket-004/D<n>`, `proto/D<n>`, or catalog
+decision IDs. References outside the table use the full namespace.
+
 | # | STRUCTURE / API implied | Law or claim demanding it | Cited at | Exists today | Proof obligation | Language |
 |---|---|---|---|---|---|---|
 | D1 | **Refusal persistence — `flb.certification.v0 {Certified \| Refused}` carrying `candidate_digest, grammar_digest, catalog_head, outcome`** | "an exhaustive grep confirms **no refusal is persisted anywhere in the repository today**"; `catalog_head` is required, "without which 'this refused' is not a recomputable claim" | GH **issue #18** (Evidence §); `[CEA]:47-49, 690-696, 824-826, 1176-1178`; `[LANG]:153-159` | **MISSING** — `refuse()` constructs, returns, drops (`proto/go/protod/refusal.go:49-54`) | called "the single highest-leverage unbuilt thing in this dossier's scope"; certifier totality (refusal is a *function* of (bytes, grammar, catalog head)) | both twinned (Go writes, TS mirrors) |
@@ -194,7 +198,7 @@ the demand signal that produced the finding.
 | H1 | **Angluin observation table** (rows from counterexample prefixes; `O(n(n+n·\|Σ\|))` membership fills) | L* escape from Gold unlearnability; "a counterexample of length `m` contributes its prefixes as new table rows" | `[CEA]:129-137` | **MISSING** | `≤ n` equivalence queries | TS (learner) |
 | H2 | **Equivalence-query verb** — the MAT's *second* verb | "the concierge answers no equivalence query — there is no verb that asks… **Ticket 015's theorem obligation is therefore not yet dischargeable as stated**"; "Claiming MAT status on membership queries alone is a category error" | `[CEA]:460-466, 930-934`; theorem owed at `docs/map/tickets/015-...md:26-33` | **MISSING** — membership *is* shipped (`certify` = the label oracle) | 015's "the concierge is a minimally adequate teacher" theorem; may be dischargeable only by **composing 015's membership oracle with 016's equivalence machinery** (`[CEA]:735-743`) — worth grilling first | Go |
 | H3 | **Counterexample minimization / decomposition** (discrimination tree, TTT single-refining-suffix extraction, linear space) | "efficient when counterexamples are pathologically long — which is the practical situation when the 'teacher' is a running system" | `[CEA]:148-158` | **MISSING** | Isberner/Howar/Steffen | TS |
-| H4 | **Precomputed `G`-refinement payload** — `(Law, Path)` *is* the minimal specialisation; `Example` is the non-emptiness witness | "**foldlab's certifier hands over the refinement already computed**"; "`Example`… is what stops the version-space collapse" | `[CEA]:516-532, 936-942` | **EXISTS (emit side)** — `Refusal{Kind,Law,Path,Got,Expected,Example,Next}` (`proto/go/protod/refusal.go:33-`), W7 shipped. **MISSING (consume side)** — nothing accumulates it | W7/W8 shipped; the consumer is D1 | Go emits / TS consumes |
+| H4 | **Precomputed `G`-refinement payload** — `(Law, Path)` *is* the minimal specialisation; `Example` is the non-emptiness witness | "**foldlab's certifier hands over the refinement already computed**"; "`Example`… is what stops the version-space collapse" | `[CEA]:516-532, 936-942` | **EXISTS (emit side)** — `Refusal{Kind,Law,Path,Got,Expected,Example,Next}` (`proto/go/protod/refusal.go:33-`), W7 shipped. **MISSING (consume side)** — nothing accumulates it | W7/W8 shipped; the consumer is estate-D1 | Go emits / TS consumes |
 | H5 | **Split labelled sample `S⁺ / S⁻` + characteristic set** (RPNI shape; negatives are the merge-veto) | "The positives determine the search space; the negatives determine where the search stops"; no such theorem exists for positive-only samples "and by §1.2 there cannot be" | `[CEA]:383-402` | **MISSING** | de la Higuera 1997 | TS/Go |
 | H6 | **Falsifiable teaching benchmark harness** (replace an L*LM-style LLM oracle with the concierge; measure convergence) | "**The claim is testable with Olausson's own methodology, and nobody has run it**" | `docs/map/tickets/015-...md:31-33`; `[CEA]:341-349, 786-794, 1013` | **MISSING** | ticket 015 ratification 2 | TS |
 | H7 | **Monotone constraint set `S`** — the CEGIS accumulator | "`constraint set S, growing` \| **absent**"; "**there is no `S` at all**" (Break 2 of the CEGIS correspondence) | `[CEA]:660-696` | **MISSING** | Break 1 (behavioural spec channel) is *irreducible* — "Anyone describing this loop as CEGIS without naming Break 1 is overclaiming"; **"The estate must not claim convergence"** | both |
@@ -245,7 +249,7 @@ the demand signal that produced the finding.
 | K1 | `flb.capture.v0 Captured{medium, audio_digest, capture{...}}` | evidence root for voice | `[LANG]:128-132` | MISSING | both |
 | K2 | `flb.utterance.v0 Uttered{transcript_digest, source: Typed \| Transcribed{audio_digest, asr_provenance, adoption}, principal_claim, at}` | "`at`: journaled arrival, not asserted wall time" (W1) | `[LANG]:134-140` | MISSING | both |
 | K3 | `flb.proposal.v0 Proposed{utterance_digests[], grammar_digest, partial_digest, frontier_digest, fills[], interpreter, catalog_head}` | ADR-0005: LLM traffic is journal traffic | `[LANG]:142-151` | MISSING | both |
-| K4 | `flb.certification.v0 {Certified \| Refused}` | = **D1**, the corpus's missing piece | `[LANG]:153-159` | MISSING | both |
+| K4 | `flb.certification.v0 {Certified \| Refused}` | = **estate-D1**, the corpus's missing piece | `[LANG]:153-159` | MISSING | both |
 | K5 | `flb.interpretation.v0 Interpreted{slot, ..., value_digest, catalog_head, principal}` — effector-homed | value_digest **must** be a Certified outcome | `[LANG]:169-177` | MISSING | Go |
 | K6 | `flb.correction.v0 Corrected{supersedes, ...}` | append-naming-predecessor; no overwrite expressible | `[LANG]:179-185` | MISSING | Go |
 | K7 | `flb.confirmation.v0 Confirmed{interpretation, principal}` — separate record, separate principal | "A certificate is not a confirmation — the single most damaging error available in this design" | `[LANG]:187-190, 577-581` | MISSING | Go |
@@ -303,18 +307,18 @@ the demand signal that produced the finding.
     E4 closure law    E5 certify()  J1 certificate  I1 flb.scale.v0   K10 flb.workflow.v0
            │               │          (ticket 005)   (ticket 016)      (ticket 008)
            ▼               ▼                              │                 │
-    E1 per-hole      D1 refusal record ──┐                ▼                 ▼
+    E1 per-hole estate-D1 refusal record ──┐              ▼                 ▼
     tree automaton   (flb.certification) │        I2 formal context   concierge lifts
            │               │             │        I3 DG basis         to programs
      ┌─────┼──────┐        ▼             │        I5 exploration jrnl
-     ▼     ▼      ▼   D2 sort split      │                │
+     ▼     ▼      ▼ estate-D2 sort split │                │
    E2    E3    G5 frontier   │           │                │
  emptiness subsumes  refs    ▼           │                │
-     │     │      ▲    D3/D4 corpus ─────┼────────────────┘
+     │     │      ▲ estate-D3/D4 corpus ─┼────────────────┘
      │     │      │         │            │
      │     │      │    ┌────┼────┬───────┴────────┐
      │     │      │    ▼    ▼    ▼                ▼
-     │     │      │  C17   D5   C2 CRDT      H1/H2/H3 MAT
+     │     │      │  C17 estate-D5 C2 CRDT   H1/H2/H3 MAT
      │     │      │ hardness regr  federation  (H2 also needs I3)
      │     │      │  map    differ   ▲
      │     │      │                  │
@@ -361,7 +365,8 @@ the demand signal that produced the finding.
 ```
 
 **Three roots with no prerequisites** (buildable today): **C1** (semilattice
-laws), **D1+D2** (refusal record + sort split), **A11** (session journal). **One
+laws), **estate-D1 + estate-D2** (refusal record + sort split), **A11**
+(session journal). **One
 root is blocked on a human decision, not a build**: **A4** (transactional writ
 scope — FINDING-WRIT-001 disposition). **One root is the declared critical path
 and gates the largest subtree**: **E7** (ticket 004).
@@ -374,11 +379,13 @@ and gates the largest subtree**: **E7** (ticket 004).
 document. Entry 3 is superseded on its per-hole premise and survives on its
 emptiness half.)*
 
-**1. D1 + D2 — persist refusals as `flb.certification.v0 {Certified | Refused}`
+**1. estate-D1 + estate-D2 — persist refusals as
+`flb.certification.v0 {Certified | Refused}`
 with a required `catalog_head`, and mark the structural/absence sort on the nine
 kinds.**
 Two small artifacts (one record kind, one enum field, one append call) that
-discharge issue #18, unblock D3–D6, C17, C2, H1–H4 and ticket 015's entire
+discharge issue #18, unblock estate-D3–estate-D6, C17, C2, H1–H4 and
+ticket 015's entire
 teaching loop; the corpus dossier names it "the single highest-leverage unbuilt
 thing in this dossier's scope," and issue #18 notes the corpus "can be born with
 the sort split already correct" only if the split lands **first**. No new proof

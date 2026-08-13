@@ -7,7 +7,7 @@
 //
 // Choreography mirrors the coordinator-owned suites:
 //   - register: effector_test.go TestClaimIsExclusive + TestStolenClaimCannotCommit
-//     (the D2 fencing law: no commit lands below the highest fence)
+//     (the EL3 fencing law: no commit lands below the highest fence)
 //   - journal: conflict_resync_test.go TestConflictResyncsLoserCursor
 //     (a lost CAS resyncs from the verified tail and recovers through Append)
 package main

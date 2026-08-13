@@ -29,10 +29,12 @@ Grill before building:
 - File format and identity: entries as canonical bytes with digests
   (the store's own content should be foldlab-lawful — verify-on-read
   applies to our own WAL); torn-write handling; the recovery fold.
-- Crash atomicity of claim/steal/commit against the proven A6
-  transition table — the model is the SPEC; the store is a new
-  implementation under the existing lockstep harness (R4 from day
-  one, negative controls included).
+- Crash atomicity of claim/steal/commit against the shipped EL0–EL10
+  obligation table in `go/effector/effector_test.go`. The historical
+  A6 model and lockstep artifacts are not public in this repository;
+  ticket 013 must land them before a new store can claim inheritance
+  from that formal evidence. Until then the executable suite, not a
+  missing transition-table document, is the build contract.
 - The KV-mirror sync: how the authority store feeds the chatter
   plane; staleness semantics (recoverable-from, never correct).
 - Concurrency scope: single-process daemon-internal store first

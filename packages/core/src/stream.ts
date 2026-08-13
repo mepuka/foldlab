@@ -93,8 +93,8 @@ const sha256 = (...parts: ReadonlyArray<Uint8Array>): Head => {
 
 const utf8 = (s: string): Uint8Array => encoder.encode(s)
 const fromHex = (hex: string): Uint8Array => {
-  if (!/^[0-9a-f]{64}$/i.test(hex)) {
-    throw new RangeError("head must be exactly 32 hexadecimal bytes")
+  if (!/^[0-9a-f]{64}$/.test(hex)) {
+    throw new RangeError("head must be exactly 32 lowercase hexadecimal bytes")
   }
   const out = new Uint8Array(hex.length / 2)
   for (let i = 0; i < out.length; i++) {
@@ -112,8 +112,10 @@ export const mergeSeed = (): Head => sha256(utf8("playground.merge.v1"))
 export const extend = (head: Head, e: StreamEvent): Head =>
   sha256(fromHex(head), encodeEvent(e))
 
-export const headFrom = (base: Head, events: ReadonlyArray<StreamEvent>): Head =>
-  events.reduce(extend, base)
+export const headFrom = (base: Head, events: ReadonlyArray<StreamEvent>): Head => {
+  fromHex(base)
+  return events.reduce(extend, base)
+}
 
 // ---------- merge: committing one linearization ----------
 
@@ -210,7 +212,7 @@ export const applyMerge = (
 
 // ---------- the semantic fold: a last-write-wins KV ----------
 
-export class MalformedPayload extends Data.TaggedError("MalformedPayload")<{
+export class MalformedEventPayload extends Data.TaggedError("MalformedEventPayload")<{
   readonly event: StreamEvent
 }> {}
 
@@ -228,7 +230,7 @@ const strictDecoder = new TextDecoder("utf-8", { fatal: true })
  * a payload that is not valid UTF-8, not a `key=value` fact, carries a NUL in
  * either half, or would overflow the u32 count. It is the single definition of
  * "what the meaning fold admits": the Effect-typed `applyKV` turns `undefined`
- * into a typed `MalformedPayload`, while the entity collector's synchronous
+ * into a typed `MalformedEventPayload`, while the entity collector's synchronous
  * fold forgives it as a no-op. There is one meaning-fold, not two.
  */
 export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
@@ -256,17 +258,17 @@ export const kvStep = (state: KVState, e: StreamEvent): KVState | undefined => {
 export const applyKV = (
   state: KVState,
   e: StreamEvent,
-): Effect.Effect<KVState, MalformedPayload> =>
+): Effect.Effect<KVState, MalformedEventPayload> =>
   Effect.suspend(() => {
     const next = kvStep(state, e)
     return next === undefined
-      ? Effect.fail(new MalformedPayload({ event: e }))
+      ? Effect.fail(new MalformedEventPayload({ event: e }))
       : Effect.succeed(next)
   })
 
 export const foldKV = (
   events: ReadonlyArray<StreamEvent>,
-): Effect.Effect<KVState, MalformedPayload> =>
+): Effect.Effect<KVState, MalformedEventPayload> =>
   Effect.reduce(events, () => emptyKV, applyKV)
 
 /** Combining two states would carry the event count past the u32 it is stored in. */
@@ -401,8 +403,8 @@ export const compact = (
   base: Head,
   events: ReadonlyArray<StreamEvent>,
   k: number,
-): Effect.Effect<Compacted, MalformedPayload | CompactionBoundary> =>
-  Effect.suspend<Compacted, MalformedPayload | CompactionBoundary, never>(() => {
+): Effect.Effect<Compacted, MalformedEventPayload | CompactionBoundary> =>
+  Effect.suspend<Compacted, MalformedEventPayload | CompactionBoundary, never>(() => {
     if (!Number.isInteger(k) || k < 0 || k > events.length) {
       return Effect.fail(new CompactionBoundary({ boundary: k, length: events.length }))
     }

@@ -56,14 +56,15 @@ Absence is the one uniform failure: a digest not yet present is a typed
 refusal — a tagged value in the error channel, not an exception and not
 a null — and senders own retry.
 
-The register's safety (no commit below the highest fence; exactly one
-terminal outcome) is a machine-checked theorem — Apalache inductive
-invariant, unbounded, independent of process identity — replayed in
-lockstep against the running Go implementation across 15,378
-schedules. The register is also where a running program becomes a
-fact: a live Effect program is codata (more can always happen), and
-commitment through the register turns it into data — one value, one
-history.
+The register's intended safety is no commit below the highest fence and
+one terminal outcome. EL0–EL10 exercise that contract on the running Go
+implementation. Historical records report an Apalache invariant and
+15,378 lockstep schedules, but their specs, controls, harness, and run
+records are absent from this repository; `VERIFICATION.md` therefore
+holds the formal R3/R4 claim until ticket 013 lands them. The register
+is also where a running program becomes a fact: a live Effect program
+is codata (more can always happen), and commitment through the register
+turns it into data — one value, one history.
 
 A second theorem falls out of the sort: presence of evidence is
 monotone (append-only journals only grow), so ingress can admit

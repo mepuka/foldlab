@@ -32,7 +32,7 @@ The table points; the entries below carry the bounds.
 
 | Contract | Rung | Status | Checkable at |
 | --- | --- | --- | --- |
-| Effector (commitment register) | R3 + R4 | **Claimed**; proof artifacts not yet shipped in this repository (ticket 013) | [go/effector/](go/effector/) |
+| Effector (commitment register) | R3 + R4 | **HELD**; historical results are not publicly checkable until ticket 013 ships their artifacts | [go/effector/](go/effector/), [ticket 013](docs/map/tickets/013-effector-evidence-public.md) |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
 | Journal and chain walls | R0/R1 | **Claimed**; no model gate yet (ticket 012) | [fixtures/](fixtures/), [go/stream/](go/stream/), [docs/gauntlet/](docs/gauntlet/) |
 | KV meaning fold — combine and join | R0/R1 | **Claimed** for the monoid in both languages; the join is TypeScript only | [go/stream/combine_test.go](go/stream/combine_test.go), [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts), [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts) |
@@ -40,7 +40,7 @@ The table points; the entries below carry the bounds.
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 
-## The effector (commitment register) — R3 + R4
+## The effector (commitment register) — R3 + R4 HELD
 
 ### Claim
 
@@ -48,7 +48,7 @@ Fencing safety (no commit lands below the highest linearized fence)
 and unique terminal outcome, for the register
 `Absent | Claim(fence, owner, lease) | Done(fence, result)`.
 
-### Evidence
+### Historical evidence (not shipped here)
 
 - Apalache inductive invariant, unbounded in fences and interleaving
   depth. Bounded at 3 and 4 owners.
@@ -75,16 +75,23 @@ and unique terminal outcome, for the register
   (ticket 013).
 - The R4 sample rides on top of the exhaustive small-scope core; the
   count is the bridge to the binary, not the proof.
-- Gap, being closed: the proof artifacts live in `.reference/`, an
+- Blocking gap: the proof artifacts live in `.reference/`, an
   untracked predecessor repository that is absent from this checkout,
-  so the public repository asserts this claim without shipping its
-  evidence. Ticket 013 ports the specs, configs, and counterexample
-  files into `verify/effector/`.
+  so this repository cannot reproduce the R3/R4 results. The formal
+  claim is HELD, not asserted. Ticket 013 ports the specs, configs,
+  counterexample files, harness, and fresh run records into
+  `verify/effector/`.
+- The currently shipped evidence is the EL0–EL10 executable suite and
+  WL1–WL4 watch suite in `go/effector/`, indexed with exact test names
+  and bounds in `docs/laws/INDEX.md`. Those tests do not establish the
+  absent R3/R4 claim. WL1 and WL2 are additionally HELD by issue #15's
+  reported retention race pending a contract disposition.
 
 ### Checkable at
 
-[go/effector/](go/effector/) — the running code and its tests, until
-ticket 013 lands the proof artifacts.
+[go/effector/](go/effector/) — the running code and its executable
+contract; [ticket 013](docs/map/tickets/013-effector-evidence-public.md)
+owns the missing public formal evidence.
 
 ## Catalog + ingress — R2 + R4; R3 in re-proof at repaired bounds
 
