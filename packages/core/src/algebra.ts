@@ -1,6 +1,7 @@
 /**
- * The declared fold algebra. Behavior is carried by plain functions, and a name
- * is carried by a separate canonical declaration; identity exists only where a
+ * The declared fold algebra. In Effect v4 terms its behavior is a `Reducer`
+ * (`initialValue` plus `combine`; classically a monoid instance), and a name is
+ * carried by a separate canonical declaration; identity exists only where a
  * value has both.
  *
  * A value earns a declaration when its own description encodes canonically and
