@@ -3,7 +3,7 @@
  *
  *   EC1 decompose-then-fold: the collector over a MIXED stream gives, per
  *       entity, exactly the folds of that entity's own subsequence — the
- *       entity IS the quotient by correlation
+ *       entity IS ONE CLASS of the quotient by correlation
  *   EC2 backing independence: two different backing layers produce
  *       identical views (the store is a seam, not a semantics)
  *   EC3 incremental = batch: O(1) ingestion equals recomputation

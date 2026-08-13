@@ -510,12 +510,13 @@ commit-safety.
 `Entity` (`cluster/Entity.ts:71`) is an addressable stateful actor — an
 `RpcGroup` protocol addressed by `EntityAddress{shardId, entityType, entityId}`
 (`cluster/EntityAddress.ts:24`), placed on a shard, one live handler per id. A
-foldlab entity is the **quotient of event traffic by a correlation key**,
-identified by a **recomputable chain head + state digest**, both folds maintained,
-backing-independent (`packages/core/src/entity.ts:29-135`). The delta: cluster
-Entity identity is an **assigned** string id plus shard placement, and its state
-is opaque live memory; foldlab entity identity is a **recomputable** head over its
-exact history, and its state is a fold anyone can re-derive and audit. They are
+foldlab entity is **one equivalence class of event traffic under a correlation
+key**, identified by a **recomputable chain head + state digest**, both folds
+maintained, backing-independent (`packages/core/src/entity.ts:29-135`). The
+delta: cluster Entity identity is an **assigned** string id plus shard
+placement, and its state is opaque live memory; foldlab entity identity is a
+**recomputable** head over its exact history, and its state is a fold anyone
+can re-derive and audit. They are
 **complementary, not substitutes**: a cluster Entity's handler could fold its
 inbox into a foldlab entity to gain recomputable state and provenance — routing
 from one, identity from the other.

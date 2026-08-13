@@ -1,9 +1,9 @@
 /**
  * The entity collector: entities folded live from a mixed event stream.
  *
- * An entity is a QUOTIENT of a stream — a correlation key's subsequence,
- * folded twice: the identity fold (a chain head over exactly its events)
- * and the meaning fold (its state). The collector maintains both
+ * An entity is ONE CLASS of a stream's quotient by correlation — one key's
+ * subsequence, folded twice: the identity fold (a chain head over exactly
+ * its events) and the meaning fold (its state). The collector maintains both
  * incrementally, O(1) per event, over ANY backing layer (the `Backing`
  * interface is the seam — memory here, SQLite/NATS-KV/whatever later; the
  * laws in test/entity.test.ts are backing-independent by construction and
@@ -81,7 +81,7 @@ export interface Collector {
 }
 
 /**
- * A collector over a backing layer. `correlate` names the quotient: which
+ * A collector over a backing layer. `correlate` induces the quotient: which
  * entity an event belongs to (for agent streams: session id, span id, tool
  * call id — any correlation key discipline).
  */

@@ -23,7 +23,7 @@ tracer bullet, own gates) and `verify/` (model gates) at root. Older
 
 Every wall below — a differential test: two implementations, one input,
 digests compared — is a passing test, not an intention (root `bun test`:
-139 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 14
+186 pass, 4 skip — the wasm wall, absent `dist/` — 0 fail across 16
 files; `tsc` clean; Go gate green. `proto/` runs its own gates, listed
 in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 
@@ -39,11 +39,12 @@ in `proto/AGENTS.md`; the model gates run from `verify/*/run.sh`):
 - **Stream bindings**: `src/streamBindings.ts` — the wall reaches through
   Effect `Stream`; rechunking at any size never moves a head (chunking is
   transport, so orchestration is provably free to vary).
-- **Entity collector**: `src/entity.ts` — entities as quotients by
-  correlation key (one entity is ONE group of `Stream.groupByKey`, a
-  single equivalence class), both folds maintained O(1) per event,
-  backing-layer independent (EC2), composition = fold of child anchors
-  (EC4: deterministic, order-committed, transitively history-sensitive).
+- **Entity collector**: `src/entity.ts` — entities as classes of the
+  quotient by correlation key (one entity is ONE group of
+  `Stream.groupByKey`, a single equivalence class), both folds
+  maintained O(1) per event, backing-layer independent (EC2),
+  composition = fold of child anchors (EC4: deterministic,
+  order-committed, transitively history-sensitive).
 - **NATS substrate (ported 2026-08-12)**: `go/{canonical,journal,effector,
   cmd/journald}` — the playground kernel's Go substrate now lives HERE
   under foldlab's gates: RFC 8785 canonical JSON (frozen

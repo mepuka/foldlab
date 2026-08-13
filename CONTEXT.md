@@ -150,9 +150,10 @@ smart constructor over values; the smart constructor here is the
 ### Entities and provenance
 
 **Entity**:
-One equivalence class of event traffic under a correlation key (the key induces the quotient; an entity is one of its classes): one key, one chained
-history, both folds maintained. Consumers hold an entity handle and never
-see stream mechanics.
+One equivalence class of event traffic under a correlation key (the key
+induces the quotient; an entity is one of its classes): one key, one
+chained history, both folds maintained. Consumers hold an entity handle
+and never see stream mechanics.
 
 **Correlation key**:
 The equivalence that decides which events are the same entity's history.
