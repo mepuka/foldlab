@@ -14,9 +14,13 @@ interface CacheEntry {
   readonly bytes: string
 }
 
+const FoldCacheTypeId: unique symbol = Symbol("@foldlab/core/FoldCache")
+
 export interface FoldCache {
-  readonly entries: ReadonlyMap<string, CacheEntry>
+  readonly [FoldCacheTypeId]: true
 }
+
+const cacheStorage = new WeakMap<FoldCache, ReadonlyMap<string, CacheEntry>>()
 
 export type IdentityUnavailable = {
   readonly ok: false
@@ -27,15 +31,36 @@ export type IdentityUnavailable = {
   }
 }
 
+export type CacheUnavailable = {
+  readonly ok: false
+  readonly refusal: {
+    readonly _tag: "CacheUnavailable"
+    readonly feature: "fold-cache"
+    readonly reason: "the cache was not issued by emptyFoldCache or putFoldCache"
+  }
+}
+
+export type CacheConflict = {
+  readonly ok: false
+  readonly refusal: {
+    readonly _tag: "CacheConflict"
+    readonly feature: "fold-cache"
+    readonly reason: "the cache key already names different canonical bytes"
+  }
+}
+
 export type CacheWrite =
   | { readonly ok: true; readonly cache: FoldCache; readonly bytes: string }
   | IdentityUnavailable
+  | CacheUnavailable
+  | CacheConflict
   | Exclude<CanonicalEncoding, { readonly ok: true }>
 
 export type CacheRead<A extends FoldState> =
   | { readonly ok: true; readonly hit: false }
   | { readonly ok: true; readonly hit: true; readonly value: A; readonly bytes: string }
   | IdentityUnavailable
+  | CacheUnavailable
 
 const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable => ({
   ok: false,
@@ -68,8 +93,23 @@ const keyFor = <E, A extends FoldState>(fold: Fold<E, A>, head: Head): string | 
     ? identityRefusal(fold as unknown as Fold<unknown, FoldState>)
     : `${fold.digest}:${head}`
 
+const unavailableCache = (): CacheUnavailable => ({
+  ok: false,
+  refusal: {
+    _tag: "CacheUnavailable",
+    feature: "fold-cache",
+    reason: "the cache was not issued by emptyFoldCache or putFoldCache",
+  },
+})
+
+const issueCache = (entries: ReadonlyMap<string, CacheEntry>): FoldCache => {
+  const cache: FoldCache = Object.freeze({ [FoldCacheTypeId]: true as const })
+  cacheStorage.set(cache, entries)
+  return cache
+}
+
 /** Uniqueness makes the empty memo sufficient; no invalidation state exists. */
-export const emptyFoldCache = (): FoldCache => ({ entries: new Map() })
+export const emptyFoldCache = (): FoldCache => issueCache(new Map())
 
 /** Fold uniqueness licenses immutable insertion at `(fold digest, head)`. */
 export const putFoldCache = <E, A extends FoldState>(
@@ -78,13 +118,28 @@ export const putFoldCache = <E, A extends FoldState>(
   head: Head,
   value: A,
 ): CacheWrite => {
+  const current = cacheStorage.get(cache)
+  if (current === undefined) return unavailableCache()
   const key = keyFor(fold, head)
   if (typeof key !== "string") return key
   const encoded = encodeFoldState(value)
   if (!encoded.ok) return encoded
-  const entries = new Map(cache.entries)
+  const existing = current.get(key)
+  if (existing !== undefined) {
+    return existing.bytes === encoded.bytes
+      ? { ok: true, cache, bytes: encoded.bytes }
+      : {
+        ok: false,
+        refusal: {
+          _tag: "CacheConflict",
+          feature: "fold-cache",
+          reason: "the cache key already names different canonical bytes",
+        },
+      }
+  }
+  const entries = new Map(current)
   entries.set(key, { bytes: encoded.bytes })
-  return { ok: true, cache: { entries }, bytes: encoded.bytes }
+  return { ok: true, cache: issueCache(entries), bytes: encoded.bytes }
 }
 
 /** Fold uniqueness licenses a hit as the same value a fresh replay would produce. */
@@ -93,9 +148,11 @@ export const getFoldCache = <E, A extends FoldState>(
   fold: Fold<E, A>,
   head: Head,
 ): CacheRead<A> => {
+  const entries = cacheStorage.get(cache)
+  if (entries === undefined) return unavailableCache()
   const key = keyFor(fold, head)
   if (typeof key !== "string") return key
-  const entry = cache.entries.get(key)
+  const entry = entries.get(key)
   if (entry === undefined) return { ok: true, hit: false }
   return {
     ok: true,
