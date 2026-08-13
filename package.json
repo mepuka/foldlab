@@ -23,6 +23,7 @@
     "test:packages": "bun run --filter './packages/*' test",
     "gates": "bun scripts/gates.ts",
     "build:wasm": "bun scripts/build-wasm.ts",
+    "test:wasm": "bun scripts/test-wasm.ts",
     "bench": "bun bench/stream.bench.ts",
     "bench:go": "bun scripts/bench-go.ts",
     "bench:compare": "bun scripts/bench-compare.ts"

@@ -1,8 +1,8 @@
 /**
  * Builds the wasm face of the transform wall into dist/ (gitignored):
  * go/cmd/wasmwall compiled GOOS=js GOARCH=wasm, plus the matching
- * wasm_exec.js loader from the local Go toolchain. test/wasm.wall.test.ts
- * auto-skips until this has run.
+ * wasm_exec.js loader from the local Go toolchain. Ordinary root tests
+ * auto-skip until this has run; `bun run test:wasm` refuses the absence.
  *
  *   bun run build:wasm
  */
