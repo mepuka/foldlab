@@ -115,11 +115,11 @@ const identityRefusal = (fold: Fold<unknown, FoldState>): IdentityUnavailable =>
     feature: "fold-cache",
     reason: !hasAdmittedDeclaration(fold.algebra)
       ? fold.algebra.identityIssue ?? (fold.algebra.declaration === undefined
-        ? "the algebra is anonymous"
+        ? "the algebra has no declared spec, so no content address"
         : "the algebra declaration is not admitted")
       : !hasAdmittedDeclaration(fold.step)
       ? fold.step.identityIssue ?? (fold.step.declaration === undefined
-        ? "the step is anonymous"
+        ? "the step has no declared spec, so no content address"
         : "the step declaration is not admitted")
       : "the fold identity is unavailable",
   },

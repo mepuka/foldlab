@@ -58,7 +58,7 @@ describe("sound fold cache", () => {
       refusal: {
         _tag: "IdentityUnavailable",
         feature: "fold-cache",
-        reason: "the algebra is anonymous",
+        reason: "the algebra has no declared spec, so no content address",
       },
     })
   })
@@ -71,7 +71,7 @@ describe("sound fold cache", () => {
       refusal: {
         _tag: "IdentityUnavailable",
         feature: "fold-cache",
-        reason: "the step is anonymous",
+        reason: "the step has no declared spec, so no content address",
       },
     })
   })
