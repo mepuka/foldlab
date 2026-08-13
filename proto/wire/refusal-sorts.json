@@ -1,0 +1,15 @@
+{
+  "structural": [
+    "malformed",
+    "invalid-structure",
+    "digest-mismatch",
+    "bad-cursor",
+    "unknown-request",
+    "bad-journal"
+  ],
+  "absence": [
+    "unknown-ref",
+    "unknown-identity",
+    "unknown-journal"
+  ]
+}

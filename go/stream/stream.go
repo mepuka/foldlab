@@ -217,22 +217,34 @@ func (err *MergeGap) Error() string {
 	return fmt.Sprintf("stream: pick %d references missing event %s@%d", err.Index, err.Pick.Stream, err.Pick.Seq)
 }
 
-// MergeDuplicateSequence refuses an ambiguous source index. Sequence is an
-// event identity coordinate, so last-write-wins is not a lawful resolution.
+// MergeDuplicateOffender is one duplicate-bearing identity coordinate. Every
+// event index claiming the coordinate is retained in source order.
+type MergeDuplicateOffender struct {
+	Source  string `json:"source"`
+	Seq     uint64 `json:"seq"`
+	Indexes []int  `json:"indexes"`
+}
+
+// MergeDuplicateSequence refuses every ambiguous source coordinate at once.
+// Offenders are sorted by UTF-8 source bytes, then sequence. The refusal is a
+// corpus-grade value: deterministic, complete, and shared with the TS twin.
 type MergeDuplicateSequence struct {
-	Source         string
-	Seq            uint64
-	FirstIndex     int
-	DuplicateIndex int
+	Offenders []MergeDuplicateOffender `json:"offenders"`
 }
 
 func (err *MergeDuplicateSequence) Error() string {
+	if len(err.Offenders) == 0 || len(err.Offenders[0].Indexes) < 2 {
+		return "stream: source repeats a sequence coordinate"
+	}
+	first := err.Offenders[0]
+	// Preserve the established message shape; the typed Offenders field, not
+	// Error text, carries the complete corpus-grade refusal.
 	return fmt.Sprintf(
 		"stream: source %s repeats sequence %d at event indexes %d and %d",
-		err.Source,
-		err.Seq,
-		err.FirstIndex,
-		err.DuplicateIndex,
+		first.Source,
+		first.Seq,
+		first.Indexes[0],
+		first.Indexes[1],
 	)
 }
 
@@ -252,6 +264,7 @@ func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
 	}
 
 	index := make(map[string]sourceIndex, len(sources))
+	offenders := make([]MergeDuplicateOffender, 0)
 	for name, events := range sources {
 		source := sourceIndex{events: events, dense: true}
 		if len(events) > 0 {
@@ -265,19 +278,31 @@ func ApplyMerge(m MergeFact, sources map[string][]Event) ([]Event, error) {
 		}
 		if !source.dense {
 			source.bySeq = make(map[uint64]indexedEvent, len(events))
+			indexesBySeq := make(map[uint64][]int, len(events))
 			for i, e := range events {
-				if first, exists := source.bySeq[e.Seq]; exists {
-					return nil, &MergeDuplicateSequence{
-						Source:         name,
-						Seq:            e.Seq,
-						FirstIndex:     first.index,
-						DuplicateIndex: i,
-					}
+				indexesBySeq[e.Seq] = append(indexesBySeq[e.Seq], i)
+				if _, exists := source.bySeq[e.Seq]; !exists {
+					source.bySeq[e.Seq] = indexedEvent{event: e, index: i}
 				}
-				source.bySeq[e.Seq] = indexedEvent{event: e, index: i}
+			}
+			for seq, indexes := range indexesBySeq {
+				if len(indexes) > 1 {
+					offenders = append(offenders, MergeDuplicateOffender{
+						Source: name, Seq: seq, Indexes: indexes,
+					})
+				}
 			}
 		}
 		index[name] = source
+	}
+	if len(offenders) > 0 {
+		sort.Slice(offenders, func(i, j int) bool {
+			if offenders[i].Source != offenders[j].Source {
+				return offenders[i].Source < offenders[j].Source
+			}
+			return offenders[i].Seq < offenders[j].Seq
+		})
+		return nil, &MergeDuplicateSequence{Offenders: offenders}
 	}
 
 	out := make([]Event, 0, len(m.Picks))

@@ -269,14 +269,13 @@ order with distinct coordinates.
 - The enriched state is O(history) where `KVState` is O(distinct keys),
   because reproducing `count` idempotently requires remembering which
   coordinates were absorbed rather than how many.
-- FINDING, reported and not repaired: `ApplyMerge`'s duplicate refusal
-  is not a function of its input in Go. With two duplicated sources the
-  refusal names either one across identical calls — measured at
-  1750/250 over 2000 runs — because `map[string][]Event` has no order,
-  while the TypeScript twin walks a `ReadonlyMap` in insertion order and
-  always names the first. Both refuse; they can disagree about the
-  refusal value, which this lane treats as data. The doc-comment on
-  `ApplyMerge` says "deterministic".
+- FIXED by Task 30 Addendum 1: `ApplyMerge`'s duplicate refusal is a
+  function of its input in both languages. It lists every duplicate-bearing
+  `(source, seq, indexes)` tuple, sorted by UTF-8 source bytes and sequence.
+  The shared M1 vector includes multiple sources, multiple sequences, more
+  than two indexes at one coordinate, and a Unicode pair that distinguishes
+  UTF-8 order from UTF-16 order; Go's randomized map walk and TS insertion
+  order both reproduce the same value.
 - Answered, not a finding: the dense and sparse indexing paths inside
   `ApplyMerge` agree. A duplicate coordinate cannot survive the density
   check, so the fast path never sees one.
@@ -285,7 +284,9 @@ order with distinct coordinates.
 
 [go/stream/combine_test.go](go/stream/combine_test.go),
 [go/stream/merge_paths_test.go](go/stream/merge_paths_test.go),
+[go/stream/merge_refusal_test.go](go/stream/merge_refusal_test.go),
 [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts),
+[packages/core/test/stream.merge-refusal.test.ts](packages/core/test/stream.merge-refusal.test.ts),
 [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts),
 and [packages/core/test/fold.laws.test.ts](packages/core/test/fold.laws.test.ts).
 
@@ -368,12 +369,16 @@ and [go/canonical/probes/](go/canonical/probes/).
 ### Claim
 
 The daemon's laws (W1–W10) are each witnessed by black-box tests over
-NATS subjects.
+NATS subjects. Its nine refusal kinds are total over two ontological sorts:
+structural refusals reproduce unchanged across catalog heads; absence
+refusals are repealed when the missing evidence lands. The sort is server-side
+classification and does not change W7's wire value.
 
 ### Evidence
 
-60 TypeScript tests, the Go conformance suite, all nine refusal kinds,
-restart survival ([proto/](proto/)).
+The TypeScript suites, the Go conformance suite, the shared all-nine refusal
+sort vector, per-kind structural/repealability laws, and restart survival
+([proto/](proto/)).
 
 ### Bounds and residuals
 

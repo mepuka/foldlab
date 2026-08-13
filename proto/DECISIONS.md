@@ -988,3 +988,40 @@ grammar/path proof and disposition choices are in
 cannot be specified, tested, or implemented until the hole sorts and legality
 predicate agree across the coordinator-owned spec, wire contract, and ticket
 003 amendment.
+
+## Task 30 — refusal sorts and corpus-grade duplicate refusals (2026-08-14)
+
+### D62 disposition. Duplicate refusal lists every offender
+
+Decided: issue #21's ratified LIST ALL OFFENDERS disposition supersedes D62's
+single-offender refusal shape. `MergeDuplicateSequence` now carries every
+duplicate-bearing `(source, seq, indexes)` tuple, sorted by source then
+sequence, in both runtimes. Alternatives: sort sources before choosing one;
+pick the first source reached by the merge fact; retain insertion/map order.
+Why: every alternative still suppresses true offenders or makes the refusal
+depend on representation order; a complete sorted value is deterministic and
+safe to retain as evidence. **Load-bearing? yes.**
+
+### D??. Refusal sort is server-side and total over the nine daemon kinds
+
+Decided: the Go and TypeScript kind tables classify the six byte/grammar
+refusals as `structural` and the three head-relative misses as `absence`; the
+classification does not ride on W7's wire refusal. One shared vector is the
+cross-language pin, structural requests are replayed against empty and
+populated catalogs, and absence is defined by same-request admission after the
+missing evidence lands. Alternatives: add `sort` to the wire; infer sort from
+kind prefixes; classify every refusal as permanent evidence. Why: the ticket
+fixes the ontology and wire neutrality, while an explicit total table makes a
+new or omitted kind fail conformance instead of silently entering a corpus.
+**Load-bearing? yes.**
+
+### D??. Duplicate-refusal source order is UTF-8 byte order
+
+Decided: `(source, seq)` ordering compares source UTF-8 bytes first and the
+unsigned sequence second; indexes remain ascending event positions. The shared
+M1 vector pins a BMP/supplementary pair that reverses under UTF-16 ordering.
+Alternatives: Go's native order on one side and JavaScript's native order on
+the other; RFC 8785 UTF-16 member-name order. Why: source ids are encoded as
+UTF-8 bytes in the canonical event frame and are not JSON member names; using
+that existing domain gives both runtimes one explicit comparator.
+**Load-bearing? yes** — changing it changes the corpus-grade refusal value.

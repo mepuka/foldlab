@@ -3,6 +3,8 @@ package stream
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
+	"sort"
 	"testing"
 	"testing/quick"
 )
@@ -26,20 +28,33 @@ func referenceSparseApplyMerge(m MergeFact, sources map[string][]Event) ([]Event
 		index int
 	}
 	index := make(map[string]map[uint64]indexedEvent, len(sources))
+	offenders := make([]MergeDuplicateOffender, 0)
 	for name, events := range sources {
 		bySeq := make(map[uint64]indexedEvent, len(events))
+		indexesBySeq := make(map[uint64][]int, len(events))
 		for i, e := range events {
-			if first, exists := bySeq[e.Seq]; exists {
-				return nil, &MergeDuplicateSequence{
-					Source:         name,
-					Seq:            e.Seq,
-					FirstIndex:     first.index,
-					DuplicateIndex: i,
-				}
+			indexesBySeq[e.Seq] = append(indexesBySeq[e.Seq], i)
+			if _, exists := bySeq[e.Seq]; !exists {
+				bySeq[e.Seq] = indexedEvent{event: e, index: i}
 			}
-			bySeq[e.Seq] = indexedEvent{event: e, index: i}
+		}
+		for seq, indexes := range indexesBySeq {
+			if len(indexes) > 1 {
+				offenders = append(offenders, MergeDuplicateOffender{
+					Source: name, Seq: seq, Indexes: indexes,
+				})
+			}
 		}
 		index[name] = bySeq
+	}
+	if len(offenders) > 0 {
+		sort.Slice(offenders, func(i, j int) bool {
+			if offenders[i].Source != offenders[j].Source {
+				return offenders[i].Source < offenders[j].Source
+			}
+			return offenders[i].Seq < offenders[j].Seq
+		})
+		return nil, &MergeDuplicateSequence{Offenders: offenders}
 	}
 	out := make([]Event, 0, len(m.Picks))
 	for i, p := range m.Picks {
@@ -67,7 +82,7 @@ func sameMergeOutcome(gotEvents []Event, gotErr error, wantEvents []Event, wantE
 		if !ok {
 			return fmt.Errorf("duplicate coordinate returned %T (%v), want *MergeDuplicateSequence", gotErr, gotErr)
 		}
-		if *got != *want {
+		if !reflect.DeepEqual(got.Offenders, want.Offenders) {
 			return fmt.Errorf("duplicate refusal differs: %#v vs %#v", got, want)
 		}
 	case *MergeGap:
@@ -248,13 +263,10 @@ func TestApplyMergeRefusesEveryDuplicateWhateverTheSourceShape(t *testing.T) {
 				if merged != nil {
 					t.Fatalf("picks %v: refusal returned a partial merge %#v", picks, merged)
 				}
-				want := &MergeDuplicateSequence{
-					Source:         "s",
-					Seq:            tc.seq,
-					FirstIndex:     tc.firstIndex,
-					DuplicateIndex: tc.duplicateIndex,
-				}
-				if *duplicate != *want {
+				want := &MergeDuplicateSequence{Offenders: []MergeDuplicateOffender{{
+					Source: "s", Seq: tc.seq, Indexes: []int{tc.firstIndex, tc.duplicateIndex},
+				}}}
+				if !reflect.DeepEqual(duplicate.Offenders, want.Offenders) {
 					t.Fatalf("picks %v: refusal = %#v; want %#v", picks, duplicate, want)
 				}
 			}
@@ -280,53 +292,27 @@ func TestApplyMergeDensePathRefusesPicksBelowTheFirstCoordinate(t *testing.T) {
 	}
 }
 
-// FINDING (pinned, not repaired). When TWO sources each carry a duplicate,
-// WHICH refusal comes back is chosen by Go's randomized map iteration order.
-// ApplyMerge's own doc-comment opens with "deterministic", and the TypeScript
-// twin IS: it walks a ReadonlyMap in insertion order and always reports the
-// first duplicated source. So the refusal VALUE — a typed error the lane treats
-// as data, carrying source, seq and both indexes — is not a function of the
-// input on the Go side, and the two implementations can disagree about it on
-// the same input.
-//
-// The refusal is always sound: whichever source is named really does repeat the
-// coordinate the error reports. What varies is only which of several true
-// refusals is returned. Nothing here proposes a repair; the shape of one
-// (iterate sources in sorted order, or in the order the picks first reach them)
-// is a disposition for the operator.
-//
-// This test pins the behaviour the way fold.laws.test.ts pins its KNOWN GAP: it
-// stays green and fails only if the behaviour changes, so a later fix is
-// visible rather than silent.
-func TestFindingApplyMergeMultiSourceRefusalOrderIsUnpinned(t *testing.T) {
+// Issue #21 regression: map iteration may discover the sources in any order,
+// but the corpus-grade refusal lists all offenders in (source, seq) order.
+func TestApplyMergeMultiSourceRefusalIsCompleteAndDeterministic(t *testing.T) {
 	sources := map[string][]Event{
 		"alpha": {ev("alpha", 1, "a=1"), ev("alpha", 1, "a=2")},
 		"beta":  {ev("beta", 1, "b=1"), ev("beta", 1, "b=2")},
 	}
 	fact := MergeFact{Picks: []Pick{{Stream: "alpha", Seq: 1}}}
-	seen := map[string]int{}
-	const runs = 2000
+	want := []MergeDuplicateOffender{
+		{Source: "alpha", Seq: 1, Indexes: []int{0, 1}},
+		{Source: "beta", Seq: 1, Indexes: []int{0, 1}},
+	}
+	const runs = 200
 	for range runs {
 		_, err := ApplyMerge(fact, sources)
 		duplicate, ok := err.(*MergeDuplicateSequence)
 		if !ok {
 			t.Fatalf("two duplicated sources returned %T %v; want *MergeDuplicateSequence", err, err)
 		}
-		// Whichever source is named, it really is duplicated at that coordinate.
-		if duplicate.Seq != 1 || duplicate.FirstIndex != 0 || duplicate.DuplicateIndex != 1 {
-			t.Fatalf("refusal names coordinates no source has: %#v", duplicate)
+		if !reflect.DeepEqual(duplicate.Offenders, want) {
+			t.Fatalf("refusal = %#v; want complete sorted %#v", duplicate.Offenders, want)
 		}
-		if _, exists := sources[duplicate.Source]; !exists {
-			t.Fatalf("refusal named a source that does not exist: %q", duplicate.Source)
-		}
-		seen[duplicate.Source]++
-	}
-	t.Logf("FINDING: refusal source over %d identical calls: %v", runs, seen)
-	if len(seen) < 2 {
-		t.Fatalf(
-			"the refusal named one source in all %d calls (%v) — the map order is now stable, "+
-				"which means this finding was repaired or masked; re-read ApplyMerge",
-			runs, seen,
-		)
 	}
 }

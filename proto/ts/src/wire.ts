@@ -12,6 +12,29 @@ export const SUBJECT_JOURNAL_READ = "flb.req.journal.read"
 export const SUBJECT_CONTRACT_DESCRIBE = "flb.req.contract.describe"
 export const INGRESS_PREFIX = "flb.ing."
 
+// Daemon refusal sorts are server-side classification, not a wire field.
+// A future refusal corpus may admit only `structural`; `absence` is a
+// head-relative observation that later presence can repeal.
+export const DAEMON_REFUSAL_SORTS = {
+  "malformed": "structural",
+  "invalid-structure": "structural",
+  "digest-mismatch": "structural",
+  "bad-cursor": "structural",
+  "unknown-request": "structural",
+  "bad-journal": "structural",
+  "unknown-ref": "absence",
+  "unknown-identity": "absence",
+  "unknown-journal": "absence",
+} as const
+
+export type DaemonRefusalKind = keyof typeof DAEMON_REFUSAL_SORTS
+export type RefusalSort = typeof DAEMON_REFUSAL_SORTS[DaemonRefusalKind]
+
+export const refusalSortOf = (kind: string): RefusalSort | undefined =>
+  Object.prototype.hasOwnProperty.call(DAEMON_REFUSAL_SORTS, kind)
+    ? DAEMON_REFUSAL_SORTS[kind as DaemonRefusalKind]
+    : undefined
+
 // ——— shapes ———
 
 export const NextHint = Schema.Struct({
