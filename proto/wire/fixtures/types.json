@@ -114,15 +114,15 @@
       "k": "union",
       "of": [
         {
-          "k": "string"
+          "k": "null"
         },
         {
-          "k": "null"
+          "k": "string"
         }
       ]
     },
-    "canonical": "{\"k\":\"union\",\"of\":[{\"k\":\"string\"},{\"k\":\"null\"}]}",
-    "digest": "3d3cbdd410da272e7b1bac04faa3163a8608f62878c5693aef339b23501e8d8f"
+    "canonical": "{\"k\":\"union\",\"of\":[{\"k\":\"null\"},{\"k\":\"string\"}]}",
+    "digest": "8bbbbf4263aff526a7d3a8a3fbad5f0255adf3ab4eaa6ce780b142240c9e72ff"
   },
   {
     "name": "brand",
@@ -154,6 +154,14 @@
     "digest": "8f12d111b7e730b86408c9bdefc5ae837f5df6657f9ad63db0d9b65ca44b6e8a"
   },
   {
+    "name": "opaque",
+    "structure": {
+      "k": "opaque"
+    },
+    "canonical": "{\"k\":\"opaque\"}",
+    "digest": "714cc72ebf92bfee7564a62f331920cde96ad36fee2d4bb43b36554f02d7456b"
+  },
+  {
     "name": "sensor-reading",
     "structure": {
       "fields": {
@@ -175,11 +183,11 @@
           "of": [
             {
               "k": "literal",
-              "value": "on"
+              "value": "off"
             },
             {
               "k": "literal",
-              "value": "off"
+              "value": "on"
             }
           ]
         },
@@ -192,14 +200,14 @@
         "note"
       ]
     },
-    "canonical": "{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"on\"},{\"k\":\"literal\",\"value\":\"off\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]}",
-    "digest": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011"
+    "canonical": "{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"off\"},{\"k\":\"literal\",\"value\":\"on\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]}",
+    "digest": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f"
   },
   {
     "name": "ref-with-check",
     "structure": {
       "base": {
-        "digest": "eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011",
+        "digest": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f",
         "k": "ref"
       },
       "check": {
@@ -210,8 +218,8 @@
       },
       "k": "check"
     },
-    "canonical": "{\"base\":{\"digest\":\"eb701c0ba8c102e913cab33216b73cfcbf79531a01d0cadac87aad9237319011\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
-    "digest": "26ed25681cc6afa620830a500a379c5ecf28418fe3f2460a58fcdf1ce7a204b1"
+    "canonical": "{\"base\":{\"digest\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
+    "digest": "3b12c67ef0b2a43089c27f605a48fb72f55fdb9101933a84686b9f54fa14f85d"
   },
   {
     "name": "string-escapes",

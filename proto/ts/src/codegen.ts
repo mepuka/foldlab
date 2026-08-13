@@ -5,7 +5,7 @@
 // target owes the round-trip wall: derive → compile → re-fold → same
 // digest (test/codegen.test.ts, over the frozen fixture corpus).
 import { Schema } from "effect"
-import { REF_ANNOTATION } from "./author.ts"
+import { ref } from "./author.ts"
 import type { Json } from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
 
@@ -65,6 +65,8 @@ const toSchemaNode = (
       return Schema.Number
     case "null":
       return Schema.Null
+    case "opaque":
+      return Schema.Unknown
     case "literal":
       return Schema.Literal(n["value"] as any)
     case "list": {
@@ -117,8 +119,7 @@ const toSchemaNode = (
       }
       const compiled = toSchemaNode(target, [...path, "(ref)"], resolve)
       if (compiled instanceof Fail) return compiled
-      // The marker makes re-folding recover the ref, not the target.
-      return compiled.pipe(Schema.annotate({ [REF_ANNOTATION]: digest } as any))
+      return ref(digest, compiled)
     }
     default:
       return underivable([...path, "k"], n["k"], "unknown kind")
@@ -135,10 +136,6 @@ export const toEffectSchema = (
 }
 
 // ——— json-schema target (draft 2020-12) ———
-
-/** The well-known opaque brand: positions v0 cannot yet describe
- * (recursive grammar, arbitrary JSON) render permissively. */
-export const OPAQUE_BRAND = "flb.v0.opaque"
 
 const toJsonSchemaNode = (
   value: Json,
@@ -157,6 +154,8 @@ const toJsonSchemaNode = (
       return { type: "number" }
     case "null":
       return { type: "null" }
+    case "opaque":
+      return {}
     case "literal":
       return { const: n["value"] ?? null }
     case "list": {
@@ -187,7 +186,6 @@ const toJsonSchemaNode = (
       return { anyOf: members }
     }
     case "brand": {
-      if (n["name"] === OPAQUE_BRAND) return {} // accepts any JSON; the daemon validates
       const of = toJsonSchemaNode(n["of"] as Json, [...path, "of"])
       if (of instanceof Fail) return of
       return { ...of, "x-flb-brand": n["name"] ?? null }
@@ -253,6 +251,8 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       return "float64"
     case "null":
       return "any // null"
+    case "opaque":
+      return "any // opaque"
     case "literal":
       return `any // literal ${JSON.stringify(n["value"] ?? null)}`
     case "union":
@@ -263,7 +263,6 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       return `[]${of.split(" //")[0]}`
     }
     case "brand": {
-      if (n["name"] === OPAQUE_BRAND) return "any // opaque"
       const of = toGoType(n["of"] as Json, [...path, "of"])
       if (of instanceof Fail) return of
       return `${of.split(" //")[0]} // brand ${n["name"]}`

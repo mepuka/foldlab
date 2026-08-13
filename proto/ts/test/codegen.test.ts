@@ -42,19 +42,19 @@ describe("json-schema target", () => {
         celsius: { type: "number" },
         count: { type: "integer" },
         id: { type: "string", "x-flb-brand": "SensorId" },
-        mode: { anyOf: [{ const: "on" }, { const: "off" }] },
+        mode: { anyOf: [{ const: "off" }, { const: "on" }] },
         note: { type: "string" },
       },
     })
     expect(derived.value["required"]).toEqual(["celsius", "count", "id", "mode"])
   })
 
-  test("checks land as constraints; the opaque brand renders permissively", () => {
+  test("checks land as constraints; the opaque node renders permissively", () => {
     const check = vectors.find((v) => v.name === "check-min-length")!
     const derived = toJsonSchema(check.structure)
     expect(derived).toMatchObject({ ok: true, value: { type: "string", minLength: 1 } })
 
-    const opaque = toJsonSchema({ k: "brand", name: "flb.v0.opaque", of: { k: "struct", fields: {}, optional: [] } })
+    const opaque = toJsonSchema({ k: "opaque" })
     expect(opaque).toMatchObject({ ok: true, value: {} })
   })
 

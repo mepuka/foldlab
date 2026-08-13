@@ -2,7 +2,7 @@
 // beyond v0 with the uniform refusal shape (as data, marked local).
 import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
-import { foldSchema } from "../src/author.ts"
+import { foldSchema, ref } from "../src/author.ts"
 import { structureDigest } from "../src/jcs.ts"
 
 describe("author fold maps the v0 slice", () => {
@@ -12,6 +12,7 @@ describe("author fold maps the v0 slice", () => {
     expect(foldSchema(Schema.Number)).toMatchObject({ ok: true, structure: { k: "float" } })
     expect(foldSchema(Schema.Int)).toMatchObject({ ok: true, structure: { k: "int" } })
     expect(foldSchema(Schema.Null)).toMatchObject({ ok: true, structure: { k: "null" } })
+    expect(foldSchema(Schema.Unknown)).toMatchObject({ ok: true, structure: { k: "opaque" } })
     expect(foldSchema(Schema.Literal("on"))).toMatchObject({
       ok: true,
       structure: { k: "literal", value: "on" },
@@ -38,8 +39,8 @@ describe("author fold maps the v0 slice", () => {
         mode: {
           k: "union",
           of: [
-            { k: "literal", value: "on" },
             { k: "literal", value: "off" },
+            { k: "literal", value: "on" },
           ],
         },
         note: { k: "string" },
@@ -74,6 +75,35 @@ describe("author fold maps the v0 slice", () => {
     const b = foldSchema(Schema.Struct({ y: Schema.String, x: Schema.Int }))
     expect(a.ok && b.ok).toBe(true)
     if (a.ok && b.ok) expect(a.digest).toBe(b.digest)
+  })
+
+  test("union member order never moves identity", () => {
+    const a = foldSchema(Schema.Union([Schema.String, Schema.Null]))
+    const b = foldSchema(Schema.Union([Schema.Null, Schema.String]))
+    expect(a.ok && b.ok).toBe(true)
+    if (a.ok && b.ok) {
+      expect(a.structure).toEqual({ k: "union", of: [{ k: "null" }, { k: "string" }] })
+      expect(a.digest).toBe(b.digest)
+    }
+  })
+
+  test("duplicate union members refuse after canonical-byte sorting", () => {
+    const folded = foldSchema(Schema.Union([Schema.String, Schema.String]))
+    expect(folded.ok).toBe(false)
+    if (folded.ok) return
+    expect(folded.refusal.kind).toBe("invalid-structure")
+    expect(folded.refusal.path).toEqual(["structure", "of", "1"])
+  })
+
+  test("a ref is a Declaration whose identifier is the digest", () => {
+    const digest = "a".repeat(64)
+    const schema = ref(digest, Schema.String)
+    expect(schema.ast._tag).toBe("Declaration")
+    expect(schema.ast.annotations?.identifier).toBe(digest)
+    expect(foldSchema(schema)).toMatchObject({
+      ok: true,
+      structure: { k: "ref", digest },
+    })
   })
 })
 

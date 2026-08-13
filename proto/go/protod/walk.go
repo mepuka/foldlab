@@ -1,6 +1,7 @@
 package protod
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"sort"
@@ -16,7 +17,7 @@ import (
 var hexDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 var v0Kinds = []string{
-	"string", "bool", "int", "float", "null",
+	"string", "bool", "int", "float", "null", "opaque",
 	"literal", "list", "struct", "union", "brand", "check", "ref",
 }
 
@@ -53,7 +54,7 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 	}
 
 	switch kind {
-	case "string", "bool", "int", "float", "null":
+	case "string", "bool", "int", "float", "null", "opaque":
 		return checkKeys(node, path, kind, "k")
 	case "literal":
 		if r := checkKeys(node, path, kind, "k", "value"); r != nil {
@@ -99,10 +100,39 @@ func walkNode(value any, path []string, result *walkResult) *Refusal {
 				node["of"], "a non-empty array of types",
 				map[string]any{"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "null"}}})
 		}
+		type canonicalMember struct {
+			value any
+			bytes []byte
+		}
+		canonical := make([]canonicalMember, len(members))
 		for index, member := range members {
 			if r := walkNode(member, append(path, "of", fmt.Sprintf("%d", index)), result); r != nil {
 				return r
 			}
+			memberBytes, err := canonicalBytes(member)
+			if err != nil {
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+					"flb.type.v0: every union member must have canonical JSON bytes",
+					member, "a canonicalizable type node", map[string]any{"k": "string"})
+			}
+			canonical[index] = canonicalMember{value: member, bytes: memberBytes}
+		}
+		// Law: order never moves identity in an unordered collection.
+		// Normalize union members by their canonical bytes before the
+		// enclosing structure is encoded and digested.
+		sort.Slice(canonical, func(i, j int) bool {
+			return bytes.Compare(canonical[i].bytes, canonical[j].bytes) < 0
+		})
+		for index := 1; index < len(canonical); index++ {
+			if bytes.Equal(canonical[index-1].bytes, canonical[index].bytes) {
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+					"flb.type.v0: union members must be unique after canonical-byte sorting",
+					canonical[index].value, "a member with distinct canonical bytes",
+					map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}})
+			}
+		}
+		for index := range canonical {
+			members[index] = canonical[index].value
 		}
 		return nil
 	case "brand":

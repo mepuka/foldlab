@@ -104,18 +104,25 @@ same shape with `local:true` for its own conditions (`unreachable`,
 ## flb.type.v0 specifics pinned by this implementation
 
 - Nodes are strict: unknown `"k"` refuses; unknown keys refuse.
+- `{"k":"opaque"}` means any well-formed v0 value not structurally
+  described here. It has no children; derivation targets render it
+  permissively (`Schema.Unknown`, JSON Schema `{}`, Go `any`).
 - `struct.optional` names must be declared, unique, and sorted by
-  UTF-16 code units — array order must not move identity.
-- `union.of` is a non-empty ordered array (member order moves identity).
+  UTF-16 code units.
+- `union.of` is non-empty; members are recursively normalized, sorted
+  lexicographically by their canonical UTF-8 bytes, and must be unique
+  after sorting. Arrays whose order is not semantic must define a sort:
+  RFC 8785 sorts object members only, not arrays.
 - `check.args` is a required JSON object (possibly empty); check names
   are free strings from the foldlab-owned table (`minLength`,
   `maxLength`, `pattern`, `min`, `max`, `greaterThan`, `lessThan` in
   the bullet).
 - `ref.digest` is 64 lowercase hex and must resolve at create time —
-  the catalog is a DAG by construction.
-- The well-known brand `flb.v0.opaque` marks positions v0 cannot yet
-  describe (used only by the contract description); derivation targets
-  render it permissively.
+  the catalog is a DAG by construction. On the Effect authoring side a
+  ref is a non-parametric Declaration whose required `identifier`
+  annotation is that digest. General annotations remain uncommitted:
+  a Declaration identifier bears identity because it is the node's only
+  canonicalizable substance.
 
 ## Identity
 
@@ -132,7 +139,8 @@ independently (`proto/go/protod/wall_test.go`,
 `-force` and a stated reason committed with the change.
 
 - `types.json` — flb.type.v0 structures with canonical bytes + digests
-  (leaves, literals, UTF-16 key ordering, escapes, nesting, ref).
+  (leaves, opaque, literals, UTF-16 key ordering, canonical union order,
+  escapes, nesting, ref).
 - `chains.json` — journal chain vectors: payloads → entry digests → head.
 - `frames.json` — ingress frames with canonical bytes (unicode, number
   normalization).

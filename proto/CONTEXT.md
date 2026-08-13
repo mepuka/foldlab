@@ -38,10 +38,11 @@ refuses (`beyond-v0`) with the uniform shape. Its check-name table is
 the pin-independence seam: representation ids in, foldlab-owned names
 out.
 
-**Ref marker**:
-The `flb.ref` annotation a compiled ref schema carries so re-folding
-recovers `{"k":"ref","digest"}` instead of the inlined target. The one
-annotation that bears identity — a deliberate carve-out (DECISIONS.md).
+**Declaration ref**:
+The non-parametric Effect Declaration used to author
+`{"k":"ref","digest"}`; its required `identifier` is the digest.
+The identifier bears identity because it is the Declaration node's only
+canonicalizable substance.
 
 **Round-trip wall**:
 derive → compile → re-fold → same digest, over the frozen fixture

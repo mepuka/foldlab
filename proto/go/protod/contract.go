@@ -6,10 +6,9 @@ package protod
 // structurally impossible.
 //
 // v0 has no recursion, so it cannot describe its own grammar; positions
-// holding "any flb.type.v0 structure" or "any JSON value" are marked
-// with the well-known brand "flb.v0.opaque", which derivation targets
-// render permissively. Self-cataloging the contract's own types is
-// deferred until ticket 004 lands in full (spec non-goal).
+// holding "any well-formed v0 value, not structurally described here"
+// use the first-class opaque node. Self-cataloging the contract's own
+// types is deferred until ticket 004 lands in full (spec non-goal).
 
 func vKind(k string) map[string]any { return map[string]any{"k": k} }
 
@@ -36,7 +35,7 @@ func vCheck(base map[string]any, name string, args map[string]any) map[string]an
 }
 
 func vOpaque() map[string]any {
-	return vBrand("flb.v0.opaque", vStruct(map[string]any{}))
+	return vKind("opaque")
 }
 
 func vDigest() map[string]any {

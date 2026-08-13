@@ -301,3 +301,30 @@ stdin lifetime, made explicit. **Load-bearing? no.**
 - Bun quirk: a script OUTSIDE a directory with node_modules will
   auto-install `effect@latest` (v3!) silently — run probes/tools from
   inside proto/ts or the pin is not what you think it is.
+
+## Ratified amendment implementation (2026-08-12)
+
+### D30. Ref helper: `ref(digest, target = Schema.Unknown)`
+Decided: the TS authoring helper returns a non-parametric
+`Schema.declare` whose required `identifier` is the digest. Its
+optional target is captured only by the Declaration's runtime predicate;
+it does not become a type parameter or AST child. Codegen passes the
+resolved compiled target, while a bare authoring ref defaults to
+`Schema.Unknown`. Alternatives: an always-permissive
+`ref(digest)` (loses resolved runtime validation); a parametric
+Declaration carrying the target AST (the identifier would no longer be
+the node's only canonicalizable substance). Why: this implements
+amendment 1 literally while preserving the prior effect-schema target's
+runtime validation when a catalog resolver is available.
+**Load-bearing? maybe** — the AST identity shape is ratified; whether a
+bare ref should validate anything is an authoring-DX choice.
+
+### D31. Opaque compiles to `Schema.Unknown`
+Decided: the effect-schema target for `{"k":"opaque"}` is
+`Schema.Unknown`; refolding `Schema.Unknown` yields the opaque node.
+Alternatives: `Schema.Any` (weakens the TypeScript side to `any`);
+`Schema.Json` (a Declaration with its own representation and not an
+honest inverse of the first-class node). Why: the transport boundary
+already limits values to JSON, while `unknown` is the safe,
+permissive TypeScript face and round-trips without another convention.
+**Load-bearing? no.**

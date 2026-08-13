@@ -11,6 +11,21 @@ export type Json = null | boolean | number | string | Json[] | { [key: string]: 
  * RFC 8785 specifies for member sorting. */
 const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
+const utf8 = new TextEncoder()
+
+/** Lexicographic byte order, used when a grammar law sorts already
+ * canonicalized values rather than RFC 8785 object member names. */
+export const compareCanonicalBytes = (left: string, right: string): number => {
+  const leftBytes = utf8.encode(left)
+  const rightBytes = utf8.encode(right)
+  const length = Math.min(leftBytes.length, rightBytes.length)
+  for (let index = 0; index < length; index++) {
+    const delta = leftBytes[index]! - rightBytes[index]!
+    if (delta !== 0) return delta
+  }
+  return leftBytes.length - rightBytes.length
+}
+
 /** Canonical bytes of a JSON value (RFC 8785). JSON.stringify already
  * matches JCS for strings (minimal escapes) and numbers (ES shortest
  * form); the work is member ordering and domain policing. */
@@ -31,10 +46,49 @@ export const canonicalize = (value: Json): string => {
 export const sha256Hex = (input: string): string =>
   createHash("sha256").update(input, "utf8").digest("hex")
 
+/** Normalize the one unordered collection in flb.type.v0. This is
+ * deliberately grammar-aware: arrays in literals/check args remain
+ * ordered JSON data, while union members sort by their canonical bytes. */
+export const normalizeStructure = (value: Json): Json => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return value
+
+  switch (value["k"]) {
+    case "list":
+      return { ...value, of: normalizeStructure(value["of"] as Json) }
+    case "struct": {
+      const rawFields = value["fields"]
+      if (typeof rawFields !== "object" || rawFields === null || Array.isArray(rawFields)) return value
+      const fields: Record<string, Json> = {}
+      for (const name of Object.keys(rawFields)) {
+        fields[name] = normalizeStructure(rawFields[name] as Json)
+      }
+      return { ...value, fields }
+    }
+    case "union": {
+      const rawMembers = value["of"]
+      if (!Array.isArray(rawMembers)) return value
+      const members = rawMembers.map(normalizeStructure)
+      members.sort((left, right) => compareCanonicalBytes(canonicalize(left), canonicalize(right)))
+      return { ...value, of: members }
+    }
+    case "brand":
+      return { ...value, of: normalizeStructure(value["of"] as Json) }
+    case "check":
+      return { ...value, base: normalizeStructure(value["base"] as Json) }
+    default:
+      return value
+  }
+}
+
+/** Canonical bytes of a structure after applying its grammar-level
+ * unordered-collection normalization. */
+export const canonicalizeStructure = (structure: Json): string =>
+  canonicalize(normalizeStructure(structure))
+
 /** The interim identity scheme, named to match the daemon (W10). */
 export const SCHEME = "bytes-sha256-v1"
 
-export const structureDigest = (structure: Json): string => sha256Hex(canonicalize(structure))
+export const structureDigest = (structure: Json): string => sha256Hex(canonicalizeStructure(structure))
 
 export interface ChainEntry {
   readonly seq: number

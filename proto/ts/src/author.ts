@@ -5,9 +5,15 @@
 // names: alignment of meaning, independence of preimage — a pin bump
 // that renames a representation breaks THIS table loudly, never a
 // digest silently.
-import type { Schema } from "effect"
 import type { SchemaAST } from "effect"
-import { canonicalize, structureDigest, type Json } from "./jcs.ts"
+import { Schema } from "effect"
+import {
+  canonicalize,
+  canonicalizeStructure,
+  compareCanonicalBytes,
+  structureDigest,
+  type Json,
+} from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
 
 export type V0 = { [key: string]: Json }
@@ -16,11 +22,20 @@ export type FoldResult =
   | { readonly ok: true; readonly structure: V0; readonly digest: string; readonly canonical: string }
   | { readonly ok: false; readonly refusal: Refusal }
 
-/** The authoring marker for refs: a compiled ref schema carries the
- * target digest as an annotation so re-folding recovers the ref instead
- * of the inlined target. The one annotation that is identity-bearing —
- * the carve-out is logged in DECISIONS.md. */
-export const REF_ANNOTATION = "flb.ref"
+const HEX_DIGEST = /^[0-9a-f]{64}$/
+
+/** Author a cross-type reference as an opaque Effect Declaration. The
+ * optional target supplies runtime validation without entering the AST;
+ * the Declaration's required identifier is the reference digest. */
+export const ref = (
+  digest: string,
+  target: Schema.Top = Schema.Unknown,
+): Schema.declare<unknown> => {
+  const isTarget = Schema.is(target)
+  return Schema.declare<unknown>((input): input is unknown => isTarget(input), {
+    identifier: digest,
+  })
+}
 
 interface CheckMapping {
   readonly name: string
@@ -98,13 +113,7 @@ const foldNode = (ast: SchemaAST.AST, path: ReadonlyArray<string>): V0 | Fail =>
   const isInt = node._tag === "Number" && checks.some((c) => c.id === INT_REPRESENTATION)
   const declaredChecks = isInt ? checks.filter((c) => c.id !== INT_REPRESENTATION) : checks
 
-  // The ref marker wins over the structural tag: a compiled ref folds
-  // back to the ref, not to the inlined target.
-  const refDigest = node.annotations?.[REF_ANNOTATION]
-  const base: V0 | Fail =
-    typeof refDigest === "string"
-      ? { k: "ref", digest: refDigest }
-      : foldBase(node, path, isInt)
+  const base = foldBase(node, path, isInt)
   if (base instanceof Fail) return base
 
   let structure: V0 = base
@@ -142,6 +151,25 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
       return { k: isInt ? "int" : "float" }
     case "Null":
       return { k: "null" }
+    case "Unknown":
+      return { k: "opaque" }
+    case "Declaration": {
+      // Law: an annotation is identity-bearing exactly when it is the
+      // node's only canonicalizable substance. A ref is a Declaration
+      // whose required identifier is the referenced digest.
+      if (node.typeParameters.length !== 0) {
+        return beyond(path, node._tag, "only non-parametric Declarations can represent refs in v0")
+      }
+      const identifier = node.annotations?.identifier
+      if (typeof identifier !== "string" || !HEX_DIGEST.test(identifier)) {
+        return beyond(
+          path,
+          identifier,
+          "a Declaration ref requires a 64-char lowercase hex digest as its identifier",
+        )
+      }
+      return { k: "ref", digest: identifier }
+    }
     case "Literal": {
       const literal = node.literal
       if (
@@ -182,13 +210,34 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
     }
     case "Union": {
       if (node.mode !== "anyOf") return beyond(path, node.mode, 'only "anyOf" unions are in v0')
-      const members: Json[] = []
+      const members: Array<{ readonly value: Json; readonly canonical: string }> = []
       for (let index = 0; index < node.types.length; index++) {
         const folded = foldNode(node.types[index], [...path, "of", String(index)])
         if (folded instanceof Fail) return folded
-        members.push(folded)
+        members.push({ value: folded, canonical: canonicalize(folded) })
       }
-      return { k: "union", of: members }
+      // Law: order never moves identity in an unordered collection.
+      members.sort((left, right) => compareCanonicalBytes(left.canonical, right.canonical))
+      for (let index = 1; index < members.length; index++) {
+        if (members[index - 1]!.canonical === members[index]!.canonical) {
+          return new Fail(
+            localRefusal(
+              "invalid-structure",
+              "flb.type.v0: union members must be unique after canonical-byte sorting",
+              {
+                path: [...path, "of", String(index)],
+                got: members[index]!.value,
+                expected: "a member with distinct canonical bytes",
+                example: {
+                  k: "union",
+                  of: [{ k: "null" }, { k: "string" }],
+                },
+              },
+            ),
+          )
+        }
+      }
+      return { k: "union", of: members.map((member) => member.value) }
     }
     default:
       return beyond(path, node._tag, `the ${node._tag} node is beyond v0`)
@@ -205,6 +254,6 @@ export const foldSchema = (schema: Schema.Top): FoldResult => {
     ok: true,
     structure: folded,
     digest: structureDigest(folded),
-    canonical: canonicalize(folded),
+    canonical: canonicalizeStructure(folded),
   }
 }

@@ -382,6 +382,42 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("permuted resubmission must converge: %v", second)
 		}
 	})
+
+	t.Run("union member order is canonical: permuted members converge", func(t *testing.T) {
+		first := h.create(map[string]any{
+			"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "null"}},
+		})
+		second := h.create(map[string]any{
+			"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}},
+		})
+		if first["ok"] != true || second["ok"] != true {
+			t.Fatalf("union creates failed: %v / %v", first, second)
+		}
+		if first["digest"] != second["digest"] {
+			t.Fatalf("union member order moved identity: %v != %v", first["digest"], second["digest"])
+		}
+		if second["created"] != false {
+			t.Fatalf("permuted union resubmission must converge: %v", second)
+		}
+	})
+
+	t.Run("duplicate union members refuse at the sorted duplicate", func(t *testing.T) {
+		r := h.create(map[string]any{
+			"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "string"}},
+		})
+		refusal := h.refusal(r, "invalid-structure")
+		path := refusal["path"].([]any)
+		if fmt.Sprint(path) != "[structure of 1]" {
+			t.Fatalf("duplicate path is %v, want [structure of 1]", path)
+		}
+	})
+
+	t.Run("opaque is a first-class leaf", func(t *testing.T) {
+		r := h.create(map[string]any{"k": "opaque"})
+		if r["ok"] != true || r["created"] != true {
+			t.Fatalf("opaque create failed: %v", r)
+		}
+	})
 }
 
 // The catalog index survives a daemon restart over the same store: the

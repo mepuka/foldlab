@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"foldlab/canonical"
 )
@@ -65,6 +66,13 @@ func m(pairs ...any) map[string]any {
 	return out
 }
 
+func union(members ...any) map[string]any {
+	sort.Slice(members, func(i, j int) bool {
+		return mustCanonical(members[i]) < mustCanonical(members[j])
+	})
+	return m("k", "union", "of", members)
+}
+
 func buildTypes() []typeVector {
 	str := m("k", "string")
 	sensor := m(
@@ -73,10 +81,10 @@ func buildTypes() []typeVector {
 			"id", m("k", "brand", "name", "SensorId", "of", str),
 			"celsius", m("k", "float"),
 			"count", m("k", "int"),
-			"mode", m("k", "union", "of", []any{
+			"mode", union(
 				m("k", "literal", "value", "on"),
 				m("k", "literal", "value", "off"),
-			}),
+			),
 			"note", str,
 		),
 		"optional", []any{"note"},
@@ -100,12 +108,13 @@ func buildTypes() []typeVector {
 			"fields", m("a", str, "Z", m("k", "int"), "é", m("k", "bool")),
 			"optional", []any{"é"},
 		)),
-		vector("union", m("k", "union", "of", []any{str, m("k", "null")})),
+		vector("union", union(str, m("k", "null"))),
 		vector("brand", m("k", "brand", "name", "UserId", "of", str)),
 		vector("check-min-length", m(
 			"k", "check", "base", str,
 			"check", m("name", "minLength", "args", m("min", 1)),
 		)),
+		vector("opaque", m("k", "opaque")),
 		vector("sensor-reading", sensor),
 		vector("ref-with-check", m(
 			"k", "check",
