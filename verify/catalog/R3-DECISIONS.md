@@ -61,6 +61,21 @@ Data journals are unbounded in the R3 domains (`DataCap = 0`), so no
 `Gen(k)` expresses every `IndInv` state and the choice is unavoidable.
 The argument:
 
+> **Premise A (append-only `data`), load-bearing and checked against the
+> transition relation, not assumed:** `data'` is written in exactly one
+> place in the whole spec — `Publish`'s
+> `data' = [data EXCEPT ![d] = Append(@, i)]`. Every other action leaves
+> it alone: `MirrorAdvance` and `MirrorReset` carry
+> `UNCHANGED <<catalog, data, creators>>`, and the create halves reach
+> `data` only through `Become`, whose callers (`CreateBeginResult`,
+> `CreateFinishResults`) write only `![1]` and `![4]`, never `![3]`. So
+> no action rewrites, reorders, removes, or compacts an existing entry.
+> Verified by enumeration over the module, not by reading: `data' =`
+> occurs exactly twice in `Catalog.tla` — `Become`'s `data' = DataOf(s)`
+> and `Publish`'s `Append` — and every `before EXCEPT` in the create
+> halves writes only `![1]` or `![4]`, so `DataOf(s) = data` at every
+> `Become` call site. `Publish`'s refusal branch is `UNCHANGED vars`.
+>
 > `data` occurs in exactly three places in the whole obligation set:
 > `TypeOK`'s pointwise entry typing, `NoAdmissionOnFaith`'s pointwise
 > `\A k`, and `AdmissionStep`. No guard reads it — `Publish`'s
@@ -70,18 +85,37 @@ The argument:
 > `IndInv(trunc(sigma))` holds, because the only `data` conjuncts are
 > pointwise `\A` over `DOMAIN data[d]`, vacuous on `<<>>`, and no other
 > conjunct mentions `data`; (b) `trunc` disables no action, every guard
-> being data-free here; (c) `trunc` preserves every violation — a
-> violation of a conjunct that does not mention `data` is untouched, and
-> a violation of `NoAdmissionOnFaith'` at an index `k <= Len(data[d])`
-> is impossible because `IndInv(sigma)` already put that entry in
-> `CommittedIds` and `CommittedIds` is monotone (every action only
-> appends to `catalog`). A new violation can therefore only be at the
-> appended entry — index 1 of a journal truncated to `<<>>`; likewise
-> `TypeOK'` and `AdmissionStep` constrain only the appended entry and
-> the pre-state `catalog`/`mirror`, never the earlier entries.
+> being data-free here; (c) `trunc` preserves every violation, conjunct
+> by conjunct:
+>
+> - a conjunct that does not mention `data` is untouched by `trunc`;
+> - `NoAdmissionOnFaith'` cannot be violated at an index
+>   `k <= Len(data[d])`: `IndInv(sigma)` already put that entry in
+>   `CommittedIds`, and `CommittedIds` is monotone because every action
+>   only appends to `catalog`. So only the appended entry can newly
+>   violate it — index 1 of a journal truncated to `<<>>`;
+> - `AdmissionStep`'s `Len(data'[d]) = Len(data[d]) + 1` and
+>   `SubSeq(data'[d], 1, Len(data[d])) = data[d]` conjuncts DO constrain
+>   the earlier entries — that is exactly what they say. They survive
+>   `trunc` not because they ignore those entries but because
+>   **Premise A** makes them structurally true of every step the
+>   transition relation admits: the sole write is an `Append`, so they
+>   can never be the violated conjunct, and after truncation they still
+>   hold (`Len(<<i>>) = Len(<<>>) + 1`, `SubSeq(<<i>>, 1, 0) = <<>>`);
+> - `AdmissionStep`'s remaining conjunct
+>   `data'[d][Len(data'[d])] \in ResolvableIds(d)` and `TypeOK'`'s entry
+>   typing depend only on the appended entry and the pre-state
+>   `catalog`/`mirror`, all of which `trunc` preserves.
 
 Hence pre-state data depth 0 (post-state 1) exhibits every violation any
 depth exhibits, and `Gen(2)` covers the cutoff with one to spare.
+
+Premise A is written out because it is the part a future edit can break
+silently. An action that compacts, reindexes, trims, or replays a data
+journal would falsify it while every other line of this argument still
+read as valid — and the cutoff, not the invariant, is what would become
+unsound. Anyone adding such an action must redo this argument, not just
+re-run the gate.
 
 The argument is what licenses the bound. `IndInitDataDeep` re-runs
 consecution at `data = Gen(3)` as an insensitivity CONTROL: a verdict

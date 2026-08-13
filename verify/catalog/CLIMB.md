@@ -171,6 +171,17 @@ preserves every violation, because only the newly appended entry can
 newly violate anything. Pre-state depth 0 suffices; `Gen(2)` covers it
 with one to spare.
 
+The argument stands on a premise worth naming here too, because it is
+the part a future edit breaks silently: **`data` is append-only**.
+`data'` is written in exactly one place — `Publish`'s `Append` — and no
+action rewrites, reorders, removes, or compacts an existing entry. That
+is what makes `AdmissionStep`'s `Len` and `SubSeq` conjuncts
+structurally true rather than something the cutoff has to survive: they
+constrain the earlier entries, and they are satisfied by every step the
+relation admits. Add a compaction, reindex, or replay-truncation action
+and the cutoff becomes unsound while every other line of the argument
+still reads as valid.
+
 `IndInitDataDeep` re-runs consecution at `data = Gen(3)` as the
 insensitivity control. It corroborates the argument; the argument is
 what licenses the bound.
