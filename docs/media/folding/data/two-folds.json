@@ -1,0 +1,101 @@
+{
+  "_provenance": "bun docs/media/folding/scripts/two-folds.ts",
+  "seed": "1099c8b389d71353e55f64169cb2d3862a8d28b6271f613a4dbaceca0d36292c",
+  "emptyStateDigest": "9b39fcdedd223336fc6894d05a45aa044ef5af2f41303d1d9612a24fa206d388",
+  "frames": [
+    {
+      "seq": 0,
+      "payload": "status=new",
+      "head": "91fa7e8a9bee6fa02ff5f48882ac60733a58d2fe3e7f98c126f3ad6a9b3700f5",
+      "admitted": true,
+      "stateDigest": "ec0635310145d4f09740b6d1c8e1ac723cfdff79b9c67ab52d2d544635c89674",
+      "entries": [
+        [
+          "status",
+          "new"
+        ]
+      ],
+      "count": 1
+    },
+    {
+      "seq": 1,
+      "payload": "qty=2",
+      "head": "3f8b049a2fc25fba479cb4ca408de4a02fac77ebf8855270ec1036b1aa96f366",
+      "admitted": true,
+      "stateDigest": "fc9b2d24899c7513c2e5070696df82b3c4c9e9f7494f637ee775223c8d154f1d",
+      "entries": [
+        [
+          "status",
+          "new"
+        ],
+        [
+          "qty",
+          "2"
+        ]
+      ],
+      "count": 2
+    },
+    {
+      "seq": 2,
+      "payload": "status=paid",
+      "head": "ba5aba855992d85263d0aff7a5e51047284ba71b671238d8d2721107794c5583",
+      "admitted": true,
+      "stateDigest": "c1383bb2fabea906beff779c2641825e4779c95264faa36a4308edb5a7c28dd1",
+      "entries": [
+        [
+          "status",
+          "paid"
+        ],
+        [
+          "qty",
+          "2"
+        ]
+      ],
+      "count": 3
+    },
+    {
+      "seq": 3,
+      "payload": "shipped",
+      "head": "6755c28c869a40ec49ac83b3811abf120dc5857650783450372e7a040d190e2e",
+      "admitted": false,
+      "stateDigest": "c1383bb2fabea906beff779c2641825e4779c95264faa36a4308edb5a7c28dd1",
+      "entries": [
+        [
+          "status",
+          "paid"
+        ],
+        [
+          "qty",
+          "2"
+        ]
+      ],
+      "count": 3
+    },
+    {
+      "seq": 4,
+      "payload": "region=eu",
+      "head": "2e2e24f2614f15f18ffd7770f20b735dd9ec333111bb459b5ba212193fb37076",
+      "admitted": true,
+      "stateDigest": "6d00454da6846a708022cc0723aa5ddeaabd198198b9a5e78c81b57236a50f19",
+      "entries": [
+        [
+          "status",
+          "paid"
+        ],
+        [
+          "qty",
+          "2"
+        ],
+        [
+          "region",
+          "eu"
+        ]
+      ],
+      "count": 4
+    }
+  ],
+  "finalHead": "2e2e24f2614f15f18ffd7770f20b735dd9ec333111bb459b5ba212193fb37076",
+  "finalStateDigest": "6d00454da6846a708022cc0723aa5ddeaabd198198b9a5e78c81b57236a50f19",
+  "eventsCommitted": 5,
+  "eventsAdmittedToMeaning": 4
+}
