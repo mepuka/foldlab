@@ -1064,3 +1064,22 @@ Alternatives: name only the structure walk; keep envelope refusals in dispatch;
 export a convenience certifier. Why: each creates a second admission decision
 or an unlicensed public surface. **Load-bearing? yes** — Task 32 attaches outcome
 persistence at this seam.
+
+## Task 41 — deterministic, pure structure walk (2026-08-13)
+
+### D??. Unknown-key blame follows identity order through one helper
+
+Decided: every structure-walk site collects every unknown member and sorts it
+by RFC 8785 UTF-16 code-unit order before selecting the first refusal path;
+the same sorted list is returned as evidence where the refusal carries all
+offenders. Alternatives: Go map iteration (nondeterministic); `sort.Strings`
+(UTF-8 order disagrees above the BMP); special-case `check` while leaving the
+shared helper unchanged (two blame laws). Why: refusal paths and evidence are
+recomputable facts only when they follow the same ordering as identity.
+**Load-bearing? yes.**
+
+Task 36's named `normalize` is the load-bearing disposition for Issue #38 F-12:
+it normalizes into owned maps/slices after the position-preserving walk, and
+the Task 41 regression additionally proves that an earlier union remains
+byte-identical when a later sibling refuses. No second normalization path was
+introduced here.
