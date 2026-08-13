@@ -219,3 +219,41 @@ under `packages/core` so the effect catalog dep resolves).
 - **Next experiment:** `node --experimental-strip-types -e "import('...schema.ts')"`
   after a Node-resolvable install, then call `encodeFrame` and assert the
   `ReferenceError: Bun is not defined`.
+
+## 2026-08-13 — EFFECTOR (A6 register) — CLEAN (certified) + D1 boundary noted
+
+Ranked #1 by the coordinator (proven-model-vs-binary gap). Attacked the
+steal/commit CAS paths (effector.go 132/177/205-245), the stale-read-then-mutate
+window, the expired-but-unsuperseded commit path, and watch.go's Initial
+demarcation. Tests in `go/effector/zz_bugbreaker_test.go`.
+
+- **D2 CERTIFIED (safety holds):** `mise x go@1.26.5 -- go test ./effector/ -run TestBUG_D2`.
+  A claim superseded by a higher fence (steal after lease lapse) CANNOT land a
+  commit below the highest fence — `Commit` returns `ErrFenced` even though it
+  never checks expiry. The revision-CAS on the single authority key
+  (`work.<digest>`) is the real linearization point: every read-then-mutate
+  window (Claim steal at :177, Commit at :220, re-read at :226-245) is guarded by
+  `stored.Revision()`, so a stale read loses the CAS and re-reads to `ErrFenced`.
+  Fence is the authority; expiry is liveness-only exactly as the theorem states.
+- **Terminal-outcome uniqueness holds** within the register API: once `work.<d>`
+  holds an outcome, `Claim` (:159) and `Commit` (:202) both route to refusal /
+  `classifyCommitted` and never overwrite; only the first claim→outcome CAS
+  returns `first=true`.
+- **D1 — documented substrate boundary, NOT a register leak.** `Open`'s shape
+  gate cannot config-deny KV deletion (a KV bucket is inherently deletable;
+  there is no `DenyDelete` on `KeyValueConfig`). Under ADMIN credentials,
+  `kv.Delete` of a committed key resurrects Unclaimed and lets a second distinct
+  outcome commit at fence 1. This is precisely the admin-success NEGATIVE CONTROL
+  already proven in `go/substrate/assumptions_test.go`, which REFUSES the same
+  delete/purge to application credentials. The "Done never deleted" premise is
+  discharged by credential scoping, and my repro runs as admin — it re-derives
+  why that gate is load-bearing, not a new bug.
+- **Reading:** the effector is the repository's strongest compositionality-of-
+  proof example in the POSITIVE direction — the machine-checked fencing theorem
+  composes faithfully into the binary because the whole protocol funnels through
+  ONE lawful admission point (the revision-CAS on a single key), and the one
+  premise the code cannot enforce (substrate immutability) is explicitly lifted
+  into an executable credential gate rather than silently assumed. Contrast the
+  journal's `Open`/`Read` split (JR1) and `applySync`/`EntryDigest` second
+  encoders (C1/CG1), where a parallel path re-incurred an obligation and dropped
+  it.
