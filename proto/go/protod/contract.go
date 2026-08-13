@@ -133,7 +133,10 @@ func describeReply() map[string]any {
 			"version": "v0",
 			"scheme":  activeScheme.Name(),
 			"note": "every reply is either the request's fact shape or the uniform refusal " +
-				"{ok:false, refusal}; refusals are data and nothing throws across this seam",
+				"{ok:false, refusal}; refusals are data and nothing throws across this seam. " +
+				"Session compaction refuses until flb.certification.v0 corpus sealing exists: " +
+				"structural refusals export, absence refusals die with the trace, and the " +
+				"state digest and corpus digest remain as evidence.",
 			"requests": []any{
 				map[string]any{
 					"name":    "type_create",

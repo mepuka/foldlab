@@ -419,6 +419,11 @@ export class CompactionBoundary extends Data.TaggedError("CompactionBoundary")<{
  * from `base` over `tail` equals the uncompacted head — verification
  * crosses the compaction boundary. What is lost, only by explicit choice:
  * step-through INSIDE the discarded prefix.
+ *
+ * This generic stream primitive does not license session-journal compaction.
+ * The session journal itself refuses until flb.certification.v0 can export
+ * structural refusals, let absence refusals die with the trace, and preserve
+ * both the state digest and corpus digest as evidence of the summarized prefix.
  */
 export const compact = (
   base: Head,

@@ -466,7 +466,11 @@ type Compacted struct {
 	Tail  []Event
 }
 
-// Compact folds away the first k events of a log that began at base.
+// Compact folds away the first k events of a generic stream log that began at
+// base. It does not license session-journal compaction: the session journal
+// itself refuses until flb.certification.v0 can export structural refusals,
+// let absence refusals die with the trace, and preserve both the state digest
+// and corpus digest as evidence of the summarized prefix.
 func Compact(base Head, events []Event, k int) (Compacted, error) {
 	if k < 0 || k > len(events) {
 		return Compacted{}, fmt.Errorf("stream: compaction boundary %d outside 0..%d", k, len(events))

@@ -58,7 +58,11 @@ derived from them, never the other way round.
 
 **Compaction**:
 Replacing a prefix by its (head, fold state) pair. What is lost — only ever
-by explicit choice — is step-through inside the discarded prefix.
+by explicit choice — is step-through inside the discarded prefix. The generic
+stream primitive does not license session-journal compaction: that journal
+refuses until `flb.certification.v0` can export structural refusals, let absence
+refusals die with the trace, and preserve the state digest plus corpus digest as
+evidence of the summarized prefix.
 
 **Anchor**:
 An entity's (key, head, state digest) triple: the seen-this-history-before
