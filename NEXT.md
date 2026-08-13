@@ -306,62 +306,10 @@ The pattern: short term is evidence machinery on existing primitives,
 no decisions pending; medium term is identity machinery, each item
 behind a grill. Nothing on either list is speculative.
 
-NOTE: the ratified build order above supersedes the numbered backlog
-below where they disagree; the backlog remains as context.
-
-Landed since this list was last written: ticket 003's tracer bullet
-(both bullets, in `proto/`), ticket 009's first climb (R2; R3 repaired
-and in re-proof, claim held), ticket 010's R4 lockstep (claimed on the
-named coarsened map), ticket 011's substrate assumption gate (the
-envelope refuses what the proofs do not cover), ticket 014's fold
-algebra, the JCS differential lane, and the 2026-08-13 external review
-cycle: eleven filed findings fixed and closed same-day, the refusal
-walls (one meaning-fold; unforgeable brands; cross-language identity
-domains closed at a shared frozen vector), and the effector CERTIFIED
-clean against its machine-checked theorem on the running binary
-(docs/research/2026-08-13-effector-certified.md). Tickets 015 and 016
-were cut; both gate on 004. Newer tickets 017-021 (journaled outcomes,
-register store, NATS resolution, the Effect surface, JS-runtime
-resolution) live in docs/map/tickets/; ticket 020's phase 1
-(JournalMessageStorage — durable Effect workflows on the proven
-journal, browser demo) is grilled, ratified, and specced. Design
-dossiers — source-cited research write-ups, one per question — live in
-docs/design/ (the WorkflowEngine correspondence and product dialogue
-are the 020 anchors).
-
-1. The foldlab-owned canonical schema encoding (map ticket 004,
-   critical path): the daemon must recompute schema digests from bytes
-   alone. Interim identity stays `bytes-sha256-v1` over submitted
-   canonical bytes. Everything downstream waits here — the certificate
-   (005), the grammar generator (ticket 015, "the grammar foundry"),
-   the ontology explorer (016).
-2. The workflow abstraction (map ticket 008) — the one remaining
-   ungrilled decision on the path: program as digestable catalog data;
-   run as durable journaled fact.
-3. DONE — catalog R4 lockstep landed (ticket 010 closed): claimed
-   against the coarsened wire refinement with both bridge halves
-   machine-checked; the split-CAS branch's conformance is ticket 012's
-   obligation, and the oracle-referee gap (no independent check that
-   the Go oracle denotes the TLA relation) is a proposed follow-on.
-4. Graduate `proto/` along its own no-redesign map (`proto/AGENTS.md`):
-   go → `go/daemon` + `go/cmd`, ts/client → `packages/client`,
-   ts/author → `packages/core`, ts/codegen → `packages/codegen`,
-   ts/mcp → `packages/ai`, wire fixtures → `fixtures/`. Until this
-   runs, `go/daemon/` is a contract with no code beneath it.
-5. The hardening program: ticket 011 LANDED (the substrate assumption
-   gate refuses out-of-envelope configurations); ticket 012 (the
-   journal's own model gate, composed into the catalog model as a
-   refinement — now also carrying the split-CAS conformance obligation
-   and the D60 one-verifier law) and ticket 013 (the effector's proof
-   artifacts into `verify/effector/`) remain open.
-6. Derived-node conformance test on embedded NATS: the collector's first
-   real backing is NATS KV through the Go twin — anchors as
-   revision-CAS'd KV entries. (KV `Watch` live plane is DONE:
-   `go/effector/watch.go` + WL1–WL4.)
-
-Anything not listed here (lowering, codecs, entity census, effectful
-getters, the fold algebra's consumer-gated `range`) waits behind the
-map's gates.
+The older numbered backlog was retired after the operator ratified the build
+order above. Git history preserves it as context; it is intentionally absent
+here so this file exposes one current ordering. Work not named by that order
+waits behind the map's explicit gates.
 
 ## Go notes for the operator (from conversation)
 

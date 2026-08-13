@@ -56,6 +56,12 @@ with no TypeScript anywhere.
   hash-chained journal and the daemon recomputes every digest it
   commits; journal roles ratified as ADR-0009; ticket 004 joins the
   critical path.
+- [The foldlab-owned canonical schema encoding](tickets/004-the-foldlab-owned-canonical-schema-encoding.md) —
+  identity is SHA-256 over the owned canonical structure walk, never the
+  vendor AST; normalization is named, total, terminating, confluent, and
+  idempotent; declared checks and brands bear identity; recursion is excluded
+  from v0 with the SCC-based successor pre-ratified; Go and Effect enter
+  through explicit bridge records.
 - [OTLP backend selection](tickets/006-otlp-backend-selection.md) —
   Langfuse (runner-up Phoenix): dual-emit for certificate visibility,
   public per-trace share links, API read-back for the stranger's
