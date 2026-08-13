@@ -99,7 +99,7 @@ export const spawnReadReplyServer = async (reply: unknown): Promise<RunningDaemo
 export const spawnProtod = async (): Promise<RunningDaemon> => {
   const bin = await buildProtod()
   const store = mkdtempSync(join(tmpdir(), "flb-protod-store-"))
-  const proc = Bun.spawn([bin, "--store", store], {
+  const proc = Bun.spawn([bin, "--store", store, "--sync-mode", "crash-durable"], {
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",

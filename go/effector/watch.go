@@ -30,6 +30,9 @@ type Transition struct {
 // plane never invents authority, and tampering is caught where it
 // matters, on authority reads. The channel closes when ctx ends.
 func (e *Effector) Watch(ctx context.Context) (<-chan Transition, error) {
+	if err := e.standingShapeError(); err != nil {
+		return nil, err
+	}
 	watcher, err := e.kv.Watch(ctx, "work.>")
 	if err != nil {
 		return nil, err

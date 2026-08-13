@@ -12,7 +12,7 @@ import (
 
 func TestSessionMutationsRequireTheOwnedPrincipalBeforeAppend(t *testing.T) {
 	open := func(author string) (*Daemon, sessionStateReply) {
-		daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+		daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir(), SyncMode: SyncCrashDurable})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -68,7 +68,7 @@ func TestSessionMutationsRequireTheOwnedPrincipalBeforeAppend(t *testing.T) {
 }
 
 func TestSessionExpectedHeadRaceAdmitsExactlyOneMove(t *testing.T) {
-	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir(), SyncMode: SyncCrashDurable})
 	if err != nil {
 		t.Fatal(err)
 	}

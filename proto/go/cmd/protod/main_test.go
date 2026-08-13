@@ -21,7 +21,7 @@ func TestDefaultLifetimeExitsCleanlyWhenStdinCloses(t *testing.T) {
 		t.Fatalf("build the real protod binary: %v\n%s", err, output)
 	}
 
-	command := exec.Command(binary, "--store", t.TempDir())
+	command := exec.Command(binary, "--store", t.TempDir(), "--sync-mode", "crash-durable")
 	stdin, err := command.StdinPipe()
 	if err != nil {
 		t.Fatal(err)

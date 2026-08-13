@@ -193,7 +193,9 @@ traces, run record) and [proto/go/catalogr4/](proto/go/catalogr4/)
 
 TypeScript and Go implementations of the stream algebra take equal
 inputs to byte-identical digests; the journal's verify-on-read detects
-tampering.
+tampering. The daemon read path is the per-message JetStream management API,
+pipelined in a bounded window and verify-on-read folded strictly in sequence
+order; it does not enable the direct-get surface.
 
 ### Evidence
 
@@ -216,6 +218,11 @@ tampering.
 - Empirical crash evidence: fleet runs under kill-9 storms and cold
   restarts with independently verifiable bundles
   ([docs/gauntlet/](docs/gauntlet/)).
+- The retained sequential read and bounded pipelined read return identical
+  entries, entry digests, and cursor over the frozen conformance corpus
+  (`go/journal/hardening_internal_test.go`). Count-10 before/after throughput
+  and the durability price are recorded in
+  `docs/bench/2026-08-13-task-19-nats-hardening.md`.
 
 ### Bounds and residuals
 
@@ -245,12 +252,28 @@ tampering.
   25 duplicates, and 5 restarts per final bundle, timed at the hardest crash
   window. It does not establish stochastic-schedule, partition, or clustered
   behavior.
+- `crash-durable` acknowledgements cover process/kill-9 failure: acknowledged
+  bytes may still be only in kernel buffers, and the pinned server's failsafe
+  sync is approximately two minutes. Pull-the-plug/power loss is explicitly
+  **not covered**. `power-durable` sets pinned `server.Options.SyncAlways` and
+  pays the measured synchronous-write price in the benchmark record above.
+- JetStream API internal-queue overflow can still drop requests without an
+  error reply. The broker warning is no longer suppressed: protod logs it with
+  a monotone `ipq_drops_total`, but that is post-loss evidence, not recovery.
+  Operators must collect stderr. The listener impersonation residual is
+  discharged for the embedded daemon: every TCP client authenticates with a
+  fresh per-Acquire application credential and receives a private NATS account,
+  while the distinct in-process credential remains internal.
 
 ### Checkable at
 
 [fixtures/](fixtures/), [go/stream/](go/stream/),
 [packages/core/test/schema.wall.test.ts](packages/core/test/schema.wall.test.ts), and
-[docs/gauntlet/](docs/gauntlet/).
+[go/journal/hardening_internal_test.go](go/journal/hardening_internal_test.go),
+[go/effector/hardening_internal_test.go](go/effector/hardening_internal_test.go),
+[proto/go/protod/hardening_test.go](proto/go/protod/hardening_test.go),
+[the Task 19 benchmark record](docs/bench/2026-08-13-task-19-nats-hardening.md),
+and [docs/gauntlet/](docs/gauntlet/).
 
 ## KV meaning fold — combine and join — R0/R1 (TypeScript), R0 (Go)
 
@@ -512,7 +535,24 @@ it is not an exhaustive proof over all byte strings.
    victim's own request/reply succeeds and forged inbox publication remains
    permission-refused
    ([proto/go/protod/lifecycle_test.go](proto/go/protod/lifecycle_test.go)).
-4. Safety only. No liveness claim is made anywhere: leases, retries,
+   Acquisition also requires an
+   explicit `crash-durable` or `power-durable` sync mode; journal and effector
+   gates refuse async stream persistence and latch every pinned stream-update
+   advisory after Open
+   ([proto/go/protod/lifecycle_test.go](proto/go/protod/lifecycle_test.go)).
+4. NATS operational census: duplicate-window metadata persists across restart,
+   but journal correctness relies on expected-sequence CAS plus digest re-read;
+   client pending overflow is a loud disconnect, JetStream API IPQ loss is the
+   counted-log residual above, and per-stream internal queues may drop under
+   burst (mostly mitigated, not eliminated, by synchronous acknowledgements);
+   `journald` sets the Go runtime memory limit to 512 MiB and `protod` defaults
+   to 512 MiB while its command flag may explicitly override that value (direct
+   library embedders own their process limit);
+   both daemons build server options programmatically and load no config file,
+   so include/file precedence is outside this envelope. Daemon-owned and bundled
+   client connections have app/version/purpose names; arbitrary NATS clients are
+   not required to supply one.
+5. Safety only. No liveness claim is made anywhere: leases, retries,
    and progress under contention are liveness machinery and are
    untested formally.
 

@@ -75,15 +75,29 @@ export class ProtoClient {
   ) {}
 
   static async connect(url: string): Promise<Reply<ProtoClient>> {
+    let expected = url
     try {
-      const connection = await connect({ servers: url, maxReconnectAttempts: 0 })
-      return { ok: true, fact: new ProtoClient(connection, url) }
+      const parsed = new URL(url)
+      const user = decodeURIComponent(parsed.username)
+      const pass = decodeURIComponent(parsed.password)
+      parsed.username = ""
+      parsed.password = ""
+      expected = parsed.toString()
+      const connection = await connect({
+        servers: parsed.toString(),
+        maxReconnectAttempts: 0,
+        name: "foldlab-proto-ts/0.0.0/application-client",
+        ...(user === "" ? {} : { user, pass }),
+      })
+      // Endpoint attribution intentionally excludes credentials even though
+      // the Acquire URL carries the generated application secret.
+      return { ok: true, fact: new ProtoClient(connection, expected) }
     } catch (error) {
       return {
         ok: false,
         refusal: localRefusal("unreachable", "no daemon answered at this URL", {
           got: String(error),
-          expected: url,
+          expected,
           next: [repairHint(
             SUBJECT_CONTRACT_DESCRIBE,
             {},

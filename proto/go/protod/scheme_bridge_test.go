@@ -51,7 +51,7 @@ func TestSchemeBridgeFixturesRederiveAndDecode(t *testing.T) {
 func TestLegacyFactIsReidentifiedWithoutRewrite(t *testing.T) {
 	ctx := context.Background()
 	store := t.TempDir()
-	first, err := Acquire(ctx, Options{StoreDir: store})
+	first, err := Acquire(ctx, Options{StoreDir: store, SyncMode: SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("acquire legacy writer: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestLegacyFactIsReidentifiedWithoutRewrite(t *testing.T) {
 	}
 	first.Release()
 
-	second, err := Acquire(ctx, Options{StoreDir: store})
+	second, err := Acquire(ctx, Options{StoreDir: store, SyncMode: SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("reopen legacy store: %v", err)
 	}

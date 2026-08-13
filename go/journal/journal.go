@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -38,17 +39,27 @@ var (
 var validName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 type Journal struct {
-	mu      sync.Mutex
-	js      jetstream.JetStream
-	stream  jetstream.Stream
-	subject string
-	cursor  Cursor
+	mu             sync.Mutex
+	js             jetstream.JetStream
+	stream         jetstream.Stream
+	subject        string
+	cursor         Cursor
+	shapeViolation atomic.Pointer[shapeViolation]
 }
+
+type shapeViolation struct{ reason string }
 
 type wireEntry struct {
 	Payload string `json:"payload"`
 	Prev    string `json:"prev"`
 	Seq     int64  `json:"seq"`
+}
+
+const readPipelineWindow = 16
+
+type fetchedMessage struct {
+	raw *jetstream.RawStreamMsg
+	err error
 }
 
 func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, error) {
@@ -98,12 +109,63 @@ func Open(ctx context.Context, js jetstream.JetStream, name string) (*Journal, e
 		return nil, err
 	}
 
-	return &Journal{
+	opened := &Journal{
 		js:      js,
 		stream:  stream,
 		subject: subject,
 		cursor:  cursor,
-	}, nil
+	}
+	if err := opened.monitorShape(streamName); err != nil {
+		return nil, fmt.Errorf("monitor journal shape: %w", err)
+	}
+	return opened, nil
+}
+
+// monitorShape turns the pinned stream-update advisory into a standing gate.
+// An operation that observes any post-open drift refuses; config changes do
+// not become silently accepted merely because Open happened earlier.
+func (j *Journal) monitorShape(streamName string) error {
+	_, err := j.js.Conn().Subscribe(
+		"$JS.EVENT.ADVISORY.STREAM.UPDATED."+streamName,
+		func(_ *nats.Msg) {
+			// The advisory itself is evidence that an owned stream changed.
+			// Latch before the live read so a conformant change, or a forbidden
+			// change reverted before Info completes, cannot disappear.
+			j.shapeViolation.Store(&shapeViolation{reason: "owned stream configuration changed"})
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			info, infoErr := j.stream.Info(ctx)
+			if infoErr != nil {
+				j.shapeViolation.Store(&shapeViolation{reason: "standing shape re-check failed: " + infoErr.Error()})
+				return
+			}
+			if reason := badShapeReason(info.Config, j.subject); reason != "" {
+				j.shapeViolation.Store(&shapeViolation{reason: reason})
+			}
+		},
+	)
+	if err != nil {
+		return err
+	}
+	// Close the Info-before-subscribe race: an update in that interval may have
+	// emitted before this subscription existed, so re-assert once after it does.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	info, err := j.stream.Info(ctx)
+	if err != nil {
+		return err
+	}
+	if reason := badShapeReason(info.Config, j.subject); reason != "" {
+		return fmt.Errorf("%w: %s", ErrBadStream, reason)
+	}
+	return nil
+}
+
+func (j *Journal) standingShapeError() error {
+	if violation := j.shapeViolation.Load(); violation != nil {
+		return fmt.Errorf("%w: %s", ErrBadStream, violation.reason)
+	}
+	return nil
 }
 
 // tailCursor resyncs a cursor from the stream's current tail, verifying the
@@ -139,6 +201,9 @@ func (j *Journal) Append(
 	ctx context.Context,
 	payload string,
 ) (canonical.ChainEntry, AppendOutcome, error) {
+	if err := j.standingShapeError(); err != nil {
+		return canonical.ChainEntry{}, "", err
+	}
 	if strings.Contains(payload, "\n") {
 		return canonical.ChainEntry{}, "", errors.New("journal payloads must not contain newlines")
 	}
@@ -158,6 +223,9 @@ func (j *Journal) AppendEntry(
 	ctx context.Context,
 	entry canonical.ChainEntry,
 ) (AppendOutcome, error) {
+	if err := j.standingShapeError(); err != nil {
+		return "", err
+	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	return j.appendEntry(ctx, entry)
@@ -168,8 +236,36 @@ func (j *Journal) Read(
 	from Cursor,
 	max int,
 ) ([]canonical.ChainEntry, Cursor, error) {
+	if err := j.standingShapeError(); err != nil {
+		return nil, from, err
+	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	return j.readLocked(ctx, from, max, readPipelineWindow)
+}
+
+// readSequential retains the pre-Task-19 fetch schedule. Production uses Read;
+// tests check both schedules against the independent frozen chain oracle while
+// the verification fold below remains shared and unchanged.
+func (j *Journal) readSequential(
+	ctx context.Context,
+	from Cursor,
+	max int,
+) ([]canonical.ChainEntry, Cursor, error) {
+	if err := j.standingShapeError(); err != nil {
+		return nil, from, err
+	}
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.readLocked(ctx, from, max, 1)
+}
+
+func (j *Journal) readLocked(
+	ctx context.Context,
+	from Cursor,
+	max int,
+	window int,
+) ([]canonical.ChainEntry, Cursor, error) {
 
 	if from.Seq < -1 {
 		return nil, from, fmt.Errorf("invalid cursor sequence %d", from.Seq)
@@ -186,29 +282,38 @@ func (j *Journal) Read(
 	cursor := from
 	nextStreamSeq := uint64(int64(from.Seq) + 2)
 	for nextStreamSeq <= info.State.LastSeq && (max <= 0 || len(entries) < max) {
-		position, positionErr := positionFromStreamSequence(nextStreamSeq)
-		if positionErr != nil {
-			return entries, cursor, positionErr
+		count := window
+		available := info.State.LastSeq - nextStreamSeq + 1
+		if uint64(count) > available {
+			count = int(available)
 		}
-		raw, getErr := j.stream.GetMsg(ctx, nextStreamSeq)
-		if getErr != nil {
-			if errors.Is(getErr, jetstream.ErrMsgNotFound) {
-				return entries, cursor, tampered(position, "message is missing")
+		if max > 0 && count > max-len(entries) {
+			count = max - len(entries)
+		}
+		fetched := j.fetchMessages(ctx, nextStreamSeq, count)
+		for index, result := range fetched {
+			sequence := nextStreamSeq + uint64(index)
+			position, positionErr := positionFromStreamSequence(sequence)
+			if positionErr != nil {
+				return entries, cursor, positionErr
 			}
-			return entries, cursor, getErr
+			if result.err != nil {
+				if errors.Is(result.err, jetstream.ErrMsgNotFound) {
+					return entries, cursor, tampered(position, "message is missing")
+				}
+				return entries, cursor, result.err
+			}
+			entry, storedCursor, verifyErr := verifyStoredEntry(result.raw)
+			if verifyErr != nil {
+				return entries, cursor, verifyErr
+			}
+			if entry.Prev != cursor.Head {
+				return entries, cursor, tampered(position, "prev does not match the verified head")
+			}
+			entries = append(entries, entry)
+			cursor = storedCursor
 		}
-
-		entry, storedCursor, verifyErr := verifyStoredEntry(raw)
-		if verifyErr != nil {
-			return entries, cursor, verifyErr
-		}
-		if entry.Prev != cursor.Head {
-			return entries, cursor, tampered(position, "prev does not match the verified head")
-		}
-
-		entries = append(entries, entry)
-		cursor = storedCursor
-		nextStreamSeq++
+		nextStreamSeq += uint64(count)
 	}
 
 	if cursor.Seq > j.cursor.Seq {
@@ -275,6 +380,24 @@ func verifyStoredEntry(
 		return canonical.ChainEntry{}, Cursor{}, tampered(position, "wire bytes are not canonical")
 	}
 	return entry, Cursor{Seq: position, Head: digest}, nil
+}
+
+func (j *Journal) fetchMessages(ctx context.Context, first uint64, count int) []fetchedMessage {
+	results := make([]fetchedMessage, count)
+	if count == 1 {
+		results[0].raw, results[0].err = j.stream.GetMsg(ctx, first)
+		return results
+	}
+	var wait sync.WaitGroup
+	wait.Add(count)
+	for index := range count {
+		go func() {
+			defer wait.Done()
+			results[index].raw, results[index].err = j.stream.GetMsg(ctx, first+uint64(index))
+		}()
+	}
+	wait.Wait()
+	return results
 }
 
 func (j *Journal) appendEntry(ctx context.Context, entry canonical.ChainEntry) (AppendOutcome, error) {
@@ -353,6 +476,9 @@ func (j *Journal) recordAccepted(position int, digest string) {
 }
 
 func badShapeReason(config jetstream.StreamConfig, subject string) string {
+	if config.PersistMode == jetstream.AsyncPersistMode {
+		return "persist mode is async"
+	}
 	if config.Retention != jetstream.LimitsPolicy {
 		return "retention is not limits"
 	}
@@ -385,6 +511,39 @@ func badShapeReason(config jetstream.StreamConfig, subject string) string {
 	}
 	if config.FirstSeq > 1 {
 		return "stream sequence does not begin at one"
+	}
+	if config.RePublish != nil {
+		return "republish can route journal entries to another subject"
+	}
+	if config.SubjectTransform != nil {
+		return "subject transform can rewrite the journal subject"
+	}
+	if config.AllowMsgTTL {
+		return "per-message TTL can erase journal entries"
+	}
+	if config.SubjectDeleteMarkerTTL != 0 {
+		return "subject delete-marker TTL is configured"
+	}
+	if config.AllowDirect {
+		return "direct access is outside the verified read path"
+	}
+	if config.MirrorDirect {
+		return "mirror direct access is enabled"
+	}
+	if config.AllowAtomicPublish {
+		return "atomic publish can bypass the single-entry append law"
+	}
+	if config.AllowMsgCounter {
+		return "message counters are outside the journal grammar"
+	}
+	if config.Compression != jetstream.NoCompression {
+		return "storage compression is enabled"
+	}
+	if config.MaxMsgSize > 0 {
+		return "maximum message size is bounded"
+	}
+	if config.ConsumerLimits.MaxAckPending != 0 || config.ConsumerLimits.InactiveThreshold != 0 {
+		return "consumer defaults are configured on a consumer-free journal"
 	}
 	return ""
 }

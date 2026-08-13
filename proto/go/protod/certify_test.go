@@ -9,7 +9,7 @@ import (
 )
 
 func TestCertifyReturnsCertificateOrW7Refusal(t *testing.T) {
-	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir(), SyncMode: SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("acquire: %v", err)
 	}

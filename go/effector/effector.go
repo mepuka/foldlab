@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sync/atomic"
 	"time"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
 	"foldlab/canonical"
@@ -55,8 +57,12 @@ var (
 )
 
 type Effector struct {
-	kv jetstream.KeyValue
+	kv             jetstream.KeyValue
+	stream         jetstream.Stream
+	shapeViolation atomic.Pointer[shapeViolation]
 }
+
+type shapeViolation struct{ reason string }
 
 type wireClaim struct {
 	Expiry int64  `json:"expiry"`
@@ -104,11 +110,75 @@ func Open(ctx context.Context, js jetstream.JetStream, name string) (*Effector, 
 		return nil, err
 	}
 	config := status.Config()
-	if reason := badShapeReason(config); reason != "" {
+	backing, err := js.Stream(ctx, "KV_"+bucket)
+	if err != nil {
+		return nil, err
+	}
+	streamInfo, err := backing.Info(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if reason := badShapeReason(config, streamInfo.Config); reason != "" {
 		return nil, fmt.Errorf("%w: %s", ErrBadBucket, reason)
 	}
 
-	return &Effector{kv: kv}, nil
+	opened := &Effector{kv: kv, stream: backing}
+	if err := opened.monitorShape(js, "KV_"+bucket); err != nil {
+		return nil, fmt.Errorf("monitor effector shape: %w", err)
+	}
+	return opened, nil
+}
+
+func (e *Effector) monitorShape(js jetstream.JetStream, streamName string) error {
+	_, err := js.Conn().Subscribe(
+		"$JS.EVENT.ADVISORY.STREAM.UPDATED."+streamName,
+		func(_ *nats.Msg) {
+			// An update is itself standing-gate evidence. Latch before the
+			// live reads so a conformant update, or a transient forbidden
+			// shape reverted before Info completes, cannot be missed.
+			e.shapeViolation.Store(&shapeViolation{reason: "owned stream configuration changed"})
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			status, statusErr := e.kv.Status(ctx)
+			if statusErr != nil {
+				e.shapeViolation.Store(&shapeViolation{reason: "standing shape re-check failed: " + statusErr.Error()})
+				return
+			}
+			info, infoErr := e.stream.Info(ctx)
+			if infoErr != nil {
+				e.shapeViolation.Store(&shapeViolation{reason: "standing shape re-check failed: " + infoErr.Error()})
+				return
+			}
+			if reason := badShapeReason(status.Config(), info.Config); reason != "" {
+				e.shapeViolation.Store(&shapeViolation{reason: reason})
+			}
+		},
+	)
+	if err != nil {
+		return err
+	}
+	// Close the Info-before-subscribe race exactly as the journal gate does.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	status, err := e.kv.Status(ctx)
+	if err != nil {
+		return err
+	}
+	info, err := e.stream.Info(ctx)
+	if err != nil {
+		return err
+	}
+	if reason := badShapeReason(status.Config(), info.Config); reason != "" {
+		return fmt.Errorf("%w: %s", ErrBadBucket, reason)
+	}
+	return nil
+}
+
+func (e *Effector) standingShapeError() error {
+	if violation := e.shapeViolation.Load(); violation != nil {
+		return fmt.Errorf("%w: %s", ErrBadBucket, violation.reason)
+	}
+	return nil
 }
 
 func (e *Effector) Claim(
@@ -117,6 +187,9 @@ func (e *Effector) Claim(
 	owner string,
 	lease time.Duration,
 ) (Claim, error) {
+	if err := e.standingShapeError(); err != nil {
+		return Claim{}, err
+	}
 	if !validDigest.MatchString(digest) {
 		return Claim{}, fmt.Errorf("invalid work digest %q", digest)
 	}
@@ -190,6 +263,9 @@ func (e *Effector) Claim(
 }
 
 func (e *Effector) Commit(ctx context.Context, claim Claim, result string) (bool, error) {
+	if err := e.standingShapeError(); err != nil {
+		return false, err
+	}
 	if !validDigest.MatchString(claim.Digest) {
 		return false, fmt.Errorf("invalid work digest %q", claim.Digest)
 	}
@@ -252,6 +328,9 @@ func (e *Effector) Commit(ctx context.Context, claim Claim, result string) (bool
 }
 
 func (e *Effector) Lookup(ctx context.Context, digest string) (State, Outcome, error) {
+	if err := e.standingShapeError(); err != nil {
+		return Unclaimed, Outcome{}, err
+	}
 	if !validDigest.MatchString(digest) {
 		return Unclaimed, Outcome{}, fmt.Errorf("invalid work digest %q", digest)
 	}
@@ -468,18 +547,21 @@ func decodeCanonical(value []byte, target any) error {
 	return nil
 }
 
-func badShapeReason(config jetstream.KeyValueConfig) string {
+func badShapeReason(config jetstream.KeyValueConfig, stream jetstream.StreamConfig) string {
 	if config.Storage != jetstream.FileStorage {
 		return "storage is not file"
 	}
-	if config.History < 1 {
-		return "history is less than one"
+	if config.History != 1 {
+		return "history is not exactly one"
 	}
 	if config.TTL != 0 {
 		return "TTL is non-zero"
 	}
 	if config.MaxBytes != 0 && config.MaxBytes != -1 {
 		return "MaxBytes is bounded"
+	}
+	if stream.PersistMode == jetstream.AsyncPersistMode {
+		return "persist mode is async"
 	}
 	return ""
 }

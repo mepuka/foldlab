@@ -15,7 +15,7 @@ import (
 
 func TestSessionResumesExactlyAfterDaemonRestart(t *testing.T) {
 	store := t.TempDir()
-	first, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store})
+	first, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store, SyncMode: protod.SyncCrashDurable})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestSessionResumesExactlyAfterDaemonRestart(t *testing.T) {
 	firstConn.Close()
 	first.Release()
 
-	second, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store})
+	second, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store, SyncMode: protod.SyncCrashDurable})
 	if err != nil {
 		t.Fatal(err)
 	}

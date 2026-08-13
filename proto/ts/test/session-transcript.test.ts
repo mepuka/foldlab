@@ -24,7 +24,10 @@ test("GitHub #57: a read transcript preserves exact sent and claimed evidence an
       max: 0,
     })
     expect(JSON.stringify(snapshot[0]?.received)).toContain('"claimed"')
-    expect(snapshot[0]).toMatchObject({ endpoint: daemon.url })
+    const publicEndpoint = new URL(daemon.url)
+    publicEndpoint.username = ""
+    publicEndpoint.password = ""
+    expect(snapshot[0]).toMatchObject({ endpoint: publicEndpoint.toString() })
     expect(Object.hasOwn(snapshot[0] ?? {}, "startedAt")).toBe(true)
     expect(Object.hasOwn(snapshot[0] ?? {}, "completedAt")).toBe(true)
 

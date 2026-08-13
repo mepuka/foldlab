@@ -115,13 +115,15 @@ func acquireDriver(ctx context.Context) (*replayDriver, error) {
 			driver.release()
 			return nil, err
 		}
-		daemon, err := protod.Acquire(ctx, protod.Options{StoreDir: store, Listen: "127.0.0.1:0"})
+		daemon, err := protod.Acquire(ctx, protod.Options{
+			StoreDir: store, Listen: "127.0.0.1:0", SyncMode: protod.SyncCrashDurable,
+		})
 		if err != nil {
 			_ = os.RemoveAll(store)
 			driver.release()
 			return nil, fmt.Errorf("acquire daemon %d: %w", index+1, err)
 		}
-		conn, err := nats.Connect(daemon.URL())
+		conn, err := nats.Connect(daemon.URL(), nats.Name("foldlab-catalog-r4/0.0.0/application-driver"))
 		if err != nil {
 			daemon.Release()
 			_ = os.RemoveAll(store)

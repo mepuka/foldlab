@@ -62,7 +62,19 @@ func observePausedClaimCommit(t *testing.T, history uint8) []effector.State {
 	}); err != nil {
 		t.Fatalf("create History:%d bucket: %v", history, err)
 	}
-	e := mustOpen(t, js, name)
+	var e *effector.Effector
+	if history == 1 {
+		e = mustOpen(t, js, name)
+	} else {
+		// Task 19 now correctly refuses History:2 in production. The issue #15
+		// one-field control deliberately binds the same implementation to the
+		// otherwise identical precreated bucket through a test-only seam.
+		var bindErr error
+		e, bindErr = effector.OpenHistoryFindingForTest(c, js, name)
+		if bindErr != nil {
+			t.Fatalf("bind History:%d finding control: %v", history, bindErr)
+		}
+	}
 
 	watchCtx, cancelWatch := context.WithCancel(c)
 	t.Cleanup(cancelWatch)

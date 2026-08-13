@@ -205,12 +205,14 @@ func buildConcierge() []conciergeVector {
 	}
 	defer os.RemoveAll(store)
 
-	daemon, err := protod.Acquire(context.Background(), protod.Options{StoreDir: store})
+	daemon, err := protod.Acquire(context.Background(), protod.Options{
+		StoreDir: store, SyncMode: protod.SyncCrashDurable,
+	})
 	if err != nil {
 		panic(err)
 	}
 	defer daemon.Release()
-	conn, err := nats.Connect(daemon.URL())
+	conn, err := nats.Connect(daemon.URL(), nats.Name("foldlab-wirefix/0.0.0/fixture-client"))
 	if err != nil {
 		panic(err)
 	}

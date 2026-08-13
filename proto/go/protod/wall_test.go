@@ -170,12 +170,12 @@ func TestConciergeFixturesRederiveAndReplay(t *testing.T) {
 		t.Fatal("no concierge vectors")
 	}
 
-	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir()})
+	daemon, err := Acquire(context.Background(), Options{StoreDir: t.TempDir(), SyncMode: SyncCrashDurable})
 	if err != nil {
 		t.Fatalf("acquire fixture daemon: %v", err)
 	}
 	t.Cleanup(daemon.Release)
-	conn, err := nats.Connect(daemon.URL())
+	conn, err := nats.Connect(daemon.URL(), nats.Name("foldlab-protod-test/0.0.0/wire-wall-client"))
 	if err != nil {
 		t.Fatalf("connect fixture client: %v", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -21,6 +22,15 @@ import (
 )
 
 const maximumLineBytes = 16 * 1024 * 1024
+
+const defaultMemoryLimit = 512 << 20
+
+type syncMode string
+
+const (
+	crashDurable syncMode = "crash-durable"
+	powerDurable syncMode = "power-durable"
+)
 
 type wireEntry struct {
 	Seq     int64  `json:"seq"`
@@ -278,14 +288,19 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 	}
 }
 
-func run(storeDir string) error {
+func run(storeDir string, durability syncMode) error {
+	if durability != crashDurable && durability != powerDurable {
+		return fmt.Errorf("unknown sync mode %q", durability)
+	}
+	debug.SetMemoryLimit(defaultMemoryLimit)
 	options := &server.Options{
 		ServerName: "p3b-journald",
 		JetStream:  true,
 		StoreDir:   storeDir,
 		DontListen: true,
-		NoLog:      true,
+		NoLog:      false,
 		NoSigs:     true,
+		SyncAlways: durability == powerDurable,
 	}
 	natsServer, err := server.NewServer(options)
 	if err != nil {
@@ -302,7 +317,11 @@ func run(storeDir string) error {
 		natsServer.WaitForShutdown()
 	}()
 
-	connection, err := nats.Connect("", nats.InProcessServer(natsServer))
+	connection, err := nats.Connect(
+		"",
+		nats.InProcessServer(natsServer),
+		nats.Name("foldlab-journald/0.0.0/internal-runtime"),
+	)
 	if err != nil {
 		return fmt.Errorf("connect to embedded nats-server: %w", err)
 	}
@@ -349,12 +368,17 @@ func run(storeDir string) error {
 
 func main() {
 	storeDir := flag.String("store", "", "JetStream file storage directory")
+	durability := flag.String("sync-mode", os.Getenv("FOLDLAB_SYNC_MODE"), "durability mode: crash-durable or power-durable (required)")
 	flag.Parse()
 	if *storeDir == "" {
 		fmt.Fprintln(os.Stderr, "journald: --store is required")
 		os.Exit(2)
 	}
-	if err := run(*storeDir); err != nil {
+	if *durability == "" {
+		fmt.Fprintln(os.Stderr, "journald: --sync-mode is required")
+		os.Exit(2)
+	}
+	if err := run(*storeDir, syncMode(*durability)); err != nil {
 		fmt.Fprintf(os.Stderr, "journald: %v\n", err)
 		os.Exit(1)
 	}
