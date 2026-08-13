@@ -238,7 +238,8 @@ links to its issue; every claim there carries executed evidence.
 **2026-08-13 (late) — the flywheel measured, licensed, and told.** A
 dogfood lane drove the concierge as a **true stdio MCP client** — 21
 JSON-RPC messages captured verbatim
-(`demo/mcp-concierge-session.md`): **11 tool calls from first intent
+(`demo/mcp-concierge-session.md`, on review branch
+`worktree-agent-ac12a6acee3504305` pending merge): **11 tool calls from first intent
 to a certified, content-addressed type** (clean path: 7), 1–6 ms per
 call. The first refusal is the best evidence in the transcript: asked
 for "a record type," the model wrote `"k":"record"` — the human's own
