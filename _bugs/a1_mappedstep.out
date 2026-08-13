@@ -1,0 +1,7 @@
+mapped(isPositiveFromMax, count):
+  certified?  false  identityIssue: homomorphism source does not match the algebra declaration
+mappedStep(isPositiveFromMax, payloadLength):
+  certified?  true  identityIssue: undefined
+  applied to a payload of length 5: true
+mappedStep(isPositiveFromMax, sequenceNumber): certified? true  identityIssue: undefined
+CONFIRMED: mappedStep omits the source==hom.source check that mapped enforces; it certifies mapped views over unrelated sources

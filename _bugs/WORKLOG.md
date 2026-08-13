@@ -343,3 +343,33 @@ demarcation. Tests in `go/effector/zz_bugbreaker_test.go`.
 - **Exploitable vs latent:** EXPLOITABLE — this is the multi-writer topology the
   journal is built for; the wedge is in shipped daemon code
   (`cmd/journald/main.go` caches one handle per name and never Reads on append).
+
+## BUG(medium): mappedStep omits the source-vs-hom.source declaration check that mapped enforces (A2)
+
+- **Location:** `packages/core/src/algebra.ts:449` (`mappedStep` guards only on
+  `source.declaration === undefined`) vs `algebra.ts:314-316` (`mapped` also
+  requires `source.declaration.digest === hom.source.declaration.digest`).
+- **Repro:** `bash _bugs/run.sh _bugs/a1_mappedstep.ts` (output `_bugs/a1_mappedstep.out`).
+- **Verbatim output excerpt:**
+  ```
+  mapped(isPositiveFromMax, count):
+    certified?  false  identityIssue: homomorphism source does not match the algebra declaration
+  mappedStep(isPositiveFromMax, payloadLength):
+    certified?  true  identityIssue: undefined
+    applied to a payload of length 5: true
+  mappedStep(isPositiveFromMax, sequenceNumber): certified? true  identityIssue: undefined
+  ```
+- **Why it matters:** worse than A1 — NO forgery needed. `mapped` correctly
+  refuses an algebra whose declaration is not the homomorphism's declared source
+  (`count != max`). `mappedStep` certifies a mapped step over ANY declared source
+  (`payloadLength`, `sequenceNumber` — nothing to do with a `max` fold) and even
+  applies `isPositiveFromMax` to a payload length, yielding `true`. The
+  homomorphism law (proven only for the `max -> any` pairing) is claimed for
+  pairings never established. Same compositionality-of-proof leak as A1, one
+  layer more permissive.
+- **Exploitable vs latent:** LATENT — closed registry; reachable when a caller
+  composes a foreign `Step` through a `DeclaredHom`.
+- **Suggested direction (NOT applied):** add the same source check `mapped` has —
+  `mappedStep` must require the source Step's declared carrier to match
+  `hom.source` (a digest/identity check against the homomorphism's declared
+  source), refusing with an `identityIssue` otherwise.
