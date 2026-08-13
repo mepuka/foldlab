@@ -22,6 +22,14 @@ value goes through it, so there is exactly one identity.
 _Avoid_: serialization format, wire format (transport encodings are not
 canonical)
 
+**Constrained decode**:
+The only way in from bytes: exactly one JSON value, valid UTF-8 and
+Unicode scalars, member names unique after unescaping, finite
+binary64, at most 256 nested containers. Acceptance is part of
+identity — a decoder that repairs its input is naming a different
+value than the one that arrived.
+_Avoid_: parse, deserialize (a parser may repair; a decode refuses)
+
 **Chain head** (or **head**):
 A 32-byte commitment to an exact history prefix — the identity fold.
 Extending is O(1); recomputing from events is always possible, which is
@@ -79,6 +87,35 @@ primitive digests plus parameters. Programs are data: the same program runs
 in-process, over the wire, or via CLI, and is what the catalog stores.
 _Avoid_: pipeline config, job spec
 
+### The fold algebra
+
+**Declared algebra**:
+A monoid named by canonical data — a small grammar of primitives plus
+product and mapped combinators. Behavior is a function; identity exists
+only where the same behavior also has a declaration. Anonymous algebras
+run fine and refuse identity: nothing without a canonical form is
+cacheable or catalogable.
+_Avoid_: monoid instance, reducer
+
+**Declared step**:
+The event-to-state map, likewise named by canonical data. A fold's
+identity is the digest over (algebra declaration, step digest), so the
+same declaration is the same fold anywhere — which is what makes a
+result keyed by (fold digest, head) an immutable truth rather than a
+cache entry needing invalidation.
+
+**Homomorphism** (or **hom**):
+A declared structure-preserving map between algebras. It licenses a
+derived view with no replay, because folding then mapping and mapping
+then folding are the same computation.
+
+**Declared right**:
+What passing a law earns. Associativity licenses parallel replay and
+mid-stream compaction; the monoid action licenses O(1) extension;
+uniqueness licenses the invalidation-free cache. Rights follow proofs —
+a function claiming one ships the generated law suite that grants it
+(ADR-0010).
+
 ### Entities and provenance
 
 **Entity**:
@@ -130,6 +167,21 @@ identifier; anonymous checks and identifier-less declarations refuse.
 Deployment facts never move identity: a schema on two subjects is one
 schema. Interim, until the build lands: a digest over submitted
 canonical bytes.
+
+**Identity order**:
+RFC 8785's UTF-16 code-unit sort over member names — the order
+identity's bytes already use, and therefore the order EVERY derivation
+target walks. It is what makes "the first path that refuses" a
+well-defined fact: construction history never leaks into evidence.
+_Avoid_: alphabetical, locale sort (neither is this order)
+
+**Certifier**:
+The one proved entry point admitting bytes to the catalog:
+`certify(bytes) → Certificate | Refusal`, discharging well-formedness,
+identity, and whatever closure laws the grammar declares. Whoever
+synthesized the bytes is permanently untrusted, the trusted base's size
+is published, and no second admission path is ever added.
+_Avoid_: validator (a validator advises; a certifier admits)
 
 **Catalog**:
 The journal of created types: per-daemon authority, mirrored elsewhere,
