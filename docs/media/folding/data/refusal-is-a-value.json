@@ -1,0 +1,19 @@
+{
+  "_provenance": "bun docs/media/folding/scripts/refusal.ts (after the go driver)",
+  "tag": "MergeDuplicateSequence",
+  "fields": {
+    "source": "orders",
+    "seq": 1,
+    "firstIndex": 1,
+    "duplicateIndex": 3
+  },
+  "message": "stream: source orders repeats sequence 1 at event indexes 1 and 3",
+  "messageSource": "go/stream/stream.go MergeDuplicateSequence.Error()",
+  "payloads": [
+    "status=new",
+    "qty=2",
+    "status=paid",
+    "qty=5"
+  ],
+  "crossLanguageAgreement": true
+}

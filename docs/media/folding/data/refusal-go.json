@@ -1,0 +1,16 @@
+{
+  "_provenance": "cd docs/media/folding/scripts/refusal \u0026\u0026 go run .",
+  "language": "go",
+  "tag": "MergeDuplicateSequence",
+  "source": "orders",
+  "seq": 1,
+  "firstIndex": 1,
+  "duplicateIndex": 3,
+  "message": "stream: source orders repeats sequence 1 at event indexes 1 and 3",
+  "payloads": [
+    "status=new",
+    "qty=2",
+    "status=paid",
+    "qty=5"
+  ]
+}

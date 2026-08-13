@@ -1,0 +1,27 @@
+{
+  "name": "@foldlab/media-folding",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Short motion-graphics clips about the fold: events becoming state and identity.",
+  "scripts": {
+    "fonts": "cp node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-{500,700}-normal.woff2 node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-{400,600}-normal.woff2 public/fonts/",
+    "stills": "bash scripts/stills.sh",
+    "extract": "bash scripts/extract.sh",
+    "studio": "remotion studio src/index.ts",
+    "render:two-folds": "remotion render src/index.ts two-folds out/two-folds.mp4 --codec h264 --crf 17 --overwrite",
+    "render:cut-anywhere": "remotion render src/index.ts cut-anywhere out/cut-anywhere.mp4 --codec h264 --crf 17 --overwrite",
+    "render:refusal": "remotion render src/index.ts refusal-is-a-value out/refusal-is-a-value.mp4 --codec h264 --crf 17 --overwrite"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.373",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.373"
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
