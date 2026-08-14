@@ -1,0 +1,5 @@
+name = "ssex"
+defaultTargets = ["SSEx"]
+
+[[lean_lib]]
+name = "SSEx"
