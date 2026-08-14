@@ -28,6 +28,12 @@ type catalogFact struct {
 	seq       int64
 }
 
+type catalogCommit struct {
+	fact        catalogFact
+	created     bool
+	catalogHead string
+}
+
 type catalog struct {
 	mu       sync.Mutex
 	journal  *journal.Journal
@@ -134,14 +140,14 @@ func (c *catalog) commitCertified(
 	structure any,
 	asserted string,
 	submitter string,
-) (fact catalogFact, created bool, refusal *Refusal, err error) {
+) (catalogCommit, *Refusal, error) {
 	result, walkRefusal := walkStructure(structure, []string{"structure"})
 	if walkRefusal != nil {
-		return catalogFact{}, false, walkRefusal, nil
+		return catalogCommit{}, walkRefusal, nil
 	}
 	for _, ref := range result.refs {
 		if !c.resolve(ref.digest) {
-			return catalogFact{}, false, &Refusal{
+			return catalogCommit{}, &Refusal{
 				Kind:     KindUnknownRef,
 				Law:      "W4/DAG: refs must resolve to cataloged digests — no forward refs, no cycles, no admission on faith",
 				Path:     ref.path,
@@ -158,25 +164,25 @@ func (c *catalog) commitCertified(
 		}
 	}
 	if recursionRefusal := walkRefGraph(structure, []string{"structure"}, c.resolveStructure); recursionRefusal != nil {
-		return catalogFact{}, false, recursionRefusal, nil
+		return catalogCommit{}, recursionRefusal, nil
 	}
 
 	normalized, err := normalize(structure)
 	if err != nil {
 		// walkStructure proved the input is inside normalize's domain.
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
 	bytes, err := canonicalBytes(normalized)
 	if err != nil {
 		// The walk admits only decoded JSON, so the canonical domain
 		// cannot be escaped here; treat failure as substrate.
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
 	attested := (bytesSHA256V1{}).Derive(bytes)
 	derived := activeScheme.Derive(bytes)
 	bridge := newSchemeBridge((bytesSHA256V1{}).Name(), attested, activeScheme.Name(), derived)
 	if asserted != "" && asserted != derived {
-		return catalogFact{}, false, &Refusal{
+		return catalogCommit{}, &Refusal{
 			Kind:     KindDigestMismatch,
 			Law:      "W1: no asserted identity — every committed digest is recomputed by the daemon from submitted bytes",
 			Path:     []string{"assertedDigest"},
@@ -194,7 +200,7 @@ func (c *catalog) commitCertified(
 	// Canonical structure value: what the digest actually commits to.
 	var canonicalValue any
 	if err := json.Unmarshal(bytes, &canonicalValue); err != nil {
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
 
 	c.mu.Lock()
@@ -202,13 +208,15 @@ func (c *catalog) commitCertified(
 	if existing, known := c.byDigest[derived]; known && existing.Scheme == activeScheme.Name() {
 		if !c.bridges[bridge] {
 			if err := c.appendBridge(ctx, bridge); err != nil {
-				return catalogFact{}, false, nil, err
+				return catalogCommit{}, nil, err
 			}
 		}
-		return existing, false, nil, nil
+		return catalogCommit{
+			fact: existing, created: false, catalogHead: c.journal.Head().Head,
+		}, nil, nil
 	}
 
-	fact = catalogFact{
+	fact := catalogFact{
 		Digest:    derived,
 		Scheme:    activeScheme.Name(),
 		Structure: canonicalValue,
@@ -221,20 +229,22 @@ func (c *catalog) commitCertified(
 		"submitter": fact.Submitter,
 	})
 	if err != nil {
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
 	entry, _, err := c.journal.Append(ctx, string(payload))
 	if err != nil {
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
 	fact.seq = entry.Seq
 	c.byDigest[fact.Digest] = fact
 	if err := c.appendBridge(ctx, bridge); err != nil {
 		// The fact is already durable and indexed. A retry observes it and
 		// appends only the missing bridge before any successful reply.
-		return catalogFact{}, false, nil, err
+		return catalogCommit{}, nil, err
 	}
-	return fact, true, nil, nil
+	return catalogCommit{
+		fact: fact, created: true, catalogHead: c.journal.Head().Head,
+	}, nil, nil
 }
 
 func (c *catalog) appendBridge(ctx context.Context, bridge schemeBridge) error {

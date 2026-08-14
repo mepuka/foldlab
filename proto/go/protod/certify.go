@@ -3,11 +3,14 @@ package protod
 import "context"
 
 // certificate is the admitted side of certify(bytes) -> certificate |
-// Refusal. Task 32 hangs persistence of both outcomes from this named seam;
-// it does not add another admission path.
+// Refusal. A successful certificate also carries the catalog head captured
+// under the same lock as its commit or convergence observation. Task 32 hangs
+// persistence of both outcomes from this named seam; it does not add another
+// admission path.
 type certificate struct {
-	Fact    catalogFact
-	Created bool
+	Fact        catalogFact
+	Created     bool
+	CatalogHead string
 }
 
 // certify is the catalog's sole admission entry point. Its bytes are the full
@@ -33,10 +36,12 @@ func (d *Daemon) certify(
 			Next:     []NextHint{describeHint()},
 		}, nil
 	}
-	fact, created, refusal, err := d.catalog.commitCertified(
+	commit, refusal, err := d.catalog.commitCertified(
 		ctx, request.Structure, request.AssertedDigest, request.Submitter)
 	if err != nil || refusal != nil {
 		return nil, refusal, err
 	}
-	return &certificate{Fact: fact, Created: created}, nil, nil
+	return &certificate{
+		Fact: commit.fact, Created: commit.created, CatalogHead: commit.catalogHead,
+	}, nil, nil
 }
