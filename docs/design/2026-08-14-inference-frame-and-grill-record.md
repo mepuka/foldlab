@@ -80,6 +80,21 @@ presentation. Data prioritizes; it never filters legality.
 (what data happened to show) into a G-position (what the type claims).
 Candidate sets are evidence and live in the journaled report.
 
+**Q7 — approximate breadth remains an unratified dormant fallback.** It has
+no effect on `flb.type.v0`, `flb.type.partial.v0`, frontier legality, ranking,
+Task 32 certification records, or certified outcomes, and no experimental
+machinery is licensed while it is dormant. Reopening requires all of: a
+concrete consumer, a named infinite-domain position, demonstrated failure of
+the exact policy for that consumer, and a proposed measurable loss budget
+with an external oracle. Meeting that gate authorizes a new operator grill,
+not implementation. That grill must decide generator support versus a
+concrete type term, the target family, subset-only error, the loss measure,
+stopping evidence, and separation from identity and certification. There is
+no scheduled reconsideration; the option is event-triggered only. The
+literature synthesis records why the cited approximate-breadth theorem does
+not itself supply finite-time certification or establish applicability to
+the full current family.
+
 ## The frame these rulings implement
 
 Kept here because the rulings are corollaries of it, and the operator

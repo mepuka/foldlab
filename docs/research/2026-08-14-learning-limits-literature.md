@@ -265,6 +265,19 @@ A three-lane formal attempt (possibility, impossibility/kernel, hostile
 referee) was run against §§1–5. The referee's verdict is accepted. The
 record above is preserved unedited; this section states what changed.
 
+**Correction and operator disposition for §7.7 (2026-08-14).** The cited
+approximate-breadth result is an in-the-limit statement about a generator's
+eventual support: eventually it emits only target members while omitting at
+most finitely many target members, conditional on the collection satisfying
+weak Angluin. It does not provide a finite-time stopping certificate, prove
+that the support is representable by one `flb.type.v0` term, or establish the
+premise for the full foldlab family. In particular, for the `string` target,
+every finite witness is contained in an expressible finite union of string
+literals whose complement in `string` is still infinite. Section 7.7 therefore
+licenses no current relaxation. The operator keeps approximate breadth only
+as an explicitly unratified dormant fallback; the governing decision and its
+reopening gate are recorded in the inference grill record.
+
 **Withdrawn:**
 - §1's "the possibility question is answered yes, by citation." FALSE as
   cited: the NCEx oracle (Jain–Kinber Def. 9) is target-relative and
