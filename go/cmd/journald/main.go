@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"time"
@@ -58,8 +61,16 @@ type request struct {
 	Digest  string          `json:"digest"`
 	Owner   string          `json:"owner"`
 	LeaseMS int64           `json:"leaseMs"`
-	Fence   uint64          `json:"fence"`
 	Result  string          `json:"result"`
+}
+
+type commitRequest struct {
+	ID     json.RawMessage `json:"id"`
+	Op     string          `json:"op"`
+	Name   string          `json:"name"`
+	Digest string          `json:"digest"`
+	Token  string          `json:"token"`
+	Result string          `json:"result"`
 }
 
 type okResponse struct {
@@ -107,6 +118,7 @@ type claimResponse struct {
 	OK       bool            `json:"ok"`
 	Fence    uint64          `json:"fence"`
 	ExpiryMS int64           `json:"expiryMs"`
+	Token    string          `json:"token"`
 }
 
 type commitResponse struct {
@@ -127,6 +139,13 @@ type daemon struct {
 	js        jetstream.JetStream
 	journals  map[string]*journal.Journal
 	effectors map[string]*effector.Effector
+	claims    map[string]claimAuthority
+}
+
+type claimAuthority struct {
+	token string
+	name  string
+	claim effector.Claim
 }
 
 func (daemon *daemon) openEffector(ctx context.Context, name string) (*effector.Effector, error) {
@@ -167,6 +186,37 @@ func validNumericID(raw json.RawMessage) bool {
 		return false
 	}
 	return decoder.Decode(&struct{}{}) != nil
+}
+
+func decodeCommitRequest(input []byte) (commitRequest, error) {
+	decoder := json.NewDecoder(bytes.NewReader(input))
+	decoder.DisallowUnknownFields()
+	var req commitRequest
+	if err := decoder.Decode(&req); err != nil {
+		return commitRequest{}, err
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return commitRequest{}, errors.New("multiple JSON values")
+		}
+		return commitRequest{}, err
+	}
+	if req.Op != "commit" {
+		return commitRequest{}, fmt.Errorf("operation is %q, want commit", req.Op)
+	}
+	decodedToken, err := hex.DecodeString(req.Token)
+	if err != nil || len(decodedToken) != 32 || hex.EncodeToString(decodedToken) != req.Token {
+		return commitRequest{}, errors.New("token must be exactly 32 lowercase hexadecimal bytes")
+	}
+	return req, nil
+}
+
+func mintClaimToken() (string, error) {
+	var token [32]byte
+	if _, err := rand.Read(token[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(token[:]), nil
 }
 
 func reasonFor(err error) string {
@@ -247,6 +297,10 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 		if err != nil {
 			return errorResponse{ID: req.ID, Reason: reasonFor(err), Detail: err.Error()}
 		}
+		token, err := mintClaimToken()
+		if err != nil {
+			return errorResponse{ID: req.ID, Reason: reasonFor(err), Detail: err.Error()}
+		}
 		claim, claimErr := opened.Claim(
 			ctx,
 			req.Digest,
@@ -256,21 +310,41 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 		if claimErr != nil {
 			return errorResponse{ID: req.ID, Reason: reasonFor(claimErr), Detail: claimErr.Error()}
 		}
-		return claimResponse{ID: req.ID, OK: true, Fence: claim.Fence, ExpiryMS: claim.Expiry.UnixMilli()}
+		if daemon.claims == nil {
+			daemon.claims = make(map[string]claimAuthority)
+		}
+		daemon.claims[claim.Digest] = claimAuthority{token: token, name: req.Name, claim: claim}
+		return claimResponse{ID: req.ID, OK: true, Fence: claim.Fence, ExpiryMS: claim.Expiry.UnixMilli(), Token: token}
 	case "commit":
-		opened, err := daemon.openEffector(ctx, req.Name)
+		commitReq, err := decodeCommitRequest(input)
 		if err != nil {
-			return errorResponse{ID: req.ID, Reason: reasonFor(err), Detail: err.Error()}
+			return errorResponse{ID: req.ID, Reason: "malformed", Detail: fmt.Sprintf("invalid commit request: %v", err)}
 		}
-		first, commitErr := opened.Commit(ctx, effector.Claim{
-			Digest: req.Digest,
-			Fence:  req.Fence,
-			Owner:  req.Owner,
-		}, req.Result)
+		opened, err := daemon.openEffector(ctx, commitReq.Name)
+		if err != nil {
+			return errorResponse{ID: commitReq.ID, Reason: reasonFor(err), Detail: err.Error()}
+		}
+		authority, found := daemon.claims[commitReq.Digest]
+		if !found || authority.token != commitReq.Token || authority.name != commitReq.Name {
+			state, outcome, lookupErr := opened.Lookup(ctx, commitReq.Digest)
+			if lookupErr != nil {
+				return errorResponse{ID: commitReq.ID, Reason: reasonFor(lookupErr), Detail: lookupErr.Error()}
+			}
+			if state == effector.Committed {
+				if outcome.Result == commitReq.Result {
+					return commitResponse{ID: commitReq.ID, OK: true, First: false}
+				}
+				committedErr := fmt.Errorf("%w: %s", effector.ErrCommitted, commitReq.Digest)
+				return errorResponse{ID: commitReq.ID, Reason: reasonFor(committedErr), Detail: committedErr.Error()}
+			}
+			return errorResponse{ID: commitReq.ID, Reason: "fenced", Detail: "claim token is stale or foreign"}
+		}
+		first, commitErr := opened.Commit(ctx, authority.claim, commitReq.Result)
 		if commitErr != nil {
-			return errorResponse{ID: req.ID, Reason: reasonFor(commitErr), Detail: commitErr.Error()}
+			return errorResponse{ID: commitReq.ID, Reason: reasonFor(commitErr), Detail: commitErr.Error()}
 		}
-		return commitResponse{ID: req.ID, OK: true, First: first}
+		delete(daemon.claims, commitReq.Digest)
+		return commitResponse{ID: commitReq.ID, OK: true, First: first}
 	case "lookup":
 		opened, err := daemon.openEffector(ctx, req.Name)
 		if err != nil {
@@ -347,6 +421,7 @@ func run(storeDir string, durability syncMode) error {
 		js:        js,
 		journals:  make(map[string]*journal.Journal),
 		effectors: make(map[string]*effector.Effector),
+		claims:    make(map[string]claimAuthority),
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 64*1024), maximumLineBytes)
