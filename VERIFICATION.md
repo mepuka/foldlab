@@ -39,6 +39,10 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
+| Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the shipped union constructor is **REFUTED** — an open defect on `main` (fix on branch `codex/union-refusal-path`) | [verify/implication/](verify/implication/) |
+| IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
+| Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the shipped head-read is **REFUTED**; the orphan-fact crash residual is a recorded finding | [verify/pipeline/](verify/pipeline/) |
+| Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Claimed** for static DAGs with deterministic bindings; the unguarded (faithless) runner is **REFUTED** in both instruments | [verify/replay/](verify/replay/) |
 
 ## The effector (commitment register) — R3 + R4
 
@@ -493,6 +497,175 @@ it is not an exhaustive proof over all byte strings.
 ### Checkable at
 
 [proto/](proto/).
+
+## Refusal projection walls — R2 (TLC) + model-level R5 (Lean); one refuted constructor on `main`
+
+### Claim
+
+Lead with the finding: the shipped union-member-uniqueness refusal
+constructor (`proto/go/protod/walk.go:170-176`) violates W7 — it
+reports the duplicate's index in the **sorted local copy's**
+coordinates as a path into the **submitted** term, so `Path` and `Got`
+can contradict each other and the path can fall outside the duplicate
+pair entirely. Established three independent ways: a live-daemon
+execution probe (submission `[string,string,bool]`; research note §5),
+a Lean theorem over the constructor model (`shipped_incoherent`,
+witness `[1,1,0]`), and a TLC trace found without the witness being
+supplied (`<<0,1,0>>`, committed as `*.cex.txt`).
+
+What is claimed positively: the repaired projection rule (report the
+least submitted index having an equal earlier member, with the
+submitted member as `Got`) satisfies **W-COHERENCE** (`Got` is what
+arrived at `Path`) and **W-SCOPE** (`Path` is the later coordinate of a
+real duplicate pair) — proved in Lean for every submission at the model
+level, and exhaustively model-checked at the TLC caps. The defect is
+**report-only**: both rules refuse exactly the duplicate-bearing
+submissions (`WDecision`, checked at bounds). Alongside, the collapse
+lemma (`QTree.collapse`): against a teacher whose knowledge is a
+decidable unary predicate, pair-query evidence is redundant up to a
+uniform 2× simulation — the formal ground for freezing
+`flb.certification.v0` without ICE-style implication fields.
+
+### Evidence
+
+`verify/implication/run.sh` — the five-verdict gate: Lean `lake build`
+(no `sorry`, core only); TLC clean config; two faithless controls
+(`Rule = "sorted"`, the constructor as shipped) each refuted on exactly
+its named invariant with traces committed; one independence control
+passing `WDecision` under the shipped rule.
+
+### Bounds and residuals
+
+TLC caps: submissions of length ≤ 4 over two member ranks, exhaustive
+below the caps (31 submissions, 93 states, depth 2). Lean's fixed-rule
+walls and the collapse lemma are unbounded but **model-level**:
+code-model correspondence with `walk.go` is empirical (the execution
+probe), not proved. Decision equivalence (`WDecision`) has no unbounded
+proof yet — it needs sorted-permutation lemmas, stated as the next
+rung in the README. The walls cover the union-uniqueness law; the
+other three shipped relational laws (`optional` declared / unique /
+ordered) project coherently today because their loops never reorder,
+and are covered by the model only insofar as their shape matches.
+
+### Checkable at
+
+[verify/implication/](verify/implication/) (Lean project, spec,
+configs, committed counterexample traces, run record in README) and
+[docs/research/2026-08-14-implication-refusals-formalized.md](docs/research/2026-08-14-implication-refusals-formalized.md)
+(the definitions the machines check).
+
+## IR denotational laws — model-level R5 (Lean)
+
+### Claim
+
+`flb.type.v0` stated once as an algebraic type (`TyX H`; the hole is a
+type parameter, so the closed and authoring grammars are one definition
+at two instantiations) with a denotational semantics `Conforms ρ t v`,
+and the estate's prose laws about meaning proved over it: brands and
+checks are denotationally invisible (the fiber theorem's premise); a ref
+means exactly its resolution; union meaning is a property of the member
+set, so the canonical member sort — under any comparator — never moves
+the denotation (identity moves, meaning does not); catalog growth never
+invalidates conformance (presence-of-evidence monotone, denotationally);
+and the C5 embed/close round trip. Structs are denotationally closed,
+derived from the shipped json-schema target (`additionalProperties:
+false`). No `sorry`, core Lean only.
+
+### Evidence
+
+`verify/ir/run.sh` (= `lake build`), Lean 4.33.0.
+
+### Bounds and residuals
+
+Model-level: the Lean grammar is the reference the Go/TS restatements
+should mirror (architecture audit §3); no correspondence proof ties it to
+`walk.go` or `codegen.ts`. Numerics abstracted to `Int`; check args to
+the check name; ref resolution fuel-indexed with DAG-depth sufficiency
+noted, not proved. Well-formedness residual laws and the parse theorem
+are the named next rungs in the README.
+
+### Checkable at
+
+[verify/ir/](verify/ir/) and
+[docs/research/2026-08-14-architecture-audit.md](docs/research/2026-08-14-architecture-audit.md) §5.
+
+## Create-pipeline snapshot law — R2 (TLC); shipped head-read refuted
+
+### Claim
+
+The snapshot law — every reply that names a head names the head its
+facts were read under; for `type.create`: `seq` addresses the op's fact,
+`head = seq + 1`, `head` addresses the op's bridge — holds for the
+repaired rule (reply captured inside the critical section, the
+`frontierSnapshot` pattern) at the gate bounds, with crashes enabled.
+The shipped rule (head read outside the lock after the bridge,
+`dispatch.go:109`) is **refuted**, trace committed. The orphan-fact
+residual (crash between fact and bridge leaves a durable fact, no
+bridge, dropped reply — `catalog.go:232-236`) is model-checked real and
+recorded as a finding. Even the shipped rule never replies without a
+durable bridge — the defect is head provenance only.
+
+### Evidence
+
+`verify/pipeline/run.sh` — four verdicts (clean, two refutation
+controls with committed traces, one independence control).
+
+### Bounds and residuals
+
+Two concurrent creates, certification always succeeds, no
+convergence/duplicate path, head abstracted to journal position. The
+spec is the ratification artifact for Task 32's `catalog_head`
+provenance; the journal gate (ticket 012) and replay soundness are the
+named next increments.
+
+### Checkable at
+
+[verify/pipeline/](verify/pipeline/) (spec, configs, committed traces,
+run record in README).
+
+## Workflow replay soundness — model-level R5 (Lean) + R2 (TLC)
+
+### Claim
+
+For a static workflow DAG (topological numbering; labels-as-identity,
+the ratified v0 position) with deterministic bodies, under the register
+step axioms (first commit wins, commits only of ready nodes, duplicate
+commits absorbed, crashed attempts invisible): every committed value is
+the denotation (`exec_coherent`), any two executions agree on everything
+both committed (`determinacy`), any two complete schedules are pointwise
+equal — **the committed linearization is a decision about order, never
+about values** (`schedule_irrelevance`) — and fold-over-Done from any
+reachable store reproduces the denotation at every node — **replay is
+execution** (`replay_sound`). The ready guard is load-bearing, not
+hygiene: without it, two schedules of a two-node workflow commit
+different values at the same node, proved as a Lean counterexample
+(`faithless_diverges`) and independently found by TLC over the
+worker/steal/fence protocol (trace committed). The bounded TLC check is
+what ties the axioms to the effector's protocol shape: two workers,
+lease-expiry steals with fence bumps, fence-checked commits, crashes as
+stealable claims — `SpecEval` holds through every interleaving.
+
+### Evidence
+
+`verify/replay/run.sh` — three verdicts: `lake build` (no `sorry`, core
+only), TLC clean, TLC faithless control refuted on exactly `SpecEval`.
+
+### Bounds and residuals
+
+Lean: model-level — the register step axioms are DISCHARGED IN PROSE by
+the effector's proven laws (fence safety, unique terminal outcome), not
+by a machine-checked refinement; that correspondence is the R4-style
+obligation once tickets 008/020 build the engine. Dynamic control flow
+is out of scope by design (choices must enter as committed facts;
+design §3 staging). TLC: DAG `1 → 3 ← 2`, two workers, fence cap 3, 376
+states. This entry is the pre-build license the workflow design named:
+the engine may now be built against a proved contract.
+
+### Checkable at
+
+[verify/replay/](verify/replay/) (Lean project, spec, configs, committed
+trace, run record in README) and
+[docs/design/2026-08-14-workflow-authoring-and-emission.md](docs/design/2026-08-14-workflow-authoring-and-emission.md) §5.1.
 
 ## Standing assumptions
 

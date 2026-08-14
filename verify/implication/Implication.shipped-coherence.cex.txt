@@ -1,0 +1,44 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 54 and seed 2048365528508437552 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 23784] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\verify\implication\Implication.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12258027543071418892\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module Integers
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Implication
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Implication
+Starting... (2026-08-14 09:10:37)
+Computing initial states...
+Computed 2 initial states...
+Computed 4 initial states...
+Computed 8 initial states...
+Computed 16 initial states...
+Finished computing initial states: 31 distinct states generated at 2026-08-14 09:10:37.
+Error: Invariant WCoherence is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ sub = <<0, 1, 0>>
+/\ phase = "submitted"
+/\ refusal = [path |-> 0, got |-> 0]
+
+State 2: <Certify line 92, col 12 to line 95, col 27 of module Implication>
+/\ sub = <<0, 1, 0>>
+/\ phase = "decided"
+/\ refusal = [path |-> 2, got |-> 0]
+
+41 states generated, 41 distinct states found, 30 states left on queue.
+The depth of the complete state graph search is 2.
+Finished in 00s at (2026-08-14 09:10:37)
+Trace exploration spec path: .\Implication_TTrace_1786716637.tla

@@ -1,0 +1,5 @@
+name = "implication"
+defaultTargets = ["Implication"]
+
+[[lean_lib]]
+name = "Implication"

@@ -1,0 +1,5 @@
+name = "replay"
+defaultTargets = ["Replay"]
+
+[[lean_lib]]
+name = "Replay"
