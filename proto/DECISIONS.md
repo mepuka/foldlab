@@ -2072,3 +2072,42 @@ be produced by the critical section that established their meaning. The
 pre-declared orphan-fact crash finding remains unchanged: a bridge failure after
 the fact append still drops the reply and is not repaired here. **Load-bearing?
 yes** — Task 32 persists this catalog-head provenance.
+## Task 46 — daemon-held claim tokens (2026-08-14)
+
+### D??. Commit authority is an opaque daemon-held claim token
+
+Decided: a successful journald `claim` returns a fresh 32-byte
+cryptographically random lowercase-hex token and records, by effector name and
+work digest, the token and exact `effector.Claim` minted by that register. A
+successful steal replaces only that composite-keyed entry. `commit` strictly
+accepts only `{id,op,name,digest,token,result}`; the removed `fence` and `owner` fields
+are unknown fields and therefore malformed. The daemon resolves its recorded
+claim and passes that value to `effector.Commit`; a foreign or stale token is
+fenced before the effector call. The token is consumed by the first successful
+commit. Once the register is `Done`, token validity no longer matters: the same
+result is absorbed as `{ok:true,first:false}`, while a different result reports
+the register's dominant `committed` fact. The fence remains observable for
+diagnosis and lookup but is never wire authority. Alternatives: trust the
+client-supplied fence; bind only the client-supplied owner; use a stateless
+signed claim envelope; persist the opaque token. Why: the first two leave
+authority fabricable, the signed envelope exports the capability's proof
+material and key lifecycle, and persistence is unnecessary for lease recovery.
+The wire change is explicitly authorized by
+`scratch/codex/46-claim-tokens.md` and the ratified workflow-design §6 decision
+6; no frozen fixture covers the journald claim/commit seam. **Load-bearing?
+yes** — the register proof assumes only the register mints commit authority.
+
+### D??. A journald restart orphans tokens until lease recovery
+
+Decided: the token map is process memory and is deliberately empty after a
+daemon restart. The underlying register claim remains authoritative in
+JetStream until its lease expires; the old process token cannot be recovered or
+used. Recovery is: inspect or retry, observe `held`, wait for lease expiry,
+claim again (which steals with a higher fence and mints a new token), then
+commit with that token. This is the existing at-least-once lease mechanism, not
+lost work or a durability defect. Alternatives: persist tokens beside the
+register, deterministically derive a token from the visible fence, or let a
+restarted daemon reconstruct authority from claim fields. Why: all three make
+authority durable or derivable outside the daemon process and recreate the
+transport leak this task closes. **Load-bearing? yes** — operators must treat
+restart as lease recovery, never as token recovery.
