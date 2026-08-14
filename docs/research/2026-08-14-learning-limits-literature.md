@@ -258,3 +258,92 @@ al. 2012, paywalled) is the one paper that could refute Conjecture II's
 novelty. Corrections recorded: the RG-A magnitude is 10²⁰ not 10⁴; the
 `O(kn²+n log m)` query bound is Rivest–Schapire, not Angluin; Haussler's
 boundary blowup needs only plain monotone terms.
+
+## 9. CORRECTIONS AND REFEREE FINDINGS (2026-08-13, adversarial pass — supersedes conflicting claims above)
+
+A three-lane formal attempt (possibility, impossibility/kernel, hostile
+referee) was run against §§1–5. The referee's verdict is accepted. The
+record above is preserved unedited; this section states what changed.
+
+**Withdrawn:**
+- §1's "the possibility question is answered yes, by citation." FALSE as
+  cited: the NCEx oracle (Jain–Kinber Def. 9) is target-relative and
+  COMPLETE — its silence certifies containment. foldlab's certifier is a
+  fixed-law well-formedness checker that never sees a value
+  (proto/SPEC.md:25-28; the wire reply literally says payload conformance
+  "was NOT checked"). A decidable predicate on the hypothesis space is
+  not an oracle; the learner can compute it. Theorem 14 does not apply.
+  The only target-relative refuter in the system is the human.
+- §3's fairness conjecture as an open problem. It is Jain–Kinber
+  Definition 42 (model D4) and Theorem 43 (NCEx = D2 ⊆ D4), proved 2008,
+  in the same paper, thirty pages after Theorem 14. Cite it.
+- §2's "the human's noise costs O(1)" — a false accept about
+  OVER-GENERALITY is not re-checkable by any certified query; that is
+  the exact failure a law-checker cannot see. Restricted to
+  law-violating proposals only.
+- The "unnamed model" claim. Motoki (IPL 39(4), 1991) names the
+  ∃-advisor version (text + sound incomplete negative source) with a
+  characterization; Angluin–Kriķis–Sloan–Turán 1997 is the persistent
+  asymmetric-error architecture; Pelc §5.4 names lie patterns. The
+  genuinely unclaimed cell is narrower: the ∀-advisor (adversarial
+  selection) with the unfairness kernel as the object — and the
+  impossibility lane's Theorem D2 (a tell-tale characterization
+  relativized to the oracles' blind spots, interpolating Angluin 1980 ⟷
+  Jain–Kinber) is the candidate theorem for exactly that cell.
+- §7.1's "free Θ(Ldim) collapse." Unestablished transfer: Braverman et
+  al.'s bound needs a SYMMETRIC counterexample generator (a function of
+  H △ target); the certifier's first-failing-(Law,Path) against fixed
+  laws is not one. The traversal-order ratification stands as a
+  determinism/reproducibility law only.
+- §3's polarity flip as stated ("both answers are refutations"). Only
+  the excluding answer is sound; "wrongly excluded" is an accept in
+  disguise and eliminating on it reintroduces the closing failure. The
+  honest form: the flip makes every ELIMINATING answer sound and demotes
+  the other direction to advisory — halving information rate, not
+  removing noise.
+- §1's fourth impossibility, now scoped: "for classes without finite
+  tell-tales."
+
+**Citation repairs:** the "query budget dominates" result is Prop. 42
+(§7) of Inf. & Comp. 204, not "Prop. 7.2"; at FIXED budget, least
+counterexamples are strictly stronger (2n−1 vs n, tight) — the
+equivalence holds only unbounded. The 2ⁿ−3 mind-change figure is
+asserted without proof in the primary ("We omit the details"). The
+Kopystiański–Otop figures are 13–87% mean 52% on equivalence queries.
+
+**What survives, strengthened:**
+- The collapse theorem (SSEx = NCEx; an unconstrained acceptor is worth
+  nothing in the limit) and the kernel-cardinality dichotomy
+  (reliability is a cardinality, not a rate; κ bounds mind-changes
+  exactly; κ=0 gives all of E). Proved by the possibility lane.
+- The plumbing dichotomy (accepts to the scheduler, never the kill set;
+  one lie defeats any accept-closing learner) — proved with the weakest
+  closing definition; the C-as-ranker cost table cost-justifies ruling
+  Q5.
+- The trade-off theorem replacing the memoization argument: ONE-SIDED
+  SOUNDNESS AND INDEPENDENCE OF ERROR CANNOT COEXIST — independence
+  requires answer-variance across semantically identical presentations,
+  which is a noisy semantic channel, which makes rejects noisy too.
+  Persistence is derived, not assumed, and matches the published
+  persistent-noise model.
+- Theorem D2 (relativized tell-tale), Theorem D6 (the fiber is the
+  kernel-critical region; content addressing is the canonical selector),
+  the finite-fragment corollaries (for finite families with decidable
+  containment, refuter completeness is FREE — the shipped regime), and
+  the kernel-erosion open problem (model the human as a learner over the
+  refusal corpus — the flywheel as mathematics).
+- The referee's repair worth adopting: model C as answering per some
+  L′ ⊇ L — the user's STATED type versus their intended one. Soundness,
+  noise, persistence, and bounded coding all fall out, and the theorem
+  aligns with the fiber theorem's shape.
+
+**The corrected headline — "the completeness gap":** a certifier that
+checks laws cannot supply the target-relative counterexamples learning
+requires; the only agent who can is unreliable in exactly the direction
+that matters; the achievable limit is therefore the user's STATED type,
+never their intended one — and the engineering program (value-conformance
+codec from the ratified codegen seam, exclusion-eliciting dialogue,
+kernel instrumentation from the corpus) is precisely what narrows the
+gap. The Lean core (verify/ssex, branch lean/ssex-core) formalizes the
+finite regime where completeness is free, which is the regime the
+product ships.
