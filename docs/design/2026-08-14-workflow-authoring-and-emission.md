@@ -256,14 +256,12 @@ Wrinkles, recorded honestly:
 
 ## 5. Obligations this design creates (roadmap deltas)
 
-1. **The replay-soundness theorem** (ground-truth increment 3, statement
-   sharpened by this dialogue): for any certified static workflow DAG
-   with deterministic bindings and any committed linearization,
-   fold-over-`Done` reproduces every live execution's result. Two
-   lemmas: (i) exchange of independent adjacent steps (trace-theory
-   half, licensed per-algebra by commutativity claims); (ii) memoized
-   replay = execution (register half, over the proven fence laws).
-   To hold BEFORE 008/020 build.
+1. **The replay-soundness theorem** (ground-truth increment 3):
+   **PROVED** — `verify/replay/` (Lean: `exec_coherent`, `determinacy`,
+   `schedule_irrelevance`, `replay_sound`, `faithless_diverges`; TLC:
+   the worker/steal/fence protocol clean, the unguarded variant
+   refuted). Ledgered in VERIFICATION.md. The pre-build license half of
+   the 008/020 gate; the other half is the token law (§6, decision 6).
 2. **`flb.workflow.v0` — RESOLVED in §4.1** (dialogue-ratified):
    values of one cataloged type plus a dedicated certify walk; no new
    grammar kinds. Remaining sub-decision: where certified definitions
@@ -279,3 +277,84 @@ Wrinkles, recorded honestly:
    claim is that NO new substrate is needed — concierge, register,
    journal, folds, codegen cover all three layers. A counterexample to
    that claim is a finding about this design.
+6. **The token law** (§6, decision 6; joins the 008/020 gate): fencing
+   tokens are never client-fabricable. Harden the journald seam to
+   daemon-held claim tokens, with a conformance test proving a stale or
+   foreign token cannot commit, BEFORE any workflow runner exists.
+7. **The binding-manifest pin** (§6, decision 5): every run journal
+   opens with its binding-manifest digest; cross-manifest resume
+   refuses by default with a journaled operator override.
+
+## 6. The Effect-bridge grill record (operator session, 2026-08-14 — ratified)
+
+The operator's proposal — "attach Go bindings to Effects: wrap the
+effect, emit it into the daemon through the CAS, write as much plain
+Effect code as possible" — was grilled decision-by-decision. All six
+resolutions accepted; this section is the committed record and
+supersedes §3 where it is sharper.
+
+1. **Commit points are explicit, chosen, typed.** The wrapper is a
+   combinator, never an ambient runtime. Auto-committing at effect or
+   yield granularity is rejected: it would put fiber scheduling, clock
+   reads, and `Effect.all` interleaving into the deterministic-glue
+   hypothesis (the exact failure `faithless_diverges` exhibits) and
+   fight the R2 economics of coarse replay cuts. Plain Effect lives
+   INSIDE activity bodies; between activities there is no hand-written
+   logic at all.
+2. **Effect `Workflow`/`Activity` is the starting surface, two-tiered.**
+   Activities are the bindings; foldlab's `WorkflowEngine` Layer is the
+   persistence (the ratified replay-design mapping). But Effect, like
+   Temporal, DEMANDS glue determinism and cannot check it — so
+   certified workflows get DERIVED bodies (codegen from the certified
+   DAG definition; pure wiring nobody writes; the hypothesis discharged
+   by the generator, the contract.describe trick), while hand-written
+   workflow bodies remain legal at an explicitly UNCLAIMED tier —
+   Temporal-grade promises, graduable by extracting their DAG into a
+   certified definition.
+3. **Bodies are at-least-once; the obligation is classified, not
+   assumed.** Exactly-once is a property of COMMITS (proved), never of
+   execution: claim → run → crash-before-commit → steal → re-run is the
+   lease mechanism working. Every binding therefore declares its effect
+   class — `pure` (compute; at-least-once free), `internal` (writes
+   only through register/journal/catalog; at-least-once free by
+   absorption and digest dedup), `external` (touches the world; the
+   binding receives the work digest as idempotency key and owns its
+   dedup — the slot Activity.make already carries). The class is data:
+   auditable, foldable, and a future certifier hook — soundness claims
+   travel with the declared classes.
+4. **Failures split exactly as the daemon's error-vs-refusal law.** The
+   committed value is an Exit: success or TYPED error, both schema'd
+   and IR-expressible, both replayed as facts (a committed rejection
+   stays rejected). Defects and interruptions never commit — they are
+   crashed attempts, i.e. lease churn. Retries of typed errors are new
+   work units (attempt index in the work digest — Effect-native, the
+   `attempt` parameter of `activityExecute`), and retry policy is
+   deterministic data in the derived glue, never engine magic.
+5. **Facts are body-free; provenance is pinned; cross-version resume
+   refuses.** Work digests exclude code identity — a committed result
+   is never recomputed or reinterpreted (rejecting the alternative,
+   body-versioned digests, which would silently re-execute committed
+   work — including external effects — on deploy). Instead every run
+   journal opens by recording its binding-manifest digest (the
+   naming-binding-set shape, one layer down); resuming under a
+   different manifest is refused by default, override is an explicit
+   journaled decision. The refusal-sort precedent verbatim: archived
+   values keep the meaning that was true when they were emitted;
+   provenance is recorded, not asserted.
+6. **The token law, non-negotiable:** fencing tokens are never
+   client-fabricable. The shipped journald seam reconstructs
+   `Claim{Fence, Owner}` from client wire fields while `Commit` checks
+   only the fence (audit defect #1) — any observer of a fence number
+   can close another worker's claim. Sequencing accepted: harden
+   journald to daemon-held claim tokens NOW (small, conformance-
+   testable: a stale or foreign token cannot commit); protod absorption
+   of the register (`workflow.claim`/`workflow.commit` request kinds
+   per W9) is a separate future grill. Operator's words, kept: "the law
+   is the law — we do it right or not at all."
+
+**The earned answer to the original question:** yes — as much plain
+Effect as wanted, because every place the model needs an invariant the
+code is either generated (glue), classified (effects), committed
+(outcomes), or refused (cross-manifest resume, fabricated tokens);
+expressiveness lives exactly in the gaps the theorems do not need to
+see.
