@@ -143,8 +143,9 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 			return nil
 		}
 		type canonicalMember struct {
-			value any
-			bytes []byte
+			submittedIndex int
+			submittedValue any
+			bytes          []byte
 		}
 		canonical := make([]canonicalMember, len(members))
 		for index, member := range members {
@@ -160,18 +161,29 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 					"flb.type.v0: every union member must have canonical JSON bytes",
 					member, "a canonicalizable type node", map[string]any{"k": "string"})
 			}
-			canonical[index] = canonicalMember{value: normalizedMember, bytes: memberBytes}
+			canonical[index] = canonicalMember{
+				submittedIndex: index,
+				submittedValue: member,
+				bytes:          memberBytes,
+			}
 		}
 		// Duplicate detection uses normal-form bytes. This local ordering is
-		// validation only; it never rewrites the submitted term.
+		// validation only; it never rewrites the submitted term. Submitted
+		// index breaks canonical-byte ties so the later submitted duplicate
+		// remains the refusal coordinate.
 		sort.Slice(canonical, func(i, j int) bool {
-			return bytes.Compare(canonical[i].bytes, canonical[j].bytes) < 0
+			comparison := bytes.Compare(canonical[i].bytes, canonical[j].bytes)
+			if comparison != 0 {
+				return comparison < 0
+			}
+			return canonical[i].submittedIndex < canonical[j].submittedIndex
 		})
 		for index := 1; index < len(canonical); index++ {
 			if bytes.Equal(canonical[index-1].bytes, canonical[index].bytes) {
-				return structureRefusal(append(path, "of", fmt.Sprintf("%d", index)),
+				duplicate := canonical[index]
+				return structureRefusal(append(path, "of", fmt.Sprintf("%d", duplicate.submittedIndex)),
 					"flb.type.v0: union members must be unique after canonical-byte sorting",
-					canonical[index].value, "a member with distinct canonical bytes",
+					duplicate.submittedValue, "a member with distinct canonical bytes",
 					map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}})
 			}
 		}

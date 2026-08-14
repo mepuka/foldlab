@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -452,14 +453,67 @@ func TestConformance(t *testing.T) {
 		}
 	})
 
-	t.Run("duplicate union members refuse at the sorted duplicate", func(t *testing.T) {
-		r := h.create(map[string]any{
-			"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "string"}},
-		})
-		refusal := h.refusal(r, "invalid-structure")
-		path := refusal["path"].([]any)
-		if fmt.Sprint(path) != "[structure of 1]" {
-			t.Fatalf("duplicate path is %v, want [structure of 1]", path)
+	t.Run("duplicate union refusal uses submitted coordinates and got", func(t *testing.T) {
+		cases := []struct {
+			name      string
+			submitted map[string]any
+		}{
+			{
+				name: "sorted copy moves the duplicate",
+				submitted: map[string]any{
+					"k": "union", "of": []any{
+						map[string]any{"k": "string"},
+						map[string]any{"k": "string"},
+						map[string]any{"k": "bool"},
+					},
+				},
+			},
+			{
+				name: "got preserves the submitted duplicate",
+				submitted: map[string]any{
+					"k": "union", "of": []any{
+						map[string]any{"k": "union", "of": []any{map[string]any{"k": "null"}, map[string]any{"k": "string"}}},
+						map[string]any{"k": "union", "of": []any{map[string]any{"k": "string"}, map[string]any{"k": "null"}}},
+						map[string]any{"k": "bool"},
+					},
+				},
+			},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				r := h.create(tc.submitted)
+				refusal := h.refusal(r, "invalid-structure")
+				path, ok := refusal["path"].([]any)
+				if !ok || len(path) != 3 || path[0] != "structure" || path[1] != "of" {
+					t.Fatalf("duplicate path is %v, want [structure of <submitted-index>]", refusal["path"])
+				}
+				indexText, ok := path[2].(string)
+				if !ok {
+					t.Fatalf("duplicate path index is %v, want a decimal string", path[2])
+				}
+				index, err := strconv.Atoi(indexText)
+				if err != nil {
+					t.Fatalf("duplicate path index is %q, want a decimal string: %v", indexText, err)
+				}
+				members := tc.submitted["of"].([]any)
+				if index < 0 || index >= len(members) {
+					t.Fatalf("duplicate path index %d is outside submitted members", index)
+				}
+				submittedBytes, err := canonical.Canonicalize(mustJSON(t, members[index]))
+				if err != nil {
+					t.Fatalf("canonicalize submitted member at refusal path: %v", err)
+				}
+				gotBytes, err := canonical.Canonicalize(mustJSON(t, refusal["got"]))
+				if err != nil {
+					t.Fatalf("canonicalize refusal got: %v", err)
+				}
+				if !bytes.Equal(submittedBytes, gotBytes) {
+					t.Fatalf("refusal path points to %s, but got reports %s", submittedBytes, gotBytes)
+				}
+				if index != 1 {
+					t.Fatalf("duplicate path index is %d, want later submitted duplicate 1", index)
+				}
+			})
 		}
 	})
 
