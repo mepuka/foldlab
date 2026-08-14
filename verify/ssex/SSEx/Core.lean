@@ -206,7 +206,7 @@ def semD : Bool → Unit → Bool := fun b _ => b
 
 def RD : Refuter univD semD true where
   ask := fun _ => none
-  sound := fun _ v hv => Option.noConfusion hv
+  sound := fun _ v hv => nomatch hv
   complete := fun _ _ v _ _ => rfl
 
 theorem corpusD : Corpus univD semD true [()] :=
