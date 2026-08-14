@@ -139,12 +139,16 @@ type daemon struct {
 	js        jetstream.JetStream
 	journals  map[string]*journal.Journal
 	effectors map[string]*effector.Effector
-	claims    map[string]claimAuthority
+	claims    map[claimKey]claimAuthority
+}
+
+type claimKey struct {
+	name   string
+	digest string
 }
 
 type claimAuthority struct {
 	token string
-	name  string
 	claim effector.Claim
 }
 
@@ -311,9 +315,10 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 			return errorResponse{ID: req.ID, Reason: reasonFor(claimErr), Detail: claimErr.Error()}
 		}
 		if daemon.claims == nil {
-			daemon.claims = make(map[string]claimAuthority)
+			daemon.claims = make(map[claimKey]claimAuthority)
 		}
-		daemon.claims[claim.Digest] = claimAuthority{token: token, name: req.Name, claim: claim}
+		key := claimKey{name: req.Name, digest: claim.Digest}
+		daemon.claims[key] = claimAuthority{token: token, claim: claim}
 		return claimResponse{ID: req.ID, OK: true, Fence: claim.Fence, ExpiryMS: claim.Expiry.UnixMilli(), Token: token}
 	case "commit":
 		commitReq, err := decodeCommitRequest(input)
@@ -324,8 +329,9 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 		if err != nil {
 			return errorResponse{ID: commitReq.ID, Reason: reasonFor(err), Detail: err.Error()}
 		}
-		authority, found := daemon.claims[commitReq.Digest]
-		if !found || authority.token != commitReq.Token || authority.name != commitReq.Name {
+		key := claimKey{name: commitReq.Name, digest: commitReq.Digest}
+		authority, found := daemon.claims[key]
+		if !found || authority.token != commitReq.Token {
 			state, outcome, lookupErr := opened.Lookup(ctx, commitReq.Digest)
 			if lookupErr != nil {
 				return errorResponse{ID: commitReq.ID, Reason: reasonFor(lookupErr), Detail: lookupErr.Error()}
@@ -343,7 +349,7 @@ func (daemon *daemon) serve(ctx context.Context, input []byte) any {
 		if commitErr != nil {
 			return errorResponse{ID: commitReq.ID, Reason: reasonFor(commitErr), Detail: commitErr.Error()}
 		}
-		delete(daemon.claims, commitReq.Digest)
+		delete(daemon.claims, key)
 		return commitResponse{ID: commitReq.ID, OK: true, First: first}
 	case "lookup":
 		opened, err := daemon.openEffector(ctx, req.Name)
@@ -421,7 +427,7 @@ func run(storeDir string, durability syncMode) error {
 		js:        js,
 		journals:  make(map[string]*journal.Journal),
 		effectors: make(map[string]*effector.Effector),
-		claims:    make(map[string]claimAuthority),
+		claims:    make(map[claimKey]claimAuthority),
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 64*1024), maximumLineBytes)

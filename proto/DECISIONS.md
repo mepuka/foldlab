@@ -2058,10 +2058,10 @@ performance seam, not an identity law.
 ### D??. Commit authority is an opaque daemon-held claim token
 
 Decided: a successful journald `claim` returns a fresh 32-byte
-cryptographically random lowercase-hex token and records, by work digest, the
-token, the selected effector name, and the exact `effector.Claim` minted by the
-register. A successful steal replaces that entry. `commit` strictly accepts
-only `{id,op,name,digest,token,result}`; the removed `fence` and `owner` fields
+cryptographically random lowercase-hex token and records, by effector name and
+work digest, the token and exact `effector.Claim` minted by that register. A
+successful steal replaces only that composite-keyed entry. `commit` strictly
+accepts only `{id,op,name,digest,token,result}`; the removed `fence` and `owner` fields
 are unknown fields and therefore malformed. The daemon resolves its recorded
 claim and passes that value to `effector.Commit`; a foreign or stale token is
 fenced before the effector call. The token is consumed by the first successful

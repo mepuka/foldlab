@@ -232,3 +232,24 @@ func TestJournaldRefusesFabricatedLegacyCommitAuthority(t *testing.T) {
 		t.Fatalf("malformed legacy attempt consumed the daemon token: %v", commit)
 	}
 }
+
+func TestSameDigestAcrossEffectorNamesDoesNotCollide(t *testing.T) {
+	s := spawn(t, buildJournald(t))
+	digest := strings.Repeat("d", 64)
+	claimAlpha := s.request(map[string]any{
+		"id": 1, "op": "claim", "name": "alpha", "digest": digest,
+		"owner": "worker-a", "leaseMs": 60_000})
+	tokenAlpha := mustClaimToken(t, claimAlpha)
+	claimBeta := s.request(map[string]any{
+		"id": 2, "op": "claim", "name": "beta", "digest": digest,
+		"owner": "worker-b", "leaseMs": 60_000})
+	if claimBeta["ok"] != true {
+		t.Fatalf("beta claim: %v", claimBeta)
+	}
+	commitAlpha := s.request(map[string]any{
+		"id": 3, "op": "commit", "name": "alpha", "digest": digest,
+		"token": tokenAlpha, "result": "alpha-result"})
+	if commitAlpha["ok"] != true {
+		t.Fatalf("live unsuperseded alpha claim refused: %v", commitAlpha)
+	}
+}
