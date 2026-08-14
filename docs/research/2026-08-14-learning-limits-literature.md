@@ -347,3 +347,54 @@ kernel instrumentation from the corpus) is precisely what narrows the
 gap. The Lean core (verify/ssex, branch lean/ssex-core) formalizes the
 finite regime where completeness is free, which is the regime the
 product ships.
+
+### 9.1 Prior-art sweep addendum (hostile pass, same session)
+
+Deeper hits, all primary-text verified (extracts preserved in the session
+scratchpad):
+- **The Theorem 43 fork, sharpened.** Jain–Kinber Def. 42 D1/D2 (delayed,
+  untagged counterexamples — silence carrying zero information) IS oracle
+  R; Thm 43 (`NCEx = D2`) already proves the untrustworthy-silence
+  variant equals the immediate one. So: R eventually-complete ⟹ claim (a)
+  is a corollary of Thm 43; R genuinely incomplete ⟹ the Thm 14 reduction
+  breaks. No middle ground.
+- **Ordering-only is the field's anti-collusion axiom.** Preference-based
+  teaching (Gao et al. JMLR 2017) and Fallat et al. JMLR 2023 Thms 43/45
+  characterize helper-supplies-order/evidence-eliminates as exactly
+  coextensive with the strongest collusion-avoidance condition. Our
+  plumbing rule is that axiom — with the new twist that it is FORCED by
+  unsoundness rather than adopted by convention. Cite, and claim the
+  twist only.
+- **Theorem (c) has a 1995 witness** (Baliga–Case–Jain Thm 51: one
+  collusion-resistant negative example collapses mind changes unbounded→0
+  with learning power unchanged) — and as a GENERAL claim about advice
+  it is FALSE (Freivalds–Wiehagen 1979: one sound number takes all of R
+  from unlearnable to learnable). (c) is a consequence of C's
+  unsoundness plus the ordering restriction; state it so.
+- **(b)+(c) analytically anticipated in the RL lane**: "Rate or Fate?
+  RLVεR" (arXiv:2601.04411) — phase transition in Youden's index J:
+  J>0 learning (noise rescales time — "rate, not fate"), J<0 collapse;
+  Egashira et al. (arXiv:2605.02909): SYSTEMATIC false positives cause
+  collapse where random noise merely delays. Persistence-not-rate,
+  measured.
+- **Half-lie is named since Rivest et al. 1980**; Bshouty's honest-teacher
+  survey §8.1 pre-authorizes persistent × one-sided as a taxonomy product.
+  AKST 1997 states the caching-implements-persistence argument verbatim.
+- **Naming rule**: never "one-sided" unqualified (four collisions:
+  reliable learning, apple tasting, PU learning, SC-verifier budgets —
+  the last, Balcan et al. arXiv:2603.03538, must be cited and
+  distinguished).
+
+**The surviving novelty axis, stated once:** the CONJUNCTION — a
+non-certifying sound refuter (Jha–Seshia q_ce / Jain–Kinber D1) paired
+with a persistent, rate-UNBOUNDED intent channel; every neighbouring
+model bounds the bad direction (p<1, table-size L, ρ₀+ρ₁<1, ε-fraction,
+soundness budget k). Unboundedness plus persistence forecloses the
+standard resampling repair and is the one cell no prior model permits.
+Repositioning sentence for any submission: we combine two named
+components under an unbounded error rate no prior model permits, and
+show the field's standard anti-collusion axiom is independently forced
+by unsoundness. Drop "unnamed" everywhere.
+
+**Unread and able to bite:** Angluin–Kriķis COLT 1997; Gasarch–Smith
+JACM 39(3) 1992; Bisht–Bshouty–Khoury JCSS 74(1) 2008.
