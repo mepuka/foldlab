@@ -398,3 +398,47 @@ by unsoundness. Drop "unnamed" everywhere.
 
 **Unread and able to bite:** Angluin–Kriķis COLT 1997; Gasarch–Smith
 JACM 39(3) 1992; Bisht–Bshouty–Khoury JCSS 74(1) 2008.
+
+### 9.2 Algebraic Property Graphs / Dragon addendum (operator-identified prior art)
+
+The Uber system the operator recalled is APG (Shinavier–Wisnesky–Meyers,
+arXiv:1909.04881), formalizing Uber's Dragon schema-integration toolkit;
+the Wisnesky lineage makes it the industrial endpoint of functorial data
+migration. Verified findings:
+- **Dragon shipped L-DERIVE and explicitly abandoned L-ACCEPT** ("rarely,
+  if ever possible; schema languages differ in expressivity" — unsupported
+  features stashed as opaque quotations). Strongest external evidence that
+  L-ACCEPT is a real jewel and that ADR-0007's corpus-bounded stance is
+  the honest posture.
+- **Codegen is Δ.** APG inherits only Δ of Spivak's Σ⊣Δ⊣Π; ruling C2's
+  "term→schema total, schema→term partial" is the Δ/Σ asymmetry in house
+  words. Adopt the vocabulary in LAWS.md: L-DERIVE is free because Δ is
+  composition; L-ACCEPT is hard because it is not a Δ property at all.
+- **Actionable: for the toJsonSchema target, L-ACCEPT is machine-checkable
+  TODAY** — JSON Schema inclusion is decidable, EXPTIME-complete, with
+  counterexample-witness generation (Attouche et al., PVLDB 15;
+  refutational normalization arXiv:2603.25306). A wall can become a
+  checker for that one target. Also cite Fagin-inverse (coNP-complete,
+  rare) vs maximum recovery (always exists) as the field's independent
+  soundness/exactness split, and EverParse as the two-sided spec shape.
+- **Three steals**: graph structure as a PREDICATE on product shape,
+  never new grammar kinds (keeps flb.type.v0 at 13 when ticket 016
+  lands); Δ/Σ/Π vocabulary; SHACL sh:closed + sh:ignoredProperties as
+  the W3C-ratified spelling of open-with-declared-rest (#45). Ticket
+  004's brand rationale should cite APG's Lbl (named types, same
+  justification, 2019) rather than derive it.
+- **All five novelty claims untouched**, two strengthened: content
+  addressing is structurally impossible in APG (vertices are
+  definitionally identity-only), and federation was explicitly REJECTED
+  by Dragon in favor of the star/central-model — the architecture
+  content addressing exists to avoid. APG/CQL/Dragon now recorded as
+  checked-and-clear in the negative sweep.
+- **Market datapoint**: Conexus (the commercialization) pivoted in 2026
+  onto "AI that will not bluff" — a competitor on our exact pitch — yet
+  shows no verifiable funding round, a press page silent since 2021, and
+  Dragon did not survive Uber; the durable artifact was one person's
+  open-source project. Lessons adopted: buyers bought dollars-found, not
+  guarantees — lead with the refusal that saved a deploy; the math named
+  as the product is a filter, not a moat; ship the corpus and protocol so
+  they outlive the entity; a promised writeup that never lands erases
+  the work (VERIFICATION.md is the counter-practice).
