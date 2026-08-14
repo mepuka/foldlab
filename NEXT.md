@@ -261,7 +261,21 @@ statement and a divergence probe.
 
 ## Backlog, ordered (tight: the ratified path and its obligations, only)
 
-## The build order (operator-ratified 2026-08-14)
+## RETIRED 2026-08-14: the dispatched-task fleet
+
+Every branch other than `main` was retired by operator decision — purged,
+not suspended, per the standing pattern. Tips survive as `archive/*` tags;
+manifest and rationale in
+[docs/research/2026-08-14-branch-retirement.md](docs/research/2026-08-14-branch-retirement.md).
+The build order below is therefore SUPERSEDED where it names dispatched
+tasks or candidate branches: no candidate exists for anything. What
+survives retirement: main at `476d89fa2` (post adversarial review, tasks
+46/47 merged), every ratified decision, every shipped proof, and the
+review's open-defect backlog as the honest debt list. A new build order
+will be ratified from the post-retirement vision grill; until then the
+list below is context, not dispatch.
+
+## The build order (operator-ratified 2026-08-14, PRE-RETIREMENT — see above)
 
 Full demand inventory and dependency graph:
 [docs/design/2026-08-14-estate-structures-map.md](docs/design/2026-08-14-estate-structures-map.md).
