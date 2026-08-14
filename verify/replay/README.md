@@ -23,7 +23,7 @@ steals and retries change WHO commits, never WHAT).
 | --- | --- |
 | `exec_coherent` | Every committed value is the denotation — the inductive heart. |
 | `determinacy` | Any two executions agree on everything both committed. |
-| `schedule_irrelevance` | Any two COMPLETE schedules are pointwise equal: the committed linearization is a decision about order, never about values. |
+| `schedule_irrelevance` | Two schedules complete over the same node set agree pointwise on that set (the theorem quantifies over nodes `< k`): the committed linearization is a decision about order, never about values. |
 | `replay_sound` | From ANY reachable store — mid-run, post-crash, complete — fold-over-Done reproduces the denotation at every node. Replay is execution. |
 | `faithless_diverges` | Drop the ready guard and two schedules of a two-node workflow commit different values at the same node (`some 0` vs `some 1`) — the guard is load-bearing, not hygiene. |
 
@@ -34,6 +34,16 @@ committed value equals the denotation) holds through every interleaving
 — 376 states, depth 13 — and the faithless variant (commit against
 absent inputs read as defaults) is refuted with the trace committed
 (`Replay.faithless.cex.txt`), the TLA twin of the Lean counterexample.
+**Scope (review-corrected, 2026-08-14):** this gate's discriminator is
+the **ready guard** — mutation-testing confirms removing it makes the
+faithless control pass. `SpecEval` is deliberately *insensitive* to the
+fence machinery: with deterministic bodies and terminal `Done`, who
+commits and at which fence cannot change what is committed, so removing
+the fence bump or the commit-side owner check leaves the verdicts
+unchanged. The fence's *safety* (no double-commit) is the effector's own
+EL laws in `go/effector`, not this gate. This half checks
+value-invariance under the ready guard; it does not re-verify the
+register protocol.
 
 ## What this licenses, and what it does not
 

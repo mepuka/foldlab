@@ -15,9 +15,9 @@ this op's fact, `head = seq + 1`, and `head` addresses this op's bridge.
 | config | verdict (recorded) |
 | --- | --- |
 | `Pipeline.cfg` (snapshot rule) | clean — TypeOK, SeqHeadCoherent, RepliedImpliesBridged, crashes enabled |
-| `Pipeline.shipped.cfg` | **refuted on SeqHeadCoherent** — the head read outside the lock (dispatch.go:109); trace committed |
-| `Pipeline.orphan.cfg` | **refuted on NoOrphanFact** — the committed trace IS the audit §5.3 finding: crash between fact and bridge leaves a durable fact with no bridge and a dropped reply |
-| `Pipeline.shipped-bridged.cfg` | clean — even the shipped rule never replies unbridged; the defect is head provenance only |
+| `Pipeline.shipped.cfg` | **refuted on SeqHeadCoherent** — models the pre-fix head read outside the lock (dispatch.go:109); a **regression guard**, since the defect is fixed and merged (`3aebd2ba9`); trace committed |
+| `Pipeline.orphan.cfg` | **refuted on NoOrphanFact** (quiescence-guarded) — a *terminal* `crashed` op leaves a durable fact with no bridge. Review fix: the invariant is guarded on `phase ∈ {replied,crashed}` so it no longer fires on the benign in-lock transient; a mutation test confirms deleting `CrashInLock` makes this control pass, proving the crash action is its sole cause. Caveat: shipped protod repairs the missing bridge on retry, so the model is stricter than the code. |
+| `Pipeline.shipped-bridged.cfg` | clean — even the shipped rule never replies unbridged; the defect was head provenance only |
 
 The repaired rule is the `frontierSnapshot` pattern (catalog.go:111-126)
 applied to `serveCreate`: capture the reply inside the critical section.

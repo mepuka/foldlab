@@ -31,7 +31,9 @@ FAIL=0
 # --- lean -------------------------------------------------------------------
 if command -v lake >/dev/null 2>&1; then
   echo "== lean: lake build =="
-  if (cd lean && lake build); then
+  if grep -rnE '(:=|by|<;>|;|\|)[[:space:]]*(sorry|admit)\b|^[[:space:]]*(sorry|admit)[[:space:]]*$|^[[:space:]]*axiom[[:space:]]' lean/Implication lean/*.lean 2>/dev/null; then
+    echo "FAIL  lean sources contain a sorry/admit tactic or axiom decl (a warning, not a build error — grep-guarded here)"; FAIL=1
+  elif (cd lean && lake build); then
     echo "PASS  lean proofs"
   else
     echo "FAIL  lean proofs did not check"; FAIL=1

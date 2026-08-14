@@ -2,3 +2,4 @@ tools/
 _runlogs/
 lean/.lake/
 states/
+*_TTrace_*

@@ -151,11 +151,19 @@ RepliedImpliesBridged ==
   \A o \in Ops : Replied(o) =>
     \E i \in DOMAIN journal : journal[i].op = o /\ journal[i].kind = "bridge"
 
-(* Every durable fact has its bridge. REFUTED by CrashInLock — the audit's
-   §5.3 orphan-fact residual, committed as a finding, not repaired here. *)
+(* Every durable fact of a QUIESCENT op has its bridge. The quiescence
+   guard (phase terminal: replied or crashed) is load-bearing — without it
+   the invariant fires on the benign in-lock transient between the fact
+   append and the bridge append on the happy path, which is not the
+   finding. Guarded this way it is REFUTED only by CrashInLock reaching a
+   "crashed" op whose fact is durable and whose bridge never landed — the
+   audit's §5.3 orphan-fact residual. Deleting CrashInLock makes this
+   control PASS (and the gate FAIL), which is what proves CrashInLock is
+   the sole cause. *)
 NoOrphanFact ==
-  \A i \in DOMAIN journal : journal[i].kind = "fact" =>
-    \E b \in DOMAIN journal :
-      journal[b].op = journal[i].op /\ journal[b].kind = "bridge"
+  \A i \in DOMAIN journal :
+    (journal[i].kind = "fact" /\ phase[journal[i].op] \in {"replied", "crashed"}) =>
+      \E b \in DOMAIN journal :
+        journal[b].op = journal[i].op /\ journal[b].kind = "bridge"
 
 ================================================================================

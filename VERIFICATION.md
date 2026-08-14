@@ -39,9 +39,9 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
-| Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the shipped union constructor is **REFUTED** — an open defect on `main` (fix on branch `codex/union-refusal-path`) | [verify/implication/](verify/implication/) |
+| Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
-| Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the shipped head-read is **REFUTED**; the orphan-fact crash residual is a recorded finding | [verify/pipeline/](verify/pipeline/) |
+| Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Claimed** for static DAGs with deterministic bindings; the unguarded (faithless) runner is **REFUTED** in both instruments | [verify/replay/](verify/replay/) |
 
 ## The effector (commitment register) — R3 + R4
@@ -498,32 +498,48 @@ it is not an exhaustive proof over all byte strings.
 
 [proto/](proto/).
 
-## Refusal projection walls — R2 (TLC) + model-level R5 (Lean); one refuted constructor on `main`
+## Refusal projection walls — R2 (TLC) + model-level R5 (Lean); the refuted constructor is fixed on `main`
 
 ### Claim
 
-Lead with the finding: the shipped union-member-uniqueness refusal
-constructor (`proto/go/protod/walk.go:170-176`) violates W7 — it
-reports the duplicate's index in the **sorted local copy's**
-coordinates as a path into the **submitted** term, so `Path` and `Got`
-can contradict each other and the path can fall outside the duplicate
-pair entirely. Established three independent ways: a live-daemon
-execution probe (submission `[string,string,bool]`; research note §5),
-a Lean theorem over the constructor model (`shipped_incoherent`,
-witness `[1,1,0]`), and a TLC trace found without the witness being
-supplied (`<<0,1,0>>`, committed as `*.cex.txt`).
+The union-member-uniqueness mislocation this development refutes is
+**fixed and merged** (`ab77d6bfc`, ancestor of HEAD): the constructor
+that reported the duplicate's index in the **sorted local copy's**
+coordinates as a path into the **submitted** term (`Path`/`Got`
+contradicting each other) is gone; the shipped walk now reports
+`submittedIndex`/`submittedValue` (`proto/go/protod/walk.go:174-188`).
+The historical defect was established three independent ways — a
+live-daemon execution probe (research note §5), a Lean theorem over the
+old constructor (`shipped_incoherent`, witness `[1,1,0]`), and a TLC
+trace found without the witness (`<<0,1,0>>`, committed as `*.cex.txt`).
+Those controls now stand as **regression guards** over the historical
+rule, not as descriptions of shipped code.
 
-What is claimed positively: the repaired projection rule (report the
-least submitted index having an equal earlier member, with the
-submitted member as `Got`) satisfies **W-COHERENCE** (`Got` is what
-arrived at `Path`) and **W-SCOPE** (`Path` is the later coordinate of a
-real duplicate pair) — proved in Lean for every submission at the model
-level, and exhaustively model-checked at the TLC caps. The defect is
-**report-only**: both rules refuse exactly the duplicate-bearing
-submissions (`WDecision`, checked at bounds). Alongside, the collapse
-lemma (`QTree.collapse`): against a teacher whose knowledge is a
-decidable unary predicate, pair-query evidence is redundant up to a
-uniform 2× simulation — the formal ground for freezing
+What is claimed positively: **the walls are satisfiable by
+construction** — a repaired projection rule (report the least submitted
+index having an equal earlier member, submitted member as `Got`)
+satisfies **W-COHERENCE** and **W-SCOPE** for every submission, proved
+in Lean (`fixed_coherent`, `fixed_in_scope`) at the model level and
+model-checked at the TLC caps. **Caveat, surfaced by adversarial review
+(2026-08-14) and machine-checked:** the *shipped* Go rule is a
+**different function** from the Lean `fixed` — it sorts by
+`(canonicalBytes, submittedIndex)` and reports the later element of the
+first canonical-byte-adjacent duplicate pair, whereas `fixed` reports
+the least-index later-twin (they diverge, e.g. submitted `[b,s,s,b]`:
+Lean path 2, Go path 4). Both satisfy both walls, but only the Lean
+rule is proved here; the *shipped* rule is walled by the Go conformance
+tests (`create`/union coverage), not by this Lean development. The
+defect is **report-only**: both rules refuse exactly the
+duplicate-bearing submissions (`WDecision`, checked at bounds).
+
+Alongside, the collapse lemma (`QTree.collapse`): pair-query evidence
+is redundant up to a uniform 2× simulation. **Precise hypothesis
+(review-clarified):** the operative premise is not decidability alone
+but that the teacher's pair answer **factors through the two membership
+bits**, `g(A x, A y)`, and the learner knows `g` — decidability makes
+queries answerable, the factoring is what forces redundancy. ICE evades
+the lemma precisely because its teacher holds a relation *not* so
+factorable. This is the formal ground for freezing
 `flb.certification.v0` without ICE-style implication fields.
 
 ### Evidence
@@ -561,15 +577,34 @@ configs, committed counterexample traces, run record in README) and
 `flb.type.v0` stated once as an algebraic type (`TyX H`; the hole is a
 type parameter, so the closed and authoring grammars are one definition
 at two instantiations) with a denotational semantics `Conforms ρ t v`,
-and the estate's prose laws about meaning proved over it: brands and
-checks are denotationally invisible (the fiber theorem's premise); a ref
-means exactly its resolution; union meaning is a property of the member
-set, so the canonical member sort — under any comparator — never moves
-the denotation (identity moves, meaning does not); catalog growth never
+and the estate's prose laws about meaning proved over it: brands are
+denotationally invisible (the fiber theorem's premise); a ref means
+exactly its resolution; union meaning is a property of the member set,
+so the canonical member sort — under any comparator — never moves the
+denotation (identity moves, meaning does not); catalog growth never
 invalidates conformance (presence-of-evidence monotone, denotationally);
 and the C5 embed/close round trip. Structs are denotationally closed,
 derived from the shipped json-schema target (`additionalProperties:
 false`). No `sorry`, core Lean only.
+
+**Scope of the "invisible" laws (review-clarified, 2026-08-14).**
+`Conforms` models the **identity/daemon semantics** — what the digest
+commits to and what the certifier admits, where the daemon validates no
+payloads (`proto/SPEC.md:83`, "checks declared-metadata only"). At that
+level brands *and* checks are invisible, and `brand_invisible` holds
+across every codegen target. **`check_invisible` does NOT hold of the
+validation semantics**: two of the three codegen targets emit real
+refinements from a check (`proto/ts/src/codegen.ts:97-105` maps six
+check names to Effect-Schema refinements; `:268/:272` emit
+`minLength`/`pattern` into JSON Schema), so `check(string, minLength≥1)`
+and `string` accept *different* value sets under a generated validator.
+The Lean law is therefore a **modeling stipulation of the identity
+semantics**, not a claim that a generated codec ignores checks. The
+`Semantics.lean` `check_invisible` docstring records this. `brand`,
+`check`, `deferred_blame` and the two-fuel brand/check laws are
+near-definitional (they unfold the `Conforms` clause); the substantive
+inductive laws are `union_extensional`, `sort_preserves_meaning`,
+`resolver_mono`, and `ref_unfold`.
 
 ### Evidence
 
@@ -589,21 +624,32 @@ are the named next rungs in the README.
 [verify/ir/](verify/ir/) and
 [docs/research/2026-08-14-architecture-audit.md](docs/research/2026-08-14-architecture-audit.md) §5.
 
-## Create-pipeline snapshot law — R2 (TLC); shipped head-read refuted
+## Create-pipeline snapshot law — R2 (TLC); the head-read defect is fixed on `main`
 
 ### Claim
 
-The snapshot law — every reply that names a head names the head its
-facts were read under; for `type.create`: `seq` addresses the op's fact,
-`head = seq + 1`, `head` addresses the op's bridge — holds for the
-repaired rule (reply captured inside the critical section, the
-`frontierSnapshot` pattern) at the gate bounds, with crashes enabled.
-The shipped rule (head read outside the lock after the bridge,
-`dispatch.go:109`) is **refuted**, trace committed. The orphan-fact
-residual (crash between fact and bridge leaves a durable fact, no
-bridge, dropped reply — `catalog.go:232-236`) is model-checked real and
-recorded as a finding. Even the shipped rule never replies without a
-durable bridge — the defect is head provenance only.
+The snapshot law — every `created:true` reply names the head its facts
+were read under; for `type.create`: `seq` addresses the op's fact,
+`head = seq + 1` (a model coordinate; on the wire the head is a digest,
+so this arithmetic is not implementation-checkable — see bounds), `head`
+addresses the op's bridge — holds for the repaired rule (reply captured
+inside the critical section, the `frontierSnapshot` pattern) at the gate
+bounds, with crashes enabled. The head-read defect it refutes is **fixed
+and merged** (`3aebd2ba9`): the shipped `serveCreate` no longer reads
+`Head()` after the lock, it forwards `certificate.CatalogHead` captured
+under `c.mu` (`catalog.go:246`). The `Rule = "shipped"` control models
+the pre-fix `dispatch.go:109` and now stands as a **regression guard**.
+The orphan-fact residual (crash between fact and bridge leaves a durable
+fact, no bridge, dropped reply — `catalog.go:232-236`) is model-checked
+under a **quiescence-guarded** invariant (`NoOrphanFact` refutes only
+when a *terminal* `crashed` op has a factless bridge; a mutation test
+confirms deleting `CrashInLock` makes the control pass, so the crash
+action is load-bearing — this repairs a review finding that the earlier
+unguarded invariant fired on a benign in-lock transient). **Caveat:**
+the model's orphan is permanent, whereas shipped protod repairs a
+missing bridge on retry (`catalog.go:240-243`), so the model is stricter
+than the code here. Even the shipped rule never replies without a
+durable bridge — the defect was head provenance only.
 
 ### Evidence
 
@@ -632,18 +678,29 @@ the ratified v0 position) with deterministic bodies, under the register
 step axioms (first commit wins, commits only of ready nodes, duplicate
 commits absorbed, crashed attempts invisible): every committed value is
 the denotation (`exec_coherent`), any two executions agree on everything
-both committed (`determinacy`), any two complete schedules are pointwise
-equal — **the committed linearization is a decision about order, never
-about values** (`schedule_irrelevance`) — and fold-over-Done from any
-reachable store reproduces the denotation at every node — **replay is
-execution** (`replay_sound`). The ready guard is load-bearing, not
-hygiene: without it, two schedules of a two-node workflow commit
-different values at the same node, proved as a Lean counterexample
-(`faithless_diverges`) and independently found by TLC over the
-worker/steal/fence protocol (trace committed). The bounded TLC check is
-what ties the axioms to the effector's protocol shape: two workers,
-lease-expiry steals with fence bumps, fence-checked commits, crashes as
-stealable claims — `SpecEval` holds through every interleaving.
+both committed (`determinacy`), any two schedules **complete over the
+same node set agree pointwise on that set** — the committed
+linearization is a decision about order, never about values
+(`schedule_irrelevance`; the theorem quantifies over nodes `< k` for a
+completion frontier `k`, review-corrected from an unqualified "pointwise
+equal") — and fold-over-Done from any reachable store reproduces the
+denotation at every node — **replay is execution** (`replay_sound`). The
+ready guard is load-bearing, not hygiene: without it, two schedules of a
+two-node workflow commit different values at the same node, proved as a
+Lean counterexample (`faithless_diverges`) and independently found by
+TLC (`SpecEval` refuted). **Scope of the TLC check (review-corrected,
+2026-08-14).** The bounded TLC model exercises the register protocol
+shape — two workers, lease-expiry steals with fence bumps, fence-checked
+commits — and mutation-testing confirms its **ready-guard** discriminator
+is load-bearing (removing it makes the faithless control pass). But
+`SpecEval` is **by design insensitive to the fence mechanism itself**:
+because bodies are deterministic and `Done` is terminal, *who* commits
+and *at which fence* cannot change *what* is committed, so removing the
+fence bump or the commit-side authority check leaves the verdicts
+unchanged. The fence's *safety* (no double-commit, unique terminal
+outcome) is the effector's own EL laws (`go/effector`, claimed R3+R4),
+**not** what this gate checks. This gate checks value-invariance under
+the ready guard; it does not re-verify the register.
 
 ### Evidence
 

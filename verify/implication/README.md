@@ -20,8 +20,18 @@ at the stated caps, R2). The gate is `./run.sh`.
 | `Projection.deferred_blame` | A candidate agreeing with the refused term at both scope coordinates still violates — the repair disjunction a single-path report hides. |
 
 **TLC** (`Implication.tla`, four configs): the transition table is stated
-once; `Rule = "sorted"` is the constructor as shipped on `main`
-(walk.go:170-176), `Rule = "submitted"` the repaired projection.
+once; `Rule = "sorted"` is the **historical** (pre-`ab77d6bfc`)
+constructor, now a regression guard — the mislocation is fixed and
+merged on `main`, which reports `submittedIndex`/`submittedValue`
+(`walk.go:174-188`). `Rule = "submitted"` is a repaired projection that
+satisfies both walls. **Note (review-clarified):** the Lean/TLA
+`submitted` rule (least-index later-twin) is a *different function* from
+the shipped Go rule (later element of the first canonical-byte-adjacent
+pair); both satisfy the walls, but only this model rule is proved here —
+the shipped rule is walled by the Go conformance tests. And the collapse
+lemma's operative hypothesis is the pair-answer *factoring* through the
+two membership bits, which decidability enables but does not by itself
+force.
 
 | config | verdict (recorded) |
 | --- | --- |

@@ -342,15 +342,27 @@ supersedes §3 where it is sharper.
    values keep the meaning that was true when they were emitted;
    provenance is recorded, not asserted.
 6. **The token law, non-negotiable:** fencing tokens are never
-   client-fabricable. The shipped journald seam reconstructs
-   `Claim{Fence, Owner}` from client wire fields while `Commit` checks
+   client-fabricable. The journald seam previously reconstructed
+   `Claim{Fence, Owner}` from client wire fields while `Commit` checked
    only the fence (audit defect #1) — any observer of a fence number
-   can close another worker's claim. Sequencing accepted: harden
-   journald to daemon-held claim tokens NOW (small, conformance-
-   testable: a stale or foreign token cannot commit); protod absorption
-   of the register (`workflow.claim`/`workflow.commit` request kinds
-   per W9) is a separate future grill. Operator's words, kept: "the law
-   is the law — we do it right or not at all."
+   could close another worker's claim. **DONE and merged** (`c87526167`,
+   task 46): claim authority is now a daemon-minted single-use token
+   scoped by `(name, digest)`; legacy fence/owner fields refuse as
+   malformed; a foreign or stale-after-steal token cannot commit,
+   conformance-tested. protod absorption of the register
+   (`workflow.claim`/`workflow.commit` request kinds per W9) is a
+   separate future grill. Operator's words, kept: "the law is the law —
+   we do it right or not at all." **Adjacent gate item surfaced by
+   review (2026-08-14), not yet closed:** the same bug class lives in
+   the raw `journal.AppendEntry` path — it validates a client-supplied
+   `prev` at read time, not write time, so a forged `prev` through
+   journald's `appendEntry` verb bricks a journal permanently. journald
+   is currently a conformance/gauntlet harness (not a production wire
+   surface) and protod's own session path computes `prev` itself, so it
+   is not a live product exploit — but any workflow runner emitting
+   frames MUST use the safe `Append` (daemon-computed `prev`), never a
+   client-supplied entry. Recorded in the architecture audit's review
+   addendum.
 
 **The earned answer to the original question:** yes — as much plain
 Effect as wanted, because every place the model needs an invariant the

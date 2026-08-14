@@ -141,7 +141,17 @@ theorem brand_invisible (ρ : Resolver) (name : String) (t : Ty) (j : Json) :
   · rintro ⟨n, h⟩
     exact ⟨n + 1, h⟩
 
-/-- **Checks are declared metadata**: a check never moves the denotation. -/
+/-- **Checks are declared metadata** in the IDENTITY/daemon semantics: a
+check never moves *this* denotation, because `conforms` discards the
+check by construction (matching `proto/SPEC.md:83`, "checks
+declared-metadata only" — the daemon validates no payloads). This is a
+modeling stipulation of the identity semantics, NOT a claim that a
+generated codec ignores checks: two of the three codegen targets DO emit
+real refinements from a check (`proto/ts/src/codegen.ts:97-105`,
+`:268/:272` — minLength, pattern, comparisons), so under a generated
+validator `check(string, minLength≥1)` and `string` accept different
+value sets. Contrast `brand_invisible`, which holds across every target.
+The distinction is recorded in VERIFICATION.md's IR entry. -/
 theorem check_invisible (ρ : Resolver) (name : String) (t : Ty) (j : Json) :
     Conforms ρ (.check t name) j ↔ Conforms ρ t j := by
   constructor

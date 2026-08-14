@@ -149,3 +149,88 @@ the learning-limits corrections (`2026-08-14-learning-limits-literature.md`
 §9) and the implication-refusals formalization
 (`2026-08-14-implication-refusals-formalized.md`): the impossible claims are
 already fenced; what remains is engineering unification, not invention.
+
+## 7. Review addendum — seven-agent adversarial pass (2026-08-14)
+
+An Opus-5 adversarial review swept the whole estate (Lean proofs, TLC
+models, Go substrate, TS estate, ledger/docs). Headline: **the proofs
+are sound and no gate fakes green in the dangerous direction** — every
+Lean theorem checks with `#print axioms` clean (only `propext`/`Quot.sound`),
+every TLC clean config passes non-vacuously and reproduces its recorded
+state counts, and the merged tasks 46/47 are correct. What the review
+corrected was **overclaim and staleness in the surrounding prose**, plus
+two genuinely weak model gates (both now repaired or re-scoped). The
+doc/ledger corrections are applied in the same session; the open code
+backlog is recorded here.
+
+### Corrected (this session)
+- **Ledger staleness (4-agent consensus).** VERIFICATION.md called the
+  union-mislocation and the create head-read "open defects on `main`"
+  and cited a since-deleted branch, though both are fixed and merged
+  (`ab77d6bfc`, `3aebd2ba9`). Rewritten to regression-guard framing.
+- **Pipeline orphan control was dead weight.** The unguarded
+  `NoOrphanFact` fired on a benign in-lock transient; deleting
+  `CrashInLock` changed no verdict (2-agent mutation finding). Fixed:
+  the invariant is now quiescence-guarded and a mutation test confirms
+  `CrashInLock` is load-bearing.
+- **Replay TLC "ties axioms to the effector protocol" was overstated.**
+  Mutation showed `SpecEval` is insensitive to the fence (deterministic
+  bodies + terminal `Done`); its real discriminator is the ready guard.
+  Re-scoped in the ledger and README; fence *safety* is the effector's
+  EL laws, not this gate.
+- **`check_invisible` overclaim.** Codegen emits real refinements from
+  checks (`codegen.ts:97-105`, `:268/:272`), so checks are invisible
+  only in the identity/daemon semantics, not the validation semantics.
+  Scoped in the ledger and the Lean docstring.
+- **Implication rule mismatch.** The Lean `fixed` (least-index) is a
+  different function from the shipped Go rule (canonical-byte-adjacent);
+  both satisfy the walls, but only the model rule is proved in Lean —
+  the shipped rule is walled by the Go conformance tests. Stated.
+- **`schedule_irrelevance` "pointwise equal"** dropped its `< k`
+  completion-frontier qualifier. Restated.
+- **Collapse hypothesis.** Decidability enables answers; the operative
+  premise is the pair-answer factoring `g(A x, A y)`. Stated.
+- **Gate hygiene.** `run.sh` did not mechanically enforce its "no
+  `sorry`" promise (a `sorry` is a warning). A precise grep guard added
+  to all three Lean gates; `*_TTrace_*` gitignored.
+
+### Open code backlog (recorded, not yet fixed — each needs its own spec)
+1. **`journal.AppendEntry` trusts a client-supplied `prev`** (validated
+   at read, not write). Through journald's `appendEntry` verb a forged
+   `prev` bricks a journal permanently. journald is a conformance/
+   gauntlet harness (not a production surface) and protod's session path
+   computes `prev` itself, so **not a live product exploit** — but it is
+   a hard gate item for the workflow runner (emit frames only via the
+   safe `Append`), and `AppendEntry` should validate `prev` at write
+   time. Highest-severity open item.
+2. **journald `daemon.claims` map is unbounded** (task 46): freed only
+   on successful commit, no eviction; soft-capped by the 512 MB memory
+   limit. Add lease-expiry eviction.
+3. **Ingress is not strict** (audit §2.3, re-confirmed): unknown frame
+   keys are canonicalized into the journal.
+4. **Lost CAS → dropped reply** on create & ingress (audit §2.4,
+   re-confirmed): `ErrConflict` becomes a client timeout, not a refusal;
+   the session path already converts it correctly. Low reachability
+   under a single daemon.
+5. **Ingress/session head reads** repeat the create head-read shape
+   (`ingress.go:116`, `session.go:238/512`) — safe today only by
+   single-goroutine dispatch; the correct head is `EntryDigest(entry)`
+   with no second lock. Consistency gap with task 47.
+6. **Grammar-kind wall gap** (TS lane, re-confirmed): nothing asserts
+   `walk.go` `v0Kinds` (enforced) equals the session descriptor
+   (advertised) equals the codegen switches. A 14th kind could be
+   enforced while the advertised grammar digest stays unchanged.
+7. **BOM identity divergence** (`FINDING-SCHEMA-BOM-001`, already pinned
+   red) and **acceptance-width** (`FINDING-ACCEPTANCE-WIDTH-001`) remain
+   disclosed red findings.
+
+### Confirmed sound (so the corrections are read in proportion)
+No `sorry`/axiom in any Lean development; all theorems non-vacuous with
+machine-checked witnesses; TLC clean configs non-vacuous and
+reproducible; tasks 46/47 correct (no forgeable authority, no
+incoherent `(seq,head)` on `main`); the fold-law suite, RFC-8785 oracle,
+refusal-sort table, and verify-on-read all ship failing negative
+controls; the wasm "loud skip" has a working absence-control; the
+`omitempty` falsy-drop is a false alarm for load-bearing reply fields.
+The estate's errors run **pessimistic** — it under-claims fixed work and
+over-discloses debt, never the reverse.
