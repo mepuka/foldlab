@@ -62,11 +62,11 @@ theorem find?_spec {α : Type _} {p : α → Bool} :
     intro a h
     cases hpx : p x with
     | true =>
-      rw [List.find?_cons_of_pos _ hpx] at h
+      rw [List.find?_cons_of_pos hpx] at h
       cases h
       exact ⟨hpx, .head xs⟩
     | false =>
-      rw [List.find?_cons_of_neg _ (by simp [hpx])] at h
+      rw [List.find?_cons_of_neg (by simp [hpx])] at h
       obtain ⟨hp, hmem⟩ := ih h
       exact ⟨hp, .tail x hmem⟩
 
@@ -78,7 +78,7 @@ theorem find?_exists {α : Type _} {p : α → Bool} :
   | cons x xs ih =>
     intro a ha hp
     cases hpx : p x with
-    | true => exact ⟨x, List.find?_cons_of_pos _ hpx⟩
+    | true => exact ⟨x, List.find?_cons_of_pos hpx⟩
     | false =>
       cases ha with
       | head =>
@@ -86,7 +86,7 @@ theorem find?_exists {α : Type _} {p : α → Bool} :
         exact Bool.noConfusion hpx
       | tail _ hmem =>
         obtain ⟨b, hb⟩ := ih hmem hp
-        exact ⟨b, by rw [List.find?_cons_of_neg _ (by simp [hpx])]; exact hb⟩
+        exact ⟨b, by rw [List.find?_cons_of_neg (by simp [hpx])]; exact hb⟩
 
 /-! ## The model -/
 
@@ -155,8 +155,7 @@ theorem consistent_agrees (univ : List V) (sem : H → V → Bool) (t : H)
   cases hsemt : sem t v with
   | true =>
     have hx : v ∈ X := C.covers v hv hsemt
-    have hh : sem h v = true := all_mem hall hx
-    rw [hh, hsemt]
+    exact all_mem hall hx
   | false =>
     cases hsemh : sem h v with
     | false => rfl
@@ -186,7 +185,7 @@ theorem perfect_steering (univ : List V) (sem : H → V → Bool) (t : H)
     (rest : List H) :
     steered (t :: rest) X sem R.ask = some t := by
   unfold steered
-  exact List.find?_cons_of_pos _ (target_consistent univ sem t R C)
+  exact List.find?_cons_of_pos (target_consistent univ sem t R C)
 
 /-! ## Impossibility of closing -/
 
@@ -195,7 +194,7 @@ channel. -/
 def trusting (ord : List H) (accept : H → Bool) : Option H :=
   ord.find? accept
 
-/-- One concrete instance where a single false accept makes the trusting
+/-! One concrete instance where a single false accept makes the trusting
 learner wrong while the steered learner — same oracles, same order — is
 right. Universe: one value. Hypotheses: `Bool`, `sem b _ = b`. Target:
 `true` (accepts the value). The intent channel accepts everything. -/
@@ -207,7 +206,7 @@ def semD : Bool → Unit → Bool := fun b _ => b
 def RD : Refuter univD semD true where
   ask := fun _ => none
   sound := fun _ v hv => nomatch hv
-  complete := fun _ _ v _ _ => rfl
+  complete := fun _ _ _ _ _ => rfl
 
 theorem corpusD : Corpus univD semD true [()] :=
   ⟨fun _ _ => rfl, fun v _ _ => by cases v; exact .head _⟩
