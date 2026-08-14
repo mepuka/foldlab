@@ -104,14 +104,13 @@ func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
 		return refuse(refusal)
 	}
 	fact := certificate.Fact
-	head := d.catalog.journal.Head()
 	return createReply{
 		OK:          true,
 		Created:     certificate.Created,
 		Digest:      fact.Digest,
 		Scheme:      fact.Scheme,
 		CatalogSeq:  fact.seq,
-		CatalogHead: head.Head,
+		CatalogHead: certificate.CatalogHead,
 		Next: []NextHint{
 			{
 				Subject: ingressPrefix + "data",

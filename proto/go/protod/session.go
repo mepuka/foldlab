@@ -418,7 +418,7 @@ func (d *Daemon) serveSessionCommit(ctx context.Context, body []byte) any {
 	event := sessionEvent{
 		Kind: "commit", Principal: request.Principal,
 		Digest: fact.Digest, Scheme: fact.Scheme,
-		CatalogSeq: fact.seq, CatalogHead: d.catalog.journal.Head().Head,
+		CatalogSeq: fact.seq, CatalogHead: certificate.CatalogHead,
 		Retention: retentionTier("commit"),
 	}
 	if err := stored.append(ctx, event, stored.state); err != nil {

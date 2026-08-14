@@ -61,6 +61,12 @@ Each new certification appends the owned fact and then a canonical
 `flb.scheme-bridge.v0` record from `bytes-sha256-v1` to `flb.type.v1`;
 neither prior fact is ever rewritten.
 
+`catalogSeq` addresses this create's fact. For `created:true`, `catalogHead`
+is the catalog head immediately after this create's fact and bridge, captured
+under the same catalog lock. For `created:false`, the sequence remains the
+historical fact's position and the head is the catalog snapshot under which
+convergence was observed. Heads are claims; readers verify them (W6).
+
 ### type.fill / type.unfill
 
 ```json
@@ -136,7 +142,9 @@ replays the verified journal, normalizes and canonicalizes the zero-hole state,
 and requires its current `bytes-sha256-v1` digest to equal the daemon-derived
 catalog digest (L7). The commit journal event additionally records `scheme`,
 `catalogSeq`, and `catalogHead`; a future scheme is a dual record/bridge, never
-an in-place reinterpretation of this fact.
+an in-place reinterpretation of this fact. Those catalog coordinates are the
+same locked certification snapshot described by `type.create`, never a later
+head read by the session caller.
 
 Every session event carries a retention mark. Each fill, unfill, and commit event
 also carries `principal`, so restart and replay re-establish ownership from the

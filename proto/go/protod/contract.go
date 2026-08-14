@@ -143,7 +143,10 @@ func describeReply() map[string]any {
 					"subject": SubjectTypeCreate,
 					"note": "submit an flb.type.v0 structure; the daemon canonicalizes (RFC 8785), " +
 						"derives the digest itself, refuses any asserted digest it cannot re-derive, " +
-						"and converges on same bytes (created:false, never an error)",
+						"and converges on same bytes (created:false, never an error). catalogSeq addresses " +
+						"this create's fact; on created:true catalogHead is captured atomically immediately " +
+						"after its fact and bridge; on created:false it names the locked convergence " +
+						"observation. Heads are claims, so readers verify them",
 					"body": vStruct(map[string]any{
 						"structure":      vBrand("flb.type.v0", vOpaque()),
 						"assertedDigest": vDigest(),

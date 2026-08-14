@@ -2052,3 +2052,23 @@ blocking call, so concurrency necessarily adds goroutine/result bookkeeping;
 the crash-durable throughput gain pays that bounded cost, while a lower-level
 replacement would need a new semantic wall. **Load-bearing? no** — this is a
 performance seam, not an identity law.
+
+## Task 47 — create reply snapshots (2026-08-14)
+
+### D??. Create certificates carry the catalog snapshot captured under commit
+
+Decided: `catalog.commitCertified` returns the fact, convergence bit, and
+catalog head as one result captured while holding the catalog lock. For a new
+fact, the head is read immediately after that fact's scheme bridge append. For
+convergence, the fact sequence remains historical and the head is the snapshot
+under which `byDigest` was consulted, after repairing a missing bridge if
+needed. Every consumer, including `type.create` and session commit, uses that
+captured head rather than re-reading the journal later. Alternatives: read the
+head in each caller after certification (permits a later create to move it);
+name the fact's head before the bridge (omits evidence the reply witnesses);
+return the historical bridge head on convergence (misstates the observation's
+catalog snapshot). Why: sequence and head together are provenance, so they must
+be produced by the critical section that established their meaning. The
+pre-declared orphan-fact crash finding remains unchanged: a bridge failure after
+the fact append still drops the reply and is not repaired here. **Load-bearing?
+yes** — Task 32 persists this catalog-head provenance.
