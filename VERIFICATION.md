@@ -41,7 +41,7 @@ The table points; the entries below carry the bounds.
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
-| E2 move calculus (diamonds, clash repair, no-loss, WF preservation, pair-set fence path independence, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** for all ADMITTED complete executions over an arbitrary fixed finite hole carrier — a schedule containing any refused move is outside every claim (audit MOVES-1); conflict coverage is two fills, fence coverage is nonempty dispute-only bags with canonical-min and holder-plurality instances, and single-seat coverage requires value-consistent intents; concrete controls cover clobber, deterministic LWW loss, filled instability, and min-fence injection; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
+| E2 move calculus (diamonds, clash repair, no-loss, WF preservation, pair-set fence path independence, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: total WF preservation and `no_lossK` cover arbitrary finite traces containing refusals, accounting for every fill as explicitly refused or terminally retained; legacy schedule/diamond/fence/stability results retain their stated admitted-run premises. Conflict coverage is two fills, fence coverage is nonempty dispute-only bags with canonical-min and holder-plurality instances, and single-seat coverage requires value-consistent intents; concrete controls include the three-fill refusal-vacuity witness; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
 
@@ -651,9 +651,10 @@ are the named next rungs in the README.
 Epistemic state `open | filled | disputed | decided` over an arbitrary
 fixed finite hole carrier, three moves (`fill`, `dispute`, `decide`),
 and the repair discipline — a conflicting fill becomes a recorded
-dispute, never an overwrite. Seventeen gated results, including
+dispute, never an overwrite. Twenty-four gated axiom reports, including
 commuting-move diamonds, clash-repair confluence, no-loss (every
-submitted value survives into candidates or evidence), WF preservation,
+admitted value survives into candidates or evidence), total
+refusal-continuation execution and WF preservation,
 fence path independence generalized to any sound pair-set function
 (canonical-min and holder-plurality as instances), `decided` stability,
 single-seat stability, and the IC4 impossibility
@@ -663,24 +664,27 @@ single-seat stability, and the IC4 impossibility
 
 `verify/moves/run.sh`: `lake build` (Lean 4.33.0, core + Std, no
 mathlib), a source guard refusing `sorry`/`admit`/`axiom`, and the
-mechanical axiom-footprint check — `#print axioms` over all seventeen
-headline results, failing on anything outside
-`{propext, Classical.choice, Quot.sound}`. Four negative controls in
+mechanical axiom-footprint check — `#print axioms` over all twenty-four
+rostered theorems and controls, failing on anything outside
+`{propext, Classical.choice, Quot.sound}`. Five controls and executable
+witnesses in
 `Moves/Violations.lean` (`clobber_diverges`, `lww_loses`,
-`filled_unstable`, `fence_manipulable`), each a transparent trace
-refuting exactly the law it drops. FINDING-48-AXIOMS is closed:
+`filled_unstable`, `fence_manipulable`, `refusal_vacuity_exposed`), each
+transparent and kernel-checked. FINDING-48-AXIOMS is closed:
 `2d2ea7941` replaced two `native_decide` axioms with kernel-checked
 proofs and added the footprint check to the gate.
 
 ### Bounds and residuals
 
-All ADMITTED complete executions over the fixed finite hole carrier; a
-single journal. The run semantics aborts any schedule containing a
-refused move, so the claims are silent about refused-move traffic —
-including workloads (three distinct fills at one hole) with zero
-admitted runs — and a daemon that refuses-and-continues diverges from
-the model exactly there (2026-08-15 audit, MOVES-1). Conflict coverage
-is two fills; fence coverage is nonempty dispute-only bags; single-seat
+The total `runRepairK` laws cover arbitrary finite traces over the fixed finite
+hole carrier, including refused moves: `no_lossK` accounts for each submitted
+fill as either explicitly refused or terminally retained. The legacy `Runs` theorems
+remain bounded to admitted complete executions. The three-distinct-fill
+control makes the distinction executable: the bag has no partial `Runs`
+witness, while the total runner observes `true, true, false` and retains both
+admitted values (MOVES-1 closed at the model layer by DEV-671). A single
+journal is modeled. Conflict coverage is two fills; fence coverage is
+nonempty dispute-only bags; single-seat
 coverage requires value-consistent intents. `no_fair_resolute_fence`
 establishes that a resolute choice between two distinct candidates
 picks one of them; the IC4-impossibility framing is reclassified
@@ -693,7 +697,7 @@ ties daemon folds and events to these states and moves — the daemon's
 synthesized two-candidate dispute and atomic close are instances the
 map must justify, not theorems here. Full audit:
 [docs/research/2026-08-15-model-audit-findings.md](docs/research/2026-08-15-model-audit-findings.md).
-Decision log: `verify/moves/DECISIONS.md` (D70–D78).
+Decision log: `verify/moves/DECISIONS.md` (D70–D79).
 
 ### Checkable at
 

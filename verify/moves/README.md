@@ -3,8 +3,9 @@
 This is the model-level R5 twin of the E2 meaning scheduler
 ([study record](../../docs/research/2026-08-14-meaning-scheduler-e2.md),
 [production dossier §6](../../docs/design/2026-08-14-meaning-primitives-production.md)).
-It states the transition system once, quantifies over every admitted finite
-interleaving, and checks with Lean 4.33.0 and core `Std` only. There is no
+It states the transition system once, retains the original admitted-run laws
+and adds total refusal-continuation laws over arbitrary finite traces. It checks
+with Lean 4.33.0 and core `Std` only. There is no
 `sorry`, `admit`, user axiom, or compiled-evaluation axiom; `./run.sh`
 mechanically restricts every headline theorem and control to the core-clean
 footprint `{propext, Classical.choice, Quot.sound}`.
@@ -36,12 +37,16 @@ canonical-min and plurality tie-breaking use the declared value comparator.
 
 ## Execution model and bounds
 
-`Runs intents terminal` supplies an arbitrary permutation of the finite intent
-bag and a complete admitted `runRepair` execution from the all-open state.
-The claims therefore cover every finite interleaving, rather than a bounded
-schedule sample. Primitive `stepTrace` refuses a whole trace after a refused
-move; `runRepair` turns a conflicting fill into the canonical evidence-
-preserving dispute before continuing.
+`Runs intents terminal` remains the legacy partial relation: it supplies an
+arbitrary permutation of the finite intent bag and a complete admitted
+`runRepair` execution from the all-open state. `stepK` and `repairK` totalize
+their respective partial functions by returning `(unchangedState, false)` on
+refusal; their agreement lemmas pin admitted and refused cases to `step` and
+`repair`. `runK` and `runRepairK` consume every finite trace and return one
+input-aligned `(move, admitted?)` observation per intent. `no_lossK` therefore
+covers arbitrary traces containing refusals: every submitted fill is either
+observed as refused or carried by terminal meaning or evidence. The existing
+partial-run theorems and their admitted-execution bounds remain unchanged.
 
 The conflict theorem covers exactly two distinct fill values. Fence theorems
 cover nonempty, dispute-only bags at one hole. The model is one journal over a
@@ -55,10 +60,12 @@ stated seat premise, or code/model correspondence.
 | --- | --- |
 | `fill_comm` | Primitive fills on distinct holes form an `Option` diamond. |
 | `fill_conflict_refused` | A distinct value cannot overwrite `filled`. |
+| `stepK_agrees`, `stepK_refused`, `repairK_agrees`, `repairK_refused` | Total steps exactly inherit admitted results and turn refusal into an unchanged-state `false`. |
 | `conflict_surfaces` | Either order of two conflicting fills exposes a dispute containing both values (with `decided` allowed as the closed surface). |
 | `dispute_merge_semilattice` | Pair-set union is commutative, associative, and idempotent. |
 | `step_preserves_wf`, `repair_preserves_wf` | Every admitted primitive or repaired move preserves open/filled/disputed/decided evidence laws. |
 | `no_loss` | Every fill intent in every complete repaired interleaving is represented by terminal meaning or the evidence retained behind a dispute/decision. |
+| `runRepairK_preserves_wf`, `no_lossK` | Every arbitrary finite repaired trace terminates well-formed, and every submitted fill is explicitly refused or remains represented. |
 | `put_put_same`, `put_current` | Same-hole replacement and current-state replacement laws used by the repair proof. |
 | `repair_fill_comm` | Canonically repaired fills on distinct holes form a diamond. |
 | `clash_repair_admissible` | A refused clash has an admitted repair containing old and new holder-attributed candidates. |
@@ -83,6 +90,7 @@ rules inherit interleaving independence without a new schedule proof.
 | `lww_step`, `lww_converges`, `lww_loses` | Deterministic LWW converges for every permutation of the standard conflicting pair, yet erases the losing fill; convergence alone is weaker than `no_loss`. |
 | `filled_unstable` | The explicit lawful trace `filled 10 → disputed {10,20}` refutes the naive claim that every fill is stable. |
 | `fence_manipulable` | Holder X injects only `(0,X)` through `dispute`; canonical-min changes its winner to 0, while plurality still selects value 10 because A and B support it independently. |
+| `refusal_vacuity_exposed` | Every partial run of a three-distinct-fill bag is absent, while the total runner records `true, true, false` and no-loss accounts for both admitted fills. |
 
 The witnesses are transparent traces in `Moves/Violations.lean`. The two
 concrete choice calculations inside `fence_manipulable` are ordinary

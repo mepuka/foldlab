@@ -54,8 +54,8 @@ Landmarks below those five:
   agent session, typo to self-repair to verified read.
 - [verify/moves/](verify/moves/) — the move calculus in Lean: epistemic
   state as `open | filled | disputed | decided`, the three moves, and
-  seventeen gated results — the headline theorems plus the negative
-  controls that refute them one dropped law at a time — checked against
+  twenty-four gated axiom reports — the headline theorems plus controls that
+  expose failed alternatives and vacuity — checked against
   a core-clean axiom footprint. Its README states what the model does
   NOT cover, which is the more useful half.
 - [verify/catalog/](verify/catalog/) — the TLA+ model gate:

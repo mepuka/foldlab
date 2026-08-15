@@ -30,9 +30,15 @@ import Moves
 
 #print axioms Moves.fill_comm
 #print axioms Moves.fill_conflict_refused
+#print axioms Moves.stepK_agrees
+#print axioms Moves.stepK_refused
+#print axioms Moves.repairK_agrees
+#print axioms Moves.repairK_refused
 #print axioms Moves.conflict_surfaces
 #print axioms Moves.step_preserves_wf
+#print axioms Moves.runRepairK_preserves_wf
 #print axioms Moves.no_loss
+#print axioms Moves.no_lossK
 #print axioms Moves.clash_repair_confluence
 #print axioms Moves.fence_deterministic
 #print axioms Moves.min_fence_deterministic
@@ -45,6 +51,7 @@ import Moves
 #print axioms Moves.lww_loses
 #print axioms Moves.filled_unstable
 #print axioms Moves.fence_manipulable
+#print axioms Moves.refusal_vacuity_exposed
 LEAN
 
 if ! axiom_output=$(lake env lean "$axiom_check" 2>&1); then
@@ -54,9 +61,9 @@ if ! axiom_output=$(lake env lean "$axiom_check" 2>&1); then
 fi
 
 report_count=$(printf '%s\n' "$axiom_output" | grep -c "^'Moves\.")
-if [[ "$report_count" -ne 17 ]]; then
+if [[ "$report_count" -ne 24 ]]; then
   printf '%s\n' "$axiom_output" >&2
-  echo "GATE: FAIL — expected 17 axiom reports, got $report_count" >&2
+  echo "GATE: FAIL — expected 24 axiom reports, got $report_count" >&2
   exit 1
 fi
 

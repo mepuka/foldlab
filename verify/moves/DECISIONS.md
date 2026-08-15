@@ -1,6 +1,6 @@
 # Task 48 decisions
 
-Repository-wide D-numbers D70–D78, assigned 2026-08-15 (post-merge
+Repository-wide D-numbers D70–D79, assigned 2026-08-15 (post-merge
 repair) per the numbering rule in `proto/DECISIONS.md`.
 
 ### D70. `filled` contains meaning only
@@ -83,3 +83,13 @@ biconditional; hard-code min. Why: without selection, a third value makes both
 sides of the biconditional false and defeats the claimed impossibility.
 **Load-bearing? yes** — the premise is what makes the theorem about a fence
 rather than an arbitrary constant function.
+
+### D79. Total runners retain an aligned observation for every move
+
+Decided: `runK` and `runRepairK` return the terminal state together with an
+input-order list of `(move, admitted?)` observations. Alternatives: return only
+the terminal state; return an aggregate success bit; retain only an unlabelled
+boolean list. Why: refusal-continuation must remain observable, and `no_lossK`
+must identify admitted fills without assuming moves are unique. **Load-bearing?
+yes** — dropping move/status alignment would make the vector generator invent
+refusal provenance or make admitted-fill accounting ambiguous.

@@ -151,9 +151,33 @@ def step (s : State) : Mv → Option State
           if ValueAppears cs v then some (put s h (.decided v) cs) else none
       | _ => none
 
+/-- The total refusal-aware step. Admission uses `step` exactly; a refusal is
+an observable `false` and leaves the state unchanged. -/
+def stepK (s : State) (m : Mv) : State × Bool :=
+  match step s m with
+  | some s' => (s', true)
+  | none => (s, false)
+
+theorem stepK_agrees {s s' : State} {m : Mv} (hstep : step s m = some s') :
+    stepK s m = (s', true) := by
+  simp [stepK, hstep]
+
+theorem stepK_refused {s : State} {m : Mv} (hstep : step s m = none) :
+    stepK s m = (s, false) := by
+  simp [stepK, hstep]
+
 def stepTrace : State → List Mv → Option State
   | s, [] => some s
   | s, m :: ms => (step s m).bind fun s' => stepTrace s' ms
+
+/-- Total primitive execution. The observation list is aligned with the input
+trace and records every admission and refusal without aborting later moves. -/
+def runK : State → List Mv → State × List (Mv × Bool)
+  | s, [] => (s, [])
+  | s, m :: ms =>
+      let outcome := stepK s m
+      let tail := runK outcome.1 ms
+      (tail.1, (m, outcome.2) :: tail.2)
 
 def thenStep (s : State) (m₁ m₂ : Mv) : Option State :=
   (step s m₁).bind fun s' => step s' m₂
@@ -251,9 +275,44 @@ def repair (s : State) : Mv → Option State
       | _ => step s (.fill h v actor)
   | m => step s m
 
+/-- The total refusal-aware repair step, defined solely by the ratified
+partial `repair` semantics. -/
+def repairK (s : State) (m : Mv) : State × Bool :=
+  match repair s m with
+  | some s' => (s', true)
+  | none => (s, false)
+
+theorem repairK_agrees {s s' : State} {m : Mv}
+    (hrepair : repair s m = some s') : repairK s m = (s', true) := by
+  simp [repairK, hrepair]
+
+theorem repairK_refused {s : State} {m : Mv} (hrepair : repair s m = none) :
+    repairK s m = (s, false) := by
+  simp [repairK, hrepair]
+
 def runRepair : State → List Mv → Option State
   | s, [] => some s
   | s, i :: is => (repair s i).bind fun s' => runRepair s' is
+
+theorem runRepair_append (s : State) (left right : List Mv) :
+    runRepair s (left ++ right) =
+      (runRepair s left).bind fun s' => runRepair s' right := by
+  induction left generalizing s with
+  | nil => rfl
+  | cons i rest ih =>
+      simp only [List.cons_append, runRepair]
+      cases repair s i with
+      | none => rfl
+      | some next => simpa using ih next
+
+/-- Total repaired execution. Unlike `runRepair`, it consumes arbitrary
+finite traces and retains one admission/refusal observation per intent. -/
+def runRepairK : State → List Mv → State × List (Mv × Bool)
+  | s, [] => (s, [])
+  | s, i :: is =>
+      let outcome := repairK s i
+      let tail := runRepairK outcome.1 is
+      (tail.1, (i, outcome.2) :: tail.2)
 
 /-- `Runs intents terminal` ranges over every permutation of the finite intent
 bag and retains only admitted complete executions. -/
@@ -499,6 +558,26 @@ theorem repair_preserves_wf {s s' : State} {m : Mv}
     simp only [repair] at hrepair
     exact step_preserves_wf hwf hrepair
 
+/-- Total repaired steps preserve well-formedness whether they admit or
+refuse. -/
+theorem repairK_preserves_wf {s : State} {m : Mv} (hwf : WF s) :
+    WF (repairK s m).1 := by
+  cases hrepair : repair s m with
+  | none => simpa [repairK, hrepair] using hwf
+  | some s' =>
+      simpa [repairK, hrepair] using repair_preserves_wf hwf hrepair
+
+/-- Every arbitrary finite repaired trace has a well-formed terminal state;
+there is no admitted-only execution premise. -/
+theorem runRepairK_preserves_wf :
+    ∀ (is : List Mv) (start : State), WF start → WF (runRepairK start is).1 := by
+  intro is
+  induction is with
+  | nil => simp [runRepairK]
+  | cons i rest ih =>
+      intro start hwf
+      simpa [runRepairK] using ih (repairK start i).1 (repairK_preserves_wf hwf)
+
 theorem runRepair_preserves_wf :
     ∀ (is : List Mv) (start terminal : State), WF start →
       runRepair start is = some terminal → WF terminal := by
@@ -671,6 +750,30 @@ theorem repair_preserves_evidence {s s' : State} {m : Mv}
     simp only [repair] at hrepair
     exact step_preserves_evidence hwf hrepair
 
+/-- Total repaired steps never delete evidence: refusal is the identity
+transition and admission inherits `repair_preserves_evidence`. -/
+theorem repairK_preserves_evidence {s : State} {m : Mv} (hwf : WF s) :
+    ∀ h candidate, candidate ∈ s.evidence h →
+      candidate ∈ (repairK s m).1.evidence h := by
+  intro h candidate hmem
+  cases hrepair : repair s m with
+  | none => simpa [repairK, hrepair] using hmem
+  | some s' =>
+      simpa [repairK, hrepair] using
+        repair_preserves_evidence hwf hrepair h candidate hmem
+
+theorem runRepairK_preserves_evidence :
+    ∀ (is : List Mv) (start : State), WF start →
+      ∀ h candidate, candidate ∈ start.evidence h →
+        candidate ∈ (runRepairK start is).1.evidence h := by
+  intro is
+  induction is with
+  | nil => simp [runRepairK]
+  | cons i rest ih =>
+      intro start hwf h candidate hmem
+      simpa [runRepairK] using ih (repairK start i).1 (repairK_preserves_wf hwf)
+        h candidate (repairK_preserves_evidence hwf h candidate hmem)
+
 theorem runRepair_preserves_evidence :
     ∀ (is : List Mv) (start terminal : State), WF start →
       runRepair start is = some terminal →
@@ -773,6 +876,67 @@ theorem runRepair_fills_recorded :
           (repair_preserves_wf hwf hri) hrun h (v, recordHolder) hrecord⟩
       · exact ih next terminal (repair_preserves_wf hwf hri) hrun h v actor htail
 
+/-- Every fill observed as admitted in a total repaired trace remains in the
+terminal evidence, even when other moves in the trace are refused. -/
+theorem runRepairK_fills_recorded :
+    ∀ (is : List Mv) (start : State), WF start →
+      ∀ h v actor,
+        ((.fill h v actor, true) : Mv × Bool) ∈ (runRepairK start is).2 →
+          Recorded (runRepairK start is).1 h v := by
+  intro is
+  induction is with
+  | nil => simp [runRepairK]
+  | cons i rest ih =>
+      intro start hwf h v actor hmem
+      cases hrepair : repair start i with
+      | none =>
+          simp only [runRepairK, repairK, hrepair] at hmem ⊢
+          exact ih start hwf h v actor (by simpa using hmem)
+      | some next =>
+          simp only [runRepairK, repairK, hrepair] at hmem ⊢
+          rcases List.mem_cons.mp hmem with hhead | htail
+          · have hi : i = .fill h v actor := by
+              exact congrArg Prod.fst hhead.symm
+            subst i
+            rcases valueAppears_iff.mp (repair_records_fill hwf h v actor hrepair) with
+              ⟨recordHolder, hrecord⟩
+            apply valueAppears_iff.mpr
+            exact ⟨recordHolder, runRepairK_preserves_evidence rest next
+              (repair_preserves_wf hwf hrepair) h (v, recordHolder) hrecord⟩
+          · exact ih next (repair_preserves_wf hwf hrepair) h v actor htail
+
+/-- Every input move receives at least one aligned admitted/refused
+observation. This remains occurrence-safe for the no-loss theorem because any
+admitted occurrence is handled separately by `runRepairK_fills_recorded`. -/
+theorem runRepairK_observes :
+    ∀ (is : List Mv) (start : State) (m : Mv), m ∈ is →
+      (m, true) ∈ (runRepairK start is).2 ∨
+        (m, false) ∈ (runRepairK start is).2 := by
+  intro is
+  induction is with
+  | nil => simp
+  | cons i rest ih =>
+      intro start m hmem
+      rcases List.mem_cons.mp hmem with rfl | htail
+      · cases hresult : repairK start m with
+        | mk next admitted =>
+          cases admitted with
+          | false =>
+              right
+              simp [runRepairK, hresult]
+          | true =>
+              left
+              simp [runRepairK, hresult]
+      · rcases ih (repairK start i).1 m htail with hadmitted | hrefused
+        · left
+          change (m, true) ∈
+            (i, (repairK start i).2) :: (runRepairK (repairK start i).1 rest).2
+          exact List.mem_cons_of_mem _ hadmitted
+        · right
+          change (m, false) ∈
+            (i, (repairK start i).2) :: (runRepairK (repairK start i).1 rest).2
+          exact List.mem_cons_of_mem _ hrefused
+
 /-- **No loss:** every fill intent in every complete repaired interleaving is
 represented in the terminal meaning or in the dispute evidence retained by a
 decision. This is strictly stronger than convergence. -/
@@ -786,6 +950,30 @@ theorem no_loss (intents : List Mv) (terminal : State) (hrun : Runs intents term
       h v actor hinOrder
     exact wf_recorded_terminal (runRepair_preserves_wf order initial terminal initial_wf hexec)
       hrecord
+
+/-- Every fill observed as admitted by the total runner survives in terminal
+meaning or retained decision evidence. -/
+theorem no_lossK_admitted (intents : List Mv) :
+    ∀ h v actor,
+      ((.fill h v actor, true) : Mv × Bool) ∈ (runRepairK initial intents).2 →
+        TerminalCarries (runRepairK initial intents).1 h v := by
+  intro h v actor hmem
+  exact wf_recorded_terminal (runRepairK_preserves_wf intents initial initial_wf)
+    (runRepairK_fills_recorded intents initial initial_wf h v actor hmem)
+
+/-- **Total no loss:** every fill in every arbitrary finite intent bag is
+accounted for by an explicit refusal observation or by terminal meaning / kept
+decision evidence. Unlike `no_loss`, the statement has no complete-admitted-run
+premise and therefore applies to traces containing refusals. -/
+theorem no_lossK (intents : List Mv) :
+    ∀ h v actor, (.fill h v actor : Mv) ∈ intents →
+      ((.fill h v actor, false) : Mv × Bool) ∈ (runRepairK initial intents).2 ∨
+        TerminalCarries (runRepairK initial intents).1 h v := by
+  intro h v actor hmem
+  rcases runRepairK_observes intents initial (.fill h v actor) hmem with
+    hadmitted | hrefused
+  · exact Or.inr (no_lossK_admitted intents h v actor hadmitted)
+  · exact Or.inl hrefused
 
 /-! ## Repairable clashes: frame, diamond, and confluence -/
 
