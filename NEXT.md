@@ -1,4 +1,18 @@
-# NEXT — the session brief
+# NEXT — FROZEN RECORD, not current instruction
+
+> **Status: frozen 2026-08-15. Do not read this file for direction.**
+>
+> It is kept because a dozen design dossiers cite it by line number, and
+> because the walls it inventories are real. It is no longer the session
+> brief: it retires its own dispatch fleet in one section and then prints
+> the retired build order in the next, which is exactly the layered,
+> self-superseding state this freeze ends.
+>
+> Current direction lives in two places and nowhere else: `AGENTS.md`
+> ("The current lane") for what is active, and the Multica board
+> (workspace `Dev`, project `foldlab`) for what is dispatched. Claims and
+> their bounds live in `VERIFICATION.md`. Line-numbered citations from
+> `docs/design/*` point at the revision frozen here, `627195ebc`.
 
 State as of 2026-08-13 (post tracer bullet — the end-to-end vertical
 slice through every layer, in `proto/` — catalog model gate, fold

@@ -4,7 +4,7 @@ Streams, entities, and cataloged types over one discipline: every value
 has a canonical byte form, identity is a digest over those bytes, and every
 cross-boundary claim is a checkable digest equality. This file is the
 seam-level glossary — module-local vocabulary lives in each module's own
-CONTEXT.md and may not leak here; design state lives in NEXT.md,
+CONTEXT.md and may not leak here; the active lane lives in AGENTS.md,
 decisions in docs/adr/. Module-local vocabulary stays local unless the
 claims ledger itself speaks it: a term VERIFICATION.md uses by name earns
 a cross-seam headword here, and that headword must point at the module

@@ -77,13 +77,20 @@ from the absence of the API-queue counter.
 
 ## How work reaches `main`
 
-Executors work on their own branch or worktree — `codex/<task>`,
-`worktree-agent-*` — and `scratch/` is gitignored, so nothing in the
-queue is ever a commit. An executor pushes its branch, opens a PR, and
-the gates run on the PR. The coordinator reads the gate result and the
-PR template, merges into `main`, and pushes. Nobody pushes to `main`
-from a worktree; the merge is the coordinator's act, and it is the only
-place two lanes meet.
+Work is dispatched as an issue on the Multica board (workspace `Dev`,
+project `foldlab`). An agent seat takes the issue, works on
+`agent/<name>/<issue>`, pushes that branch, and opens a PR; the gates
+run on the PR. A Rev seat posts findings on the PR, and a repair
+mentions the seat that filed them. The coordinator reads the gate result
+and the PR template, merges into `main`, and pushes. Nobody pushes to
+`main` from an agent seat; the merge is the coordinator's act, and it is
+the only place two lanes meet. The run closes with a report on the
+dispatching thread, which is the durable record — a report that lives
+only in a session transcript did not happen.
+
+`scratch/` is tracked as of 2026-08-15, so a task brief is part of the
+checkout an agent gets. `scratch/_archive/` stays ignored: retired
+briefs are local history, not repository evidence.
 
 ## Releases
 

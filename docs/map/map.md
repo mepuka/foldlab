@@ -5,6 +5,14 @@ created: 2026-08-12
 
 # Map: the schema-centric system
 
+> **Status: frozen 2026-08-15. This is not live planning.**
+>
+> The board dispatches now — Multica workspace `Dev`, project `foldlab`.
+> This map and its 26 tickets are kept because design records and
+> `proto/DECISIONS.md` cite them by number, and because the destination
+> below is still the destination. They are a record of how the questions
+> were framed, not a queue anyone is working. Active lane: `AGENTS.md`.
+
 ## Destination
 
 Real traffic (the R2 climb journal; R1's as fallback) flows through
