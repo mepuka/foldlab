@@ -625,6 +625,52 @@ are the named next rungs in the README.
 [verify/ir/](verify/ir/) and
 [docs/research/2026-08-14-architecture-audit.md](docs/research/2026-08-14-architecture-audit.md) §5.
 
+## E2 move calculus — model-level R5 (Lean)
+
+### Claim
+
+Epistemic state `open | filled | disputed | decided` over an arbitrary
+fixed finite hole carrier, three moves (`fill`, `dispute`, `decide`),
+and the repair discipline — a conflicting fill becomes a recorded
+dispute, never an overwrite. Seventeen gated results, including
+commuting-move diamonds, clash-repair confluence, no-loss (every
+submitted value survives into candidates or evidence), WF preservation,
+fence path independence generalized to any sound pair-set function
+(canonical-min and holder-plurality as instances), `decided` stability,
+single-seat stability, and the IC4 impossibility
+`no_fair_resolute_fence`.
+
+### Evidence
+
+`verify/moves/run.sh`: `lake build` (Lean 4.33.0, core + Std, no
+mathlib), a source guard refusing `sorry`/`admit`/`axiom`, and the
+mechanical axiom-footprint check — `#print axioms` over all seventeen
+headline results, failing on anything outside
+`{propext, Classical.choice, Quot.sound}`. Four negative controls in
+`Moves/Violations.lean` (`clobber_diverges`, `lww_loses`,
+`filled_unstable`, `fence_manipulable`), each a transparent trace
+refuting exactly the law it drops. FINDING-48-AXIOMS is closed:
+`2d2ea7941` replaced two `native_decide` axioms with kernel-checked
+proofs and added the footprint check to the gate.
+
+### Bounds and residuals
+
+All finite interleavings over the fixed finite hole carrier; a single
+journal. Conflict coverage is two fills; fence coverage is nonempty
+dispute-only bags; single-seat coverage requires value-consistent
+intents. Not modeled: crash recovery, CAS, retries, leases, liveness,
+the Effect runtime, and any attack/revision model. Code-model
+correspondence is the named open lane: no refinement map ties daemon
+folds and events to these states and moves — the daemon's synthesized
+two-candidate dispute and atomic close are instances the map must
+justify, not theorems here. Decision log: `verify/moves/DECISIONS.md`
+(D70–D78).
+
+### Checkable at
+
+[verify/moves/](verify/moves/) and
+[docs/research/2026-08-14-meaning-scheduler-e2.md](docs/research/2026-08-14-meaning-scheduler-e2.md).
+
 ## Create-pipeline snapshot law — R2 (TLC); the head-read defect is fixed on `main`
 
 ### Claim

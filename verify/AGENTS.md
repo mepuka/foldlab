@@ -44,6 +44,19 @@ rung definitions. Scoped laws:
   in the laws registry; source-local W1–W5 remain frozen in the spec): R2 at the gate
   caps, R3 inductive invariant, four faithless controls. R4 is ticket
   010.
+- `implication/` — the refusal projection walls: the Lean collapse
+  lemma plus TLC over the repaired projection rule (W-COHERENCE,
+  W-SCOPE), controls refuting the shipped constructor.
+- `ir/` — `flb.type.v0` stated once as an algebraic type with a
+  denotational semantics (Lean). The reference the Go and TS grammar
+  restatements are meant to mirror; correspondence unproved.
+- `moves/` — the E2 move calculus: seventeen gated results and four
+  violation traces. Its `run.sh` adds the mechanical axiom-footprint
+  check over every headline theorem (Lean).
+- `pipeline/` — the create-pipeline snapshot law with crashes enabled,
+  plus the orphan-fact crash residual (TLC).
+- `replay/` — workflow replay soundness: Lean for the unbounded half,
+  TLC for the protocol half, the faithless runner refuted in both.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence
   out of `.reference/`, an untracked predecessor repository absent from
   this checkout), `journal/` (ticket 012, composed into the catalog

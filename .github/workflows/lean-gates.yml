@@ -1,0 +1,38 @@
+# The pure-Lean model gates, per push.
+#
+# verify/moves/run.sh and verify/ir/run.sh are whole gates: lake build,
+# a source guard refusing sorry/admit/axiom declarations, and — for
+# moves — the mechanical axiom-footprint check over every headline
+# theorem. Both projects are Lean 4.33.0 with core + Std only, so a
+# runner needs elan and nothing else; the toolchain is pinned by each
+# project's lean-toolchain file, not by this workflow.
+#
+# The implication and replay gates are NOT here: each carries a TLC
+# half whose tla2tools.jar is a rolling upstream asset, so they follow
+# model-gate.yml's scheduled, sha-recording pattern instead of running
+# per push.
+name: lean-gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: moves gate (proofs + axiom footprint)
+        run: bash verify/moves/run.sh
+      - name: ir gate (proofs)
+        run: bash verify/ir/run.sh
