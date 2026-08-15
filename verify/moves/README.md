@@ -3,11 +3,17 @@
 This is the model-level R5 twin of the E2 meaning scheduler
 ([study record](../../docs/research/2026-08-14-meaning-scheduler-e2.md),
 [production dossier §6](../../docs/design/2026-08-14-meaning-primitives-production.md)).
-It states the transition system once, quantifies over every admitted finite
-interleaving, and checks with Lean 4.33.0 and core `Std` only. There is no
-`sorry`, `admit`, user axiom, or compiled-evaluation axiom; `./run.sh`
-mechanically restricts every headline theorem and control to the core-clean
-footprint `{propext, Classical.choice, Quot.sound}`.
+It states the transition system once, retains the original admitted-run laws,
+and — since D85 (DEV-673) — proves the confluence package over the total
+runner: fills are total, terminal meaning and journal are invariant under
+permutation of any fill/dispute bag, and refusal is characterized per move as
+an iff against the frozen `D85Refusal`. It checks with Lean 4.33.0 and core
+`Std` only. There is no `sorry`, `admit`, user axiom, or compiled-evaluation
+axiom; `./run.sh` verifies the frozen-spec sha256 pin, mechanically restricts
+every rostered theorem to the core-clean footprint
+`{propext, Classical.choice, Quot.sound}`, and enforces the orphan rule:
+every public theorem is rostered or listed with a reason in
+`gate-exclusions.txt`.
 
 ## Ratified model
 
@@ -18,9 +24,10 @@ Task 48's final D1–D3 shape is represented directly:
 - A candidate is `(Value × Holder)`, stored in an extensional finite pair-set
   (D2). Redelivery of the same pair collapses; the same value from distinct
   holders remains two candidates and is counted twice by plurality.
-- There is no `revise` move and no prioritized self-revision (D3). A
-  conflicting fill is refused and the repair path surfaces a holder-attributed
-  dispute; correction requires a later fence decision.
+- There is no `revise` move and no prioritized self-revision (D3). At the
+  primitive step a conflicting fill is refused; the repair composite absorbs
+  it into a holder-attributed dispute (D85), and correction requires a later
+  fence decision.
 - `EpistemicState.holes` is the meaning projection. Its separate `evidence`
   map is ghost journal provenance used only for `WF`, decision provenance,
   repair, and `no_loss`; it is not part of the meaning digest. This preserves
@@ -36,18 +43,38 @@ canonical-min and plurality tie-breaking use the declared value comparator.
 
 ## Execution model and bounds
 
-`Runs intents terminal` supplies an arbitrary permutation of the finite intent
-bag and a complete admitted `runRepair` execution from the all-open state.
-The claims therefore cover every finite interleaving, rather than a bounded
-schedule sample. Primitive `stepTrace` refuses a whole trace after a refused
-move; `runRepair` turns a conflicting fill into the canonical evidence-
-preserving dispute before continuing.
+`Runs intents terminal` remains the legacy partial relation: it supplies an
+arbitrary permutation of the finite intent bag and a complete admitted
+`runRepair` execution from the all-open state. `stepK` and `repairK` totalize
+their respective partial functions by returning `(unchangedState, false)` on
+refusal; their agreement lemmas pin admitted and refused cases to `step` and
+`repair`. `runRepairK` consumes every finite trace and returns one
+input-aligned `(move, admitted?)` observation per intent
+(`runRepairK_alignment` proves the alignment).
 
-The conflict theorem covers exactly two distinct fill values. Fence theorems
-cover nonempty, dispute-only bags at one hole. The model is one journal over a
-fixed finite hole carrier. It does not model crash recovery, CAS, retries,
-leases, liveness, the Effect runtime, watch payloads, protocol writs beyond the
-stated seat premise, or code/model correspondence.
+Under D85 the repair composite makes fills total: a fill at an open hole
+fills it, at a filled hole it either journals the confirming pair
+(same value) or absorbs into the canonical dispute (different value), at a
+disputed hole it absorbs into the candidate set, and after `decided` it
+appends a ghost receipt without touching the tombstone. An empty dispute
+offer is refused at every state (D86), so refusal is a function of the move
+and the meaning fold alone — never of arrival order or ghost evidence.
+`spec_no_loss_strong` then holds with no refusal disjunct: every fill in an
+arbitrary finite bag lands its exact holder-attributed pair in terminal
+journal evidence. `runRepairK_perm` is the confluence core: over
+fill/dispute bags the terminal state — meaning and journal both — is
+invariant under permutation. Decide-bearing bags are order-sensitive by
+design: decide enters only through the fence at close, which is why the
+confluence laws quantify over the `FillDisputeOnly` wire fragment.
+
+The conflict theorem covers exactly two distinct fill values. Legacy fence
+theorems cover nonempty, dispute-only bags at one hole;
+`spec_fence_schedule_free` extends schedule-freedom to any sound pair-set
+rule over the wire fragment through runner-state confluence. The model is
+one journal over a fixed finite hole carrier. It does not model crash
+recovery, CAS, retries, leases, liveness, the Effect runtime, watch
+payloads, protocol writs beyond the stated seat premise, or code/model
+correspondence.
 
 ## Machine-checked laws
 
@@ -55,10 +82,19 @@ stated seat premise, or code/model correspondence.
 | --- | --- |
 | `fill_comm` | Primitive fills on distinct holes form an `Option` diamond. |
 | `fill_conflict_refused` | A distinct value cannot overwrite `filled`. |
+| `stepK_agrees`, `stepK_refused`, `repairK_agrees`, `repairK_refused` | Total steps exactly inherit admitted results and turn refusal into an unchanged-state `false`. |
 | `conflict_surfaces` | Either order of two conflicting fills exposes a dispute containing both values (with `decided` allowed as the closed surface). |
 | `dispute_merge_semilattice` | Pair-set union is commutative, associative, and idempotent. |
 | `step_preserves_wf`, `repair_preserves_wf` | Every admitted primitive or repaired move preserves open/filled/disputed/decided evidence laws. |
 | `no_loss` | Every fill intent in every complete repaired interleaving is represented by terminal meaning or the evidence retained behind a dispute/decision. |
+| `runRepairK_preserves_wf` | Every arbitrary finite repaired trace terminates well-formed; there is no admitted-only premise. |
+| `runRepairK_fill_pair` (`spec_no_loss_strong`) | Strong no-loss: every fill in an arbitrary finite bag lands its exact holder-attributed pair in terminal journal evidence — no refusal disjunct. |
+| `runRepairK_perm` (`spec_meaning_confluent`, `spec_evidence_confluent`) | Wire confluence: the total runner's terminal state, meaning and journal both, is invariant under permutation of any fill/dispute bag. |
+| `spec_fence_schedule_free` | Any sound pair-set fence chooses identically across permutations of a wire bag. |
+| `spec_refusal_iff` | Refusal is characterized per move as an iff against the frozen `D85Refusal`: fills never refuse; disputes refuse only at decided holes or on an empty offer; decides refuse unless the hole is disputed and the value represented. |
+| `spec_alignment`, `spec_repairK_iff_admitted` | The receipt list aligns one-to-one with the input, and the total runner admits exactly the calculus's transitions. |
+| `spec_decided_stable_total` | No repaired move, admitted or refused, revises a decided hole. |
+| `spec_discharged` | The single conjunction discharging every frozen obligation in `Moves/Spec.lean` (sha256-pinned in `run.sh`). |
 | `put_put_same`, `put_current` | Same-hole replacement and current-state replacement laws used by the repair proof. |
 | `repair_fill_comm` | Canonically repaired fills on distinct holes form a diamond. |
 | `clash_repair_admissible` | A refused clash has an admitted repair containing old and new holder-attributed candidates. |
@@ -83,6 +119,10 @@ rules inherit interleaving independence without a new schedule proof.
 | `lww_step`, `lww_converges`, `lww_loses` | Deterministic LWW converges for every permutation of the standard conflicting pair, yet erases the losing fill; convergence alone is weaker than `no_loss`. |
 | `filled_unstable` | The explicit lawful trace `filled 10 → disputed {10,20}` refutes the naive claim that every fill is stable. |
 | `fence_manipulable` | Holder X injects only `(0,X)` through `dispute`; canonical-min changes its winner to 0, while plurality still selects value 10 because A and B support it independently. |
+| `spec_mutant_legacy_killed_by_L1` | The pre-D85 repair chain, frozen verbatim in `Moves/Spec.lean` as the canonical mutant, loses the third fill's pair on the three-fill bag — strong no-loss kills it. |
+| `spec_mutant_legacy_killed_by_L2` | The same mutant reaches different terminal meanings on two permutations of a fill-only bag — meaning confluence kills it. |
+| `spec_mutant_refuseAll_killed` | Refuse-everything violates the refusal characterization on any fill. |
+| `spec_witness_three_fill`, `spec_witness_confirm_recorded` | Pinned executable witnesses: the three-fill bag admits all three and journals `(30, x)`; a confirming refill records the second holder (MOVES-5 closed). |
 
 The witnesses are transparent traces in `Moves/Violations.lean`. The two
 concrete choice calculations inside `fence_manipulable` are ordinary

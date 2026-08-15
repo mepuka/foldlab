@@ -2204,3 +2204,40 @@ scheme, which has the hole. The debt comes due when a second protocol
 scheme exists or a dogfood run closes a real session; consult this
 entry before either. **Load-bearing? yes** — close is the protocol's
 one fence, and a silent `abandoned` is a wrong outcome, not a refusal.
+
+## DEV-673 (numbers task-local until merge, per the numbering rule)
+
+### D85. A fill absorbs at every hole state; refusal is enumerated
+
+Decided (operator, 2026-08-15, Branch A after the DEV-671 three-lens
+review): fills are total. A fill arriving at a disputed hole absorbs
+into the candidate set via the canonical dispute-merge; a same-value
+refill leaves meaning unchanged and journals the confirming holder's
+pair; a fill after `decided` leaves the tombstone untouched and appends
+the pair to ghost evidence as its receipt. Refusal is exhaustively
+enumerated by `D85Refusal`: fills never refuse, disputes refuse only at
+decided holes (see D86 for the empty offer), decides refuse unless the
+hole is disputed and the value is represented. Alternatives:
+round-freeze (disputes frozen at two candidates); order-dependence
+within rounds. Why: order-dependence is time leaking into meaning; the
+pair-set is already a proved semilattice, so absorb makes terminal
+state a function of what was said. **Load-bearing? yes** — the DEV-673
+theorem package (strong no-loss, meaning/evidence confluence,
+schedule-free fences) quantifies through these semantics.
+
+### D86. An empty dispute offer is refused at every state
+
+Decided (operator, 2026-08-15, on the DEV-673 blocking finding): the
+dispute refusal test is `cs = ∅` on the offered set, not emptiness of
+the merged set. The original test refused an empty offer at an open
+hole but admitted it at a filled one — converting `filled` to
+`disputed` — so a kernel-checked two-move permutation changed terminal
+meaning and the frozen L2/L5 pair was jointly unsatisfiable
+(docs/research/2026-08-15-dev673-spec-review.md). Alternatives: keep
+the merged-set test and exclude empty disputes from the confluence
+fragment (leaves an order-sensitive behavior reachable on the wire and
+a ghost-evidence read in the refusal predicate); a separate ratified
+contest-without-alternative move (available later if wanted). Why: a
+move that asserts nothing must change nothing, and refusal must be a
+function of the move and the meaning fold alone. **Load-bearing?
+yes** — meaning confluence over the wire fragment is false without it.

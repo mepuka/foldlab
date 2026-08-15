@@ -24,20 +24,40 @@ the ghost-evidence design. No hypothesis was found unsatisfiable in the
 claims that matter; the per-step lemmas are state-general and usable as
 simulation obligations.
 
-### MOVES-1 (high). "All finite interleavings" means "all admitted runs"
+### MOVES-1 (high, closed at the model layer 2026-08-15 by DEV-671; wall half pending). "All finite interleavings" meant "all admitted runs"
 
-`Runs` (Model.lean:260) retains only schedules in which no move is ever
-refused; `stepTrace` propagates `none`, killing the whole trace. A bag
+At audit time, `Runs` (Model.lean:260) retained only schedules in which no move
+was ever refused; `stepTrace` propagated `none`, killing the whole trace. A bag
 of three distinct fills at one hole has ZERO admitted runs — the first
 two clash into a dispute and the third fill is refused — so `no_loss`
-holds vacuously over that workload. The daemon refuses a move and
-CONTINUES, so a refinement map from daemon histories is partial exactly
-on the contention traces the calculus exists for, and value survival
-for refused-then-dropped fills is unproved. The README discloses the
-admitted-runs restriction; the ledger row's "all finite interleavings"
-oversold it. Disposition needed: ledger re-scope (applied this commit,
-pending ratification), and the conformance-vector wall MUST include
-refused moves, where model-abort vs daemon-skip will diverge first.
+held vacuously over that workload. The daemon refused a move and CONTINUED, so
+without a total model a refinement map from daemon histories would be partial
+exactly on the contention traces the calculus exists for. The README disclosed
+the admitted-runs restriction; the ledger row's "all finite interleavings"
+oversold it. The required disposition was a total refusal-aware runner plus a
+conformance-vector wall containing refused moves.
+
+Disposition: `stepK` and `repairK` now define refusal as an unchanged-state
+`false`, with agreement lemmas tying both outcomes to the unchanged partial
+semantics. `runK` and `runRepairK` consume every move and retain an aligned
+observation list. `no_lossK` quantifies over arbitrary finite traces and
+accounts for every fill as either explicitly refused or retained, while its
+admitted case proves terminal preservation even when other moves refuse. The
+`refusal_vacuity_exposed` control proves that the three-distinct-fill bag has
+no partial `Runs` witness while its total execution records `true, true,
+false` and retains both admitted values. This closes the model-totality defect;
+the separate daemon↔model refinement map remains unproved, and the vector wall
+must still exercise refusals.
+
+Appended disposition (2026-08-15, DEV-673): the D85 absorb semantics
+supersedes part of the above record. Fills are now total under
+`repair` (the three-fill bag admits all three, witnessed by the frozen
+`spec_witness_three_fill`); `runK`, `no_lossK`, and the
+`refusal_vacuity_exposed` control were deleted with the semantics that
+made them meaningful, replaced by `spec_no_loss_strong` (pair-level,
+no refusal disjunct), the frozen legacy chain as the canonical mutant,
+and its kill theorems. The wall half of this finding remains pending
+(DEV-670 generates against post-D85 semantics).
 
 ### MOVES-2 (high). The IC4 impossibility is a pigeonhole triviality
 
@@ -70,13 +90,19 @@ pairs manipulates plurality exactly as min was manipulated. The
 refinement map owes an attribution-authentication invariant the model
 does not have.
 
-### MOVES-5 (medium). Same-value refill discards holder attribution
+### MOVES-5 (medium, closed 2026-08-15 by D85/DEV-673). Same-value refill discards holder attribution
 
 A second holder confirming the same value leaves `evidence` untouched
 (Model.lean:140), so plurality later undercounts support — and the
 README's "counted twice by plurality" is true for dispute pair-sets,
 false for fills. `no_loss` cannot notice: `TerminalCarries` is
 value-level.
+
+Appended disposition (2026-08-15, DEV-673): closed by the D85 absorb
+semantics. A confirming same-value refill now journals the confirming
+holder's pair; the frozen witness `spec_witness_confirm_recorded`
+pins it executably, and the pair-level `spec_no_loss_strong` makes
+the value-level blindness of `TerminalCarries` moot for fills.
 
 ### MOVES-6..12 (lower). Recorded for the map's spec
 
@@ -143,7 +169,7 @@ through emission harness) is carried into the dispatch draft
 The foundation is real mathematics with honestly disclosed bounds —
 the audits confirmed the proofs and refuted none of them. The fluff
 risk is confined to two places, both now named: prose that claims more
-than the statements (MOVES-1/2/3, repaired in the ledger pending
-ratification), and machinery that is assumed executable but unbuilt
+than the statements (MOVES-1 closed by DEV-671; MOVES-2/3 remain
+pending disposition), and machinery that is assumed executable but unbuilt
 (the referee engine). Neither is a reason to change the lane; both are
 the lane's first work items.
