@@ -8,6 +8,12 @@ if ! command -v lake >/dev/null 2>&1; then
   echo "FAIL: lake not found. Install elan (e.g. 'scoop install elan')." >&2
   exit 2
 fi
+expected_spec_sha256="f3afcf10335019fb650a5baf0760b7318231bf716fa89f84a51782ef44a58ef4"
+actual_spec_sha256=$(sha256sum Moves/Spec.lean | cut -d ' ' -f 1)
+if [[ "$actual_spec_sha256" != "$expected_spec_sha256" ]]; then
+  echo "GATE: FAIL — Spec.lean is frozen; changes require a Rev re-pin" >&2
+  exit 1
+fi
 if grep -rnE '(:=|by|<;>|;|\|)[[:space:]]*(sorry|admit)\b|^[[:space:]]*(sorry|admit)[[:space:]]*$|^[[:space:]]*axiom[[:space:]]' Moves Moves.lean 2>/dev/null; then
   echo "GATE: FAIL — lean sources contain a sorry/admit tactic or an axiom decl (a warning, not a build error)"; exit 1
 fi
