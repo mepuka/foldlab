@@ -54,6 +54,12 @@ Landmarks below those five:
 - [proto/ts/src/mcp.ts](proto/ts/src/mcp.ts) — the MCP derivation;
   [proto/ts/test/smoke.test.ts](proto/ts/test/smoke.test.ts) — a full
   agent session, typo to self-repair to verified read.
+- [verify/moves/](verify/moves/) — the move calculus in Lean: epistemic
+  state as `open | filled | disputed | decided`, the three moves, and
+  seventeen gated results — the headline theorems plus the negative
+  controls that refute them one dropped law at a time — checked against
+  a core-clean axiom footprint. Its README states what the model does
+  NOT cover, which is the more useful half.
 - [verify/catalog/](verify/catalog/) — the TLA+ model gate:
   `Catalog.tla`, the four counterexample traces from the sabotaged
   variants, and the run record in its README.
@@ -148,39 +154,12 @@ Go 1.26, `nats-server v2.14.4`, `nats.go v1.53.1`.
 
 ## Where to look
 
-Start with the ledger and the language, then pick a shelf. The design
-shelf is where the last two days of parallel work landed: each
-document was produced by a dispatched research lane, reviewed by a
-second, and merged with its evidence intact — the dates in the
-filenames are dispatch dates, and every claim inside carries the file,
-line, or executed output that backs it.
-
-- [VERIFICATION.md](VERIFICATION.md) — the claims ledger: every
-  verification claim with its rung, bounds, assumptions, and the file
-  where it is checkable.
-- [CONTEXT.md](CONTEXT.md) — the ubiquitous language: folds, heads,
-  journals, catalogs, refusals.
-- [proto/SPEC.md](proto/SPEC.md) and
-  [proto/wire/CONTRACT.md](proto/wire/CONTRACT.md) — the ratified
-  laws (W1–W10) and the wire contract with its frozen fixtures.
-- [proto/go/protod/](proto/go/protod/) — the daemon: catalog,
-  ingress, refusals, and the black-box conformance suite.
-- [proto/ts/src/mcp.ts](proto/ts/src/mcp.ts) — the MCP derivation;
-  [proto/ts/test/smoke.test.ts](proto/ts/test/smoke.test.ts) — a full
-  agent session, typo to self-repair to verified read.
-- [verify/catalog/](verify/catalog/) — the TLA+ model gate:
-  `Catalog.tla`, the four counterexample traces from the sabotaged
-  variants, and the run record in its README.
-- [docs/map/tickets/009-the-verification-ladder.md](docs/map/tickets/009-the-verification-ladder.md)
-  — which contract sits on which proof rung, and what each rung's
-  gate requires.
-- [docs/adr/](docs/adr/) — the committed decisions;
-  [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
-  campaigns (crash storms, fleet runs), each with a frozen spec and a
-  frozen verifier that checks the exported run bundle by recomputation.
-- [go/effector/](go/effector/) — the proven register, as running Go.
-
-The design shelf — the recent research and design lanes, merged:
+The registers table above names the five documents and the landmarks
+beneath them; start there. What follows is the design shelf, where the
+research and design lanes landed. Each document was produced by one
+dispatched lane and reviewed by a second, then merged with its evidence
+intact — the dates in the filenames are dispatch dates, and every claim
+inside carries the file, line, or executed output that backs it.
 
 - [docs/research/2026-08-14-tangible-examples.md](docs/research/2026-08-14-tangible-examples.md)
   — the five concepts as worked, executed examples, each calibrated

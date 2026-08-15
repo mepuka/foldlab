@@ -5,6 +5,11 @@ bench/results/
 .env
 artifacts/receipts/*/corpus.json
 go/*.exe
-scratch/
 ci-logs/
 tlc-out/
+
+# scratch/ is TRACKED: the task briefs an agent needs are useless if a fresh
+# checkout cannot see them. Retired briefs and their build products are not.
+scratch/_archive/
+scratch/**/out/
+scratch/**/*.tsbuildinfo
