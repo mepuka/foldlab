@@ -41,7 +41,7 @@ The table points; the entries below carry the bounds.
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
-| E2 move calculus (diamonds, clash repair, no-loss, WF preservation, pair-set fence path independence, stability, IC4) | model-level R5 (Lean) | **Claimed** for all finite interleavings over an arbitrary fixed finite hole carrier; conflict coverage is two fills, fence coverage is nonempty dispute-only bags with canonical-min and holder-plurality instances, and single-seat coverage requires value-consistent intents; concrete controls cover clobber, deterministic LWW loss, filled instability, and min-fence injection; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence | [verify/moves/](verify/moves/) |
+| E2 move calculus (diamonds, clash repair, no-loss, WF preservation, pair-set fence path independence, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** for all ADMITTED complete executions over an arbitrary fixed finite hole carrier — a schedule containing any refused move is outside every claim (audit MOVES-1); conflict coverage is two fills, fence coverage is nonempty dispute-only bags with canonical-min and holder-plurality instances, and single-seat coverage requires value-consistent intents; concrete controls cover clobber, deterministic LWW loss, filled instability, and min-fence injection; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Claimed** for static DAGs with deterministic bindings; the unguarded (faithless) runner is **REFUTED** in both instruments | [verify/replay/](verify/replay/) |
 
@@ -655,16 +655,26 @@ proofs and added the footprint check to the gate.
 
 ### Bounds and residuals
 
-All finite interleavings over the fixed finite hole carrier; a single
-journal. Conflict coverage is two fills; fence coverage is nonempty
-dispute-only bags; single-seat coverage requires value-consistent
-intents. Not modeled: crash recovery, CAS, retries, leases, liveness,
-the Effect runtime, and any attack/revision model. Code-model
-correspondence is the named open lane: no refinement map ties daemon
-folds and events to these states and moves — the daemon's synthesized
-two-candidate dispute and atomic close are instances the map must
-justify, not theorems here. Decision log: `verify/moves/DECISIONS.md`
-(D70–D78).
+All ADMITTED complete executions over the fixed finite hole carrier; a
+single journal. The run semantics aborts any schedule containing a
+refused move, so the claims are silent about refused-move traffic —
+including workloads (three distinct fills at one hole) with zero
+admitted runs — and a daemon that refuses-and-continues diverges from
+the model exactly there (2026-08-15 audit, MOVES-1). Conflict coverage
+is two fills; fence coverage is nonempty dispute-only bags; single-seat
+coverage requires value-consistent intents. `no_fair_resolute_fence`
+establishes that a resolute choice between two distinct candidates
+picks one of them; the IC4-impossibility framing is reclassified
+pending disposition (MOVES-2). Dispute attribution is unauthenticated
+in the model (MOVES-4). Not modeled: crash recovery, CAS, retries,
+leases, liveness, the Effect runtime, any attack/revision model, and
+close atomicity (the daemon's seal + fence + record in one step).
+Code-model correspondence is the named open lane: no refinement map
+ties daemon folds and events to these states and moves — the daemon's
+synthesized two-candidate dispute and atomic close are instances the
+map must justify, not theorems here. Full audit:
+[docs/research/2026-08-15-model-audit-findings.md](docs/research/2026-08-15-model-audit-findings.md).
+Decision log: `verify/moves/DECISIONS.md` (D70–D78).
 
 ### Checkable at
 
