@@ -86,7 +86,7 @@ The rulings survived; the claims around them were resized the same day:
 - The moves model's remaining prose repairs and optional increments
   (skip semantics, attribution authentication) are dispatched as
   dispositions, not silently fixed
-  (`scratch/dispatch/05-moves-claim-repairs.md`).
+  (`scratch/dispatch/08-moves-claim-repairs.md`).
 
 ## The verification chain, drawn
 
@@ -116,6 +116,9 @@ flowchart LR
 
 ## Dispatch order
 
+(Superseded the same day by the alignment-grill addendum below; kept
+as the record of the first ordering.)
+
 Drafted as board-ready issue bodies in `scratch/dispatch/`, ordered:
 
 1. **Dogfood with teeth** — rerun the estate's task acceptance through
@@ -133,3 +136,59 @@ Drafted as board-ready issue bodies in `scratch/dispatch/`, ordered:
 
 The purge itself (F1 + F2) is not dispatched; it was executed by the
 coordinator on `chore/estate-focus` with gates run before and after.
+
+## Addendum — the alignment grill (2026-08-15, later the same day)
+
+Operator + coordinator, five questions, one at a time. What it
+established, each ruling operator-ratified:
+
+**A1 — the product is the agent-coordination substrate.** The daemon
+where agent work products — types, records, protocol sessions,
+decisions — live as content-addressed artifacts with recomputable
+guarantees. Proofs, walls, and models are quality control, never the
+deliverable.
+
+**A2 — the near-term deliverable is the ontology test bed, not estate
+chores.** Given a domain ontology in PROSE (ecommerce was the
+operator's example), an agent authors the types through typed holes on
+the MCP surface, a protocol is declared over those types, seats run
+sessions, and the journals and state digests come out replayable.
+Task acceptance is one instance, not the point.
+
+**A3 — the fluff ledger for tasks 48 and 49, stated precisely.**
+Task 48 is sound and was well run: the move calculus — fill, dispute,
+decide, with the repair discipline — is machine-checked, and the
+prose that outran the statements was resized in the ledger the same
+day. Task 49 carries the real spec fluff: D84, the coordinator's own
+spec baking the hole name `decision` into a generic scheme. The
+deepest gap is neither file: the proved calculus has never been
+exercised — no real session journal exists. Also clarified against a
+near-miss in shared understanding: `verify/moves` proves the
+collaboration dynamics over holes that already exist (fixed carrier,
+no creation move, admitted runs only); it does not cover the
+authoring step that produces holes, which agent authoring makes
+refusal-heavy by design.
+
+**A4 — step-1 soundness is proved over TyX, in verify/ir.** The
+authoring loop — fill/unfill over the partial grammar, the frontier,
+completion-reachability (no dead ends) — gets model-level theorems,
+upgrading the C1–C5 walls. This makes the operator's priority and the
+ratified type-generation lane the same lane.
+
+**A5 — exercise before extend.** Verifying the approach's basic
+soundness means running the proved calculus first: one real protocol
+session through protod, with a staged dispute so the fence is
+exercised, its journal committed and replay-verified. Then the
+authoring proofs, then the D84 completion declaration, then the
+ontology demo. The dispatch order in `scratch/dispatch/` was
+renumbered accordingly (01 session run, 02 authoring soundness,
+03 completion declaration, 04 ontology demo, 05/06 referee
+grills/engine, 07 vector wall, 08 claim repairs).
+
+**Pace, ruled at close:** the operator does not yet work in Lean and
+does not claim to; before further TyX dispatch the coordinator owes an
+education pass — how Lean states the grammar, what TyX's definitions
+actually say, and how domain types are realized in the calculus —
+taken incrementally and slowly. Understanding precedes ratification;
+that is not a delay, it is the ratification law applied to the
+operator's own inputs.

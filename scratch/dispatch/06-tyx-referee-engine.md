@@ -1,6 +1,6 @@
 # The referee engine: make TyX executable and emit the first golden vectors
 
-BLOCKED ON: `03-tyx-referee-grills.md` — all three rulings ratified.
+BLOCKED ON: `05-tyx-referee-grills.md` — all three rulings ratified.
 
 ## Why now
 

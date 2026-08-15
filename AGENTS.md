@@ -16,8 +16,12 @@ audited adversarially the same day
   denotational semantics, eight laws machine-checked in Lean 4.33.0.
   The executable referee (normalize, parse, canonical bytes, bounded
   fuel) is NOT built: ten ordered work items, the first two decisions
-  ungrilled. The dispatch order lives in `scratch/dispatch/` — the
-  grills (03) gate the engine (04).
+  ungrilled. The dispatch order lives in `scratch/dispatch/` —
+  exercise the proved calculus first (01), prove the authoring loop
+  over TyX (02, the lane's first rung), and the referee grills (05)
+  gate the engine (06). The near-term consumer is the ontology test
+  bed (04): prose domain in, agent-authored types, a protocol over
+  them, replayable journals out (alignment grill, 2026-08-15).
 - The payoff is the drift-engine kill (architecture audit §3): the
   grammar is restated ~6× in Go and ~4× in TS with divergent
   defaults. Golden vectors emitted by the model wall every
@@ -29,7 +33,7 @@ calculus — seventeen gated results over ADMITTED executions only; a
 refused move ends a model run while the daemon refuses and continues,
 which is where the two machines diverge first (audit MOVES-1).
 `proto/` runs the twin. No refinement map exists. The ratified floor
-is the queued vector wall (`scratch/dispatch/02`), refused moves
+is the queued vector wall (`scratch/dispatch/07`), refused moves
 included. Copying the Lean constructors into Go would hide the
 abstraction difference instead of discharging it.
 

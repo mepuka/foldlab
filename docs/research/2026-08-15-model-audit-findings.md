@@ -136,7 +136,7 @@ zero can be emitted today:
 
 The full work-item list (ten items, ordered, from concrete catalog type
 through emission harness) is carried into the dispatch draft
-`scratch/dispatch/04-tyx-referee-engine.md`.
+`scratch/dispatch/06-tyx-referee-engine.md`.
 
 ## What this means for the ratified focus
 
