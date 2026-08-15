@@ -1,0 +1,5 @@
+name = "moves"
+defaultTargets = ["Moves"]
+
+[[lean_lib]]
+name = "Moves"
