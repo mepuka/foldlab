@@ -93,3 +93,13 @@ boolean list. Why: refusal-continuation must remain observable, and `no_lossK`
 must identify admitted fills without assuming moves are unique. **Load-bearing?
 yes** — dropping move/status alignment would make the vector generator invent
 refusal provenance or make admitted-fill accounting ambiguous.
+
+### D85/D86 pointer (2026-08-15, DEV-673)
+
+The absorb semantics (fills total; `runK` and the `no_lossK` pair
+retired in favor of the frozen-spec laws) and the empty-offer refusal
+are recorded under the DEV-673 heading in `proto/DECISIONS.md`,
+numbered at merge per the repo-wide rule. D79's `runK` mention is
+historical; the surviving total runner is `runRepairK`, and its
+prose-only alignment invariant is now the proved
+`runRepairK_alignment` (`spec_alignment`).

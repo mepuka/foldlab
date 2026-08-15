@@ -24,7 +24,7 @@ the ghost-evidence design. No hypothesis was found unsatisfiable in the
 claims that matter; the per-step lemmas are state-general and usable as
 simulation obligations.
 
-### MOVES-1 (high, closed 2026-08-15 by DEV-671). "All finite interleavings" meant "all admitted runs"
+### MOVES-1 (high, closed at the model layer 2026-08-15 by DEV-671; wall half pending). "All finite interleavings" meant "all admitted runs"
 
 At audit time, `Runs` (Model.lean:260) retained only schedules in which no move
 was ever refused; `stepTrace` propagated `none`, killing the whole trace. A bag
@@ -48,6 +48,16 @@ no partial `Runs` witness while its total execution records `true, true,
 false` and retains both admitted values. This closes the model-totality defect;
 the separate daemon↔model refinement map remains unproved, and the vector wall
 must still exercise refusals.
+
+Appended disposition (2026-08-15, DEV-673): the D85 absorb semantics
+supersedes part of the above record. Fills are now total under
+`repair` (the three-fill bag admits all three, witnessed by the frozen
+`spec_witness_three_fill`); `runK`, `no_lossK`, and the
+`refusal_vacuity_exposed` control were deleted with the semantics that
+made them meaningful, replaced by `spec_no_loss_strong` (pair-level,
+no refusal disjunct), the frozen legacy chain as the canonical mutant,
+and its kill theorems. The wall half of this finding remains pending
+(DEV-670 generates against post-D85 semantics).
 
 ### MOVES-2 (high). The IC4 impossibility is a pigeonhole triviality
 
@@ -80,13 +90,19 @@ pairs manipulates plurality exactly as min was manipulated. The
 refinement map owes an attribution-authentication invariant the model
 does not have.
 
-### MOVES-5 (medium). Same-value refill discards holder attribution
+### MOVES-5 (medium, closed 2026-08-15 by D85/DEV-673). Same-value refill discards holder attribution
 
 A second holder confirming the same value leaves `evidence` untouched
 (Model.lean:140), so plurality later undercounts support — and the
 README's "counted twice by plurality" is true for dispute pair-sets,
 false for fills. `no_loss` cannot notice: `TerminalCarries` is
 value-level.
+
+Appended disposition (2026-08-15, DEV-673): closed by the D85 absorb
+semantics. A confirming same-value refill now journals the confirming
+holder's pair; the frozen witness `spec_witness_confirm_recorded`
+pins it executably, and the pair-level `spec_no_loss_strong` makes
+the value-level blindness of `TerminalCarries` moot for fills.
 
 ### MOVES-6..12 (lower). Recorded for the map's spec
 
