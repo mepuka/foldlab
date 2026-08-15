@@ -205,3 +205,17 @@ stable-watch surface's design constraints.
 - "Fence determinism protects the system" unqualified — it protects
   the fence; the candidate set's schedule-invariance (theorem 4(a) in
   the value-only model) is the necessary companion.
+
+---
+
+## Ratification record (2026-08-14, operator)
+
+D1–D6 RATIFIED as recommended, same day: D1 by-field drop; D2
+holder-keyed candidate multiplicity; D3 revise stays
+Relative-Success/merging (no prioritized self-revision — protects
+fence_deterministic); D4 fence direction (routing, UNDECIDED,
+declared lexicographic criteria, reconciliation-before-fence) as the
+protocol grill's frame; D5 venue hardening as named roadmap
+obligations; D6 watch epistemics as the stable-watch surface's design
+constraints. Task 48 Addendum 3 carries D1–D3 into the model; D4–D6
+bind the protocol grill and the daemon roadmap.
