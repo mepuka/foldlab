@@ -1,6 +1,6 @@
 {
-  "grammar": "flb.type.v0+flb.session.v0",
-  "grammarDigest": "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc",
+  "grammar": "flb.type.v0+flb.session.v0+flb.protocol.v0",
+  "grammarDigest": "26193b59e8c12952edaf206d1d31dca7974843c5db0f19f9be2f2faabc35ad03",
   "sortByKind": {
     "malformed": "structural",
     "invalid-structure": "structural",
@@ -13,6 +13,8 @@
     "unknown-journal": "absence",
     "session-stale": "absence",
     "session-principal": "structural",
-    "compaction-blocked": "absence"
+    "compaction-blocked": "absence",
+    "seat-unauthorized": "structural",
+    "session-closed": "structural"
   }
 }

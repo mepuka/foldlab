@@ -86,18 +86,84 @@ func openCatalog(ctx context.Context, js jetstream.JetStream) (*catalog, error) 
 func (c *catalog) resolve(digest string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	_, known := c.byDigest[digest]
-	return known
+	fact, known := c.byDigest[digest]
+	return known && isTypeFactScheme(fact.Scheme)
 }
 
 func (c *catalog) resolveStructure(digest string) (any, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	fact, known := c.byDigest[digest]
-	if !known {
+	if !known || !isTypeFactScheme(fact.Scheme) {
 		return nil, false
 	}
 	return fact.Structure, true
+}
+
+func (c *catalog) resolveFact(digest string) (catalogFact, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	fact, known := c.byDigest[digest]
+	return fact, known
+}
+
+// commitValue appends a value whose grammar has already been validated by its
+// owned certifier. Unlike flb.type.v0, protocol values are not normalized and
+// bear the scheme declared by their own canonical record.
+func (c *catalog) commitValue(
+	ctx context.Context,
+	value any,
+	scheme string,
+	asserted string,
+	submitter string,
+) (catalogCommit, *Refusal, error) {
+	bytes, err := canonicalBytes(value)
+	if err != nil {
+		return catalogCommit{}, nil, err
+	}
+	digest := bytesSHA256V1{}.Derive(bytes)
+	if asserted != "" && asserted != digest {
+		return catalogCommit{}, &Refusal{
+			Kind: KindDigestMismatch,
+			Law:  "W1: no asserted identity — every committed protocol digest is recomputed from canonical bytes",
+			Path: []string{"assertedDigest"}, Got: asserted, Expected: digest,
+			Next: []NextHint{{Subject: SubjectProtocolCreate, Note: "drop assertedDigest or assert the daemon-derived value"}},
+		}, nil
+	}
+	var canonicalValue any
+	if err := json.Unmarshal(bytes, &canonicalValue); err != nil {
+		return catalogCommit{}, nil, err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if existing, known := c.byDigest[digest]; known {
+		if existing.Scheme != scheme {
+			return catalogCommit{}, &Refusal{
+				Kind:     KindDigestMismatch,
+				Law:      "one canonical value digest cannot converge across different catalog schemes",
+				Got:      map[string]any{"digest": digest, "scheme": scheme},
+				Expected: map[string]any{"digest": digest, "scheme": existing.Scheme},
+				Next:     []NextHint{readCatalogHint()},
+			}, nil
+		}
+		return catalogCommit{fact: existing, created: false, catalogHead: c.journal.Head().Head}, nil, nil
+	}
+	fact := catalogFact{Digest: digest, Scheme: scheme, Structure: canonicalValue, Submitter: submitter}
+	payload, err := canonicalBytes(map[string]any{
+		"digest": fact.Digest, "scheme": fact.Scheme,
+		"structure": fact.Structure, "submitter": fact.Submitter,
+	})
+	if err != nil {
+		return catalogCommit{}, nil, err
+	}
+	entry, _, err := c.journal.Append(ctx, string(payload))
+	if err != nil {
+		return catalogCommit{}, nil, err
+	}
+	fact.seq = entry.Seq
+	c.byDigest[digest] = fact
+	return catalogCommit{fact: fact, created: true, catalogHead: c.journal.Head().Head}, nil, nil
 }
 
 func (c *catalog) resolvableDigests(limit int) []string {
@@ -105,7 +171,9 @@ func (c *catalog) resolvableDigests(limit int) []string {
 	defer c.mu.Unlock()
 	digests := make([]string, 0, len(c.byDigest))
 	for digest := range c.byDigest {
-		digests = append(digests, digest)
+		if isTypeFactScheme(c.byDigest[digest].Scheme) {
+			digests = append(digests, digest)
+		}
 	}
 	sort.Strings(digests)
 	if len(digests) > limit {
@@ -122,7 +190,9 @@ func (c *catalog) frontierSnapshot(limit int) (string, []string) {
 	defer c.mu.Unlock()
 	digests := make([]string, 0, len(c.byDigest))
 	for digest := range c.byDigest {
-		digests = append(digests, digest)
+		if isTypeFactScheme(c.byDigest[digest].Scheme) {
+			digests = append(digests, digest)
+		}
 	}
 	sort.Strings(digests)
 	if len(digests) > limit {

@@ -20,10 +20,15 @@ the daemon is a bug in one of them.
 | append a session move | `flb.req.session.move` | request/reply |
 | resume session state | `flb.req.session.state` | request/reply |
 | commit a decided session | `flb.req.session.commit` | request/reply |
+| create a protocol | `flb.req.protocol.create` | request/reply |
+| open a protocol session | `flb.req.protocol.session.open` | request/reply |
+| fill a protocol hole | `flb.req.protocol.session.fill` | request/reply |
+| close a protocol session | `flb.req.protocol.session.close` | request/reply |
+| read protocol-session state | `flb.req.protocol.session.state` | request/reply |
 | publish a frame | `flb.ing.<journal>` | request/reply (the reply admits or refuses) |
 
 `<journal>` matches `^[A-Za-z0-9_-]+$` and is never `catalog` or a name
-beginning `flb_session_v0_` — those journals are written only by the
+beginning `flb_session_v0_` or `flb_protocol_session_v0_` — those journals are written only by the
 daemon through their request kinds. Requests
 on unknown `flb.req.*` subjects are answered with an `unknown-request`
 refusal (data, not silence). Requests without a reply inbox are dropped:
@@ -157,6 +162,44 @@ digest remain as evidence of what was summarized. Actual compaction is blocked
 in this build because that corpus-sealing seam does not exist. The typed
 `compaction-blocked` path retains the complete session.
 
+### flb.protocol.v0 and protocol sessions
+
+`protocol.create` catalogs a strict `flb.protocol.v0` value after validating
+nonempty unique seats, hole-seat inclusion, type resolution, and the fence
+law. A single-seat hole must not carry a fence. Every multi-seat hole carries
+`{"rule":"seat-authority","order":[...]}`, where `order` is a permutation
+of its seats. The daemon derives identity from the protocol record's RFC 8785
+bytes and records the catalog fact under scheme `flb.protocol.v0`.
+
+The four session requests are:
+
+```json
+{"protocol":"<digest>","bindings":{"seat":"principal"},"predecessor":{"session":"...","state_digest":"<digest>"}?}
+{"session":"...","principal":"...","hole":"...","value":...}
+{"session":"...","principal":"..."}
+{"session":"..."}
+```
+
+They are respectively `protocol.session.open`, `.fill`, `.close`, and
+`.state`. Bindings name every declared seat exactly once and remain immutable.
+The journal name is content-addressed from the canonical open event. State is
+always reconstructed by a verified journal read.
+
+An open hole fills with meaning only; its journal evidence records the
+`(value, seat)` pair. A byte-identical refill succeeds without moving the head.
+A different value from a different seat creates a canonical pair-attributed
+dispute. A different value from the same seat, and every fill of a disputed or
+decided hole, refuses and teaches a successor round. `close` is operator-only
+and atomic under the per-session serialization point: it seals filled holes,
+fences disputes by the declared seat order, records open holes as unfilled,
+and closes with `completed` exactly when the decision hole was filled or
+decided; otherwise it records `abandoned`. Closed sessions are terminal.
+
+The final state digest covers protocol, bindings, hole folds, status, outcome,
+and optional predecessor, but not the journal head (which would be circular).
+The close event commits that digest and the reply's head is captured inside the
+same critical section.
+
 ### journal.read
 
 ```json
@@ -207,9 +250,9 @@ bytes).
 
 `sort` is persisted in every daemon refusal. Readers of archived values use
 that field; they never reclassify the kind through current code. The canonical
-kind-to-sort manifest for `flb.type.v0+flb.session.v0` is frozen in
+kind-to-sort manifest for `flb.type.v0+flb.session.v0+flb.protocol.v0` is frozen in
 `refusal-sorts.json` under grammar digest
-`080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc`;
+`26193b59e8c12952edaf206d1d31dca7974843c5db0f19f9be2f2faabc35ad03`;
 a re-sort must mint a new digest. Only `structural` refusals may enter a future
 permanent refusal corpus. `absence` is a head-relative observation whose
 missing evidence may later arrive.
@@ -221,7 +264,7 @@ missing evidence may later arrive.
 | kind | sort | law it names |
 |---|---|---|
 | `malformed` | `structural` | body is not JSON / not an object / field shapes wrong |
-| `invalid-structure` | `structural` | flb.type.v0 grammar violation (path/got/expected/example) |
+| `invalid-structure` | `structural` | owned type/protocol grammar or move-state violation (path/got/expected/example) |
 | `unknown-ref` | `absence` | a ref digest does not resolve in the catalog |
 | `digest-mismatch` | `structural` | asserted identity the daemon cannot re-derive (W1) |
 | `unknown-identity` | `absence` | frame claims an uncataloged digest (W4) |
@@ -232,6 +275,8 @@ missing evidence may later arrive.
 | `session-stale` | `absence` | expectedHead is not the session's current head (G3) |
 | `session-principal` | `structural` | mutator principal differs from immutable `open.author` |
 | `compaction-blocked` | `absence` | the certification corpus seam is unavailable (G4) |
+| `seat-unauthorized` | `structural` | principal holds no seat authorized for this move |
+| `session-closed` | `structural` | protocol session is terminal |
 
 Every local refusal carries at least one `next` action and never performs that
 action implicitly; daemon refusals may use an empty list when absence itself is
@@ -313,3 +358,9 @@ grow only with a stated reply-domain reason; existing rows are frozen evidence.
   including nested, permuted-union, and ref-bearing terms.
 - `scheme-bridges.json` — canonical dual-scheme evidence records decoded
   and re-derived by both runtimes.
+
+`protocol-moves.json` is the one Task 49-authorized addition to this directory.
+It is hand-authored, carries its own provenance, and is exercised through the
+real Go runtime and the TypeScript client decoder. The vectors are a WALL
+against the proved model rule, not a correspondence proof. In particular,
+they do not prove correspondence between the Lean model and the daemon.

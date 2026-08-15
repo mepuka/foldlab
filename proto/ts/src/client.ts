@@ -14,6 +14,10 @@ import {
   ReadReply,
   SessionCommitReply,
   SessionStateReply,
+  ProtocolOpenReply,
+  ProtocolFillReply,
+  ProtocolCloseReply,
+  ProtocolStateReply,
   SUBJECT_CONTRACT_DESCRIBE,
   SUBJECT_JOURNAL_READ,
   SUBJECT_TYPE_CREATE,
@@ -23,6 +27,11 @@ import {
   SUBJECT_SESSION_MOVE,
   SUBJECT_SESSION_OPEN,
   SUBJECT_SESSION_STATE,
+  SUBJECT_PROTOCOL_CREATE,
+  SUBJECT_PROTOCOL_SESSION_OPEN,
+  SUBJECT_PROTOCOL_SESSION_FILL,
+  SUBJECT_PROTOCOL_SESSION_CLOSE,
+  SUBJECT_PROTOCOL_SESSION_STATE,
   decodeReply,
   localRefusal,
   type Refusal,
@@ -364,6 +373,53 @@ export class ProtoClient {
     if (submitter !== undefined) body["submitter"] = submitter
     return this.request(SUBJECT_SESSION_COMMIT, body, SessionCommitReply)
   }
+
+  async createProtocol(
+    protocol: Json,
+    options: { assertedDigest?: string; submitter?: string } = {},
+  ): Promise<Reply<CreateReply>> {
+    const body: Record<string, Json> = { protocol }
+    if (options.assertedDigest !== undefined) body["assertedDigest"] = options.assertedDigest
+    if (options.submitter !== undefined) body["submitter"] = options.submitter
+    return this.request(SUBJECT_PROTOCOL_CREATE, body, CreateReply)
+  }
+
+  async openProtocolSession(options: {
+    readonly protocol: string
+    readonly bindings: Readonly<Record<string, string>>
+    readonly predecessor?: { readonly session: string; readonly state_digest: string }
+  }): Promise<Reply<ProtocolOpenReply>> {
+    const body: Record<string, Json> = {
+      protocol: options.protocol,
+      bindings: { ...options.bindings },
+    }
+    if (options.predecessor !== undefined) body["predecessor"] = { ...options.predecessor }
+    return this.request(SUBJECT_PROTOCOL_SESSION_OPEN, body, ProtocolOpenReply)
+  }
+
+  async fillProtocolSession(
+    session: string,
+    principal: string,
+    hole: string,
+    value: Json,
+  ): Promise<Reply<ProtocolFillReply>> {
+    return this.request(
+      SUBJECT_PROTOCOL_SESSION_FILL,
+      { session, principal, hole, value },
+      ProtocolFillReply,
+    )
+  }
+
+  async closeProtocolSession(
+    session: string,
+    principal: string,
+  ): Promise<Reply<ProtocolCloseReply>> {
+    return this.request(SUBJECT_PROTOCOL_SESSION_CLOSE, { session, principal }, ProtocolCloseReply)
+  }
+
+  async protocolSessionState(session: string): Promise<Reply<ProtocolStateReply>> {
+    return this.request(SUBJECT_PROTOCOL_SESSION_STATE, { session }, ProtocolStateReply)
+  }
 }
 
 export {
@@ -376,6 +432,11 @@ export {
   SUBJECT_SESSION_MOVE,
   SUBJECT_SESSION_STATE,
   SUBJECT_SESSION_COMMIT,
+  SUBJECT_PROTOCOL_CREATE,
+  SUBJECT_PROTOCOL_SESSION_OPEN,
+  SUBJECT_PROTOCOL_SESSION_FILL,
+  SUBJECT_PROTOCOL_SESSION_CLOSE,
+  SUBJECT_PROTOCOL_SESSION_STATE,
   INGRESS_PREFIX,
 }
 export type {
@@ -388,4 +449,8 @@ export type {
   ReadReply,
   SessionStateReply,
   SessionCommitReply,
+  ProtocolOpenReply,
+  ProtocolFillReply,
+  ProtocolCloseReply,
+  ProtocolStateReply,
 }

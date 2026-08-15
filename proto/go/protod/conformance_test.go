@@ -361,8 +361,8 @@ func TestConformance(t *testing.T) {
 			}
 		}
 		requests := contract["requests"].([]any)
-		if len(requests) != 9 {
-			t.Fatalf("expected 9 request kinds, got %d", len(requests))
+		if len(requests) != 14 {
+			t.Fatalf("expected 14 request kinds, got %d", len(requests))
 		}
 		names := map[string]bool{}
 		for _, raw := range requests {
@@ -385,6 +385,11 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("contract omits concierge request kinds: %v", names)
 		}
 		for _, name := range []string{"session_open", "session_move", "session_state", "session_commit"} {
+			if !names[name] {
+				t.Fatalf("contract omits %s: %v", name, names)
+			}
+		}
+		for _, name := range []string{"protocol.create", "protocol.session.open", "protocol.session.fill", "protocol.session.close", "protocol.session.state"} {
 			if !names[name] {
 				t.Fatalf("contract omits %s: %v", name, names)
 			}

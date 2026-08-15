@@ -17,8 +17,8 @@ test("the TS refusal sorts match the shared combined-grammar vector", () => {
     Object.entries(vector.sortByKind) as Array<[DaemonRefusalKind, RefusalSort]>,
   )
 
-  expect(Object.keys(DAEMON_REFUSAL_SORTS).length).toBe(12)
-  expect(expected.size).toBe(12)
+  expect(Object.keys(DAEMON_REFUSAL_SORTS).length).toBe(14)
+  expect(expected.size).toBe(14)
   for (const [kind, sort] of expected) {
     expect(refusalSortOf(kind)).toBe(sort)
     expect(DAEMON_REFUSAL_SORTS[kind]).toBe(sort)

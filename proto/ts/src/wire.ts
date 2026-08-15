@@ -14,6 +14,11 @@ export const SUBJECT_SESSION_OPEN = "flb.req.session.open"
 export const SUBJECT_SESSION_MOVE = "flb.req.session.move"
 export const SUBJECT_SESSION_STATE = "flb.req.session.state"
 export const SUBJECT_SESSION_COMMIT = "flb.req.session.commit"
+export const SUBJECT_PROTOCOL_CREATE = "flb.req.protocol.create"
+export const SUBJECT_PROTOCOL_SESSION_OPEN = "flb.req.protocol.session.open"
+export const SUBJECT_PROTOCOL_SESSION_FILL = "flb.req.protocol.session.fill"
+export const SUBJECT_PROTOCOL_SESSION_CLOSE = "flb.req.protocol.session.close"
+export const SUBJECT_PROTOCOL_SESSION_STATE = "flb.req.protocol.session.state"
 export const INGRESS_PREFIX = "flb.ing."
 
 // Daemon refusal sorts are persisted on the wire. A future refusal corpus may
@@ -33,6 +38,8 @@ export const DAEMON_REFUSAL_SORTS = {
   "session-stale": "absence",
   "session-principal": "structural",
   "compaction-blocked": "absence",
+  "seat-unauthorized": "structural",
+  "session-closed": "structural",
 } as const
 
 export type DaemonRefusalKind = keyof typeof DAEMON_REFUSAL_SORTS
@@ -40,9 +47,9 @@ export type RefusalSort = typeof DAEMON_REFUSAL_SORTS[DaemonRefusalKind]
 
 // Digest of the canonical { grammar, sortByKind } manifest frozen in
 // proto/wire/refusal-sorts.json. A re-sort must mint a new grammar digest.
-export const REFUSAL_SORT_GRAMMAR = "flb.type.v0+flb.session.v0"
+export const REFUSAL_SORT_GRAMMAR = "flb.type.v0+flb.session.v0+flb.protocol.v0"
 export const REFUSAL_SORT_GRAMMAR_DIGEST =
-  "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc"
+  "26193b59e8c12952edaf206d1d31dca7974843c5db0f19f9be2f2faabc35ad03"
 
 export const refusalSortOf = (kind: string): RefusalSort | undefined =>
   Object.prototype.hasOwnProperty.call(DAEMON_REFUSAL_SORTS, kind)
@@ -182,6 +189,65 @@ export const SessionCommitReply = Schema.Struct({
   next: Schema.Array(NextHint),
 })
 export interface SessionCommitReply extends Schema.Schema.Type<typeof SessionCommitReply> {}
+
+export const ProtocolPredecessor = Schema.Struct({
+  session: Schema.String,
+  state_digest: Hex64,
+})
+export interface ProtocolPredecessor extends Schema.Schema.Type<typeof ProtocolPredecessor> {}
+
+export const ProtocolCandidate = Schema.Struct({
+  value: Schema.Json,
+  seat: Schema.String,
+})
+export interface ProtocolCandidate extends Schema.Schema.Type<typeof ProtocolCandidate> {}
+
+export const ProtocolHoleState = Schema.Struct({
+  state: Schema.Literals(["open", "filled", "disputed", "decided", "unfilled"]),
+  value: Schema.optionalKey(Schema.Json),
+  candidates: Schema.optionalKey(Schema.Array(ProtocolCandidate)),
+  sealed: Schema.optionalKey(Schema.Boolean),
+})
+export interface ProtocolHoleState extends Schema.Schema.Type<typeof ProtocolHoleState> {}
+
+export const ProtocolOpenReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  head: Hex64,
+  next: Schema.Array(NextHint),
+})
+export interface ProtocolOpenReply extends Schema.Schema.Type<typeof ProtocolOpenReply> {}
+
+export const ProtocolFillReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  head: Hex64,
+  hole_state: ProtocolHoleState,
+  next: Schema.Array(NextHint),
+})
+export interface ProtocolFillReply extends Schema.Schema.Type<typeof ProtocolFillReply> {}
+
+export const ProtocolCloseReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  head: Hex64,
+  outcome: Schema.Literals(["completed", "abandoned"]),
+  next: Schema.Array(NextHint),
+})
+export interface ProtocolCloseReply extends Schema.Schema.Type<typeof ProtocolCloseReply> {}
+
+export const ProtocolStateReply = Schema.Struct({
+  ok: Schema.Literal(true),
+  session: Schema.String,
+  protocol: Hex64,
+  bindings: Schema.Record(Schema.String, Schema.String),
+  holes: Schema.Record(Schema.String, ProtocolHoleState),
+  status: Schema.Literals(["open", "closed"]),
+  outcome: Schema.optionalKey(Schema.Literals(["completed", "abandoned"])),
+  predecessor: Schema.optionalKey(ProtocolPredecessor),
+  final_state_digest: Schema.optionalKey(Hex64),
+  head: Hex64,
+  next: Schema.Array(NextHint),
+})
+export interface ProtocolStateReply extends Schema.Schema.Type<typeof ProtocolStateReply> {}
 
 export const WireEntry = Schema.Struct({
   seq: NonNegativeInt,

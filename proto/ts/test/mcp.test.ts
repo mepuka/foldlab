@@ -23,6 +23,8 @@ const DAEMON_REFUSAL_KINDS = [
   "session-stale",
   "session-principal",
   "compaction-blocked",
+  "seat-unauthorized",
+  "session-closed",
 ] as const
 
 const enumsIn = (value: unknown): ReadonlyArray<ReadonlyArray<unknown>> => {
@@ -180,6 +182,11 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
     expect(tools.map((t) => t.name).sort()).toEqual([
       "contract_describe",
       "journal_read",
+      "protocol.create",
+      "protocol.session.close",
+      "protocol.session.fill",
+      "protocol.session.open",
+      "protocol.session.state",
       "publish",
       "session_commit",
       "session_move",
@@ -210,14 +217,14 @@ test("tool schemas are derived from contract.describe, and refusals are data in 
         idempotentHint: annotations?.idempotentHint,
       }
     }
-    for (const name of ["contract_describe", "journal_read"]) {
+    for (const name of ["contract_describe", "journal_read", "protocol.session.state"]) {
       expect(annotationsOf(name)).toEqual({
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: false,
       })
     }
-    for (const name of ["type_create", "type_fill", "type_unfill"]) {
+    for (const name of ["type_create", "type_fill", "type_unfill", "protocol.create", "protocol.session.open"]) {
       expect(annotationsOf(name)).toEqual({
         readOnlyHint: false,
         destructiveHint: false,
