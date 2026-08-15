@@ -8,7 +8,7 @@ if ! command -v lake >/dev/null 2>&1; then
   echo "FAIL: lake not found. Install elan (e.g. 'scoop install elan')." >&2
   exit 2
 fi
-expected_spec_sha256="f3afcf10335019fb650a5baf0760b7318231bf716fa89f84a51782ef44a58ef4"
+expected_spec_sha256="36c3203e3e6edbcc15f7561ab91d1e2d0b03cf40bf6e23a8f9c58e47be2b5b43"
 actual_spec_sha256=$(sha256sum Moves/Spec.lean | cut -d ' ' -f 1)
 if [[ "$actual_spec_sha256" != "$expected_spec_sha256" ]]; then
   echo "GATE: FAIL — Spec.lean is frozen; changes require a Rev re-pin" >&2

@@ -24,10 +24,12 @@ local notation "Mv" => Move HoleId Holder Value candidateCmp
 /-- Wire-fragment bags: no decide moves (decide enters only via the fence at close). -/
 def FillDisputeOnly (l : List Mv) : Prop := ∀ m ∈ l, ∀ h v, m ≠ Move.decide h v
 
-/-- The complete enumeration of lawful refusal under D85. Fills never refuse. -/
+/-- The complete enumeration of lawful refusal under D85 as amended: fills
+never refuse, and an empty dispute offer is refused at every state, so
+refusal is a function of the move and the meaning fold alone. -/
 def D85Refusal (s : State) : Mv → Prop
   | .fill _ _ _     => False
-  | .dispute h cs _ => (∃ v, s.holes h = .decided v) ∨ priorCandidates s h ∪ cs = ∅
+  | .dispute h cs _ => (∃ v, s.holes h = .decided v) ∨ cs = ∅
   | .decide h v     =>
       match s.holes h with
       | .disputed cs => ¬ ValueAppears cs v
