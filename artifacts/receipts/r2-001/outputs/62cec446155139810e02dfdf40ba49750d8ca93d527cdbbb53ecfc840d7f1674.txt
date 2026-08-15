@@ -1,5 +1,0 @@
-```json
-{"template":"<<<Review the working shown above. Identify the final answer that was stated. Extract and verify it is a single integer. If there are multiple candidate answers, select the one explicitly marked as FINAL ANSWER. Output only that integer with no other characters:
-
-{{INPUT}}>>>","params":{"max_tokens":512,"thinking_budget":1024}}
-```

@@ -1,9 +1,0 @@
-```json
-{
-  "template": "{{INPUT}}\n\nThe final answer is the single integer: ",
-  "params": {
-    "max_tokens": 256,
-    "thinking_budget": 0
-  }
-}
-```

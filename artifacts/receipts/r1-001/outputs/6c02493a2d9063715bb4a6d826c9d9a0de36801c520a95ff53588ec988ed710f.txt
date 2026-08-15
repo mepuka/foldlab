@@ -1,3 +1,0 @@
-# Problem Statement
-
-What is the total number of defective parts among 23 pallets containing 5 boxes per pallet with 10 parts per box at an 8 percent defect rate?

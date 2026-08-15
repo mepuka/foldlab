@@ -32,10 +32,10 @@ The table points; the entries below carry the bounds.
 
 | Contract | Rung | Status | Checkable at |
 | --- | --- | --- | --- |
-| Effector (commitment register) | R3 + R4 | **Claimed**; proof artifacts not yet shipped in this repository (ticket 013) | [go/effector/](go/effector/) |
+| Effector (commitment register) | R3 + R4 | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed with proof artifacts unshipped (ticket 013) | the tag; section below kept as record |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
-| Journal and chain walls | R0/R1 | **Claimed**; no model gate yet (ticket 012) | [fixtures/](fixtures/), [go/stream/](go/stream/), [docs/gauntlet/](docs/gauntlet/) |
-| KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Claimed** at R0 in both languages and R1 in TypeScript; the join is TypeScript only | [go/stream/combine_test.go](go/stream/combine_test.go), [packages/core/test/stream.combine.test.ts](packages/core/test/stream.combine.test.ts), [packages/core/test/kvSemilattice.test.ts](packages/core/test/kvSemilattice.test.ts) |
+| Journal (CAS-append, verify-on-read) | R0/R1 | **Claimed**; no model gate yet (ticket 012). The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
+| KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
@@ -43,9 +43,16 @@ The table points; the entries below carry the bounds.
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
 | E2 move calculus (diamonds, clash repair, no-loss, WF preservation, pair-set fence path independence, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** for all ADMITTED complete executions over an arbitrary fixed finite hole carrier — a schedule containing any refused move is outside every claim (audit MOVES-1); conflict coverage is two fills, fence coverage is nonempty dispute-only bags with canonical-min and holder-plurality instances, and single-seat coverage requires value-consistent intents; concrete controls cover clobber, deterministic LWW loss, filled instability, and min-fence injection; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
-| Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Claimed** for static DAGs with deterministic bindings; the unguarded (faithless) runner is **REFUTED** in both instruments | [verify/replay/](verify/replay/) |
+| Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
 
 ## The effector (commitment register) — R3 + R4
+
+> **ARCHIVED 2026-08-15.** The running code and tests named below left
+> the working tree in the estate-focus purge and are intact at tag
+> `archive/pre-estate-focus`
+> ([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
+> This checkout no longer asserts the claim; the entry is kept as the
+> record of what was established and its bounds, checkable at the tag.
 
 ### Claim
 
@@ -194,6 +201,13 @@ traces, run record) and [proto/go/catalogr4/](proto/go/catalogr4/)
 
 ## Journal and chain walls — R0/R1, model pending
 
+> **PARTIALLY ARCHIVED 2026-08-15.** The journal half (CAS-append,
+> verify-on-read, `go/journal/` and its black-box tests) remains in
+> the tree and in the gate battery; its claim stands. The chain-wall
+> half — `src/stream.ts` ≡ `go/stream` over `fixtures/stream-wall.json`
+> and everything downstream of it — is archived at
+> `archive/pre-estate-focus` and no longer asserted by this checkout.
+
 ### Claim
 
 TypeScript and Go implementations of the stream algebra take equal
@@ -281,6 +295,11 @@ order; it does not enable the direct-get surface.
 and [docs/gauntlet/](docs/gauntlet/).
 
 ## KV meaning fold — combine and join — R0/R1 (TypeScript), R0 (Go)
+
+> **ARCHIVED 2026-08-15.** Both sides of this wall left the working
+> tree in the estate-focus purge and are intact at tag
+> `archive/pre-estate-focus`. This checkout no longer asserts the
+> claim; the entry is kept as the record, checkable at the tag.
 
 ### Claim
 
@@ -727,6 +746,13 @@ named next increments.
 run record in README).
 
 ## Workflow replay soundness — model-level R5 (Lean) + R2 (TLC)
+
+> **ARCHIVED 2026-08-15.** `verify/replay/` left the working tree in
+> the estate-focus purge and is intact at tag
+> `archive/pre-estate-focus`. This checkout no longer asserts the
+> claim; the entry is kept as the record, checkable at the tag. Its
+> theorems remain the floor tickets 008/020 must stand on if the
+> workflow lane returns.
 
 ### Claim
 

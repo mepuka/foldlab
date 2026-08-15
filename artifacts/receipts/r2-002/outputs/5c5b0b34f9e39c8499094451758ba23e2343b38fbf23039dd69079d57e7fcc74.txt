@@ -1,9 +1,0 @@
-```json
-{
-  "template": "Extract the final answer from the work above. It should be a single integer. Respond with ONLY that integer, nothing else:\n\n{{INPUT}}\n\nFinal answer:",
-  "params": {
-    "max_tokens": 256,
-    "thinking_budget": 0
-  }
-}
-```

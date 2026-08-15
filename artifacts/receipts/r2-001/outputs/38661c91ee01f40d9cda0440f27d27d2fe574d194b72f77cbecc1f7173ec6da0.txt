@@ -1,9 +1,0 @@
-```json
-{
-  "template": "<<<Carry out the plan step by step, showing all work. For each step:\n1. State what you are calculating\n2. Show the complete calculation\n3. Verify the result by checking it makes sense\n\nAfter completing all steps:\n- Verify your answer by substituting back into the original problem if possible\n- Check that your answer is a reasonable integer\n- State FINAL ANSWER: [integer] where [integer] is your numerical answer\n\n{{INPUT}}>>>",
-  "params": {
-    "max_tokens": 6000,
-    "thinking_budget": 5000
-  }
-}
-```

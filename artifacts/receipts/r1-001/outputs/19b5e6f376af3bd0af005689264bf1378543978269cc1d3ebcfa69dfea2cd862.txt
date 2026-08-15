@@ -1,9 +1,0 @@
-# Two-Step Plan to Solve the Defective Parts Problem
-
-1. **Calculate the total number of parts in the shipment:**
-   - Multiply: 25 pallets × 8 boxes per pallet × 6 parts per box = 1,200 total parts
-
-2. **Calculate the number of defective parts:**
-   - Multiply: 1,200 total parts × 14% (or 0.14) = 168 defective parts
-
-**Answer:** The shipment contains 168 defective parts.

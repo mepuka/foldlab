@@ -1,3 +1,0 @@
-```json
-{"template":"{{INPUT}}\n\nExtract and verify the final answer: Look at the work above. What is the final numerical answer to this problem? State it as a single integer with no other text.","params":{"max_tokens":512,"thinking_budget":1024}}
-```

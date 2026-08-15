@@ -1,1 +1,0 @@
-{"caps":{"max_calls":500,"max_output_tokens":300,"max_spend_usd_micro":5000000},"k":8,"l":6,"model":"claude-haiku-4-5-20251001","prices":{"input_micro_per_token":1,"output_micro_per_token":5},"q":20,"seed":"r1-001"}

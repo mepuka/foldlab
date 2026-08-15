@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test"
 import * as FastCheck from "fast-check"
-import { encodeFoldState } from "../src/algebra.ts"
 import { canonicalizeJson, decodeJson, encodeJsonValue, type JsonValue } from "../src/jcs.ts"
 
 const utf8 = (value: string): Uint8Array => new TextEncoder().encode(value)
@@ -36,12 +35,12 @@ const nonPlainObjectArbitrary: FastCheck.Arbitrary<JsonValue> = FastCheck.oneof(
 
 describe("RFC 8785 canonical JSON", () => {
   test("Appendix B serializes negative zero as zero", () => {
-    expect(encodeFoldState(-0)).toEqual({ ok: true, bytes: "0" })
+    expect(encodeJsonValue(-0)).toEqual({ ok: true, bytes: "0" })
   })
 
   test("every RFC 8785 Appendix B number vector matches", () => {
     for (const vector of rfc.numbers) {
-      const encoded = encodeFoldState(floatFromBits(vector.ieee754))
+      const encoded = encodeJsonValue(floatFromBits(vector.ieee754))
       if (vector.encoded === null) {
         expect(encoded.ok, `${vector.ieee754} (${vector.comment})`).toBe(false)
       } else {

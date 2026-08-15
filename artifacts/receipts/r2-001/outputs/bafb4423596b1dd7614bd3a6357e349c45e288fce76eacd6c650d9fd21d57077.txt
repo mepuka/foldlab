@@ -1,9 +1,0 @@
-```json
-{
-  "template": "<<<You are solving a competition math problem. Use extended reasoning to work through this carefully.\n\n{{INPUT}}\n\nNow solve the problem:\n1. State what you are calculating\n2. Show the complete calculation with all intermediate steps\n3. Verify each result makes logical sense\n4. Check your answer by substituting back into the original problem\n5. Confirm your final answer is a reasonable integer\n\nState FINAL ANSWER: [integer] where [integer] is your numerical answer>>>",
-  "params": {
-    "max_tokens": 8000,
-    "thinking_budget": 5500
-  }
-}
-```

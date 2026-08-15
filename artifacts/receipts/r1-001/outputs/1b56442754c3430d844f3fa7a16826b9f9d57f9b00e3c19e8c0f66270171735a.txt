@@ -1,7 +1,0 @@
-# Two-Step Plan to Solve the Problem
-
-1. **Calculate the total number of parts:** Multiply the number of pallets (37) by the number of boxes per pallet (6) by the number of parts per box (5) to find the total quantity of parts.
-   - 37 × 6 × 5 = 1,110 total parts
-
-2. **Calculate the number of defective parts:** Multiply the total number of parts (1,110) by the defective rate (10% or 0.10) to determine how many parts are defective.
-   - 1,110 × 0.10 = 111 defective parts

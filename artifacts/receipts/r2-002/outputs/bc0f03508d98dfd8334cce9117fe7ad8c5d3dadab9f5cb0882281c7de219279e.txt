@@ -1,9 +1,0 @@
-```json
-{
-  "template": "{{INPUT}}\n\nFinal Answer: ",
-  "params": {
-    "max_tokens": 256,
-    "thinking_budget": 0
-  }
-}
-```

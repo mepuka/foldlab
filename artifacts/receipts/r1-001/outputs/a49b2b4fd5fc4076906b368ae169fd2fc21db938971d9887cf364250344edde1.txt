@@ -1,1 +1,0 @@
-A shipment contains 16 pallets with 9 boxes per pallet and 7 parts per box, of which 17 percent are defective.
