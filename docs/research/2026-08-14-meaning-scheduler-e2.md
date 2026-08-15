@@ -174,3 +174,48 @@ head auditable. The next rung is not more theory — it is the same loop
 with (a) real cataloged types instead of a hand-made state, (b) the
 daemon's journal instead of an in-memory class, (c) a protocol value
 instead of hard-coded intents.
+
+---
+
+# Addendum: E2 part 2 — the consumer, and the stability law it discovered
+
+Same day. Code: scratch/meaning-scheduler/consumer.ts. Question asked by
+the operator: how does a SEPARATE program — not Effect, never having met
+the agents — use modeled agent state? Answer built: a plain-TS consumer
+whose only input is journal entries and whose entire logic is a
+predicate over epistemic states ("fulfill when the order's id and
+currency are settled"), watching for the predicate's rising edge over
+the fold.
+
+**The refutation that became a law.** The naive predicate — trigger when
+holes look "filled" — fired on THREE different meaning-points across the
+12 schedules. Cause: "filled" is not a stable property; a fill can later
+be disputed, so transient prefixes legitimately differ per
+linearization, and a hook on an unstable predicate inherits the
+schedule's clock. This is the CALM principle (consistency as logical
+monotonicity) surfacing in the toy unprompted: monotone hooks are
+coordination-free; non-monotone hooks must wait for the fence.
+
+**The stability law (new, for the protocol grill):** a consumer may hook
+meaning only on properties that cannot un-happen. Which properties those
+are is PROTOCOL knowledge, not consumer guesswork: a fence decision is
+stable forever; a fill is stable iff the protocol grants the hole a
+single seat (no second seat exists to contest it); everything else is
+transient. The protocol value therefore owes each hole a declared
+stability tier — this joins holes/seats/fence-rule as the fourth thing a
+protocol declares.
+
+**Result with the corrected predicate:** one meaning-point across all 12
+schedules (and one clock position, since the fence is the last mover) —
+the consumer inherited schedule independence without knowing schedules
+exist. The naive predicate is retained in consumer.ts as the negative
+control; run order: `bun run consumer.ts`.
+
+**Consequences recorded for the build:** (1) verify/moves gains a fifth
+theorem obligation — stability: decided states are invariant under all
+subsequent moves, and single-seat filled states likewise; (2) the
+`frontier`/watch tools must expose the stability tier of every reported
+state so consumers cannot accidentally hook transients; (3) "agent
+state" is now precisely: a HEAD (position in shared meaning) plus a WRIT
+(context: capabilities and type digests) — knowledge lives in the
+journal, rehydration is a fold, and an agent crash loses nothing.
