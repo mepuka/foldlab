@@ -120,6 +120,23 @@ theorem put_comm (s : State) {h₁ h₂ : HoleId} (hne : h₁ ≠ h₂)
     simp only [put]
     by_cases hk₁ : k = h₁ <;> by_cases hk₂ : k = h₂ <;> simp_all
 
+theorem put_put_same (s : State) (h : HoleId)
+    (x₁ x₂ : HState) (e₁ e₂ : CSet) :
+    put (put s h x₁ e₁) h x₂ e₂ = put s h x₂ e₂ := by
+  apply EpistemicState.ext
+  · funext k
+    by_cases hkh : k = h <;> simp [put, hkh]
+  · funext k
+    by_cases hkh : k = h <;> simp [put, hkh]
+
+theorem put_current (s : State) (h : HoleId) :
+    put s h (s.holes h) (s.evidence h) = s := by
+  apply EpistemicState.ext
+  · funext k
+    by_cases hkh : k = h <;> simp [put, hkh]
+  · funext k
+    by_cases hkh : k = h <;> simp [put, hkh]
+
 /-- Observable equality: journal provenance may differ while meaning agrees. -/
 def MeaningEq (s t : State) : Prop := s.holes = t.holes
 
@@ -131,8 +148,11 @@ def priorCandidates (s : State) (h : HoleId) : CSet :=
   | .filled _ => s.evidence h
   | .disputed cs => cs
 
-/-- The ratified move step. Empty resulting disputes are refused so admitted
-steps preserve the required nonempty-dispute invariant. -/
+/-- The ratified move step. An empty dispute offer is refused at every state:
+a move that asserts nothing must change nothing, so refusal depends only on
+the move and the meaning fold, never on arrival order or ghost evidence. A
+nonempty offer keeps the merged set nonempty, preserving the required
+nonempty-dispute invariant. -/
 def step (s : State) : Mv → Option State
   | .fill h v actor =>
       match s.holes h with
@@ -143,8 +163,10 @@ def step (s : State) : Mv → Option State
       match s.holes h with
       | .decided _ => none
       | _ =>
-          let merged := priorCandidates s h ∪ cs
-          if merged = ∅ then none else some (put s h (.disputed merged) merged)
+          if cs = ∅ then none
+          else
+            let merged := priorCandidates s h ∪ cs
+            some (put s h (.disputed merged) merged)
   | .decide h v =>
       match s.holes h with
       | .disputed cs =>
@@ -169,15 +191,6 @@ theorem stepK_refused {s : State} {m : Mv} (hstep : step s m = none) :
 def stepTrace : State → List Mv → Option State
   | s, [] => some s
   | s, m :: ms => (step s m).bind fun s' => stepTrace s' ms
-
-/-- Total primitive execution. The observation list is aligned with the input
-trace and records every admission and refusal without aborting later moves. -/
-def runK : State → List Mv → State × List (Mv × Bool)
-  | s, [] => (s, [])
-  | s, m :: ms =>
-      let outcome := stepK s m
-      let tail := runK outcome.1 ms
-      (tail.1, (m, outcome.2) :: tail.2)
 
 def thenStep (s : State) (m₁ m₂ : Mv) : Option State :=
   (step s m₁).bind fun s' => step s' m₂
@@ -264,15 +277,63 @@ theorem fill_conflict_refused (s : State) (h : HoleId) (v w : Value)
 def canonicalRepairCandidates (s : State) (h : HoleId) (v : Value)
     (actor : Holder) : CSet := s.evidence h ∪ {(v, actor)}
 
-/-- The fill-else-dispute composite. The clash repair includes every journaled
-proposal already known at the hole plus the refused fill. -/
+theorem canonicalRepairCandidates_ne_empty (s : State) (h : HoleId)
+    (v : Value) (actor : Holder) :
+    canonicalRepairCandidates s h v actor ≠ ∅ :=
+  finset_union_ne_empty_right Std.ExtTreeSet.insert_ne_empty
+
+theorem offer_ne_empty (base : CSet) (v : Value) (actor : Holder) :
+    base ∪ {(v, actor)} ≠ ∅ :=
+  finset_union_ne_empty_right Std.ExtTreeSet.insert_ne_empty
+
+/-- An empty offer is refused identically at every hole state. -/
+theorem step_dispute_empty (s : State) (h : HoleId) (actor : Holder) :
+    step s (.dispute h (∅ : CSet) actor) = none := by
+  cases hs : s.holes h <;> simp [step, hs]
+
+/-- A nonempty offer at an undecided hole always admits, merging with the
+prior candidates. -/
+theorem step_dispute_admitted (s : State) (h : HoleId) (cs : CSet)
+    (actor : Holder) (hcs : cs ≠ ∅) (hdec : ∀ v, s.holes h ≠ .decided v) :
+    step s (.dispute h cs actor) =
+      some (put s h (.disputed (priorCandidates s h ∪ cs))
+        (priorCandidates s h ∪ cs)) := by
+  cases hs : s.holes h with
+  | «open» | filled _ | disputed _ => simp [step, hs, hcs, priorCandidates]
+  | decided w => exact absurd hs (hdec w)
+
+/-- Inversion for an admitted dispute: the offer was nonempty, the hole was
+undecided, and the result is the canonical merge. -/
+theorem step_dispute_cases {s s' : State} {h : HoleId} {cs : CSet}
+    {actor : Holder} (hstep : step s (.dispute h cs actor) = some s') :
+    cs ≠ ∅ ∧ (∀ v, s.holes h ≠ .decided v) ∧
+      s' = put s h (.disputed (priorCandidates s h ∪ cs))
+        (priorCandidates s h ∪ cs) := by
+  have hdec : ∀ v, s.holes h ≠ .decided v := by
+    intro v hv
+    simp [step, hv] at hstep
+  have hcs : cs ≠ ∅ := by
+    intro hempty
+    subst hempty
+    rw [step_dispute_empty] at hstep
+    cases hstep
+  rw [step_dispute_admitted s h cs actor hcs hdec] at hstep
+  injection hstep with heq
+  exact ⟨hcs, hdec, heq.symm⟩
+
+/-- The fill-else-dispute composite under absorb semantics: fills are total.
+A clash or a live dispute absorbs the fill into the canonical pair-set; a
+same-value refill and a post-decision fill append the confirming pair to
+ghost journal evidence without touching meaning. -/
 def repair (s : State) : Mv → Option State
   | .fill h v actor =>
       match s.holes h with
+      | .open => step s (.fill h v actor)
       | .filled w =>
-          if w = v then some s
+          if w = v then some (put s h (.filled w) (s.evidence h ∪ {(v, actor)}))
           else step s (.dispute h (canonicalRepairCandidates s h v actor) actor)
-      | _ => step s (.fill h v actor)
+      | .disputed cs => step s (.dispute h (cs ∪ {(v, actor)}) actor)
+      | .decided w => some (put s h (.decided w) (s.evidence h ∪ {(v, actor)}))
   | m => step s m
 
 /-- The total refusal-aware repair step, defined solely by the ratified
@@ -329,33 +390,45 @@ theorem singletonCandidate_ne_empty (v : Value) (actor : Holder) :
 theorem candidate_mem_singleton (v : Value) (actor : Holder) :
     (v, actor) ∈ ({(v, actor)} : CSet) := Std.ExtTreeSet.mem_insert_self
 
+/-- The computed two-fill conflict run: fill, clash, canonical dispute. -/
+theorem run_pair_of_conflict (h : HoleId) (v w : Value) (a b : Holder)
+    (hne : v ≠ w) :
+    runRepair (initial : State) [.fill h v a, .fill h w b] =
+      some (put initial h
+        (.disputed (({(v, a)} : CSet) ∪ (({(v, a)} : CSet) ∪ {(w, b)})))
+        (({(v, a)} : CSet) ∪ (({(v, a)} : CSet) ∪ {(w, b)}))) := by
+  let first : CSet := {(v, a)}
+  let merged : CSet := first ∪ (first ∪ ({(w, b)} : CSet))
+  let filledState : State := put initial h (.filled v) first
+  have hstate : filledState.holes h = .filled v := by simp [filledState]
+  have hfirst : repair (initial : State) (.fill h v a) = some filledState := by
+    simp [repair, step, initial, filledState, first]
+  have hsecond : repair filledState (.fill h w b) =
+      some (put filledState h (.disputed merged) merged) := by
+    simp only [repair, hstate, if_neg hne]
+    rw [step_dispute_admitted filledState h _ b
+      (canonicalRepairCandidates_ne_empty filledState h w b)
+      (fun u hu => by simp [filledState] at hu)]
+    have hsets : priorCandidates filledState h ∪
+        canonicalRepairCandidates filledState h w b = merged := by
+      simp [priorCandidates, hstate, canonicalRepairCandidates, filledState,
+        merged, first]
+    rw [hsets]
+  simp only [runRepair, hfirst, Option.bind_some, hsecond]
+  rw [put_put_same]
+
 theorem run_conflicting_pair (h : HoleId) (v w : Value) (a b : Holder)
     (hne : v ≠ w) :
     ∃ (terminal : State) (cs : CSet),
       runRepair initial [.fill h v a, .fill h w b] = some terminal ∧
       terminal.holes h = .disputed cs ∧ candidatesContain cs v w := by
-  let first : CSet := {(v, a)}
-  let offered : CSet := first ∪ ({(w, b)} : CSet)
-  let merged : CSet := first ∪ offered
-  have hfirst : first ≠ ∅ := singletonCandidate_ne_empty v a
-  have hm : merged ≠ ∅ := finset_union_ne_empty_left hfirst
-  let filled : State := put initial h (.filled v) first
-  let terminal : State := put filled h (.disputed merged) merged
-  refine ⟨terminal, merged, ?_, by simp [terminal], ?_⟩
-  · simp [runRepair, repair, step, initial, canonicalRepairCandidates,
-      priorCandidates, put, hne, hm, first, offered, merged, filled, terminal]
-    exact hm
-  · constructor
-    · apply valueAppears_iff.mpr
-      refine ⟨a, ?_⟩
-      change (v, a) ∈ first ∪ (first ∪ ({(w, b)} : CSet))
-      exact Std.ExtTreeSet.mem_union_of_left (by
-        simpa [first] using candidate_mem_singleton (candidateCmp := candidateCmp) v a)
-    · apply valueAppears_iff.mpr
-      refine ⟨b, ?_⟩
-      change (w, b) ∈ first ∪ (first ∪ ({(w, b)} : CSet))
-      exact Std.ExtTreeSet.mem_union_of_right
-        (Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton w b))
+  refine ⟨_, ({(v, a)} : CSet) ∪ (({(v, a)} : CSet) ∪ {(w, b)}),
+    run_pair_of_conflict h v w a b hne, put_holes_same _ _ _ _, ?_, ?_⟩
+  · exact valueAppears_iff.mpr
+      ⟨a, Std.ExtTreeSet.mem_union_of_left (candidate_mem_singleton v a)⟩
+  · exact valueAppears_iff.mpr
+      ⟨b, Std.ExtTreeSet.mem_union_of_right
+        (Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton w b))⟩
 
 theorem perm_pair {α : Type u} {x y : α} {order : List α}
     (h : order.Perm [x, y]) : order = [x, y] ∨ order = [y, x] := by
@@ -456,6 +529,40 @@ theorem wf_put_decided {s : State} (hwf : WF s) (h : HoleId)
     simpa [put] using hmem
   · simpa [put, hkh] using hwf k
 
+/-- Appending a confirming same-value pair keeps a filled hole well-formed. -/
+theorem wf_put_filled_append {s : State} (hwf : WF s) (h : HoleId) {w : Value}
+    (hs : s.holes h = .filled w) (v : Value) (actor : Holder) (heq : w = v) :
+    WF (put s h (.filled w) (s.evidence h ∪ {(v, actor)})) := by
+  intro k
+  by_cases hkh : k = h
+  · subst k
+    simp only [put_holes_same, put_evidence_same]
+    have hfilled := hwf h
+    simp only [hs] at hfilled
+    refine ⟨finset_union_ne_empty_left hfilled.1, ?_⟩
+    intro candidate hmem
+    simp only [Std.ExtTreeSet.mem_union_iff] at hmem
+    rcases hmem with hold | hnew
+    · exact hfilled.2 candidate hold
+    · have hpair : (v, actor) = candidate := by simpa using hnew
+      rw [← hpair]
+      exact heq.symm
+  · simpa [put, hkh] using hwf k
+
+/-- Appending a ghost receipt keeps a decided hole well-formed. -/
+theorem wf_put_decided_append {s : State} (hwf : WF s) (h : HoleId) {w : Value}
+    (hs : s.holes h = .decided w) (v : Value) (actor : Holder) :
+    WF (put s h (.decided w) (s.evidence h ∪ {(v, actor)})) := by
+  intro k
+  by_cases hkh : k = h
+  · subst k
+    simp only [put_holes_same, put_evidence_same]
+    have hdec := hwf h
+    simp only [hs] at hdec
+    rcases valueAppears_iff.mp hdec with ⟨holder, hmem⟩
+    exact valueAppears_iff.mpr ⟨holder, Std.ExtTreeSet.mem_union_of_left hmem⟩
+  · simpa [put, hkh] using hwf k
+
 /-- Every admitted primitive step preserves well-formedness. -/
 theorem step_preserves_wf {s s' : State} {m : Mv}
     (hwf : WF s) (hstep : step s m = some s') : WF s' := by
@@ -475,50 +582,8 @@ theorem step_preserves_wf {s s' : State} {m : Mv}
     | disputed cs => simp [step, hs] at hstep
     | decided old => simp [step, hs] at hstep
   | dispute h cs actor =>
-    cases hs : s.holes h with
-    | decided old => simp [step, hs] at hstep
-    | «open» =>
-      let merged : CSet := ∅ ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_pos hempty] at hstep
-        contradiction
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        exact wf_put_disputed hwf h merged hempty
-    | filled old =>
-      let merged : CSet := s.evidence h ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_pos hempty] at hstep
-        contradiction
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        exact wf_put_disputed hwf h merged hempty
-    | disputed old =>
-      let merged : CSet := old ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_pos hempty] at hstep
-        contradiction
-      · change (if merged = ∅ then none else some (put s h (.disputed merged) merged)) =
-          some s' at hstep
-        rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        exact wf_put_disputed hwf h merged hempty
+    obtain ⟨hcs, hdec, rfl⟩ := step_dispute_cases hstep
+    exact wf_put_disputed hwf h _ (finset_union_ne_empty_right hcs)
   | decide h v =>
     cases hs : s.holes h with
     | «open» => simp [step, hs] at hstep
@@ -541,16 +606,21 @@ theorem repair_preserves_wf {s s' : State} {m : Mv}
   cases m with
   | fill h v actor =>
     cases hs : s.holes h with
-    | «open» | disputed _ | decided _ =>
+    | «open» | disputed _ =>
       simp only [repair, hs] at hrepair
       exact step_preserves_wf hwf hrepair
     | filled w =>
       by_cases heq : w = v
-      · simp [repair, hs, heq] at hrepair
+      · subst heq
+        simp [repair, hs] at hrepair
         subst s'
-        exact hwf
-      · simp [repair, hs, heq] at hrepair
+        exact wf_put_filled_append hwf h hs w actor rfl
+      · simp only [repair, hs, if_neg heq] at hrepair
         exact step_preserves_wf hwf hrepair
+    | decided w =>
+      simp [repair, hs] at hrepair
+      subst s'
+      exact wf_put_decided_append hwf h hs v actor
   | dispute h cs actor =>
     simp only [repair] at hrepair
     exact step_preserves_wf hwf hrepair
@@ -631,6 +701,27 @@ theorem wf_recorded_terminal {s : State} (hwf : WF s) {h : HoleId} {v : Value}
     simpa [TerminalCarries, hs] using (Or.inr hrecorded :
       chosen = v ∨ ValueAppears (s.evidence h) v)
 
+/-- Journal evidence sits inside the prior candidates at every undecided
+hole: empty at open, the journal itself at filled, the live set at disputed. -/
+theorem wf_evidence_subset_prior {s : State} (hwf : WF s) (h : HoleId)
+    (hdec : ∀ v, s.holes h ≠ .decided v) :
+    ∀ candidate ∈ s.evidence h, candidate ∈ priorCandidates s h := by
+  intro candidate hmem
+  cases hs : s.holes h with
+  | «open» =>
+    have hopen := hwf h
+    simp only [hs] at hopen
+    rw [hopen] at hmem
+    exact absurd hmem Std.ExtTreeSet.not_mem_empty
+  | filled w =>
+    simpa [priorCandidates, hs] using hmem
+  | disputed cs =>
+    have hdisputed := hwf h
+    simp only [hs] at hdisputed
+    rw [hdisputed.2] at hmem
+    simpa [priorCandidates, hs] using hmem
+  | decided w => exact absurd hs (hdec w)
+
 /-- Primitive steps never delete journal evidence from a well-formed state. -/
 theorem step_preserves_evidence {s s' : State} {m : Mv}
     (hwf : WF s) (hstep : step s m = some s') :
@@ -658,55 +749,12 @@ theorem step_preserves_evidence {s s' : State} {m : Mv}
     | disputed cs => simp [step, hs] at hstep
     | decided old => simp [step, hs] at hstep
   | dispute h cs actor =>
-    cases hs : s.holes h with
-    | decided old => simp [step, hs] at hstep
-    | «open» =>
-      let merged : CSet := ∅ ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        by_cases htarget : target = h
-        · subst target
-          have hopen := hwf h
-          simp only [hs] at hopen
-          rw [hopen] at hmem
-          exact absurd hmem Std.ExtTreeSet.not_mem_empty
-        · simpa [put, htarget] using hmem
-    | filled old =>
-      let merged : CSet := s.evidence h ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        by_cases htarget : target = h
-        · subst target
-          simpa [put] using (Std.ExtTreeSet.mem_union_of_left hmem :
-            candidate ∈ s.evidence h ∪ cs)
-        · simpa [put, htarget] using hmem
-    | disputed old =>
-      let merged : CSet := old ∪ cs
-      simp only [step, hs, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        by_cases htarget : target = h
-        · subst target
-          have hdisputed := hwf h
-          simp only [hs] at hdisputed
-          rw [hdisputed.2] at hmem
-          simpa [put] using (Std.ExtTreeSet.mem_union_of_left hmem :
-            candidate ∈ old ∪ cs)
-        · simpa [put, htarget] using hmem
+    obtain ⟨hcs, hdec, rfl⟩ := step_dispute_cases hstep
+    by_cases htarget : target = h
+    · subst target
+      simpa [put] using Std.ExtTreeSet.mem_union_of_left
+        (wf_evidence_subset_prior hwf h hdec candidate hmem)
+    · simpa [put, htarget] using hmem
   | decide h chosen =>
     cases hs : s.holes h with
     | «open» => simp [step, hs] at hstep
@@ -733,16 +781,31 @@ theorem repair_preserves_evidence {s s' : State} {m : Mv}
   cases m with
   | fill h v actor =>
     cases hs : s.holes h with
-    | «open» | disputed _ | decided _ =>
+    | «open» | disputed _ =>
       simp only [repair, hs] at hrepair
       exact step_preserves_evidence hwf hrepair
     | filled w =>
       by_cases heq : w = v
-      · simp [repair, hs, heq] at hrepair
+      · subst heq
+        simp [repair, hs] at hrepair
         subst s'
-        exact fun _ _ hm => hm
-      · simp [repair, hs, heq] at hrepair
+        intro target candidate hmem
+        by_cases htarget : target = h
+        · subst target
+          simp only [put_evidence_same]
+          exact Std.ExtTreeSet.mem_union_of_left hmem
+        · simpa [put, htarget] using hmem
+      · simp only [repair, hs, if_neg heq] at hrepair
         exact step_preserves_evidence hwf hrepair
+    | decided w =>
+      simp [repair, hs] at hrepair
+      subst s'
+      intro target candidate hmem
+      by_cases htarget : target = h
+      · subst target
+        simp only [put_evidence_same]
+        exact Std.ExtTreeSet.mem_union_of_left hmem
+      · simpa [put, htarget] using hmem
   | dispute h cs actor =>
     simp only [repair] at hrepair
     exact step_preserves_evidence hwf hrepair
@@ -797,60 +860,69 @@ theorem runRepair_preserves_evidence :
       exact ih next terminal (repair_preserves_wf hwf hri) hrun h candidate
         (repair_preserves_evidence hwf hri h candidate hmem)
 
-theorem repair_records_fill {s s' : State} (hwf : WF s)
-    (h : HoleId) (v : Value) (actor : Holder)
-    (hrepair : repair s (.fill h v actor) = some s') : Recorded s' h v := by
+/-- Fills are total: every hole state admits a repaired fill. -/
+theorem repair_fill_total (s : State) (h : HoleId) (v : Value) (actor : Holder) :
+    (repair s (.fill h v actor)).isSome := by
+  cases hs : s.holes h with
+  | «open» => simp [repair, hs, step]
+  | filled w =>
+    by_cases heq : w = v
+    · simp [repair, hs, heq]
+    · simp only [repair, hs, if_neg heq]
+      rw [step_dispute_admitted s h _ actor
+        (canonicalRepairCandidates_ne_empty s h v actor)
+        (fun u hu => by simp [hs] at hu)]
+      simp
+  | disputed cs =>
+    simp only [repair, hs]
+    rw [step_dispute_admitted s h _ actor (offer_ne_empty cs v actor)
+      (fun u hu => by simp [hs] at hu)]
+    simp
+  | decided w => simp [repair, hs]
+
+/-- A repaired fill journals the offered pair, at every hole state. -/
+theorem repair_fill_records_pair {s s' : State} {h : HoleId} {v : Value}
+    {actor : Holder} (hrepair : repair s (.fill h v actor) = some s') :
+    ((v, actor) : Cand) ∈ s'.evidence h := by
   cases hs : s.holes h with
   | «open» =>
     simp [repair, hs, step] at hrepair
     subst s'
-    unfold Recorded
-    simp only [put_evidence_same]
-    change ValueAppears ({(v, actor)} : CSet) v
-    apply valueAppears_iff.mpr
-    exact ⟨actor, candidate_mem_singleton v actor⟩
+    simpa [put] using candidate_mem_singleton v actor
   | filled w =>
     by_cases heq : w = v
     · simp [repair, hs, heq] at hrepair
       subst s'
-      have hfilled := hwf h
-      simp only [hs] at hfilled
-      let candidate := (s.evidence h).min hfilled.1
-      have hmem : candidate ∈ s.evidence h := Std.ExtTreeSet.min_mem
-      rcases candidate with ⟨value, holder⟩
-      have hv : value = v := (hfilled.2 (value, holder) hmem).trans heq
-      subst value
-      exact valueAppears_iff.mpr ⟨holder, hmem⟩
+      simpa [put] using
+        Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton v actor)
     · simp only [repair, hs, if_neg heq] at hrepair
-      cases hstep : step s (.dispute h (canonicalRepairCandidates s h v actor) actor) with
-      | none => simp [hstep] at hrepair
-      | some repaired =>
-        rw [hstep] at hrepair
-        injection hrepair with heqState
-        subst repaired
-        cases hs' : s.holes h with
-        | «open» => simp [hs] at hs'
-        | filled old =>
-          simp only [step, hs, priorCandidates] at hstep
-          let merged : CSet := s.evidence h ∪ canonicalRepairCandidates s h v actor
-          have hnonempty : merged ≠ ∅ := by
-            apply finset_union_ne_empty_right
-            apply finset_union_ne_empty_right
-            exact singletonCandidate_ne_empty v actor
-          rw [if_neg hnonempty] at hstep
-          injection hstep with heqState
-          subst s'
-          unfold Recorded
-          simp only [put_evidence_same]
-          change ValueAppears merged v
-          apply valueAppears_iff.mpr
-          refine ⟨actor, ?_⟩
-          exact Std.ExtTreeSet.mem_union_of_right
-            (Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton v actor))
-        | disputed cs => simp [hs] at hs'
-        | decided old => simp [hs] at hs'
-  | disputed cs => simp [repair, hs, step] at hrepair
-  | decided old => simp [repair, hs, step] at hrepair
+      rw [step_dispute_admitted s h _ actor
+        (canonicalRepairCandidates_ne_empty s h v actor)
+        (fun u hu => by simp [hs] at hu)] at hrepair
+      injection hrepair with heqState
+      subst s'
+      simp only [put_evidence_same]
+      exact Std.ExtTreeSet.mem_union_of_right
+        (Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton v actor))
+  | disputed cs =>
+    simp only [repair, hs] at hrepair
+    rw [step_dispute_admitted s h _ actor (offer_ne_empty cs v actor)
+      (fun u hu => by simp [hs] at hu)] at hrepair
+    injection hrepair with heqState
+    subst s'
+    simp only [put_evidence_same]
+    exact Std.ExtTreeSet.mem_union_of_right
+      (Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton v actor))
+  | decided w =>
+    simp [repair, hs] at hrepair
+    subst s'
+    simpa [put] using
+      Std.ExtTreeSet.mem_union_of_right (candidate_mem_singleton v actor)
+
+theorem repair_records_fill {s s' : State}
+    (h : HoleId) (v : Value) (actor : Holder)
+    (hrepair : repair s (.fill h v actor) = some s') : Recorded s' h v :=
+  valueAppears_iff.mpr ⟨actor, repair_fill_records_pair hrepair⟩
 
 theorem runRepair_fills_recorded :
     ∀ (is : List Mv) (start terminal : State), WF start →
@@ -869,7 +941,7 @@ theorem runRepair_fills_recorded :
       simp only [Option.bind_some] at hrun
       rcases List.mem_cons.mp hmem with heq | htail
       · subst i
-        rcases valueAppears_iff.mp (repair_records_fill hwf h v actor hri) with
+        rcases valueAppears_iff.mp (repair_records_fill h v actor hri) with
           ⟨recordHolder, hrecord⟩
         apply valueAppears_iff.mpr
         exact ⟨recordHolder, runRepair_preserves_evidence rest next terminal
@@ -898,44 +970,12 @@ theorem runRepairK_fills_recorded :
           · have hi : i = .fill h v actor := by
               exact congrArg Prod.fst hhead.symm
             subst i
-            rcases valueAppears_iff.mp (repair_records_fill hwf h v actor hrepair) with
+            rcases valueAppears_iff.mp (repair_records_fill h v actor hrepair) with
               ⟨recordHolder, hrecord⟩
             apply valueAppears_iff.mpr
             exact ⟨recordHolder, runRepairK_preserves_evidence rest next
               (repair_preserves_wf hwf hrepair) h (v, recordHolder) hrecord⟩
           · exact ih next (repair_preserves_wf hwf hrepair) h v actor htail
-
-/-- Every input move receives at least one aligned admitted/refused
-observation. This remains occurrence-safe for the no-loss theorem because any
-admitted occurrence is handled separately by `runRepairK_fills_recorded`. -/
-theorem runRepairK_observes :
-    ∀ (is : List Mv) (start : State) (m : Mv), m ∈ is →
-      (m, true) ∈ (runRepairK start is).2 ∨
-        (m, false) ∈ (runRepairK start is).2 := by
-  intro is
-  induction is with
-  | nil => simp
-  | cons i rest ih =>
-      intro start m hmem
-      rcases List.mem_cons.mp hmem with rfl | htail
-      · cases hresult : repairK start m with
-        | mk next admitted =>
-          cases admitted with
-          | false =>
-              right
-              simp [runRepairK, hresult]
-          | true =>
-              left
-              simp [runRepairK, hresult]
-      · rcases ih (repairK start i).1 m htail with hadmitted | hrefused
-        · left
-          change (m, true) ∈
-            (i, (repairK start i).2) :: (runRepairK (repairK start i).1 rest).2
-          exact List.mem_cons_of_mem _ hadmitted
-        · right
-          change (m, false) ∈
-            (i, (repairK start i).2) :: (runRepairK (repairK start i).1 rest).2
-          exact List.mem_cons_of_mem _ hrefused
 
 /-- **No loss:** every fill intent in every complete repaired interleaving is
 represented in the terminal meaning or in the dispute evidence retained by a
@@ -951,48 +991,33 @@ theorem no_loss (intents : List Mv) (terminal : State) (hrun : Runs intents term
     exact wf_recorded_terminal (runRepair_preserves_wf order initial terminal initial_wf hexec)
       hrecord
 
-/-- Every fill observed as admitted by the total runner survives in terminal
-meaning or retained decision evidence. -/
-theorem no_lossK_admitted (intents : List Mv) :
-    ∀ h v actor,
-      ((.fill h v actor, true) : Mv × Bool) ∈ (runRepairK initial intents).2 →
-        TerminalCarries (runRepairK initial intents).1 h v := by
-  intro h v actor hmem
-  exact wf_recorded_terminal (runRepairK_preserves_wf intents initial initial_wf)
-    (runRepairK_fills_recorded intents initial initial_wf h v actor hmem)
-
-/-- **Total no loss:** every fill in every arbitrary finite intent bag is
-accounted for by an explicit refusal observation or by terminal meaning / kept
-decision evidence. Unlike `no_loss`, the statement has no complete-admitted-run
-premise and therefore applies to traces containing refusals. -/
-theorem no_lossK (intents : List Mv) :
-    ∀ h v actor, (.fill h v actor : Mv) ∈ intents →
-      ((.fill h v actor, false) : Mv × Bool) ∈ (runRepairK initial intents).2 ∨
-        TerminalCarries (runRepairK initial intents).1 h v := by
-  intro h v actor hmem
-  rcases runRepairK_observes intents initial (.fill h v actor) hmem with
-    hadmitted | hrefused
-  · exact Or.inr (no_lossK_admitted intents h v actor hadmitted)
-  · exact Or.inl hrefused
+/-- **Strong no loss:** every fill in an arbitrary finite intent bag lands its
+exact holder-attributed pair in terminal journal evidence. No refusal
+disjunct: fills are total and the journal is monotone. -/
+theorem runRepairK_fill_pair :
+    ∀ (is : List Mv) (start : State), WF start →
+      ∀ h v actor, (.fill h v actor : Mv) ∈ is →
+        ((v, actor) : Cand) ∈ (runRepairK start is).1.evidence h := by
+  intro is
+  induction is with
+  | nil => simp
+  | cons i rest ih =>
+      intro start hwf h v actor hmem
+      rcases List.mem_cons.mp hmem with rfl | htail
+      · cases hrepair : repair start (.fill h v actor) with
+        | none =>
+            have htotal := repair_fill_total start h v actor
+            rw [hrepair] at htotal
+            simp at htotal
+        | some next =>
+            simp only [runRepairK, repairK, hrepair]
+            exact runRepairK_preserves_evidence rest next
+              (repair_preserves_wf hwf hrepair) h (v, actor)
+              (repair_fill_records_pair hrepair)
+      · simpa [runRepairK] using
+          ih (repairK start i).1 (repairK_preserves_wf hwf) h v actor htail
 
 /-! ## Repairable clashes: frame, diamond, and confluence -/
-
-theorem put_put_same (s : State) (h : HoleId)
-    (x₁ x₂ : HState) (e₁ e₂ : CSet) :
-    put (put s h x₁ e₁) h x₂ e₂ = put s h x₂ e₂ := by
-  apply EpistemicState.ext
-  · funext k
-    by_cases hkh : k = h <;> simp [put, hkh]
-  · funext k
-    by_cases hkh : k = h <;> simp [put, hkh]
-
-theorem put_current (s : State) (h : HoleId) :
-    put s h (s.holes h) (s.evidence h) = s := by
-  apply EpistemicState.ext
-  · funext k
-    by_cases hkh : k = h <;> simp [put, hkh]
-  · funext k
-    by_cases hkh : k = h <;> simp [put, hkh]
 
 def thenRepair (s : State) (m₁ m₂ : Mv) : Option State :=
   (repair s m₁).bind fun s' => repair s' m₂
@@ -1002,11 +1027,14 @@ def repairFillLocal (hs : HState) (ev : CSet) (v : Value) (actor : Holder) :
   match hs with
   | .open => some (.filled v, {(v, actor)})
   | .filled w =>
-      if w = v then some (.filled w, ev)
+      if w = v then some (.filled w, ev ∪ {(v, actor)})
       else
         let merged := ev ∪ (ev ∪ {(v, actor)})
-        if merged = ∅ then none else some (.disputed merged, merged)
-  | .disputed _ | .decided _ => none
+        some (.disputed merged, merged)
+  | .disputed cs =>
+      let merged := cs ∪ (cs ∪ {(v, actor)})
+      some (.disputed merged, merged)
+  | .decided w => some (.decided w, ev ∪ {(v, actor)})
 
 theorem repair_fill_eq_local (s : State) (h : HoleId) (v : Value) (actor : Holder) :
     repair s (.fill h v actor) =
@@ -1016,17 +1044,22 @@ theorem repair_fill_eq_local (s : State) (h : HoleId) (v : Value) (actor : Holde
   | «open» =>
     simp [repair, repairFillLocal, step, hs, canonicalRepairCandidates, priorCandidates]
   | disputed cs =>
-    simp [repair, repairFillLocal, step, hs, canonicalRepairCandidates, priorCandidates]
+    rw [repair.eq_def]
+    simp only [hs]
+    rw [step_dispute_admitted s h _ actor (offer_ne_empty cs v actor)
+      (fun w hw => by simp [hs] at hw)]
+    simp [repairFillLocal, priorCandidates, hs]
   | decided chosen =>
     simp [repair, repairFillLocal, step, hs, canonicalRepairCandidates, priorCandidates]
   | filled w =>
     by_cases heq : w = v
-    · simp [repair, repairFillLocal, step, hs, heq, canonicalRepairCandidates,
-        priorCandidates]
-      simpa [hs, heq] using (put_current s h).symm
-    · simp [repair, repairFillLocal, step, hs, heq, canonicalRepairCandidates,
-        priorCandidates]
-      split <;> rfl
+    · simp [repair, repairFillLocal, hs, heq]
+    · rw [repair.eq_def]
+      simp only [hs, if_neg heq]
+      rw [step_dispute_admitted s h _ actor
+        (canonicalRepairCandidates_ne_empty s h v actor)
+        (fun u hu => by simp [hs] at hu)]
+      simp [repairFillLocal, priorCandidates, hs, heq, canonicalRepairCandidates]
 
 /-- The independence/frame step: repaired fills on distinct named holes form
 the same diamond as primitive fills. -/
@@ -1041,8 +1074,8 @@ theorem repair_fill_comm (s : State) {h₁ h₂ : HoleId} (hne : h₁ ≠ h₂)
     simp [hlocal₁, hlocal₂, repair_fill_eq_local, put_holes_other,
       put_evidence_other, hne, hne', put_comm]
 
-/-- A refused conflicting fill has an admitted canonical dispute repair that
-retains both the old and new values with holder attribution. -/
+/-- A conflicting fill's canonical dispute repair retains both the old and
+new values with holder attribution. -/
 theorem clash_repair_admissible {s : State} (hwf : WF s) (h : HoleId)
     (v w : Value) (actor : Holder) (hstate : s.holes h = .filled w)
     (hne : v ≠ w) :
@@ -1053,13 +1086,17 @@ theorem clash_repair_admissible {s : State} (hwf : WF s) (h : HoleId)
   let merged : CSet := s.evidence h ∪ offered
   have hfilled := hwf h
   simp only [hstate] at hfilled
-  have hmerged : merged ≠ ∅ := finset_union_ne_empty_left hfilled.1
   have hwv : w ≠ v := Ne.symm hne
   let repaired : State := put s h (.disputed merged) merged
   refine ⟨repaired, merged, ?_, by simp [repaired], ?_⟩
-  · simp [repair, hstate, hwv, step, priorCandidates, offered, merged,
-      canonicalRepairCandidates, hmerged, repaired]
-    exact hmerged
+  · simp only [repair, hstate, if_neg hwv]
+    rw [step_dispute_admitted s h _ actor
+      (canonicalRepairCandidates_ne_empty s h v actor)
+      (fun u hu => by simp [hstate] at hu)]
+    have hsets : priorCandidates s h ∪ canonicalRepairCandidates s h v actor =
+        merged := by
+      simp [priorCandidates, hstate, merged, offered]
+    rw [hsets]
   · constructor
     · let oldCandidate := (s.evidence h).min hfilled.1
       have holdmem : oldCandidate ∈ s.evidence h := Std.ExtTreeSet.min_mem
@@ -1083,32 +1120,24 @@ theorem clash_repair_confluence (h : HoleId) (v w : Value) (a b : Holder)
     (hne : v ≠ w) :
     runRepair (initial : State) [.fill h v a, .fill h w b] =
       runRepair (initial : State) [.fill h w b, .fill h v a] := by
-  let left : CSet := {(v, a)}
-  let right : CSet := {(w, b)}
-  have hleft : left ∪ (left ∪ right) = left ∪ right := by
-    rw [← finset_union_assoc, finset_union_idem]
-  have hright : right ∪ (right ∪ left) = left ∪ right := by
-    rw [← finset_union_assoc, finset_union_idem, finset_union_comm]
-  have hneLeft : left ∪ (left ∪ right) ≠ ∅ :=
-    finset_union_ne_empty_left (singletonCandidate_ne_empty v a)
-  have hneRight : right ∪ (right ∪ left) ≠ ∅ :=
-    finset_union_ne_empty_left (singletonCandidate_ne_empty w b)
-  have hneLeft' :
-      ({(v, a)} : CSet) ∪ (({(v, a)} : CSet) ∪ ({(w, b)} : CSet)) ≠ ∅ := by
-    simpa [left, right] using hneLeft
-  have hneRight' :
-      ({(w, b)} : CSet) ∪ (({(w, b)} : CSet) ∪ ({(v, a)} : CSet)) ≠ ∅ := by
-    simpa [left, right] using hneRight
+  rw [run_pair_of_conflict h v w a b hne,
+    run_pair_of_conflict h w v b a (Ne.symm hne)]
   have hsets :
       ({(v, a)} : CSet) ∪ (({(v, a)} : CSet) ∪ ({(w, b)} : CSet)) =
         ({(w, b)} : CSet) ∪ (({(w, b)} : CSet) ∪ ({(v, a)} : CSet)) := by
-    calc
-      _ = left ∪ right := by simpa [left, right] using hleft
-      _ = right ∪ (right ∪ left) := hright.symm
-      _ = _ := by simp [left, right]
-  simp [runRepair, repair, step, initial, canonicalRepairCandidates,
-    priorCandidates, put_put_same, hne, Ne.symm hne, hneLeft', hneRight', hsets]
-  split <;> split <;> simp_all [hsets]
+    apply Std.ExtTreeSet.ext_mem
+    intro candidate
+    simp only [Std.ExtTreeSet.mem_union_iff]
+    constructor
+    · rintro (hm | hm | hm)
+      · exact Or.inr (Or.inr hm)
+      · exact Or.inr (Or.inr hm)
+      · exact Or.inl hm
+    · rintro (hm | hm | hm)
+      · exact Or.inr (Or.inr hm)
+      · exact Or.inr (Or.inr hm)
+      · exact Or.inl hm
+  rw [hsets]
 
 /-! ## Fence path independence for arbitrary pair-set rules -/
 
@@ -1154,8 +1183,10 @@ theorem runFromDisputed (h : HoleId) :
     have hmerge : base ∪ cs ≠ ∅ := finset_union_ne_empty_right hcs
     let next := put start h (.disputed (base ∪ cs)) (base ∪ cs)
     have hstep : repair start (.dispute h cs actor) = some next := by
-      simp only [repair, step, hstart, priorCandidates]
-      simp [hmerge, next]
+      simp only [repair]
+      rw [step_dispute_admitted start h cs actor hcs
+        (fun u hu => by simp [hstart] at hu)]
+      simp [priorCandidates, hstart, next]
     simp only [runRepair, hstep, Option.bind_some] at hrun
     rcases ih (base ∪ cs) next terminal hmerge (by simp [next]) (by simp [next])
       hrest hrun with ⟨hh, he⟩
@@ -1180,8 +1211,10 @@ theorem run_all_disputes (h : HoleId) (is : List Mv) (terminal : State)
       exact hcs
     let first : State := put initial h (.disputed ((∅ : CSet) ∪ cs)) ((∅ : CSet) ∪ cs)
     have hstep : repair initial (.dispute h cs actor) = some first := by
-      simp only [repair, step, initial, priorCandidates]
-      simp [hfirst, first, initial]
+      simp only [repair]
+      rw [step_dispute_admitted initial h cs actor hcs
+        (fun u hu => by simp [initial] at hu)]
+      simp [priorCandidates, initial, first]
     simp only [runRepair, hstep, Option.bind_some] at hrun
     rcases runFromDisputed h rest ((∅ : CSet) ∪ cs) first terminal hfirst
       (by simp [first]) (by simp [first]) hrest hrun with ⟨hh, he⟩
@@ -1404,38 +1437,8 @@ theorem step_preserves_other {s s' : State} (m : Mv) {h : HoleId}
     | decided old => simp [step, hk] at hstep
   | dispute k cs actor =>
     simp only [Move.hole] at hne
-    cases hk : s.holes k with
-    | decided old => simp [step, hk] at hstep
-    | «open» =>
-      let merged : CSet := ∅ ∪ cs
-      simp only [step, hk, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        simp [put, Ne.symm hne]
-    | filled old =>
-      let merged : CSet := s.evidence k ∪ cs
-      simp only [step, hk, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        simp [put, Ne.symm hne]
-    | disputed old =>
-      let merged : CSet := old ∪ cs
-      simp only [step, hk, priorCandidates] at hstep
-      by_cases hempty : merged = ∅
-      · rw [if_pos hempty] at hstep
-        contradiction
-      · rw [if_neg hempty] at hstep
-        injection hstep with heq
-        subst s'
-        simp [put, Ne.symm hne]
+    obtain ⟨hcs, hdec, rfl⟩ := step_dispute_cases hstep
+    simp [put, Ne.symm hne]
   | decide k value =>
     simp only [Move.hole] at hne
     cases hk : s.holes k with
@@ -1533,7 +1536,7 @@ theorem runRepair_single_seat (h : HoleId) (actor : Holder) (v : Value) :
             exact Or.inr (by simp [put])
           · simp [repair, hfilled] at hri
             subst next
-            exact Or.inr hfilled
+            exact Or.inr (put_holes_same start h _ _)
         · rw [repair_preserves_other i hi hri]
           exact hinv
       exact ih next terminal hrest hnext hrun
@@ -1551,6 +1554,381 @@ theorem single_seat_stable (h : HoleId) (actor : Holder) (v : Value)
       exact hseat i (hp.mem_iff.mp hi) hh
     exact runRepair_single_seat h actor v order initial terminal hseatOrder
       (Or.inl rfl) hexec
+
+/-! ## The wire diamond: fill and dispute moves commute unconditionally -/
+
+/-- Wire moves: fills and disputes. Decide enters only through the fence at
+close, so schedule-freedom is stated for this fragment. -/
+def WireMove : Mv → Prop
+  | .decide _ _ => False
+  | _ => True
+
+theorem wireMove_of_not_decide {m : Mv} (hm : ∀ h v, m ≠ .decide h v) :
+    WireMove m := by
+  cases m with
+  | fill _ _ _ => trivial
+  | dispute _ _ _ => trivial
+  | decide h v => exact absurd rfl (hm h v)
+
+def repairDisputeLocal (hs : HState) (ev : CSet) (cs : CSet) :
+    Option (HState × CSet) :=
+  match hs with
+  | .decided _ => none
+  | .open =>
+      if cs = ∅ then none
+      else some (.disputed ((∅ : CSet) ∪ cs), (∅ : CSet) ∪ cs)
+  | .filled _ =>
+      if cs = ∅ then none else some (.disputed (ev ∪ cs), ev ∪ cs)
+  | .disputed old =>
+      if cs = ∅ then none else some (.disputed (old ∪ cs), old ∪ cs)
+
+theorem repair_dispute_eq_local (s : State) (h : HoleId) (cs : CSet)
+    (actor : Holder) :
+    repair s (.dispute h cs actor) =
+      (repairDisputeLocal (s.holes h) (s.evidence h) cs).map
+        (fun result => put s h result.1 result.2) := by
+  cases hs : s.holes h with
+  | decided w => simp [repair, step, hs, repairDisputeLocal]
+  | «open» =>
+    by_cases hcs : cs = ∅
+    · subst hcs
+      simp only [repair]
+      rw [step_dispute_empty]
+      simp [repairDisputeLocal, hs]
+    · simp only [repair]
+      rw [step_dispute_admitted s h cs actor hcs (fun u hu => by simp [hs] at hu)]
+      simp [repairDisputeLocal, hs, hcs, priorCandidates]
+  | filled w =>
+    by_cases hcs : cs = ∅
+    · subst hcs
+      simp only [repair]
+      rw [step_dispute_empty]
+      simp [repairDisputeLocal, hs]
+    · simp only [repair]
+      rw [step_dispute_admitted s h cs actor hcs (fun u hu => by simp [hs] at hu)]
+      simp [repairDisputeLocal, hs, hcs, priorCandidates]
+  | disputed old =>
+    by_cases hcs : cs = ∅
+    · subst hcs
+      simp only [repair]
+      rw [step_dispute_empty]
+      simp [repairDisputeLocal, hs]
+    · simp only [repair]
+      rw [step_dispute_admitted s h cs actor hcs (fun u hu => by simp [hs] at hu)]
+      simp [repairDisputeLocal, hs, hcs, priorCandidates]
+
+/-- One wire move's effect on a single hole's (meaning, journal) cell;
+refusal is the identity. -/
+def cellApply (m : Mv) (cell : HState × CSet) : HState × CSet :=
+  match m with
+  | .fill _ v actor =>
+      match repairFillLocal cell.1 cell.2 v actor with
+      | some result => result
+      | none => cell
+  | .dispute _ cs _ =>
+      match repairDisputeLocal cell.1 cell.2 cs with
+      | some result => result
+      | none => cell
+  | .decide _ _ => cell
+
+/-- A total repaired wire step is exactly the local cell update at its hole. -/
+theorem repairK_cell (s : State) {m : Mv} (hw : WireMove m) :
+    (repairK s m).1 =
+      put s m.hole (cellApply m (s.holes m.hole, s.evidence m.hole)).1
+        (cellApply m (s.holes m.hole, s.evidence m.hole)).2 := by
+  cases m with
+  | decide h v => exact absurd hw (by simp [WireMove])
+  | fill h v actor =>
+    simp only [Move.hole]
+    cases hlocal : repairFillLocal (s.holes h) (s.evidence h) v actor with
+    | none =>
+      have hrepair : repair s (.fill h v actor) = none := by
+        rw [repair_fill_eq_local, hlocal]
+        rfl
+      simp only [repairK, hrepair, cellApply, hlocal]
+      exact (put_current s h).symm
+    | some result =>
+      have hrepair : repair s (.fill h v actor) =
+          some (put s h result.1 result.2) := by
+        rw [repair_fill_eq_local, hlocal]
+        rfl
+      simp only [repairK, hrepair, cellApply, hlocal]
+  | dispute h cs actor =>
+    simp only [Move.hole]
+    cases hlocal : repairDisputeLocal (s.holes h) (s.evidence h) cs with
+    | none =>
+      have hrepair : repair s (.dispute h cs actor) = none := by
+        rw [repair_dispute_eq_local, hlocal]
+        rfl
+      simp only [repairK, hrepair, cellApply, hlocal]
+      exact (put_current s h).symm
+    | some result =>
+      have hrepair : repair s (.dispute h cs actor) =
+          some (put s h result.1 result.2) := by
+        rw [repair_dispute_eq_local, hlocal]
+        rfl
+      simp only [repairK, hrepair, cellApply, hlocal]
+
+theorem cellApply_dispute_empty (h : HoleId) (actor : Holder)
+    (cell : HState × CSet) :
+    cellApply (.dispute h (∅ : CSet) actor) cell = cell := by
+  obtain ⟨hs, ev⟩ := cell
+  cases hs <;> simp [cellApply, repairDisputeLocal]
+
+/-- Pair-set equality by membership; the disjunction shuffle is decided by
+`grind`. -/
+local macro "cell_union_eq" : tactic =>
+  `(tactic|
+    (apply Std.ExtTreeSet.ext_mem
+     intro mem_candidate
+     simp only [Std.ExtTreeSet.mem_union_iff, Std.ExtTreeSet.not_mem_empty,
+       false_or, or_false]
+     grind))
+
+/-- **The wire diamond:** two wire moves commute on a single cell, with no
+well-formedness premise. Refusals are identities, admissions are joins, and
+joins commute. -/
+theorem cellApply_comm {m₁ m₂ : Mv} (hw₁ : WireMove m₁) (hw₂ : WireMove m₂)
+    (cell : HState × CSet) :
+    cellApply m₂ (cellApply m₁ cell) = cellApply m₁ (cellApply m₂ cell) := by
+  obtain ⟨hs, ev⟩ := cell
+  cases m₁ with
+  | decide h v => exact absurd hw₁ (by simp [WireMove])
+  | fill h₁ v₁ a₁ =>
+    cases m₂ with
+    | decide h v => exact absurd hw₂ (by simp [WireMove])
+    | fill h₂ v₂ a₂ =>
+      cases hs with
+      | «open» =>
+        by_cases h12 : v₁ = v₂
+        · simp [cellApply, repairFillLocal, h12]
+          all_goals cell_union_eq
+        · have h21 : v₂ ≠ v₁ := Ne.symm h12
+          simp [cellApply, repairFillLocal, h12, h21]
+          all_goals cell_union_eq
+      | filled w =>
+        by_cases hv₁ : w = v₁ <;> by_cases hv₂ : w = v₂
+        · have h12 : v₁ = v₂ := hv₁.symm.trans hv₂
+          simp [cellApply, repairFillLocal, hv₁, h12]
+          all_goals cell_union_eq
+        · have h12 : ¬ v₁ = v₂ := fun heq => hv₂ (hv₁.trans heq)
+          simp [cellApply, repairFillLocal, hv₁, hv₂, h12]
+          all_goals cell_union_eq
+        · have h21 : ¬ v₂ = v₁ := fun heq => hv₁ (hv₂.trans heq)
+          simp [cellApply, repairFillLocal, hv₁, hv₂, h21]
+          all_goals cell_union_eq
+        · simp [cellApply, repairFillLocal, hv₁, hv₂]
+          all_goals cell_union_eq
+      | disputed d =>
+        simp [cellApply, repairFillLocal]
+        all_goals cell_union_eq
+      | decided w =>
+        simp [cellApply, repairFillLocal]
+        all_goals cell_union_eq
+    | dispute h₂ cs₂ a₂ =>
+      by_cases hcs : cs₂ = ∅
+      · subst hcs
+        rw [cellApply_dispute_empty, cellApply_dispute_empty]
+      · cases hs with
+        | «open» =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+        | filled w =>
+          by_cases hwv : w = v₁ <;>
+            simp [cellApply, repairFillLocal, repairDisputeLocal, hcs, hwv] <;>
+            all_goals cell_union_eq
+        | disputed d =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+        | decided w =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+  | dispute h₁ cs₁ a₁ =>
+    cases m₂ with
+    | decide h v => exact absurd hw₂ (by simp [WireMove])
+    | fill h₂ v₂ a₂ =>
+      by_cases hcs : cs₁ = ∅
+      · subst hcs
+        rw [cellApply_dispute_empty, cellApply_dispute_empty]
+      · cases hs with
+        | «open» =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+        | filled w =>
+          by_cases hwv : w = v₂ <;>
+            simp [cellApply, repairFillLocal, repairDisputeLocal, hcs, hwv] <;>
+            all_goals cell_union_eq
+        | disputed d =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+        | decided w =>
+          simp [cellApply, repairFillLocal, repairDisputeLocal, hcs]
+          all_goals cell_union_eq
+    | dispute h₂ cs₂ a₂ =>
+      by_cases hcs₁ : cs₁ = ∅
+      · subst hcs₁
+        rw [cellApply_dispute_empty, cellApply_dispute_empty]
+      · by_cases hcs₂ : cs₂ = ∅
+        · subst hcs₂
+          rw [cellApply_dispute_empty, cellApply_dispute_empty]
+        · cases hs with
+          | «open» =>
+            simp [cellApply, repairDisputeLocal, hcs₁, hcs₂]
+            all_goals cell_union_eq
+          | filled w =>
+            simp [cellApply, repairDisputeLocal, hcs₁, hcs₂]
+            all_goals cell_union_eq
+          | disputed d =>
+            simp [cellApply, repairDisputeLocal, hcs₁, hcs₂]
+            all_goals cell_union_eq
+          | decided w =>
+            simp [cellApply, repairDisputeLocal, hcs₁, hcs₂]
+            all_goals cell_union_eq
+
+/-- Wire moves commute at the state level, same hole or different. -/
+theorem repairK_comm (s : State) {m₁ m₂ : Mv} (hw₁ : WireMove m₁)
+    (hw₂ : WireMove m₂) :
+    (repairK (repairK s m₁).1 m₂).1 = (repairK (repairK s m₂).1 m₁).1 := by
+  by_cases hh : m₁.hole = m₂.hole
+  · rw [repairK_cell s hw₁, repairK_cell _ hw₂, repairK_cell s hw₂,
+      repairK_cell _ hw₁, ← hh]
+    have heta : ∀ p : HState × CSet, ((p.1, p.2) : HState × CSet) = p :=
+      fun _ => rfl
+    simp only [put_holes_same, put_evidence_same, put_put_same, heta]
+    rw [cellApply_comm hw₁ hw₂]
+  · have hne' : m₂.hole ≠ m₁.hole := Ne.symm hh
+    rw [repairK_cell s hw₁, repairK_cell _ hw₂, repairK_cell s hw₂,
+      repairK_cell _ hw₁,
+      put_holes_other s hne', put_evidence_other s hne',
+      put_holes_other s hh, put_evidence_other s hh,
+      put_comm s hh]
+
+/-- **Wire confluence:** the total runner's terminal state — meaning and
+journal both — is invariant under permutation of any fill/dispute bag. -/
+theorem runRepairK_perm {l₁ l₂ : List Mv} (hperm : l₁.Perm l₂) :
+    (∀ m ∈ l₁, WireMove m) →
+      ∀ s : State, (runRepairK s l₁).1 = (runRepairK s l₂).1 := by
+  induction hperm with
+  | nil => intro _ s; rfl
+  | cons x hperm ih =>
+    intro hw s
+    simp only [runRepairK]
+    exact ih (fun m hm => hw m (List.mem_cons_of_mem _ hm)) _
+  | swap x y l =>
+    intro hw s
+    simp only [runRepairK]
+    rw [repairK_comm s (hw y List.mem_cons_self)
+      (hw x (List.mem_cons_of_mem _ List.mem_cons_self))]
+  | trans h₁₂ h₂₃ ih₁ ih₂ =>
+    intro hw s
+    rw [ih₁ hw s, ih₂ (fun m hm => hw m (h₁₂.mem_iff.mpr hm)) s]
+
+/-- Decisions survive totalization: no repaired move, admitted or refused,
+revises a decided hole. -/
+theorem repairK_decided_stable (s : State) (m : Mv) (h : HoleId) (v : Value)
+    (hdec : s.holes h = .decided v) : (repairK s m).1.holes h = .decided v := by
+  cases hrepair : repair s m with
+  | none => simpa [repairK, hrepair] using hdec
+  | some s' =>
+    simp only [repairK, hrepair]
+    cases m with
+    | fill h' v' actor =>
+      by_cases hh : h' = h
+      · subst hh
+        simp only [repair, hdec] at hrepair
+        injection hrepair with heq
+        subst s'
+        exact put_holes_same s h' _ _
+      · rw [repair_preserves_other _ (by simpa [Move.hole] using hh) hrepair, hdec]
+    | dispute h' cs actor =>
+      by_cases hh : h' = h
+      · subst hh
+        obtain ⟨hcs, hdec', rfl⟩ :=
+          step_dispute_cases (show step s (.dispute h' cs actor) = some s' from hrepair)
+        exact absurd hdec (hdec' v)
+      · rw [repair_preserves_other _ (by simpa [Move.hole] using hh) hrepair, hdec]
+    | decide h' v' =>
+      by_cases hh : h' = h
+      · subst hh
+        simp [repair, step, hdec] at hrepair
+      · rw [repair_preserves_other _ (by simpa [Move.hole] using hh) hrepair, hdec]
+
+/-! ## Refusal characterization and observation alignment -/
+
+/-- The total runner marks a move refused exactly when the calculus has no
+transition for it. -/
+theorem repairK_false_iff (s : State) (m : Mv) :
+    (repairK s m).2 = false ↔ repair s m = none := by
+  cases hrepair : repair s m with
+  | none => simp [repairK, hrepair]
+  | some s' => simp [repairK, hrepair]
+
+/-- The total runner admits with result `s'` exactly when the calculus steps
+to `s'`. -/
+theorem repairK_iff_admitted (s s' : State) (m : Mv) :
+    repairK s m = (s', true) ↔ repair s m = some s' := by
+  cases hrepair : repair s m with
+  | none => simp [repairK, hrepair]
+  | some s'' => simp [repairK, hrepair, eq_comm]
+
+theorem repair_fill_ne_none (s : State) (h : HoleId) (v : Value)
+    (actor : Holder) : repair s (.fill h v actor) ≠ none := by
+  intro hnone
+  have htotal := repair_fill_total s h v actor
+  rw [hnone] at htotal
+  simp at htotal
+
+theorem repair_dispute_none_iff (s : State) (h : HoleId) (cs : CSet)
+    (actor : Holder) :
+    repair s (.dispute h cs actor) = none ↔
+      (∃ v, s.holes h = .decided v) ∨ cs = ∅ := by
+  constructor
+  · intro hnone
+    by_cases hcs : cs = ∅
+    · exact Or.inr hcs
+    · cases hsh : s.holes h with
+      | decided w => exact Or.inl ⟨w, rfl⟩
+      | «open» =>
+        simp only [repair] at hnone
+        rw [step_dispute_admitted s h cs actor hcs
+          (fun u hu => by simp [hsh] at hu)] at hnone
+        cases hnone
+      | filled w =>
+        simp only [repair] at hnone
+        rw [step_dispute_admitted s h cs actor hcs
+          (fun u hu => by simp [hsh] at hu)] at hnone
+        cases hnone
+      | disputed old =>
+        simp only [repair] at hnone
+        rw [step_dispute_admitted s h cs actor hcs
+          (fun u hu => by simp [hsh] at hu)] at hnone
+        cases hnone
+  · intro hd
+    rcases hd with ⟨v, hv⟩ | hcs
+    · simp [repair, step, hv]
+    · subst hcs
+      simp only [repair]
+      exact step_dispute_empty s h actor
+
+theorem repair_decide_none_iff (s : State) (h : HoleId) (v : Value) :
+    repair s (.decide h v) = none ↔
+      match s.holes h with
+      | .disputed cs => ¬ ValueAppears cs v
+      | _ => True := by
+  show step s (.decide h v) = none ↔ _
+  cases hsh : s.holes h with
+  | disputed cs => by_cases hva : ValueAppears cs v <;> simp [step, hsh, hva]
+  | «open» => simp [step, hsh]
+  | filled w => simp [step, hsh]
+  | decided w => simp [step, hsh]
+
+/-- Observation alignment: the receipt list is the input list, one aligned
+admitted/refused bit per intent, never aborting. -/
+theorem runRepairK_alignment (s : State) (l : List Mv) :
+    (runRepairK s l).2.map Prod.fst = l := by
+  induction l generalizing s with
+  | nil => rfl
+  | cons m ms ih => simp [runRepairK, ih]
 
 /-! ## IC4: no fair resolute fence -/
 

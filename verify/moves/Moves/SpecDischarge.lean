@@ -1,4 +1,4 @@
-import Moves.Spec
+import Moves.SpecProofs
 
 namespace Moves
 
@@ -6,7 +6,8 @@ universe uH uA uV
 
 variable {HoleId : Type uH} {Holder : Type uA} {Value : Type uV}
 variable {candidateCmp : Candidate Value Holder → Candidate Value Holder → Ordering}
-variable [DecidableEq HoleId] [DecidableEq Value]
+variable [FiniteCarrier HoleId] [DecidableEq HoleId]
+variable [DecidableEq Holder] [DecidableEq Value]
 variable [Std.TransCmp candidateCmp] [Std.LawfulEqCmp candidateCmp]
 
 /-
