@@ -628,8 +628,8 @@ theorem repair_preserves_wf {s s' : State} {m : Mv}
     simp only [repair] at hrepair
     exact step_preserves_wf hwf hrepair
 
-/-- Total repaired steps preserve well-formedness whether they admit or
-refuse. -/
+/-- Total repaired steps preserve well-formedness on admission and on
+refusal alike. -/
 theorem repairK_preserves_wf {s : State} {m : Mv} (hwf : WF s) :
     WF (repairK s m).1 := by
   cases hrepair : repair s m with

@@ -8,57 +8,63 @@ if ! command -v lake >/dev/null 2>&1; then
   echo "FAIL: lake not found. Install elan (e.g. 'scoop install elan')." >&2
   exit 2
 fi
+
+# ---- Frozen-spec pin: Spec.lean changes require a Rev re-pin ----
 expected_spec_sha256="36c3203e3e6edbcc15f7561ab91d1e2d0b03cf40bf6e23a8f9c58e47be2b5b43"
 actual_spec_sha256=$(sha256sum Moves/Spec.lean | cut -d ' ' -f 1)
 if [[ "$actual_spec_sha256" != "$expected_spec_sha256" ]]; then
   echo "GATE: FAIL — Spec.lean is frozen; changes require a Rev re-pin" >&2
   exit 1
 fi
-if grep -rnE '(:=|by|<;>|;|\|)[[:space:]]*(sorry|admit)\b|^[[:space:]]*(sorry|admit)[[:space:]]*$|^[[:space:]]*axiom[[:space:]]' Moves Moves.lean 2>/dev/null; then
-  echo "GATE: FAIL — lean sources contain a sorry/admit tactic or an axiom decl (a warning, not a build error)"; exit 1
+
+# ---- Word-boundary greps: `exact sorry`, mid-line `admit`, and
+# `private axiom` all match. The bare words may not appear anywhere in
+# the sources, comments included, so evasion by phrasing is impossible.
+if grep -rnE "(^|[^A-Za-z0-9_'])(sorry|admit)($|[^A-Za-z0-9_'])" Moves Moves.lean 2>/dev/null; then
+  echo "GATE: FAIL — lean sources mention sorry/admit" >&2
+  exit 1
 fi
+if grep -rnE "(^|[^A-Za-z0-9_'])axiom($|[^A-Za-z0-9_'])" Moves Moves.lean 2>/dev/null; then
+  echo "GATE: FAIL — lean sources mention an axiom declaration" >&2
+  exit 1
+fi
+
 if lake build; then
   echo "GATE: build passed"
 else
   echo "GATE: FAIL"; exit 1
 fi
 
-# A compiled evaluator can add theorem axioms without declaring an `axiom` in
-# source, so the source grep alone is insufficient. Keep this list aligned with
-# the headline laws and negative controls documented in README.md.
+# ---- Axiom footprint over the rostered results. A compiled evaluator can
+# add theorem axioms without declaring `axiom` in source, so the source
+# grep alone is insufficient. Keep this roster aligned with README.md.
+roster=(
+  fill_comm fill_conflict_refused stepK_agrees stepK_refused
+  repairK_agrees repairK_refused conflict_surfaces step_preserves_wf
+  runRepairK_preserves_wf no_loss clash_repair_confluence
+  fence_deterministic min_fence_deterministic plurality_fence_deterministic
+  decided_stable single_seat_stable no_fair_resolute_fence
+  clobber_diverges lww_converges lww_loses filled_unstable
+  fence_manipulable runRepairK_perm runRepairK_fill_pair
+  spec_no_loss_strong spec_meaning_confluent spec_evidence_confluent
+  spec_fence_schedule_free spec_refusal_iff spec_alignment
+  spec_repairK_iff_admitted spec_runRepairK_preserves_wf
+  spec_decided_stable_total spec_mutant_legacy_killed_by_L1
+  spec_mutant_legacy_killed_by_L2 spec_mutant_refuseAll_killed
+  spec_witness_three_fill spec_witness_confirm_recorded spec_discharged
+)
+
 axiom_check=$(mktemp "./.axiom-check.XXXXXX.lean") || {
   echo "GATE: FAIL — could not create axiom-footprint check" >&2
   exit 1
 }
 trap 'rm -f "$axiom_check"' EXIT
-cat >"$axiom_check" <<'LEAN'
-import Moves
-
-#print axioms Moves.fill_comm
-#print axioms Moves.fill_conflict_refused
-#print axioms Moves.stepK_agrees
-#print axioms Moves.stepK_refused
-#print axioms Moves.repairK_agrees
-#print axioms Moves.repairK_refused
-#print axioms Moves.conflict_surfaces
-#print axioms Moves.step_preserves_wf
-#print axioms Moves.runRepairK_preserves_wf
-#print axioms Moves.no_loss
-#print axioms Moves.no_lossK
-#print axioms Moves.clash_repair_confluence
-#print axioms Moves.fence_deterministic
-#print axioms Moves.min_fence_deterministic
-#print axioms Moves.plurality_fence_deterministic
-#print axioms Moves.decided_stable
-#print axioms Moves.single_seat_stable
-#print axioms Moves.no_fair_resolute_fence
-#print axioms Moves.clobber_diverges
-#print axioms Moves.lww_converges
-#print axioms Moves.lww_loses
-#print axioms Moves.filled_unstable
-#print axioms Moves.fence_manipulable
-#print axioms Moves.refusal_vacuity_exposed
-LEAN
+{
+  echo "import Moves"
+  for name in "${roster[@]}"; do
+    echo "#print axioms Moves.$name"
+  done
+} > "$axiom_check"
 
 if ! axiom_output=$(lake env lean "$axiom_check" 2>&1); then
   printf '%s\n' "$axiom_output" >&2
@@ -67,9 +73,9 @@ if ! axiom_output=$(lake env lean "$axiom_check" 2>&1); then
 fi
 
 report_count=$(printf '%s\n' "$axiom_output" | grep -c "^'Moves\.")
-if [[ "$report_count" -ne 24 ]]; then
+if [[ "$report_count" -ne "${#roster[@]}" ]]; then
   printf '%s\n' "$axiom_output" >&2
-  echo "GATE: FAIL — expected 24 axiom reports, got $report_count" >&2
+  echo "GATE: FAIL — expected ${#roster[@]} axiom reports, got $report_count" >&2
   exit 1
 fi
 
@@ -87,4 +93,25 @@ if [[ -n "$unexpected_axioms" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (move-calculus proofs and axiom footprint check)"
+# ---- Orphan rule: every public theorem in the sources is rostered above
+# or listed with a reason in gate-exclusions.txt. A theorem the gate has
+# never heard of is a hole, not a freebie.
+declare -A covered
+for name in "${roster[@]}"; do covered["$name"]=1; done
+while IFS= read -r line; do
+  [[ -z "$line" || "$line" == \#* ]] && continue
+  covered["${line%% *}"]=1
+done < gate-exclusions.txt
+
+orphans=""
+while IFS= read -r name; do
+  if [[ -z "${covered[$name]:-}" ]]; then
+    orphans+="$name"$'\n'
+  fi
+done < <(grep -rhoE "^theorem [A-Za-z0-9_']+" Moves Moves.lean | awk '{print $2}' | sort -u)
+if [[ -n "$orphans" ]]; then
+  printf 'GATE: FAIL — public theorems neither rostered nor excluded:\n%s' "$orphans" >&2
+  exit 1
+fi
+
+echo "GATE: PASS (move-calculus proofs, axiom footprint, spec pin, orphan rule)"

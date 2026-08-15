@@ -1,0 +1,80 @@
+# Gate exclusions: public theorems deliberately not in the axiom-footprint
+# roster. First token is the theorem name; the rest of the line is the
+# reason. Every public theorem must appear here or in the run.sh roster,
+# or the gate fails (the orphan rule).
+candidateCmp_lawful SpecCarrier instance witness for the frozen carrier
+candidate_mem_singleton singleton membership helper
+canonicalRepairCandidates_ne_empty offer nonemptiness helper
+cellApply_comm wire-diamond cell algebra behind runRepairK_perm
+cellApply_dispute_empty wire-diamond cell algebra behind runRepairK_perm
+clash_repair_admissible clash-repair witness beside rostered conflict_surfaces
+disputeUnion_perm dispute-union permutation lemma behind fence_deterministic
+dispute_merge_semilattice packaged semilattice triple for callers and docs
+finset_union_assoc pair-set semilattice scaffolding behind the confluence laws
+finset_union_comm pair-set semilattice scaffolding behind the confluence laws
+finset_union_empty_left pair-set semilattice scaffolding behind the confluence laws
+finset_union_empty_right pair-set semilattice scaffolding behind the confluence laws
+finset_union_idem pair-set semilattice scaffolding behind the confluence laws
+finset_union_left_comm pair-set semilattice scaffolding behind the confluence laws
+finset_union_ne_empty_left pair-set semilattice scaffolding behind the confluence laws
+finset_union_ne_empty_right pair-set semilattice scaffolding behind the confluence laws
+initial_wf base-case well-formedness for the runners
+meaningEq_refl MeaningEq reflexivity helper
+minBetter_eq_left_or_right min-fence fold membership scaffolding
+minCandidate_mem min-fence fold membership scaffolding
+minFold_mem min-fence fold membership scaffolding
+offer_ne_empty offer nonemptiness helper
+perm_pair two-element permutation enumeration helper
+pluralityBetter_eq_left_or_right plurality-fence fold membership scaffolding
+pluralityCandidate_mem plurality-fence fold membership scaffolding
+pluralityFold_mem plurality-fence fold membership scaffolding
+put_comm state-update frame algebra behind the diamond
+put_current state-update frame algebra behind the diamond
+put_put_same state-update frame algebra behind the diamond
+repairK_cell total-runner step lemmas subsumed by rostered spec results
+repairK_comm total-runner step lemmas subsumed by rostered spec results
+repairK_decided_stable total-runner step lemmas subsumed by rostered spec results
+repairK_false_iff total-runner step lemmas subsumed by rostered spec results
+repairK_iff_admitted total-runner step lemmas subsumed by rostered spec results
+repairK_preserves_evidence total-runner step lemmas subsumed by rostered spec results
+repairK_preserves_wf total-runner step lemmas subsumed by rostered spec results
+repair_decide_none_iff repair-layer characterization scaffolding for the spec laws
+repair_dispute_eq_local repair-layer characterization scaffolding for the spec laws
+repair_dispute_none_iff repair-layer characterization scaffolding for the spec laws
+repair_fill_comm repair-layer characterization scaffolding for the spec laws
+repair_fill_eq_local repair-layer characterization scaffolding for the spec laws
+repair_fill_ne_none repair-layer characterization scaffolding for the spec laws
+repair_fill_records_pair repair-layer characterization scaffolding for the spec laws
+repair_fill_total repair-layer characterization scaffolding for the spec laws
+repair_preserves_evidence repair-layer characterization scaffolding for the spec laws
+repair_preserves_other repair-layer characterization scaffolding for the spec laws
+repair_preserves_wf repair-layer characterization scaffolding for the spec laws
+repair_records_fill repair-layer characterization scaffolding for the spec laws
+runFromDisputed dispute-run accumulation behind fence_deterministic
+runRepairK_alignment total-runner preservation chain behind rostered laws
+runRepairK_fills_recorded total-runner preservation chain behind rostered laws
+runRepairK_preserves_evidence total-runner preservation chain behind rostered laws
+runRepair_append partial-runner preservation chain behind no_loss
+runRepair_fills_recorded partial-runner preservation chain behind no_loss
+runRepair_preserves_evidence partial-runner preservation chain behind no_loss
+runRepair_preserves_wf partial-runner preservation chain behind no_loss
+runRepair_single_seat partial-runner preservation chain behind no_loss
+run_all_disputes computed-run equations feeding rostered clash and fence results
+run_conflicting_pair computed-run equations feeding rostered clash and fence results
+run_pair_of_conflict computed-run equations feeding rostered clash and fence results
+singletonCandidate_ne_empty singleton nonemptiness helper
+step_dispute_admitted primitive-step inversion and preservation scaffolding
+step_dispute_cases primitive-step inversion and preservation scaffolding
+step_dispute_empty primitive-step inversion and preservation scaffolding
+step_preserves_evidence primitive-step inversion and preservation scaffolding
+step_preserves_other primitive-step inversion and preservation scaffolding
+twoCandidateValues two-candidate value enumeration behind IC4
+valueAppears_iff membership bridge between ValueAppears and pairs
+wf_evidence_subset_prior well-formedness preservation chain behind no-loss and L8
+wf_put_decided well-formedness preservation chain behind no-loss and L8
+wf_put_decided_append well-formedness preservation chain behind no-loss and L8
+wf_put_disputed well-formedness preservation chain behind no-loss and L8
+wf_put_filled well-formedness preservation chain behind no-loss and L8
+wf_put_filled_append well-formedness preservation chain behind no-loss and L8
+wf_recorded_terminal well-formedness preservation chain behind no-loss and L8
+wireMove_of_not_decide bridge from FillDisputeOnly to WireMove
