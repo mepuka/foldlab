@@ -2205,7 +2205,9 @@ scheme exists or a dogfood run closes a real session; consult this
 entry before either. **Load-bearing? yes** — close is the protocol's
 one fence, and a silent `abandoned` is a wrong outcome, not a refusal.
 
-## DEV-673 (numbers task-local until merge, per the numbering rule)
+## DEV-673 (assigned at merge e296c8031, 2026-08-15: D84 was the last
+heading, so the task-local D85–D86 stand as the final numbers — no
+renumbering)
 
 ### D85. A fill absorbs at every hole state; refusal is enumerated
 
