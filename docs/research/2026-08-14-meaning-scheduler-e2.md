@@ -219,3 +219,35 @@ state so consumers cannot accidentally hook transients; (3) "agent
 state" is now precisely: a HEAD (position in shared meaning) plus a WRIT
 (context: capabilities and type digests) — knowledge lives in the
 journal, rehydration is a fold, and an agent crash loses nothing.
+
+---
+
+# Addendum 2: the by-field refutation (predicted by literature, confirmed by probe)
+
+2026-08-14, later the same day. The monotone-determinism literature
+survey (persisted beside this file) predicted a latent claim-1 violation
+the E2 fixtures never exercised: two agents filling the SAME hole with
+the SAME value. Semantically idempotent — the fills should commute — but
+`filled` records `by: <whoever landed first>`, so the state digest
+depends on the schedule.
+
+Probe (scratch/meaning-scheduler/probe-by-field.ts), 12 schedules:
+**2 distinct final state digests, recorded filler A or B by schedule.
+REFUTED as predicted — the by field leaks the clock into meaning.**
+
+The repair decision (coordinator recommendation, operator ratification
+pending): drop `by` from the filled MEANING state. WHO said a thing is
+provenance, and provenance already lives in the journal entries — the
+chain remembers it perfectly. WHAT is understood is meaning, and meaning
+must not carry the linearization. This is the estate's own two-fold
+separation ("the chain remembers what the fold forgives") applied one
+level down, and it parallels "deployment facts never move identity."
+Alternative if overturned: `by` becomes an attester Finset (a join), at
+the cost of meaning growing an audience list. Task 48 carries the
+recommendation as Addendum 1.
+
+Score for the method: this defect was found by literature, confirmed by
+a one-minute probe, and repaired by a distinction the estate already
+owned. The claims ledger for E2 now reads: claims 1-3 held AS SCOPED;
+claim 1 additionally REFUTED outside its tested scope (same-value
+multi-writer) with the repair identified.
