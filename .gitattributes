@@ -1,0 +1,15 @@
+# Identity is bytes. A checkout that rewrites line endings rewrites identity,
+# so nothing here is eol-negotiable — not on Windows, not on any agent runtime
+# that checks out with its own core.autocrlf.
+* text=auto eol=lf
+
+# Gate runners: a CR on the shebang line makes the kernel report "no such
+# file" and a green gate reads as a missing one. Observed on a Windows agent
+# checkout 2026-08-15, where verify/moves/run.sh failed while `lake build`
+# passed.
+*.sh text eol=lf
+
+# Frozen fixtures are walled by digest. LF is not a preference here, it is the
+# preimage.
+fixtures/** text eol=lf
+proto/wire/fixtures/** text eol=lf
