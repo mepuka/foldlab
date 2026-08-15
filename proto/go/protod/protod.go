@@ -95,6 +95,9 @@ type Daemon struct {
 	sessionMu sync.Mutex
 	sessions  map[string]*sessionJournal
 
+	protocolSessionMu sync.Mutex
+	protocolSessions  map[string]*protocolSessionJournal
+
 	url  string
 	subs []*nats.Subscription
 }
@@ -216,13 +219,14 @@ func Acquire(ctx context.Context, opts Options) (*Daemon, error) {
 	}
 
 	d := &Daemon{
-		server:   natsServer,
-		conn:     conn,
-		js:       js,
-		catalog:  openedCatalog,
-		journals: map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
-		sessions: map[string]*sessionJournal{},
-		url:      authenticatedURL(natsServer.ClientURL(), "application", applicationPassword),
+		server:           natsServer,
+		conn:             conn,
+		js:               js,
+		catalog:          openedCatalog,
+		journals:         map[string]*journal.Journal{catalogJournalName: openedCatalog.journal},
+		sessions:         map[string]*sessionJournal{},
+		protocolSessions: map[string]*protocolSessionJournal{},
+		url:              authenticatedURL(natsServer.ClientURL(), "application", applicationPassword),
 	}
 
 	requestSub, err := conn.Subscribe(subjectRequestWildcard, d.handleRequest)

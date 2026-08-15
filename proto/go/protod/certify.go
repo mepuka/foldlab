@@ -45,3 +45,33 @@ func (d *Daemon) certify(
 		Fact: commit.fact, Created: commit.created, CatalogHead: commit.catalogHead,
 	}, nil, nil
 }
+
+// certifyProtocol is the flb.protocol.v0 branch of the same owned
+// certification architecture: full request bytes enter once, grammar and
+// references are decided before identity, and only a certificate can reach
+// the catalog append helper.
+func (d *Daemon) certifyProtocol(
+	ctx context.Context,
+	bytes []byte,
+) (*certificate, *Refusal, error) {
+	var request protocolCreateRequest
+	if refusal := decodeBody(bytes, &request); refusal != nil {
+		return nil, refusal, nil
+	}
+	if request.Protocol == nil {
+		return nil, protocolMalformed([]string{"protocol"}, nil, "an flb.protocol.v0 value"), nil
+	}
+	definition, refusal := d.validateProtocol(request.Protocol, []string{"protocol"})
+	if refusal != nil {
+		return nil, refusal, nil
+	}
+	commit, refusal, err := d.catalog.commitValue(
+		ctx, definition, protocolScheme, request.AssertedDigest, request.Submitter,
+	)
+	if err != nil || refusal != nil {
+		return nil, refusal, err
+	}
+	return &certificate{
+		Fact: commit.fact, Created: commit.created, CatalogHead: commit.catalogHead,
+	}, nil, nil
+}

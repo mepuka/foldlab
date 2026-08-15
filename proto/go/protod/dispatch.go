@@ -14,18 +14,23 @@ import (
 // no reply inbox is dropped — there is nowhere to teach into.
 
 const (
-	SubjectTypeCreate       = "flb.req.type.create"
-	SubjectTypeFill         = "flb.req.type.fill"
-	SubjectTypeUnfill       = "flb.req.type.unfill"
-	SubjectJournalRead      = "flb.req.journal.read"
-	SubjectContractDescribe = "flb.req.contract.describe"
-	SubjectSessionOpen      = "flb.req.session.open"
-	SubjectSessionMove      = "flb.req.session.move"
-	SubjectSessionState     = "flb.req.session.state"
-	SubjectSessionCommit    = "flb.req.session.commit"
-	subjectRequestWildcard  = "flb.req.>"
-	ingressPrefix           = "flb.ing."
-	ingressWildcard         = "flb.ing.>"
+	SubjectTypeCreate           = "flb.req.type.create"
+	SubjectTypeFill             = "flb.req.type.fill"
+	SubjectTypeUnfill           = "flb.req.type.unfill"
+	SubjectJournalRead          = "flb.req.journal.read"
+	SubjectContractDescribe     = "flb.req.contract.describe"
+	SubjectSessionOpen          = "flb.req.session.open"
+	SubjectSessionMove          = "flb.req.session.move"
+	SubjectSessionState         = "flb.req.session.state"
+	SubjectSessionCommit        = "flb.req.session.commit"
+	SubjectProtocolCreate       = "flb.req.protocol.create"
+	SubjectProtocolSessionOpen  = "flb.req.protocol.session.open"
+	SubjectProtocolSessionFill  = "flb.req.protocol.session.fill"
+	SubjectProtocolSessionClose = "flb.req.protocol.session.close"
+	SubjectProtocolSessionState = "flb.req.protocol.session.state"
+	subjectRequestWildcard      = "flb.req.>"
+	ingressPrefix               = "flb.ing."
+	ingressWildcard             = "flb.ing.>"
 )
 
 var genesis = canonical.Genesis
@@ -71,6 +76,16 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 		reply = d.serveSessionState(ctx, msg.Data)
 	case SubjectSessionCommit:
 		reply = d.serveSessionCommit(ctx, msg.Data)
+	case SubjectProtocolCreate:
+		reply = d.serveProtocolCreate(ctx, msg.Data)
+	case SubjectProtocolSessionOpen:
+		reply = d.serveProtocolSessionOpen(ctx, msg.Data)
+	case SubjectProtocolSessionFill:
+		reply = d.serveProtocolSessionFill(ctx, msg.Data)
+	case SubjectProtocolSessionClose:
+		reply = d.serveProtocolSessionClose(ctx, msg.Data)
+	case SubjectProtocolSessionState:
+		reply = d.serveProtocolSessionState(ctx, msg.Data)
 	default:
 		reply = refuse(&Refusal{
 			Kind: KindUnknownRequest,
@@ -86,6 +101,11 @@ func (d *Daemon) handleRequest(msg *nats.Msg) {
 				SubjectSessionMove,
 				SubjectSessionState,
 				SubjectSessionCommit,
+				SubjectProtocolCreate,
+				SubjectProtocolSessionOpen,
+				SubjectProtocolSessionFill,
+				SubjectProtocolSessionClose,
+				SubjectProtocolSessionState,
 			},
 			Next: []NextHint{describeHint()},
 		})

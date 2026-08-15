@@ -19,8 +19,8 @@ const (
 // current grammar. A changed classification mints a new digest; readers of an
 // archived refusal never reinterpret its persisted Sort through a newer table.
 const (
-	RefusalSortGrammar       = "flb.type.v0+flb.session.v0"
-	RefusalSortGrammarDigest = "080507edd048db53696fa855243c2f7811b867f2b92820957bda2798949999fc"
+	RefusalSortGrammar       = "flb.type.v0+flb.session.v0+flb.protocol.v0"
+	RefusalSortGrammarDigest = "26193b59e8c12952edaf206d1d31dca7974843c5db0f19f9be2f2faabc35ad03"
 )
 
 // Refusal kinds. Each names the one law that refused; the conformance test
@@ -28,13 +28,15 @@ const (
 // at the declaration site.
 const (
 	KindMalformed        = "malformed"         // body is not a JSON object the handler can read
-	KindInvalidStructure = "invalid-structure" // flb.type.v0 grammar violation
+	KindInvalidStructure = "invalid-structure" // owned grammar or move-state violation
 	KindDigestMismatch   = "digest-mismatch"   // asserted identity the daemon cannot re-derive (W1)
 	KindBadJournal       = "bad-journal"       // ingress subject names an invalid or reserved journal
 	KindBadCursor        = "bad-cursor"        // read cursor does not verify against the journal (W6)
 	KindUnknownRequest   = "unknown-request"   // request subject has no handler
 	KindSessionStale     = "session-stale"     // expectedHead is not the session's current head
 	KindSessionPrincipal = "session-principal" // mutator principal differs from the session's open.author
+	KindSeatUnauthorized = "seat-unauthorized" // principal is not bound to an authorized seat
+	KindSessionClosed    = "session-closed"    // protocol session is terminal
 )
 
 const (
@@ -55,6 +57,8 @@ var refusalSortByKind = map[string]RefusalSort{
 	KindUnknownJournal:    RefusalAbsence,
 	KindSessionStale:      RefusalAbsence,
 	KindSessionPrincipal:  RefusalStructural,
+	KindSeatUnauthorized:  RefusalStructural,
+	KindSessionClosed:     RefusalStructural,
 	KindCompactionBlocked: RefusalAbsence,
 }
 

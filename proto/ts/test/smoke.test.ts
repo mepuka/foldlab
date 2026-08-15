@@ -39,6 +39,11 @@ test("the smoke thread reads like an agent session", async () => {
   expect(contract.requests.map((r) => r.name).sort()).toEqual([
     "contract_describe",
     "journal_read",
+    "protocol.create",
+    "protocol.session.close",
+    "protocol.session.fill",
+    "protocol.session.open",
+    "protocol.session.state",
     "session_commit",
     "session_move",
     "session_open",

@@ -45,7 +45,7 @@ func (d *Daemon) handleIngress(msg *nats.Msg) {
 
 func (d *Daemon) serveIngress(ctx context.Context, subject string, body []byte) any {
 	name := strings.TrimPrefix(subject, ingressPrefix)
-	if !validJournalName.MatchString(name) || name == catalogJournalName || strings.HasPrefix(name, sessionJournalPrefix) {
+	if !validJournalName.MatchString(name) || name == catalogJournalName || strings.HasPrefix(name, sessionJournalPrefix) || strings.HasPrefix(name, protocolSessionJournalPrefix) {
 		return refuse(&Refusal{
 			Kind:     KindBadJournal,
 			Law:      "ingress subjects name a data journal; the catalog is written only by the daemon, through type.create",

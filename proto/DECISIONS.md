@@ -2111,3 +2111,70 @@ restarted daemon reconstruct authority from claim fields. Why: all three make
 authority durable or derivable outside the daemon process and recreate the
 transport leak this task closes. **Load-bearing? yes** — operators must treat
 restart as lease recovery, never as token recovery.
+
+## Task 49 — flb.protocol.v0 tracer bullet (2026-08-14)
+
+### D??. The five bootstrap types use the exact expressible v0 shapes
+
+Decided: `task.spec.v0`, `task.authorization.v0`, `task.build_report.v0`,
+`task.review.v0`, and `task.decision.v0` use strict structs; optional notes use
+`struct.optional`; review findings use a list of strict structs; and verdict is
+a union of the three literal strings `accept`, `revise`, and `reject`. Empty
+review findings are an ordinary empty list. Alternatives: brand the five
+types; encode verdict as a free string plus a check; make findings optional.
+Why: every requested shape is directly expressible in the current grammar, so
+an approximation or new machinery would widen the contract without need.
+**Load-bearing? yes** — runtime fill checking and the protocol's hole identities
+depend on these cataloged structures.
+
+### D??. Protocol operations keep dotted request names and NATS-safe subjects
+
+Decided: `contract.describe` names the derived MCP tools exactly
+`protocol.create`, `protocol.session.open`, `.fill`, `.close`, and `.state`,
+while their transport subjects are the NATS-safe
+`flb.req.protocol.create` and `flb.req.protocol.session.*` forms. The contract
+remains the only MCP tool list. Alternatives: retain the older underscore MCP
+naming convention; hand-register aliases; put tool names directly on NATS.
+Why: Task 49 fixes the public tool names, NATS already licenses dots as subject
+tokens, and aliases would create a second drifting surface. **Load-bearing?
+yes** — MCP derivation must expose all five capabilities without handwritten
+registration.
+
+### D??. Bootstrap is executable TypeScript above the three-verb client
+
+Decided: `src/protocol.ts` owns the reusable five-types-first bootstrap and
+`examples/bootstrap-protocol-v0.ts` is its runnable entry point. It calls only
+the existing request writ through `ProtoClient`; protod owns all validation and
+identity derivation. Alternatives: daemon startup side effects; a Go-only
+bootstrap command; prose-only copy/paste bodies. Why: catalog contents should
+not appear implicitly at daemon acquisition, while an executable client-side
+bootstrap is repeatable and same-byte submissions converge. **Load-bearing?
+no** — the bootstrap location can move without changing protocol semantics.
+
+### D??. Protocol session identity and evidence are canonical and arrival-free
+
+Decided: the session id is the digest of its canonical open event; each request
+replays the owned journal through verify-on-read under one per-session mutex.
+Filled meaning contains only the value. The journal derives the authorized seat
+from immutable bindings and retains candidate `(value, seat)` evidence;
+candidate output sorts by seat then canonical value bytes. If one principal is
+bound to multiple authorized seats, the first seat in the hole declaration is
+the deterministic holder. Alternatives: include arrival actor in filled
+meaning; preserve candidate arrival order; require globally unique principals;
+accept an asserted seat in fill. Why: this mirrors Task 48's meaning/evidence
+split, makes conflicting arrival orders converge, and keeps seat authority
+derived rather than caller-fabricated. **Load-bearing? yes** — fence results and
+final state identity must not depend on scheduling.
+
+### D??. Close records explicit unfilled states and digests a non-circular fold
+
+Decided: close changes remaining `open` holes to visible `unfilled`, leaves a
+filled state's value in place with `sealed:true`, and changes disputes to
+`decided` while retaining candidates. The final digest covers protocol,
+bindings, holes, closed status, outcome, and optional predecessor, excluding
+session id, journal head, and the digest field itself. Alternatives: infer
+unfilled from closed+open; replace filled with a new sealed state tag; include
+the close head in the final digest. Why: explicit terminal states are auditable,
+the requested state shape already provides `sealed?`, and including the head
+would make the close event's identity circular. **Load-bearing? yes** —
+predecessor validation and close replay re-derive this exact digest.

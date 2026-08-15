@@ -1,0 +1,135 @@
+{
+  "_provenance": "Hand-authored Task 49 vectors against the ratified Task 48 move laws. Go drives these moves through the real single-daemon runtime; TypeScript decodes the same expected wire values. The vectors are a WALL against the proved model rule, not a correspondence proof.",
+  "version": "flb.protocol.session.v0",
+  "bindings": {
+    "operator": "operator-principal",
+    "coordinator": "coordinator-principal",
+    "builder": "builder-principal"
+  },
+  "vectors": [
+    {
+      "name": "fill-open",
+      "setup": [],
+      "pre": { "build_report": { "state": "open" } },
+      "move": { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } },
+      "expected": { "build_report": { "state": "filled", "value": { "commit": "abc", "gates": "green" } } }
+    },
+    {
+      "name": "idempotent-refill",
+      "setup": [
+        { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } }
+      ],
+      "pre": { "build_report": { "state": "filled", "value": { "commit": "abc", "gates": "green" } } },
+      "move": { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } },
+      "head_unchanged": true,
+      "expected": { "build_report": { "state": "filled", "value": { "commit": "abc", "gates": "green" } } }
+    },
+    {
+      "name": "conflict-becomes-pair-attributed-dispute",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } }
+      ],
+      "pre": { "decision": { "state": "filled", "value": { "verdict": "revise" } } },
+      "move": { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } },
+      "expected": {
+        "decision": {
+          "state": "disputed",
+          "candidates": [
+            { "value": { "verdict": "revise" }, "seat": "coordinator" },
+            { "value": { "verdict": "accept" }, "seat": "operator" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "same-seat-conflict-refuses",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } }
+      ],
+      "pre": { "decision": { "state": "filled", "value": { "verdict": "revise" } } },
+      "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
+      "refusal": { "kind": "invalid-structure" }
+    },
+    {
+      "name": "fill-disputed-refuses",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } },
+        { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } }
+      ],
+      "pre": { "decision": { "state": "disputed" } },
+      "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
+      "refusal": { "kind": "invalid-structure" }
+    },
+    {
+      "name": "fill-decided-refuses",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } },
+        { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } },
+        { "op": "close", "principal": "operator-principal" }
+      ],
+      "pre": { "decision": { "state": "decided", "value": { "verdict": "accept" } } },
+      "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
+      "refusal": { "kind": "session-closed" }
+    },
+    {
+      "name": "unauthorized-fill-refuses",
+      "setup": [],
+      "pre": { "spec": { "state": "open" } },
+      "move": { "op": "fill", "principal": "builder-principal", "hole": "spec", "value": { "title": "x", "body_digest": "d" } },
+      "refusal": { "kind": "seat-unauthorized" }
+    },
+    {
+      "name": "close-seals-filled",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "spec", "value": { "title": "task", "body_digest": "digest" } },
+        { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } }
+      ],
+      "pre": { "spec": { "state": "filled" }, "decision": { "state": "filled" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "completed",
+      "expected": {
+        "spec": { "state": "filled", "value": { "title": "task", "body_digest": "digest" }, "sealed": true },
+        "decision": { "state": "filled", "value": { "verdict": "accept" }, "sealed": true }
+      }
+    },
+    {
+      "name": "fence-coordinator-arrives-first",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
+        { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } }
+      ],
+      "pre": { "decision": { "state": "disputed" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "completed",
+      "expected": { "decision": { "state": "decided", "value": { "verdict": "accept" } } }
+    },
+    {
+      "name": "fence-operator-arrives-first",
+      "setup": [
+        { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } },
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } }
+      ],
+      "pre": { "decision": { "state": "disputed" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "completed",
+      "expected": { "decision": { "state": "decided", "value": { "verdict": "accept" } } }
+    },
+    {
+      "name": "empty-decision-abandons",
+      "setup": [],
+      "pre": { "decision": { "state": "open" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "abandoned",
+      "expected": { "decision": { "state": "unfilled" } }
+    },
+    {
+      "name": "post-close-fill-refuses",
+      "setup": [
+        { "op": "close", "principal": "operator-principal" }
+      ],
+      "pre": { "build_report": { "state": "unfilled" } },
+      "move": { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } },
+      "refusal": { "kind": "session-closed" }
+    }
+  ]
+}

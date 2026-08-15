@@ -43,6 +43,8 @@ const DaemonRefusal = DaemonRefusalSchema.pipe(
       "session-stale",
       "session-principal",
       "compaction-blocked",
+      "seat-unauthorized",
+      "session-closed",
     ]),
   }),
 )
@@ -108,8 +110,8 @@ const CONVERGENT_MUTATION: McpToolAnnotations = {
 }
 
 const annotationsForRequest = (name: string): McpToolAnnotations => {
-  if (name === "contract_describe" || name === "journal_read") return READ_ONLY
-  if (name === "type_create" || name === "type_fill" || name === "type_unfill") {
+  if (name === "contract_describe" || name === "journal_read" || name === "protocol.session.state") return READ_ONLY
+  if (name === "type_create" || name === "type_fill" || name === "type_unfill" || name === "protocol.create" || name === "protocol.session.open") {
     return CONVERGENT_MUTATION
   }
   return CONSERVATIVE_MUTATION

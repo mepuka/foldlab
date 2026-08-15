@@ -125,6 +125,38 @@ func vSessionStateReply() map[string]any {
 	})
 }
 
+func vProtocolPredecessor() map[string]any {
+	return vStruct(map[string]any{
+		"session":      vKind("string"),
+		"state_digest": vDigest(),
+	})
+}
+
+func vProtocolHoleState() map[string]any {
+	return vStruct(map[string]any{
+		"state":      vKind("string"),
+		"value":      vOpaque(),
+		"candidates": vList(vStruct(map[string]any{"value": vOpaque(), "seat": vKind("string")})),
+		"sealed":     vKind("bool"),
+	}, "value", "candidates", "sealed")
+}
+
+func vProtocolStateReply() map[string]any {
+	return vStruct(map[string]any{
+		"ok":                 vKind("bool"),
+		"session":            vKind("string"),
+		"protocol":           vDigest(),
+		"bindings":           vOpaque(),
+		"holes":              vOpaque(),
+		"status":             vKind("string"),
+		"outcome":            vKind("string"),
+		"predecessor":        vProtocolPredecessor(),
+		"final_state_digest": vDigest(),
+		"head":               vDigest(),
+		"next":               vList(vNextHint()),
+	}, "outcome", "predecessor", "final_state_digest")
+}
+
 func describeReply() map[string]any {
 	return map[string]any{
 		"ok": true,
@@ -277,6 +309,61 @@ func describeReply() map[string]any {
 						"catalogHead": vDigest(),
 						"next":        vList(vNextHint()),
 					}),
+				},
+				map[string]any{
+					"name":    "protocol.create",
+					"subject": SubjectProtocolCreate,
+					"note": "catalog an flb.protocol.v0 value through the daemon-owned certification path; " +
+						"seat and fence laws are checked before the daemon derives identity",
+					"body": vStruct(map[string]any{
+						"protocol":       vBrand(protocolScheme, vOpaque()),
+						"assertedDigest": vDigest(),
+						"submitter":      vKind("string"),
+					}, "assertedDigest", "submitter"),
+					"reply": vStruct(map[string]any{
+						"ok": vKind("bool"), "created": vKind("bool"), "digest": vDigest(),
+						"scheme": vKind("string"), "catalogSeq": vKind("int"),
+						"catalogHead": vDigest(), "next": vList(vNextHint()),
+					}),
+				},
+				map[string]any{
+					"name":    "protocol.session.open",
+					"subject": SubjectProtocolSessionOpen,
+					"note":    "open or converge on a content-addressed protocol round with exact immutable seat bindings",
+					"body": vStruct(map[string]any{
+						"protocol": vDigest(), "bindings": vOpaque(), "predecessor": vProtocolPredecessor(),
+					}, "predecessor"),
+					"reply": vStruct(map[string]any{
+						"ok": vKind("bool"), "session": vKind("string"), "head": vDigest(), "next": vList(vNextHint()),
+					}),
+				},
+				map[string]any{
+					"name":    "protocol.session.fill",
+					"subject": SubjectProtocolSessionFill,
+					"note":    "fill under seat authority; conflicts across seats surface as pair-attributed disputes and self-revision refuses",
+					"body": vStruct(map[string]any{
+						"session": vKind("string"), "principal": vKind("string"),
+						"hole": vKind("string"), "value": vOpaque(),
+					}),
+					"reply": vStruct(map[string]any{
+						"ok": vKind("bool"), "head": vDigest(), "hole_state": vProtocolHoleState(), "next": vList(vNextHint()),
+					}),
+				},
+				map[string]any{
+					"name":    "protocol.session.close",
+					"subject": SubjectProtocolSessionClose,
+					"note":    "operator-only atomic close: fence disputes, seal filled holes, record unfilled holes, and capture the terminal head",
+					"body":    vStruct(map[string]any{"session": vKind("string"), "principal": vKind("string")}),
+					"reply": vStruct(map[string]any{
+						"ok": vKind("bool"), "head": vDigest(), "outcome": vKind("string"), "next": vList(vNextHint()),
+					}),
+				},
+				map[string]any{
+					"name":    "protocol.session.state",
+					"subject": SubjectProtocolSessionState,
+					"note":    "verify-on-read and return the complete protocol-session meaning and evidence fold",
+					"body":    vStruct(map[string]any{"session": vKind("string")}),
+					"reply":   vProtocolStateReply(),
 				},
 			},
 			"ingress": map[string]any{
