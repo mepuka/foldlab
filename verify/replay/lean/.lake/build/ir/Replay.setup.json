@@ -1,0 +1,11 @@
+{"plugins": [],
+ "package": "replay",
+ "options": {},
+ "name": "Replay",
+ "isModule": false,
+ "importArts":
+ {"Replay.Faithless":
+  [["C:\\Users\\kokok\\Dev\\foldlab\\verify\\replay\\lean\\.lake\\build\\lib\\lean\\Replay\\Faithless.olean"]],
+  "Replay.Core":
+  [["C:\\Users\\kokok\\Dev\\foldlab\\verify\\replay\\lean\\.lake\\build\\lib\\lean\\Replay\\Core.olean"]]},
+ "dynlibs": []}

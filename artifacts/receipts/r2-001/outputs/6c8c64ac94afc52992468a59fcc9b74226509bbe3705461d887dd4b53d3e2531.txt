@@ -1,3 +1,0 @@
-```json
-{"template":"{{INPUT}}\n\nReview your work above. Did you make any errors? If so, correct them.\n\nFinal answer (single integer only):", "params":{"max_tokens":2000,"thinking_budget":1024}}
-```

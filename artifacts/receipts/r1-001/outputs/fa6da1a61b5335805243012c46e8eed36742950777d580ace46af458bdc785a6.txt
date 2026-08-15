@@ -1,6 +1,0 @@
-# Numbers from the Problem
-
-• 25 pallets
-• 8 boxes (per pallet)
-• 6 parts (per box)
-• 14 percent (defective parts)

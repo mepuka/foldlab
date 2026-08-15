@@ -1,9 +1,0 @@
-# Quantities with Units
-
-42 pallets
-
-8 boxes/pallet
-
-12 parts/box
-
-15 percent defective

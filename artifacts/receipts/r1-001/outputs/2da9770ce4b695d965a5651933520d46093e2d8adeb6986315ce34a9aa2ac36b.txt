@@ -1,7 +1,0 @@
-# Two-Step Plan
-
-1. **Calculate the total number of parts**
-   - Multiply: 23 pallets × 5 boxes per pallet × 10 parts per box = 1,150 total parts
-
-2. **Calculate the number of defective parts at 8 percent**
-   - Multiply: 1,150 total parts × 0.08 (8%) = **92 defective parts**

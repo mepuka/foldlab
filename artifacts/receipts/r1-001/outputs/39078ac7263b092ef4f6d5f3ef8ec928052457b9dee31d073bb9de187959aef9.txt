@@ -1,8 +1,0 @@
-# Quantities with Units
-
-49 pallets
-4 boxes per pallet
-4 parts per box
-6 percent defective parts
-100 percent total parts (implied)
-94 percent non-defective parts

@@ -1,1 +1,0 @@
-A shipment of 49 pallets containing 4 boxes per pallet with 4 parts per box has a 6 percent defective rate, meaning 94 percent of the parts are non-defective.

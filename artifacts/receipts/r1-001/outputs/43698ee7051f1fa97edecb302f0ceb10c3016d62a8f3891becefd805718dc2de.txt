@@ -1,7 +1,0 @@
-# Quantities in the Problem
-
-35 pallets
-3 boxes per pallet
-9 parts per box
-24 percent defective parts
-(implied: 76 percent non-defective parts)

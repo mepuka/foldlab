@@ -7,25 +7,23 @@ Effect (TypeScript) and Go. Created and directed by
 [Mepuka Kessy](https://github.com/mepuka). Licensed
 [Apache-2.0](LICENSE).
 
-```
-$ bun packages/core/examples/tour.ts
+Two histories can record the same two facts in opposite orders. They
+agree about what they mean and disagree about which they are — and in
+this lab both answers are digests any reader can recompute from the
+same events rather than claims anyone has to accept. Everything below
+is machinery for holding that at every edge, in two languages, with
+the evidence committed.
 
-two histories, same two facts, different order
-
-  A head           c0f9c11ccb06bc3c18f4de601b85f44aaf682c83f09090a2c536fa1488d40816
-  B head           cbf009894aea951acfd7e7f8157c514fd5144aa6efd7960698855c464533c7ff
-  A state digest   62ca5ca464cbce85942499596ae21def9299236f26b68a29f3aaec37cc44733f
-  B state digest   62ca5ca464cbce85942499596ae21def9299236f26b68a29f3aaec37cc44733f
-  heads equal?     false
-  states equal?    true
-```
-
-Two histories record the same two facts in opposite orders. They agree
-about what they mean and disagree about which they are, and both
-answers are digests any reader can recompute from the same events
-rather than claims anyone has to accept.
-[The first ten minutes](docs/tutorial/first-ten-minutes.md) walks that
-command and three others.
+As of 2026-08-15 the estate is focused
+([grill record](docs/design/2026-08-15-estate-focus-grill-record.md)):
+the active lane makes the Lean ground-truth model the executable
+referee for `flb.type.v0` ([verify/ir/](verify/ir/)), beside the
+proved move calculus ([verify/moves/](verify/moves/)) running as
+`flb.protocol.v0` sessions in [proto/](proto/). Off-path work — the
+stream/transform walls, the effector, the gauntlet lanes, the demo
+server, the guided tour — is archived whole at tag
+`archive/pre-estate-focus`
+([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
 
 foldlab is a lab rather than a product: nothing here is published,
 `proto/` is a tracer bullet carrying its own gates, and the repository
@@ -41,7 +39,7 @@ is the usual way in.
 
 | Register | Document | The question it answers |
 | --- | --- | --- |
-| Tutorial | [docs/tutorial/first-ten-minutes.md](docs/tutorial/first-ten-minutes.md) | What does this do? Four commands and their real output, with every term named only after it has been touched. |
+| Tutorial | [docs/tutorial/first-ten-minutes.md](docs/tutorial/first-ten-minutes.md) | What does this do? Four commands and their real output. Frozen 2026-08-15: its commands reference the archived tour and run only at tag `archive/pre-estate-focus`; kept because the walkthrough's explanations still hold. |
 | Explanation | [docs/explanation/why-two-folds.md](docs/explanation/why-two-folds.md), [docs/explanation/theory.md](docs/explanation/theory.md) | Why is it built this way? Why a chain head is kept when the fold state already answers; the three sorts and the fold-shape behind them. |
 | Language reference | [CONTEXT.md](CONTEXT.md) | What does this word mean here? The ubiquitous language — folds, heads, journals, catalogs, refusals. Consulted during work, not read front to back. |
 | Wire reference | [proto/wire/CONTRACT.md](proto/wire/CONTRACT.md), [proto/SPEC.md](proto/SPEC.md) | What is on the wire? Subjects, body shapes, the refusal kinds, and the ratified laws (W1–W10) with their frozen fixtures. |
@@ -66,11 +64,13 @@ Landmarks below those five:
 - [docs/map/tickets/009-the-verification-ladder.md](docs/map/tickets/009-the-verification-ladder.md)
   — which contract sits on which proof rung, and what each rung's
   gate requires.
+- [verify/ir/](verify/ir/) — TyX, the `flb.type.v0` grammar stated
+  once as an algebraic type with a denotational semantics; the lane's
+  home. Its README names the next rungs; the 2026-08-15 audit names
+  what the executable referee still needs.
 - [docs/adr/](docs/adr/) — the committed decisions;
-  [docs/gauntlet/](docs/gauntlet/) — the gauntlets: adversarial test
-  campaigns (crash storms, fleet runs), each with a frozen spec and a
-  frozen verifier that checks the exported run bundle by recomputation.
-- [go/effector/](go/effector/) — the proven register, as running Go.
+  [docs/gauntlet/](docs/gauntlet/) — the gauntlets' frozen specs (their
+  verifiers and bundles are archived at `archive/pre-estate-focus`).
 
 ## What does this have to do with Effect?
 
@@ -164,11 +164,10 @@ inside carries the file, line, or executed output that backs it.
 - [docs/research/2026-08-14-tangible-examples.md](docs/research/2026-08-14-tangible-examples.md)
   — the five concepts as worked, executed examples, each calibrated
   three ways (Effect developer, infra engineer, skeptical auditor).
-  The best on-ramp in the repository; its companion scripts
-  ([packages/core/examples/tour.ts](packages/core/examples/tour.ts),
-  [proto/ts/examples/refusals.ts](proto/ts/examples/refusals.ts)) run
-  with one command and reproduce byte-identically across Windows and
-  macOS.
+  The best on-ramp in the repository. Of its two companion scripts,
+  [proto/ts/examples/refusals.ts](proto/ts/examples/refusals.ts)
+  remains runnable; the tour is archived at `archive/pre-estate-focus`
+  with the modules it toured.
 - [docs/design/2026-08-14-mcp-surface-deep-read.md](docs/design/2026-08-14-mcp-surface-deep-read.md)
   — every MCP protocol feature vs. what the pinned Effect rc.108
   server actually implements, feature by feature with file:line, and
@@ -273,7 +272,9 @@ five makes every entry in this log readable.
    optimistic-locking pattern of every database version column, plus
    the fencing tokens distributed-systems books recommend. It is the
    *one* place in the system where writers coordinate. Everything
-   else merges freely.
+   else merges freely. (The standalone Go register is archived at
+   `archive/pre-estate-focus`; protod carries the pattern at session
+   close.)
 
 Why do the same five keep arising, here and everywhere else? Because
 they are the minimal answers to the only five questions a distributed

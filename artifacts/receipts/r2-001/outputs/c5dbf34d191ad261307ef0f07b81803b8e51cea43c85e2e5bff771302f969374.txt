@@ -1,9 +1,0 @@
-```json
-{
-  "template": "<<<Review the working shown above. Verify the final answer is correct by checking it satisfies all problem conditions. Then state ONLY the final integer answer with no other text:\n\n{{INPUT}}\n\nFinal answer (integer only):>>>",
-  "params": {
-    "max_tokens": 512,
-    "thinking_budget": 1024
-  }
-}
-```

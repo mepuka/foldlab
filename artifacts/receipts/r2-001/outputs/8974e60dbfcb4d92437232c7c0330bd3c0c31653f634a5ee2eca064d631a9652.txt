@@ -1,3 +1,0 @@
-```json
-{"template":"{{INPUT}}\n\nExtract and verify the final answer: the answer is the single integer that appears after \"FINAL ANSWER:\" in the working above. State only this integer with no other text:","params":{"max_tokens":512,"thinking_budget":1024}}
-```

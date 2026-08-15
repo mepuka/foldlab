@@ -5,34 +5,41 @@ Compatibility files such as `CLAUDE.md` only point here.
 
 ## The current lane
 
-One question is active: **close the gap between the proved move calculus
-and the running daemon.** Two directories carry it.
+One lane is active: **make the Lean ground-truth model the executable
+referee for `flb.type.v0`** — the first rung of "the Lean models power
+type generation." Ratified 2026-08-15
+([grill record](docs/design/2026-08-15-estate-focus-grill-record.md)),
+audited adversarially the same day
+([findings](docs/research/2026-08-15-model-audit-findings.md)).
 
-- `verify/moves/` — the machine-checked kernel. Epistemic state as
-  `open | filled | disputed | decided`, three moves (fill, dispute,
-  decide), and seventeen gated results — theorems and their negative
-  controls — checked in Lean 4.33.0 against the core-clean axiom
-  footprint. `verify/moves/run.sh` is the gate.
-- `proto/` — the running twin. `flb.protocol.v0` and the protod session
-  runtime, which holds that same epistemic state over the Effect runtime
-  and NATS.
+- `verify/ir/` carries it — TyX, the grammar stated once with a
+  denotational semantics, eight laws machine-checked in Lean 4.33.0.
+  The executable referee (normalize, parse, canonical bytes, bounded
+  fuel) is NOT built: ten ordered work items, the first two decisions
+  ungrilled. The dispatch order lives in `scratch/dispatch/` — the
+  grills (03) gate the engine (04).
+- The payoff is the drift-engine kill (architecture audit §3): the
+  grammar is restated ~6× in Go and ~4× in TS with divergent
+  defaults. Golden vectors emitted by the model wall every
+  restatement; a divergence a vector exposes is a FINDING.
 
-**The gap is not yet closed, and pretending otherwise is the failure mode
-to avoid.** No refinement map exists from daemon folds and events to Lean
-states and moves. Lean admits an arbitrary nonempty candidate-set dispute
-and an explicit represented-value decision; the daemon synthesizes a
-two-candidate dispute from a cross-seat conflicting fill, and fences,
-seals, marks unfilled, and records the outcome atomically at close. Those
-are different machines until someone writes the map between them. Naming
-that map — then proving fill simulation, synthesized-dispute
-authenticity, close/fence soundness, and trace-level stability — is the
-work. Copying the Lean constructors into Go would hide the abstraction
-difference instead of discharging it.
+**The moves↔protod gap is HELD, not closed, and pretending otherwise
+is the failure mode to avoid.** `verify/moves/` proves the move
+calculus — seventeen gated results over ADMITTED executions only; a
+refused move ends a model run while the daemon refuses and continues,
+which is where the two machines diverge first (audit MOVES-1).
+`proto/` runs the twin. No refinement map exists. The ratified floor
+is the queued vector wall (`scratch/dispatch/02`), refused moves
+included. Copying the Lean constructors into Go would hide the
+abstraction difference instead of discharging it.
 
-Everything else here is standing evidence, not active work: `packages/`
-and `go/` hold the differential walls, `verify/{catalog,ir,implication,
-pipeline,replay}/` hold the other model gates. They must stay green.
-Touch them only when the lane forces it, and say so when you do.
+Everything else is standing evidence, not active work: proto's
+conformance walls, the `verify/{catalog,pipeline,implication}` gates,
+and the JCS differential wall (`go/canonical` ≡ `packages/core` jcs,
+RFC 8785 Appendix B as referee) must stay green. Touch them only when
+the lane forces it, and say so when you do. The 2026-08-15 purge
+archived all off-path work at tag `archive/pre-estate-focus`
+([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
 
 ## Read first
 
@@ -50,11 +57,10 @@ Touch them only when the lane forces it, and say so when you do.
 
 Module directories carry their own `AGENTS.md` (enforceable laws) and
 `CONTEXT.md` (module-local vocabulary hidden behind the seam). Read the
-scoped files before editing inside: `go/` (substrate), `go/daemon/`
-(contract only — the code lives in `proto/` until graduation),
-`packages/core/`, `packages/client/`, `proto/` (the tracer bullet, with
-its own gates and `DECISIONS.md`), `verify/` (model gates). Performance
-work must also follow `bench/BENCH.md`.
+scoped files before editing inside: `go/` (substrate: canonical,
+journal, jcsprobe), `packages/core/` (the RFC 8785 seam), `proto/`
+(the tracer bullet, with its own gates and `DECISIONS.md`), `verify/`
+(model gates).
 
 ## How work arrives and how it leaves
 
@@ -140,9 +146,9 @@ nothing may import from `repos/`.
 
 ## Non-negotiable rules
 
-- `fixtures/stream-wall.json` is frozen. A digest mismatch means the change is
-  wrong unless fixture regeneration was explicitly requested with a stated
-  reason.
+- `fixtures/golden-conformance.json` and `fixtures/jcs-rfc8785.json` are
+  frozen. A digest or verdict mismatch means the change is wrong unless
+  fixture regeneration was explicitly requested with a stated reason.
 - Cross-language equivalence is proven by digest-equality walls, never by
   trusting a port.
 - Keep the Go module stdlib-only unless a task explicitly requires otherwise.
@@ -173,5 +179,5 @@ one your change touches:
 bash verify/moves/run.sh
 ```
 
-`verify/{catalog,ir,implication,pipeline,replay}/run.sh` follow the same
-shape. The optional wasm wall is `bun run build:wasm && bun test`.
+`verify/{catalog,ir,implication,pipeline}/run.sh` follow the same
+shape.

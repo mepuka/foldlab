@@ -1,9 +1,0 @@
-```json
-{
-  "template": "{{INPUT}}\n\nExtract the final answer: Look at the working above and identify the final numerical answer to the problem. State ONLY this single integer with no words, units, punctuation, or explanation.",
-  "params": {
-    "max_tokens": 256,
-    "thinking_budget": 1024
-  }
-}
-```

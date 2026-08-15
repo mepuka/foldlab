@@ -195,6 +195,12 @@ fences disputes by the declared seat order, records open holes as unfilled,
 and closes with `completed` exactly when the decision hole was filled or
 decided; otherwise it records `abandoned`. Closed sessions are terminal.
 
+Caveat (D84): the completed/abandoned rule keys on the literal hole
+name `decision`, and validation never requires that hole to exist. A
+protocol value without one always closes `abandoned` — no refusal is
+issued. Until a completion declaration lands, `flb.protocol.v0` close
+semantics are task-acceptance-specific.
+
 The final state digest covers protocol, bindings, hole folds, status, outcome,
 and optional predecessor, but not the journal head (which would be circular).
 The close event commits that digest and the reply's head is captured inside the

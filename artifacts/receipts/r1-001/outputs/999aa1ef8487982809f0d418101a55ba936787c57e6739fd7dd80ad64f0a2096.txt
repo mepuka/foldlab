@@ -1,9 +1,0 @@
-# Two-Step Plan to Solve the Problem
-
-1. **Calculate the total number of parts in the shipment**
-   - Multiply the number of pallets × boxes per pallet × parts per box
-   - 30 pallets × 10 boxes × 13 parts = 3,900 total parts
-
-2. **Calculate the number of defective parts**
-   - Multiply the total number of parts by the defective percentage
-   - 3,900 parts × 0.19 (19%) = 741 defective parts

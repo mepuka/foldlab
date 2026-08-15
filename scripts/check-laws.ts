@@ -52,7 +52,10 @@ type Row = {
 }
 
 const AMBIGUOUS_REGISTRY = new Map<string, ReadonlyArray<string>>([
-  ["C1", ["concierge:C1", "entity:C1"]],
+  // entity:C1 is archived at archive/pre-estate-focus with its family; the
+  // ID stays reserved. Restore it here in the same commit that un-archives
+  // the entity tests — a bare C1 must never resolve to an absent family.
+  ["C1", ["concierge:C1"]],
   ["W1", ["proto-wire:W1", "catalog-model:W1"]],
   ["W2", ["proto-wire:W2", "catalog-model:W2"]],
   ["W3", ["proto-wire:W3", "catalog-model:W3"]],
@@ -356,7 +359,6 @@ if (process.argv.includes("--self-test")) {
   )
   const completeRegistry = parseIndex(
     "| `concierge:C1` | `spec.md` | `x_test.go::func TestC1` | BOUND |\n" +
-      "| `entity:C1` | `spec.md` | `x_test.go::func TestC1` | BOUND |\n" +
       [...AMBIGUOUS_REGISTRY]
         .filter(([token]) => token.startsWith("W"))
         .flatMap(([, ids]) => ids.map((id) => `| \`${id}\` | \`spec.md\` | — | DESIGN |`))
@@ -374,8 +376,8 @@ if (process.argv.includes("--self-test")) {
   )
   bad += ok(
     "one missing side of a context-qualified collision",
-    checkRegistryIds(completeRegistry.filter((row) => row.law !== "entity:C1")).some(
-      (s) => s.includes("entity:C1") && s.includes("missing"),
+    checkRegistryIds(completeRegistry.filter((row) => row.law !== "catalog-model:W1")).some(
+      (s) => s.includes("catalog-model:W1") && s.includes("missing"),
     ),
   )
 

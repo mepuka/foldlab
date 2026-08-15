@@ -1,9 +1,0 @@
-```json
-{
-  "template": "{{INPUT}}\n\nNow, carefully review your work above. Identify the final numerical answer to the competition math problem. State this answer as a single integer with no other text, symbols, or explanation:",
-  "params": {
-    "max_tokens": 256,
-    "thinking_budget": 1024
-  }
-}
-```

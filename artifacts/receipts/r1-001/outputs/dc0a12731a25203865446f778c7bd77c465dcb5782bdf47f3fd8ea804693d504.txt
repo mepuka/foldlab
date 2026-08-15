@@ -1,1 +1,0 @@
-A shipment contains 14 pallets, each with 6 boxes, each containing 11 parts, and 11 percent of the shipment is damaged.

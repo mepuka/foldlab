@@ -1,19 +1,21 @@
 # packages/core — agent contract
 
-The TS algebra and Schema face. Read root `AGENTS.md` first; scoped
-laws:
+Slimmed 2026-08-15 to the RFC 8785 seam (estate-focus purge; the full
+algebra package lives at tag `archive/pre-estate-focus`). Read root
+`AGENTS.md` first; scoped laws:
 
-- Every module here is one half of a wall: `stream.ts` ≡ `go/stream`,
-  `xform.ts` ≡ `go/stream/transform.go`, `schema.ts` decoding the
-  frozen Go frame. A change that moves a frozen digest is wrong unless
-  fixture regeneration was explicitly requested with a stated reason.
+- `src/jcs.ts` is one half of the JCS differential wall: constrained
+  decode and RFC 8785 encoding, walled against `go/canonical` under
+  bidirectional fuzz, refereed by the independent Appendix B oracle in
+  `fixtures/jcs-rfc8785.json`. Identity is of canonical uncompressed
+  bytes (ADR-0002); never fingerprint a transport form.
+- Decode acceptance is part of identity: one value, valid UTF-8 and
+  scalars, names unique after unescaping, finite binary64,
+  256-container depth. Widening or narrowing acceptance moves identity
+  and is a ratification boundary.
 - This package is authoring and proof, never runtime authority: no
-  NATS, no IO in the algebra, transforms are pure, dropping an event is
-  a return value. Runtime lives behind the daemon's seam.
-- Schema identity is GREENFIELD (map ticket 004; ADR-0008 records the
-  wipe): do not add digest-of-schema code here until 004 is ratified.
+  NATS, no IO. `src/jcs.ts` imports nothing at runtime.
 - Runtime dependency: `effect` at the pinned catalog version, nothing
   else. devDependencies for testing are permitted (fast-check, exact
-  pin) — the no-new-dependency law governs the runtime surface.
-  Confirm APIs against the pinned declarations and `repos/effect/`,
-  never memory.
+  pin). Confirm APIs against the pinned declarations and
+  `repos/effect/`, never memory.

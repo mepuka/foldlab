@@ -1,9 +1,0 @@
-```json
-{
-  "template": "Carry out the plan step by step, showing all work. Double-check each calculation. At the end, state the final answer as: ANSWER: [integer]\n\n{{INPUT}}",
-  "params": {
-    "max_tokens": 9000,
-    "thinking_budget": 6000
-  }
-}
-```

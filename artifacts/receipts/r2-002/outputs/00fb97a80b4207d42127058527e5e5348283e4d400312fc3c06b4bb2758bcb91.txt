@@ -1,9 +1,0 @@
-```json
-{
-  "template": "{{INPUT}}\n\nVerify this answer by checking it against the problem constraints. Then respond with ONLY the final integer answer with no other text:",
-  "params": {
-    "max_tokens": 512,
-    "thinking_budget": 1024
-  }
-}
-```

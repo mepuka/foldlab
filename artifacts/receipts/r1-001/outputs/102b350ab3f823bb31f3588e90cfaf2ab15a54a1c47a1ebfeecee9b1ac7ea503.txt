@@ -1,3 +1,0 @@
-# Restated Problem
-
-If there are 23 pallets with 5 boxes per pallet and 10 parts per box, how many of the total parts are defective at a rate of 8 percent?

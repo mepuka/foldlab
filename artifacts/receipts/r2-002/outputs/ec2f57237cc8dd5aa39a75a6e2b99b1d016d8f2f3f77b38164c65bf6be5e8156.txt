@@ -1,6 +1,0 @@
-```json
-{
-  "template": "<<<Review the working shown above. Verify the final answer is correct. Extract and state ONLY the final integer answer, with absolutely no other text, symbols, or formatting:\n\n{{INPUT}}\n\nFinal answer (integer only):>>>",
-  "params": {"max_tokens": 512, "thinking_budget": 1024}
-}
-```

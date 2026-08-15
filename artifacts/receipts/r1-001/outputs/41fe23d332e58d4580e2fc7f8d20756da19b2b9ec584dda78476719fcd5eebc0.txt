@@ -1,9 +1,0 @@
-# Two-Step Plan to Solve the Problem
-
-1. **Calculate the total number of parts across all pallets**
-   - Multiply the number of pallets (35) by boxes per pallet (3) by parts per box (9)
-   - Total parts = 35 × 3 × 9 = 945 parts
-
-2. **Determine the number of defective and non-defective parts**
-   - Multiply total parts by the defective percentage: 945 × 0.24 = 226.8 defective parts
-   - Multiply total parts by the non-defective percentage: 945 × 0.76 = 

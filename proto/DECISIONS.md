@@ -2055,7 +2055,9 @@ performance seam, not an identity law.
 
 ## Task 47 — create reply snapshots (2026-08-14)
 
-### D??. Create certificates carry the catalog snapshot captured under commit
+(D-number assigned 2026-08-15, post-merge repair: D67.)
+
+### D67. Create certificates carry the catalog snapshot captured under commit
 
 Decided: `catalog.commitCertified` returns the fact, convergence bit, and
 catalog head as one result captured while holding the catalog lock. For a new
@@ -2074,7 +2076,9 @@ the fact append still drops the reply and is not repaired here. **Load-bearing?
 yes** — Task 32 persists this catalog-head provenance.
 ## Task 46 — daemon-held claim tokens (2026-08-14)
 
-### D??. Commit authority is an opaque daemon-held claim token
+(D-numbers assigned 2026-08-15, post-merge repair: D68–D69.)
+
+### D68. Commit authority is an opaque daemon-held claim token
 
 Decided: a successful journald `claim` returns a fresh 32-byte
 cryptographically random lowercase-hex token and records, by effector name and
@@ -2097,7 +2101,7 @@ The wire change is explicitly authorized by
 6; no frozen fixture covers the journald claim/commit seam. **Load-bearing?
 yes** — the register proof assumes only the register mints commit authority.
 
-### D??. A journald restart orphans tokens until lease recovery
+### D69. A journald restart orphans tokens until lease recovery
 
 Decided: the token map is process memory and is deliberately empty after a
 daemon restart. The underlying register claim remains authoritative in
@@ -2114,7 +2118,10 @@ restart as lease recovery, never as token recovery.
 
 ## Task 49 — flb.protocol.v0 tracer bullet (2026-08-14)
 
-### D??. The five bootstrap types use the exact expressible v0 shapes
+(D-numbers assigned 2026-08-15, post-merge repair: D79–D84. Task 48's
+nine entries are D70–D78, in `verify/moves/DECISIONS.md`.)
+
+### D79. The five bootstrap types use the exact expressible v0 shapes
 
 Decided: `task.spec.v0`, `task.authorization.v0`, `task.build_report.v0`,
 `task.review.v0`, and `task.decision.v0` use strict structs; optional notes use
@@ -2127,7 +2134,7 @@ an approximation or new machinery would widen the contract without need.
 **Load-bearing? yes** — runtime fill checking and the protocol's hole identities
 depend on these cataloged structures.
 
-### D??. Protocol operations keep dotted request names and NATS-safe subjects
+### D80. Protocol operations keep dotted request names and NATS-safe subjects
 
 Decided: `contract.describe` names the derived MCP tools exactly
 `protocol.create`, `protocol.session.open`, `.fill`, `.close`, and `.state`,
@@ -2140,7 +2147,7 @@ tokens, and aliases would create a second drifting surface. **Load-bearing?
 yes** — MCP derivation must expose all five capabilities without handwritten
 registration.
 
-### D??. Bootstrap is executable TypeScript above the three-verb client
+### D81. Bootstrap is executable TypeScript above the three-verb client
 
 Decided: `src/protocol.ts` owns the reusable five-types-first bootstrap and
 `examples/bootstrap-protocol-v0.ts` is its runnable entry point. It calls only
@@ -2151,7 +2158,7 @@ not appear implicitly at daemon acquisition, while an executable client-side
 bootstrap is repeatable and same-byte submissions converge. **Load-bearing?
 no** — the bootstrap location can move without changing protocol semantics.
 
-### D??. Protocol session identity and evidence are canonical and arrival-free
+### D82. Protocol session identity and evidence are canonical and arrival-free
 
 Decided: the session id is the digest of its canonical open event; each request
 replays the owned journal through verify-on-read under one per-session mutex.
@@ -2166,7 +2173,7 @@ split, makes conflicting arrival orders converge, and keeps seat authority
 derived rather than caller-fabricated. **Load-bearing? yes** — fence results and
 final state identity must not depend on scheduling.
 
-### D??. Close records explicit unfilled states and digests a non-circular fold
+### D83. Close records explicit unfilled states and digests a non-circular fold
 
 Decided: close changes remaining `open` holes to visible `unfilled`, leaves a
 filled state's value in place with `sealed:true`, and changes disputes to
@@ -2178,3 +2185,22 @@ the close head in the final digest. Why: explicit terminal states are auditable,
 the requested state shape already provides `sealed?`, and including the head
 would make the close event's identity circular. **Load-bearing? yes** —
 predecessor validation and close replay re-derive this exact digest.
+
+### D84. The close-outcome rule keys on the literal hole name `decision`
+
+Decided (operator, at the task 49 merge): ship with the session runtime
+computing a session's outcome from the hole named `decision`
+(`protocol_session.go`), and no completion declaration in
+`flb.protocol.v0`. Consequence, stated: any protocol value without a
+hole of that name closes `abandoned` — silently, since validation never
+requires the hole. This records the acceptance review's
+FINDING-49-COMPLETION (`scratch/codex/49-protocol-v0.md`), which asked
+for a completion field before merge because a cataloged record shape is
+cheapest to change before its first real use. Alternatives: a
+`completion` field naming the outcome-bearing holes; a per-protocol
+close rule; refusing protocols that lack a `decision` hole. Why
+deferred: dogfood build — the only consumer is the task-acceptance
+scheme, which has the hole. The debt comes due when a second protocol
+scheme exists or a dogfood run closes a real session; consult this
+entry before either. **Load-bearing? yes** — close is the protocol's
+one fence, and a silent `abandoned` is a wrong outcome, not a refusal.
