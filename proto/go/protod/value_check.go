@@ -212,6 +212,6 @@ func valueRefusal(path []string, got, expected any) *Refusal {
 		Kind: KindInvalidStructure,
 		Law:  "a protocol fill value must conform to the hole's cataloged flb.type.v0 structure",
 		Path: frozenPath(path), Got: got, Expected: expected,
-		Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the session and submit a conforming value to an open or filled hole"}, describeHint()},
+		Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the session and submit a conforming value to a hole this session still admits"}, describeHint()},
 	}
 }

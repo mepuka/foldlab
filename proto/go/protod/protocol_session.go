@@ -58,15 +58,18 @@ type protocolHoleFold struct {
 	Sealed     bool                `json:"sealed,omitempty"`
 }
 
-// MarshalJSON keeps meaning and journal evidence separate: filled exposes its
-// value, disputed exposes the pair-set, and decided exposes both the selected
-// value and the retained candidate evidence. A JSON null is still a present
-// filled/decided value rather than being erased by omitempty.
+// MarshalJSON keeps meaning and journal evidence in separate fields: value
+// carries the hole's meaning, candidates carries its retained (value, seat)
+// evidence pairs. Every non-open state exposes its evidence — a confirming
+// refill must be readable in the state read, not only in the raw journal.
+// A JSON null is still a present filled/decided value rather than being
+// erased by omitempty.
 func (h protocolHoleFold) MarshalJSON() ([]byte, error) {
 	value := map[string]any{"state": h.State}
 	switch h.State {
 	case "filled":
 		value["value"] = h.Value
+		value["candidates"] = h.Candidates
 		if h.Sealed {
 			value["sealed"] = true
 		}
@@ -236,9 +239,6 @@ func (d *Daemon) serveProtocolSessionFill(ctx context.Context, body []byte) any 
 	if err != nil {
 		return nil
 	}
-	if fold.Status == "closed" {
-		return refuse(protocolClosed(request.Session))
-	}
 	hole, known := protocolHoleByName(fold.definition, request.Hole)
 	if !known {
 		return refuse(protocolSessionMoveRefusal(request.Session, []string{"hole"}, request.Hole, "a hole declared by this session's protocol", "choose a declared hole"))
@@ -255,46 +255,38 @@ func (d *Daemon) serveProtocolSessionFill(ctx context.Context, body []byte) any 
 	if refusal := d.checkCatalogedValue(hole.Type, request.Value, []string{"value"}); refusal != nil {
 		refusal.Next = []NextHint{{
 			Subject: SubjectProtocolSessionState,
-			Note:    "read the session and submit a conforming value to an open or filled hole",
+			Note:    "read the session and submit a conforming value to a hole this session still admits",
 			Body:    map[string]any{"session": request.Session},
 		}, describeHint()}
 		return refuse(refusal)
 	}
-	current := fold.Holes[request.Hole]
-	switch current.State {
-	case "open":
-		// append below
-	case "filled":
-		equal, err := sameCanonicalValue(current.Value, request.Value)
-		if err != nil {
-			return nil
+	valueBytes, err := canonicalBytes(request.Value)
+	if err != nil {
+		return refuse(protocolValueDomainRefusal(request.Session))
+	}
+	_, outcome, err := protocolFillStep(fold.Status, fold.Holes[request.Hole], request.Value, valueBytes, seat)
+	if err != nil {
+		// A retained value that lost its canonical bytes is substrate
+		// corruption: silence, never a fabricated law.
+		return nil
+	}
+	switch outcome {
+	case fillIdempotent:
+		return protocolFillReply{
+			OK: true, Head: cursor.Head, HoleState: cloneHoleFold(fold.Holes[request.Hole]),
+			Next: protocolSessionNext(request.Session),
 		}
-		if equal {
-			return protocolFillReply{
-				OK: true, Head: cursor.Head, HoleState: cloneHoleFold(current),
-				Next: protocolSessionNext(request.Session),
-			}
-		}
-		if len(current.Candidates) != 1 {
-			return nil
-		}
-		if current.Candidates[0].Seat == seat {
-			return refuse(protocolSessionMoveRefusal(
-				request.Session,
-				[]string{"value"}, request.Value,
-				"no self-revision: a seat opens a new protocol round to revise its own filled value",
-				"correction is a new round: close this round, then open a successor that cites it",
-			))
-		}
-	case "disputed", "decided":
+	case fillRefusedSelfRevision:
 		return refuse(protocolSessionMoveRefusal(
 			request.Session,
-			[]string{"hole"}, request.Hole,
-			"fills apply only to open or filled holes; disputed and decided evidence is append-stable",
-			"close this round; revise only in a successor session",
+			[]string{"value"}, request.Value,
+			"no self-revision: a seat opens a new protocol round to revise its own filled value",
+			"correction is a new round: close this round, then open a successor that cites it",
 		))
-	default:
-		return refuse(protocolSessionMoveRefusal(request.Session, []string{"hole"}, request.Hole, "an open or filled hole", "read session state"))
+	case fillRefusedClosed:
+		return refuse(protocolClosed(request.Session))
+	case fillRefusedState:
+		return refuse(protocolSessionMoveRefusal(request.Session, []string{"hole"}, request.Hole, "an open, filled, or disputed hole", "read session state"))
 	}
 	event := protocolSessionEvent{
 		Kind: "fill", Principal: request.Principal, Seat: seat, Hole: request.Hole,
@@ -468,8 +460,8 @@ func (d *Daemon) applyProtocolEvent(name string, fold *protocolSessionFold, even
 			definition: definition,
 		}, nil
 	case "fill":
-		if fold == nil || fold.Status != "open" {
-			return nil, errors.New("fill is not inside an open protocol session")
+		if fold == nil {
+			return nil, errors.New("fill precedes its protocol session open")
 		}
 		hole, known := protocolHoleByName(fold.definition, event.Hole)
 		seat, authorized := principalSeat(hole, fold.Bindings, event.Principal)
@@ -479,25 +471,20 @@ func (d *Daemon) applyProtocolEvent(name string, fold *protocolSessionFold, even
 		if refusal := d.checkCatalogedValue(hole.Type, event.Value, []string{"value"}); refusal != nil {
 			return nil, errors.New("stored fill value does not conform to its hole type")
 		}
-		state := fold.Holes[event.Hole]
-		switch state.State {
-		case "open":
-			state = protocolHoleFold{
-				State: "filled", Value: cloneJSON(event.Value),
-				Candidates: []protocolCandidate{{Value: cloneJSON(event.Value), Seat: event.Seat}},
-			}
-		case "filled":
-			equal, err := sameCanonicalValue(state.Value, event.Value)
-			if err != nil || equal || len(state.Candidates) != 1 || state.Candidates[0].Seat == event.Seat {
-				return nil, errors.New("stored conflicting fill is not a lawful dispute repair")
-			}
-			state.State = "disputed"
-			state.Value = nil
-			state.Candidates = canonicalCandidates(append(state.Candidates, protocolCandidate{Value: cloneJSON(event.Value), Seat: event.Seat}))
-		default:
-			return nil, errors.New("stored fill targets a stable hole state")
+		valueBytes, err := canonicalBytes(event.Value)
+		if err != nil {
+			return nil, errors.New("stored fill value has no canonical bytes")
 		}
-		fold.Holes[event.Hole] = state
+		next, outcome, err := protocolFillStep(fold.Status, fold.Holes[event.Hole], event.Value, valueBytes, event.Seat)
+		if err != nil {
+			return nil, err
+		}
+		if outcome != fillJournal {
+			// The serve path journals only admitted pair-new fills; any other
+			// stored outcome is an event this daemon never writes.
+			return nil, errors.New(storedFillCorruption(outcome))
+		}
+		fold.Holes[event.Hole] = next
 		return fold, nil
 	case "close":
 		if fold == nil || fold.Status != "open" || fold.Bindings["operator"] != event.Principal {
@@ -666,16 +653,136 @@ func canonicalCandidates(candidates []protocolCandidate) []protocolCandidate {
 	return result
 }
 
-func sameCanonicalValue(left, right any) (bool, error) {
-	leftBytes, err := canonicalBytes(left)
-	if err != nil {
-		return false, err
+type fillOutcome int
+
+const (
+	fillJournal fillOutcome = iota
+	fillIdempotent
+	fillRefusedSelfRevision
+	fillRefusedClosed
+	fillRefusedState
+)
+
+// protocolFillStep is the one fill decision kernel: the serve path and the
+// replay validator both apply it, so admitted wire behavior and stored-event
+// validation cannot drift. A fill journals exactly when its (value, seat)
+// pair is new to the hole's retained evidence; a pair already present is the
+// idempotent outcome, so at-least-once redelivery never grows the journal.
+// While the session is open, an open hole fills, a filled hole takes a
+// confirming refill or becomes a dispute built from every evidence pair plus
+// the offender, and a disputed hole absorbs from any authorized seat. After
+// close, meaning is fenced: decided and sealed holes append evidence
+// receipts, anything else refuses. The one deliberate divergence from the
+// model's total fills is no-self-revision: a seat that contributed an
+// evidence pair for the filled value may not submit a different value in the
+// same round.
+func protocolFillStep(status string, current protocolHoleFold, value any, valueBytes []byte, seat string) (protocolHoleFold, fillOutcome, error) {
+	pair := protocolCandidate{Value: cloneJSON(value), Seat: seat}
+	withPair := func(state protocolHoleFold) protocolHoleFold {
+		next := cloneHoleFold(state)
+		next.Candidates = canonicalCandidates(append(next.Candidates, pair))
+		return next
 	}
-	rightBytes, err := canonicalBytes(right)
-	if err != nil {
-		return false, err
+	if status == "closed" {
+		if current.State != "decided" && !(current.State == "filled" && current.Sealed) {
+			return protocolHoleFold{}, fillRefusedClosed, nil
+		}
+		present, err := candidatePairPresent(current.Candidates, valueBytes, seat)
+		if err != nil {
+			return protocolHoleFold{}, fillRefusedState, err
+		}
+		if present {
+			return current, fillIdempotent, nil
+		}
+		return withPair(current), fillJournal, nil
 	}
-	return bytes.Equal(leftBytes, rightBytes), nil
+	switch current.State {
+	case "open":
+		return protocolHoleFold{
+			State: "filled", Value: cloneJSON(value),
+			Candidates: []protocolCandidate{pair},
+		}, fillJournal, nil
+	case "filled":
+		present, err := candidatePairPresent(current.Candidates, valueBytes, seat)
+		if err != nil {
+			return protocolHoleFold{}, fillRefusedState, err
+		}
+		if present {
+			return current, fillIdempotent, nil
+		}
+		filledBytes, err := canonicalBytes(current.Value)
+		if err != nil {
+			return protocolHoleFold{}, fillRefusedState, err
+		}
+		if bytes.Equal(filledBytes, valueBytes) {
+			return withPair(current), fillJournal, nil
+		}
+		contributed, err := candidatePairPresent(current.Candidates, filledBytes, seat)
+		if err != nil {
+			return protocolHoleFold{}, fillRefusedState, err
+		}
+		if contributed {
+			return protocolHoleFold{}, fillRefusedSelfRevision, nil
+		}
+		next := withPair(current)
+		next.State = "disputed"
+		next.Value = nil
+		return next, fillJournal, nil
+	case "disputed":
+		present, err := candidatePairPresent(current.Candidates, valueBytes, seat)
+		if err != nil {
+			return protocolHoleFold{}, fillRefusedState, err
+		}
+		if present {
+			return current, fillIdempotent, nil
+		}
+		return withPair(current), fillJournal, nil
+	default:
+		return protocolHoleFold{}, fillRefusedState, nil
+	}
+}
+
+func candidatePairPresent(candidates []protocolCandidate, valueBytes []byte, seat string) (bool, error) {
+	for _, candidate := range candidates {
+		if candidate.Seat != seat {
+			continue
+		}
+		stored, err := canonicalBytes(candidate.Value)
+		if err != nil {
+			return false, err
+		}
+		if bytes.Equal(stored, valueBytes) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func storedFillCorruption(outcome fillOutcome) string {
+	switch outcome {
+	case fillIdempotent:
+		return "stored fill repeats an already-journaled evidence pair"
+	case fillRefusedSelfRevision:
+		return "stored fill is a refused self-revision"
+	case fillRefusedClosed:
+		return "stored fill after close targets an unfilled hole"
+	default:
+		return "stored fill targets a stable hole state"
+	}
+}
+
+func protocolValueDomainRefusal(session string) *Refusal {
+	return &Refusal{
+		Kind: KindInvalidStructure,
+		Law:  "a protocol fill value must have canonical bytes; identity cannot retain a value the canonical encoding refuses",
+		Path: []string{"value"}, Got: "a value outside the canonical encoding domain",
+		Expected: "a JSON value the RFC 8785 encoding admits",
+		Next: []NextHint{{
+			Subject: SubjectProtocolSessionState,
+			Note:    "submit a value inside the canonical identity domain",
+			Body:    map[string]any{"session": session},
+		}, describeHint()},
+	}
 }
 
 func protocolFinalStateDigest(fold *protocolSessionFold) (string, error) {
@@ -757,7 +864,7 @@ func protocolSessionMoveRefusal(session string, path []string, got, expected any
 func protocolClosed(session string) *Refusal {
 	return &Refusal{
 		Kind: KindSessionClosed,
-		Law:  "a closed protocol session is terminal; fills and repeated closes never append",
+		Law:  "a closed protocol session is terminal for meaning: evidence receipts append only to decided and sealed holes; unfilled holes and repeated closes never append",
 		Path: []string{"session"}, Got: session, Expected: "an open protocol session",
 		Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the terminal fold; revision requires a successor round", Body: map[string]any{"session": session}}},
 	}

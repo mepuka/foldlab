@@ -2243,3 +2243,97 @@ contest-without-alternative move (available later if wanted). Why: a
 move that asserts nothing must change nothing, and refusal must be a
 function of the move and the meaning fold alone. **Load-bearing?
 yes** — meaning confluence over the wire fragment is false without it.
+
+## DEV-674 — the daemon absorbs (2026-08-16; task-local placeholders
+D87–D91, assign at merge per the numbering rule)
+
+### D87. A fill is journaled exactly when its (value, seat) pair is new
+
+Decided: one pair-newness rule governs every fill path — open fill,
+confirming refill, absorb into a dispute, post-close receipt: the
+daemon admits-and-journals a fill iff its `(value, seat)` pair is new
+to the hole's retained evidence, and a pair already present replies OK
+idempotently with the head unchanged, never appending. The replay
+validator enforces the same rule strictly: a stored fill repeating a
+journaled pair is refused as corruption, because the serve path never
+writes one. Both sites consume one decision kernel
+(`protocolFillStep`), so the serve behavior and the journal validation
+cannot drift. Alternatives: journal every delivery and rely on the
+fold's set union (the journal grows without information under
+at-least-once transport); tolerate repeated pairs on replay as no-ops
+(admits journals this daemon never writes and silently un-checks the
+minimality invariant). Why: journal minimality, at-least-once
+collapse, and D85's extensional set semantics become one rule checked
+at both fill sites. **Load-bearing? yes** — implements D85 on the
+wire; DEV-670's wall drives redelivery vectors against it.
+
+### D88. No-self-revision binds over multi-pair evidence, in open rounds only
+
+Decided: a fill refuses iff the submitting seat already contributed an
+evidence pair for the hole's FILLED value and the submitted value
+differs (the single-pair `Candidates[0].Seat` check was this
+predicate's special case). The predicate binds only at filled holes in
+open sessions: disputed holes absorb from any authorized seat — a
+dispute is contest, not revision — and after close every fill on a
+decided or sealed hole lands as an evidence receipt, even a differing
+value from the sealing seat, because there is no dispute left to open
+and the seal is the meaning's protection. Alternatives: refuse
+post-close self-revisions too (splits the receipt path and adds a
+second divergence constructor to the DEV-670 wall mapping); predicate
+on "appears among the evidence seats" alone (equivalent for lawful
+states; the value-qualified form stays truthful on corrupt ones). Why:
+keeps the daemon's divergence from the model's total fills (D85) at
+exactly one named constructor, stated over the evidence it depends on.
+**Load-bearing? yes** — DEV-670's `selfRevisionRefusedByDaemon`
+encodes exactly this predicate.
+
+### D89. Hole folds expose retained evidence; the close digest covers it
+
+Decided: filled holes marshal their `candidates` beside `value` and
+`sealed`, so a confirming refill is readable in state reads and fill
+replies, not only in the raw journal; disputed and decided holes
+already exposed theirs. Consequence, stated: the final state digest —
+computed at close over the marshaled hole folds, pinned in the close
+event, never recomputed — now covers filled-hole evidence, making
+terminal identity a function of the full intent set, meaning AND
+evidence, which is D85's thesis on the wire. A journal closed before
+this change re-derives a different digest and fails replay; no such
+journal exists outside test temp stores (v0, no migration owed).
+Alternatives: keep filled folds meaning-only (confirming refills
+invisible in every reply, so the acceptance's state-read assertion is
+unfalsifiable); expose evidence in replies but digest meaning only
+(two hole-fold encodings that drift). **Load-bearing? yes** — digest
+preimages are wire law.
+
+### D90. The fill state machine, not a session gate, decides late fills
+
+Decided: the serve path's session-closed pre-check on fill is gone;
+hole existence, seat authority, and value conformance refuse first,
+and the fill kernel then routes closed-session fills — decided and
+sealed holes append receipts, unfilled holes refuse `session-closed`
+with the law reworded to "terminal for meaning". Consequence:
+post-close refusal kinds changed for unknown holes (was
+session-closed, now the unknown-hole refusal), unauthorized principals
+(now seat-unauthorized), and non-conforming values (now
+invalid-structure). The close verb keeps its early closed check, so a
+repeated close still refuses `session-closed`. Alternatives: keep the
+gate and carve receipt exceptions inside it (the gate would need
+exactly the hole/seat/value context it precedes); a separate receipt
+verb (a fourth face for what is still a fill). Why: a refusal should
+name the deepest law that fails, and the receipt path needs full
+validation anyway. **Load-bearing? maybe** — refusal kinds are
+wire-visible teaching and DEV-670's mapping reads them.
+
+### D91. A seat's multiple dispute values fence by canonical byte order
+
+Decided: nothing in `fenceChoice` changed; this records the newly
+reachable case. Absorb lets one seat hold several pairs inside a
+dispute, and at close the seat-authority fence picks that seat's first
+candidate in the canonical sort (seat, then value bytes) — the
+tie-break within the chosen seat is smallest canonical value bytes,
+deterministic and arrival-free like the rest of the fold. Alternatives
+(future ratification if wanted): refuse to fence a multi-value seat;
+latest-pair-wins (requires arrival order, refused by D82). Why: the
+existing fold already decides this case lawfully; recording it beats
+rediscovering it in the wall. **Load-bearing? maybe** — DEV-670's
+fence vectors will pin it.

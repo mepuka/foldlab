@@ -185,15 +185,25 @@ They are respectively `protocol.session.open`, `.fill`, `.close`, and
 The journal name is content-addressed from the canonical open event. State is
 always reconstructed by a verified journal read.
 
-An open hole fills with meaning only; its journal evidence records the
-`(value, seat)` pair. A byte-identical refill succeeds without moving the head.
-A different value from a different seat creates a canonical pair-attributed
-dispute. A different value from the same seat, and every fill of a disputed or
-decided hole, refuses and teaches a successor round. `close` is operator-only
-and atomic under the per-session serialization point: it seals filled holes,
-fences disputes by the declared seat order, records open holes as unfilled,
-and closes with `completed` exactly when the decision hole was filled or
-decided; otherwise it records `abandoned`. Closed sessions are terminal.
+An open hole fills with meaning only; every non-open hole fold exposes its
+retained journal evidence as `candidates`. A fill is admitted and journaled
+exactly when its `(value, seat)` pair is new to the hole's evidence;
+redelivering a journaled pair replies OK with the head unchanged, so
+at-least-once delivery cannot grow the journal. A same-value refill from a
+new seat journals the confirming pair with meaning untouched. A different
+value from a seat that has not contributed the filled value turns the hole
+into a canonical pair-attributed dispute built from every evidence pair plus
+the offender, and further fills on a disputed hole absorb into the candidate
+set from any authorized seat. A different value from a seat that already
+contributed the filled value refuses (no self-revision: correction is a
+successor round) — the daemon's one deliberate divergence from the model's
+total fills. `close` is operator-only and atomic under the per-session
+serialization point: it seals filled holes, fences disputes by the declared
+seat order, records open holes as unfilled, and closes with `completed`
+exactly when the decision hole was filled or decided; otherwise it records
+`abandoned`. A closed session is terminal for meaning: fills on decided and
+sealed holes append evidence receipts and never move the final state
+digest, while fills on unfilled holes and repeated closes refuse.
 
 Caveat (D84): the completed/abandoned rule keys on the literal hole
 name `decision`, and validation never requires that hole to exist. A
@@ -201,10 +211,11 @@ protocol value without one always closes `abandoned` — no refusal is
 issued. Until a completion declaration lands, `flb.protocol.v0` close
 semantics are task-acceptance-specific.
 
-The final state digest covers protocol, bindings, hole folds, status, outcome,
-and optional predecessor, but not the journal head (which would be circular).
-The close event commits that digest and the reply's head is captured inside the
-same critical section.
+The final state digest covers protocol, bindings, hole folds (their retained
+evidence included), status, outcome, and optional predecessor, but not the
+journal head (which would be circular). The close event commits that digest
+and the reply's head is captured inside the same critical section; the digest
+is pinned at close and later evidence receipts never recompute it.
 
 ### journal.read
 

@@ -1,5 +1,5 @@
 {
-  "_provenance": "Hand-authored Task 49 vectors against the ratified Task 48 move laws. Go drives these moves through the real single-daemon runtime; TypeScript decodes the same expected wire values. The vectors are a WALL against the proved model rule, not a correspondence proof.",
+  "_provenance": "Hand-authored contract vectors for the flb.protocol.session.v0 fill/close prose in proto/wire/CONTRACT.md (post-D85 absorb semantics). Go drives these moves through the real single-daemon runtime; TypeScript decodes the same expected wire values. The vectors claim the contract prose only — no model verdicts and not a correspondence proof; the generated wall carries the model claim.",
   "version": "flb.protocol.session.v0",
   "bindings": {
     "operator": "operator-principal",
@@ -51,17 +51,26 @@
       "refusal": { "kind": "invalid-structure" }
     },
     {
-      "name": "fill-disputed-refuses",
+      "name": "fill-disputed-absorbs",
       "setup": [
         { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } },
         { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } }
       ],
       "pre": { "decision": { "state": "disputed" } },
       "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
-      "refusal": { "kind": "invalid-structure" }
+      "expected": {
+        "decision": {
+          "state": "disputed",
+          "candidates": [
+            { "value": { "verdict": "reject" }, "seat": "coordinator" },
+            { "value": { "verdict": "revise" }, "seat": "coordinator" },
+            { "value": { "verdict": "accept" }, "seat": "operator" }
+          ]
+        }
+      }
     },
     {
-      "name": "fill-decided-refuses",
+      "name": "fill-decided-appends-evidence",
       "setup": [
         { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } },
         { "op": "fill", "principal": "operator-principal", "hole": "decision", "value": { "verdict": "accept" } },
@@ -69,7 +78,17 @@
       ],
       "pre": { "decision": { "state": "decided", "value": { "verdict": "accept" } } },
       "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
-      "refusal": { "kind": "session-closed" }
+      "expected": {
+        "decision": {
+          "state": "decided",
+          "value": { "verdict": "accept" },
+          "candidates": [
+            { "value": { "verdict": "reject" }, "seat": "coordinator" },
+            { "value": { "verdict": "revise" }, "seat": "coordinator" },
+            { "value": { "verdict": "accept" }, "seat": "operator" }
+          ]
+        }
+      }
     },
     {
       "name": "unauthorized-fill-refuses",
