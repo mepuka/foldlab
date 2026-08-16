@@ -20,11 +20,11 @@ fi
 # ---- Word-boundary greps: `exact sorry`, mid-line `admit`, and
 # `private axiom` all match. The bare words may not appear anywhere in
 # the sources, comments included, so evasion by phrasing is impossible.
-if grep -rnE "(^|[^A-Za-z0-9_'])(sorry|admit)($|[^A-Za-z0-9_'])" Moves Moves.lean 2>/dev/null; then
+if grep -rnE "(^|[^A-Za-z0-9_'])(sorry|admit)($|[^A-Za-z0-9_'])" Moves Moves.lean Oracle Main.lean 2>/dev/null; then
   echo "GATE: FAIL — lean sources mention sorry/admit" >&2
   exit 1
 fi
-if grep -rnE "(^|[^A-Za-z0-9_'])axiom($|[^A-Za-z0-9_'])" Moves Moves.lean 2>/dev/null; then
+if grep -rnE "(^|[^A-Za-z0-9_'])axiom($|[^A-Za-z0-9_'])" Moves Moves.lean Oracle Main.lean 2>/dev/null; then
   echo "GATE: FAIL — lean sources mention an axiom declaration" >&2
   exit 1
 fi
@@ -114,4 +114,24 @@ if [[ -n "$orphans" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (move-calculus proofs, axiom footprint, spec pin, orphan rule)"
+# ---- Conformance corpus regeneration: the committed fixture must equal a
+# fresh emission byte-for-byte. The provenance of every vector is the
+# generation command; a fixture that a regeneration cannot reproduce is a
+# hand-authored model verdict and is refused.
+fixture="../../packages/moves/fixtures/moves-conformance.ndjson"
+regen_tmp=$(mktemp "./.corpus-regen.XXXXXX.ndjson") || {
+  echo "GATE: FAIL — could not create corpus regeneration scratch" >&2
+  exit 1
+}
+trap 'rm -f "$axiom_check" "$regen_tmp"' EXIT
+if ! lake exe oracle emit 2000 > "$regen_tmp"; then
+  echo "GATE: FAIL — corpus emitter did not run" >&2
+  exit 1
+fi
+if ! cmp -s "$regen_tmp" "$fixture"; then
+  echo "GATE: FAIL — committed corpus is not a fresh regeneration;" \
+    "regenerate with: lake exe oracle emit 2000 > $fixture" >&2
+  exit 1
+fi
+
+echo "GATE: PASS (move-calculus proofs, axiom footprint, spec pin, orphan rule, corpus regeneration)"

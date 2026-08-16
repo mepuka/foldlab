@@ -1,5 +1,12 @@
 name = "moves"
-defaultTargets = ["Moves"]
+defaultTargets = ["Moves", "oracle"]
 
 [[lean_lib]]
 name = "Moves"
+
+[[lean_lib]]
+name = "Oracle"
+
+[[lean_exe]]
+name = "oracle"
+root = "Main"

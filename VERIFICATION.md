@@ -42,6 +42,7 @@ The table points; the entries below carry the bounds.
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
 | E2 move calculus (D85 confluence package: strong no-loss, wire confluence, schedule-free fences, refusal characterization, WF preservation, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: fills are total under repair, every fill's holder-attributed pair survives into terminal journal evidence with no refusal disjunct, and the total runner's terminal state — meaning and journal both — is invariant under permutation of any fill/dispute bag; refusal is an iff against the frozen `D85Refusal`; discharged against a sha256-pinned frozen spec with kill-checked mutants. Decide-bearing bags are order-sensitive by design (decide enters only through the fence at close); conflict coverage is two fills for legacy theorems; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
+| TS move-calculus kernel ≡ Lean model | R0 differential + R1 | **Claimed** for the generated 2000-vector corpus and the property sample: the `@foldlab/moves` kernel replays every model-emitted vector byte-identically (receipts, reversed bags, fences, journal evidence included), five planted mutants each die against the corpus, and the frozen-spec laws re-run as fast-check properties. Agreement is evidence, not proof; the corpus is randomized, not exhaustive; not the DEV-670 daemon wall | [packages/moves/](packages/moves/), [verify/moves/Main.lean](verify/moves/Main.lean) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
 
@@ -725,6 +726,62 @@ merge).
 
 [verify/moves/](verify/moves/) and
 [docs/research/2026-08-14-meaning-scheduler-e2.md](docs/research/2026-08-14-meaning-scheduler-e2.md).
+
+## TS move-calculus kernel ≡ Lean model — R0 differential + R1
+
+### Claim
+
+`@foldlab/moves` (`packages/moves/src/kernel.ts`, one named function per
+named def) computes the same calculus as `verify/moves/Moves/Model.lean`
+at the ground wire instantiation (three holes, `Nat` values,
+ASCII-identifier holders, value-then-holder candidate order): identical
+admitted/refused receipts, terminal meaning, journal evidence, primitive
+and repaired partial runs, reversed-bag runs, and canonical-min /
+holder-plurality fence choices, byte-for-byte under RFC 8785
+serialization.
+
+### Evidence
+
+The corpus is authored by executing the model: `verify/moves/Main.lean`
+(`lake exe oracle emit 2000`) compiles the unmodified `Moves` library
+and emits 2000 splitmix64-indexed traces with verdicts to
+`packages/moves/fixtures/moves-conformance.ndjson`; the first line
+records the generation command as provenance. `verify/moves/run.sh`
+regenerates and byte-compares the fixture on every gate run, so a
+hand-edited or stale corpus is a gate failure.
+`packages/moves/test/conformance.test.ts` replays all 2000 vectors —
+zero skips, count pinned — comparing canonical bytes, and pins corpus
+adequacy (refusals, disputes, decided holes all present in bulk).
+`packages/moves/test/mutants.test.ts` plants five semantics mutants —
+last-write-wins fill, the verbatim pre-D85 legacy repair, decide
+without the membership guard, empty-offer admission, reversed value
+order — and each dies against the corpus while the lawful kernel
+survives. `packages/moves/test/laws.property.test.ts` restates the
+frozen-spec laws L1–L8 and both spec witnesses as fast-check
+properties over inputs the corpus never sampled.
+
+### Bounds and residuals
+
+Cedar-style differential evidence, deliberately below refinement: the
+kernel-checked theorems hold of the instantiated model, NOT of the
+compiled binary that emitted the corpus, and NOT of the TS kernel —
+agreement is evidence bounded by the generator's reach. The corpus is
+randomized (traces of length 1–6 over two-to-four values, three holes,
+three holders), not the exhaustive wire-image enumeration DEV-670
+specifies, and it drives the TS kernel, not the Go daemon — the
+moves↔protod gap stays HELD. Byte identity leans on the narrow corpus
+grammar (ASCII keys and identifiers, integers below 2^53); outside it
+Lean's printer and RFC 8785 diverge (spike report). The TS comparators
+match Lean's only on that grammar: JavaScript code-unit string order
+equals Lean's code-point order for ASCII holders only. Cross-platform
+regeneration byte-identity is verified on this machine and argued, not
+CI-proven.
+
+### Checkable at
+
+[packages/moves/](packages/moves/),
+[verify/moves/Main.lean](verify/moves/Main.lean), and
+[docs/research/2026-08-15-lean-oracle-spike.md](docs/research/2026-08-15-lean-oracle-spike.md).
 
 ## Create-pipeline snapshot law — R2 (TLC); the head-read defect is fixed on `main`
 

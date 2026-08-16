@@ -24,6 +24,16 @@
         "fast-check": "4.9.0",
       },
     },
+    "packages/moves": {
+      "name": "@foldlab/moves",
+      "version": "0.0.0",
+      "dependencies": {
+        "@foldlab/core": "workspace:*",
+      },
+      "devDependencies": {
+        "fast-check": "4.9.0",
+      },
+    },
   },
   "catalog": {
     "@effect/platform-bun": "4.0.0-rc.108",
@@ -33,6 +43,8 @@
     "@effect/language-service": ["@effect/language-service@0.87.2", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-CfiSoaVQO8pZgaMZGw5VvMvRGybsJ2LaSDoLYaqiVGvo/YYPYVR2GzUKY0h1NtIweq/+SQ5XLrvtzPIttWQ0GQ=="],
 
     "@foldlab/core": ["@foldlab/core@workspace:packages/core"],
+
+    "@foldlab/moves": ["@foldlab/moves@workspace:packages/moves"],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
 

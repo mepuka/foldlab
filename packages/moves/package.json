@@ -1,0 +1,19 @@
+{
+  "name": "@foldlab/moves",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The E2 move calculus kernel: a direct transliteration of verify/moves, walled by model-generated conformance vectors.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "bun test ./test"
+  },
+  "dependencies": {
+    "@foldlab/core": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "4.9.0"
+  }
+}

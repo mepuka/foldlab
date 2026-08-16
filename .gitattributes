@@ -13,3 +13,4 @@
 # preimage.
 fixtures/** text eol=lf
 proto/wire/fixtures/** text eol=lf
+packages/moves/fixtures/** text eol=lf
