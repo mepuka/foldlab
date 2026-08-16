@@ -485,18 +485,19 @@ persists the sort on the wire, and the complete kind-to-sort manifest is
 frozen under a grammar digest so archived values are not silently re-sorted.
 
 The `flb.protocol.v0` session surface additionally claims, single-daemon:
-the close outcome follows the protocol's completion declaration; the
-declared revision policy is the exact divergence point between refusing
-and absorbing a contributing seat's differing value; the final-state
-digest preimage carries its session version string and that string is
-load-bearing; replay refuses a journal written under an unknown session
-version by name; the fence tie-break within the fence-chosen seat is
-smallest canonical value bytes; bounded fill multisets converge to one
-final-state digest across delivery orders with redeliveries injected, and
-the at-least-once collapse survives a process restart; and reopen
-equivalence on every admitting path is byte-level — the state reply
-served before a restart equals the reply replayed from the same store
-byte-for-byte.
+the close outcome follows the protocol's completion declaration; close
+authority follows the protocol's close declaration, with any principal
+bound to any named seat authorized to close; the declared revision policy
+is the exact divergence point between refusing and absorbing a contributing
+seat's differing value; the final-state digest preimage carries its session
+version string and that string is load-bearing; replay refuses a journal
+written under an unknown session version by name; the fence tie-break within
+the fence-chosen seat is smallest canonical value bytes; bounded fill
+multisets converge to one final-state digest across delivery orders with
+redeliveries injected, and the at-least-once collapse survives a process
+restart; and reopen equivalence on every admitting path is byte-level — the
+state reply served before a restart equals the reply replayed from the same
+store byte-for-byte.
 
 ### Evidence
 
@@ -525,6 +526,9 @@ driven through the real serve paths); the permutation/redelivery property
 `0x06750002`, 24 multisets, two random orders each, redeliveries injected
 mid-order); `TestRestartRedeliveryCollapses`;
 `TestCloseOutcomeFollowsTheCompletionDeclaration`;
+`TestCloseAuthorityFollowsTheDeclaration`,
+`TestNoOperatorSeatProtocolCloses`, and
+`TestCloseRefusalPrecedenceIsClosedThenAuthority`;
 `TestRevisionPolicySuccessorRoundRefuses` and
 `TestRevisionPolicyAbsorbIsTotal`;
 `TestSessionDigestPreimageCarriesItsVersion` and

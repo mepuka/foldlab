@@ -241,7 +241,7 @@ func protocolCloseStep(fold *protocolSessionFold) (*protocolSessionFold, closeOu
 // protocolSessionTransition folds one validated journal event. The caller
 // owns the impure half — catalog resolution for open (which constructs the
 // fold via protocolOpenFold), hole existence, seat derivation, and value
-// conformance for fill, operator authority for close — and every semantic
+// conformance for fill, declared close authority for close — and every semantic
 // outcome here is decided by the two kernels. A non-journal outcome refuses:
 // the serve paths never write one, so a stored event carrying one is
 // corruption.

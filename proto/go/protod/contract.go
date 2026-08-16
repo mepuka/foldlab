@@ -353,7 +353,7 @@ func describeReply() map[string]any {
 				map[string]any{
 					"name":    "protocol.session.close",
 					"subject": SubjectProtocolSessionClose,
-					"note":    "operator-only atomic close: fence disputes, seal filled holes, record unfilled holes, and capture the terminal head",
+					"note":    "declaration-authorized atomic close: a close principal must hold one of the protocol's declared close seats; close fences disputes, seals filled holes, records unfilled holes, and captures the terminal head",
 					"body":    vStruct(map[string]any{"session": vKind("string"), "principal": vKind("string")}),
 					"reply": vStruct(map[string]any{
 						"ok": vKind("bool"), "head": vDigest(), "outcome": vKind("string"), "next": vList(vNextHint()),

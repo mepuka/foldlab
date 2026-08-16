@@ -123,7 +123,7 @@ func (d *Daemon) serveProtocolSessionOpen(ctx context.Context, body []byte) any 
 			Kind: KindInvalidStructure,
 			Law:  "a cataloged fact that does not satisfy the flb.protocol.v0 grammar refuses at session open rather than folding",
 			Path: []string{"protocol"}, Got: request.Protocol,
-			Expected: "a cataloged flb.protocol.v0 value carrying the required completion and revision declarations",
+			Expected: "a cataloged flb.protocol.v0 value carrying the required completion, close, and revision declarations",
 			Next:     []NextHint{{Subject: SubjectProtocolCreate, Note: "recreate the protocol under the current grammar, then open its session"}, describeHint()},
 		})
 	}
@@ -204,7 +204,7 @@ func (d *Daemon) serveProtocolSessionFill(ctx context.Context, body []byte) any 
 	if !known {
 		return refuse(protocolSessionMoveRefusal(request.Session, []string{"hole"}, request.Hole, "a hole declared by this session's protocol", "choose a declared hole"))
 	}
-	seat, authorized := principalSeat(hole, fold.Bindings, request.Principal)
+	seat, authorized := principalSeat(hole.Seats, fold.Bindings, request.Principal)
 	if !authorized {
 		return refuse(&Refusal{
 			Kind: KindSeatUnauthorized,
@@ -297,18 +297,18 @@ func (d *Daemon) serveProtocolSessionClose(ctx context.Context, body []byte) any
 	if outcome == closeRefusedClosed {
 		return refuse(protocolClosed(request.Session))
 	}
-	if fold.Bindings["operator"] != request.Principal {
+	if _, authorized := principalSeat(fold.definition.Close, fold.Bindings, request.Principal); !authorized {
 		return refuse(&Refusal{
 			Kind: KindSeatUnauthorized,
-			Law:  "only the principal bound to the protocol's operator seat may close a round",
-			Path: []string{"principal"}, Got: request.Principal, Expected: fold.Bindings["operator"],
-			Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the operator binding before closing", Body: map[string]any{"session": request.Session}}},
+			Law:  "a close principal must hold one of the protocol's declared close seats",
+			Path: []string{"principal"}, Got: request.Principal, Expected: cloneJSON(fold.definition.Close),
+			Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the immutable seat bindings before choosing a principal bound to a declared close seat", Body: map[string]any{"session": request.Session}}},
 		})
 	}
 	if err != nil {
 		// A fold the close kernel cannot fence or digest is substrate
 		// corruption: silence, never a fabricated law — and it answers only
-		// after the teachable closed and operator refusals, preserving the
+		// after the teachable closed and close-authority refusals, preserving the
 		// pre-kernel refusal precedence.
 		return nil
 	}
@@ -383,7 +383,7 @@ func (d *Daemon) replayProtocolSession(ctx context.Context, name string, opened 
 }
 
 // applyProtocolEvent owns the impure half of stored-event validation —
-// catalog resolution, seat derivation, value conformance, operator
+// catalog resolution, seat derivation, value conformance, declared close
 // authority — and hands every semantic outcome to the kernels in
 // protocol_step.go through protocolSessionTransition.
 func (d *Daemon) applyProtocolEvent(name string, fold *protocolSessionFold, event protocolSessionEvent) (*protocolSessionFold, error) {
@@ -412,7 +412,7 @@ func (d *Daemon) applyProtocolEvent(name string, fold *protocolSessionFold, even
 			return nil, errors.New("fill precedes its protocol session open")
 		}
 		hole, known := protocolHoleByName(fold.definition, event.Hole)
-		seat, authorized := principalSeat(hole, fold.Bindings, event.Principal)
+		seat, authorized := principalSeat(hole.Seats, fold.Bindings, event.Principal)
 		if !known || !authorized || seat != event.Seat {
 			return nil, errors.New("stored fill does not carry its derived authorized seat")
 		}
@@ -421,7 +421,11 @@ func (d *Daemon) applyProtocolEvent(name string, fold *protocolSessionFold, even
 		}
 		return protocolSessionTransition(fold, event)
 	case "close":
-		if fold == nil || fold.Bindings["operator"] != event.Principal {
+		var authorized bool
+		if fold != nil {
+			_, authorized = principalSeat(fold.definition.Close, fold.Bindings, event.Principal)
+		}
+		if !authorized {
 			return nil, errors.New("stored close is unauthorized or repeated")
 		}
 		return protocolSessionTransition(fold, event)
@@ -518,8 +522,8 @@ func protocolHoleByName(definition protocolDefinition, name string) (protocolHol
 	return protocolHole{}, false
 }
 
-func principalSeat(hole protocolHole, bindings map[string]string, principal string) (string, bool) {
-	for _, seat := range hole.Seats {
+func principalSeat(seats []string, bindings map[string]string, principal string) (string, bool) {
+	for _, seat := range seats {
 		if bindings[seat] == principal {
 			return seat, true
 		}
