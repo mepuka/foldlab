@@ -44,54 +44,6 @@ type protocolSessionStateRequest struct {
 	Session string `json:"session"`
 }
 
-type protocolCandidate struct {
-	Value any    `json:"value"`
-	Seat  string `json:"seat"`
-}
-
-type protocolHoleFold struct {
-	State      string              `json:"state"`
-	Value      any                 `json:"value,omitempty"`
-	Candidates []protocolCandidate `json:"candidates,omitempty"`
-	Sealed     bool                `json:"sealed,omitempty"`
-}
-
-// MarshalJSON keeps meaning and journal evidence in separate fields: value
-// carries the hole's meaning, candidates carries its retained (value, seat)
-// evidence pairs. Every non-open state exposes its evidence — a confirming
-// refill must be readable in the state read, not only in the raw journal.
-// A JSON null is still a present filled/decided value rather than being
-// erased by omitempty.
-func (h protocolHoleFold) MarshalJSON() ([]byte, error) {
-	value := map[string]any{"state": h.State}
-	switch h.State {
-	case "filled":
-		value["value"] = h.Value
-		value["candidates"] = h.Candidates
-		if h.Sealed {
-			value["sealed"] = true
-		}
-	case "disputed":
-		value["candidates"] = h.Candidates
-	case "decided":
-		value["value"] = h.Value
-		value["candidates"] = h.Candidates
-	}
-	return json.Marshal(value)
-}
-
-type protocolSessionFold struct {
-	Session          string                      `json:"session"`
-	Protocol         string                      `json:"protocol"`
-	Bindings         map[string]string           `json:"bindings"`
-	Holes            map[string]protocolHoleFold `json:"holes"`
-	Status           string                      `json:"status"`
-	Outcome          string                      `json:"outcome,omitempty"`
-	Predecessor      *protocolPredecessor        `json:"predecessor,omitempty"`
-	FinalStateDigest string                      `json:"final_state_digest,omitempty"`
-	definition       protocolDefinition
-}
-
 type protocolSessionEvent struct {
 	Version          string               `json:"version,omitempty"`
 	Kind             string               `json:"kind"`
@@ -563,33 +515,6 @@ func protocolValueDomainRefusal(session string) *Refusal {
 			Note:    "submit a value inside the canonical identity domain",
 			Body:    map[string]any{"session": session},
 		}, describeHint()},
-	}
-}
-
-func cloneProtocolFold(fold *protocolSessionFold) *protocolSessionFold {
-	return &protocolSessionFold{
-		Session: fold.Session, Protocol: fold.Protocol, Bindings: cloneBindings(fold.Bindings),
-		Holes: cloneHoles(fold.Holes), Status: fold.Status, Outcome: fold.Outcome,
-		Predecessor: clonePredecessor(fold.Predecessor), FinalStateDigest: fold.FinalStateDigest,
-		definition: fold.definition,
-	}
-}
-
-func cloneHoles(holes map[string]protocolHoleFold) map[string]protocolHoleFold {
-	result := make(map[string]protocolHoleFold, len(holes))
-	for name, state := range holes {
-		result[name] = cloneHoleFold(state)
-	}
-	return result
-}
-
-func cloneHoleFold(state protocolHoleFold) protocolHoleFold {
-	candidates := make([]protocolCandidate, len(state.Candidates))
-	for index, candidate := range state.Candidates {
-		candidates[index] = protocolCandidate{Value: cloneJSON(candidate.Value), Seat: candidate.Seat}
-	}
-	return protocolHoleFold{
-		State: state.State, Value: cloneJSON(state.Value), Candidates: candidates, Sealed: state.Sealed,
 	}
 }
 
