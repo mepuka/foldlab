@@ -15,7 +15,10 @@ oracle, so the two cannot drift.
 ## Scope
 
 1. `oracle serve` (from the wall's `Main.lean`): persistent
-   JSON-lines process over stdin/stdout.
+   JSON-lines process over stdin/stdout. **Landed 2026-08-15**: the
+   binary exists in `verify/moves` against the canonical post-D85
+   model (`lake exe oracle serve`), emitting the S7 verdict schema;
+   this issue consumes it, extended by DEV-670's wire mode.
 2. A differential harness driving the daemon's isolated pure fold and
    the oracle side by side, reusing the shape of
    `go/canonical/differential_fuzz_test.go` (swap the `bun` probe for

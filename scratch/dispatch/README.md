@@ -42,10 +42,15 @@ in order:
   ratified: absorb semantics + strong no-loss + full confluence
   under a Rev-frozen, hash-pinned Spec.lean with mutant-killers.
 - stage 3: `15-daemon-absorb.md` (DEV-674) — D85 on the wire;
-  no-self-revision stays as a named Divergence.
+  no-self-revision stays as a named Divergence. Brief tightened
+  2026-08-15: the serve/replay lockstep obligation, the pair-newness
+  and self-revision predicates fixed, reopen-equivalence acceptance.
 - stage 4: `07-moves-vector-wall.md` (DEV-670, revised post-review) —
   exhaustive wire-image corpus at post-D85 semantics; the
-  hand-authored fixture and its kind leave the estate.
+  hand-authored fixture and its kind leave the estate. The oracle
+  emitter and the S7 TS-kernel wall landed 2026-08-15
+  (`docs/research/2026-08-15-ts-kernel-conformance-wall.md`); this
+  issue extends that machinery, never rebuilds it.
 - stage 5: `01-run-the-proved-calculus.md` (DEV-665, above)
 - stage 6: `09-author-one-type-on-the-wire.md` (DEV-666) — the
   fill/frontier loop births one real type.

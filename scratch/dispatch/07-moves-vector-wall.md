@@ -15,6 +15,45 @@ with the totality fix (previous stage) landed first. Feasibility is
 proved, not assumed: `scratch/spike-lean-oracle/` compiles the
 unmodified model and emits deterministically at ~115k cases/s.
 
+## Landed interfaces (2026-08-15, seam S7) — build on these, do not rebuild
+
+The TS-kernel wall (`docs/research/2026-08-15-ts-kernel-conformance-wall.md`)
+landed machinery this issue's scope items assume; the executor extends
+it rather than duplicating it:
+
+- **The oracle already lives in `verify/moves`** — `Oracle/Instance.lean`
+  (proved carrier instances), `Oracle/Codec.lean`, `Oracle/Gen.lean`,
+  `Main.lean`, lakefile targets; `lake exe oracle (emit N | serve)`.
+  Scope item 4's emitter is a new mode of THIS binary (e.g.
+  `emit-wire`), not a second executable. `serve` is already the
+  online-oracle lane's interface (DEV-672) — do not fork it.
+- **The S7 corpus stays.** `packages/moves/fixtures/moves-conformance.ndjson`
+  (2000 randomized vectors, provenance = its first line) is
+  regeneration-gated in `verify/moves/run.sh`: any change to
+  `Oracle/Gen.lean`, `Oracle/Codec.lean`, or a comparator rewrites its
+  bytes and must land with a regeneration in the same commit or the
+  gate fails. Tier A does NOT reuse the S7 instantiation — the
+  review's carriers stand (`Fin 2` holes; A, B, X; the five-spelling
+  value alphabet with RFC 8785 Appendix B as referee); the S7 wall
+  (`bun run gates` → packages/moves tests) must stay green through
+  every commit of this issue.
+- **The harness discipline is proven; copy its shape.** Zero skips as
+  `driven == total == pinned count`, whole-line byte equality, and
+  corpus-adequacy pins: `packages/moves/test/conformance.test.ts`.
+  Planted-mutant negative controls with a committed mutation→vector
+  kill map: `packages/moves/test/mutants.test.ts` and the map format
+  in the S7 closing record — gate (e)'s runtime mutations follow the
+  same reporting shape on the Go side.
+- **The registry (gate d) registers BOTH corpora** — Tier A/B and the
+  S7 fixture — from day one; an unregistered model-verdict fixture
+  anywhere in the tree is the failure the registry exists to catch.
+- **The Divergence enum's self-revision constructor encodes DEV-674's
+  fixed predicate** (refuse iff the submitting seat already
+  contributed an evidence pair for the filled value and the value
+  differs). It is evidence-dependent — the reason it is a Divergence
+  and not a model refusal — so the constructor carries the evidence
+  premise explicitly rather than a prose note.
+
 ## Scope
 
 1. **`verify/moves/Moves/Wire.lean` — the executable mapping.**
@@ -106,6 +145,15 @@ unmodified model and emits deterministically at ~115k cases/s.
   not correspondence. Explicitly: MOVES-5 passes this wall and is
   not dispositioned by it; close, `unfilled`, `sealed`, outcomes,
   and digests are contract-tested, not model-derived.
+- The S7 wall stays green through every commit: `bun run gates`
+  (packages/moves conformance + mutants + laws) and the
+  `verify/moves/run.sh` corpus-regeneration stage both pass; if a
+  codec/generator/comparator change rewrites the S7 corpus, the
+  regeneration lands in the same commit with the change named.
+- Emit/serve parity is a committed test, not a spike memory: the
+  Tier A corpus replayed through `oracle serve` is byte-identical
+  to its emitted form (the fixture is a memoized prefix of the
+  oracle; drift between the two modes is a gate failure).
 
 ## Out of scope
 
