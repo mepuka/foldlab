@@ -2244,8 +2244,9 @@ move that asserts nothing must change nothing, and refusal must be a
 function of the move and the meaning fold alone. **Load-bearing?
 yes** — meaning confluence over the wire fragment is false without it.
 
-## DEV-674 — the daemon absorbs (2026-08-16; task-local placeholders
-D87–D91, assign at merge per the numbering rule)
+## DEV-674 — the daemon absorbs (2026-08-16; assigned at merge: D86
+was the last heading on main, so the task-local D87–D91 stand as the
+final numbers — no renumbering)
 
 ### D87. A fill is journaled exactly when its (value, seat) pair is new
 

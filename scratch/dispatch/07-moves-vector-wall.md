@@ -2,7 +2,10 @@
 
 Issue: DEV-670 (slice stage 2, parent DEV-664; revised 2026-08-15
 after the independent review — supersedes the earlier bounded-corpus
-draft, whose reviewed defects this design exists to avoid)
+draft, whose reviewed defects this design exists to avoid; re-pinned
+2026-08-16 by the coordinator after the debt-free-wire grill, brief
+16: hard-cutover v0 grammar with required `completion`/`revision`,
+absorb-declared corpus, no open-session fill divergence)
 
 ## Why now
 
@@ -47,21 +50,31 @@ it rather than duplicating it:
 - **The registry (gate d) registers BOTH corpora** — Tier A/B and the
   S7 fixture — from day one; an unregistered model-verdict fixture
   anywhere in the tree is the failure the registry exists to catch.
-- **The Divergence enum's self-revision constructor encodes DEV-674's
-  fixed predicate** (refuse iff the submitting seat already
-  contributed an evidence pair for the filled value and the value
-  differs). It is evidence-dependent — the reason it is a Divergence
-  and not a model refusal — so the constructor carries the evidence
-  premise explicitly rather than a prose note.
+- **The open-session fill path carries NO divergence constructor**
+  (re-pinned 2026-08-16, grill rulings R4/R7): the corpus protocol
+  declares `revision: "absorb"`, so the daemon's open-session fill
+  path IS the model's total fill and `selfRevisionRefusedByDaemon`
+  leaves the enum. It returns only if a successor-round protocol
+  later joins the corpus — and then it encodes DEV-674's fixed
+  predicate (refuse iff the submitting seat already contributed an
+  evidence pair for the filled value and the value differs),
+  carrying the evidence premise explicitly rather than as a prose
+  note, because it is evidence-dependent — the reason it would be a
+  Divergence and not a model refusal. Successor-round behavior is
+  contract-tested at the daemon by the debt-free-wire stage's named
+  tests, not by this wall.
 
 ## Scope
 
 1. **`verify/moves/Moves/Wire.lean` — the executable mapping.**
    `WireMove` (fill/close only), total `toWire : Move → Option
-   WireMove`, `ofWire : DaemonHoleFold → Option HoleState`, and
-   `inductive Divergence` with one constructor per declared
-   model↔daemon disagreement (`selfRevisionRefusedByDaemon`,
-   `decidedMaskedBySessionClosed`, `closeHasNoModelCounterpart`, …).
+   WireMove`, `ofWire : DaemonHoleFold → Option HoleState` (stated
+   mapping premise, carried in the code rather than prose: a sealed
+   filled fold maps to `.decided`), and `inductive Divergence` with
+   one constructor per declared model↔daemon disagreement
+   (`closeHasNoModelCounterpart`; the post-close fill on an unfilled
+   hole refusing session-closed — the D90 mask; the open-session
+   fill path contributes none under the absorb-declared corpus).
    `|Divergence| = N` is pinned in acceptance. No prose divergence
    notes anywhere — a disagreement outside the N constructors fails.
 2. **`verify/moves/Moves/Vectors.lean` — the instantiation.**
@@ -95,13 +108,17 @@ it rather than duplicating it:
    JSON discipline per the spike report: fixed ASCII keys, values
    below 2^53, no floats, no control characters, `.compress` only.
 5. **Corpus protocol.** Two holes, all three seats on both holes,
-   hole types `{"k":"opaque"}`, `fence.order` declared — the
+   hole types `{"k":"opaque"}`, `fence.order` declared,
+   `revision: "absorb"` (ruling R7 — the naked calculus), and
+   `completion` naming both holes (required by the cutover grammar;
+   close outcomes stay contract-tested, not model-derived) — the
    daemon's type-check and seat authorization are provably inert, so
    any refusal is a calculus refusal.
-6. **Harness, two tiers.** Tier 1 drives Tier A through the isolated
-   pure fold (`applyProtocolEvent` extracted behind a `Step`-shaped
-   function); Tier 2 drives the same corpus through the real daemon
-   in Go and TS. Both assert `driven == total`, **zero skips**.
+6. **Harness, two tiers.** Tier 1 drives Tier A through the landed
+   pure seam `protocolSessionTransition` in
+   `proto/go/protod/protocol_step.go` (the debt-free-wire stage
+   hands it over as a landed interface, not a to-do); Tier 2 drives
+   the same corpus through the real daemon in Go and TS. Both assert `driven == total`, **zero skips**.
    Every vector resolves to `agree` or exactly one named
    `Divergence`; anything else fails.
 7. **Fixture split, not deletion.** Model-claiming rows of
@@ -133,7 +150,9 @@ it rather than duplicating it:
   concrete types, appears in the axiom-footprint roster, and no
   `sorry` exists in any generator file.
 - Every vector resolves to `agree` or one of the N named
-  divergences; N is pinned.
+  divergences; N is pinned. No open-session fill resolves to a
+  divergence — the absorb-declared corpus makes that path
+  divergence-free by construction (ruling R7).
 - ≥3 mutations each fail against a named vector; the map is
   committed with the closing report.
 - The registry gate fails on an unregistered model-verdict fixture

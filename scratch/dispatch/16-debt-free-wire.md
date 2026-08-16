@@ -1,7 +1,8 @@
-# The debt-free wire: protocol v1, versioned identity, policy-dissolved divergence
+# The debt-free wire: hard-cutover v0, versioned identity, policy-dissolved divergence
 
-Issue: DEV-675 (create on dispatch; parent DEV-664). Position: slice
-stage 3.5 — this stage lands BEFORE the DEV-670 corpus is generated,
+Issue: DEV-675 (created 2026-08-16, parent DEV-664, board stage 4 —
+DEV-670 and later shifted up one). Grill closed 2026-08-16; rulings
+below. Position: this stage lands BEFORE the DEV-670 corpus is generated,
 because the wall freezes semantics into a regeneration-gated corpus
 and every semantic change after that freeze costs a corpus rewrite
 plus divergence-enum churn. Generate the wall once, against debt-free
@@ -68,76 +69,99 @@ FINDING — minimize, report, STOP per AGENTS.md; do not repair first.
    byte-identical (the at-least-once collapse surviving a process
    boundary, which the DEV-674 reopen tests did not redeliver across).
 
-## The grill (operator ratifies before the build; recommended option first)
+## Rulings (operator, 2026-08-16 — the grill is closed; the executor
+transcribes these into task-local D-entries at build time)
 
-- **R1 — completion declaration.** Recommended: `flb.protocol.v1`
-  gains a required `completion` field: a non-empty, UTF-16-sorted,
-  duplicate-free array of declared hole names (the `struct.optional`
-  law, D9, applied again); close records `completed` exactly when
-  every named hole is `filled` or `decided`, else `abandoned`;
-  creation refuses unknown names, duplicates, unsorted order, or an
-  empty list (an empty ∀ would be vacuously `completed` — a footgun,
-  so unconditional completion is expressed by naming a hole the
-  protocol always fills). Alternatives: per-hole `required` flag; a
-  declared outcome expression (grammar creep); reserved `decision`
-  convention (D84 with a permit).
-- **R2 — scheme succession, not amendment.** Recommended: mint
-  `flb.protocol.v1`; `protocol.create` refuses `flb.protocol.v0`
-  with a teaching refusal naming v1 and its two new fields;
-  session.open on a v0 catalog fact already refuses by the existing
-  scheme check (`protocol_session.go:158`) — reword its law to teach
-  v1. No v0→v1 bridge machinery: the flb.type bridge precedent
-  (Task 36) existed for real facts, and no protocol fact has a real
-  consumer. v0 facts remain readable catalog history (the journal is
-  append-only; nothing is deleted). Alternative: amend v0 in place
-  (silently changes what a version string admits — exactly the
-  pattern this stage exists to end).
-- **R3 — versioned digest preimages, stated as law.** Recommended:
-  mint `flb.protocol.session.v1` (open-event version string, journal
-  name prefix `flb_protocol_session_v1_`), and the final-state
-  digest's meaning map gains `"v": "flb.protocol.session.v1"`. The
-  law for CONTRACT.md §versioning: a digest preimage is frozen for
-  the life of its version string; any change to what the bytes cover
-  mints the next version, and the version appears inside the digested
-  bytes, so two preimage shapes can never collide on one digest
-  domain. Replay refuses a version it does not carry with a named
-  error ("a journal written under an unknown session version refuses
-  replay rather than misfolding"). This retroactively legitimizes
-  D89's change as the v0→v1 boundary. Alternative: keep session v0
-  and document the preimage change (documentation is not a
-  mechanism).
-- **R4 — revision policy field.** Recommended: `flb.protocol.v1`
-  gains a required `revision` field, `"successor-round"` (today's
-  D88 refusal: a seat that contributed a pair for the filled value
-  may not submit a differing value in the open round) or `"absorb"`
-  (model-pure: such a fill disputes like any clash; fills are total).
-  No default — an identity-bearing semantic is never defaulted. The
-  policy threads through `protocolFillStep` as a parameter; one
-  kernel, both call sites, both policies. Alternatives: per-hole
-  granularity (build when a consumer asks); keep the hard-coded
-  refusal (keeps the divergence enum non-empty forever).
-- **R5 — fence tie-break ratified.** Recommended: ratify D91's
-  emergent behavior — when the fence's chosen seat holds several
-  candidate values, the smallest canonical value bytes win —
-  and pin it with a contract test. Alternative: refuse to fence a
-  multi-value seat (makes close partial; close must be total).
-- **R6 — retro-ratify D87–D90** as v1 law in the same sitting (they
-  are currently Eng-recorded decisions the spec did not fix:
-  pair-newness journaling, self-revision scoping, evidence in the
-  digest, refusal-precedence order). Cheap now, expensive after the
-  wall pins them.
+- **R1 — completion declaration: RATIFIED as recommended.** The
+  protocol record gains a required `completion` field: a non-empty,
+  UTF-16-sorted, duplicate-free array of declared hole names (the
+  `struct.optional` law, D9, applied again); close records
+  `completed` exactly when every named hole ends `filled` or
+  `decided`, else `abandoned`; creation refuses unknown names,
+  duplicates, unsorted order, and the empty list (an empty ∀ would
+  be vacuously `completed`; unconditional completion is expressed by
+  naming a hole the protocol always fills). Rejected: per-hole
+  `required` flag (same facts scattered); declared outcome
+  expression (grammar creep); reserved `decision` convention (D84
+  with a permit).
+- **R2 — HARD CUTOVER, overriding the succession recommendation.**
+  What lands now IS `flb.protocol.v0`: the redefined grammar
+  (`completion` and `revision` required) ships under the existing
+  version string, and every trace of the prior protocol shape is
+  discarded — no succession machinery, no teaching refusal naming a
+  successor, no bridge, no prior-version history maintained.
+  Operator's rationale: this is the first actually verified valid
+  protocol; versioning becomes a critical correctness concern FROM
+  THIS POINT, and there is no reason to maintain adherence or
+  reference to the pre-cutover shape. An old-shape value refuses as
+  malformed at its missing required field through the ordinary
+  grammar refusal — nothing names a "v1" anywhere. Preconditions,
+  verified at the grill: creation's key allowlist means no cataloged
+  fact carrying the new fields can exist, and D89 records that no
+  real session journals exist.
+- **R3 — versioned digest preimages: RATIFIED, composed with the
+  cutover.** The session version string stays
+  `flb.protocol.session.v0` (journal prefix unchanged); the
+  final-state digest's meaning map gains
+  `"v": "flb.protocol.session.v0"`. The law for CONTRACT.md
+  §versioning, binding from this cutover forward: a digest preimage
+  is frozen for the life of its version string; any change to what
+  the bytes cover mints the next version, and the version lives
+  inside the digested bytes, so two preimage shapes can never
+  collide on one digest domain. Replay refuses a version it does not
+  carry with a named error ("a journal written under an unknown
+  session version refuses replay rather than misfolding") — the
+  open case splits "repeated open" from "unknown session version".
+  D89 needs no retroactive boundary: pre-cutover history is
+  discarded outright, and the redefined v0 is the FIRST frozen
+  preimage.
+- **R4 — revision policy field: RATIFIED as recommended.** Required
+  `revision` field, `"successor-round"` (today's D88 refusal: a seat
+  that contributed a pair for the filled value may not submit a
+  differing value in the open round) or `"absorb"` (model-pure: such
+  a fill disputes like any clash; fills are total). No default — an
+  identity-bearing semantic is never defaulted. The policy threads
+  through `protocolFillStep` as a parameter; one kernel, both call
+  sites, both policies. The bootstrap task-acceptance protocol
+  declares `successor-round` (behavior unchanged). Rejected:
+  absorb-only without a field (deletes the governance protection
+  with no declared opt-in); per-hole granularity (build when a
+  consumer asks); hard-coded refusal (divergence enum non-empty
+  forever).
+- **R5 — fence tie-break: RATIFIED.** Within the fence-chosen seat,
+  smallest canonical value bytes win — D91's emergent behavior
+  becomes law, pinned with a contract test. Noted at ratification:
+  the refuse-to-fence alternative would hand any seat a veto on
+  close (submit two values into a dispute and the session never
+  terminates) — a griefing vector, beyond making close partial.
+- **R6 — D87–D90 retro-ratified as law, all four as-is**
+  (pair-newness journaling, self-revision scoping, evidence in the
+  close digest, refusal-precedence order): CONTRACT.md law under the
+  cutover grammar, quoted where they changed.
+- **R7 (added at the grill) — the DEV-670 wall corpus declares
+  `absorb` only.** The wall tests the naked calculus with an EMPTY
+  open-session fill divergence set; `selfRevisionRefusedByDaemon`
+  leaves the enum and returns only if a successor-round protocol
+  later joins the corpus (the enum grows by one constructor without
+  invalidating anything). Successor-round remains contract-tested at
+  the daemon by this stage's named tests. The DEV-670 brief re-pin
+  applying this is the coordinator's and is applied (scope item 9).
 
 ## Scope (build, after ratification)
 
-1. **`flb.protocol.v1`** in `proto/go/protod/protocol.go`: scheme
-   constant, `completion` and `revision` parsed and validated
-   (unknown names / empty / unsorted / duplicates refuse; unknown
-   `revision` value refuses); v0 creation refused with the teaching
-   refusal; all refusal law strings updated to name v1.
-2. **`flb.protocol.session.v1`** in `protocol_session.go`: version
-   constant, journal prefix, digest preimage gains `"v"`; the replay
-   open case splits its error — "repeated open" vs "unknown session
-   version" — so a future-version journal refuses by name.
+1. **The redefined `flb.protocol.v0`** in
+   `proto/go/protod/protocol.go`: `completion` and `revision` parsed
+   and validated (unknown names / empty / unsorted / duplicates
+   refuse; unknown `revision` value refuses); an old-shape value
+   refuses as malformed at its missing required field — no
+   succession refusal, no successor string; law strings keep naming
+   `flb.protocol.v0` (hard cutover, R2).
+2. **The versioned session preimage** in `protocol_session.go`: the
+   version string and journal prefix stay `flb.protocol.session.v0`
+   / `flb_protocol_session_v0_`; the digest preimage gains
+   `"v": "flb.protocol.session.v0"`; the replay open case splits its
+   error — "repeated open" vs "unknown session version" — so a
+   future-version journal refuses by name.
 3. **The close kernel.** Extract the close fold (seal / fence /
    unfilled / completion outcome / digest) into one pure function
    consumed by BOTH `serveProtocolSessionClose` and
@@ -163,22 +187,22 @@ FINDING — minimize, report, STOP per AGENTS.md; do not repair first.
    `abandoned`, and an absorb-declared protocol absorbing a
    contributing seat's differing value; `proto/ts/src/protocol.ts`
    bootstrap emits the new fields; TS decode path green.
-7. **CONTRACT.md**: §flb.protocol.v1 (completion, revision), the D84
-   caveat deleted, §versioning added with R3's law; the
+7. **CONTRACT.md**: §flb.protocol.v0 rewritten for the cutover
+   grammar (completion, revision), the D84 caveat deleted,
+   §versioning added with R3's law as composed with the cutover; the
    session-closed and scheme refusal laws re-quoted where they
-   changed.
+   changed. No section references the pre-cutover shape.
 8. **DECISIONS.md**: task-local entries for R1–R6 outcomes; D84 gains
    `SUPERSEDED BY` naming the completion entry; D91 gains its
    disposition line.
-9. **Docs hygiene**: the DEV-670 brief needs its revision pass by the
-   coordinator, NOT this executor (an executor never edits the spec
-   it builds against): divergence enum shrinks under R4 (corpus
-   protocol declares `absorb`; `selfRevisionRefusedByDaemon` remains
-   only if a successor-round protocol joins the corpus), the stale
-   `decidedMaskedBySessionClosed` example becomes the unfilled-hole
-   mask, and the mapping note "sealed folds map to `.decided`" is
-   recorded as a constructor premise. This brief flags it; DEV-670's
-   re-pin applies it.
+9. **Docs hygiene — APPLIED at the grill (2026-08-16)**: the
+   coordinator's revision pass on the DEV-670 brief landed with
+   these rulings (an executor never edits the spec it builds
+   against): divergence enum shrinks under R4/R7 (corpus protocol
+   declares `absorb`; `selfRevisionRefusedByDaemon` leaves the
+   enum), the stale `decidedMaskedBySessionClosed` example became
+   the post-close unfilled-hole mask, and the mapping note "sealed
+   folds map to `.decided`" is recorded as a stated mapping premise.
 
 ## Structural rules (the anti-divergence discipline, restated as law)
 
@@ -190,8 +214,10 @@ FINDING — minimize, report, STOP per AGENTS.md; do not repair first.
   outside that file fails the review.
 - Preimage-freeze law (R3): version strings inside digested bytes;
   refusal, never misfolding, for unknown versions.
-- Refusals teach succession: every refusal minted by the v0→v1 move
-  names the successor scheme and the missing fields in `next` hints.
+- Refusals teach the grammar: a value missing `completion` or
+  `revision` refuses at the missing field's path with `next` hints
+  naming the repair — no refusal names any successor or prior scheme
+  (hard cutover, R2).
 
 ## Acceptance (mechanical)
 
@@ -207,13 +233,13 @@ FINDING — minimize, report, STOP per AGENTS.md; do not repair first.
   - `TestRestartRedeliveryCollapses`;
   - `TestCloseOutcomeFollowsTheCompletionDeclaration` (including the
     non-`decision` completion closing `completed`);
-  - `TestProtocolV1CreationRefusalsTeach` (v0 scheme, empty/unknown/
-    unsorted completion, missing/unknown revision — each refusal
-    naming the repair);
+  - `TestProtocolCreationRefusalsTeach` (empty/unknown/unsorted
+    completion, missing/unknown revision — each refusal naming the
+    repair at its path);
   - `TestRevisionPolicyAbsorbIsTotal` and
     `TestRevisionPolicySuccessorRoundRefuses` (same fill sequence,
     both policies, diverging exactly at the declared point);
-  - `TestSessionV1DigestPreimageCarriesItsVersion` (internal, on
+  - `TestSessionDigestPreimageCarriesItsVersion` (internal, on
     `protocolFinalStateDigest`) and
     `TestUnknownSessionVersionRefusesReplay` (internal, on the open
     case);
@@ -221,8 +247,9 @@ FINDING — minimize, report, STOP per AGENTS.md; do not repair first.
 - Reopen equivalence on every new admitting path (the DEV-674 harness
   reused: restart over the same store, byte-identical fold).
 - Grep gates: `"decision"` absent from `protocol_session.go`;
-  `flb.protocol.v0` absent from creation-path law strings except the
-  teaching refusal that names it.
+  `protocol.v1` and `protocol.session.v1` absent from the tree (the
+  cutover mints no successor string); no refusal text names a prior
+  or successor scheme.
 - D-entries recorded; CONTRACT.md sections landed; the closing report
   lists findings from the sniff-first commits explicitly, including
   "none" if none.

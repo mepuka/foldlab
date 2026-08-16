@@ -1,5 +1,8 @@
 # The completion declaration: retire D84's hardcoded hole name
 
+RETIRED 2026-08-16: absorbed by `16-debt-free-wire.md` (grill item R1,
+build items in its scope). Do not dispatch from this draft.
+
 ## Why now
 
 D84, the operator's verdict verbatim: garbage fluff. The close-outcome
