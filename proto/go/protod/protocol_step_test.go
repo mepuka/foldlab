@@ -10,6 +10,7 @@
 package protod
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
@@ -161,6 +162,7 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 			map[string]any{"name": "blob", "type": opaqueType, "seats": []any{"coordinator"}},
 		},
 		"identity": "trusted-principals", "liveness": []any{"coordinator", "operator"},
+		"completion": []any{"decision"}, "revision": "successor-round",
 	})
 
 	// linear: open, one fill, close — every prefix is a lawful fold.
@@ -183,6 +185,19 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 	if len(disputed.events) != 3 {
 		t.Fatalf("disputed scenario stored %d events, want 3", len(disputed.events))
 	}
+	// A protocol fact from before the completion declaration cannot be
+	// created through the serve path anymore; inject one directly to prove
+	// replay refuses it rather than closing vacuously completed.
+	preCutoverCommit, refusal, err := d.catalog.commitValue(context.Background(), map[string]any{
+		"scheme": protocolScheme, "name": "pre-cutover",
+		"seats":    []any{"operator"},
+		"holes":    []any{map[string]any{"name": "decision", "type": stringType, "seats": []any{"operator"}}},
+		"identity": "trusted-principals", "liveness": []any{"operator"},
+	}, protocolScheme, "", "sniff")
+	if err != nil || refusal != nil {
+		t.Fatalf("inject pre-cutover fact: %v %v", err, refusal)
+	}
+	preCutoverFact := preCutoverCommit.fact.Digest
 
 	fill := func(principal, seat, hole string, value any) protocolSessionEvent {
 		return protocolSessionEvent{
@@ -214,19 +229,29 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 			name: "repeated open", scenario: linear,
 			fold:  func(t *testing.T) *protocolSessionFold { return linear.foldAt(t, 1) },
 			event: linear.events[0],
-			want:  "invalid or repeated protocol session open",
+			want:  "repeated protocol session open",
 		},
 		{
 			name: "open with a missing version", scenario: linear,
 			fold:  func(t *testing.T) *protocolSessionFold { return nil },
 			event: openWithVersion(""),
-			want:  "invalid or repeated protocol session open",
+			want:  "a journal written under an unknown session version refuses replay rather than misfolding",
 		},
 		{
 			name: "open with an unknown session version", scenario: linear,
 			fold:  func(t *testing.T) *protocolSessionFold { return nil },
 			event: openWithVersion("flb.protocol.session.vX"),
-			want:  "invalid or repeated protocol session open",
+			want:  "a journal written under an unknown session version refuses replay rather than misfolding",
+		},
+		{
+			name: "open with a pre-cutover protocol fact", scenario: linear,
+			fold: func(t *testing.T) *protocolSessionFold { return nil },
+			event: func() protocolSessionEvent {
+				event := linear.events[0]
+				event.Protocol = preCutoverFact
+				return event
+			}(),
+			wantContains: "does not satisfy the flb.protocol.v0 grammar",
 		},
 		{
 			name: "open with a protocol absent from the catalog", scenario: linear,
@@ -411,5 +436,70 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 				t.Fatalf("error = %q, want it to contain %q", err.Error(), row.wantContains)
 			}
 		})
+	}
+}
+
+func stepCreateMinimalProtocol(t *testing.T, d *Daemon) string {
+	t.Helper()
+	stringType := stepCreateType(t, d, map[string]any{"k": "string"})
+	return stepCreateProtocol(t, d, map[string]any{
+		"scheme": "flb.protocol.v0", "name": "minimal",
+		"seats":      []any{"operator"},
+		"holes":      []any{map[string]any{"name": "outcome", "type": stringType, "seats": []any{"operator"}}},
+		"completion": []any{"outcome"}, "revision": "successor-round",
+		"identity": "trusted-principals", "liveness": []any{"operator"},
+	})
+}
+
+func TestSessionDigestPreimageCarriesItsVersion(t *testing.T) {
+	d := stepDaemon(t)
+	protocol := stepCreateMinimalProtocol(t, d)
+	scenario := stepRunScenario(t, d, protocol,
+		map[string]string{"operator": "op-v"},
+		[]stepMove{
+			{principal: "op-v", hole: "outcome", value: "v"},
+			{principal: "op-v", close: true},
+		})
+	fold := scenario.foldAt(t, 3)
+	meaning := map[string]any{
+		"v":        protocolSessionVersion,
+		"protocol": fold.Protocol, "bindings": fold.Bindings, "holes": fold.Holes,
+		"status": fold.Status, "outcome": fold.Outcome,
+	}
+	preimage, err := canonicalBytes(meaning)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (bytesSHA256V1{}).Derive(preimage); fold.FinalStateDigest != want {
+		t.Fatalf("final state digest %s does not re-derive from the versioned preimage digest %s", fold.FinalStateDigest, want)
+	}
+	if !bytes.Contains(preimage, []byte(`"v":"flb.protocol.session.v0"`)) {
+		t.Fatalf("digest preimage does not carry its version string: %s", preimage)
+	}
+	delete(meaning, "v")
+	unversioned, err := canonicalBytes(meaning)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fold.FinalStateDigest == (bytesSHA256V1{}).Derive(unversioned) {
+		t.Fatal("the version string is not load-bearing in the digest preimage")
+	}
+}
+
+func TestUnknownSessionVersionRefusesReplay(t *testing.T) {
+	d := stepDaemon(t)
+	protocol := stepCreateMinimalProtocol(t, d)
+	scenario := stepRunScenario(t, d, protocol, map[string]string{"operator": "op-u"}, nil)
+	for _, version := range []string{"", "flb.protocol.session.vX"} {
+		event := scenario.events[0]
+		event.Version = version
+		_, err := d.applyProtocolEvent(scenario.session, nil, event)
+		want := "a journal written under an unknown session version refuses replay rather than misfolding"
+		if err == nil || err.Error() != want {
+			t.Fatalf("open under version %q folded with err=%v, want %q", version, err, want)
+		}
+	}
+	if _, err := d.applyProtocolEvent(scenario.session, nil, scenario.events[0]); err != nil {
+		t.Fatalf("the carried session version must fold: %v", err)
 	}
 }

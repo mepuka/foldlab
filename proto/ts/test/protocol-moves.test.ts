@@ -22,6 +22,7 @@ type Move = typeof Move.Type
 const HoleSubset = Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Json))
 const Vector = Schema.Struct({
   name: Schema.String,
+  protocol: Schema.optionalKey(Schema.Literals(["task-acceptance", "report-completion", "absorb-decision"])),
   setup: Schema.Array(Move),
   pre: HoleSubset,
   move: Move,
@@ -59,6 +60,76 @@ const execute = (client: ProtoClient, session: string, move: Move) =>
     ? client.closeProtocolSession(session, move.principal)
     : client.fillProtocolSession(session, move.principal, move.hole, mutableJson(move.value))
 
+const mustCreateType = async (client: ProtoClient, structure: Json, submitter: string): Promise<string> => {
+  const created = await client.createType(structure, { submitter })
+  if (!created.ok) throw new Error(JSON.stringify(created.refusal))
+  return created.fact.digest
+}
+
+const mustCreateProtocol = async (client: ProtoClient, protocol: Json, submitter: string): Promise<string> => {
+  const created = await client.createProtocol(protocol, { submitter })
+  if (!created.ok) throw new Error(JSON.stringify(created.refusal))
+  return created.fact.digest
+}
+
+/** Catalog the vector's declared protocol variant; absence means the
+ * task-acceptance bootstrap. */
+const bootstrapVariant = async (
+  client: ProtoClient,
+  variant: "task-acceptance" | "report-completion" | "absorb-decision" | undefined,
+  submitter: string,
+): Promise<string> => {
+  if (variant === undefined || variant === "task-acceptance") {
+    return (await bootstrapTaskAcceptance(client, submitter)).protocol
+  }
+  if (variant === "report-completion") {
+    const reportType = await mustCreateType(client, {
+      k: "struct",
+      fields: { commit: { k: "string" }, gates: { k: "string" } },
+      optional: [],
+    }, submitter)
+    return mustCreateProtocol(client, {
+      scheme: "flb.protocol.v0",
+      name: "report-completion",
+      seats: ["operator", "coordinator", "builder"],
+      holes: [{ name: "build_report", type: reportType, seats: ["builder"] }],
+      completion: ["build_report"],
+      revision: "successor-round",
+      identity: "trusted-principals",
+      liveness: ["builder", "coordinator", "operator"],
+    }, submitter)
+  }
+  const verdictType = await mustCreateType(client, {
+    k: "struct",
+    fields: {
+      verdict: {
+        k: "union",
+        of: [
+          { k: "literal", value: "accept" },
+          { k: "literal", value: "revise" },
+          { k: "literal", value: "reject" },
+        ],
+      },
+    },
+    optional: [],
+  }, submitter)
+  return mustCreateProtocol(client, {
+    scheme: "flb.protocol.v0",
+    name: "absorb-decision",
+    seats: ["operator", "coordinator", "builder"],
+    holes: [{
+      name: "decision",
+      type: verdictType,
+      seats: ["coordinator", "operator"],
+      fence: { rule: "seat-authority", order: ["operator", "coordinator"] },
+    }],
+    completion: ["decision"],
+    revision: "absorb",
+    identity: "trusted-principals",
+    liveness: ["builder", "coordinator", "operator"],
+  }, submitter)
+}
+
 test("the shared protocol move vectors pass through the typed client decode path", async () => {
   expect(fixture._provenance).toContain("not a correspondence proof")
   const fenceDigests = new Map<string, string>()
@@ -72,9 +143,9 @@ test("the shared protocol move vectors pass through the typed client decode path
     }
     const client = connected.fact
     try {
-      const bootstrapped = await bootstrapTaskAcceptance(client, `fixture:${vector.name}`)
+      const bootstrapped = await bootstrapVariant(client, vector.protocol, `fixture:${vector.name}`)
       const opened = await client.openProtocolSession({
-        protocol: bootstrapped.protocol,
+        protocol: bootstrapped,
         bindings: fixture.bindings,
       })
       expect(opened.ok).toBe(true)

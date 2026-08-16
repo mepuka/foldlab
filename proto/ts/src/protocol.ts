@@ -86,6 +86,8 @@ export const bootstrapTaskAcceptance = async (
         fence: { rule: "seat-authority", order: ["operator", "coordinator"] },
       },
     ],
+    completion: ["decision"],
+    revision: "successor-round",
     identity: "trusted-principals",
     liveness: ["builder", "coordinator", "operator"],
   }

@@ -165,11 +165,21 @@ in this build because that corpus-sealing seam does not exist. The typed
 ### flb.protocol.v0 and protocol sessions
 
 `protocol.create` catalogs a strict `flb.protocol.v0` value after validating
-nonempty unique seats, hole-seat inclusion, type resolution, and the fence
-law. A single-seat hole must not carry a fence. Every multi-seat hole carries
+nonempty unique seats, hole-seat inclusion, type resolution, the fence law,
+the completion declaration, and the revision policy. A single-seat hole must
+not carry a fence. Every multi-seat hole carries
 `{"rule":"seat-authority","order":[...]}`, where `order` is a permutation
-of its seats. The daemon derives identity from the protocol record's RFC 8785
-bytes and records the catalog fact under scheme `flb.protocol.v0`.
+of its seats. `completion` is required: a non-empty, UTF-16-sorted,
+duplicate-free array of declared hole names — the holes whose terminal
+states decide the close outcome. The empty list refuses, because an empty ∀
+would close every round vacuously `completed`; unconditional completion is
+declared by naming a hole the protocol always fills. `revision` is required
+and is either `"successor-round"` or `"absorb"` — an identity-bearing
+semantic is never defaulted. A value missing either field refuses as
+malformed at the missing field's path. The daemon derives identity from the
+protocol record's RFC 8785 bytes and records the catalog fact under scheme
+`flb.protocol.v0`. A cataloged fact that does not satisfy this grammar
+refuses at session open and replay rather than folding.
 
 The four session requests are:
 
@@ -194,28 +204,38 @@ new seat journals the confirming pair with meaning untouched. A different
 value from a seat that has not contributed the filled value turns the hole
 into a canonical pair-attributed dispute built from every evidence pair plus
 the offender, and further fills on a disputed hole absorb into the candidate
-set from any authorized seat. A different value from a seat that already
-contributed the filled value refuses (no self-revision: correction is a
-successor round) — the daemon's one deliberate divergence from the model's
-total fills. `close` is operator-only and atomic under the per-session
-serialization point: it seals filled holes, fences disputes by the declared
-seat order, records open holes as unfilled, and closes with `completed`
-exactly when the decision hole was filled or decided; otherwise it records
-`abandoned`. A closed session is terminal for meaning: fills on decided and
-sealed holes append evidence receipts and never move the final state
-digest, while fills on unfilled holes and repeated closes refuse.
+set from any authorized seat. What a different value from a seat that
+already contributed the filled value does is the protocol's own declared
+policy: under `revision: "successor-round"` it refuses (no self-revision:
+correction is a successor round), and under `revision: "absorb"` it disputes
+like any other clash — fills are total and the open-session fill path
+carries no divergence from the model. `close` is operator-only and atomic
+under the per-session serialization point: it seals filled holes, fences
+disputes by the declared seat order — within the fence-chosen seat the
+tie-break is smallest canonical value bytes, deterministic and arrival-free
+— records open holes as unfilled, and closes with `completed` exactly when
+every hole named by the completion declaration ends `filled` or `decided`;
+otherwise it records `abandoned`. A closed session is terminal for meaning:
+fills on decided and sealed holes append evidence receipts and never move
+the final state digest, while fills on unfilled holes and repeated closes
+refuse.
 
-Caveat (D84): the completed/abandoned rule keys on the literal hole
-name `decision`, and validation never requires that hole to exist. A
-protocol value without one always closes `abandoned` — no refusal is
-issued. Until a completion declaration lands, `flb.protocol.v0` close
-semantics are task-acceptance-specific.
+The final state digest covers the session version string
+(`"v": "flb.protocol.session.v0"`), protocol, bindings, hole folds (their
+retained evidence included), status, outcome, and optional predecessor, but
+not the journal head (which would be circular). The close event commits that
+digest and the reply's head is captured inside the same critical section; the
+digest is pinned at close and later evidence receipts never recompute it.
 
-The final state digest covers protocol, bindings, hole folds (their retained
-evidence included), status, outcome, and optional predecessor, but not the
-journal head (which would be circular). The close event commits that digest
-and the reply's head is captured inside the same critical section; the digest
-is pinned at close and later evidence receipts never recompute it.
+### Versioning
+
+A digest preimage is frozen for the life of its version string: any change
+to what the digested bytes cover mints the next version, and the version
+string lives inside the digested bytes, so two preimage shapes can never
+collide on one digest domain. `flb.protocol.session.v0` as defined above is
+the first frozen preimage. Replay refuses a version it does not carry with a
+named error — a journal written under an unknown session version refuses
+replay rather than misfolding.
 
 ### journal.read
 
