@@ -1,5 +1,7 @@
 # Authoring soundness over TyX: the flywheel's first step gets theorems
 
+Issue: DEV-669 (proof lane — parallel to the slice, never blocks it)
+
 ## Why now
 
 Ruling from the 2026-08-15 alignment grill: the test bed's first step —

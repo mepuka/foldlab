@@ -1,5 +1,7 @@
 # Run the proved calculus: the first real protocol session
 
+Issue: DEV-665 (slice stage 3, parent DEV-664)
+
 ## Why now
 
 Ruling from the 2026-08-15 alignment grill: the move calculus is proved
@@ -45,6 +47,11 @@ task-acceptance scheme (the one whose close semantics D84 supports):
   candidates, and the close records its fenced resolution.
 - The close outcome is `completed`, exercising the D84 rule on a real
   session for the first time.
+- The closing report renders the trace for the operator: a hole ×
+  event table (or sequence diagram) generated from the committed
+  journal, showing every admitted move, the refusal, the synthesized
+  dispute with both `(value, seat)` candidates, and the fence at
+  close. Generated from the journal, not hand-drawn.
 
 ## Out of scope
 

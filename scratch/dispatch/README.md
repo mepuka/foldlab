@@ -27,6 +27,38 @@ then prove the unproved step, then the demo):
 8. `08-moves-claim-repairs.md` — dispositions for the 2026-08-15
    audit findings.
 
+The vertical slice (ratified 2026-08-15, operator session; scoreboard
+in `SLICE.md`; restaged twice the same day — first by the rigor
+ruling banning hand-typed model verdicts, then by the independent
+review whose records live in `docs/research/2026-08-15-*.md`) is
+dispatched as a staged parent issue on the board —
+`00-the-vertical-slice.md` is the parent body (DEV-664); stages open
+in order:
+
+- stage 1: `12-total-step-runner.md` (DEV-671) — stepK closes
+  MOVES-1. DONE on `agent/codex/DEV-671`; Rev-reviewed; framing
+  repairs subsumed by stage 2.
+- stage 2: `14-d85-confluence-package.md` (DEV-673) — Branch A
+  ratified: absorb semantics + strong no-loss + full confluence
+  under a Rev-frozen, hash-pinned Spec.lean with mutant-killers.
+- stage 3: `15-daemon-absorb.md` (DEV-674) — D85 on the wire;
+  no-self-revision stays as a named Divergence.
+- stage 4: `07-moves-vector-wall.md` (DEV-670, revised post-review) —
+  exhaustive wire-image corpus at post-D85 semantics; the
+  hand-authored fixture and its kind leave the estate.
+- stage 5: `01-run-the-proved-calculus.md` (DEV-665, above)
+- stage 6: `09-author-one-type-on-the-wire.md` (DEV-666) — the
+  fill/frontier loop births one real type.
+- stage 7: `10-typed-scheme-join.md` (DEV-667) — a scheme hole typed
+  by the authored digest, run for real.
+- stage 8: `11-codegen-seat-schema.md` (DEV-668) — derived schemas
+  validate the session's values.
+- lane (blocked on stage 4): `13-online-oracle.md` (DEV-672) —
+  unbounded nightly differential against `oracle serve`.
+
+`02-tyx-authoring-soundness.md` rides beside the slice as the proof
+lane and never blocks it.
+
 A draft moves to the board by being pasted as an issue; the file then
 gains a line naming the issue key. A draft superseded before dispatch
 moves to `scratch/_archive/`.
