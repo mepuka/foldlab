@@ -246,10 +246,10 @@ func protocolCloseStep(fold *protocolSessionFold) (*protocolSessionFold, closeOu
 // the serve paths never write one, so a stored event carrying one is
 // corruption.
 //
-// Ownership: a fill folds in place and returns the same fold pointer; a
-// close returns a fresh terminal fold and leaves its input untouched. A
-// caller that needs the pre-event fold after stepping a fill must clone
-// first.
+// Ownership: the transition never mutates its input — fill and close each
+// return a fresh fold, so a harness may step several events from one
+// snapshot. The O(fold) clone per fill is the price of that purity, paid
+// once per replayed event.
 func protocolSessionTransition(fold *protocolSessionFold, event protocolSessionEvent) (*protocolSessionFold, error) {
 	switch event.Kind {
 	case "fill":
@@ -264,8 +264,9 @@ func protocolSessionTransition(fold *protocolSessionFold, event protocolSessionE
 		if outcome != fillJournal {
 			return nil, errors.New(storedFillCorruption(outcome))
 		}
-		fold.Holes[event.Hole] = next
-		return fold, nil
+		stepped := cloneProtocolFold(fold)
+		stepped.Holes[event.Hole] = next
+		return stepped, nil
 	case "close":
 		closed, outcome, err := protocolCloseStep(fold)
 		if err != nil {

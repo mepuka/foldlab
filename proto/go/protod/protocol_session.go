@@ -119,7 +119,13 @@ func (d *Daemon) serveProtocolSessionOpen(ctx context.Context, body []byte) any 
 	}
 	definition, err := protocolFromFact(fact)
 	if err != nil {
-		return nil
+		return refuse(&Refusal{
+			Kind: KindInvalidStructure,
+			Law:  "a cataloged fact that does not satisfy the flb.protocol.v0 grammar refuses at session open rather than folding",
+			Path: []string{"protocol"}, Got: request.Protocol,
+			Expected: "a cataloged flb.protocol.v0 value carrying the required completion and revision declarations",
+			Next:     []NextHint{{Subject: SubjectProtocolCreate, Note: "recreate the protocol under the current grammar, then open its session"}, describeHint()},
+		})
 	}
 	if refusal := validateBindings(definition, request.Bindings); refusal != nil {
 		return refuse(refusal)
@@ -187,6 +193,11 @@ func (d *Daemon) serveProtocolSessionFill(ctx context.Context, body []byte) any 
 	defer stored.mu.Unlock()
 	fold, cursor, err := d.replayProtocolSession(ctx, request.Session, stored.journal)
 	if err != nil {
+		return nil
+	}
+	if fold == nil {
+		// A journal with no open event replays to no fold: silence until the
+		// open is redelivered, never a panic.
 		return nil
 	}
 	hole, known := protocolHoleByName(fold.definition, request.Hole)
@@ -277,6 +288,11 @@ func (d *Daemon) serveProtocolSessionClose(ctx context.Context, body []byte) any
 	if err != nil {
 		return nil
 	}
+	if fold == nil {
+		// A journal with no open event replays to no fold: silence until the
+		// open is redelivered, never a panic.
+		return nil
+	}
 	closed, outcome, err := protocolCloseStep(fold)
 	if outcome == closeRefusedClosed {
 		return refuse(protocolClosed(request.Session))
@@ -331,6 +347,11 @@ func (d *Daemon) serveProtocolSessionState(ctx context.Context, body []byte) any
 	defer stored.mu.Unlock()
 	fold, cursor, err := d.replayProtocolSession(ctx, request.Session, stored.journal)
 	if err != nil {
+		return nil
+	}
+	if fold == nil {
+		// A journal with no open event replays to no fold: silence until the
+		// open is redelivered, never a panic.
 		return nil
 	}
 	return protocolStateReply{

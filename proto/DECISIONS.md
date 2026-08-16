@@ -2469,3 +2469,85 @@ catalog); kernels left in `protocol_session.go` (the review rule
 "a semantic switch outside protocol_step.go fails the review" would
 be unenforceable). **Load-bearing? maybe** — DEV-670 consumes
 `protocolSessionTransition` as its Step-shaped function.
+
+## DEV-675 review remediation (2026-08-16; the independent review's
+recommended rulings, operator-ratified with G1–G5 — D98–D103 assigned
+at merge)
+
+### D98. An unlawful decoded protocol fact refuses at session open as data
+
+Decided (G1 ratified as amended by the independent review):
+`serveProtocolSessionOpen` surfaces a `protocolFromFact` failure as a
+typed `invalid-structure` refusal at path `protocol` with repair
+hints, instead of dropping the reply. CONTRACT.md already promised
+"refuses at session open and replay rather than folding"; the build's
+silence was the defect. The refusal reuses the frozen
+`invalid-structure` kind, so the refusal-sort manifest digest is
+untouched. Replay errors on the other serve paths remain wire silence
+per D101. Pinned by `TestPreCutoverFactRefusesAtSessionOpen`.
+Alternatives: keep silence (contradicts the refusal-as-data law and
+the contract's own sentence); a new refusal kind (re-mints the frozen
+sort manifest for no new ontology). **Load-bearing? yes** — a client
+can now distinguish "recreate the protocol" from "daemon unreachable".
+
+### D99. One completion checker drives creation and decoded facts
+
+Decided (the F6 cure, ratified with G1): the completion law is stated
+once — `protocolCompletionCheck` — and both the creation refusal path
+(`protocolCompletion`) and the decoded-fact predicate
+(`protocolGrammarLawful`) derive from it. Two restatements of one law
+in one file would eventually admit at creation what decode refuses,
+or vice versa — the "agree by inspection" hazard this issue exists to
+kill. Alternatives: keep the twin restatements (drift hazard);
+refusal-shaped check only (decoded facts need no paths).
+**Load-bearing? yes** — the predicate guards the catalog surface D93
+extended.
+
+### D100. The transition seam clones on fill
+
+Decided (F5, per the independent review's recommendation):
+`protocolSessionTransition` never mutates its input — a fill clones
+the fold before folding, matching close. A DEV-670 Tier-1 harness may
+step several events from one snapshot without contaminating its
+baseline; the O(fold) clone per replayed event is the stated price.
+Pinned by `TestTransitionLeavesItsInputFoldUntouched`. Alternatives:
+fill-in-place with a documented ownership asymmetry (the `0db328c`
+contract — a footgun the first harness would trip); copy-on-write
+holes (complexity unearned at this fold size). **Load-bearing? yes**
+— DEV-670 consumes the seam.
+
+### D101. Wire silence for replay errors, unknown session version included
+
+Decided (G2 ratified): on the wire, a journal that refuses replay —
+unknown session version included — receives the substrate-corruption
+treatment: no reply. The named unknown-version error binds the replay
+validator (D94); no wire refusal kind exists for it, because a typed
+kind would re-mint the frozen sort manifest for a distinction no
+consumer reads today. Revisit when a second session version exists.
+Alternatives: a typed wire refusal now (manifest re-mint plus a new
+kind for client teaching that has no client). **Load-bearing? no** —
+recorded so the silence is a choice, not an accident.
+
+### D102. The moves fixture carries a per-vector protocol variant field
+
+Decided (build, recorded per the review): `protocol-moves.json`
+vectors may name a `protocol` variant — `task-acceptance` (default),
+`report-completion`, `absorb-decision` — because the fixture's
+single-bootstrap format could not express the three cutover vectors.
+Both drivers refuse unknown variant names. Alternatives: separate
+fixture files per protocol (three walls to keep aligned); inline
+protocol definitions per vector (bloats every row for three uses).
+**Load-bearing? no**.
+
+### D103. An open-less session journal serves silence, never a panic
+
+Decided (G4, authorized as review repair): the serve paths guard the
+nil fold an empty journal replays to — the crash window between
+journal creation and the open append — and answer silence until the
+open is redelivered; the content-addressed open converges on the same
+journal and repairs it. Previously a fill, close, or state request on
+such a journal panicked inside the NATS handler and took down the
+daemon process. Pinned by `TestEmptyProtocolSessionJournalServesSilence`.
+Alternatives: ticket-and-defer (leaves a process-crash exposure a
+one-line guard removes); a typed refusal (invents a law for a state
+no lawful flow produces). **Load-bearing? no**.

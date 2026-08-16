@@ -133,18 +133,31 @@ func TestProtocolCreationRefusalsTeach(t *testing.T) {
 			"identity": "trusted-principals", "liveness": []any{"operator"},
 		}
 	}
+	// expected must TEACH: the describe surface brands the protocol body
+	// opaque, so each refusal's expected is the only place a caller can
+	// discover the lawful completion shape or the permitted revision values.
+	revisionValues := []any{"successor-round", "absorb"}
 	rows := []struct {
-		name   string
-		mutate func(map[string]any)
-		path   []any
+		name           string
+		mutate         func(map[string]any)
+		path           []any
+		expectContains []string
+		expectEquals   any
 	}{
-		{"missing completion", func(p map[string]any) { delete(p, "completion") }, []any{"protocol", "completion"}},
-		{"empty completion", func(p map[string]any) { p["completion"] = []any{} }, []any{"protocol", "completion"}},
-		{"unknown completion name", func(p map[string]any) { p["completion"] = []any{"gamma"} }, []any{"protocol", "completion", "0"}},
-		{"unsorted completion", func(p map[string]any) { p["completion"] = []any{"beta", "alpha"} }, []any{"protocol", "completion", "1"}},
-		{"duplicate completion name", func(p map[string]any) { p["completion"] = []any{"alpha", "alpha"} }, []any{"protocol", "completion", "1"}},
-		{"missing revision", func(p map[string]any) { delete(p, "revision") }, []any{"protocol", "revision"}},
-		{"unknown revision policy", func(p map[string]any) { p["revision"] = "latest-wins" }, []any{"protocol", "revision"}},
+		{"missing completion", func(p map[string]any) { delete(p, "completion") }, []any{"protocol", "completion"},
+			[]string{"declared hole names", "UTF-16-sorted", "duplicate-free"}, nil},
+		{"empty completion", func(p map[string]any) { p["completion"] = []any{} }, []any{"protocol", "completion"},
+			[]string{"declared hole names", "UTF-16-sorted", "duplicate-free"}, nil},
+		{"unknown completion name", func(p map[string]any) { p["completion"] = []any{"gamma"} }, []any{"protocol", "completion", "0"},
+			[]string{"declared"}, nil},
+		{"unsorted completion", func(p map[string]any) { p["completion"] = []any{"beta", "alpha"} }, []any{"protocol", "completion", "1"},
+			[]string{"sorted by UTF-16"}, nil},
+		{"duplicate completion name", func(p map[string]any) { p["completion"] = []any{"alpha", "alpha"} }, []any{"protocol", "completion", "1"},
+			[]string{"without duplicates"}, nil},
+		{"missing revision", func(p map[string]any) { delete(p, "revision") }, []any{"protocol", "revision"},
+			nil, revisionValues},
+		{"unknown revision policy", func(p map[string]any) { p["revision"] = "latest-wins" }, []any{"protocol", "revision"},
+			nil, revisionValues},
 	}
 	for _, row := range rows {
 		t.Run(row.name, func(t *testing.T) {
@@ -156,6 +169,17 @@ func TestProtocolCreationRefusalsTeach(t *testing.T) {
 			}
 			if !reflect.DeepEqual(refusal["path"], row.path) {
 				t.Fatalf("refusal path = %v, want %v", refusal["path"], row.path)
+			}
+			if len(row.expectContains) > 0 {
+				expected, _ := refusal["expected"].(string)
+				for _, want := range row.expectContains {
+					if !strings.Contains(expected, want) {
+						t.Fatalf("refusal expected %q does not teach %q", expected, want)
+					}
+				}
+			}
+			if row.expectEquals != nil && !reflect.DeepEqual(refusal["expected"], row.expectEquals) {
+				t.Fatalf("refusal expected = %v, want %v", refusal["expected"], row.expectEquals)
 			}
 			next, ok := refusal["next"].([]any)
 			if !ok || len(next) == 0 {

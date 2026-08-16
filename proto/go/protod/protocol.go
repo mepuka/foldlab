@@ -197,28 +197,55 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 	return definition, nil
 }
 
-// protocolCompletion validates the completion declaration: a non-empty,
-// UTF-16-sorted, duplicate-free array of declared hole names. The empty
-// list is refused because an empty ∀ would close every round vacuously
+// completionExpectation is the completion declaration's lawful shape,
+// taught verbatim by every refusal about the whole field. The empty list
+// is refused because an empty ∀ would close every round vacuously
 // completed; unconditional completion is declared by naming a hole the
 // protocol always fills.
+const completionExpectation = "a non-empty, UTF-16-sorted, duplicate-free array of declared hole names whose terminal states decide the close outcome"
+
+// protocolCompletionCheck is the one completion law; the creation refusal
+// and the decoded-fact predicate both derive from it, so the two surfaces
+// cannot drift. It reports the first offense as (index, expected); index -1
+// offends at the array itself.
+func protocolCompletionCheck(names []string, declared map[string]bool) (int, string, bool) {
+	if len(names) == 0 {
+		return -1, completionExpectation, false
+	}
+	for index, name := range names {
+		if !declared[name] {
+			return index, "a hole name declared by this protocol", false
+		}
+		if index > 0 && !utf16Less(names[index-1], name) {
+			return index, "completion names sorted by UTF-16 code units without duplicates", false
+		}
+	}
+	return 0, "", true
+}
+
+// protocolCompletion shapes the submitted value and refuses through
+// protocolCompletionCheck at the exact offending path.
 func protocolCompletion(value any, path []string, holeNames map[string]bool) ([]string, *Refusal) {
 	values, ok := value.([]any)
-	if !ok || len(values) == 0 {
-		return nil, protocolMalformed(path, value, "a non-empty array of declared hole names whose terminal states decide the close outcome")
+	if !ok {
+		return nil, protocolMalformed(path, value, completionExpectation)
 	}
 	result := make([]string, len(values))
 	for index, item := range values {
 		name, ok := item.(string)
-		if !ok || !holeNames[name] {
+		if !ok {
 			return nil, protocolMalformed(append(path, fmt.Sprint(index)), item, "a hole name declared by this protocol")
-		}
-		if index > 0 && !utf16Less(result[index-1], name) {
-			return nil, protocolMalformed(append(path, fmt.Sprint(index)), name, "completion names sorted by UTF-16 code units without duplicates")
 		}
 		result[index] = name
 	}
-	return result, nil
+	index, expected, lawful := protocolCompletionCheck(result, holeNames)
+	if lawful {
+		return result, nil
+	}
+	if index < 0 {
+		return nil, protocolMalformed(path, value, expected)
+	}
+	return nil, protocolMalformed(append(path, fmt.Sprint(index)), result[index], expected)
 }
 
 func protocolRevisionLawful(revision string) bool {
@@ -230,22 +257,12 @@ func protocolRevisionLawful(revision string) bool {
 // refuse only a fact cataloged before these fields existed — which must
 // refuse rather than close vacuously completed.
 func protocolGrammarLawful(definition protocolDefinition) bool {
-	if len(definition.Completion) == 0 || !protocolRevisionLawful(definition.Revision) {
-		return false
-	}
 	declared := map[string]bool{}
 	for _, hole := range definition.Holes {
 		declared[hole.Name] = true
 	}
-	for index, name := range definition.Completion {
-		if !declared[name] {
-			return false
-		}
-		if index > 0 && !utf16Less(definition.Completion[index-1], name) {
-			return false
-		}
-	}
-	return true
+	_, _, lawful := protocolCompletionCheck(definition.Completion, declared)
+	return lawful && protocolRevisionLawful(definition.Revision)
 }
 
 func isTypeFactScheme(scheme string) bool {
@@ -262,10 +279,24 @@ func protocolKeys(value map[string]any, path []string, allowed ...string) *Refus
 			continue
 		}
 		if _, present := value[key]; !present {
-			return protocolMalformed(append(path, key), nil, "a required flb.protocol.v0 field")
+			return protocolMalformed(append(path, key), nil, protocolFieldExpectation(key))
 		}
 	}
 	return nil
+}
+
+// protocolFieldExpectation teaches a missing required field's lawful shape.
+// contract.describe brands the protocol body opaque, so the refusal is the
+// only surface where the grammar's new fields are discoverable.
+func protocolFieldExpectation(key string) any {
+	switch key {
+	case "completion":
+		return completionExpectation
+	case "revision":
+		return []any{protocolRevisionSuccessorRound, protocolRevisionAbsorb}
+	default:
+		return "a required flb.protocol.v0 field"
+	}
 }
 
 func protocolStringSet(value any, path []string, nonempty bool) ([]string, *Refusal) {

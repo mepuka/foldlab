@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -483,6 +484,102 @@ func TestSessionDigestPreimageCarriesItsVersion(t *testing.T) {
 	}
 	if fold.FinalStateDigest == (bytesSHA256V1{}).Derive(unversioned) {
 		t.Fatal("the version string is not load-bearing in the digest preimage")
+	}
+}
+
+// The serve-side face of the replay grammar re-check: a cataloged
+// pre-cutover fact refuses at session open as typed data — the CONTRACT.md
+// sentence "refuses at session open and replay rather than folding" bound
+// to the wire, not only to the validator.
+func TestPreCutoverFactRefusesAtSessionOpen(t *testing.T) {
+	d := stepDaemon(t)
+	stringType := stepCreateType(t, d, map[string]any{"k": "string"})
+	commit, refusal, err := d.catalog.commitValue(context.Background(), map[string]any{
+		"scheme": protocolScheme, "name": "pre-cutover-open",
+		"seats":    []any{"operator"},
+		"holes":    []any{map[string]any{"name": "decision", "type": stringType, "seats": []any{"operator"}}},
+		"identity": "trusted-principals", "liveness": []any{"operator"},
+	}, protocolScheme, "", "sniff")
+	if err != nil || refusal != nil {
+		t.Fatalf("inject pre-cutover fact: %v %v", err, refusal)
+	}
+	body, err := json.Marshal(map[string]any{
+		"protocol": commit.fact.Digest, "bindings": map[string]any{"operator": "op"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	served := d.serveProtocolSessionOpen(context.Background(), body)
+	refused, ok := served.(refusalReply)
+	if !ok {
+		t.Fatalf("open with a pre-cutover fact must refuse as data, got %#v", served)
+	}
+	if refused.Refusal.Kind != KindInvalidStructure {
+		t.Fatalf("refusal kind = %q, want %q", refused.Refusal.Kind, KindInvalidStructure)
+	}
+	if !strings.Contains(refused.Refusal.Law, "flb.protocol.v0") {
+		t.Fatalf("refusal law does not name the grammar: %q", refused.Refusal.Law)
+	}
+	if len(refused.Refusal.Next) == 0 || refused.Refusal.Next[0].Note == "" {
+		t.Fatalf("refusal teaches no repair: %#v", refused.Refusal)
+	}
+}
+
+// The crash window between journal creation and the open append leaves an
+// empty session journal; every serve path answers silence for it — the
+// substrate-corruption treatment until the content-addressed open is
+// redelivered — never a process-crashing panic.
+func TestEmptyProtocolSessionJournalServesSilence(t *testing.T) {
+	d := stepDaemon(t)
+	ctx := context.Background()
+	name := protocolSessionJournalPrefix + strings.Repeat("0", 64)
+	if _, err := d.openJournal(ctx, name); err != nil {
+		t.Fatalf("create empty session journal: %v", err)
+	}
+	serves := []struct {
+		subject string
+		serve   func(context.Context, []byte) any
+		body    map[string]any
+	}{
+		{"fill", d.serveProtocolSessionFill, map[string]any{"session": name, "principal": "p", "hole": "h", "value": "v"}},
+		{"close", d.serveProtocolSessionClose, map[string]any{"session": name, "principal": "p"}},
+		{"state", d.serveProtocolSessionState, map[string]any{"session": name}},
+	}
+	for _, row := range serves {
+		body, err := json.Marshal(row.body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if served := row.serve(ctx, body); served != nil {
+			t.Fatalf("%s over an open-less journal must stay silent, got %#v", row.subject, served)
+		}
+	}
+}
+
+// The transition owns no caller state: stepping a fill leaves the input
+// fold untouched, so a harness may step several events from one snapshot
+// without contaminating its baseline (the DEV-670 Tier-1 contract).
+func TestTransitionLeavesItsInputFoldUntouched(t *testing.T) {
+	d := stepDaemon(t)
+	protocol := stepCreateMinimalProtocol(t, d)
+	scenario := stepRunScenario(t, d, protocol,
+		map[string]string{"operator": "op-p"},
+		[]stepMove{{principal: "op-p", hole: "outcome", value: "v"}})
+	snapshot := scenario.foldAt(t, 1)
+	witness := scenario.foldAt(t, 1)
+	first, err := protocolSessionTransition(snapshot, scenario.events[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(snapshot, witness) {
+		t.Fatalf("stepping a fill mutated the input fold:\nbefore: %#v\nafter:  %#v", witness, snapshot)
+	}
+	second, err := protocolSessionTransition(snapshot, scenario.events[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("two steps from one snapshot diverged:\nfirst:  %#v\nsecond: %#v", first, second)
 	}
 }
 
