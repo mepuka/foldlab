@@ -32,6 +32,7 @@ type protocolDefinition struct {
 	Seats      []string       `json:"seats"`
 	Holes      []protocolHole `json:"holes"`
 	Completion []string       `json:"completion"`
+	Close      []string       `json:"close"`
 	Revision   string         `json:"revision"`
 	Identity   string         `json:"identity"`
 	Liveness   []string       `json:"liveness"`
@@ -77,7 +78,7 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 	if !ok {
 		return protocolDefinition{}, protocolMalformed(path, value, "an object carrying the flb.protocol.v0 fields")
 	}
-	if refusal := protocolKeys(root, path, "scheme", "name", "seats", "holes", "completion", "revision", "identity", "liveness"); refusal != nil {
+	if refusal := protocolKeys(root, path, "scheme", "name", "seats", "holes", "completion", "close", "revision", "identity", "liveness"); refusal != nil {
 		return protocolDefinition{}, refusal
 	}
 	definition := protocolDefinition{}
@@ -183,7 +184,17 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 		}
 		definition.Holes[index] = hole
 	}
-	definition.Completion, refusal = protocolCompletion(root["completion"], append(path, "completion"), holeNames)
+	definition.Completion, refusal = protocolDeclaredNames(
+		root["completion"], append(path, "completion"), holeNames,
+		completionExpectation, "hole name", "completion names",
+	)
+	if refusal != nil {
+		return protocolDefinition{}, refusal
+	}
+	definition.Close, refusal = protocolDeclaredNames(
+		root["close"], append(path, "close"), seatSet,
+		closeExpectation, "seat", "close seats",
+	)
 	if refusal != nil {
 		return protocolDefinition{}, refusal
 	}
@@ -204,41 +215,46 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 // protocol always fills.
 const completionExpectation = "a non-empty, UTF-16-sorted, duplicate-free array of declared hole names whose terminal states decide the close outcome"
 
-// protocolCompletionCheck is the one completion law; the creation refusal
-// and the decoded-fact predicate both derive from it, so the two surfaces
-// cannot drift. It reports the first offense as (index, expected); index -1
-// offends at the array itself.
-func protocolCompletionCheck(names []string, declared map[string]bool) (int, string, bool) {
+// closeExpectation is the close declaration's lawful shape, taught verbatim
+// by every refusal about the whole field.
+const closeExpectation = "a non-empty, UTF-16-sorted, duplicate-free array of declared seat names whose bound principals may close the round (any-of)"
+
+// protocolDeclaredNamesCheck is the one sorted/unique/declared-names law.
+// Completion and close parameterize their teaching text; their creation
+// refusals and decoded-fact predicates both derive from this checker, so the
+// two surfaces cannot drift. It reports the first offense as (index,
+// expected); index -1 offends at the array itself.
+func protocolDeclaredNamesCheck(names []string, declared map[string]bool, wholeExpectation, noun, field string) (int, string, bool) {
 	if len(names) == 0 {
-		return -1, completionExpectation, false
+		return -1, wholeExpectation, false
 	}
 	for index, name := range names {
 		if !declared[name] {
-			return index, "a hole name declared by this protocol", false
+			return index, fmt.Sprintf("a %s declared by this protocol", noun), false
 		}
 		if index > 0 && !utf16Less(names[index-1], name) {
-			return index, "completion names sorted by UTF-16 code units without duplicates", false
+			return index, fmt.Sprintf("%s sorted by UTF-16 code units without duplicates", field), false
 		}
 	}
 	return 0, "", true
 }
 
-// protocolCompletion shapes the submitted value and refuses through
-// protocolCompletionCheck at the exact offending path.
-func protocolCompletion(value any, path []string, holeNames map[string]bool) ([]string, *Refusal) {
+// protocolDeclaredNames shapes a submitted declaration and refuses through
+// protocolDeclaredNamesCheck at the exact offending path.
+func protocolDeclaredNames(value any, path []string, declared map[string]bool, wholeExpectation, noun, field string) ([]string, *Refusal) {
 	values, ok := value.([]any)
 	if !ok {
-		return nil, protocolMalformed(path, value, completionExpectation)
+		return nil, protocolMalformed(path, value, wholeExpectation)
 	}
 	result := make([]string, len(values))
 	for index, item := range values {
 		name, ok := item.(string)
 		if !ok {
-			return nil, protocolMalformed(append(path, fmt.Sprint(index)), item, "a hole name declared by this protocol")
+			return nil, protocolMalformed(append(path, fmt.Sprint(index)), item, fmt.Sprintf("a %s declared by this protocol", noun))
 		}
 		result[index] = name
 	}
-	index, expected, lawful := protocolCompletionCheck(result, holeNames)
+	index, expected, lawful := protocolDeclaredNamesCheck(result, declared, wholeExpectation, noun, field)
 	if lawful {
 		return result, nil
 	}
@@ -252,17 +268,22 @@ func protocolRevisionLawful(revision string) bool {
 	return revision == protocolRevisionSuccessorRound || revision == protocolRevisionAbsorb
 }
 
-// protocolGrammarLawful re-checks the completion and revision laws on a
-// decoded catalog fact. Creation validates before commit, so this can
+// protocolGrammarLawful re-checks the completion, close, and revision laws
+// on a decoded catalog fact. Creation validates before commit, so this can
 // refuse only a fact cataloged before these fields existed — which must
-// refuse rather than close vacuously completed.
+// refuse rather than fold under missing semantics.
 func protocolGrammarLawful(definition protocolDefinition) bool {
-	declared := map[string]bool{}
+	holeNames := map[string]bool{}
 	for _, hole := range definition.Holes {
-		declared[hole.Name] = true
+		holeNames[hole.Name] = true
 	}
-	_, _, lawful := protocolCompletionCheck(definition.Completion, declared)
-	return lawful && protocolRevisionLawful(definition.Revision)
+	_, _, completionLawful := protocolDeclaredNamesCheck(
+		definition.Completion, holeNames, completionExpectation, "hole name", "completion names",
+	)
+	_, _, closeLawful := protocolDeclaredNamesCheck(
+		definition.Close, stringSet(definition.Seats), closeExpectation, "seat", "close seats",
+	)
+	return completionLawful && closeLawful && protocolRevisionLawful(definition.Revision)
 }
 
 func isTypeFactScheme(scheme string) bool {
@@ -292,6 +313,8 @@ func protocolFieldExpectation(key string) any {
 	switch key {
 	case "completion":
 		return completionExpectation
+	case "close":
+		return closeExpectation
 	case "revision":
 		return []any{protocolRevisionSuccessorRound, protocolRevisionAbsorb}
 	default:

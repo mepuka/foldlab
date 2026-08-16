@@ -98,7 +98,7 @@ func bootstrapProtocol(t *testing.T, h *harness) string {
 				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
 			},
 		},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -108,10 +108,7 @@ func bootstrapProtocol(t *testing.T, h *harness) string {
 	return created["digest"].(string)
 }
 
-// bootstrapReportCompletion catalogs the fixture's "report-completion"
-// variant: no hole is named decision anywhere, and the close outcome
-// follows the declared build_report hole.
-func bootstrapReportCompletion(t *testing.T, h *harness) string {
+func bootstrapReportProtocol(t *testing.T, h *harness, name, closeSeat string) string {
 	t.Helper()
 	reportType := h.create(map[string]any{
 		"k": "struct", "fields": map[string]any{"commit": map[string]any{"k": "string"}, "gates": map[string]any{"k": "string"}}, "optional": []any{},
@@ -120,19 +117,34 @@ func bootstrapReportCompletion(t *testing.T, h *harness) string {
 		t.Fatalf("create report type: %v", reportType)
 	}
 	protocol := map[string]any{
-		"scheme": "flb.protocol.v0", "name": "report-completion",
+		"scheme": "flb.protocol.v0", "name": name,
 		"seats": []any{"operator", "coordinator", "builder"},
 		"holes": []any{
 			map[string]any{"name": "build_report", "type": reportType["digest"], "seats": []any{"builder"}},
 		},
-		"completion": []any{"build_report"}, "revision": "successor-round",
+		"completion": []any{"build_report"}, "close": []any{closeSeat}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
 	if created["ok"] != true {
-		t.Fatalf("create report-completion protocol: %v", created)
+		t.Fatalf("create %s protocol: %v", name, created)
 	}
 	return created["digest"].(string)
+}
+
+// bootstrapReportCompletion catalogs the fixture's "report-completion"
+// variant: no hole is named decision anywhere, and the close outcome
+// follows the declared build_report hole.
+func bootstrapReportCompletion(t *testing.T, h *harness) string {
+	t.Helper()
+	return bootstrapReportProtocol(t, h, "report-completion", "operator")
+}
+
+// bootstrapCoordinatorClose changes only the close declaration from the
+// report-completion control: the coordinator-bound principal closes.
+func bootstrapCoordinatorClose(t *testing.T, h *harness) string {
+	t.Helper()
+	return bootstrapReportProtocol(t, h, "coordinator-close", "coordinator")
 }
 
 // bootstrapAbsorbDecision catalogs the fixture's "absorb-decision" variant:
@@ -158,7 +170,7 @@ func bootstrapAbsorbDecision(t *testing.T, h *harness) string {
 				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
 			},
 		},
-		"completion": []any{"decision"}, "revision": "absorb",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "absorb",
 		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -177,6 +189,8 @@ func bootstrapProtocolVariant(t *testing.T, h *harness, variant string) string {
 		return bootstrapReportCompletion(t, h)
 	case "absorb-decision":
 		return bootstrapAbsorbDecision(t, h)
+	case "coordinator-close":
+		return bootstrapCoordinatorClose(t, h)
 	default:
 		t.Fatalf("fixture names an unknown protocol variant %q", variant)
 		return ""
@@ -276,7 +290,7 @@ func TestProtocolCreationAndFillValidateAtTheBoundary(t *testing.T) {
 			"name": "decision", "type": stringType, "seats": []any{"operator"},
 			"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator"}},
 		}},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	h.refusal(h.request("flb.req.protocol.create", map[string]any{"protocol": badFence}), "invalid-structure")
@@ -304,7 +318,7 @@ func TestProtocolFillPreservesALicensedNullValue(t *testing.T) {
 	protocol := map[string]any{
 		"scheme": "flb.protocol.v0", "name": "null-decision", "seats": []any{"operator"},
 		"holes":      []any{map[string]any{"name": "decision", "type": nullType, "seats": []any{"operator"}}},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -335,7 +349,7 @@ func TestProtocolCreationEnforcesSeatAndFenceLaws(t *testing.T) {
 				"seats": []any{"operator", "coordinator"},
 				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
 			}},
-			"completion": []any{"decision"}, "revision": "successor-round",
+			"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 			"identity": "trusted-principals", "liveness": []any{"operator", "coordinator"},
 		}
 	}

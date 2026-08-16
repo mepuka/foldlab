@@ -163,7 +163,7 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 			map[string]any{"name": "blob", "type": opaqueType, "seats": []any{"coordinator"}},
 		},
 		"identity": "trusted-principals", "liveness": []any{"coordinator", "operator"},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 	})
 
 	// linear: open, one fill, close — every prefix is a lawful fold.
@@ -199,6 +199,20 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 		t.Fatalf("inject pre-cutover fact: %v %v", err, refusal)
 	}
 	preCutoverFact := preCutoverCommit.fact.Digest
+	// A protocol fact from immediately before the close declaration carries
+	// the already-required completion and revision declarations. Direct
+	// injection proves the new hard cutover independently of the older row.
+	closeLessCommit, refusal, err := d.catalog.commitValue(context.Background(), map[string]any{
+		"scheme": protocolScheme, "name": "close-less",
+		"seats":      []any{"operator"},
+		"holes":      []any{map[string]any{"name": "decision", "type": stringType, "seats": []any{"operator"}}},
+		"completion": []any{"decision"}, "revision": "successor-round",
+		"identity": "trusted-principals", "liveness": []any{"operator"},
+	}, protocolScheme, "", "sniff")
+	if err != nil || refusal != nil {
+		t.Fatalf("inject close-less fact: %v %v", err, refusal)
+	}
+	closeLessFact := closeLessCommit.fact.Digest
 
 	fill := func(principal, seat, hole string, value any) protocolSessionEvent {
 		return protocolSessionEvent{
@@ -250,6 +264,16 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 			event: func() protocolSessionEvent {
 				event := linear.events[0]
 				event.Protocol = preCutoverFact
+				return event
+			}(),
+			wantContains: "does not satisfy the flb.protocol.v0 grammar",
+		},
+		{
+			name: "open with a fact missing the close declaration", scenario: linear,
+			fold: func(t *testing.T) *protocolSessionFold { return nil },
+			event: func() protocolSessionEvent {
+				event := linear.events[0]
+				event.Protocol = closeLessFact
 				return event
 			}(),
 			wantContains: "does not satisfy the flb.protocol.v0 grammar",
@@ -385,7 +409,7 @@ func TestReplayValidatorRefusesEveryCorruption(t *testing.T) {
 			want:  "stored close is unauthorized or repeated",
 		},
 		{
-			name: "close by a non-operator principal", scenario: linear,
+			name: "close by a principal outside the declared close seats", scenario: linear,
 			fold:  func(t *testing.T) *protocolSessionFold { return linear.foldAt(t, 2) },
 			event: closeEvent("co-a", linear.events[2].Outcome, linear.events[2].FinalStateDigest),
 			want:  "stored close is unauthorized or repeated",
@@ -447,7 +471,7 @@ func stepCreateMinimalProtocol(t *testing.T, d *Daemon) string {
 		"scheme": "flb.protocol.v0", "name": "minimal",
 		"seats":      []any{"operator"},
 		"holes":      []any{map[string]any{"name": "outcome", "type": stringType, "seats": []any{"operator"}}},
-		"completion": []any{"outcome"}, "revision": "successor-round",
+		"completion": []any{"outcome"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	})
 }
@@ -496,8 +520,9 @@ func TestPreCutoverFactRefusesAtSessionOpen(t *testing.T) {
 	stringType := stepCreateType(t, d, map[string]any{"k": "string"})
 	commit, refusal, err := d.catalog.commitValue(context.Background(), map[string]any{
 		"scheme": protocolScheme, "name": "pre-cutover-open",
-		"seats":    []any{"operator"},
-		"holes":    []any{map[string]any{"name": "decision", "type": stringType, "seats": []any{"operator"}}},
+		"seats":      []any{"operator"},
+		"holes":      []any{map[string]any{"name": "decision", "type": stringType, "seats": []any{"operator"}}},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}, protocolScheme, "", "sniff")
 	if err != nil || refusal != nil {

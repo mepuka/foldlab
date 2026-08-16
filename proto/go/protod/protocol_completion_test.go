@@ -1,8 +1,9 @@
 // Contract tests for the cutover grammar: the completion declaration
-// decides the close outcome, creation refusals teach the new fields at
-// their paths, the declared revision policy is the exact divergence point
-// between refusing and absorbing a contributing seat's differing value,
-// and the fence tie-break within the chosen seat is canonical byte order.
+// decides the close outcome, the close declaration decides authority,
+// creation refusals teach the new fields at their paths, the declared
+// revision policy is the exact divergence point between refusing and
+// absorbing a contributing seat's differing value, and the fence tie-break
+// within the chosen seat is canonical byte order.
 // Every admitting path ends in a daemon restart over the same store and
 // asserts the freshly replayed session serves the identical fold.
 package protod_test
@@ -36,7 +37,7 @@ func bootstrapPairCompletion(t *testing.T, h *harness) string {
 			map[string]any{"name": "alpha", "type": created["digest"], "seats": []any{"operator"}},
 			map[string]any{"name": "beta", "type": created["digest"], "seats": []any{"operator"}},
 		},
-		"completion": []any{"alpha", "beta"}, "revision": "successor-round",
+		"completion": []any{"alpha", "beta"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	result := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -46,33 +47,127 @@ func bootstrapPairCompletion(t *testing.T, h *harness) string {
 	return result["digest"].(string)
 }
 
-func TestOperatorlessProtocolCannotClose(t *testing.T) {
-	h := acquire(t)
+func bootstrapCloseAuthorityProtocol(t *testing.T, h *harness, name string, seats, closeSeats []any, holeSeat string) string {
+	t.Helper()
 	created := h.create(map[string]any{"k": "string"})
 	if created["ok"] != true {
 		t.Fatalf("create string type: %v", created)
 	}
 	protocol := map[string]any{
-		"scheme": "flb.protocol.v0", "name": "operatorless", "seats": []any{"author", "reviewer"},
+		"scheme": "flb.protocol.v0", "name": name, "seats": seats,
 		"holes": []any{
-			map[string]any{"name": "draft", "type": created["digest"], "seats": []any{"author"}},
+			map[string]any{"name": "work", "type": created["digest"], "seats": []any{holeSeat}},
 		},
-		"completion": []any{"draft"}, "revision": "successor-round",
-		"identity": "trusted-principals", "liveness": []any{"author", "reviewer"},
+		"completion": []any{"work"}, "close": closeSeats, "revision": "successor-round",
+		"identity": "trusted-principals", "liveness": seats,
 	}
 	made := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
 	if made["ok"] != true {
-		t.Fatalf("create operatorless protocol: %v", made)
+		t.Fatalf("create %s protocol: %v", name, made)
 	}
-	session := openProtocolSession(t, h, made["digest"].(string), map[string]any{
+	return made["digest"].(string)
+}
+
+func TestCloseAuthorityFollowsTheDeclaration(t *testing.T) {
+	t.Run("a declared non-operator close seat closes", func(t *testing.T) {
+		store := t.TempDir()
+		h, release := acquireStore(t, store)
+		protocol := bootstrapCloseAuthorityProtocol(t, h, "coordinator-close", []any{"coordinator", "operator"}, []any{"coordinator"}, "coordinator")
+		bindings := map[string]any{"coordinator": "coordinator-principal", "operator": "operator-principal"}
+		session := openProtocolSession(t, h, protocol, bindings)
+		mustFillProtocol(t, h, session, "coordinator-principal", "work", "ready")
+		refused := h.refusal(h.request("flb.req.protocol.session.close", map[string]any{
+			"session": session, "principal": "operator-principal",
+		}), "seat-unauthorized")
+		if law, _ := refused["law"].(string); law != "a close principal must hold one of the protocol's declared close seats" {
+			t.Fatalf("close-authority law = %q", law)
+		}
+		if !reflect.DeepEqual(refused["path"], []any{"principal"}) {
+			t.Fatalf("close-authority path = %v", refused["path"])
+		}
+		if !reflect.DeepEqual(refused["expected"], []any{"coordinator"}) {
+			t.Fatalf("close-authority expected = %v", refused["expected"])
+		}
+		next, ok := refused["next"].([]any)
+		if !ok || len(next) == 0 {
+			t.Fatalf("close-authority refusal has no next hint: %v", refused)
+		}
+		hint, ok := next[0].(map[string]any)
+		note, noteOK := hint["note"].(string)
+		if !ok || !noteOK || !strings.Contains(note, "bindings") {
+			t.Fatalf("close-authority refusal does not direct the caller to the bindings: %v", refused)
+		}
+		closed := mustCloseProtocol(t, h, session, "coordinator-principal")
+		if closed["outcome"] != "completed" {
+			t.Fatalf("declared coordinator close: %v", closed)
+		}
+		reopenEquivalence(t, store, h, release, session)
+	})
+
+	for _, closer := range []string{"coordinator", "operator"} {
+		t.Run("an any-of declaration admits "+closer, func(t *testing.T) {
+			store := t.TempDir()
+			h, release := acquireStore(t, store)
+			protocol := bootstrapCloseAuthorityProtocol(t, h, "either-seat-closes", []any{"coordinator", "operator"}, []any{"coordinator", "operator"}, "coordinator")
+			bindings := map[string]any{"coordinator": "coordinator-principal", "operator": "operator-principal"}
+			session := openProtocolSession(t, h, protocol, bindings)
+			mustFillProtocol(t, h, session, "coordinator-principal", "work", "ready")
+			closed := mustCloseProtocol(t, h, session, closer+"-principal")
+			if closed["outcome"] != "completed" {
+				t.Fatalf("declared %s close: %v", closer, closed)
+			}
+			reopenEquivalence(t, store, h, release, session)
+		})
+	}
+
+	t.Run("the bootstrap operator declaration preserves its behavior", func(t *testing.T) {
+		store := t.TempDir()
+		h, release := acquireStore(t, store)
+		protocol := bootstrapProtocol(t, h)
+		session := openProtocolSession(t, h, protocol, readProtocolMoveFixture(t).Bindings)
+		h.refusal(h.request("flb.req.protocol.session.close", map[string]any{
+			"session": session, "principal": "coordinator-principal",
+		}), "seat-unauthorized")
+		closed := mustCloseProtocol(t, h, session, "operator-principal")
+		if closed["outcome"] != "abandoned" {
+			t.Fatalf("bootstrap close: %v", closed)
+		}
+		reopenEquivalence(t, store, h, release, session)
+	})
+}
+
+func TestNoOperatorSeatProtocolCloses(t *testing.T) {
+	store := t.TempDir()
+	h, release := acquireStore(t, store)
+	protocol := bootstrapCloseAuthorityProtocol(t, h, "operatorless", []any{"author", "reviewer"}, []any{"reviewer"}, "author")
+	session := openProtocolSession(t, h, protocol, map[string]any{
 		"author": "author-principal", "reviewer": "reviewer-principal",
 	})
-	mustFillProtocol(t, h, session, "author-principal", "draft", "ready")
-	for _, principal := range []string{"author-principal", "reviewer-principal"} {
-		h.refusal(h.request("flb.req.protocol.session.close", map[string]any{
-			"session": session, "principal": principal,
-		}), "seat-unauthorized")
+	mustFillProtocol(t, h, session, "author-principal", "work", "ready")
+	closed := mustCloseProtocol(t, h, session, "reviewer-principal")
+	if closed["outcome"] != "completed" {
+		t.Fatalf("operatorless protocol close: %v", closed)
 	}
+	state := protocolState(t, h, session)
+	if digest, ok := state["final_state_digest"].(string); !ok || len(digest) != 64 {
+		t.Fatalf("operatorless close has no final state digest: %v", state)
+	}
+	reopenEquivalence(t, store, h, release, session)
+}
+
+func TestCloseRefusalPrecedenceIsClosedThenAuthority(t *testing.T) {
+	store := t.TempDir()
+	h, release := acquireStore(t, store)
+	protocol := bootstrapProtocol(t, h)
+	session := openProtocolSession(t, h, protocol, readProtocolMoveFixture(t).Bindings)
+	mustCloseProtocol(t, h, session, "operator-principal")
+	refused := h.refusal(h.request("flb.req.protocol.session.close", map[string]any{
+		"session": session, "principal": "coordinator-principal",
+	}), "session-closed")
+	if refused["kind"] == "seat-unauthorized" {
+		t.Fatalf("closed-session precedence leaked authority: %v", refused)
+	}
+	reopenEquivalence(t, store, h, release, session)
 }
 
 func TestCloseOutcomeFollowsTheCompletionDeclaration(t *testing.T) {
@@ -153,19 +248,20 @@ func TestProtocolCreationRefusalsTeach(t *testing.T) {
 	}
 	valid := func() map[string]any {
 		return map[string]any{
-			"scheme": "flb.protocol.v0", "name": "teaching", "seats": []any{"operator"},
+			"scheme": "flb.protocol.v0", "name": "teaching", "seats": []any{"coordinator", "operator"},
 			"holes": []any{
 				map[string]any{"name": "alpha", "type": created["digest"], "seats": []any{"operator"}},
 				map[string]any{"name": "beta", "type": created["digest"], "seats": []any{"operator"}},
 			},
-			"completion": []any{"alpha", "beta"}, "revision": "successor-round",
-			"identity": "trusted-principals", "liveness": []any{"operator"},
+			"completion": []any{"alpha", "beta"}, "close": []any{"coordinator", "operator"}, "revision": "successor-round",
+			"identity": "trusted-principals", "liveness": []any{"coordinator", "operator"},
 		}
 	}
 	// expected must TEACH: the describe surface brands the protocol body
 	// opaque, so each refusal's expected is the only place a caller can
-	// discover the lawful completion shape or the permitted revision values.
+	// discover the lawful completion/close shapes or permitted revision values.
 	revisionValues := []any{"successor-round", "absorb"}
+	closeShape := "a non-empty, UTF-16-sorted, duplicate-free array of declared seat names whose bound principals may close the round (any-of)"
 	rows := []struct {
 		name           string
 		mutate         func(map[string]any)
@@ -183,6 +279,16 @@ func TestProtocolCreationRefusalsTeach(t *testing.T) {
 			[]string{"sorted by UTF-16"}, nil},
 		{"duplicate completion name", func(p map[string]any) { p["completion"] = []any{"alpha", "alpha"} }, []any{"protocol", "completion", "1"},
 			[]string{"without duplicates"}, nil},
+		{"missing close", func(p map[string]any) { delete(p, "close") }, []any{"protocol", "close"},
+			nil, closeShape},
+		{"empty close", func(p map[string]any) { p["close"] = []any{} }, []any{"protocol", "close"},
+			nil, closeShape},
+		{"unknown close seat", func(p map[string]any) { p["close"] = []any{"ghost"} }, []any{"protocol", "close", "0"},
+			nil, "a seat declared by this protocol"},
+		{"unsorted close seats", func(p map[string]any) { p["close"] = []any{"operator", "coordinator"} }, []any{"protocol", "close", "1"},
+			nil, "close seats sorted by UTF-16 code units without duplicates"},
+		{"duplicate close seat", func(p map[string]any) { p["close"] = []any{"coordinator", "coordinator"} }, []any{"protocol", "close", "1"},
+			nil, "close seats sorted by UTF-16 code units without duplicates"},
 		{"missing revision", func(p map[string]any) { delete(p, "revision") }, []any{"protocol", "revision"},
 			nil, revisionValues},
 		{"unknown revision policy", func(p map[string]any) { p["revision"] = "latest-wins" }, []any{"protocol", "revision"},

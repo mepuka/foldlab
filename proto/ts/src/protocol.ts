@@ -87,6 +87,7 @@ export const bootstrapTaskAcceptance = async (
       },
     ],
     completion: ["decision"],
+    close: ["operator"],
     revision: "successor-round",
     identity: "trusted-principals",
     liveness: ["builder", "coordinator", "operator"],

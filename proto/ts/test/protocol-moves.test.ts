@@ -22,7 +22,12 @@ type Move = typeof Move.Type
 const HoleSubset = Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Json))
 const Vector = Schema.Struct({
   name: Schema.String,
-  protocol: Schema.optionalKey(Schema.Literals(["task-acceptance", "report-completion", "absorb-decision"])),
+  protocol: Schema.optionalKey(Schema.Literals([
+    "task-acceptance",
+    "report-completion",
+    "absorb-decision",
+    "coordinator-close",
+  ])),
   setup: Schema.Array(Move),
   pre: HoleSubset,
   move: Move,
@@ -76,13 +81,13 @@ const mustCreateProtocol = async (client: ProtoClient, protocol: Json, submitter
  * task-acceptance bootstrap. */
 const bootstrapVariant = async (
   client: ProtoClient,
-  variant: "task-acceptance" | "report-completion" | "absorb-decision" | undefined,
+  variant: "task-acceptance" | "report-completion" | "absorb-decision" | "coordinator-close" | undefined,
   submitter: string,
 ): Promise<string> => {
   if (variant === undefined || variant === "task-acceptance") {
     return (await bootstrapTaskAcceptance(client, submitter)).protocol
   }
-  if (variant === "report-completion") {
+  if (variant === "report-completion" || variant === "coordinator-close") {
     const reportType = await mustCreateType(client, {
       k: "struct",
       fields: { commit: { k: "string" }, gates: { k: "string" } },
@@ -90,14 +95,18 @@ const bootstrapVariant = async (
     }, submitter)
     return mustCreateProtocol(client, {
       scheme: "flb.protocol.v0",
-      name: "report-completion",
+      name: variant,
       seats: ["operator", "coordinator", "builder"],
       holes: [{ name: "build_report", type: reportType, seats: ["builder"] }],
       completion: ["build_report"],
+      close: [variant === "coordinator-close" ? "coordinator" : "operator"],
       revision: "successor-round",
       identity: "trusted-principals",
       liveness: ["builder", "coordinator", "operator"],
     }, submitter)
+  }
+  if (variant !== "absorb-decision") {
+    throw new Error(`fixture names an unknown protocol variant ${JSON.stringify(variant)}`)
   }
   const verdictType = await mustCreateType(client, {
     k: "struct",
@@ -124,6 +133,7 @@ const bootstrapVariant = async (
       fence: { rule: "seat-authority", order: ["operator", "coordinator"] },
     }],
     completion: ["decision"],
+    close: ["operator"],
     revision: "absorb",
     identity: "trusted-principals",
     liveness: ["builder", "coordinator", "operator"],

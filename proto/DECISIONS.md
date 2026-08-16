@@ -2470,6 +2470,10 @@ catalog); kernels left in `protocol_session.go` (the review rule
 be unenforceable). **Load-bearing? maybe** — DEV-670 consumes
 `protocolSessionTransition` as its Step-shaped function.
 
+**SUPERSEDED BY DEV-676 S1 (task-local D104; final number assigned at
+merge), only as to the literal "operator authority" wording.** The pure
+step seam and closed-before-authority refusal precedence remain in force.
+
 ## DEV-675 review remediation (2026-08-16; the independent review's
 recommended rulings, operator-ratified with G1–G5 — D98–D103 assigned
 at merge)
@@ -2551,3 +2555,77 @@ daemon process. Pinned by `TestEmptyProtocolSessionJournalServesSilence`.
 Alternatives: ticket-and-defer (leaves a process-crash exposure a
 one-line guard removes); a typed refusal (invents a law for a state
 no lawful flow produces). **Load-bearing? no**.
+
+## DEV-676 — declared close authority (2026-08-16; task-local
+D104–D108 — final numbers assigned at merge)
+
+### D104. Close authority is a required any-of declaration over seats
+
+Decided (operator-ratified S1): `flb.protocol.v0` requires `close`, a
+non-empty, UTF-16-sorted, duplicate-free array of declared seat names.
+Any principal bound to any named seat may close the round; creation
+refuses an empty declaration, an unknown seat, a duplicate, or unsorted
+order at the offending path. The task-acceptance bootstrap declares
+`close: ["operator"]`, while the contract vector's `coordinator-close`
+variant proves that the seat name is not implicit law. This supersedes
+D97 only where its build record called caller-owned close validation
+"operator authority"; D97's pure-kernel seam and closed-first refusal
+precedence remain. Alternatives: one seat-name string (forecloses any-of
+authority); overloading inert `liveness` (gives an existing field implicit
+meaning); per-hole close authority (no consumer asks for it). Why: close
+authority is one explicit identity-bearing protocol fact rather than a
+literal hidden in each caller. **Load-bearing? yes** — without the
+declaration a lawful protocol can have no principal able to terminate it.
+
+### D105. The close declaration hard-cuts over under flb.protocol.v0
+
+Decided (operator-ratified S2, the D93 pattern): the grammar keeps the
+`flb.protocol.v0` scheme string and makes `close` required. A submitted
+old-shape value refuses as malformed at `close`; a close-less decoded
+catalog fact refuses through the D98 typed session-open surface and at
+replay through `protocolGrammarLawful`. Creation's former key allowlist
+could not have cataloged a value carrying `close`, and tracer stores are
+temporary, but the refusal is enforced by the grammar rather than relying
+on those environmental facts. Alternatives: mint a successor protocol
+scheme; default a missing declaration to `operator`; retain a compatibility
+decoder. Why: this is the same no-production-state cutover D93 licensed,
+and a default would preserve the literal this task removes.
+**Load-bearing? yes** — the model-generated wall must freeze only the
+declared-authority grammar.
+
+### D106. Close events retain principal only; replay re-derives authority
+
+Decided (operator-ratified S3): the close journal event remains unchanged
+and carries its asserted `principal` only. Serve and replay independently
+derive whether that principal holds one of the protocol's declared close
+seats from the immutable bindings and protocol definition. Alternatives:
+record the derived close seat on the event. Why: immutable bindings make
+the derivation stable, so the extra coordinate would change the journal
+shape without adding evidence. **Load-bearing? yes** — replay must reject
+unauthorized stored closes without trusting a recorded authorization claim.
+
+### D107. Declared close authority does not mint a session version
+
+Decided (operator-ratified S4): `flb.protocol.session.v0` remains the
+session version. The final-state digest preimage still contains exactly
+`v`, protocol, bindings, holes, status, outcome, and optional predecessor;
+the changed grammar already moves the referenced protocol digest. No close
+declaration or derived seat is added beside that digest. Alternatives: mint
+a new session version; duplicate the close declaration or derived seat in
+the final-state preimage. Why: D94's freeze law applies to the preimage's
+field set, which this change does not alter. **Load-bearing? yes** — the
+no-mint is an identity decision, not an omitted migration step.
+
+### D108. One declared-names checker serves completion and close
+
+Decided (operator-ratified S5, generalizing D99): one checker owns the
+non-empty, UTF-16-sorted, duplicate-free, declared-name law. Its taught
+noun is parametrized — "a hole name declared by this protocol" for
+`completion`, "a seat declared by this protocol" for `close` — and both
+fields derive their creation refusals and decoded-fact predicates from
+that checker. The field-specific whole-shape and sorted-order teaching
+remain declaration-relative. Alternatives: add a second close checker;
+repeat either law inside `protocolGrammarLawful`. Why: creation and replay
+must not drift on which identity-bearing declarations they admit.
+**Load-bearing? yes** — two restatements can make a catalog fact creatable
+but unreplayable, or replayable despite being uncreatable.

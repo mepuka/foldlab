@@ -279,7 +279,7 @@ func bootstrapThreeSeatDecision(t *testing.T, h *harness) string {
 			"seats": []any{"operator", "coordinator", "builder"},
 			"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator", "builder"}},
 		}},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator", "coordinator", "builder"},
 	}
 	result := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -386,7 +386,7 @@ func TestFillValueOutsideCanonicalDomainRefuses(t *testing.T) {
 	protocol := map[string]any{
 		"scheme": "flb.protocol.v0", "name": "opaque-decision", "seats": []any{"operator"},
 		"holes":      []any{map[string]any{"name": "decision", "type": created["digest"], "seats": []any{"operator"}}},
-		"completion": []any{"decision"}, "revision": "successor-round",
+		"completion": []any{"decision"}, "close": []any{"operator"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	made := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
