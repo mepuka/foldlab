@@ -278,11 +278,6 @@ func (d *Daemon) serveProtocolSessionClose(ctx context.Context, body []byte) any
 		return nil
 	}
 	closed, outcome, err := protocolCloseStep(fold)
-	if err != nil {
-		// A fold the close kernel cannot fence or digest is substrate
-		// corruption: silence, never a fabricated law.
-		return nil
-	}
 	if outcome == closeRefusedClosed {
 		return refuse(protocolClosed(request.Session))
 	}
@@ -293,6 +288,13 @@ func (d *Daemon) serveProtocolSessionClose(ctx context.Context, body []byte) any
 			Path: []string{"principal"}, Got: request.Principal, Expected: fold.Bindings["operator"],
 			Next: []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the operator binding before closing", Body: map[string]any{"session": request.Session}}},
 		})
+	}
+	if err != nil {
+		// A fold the close kernel cannot fence or digest is substrate
+		// corruption: silence, never a fabricated law — and it answers only
+		// after the teachable closed and operator refusals, preserving the
+		// pre-kernel refusal precedence.
+		return nil
 	}
 	event := protocolSessionEvent{
 		Kind: "close", Principal: request.Principal, Outcome: closed.Outcome,

@@ -245,6 +245,11 @@ func protocolCloseStep(fold *protocolSessionFold) (*protocolSessionFold, closeOu
 // outcome here is decided by the two kernels. A non-journal outcome refuses:
 // the serve paths never write one, so a stored event carrying one is
 // corruption.
+//
+// Ownership: a fill folds in place and returns the same fold pointer; a
+// close returns a fresh terminal fold and leaves its input untouched. A
+// caller that needs the pre-event fold after stepping a fill must clone
+// first.
 func protocolSessionTransition(fold *protocolSessionFold, event protocolSessionEvent) (*protocolSessionFold, error) {
 	switch event.Kind {
 	case "fill":
