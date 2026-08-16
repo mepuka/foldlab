@@ -38,7 +38,7 @@ The table points; the entries below carry the bounds.
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
-| Tracer conformance (W1–W10) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
+| Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
 | E2 move calculus (D85 confluence package: strong no-loss, wire confluence, schedule-free fences, refusal characterization, WF preservation, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: fills are total under repair, every fill's holder-attributed pair survives into terminal journal evidence with no refusal disjunct, and the total runner's terminal state — meaning and journal both — is invariant under permutation of any fill/dispute bag; refusal is an iff against the frozen `D85Refusal`; discharged against a sha256-pinned frozen spec with kill-checked mutants. Decide-bearing bags are order-sensitive by design (decide enters only through the fence at close); conflict coverage is two fills for legacy theorems; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
@@ -484,6 +484,20 @@ refusals are repealed when the missing evidence lands. Every daemon refusal
 persists the sort on the wire, and the complete kind-to-sort manifest is
 frozen under a grammar digest so archived values are not silently re-sorted.
 
+The `flb.protocol.v0` session surface additionally claims, single-daemon:
+the close outcome follows the protocol's completion declaration; the
+declared revision policy is the exact divergence point between refusing
+and absorbing a contributing seat's differing value; the final-state
+digest preimage carries its session version string and that string is
+load-bearing; replay refuses a journal written under an unknown session
+version by name; the fence tie-break within the fence-chosen seat is
+smallest canonical value bytes; bounded fill multisets converge to one
+final-state digest across delivery orders with redeliveries injected, and
+the at-least-once collapse survives a process restart; and reopen
+equivalence on every admitting path is byte-level — the state reply
+served before a restart equals the reply replayed from the same store
+byte-for-byte.
+
 ### Evidence
 
 The TypeScript and Go conformance suites, all twelve refusal kinds, restart
@@ -503,6 +517,21 @@ The shared combined-grammar refusal-sort vector has an independently recomputed
 manifest digest; per-kind structural reproducibility and absence
 repealability laws, strict decoder controls, and restart survival pin the
 persisted classification.
+The protocol-session evidence (`proto/go/protod/protocol_*_test.go`): the
+replay-corruption roster `TestReplayValidatorRefusesEveryCorruption` (every
+refusal branch of the replay validator, exact error strings, valid histories
+driven through the real serve paths); the permutation/redelivery property
+`TestFillPermutationsConvergeUnderRedelivery` (seeds `0x06750001` and
+`0x06750002`, 24 multisets, two random orders each, redeliveries injected
+mid-order); `TestRestartRedeliveryCollapses`;
+`TestCloseOutcomeFollowsTheCompletionDeclaration`;
+`TestRevisionPolicySuccessorRoundRefuses` and
+`TestRevisionPolicyAbsorbIsTotal`;
+`TestSessionDigestPreimageCarriesItsVersion` and
+`TestUnknownSessionVersionRefusesReplay`;
+`TestFenceTieBreakIsCanonicalWithinTheSeat`; and the byte-level
+`reopenEquivalence` harness that closes every admitting-path contract test
+with a daemon restart over the same store.
 
 ### Bounds and residuals
 
@@ -514,6 +543,20 @@ branches, not exhaustive equivalence over all JSON or every future reply kind.
 The request-byte claim is likewise bounded to the three sharp constrained-
 decode classes plus the existing generated and differential canonical corpus;
 it is not an exhaustive proof over all byte strings.
+
+Protocol-session bounds, stated: the permutation property quantifies only
+over multisets giving each seat at most one distinct value — the honest
+convergence domain under `successor-round`, where no refusal can fire in
+any order; absorb-unrestricted multisets are deliberately left to the
+DEV-670 model-generated wall. The properties claim daemon self-consistency
+(permutation and idempotence laws), never model verdicts. The corruption
+roster's completeness is enforced by review convention — a new validator
+error string can land without a row, and no grep can catch it. Close
+redelivery across a restart is untested; the per-session mutex is never
+raced by a test; the serve-path answer for a future-version journal is
+silence by decision (D101) and is asserted internally only; the fence
+tie-break is pinned with trivially-ordered strings until the model-emitted
+wall vectors pin it.
 
 ### Checkable at
 

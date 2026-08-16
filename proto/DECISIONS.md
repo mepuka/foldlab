@@ -2188,6 +2188,10 @@ predecessor validation and close replay re-derive this exact digest.
 
 ### D84. The close-outcome rule keys on the literal hole name `decision`
 
+SUPERSEDED BY: D92 (DEV-675 completion declaration) — the literal is
+deleted and the close outcome follows the protocol's required
+`completion` field.
+
 Decided (operator, at the task 49 merge): ship with the session runtime
 computing a session's outcome from the hole named `decision`
 (`protocol_session.go`), and no completion declaration in
@@ -2338,3 +2342,212 @@ latest-pair-wins (requires arrival order, refused by D82). Why: the
 existing fold already decides this case lawfully; recording it beats
 rediscovering it in the wall. **Load-bearing? maybe** — DEV-670's
 fence vectors will pin it.
+
+### D91 disposition
+
+Ratified as law at the DEV-675 grill (ruling R5, 2026-08-16) and
+recorded as D96: the emergent tie-break is now contract prose in
+CONTRACT.md and pinned by `TestFenceTieBreakIsCanonicalWithinTheSeat`.
+The refuse-to-fence alternative was rejected at ratification because it
+hands any seat a veto on close — submit two values into a dispute and
+the session never terminates.
+
+## DEV-675 — the debt-free wire (2026-08-16; task-local D92–D97 —
+D91 was the last heading on main; the merger confirms the numbers)
+
+### D92. Close outcome follows a required completion declaration
+
+Decided (operator ruling R1, 2026-08-16 grill): `flb.protocol.v0`
+requires `completion`, a non-empty, UTF-16-sorted, duplicate-free
+array of declared hole names; close records `completed` exactly when
+every named hole ends `filled` or `decided`, else `abandoned`;
+creation refuses unknown names, duplicates, unsorted order, and the
+empty list — an empty ∀ would close every round vacuously
+`completed`, and unconditional completion is declared by naming a
+hole the protocol always fills. Alternatives: per-hole `required`
+flag (the same facts scattered); a declared outcome expression
+(grammar creep); a reserved `decision` convention (D84 with a
+permit). Why: one fact in one place, the `struct.optional` sorted-
+names law (D9) applied again, and D84's wrong-outcome fault dies at
+creation instead of at close. **Load-bearing? yes** — close is the
+protocol's one fence, and the outcome now follows a declared fact.
+
+### D93. Hard cutover: the redefined grammar IS flb.protocol.v0
+
+Decided (operator ruling R2, overriding the succession
+recommendation): the redefined grammar ships under the existing
+version string; every trace of the prior protocol shape is discarded
+— no succession machinery, no teaching refusal naming a successor,
+no bridge. An old-shape submitted value refuses as malformed at its
+missing required field through the ordinary grammar refusal. Build
+extension, stated: `protocolFromFact` re-checks the completion and
+revision laws on every DECODED catalog fact, so a pre-cutover fact
+surviving in an old store refuses at session open and at replay
+rather than folding an empty declaration into a vacuous `completed`
+— the R2 refusal applied to the catalog surface the ruling's text
+did not name. Preconditions verified at the grill: creation's key
+allowlist means no cataloged fact carrying the new fields can exist,
+and D89 records that no real session journals exist. Alternatives:
+the Task 36 scheme-succession precedent; a versioned successor
+string. Why: this is the first actually verified valid protocol;
+versioning becomes a critical correctness concern FROM THIS POINT,
+and nothing needs adherence to the pre-cutover shape.
+**Load-bearing? yes** — the DEV-670 wall generates against these
+semantics.
+
+### D94. Digest preimages are versioned; replay refuses unknown session versions
+
+Decided (operator ruling R3, composed with the cutover): the session
+version string and journal prefix stay `flb.protocol.session.v0`;
+the final-state digest's meaning map gains
+`"v": "flb.protocol.session.v0"`. The law, binding from this cutover
+forward: a digest preimage is frozen for the life of its version
+string, any change to what the bytes cover mints the next version,
+and the version lives inside the digested bytes, so two preimage
+shapes can never collide on one digest domain. The replay open case
+splits its error — "repeated protocol session open" vs the named
+refusal "a journal written under an unknown session version refuses
+replay rather than misfolding". D89 needs no retroactive boundary:
+pre-cutover history is discarded outright and the redefined v0 is
+the FIRST frozen preimage. Alternatives: version outside the
+digested bytes (collidable); no version (the D89 pattern survives).
+**Load-bearing? yes** — digest preimages are wire law.
+
+### D95. Revision policy is a required declared field through the one fill kernel
+
+Decided (operator ruling R4): `flb.protocol.v0` requires `revision`,
+either `"successor-round"` (the D88 refusal: a seat that contributed
+a pair for the filled value may not submit a differing value in the
+open round) or `"absorb"` (model-pure: such a fill disputes like any
+clash; fills are total). No default — an identity-bearing semantic
+is never defaulted. The policy threads through `protocolFillStep` as
+a parameter: one kernel, both call sites, both policies, and the
+self-revision refusal text is unchanged under `"successor-round"`.
+The bootstrap task-acceptance protocol declares `"successor-round"`
+(behavior unchanged); per ruling R7 the DEV-670 wall corpus declares
+`"absorb"` only, so the wall tests the naked calculus with an EMPTY
+open-session fill divergence set and `selfRevisionRefusedByDaemon`
+leaves the enum. Alternatives: absorb-only without a field (deletes
+the governance protection with no declared opt-in); per-hole
+granularity (build when a consumer asks); hard-coded refusal
+(divergence enum non-empty forever). **Load-bearing? yes** — the
+policy dissolves the last declared divergence from the model's total
+fills.
+
+### D96. Fence tie-break within the chosen seat is smallest canonical value bytes
+
+Decided (operator ruling R5): D91's emergent behavior becomes law —
+within the fence-chosen seat, the candidate with the smallest
+canonical value bytes wins, pinned by
+`TestFenceTieBreakIsCanonicalWithinTheSeat` and stated in
+CONTRACT.md. Rejected at ratification: refuse-to-fence (hands any
+seat a veto on close — a griefing vector beyond making close
+partial); latest-pair-wins (requires arrival order, refused by D82).
+**Load-bearing? yes** — DEV-670's fence vectors pin it.
+
+### D97. The pure step seam: one kernel per verb, and the fold model lives beside them
+
+Decided (build, under ruling R6's retro-ratification of D87–D90 and
+the brief's structural rules): `protocol_step.go` holds the fill
+kernel, the new close kernel `protocolCloseStep` (seal / fence /
+unfilled / completion outcome / versioned digest — the duplicated
+close fold collapsed exactly as DEV-674 collapsed fills), the
+`protocolSessionTransition` wrapper the DEV-670 Tier-1 harness
+consumes, `protocolOpenFold`, and the fold data model including the
+state-dependent `MarshalJSON` — moved here because which fields a
+hole state exposes shapes the digest preimage, which is identity,
+not presentation. The close kernel owns the session-status branch
+(`closeRefusedClosed`), so the serve path's early closed check and
+the replay validator's repeated-close refusal are one branch
+translated twice; close refusal precedence is preserved (closed
+before operator). Callers keep only validation (catalog resolution,
+seat derivation, value conformance, operator authority) and outcome
+translation; `validatePredecessor`'s read of a terminal fold is
+single-sited verification, not a transition twin. Alternatives:
+transition covering open too (impossible purely — open needs the
+catalog); kernels left in `protocol_session.go` (the review rule
+"a semantic switch outside protocol_step.go fails the review" would
+be unenforceable). **Load-bearing? maybe** — DEV-670 consumes
+`protocolSessionTransition` as its Step-shaped function.
+
+## DEV-675 review remediation (2026-08-16; the independent review's
+recommended rulings, operator-ratified with G1–G5 — D98–D103 assigned
+at merge)
+
+### D98. An unlawful decoded protocol fact refuses at session open as data
+
+Decided (G1 ratified as amended by the independent review):
+`serveProtocolSessionOpen` surfaces a `protocolFromFact` failure as a
+typed `invalid-structure` refusal at path `protocol` with repair
+hints, instead of dropping the reply. CONTRACT.md already promised
+"refuses at session open and replay rather than folding"; the build's
+silence was the defect. The refusal reuses the frozen
+`invalid-structure` kind, so the refusal-sort manifest digest is
+untouched. Replay errors on the other serve paths remain wire silence
+per D101. Pinned by `TestPreCutoverFactRefusesAtSessionOpen`.
+Alternatives: keep silence (contradicts the refusal-as-data law and
+the contract's own sentence); a new refusal kind (re-mints the frozen
+sort manifest for no new ontology). **Load-bearing? yes** — a client
+can now distinguish "recreate the protocol" from "daemon unreachable".
+
+### D99. One completion checker drives creation and decoded facts
+
+Decided (the F6 cure, ratified with G1): the completion law is stated
+once — `protocolCompletionCheck` — and both the creation refusal path
+(`protocolCompletion`) and the decoded-fact predicate
+(`protocolGrammarLawful`) derive from it. Two restatements of one law
+in one file would eventually admit at creation what decode refuses,
+or vice versa — the "agree by inspection" hazard this issue exists to
+kill. Alternatives: keep the twin restatements (drift hazard);
+refusal-shaped check only (decoded facts need no paths).
+**Load-bearing? yes** — the predicate guards the catalog surface D93
+extended.
+
+### D100. The transition seam clones on fill
+
+Decided (F5, per the independent review's recommendation):
+`protocolSessionTransition` never mutates its input — a fill clones
+the fold before folding, matching close. A DEV-670 Tier-1 harness may
+step several events from one snapshot without contaminating its
+baseline; the O(fold) clone per replayed event is the stated price.
+Pinned by `TestTransitionLeavesItsInputFoldUntouched`. Alternatives:
+fill-in-place with a documented ownership asymmetry (the `0db328c`
+contract — a footgun the first harness would trip); copy-on-write
+holes (complexity unearned at this fold size). **Load-bearing? yes**
+— DEV-670 consumes the seam.
+
+### D101. Wire silence for replay errors, unknown session version included
+
+Decided (G2 ratified): on the wire, a journal that refuses replay —
+unknown session version included — receives the substrate-corruption
+treatment: no reply. The named unknown-version error binds the replay
+validator (D94); no wire refusal kind exists for it, because a typed
+kind would re-mint the frozen sort manifest for a distinction no
+consumer reads today. Revisit when a second session version exists.
+Alternatives: a typed wire refusal now (manifest re-mint plus a new
+kind for client teaching that has no client). **Load-bearing? no** —
+recorded so the silence is a choice, not an accident.
+
+### D102. The moves fixture carries a per-vector protocol variant field
+
+Decided (build, recorded per the review): `protocol-moves.json`
+vectors may name a `protocol` variant — `task-acceptance` (default),
+`report-completion`, `absorb-decision` — because the fixture's
+single-bootstrap format could not express the three cutover vectors.
+Both drivers refuse unknown variant names. Alternatives: separate
+fixture files per protocol (three walls to keep aligned); inline
+protocol definitions per vector (bloats every row for three uses).
+**Load-bearing? no**.
+
+### D103. An open-less session journal serves silence, never a panic
+
+Decided (G4, authorized as review repair): the serve paths guard the
+nil fold an empty journal replays to — the crash window between
+journal creation and the open append — and answer silence until the
+open is redelivered; the content-addressed open converges on the same
+journal and repairs it. Previously a fill, close, or state request on
+such a journal panicked inside the NATS handler and took down the
+daemon process. Pinned by `TestEmptyProtocolSessionJournalServesSilence`.
+Alternatives: ticket-and-defer (leaves a process-crash exposure a
+one-line guard removes); a typed refusal (invents a law for a state
+no lawful flow produces). **Load-bearing? no**.

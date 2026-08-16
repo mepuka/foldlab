@@ -340,7 +340,8 @@ func describeReply() map[string]any {
 				map[string]any{
 					"name":    "protocol.session.fill",
 					"subject": SubjectProtocolSessionFill,
-					"note":    "fill under seat authority; conflicts across seats surface as pair-attributed disputes and self-revision refuses",
+					"note": "fill under seat authority; conflicts across seats surface as pair-attributed disputes, and a contributing " +
+						"seat's differing value follows the protocol's declared revision policy — successor-round refuses, absorb disputes",
 					"body": vStruct(map[string]any{
 						"session": vKind("string"), "principal": vKind("string"),
 						"hole": vKind("string"), "value": vOpaque(),

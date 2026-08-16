@@ -9,6 +9,11 @@ import (
 
 const protocolScheme = "flb.protocol.v0"
 
+const (
+	protocolRevisionSuccessorRound = "successor-round"
+	protocolRevisionAbsorb         = "absorb"
+)
+
 type protocolFence struct {
 	Rule  string   `json:"rule"`
 	Order []string `json:"order"`
@@ -22,12 +27,14 @@ type protocolHole struct {
 }
 
 type protocolDefinition struct {
-	Scheme   string         `json:"scheme"`
-	Name     string         `json:"name"`
-	Seats    []string       `json:"seats"`
-	Holes    []protocolHole `json:"holes"`
-	Identity string         `json:"identity"`
-	Liveness []string       `json:"liveness"`
+	Scheme     string         `json:"scheme"`
+	Name       string         `json:"name"`
+	Seats      []string       `json:"seats"`
+	Holes      []protocolHole `json:"holes"`
+	Completion []string       `json:"completion"`
+	Revision   string         `json:"revision"`
+	Identity   string         `json:"identity"`
+	Liveness   []string       `json:"liveness"`
 }
 
 type protocolCreateRequest struct {
@@ -70,7 +77,7 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 	if !ok {
 		return protocolDefinition{}, protocolMalformed(path, value, "an object carrying the flb.protocol.v0 fields")
 	}
-	if refusal := protocolKeys(root, path, "scheme", "name", "seats", "holes", "identity", "liveness"); refusal != nil {
+	if refusal := protocolKeys(root, path, "scheme", "name", "seats", "holes", "completion", "revision", "identity", "liveness"); refusal != nil {
 		return protocolDefinition{}, refusal
 	}
 	definition := protocolDefinition{}
@@ -176,7 +183,86 @@ func (d *Daemon) validateProtocol(value any, path []string) (protocolDefinition,
 		}
 		definition.Holes[index] = hole
 	}
+	definition.Completion, refusal = protocolCompletion(root["completion"], append(path, "completion"), holeNames)
+	if refusal != nil {
+		return protocolDefinition{}, refusal
+	}
+	definition.Revision, okField = root["revision"].(string)
+	if !okField || !protocolRevisionLawful(definition.Revision) {
+		return protocolDefinition{}, protocolMalformed(
+			append(path, "revision"), root["revision"],
+			[]any{protocolRevisionSuccessorRound, protocolRevisionAbsorb},
+		)
+	}
 	return definition, nil
+}
+
+// completionExpectation is the completion declaration's lawful shape,
+// taught verbatim by every refusal about the whole field. The empty list
+// is refused because an empty ∀ would close every round vacuously
+// completed; unconditional completion is declared by naming a hole the
+// protocol always fills.
+const completionExpectation = "a non-empty, UTF-16-sorted, duplicate-free array of declared hole names whose terminal states decide the close outcome"
+
+// protocolCompletionCheck is the one completion law; the creation refusal
+// and the decoded-fact predicate both derive from it, so the two surfaces
+// cannot drift. It reports the first offense as (index, expected); index -1
+// offends at the array itself.
+func protocolCompletionCheck(names []string, declared map[string]bool) (int, string, bool) {
+	if len(names) == 0 {
+		return -1, completionExpectation, false
+	}
+	for index, name := range names {
+		if !declared[name] {
+			return index, "a hole name declared by this protocol", false
+		}
+		if index > 0 && !utf16Less(names[index-1], name) {
+			return index, "completion names sorted by UTF-16 code units without duplicates", false
+		}
+	}
+	return 0, "", true
+}
+
+// protocolCompletion shapes the submitted value and refuses through
+// protocolCompletionCheck at the exact offending path.
+func protocolCompletion(value any, path []string, holeNames map[string]bool) ([]string, *Refusal) {
+	values, ok := value.([]any)
+	if !ok {
+		return nil, protocolMalformed(path, value, completionExpectation)
+	}
+	result := make([]string, len(values))
+	for index, item := range values {
+		name, ok := item.(string)
+		if !ok {
+			return nil, protocolMalformed(append(path, fmt.Sprint(index)), item, "a hole name declared by this protocol")
+		}
+		result[index] = name
+	}
+	index, expected, lawful := protocolCompletionCheck(result, holeNames)
+	if lawful {
+		return result, nil
+	}
+	if index < 0 {
+		return nil, protocolMalformed(path, value, expected)
+	}
+	return nil, protocolMalformed(append(path, fmt.Sprint(index)), result[index], expected)
+}
+
+func protocolRevisionLawful(revision string) bool {
+	return revision == protocolRevisionSuccessorRound || revision == protocolRevisionAbsorb
+}
+
+// protocolGrammarLawful re-checks the completion and revision laws on a
+// decoded catalog fact. Creation validates before commit, so this can
+// refuse only a fact cataloged before these fields existed — which must
+// refuse rather than close vacuously completed.
+func protocolGrammarLawful(definition protocolDefinition) bool {
+	declared := map[string]bool{}
+	for _, hole := range definition.Holes {
+		declared[hole.Name] = true
+	}
+	_, _, lawful := protocolCompletionCheck(definition.Completion, declared)
+	return lawful && protocolRevisionLawful(definition.Revision)
 }
 
 func isTypeFactScheme(scheme string) bool {
@@ -193,10 +279,24 @@ func protocolKeys(value map[string]any, path []string, allowed ...string) *Refus
 			continue
 		}
 		if _, present := value[key]; !present {
-			return protocolMalformed(append(path, key), nil, "a required flb.protocol.v0 field")
+			return protocolMalformed(append(path, key), nil, protocolFieldExpectation(key))
 		}
 	}
 	return nil
+}
+
+// protocolFieldExpectation teaches a missing required field's lawful shape.
+// contract.describe brands the protocol body opaque, so the refusal is the
+// only surface where the grammar's new fields are discoverable.
+func protocolFieldExpectation(key string) any {
+	switch key {
+	case "completion":
+		return completionExpectation
+	case "revision":
+		return []any{protocolRevisionSuccessorRound, protocolRevisionAbsorb}
+	default:
+		return "a required flb.protocol.v0 field"
+	}
 }
 
 func protocolStringSet(value any, path []string, nonempty bool) ([]string, *Refusal) {
@@ -261,6 +361,9 @@ func protocolFromFact(fact catalogFact) (protocolDefinition, error) {
 	var definition protocolDefinition
 	if err := json.Unmarshal(bytes, &definition); err != nil {
 		return protocolDefinition{}, err
+	}
+	if !protocolGrammarLawful(definition) {
+		return protocolDefinition{}, fmt.Errorf("catalog fact %s does not satisfy the flb.protocol.v0 grammar", fact.Digest)
 	}
 	return definition, nil
 }

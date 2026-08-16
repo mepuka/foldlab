@@ -17,6 +17,7 @@ type protocolMove struct {
 
 type protocolMoveVector struct {
 	Name          string                    `json:"name"`
+	Protocol      string                    `json:"protocol"`
 	Setup         []protocolMove            `json:"setup"`
 	Pre           map[string]map[string]any `json:"pre"`
 	Move          protocolMove              `json:"move"`
@@ -97,6 +98,7 @@ func bootstrapProtocol(t *testing.T, h *harness) string {
 				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
 			},
 		},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -104,6 +106,81 @@ func bootstrapProtocol(t *testing.T, h *harness) string {
 		t.Fatalf("create protocol: %v", created)
 	}
 	return created["digest"].(string)
+}
+
+// bootstrapReportCompletion catalogs the fixture's "report-completion"
+// variant: no hole is named decision anywhere, and the close outcome
+// follows the declared build_report hole.
+func bootstrapReportCompletion(t *testing.T, h *harness) string {
+	t.Helper()
+	reportType := h.create(map[string]any{
+		"k": "struct", "fields": map[string]any{"commit": map[string]any{"k": "string"}, "gates": map[string]any{"k": "string"}}, "optional": []any{},
+	})
+	if reportType["ok"] != true {
+		t.Fatalf("create report type: %v", reportType)
+	}
+	protocol := map[string]any{
+		"scheme": "flb.protocol.v0", "name": "report-completion",
+		"seats": []any{"operator", "coordinator", "builder"},
+		"holes": []any{
+			map[string]any{"name": "build_report", "type": reportType["digest"], "seats": []any{"builder"}},
+		},
+		"completion": []any{"build_report"}, "revision": "successor-round",
+		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
+	}
+	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
+	if created["ok"] != true {
+		t.Fatalf("create report-completion protocol: %v", created)
+	}
+	return created["digest"].(string)
+}
+
+// bootstrapAbsorbDecision catalogs the fixture's "absorb-decision" variant:
+// the task-acceptance decision hole under the absorb revision policy.
+func bootstrapAbsorbDecision(t *testing.T, h *harness) string {
+	t.Helper()
+	verdictType := h.create(map[string]any{
+		"k": "struct", "fields": map[string]any{
+			"verdict": map[string]any{"k": "union", "of": []any{
+				map[string]any{"k": "literal", "value": "accept"}, map[string]any{"k": "literal", "value": "revise"}, map[string]any{"k": "literal", "value": "reject"},
+			}},
+		}, "optional": []any{},
+	})
+	if verdictType["ok"] != true {
+		t.Fatalf("create verdict type: %v", verdictType)
+	}
+	protocol := map[string]any{
+		"scheme": "flb.protocol.v0", "name": "absorb-decision",
+		"seats": []any{"operator", "coordinator", "builder"},
+		"holes": []any{
+			map[string]any{
+				"name": "decision", "type": verdictType["digest"], "seats": []any{"coordinator", "operator"},
+				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
+			},
+		},
+		"completion": []any{"decision"}, "revision": "absorb",
+		"identity": "trusted-principals", "liveness": []any{"builder", "coordinator", "operator"},
+	}
+	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
+	if created["ok"] != true {
+		t.Fatalf("create absorb-decision protocol: %v", created)
+	}
+	return created["digest"].(string)
+}
+
+func bootstrapProtocolVariant(t *testing.T, h *harness, variant string) string {
+	t.Helper()
+	switch variant {
+	case "", "task-acceptance":
+		return bootstrapProtocol(t, h)
+	case "report-completion":
+		return bootstrapReportCompletion(t, h)
+	case "absorb-decision":
+		return bootstrapAbsorbDecision(t, h)
+	default:
+		t.Fatalf("fixture names an unknown protocol variant %q", variant)
+		return ""
+	}
 }
 
 func protocolState(t *testing.T, h *harness, session string) reply {
@@ -149,7 +226,7 @@ func TestProtocolMoveFixtureDrivesRealRuntime(t *testing.T) {
 	for _, vector := range fixture.Vectors {
 		t.Run(vector.Name, func(t *testing.T) {
 			h := acquire(t)
-			protocol := bootstrapProtocol(t, h)
+			protocol := bootstrapProtocolVariant(t, h, vector.Protocol)
 			opened := h.request("flb.req.protocol.session.open", map[string]any{
 				"protocol": protocol, "bindings": fixture.Bindings,
 			})
@@ -199,6 +276,7 @@ func TestProtocolCreationAndFillValidateAtTheBoundary(t *testing.T) {
 			"name": "decision", "type": stringType, "seats": []any{"operator"},
 			"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator"}},
 		}},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	h.refusal(h.request("flb.req.protocol.create", map[string]any{"protocol": badFence}), "invalid-structure")
@@ -225,7 +303,8 @@ func TestProtocolFillPreservesALicensedNullValue(t *testing.T) {
 	nullType := h.create(map[string]any{"k": "null"})["digest"].(string)
 	protocol := map[string]any{
 		"scheme": "flb.protocol.v0", "name": "null-decision", "seats": []any{"operator"},
-		"holes":    []any{map[string]any{"name": "decision", "type": nullType, "seats": []any{"operator"}}},
+		"holes":      []any{map[string]any{"name": "decision", "type": nullType, "seats": []any{"operator"}}},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	created := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -256,6 +335,7 @@ func TestProtocolCreationEnforcesSeatAndFenceLaws(t *testing.T) {
 				"seats": []any{"operator", "coordinator"},
 				"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator"}},
 			}},
+			"completion": []any{"decision"}, "revision": "successor-round",
 			"identity": "trusted-principals", "liveness": []any{"operator", "coordinator"},
 		}
 	}

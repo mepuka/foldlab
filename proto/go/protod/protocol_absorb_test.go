@@ -8,7 +8,9 @@
 package protod_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sync"
@@ -45,14 +47,26 @@ func acquireStore(t *testing.T, store string) (*harness, func()) {
 	return &harness{t: t, conn: conn}, release
 }
 
+// reopenEquivalence is the byte-level acceptance: the state reply served
+// before the restart and the reply replayed from the same store after it
+// must be identical raw wire bytes, and must be an OK fact — two daemons
+// agreeing on a refusal is not equivalence.
 func reopenEquivalence(t *testing.T, store string, h *harness, release func(), session string) {
 	t.Helper()
-	served := protocolState(t, h, session)
+	body, err := json.Marshal(map[string]any{"session": session})
+	if err != nil {
+		t.Fatal(err)
+	}
+	served := h.requestBytes("flb.req.protocol.session.state", body)
+	var fact reply
+	if err := json.Unmarshal(served, &fact); err != nil || fact["ok"] != true {
+		t.Fatalf("state before restart is not an OK fact: %s", served)
+	}
 	release()
 	reopened, _ := acquireStore(t, store)
-	replayed := protocolState(t, reopened, session)
-	if !reflect.DeepEqual(served, replayed) {
-		t.Fatalf("reopen equivalence failed:\nserved:   %v\nreplayed: %v", served, replayed)
+	replayed := reopened.requestBytes("flb.req.protocol.session.state", body)
+	if !bytes.Equal(served, replayed) {
+		t.Fatalf("reopen equivalence failed at the byte level:\nserved:   %s\nreplayed: %s", served, replayed)
 	}
 }
 
@@ -265,6 +279,7 @@ func bootstrapThreeSeatDecision(t *testing.T, h *harness) string {
 			"seats": []any{"operator", "coordinator", "builder"},
 			"fence": map[string]any{"rule": "seat-authority", "order": []any{"operator", "coordinator", "builder"}},
 		}},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator", "coordinator", "builder"},
 	}
 	result := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
@@ -370,7 +385,8 @@ func TestFillValueOutsideCanonicalDomainRefuses(t *testing.T) {
 	}
 	protocol := map[string]any{
 		"scheme": "flb.protocol.v0", "name": "opaque-decision", "seats": []any{"operator"},
-		"holes":    []any{map[string]any{"name": "decision", "type": created["digest"], "seats": []any{"operator"}}},
+		"holes":      []any{map[string]any{"name": "decision", "type": created["digest"], "seats": []any{"operator"}}},
+		"completion": []any{"decision"}, "revision": "successor-round",
 		"identity": "trusted-principals", "liveness": []any{"operator"},
 	}
 	made := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})

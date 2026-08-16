@@ -1,5 +1,5 @@
 {
-  "_provenance": "Hand-authored contract vectors for the flb.protocol.session.v0 fill/close prose in proto/wire/CONTRACT.md (post-D85 absorb semantics). Go drives these moves through the real single-daemon runtime; TypeScript decodes the same expected wire values. The vectors claim the contract prose only — no model verdicts and not a correspondence proof; the generated wall carries the model claim.",
+  "_provenance": "Hand-authored contract vectors for the flb.protocol.session.v0 fill/close prose in proto/wire/CONTRACT.md (DEV-675 cutover grammar: completion declaration, revision policy). A vector may name a protocol variant (task-acceptance default, report-completion, absorb-decision). Go drives these moves through the real single-daemon runtime; TypeScript decodes the same expected wire values. The vectors claim the contract prose only — no model verdicts and not a correspondence proof; the generated wall carries the model claim.",
   "version": "flb.protocol.session.v0",
   "bindings": {
     "operator": "operator-principal",
@@ -149,6 +149,44 @@
       "pre": { "build_report": { "state": "unfilled" } },
       "move": { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } },
       "refusal": { "kind": "session-closed" }
+    },
+    {
+      "name": "completion-follows-the-declared-hole",
+      "protocol": "report-completion",
+      "setup": [
+        { "op": "fill", "principal": "builder-principal", "hole": "build_report", "value": { "commit": "abc", "gates": "green" } }
+      ],
+      "pre": { "build_report": { "state": "filled" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "completed",
+      "expected": { "build_report": { "state": "filled", "value": { "commit": "abc", "gates": "green" }, "sealed": true } }
+    },
+    {
+      "name": "unfilled-completion-hole-abandons",
+      "protocol": "report-completion",
+      "setup": [],
+      "pre": { "build_report": { "state": "open" } },
+      "move": { "op": "close", "principal": "operator-principal" },
+      "outcome": "abandoned",
+      "expected": { "build_report": { "state": "unfilled" } }
+    },
+    {
+      "name": "absorb-revises-the-contributing-seat",
+      "protocol": "absorb-decision",
+      "setup": [
+        { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "revise" } }
+      ],
+      "pre": { "decision": { "state": "filled", "value": { "verdict": "revise" } } },
+      "move": { "op": "fill", "principal": "coordinator-principal", "hole": "decision", "value": { "verdict": "reject" } },
+      "expected": {
+        "decision": {
+          "state": "disputed",
+          "candidates": [
+            { "value": { "verdict": "reject" }, "seat": "coordinator" },
+            { "value": { "verdict": "revise" }, "seat": "coordinator" }
+          ]
+        }
+      }
     }
   ]
 }
