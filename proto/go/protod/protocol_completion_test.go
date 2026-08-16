@@ -46,6 +46,35 @@ func bootstrapPairCompletion(t *testing.T, h *harness) string {
 	return result["digest"].(string)
 }
 
+func TestOperatorlessProtocolCannotClose(t *testing.T) {
+	h := acquire(t)
+	created := h.create(map[string]any{"k": "string"})
+	if created["ok"] != true {
+		t.Fatalf("create string type: %v", created)
+	}
+	protocol := map[string]any{
+		"scheme": "flb.protocol.v0", "name": "operatorless", "seats": []any{"author", "reviewer"},
+		"holes": []any{
+			map[string]any{"name": "draft", "type": created["digest"], "seats": []any{"author"}},
+		},
+		"completion": []any{"draft"}, "revision": "successor-round",
+		"identity": "trusted-principals", "liveness": []any{"author", "reviewer"},
+	}
+	made := h.request("flb.req.protocol.create", map[string]any{"protocol": protocol})
+	if made["ok"] != true {
+		t.Fatalf("create operatorless protocol: %v", made)
+	}
+	session := openProtocolSession(t, h, made["digest"].(string), map[string]any{
+		"author": "author-principal", "reviewer": "reviewer-principal",
+	})
+	mustFillProtocol(t, h, session, "author-principal", "draft", "ready")
+	for _, principal := range []string{"author-principal", "reviewer-principal"} {
+		h.refusal(h.request("flb.req.protocol.session.close", map[string]any{
+			"session": session, "principal": principal,
+		}), "seat-unauthorized")
+	}
+}
+
 func TestCloseOutcomeFollowsTheCompletionDeclaration(t *testing.T) {
 	operatorOnly := map[string]any{"operator": "operator-principal"}
 
