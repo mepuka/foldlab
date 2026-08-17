@@ -1,0 +1,7 @@
+KV key=delete allowed=create@1,update@2,revision-checked-delete@3 op=KeyValueDeleteOp history=3,reopen-update@4
+KV key=purge allowed=create@5,update@6,revision-checked-purge@7 op=KeyValuePurgeOp history=1,reopen-update@8
+MANAGEMENT subject=$JS.API.STREAM.DELETE.KV_BOUNDARY result=permission-refused
+MANAGEMENT subject=$JS.API.STREAM.PURGE.KV_BOUNDARY result=permission-refused
+MANAGEMENT subject=$JS.API.STREAM.UPDATE.KV_BOUNDARY result=permission-refused
+MANAGEMENT subject=$JS.API.STREAM.RESTORE.KV_BOUNDARY result=permission-refused
+PINS server=v2.14.4 go-client=v1.53.1

@@ -1,0 +1,1 @@
+{"server":"nats://application:application@127.0.0.1:4222","address":{"listen":"127.0.0.1:4222","hostname":"127.0.0.1","port":4222},"auth":null}
