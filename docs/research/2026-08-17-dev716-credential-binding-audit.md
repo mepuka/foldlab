@@ -260,6 +260,14 @@ fixed-incarnation prose remains accurate as a bound. The narrower statement
 “DEV-716 independently proves the deployed register credential guard” is not
 supported today.
 
+## Multica disposition record
+
+The source-cited boundary finding was posted after DEV-716 merged, as reply
+`1c5a5f28-4238-400e-8b4b-b865c90e9d32` to the merge record (2026-08-17
+19:30:21Z). The post explicitly preserves DEV-716's bounded substrate claim
+and routes the residual to the trusted-writer/deployment boundary; it does not
+request a ledger retraction or reopen the five-action theorem.
+
 ## Sources considered and pertinence
 
 | Source/evidence | Pertinent? | Reason |
