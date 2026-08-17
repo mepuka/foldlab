@@ -82,7 +82,6 @@ public consequence of digest-as-message-id, so its time bound must not move
 silently with a server default. **Load-bearing? yes** — the window defines the
 bounded interval over which a repeated envelope is one stored frame.
 
-<<<<<<< HEAD
 ### T6. The incarnation pin at register-open is deferred, recorded
 
 Decided: the register does NOT yet record the backing stream's creation time
