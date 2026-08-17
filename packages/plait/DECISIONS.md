@@ -3,6 +3,20 @@
 Task-local placeholders per the numbering rule in `proto/DECISIONS.md`;
 repository D-numbers are assigned at merge.
 
+### T0. DEV-711 register mapping and replay wall
+
+Decided: `Register.ts` owns the public `Registers` service and
+`src/internal/registers.ts` owns NATS KV. The token is the key's revision-CAS
+order. Commit stores the lease token in its terminal payload even though the
+storing PUT advances the backing stream revision; observe reports the landed
+lease token. `flb-fab-reg` is file-backed R=1, history 64, TTL 0, max bytes -1.
+Every generated row audits its history for at most one landing and no zombie.
+The hard-kill wall reuses `zombie-stale-commit`: TS grants, Go steals, the TS
+zombie refuses, and Go lands the current-token outcome. A planted runtime
+mutant dropping commit's token guard is killed by that vector; the Lean gate
+kills hand-edited corpus rows by byte comparison. **Load-bearing? yes** — this
+is the concrete F5-to-KV mapping and its executable wall.
+
 ### T1. Build the pinned upstream NATS server command from the Go module lock
 
 Decided: the round-trip harness builds `github.com/nats-io/nats-server/v2`

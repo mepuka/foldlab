@@ -10,6 +10,9 @@ export * as FabricClient from "./FabricClient.js"
 /** Structural and absence refusals plus the absence-only retry policy. */
 export * as Refusal from "./Refusal.js"
 
+/** Fenced five-action commitment registers over NATS KV revision CAS. */
+export * as Register from "./Register.js"
+
 /** Typed constructors for the `flb.fab.*` routing grammar. */
 export * as Subjects from "./Subjects.js"
 

@@ -2,8 +2,21 @@
 
 Local terms hidden behind the substrate's seam. The public language is
 root [CONTEXT.md](../CONTEXT.md); nothing here may leak into it. The
-effector's vocabulary (register, fence, steal, lease, outcome, watch)
-lives with the effector at tag `archive/pre-estate-focus`.
+archived effector/watch vocabulary remains at tag
+`archive/pre-estate-focus`. DEV-711 introduces a fresh `register/` twin with a
+narrower five-action vocabulary; it does not restore the archived watch lane.
+
+**Commitment register**:
+Fresh minimal twin of Plait's per-work-digest authority: grant, renew, commit,
+expire-steal, and observe over the `flb-fab-reg` KV bucket.
+
+**Fence token**:
+The key's revision in the KV CAS order. A holder name never confers authority;
+only the current revision can renew or commit.
+
+**Landed outcome**:
+The unique terminal value and the lease token under which it landed. A zombie
+with an older token is permanently refused.
 
 **Authority journal**:
 The single writable home of a journal's facts. Imports nothing

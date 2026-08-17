@@ -1,0 +1,4 @@
+FabricVeil.Controls.trusted_mode_control depends on axioms: [sorryAx]
+
+This theorem is deliberately excluded from theorem-roster.txt. The gate runs it,
+observes sorryAx, and proves the claimed-footprint checker refuses that output.

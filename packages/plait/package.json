@@ -10,6 +10,7 @@
     "./Digest": "./src/Digest.ts",
     "./FabricClient": "./src/FabricClient.ts",
     "./Refusal": "./src/Refusal.ts",
+    "./Register": "./src/Register.ts",
     "./Subjects": "./src/Subjects.ts",
     "./Wire": "./src/Wire.ts"
   },
