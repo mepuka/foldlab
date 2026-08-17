@@ -82,6 +82,7 @@ public consequence of digest-as-message-id, so its time bound must not move
 silently with a server default. **Load-bearing? yes** — the window defines the
 bounded interval over which a repeated envelope is one stored frame.
 
+<<<<<<< HEAD
 ### T6. The incarnation pin at register-open is deferred, recorded
 
 Decided: the register does NOT yet record the backing stream's creation time
@@ -100,29 +101,66 @@ the other half of the guard. **Load-bearing? yes** — until the pin or the
 ACL suite lands, the bound sentence is the only fence around lifecycle
 mutation.
 
-### T7. Inspect every emitted overload signature through the compiler API
+### T7. Make the emitted declaration walk the public-surface authority for this package's own declarations
 
-Decided: the public-effect gate emits the package declarations, asks the pinned
-TypeScript compiler for every call signature, checks each resolved return error
-against `Refusal`, and byte-diffs a generated signature manifest. Alternatives:
-continue using `ReturnType`, which resolves only the last signature; encode a
-two-, three-, and four-overload inference ladder. Why: TypeScript exposes no
-general type-level reflection over an overload set, and a count-bounded ladder
-would reproduce the hand-maintained escape shape the derived gate replaced.
-**Load-bearing? yes** — `retryAbsence` is the first live four-signature export,
-and every non-final signature was otherwise outside the gate.
+Decided: the public-effect gate emits the package declarations, then one pinned
+TypeScript compiler walk traverses public values, members authored in this
+package's `src`, prototypes, `Context.Service` shapes, string/number indices,
+and construct results. It asks the compiler for every call and construct
+signature, checks each resolved carrier error against `Refusal`, and byte-diffs
+a generated signature manifest that names the authority. The gate also refuses
+an empty manifest, even if the committed manifest were emptied with it. The
+declaration walk's authorship filter is the emitted declaration root — this
+package's `src` alone — so members authored in a sibling workspace package and
+surfaced through the barrel are OUTSIDE its reach; for exactly that class the
+type-level walk is retained as LOAD-BEARING (its plant reddens where the
+declaration walk is silent), and the intersection is recorded here rather than
+left implicit (repaired 2026-08-17, DEV-710 round-3 review: the earlier
+"one walk owns the whole consumer-reachable surface" absolute was unlicensed
+for externally-authored members). Alternatives: widen the declaration emit to
+the workspace (heavier emit, cross-package declaration coupling); continue
+using `ReturnType`, which resolves only the final signature; a count-bounded
+overload inference ladder. Why: TypeScript exposes no general type-level
+reflection over an overload set, and the two-walk split with a RECORDED
+division of authority keeps every surface class under a named mechanism.
+**Load-bearing? yes** — `retryAbsence`, service instance methods, and
+construct-only results are checked by the declaration walk; workspace-authored
+members surfaced through the barrel are checked by the type-level walk; no
+surface class rests on an unrecorded intersection.
 
-### T8. Bound authored-surface recursion at eight edges
+### T8. Bound declaration traversal at eight measured edges
 
-Decided: the type-level public-surface walk stops after eight recursive edges,
-traverses plain classes including their prototype and statics, and subtracts
-only the imported `Schema.Top` protocol before traversing package-authored
-Schema extensions. The controls add a fallible static and a fallible `decode`
-to new surfaces, so both former blanket exemptions are under the quantifier.
-Alternatives: leave recursion unbounded; suppress every `ast` carrier; suppress
-every constructor. The review's removal test at `2853e48` was: both blanket
-arms removed → `TS2589`; `ast` only → clean; constructor only → clean. Why: the
-explicit counter covers the shipped namespace depth and the planted deep-object
-shape without asking TypeScript to expand cyclic vendor protocols indefinitely.
-**Load-bearing? yes** — removing the counter reintroduces `TS2589`, while either
-blanket arm restores a live escape.
+Decided: the load-bearing declaration walk inspects a carrier reached in at
+most eight recursive transitions from an exported value. Member, prototype,
+service-shape, and index traversal each spend one edge; a call or construct
+return spends one edge. The committed ladder refuses
+`atBound.n1.n2.n3.n4.n5.load#call[1]` at edge eight and admits the otherwise
+identical branch with one extra `n6` member at edge nine. The supplemental
+type-level walk retains its own eight-step cutoff, traverses plain classes, and
+subtracts imported `Schema.Top` protocol members before package-authored Schema
+extensions. Alternatives: leave either recursion unbounded; suppress every
+`ast` carrier; suppress every constructor. The review's removal test at
+`2853e48` was: both blanket arms removed → `TS2589`; `ast` only → clean;
+constructor only → clean. Why: explicit measured counters cover the shipped
+surface without expanding cyclic vendor protocols indefinitely.
+**Load-bearing? yes** — the declaration bound sizes the claim; the type-level
+cutoff prevents compiler divergence and bounds the externally-authored class
+that walk covers (T7).
+
+### T9. Name the remaining public-surface exclusions from controls
+
+Decided: the Bounds text explicitly excludes `Effect<Effect<A, E>, Refusal>`,
+a fallible `Layer` returned within an Effect success, fallible carriers inside
+collection elements, paths requiring a ninth traversal edge, vendor-owned
+members such as the `Schema.Top` protocol, and — for the declaration walk
+alone — members authored outside this package's `src`, which the type-level
+walk covers as its recorded load-bearing class (T7). A direct fallible
+`Stream` returned
+within an Effect success is covered and therefore is not an exclusion. The
+committed bounds control carries all four nested shapes; only its direct Stream
+branch appears in the refusal trace. Alternatives: infer exclusions from the
+walker implementation; use the earlier blanket phrase “fallible carriers in an
+Effect success.” Why: that blanket was false for Stream, while named measured
+shapes keep the ledger claim and its controls in the same register.
+**Load-bearing? yes** — these exclusions are the exact ceiling on the proposed
+public-surface claim.

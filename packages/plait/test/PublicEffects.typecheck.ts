@@ -103,7 +103,7 @@ export type Assert<T extends true> = T
 /** Fails compilation unless the public-surface violation union is empty. */
 export type AssertNever<T extends never> = T
 
-/** Derived compile-time assertion over the complete public slice-0 surface. */
+/** Supplemental compile-time tripwire; the emitted-declaration gate owns the surface claim. */
 export type PublicEffectErrorConformance = AssertNever<
   PublicSurfaceViolations<PublicApi>
 >

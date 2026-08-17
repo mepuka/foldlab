@@ -7,6 +7,11 @@ import {
 import { dirname, resolve, sep } from "node:path"
 import * as ts from "typescript"
 
+/**
+ * The emitted-declaration walk is the load-bearing public-surface authority.
+ * Its caller rejects an empty manifest, so declaration drift cannot erase the
+ * quantified surface and pass vacuously.
+ */
 const packageRoot = resolve(import.meta.dir, "..")
 const declarationCache = resolve(packageRoot, "node_modules/.cache")
 const maximumSurfaceDepth = 8
@@ -218,8 +223,9 @@ export const inspectPublicDeclarations = (
     depth: number,
     seen: ReadonlySet<ts.Type>,
   ): void => {
-    if (depth >= maximumSurfaceDepth || seen.has(type)) return
+    if (seen.has(type)) return
     if (inspectCarrier(type, path)) return
+    if (depth >= maximumSurfaceDepth) return
     const nextSeen = new Set(seen)
     nextSeen.add(type)
 
@@ -233,7 +239,63 @@ export const inspectPublicDeclarations = (
       )
     })
 
+    const prototype = checker.getPropertyOfType(type, "prototype")
+    const typeSymbol = type.getSymbol()
+    const prototypeDeclaration = prototype === undefined
+      ? undefined
+      : symbolDeclaration(prototype) ??
+        (typeSymbol === undefined ? undefined : symbolDeclaration(typeSymbol))
+    let hasLocalPrototype = false
+    let localPrototypeType: ts.Type | undefined
+    if (prototype !== undefined && prototypeDeclaration !== undefined &&
+      normalizePath(prototypeDeclaration.getSourceFile().fileName).startsWith(localRoot)) {
+      hasLocalPrototype = true
+      localPrototypeType = checker.getTypeOfSymbolAtLocation(prototype, prototypeDeclaration)
+      inspectType(
+        localPrototypeType,
+        path === "" ? "prototype" : `${path}.prototype`,
+        depth + 1,
+        nextSeen,
+      )
+    }
+    const constructSignatures = checker.getSignaturesOfType(type, ts.SignatureKind.Construct)
+    constructSignatures.forEach((signature, index) => {
+      const result = checker.getReturnTypeOfSignature(signature)
+      if (localPrototypeType !== undefined &&
+        checker.isTypeAssignableTo(result, localPrototypeType) &&
+        checker.isTypeAssignableTo(localPrototypeType, result)) return
+      inspectType(
+        result,
+        `${path}#construct[${index + 1}]`,
+        depth + 1,
+        nextSeen,
+      )
+    })
+
+    const service = checker.getPropertyOfType(type, "Service")
+    const serviceDeclaration = service === undefined ? undefined : symbolDeclaration(service)
+    if (!hasLocalPrototype && service !== undefined && serviceDeclaration !== undefined &&
+      checker.getPropertyOfType(type, "key") !== undefined) {
+      inspectType(
+        checker.getTypeOfSymbolAtLocation(service, serviceDeclaration),
+        `${path}#service`,
+        depth + 1,
+        nextSeen,
+      )
+    }
+
+    for (const [kind, label] of [
+      [ts.IndexKind.String, "string"],
+      [ts.IndexKind.Number, "number"],
+    ] as const) {
+      const indexed = checker.getIndexTypeOfType(type, kind)
+      if (indexed !== undefined) {
+        inspectType(indexed, `${path}#index[${label}]`, depth + 1, nextSeen)
+      }
+    }
+
     for (const property of checker.getPropertiesOfType(type)) {
+      if (property.name === "prototype") continue
       const declaration = property.declarations?.find((candidate) =>
         normalizePath(candidate.getSourceFile().fileName).startsWith(localRoot))
       if (declaration === undefined) continue

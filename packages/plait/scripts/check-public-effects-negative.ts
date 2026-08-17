@@ -57,6 +57,42 @@ const controls = [
 
 const declarationControls = [
   {
+    name: "measured nested-carrier bounds",
+    project: "tsconfig.negative-bounds.json",
+    entry: "negative-controls/PublicEffects.bounds.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.bounds.trace.txt",
+  },
+  {
+    name: "package-authored Schema declaration extension",
+    project: "tsconfig.negative-schema-declaration.json",
+    entry: "negative-controls/PublicEffects.schema-declaration.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.schema-declaration.trace.txt",
+  },
+  {
+    name: "string-indexed fallible operation",
+    project: "tsconfig.negative-string-index.json",
+    entry: "negative-controls/PublicEffects.string-index.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.string-index.trace.txt",
+  },
+  {
+    name: "declaration recursion depth ladder",
+    project: "tsconfig.negative-depth-ladder.json",
+    entry: "negative-controls/PublicEffects.depth-ladder.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.depth-ladder.trace.txt",
+  },
+  {
+    name: "construct-signature-only fallible instance",
+    project: "tsconfig.negative-construct-signature.json",
+    entry: "negative-controls/PublicEffects.construct-signature.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.construct-signature.trace.txt",
+  },
+  {
+    name: "fallible non-final instance overload signature",
+    project: "tsconfig.negative-overload-instance.json",
+    entry: "negative-controls/PublicEffects.overload-instance.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.overload-instance.trace.txt",
+  },
+  {
     name: "fallible first overload signature",
     project: "tsconfig.negative-overload-first.json",
     entry: "negative-controls/PublicEffects.overload-first.mutant.d.ts",
@@ -128,4 +164,4 @@ for (const control of declarationControls) {
   if (failed) process.exit(1)
 }
 
-console.log("PUBLIC EFFECT CONTROL: PASS (eleven public-surface regressions refused)")
+console.log("PUBLIC EFFECT CONTROL: PASS (seventeen public-surface regressions refused)")

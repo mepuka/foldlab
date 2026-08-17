@@ -223,11 +223,32 @@ const selfTestInstallPreflight = (): void => {
       directory: warmLockfileRoot,
       lockfile: warmLockfile,
     }
+    let warmInstallOutput = ""
     requireRefusal(
       warmLockfileTarget,
-      installFrozen,
+      (target) => {
+        console.log(`\n== preflight — ${target.label}`)
+        const result = Bun.spawnSync({
+          cmd: ["bun", "install", "--frozen-lockfile"],
+          cwd: target.directory,
+          stdout: "pipe",
+          stderr: "pipe",
+          env: process.env,
+        })
+        const stdout = text(result.stdout)
+        const stderr = text(result.stderr)
+        warmInstallOutput = `${stdout}${stderr}`
+        if (stdout !== "") process.stdout.write(stdout)
+        if (stderr !== "") process.stderr.write(stderr)
+        return result.exitCode
+      },
       "preflight — warm lockfile-drift control: frozen install exited 1",
     )
+    if (!warmInstallOutput.includes("lockfile is frozen")) {
+      throw new Error(
+        `warm lockfile-drift control failed for another reason\n${warmInstallOutput}`,
+      )
+    }
 
     const frozenExitRoot = resolve(temporaryRoot, "frozen-exit")
     mkdirSync(resolve(frozenExitRoot, "node_modules"), { recursive: true })

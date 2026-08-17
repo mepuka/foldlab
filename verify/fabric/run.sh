@@ -139,7 +139,8 @@ corpus_witnesses_tmp=$(mktemp "./.corpus-witnesses.XXXXXX")
 corpus_mutation_tmp=$(mktemp "$regen_dir/.corpus-mutation.XXXXXX.ndjson")
 emission_mutation_tmp=$(mktemp "$regen_dir/.emission-mutation.XXXXXX.ndjson")
 row_deletion_tmp=$(mktemp "$regen_dir/.row-deletion.XXXXXX.ndjson")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_witnesses_tmp" "$corpus_mutation_tmp" "$emission_mutation_tmp" "$row_deletion_tmp"' EXIT
+row_insertion_tmp=$(mktemp "$regen_dir/.row-insertion.XXXXXX.ndjson")
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_witnesses_tmp" "$corpus_mutation_tmp" "$emission_mutation_tmp" "$row_deletion_tmp" "$row_insertion_tmp"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -305,7 +306,7 @@ report_first_corpus_divergence() {
         kind=${kind:-unknown}
         name=${name:-unknown}
       fi
-      echo "FINDING: divergent corpus row=$row kind=$kind name=$name" >&2
+      echo "FINDING: divergent corpus row=$row kind=$kind name=$name positional-bound=one-row-lookahead" >&2
       if [[ "$report_model_present" -eq 1 ]]; then
         echo "FINDING: model line: $model_line" >&2
       else
@@ -430,6 +431,32 @@ if [[ "$self_test" == true ]]; then
   fi
   printf '%s\n' "$deletion_control"
   echo "GATE: PASS (--self-test refused deleted model row=5 kind=F2b name=floor-violating-stale-replay)"
+
+  if ! awk '
+      !inserted && /"name":"floor-violating-stale-replay"/ {
+        planted = $0
+        inserted = sub(/"name":"floor-violating-stale-replay"/, "\"name\":\"inserted-control-row\"", planted)
+        print planted
+      }
+      { print }
+      END { if (inserted != 1) exit 42 }
+    ' "$corpus_tmp" > "$row_insertion_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the model-row insertion" >&2
+    exit 1
+  fi
+  if insertion_control=$(check_corpus_regeneration "$fixture" "$row_insertion_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted an inserted model row" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=5 kind=F2b name=inserted-control-row' \
+      <<< "$insertion_control" ||
+      ! grep -q 'FINDING: committed line: <missing>' <<< "$insertion_control"; then
+    printf '%s\n' "$insertion_control" >&2
+    echo "GATE: FAIL — model-row insertion refusal misattributed the inserted row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$insertion_control"
+  echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
 echo "GATE: PASS (4 law-dropping controls; 11 canonical model vectors; byte-identical regeneration)"
