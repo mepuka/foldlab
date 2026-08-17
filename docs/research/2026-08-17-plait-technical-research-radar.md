@@ -132,3 +132,39 @@ disposition or new evidence. It continues that line if so. Otherwise it rescans
 recently active Multica threads and selects at most one new load-bearing claim
 using the five criteria above. Material findings are posted to their issue;
 ordinary notes remain in the research record.
+
+## Hourly continuation — 15:20 UTC
+
+The board moved from 37 issues / 20 done at the preceding scan to 38 / 21.
+DEV-720 was created and closed as a targeted hygiene re-review; its residuals
+are compiler-surface and test-gate review work, not a new literature bottleneck.
+DEV-711 has no replacement head or coordinator ruling. Its executor accepted
+`DEV711-LIFECYCLE-1`, withdrew the unqualified runtime/ledger claim, and left
+PR #74 not merge-ready.
+
+The exact PR #74 audit is now durable at
+`docs/research/2026-08-17-dev711-pr74-lifecycle-closure-audit.md`. It confirms
+that the five-action theorem remains sound, while the runtime bridge has no
+incarnation state, credential guard, or fixed-incarnation bound. A particularly
+strong test-specific witness is that the TypeScript replay destroys and
+recreates `flb-fab-reg` after every row and expects token `1` again, but drops
+the old token before the cross-incarnation stale commit that would expose the
+bug.
+
+DEV-716 / PR #73 also advanced and remains changes-requested. Its round-two
+credential probes now cover stream DELETE/PURGE and KV backing-stream deletion,
+but a reviewer widened only `$JS.API.STREAM.UPDATE.>` and successfully changed
+`MaxMsgs` to 1, evicting two of three frames while the suite stayed green. This
+is pertinent to the same design choice: a fixed-incarnation/terminality guard
+must cover configuration authority, not only operations whose names sound
+destructive. It remains an operational premise, outside the Lean transition
+system and not yet bound to the register runtimes.
+
+No new Multica comment was posted this hour. The original counterexample is
+accepted and stopped on, and DEV-716 already carries the newer UPDATE witness;
+duplicating either would add notification without evidence. The next best
+research target remains the disposition itself: after the coordinator chooses
+fixed incarnation versus epoch-bearing identity, test the selected boundary
+against stream update, snapshot/restore/import, account/credential replacement,
+and operator rollback. Until that ruling, broad lease or consensus literature
+is not pertinent because it cannot determine the missing semantic identity.
