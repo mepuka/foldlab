@@ -351,13 +351,17 @@ Plait distributes exactly this and nothing more:
   is this exact statement in Mathlib (fold of a union equals op of the
   folds, for ACI ops), and the estate's permutation theorems are its
   in-house siblings.
-- **The position-floor guard (F2b)** manufactures effective idempotence
+- **The successor discipline (F2b)** manufactures effective idempotence
   for algebras that are not idempotent (counting is the canonical
-  example): application is guarded by the anchor's per-partition position
-  floor, and guarded replay of any at-least-once redelivery schedule
-  applies each event exactly once. This small lemma is what lets
-  non-idempotent folds ride the sloppy plane safely, and it is trivially
-  statable in Lean over list-with-positions traces.
+  example): arrivals are admitted through a window and applied only at
+  the contiguous frontier, so any at-least-once redelivery schedule
+  applies each event exactly once. The anchor's position floor is the
+  *derived record* of that frontier — the resume coordinate — not
+  itself the protector (attribution corrected 2026-08-17: the DEV-695
+  re-review proved a floor guard observationally redundant given the
+  discipline — `guard_is_redundant`, footprint-clean). This is what
+  lets non-idempotent folds ride the sloppy plane safely, statable in
+  Lean over list-with-positions traces.
 
 ### 5.5 C5 — the lease register
 
@@ -390,7 +394,7 @@ verbatim as the estate already carries it:
 | Network axiom | What it guards | How Plait discharges it |
 | --- | --- | --- |
 | `msg_id_unique` | global uniqueness of message identity | content addressing: message id = SHA-256 over canonical envelope bytes; uniqueness is collision resistance, already in the trusted base |
-| `histories_distinct` | no duplicate events per node | per-venue CAS-append refuses positionally (unchanged); on the commons plane duplicates are *permitted* and harmless — F2 idempotence / F2b position-floor guard |
+| `histories_distinct` | no duplicate events per node | per-venue CAS-append refuses positionally (unchanged); on the commons plane duplicates are *permitted* and harmless — F2 idempotence / F2b successor discipline |
 | `deliver_locally` | a broadcaster sees its own message | JetStream: a publisher reads its own stream; venue journals unchanged |
 | `causal_delivery` | delivery order respects happens-before | **vacuous by design**: the fabric's stream alphabet is all-pairs-commuting (the `repairK_comm` discipline extended to fabric ops), so no delivery order is privileged; this is a design *constraint* — any proposed fabric op that does not commute with all others is refused from the alphabet and must ride the coordination plane instead |
 | `delivery_has_a_cause` | no message minted by the network | **the one open row.** Within a venue: single writer, verify-on-read (unchanged). Across the fabric: today this rests on transport authentication (per-node NATS credentials) and on SHA-256 self-consistency of envelopes; *who authored an observation* is exactly the estate's undecided attribution scheme. Plait pre-registers the dependency and scopes v0 accordingly (§7.4) |
@@ -1173,7 +1177,7 @@ lattice, model seam, cataloged context programs) live in
 | lane | a declared, content-addressed evidence stream (schema, partitions, key derivation) |
 | cell | a lattice value in commons KV, merged by join |
 | register | a lease/epoch authority: work digest → (token, holder, outcome), CAS-advanced |
-| anchor floor | the per-partition applied-position in a fold's checkpoint fact; the guard that manufactures exactly-once application |
+| anchor floor | the per-partition applied-position in a fold's checkpoint fact — the derived record of the successor discipline's contiguous frontier (the resume coordinate); the discipline, not the floor, manufactures exactly-once application |
 | monotone plane / coordination plane | the CALM split: what may be delivered sloppily vs the enumerated CAS points |
 | attest | the generated-vector conformance harness whose passing defines nodehood |
 

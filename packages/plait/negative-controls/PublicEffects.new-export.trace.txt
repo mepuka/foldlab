@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.new-export.mutant.ts(24,3): error TS2344: Type '"Subjects.clusterSubject"' does not satisfy the constraint 'never'.

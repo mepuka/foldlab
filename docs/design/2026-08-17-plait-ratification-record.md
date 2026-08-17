@@ -51,6 +51,20 @@ program's project management.
    declarations; deep domain modeling in Effect Schema including custom
    schema types with R-channel (service-requiring) decode.
 
+## Second ratification wave (same day)
+
+The operator ratified the consolidated grill sheet
+([2026-08-17-plait-grill-sheet.md](2026-08-17-plait-grill-sheet.md))
+with all recommendations — items 1–21, covering part 3's adoption
+(G13–G24), F11/F12 as separate candidate statements, the chaos-CLI
+E4 ticket, the capabilities-not-vendors public posture, the
+disclose-upstream-first precondition on the Effect id-collision
+evidence, the CI postures (lean-gates non-required with revisit
+trigger; toolchain sha and first verifier bundle at slice 1; bundles
+every slice tag thereafter), the run.sh-amendments follow-up brief
+route, the Resource naming/alias rule, and the API iteration log as a
+standing surface.
+
 ## Program charter
 
 - **Board:** workspace `Dev`, project `plait` (created this day).
