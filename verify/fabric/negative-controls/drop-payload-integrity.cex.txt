@@ -1,0 +1,1 @@
+control=drop-payload-integrity;vector=payload-conflict-window;lawful=5;mutant=1002;verdict=refuted
