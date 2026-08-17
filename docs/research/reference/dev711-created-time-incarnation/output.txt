@@ -1,0 +1,3 @@
+pins nats-server=2.14.4 nats.go=v1.53.1 storage=file replicas=1 clustered=false
+snapshot-created=2026-08-17T16:33:50.7342293Z restored-created=2026-08-17T16:33:50.7342293Z created-equal=true snapshot-last-seq=1 restored-revision=1 old-token=1 old-outcome-revision=2 pre-delete-token-accepted-after-rollback=true second-outcome-revision=2 final="outcome-B-from-pre-delete-token"
+restart-original-created=2026-08-17T16:33:50.7614323Z live-after-restart-created=2026-08-17T16:33:50.7614323Z after-noop-update-and-second-restart-created=2026-08-17T16:33:50.7771926Z restored-from-post-restart-snapshot-created=2026-08-17T16:33:50.7934366Z live-preserved-across-first-restart=true noop-update-preserved-created-after-next-restart=false snapshot-restore-preserved-original=false

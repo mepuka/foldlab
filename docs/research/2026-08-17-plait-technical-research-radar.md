@@ -168,3 +168,37 @@ fixed incarnation versus epoch-bearing identity, test the selected boundary
 against stream update, snapshot/restore/import, account/credential replacement,
 and operator rollback. Until that ruling, broad lease or consensus literature
 is not pertinent because it cannot determine the missing semantic identity.
+
+## Hourly continuation — 17:28 UTC
+
+The board is now 39 issues / 23 done. DEV-711 and its E5 epic closed after PR
+#74 merged at `bd1c7e3dd`; the separate ledger commit is `5004471ae`. The
+landed claim is honestly bounded to one fixed backing-stream incarnation, with
+the creation-time pin explicitly deferred in `packages/plait/DECISIONS.md` T6.
+DEV-721 moved in progress after that merge. DEV-716 remains in review and its
+draft PR is now conflicting with main; there is no newer review evidence than
+the round-two UPDATE finding.
+
+The newly ruled suggestion to use JetStream stream creation time as a future
+incarnation pin was tested against pinned source and the exact standalone
+file/R1 server. It is not a sound safety epoch:
+
+- snapshot at revision 1, commit outcome A, delete, then restore the snapshot
+  preserves the same `StreamInfo.Created`, restores revision 1, and lets the
+  pre-deletion token 1 land outcome B at revision 2;
+- restart followed by a no-op stream update and another restart changes the
+  reported creation time without replacing the logical stream; and
+- an info comparison is a separate request from numeric revision CAS, so even
+  per-operation checking has a deletion/recreation TOCTOU gap.
+
+The primary-source cause and real-server traces are recorded in
+`docs/research/2026-08-17-dev711-created-time-incarnation-audit.md`, with the
+probe under `docs/research/reference/dev711-created-time-incarnation/`. The
+finding does not retract the merged ledger row because that row chose the
+recorded deferral. It does constrain the next repair: `Created` may diagnose a
+violated operational premise, but equality cannot prove continuity. The
+load-bearing guard remains restricted application credentials plus an
+administrative procedure excluding delete, restore, rollback, and update while
+issued tokens are live. The next best probe target is the repaired DEV-716
+credential itself after its next head: verify both the denied management API
+surface and that the register runtime actually uses that identity.
