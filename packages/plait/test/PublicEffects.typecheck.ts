@@ -2,7 +2,8 @@ import type { Effect, Layer, Schema, Stream } from "effect"
 
 import type { Refusal } from "../src/Refusal.js"
 
-type PublicApi = typeof import("../src/index.js")
+/** The public barrel this walk quantifies over. */
+export type PublicApi = typeof import("../src/index.js")
 type PublicFunction = (...args: ReadonlyArray<never>) => unknown
 type SurfaceDepth = ReadonlyArray<unknown>
 type NextDepth<Depth extends SurfaceDepth> = readonly [...Depth, unknown]
@@ -103,7 +104,39 @@ export type Assert<T extends true> = T
 /** Fails compilation unless the public-surface violation union is empty. */
 export type AssertNever<T extends never> = T
 
-/** Supplemental compile-time tripwire; the emitted-declaration gate owns the surface claim. */
+/**
+ * The barrel resolved a second time, independently of whatever a caller
+ * quantifies over, so a narrowed quantifier cannot be compared against itself.
+ */
+type PublicApiWitness = typeof import("../src/index.js")
+
+/**
+ * The vacuity guard, in the declaration walk's own shape: refuse an empty
+ * quantifier by name, then require a bound witness — the walked surface must
+ * carry the whole barrel, not a narrowing of it. Without this, narrowing the
+ * quantifier to `Pick<PublicApi, never>` left the battery green over a live
+ * cross-package violation (DEV-722).
+ */
+type SurfaceQuantifierDefect<Surface> = [keyof Surface & string] extends [never]
+  ? "the walked public surface is empty"
+  : [Surface] extends [PublicApiWitness]
+  ? never
+  : "the walked public surface is not the whole public barrel"
+
+/**
+ * Every reason this walk refuses `Surface`: its quantifier defects first, then
+ * each reachable carrier whose complete error type is not Refusal. The
+ * quantifier is named once, so narrowing it reddens this same union.
+ */
+export type BoundSurfaceViolations<Surface> =
+  | SurfaceQuantifierDefect<Surface>
+  | PublicSurfaceViolations<Surface>
+
+/**
+ * Load-bearing for members authored outside this package's `src` — the class
+ * the emitted-declaration walk's authorship filter cannot reach; that gate owns
+ * every other public-surface class (DECISIONS T7).
+ */
 export type PublicEffectErrorConformance = AssertNever<
-  PublicSurfaceViolations<PublicApi>
+  BoundSurfaceViolations<PublicApi>
 >

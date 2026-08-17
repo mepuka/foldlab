@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.narrowed-quantifier.mutant.ts(13,3): error TS2344: Type '"the walked public surface is not the whole public barrel"' does not satisfy the constraint 'never'.
