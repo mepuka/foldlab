@@ -1,13 +1,19 @@
 import {
+  DeliverPolicy,
   JetStreamApiCodes,
   JetStreamApiError,
+  ReplayPolicy,
   StorageType,
   jetstream,
   jetstreamManager,
+  type Consumer,
+  type ConsumerMessages,
+  type JetStreamClient,
+  type JsMsg,
 } from "@nats-io/jetstream"
-import type { NatsConnection, Subscription } from "@nats-io/nats-core"
+import type { NatsConnection } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Result, Schema, Scope, Stream } from "effect"
+import { Effect, Queue, Result, Schema, Scope, Stream } from "effect"
 
 import type {
   FabricClientOptions,
@@ -23,10 +29,14 @@ const fabricSubjects = [
   "flb.fab.node.*",
 ] as const
 
+const messageIdWindowNanos = 2 * 60 * 1_000_000_000
+const ephemeralConsumerInactiveNanos = 30 * 1_000_000_000
+
 const StreamShape = Schema.Struct({
   config: Schema.Struct({
     storage: Schema.Literal("file"),
     num_replicas: Schema.Literal(1),
+    duplicate_window: Schema.Literal(messageIdWindowNanos),
     subjects: Schema.Array(Schema.String),
   }),
 })
@@ -50,6 +60,7 @@ const streamShapeRefusal = (got: string): Refusal =>
     expected: {
       storage: StorageType.File,
       num_replicas: 1,
+      duplicate_window: messageIdWindowNanos,
       subjects: fabricSubjects,
     },
     next: [],
@@ -71,6 +82,7 @@ const ensureStream = Effect.fn("FabricClient.ensureStream")(function* (
             subjects: [...fabricSubjects],
             storage: StorageType.File,
             num_replicas: 1,
+            duplicate_window: messageIdWindowNanos,
           })
         }
         throw error
@@ -81,13 +93,13 @@ const ensureStream = Effect.fn("FabricClient.ensureStream")(function* (
 
   const decoded = Schema.decodeUnknownResult(StreamShape)(info)
   if (Result.isFailure(decoded)) {
-    return yield* Effect.fail(streamShapeRefusal(String(decoded.failure)))
+    return yield* streamShapeRefusal(String(decoded.failure))
   }
   const actualSubjects = [...decoded.success.config.subjects].sort()
   const expectedSubjects = [...fabricSubjects].sort()
   if (actualSubjects.length !== expectedSubjects.length ||
     actualSubjects.some((subject, index) => subject !== expectedSubjects[index])) {
-    return yield* Effect.fail(streamShapeRefusal(JSON.stringify(decoded.success.config)))
+    return yield* streamShapeRefusal(JSON.stringify(decoded.success.config))
   }
 })
 
@@ -97,23 +109,32 @@ const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
     catch: () => undefined,
   }).pipe(Effect.catch(() => Effect.void))
 
-const acquireSubscription = (
-  connection: NatsConnection,
+const acquireConsumer = (
+  js: JetStreamClient,
+  stream: string,
   subject: string,
-): Effect.Effect<Subscription, Refusal> =>
+): Effect.Effect<Consumer, Refusal> =>
   Effect.tryPromise({
-    try: async () => {
-      const subscription = connection.subscribe(subject)
-      try {
-        await connection.flush()
-        return subscription
-      } catch (error) {
-        subscription.unsubscribe()
-        throw error
-      }
-    },
+    try: () => js.consumers.get(stream, {
+      filter_subjects: subject,
+      deliver_policy: DeliverPolicy.All,
+      replay_policy: ReplayPolicy.Instant,
+      inactive_threshold: ephemeralConsumerInactiveNanos,
+    }),
     catch: (cause) => transportRefusal("subscribe.acquire", cause),
   })
+
+const deleteConsumer = (consumer: Consumer): Effect.Effect<void> =>
+  Effect.tryPromise({
+    try: () => consumer.delete(),
+    catch: () => undefined,
+  }).pipe(
+    Effect.catch(() => Effect.void),
+    Effect.asVoid,
+  )
+
+const closeConsumerMessages = (messages: ConsumerMessages): Effect.Effect<void> =>
+  Effect.promise(() => messages.close()).pipe(Effect.asVoid)
 
 export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   options: FabricClientOptions,
@@ -133,8 +154,7 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
 
   const publish: FabricClientService["publish"] = Effect.fn("FabricClient.publish")(
     function* (subject, envelope) {
-      const encoded = encodeEnvelope(envelope)
-      if (!encoded.ok) return yield* Effect.fail(encoded.refusal)
+      const encoded = yield* encodeEnvelope(envelope)
       const acknowledgement = yield* Effect.tryPromise({
         try: () => js.publish(subject, encoded.bytes, { msgID: encoded.digest }),
         catch: (cause) => transportRefusal("publish", cause),
@@ -149,25 +169,34 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
 
   const subscribe: FabricClientService["subscribe"] = Effect.fn("FabricClient.subscribe")(
     function* (subject) {
-      const subscription = yield* Effect.acquireRelease(
-        acquireSubscription(connection, subject),
-        (active) => Effect.sync(() => active.unsubscribe()),
+      const consumer = yield* Effect.acquireRelease(
+        acquireConsumer(js, options.stream, subject),
+        deleteConsumer,
       )
-      return Stream.fromAsyncIterable(
-        subscription,
-        (cause) => transportRefusal("subscribe.read", cause),
+      return Stream.callback<JsMsg, Refusal>((queue) =>
+        Effect.acquireRelease(
+          Effect.tryPromise({
+            try: () => consumer.consume({
+              callback: (message) => {
+                Queue.offerUnsafe(queue, message)
+              },
+            }),
+            catch: (cause) => transportRefusal("subscribe.read", cause),
+          }),
+          closeConsumerMessages,
+        )
       ).pipe(
-        Stream.mapEffect((message): Effect.Effect<ReceivedEnvelope, Refusal> => {
+        Stream.mapEffect(Effect.fn("FabricClient.verifyReceived")(function* (
+          message,
+        ): Effect.fn.Return<ReceivedEnvelope, Refusal> {
           const messageId = message.headers?.get("Nats-Msg-Id") ?? ""
-          const verified = verifyEnvelopeDigest(message.data, messageId)
-          return verified.ok
-            ? Effect.succeed({
-              subject,
-              envelope: verified.envelope,
-              digest: verified.digest,
-            })
-            : Effect.fail(verified.refusal)
-        }),
+          const verified = yield* verifyEnvelopeDigest(message.data, messageId)
+          return {
+            subject,
+            envelope: verified.envelope,
+            digest: verified.digest,
+          }
+        })),
       )
     },
   )

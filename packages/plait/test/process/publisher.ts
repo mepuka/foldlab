@@ -12,8 +12,7 @@ const CorpusRow = Schema.Struct({
 })
 
 const [url, corpusPath, resultPath] = process.argv.slice(2)
-const subject = evidenceSubject("roundtrip", 0)
-if (url === undefined || corpusPath === undefined || resultPath === undefined || !subject.ok) {
+if (url === undefined || corpusPath === undefined || resultPath === undefined) {
   throw new Error("publisher arguments are incomplete")
 }
 
@@ -23,13 +22,18 @@ const rows = lines.map((line) => Schema.decodeUnknownSync(CorpusRow)(JSON.parse(
 }))
 
 const program = Effect.gen(function* () {
+  const subject = yield* evidenceSubject("roundtrip", 0)
   const client = yield* FabricClient
   const published: Array<PublishedEnvelope> = []
   for (const row of rows) {
-    published.push(yield* client.publish(subject.subject, row.envelope))
+    published.push(yield* client.publish(subject, row.envelope))
   }
+  const first = rows[0]
+  if (first === undefined) return yield* Effect.die("the generated corpus is empty")
+  const duplicate = yield* client.publish(subject, first.envelope)
   yield* Effect.promise(() => Bun.write(resultPath, JSON.stringify({
     digests: published.map((ack) => ack.digest),
+    duplicate,
   })))
 }).pipe(
   Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),

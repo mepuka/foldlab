@@ -1,12 +1,24 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { join, resolve } from "node:path"
 
-import { Schema } from "effect"
+import { jetstreamManager } from "@nats-io/jetstream"
+import { connect } from "@nats-io/transport-node"
+import { Effect, Option, Schema, Stream } from "effect"
 
 import { Digest } from "../src/Digest.js"
+import { FabricClient } from "../src/FabricClient.js"
+import { evidenceSubject } from "../src/Subjects.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
 
 const ResultFile = Schema.Struct({ digests: Schema.Array(Digest) })
+const PublisherResultFile = Schema.Struct({
+  digests: Schema.Array(Digest),
+  duplicate: Schema.Struct({
+    digest: Digest,
+    sequence: Schema.Number,
+    duplicate: Schema.Boolean,
+  }),
+})
 const corpus = resolve(import.meta.dir, "../fixtures/envelopes.ndjson")
 const processes = new Set<ReturnType<typeof Bun.spawn>>()
 let harness: NatsHarness | undefined
@@ -29,18 +41,8 @@ const stderr = async (process: ReturnType<typeof Bun.spawn>): Promise<string> =>
 describe("local NATS envelope round trip", () => {
   test("two processes agree on every publisher header and consumer digest", async () => {
     harness = await startNatsHarness()
-    const ready = join(harness.directory, "consumer.ready")
     const consumedPath = join(harness.directory, "consumed.json")
     const publishedPath = join(harness.directory, "published.json")
-
-    const consumer = Bun.spawn({
-      cmd: ["bun", "run", "./test/process/consumer.ts", harness.url, ready, consumedPath, "4"],
-      cwd: resolve(import.meta.dir, ".."),
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-    processes.add(consumer)
-    await waitForFile(ready)
 
     const publisher = Bun.spawn({
       cmd: ["bun", "run", "./test/process/publisher.ts", harness.url, corpus, publishedPath],
@@ -52,11 +54,28 @@ describe("local NATS envelope round trip", () => {
 
     const publisherExit = await publisher.exited
     expect(publisherExit, await stderr(publisher)).toBe(0)
+
+    const inspectionConnection = await connect({ servers: harness.url })
+    try {
+      const manager = await jetstreamManager(inspectionConnection)
+      const stream = await manager.streams.info("PLAIT_SPINE")
+      expect(stream.config.duplicate_window).toBe(120_000_000_000)
+    } finally {
+      await inspectionConnection.close()
+    }
+
+    const consumer = Bun.spawn({
+      cmd: ["bun", "run", "./test/process/consumer.ts", harness.url, consumedPath, "4"],
+      cwd: resolve(import.meta.dir, ".."),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    processes.add(consumer)
     await waitForFile(consumedPath)
     const consumerExit = await consumer.exited
     expect(consumerExit, await stderr(consumer)).toBe(0)
 
-    const published = Schema.decodeUnknownSync(ResultFile)(
+    const published = Schema.decodeUnknownSync(PublisherResultFile)(
       JSON.parse(await Bun.file(publishedPath).text()),
       { onExcessProperty: "error" },
     )
@@ -66,5 +85,27 @@ describe("local NATS envelope round trip", () => {
     )
     expect(consumed.digests).toEqual(published.digests)
     expect(consumed.digests).toHaveLength(4)
+    expect(published.duplicate.duplicate).toBe(true)
+    expect(published.duplicate.sequence).toBe(1)
+
+    const idleResult = await Promise.race([
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const subject = yield* evidenceSubject("idle", 0)
+          const client = yield* FabricClient
+          const messages = yield* client.subscribe(subject)
+          return yield* Stream.runHead(messages).pipe(
+            Effect.timeoutOption("250 millis"),
+          )
+        }).pipe(
+          Effect.provide(FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" })),
+          Effect.scoped,
+        ),
+      ),
+      Bun.sleep(5_000).then(() => {
+        throw new Error("idle subscription did not respond to interruption")
+      }),
+    ])
+    expect(Option.isNone(idleResult)).toBe(true)
   }, 120_000)
 })

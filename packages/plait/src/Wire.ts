@@ -1,6 +1,6 @@
-import { Predicate, Result, Schema } from "effect"
+import { Effect, Predicate, Result, Schema, SchemaIssue } from "effect"
 
-import { decodeJson } from "../../core/src/jcs.js"
+import { decodeJson, type JsonValue } from "@foldlab/core/jcs"
 import { canonicalBytes } from "./Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "./Digest.js"
 import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
@@ -51,15 +51,15 @@ export const Envelope = Schema.Struct({
 /** The closed envelope-v0 boundary shape. */
 export type Envelope = typeof Envelope.Type
 
-/** The constrained envelope decoder's explicit success or refusal. */
-export type EnvelopeDecode =
-  | {
-    readonly ok: true
-    readonly envelope: Envelope
-    readonly bytes: Uint8Array
-    readonly digest: DigestValue
-  }
-  | { readonly ok: false; readonly refusal: StructuralRefusal }
+/** One admitted envelope together with its canonical bytes and identity. */
+export interface DecodedEnvelope {
+  readonly envelope: Envelope
+  readonly bytes: Uint8Array
+  readonly digest: DigestValue
+}
+
+/** The constrained envelope computation and its structural error channel. */
+export type EnvelopeDecode = Effect.Effect<DecodedEnvelope, StructuralRefusal>
 
 const closedEnvelopeLaw =
   "Envelope v0 is a closed struct; excess properties are refused."
@@ -67,65 +67,138 @@ const envelopeShapeLaw =
   "Envelope v0 fields must have the fixed wire shapes declared by the fabric contract."
 const inlineBodyLaw =
   `Envelope v0 inlines at most ${INLINE_BODY_MAX_BYTES} canonical body bytes; larger bodies use {blob}.`
+const blobReferenceLaw =
+  "Envelope v0 reserves {blob: Digest} as an exact closed body form."
 
-const malformed = (
-  law: string,
-  got: string,
-  expected: string,
-): EnvelopeDecode => ({
-  ok: false,
-  refusal: structuralRefusal({
+interface LocatedIssue {
+  readonly path: ReadonlyArray<string>
+  readonly issue: SchemaIssue.Issue
+}
+
+const firstIssue = (
+  issue: SchemaIssue.Issue,
+  path: ReadonlyArray<string> = [],
+): LocatedIssue => {
+  switch (issue._tag) {
+    case "Pointer":
+      return firstIssue(
+        issue.issue,
+        [...path, ...issue.path.map(String)],
+      )
+    case "Composite":
+      return firstIssue(issue.issues[0], path)
+    case "AnyOf":
+      return issue.issues[0] === undefined
+        ? { path, issue }
+        : firstIssue(issue.issues[0], path)
+    case "Filter":
+    case "Encoding":
+      return firstIssue(issue.issue, path)
+    default:
+      return { path, issue }
+  }
+}
+
+const envelopeExpectedAt = (path: ReadonlyArray<string>): JsonValue => {
+  const [head, second] = path
+  if (head === undefined) return "the closed Envelope v0 object"
+  if (head === "v") return 0
+  if (head === "kind") return ["emit", "attest", "checkpoint", "sealed"]
+  if (head === "lane") return "a lowercase SHA-256 digest"
+  if (head === "key") return "one RFC 8785 JSON value"
+  if (head === "holder") return "a holder string carried verbatim"
+  if (head === "body") return "one RFC 8785 JSON value or exact {blob: Digest}"
+  if (head === "pins") return "an array of lowercase SHA-256 digests"
+  if (head === "cert") {
+    return second === undefined
+      ? "a certificate object with schema, program, inputAnchor, and spanHead digests"
+      : "a lowercase SHA-256 digest"
+  }
+  return "a field declared by the closed Envelope v0 schema"
+}
+
+const observed = (issue: SchemaIssue.Issue): JsonValue =>
+  SchemaIssue.hasInput(issue) && Schema.is(Schema.Json)(issue.input)
+    ? issue.input
+    : "missing"
+
+const envelopeSchemaRefusal = (
+  issue: SchemaIssue.Issue,
+): StructuralRefusal => {
+  const located = firstIssue(issue)
+  const excess = located.issue._tag === "UnexpectedKey"
+  return structuralRefusal({
     kind: "malformed-envelope",
-    law,
-    path: [],
-    got,
-    expected,
+    law: excess ? closedEnvelopeLaw : envelopeShapeLaw,
+    path: located.path,
+    got: observed(located.issue),
+    expected: excess ? "no excess property" : envelopeExpectedAt(located.path),
     next: [],
-  }),
-})
+  })
+}
 
-const bodyRefusal = (body: Envelope["body"]): StructuralRefusal | undefined => {
+const jsonRefusal = (
+  bytes: Uint8Array,
+  refusal: { readonly offset: number; readonly reason: string },
+): StructuralRefusal =>
+  structuralRefusal({
+    kind: "malformed-envelope",
+    law: envelopeShapeLaw,
+    path: ["bytes", String(refusal.offset)],
+    got: bytes[refusal.offset] ?? "end-of-input",
+    expected: "one constrained JSON envelope",
+    next: [{ subject: "decode", note: refusal.reason }],
+  })
+
+const blobSchemaRefusal = (issue: SchemaIssue.Issue): StructuralRefusal => {
+  const located = firstIssue(issue)
+  const excess = located.issue._tag === "UnexpectedKey"
+  return structuralRefusal({
+    kind: "malformed-blob-reference",
+    law: blobReferenceLaw,
+    path: ["body", ...located.path],
+    got: observed(located.issue),
+    expected: excess
+      ? "no excess property"
+      : "exactly one blob field carrying a lowercase SHA-256 digest",
+    next: [],
+  })
+}
+
+const validateBody = Effect.fn("Wire.validateBody")(function* (
+  body: Envelope["body"],
+): Effect.fn.Return<void, StructuralRefusal> {
   if (Predicate.isObject(body) && Object.hasOwn(body, "blob")) {
     const reference = Schema.decodeUnknownResult(BlobReference, {
       onExcessProperty: "error",
-      errors: "all",
+      errors: "first",
+      reportInput: true,
     })(body)
-    if (Result.isFailure(reference)) {
-      return structuralRefusal({
-        kind: "malformed-blob-reference",
-        law: "Envelope v0 reserves {blob: Digest} as an exact closed body form.",
-        path: ["body"],
-        got: String(reference.failure),
-        expected: "exactly one blob field carrying a lowercase SHA-256 digest",
-        next: [],
-      })
-    }
-    return undefined
+    if (Result.isFailure(reference)) return yield* blobSchemaRefusal(reference.failure.issue)
+    return
   }
 
-  const canonical = canonicalBytes(body)
-  if (!canonical.ok) {
-    return structuralRefusal({
+  const canonical = yield* canonicalBytes(body).pipe(
+    Effect.mapError((refusal) => structuralRefusal({
       kind: "malformed-envelope",
       law: envelopeShapeLaw,
-      path: ["body"],
-      got: canonical.refusal.reason,
-      expected: "one RFC 8785 wire value",
-      next: [],
-    })
-  }
-  if (canonical.bytes.byteLength > INLINE_BODY_MAX_BYTES) {
-    return structuralRefusal({
+      path: ["body", ...refusal.path],
+      got: refusal.got,
+      expected: refusal.expected,
+      next: refusal.next,
+    })),
+  )
+  if (canonical.byteLength > INLINE_BODY_MAX_BYTES) {
+    return yield* structuralRefusal({
       kind: "inline-body-too-large",
       law: inlineBodyLaw,
       path: ["body"],
-      got: canonical.bytes.byteLength,
+      got: canonical.byteLength,
       expected: INLINE_BODY_MAX_BYTES,
       next: [],
     })
   }
-  return undefined
-}
+})
 
 /**
  * Constrained-decodes one envelope and refuses rather than repairing input.
@@ -133,74 +206,44 @@ const bodyRefusal = (body: Envelope["body"]): StructuralRefusal | undefined => {
  * @example
  * ```ts
  * import { decodeEnvelope } from "@foldlab/plait/Wire"
+ * import { Effect } from "effect"
  *
- * decodeEnvelope(new TextEncoder().encode("{}"))
- * // { ok: false, refusal: { sort: "structural", ... } }
+ * Effect.runPromise(Effect.flip(decodeEnvelope(new TextEncoder().encode("{}"))))
+ * // StructuralRefusal
  * ```
  */
-export const decodeEnvelope = (bytes: Uint8Array): EnvelopeDecode => {
+export const decodeEnvelope = Effect.fn("Wire.decodeEnvelope")(function* (
+  bytes: Uint8Array,
+): Effect.fn.Return<DecodedEnvelope, StructuralRefusal> {
   const parsed = decodeJson(bytes)
-  if (!parsed.ok) {
-    return malformed(
-      envelopeShapeLaw,
-      parsed.refusal.reason,
-      "one constrained JSON envelope",
-    )
-  }
+  if (!parsed.ok) return yield* jsonRefusal(bytes, parsed.refusal)
 
   const decoded = Schema.decodeUnknownResult(Envelope, {
     onExcessProperty: "error",
-    errors: "all",
+    errors: "first",
+    reportInput: true,
   })(parsed.value)
   if (Result.isFailure(decoded)) {
-    const got = String(decoded.failure)
-    return malformed(
-      got.includes("Expected no excess property") ? closedEnvelopeLaw : envelopeShapeLaw,
-      got,
-      "the closed Envelope v0 schema",
-    )
+    return yield* envelopeSchemaRefusal(decoded.failure.issue)
   }
 
-  const bodyFailure = bodyRefusal(decoded.success.body)
-  if (bodyFailure !== undefined) return { ok: false, refusal: bodyFailure }
-
-  const canonical = canonicalBytes(decoded.success)
-  if (!canonical.ok) {
-    return malformed(
-      envelopeShapeLaw,
-      canonical.refusal.reason,
-      "an RFC 8785 envelope value",
-    )
-  }
-  const identity = digestOf(decoded.success)
-  if (!identity.ok) {
-    return malformed(
-      envelopeShapeLaw,
-      identity.refusal.reason,
-      "an RFC 8785 envelope value",
-    )
-  }
-
+  yield* validateBody(decoded.success.body)
+  const bytesCanonical = yield* canonicalBytes(decoded.success)
+  const digest = yield* digestOf(decoded.success)
   return {
-    ok: true,
     envelope: decoded.success,
-    bytes: canonical.bytes,
-    digest: identity.digest,
+    bytes: bytesCanonical,
+    digest,
   }
-}
+})
 
 /** Canonical-encodes a typed envelope through the constrained decode door. */
-export const encodeEnvelope = (envelope: Envelope): EnvelopeDecode => {
-  const canonical = canonicalBytes(envelope)
-  if (!canonical.ok) {
-    return malformed(
-      envelopeShapeLaw,
-      canonical.refusal.reason,
-      "an RFC 8785 envelope value",
-    )
-  }
-  return decodeEnvelope(canonical.bytes)
-}
+export const encodeEnvelope = Effect.fn("Wire.encodeEnvelope")(function* (
+  envelope: Envelope,
+): Effect.fn.Return<DecodedEnvelope, StructuralRefusal> {
+  const bytes = yield* canonicalBytes(envelope)
+  return yield* decodeEnvelope(bytes)
+})
 
 /**
  * Constrained-decodes an envelope and checks that its message id is its digest.
@@ -212,22 +255,18 @@ export const encodeEnvelope = (envelope: Envelope): EnvelopeDecode => {
  * verifyEnvelopeDigest(bytes, messageId)
  * ```
  */
-export const verifyEnvelopeDigest = (
+export const verifyEnvelopeDigest = Effect.fn("Wire.verifyEnvelopeDigest")(function* (
   bytes: Uint8Array,
   messageId: string,
-): EnvelopeDecode => {
-  const decoded = decodeEnvelope(bytes)
-  if (!decoded.ok) return decoded
+): Effect.fn.Return<DecodedEnvelope, StructuralRefusal> {
+  const decoded = yield* decodeEnvelope(bytes)
   if (decoded.digest === messageId) return decoded
-  return {
-    ok: false,
-    refusal: structuralRefusal({
-      kind: "digest-mismatch",
-      law: "Nats-Msg-Id must equal SHA-256 over the envelope's canonical uncompressed bytes.",
-      path: ["Nats-Msg-Id"],
-      got: messageId,
-      expected: decoded.digest,
-      next: [],
-    }),
-  }
-}
+  return yield* structuralRefusal({
+    kind: "digest-mismatch",
+    law: "Nats-Msg-Id must equal SHA-256 over the envelope's canonical uncompressed bytes.",
+    path: ["Nats-Msg-Id"],
+    got: messageId,
+    expected: decoded.digest,
+    next: [],
+  })
+})

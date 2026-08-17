@@ -1,3 +1,5 @@
+import { Effect } from "effect"
+
 import { decodeEnvelope, type Envelope } from "../src/Wire.js"
 
 /** One model-independent digest wall input and its TypeScript verdict. */
@@ -62,10 +64,7 @@ const sourceRows: ReadonlyArray<readonly [string, unknown]> = [
 ]
 
 const rows = (): ReadonlyArray<CorpusRow> => sourceRows.map(([name, envelope]) => {
-  const decoded = decodeEnvelope(utf8.encode(JSON.stringify(envelope)))
-  if (!decoded.ok) {
-    throw new Error(`corpus source ${name} refused: ${decoded.refusal.law}`)
-  }
+  const decoded = Effect.runSync(decodeEnvelope(utf8.encode(JSON.stringify(envelope))))
   return {
     case: name,
     digest: decoded.digest,

@@ -15,10 +15,12 @@
   },
   "scripts": {
     "check:corpus": "bun scripts/check-corpus.ts",
+    "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "generate:corpus": "bun scripts/generate-corpus.ts",
-    "test": "bun test ./test && bun run check:corpus"
+    "test": "bun test ./test && bun run check:corpus && bun run check:type-control"
   },
   "dependencies": {
+    "@foldlab/core": "workspace:*",
     "@nats-io/jetstream": "3.4.0",
     "@nats-io/kv": "3.4.0",
     "@nats-io/nats-core": "3.4.0",

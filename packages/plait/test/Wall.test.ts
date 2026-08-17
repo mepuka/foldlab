@@ -5,7 +5,7 @@ import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { gzipSync } from "node:zlib"
 
-import { Schema } from "effect"
+import { Effect, Schema } from "effect"
 
 import { decodeEnvelope } from "../src/Wire.js"
 
@@ -44,8 +44,9 @@ describe("TS to Go envelope wall", () => {
     const original = Schema.decodeUnknownSync(MutantRow)(JSON.parse(lines[1]!), {
       onExcessProperty: "error",
     })
-    const decoded = decodeEnvelope(new TextEncoder().encode(JSON.stringify(original.envelope)))
-    if (!decoded.ok) throw new Error(decoded.refusal.law)
+    const decoded = Effect.runSync(
+      decodeEnvelope(new TextEncoder().encode(JSON.stringify(original.envelope))),
+    )
     const row = {
       ...original,
       digest: createHash("sha256").update(gzipSync(decoded.bytes)).digest("hex"),

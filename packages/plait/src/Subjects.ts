@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Effect, Schema } from "effect"
 
 import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
 
@@ -29,10 +29,8 @@ export type NodeSubject = typeof NodeSubject.Type
 /** Every public fabric routing subject. */
 export type FabricSubject = EvidenceSubject | FactSubject | NodeSubject
 
-/** A typed subject or a structural routing refusal. */
-export type SubjectResult<S extends FabricSubject> =
-  | { readonly ok: true; readonly subject: S }
-  | { readonly ok: false; readonly refusal: StructuralRefusal }
+/** A typed subject computation whose only failure is a structural routing refusal. */
+export type SubjectResult<S extends FabricSubject> = Effect.Effect<S, StructuralRefusal>
 
 const tokenPattern = /^[^.*>\s]+$/u
 
@@ -47,28 +45,29 @@ const invalidToken = (path: string, got: string | number): StructuralRefusal =>
   })
 
 /** Constructs `flb.fab.ev.<lane>.<part>` without embedding identity. */
-export const evidenceSubject = (
+export const evidenceSubject = Effect.fn("Subjects.evidenceSubject")(function* (
   lane: string,
   part: number,
-): SubjectResult<EvidenceSubject> => {
-  if (!tokenPattern.test(lane)) return { ok: false, refusal: invalidToken("lane", lane) }
+): Effect.fn.Return<EvidenceSubject, StructuralRefusal> {
+  if (!tokenPattern.test(lane)) return yield* invalidToken("lane", lane)
   if (!Number.isSafeInteger(part) || part < 0) {
-    return { ok: false, refusal: invalidToken("part", part) }
+    return yield* invalidToken("part", part)
   }
-  return {
-    ok: true,
-    subject: EvidenceSubject.make(`flb.fab.ev.${lane}.${part}`),
-  }
-}
+  return EvidenceSubject.make(`flb.fab.ev.${lane}.${part}`)
+})
 
 /** Constructs `flb.fab.fact.<venue>` without embedding identity. */
-export const factSubject = (venue: string): SubjectResult<FactSubject> =>
-  tokenPattern.test(venue)
-    ? { ok: true, subject: FactSubject.make(`flb.fab.fact.${venue}`) }
-    : { ok: false, refusal: invalidToken("venue", venue) }
+export const factSubject = Effect.fn("Subjects.factSubject")(function* (
+  venue: string,
+): Effect.fn.Return<FactSubject, StructuralRefusal> {
+  if (!tokenPattern.test(venue)) return yield* invalidToken("venue", venue)
+  return FactSubject.make(`flb.fab.fact.${venue}`)
+})
 
 /** Constructs `flb.fab.node.<node>` without embedding identity. */
-export const nodeSubject = (node: string): SubjectResult<NodeSubject> =>
-  tokenPattern.test(node)
-    ? { ok: true, subject: NodeSubject.make(`flb.fab.node.${node}`) }
-    : { ok: false, refusal: invalidToken("node", node) }
+export const nodeSubject = Effect.fn("Subjects.nodeSubject")(function* (
+  node: string,
+): Effect.fn.Return<NodeSubject, StructuralRefusal> {
+  if (!tokenPattern.test(node)) return yield* invalidToken("node", node)
+  return NodeSubject.make(`flb.fab.node.${node}`)
+})

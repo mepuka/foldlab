@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { Effect } from "effect"
 
 import {
   decodeEnvelope,
@@ -16,30 +17,97 @@ const frame = (extra: string): Uint8Array =>
   )
 
 describe("decodeEnvelope", () => {
-  test("carries holder verbatim and re-derives the envelope digest", () => {
-    const decoded = decodeEnvelope(frame(""))
+  test("carries holder verbatim and re-derives the envelope digest", async () => {
+    const decoded = await Effect.runPromise(decodeEnvelope(frame("")))
 
-    expect(decoded.ok).toBe(true)
-    if (!decoded.ok) throw new Error(decoded.refusal.law)
     expect(decoded.envelope.holder).toBe("seat-a")
     expect(String(decoded.digest)).toBe(
       "bb4f3e5e257ca09b067986bbcb6fa72f9b868eea9d4dff92afd94e2876aa795a",
     )
   })
 
-  test("refuses an excess property with the closed-envelope law", () => {
-    const decoded = decodeEnvelope(frame(',"smuggled":true'))
+  test("refuses an excess property with the closed-envelope law", async () => {
+    const refusal = await Effect.runPromise(
+      Effect.flip(decodeEnvelope(frame(',"smuggled":true'))),
+    )
 
-    expect(decoded.ok).toBe(false)
-    if (decoded.ok) throw new Error("the excess property was admitted")
-    expect(decoded.refusal.sort).toBe("structural")
-    expect(decoded.refusal.kind).toBe("malformed-envelope")
-    expect(decoded.refusal.law).toBe(
+    expect(refusal.sort).toBe("structural")
+    expect(refusal.kind).toBe("malformed-envelope")
+    expect(refusal.law).toBe(
       "Envelope v0 is a closed struct; excess properties are refused.",
     )
+    expect(refusal.path).toEqual(["smuggled"])
+    expect(refusal.got).toBe(true)
+    expect(refusal.expected).toBe("no excess property")
   })
 
-  test("inlines at most 256 KiB of canonical body bytes", () => {
+  test("reports the observed value and path for a malformed field", async () => {
+    const malformed = utf8.encode(
+      `{"v":0,"kind":"emit","lane":"${digest}","key":"entity-1","holder":7,"body":1,"pins":[]}`,
+    )
+    const refusal = await Effect.runPromise(Effect.flip(decodeEnvelope(malformed)))
+
+    expect(refusal.law).toBe(
+      "Envelope v0 fields must have the fixed wire shapes declared by the fabric contract.",
+    )
+    expect(refusal.path).toEqual(["holder"])
+    expect(refusal.got).toBe(7)
+    expect(refusal.expected).toBe("a holder string carried verbatim")
+  })
+
+  test("reports nested excess properties from the structured schema issue", async () => {
+    const malformed = utf8.encode(JSON.stringify({
+      v: 0,
+      kind: "attest",
+      lane: digest,
+      key: "entity-1",
+      holder: "seat-a",
+      body: 1,
+      cert: {
+        schema: digest,
+        program: digest,
+        inputAnchor: digest,
+        spanHead: digest,
+        smuggled: true,
+      },
+      pins: [],
+    }))
+    const refusal = await Effect.runPromise(Effect.flip(decodeEnvelope(malformed)))
+
+    expect(refusal.law).toBe(
+      "Envelope v0 is a closed struct; excess properties are refused.",
+    )
+    expect(refusal.path).toEqual(["cert", "smuggled"])
+    expect(refusal.got).toBe(true)
+  })
+
+  test("refuses both widened and non-digest blob references at their exact paths", async () => {
+    const envelope = (body: unknown): Uint8Array =>
+      utf8.encode(JSON.stringify({
+        v: 0,
+        kind: "checkpoint",
+        lane: digest,
+        key: "entity-1",
+        holder: "seat-a",
+        body,
+        pins: [],
+      }))
+    const widened = await Effect.runPromise(
+      Effect.flip(decodeEnvelope(envelope({ blob: digest, extra: true }))),
+    )
+    const malformed = await Effect.runPromise(
+      Effect.flip(decodeEnvelope(envelope({ blob: "not-a-digest" }))),
+    )
+
+    expect(widened.kind).toBe("malformed-blob-reference")
+    expect(widened.path).toEqual(["body", "extra"])
+    expect(widened.got).toBe(true)
+    expect(malformed.kind).toBe("malformed-blob-reference")
+    expect(malformed.path).toEqual(["body", "blob"])
+    expect(malformed.got).toBe("not-a-digest")
+  })
+
+  test("inlines at most 256 KiB of canonical body bytes", async () => {
     const envelope = (body: string): Uint8Array =>
       utf8.encode(JSON.stringify({
         v: 0,
@@ -51,32 +119,30 @@ describe("decodeEnvelope", () => {
         pins: [],
       }))
 
-    const atBoundary = decodeEnvelope(envelope("x".repeat(INLINE_BODY_MAX_BYTES - 2)))
-    const overBoundary = decodeEnvelope(envelope("x".repeat(INLINE_BODY_MAX_BYTES - 1)))
+    const atBoundary = await Effect.runPromise(
+      decodeEnvelope(envelope("x".repeat(INLINE_BODY_MAX_BYTES - 2))),
+    )
+    const overBoundary = await Effect.runPromise(
+      Effect.flip(decodeEnvelope(envelope("x".repeat(INLINE_BODY_MAX_BYTES - 1)))),
+    )
 
-    expect(atBoundary.ok).toBe(true)
-    expect(overBoundary.ok).toBe(false)
-    if (overBoundary.ok) throw new Error("oversize body was inlined")
-    expect(overBoundary.refusal.kind).toBe("inline-body-too-large")
+    expect(atBoundary.envelope.body).toHaveLength(INLINE_BODY_MAX_BYTES - 2)
+    expect(overBoundary.kind).toBe("inline-body-too-large")
   })
 
-  test("refuses a message id that does not name the envelope", () => {
-    const verified = verifyEnvelopeDigest(frame(""), "0".repeat(64))
+  test("refuses a message id that does not name the envelope", async () => {
+    const refusal = await Effect.runPromise(
+      Effect.flip(verifyEnvelopeDigest(frame(""), "0".repeat(64))),
+    )
 
-    expect(verified.ok).toBe(false)
-    if (verified.ok) throw new Error("the false message id was admitted")
-    expect(verified.refusal.kind).toBe("digest-mismatch")
-    expect(verified.refusal.path).toEqual(["Nats-Msg-Id"])
+    expect(refusal.kind).toBe("digest-mismatch")
+    expect(refusal.path).toEqual(["Nats-Msg-Id"])
   })
 
-  test("encodes through the same constrained envelope door", () => {
-    const decoded = decodeEnvelope(frame(""))
-    if (!decoded.ok) throw new Error(decoded.refusal.law)
+  test("encodes through the same constrained envelope door", async () => {
+    const decoded = await Effect.runPromise(decodeEnvelope(frame("")))
+    const encoded = await Effect.runPromise(encodeEnvelope(decoded.envelope))
 
-    const encoded = encodeEnvelope(decoded.envelope)
-
-    expect(encoded.ok).toBe(true)
-    if (!encoded.ok) throw new Error(encoded.refusal.law)
     expect(String(encoded.digest)).toBe(String(decoded.digest))
     expect(encoded.bytes).toEqual(decoded.bytes)
   })

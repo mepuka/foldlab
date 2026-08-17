@@ -19,8 +19,13 @@ describe("refusal retry class", () => {
       next: [],
     } as const
 
-    expect(isRetryable(absenceRefusal(fields))).toBe(true)
-    expect(isRetryable(structuralRefusal(fields))).toBe(false)
+    const absence = absenceRefusal(fields)
+    const structural = structuralRefusal(fields)
+
+    expect(absence._tag).toBe("AbsenceRefusal")
+    expect(structural._tag).toBe("StructuralRefusal")
+    expect(isRetryable(absence)).toBe(true)
+    expect(isRetryable(structural)).toBe(false)
   })
 
   test("the shipped policy retries only absence-sorted failures", async () => {

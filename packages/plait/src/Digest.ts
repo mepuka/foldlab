@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto"
 
-import { Schema } from "effect"
+import { Effect, Schema } from "effect"
 
-import { canonicalBytes, type CanonicalBytes, type WireValue } from "./Canonical.js"
+import { canonicalBytes, type WireValue } from "./Canonical.js"
+import type { StructuralRefusal } from "./Refusal.js"
 
 /** A lowercase SHA-256 digest written as 64 hexadecimal characters. */
 export const Digest = Schema.String
@@ -13,27 +14,21 @@ export const Digest = Schema.String
 /** The admitted digest type. */
 export type Digest = typeof Digest.Type
 
-/** A digest or the canonical-value refusal that prevented identity. */
-export type DigestResult =
-  | { readonly ok: true; readonly digest: Digest }
-  | Exclude<CanonicalBytes, { readonly ok: true }>
-
 /**
  * Derives identity from canonical uncompressed bytes.
  *
  * @example
  * ```ts
  * import { digestOf } from "@foldlab/plait/Digest"
+ * import { Effect } from "effect"
  *
- * digestOf({ a: 1 })
- * // { ok: true, digest: "015abd7f..." }
+ * Effect.runSync(digestOf({ a: 1 }))
+ * // "015abd7f..."
  * ```
  */
-export const digestOf = (value: WireValue): DigestResult => {
-  const canonical = canonicalBytes(value)
-  if (!canonical.ok) return canonical
-  return {
-    ok: true,
-    digest: Digest.make(createHash("sha256").update(canonical.bytes).digest("hex")),
-  }
-}
+export const digestOf = Effect.fn("Digest.digestOf")(function* (
+  value: WireValue,
+): Effect.fn.Return<Digest, StructuralRefusal> {
+  const canonical = yield* canonicalBytes(value)
+  return Digest.make(createHash("sha256").update(canonical).digest("hex"))
+})

@@ -20,22 +20,22 @@ const RefusalFields = {
 } as const
 
 /** A permanent statement that input violated a pinned structural law. */
-export const StructuralRefusal = Schema.Struct({
-  sort: Schema.Literal("structural"),
-  ...RefusalFields,
-})
-
-/** A permanent statement that input violated a pinned structural law. */
-export type StructuralRefusal = typeof StructuralRefusal.Type
-
-/** A head-relative statement that required evidence is not present yet. */
-export const AbsenceRefusal = Schema.Struct({
-  sort: Schema.Literal("absence"),
-  ...RefusalFields,
-})
+export class StructuralRefusal extends Schema.TaggedError<StructuralRefusal>()(
+  "StructuralRefusal",
+  {
+    sort: Schema.Literal("structural"),
+    ...RefusalFields,
+  },
+) {}
 
 /** A head-relative statement that required evidence is not present yet. */
-export type AbsenceRefusal = typeof AbsenceRefusal.Type
+export class AbsenceRefusal extends Schema.TaggedError<AbsenceRefusal>()(
+  "AbsenceRefusal",
+  {
+    sort: Schema.Literal("absence"),
+    ...RefusalFields,
+  },
+) {}
 
 /** Every refusal on a Plait seam, discriminated by its persisted sort. */
 export const Refusal = Schema.Union([StructuralRefusal, AbsenceRefusal])
@@ -43,15 +43,23 @@ export const Refusal = Schema.Union([StructuralRefusal, AbsenceRefusal])
 /** Every refusal on a Plait seam, discriminated by its persisted sort. */
 export type Refusal = typeof Refusal.Type
 
-type RefusalFields = Omit<Refusal, "sort">
+/** Fields common to every refusal sort. */
+export interface RefusalFields {
+  readonly kind: string
+  readonly law: string
+  readonly path: ReadonlyArray<string>
+  readonly got: typeof Schema.Json.Type
+  readonly expected: typeof Schema.Json.Type
+  readonly next: ReadonlyArray<Next>
+}
 
 /** Constructs structural evidence; shipped retry policies never retry it. */
 export const structuralRefusal = (fields: RefusalFields): StructuralRefusal =>
-  StructuralRefusal.make({ sort: "structural", ...fields })
+  new StructuralRefusal({ sort: "structural", ...fields })
 
 /** Constructs an absence observation, the only shipped retry class. */
 export const absenceRefusal = (fields: RefusalFields): AbsenceRefusal =>
-  AbsenceRefusal.make({ sort: "absence", ...fields })
+  new AbsenceRefusal({ sort: "absence", ...fields })
 
 /** Returns whether new evidence could repeal the refusal. */
 export const isRetryable = (refusal: Refusal): refusal is AbsenceRefusal =>
