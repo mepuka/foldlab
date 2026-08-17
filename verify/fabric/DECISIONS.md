@@ -15,19 +15,20 @@ yes** — retaining multiplicity would destroy F2.
 
 ### T2. Model bounded redelivery with an explicit serial successor premise
 
-Decided: `ingestSchedule` traverses every arrival, applies the lower position
-floor and upper window, and inserts admitted operations into a position-sorted,
-deduplicated buffer. `F2bSerialSuccessorPremise` states that consuming the
-schedule exposes the consecutive positioned trace; `guardedApply` advances
-only at `floor + 1`. The finite delivery list may be permuted, duplicated, and
-contain stale entries at or below the floor, but application stays serial
-within a partition. Alternatives: a bare `position > floor` check; refuse every
-ahead-of-frontier delivery instead of buffering it; model buffer capacity and
-liveness. Why: delivery 6 before 5 falsifies the bare check — 6 advances the
-floor and 5 is skipped — while the theorem remains generic in the step
-function under the runtime's stated discipline. **Load-bearing? yes** — the
-premise is the boundary between the proved consumer and a falsifiable runtime
-restatement.
+Decided: `ingestSchedule` traverses every raw arrival, applies the lower
+position floor and upper window, and folds admitted operations into a buffer
+addressed by journal position. `F2bSerialSuccessorPremise` is not an equation
+about that buffer: it says the in-window support of the raw arrivals is exactly
+the consecutive positioned trace. The proof derives that the shipped buffer
+normalises every such duplicate/permuted schedule, and `guardedApply` advances
+only at `floor + 1`. Stale entries at or below the floor may be present, but
+application stays serial within a partition. Alternatives: a bare
+`position > floor` check; make the buffer-output equation the premise; refuse
+every ahead-of-frontier delivery instead of buffering it; model buffer capacity
+and liveness. Why: delivery 6 before 5 falsifies the bare check — an
+order-sensitive append step yields `[3]` instead of `[2, 3]` — while the theorem
+remains generic in the step function. **Load-bearing? yes** — the raw-support
+premise is the runtime discipline whose consequence the model proves.
 
 ### T3. Represent policy components uniformly
 
@@ -46,8 +47,10 @@ Decided: one provenance/count header plus 11 deterministic rows: F1 (1), F2
 (2), F2b (3), F3 (1), F4 (1), F9 (2), and ACI-alphabet refusal (1).
 Alternatives: seeded random traces; one large JSON array. Why: the named rows
 are the smallest corpus covering every dispatched adversary and every law;
-NDJSON follows the DEV-670 emitter idiom and yields useful one-row diffs. The
-gate pins both total and per-kind counts. **Load-bearing? maybe** — consumers
+the bounded-reordering row uses list append so a buffer-less arrival-order
+consumer observably disagrees. NDJSON follows the DEV-670 emitter idiom and
+yields useful one-row diffs. The gate pins total/per-kind counts and every
+`(kind, name, witness)` triple. **Load-bearing? maybe** — consumers
 may later request more rows, but any change is an explicit regenerated wire
 change.
 

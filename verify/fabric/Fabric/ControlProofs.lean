@@ -56,23 +56,29 @@ theorem drop_commutativity_killed :
 
 theorem floor_replay_vector_has_serial_successor_premise :
     Laws.F2bSerialSuccessorPremise 4 [2, 3] Mutants.floorReplayVector := by
-  rfl
+  intro delivery
+  rcases delivery with ⟨position, operation⟩
+  simp [Mutants.floorReplayVector, Emitter.reorderedDeliveries, InWindow,
+    positionTrace]
+  omega
 
 /-- A bare `seq > floor` consumer applies 6, advances to 6, then skips 5. -/
 theorem bare_floor_guard_skips_six_before_five :
-    Mutants.bareFloorApply Nat.add 4 Mutants.floorReplayVector 0 = 3 := by
+    Mutants.bareFloorApply Emitter.appendStep 4 Mutants.floorReplayVector [] =
+      [3] := by
   decide
 
 theorem floor_guard_survives_replay :
-    guardedApply Nat.add 4 2 Mutants.floorReplayVector 0 = fold Nat.add 0 [2, 3] := by
-  exact f2b_guarded_exactly_once Nat.add 4 [2, 3] Mutants.floorReplayVector 0
-    floor_replay_vector_has_serial_successor_premise
+    guardedApply Emitter.appendStep 4 2 Mutants.floorReplayVector [] =
+      fold Emitter.appendStep [] [2, 3] := by
+  simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 4 [2, 3]
+    Mutants.floorReplayVector [] floor_replay_vector_has_serial_successor_premise
 
 /-- The 6-before-5 row refutes the bare floor guard because applying 6 first
     advances the floor and causes 5 to be skipped forever. -/
 theorem drop_floor_guard_killed :
-    Mutants.bareFloorApply Nat.add 4 Mutants.floorReplayVector 0 ≠
-      fold Nat.add 0 [2, 3] := by
+    Mutants.bareFloorApply Emitter.appendStep 4 Mutants.floorReplayVector [] ≠
+      fold Emitter.appendStep [] [2, 3] := by
   decide
 
 theorem meet_clamp_survives_escalating_request :

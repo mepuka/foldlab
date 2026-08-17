@@ -62,7 +62,7 @@ if grep -nE '^theorem ' Fabric/Definitions.lean Fabric/Laws.lean \
   echo "GATE: FAIL — theorem escaped the proof partition" >&2
   exit 1
 fi
-if grep -nE '^(def|abbrev|structure|inductive) ' Fabric/Proofs.lean \
+if grep -nE '^(def|abbrev|structure|inductive|instance) ' Fabric/Proofs.lean \
     Fabric/ControlProofs.lean Fabric/BridgeProofs.lean; then
   echo "GATE: FAIL — definition escaped into a proof partition" >&2
   exit 1
@@ -100,8 +100,12 @@ fi
 roster=(
   cell_merge_comm cell_merge_assoc cell_merge_idem f1_cell_merge_aci
   f1_same_verified_set_converges f2_trace_invariant f2_permutation
-  f2_duplication emitter_observation_comparator_lawful
-  f3_resume_exact f2b_guarded_exactly_once
+  f2_duplication emitter_observation_cmp_lawful_eq
+  emitter_observation_cmp_lawful_beq
+  emitter_observation_comparator_lawful f3_resume_exact
+  positioned_above positioned_unique ingest_preserves_lookup
+  ingest_lookup_of_raw_support schedule_buffer_covers apply_successors_exact
+  f2b_guarded_exactly_once
   commutative_fold_append commutative_fold_permutation
   partition_folds_flatten f4_partition_fold policy_set_inter_comm
   policy_set_inter_assoc policy_set_inter_idem policy_le_refl policy_le_trans
@@ -116,9 +120,12 @@ roster=(
   drop_floor_guard_killed meet_clamp_survives_escalating_request
   drop_meet_clamping_killed
   emitter_f1_cell_merge_aci emitter_f2_duplication emitter_f2_permutation
-  emitter_f2b_stale_replay emitter_f2b_duplication emitter_f2b_reordering
+  emitter_stale_schedule_premise emitter_f2b_stale_replay
+  emitter_duplicate_schedule_premise emitter_f2b_duplication
+  emitter_reordered_schedule_premise emitter_f2b_reordering
   emitter_f3_resume emitter_f4_partition emitter_intruder_refused
-  emitter_f9_clamp emitter_f9_tree emitter_string_escaping
+  finite_subset_bool_iff policyLeBool_iff emitter_f9_clamp emitter_f9_tree
+  emitter_string_escaping
   emitter_duplicate_key_collapse
 )
 
@@ -205,20 +212,20 @@ fi
 
 fixture="../../packages/plait/fixtures/fabric-conformance.ndjson"
 lake exe emitter > "$corpus_tmp"
-sed -nE 's/.*"kind":"([^"]+)".*"witness":"Fabric\.([^"]+)".*/\1 \2/p' \
+sed -nE 's/.*"kind":"([^"]+)".*"name":"([^"]+)".*"witness":"Fabric\.([^"]+)".*/\1 \2 \3/p' \
   "$corpus_tmp" > "$corpus_witnesses_tmp"
 expected_vector_witnesses=(
-  'F1 emitter_f1_cell_merge_aci'
-  'F2 emitter_f2_duplication'
-  'F2 emitter_f2_permutation'
-  'F2b emitter_f2b_stale_replay'
-  'F2b emitter_f2b_duplication'
-  'F2b emitter_f2b_reordering'
-  'F3 emitter_f3_resume'
-  'F4 emitter_f4_partition'
-  'alphabet-refusal emitter_intruder_refused'
-  'F9 emitter_f9_clamp'
-  'F9 emitter_f9_tree'
+  'F1 cell-merge-aci emitter_f1_cell_merge_aci'
+  'F2 duplicated-deliveries emitter_f2_duplication'
+  'F2 permuted-evidence-schedule emitter_f2_permutation'
+  'F2b floor-violating-stale-replay emitter_f2b_stale_replay'
+  'F2b duplicate-current-delivery emitter_f2b_duplication'
+  'F2b bounded-reordered-delivery emitter_f2b_reordering'
+  'F3 checkpoint-resume emitter_f3_resume'
+  'F4 partition-interleaving emitter_f4_partition'
+  'alphabet-refusal non-commuting-intruder emitter_intruder_refused'
+  'F9 attenuation-request-clamped emitter_f9_clamp'
+  'F9 delegation-tree-attenuation emitter_f9_tree'
 )
 if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 11 ]] ||
     ! diff -u <(printf '%s\n' "${expected_vector_witnesses[@]}" | LC_ALL=C sort) \
@@ -226,7 +233,7 @@ if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 11 ]] ||
   echo "GATE: FAIL — every emitted vector must name its exact theorem instance" >&2
   exit 1
 fi
-while read -r _kind witness; do
+while read -r _kind _name witness; do
   if ! grep -qx "$witness" "$roster_tmp"; then
     echo "GATE: FAIL — vector witness Fabric.$witness is absent from the theorem roster" >&2
     exit 1

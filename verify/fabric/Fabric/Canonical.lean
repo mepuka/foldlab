@@ -1,7 +1,8 @@
 /-
 Canonical JSON for the emitter's deliberately narrowed grammar: ASCII strings,
-non-negative integers, arrays, and objects. Object keys are sorted before
-rendering. The integer path transliterates the promoted RQ-9 reference pattern
+non-negative safe integers at most 9007199254740991, arrays, and objects.
+Object keys are sorted before rendering. The integer path transliterates the
+promoted RQ-9 reference pattern
 at `docs/research/reference/rq9-rfc8785-numbers/EsNumberToString.lean`:
 strip decimal trailing zeroes, then take ES2019 step 6. This package has no
 floating-point grammar and therefore does not claim the unimplemented RQ-9
@@ -27,7 +28,8 @@ def stripTrailingZeros (number : Nat) : Nat × Nat :=
         else (significand, exponent)
   go number 0 number
 
-/-- RFC 8785 / ES2019 rendering on the corpus's non-negative integer leaf. -/
+/-- RFC 8785 / ES2019 step-6 rendering on the corpus's non-negative safe-integer
+    leaf. The gate refuses every generated value above 9007199254740991. -/
 def nat (number : Nat) : String :=
   if number == 0 then "0"
   else

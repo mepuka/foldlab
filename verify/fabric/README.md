@@ -10,15 +10,16 @@ executes the same definitions to author the runtime conformance corpus at
 - `Fabric/Definitions.lean` owns the objects and executable functions. A
   `Cell` is a finite set of `(holder, observation)` pairs. `foldEvidence`
   inserts a trace into that set. `guardedApply` consumes every arrival through
-  a position-floor guard, sorting and deduplicating its bounded replay buffer,
-  and applies only the contiguous successor at `floor + 1` before advancing.
+  a position-floor guard, folds admitted arrivals into a position-addressed
+  replay buffer, and applies only contiguous successors before advancing.
   `CommutativeAlgebra` declares the laws
   required before partition folds may be merged. `Policy.meet` intersects the
   four set-valued components and takes `Nat.min` across the four ceilings.
 - `Fabric/Laws.lean` contains statements only. F1 is cell ACI plus extensional
   convergence; F2 identifies traces with equal observation support; F2b
-  states its serial/successor premise explicitly and quantifies over every
-  finite schedule whose consumed buffer is the contiguous positioned trace;
+  states that the in-window support of the raw schedule is exactly the
+  contiguous positioned trace, then names the shipped buffer fold in the
+  conclusion;
   F3 is checkpoint resumption; F4 is partition/interleaving equivalence under
   a declared commutative algebra; F9 is the full greatest-lower-bound law plus
   descendant attenuation.
@@ -36,10 +37,13 @@ executes the same definitions to author the runtime conformance corpus at
   transliterates the promoted RQ-9 path in
   `docs/research/reference/rq9-rfc8785-numbers/EsNumberToString.lean`: strip
   decimal trailing zeroes, then render ES2019 step 6. No float enters this
-  grammar.
+  grammar, capped at the RFC 8785 safe-integer ceiling `9007199254740991`.
 - `Fabric/BridgeProofs.lean` supplies the concrete theorem instance named by
-  every emitted row. The gate refuses a vector whose `witness` is absent from
-  the complete theorem and footprint roster.
+  every emitted row. It also proves that the F9 emitter's executable Boolean
+  policy order is equivalent to `Policy.Le`. The tree row carries a stricter
+  second-level request, so its descendant bytes differ from the one-level clamp.
+  The gate refuses a vector whose `(kind, name, witness)` triple is not pinned or
+  whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
   roster, proof footprint, four negative controls, pinned vector counts, and
   byte-identical regeneration. A failed regeneration names the first divergent
@@ -58,12 +62,15 @@ trace into a finite set deliberately forgets both order and multiplicity. F2b
 handles non-idempotent steps. A schedule is finite and may be duplicated,
 reordered, and prefixed with stale deliveries. `ingestSchedule` traverses the
 actual arrivals, rejects positions outside the floor/window, and builds a
-position-sorted buffer whose first delivery at a position wins. Under F2b's
-explicit `F2bSerialSuccessorPremise`, `guardedApply` drains only consecutive
-successors. A delivery of 6 before 5 is buffered; the bare `seq > floor`
-negative control applies 6 immediately, advances the floor, and skips 5. The
-theorem is generic in `step`, so counting and other non-idempotent folds are
-included.
+position-addressed buffer. F2b's explicit `F2bSerialSuccessorPremise` describes
+the raw schedule: inside the window it has exactly the support of the
+positioned trace, while duplicates, permutation, and stale deliveries remain
+allowed. The proof derives the buffer's coverage from that premise and drains
+only consecutive successors. A delivery of 6 before 5 is buffered; the bare
+`seq > floor` negative control applies operation 3 immediately, advances the
+floor, and skips operation 2. The order-sensitive append row therefore yields
+`[3]` in the mutant and `[2, 3]` in the lawful model. The theorem remains generic
+in `step`, so counting and other non-idempotent folds are included.
 
 ## Notation
 

@@ -83,30 +83,34 @@ end F2
 
 section EmitterComparator
 
-namespace Emitter
-
 /-- The emitter comparator returns equality only for equal holder/value pairs. -/
-instance observationCmpLawfulEq : Std.LawfulEqCmp observationCmp where
+theorem emitter_observation_cmp_lawful_eq :
+    Std.LawfulEqCmp Emitter.observationCmp := {
   compare_self := by
     intro observation
-    simp [observationCmp, compareLex, compareOn]
+    simp [Emitter.observationCmp, compareLex, compareOn]
   eq_of_compare := by
     intro left right equalComparison
     rcases left with ⟨leftHolder, leftValue⟩
     rcases right with ⟨rightHolder, rightValue⟩
-    simp [observationCmp, compareLex, compareOn] at equalComparison
+    simp [Emitter.observationCmp, compareLex, compareOn] at equalComparison
     rcases equalComparison with ⟨rfl, rfl⟩
     rfl
+}
+
+attribute [instance] emitter_observation_cmp_lawful_eq
 
 /-- Boolean equality and comparator equality coincide on emitted observations. -/
-instance observationCmpLawfulBEq : Std.LawfulBEqCmp observationCmp where
+theorem emitter_observation_cmp_lawful_beq :
+    Std.LawfulBEqCmp Emitter.observationCmp := {
   compare_eq_iff_beq := by
     intro left right
     rcases left with ⟨leftHolder, leftValue⟩
     rcases right with ⟨rightHolder, rightValue⟩
-    simp [observationCmp, compareLex, compareOn]
+    simp [Emitter.observationCmp, compareLex, compareOn]
+}
 
-end Emitter
+attribute [instance] emitter_observation_cmp_lawful_beq
 
 /-- The concrete comparator used at L1 satisfies every class required by the
     generic F1/F2 proofs. -/
@@ -134,23 +138,154 @@ section F2b
 
 variable {State : Type uH} {Op : Type uV}
 
-/-- F2b: under serial successor application, the position floor turns finite
-    at-least-once delivery into the arbitrary step function's exactly-once
-    sequential fold. -/
-theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
-    Laws.F2bGuardedExactlyOnce step := by
-  intro floor operations deliveries initial schedule
-  unfold Laws.F2bSerialSuccessorPremise SerialSuccessorSchedule at schedule
-  unfold guardedApply
-  rw [schedule]
-  clear schedule deliveries
+/-- Every positioned operation lies strictly above the floor that positioned
+    its trace. -/
+theorem positioned_above (floor : Nat) (operations : List Op)
+    {delivery : Positioned Op}
+    (member : delivery ∈ positionTrace floor operations) :
+    floor < delivery.position := by
+  induction operations generalizing floor with
+  | nil => simp [positionTrace] at member
+  | cons operation operations inductionHypothesis =>
+      simp only [positionTrace, List.mem_cons] at member
+      rcases member with rfl | member
+      · exact Nat.lt_succ_self floor
+      · exact Nat.lt_trans (Nat.lt_succ_self floor)
+          (inductionHypothesis (floor + 1) member)
+
+/-- One contiguous positioned trace cannot carry two different operations at
+    the same journal position. -/
+theorem positioned_unique (floor : Nat) (operations : List Op)
+    {left right : Positioned Op}
+    (leftMember : left ∈ positionTrace floor operations)
+    (rightMember : right ∈ positionTrace floor operations)
+    (samePosition : left.position = right.position) : left = right := by
+  induction operations generalizing floor left right with
+  | nil => simp [positionTrace] at leftMember
+  | cons operation operations inductionHypothesis =>
+      simp only [positionTrace, List.mem_cons] at leftMember rightMember
+      rcases leftMember with rfl | leftMember
+      · rcases rightMember with rfl | rightMember
+        · rfl
+        · have above := positioned_above (floor + 1) operations rightMember
+          change floor + 1 = right.position at samePosition
+          omega
+      · rcases rightMember with rfl | rightMember
+        · have above := positioned_above (floor + 1) operations leftMember
+          change left.position = floor + 1 at samePosition
+          omega
+        · exact inductionHypothesis (floor + 1) leftMember rightMember samePosition
+
+/-- Once a position contains the expected operation, consuming further raw
+    arrivals that agree at that position preserves it. -/
+theorem ingest_preserves_lookup (floor ceiling position : Nat)
+    (operation : Op) (deliveries : List (Positioned Op))
+    (buffer : ReplayBuffer Op)
+    (matching : forall delivery, delivery ∈ deliveries ->
+      InWindow floor ceiling delivery -> delivery.position = position ->
+        delivery.operation = operation)
+    (present : buffer position = some operation) :
+    (deliveries.foldl (ingestDelivery floor ceiling) buffer) position =
+      some operation := by
+  induction deliveries generalizing buffer with
+  | nil => exact present
+  | cons delivery deliveries inductionHypothesis =>
+      simp only [List.foldl]
+      apply inductionHypothesis
+      · intro candidate member inWindow samePosition
+        exact matching candidate (List.mem_cons_of_mem delivery member) inWindow
+          samePosition
+      · by_cases inWindow : floor < delivery.position /\ delivery.position <= ceiling
+        · by_cases samePosition : position = delivery.position
+          · have operationEqual := matching delivery (by simp) (by
+              simpa [InWindow] using inWindow) samePosition.symm
+            simp [ingestDelivery, inWindow, samePosition, operationEqual]
+          · simp [ingestDelivery, inWindow, samePosition, present]
+        · simp [ingestDelivery, inWindow, present]
+
+/-- A raw in-window witness, together with agreement of all redeliveries at
+    its position, determines the shipped buffer's lookup result. -/
+theorem ingest_lookup_of_raw_support (floor ceiling position : Nat)
+    (operation : Op) (deliveries : List (Positioned Op))
+    (matching : forall delivery, delivery ∈ deliveries ->
+      InWindow floor ceiling delivery -> delivery.position = position ->
+        delivery.operation = operation)
+    (witness : { delivery : Positioned Op //
+      delivery ∈ deliveries /\ InWindow floor ceiling delivery /\
+        delivery.position = position /\ delivery.operation = operation }) :
+    (ingestSchedule floor ceiling deliveries) position = some operation := by
+  rcases witness with ⟨witness, witnessMember, witnessWindow,
+    witnessPosition, witnessOperation⟩
+  obtain ⟨before, after, rfl⟩ := List.append_of_mem witnessMember
+  unfold ingestSchedule
+  rw [List.foldl_append]
+  simp only [List.foldl]
+  apply ingest_preserves_lookup floor ceiling position operation after
+    (ingestDelivery floor ceiling
+      (List.foldl (ingestDelivery floor ceiling) emptyReplayBuffer before) witness)
+  · intro candidate member inWindow samePosition
+    apply matching candidate
+    · simp only [List.mem_append, List.mem_cons]
+      exact Or.inr (Or.inr member)
+    · exact inWindow
+    · exact samePosition
+  · have window : floor < witness.position /\ witness.position <= ceiling := by
+      simpa [InWindow] using witnessWindow
+    subst position
+    subst operation
+    simp [ingestDelivery, window]
+
+/-- The raw schedule premise forces every positioned operation into the
+    shipped buffer, independently of arrival order and multiplicity. -/
+theorem schedule_buffer_covers (floor : Nat) (operations : List Op)
+    (deliveries : List (Positioned Op))
+    (schedule : SerialSuccessorSchedule floor operations deliveries)
+    (expected : Positioned Op) (expectedMember : expected ∈ positionTrace floor operations) :
+    ingestSchedule floor (floor + operations.length) deliveries expected.position =
+      some expected.operation := by
+  have covered := (schedule expected).mpr expectedMember
+  apply ingest_lookup_of_raw_support floor
+    (floor + operations.length) expected.position expected.operation deliveries
+  · intro delivery member inWindow samePosition
+    have deliveryMember := (schedule delivery).mp ⟨member, inWindow⟩
+    have equal := positioned_unique floor operations
+      deliveryMember expectedMember samePosition
+    exact congrArg Positioned.operation equal
+  · exact ⟨expected, covered.1, covered.2, rfl, rfl⟩
+
+/-- A buffer covering a contiguous positioned trace drains to the trace's
+    sequential fold for any step function. -/
+theorem apply_successors_exact (step : State -> Op -> State)
+    (floor : Nat) (operations : List Op) (initial : State)
+    (buffer : ReplayBuffer Op)
+    (covered : forall delivery, delivery ∈ positionTrace floor operations ->
+      buffer delivery.position = some delivery.operation) :
+    applySuccessors step floor operations.length initial buffer =
+      fold step initial operations := by
   induction operations generalizing floor initial with
   | nil => rfl
   | cons operation operations inductionHypothesis =>
-      simp only [positionTrace, applySuccessors, fold, foldFrom, List.foldl,
-        ↓reduceIte]
-      exact inductionHypothesis (floor := floor + 1)
-        (initial := step initial operation)
+      let head : Positioned Op := { position := floor + 1, operation }
+      have headMember : head ∈ positionTrace floor (operation :: operations) := by
+        simp [head, positionTrace]
+      have headCovered := covered head headMember
+      simp only [head] at headCovered
+      simp only [List.length_cons, applySuccessors, fold, foldFrom, List.foldl]
+      rw [headCovered]
+      apply inductionHypothesis
+      intro delivery member
+      apply covered delivery
+      exact List.mem_cons_of_mem head member
+
+/-- F2b: the raw-arrival buffer fold normalises every finite schedule with the
+    stated contiguous in-window support, then the position floor gives its
+    arbitrary step function exactly-once sequential meaning. -/
+theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
+    Laws.F2bGuardedExactlyOnce step := by
+  intro floor operations deliveries initial schedule
+  apply apply_successors_exact step floor operations initial
+  intro delivery member
+  exact schedule_buffer_covers floor operations deliveries schedule delivery member
 
 end F2b
 

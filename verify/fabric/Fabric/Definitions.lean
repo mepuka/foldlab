@@ -120,44 +120,44 @@ def positionTrace {Op : Type uV} : Nat -> List Op -> List (Positioned Op)
       { position := floor + 1, operation } ::
         positionTrace (floor + 1) operations
 
-/-- Insert one delivery into a position-ordered buffer. The first delivery at
-    a position wins; later redeliveries at that position are no-ops. -/
-def insertPositioned {Op : Type uV} (delivery : Positioned Op) :
-    List (Positioned Op) -> List (Positioned Op)
-  | [] => [delivery]
-  | head :: tail =>
-      match compare delivery.position head.position with
-      | .lt => delivery :: head :: tail
-      | .eq => head :: tail
-      | .gt => head :: insertPositioned delivery tail
+/-- A raw delivery lies inside the checkpoint's finite replay window. -/
+def InWindow {Op : Type uV} (floor ceiling : Nat) (delivery : Positioned Op) :
+    Prop :=
+  floor < delivery.position /\ delivery.position <= ceiling
 
-/-- Consume one arrival into the bounded reorder buffer. This is the live
+/-- The bounded reorder buffer, addressed by journal position. -/
+abbrev ReplayBuffer (Op : Type uV) := Nat -> Option Op
+
+/-- No position has arrived. -/
+def emptyReplayBuffer {Op : Type uV} : ReplayBuffer Op := fun _ => none
+
+/-- Consume one raw arrival into the bounded reorder buffer. This is the live
     position-floor guard: stale replays and out-of-window futures have no
-    effect; admitted arrivals are sorted and deduplicated by position. -/
+    effect; an admitted redelivery replaces only the same positioned entry. -/
 def ingestDelivery {Op : Type uV} (floor ceiling : Nat)
-    (buffer : List (Positioned Op)) (delivery : Positioned Op) :
-    List (Positioned Op) :=
+    (buffer : ReplayBuffer Op) (delivery : Positioned Op) : ReplayBuffer Op :=
   if floor < delivery.position /\ delivery.position <= ceiling then
-    insertPositioned delivery buffer
+    fun position =>
+      if position = delivery.position then some delivery.operation
+      else buffer position
   else buffer
 
-/-- Traverse the delivery schedule in arrival order, applying the floor guard
-    to every arrival and building the bounded reorder buffer. -/
+/-- Traverse the raw delivery schedule in arrival order and fold every arrival
+    through the bounded position-floor guard. -/
 def ingestSchedule {Op : Type uV} (floor ceiling : Nat)
-    (deliveries : List (Positioned Op)) : List (Positioned Op) :=
-  deliveries.foldl (ingestDelivery floor ceiling) []
+    (deliveries : List (Positioned Op)) : ReplayBuffer Op :=
+  deliveries.foldl (ingestDelivery floor ceiling) emptyReplayBuffer
 
-/-- Drain only consecutive successors. A delivery ahead of `floor + 1` stays
-    unapplied; the caller must retain or refuse it rather than advancing over
-    a gap. -/
+/-- Drain exactly the consecutive successors present in the buffer. A gap
+    stops application; an ahead-of-frontier entry never advances over it. -/
 def applySuccessors {State : Type uH} {Op : Type uV}
-    (step : State -> Op -> State) : Nat -> State -> List (Positioned Op) -> State
-  | _, state, [] => state
-  | floor, state, delivery :: deliveries =>
-      if delivery.position = floor + 1 then
-        applySuccessors step delivery.position
-          (step state delivery.operation) deliveries
-      else state
+    (step : State -> Op -> State) : Nat -> Nat -> State -> ReplayBuffer Op -> State
+  | _, 0, state, _ => state
+  | floor, count + 1, state, buffer =>
+      match buffer (floor + 1) with
+      | none => state
+      | some operation =>
+          applySuccessors step (floor + 1) count (step state operation) buffer
 
 /-- Consume the actual redelivery schedule in list order. The bounded buffer
     retains ahead-of-frontier arrivals; application advances serially within
@@ -165,17 +165,19 @@ def applySuccessors {State : Type uH} {Op : Type uV}
 def guardedApply {State : Type uH} {Op : Type uV}
     (step : State -> Op -> State) (floor count : Nat)
     (deliveries : List (Positioned Op)) (initial : State) : State :=
-  applySuccessors step floor initial
+  applySuccessors step floor count initial
     (ingestSchedule floor (floor + count) deliveries)
 
-/-- The serial/successor discipline required of an at-least-once schedule:
-    consuming arrivals in list order into the bounded buffer must expose the
-    exact contiguous trace above the floor. Duplicates, bounded reordering, and
-    stale replays are admitted, but a consumer may not advance across a gap. -/
+/-- The serial/successor discipline required of an at-least-once schedule.
+    Inside the finite window, the raw arrivals have exactly the support of the
+    contiguous positioned trace. Multiplicity and arrival order are irrelevant;
+    stale and out-of-window deliveries may also be present. -/
 def SerialSuccessorSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
     (deliveries : List (Positioned Op)) : Prop :=
-  ingestSchedule floor (floor + operations.length) deliveries =
-    positionTrace floor operations
+  forall delivery,
+    (delivery ∈ deliveries /\
+        InWindow floor (floor + operations.length) delivery) <->
+      delivery ∈ positionTrace floor operations
 
 namespace Emitter
 
@@ -198,6 +200,10 @@ def reorderedDeliveries : List (Positioned Nat) :=
   [ { position := 6, operation := 3 }
   , { position := 5, operation := 2 }
   ]
+
+/-- The order-sensitive step used by the bounded-reordering vector. -/
+def appendStep (state : List Nat) (operation : Nat) : List Nat :=
+  state ++ [operation]
 
 end Emitter
 

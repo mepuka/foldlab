@@ -6,6 +6,9 @@ def showControl (name vector : String) (lawful mutant : Nat) : IO UInt32 := do
   IO.println s!"control={name};vector={vector};lawful={lawful};mutant={mutant};verdict={if lawful == mutant then "survived" else "refuted"}"
   return if lawful == mutant then 1 else 0
 
+def encodeTrace (trace : List Nat) : Nat :=
+  trace.foldl (fun encoded operation => encoded * 10 + operation) 0
+
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["drop-idempotence"] =>
@@ -19,8 +22,9 @@ def main (args : List String) : IO UInt32 := do
         (Mutants.foldLeftBiased Emitter.permutedEvidence).toList.head!.1
   | ["drop-floor-guard"] =>
       showControl "drop-floor-guard" "six-before-five-reordering"
-        (guardedApply Nat.add 4 2 Mutants.floorReplayVector 0)
-        (Mutants.bareFloorApply Nat.add 4 Mutants.floorReplayVector 0)
+        (encodeTrace (guardedApply Emitter.appendStep 4 2 Mutants.floorReplayVector []))
+        (encodeTrace (Mutants.bareFloorApply Emitter.appendStep 4
+          Mutants.floorReplayVector []))
   | ["drop-meet-clamping"] =>
       showControl "drop-meet-clamping" "attenuation-request-clamped"
         (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest).budget

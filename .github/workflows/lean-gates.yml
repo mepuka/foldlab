@@ -3,7 +3,7 @@
 # verify/moves/run.sh, verify/ir/run.sh, and verify/fabric/run.sh are whole gates: lake build,
 # a source guard refusing sorry/admit/axiom declarations, and — for
 # moves — the mechanical axiom-footprint check over every headline
-# theorem. Both projects are Lean 4.33.0 with core + Std only, so a
+# theorem. All three projects are Lean 4.33.0 with core + Std only, so a
 # runner needs elan and nothing else; the toolchain is pinned by each
 # project's lean-toolchain file, not by this workflow.
 #

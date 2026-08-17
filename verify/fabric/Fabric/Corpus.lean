@@ -114,8 +114,21 @@ def f2bStaleVector : Vector := guardedVector "floor-violating-stale-replay" 10
 def f2bDuplicateVector : Vector := guardedVector "duplicate-current-delivery" 10
   Emitter.duplicatedPositionedDeliveries
 
-def f2bReorderedVector : Vector := guardedVector "bounded-reordered-delivery" 4
-  Emitter.reorderedDeliveries
+def f2bReorderedVector : Vector :=
+  let guarded := guardedApply Emitter.appendStep 4 2 Emitter.reorderedDeliveries []
+  let exact := fold Emitter.appendStep [] [2, 3]
+  { name := "bounded-reordered-delivery"
+    kind := "F2b"
+    witness := "Fabric.emitter_f2b_reordering"
+    input := object
+      [ { key := "deliveries", value := renderDeliveries Emitter.reorderedDeliveries }
+      , { key := "floor", value := nat 4 }
+      ]
+    verdict := object
+      [ { key := "exact", value := array (exact.map nat) }
+      , { key := "guarded", value := array (guarded.map nat) }
+      , { key := "matchesExact", value := bool (guarded == exact) }
+      ] }
 
 inductive AlphabetCandidate where
   | evidence (observation : GroundObservation)
@@ -219,13 +232,24 @@ def policyLeBool (left right : Mutants.GroundPolicy) : Bool :=
   decide (left.budget <= right.budget) &&
   decide (left.spawnBound <= right.spawnBound)
 
+/-- The second-level request strictly attenuates the first effective policy. -/
+def attenuatedChildRequest : Mutants.GroundPolicy where
+  capabilities := Mutants.atoms [2]
+  contextAllowlist := Mutants.atoms [20]
+  toolkits := Mutants.atoms [30]
+  writ := Mutants.atoms [50]
+  capabilityClass := 2
+  effortClass := 3
+  budget := 4
+  spawnBound := 2
+
 def delegationTree : ActionTree Nat compare :=
   .node Mutants.escalatingRequest
-    [.node Mutants.escalatingRequest []]
+    [.node attenuatedChildRequest []]
 
 def descendantPolicy : Mutants.GroundPolicy :=
   Policy.meet (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest)
-    Mutants.escalatingRequest
+    attenuatedChildRequest
 
 def renderActionTree : ActionTree Nat compare -> String
   | .node requested children => object

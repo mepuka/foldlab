@@ -23,25 +23,48 @@ theorem emitter_f2_permutation :
   decide
 
 /-- The stale-replay row is accepted by the guarded schedule consumer. -/
+theorem emitter_stale_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 10 [2, 3]
+      Emitter.staleReplayDeliveries := by
+  intro delivery
+  rcases delivery with ⟨position, operation⟩
+  simp [Emitter.staleReplayDeliveries, InWindow, positionTrace]
+  omega
+
 theorem emitter_f2b_stale_replay :
     guardedApply Nat.add 10 2 Emitter.staleReplayDeliveries 0 =
       fold Nat.add 0 [2, 3] := by
-  exact f2b_guarded_exactly_once Nat.add 10 [2, 3]
-    Emitter.staleReplayDeliveries 0 (by rfl)
+  simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
+    Emitter.staleReplayDeliveries 0 emitter_stale_schedule_premise
 
 /-- The duplicate-current row is accepted by the guarded schedule consumer. -/
+theorem emitter_duplicate_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 10 [2, 3]
+      Emitter.duplicatedPositionedDeliveries := by
+  intro delivery
+  rcases delivery with ⟨position, operation⟩
+  simp [Emitter.duplicatedPositionedDeliveries, InWindow, positionTrace]
+  omega
+
 theorem emitter_f2b_duplication :
     guardedApply Nat.add 10 2 Emitter.duplicatedPositionedDeliveries 0 =
       fold Nat.add 0 [2, 3] := by
-  exact f2b_guarded_exactly_once Nat.add 10 [2, 3]
-    Emitter.duplicatedPositionedDeliveries 0 (by rfl)
+  simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
+    Emitter.duplicatedPositionedDeliveries 0 emitter_duplicate_schedule_premise
 
 /-- The bounded-reordering row is accepted by the guarded schedule consumer. -/
+theorem emitter_reordered_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 4 [2, 3] Emitter.reorderedDeliveries := by
+  intro delivery
+  rcases delivery with ⟨position, operation⟩
+  simp [Emitter.reorderedDeliveries, InWindow, positionTrace]
+  omega
+
 theorem emitter_f2b_reordering :
-    guardedApply Nat.add 4 2 Emitter.reorderedDeliveries 0 =
-      fold Nat.add 0 [2, 3] := by
-  exact f2b_guarded_exactly_once Nat.add 4 [2, 3]
-    Emitter.reorderedDeliveries 0 (by rfl)
+    guardedApply Emitter.appendStep 4 2 Emitter.reorderedDeliveries [] =
+      fold Emitter.appendStep [] [2, 3] := by
+  simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 4 [2, 3]
+    Emitter.reorderedDeliveries [] emitter_reordered_schedule_premise
 
 /-- The checkpoint row is an exact F3 instance. -/
 theorem emitter_f3_resume :
@@ -65,27 +88,65 @@ theorem emitter_intruder_refused :
   decide
 
 /-- The request-clamping row exercises all eight policy components. -/
+theorem finite_subset_bool_iff (left right : FiniteSet Nat compare) :
+    Corpus.finiteSubsetBool left right = true <->
+      forall atom, atom ∈ left -> atom ∈ right := by
+  simp [Corpus.finiteSubsetBool]
+
+/-- The executable policy order used in F9 verdicts is exactly `Policy.Le`. -/
+theorem policyLeBool_iff (left right : Mutants.GroundPolicy) :
+    Corpus.policyLeBool left right = true <-> left <= right := by
+  constructor
+  · intro ordered
+    simp only [Corpus.policyLeBool, Bool.and_eq_true, decide_eq_true_eq] at ordered
+    rcases ordered with ⟨⟨⟨⟨⟨⟨⟨capabilities, contextAllowlist⟩, toolkits⟩,
+      writ⟩, capabilityClass⟩, effortClass⟩, budget⟩, spawnBound⟩
+    exact {
+      capabilities := (by simpa [Corpus.finiteSubsetBool] using capabilities)
+      contextAllowlist := (by simpa [Corpus.finiteSubsetBool] using contextAllowlist)
+      toolkits := (by simpa [Corpus.finiteSubsetBool] using toolkits)
+      writ := (by simpa [Corpus.finiteSubsetBool] using writ)
+      capabilityClass
+      effortClass
+      budget
+      spawnBound
+    }
+  · intro ordered
+    simp only [Corpus.policyLeBool, Bool.and_eq_true, decide_eq_true_eq]
+    refine ⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ordered.capabilityClass⟩,
+      ordered.effortClass⟩, ordered.budget⟩, ordered.spawnBound⟩
+    · simpa [Corpus.finiteSubsetBool] using ordered.capabilities
+    · simpa [Corpus.finiteSubsetBool] using ordered.contextAllowlist
+    · simpa [Corpus.finiteSubsetBool] using ordered.toolkits
+    · simpa [Corpus.finiteSubsetBool] using ordered.writ
+
 theorem emitter_f9_clamp :
-    Policy.meet Mutants.rootPolicy Mutants.escalatingRequest <=
-      Mutants.rootPolicy :=
-  policy_meet_le_left _ _
+    Corpus.policyLeBool
+          (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest)
+          Mutants.rootPolicy = true /\
+      Policy.meet Mutants.rootPolicy Mutants.escalatingRequest <=
+        Mutants.rootPolicy := by
+  have ordered := policy_meet_le_left Mutants.rootPolicy Mutants.escalatingRequest
+  exact ⟨(policyLeBool_iff _ _).mpr ordered, ordered⟩
 
 /-- The tree row constructs the actual two-level action tree and witnesses the
     descendant relation consumed by F9. -/
 theorem emitter_f9_tree :
     DescendantEffective Mutants.rootPolicy Corpus.delegationTree
         Corpus.descendantPolicy /\
+      Corpus.policyLeBool Corpus.descendantPolicy Mutants.rootPolicy = true /\
       Corpus.descendantPolicy <= Mutants.rootPolicy := by
   have reachable : DescendantEffective Mutants.rootPolicy Corpus.delegationTree
       Corpus.descendantPolicy := by
     apply DescendantEffective.throughChild Mutants.rootPolicy
       Mutants.escalatingRequest [] []
-      (.node Mutants.escalatingRequest []) Corpus.descendantPolicy
+      (.node Corpus.attenuatedChildRequest []) Corpus.descendantPolicy
     exact DescendantEffective.here
       (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest)
-      Mutants.escalatingRequest []
-  exact ⟨reachable, f9_tree_attenuation Mutants.rootPolicy
-    Corpus.descendantPolicy Corpus.delegationTree reachable⟩
+      Corpus.attenuatedChildRequest []
+  have ordered := f9_tree_attenuation Mutants.rootPolicy
+    Corpus.descendantPolicy Corpus.delegationTree reachable
+  exact ⟨reachable, (policyLeBool_iff _ _).mpr ordered, ordered⟩
 
 /-- The canonical string boundary escapes quotes, reverse solidi, and controls. -/
 theorem emitter_string_escaping :
