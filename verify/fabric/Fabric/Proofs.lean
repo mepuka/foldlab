@@ -39,9 +39,11 @@ theorem cell_merge_idem (cell : Cell Holder Value cmp) :
 theorem f1_cell_merge_aci : Laws.F1CellMergeACI (cmp := cmp) :=
   ⟨cell_merge_comm, cell_merge_assoc, cell_merge_idem⟩
 
-/-- F1: extensional equality turns equal verified sets into equal replicas. -/
-theorem f1_same_verified_set_converges :
-    Laws.F1SameVerifiedSetConverges (cmp := cmp) := by
+/-- F1: extensional equality turns equal verified sets into equal replicas.
+    This is a statement about states; the history-level convergence the
+    fabric also claims is `f1_history_convergence`. -/
+theorem f1_cell_extensional :
+    Laws.F1CellExtensional (cmp := cmp) := by
   intro left right same
   apply Std.ExtTreeSet.ext_mem
   exact same
@@ -78,6 +80,12 @@ theorem f2_duplication [LawfulBEq (Observation Holder Value)]
   apply f2_trace_invariant
   intro candidate
   simp
+
+/-- F1, convergence half: two nodes folding the same evidence multiset in
+    different delivery orders converge to one cell — derived from F2's
+    permutation half. -/
+theorem f1_history_convergence : Laws.F1HistoryConvergence (cmp := cmp) :=
+  fun _ _ permutation => f2_permutation permutation
 
 end F2
 
@@ -153,6 +161,23 @@ theorem positioned_above (floor : Nat) (operations : List Op)
       · exact Nat.lt_trans (Nat.lt_succ_self floor)
           (inductionHypothesis (floor + 1) member)
 
+/-- Every positioned operation lies inside the ceiling of the window its
+    trace spans. -/
+theorem positioned_within (floor : Nat) (operations : List Op)
+    {delivery : Positioned Op}
+    (member : delivery ∈ positionTrace floor operations) :
+    delivery.position <= floor + operations.length := by
+  induction operations generalizing floor with
+  | nil => simp [positionTrace] at member
+  | cons operation operations inductionHypothesis =>
+      simp only [positionTrace, List.mem_cons] at member
+      rcases member with rfl | member
+      · simp only [List.length_cons]
+        omega
+      · have below := inductionHypothesis (floor + 1) member
+        simp only [List.length_cons]
+        omega
+
 /-- One contiguous positioned trace cannot carry two different operations at
     the same journal position. -/
 theorem positioned_unique (floor : Nat) (operations : List Op)
@@ -204,9 +229,9 @@ theorem ingest_lookup_of_raw_support (position : Nat)
     (operation : Op) (deliveries : List (Positioned Op))
     (matching : forall delivery, delivery ∈ deliveries ->
       delivery.position = position -> delivery.operation = operation)
-    (witness : { delivery : Positioned Op //
+    (witness : exists delivery,
       delivery ∈ deliveries /\ delivery.position = position /\
-        delivery.operation = operation }) :
+        delivery.operation = operation) :
     (ingestSchedule deliveries) position = some operation := by
   rcases witness with ⟨witness, witnessMember, witnessPosition, witnessOperation⟩
   obtain ⟨before, after, rfl⟩ := List.append_of_mem witnessMember
@@ -224,30 +249,43 @@ theorem ingest_lookup_of_raw_support (position : Nat)
     subst operation
     simp [ingestDelivery]
 
-/-- The raw schedule premise forces every positioned operation into the
-    shipped buffer, independently of arrival order and multiplicity. -/
+/-- The two premise halves force every positioned operation into the shipped
+    buffer, independently of arrival order and multiplicity: coverage supplies
+    an arrival at the expected position, and payload integrity pins every
+    in-window arrival at that position to the expected operation. -/
 theorem schedule_buffer_covers (floor : Nat) (operations : List Op)
     (deliveries : List (Positioned Op))
-    (schedule : SerialSuccessorSchedule floor operations deliveries)
+    (coverage : WindowCoverage floor operations deliveries)
+    (integrity : PositionPayloadIntegrity floor operations deliveries)
     (expected : Positioned Op) (expectedMember : expected ∈ positionTrace floor operations) :
     ingestSchedule deliveries expected.position =
       some expected.operation := by
-  have covered := (schedule expected).mpr expectedMember
+  have expectedLower := positioned_above floor operations expectedMember
+  have expectedUpper := positioned_within floor operations expectedMember
+  have matching : forall delivery, delivery ∈ deliveries ->
+      delivery.position = expected.position ->
+        delivery = expected := by
+    intro delivery member samePosition
+    have deliveryWindow : InWindow floor (floor + operations.length) delivery :=
+      ⟨by simpa [samePosition] using expectedLower,
+        by simpa [samePosition] using expectedUpper⟩
+    have deliveryMember := integrity delivery member deliveryWindow
+    exact positioned_unique floor operations
+      deliveryMember expectedMember samePosition
   apply ingest_lookup_of_raw_support expected.position expected.operation deliveries
   · intro delivery member samePosition
-    have deliveryWindow : InWindow floor (floor + operations.length) delivery := by
-      rcases covered.2 with ⟨expectedLower, expectedUpper⟩
-      exact ⟨by simpa [samePosition] using expectedLower,
-        by simpa [samePosition] using expectedUpper⟩
-    have deliveryMember := (schedule delivery).mp ⟨member, deliveryWindow⟩
-    have equal := positioned_unique floor operations
-      deliveryMember expectedMember samePosition
-    exact congrArg Positioned.operation equal
-  · exact ⟨expected, covered.1, rfl, rfl⟩
+    exact congrArg Positioned.operation (matching delivery member samePosition)
+  · obtain ⟨delivery, member, samePosition⟩ := coverage expected expectedMember
+    exact ⟨delivery, member, samePosition,
+      congrArg Positioned.operation (matching delivery member samePosition)⟩
 
-/-- A buffer covering a contiguous positioned trace drains to the trace's
-    sequential fold for any step function. -/
-theorem apply_successors_exact (step : State -> Op -> State)
+/-- Helper on the way to F2b, stated over an already-complete buffer: when
+    every window position is present with its exact payload, the successor
+    drain is the sequential fold. The complete-buffer hypothesis is this
+    lemma's whole premise — it says nothing about raw schedules, which is why
+    it stays private and off the roster; `f2b_guarded_exactly_once` is the
+    headline result. -/
+private theorem applySuccessors_of_completeBuffer (step : State -> Op -> State)
     (floor : Nat) (operations : List Op) (initial : State)
     (buffer : ReplayBuffer Op)
     (covered : forall delivery, delivery ∈ positionTrace floor operations ->
@@ -337,15 +375,18 @@ theorem guard_is_redundant (step : State -> Op -> State)
   exact ingest_window_agrees floor (floor + count) deliveries
     emptyReplayBuffer emptyReplayBuffer (fun _ _ _ => rfl) position lower upper
 
-/-- F2b: the raw-arrival buffer fold normalises every finite schedule with the
-    stated contiguous in-window support, then the successor discipline gives
-    its arbitrary step function exactly-once sequential meaning. -/
+/-- F2b: under window coverage the raw-arrival buffer fold normalises every
+    finite schedule, under position-payload integrity it normalises it to the
+    contiguous positioned trace, and then the successor discipline gives its
+    arbitrary step function exactly-once sequential meaning. -/
 theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
     Laws.F2bGuardedExactlyOnce step := by
-  intro floor operations deliveries initial schedule
-  apply apply_successors_exact step floor operations initial
+  intro floor operations deliveries initial premise
+  obtain ⟨coverage, integrity⟩ := premise
+  apply applySuccessors_of_completeBuffer step floor operations initial
   intro delivery member
-  exact schedule_buffer_covers floor operations deliveries schedule delivery member
+  exact schedule_buffer_covers floor operations deliveries
+    coverage integrity delivery member
 
 end F2b
 
@@ -467,6 +508,8 @@ theorem policy_le_refl (policy : Policy Atom cmp) : policy <= policy := by
     contextAllowlist := fun _ member => member
     toolkits := fun _ member => member
     writ := fun _ member => member
+    indexes := fun _ member => member
+    resources := fun _ member => member
     capabilityClass := Nat.le_refl _
     effortClass := Nat.le_refl _
     budget := Nat.le_refl _
@@ -486,6 +529,10 @@ theorem policy_le_trans {lower middle upper : Policy Atom cmp}
       middleUpper.toolkits atom (lowerMiddle.toolkits atom member)
     writ := fun atom member =>
       middleUpper.writ atom (lowerMiddle.writ atom member)
+    indexes := fun atom member =>
+      middleUpper.indexes atom (lowerMiddle.indexes atom member)
+    resources := fun atom member =>
+      middleUpper.resources atom (lowerMiddle.resources atom member)
     capabilityClass := Nat.le_trans lowerMiddle.capabilityClass middleUpper.capabilityClass
     effortClass := Nat.le_trans lowerMiddle.effortClass middleUpper.effortClass
     budget := Nat.le_trans lowerMiddle.budget middleUpper.budget
@@ -495,6 +542,8 @@ theorem policy_le_trans {lower middle upper : Policy Atom cmp}
 theorem policy_meet_comm (left right : Policy Atom cmp) :
     Policy.meet left right = Policy.meet right left := by
   apply Policy.ext
+  · exact policy_set_inter_comm _ _
+  · exact policy_set_inter_comm _ _
   · exact policy_set_inter_comm _ _
   · exact policy_set_inter_comm _ _
   · exact policy_set_inter_comm _ _
@@ -512,6 +561,8 @@ theorem policy_meet_assoc (left middle right : Policy Atom cmp) :
   · exact policy_set_inter_assoc _ _ _
   · exact policy_set_inter_assoc _ _ _
   · exact policy_set_inter_assoc _ _ _
+  · exact policy_set_inter_assoc _ _ _
+  · exact policy_set_inter_assoc _ _ _
   · exact Nat.min_assoc _ _ _
   · exact Nat.min_assoc _ _ _
   · exact Nat.min_assoc _ _ _
@@ -520,6 +571,8 @@ theorem policy_meet_assoc (left middle right : Policy Atom cmp) :
 theorem policy_meet_idem (policy : Policy Atom cmp) :
     Policy.meet policy policy = policy := by
   apply Policy.ext
+  · exact policy_set_inter_idem _
+  · exact policy_set_inter_idem _
   · exact policy_set_inter_idem _
   · exact policy_set_inter_idem _
   · exact policy_set_inter_idem _
@@ -537,6 +590,8 @@ theorem policy_meet_le_left (left right : Policy Atom cmp) :
     contextAllowlist := fun _ member => (Std.ExtTreeSet.mem_inter_iff.mp member).1
     toolkits := fun _ member => (Std.ExtTreeSet.mem_inter_iff.mp member).1
     writ := fun _ member => (Std.ExtTreeSet.mem_inter_iff.mp member).1
+    indexes := fun _ member => (Std.ExtTreeSet.mem_inter_iff.mp member).1
+    resources := fun _ member => (Std.ExtTreeSet.mem_inter_iff.mp member).1
     capabilityClass := Nat.min_le_left _ _
     effortClass := Nat.min_le_left _ _
     budget := Nat.min_le_left _ _
@@ -561,6 +616,10 @@ theorem policy_le_meet {lower left right : Policy Atom cmp}
       ⟨lowerLeft.toolkits atom member, lowerRight.toolkits atom member⟩
     writ := fun atom member => Std.ExtTreeSet.mem_inter_iff.mpr
       ⟨lowerLeft.writ atom member, lowerRight.writ atom member⟩
+    indexes := fun atom member => Std.ExtTreeSet.mem_inter_iff.mpr
+      ⟨lowerLeft.indexes atom member, lowerRight.indexes atom member⟩
+    resources := fun atom member => Std.ExtTreeSet.mem_inter_iff.mpr
+      ⟨lowerLeft.resources atom member, lowerRight.resources atom member⟩
     capabilityClass := Nat.le_min.mpr
       ⟨lowerLeft.capabilityClass, lowerRight.capabilityClass⟩
     effortClass := Nat.le_min.mpr ⟨lowerLeft.effortClass, lowerRight.effortClass⟩

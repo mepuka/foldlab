@@ -111,7 +111,7 @@ def fold {State : Type uH} {Op : Type uV}
 structure Positioned (Op : Type uV) where
   position : Nat
   operation : Op
-deriving Repr, BEq, DecidableEq
+deriving Repr, DecidableEq
 
 /-- Assign consecutive positions immediately above a checkpoint floor. -/
 def positionTrace {Op : Type uV} : Nat -> List Op -> List (Positioned Op)
@@ -165,15 +165,24 @@ def guardedApply {State : Type uH} {Op : Type uV}
   applySuccessors step floor count initial
     (ingestSchedule deliveries)
 
-/-- The serial/successor discipline required of an at-least-once schedule.
-    Inside the finite window, the raw arrivals have exactly the support of the
-    contiguous positioned trace. Multiplicity and arrival order are irrelevant;
-    stale and out-of-window deliveries may also be present. -/
-def SerialSuccessorSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
+/-- Half one of the at-least-once premise: complete successor coverage.
+    Every position of the checkpoint window is present among the raw
+    arrivals. Nothing here constrains payloads. -/
+def WindowCoverage {Op : Type uV} (floor : Nat) (operations : List Op)
     (deliveries : List (Positioned Op)) : Prop :=
-  forall delivery,
-    (delivery ∈ deliveries /\
-        InWindow floor (floor + operations.length) delivery) <->
+  forall expected, expected ∈ positionTrace floor operations ->
+    exists delivery,
+      delivery ∈ deliveries /\ delivery.position = expected.position
+
+/-- Half two of the at-least-once premise: position-payload fidelity. An
+    in-window arrival carries exactly the record the contiguous positioned
+    trace assigns to its journal position; redelivery at a position never
+    changes that position's payload. Stale and out-of-window deliveries
+    stay unconstrained. -/
+def PositionPayloadIntegrity {Op : Type uV} (floor : Nat) (operations : List Op)
+    (deliveries : List (Positioned Op)) : Prop :=
+  forall delivery, delivery ∈ deliveries ->
+    InWindow floor (floor + operations.length) delivery ->
       delivery ∈ positionTrace floor operations
 
 namespace Emitter
@@ -201,6 +210,46 @@ def reorderedDeliveries : List (Positioned Nat) :=
 /-- The order-sensitive step used by the bounded-reordering vector. -/
 def appendStep (state : List Nat) (operation : Nat) : List Nat :=
   state ++ [operation]
+
+/-- The exact resume-then-redeliver suffix row: after a checkpoint at floor 2,
+    the suffix schedule arrives reordered and duplicated (the kill-9 shape). -/
+def resumeSuffixDeliveries : List (Positioned Nat) :=
+  [ { position := 4, operation := 4 }
+  , { position := 3, operation := 3 }
+  , { position := 4, operation := 4 }
+  ]
+
+/-- The exact ahead-of-ceiling row: position 13 sits beyond the two-operation
+    window above floor 10, so it is buffered and never applied. -/
+def aheadOfCeilingDeliveries : List (Positioned Nat) :=
+  [ { position := 13, operation := 7 }
+  , { position := 11, operation := 2 }
+  , { position := 12, operation := 3 }
+  ]
+
+/-- The exact multi-gap row: a delivery order whose positions arrive with
+    more than one gap open at once. This model ingests the whole schedule
+    and then drains, so no statement here describes a transient buffer
+    shape — the theorem's content is terminal equality over the window;
+    the incremental drain behaviour is the consuming wall's and the chaos
+    gates' to measure, not the model's. -/
+def multiGapDeliveries : List (Positioned Nat) :=
+  [ { position := 13, operation := 4 }
+  , { position := 11, operation := 2 }
+  , { position := 14, operation := 5 }
+  , { position := 12, operation := 3 }
+  ]
+
+/-- The exact redeliver-everything-twice row: the whole positioned trace,
+    delivered twice, shuffled. -/
+def redeliverTwiceShuffledDeliveries : List (Positioned Nat) :=
+  [ { position := 12, operation := 3 }
+  , { position := 11, operation := 2 }
+  , { position := 13, operation := 4 }
+  , { position := 11, operation := 2 }
+  , { position := 13, operation := 4 }
+  , { position := 12, operation := 3 }
+  ]
 
 end Emitter
 
@@ -248,6 +297,8 @@ def Interleaves {Op : Type uV}
   contextAllowlist : FiniteSet Atom cmp
   toolkits : FiniteSet Atom cmp
   writ : FiniteSet Atom cmp
+  indexes : FiniteSet Atom cmp
+  resources : FiniteSet Atom cmp
   capabilityClass : Nat
   effortClass : Nat
   budget : Nat
@@ -265,6 +316,8 @@ def meet (left right : Policy Atom cmp) : Policy Atom cmp where
   contextAllowlist := left.contextAllowlist ∩ right.contextAllowlist
   toolkits := left.toolkits ∩ right.toolkits
   writ := left.writ ∩ right.writ
+  indexes := left.indexes ∩ right.indexes
+  resources := left.resources ∩ right.resources
   capabilityClass := Nat.min left.capabilityClass right.capabilityClass
   effortClass := Nat.min left.effortClass right.effortClass
   budget := Nat.min left.budget right.budget
@@ -277,6 +330,8 @@ structure Le (left right : Policy Atom cmp) : Prop where
     atom ∈ left.contextAllowlist -> atom ∈ right.contextAllowlist
   toolkits : forall atom, atom ∈ left.toolkits -> atom ∈ right.toolkits
   writ : forall atom, atom ∈ left.writ -> atom ∈ right.writ
+  indexes : forall atom, atom ∈ left.indexes -> atom ∈ right.indexes
+  resources : forall atom, atom ∈ left.resources -> atom ∈ right.resources
   capabilityClass : left.capabilityClass <= right.capabilityClass
   effortClass : left.effortClass <= right.effortClass
   budget : left.budget <= right.budget

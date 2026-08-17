@@ -47,6 +47,25 @@ def arrivalOrderApply {State Op : Type} (step : State -> Op -> State)
 def reorderedDeliveryVector : List (Positioned Nat) :=
   Emitter.reorderedDeliveries
 
+/-- Position coverage holds over the floor-10 two-operation window, but the
+    two arrivals at position 11 disagree on the payload: the schedule
+    violates `PositionPayloadIntegrity` while satisfying `WindowCoverage`. -/
+def payloadConflictDeliveries : List (Positioned Nat) :=
+  [ { position := 11, operation := 2 }
+  , { position := 11, operation := 999 }
+  , { position := 12, operation := 3 }
+  ]
+
+/-- Drops the position-payload-integrity premise: the shipped consumer's
+    last-write buffer is trusted on a schedule whose redeliveries conflict at
+    one position, so the drain replays whichever payload arrived last. The
+    body is exactly `guardedApply`'s — the mutation is running it outside
+    the premise that licenses it. -/
+def lastWriteBufferApply {State Op : Type} (step : State -> Op -> State)
+    (floor count : Nat) (deliveries : List (Positioned Op))
+    (initial : State) : State :=
+  applySuccessors step floor count initial (ingestSchedule deliveries)
+
 abbrev GroundPolicy := Policy Nat compare
 
 def atoms (values : List Nat) : FiniteSet Nat compare :=
@@ -57,6 +76,8 @@ def rootPolicy : GroundPolicy where
   contextAllowlist := atoms [10, 20]
   toolkits := atoms [30]
   writ := atoms [40, 50]
+  indexes := atoms [60]
+  resources := atoms [70, 71]
   capabilityClass := 3
   effortClass := 4
   budget := 10
@@ -67,6 +88,8 @@ def escalatingRequest : GroundPolicy where
   contextAllowlist := atoms [20, 21]
   toolkits := atoms [30, 31]
   writ := atoms [50, 51]
+  indexes := atoms [60, 61]
+  resources := atoms [71, 72]
   capabilityClass := 8
   effortClass := 9
   budget := 20
