@@ -1,1 +1,1 @@
-control=drop-schedule-independence;vector=two-ambient-threads;lawful-left=23,12,5;lawful-right=23,12,5;mutant-left=7,5,23;mutant-right=12,7,5;verdict=refuted
+control=drop-schedule-independence;vector=two-ambient-threads;lawful-left=23,12,5;lawful-right=23,12,5;mutant-left=23,12,5;mutant-right=12,23,5;verdict=refuted

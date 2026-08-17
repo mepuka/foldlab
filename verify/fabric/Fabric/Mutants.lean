@@ -99,6 +99,30 @@ def completionScheduleLate : List Nat := [2, 1, 0]
     indices 1, 2, 0). -/
 def completionScheduleCanonical : List Nat := [1, 2, 0]
 
+/-- Reverses each class's segments while keeping the class blocks in the
+    fixed order: lawful under the congruence half and the class-projection
+    half, refuted by the within-class half. -/
+def reversedWithinClass {Addr : Type} (segments : List (ContextSegment Addr)) :
+    List (ContextSegment Addr) :=
+  Volatility.all.flatMap fun volatility =>
+    (segments.filter fun segment => segment.volatility == volatility).reverse
+
+/-- The rival assembler built from it: drops exactly the within-class
+    order — equal-class segments leave program order — while both other
+    F7 statements keep holding at every program and valuation. -/
+def rivalAssemble {Addr Value : Type} (program : ContextProgram Addr Value)
+    (valuation : Addr -> Value) : List (ContextSegment Addr) :=
+  reversedWithinClass (renderReads program valuation)
+
+/-- The two-reads-one-class program of the within-class row. The ground
+    program's three classes are pairwise distinct, so a within-class rival
+    is byte-identical there; this vector is where it becomes visible. -/
+def twoStaticProgram : ContextProgram Nat Nat where
+  reads :=
+    [ { addr := 10, render := Emitter.decimalRender, volatility := .static }
+    , { addr := 20, render := Emitter.taggedRender, volatility := .static }
+    ]
+
 /-! ### F11 query mutants -/
 
 /-- Drops the identity tie-break: take the first k of the support in
@@ -107,15 +131,18 @@ def arrivalOrderTopK (k : Nat) (entries : List Emitter.GroundEntry) :
     List Emitter.GroundEntry :=
   (dedup entries).take k
 
-/-- Drops schedule independence: an answer with an extra ambient-thread
-    parameter it actually consults — entries seen in the ambient thread
-    are boosted ahead of the declared order. The lawful query carrier has
-    no such parameter to read. -/
+/-- Drops schedule independence and nothing else: an answer with an extra
+    ambient-thread parameter it actually consults — an entry the thread
+    has seen gets a score boost — while the declared sort and tie-break
+    stay in force. At the empty thread it is definitionally the lawful
+    top-k, so a kill is attributable to consulting the thread alone. The
+    lawful query carrier has no such parameter to read. -/
 def ambientScheduleAnswer (ambient : List Emitter.GroundEntry) (k : Nat)
     (entries : List Emitter.GroundEntry) : List Emitter.GroundEntry :=
-  let support := dedup entries
-  (support.filter (fun entry => ambient.contains entry) ++
-    support.filter (fun entry => !ambient.contains entry)).take k
+  topK
+    (fun entry =>
+      Emitter.groundScore entry + (if ambient.contains entry then 10 else 0))
+    id k entries
 
 /-- The empty ambient thread of the two-schedules row. -/
 def ambientThreadEmpty : List Emitter.GroundEntry := []

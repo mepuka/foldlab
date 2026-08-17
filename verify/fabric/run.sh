@@ -74,7 +74,7 @@ expected_laws=(
   F1CellMergeACI F1CellExtensional F1HistoryConvergence F2TraceInvariant
   F3ResumeExact F2bSerialSuccessorPremise F2bGuardedExactlyOnce F4PartitionFold
   F9PolicyMeetSemilattice F9TreeAttenuation F7AssemblyReadsOnlyDeclared
-  F7SegmentOrderStable F11TopKOfSupport F11QueryDeterministic
+  F7SegmentOrderStable F7WithinClassOrder F11TopKOfSupport F11QueryDeterministic
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+F[0-9A-Za-z_]+' \
@@ -153,6 +153,8 @@ roster=(
   render_reads_agree f7_assembly_reads_only_declared
   map_volatility_render_reads map_volatility_order_by_volatility
   f7_segment_order_stable
+  order_by_volatility_filter_class reverse_map_volatility_filter_class
+  f7_within_class_order
   dedup_mem dedup_nodup by_score_then_identity_total
   by_score_then_identity_trans by_score_then_identity_antisymm
   sorted_nodup_eq_of_same_mem f11_topk_of_support f11_state_of_anchor
@@ -163,8 +165,13 @@ roster=(
   arrival_order_assembly_breaks_class_order drop_volatility_order_killed
   drop_identity_tiebreak_keeps_duplication topk_survives_reordered_arrival
   drop_identity_tiebreak_killed
+  drop_schedule_independence_keeps_empty_thread
   drop_schedule_independence_keeps_duplication
   drop_schedule_independence_killed
+  rival_keeps_declared_reads_frame rival_keeps_class_projection
+  rival_keeps_distinct_class_ground_row
+  within_class_order_survives_two_static
+  drop_within_class_order_killed
   emitter_f7_agreement_premise emitter_f7_declared_reads
   emitter_f7_segment_order
   emitter_f11_support_premise emitter_f11_topk_support
@@ -255,6 +262,7 @@ check_control drop-declared-reads
 check_control drop-volatility-order
 check_control drop-identity-tiebreak
 check_control drop-schedule-independence
+check_control drop-within-class-order
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
 mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
@@ -520,4 +528,4 @@ if [[ "$self_test" == true ]]; then
   echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
-echo "GATE: PASS (9 law-dropping controls; 20 canonical model vectors; byte-identical regeneration)"
+echo "GATE: PASS (10 law-dropping controls; 20 canonical model vectors; byte-identical regeneration)"

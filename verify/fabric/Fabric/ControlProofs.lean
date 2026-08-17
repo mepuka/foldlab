@@ -272,24 +272,92 @@ theorem drop_identity_tiebreak_killed :
         Emitter.queryArrivalTwo := by
   decide
 
+/-- At the empty ambient thread the variant IS the lawful answer — at
+    every width and every delivered list, definitionally — so the kill
+    below is attributable to consulting the thread alone. -/
+theorem drop_schedule_independence_keeps_empty_thread
+    (k : Nat) (entries : List Emitter.GroundEntry) :
+    Mutants.ambientScheduleAnswer Mutants.ambientThreadEmpty k entries =
+      topK Emitter.groundScore id k entries :=
+  rfl
+
 /-- The ambient-thread variant retains duplication absorption under a
-    FIXED thread: the kill is attributable to consulting the thread
-    alone. -/
+    FIXED thread: its declared sort still runs over the dedup'd support. -/
 theorem drop_schedule_independence_keeps_duplication :
     Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
         Emitter.groundWidth Emitter.queryArrivalOne =
       Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
         Emitter.groundWidth Mutants.queryArrivalOneExact := by
-  decide
+  unfold Mutants.ambientScheduleAnswer topK
+  rw [show dedup Emitter.queryArrivalOne = dedup Mutants.queryArrivalOneExact
+    from by decide]
 
 /-- The two-schedules row kills the variant: one anchored support, one
     query, two ambient threads, two answers. The lawful algebra has no
-    thread parameter to vary. -/
+    thread parameter to vary, and the boosted side still emits its answer
+    through the declared sort — the divergence is the thread read alone. -/
 theorem drop_schedule_independence_killed :
     Mutants.ambientScheduleAnswer Mutants.ambientThreadEmpty
         Emitter.groundWidth Emitter.queryArrivalOne ≠
       Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
         Emitter.groundWidth Emitter.queryArrivalOne := by
+  simp [Mutants.ambientScheduleAnswer, Mutants.ambientThreadEmpty,
+    Mutants.ambientThreadBoosting, topK, dedup, byScoreThenIdentity,
+    List.mergeSort, Emitter.groundScore, Emitter.groundWidth,
+    Emitter.queryArrivalOne]
+
+/-- The rival keeps the congruence half at every program: valuations that
+    agree on the declared addresses give it one output, so the kill below
+    is not attributable to an undeclared read. -/
+theorem rival_keeps_declared_reads_frame
+    {Addr Value : Type} (program : ContextProgram Addr Value)
+    {left right : Addr -> Value}
+    (agree : forall addr, addr ∈ program.addresses -> left addr = right addr) :
+    Mutants.rivalAssemble program left = Mutants.rivalAssemble program right := by
+  unfold Mutants.rivalAssemble
+  rw [render_reads_agree program agree]
+
+/-- The rival keeps the class-projection half at every program and
+    valuation: reversing inside a class cannot move the class projection,
+    so the kill below is not attributable to the stability half. -/
+theorem rival_keeps_class_projection
+    {Addr Value : Type} (program : ContextProgram Addr Value)
+    (valuation : Addr -> Value) :
+    (Mutants.rivalAssemble program valuation).map ContextSegment.volatility =
+      stableClassOrder (program.reads.map ContextRead.volatility) := by
+  rw [<- map_volatility_render_reads program valuation]
+  unfold Mutants.rivalAssemble Mutants.reversedWithinClass stableClassOrder
+  rw [List.map_flatMap]
+  congr 1
+  funext volatility
+  rw [reverse_map_volatility_filter_class, List.filter_map]
+  rfl
+
+/-- On the committed ground program — classes pairwise distinct — the
+    rival is byte-identical to lawful assembly: no prior corpus row or
+    control could see it. -/
+theorem rival_keeps_distinct_class_ground_row :
+    Mutants.rivalAssemble Emitter.contextProgram Emitter.valuationOne =
+      assemble Emitter.contextProgram Emitter.valuationOne := by
+  decide
+
+/-- The lawful assembly's static-class subsequence is the program-order
+    rendering's — the two-reads-one-class vector is an F7 instance. -/
+theorem within_class_order_survives_two_static :
+    (assemble Mutants.twoStaticProgram Emitter.valuationOne).filter
+        (fun segment => segment.volatility == Volatility.static) =
+      (renderReads Mutants.twoStaticProgram Emitter.valuationOne).filter
+        (fun segment => segment.volatility == Volatility.static) :=
+  f7_within_class_order Mutants.twoStaticProgram Emitter.valuationOne .static
+
+/-- The two-reads-one-class row kills the rival: it reverses the static
+    class's two segments — bytes neither the congruence half nor the
+    class-projection half can see. -/
+theorem drop_within_class_order_killed :
+    (Mutants.rivalAssemble Mutants.twoStaticProgram Emitter.valuationOne).filter
+        (fun segment => segment.volatility == Volatility.static) ≠
+      (renderReads Mutants.twoStaticProgram Emitter.valuationOne).filter
+        (fun segment => segment.volatility == Volatility.static) := by
   decide
 
 end Fabric

@@ -113,19 +113,35 @@ def F7AssemblyReadsOnlyDeclared {Addr : Type uH} {Value : Type uV} : Prop :=
 
 /-- F7, stability half: segment order is the stable class sort of the
     program's own declared order — a function of the program, never of
-    evaluation schedule. Two lawful implementations cannot disagree on
-    equal-class order. -/
+    evaluation schedule. This half pins the class projection only; the
+    within-class half below pins equal-class order. -/
 def F7SegmentOrderStable {Addr : Type uH} {Value : Type uV} : Prop :=
   forall (program : ContextProgram Addr Value) (valuation : Addr -> Value),
     (assemble program valuation).map ContextSegment.volatility =
       stableClassOrder (program.reads.map ContextRead.volatility)
+
+/-- F7, within-class half: inside each volatility class, assembly keeps
+    the program's declared relative order — the per-class subsequence of
+    the assembled value is exactly the per-class subsequence of the
+    program-order rendering. Without it, a rival that reorders equal-class
+    segments satisfies both other halves and still moves bytes; with it,
+    the class projection and the per-class subsequences determine the
+    assembled list completely, so two lawful implementations cannot
+    disagree on equal-class order. -/
+def F7WithinClassOrder {Addr : Type uH} {Value : Type uV} : Prop :=
+  forall (program : ContextProgram Addr Value) (valuation : Addr -> Value)
+      (volatility : Volatility),
+    (assemble program valuation).filter
+        (fun segment => segment.volatility == volatility) =
+      (renderReads program valuation).filter
+        (fun segment => segment.volatility == volatility)
 
 /-- F11, list half: under the named distinctness premise, top-k is a
     function of the delivered support — permutation and duplication of the
     anchored entry list cannot move it. Stated over raw lists, where an
     insertion-order mutant is refutable; over the extensional set carrier
     the statement would be discharged by the carrier and falsify nothing. -/
-def F11TopKOfSupport {Entry : Type uV} [BEq Entry]
+def F11TopKOfSupport {Entry : Type uV} [BEq Entry] [LawfulBEq Entry]
     (score identity : Entry -> Nat) : Prop :=
   forall (k : Nat) (left right : List Entry),
     IdentityDistinct identity left -> SameDeliveredSet left right ->
@@ -134,7 +150,7 @@ def F11TopKOfSupport {Entry : Type uV} [BEq Entry]
 /-- F11, composed: the rendered answer at an anchored, resumed support is
     a function of (support, query) — invariant under re-anchoring by F3
     and under permutation/duplication of the delivered support. -/
-def F11QueryDeterministic {Entry : Type uV} [BEq Entry]
+def F11QueryDeterministic {Entry : Type uV} [BEq Entry] [LawfulBEq Entry]
     (score identity : Entry -> Nat) (render : List Entry -> String) : Prop :=
   forall (k : Nat)
       (prefixLeft suffixLeft prefixRight suffixRight : List Entry),

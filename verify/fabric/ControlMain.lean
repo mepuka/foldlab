@@ -92,7 +92,21 @@ def main (args : List String) : IO UInt32 := do
         (renderEntryList (Mutants.ambientScheduleAnswer
           Mutants.ambientThreadBoosting Emitter.groundWidth
           Emitter.queryArrivalOne))
+  | ["drop-within-class-order"] =>
+      showDriftControl "drop-within-class-order" "two-reads-one-class"
+        (renderSegments ((assemble Mutants.twoStaticProgram
+          Emitter.valuationOne).filter fun segment =>
+            segment.volatility == Volatility.static))
+        (renderSegments ((renderReads Mutants.twoStaticProgram
+          Emitter.valuationOne).filter fun segment =>
+            segment.volatility == Volatility.static))
+        (renderSegments ((Mutants.rivalAssemble Mutants.twoStaticProgram
+          Emitter.valuationOne).filter fun segment =>
+            segment.volatility == Volatility.static))
+        (renderSegments ((renderReads Mutants.twoStaticProgram
+          Emitter.valuationOne).filter fun segment =>
+            segment.volatility == Volatility.static))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence)"
+        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence|drop-within-class-order)"
       return 2

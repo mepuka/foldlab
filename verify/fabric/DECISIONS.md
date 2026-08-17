@@ -283,7 +283,7 @@ query-at-reanchored-state), `query-admission` (undeclared-seed-refused) —
 after the existing fifteen, so committed row bytes and the self-test's
 planted row indices stay fixed; the header count object gains the three
 kinds and moves `vectors` to 20. Ground query data: support {5, 7, 12, 23}
-under the decade-bucket score (a three-way tie at score 0 exercises the
+under the decade-bucket score (a two-way tie at score 0 exercises the
 identity tie-break), k = 3, both arrivals carrying one duplication, the
 re-anchored row splitting the two schedules at different floors.
 Alternatives: one kind per row; folding admission into `alphabet-refusal`.
@@ -291,6 +291,42 @@ Why: family identity is what the slice-1b/2a walls key on, and the
 admission row parallels the ACI intruder row's refusal shape.
 **Load-bearing? maybe** — the names and kinds are the consuming walls'
 family list; flagged to the coordinator in the closing report.
+
+### T25. State the within-class half; rebuild the thread mutant inside the declared sort
+
+Decided: F7 gains its third statement, `F7WithinClassOrder` — the per-class
+subsequence of the assembled value is exactly the program-order rendering's
+— after the M2 review (DEV-729) exhibited a rival assembler
+(`rivalAssemble`: reverse each class block) that satisfies both prior
+halves at every program and valuation yet moves bytes on any program with
+two reads in one class; the ground program's classes are pairwise
+distinct, so no prior row or control could see it
+(`rival_keeps_distinct_class_ground_row`). The proof is the filter/flatMap
+absorption `order_by_volatility_filter_class`; the tenth control kills the
+rival on a committed two-reads-one-class vector whose drift line compares
+two genuinely different presentations (assembled value vs program-order
+rendering, both filtered to the class), while general retained-side
+theorems keep the rival lawful under congruence and class projection. With
+the third statement, class projection plus per-class subsequences
+determine the assembled list — which is what licenses T20's sentence that
+the class-filter order is the byte layout every lawful assembler must
+reproduce. In the same round the ninth mutant is rebuilt as a score boost
+INSIDE the declared sort: the old partition-then-take shape also dropped
+the declared order (review finding — at the empty thread it was
+definitionally the eighth mutant), where the rebuilt variant is
+definitionally the lawful `topK` at the empty thread
+(`drop_schedule_independence_keeps_empty_thread`, a generic identity, not
+a concrete pin), so its kill is attributable to consulting the thread
+alone. Also from the review: both F11 law statements now carry
+`[LawfulBEq Entry]` — as written they were refutable at an unlawful
+instance while their theorems assumed lawfulness — and T24's tie count is
+corrected to two-way. Alternatives: stop claiming within-class order in
+the three prose sites (Laws docstring, T20, README) instead of stating
+it; keep the double-drop ninth with amended prose. Why: slice 2a's
+byte-identical reassembly wall keys on exactly the within-class claim,
+and a mutant that drops two laws cannot attribute its kill.
+**Load-bearing? yes** — the third statement is what turns "two lawful
+assemblers agree byte-for-byte" from a sentence into a theorem.
 
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 

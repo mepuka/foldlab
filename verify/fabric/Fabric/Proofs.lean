@@ -707,13 +707,100 @@ theorem map_volatility_order_by_volatility
   rfl
 
 /-- F7: segment order is the stable class sort of the program's declared
-    order — a function of the program alone, so two lawful
-    implementations cannot disagree on equal-class order. -/
+    order — a function of the program alone. This half constrains the
+    class projection; the within-class half below constrains equal-class
+    order. -/
 theorem f7_segment_order_stable :
     Laws.F7SegmentOrderStable (Addr := Addr) (Value := Value) := by
   intro program valuation
   unfold assemble
   rw [map_volatility_order_by_volatility, map_volatility_render_reads]
+
+/-- Ordering by volatility leaves each class's subsequence untouched: the
+    class filter absorbs the stable ordering, because exactly one class
+    block survives the filter and that block is itself a filter of the
+    input. -/
+theorem order_by_volatility_filter_class
+    (segments : List (ContextSegment Addr)) (volatility : Volatility) :
+    (orderByVolatility segments).filter
+        (fun segment => segment.volatility == volatility) =
+      segments.filter (fun segment => segment.volatility == volatility) := by
+  have distinctClassNil : forall (kept : Volatility), kept ≠ volatility ->
+      (segments.filter fun segment =>
+        (segment.volatility == volatility) && (segment.volatility == kept)) =
+        [] := by
+    intro kept distinct
+    refine List.filter_eq_nil_iff.mpr fun segment _ both => distinct ?_
+    simp only [Bool.and_eq_true] at both
+    exact (beq_iff_eq.mp both.2).symm.trans (beq_iff_eq.mp both.1)
+  have sameClassSelf :
+      (segments.filter fun segment =>
+        (segment.volatility == volatility) &&
+          (segment.volatility == volatility)) =
+        segments.filter fun segment => segment.volatility == volatility :=
+    List.filter_congr fun segment _ => Bool.and_self _
+  unfold orderByVolatility
+  rw [List.filter_flatMap]
+  simp only [List.filter_filter, Volatility.all, List.flatMap_cons,
+    List.flatMap_nil, List.append_nil]
+  cases volatility
+  case static =>
+    rw [sameClassSelf, distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil]
+  case policy =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .session (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case session =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case live =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case turn =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide),
+      distinctClassNil .live (by decide)]
+    simp only [List.nil_append]
+
+/-- The class projection of one class's filtered segments is constant, so
+    reversing the filtered segments cannot move that projection. -/
+theorem reverse_map_volatility_filter_class
+    (segments : List (ContextSegment Addr)) (volatility : Volatility) :
+    ((segments.filter fun segment =>
+        segment.volatility == volatility).reverse).map
+        ContextSegment.volatility =
+      (segments.filter fun segment =>
+        segment.volatility == volatility).map ContextSegment.volatility := by
+  rw [List.map_reverse]
+  have allSame : forall clazz,
+      clazz ∈ (segments.filter fun segment =>
+        segment.volatility == volatility).map ContextSegment.volatility ->
+      clazz = volatility := by
+    intro clazz member
+    obtain ⟨segment, memberFilter, rfl⟩ := List.mem_map.mp member
+    exact beq_iff_eq.mp (List.mem_filter.mp memberFilter).2
+  rw [List.eq_replicate_of_mem allSame, List.reverse_replicate]
+
+/-- F7: within every volatility class, assembly preserves the program's
+    declared relative order — the per-class subsequence of the assembled
+    value is the program-order rendering's. With the class-projection
+    half this pins the assembled byte layout completely. -/
+theorem f7_within_class_order :
+    Laws.F7WithinClassOrder (Addr := Addr) (Value := Value) := by
+  intro program valuation volatility
+  unfold assemble
+  exact order_by_volatility_filter_class (renderReads program valuation)
+    volatility
 
 end F7
 

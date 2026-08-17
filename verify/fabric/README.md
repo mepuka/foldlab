@@ -36,10 +36,13 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   F3 is checkpoint resumption; F4 is partition/interleaving equivalence under
   a declared commutative algebra; F9 is the full greatest-lower-bound law plus
   descendant attenuation over ten policy components, the `indexes` and
-  `resources` allowlists included. F7 has two halves stated separately:
-  assembly reads only its declared addresses (two valuations agreeing
-  there assemble one value), and segment order is the stable class sort
-  of the program's own declared order. F11 also has two halves: top-k is
+  `resources` allowlists included. F7 has three statements stated
+  separately: assembly reads only its declared addresses (two valuations
+  agreeing there assemble one value), segment order is the stable class
+  sort of the program's own declared order (the class projection), and
+  within each class assembly keeps the program's declared relative order
+  (the per-class subsequence) — the projection and the subsequences
+  together determine the assembled byte layout. F11 has two halves: top-k is
   a function of the delivered support — quantified over raw lists under
   `SameDeliveredSet`, with the named `IdentityDistinct` premise making
   the identity tie-break antisymmetric — and the composed law: the
@@ -54,14 +57,16 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   permutation lemmas. F9 proves set intersection and numeric minimum
   componentwise, then follows an action-tree descendant derivation. F7's
   congruence is a map congruence over the declared reads; its stability
-  half is a map/filter commutation, not an `rfl`. F11's list half walks
+  half is a map/filter commutation, not an `rfl`; its within-class half
+  is the filter/flatMap absorption `order_by_volatility_filter_class` —
+  the class filter erases the stable ordering. F11's list half walks
   the canonical-form induction: both sorted dedups are duplicate-free
   presentations of one support, and sorted + duplicate-free + same
   members forces equality, with antisymmetry discharged from
   `IdentityDistinct` exactly where the tie-break needs it. The composed
   F11 chains F3 (`f11_state_of_anchor`), the support fold, and the list
   half under a rendered conclusion.
-- `Fabric/Mutants.lean` contains nine variants, each dropping exactly one
+- `Fabric/Mutants.lean` contains ten variants, each dropping exactly one
   required law or premise half. The fourth drops the successor discipline and
   is killed by the
   order-sensitive 6-before-5 row; it does not claim to drop the redundant
@@ -74,13 +79,19 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   evaluation completion schedule and dies on the two-schedules row. The
   eighth takes the first k in arrival order — insertion order as the
   tie-break — and dies on the two-arrival-orders row. The ninth consults
-  an ambient thread parameter the lawful query carrier does not have and
-  dies on the two-ambient-threads row.
+  an ambient thread parameter the lawful query carrier does not have —
+  a thread-seen entry gets a score boost inside the otherwise-declared
+  sort, so at the empty thread it is definitionally the lawful top-k —
+  and dies on the two-ambient-threads row. The tenth reverses each
+  volatility class's segments while keeping the class blocks: lawful
+  under the congruence and class-projection statements at every program,
+  it dies on the two-reads-one-class row that the within-class statement
+  pins.
   `Fabric/ControlProofs.lean` proves the retained laws and the
   named counterexamples. `ControlMain.lean` emits the committed counterexample
-  traces checked by the gate; the four M2 kills use a drift-format line,
-  refuted when the mutant's output moves across the row's two
-  presentations while the lawful output holds.
+  traces checked by the gate; the five assembly/query kills use a
+  drift-format line, refuted when the mutant's output moves across the
+  row's two presentations while the lawful output holds.
 - `Fabric/Canonical.lean`, `Fabric/Corpus.lean`, `Fabric/Emit.lean`, and
   `Main.lean` are the
   executable emitter. Object keys are sorted; strings occupy a fixed safe
@@ -100,7 +111,7 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   The gate refuses a vector whose `(kind, name, witness)` triple is not pinned or
   whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
-  roster, proof footprint, nine negative controls, pinned vector counts, and
+  roster, proof footprint, ten negative controls, pinned vector counts, and
   byte-identical regeneration.
 
 ## How a trace walks through `fold`
@@ -144,12 +155,14 @@ instead.
 `assemble program valuation` renders each declared read at its address and
 presents the segments in the fixed class order (static, policy, session,
 live, turn), equal-class segments keeping program order. Determinism is
-two theorems, not a signature: valuations that agree on the declared
+three theorems, not a signature: valuations that agree on the declared
 addresses assemble one value (so a variant consulting the undeclared
 timestamp address is refutable — and dies on the committed
-two-valuations row), and the segment order is a function of the program
+two-valuations row), the segment order is a function of the program
 alone (so a variant ordering by evaluation completion dies on the
-two-schedules row).
+two-schedules row), and each class's subsequence is the program-order
+rendering's (so a rival that reverses inside a class — invisible to the
+other two statements — dies on the two-reads-one-class row).
 
 A query answers over an anchored support: the state is the entry list the
 admitted deliveries appended, resumption is F3, and `topK` dedups the
