@@ -7,6 +7,11 @@ import { Schema } from "effect"
 const Ports = Schema.Struct({ nats: Schema.Array(Schema.String) })
 const goRoot = resolve(import.meta.dir, "../../../go")
 
+export interface NatsServerBinary {
+  readonly binary: string
+  readonly cleanup: () => Promise<void>
+}
+
 export interface NatsHarness {
   readonly url: string
   readonly directory: string
@@ -22,8 +27,9 @@ const waitForPorts = async (directory: string): Promise<string> => {
   throw new Error("nats-server did not write its ports file within 5 seconds")
 }
 
-export const startNatsHarness = async (): Promise<NatsHarness> => {
-  const directory = await mkdtemp(join(tmpdir(), "plait-nats-"))
+/** Builds the pinned upstream nats-server once from the Go module lock. */
+export const buildServerBinary = async (): Promise<NatsServerBinary> => {
+  const directory = await mkdtemp(join(tmpdir(), "plait-nats-bin-"))
   const binary = join(directory, process.platform === "win32" ? "nats-server.exe" : "nats-server")
   const build = Bun.spawnSync({
     cmd: ["go", "build", "-o", binary, "github.com/nats-io/nats-server/v2"],
@@ -40,10 +46,25 @@ export const startNatsHarness = async (): Promise<NatsHarness> => {
     await rm(directory, { recursive: true, force: true })
     throw new Error(`wrong nats-server pin: ${version.stdout.toString()}${version.stderr.toString()}`)
   }
+  return {
+    binary,
+    cleanup: async () => {
+      await rm(directory, { recursive: true, force: true })
+    },
+  }
+}
 
+/**
+ * Starts one fresh single-node JetStream server on a fresh file store.
+ * Row isolation is a fresh server, never bucket destroy+recreate: bucket
+ * lifecycle mutation resets the revision order, which is exactly the
+ * fixed-incarnation edge the register's claims exclude (seam rule 7).
+ */
+export const startNatsServer = async (prebuilt: string): Promise<NatsHarness> => {
+  const directory = await mkdtemp(join(tmpdir(), "plait-nats-"))
   const server = Bun.spawn({
     cmd: [
-      binary,
+      prebuilt,
       "-js",
       "-sd",
       join(directory, "store"),
@@ -81,6 +102,26 @@ export const startNatsHarness = async (): Promise<NatsHarness> => {
     await server.exited
     await rm(directory, { recursive: true, force: true })
     throw error
+  }
+}
+
+/** Builds the pinned binary and starts one server; stop() cleans up both. */
+export const startNatsHarness = async (): Promise<NatsHarness> => {
+  const built = await buildServerBinary()
+  let harness: NatsHarness
+  try {
+    harness = await startNatsServer(built.binary)
+  } catch (error) {
+    await built.cleanup()
+    throw error
+  }
+  return {
+    url: harness.url,
+    directory: harness.directory,
+    stop: async () => {
+      await harness.stop()
+      await built.cleanup()
+    },
   }
 }
 

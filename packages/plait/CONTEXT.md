@@ -27,3 +27,18 @@ the envelope.
 The transport-free Effect service through which callers publish canonical
 envelopes or subscribe to verified ones. Its live layer owns the NATS
 connection in `Scope`; its fixture layer exercises the same service tag.
+
+**Commitment register**:
+The per-work-digest authority with five actions: grant, renew, commit,
+expire-steal, and observe. Its fencing token is the KV revision order; the
+holder name is descriptive and never decides authority.
+
+**Landed outcome**:
+The unique terminal value stored with the fencing token that was current when
+it committed. Once present, no later commit or steal is admitted within a
+fixed backing-stream incarnation; administrative lifecycle mutation is
+outside the credential guard.
+
+**Zombie**:
+A dispossessed holder that completes after a steal. Its stale token is evidence
+for refusal, regardless of holder identity.

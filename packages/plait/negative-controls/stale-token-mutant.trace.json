@@ -1,0 +1,14 @@
+{
+  "control": "runtime-stale-token-mutant",
+  "corpusRow": "zombie-stale-commit",
+  "corpusVerdict": "refused",
+  "mutantVerdict": "accepted",
+  "landed": { "token": 1, "value": "zombie" },
+  "observedAfterMutant": {
+    "token": 1,
+    "holder": "holder-b",
+    "outcome": { "token": 1, "value": "zombie" }
+  },
+  "zombieLandingsInHistory": 1,
+  "violatedLaw": "no stale token ever lands"
+}

@@ -1,0 +1,58 @@
+# Veil cache-fit measurement at first landing (2026-08-17, zstd -3):
+# lake deps 7,596,303,277 expanded -> 2,555,647,160 compressed; the pinned
+# Lean 4.28.0 toolchain 2,889,878,762 expanded -> 688,285,068 compressed.
+# Combined compressed fit: 3,243,932,228 bytes (3.021 GiB), below GitHub's
+# 10 GiB ceiling. The weekly canary deliberately restores no cache.
+name: fabric-veil-gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "verify/fabric-veil/**"
+      - "packages/plait/fixtures/register-traces.ndjson"
+      - ".github/workflows/fabric-veil-gate.yml"
+  pull_request:
+    paths:
+      - "verify/fabric-veil/**"
+      - "packages/plait/fixtures/register-traces.ndjson"
+      - ".github/workflows/fabric-veil-gate.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "31 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fabric-veil-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reconstructed-smt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Restore measured Lean and Lake dependency cache
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.elan
+            verify/fabric-veil/.lake/packages
+          key: fabric-veil-${{ runner.os }}-${{ hashFiles('verify/fabric-veil/lean-toolchain', 'verify/fabric-veil/lake-manifest.json', 'verify/fabric-veil/setup-windows.ps1') }}
+
+      - name: Install elan
+        run: |
+          if ! command -v elan >/dev/null 2>&1; then
+            curl -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          fi
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reconstructed-SMT gate
+        run: bash verify/fabric-veil/run.sh

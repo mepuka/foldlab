@@ -1,0 +1,10 @@
+{
+  "corpusRow": "zombie-stale-commit",
+  "steps": [
+    "ts-holder:grant",
+    "harness:hard-kill-ts-holder",
+    "go-contender:expire-steal",
+    "ts-zombie:commit-stale-token",
+    "go-contender:commit-current-token"
+  ]
+}

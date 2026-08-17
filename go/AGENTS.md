@@ -1,7 +1,8 @@
 # go/ — agent contract (substrate)
 
-Slimmed 2026-08-15 to the focus substrate: `canonical/`, `journal/`,
-and `cmd/jcsprobe/`. The stream/transform hot path, the effector, the
+Slimmed 2026-08-15 to the focus substrate, then extended by DEV-711 with a
+fresh `register/` twin and `cmd/registerwall/`: `canonical/`, `journal/`,
+`register/`, and the two commands. The stream/transform hot path, the archived effector, the
 gauntlet lanes, and their commands live at tag
 `archive/pre-estate-focus`. Read root `AGENTS.md` first; scoped laws:
 
@@ -24,3 +25,6 @@ gauntlet lanes, and their commands live at tag
   spawned as a persistent process by `packages/core/test/jcsProbe.ts`.
   Its line protocol is part of the wall; a change to it is a change to
   the wall.
+- `register/` is fresh code, not restored `go/effector`. It has exactly the
+  five F5 actions and no watch surface; `cmd/registerwall/` exists only for the
+  heterogeneous hard-kill/steal/zombie schedule.

@@ -3,6 +3,31 @@
 Task-local placeholders per the numbering rule in `proto/DECISIONS.md`;
 repository D-numbers are assigned at merge.
 
+### T0. DEV-711 register mapping and replay wall
+
+Decided: `Register.ts` owns the public `Registers` service and
+`src/internal/registers.ts` owns NATS KV. The token is the key's revision-CAS
+order. Commit stores the lease token in its terminal payload even though the
+storing PUT advances the backing stream revision; observe reports the landed
+lease token. `flb-fab-reg` is file-backed R=1, history 64, TTL 0, max bytes -1.
+Every generated row audits its history for at most one landing and no zombie.
+Row isolation is one fresh server — a fresh backing-stream incarnation — per
+row, the Go wall's shape; bucket destroy+recreate is never an isolation
+primitive (it is the seam-rule-7 incarnation edge, and building on it made
+the round-1 wall nondeterministic). The wall's numeric token equality with
+the model counter is an artifact of that envelope (one key, fresh server);
+an interleaved-writer wall must assert order-isomorphism instead. Failed CAS
+appends are classified by operation context plus code and reconciled by
+read-back comparison, never by expecting a duplicate PubAck; transport
+causes are preserved and never wear fencing laws. The hard-kill wall reuses
+`zombie-stale-commit`: TS grants, Go steals, the TS zombie refuses, and Go
+lands the current-token outcome. The runtime mutant is the real commit path
+with its token comparison deleted, run against the live bucket, killed by
+the `zombie-stale-commit` vector with its executed trace committed
+(`negative-controls/stale-token-mutant.trace.json`); the Lean gate kills
+hand-edited corpus rows by byte comparison. **Load-bearing? yes** — this
+is the concrete F5-to-KV mapping and its executable wall.
+
 ### T1. Build the pinned upstream NATS server command from the Go module lock
 
 Decided: the round-trip harness builds `github.com/nats-io/nats-server/v2`
@@ -56,3 +81,21 @@ server default; expose a caller option. Why: `PublishedEnvelope.duplicate` is a
 public consequence of digest-as-message-id, so its time bound must not move
 silently with a server default. **Load-bearing? yes** — the window defines the
 bounded interval over which a repeated envelope is one stored frame.
+
+### T6. The incarnation pin at register-open is deferred, recorded
+
+Decided: the register does NOT yet record the backing stream's creation time
+at open or refuse on its mismatch. Every register claim therefore carries the
+bound "within a fixed backing-stream incarnation; administrative lifecycle
+mutation is outside the credential guard" (module JSDoc, both CONTEXT files,
+both READMEs, and the proposed ledger row). Alternatives: a per-operation
+stream-info comparison (one extra round trip per action); external pin
+storage (new machinery no consumer asked for); epoch-bearing tokens (ruled
+OUT for v0 by the seam-rule-7 ruling). Why: a pin held only inside the
+bucket dies with the bucket, so a real guard needs either per-operation
+verification cost or cross-process state — both are un-grilled machinery;
+the ruling explicitly admits a recorded deferral, and the DEV-716 ACL suite
+(application credentials cannot delete or recreate streams and buckets) is
+the other half of the guard. **Load-bearing? yes** — until the pin or the
+ACL suite lands, the bound sentence is the only fence around lifecycle
+mutation.
