@@ -15,6 +15,14 @@ document changes no code, no ledger row, no dispatch spec, and no seam
 status. Findings it raises against the ratified records are FILED in
 §11, not fixed.
 
+> **Adopted 2026-08-17** under the ratified grill sheet
+> ([2026-08-17-plait-grill-sheet.md](2026-08-17-plait-grill-sheet.md),
+> item 1/G13, all items on recommended options): C10–C11 join the
+> construct set; F11/F12 enter the proof plan as separate,
+> minimally-scoped candidate statements (item 12); the composition gap
+> table is the program's readiness map, its two deliberately-open rows
+> kept open (item 10 defers declaration-upgrade to its owner).
+
 Confidence tiers, as parts 1–2: **ratified** (grill record or standing
 ruling) · **proven** (Lean theorem behind a green gate) · **measured**
 (ran-it result in a durable estate document) · **shipped** (code on

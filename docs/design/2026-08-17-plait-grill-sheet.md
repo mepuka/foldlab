@@ -1,5 +1,10 @@
 # Plait — consolidated grill sheet (part 3 + the standing ruling queue)
 
+> **RATIFIED 2026-08-17 — operator: "Grill sheet is ratified with given
+> recommendations."** Every item below lands on its recommended option;
+> this sheet is now the ruling record for items 1–21 (G13–G24
+> included). The probe-ledger conditions stand as recorded.
+
 Drafted 2026-08-17 for the operator's grill. **Twenty-one open items**,
 one decision at a time, recommended option first, alternatives priced
 with cost and reversal, one line on what lands if ratified — the house
