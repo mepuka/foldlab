@@ -1,9 +1,11 @@
-# Plait — the model-completion slice and the parallel fan-out (planning draft)
+# Plait — the model-completion slice and the parallel fan-out
 
-Status: PLANNING DRAFT for the coordinator's grill, 2026-08-17. Changes no
-code, no record, no board state. Every recommendation is priced with
-alternatives; every genuinely new decision is a numbered grill item in §E.
-Nothing already ratified is reopened.
+Status: **RATIFIED 2026-08-17** — the operator ruled all thirteen §E grill
+items on their recommended options ("I'll go with recommendations for
+now. Lets start running and we shouldnt stop until M3 is complete."),
+with the standing directive that execution runs continuously until wave
+M3 merges. Every recommendation is priced with alternatives; nothing
+previously ratified was reopened.
 
 **The operator's charge, restated:** scope the near-term work so
 application-level work proceeds in parallel DURING the next slice of model
