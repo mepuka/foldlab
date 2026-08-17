@@ -26,6 +26,22 @@ def renderEntryList (entries : List Nat) : String :=
 def encodeTrace (trace : List Nat) : Nat :=
   trace.foldl (fun encoded operation => encoded * 10 + operation) 0
 
+/-- String-valued single-comparison control line: refuted when the
+    mutant's output differs from the lawful output on the named row. -/
+def showValueControl (name vector lawful mutant : String) : IO UInt32 := do
+  IO.println s!"control={name};vector={vector};lawful={lawful};mutant={mutant};verdict={if lawful == mutant then "survived" else "refuted"}"
+  return if lawful == mutant then 1 else 0
+
+def showResolution : Resolution Nat -> String
+  | .bound digest => s!"bound:{digest}"
+  | .absent => "absent"
+  | .ambiguous listing => s!"ambiguous:{renderEntryList listing}"
+  | .sealedAt token digest => s!"sealed-at:{token}:{digest}"
+
+def renderCellList (cell : Emitter.GroundCell) : String :=
+  String.intercalate "|" (cell.toList.map fun observation =>
+    s!"{observation.1}:{observation.2}")
+
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["drop-idempotence"] =>
@@ -106,7 +122,44 @@ def main (args : List String) : IO UInt32 := do
         (renderSegments ((renderReads Mutants.twoStaticProgram
           Emitter.valuationOne).filter fun segment =>
             segment.volatility == Volatility.static))
+  | ["drop-join-minimality"] =>
+      showValueControl "drop-join-minimality" "padded-join-not-least"
+        (renderCellList (Cell.merge Mutants.joinLeft Mutants.joinRight))
+        (renderCellList (Mutants.paddedJoin Mutants.joinLeft Mutants.joinRight))
+  | ["drop-seals-well-fenced"] =>
+      showDriftControl "drop-seals-well-fenced" "two-seals-one-token"
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Emitter.sealOrderOne))
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Emitter.sealOrderTwo))
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Mutants.unfencedSealOrderOne))
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Mutants.unfencedSealOrderTwo))
+  | ["drop-ambiguity-refusal"] =>
+      showDriftControl "drop-ambiguity-refusal" "two-bind-orders"
+        (showResolution (resolve id (foldBindings Emitter.bindingCmp
+          Emitter.bindOrderOne) Emitter.groundPetname []))
+        (showResolution (resolve id (foldBindings Emitter.bindingCmp
+          Emitter.bindOrderTwo) Emitter.groundPetname []))
+        (showResolution (Mutants.lwwResolve Emitter.bindOrderOne
+          Emitter.groundPetname))
+        (showResolution (Mutants.lwwResolve Emitter.bindOrderTwo
+          Emitter.groundPetname))
+  | ["drop-token-arbitration"] =>
+      showValueControl "drop-token-arbitration" "permuted-seal-holder-disagrees"
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Emitter.sealOrderOne))
+        (showResolution (Mutants.holderArbitratedResolve Emitter.sealOrderOne))
+  | ["drop-greatest-token"] =>
+      showDriftControl "drop-greatest-token" "permuted-seal"
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Emitter.sealOrderOne))
+        (showResolution (resolve id Emitter.groundDirectory
+          Emitter.groundPetname Emitter.sealOrderTwo))
+        (showResolution (Mutants.lastArrivalResolve Emitter.sealOrderOne))
+        (showResolution (Mutants.lastArrivalResolve Emitter.sealOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence|drop-within-class-order)"
+        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence|drop-within-class-order|drop-join-minimality|drop-seals-well-fenced|drop-ambiguity-refusal|drop-token-arbitration|drop-greatest-token)"
       return 2

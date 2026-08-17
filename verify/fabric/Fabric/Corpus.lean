@@ -599,6 +599,181 @@ def renderDeclaredSeedCandidate : String :=
     , { key := "seed", value := nat 7 }
     ]
 
+/-! ## F12 resolution rows -/
+
+def renderSeal (observed : Seal Nat) : String :=
+  object
+    [ { key := "digest", value := nat observed.digest }
+    , { key := "holder", value := nat observed.holder }
+    , { key := "token", value := nat observed.token }
+    ]
+
+def renderSeals (seals : List (Seal Nat)) : String :=
+  array (seals.map renderSeal)
+
+def renderBinding (binding : Binding Nat Nat) : String :=
+  object
+    [ { key := "digest", value := nat binding.2 }
+    , { key := "name", value := nat binding.1 }
+    ]
+
+def renderBindEvents (events : List (Binding Nat Nat)) : String :=
+  array (events.map renderBinding)
+
+def renderDirectory (directory : Emitter.GroundDirectory) : String :=
+  array (directory.toList.map renderBinding)
+
+def renderResolution : Resolution Nat -> String
+  | .bound digest => object
+      [ { key := "digest", value := nat digest }
+      , { key := "verdict", value := string "bound" }
+      ]
+  | .absent => object [{ key := "verdict", value := string "absent" }]
+  | .ambiguous listing => object
+      [ { key := "candidates", value := array (listing.map nat) }
+      , { key := "verdict", value := string "ambiguous" }
+      ]
+  | .sealedAt token digest => object
+      [ { key := "digest", value := nat digest }
+      , { key := "token", value := nat token }
+      , { key := "verdict", value := string "sealed-at" }
+      ]
+
+/-- The stale-rebind row's provenance for its well-fenced seal history:
+    the Veil register package's exported corpus vintage. -/
+def veilCorpusCitation : String :=
+  "F5 I1/I2, verify/fabric-veil: packages/plait/fixtures/register-traces.ndjson (15 rows, sha256 376503be58dcaa01)"
+
+def f12AbsentVector
+    (absentRefusal : resolve id Emitter.groundDirectory Emitter.absentPetname
+      ([] : List (Seal Nat)) = .absent) : Vector :=
+  let resolution :=
+    resolve id Emitter.groundDirectory Emitter.absentPetname []
+  { name := "resolution-absent-name"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_absent"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.absentPetname }
+      , { key := "seals", value := renderSeals [] }
+      ]
+    verdict := object
+      [ { key := "isAbsenceRefusal", value := bool (verdictOfEq
+          (renderResolution resolution) (renderResolution .absent)
+          (congrArg renderResolution absentRefusal)) }
+      , { key := "resolution", value := renderResolution resolution }
+      ] }
+
+def f12SingletonVector
+    (singletonBound : resolve id Emitter.groundDirectory
+      Emitter.singletonPetname ([] : List (Seal Nat)) = .bound 300) : Vector :=
+  let resolution :=
+    resolve id Emitter.groundDirectory Emitter.singletonPetname []
+  { name := "resolution-singleton-binding"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_singleton"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.singletonPetname }
+      , { key := "seals", value := renderSeals [] }
+      ]
+    verdict := object
+      [ { key := "boundDigest", value := nat 300 }
+      , { key := "isSingletonBinding", value := bool (verdictOfEq
+          (renderResolution resolution) (renderResolution (.bound 300))
+          (congrArg renderResolution singletonBound)) }
+      , { key := "resolution", value := renderResolution resolution }
+      ] }
+
+def f12AmbiguousVector
+    (acrossOrders :
+      resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+          Emitter.groundPetname [] = .ambiguous [100, 200] /\
+        resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+          Emitter.groundPetname [] = .ambiguous [100, 200]) : Vector :=
+  let resolutionOne :=
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+      Emitter.groundPetname []
+  let resolutionTwo :=
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+      Emitter.groundPetname []
+  { name := "ambiguous-across-bind-orders"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_ambiguous_across_orders"
+    input := object
+      [ { key := "bindOrderOne", value := renderBindEvents Emitter.bindOrderOne }
+      , { key := "bindOrderTwo", value := renderBindEvents Emitter.bindOrderTwo }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      ]
+    verdict := object
+      [ { key := "equalAcrossOrders", value := bool (verdictOfEq
+          (renderResolution resolutionOne) (renderResolution resolutionTwo)
+          (congrArg renderResolution
+            (acrossOrders.1.trans acrossOrders.2.symm))) }
+      , { key := "refusal", value := string "ambiguous-binding" }
+      , { key := "resolution", value := renderResolution resolutionOne }
+      ] }
+
+def f12GreatestSealVector
+    (acrossOrders :
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.sealOrderOne = .sealedAt 9 200 /\
+        resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.sealOrderTwo = .sealedAt 9 200) : Vector :=
+  let resolutionOne :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.sealOrderOne
+  let resolutionTwo :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.sealOrderTwo
+  { name := "greatest-seal-across-orders"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_greatest_seal"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      , { key := "sealOrderOne", value := renderSeals Emitter.sealOrderOne }
+      , { key := "sealOrderTwo", value := renderSeals Emitter.sealOrderTwo }
+      ]
+    verdict := object
+      [ { key := "equalAcrossOrders", value := bool (verdictOfEq
+          (renderResolution resolutionOne) (renderResolution resolutionTwo)
+          (congrArg renderResolution
+            (acrossOrders.1.trans acrossOrders.2.symm))) }
+      , { key := "resolution", value := renderResolution resolutionOne }
+      ] }
+
+def f12StaleRebindVector
+    (staleInert :
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          (Emitter.staleSeal :: Emitter.landedSeals) =
+        resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.landedSeals /\
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.landedSeals = .sealedAt 9 200) : Vector :=
+  let withStale :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      (Emitter.staleSeal :: Emitter.landedSeals)
+  let withoutStale :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.landedSeals
+  { name := "stale-token-rebind-inert"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_stale_rebind"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "landedSeals", value := renderSeals Emitter.landedSeals }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      , { key := "staleAttempt", value := renderSeal Emitter.staleSeal }
+      , { key := "wellFencedBy", value := string veilCorpusCitation }
+      ]
+    verdict := object
+      [ { key := "resolution", value := renderResolution withoutStale }
+      , { key := "staleObservationInert", value := bool (verdictOfEq
+          (renderResolution withStale) (renderResolution withoutStale)
+          (congrArg renderResolution staleInert.1)) }
+      ] }
+
 def querySeedAdmissionVector
     (ambientSeedRefused : admitQueryInput .ambientSeed = none)
     (ambientClockRefused : admitQueryInput .ambientClock = none)

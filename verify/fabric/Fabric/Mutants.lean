@@ -154,6 +154,83 @@ def ambientThreadBoosting : List Emitter.GroundEntry := [12]
     duplication pins. -/
 def queryArrivalOneExact : List Emitter.GroundEntry := [7, 5, 23, 12]
 
+/-! ### Join-semilattice mutant -/
+
+/-- Drops minimality and nothing else: the padded join always unions a
+    sentinel observation, so it is an upper bound of both arguments —
+    both upper-bound laws hold generally — but never the least one on the
+    committed row. Over an intact ACI algebra a minimality-only drop is
+    inexpressible (lub-ness is a theorem of ACI), so the honest mutant
+    mutates the join itself while the retained theorems pin every law the
+    kill must not be attributed to. -/
+def paddedJoin (left right : Emitter.GroundCell) : Emitter.GroundCell :=
+  Cell.merge (Cell.merge left right) (Cell.singleton (99, 990))
+
+/-- The two distinct cells of the minimality kill row. -/
+def joinLeft : Emitter.GroundCell :=
+  foldEvidence Emitter.observationCmp [(1, 10)]
+
+def joinRight : Emitter.GroundCell :=
+  foldEvidence Emitter.observationCmp [(2, 20)]
+
+/-! ### F12 resolution mutants -/
+
+/-- The well-fencing-violating seal support: two seals at one token. The
+    mutant here is the T16 shape — the lawful `resolve` body run outside
+    the premise that licenses it. -/
+def unfencedSealOrderOne : List (Seal Nat) :=
+  [ { token := 7, holder := 1, digest := 100 }
+  , { token := 7, holder := 2, digest := 200 }
+  ]
+
+/-- The same unfenced support in the other arrival order. -/
+def unfencedSealOrderTwo : List (Seal Nat) :=
+  [ { token := 7, holder := 2, digest := 200 }
+  , { token := 7, holder := 1, digest := 100 }
+  ]
+
+/-- Drops the ambiguity refusal: the last bind event at the name wins, an
+    arbitration by arrival order that nobody declared. The lawful resolve
+    refuses with the candidate listing instead of deciding. -/
+def lwwResolve (events : List (Binding Nat Nat)) (name : Nat) :
+    Resolution Nat :=
+  match (events.filter (fun binding => binding.1 == name)).map
+      (fun binding => binding.2) with
+  | [] => .absent
+  | digest :: digests => .bound (digests.foldl (fun _ next => next) digest)
+
+/-- The greatest-holder seal: the arbitration input the law forbids. -/
+def greatestByHolder : List (Seal Nat) -> Option (Seal Nat)
+  | [] => none
+  | arrival :: rest =>
+      match greatestByHolder rest with
+      | none => some arrival
+      | some best =>
+          if arrival.holder < best.holder then some best else some arrival
+
+/-- Drops token arbitration: the who decides instead of the token. -/
+def holderArbitratedResolve (seals : List (Seal Nat)) : Resolution Nat :=
+  match greatestByHolder seals with
+  | none => .absent
+  | some top => .sealedAt top.token top.digest
+
+/-- Drops greatest-token arbitration: the last-arrived seal decides, so
+    the permuted-seal row's two arrival orders give two answers. -/
+def lastArrivalResolve (seals : List (Seal Nat)) : Resolution Nat :=
+  match seals with
+  | [] => .absent
+  | arrival :: rest =>
+      (fun top => Resolution.sealedAt top.token top.digest)
+        (rest.foldl (fun _ next => next) arrival)
+
+/-- The aligned seal row: holder order agrees with token order, so the
+    holder-arbitrating mutant coincides with the lawful resolution there —
+    its kill is attributable to consulting the holder alone. -/
+def alignedSeals : List (Seal Nat) :=
+  [ { token := 7, holder := 1, digest := 100 }
+  , { token := 9, holder := 9, digest := 200 }
+  ]
+
 abbrev GroundPolicy := Policy Nat compare
 
 def atoms (values : List Nat) : FiniteSet Nat compare :=

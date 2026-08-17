@@ -164,6 +164,115 @@ def F11QueryDeterministic {Entry : Type uV} [BEq Entry] [LawfulBEq Entry]
           (foldFrom appendEntry (fold appendEntry [] prefixRight)
             suffixRight) k)
 
+/-- F1, semilattice half: cell merge carries the full join-semilattice
+    package under its derived order — the order laws plus least upper
+    bound, all consequences of the ACI laws already proved. The replica
+    reading: a node's current cell is a lattice lower bound of every
+    state it can reach by absorbing observations. -/
+def F1CellJoinSemilattice : Prop :=
+  JoinSemilatticePackage (Cell.merge (Holder := Holder) (Value := Value)
+    (cmp := cmp))
+
+/-- F12, algebra half: componentwise union of directories is associative,
+    commutative, and idempotent — the F1-for-maps ACI package on the new
+    carrier. -/
+def F12DirectoryMergeACI {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  (forall left right : Directory Petname Digest cmp,
+    Directory.merge left right = Directory.merge right left) /\
+  (forall left middle right : Directory Petname Digest cmp,
+    Directory.merge (Directory.merge left middle) right =
+      Directory.merge left (Directory.merge middle right)) /\
+  (forall directory : Directory Petname Digest cmp,
+    Directory.merge directory directory = directory)
+
+/-- F12, extensionality half: the binding set determines the directory —
+    a statement about states, not delivery histories. -/
+def F12DirectoryExtensional {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  forall left right : Directory Petname Digest cmp,
+    Directory.SameBindingSet left right -> left = right
+
+/-- F12, convergence half: two nodes folding the same bind-event support
+    under different delivery orders and multiplicities reach one
+    directory. -/
+def F12DirectoryConvergence {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq (Binding Petname Digest)] : Prop :=
+  forall left right : List (Binding Petname Digest),
+    SameDeliveredSet left right ->
+      foldBindings cmp left = foldBindings cmp right
+
+/-- F12, semilattice half: the directory join carries the same general
+    package as the cell — one derived order, one least-upper-bound law
+    set, instantiated at the map carrier. -/
+def F12DirectoryJoinSemilattice {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  JoinSemilatticePackage (Directory.merge (Petname := Petname)
+    (Digest := Digest) (cmp := cmp))
+
+/-- F12, support half: resolution is a function of the bindings observed
+    at the name and the seal support — never of arrival order or
+    multiplicity. The distinctness premise is what makes the ambiguity
+    listing canonical; the well-fenced premise is what makes the greatest
+    seal unique, and it is discharged by citation of the register's F5
+    invariants, never restated here. -/
+def F12ResolutionOfSupport {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest] [BEq (Seal Digest)]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir dir' : Directory Petname Digest cmp) (name : Petname)
+      (seals seals' : List (Seal Digest)),
+    IdentityDistinct identity (boundDigests dir name) ->
+    (forall digest, Directory.BoundTo dir name digest <->
+      Directory.BoundTo dir' name digest) ->
+    SealsWellFenced seals ->
+    SameDeliveredSet seals seals' ->
+      resolve identity dir name seals = resolve identity dir' name seals'
+
+/-- F12, arbitration half: with any seal observed, resolution is the
+    binding sealed at the greatest token — a member of the observed seal
+    support that every observed token bounds. The holder appears nowhere:
+    the token decides, never the who. -/
+def F12GreatestSealWins {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir : Directory Petname Digest cmp) (name : Petname)
+      (seals : List (Seal Digest)),
+    SealsWellFenced seals -> seals ≠ [] ->
+      exists top, top ∈ seals /\
+        (forall observed, observed ∈ seals -> observed.token <= top.token) /\
+        resolve identity dir name seals = .sealedAt top.token top.digest
+
+/-- F12, verdict characterization: the four resolution rows are exhaustive
+    and mutually exclusive — each verdict holds exactly at its stated
+    condition, the refusal-iff idiom. Deliberately premise-free: this is
+    computation accounting over the arrival schedule (without
+    `SealsWellFenced` a tied top token resolves to the first-kept pick,
+    visibly schedule-dependent); the order-free meaning law is
+    `F12GreatestSealWins` under the premise. -/
+def F12ResolutionCharacterization {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir : Directory Petname Digest cmp) (name : Petname)
+      (seals : List (Seal Digest)),
+    (resolve identity dir name seals = .absent <->
+      seals = [] /\ candidates identity dir name = []) /\
+    (forall digest, resolve identity dir name seals = .bound digest <->
+      seals = [] /\ candidates identity dir name = [digest]) /\
+    (forall listing, resolve identity dir name seals = .ambiguous listing <->
+      seals = [] /\ candidates identity dir name = listing /\
+        2 <= listing.length) /\
+    (forall token digest,
+      resolve identity dir name seals = .sealedAt token digest <->
+        exists top, greatestSeal seals = some top /\
+          top.token = token /\ top.digest = digest)
+
 end Laws
 
 end Fabric

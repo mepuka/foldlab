@@ -1034,4 +1034,585 @@ theorem f11_query_deterministic [BEq Entry] [LawfulBEq Entry]
 
 end F11
 
+section JoinSemilattice
+
+variable {alpha : Type uH} {sup : alpha -> alpha -> alpha}
+
+/-- Reflexivity of the derived order, from idempotence alone. -/
+theorem le_refl (idem : forall a, sup a a = a) (a : alpha) : supLe sup a a :=
+  idem a
+
+/-- Antisymmetry of the derived order, from commutativity alone. -/
+theorem le_antisymm (comm : forall a b, sup a b = sup b a) {a b : alpha}
+    (leftRight : supLe sup a b) (rightLeft : supLe sup b a) : a = b := by
+  unfold supLe at leftRight rightLeft
+  calc a = sup b a := rightLeft.symm
+    _ = sup a b := comm b a
+    _ = b := leftRight
+
+/-- Transitivity of the derived order, from associativity alone. -/
+theorem le_trans
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    {a b c : alpha} (ab : supLe sup a b) (bc : supLe sup b c) :
+    supLe sup a c := by
+  unfold supLe at ab bc ⊢
+  calc sup a c = sup a (sup b c) := by rw [bc]
+    _ = sup (sup a b) c := (assoc a b c).symm
+    _ = sup b c := by rw [ab]
+    _ = c := bc
+
+/-- The join is an upper bound of its left argument. -/
+theorem le_sup_left
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    (idem : forall a, sup a a = a) (a b : alpha) :
+    supLe sup a (sup a b) := by
+  unfold supLe
+  calc sup a (sup a b) = sup (sup a a) b := (assoc a a b).symm
+    _ = sup a b := by rw [idem a]
+
+/-- The join is an upper bound of its right argument. -/
+theorem le_sup_right (comm : forall a b, sup a b = sup b a)
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    (idem : forall a, sup a a = a) (a b : alpha) :
+    supLe sup b (sup a b) := by
+  unfold supLe
+  calc sup b (sup a b) = sup b (sup b a) := by rw [comm a b]
+    _ = sup (sup b b) a := (assoc b b a).symm
+    _ = sup b a := by rw [idem b]
+    _ = sup a b := comm b a
+
+/-- Minimality: the join is below every common upper bound — from
+    associativity alone. -/
+theorem sup_le
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    {a b c : alpha} (ac : supLe sup a c) (bc : supLe sup b c) :
+    supLe sup (sup a b) c := by
+  unfold supLe at ac bc ⊢
+  calc sup (sup a b) c = sup a (sup b c) := assoc a b c
+    _ = sup a c := by rw [bc]
+    _ = c := ac
+
+/-- Absorbing an observation only grows the local join: every absorb is an
+    inflation, so a replica's current state is a lattice lower bound of
+    every state it can reach. -/
+theorem absorb_inflationary
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    (idem : forall a, sup a a = a) (replica observed : alpha) :
+    supLe sup replica (sup replica observed) :=
+  le_sup_left assoc idem replica observed
+
+/-- The whole join-semilattice package from the three ACI facts — the
+    `SemilatticeSup.mk'` construction, transliterated. -/
+theorem join_semilattice_of_aci (comm : forall a b, sup a b = sup b a)
+    (assoc : forall a b c, sup (sup a b) c = sup a (sup b c))
+    (idem : forall a, sup a a = a) : JoinSemilatticePackage sup :=
+  ⟨le_refl idem,
+    fun _ _ => le_antisymm comm,
+    fun _ _ _ => le_trans assoc,
+    le_sup_left assoc idem,
+    le_sup_right comm assoc idem,
+    fun _ _ _ => sup_le assoc⟩
+
+end JoinSemilattice
+
+section CellSemilattice
+
+variable {Holder : Type uH} {Value : Type uV}
+variable {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
+
+/-- F1, semilattice half: the cell merge instantiates the general
+    package. -/
+theorem f1_cell_join_semilattice : Laws.F1CellJoinSemilattice (cmp := cmp) :=
+  join_semilattice_of_aci cell_merge_comm cell_merge_assoc cell_merge_idem
+
+/-- The replica lower bound at the cell carrier: a node's current cell is
+    below every merge with observed evidence. -/
+theorem cell_absorb_inflationary (replica observed : Cell Holder Value cmp) :
+    supLe Cell.merge replica (Cell.merge replica observed) :=
+  absorb_inflationary cell_merge_assoc cell_merge_idem replica observed
+
+/-- The derived cell order is exactly observation-set inclusion — the
+    bridge between the semilattice reading and the membership reading. -/
+theorem cell_le_iff_subset {left right : Cell Holder Value cmp} :
+    supLe Cell.merge left right <->
+      forall observation, observation ∈ left -> observation ∈ right := by
+  constructor
+  · intro le observation member
+    rw [← le]
+    simp only [Cell.merge, Std.ExtTreeSet.mem_union_iff]
+    exact Or.inl member
+  · intro subset
+    unfold supLe
+    apply Std.ExtTreeSet.ext_mem
+    intro observation
+    simp only [Cell.merge, Std.ExtTreeSet.mem_union_iff]
+    constructor
+    · exact fun member => member.elim (subset observation) id
+    · exact Or.inr
+
+end CellSemilattice
+
+section F12Directory
+
+variable {Petname : Type uH} {Digest : Type uV}
+variable {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
+
+theorem directory_merge_comm (left right : Directory Petname Digest cmp) :
+    Directory.merge left right = Directory.merge right left := by
+  apply Std.ExtTreeSet.ext_mem
+  intro binding
+  simp only [Directory.merge, Std.ExtTreeSet.mem_union_iff]
+  exact or_comm
+
+theorem directory_merge_assoc (left middle right : Directory Petname Digest cmp) :
+    Directory.merge (Directory.merge left middle) right =
+      Directory.merge left (Directory.merge middle right) := by
+  apply Std.ExtTreeSet.ext_mem
+  intro binding
+  simp only [Directory.merge, Std.ExtTreeSet.mem_union_iff]
+  exact or_assoc
+
+theorem directory_merge_idem (directory : Directory Petname Digest cmp) :
+    Directory.merge directory directory = directory := by
+  apply Std.ExtTreeSet.ext_mem
+  intro binding
+  simp only [Directory.merge, Std.ExtTreeSet.mem_union_iff]
+  constructor
+  · exact fun member => member.elim id id
+  · exact Or.inl
+
+/-- F12: componentwise union supplies the directory's ACI join — the
+    F1-for-maps algebra half. -/
+theorem f12_directory_merge_aci : Laws.F12DirectoryMergeACI (cmp := cmp) :=
+  ⟨directory_merge_comm, directory_merge_assoc, directory_merge_idem⟩
+
+/-- F12: the binding set determines the directory. -/
+theorem f12_directory_extensional :
+    Laws.F12DirectoryExtensional (cmp := cmp) := by
+  intro left right same
+  apply Std.ExtTreeSet.ext_mem
+  exact same
+
+/-- F12: equal bind-event support yields one directory state, independent
+    of arrival order and multiplicity. -/
+theorem f12_directory_convergence [BEq (Binding Petname Digest)]
+    [Std.LawfulBEqCmp cmp] :
+    Laws.F12DirectoryConvergence (cmp := cmp) := by
+  intro left right same
+  apply Std.ExtTreeSet.ext_mem
+  intro binding
+  simp only [foldBindings, Std.ExtTreeSet.mem_ofList]
+  rw [same binding]
+
+omit [Std.LawfulEqCmp cmp] in
+/-- The componentwise reading of the graph union: at every name, the
+    bindings of a merged directory are the union of the two sides'
+    bindings — merge really is componentwise union of the induced maps. -/
+theorem directory_merge_bindings (left right : Directory Petname Digest cmp)
+    (name : Petname) (digest : Digest) :
+    Directory.BoundTo (Directory.merge left right) name digest <->
+      Directory.BoundTo left name digest \/
+        Directory.BoundTo right name digest := by
+  simp only [Directory.BoundTo, Directory.merge, Std.ExtTreeSet.mem_union_iff]
+
+/-- F12, semilattice half: the directory join instantiates the same
+    general package as the cell. -/
+theorem f12_directory_join_semilattice :
+    Laws.F12DirectoryJoinSemilattice (cmp := cmp) :=
+  join_semilattice_of_aci directory_merge_comm directory_merge_assoc
+    directory_merge_idem
+
+/-- The replica lower bound at the directory carrier. -/
+theorem directory_absorb_inflationary
+    (replica observed : Directory Petname Digest cmp) :
+    supLe Directory.merge replica (Directory.merge replica observed) :=
+  absorb_inflationary directory_merge_assoc directory_merge_idem
+    replica observed
+
+/-- Projection membership: a digest appears among a name's bound digests
+    exactly when the directory binds the pair. -/
+theorem bound_digests_mem [BEq Petname] [LawfulBEq Petname]
+    {directory : Directory Petname Digest cmp} {name : Petname}
+    {digest : Digest} :
+    digest ∈ boundDigests directory name <->
+      Directory.BoundTo directory name digest := by
+  unfold boundDigests Directory.BoundTo
+  constructor
+  · intro member
+    obtain ⟨binding, memberFilter, projection⟩ := List.mem_map.mp member
+    obtain ⟨memberList, nameBeq⟩ := List.mem_filter.mp memberFilter
+    have nameEq : binding.1 = name := beq_iff_eq.mp nameBeq
+    have pairEq : (name, digest) = binding := by
+      cases binding
+      cases projection
+      cases nameEq
+      rfl
+    rw [pairEq]
+    exact Std.ExtTreeSet.mem_toList.mp memberList
+  · intro member
+    apply List.mem_map.mpr
+    refine ⟨(name, digest),
+      List.mem_filter.mpr ⟨Std.ExtTreeSet.mem_toList.mpr member, ?_⟩, rfl⟩
+    exact beq_iff_eq.mpr rfl
+
+/-- Candidate membership is exactly binding membership: the canonical
+    listing forgets arrival order, multiplicity, and tree shape. -/
+theorem candidates_mem [BEq Petname] [LawfulBEq Petname]
+    [BEq Digest] [LawfulBEq Digest]
+    {identity : Digest -> Nat} {directory : Directory Petname Digest cmp}
+    {name : Petname} {digest : Digest} :
+    digest ∈ candidates identity directory name <->
+      Directory.BoundTo directory name digest := by
+  unfold candidates
+  rw [(List.mergeSort_perm _ (byIdentity identity)).mem_iff, dedup_mem,
+    bound_digests_mem]
+
+/-- Equal per-name bindings give one canonical candidate listing — the
+    directory half of resolution's support determinism. Antisymmetry of
+    the identity order is demanded only on the bound digests, which is
+    where the named distinctness premise lands. -/
+theorem candidates_of_same_bound [BEq Petname] [LawfulBEq Petname]
+    [BEq Digest] [LawfulBEq Digest]
+    {identity : Digest -> Nat} {dir dir' : Directory Petname Digest cmp}
+    {name : Petname}
+    (distinct : IdentityDistinct identity (boundDigests dir name))
+    (same : forall digest, Directory.BoundTo dir name digest <->
+      Directory.BoundTo dir' name digest) :
+    candidates identity dir name = candidates identity dir' name := by
+  have leftPerm := List.mergeSort_perm (dedup (boundDigests dir name))
+    (byIdentity identity)
+  have rightPerm := List.mergeSort_perm (dedup (boundDigests dir' name))
+    (byIdentity identity)
+  unfold candidates
+  apply sorted_nodup_eq_of_same_mem (byIdentity identity)
+  · intro a aMember b bMember ab ba
+    exact distinct a (dedup_mem.mp (leftPerm.mem_iff.mp aMember))
+      b (dedup_mem.mp (leftPerm.mem_iff.mp bMember))
+      (by_score_then_identity_antisymm (fun _ => 0) identity a b ab ba)
+  · exact List.pairwise_mergeSort
+      (by_score_then_identity_trans (fun _ => 0) identity)
+      (by_score_then_identity_total (fun _ => 0) identity) _
+  · exact List.pairwise_mergeSort
+      (by_score_then_identity_trans (fun _ => 0) identity)
+      (by_score_then_identity_total (fun _ => 0) identity) _
+  · exact leftPerm.nodup_iff.mpr (dedup_nodup _)
+  · exact rightPerm.nodup_iff.mpr (dedup_nodup _)
+  · intro digest
+    rw [leftPerm.mem_iff, rightPerm.mem_iff, dedup_mem, dedup_mem,
+      bound_digests_mem, bound_digests_mem]
+    exact same digest
+
+/-- A sorted, duplicate-free listing holding exactly the bound digests IS
+    the canonical candidate listing. This is the decide-friendly route to
+    ground candidate facts: the canonical sort itself is opaque to kernel
+    reduction, while membership, sortedness, and duplicate-freedom of a
+    literal listing all compute. -/
+theorem candidates_eq_canonical [BEq Petname] [LawfulBEq Petname]
+    [BEq Digest] [LawfulBEq Digest]
+    {identity : Digest -> Nat} {dir : Directory Petname Digest cmp}
+    {name : Petname} {listing : List Digest}
+    (distinct : IdentityDistinct identity (boundDigests dir name))
+    (sortedListing : listing.Pairwise
+      (fun left right => byIdentity identity left right = true))
+    (nodupListing : listing.Nodup)
+    (sameMem : forall digest, digest ∈ listing <->
+      Directory.BoundTo dir name digest) :
+    candidates identity dir name = listing := by
+  have leftPerm := List.mergeSort_perm (dedup (boundDigests dir name))
+    (byIdentity identity)
+  unfold candidates
+  apply sorted_nodup_eq_of_same_mem (byIdentity identity)
+  · intro a aMember b bMember ab ba
+    exact distinct a (dedup_mem.mp (leftPerm.mem_iff.mp aMember))
+      b (dedup_mem.mp (leftPerm.mem_iff.mp bMember))
+      (by_score_then_identity_antisymm (fun _ => 0) identity a b ab ba)
+  · exact List.pairwise_mergeSort
+      (by_score_then_identity_trans (fun _ => 0) identity)
+      (by_score_then_identity_total (fun _ => 0) identity) _
+  · exact sortedListing
+  · exact leftPerm.nodup_iff.mpr (dedup_nodup _)
+  · exact nodupListing
+  · intro digest
+    rw [leftPerm.mem_iff, dedup_mem, bound_digests_mem]
+    exact (sameMem digest).symm
+
+end F12Directory
+
+section F12Resolution
+
+variable {Digest : Type uV}
+
+/-- No greatest seal means no seal was observed. -/
+theorem greatest_seal_none_iff {seals : List (Seal Digest)} :
+    greatestSeal seals = none <-> seals = [] := by
+  cases seals with
+  | nil => simp [greatestSeal]
+  | cons arrival rest =>
+      simp only [greatestSeal]
+      cases hs : greatestSeal rest with
+      | none => simp
+      | some best => by_cases lt : arrival.token < best.token <;> simp [lt]
+
+/-- The greatest seal is an observed seal. -/
+theorem greatest_seal_mem {seals : List (Seal Digest)} {top : Seal Digest}
+    (h : greatestSeal seals = some top) : top ∈ seals := by
+  induction seals generalizing top with
+  | nil => simp [greatestSeal] at h
+  | cons arrival rest inductionHypothesis =>
+      cases hs : greatestSeal rest with
+      | none =>
+          simp only [greatestSeal, hs] at h
+          obtain rfl := Option.some.inj h
+          exact List.mem_cons_self
+      | some best =>
+          simp only [greatestSeal, hs] at h
+          by_cases lt : arrival.token < best.token
+          · rw [if_pos lt] at h
+            obtain rfl := Option.some.inj h
+            exact List.mem_cons_of_mem arrival (inductionHypothesis hs)
+          · rw [if_neg lt] at h
+            obtain rfl := Option.some.inj h
+            exact List.mem_cons_self
+
+/-- Every observed token is bounded by the greatest seal's token. -/
+theorem greatest_seal_is_ub {seals : List (Seal Digest)} {top : Seal Digest}
+    (h : greatestSeal seals = some top) :
+    forall observed, observed ∈ seals -> observed.token <= top.token := by
+  induction seals generalizing top with
+  | nil => intro observed member; simp at member
+  | cons arrival rest inductionHypothesis =>
+      intro observed member
+      rcases List.mem_cons.mp member with rfl | member
+      · cases hs : greatestSeal rest with
+        | none =>
+            simp only [greatestSeal, hs] at h
+            obtain rfl := Option.some.inj h
+            exact Nat.le_refl _
+        | some best =>
+            simp only [greatestSeal, hs] at h
+            by_cases lt : observed.token < best.token
+            · rw [if_pos lt] at h
+              obtain rfl := Option.some.inj h
+              exact Nat.le_of_lt lt
+            · rw [if_neg lt] at h
+              obtain rfl := Option.some.inj h
+              exact Nat.le_refl _
+      · cases hs : greatestSeal rest with
+        | none =>
+            have empty := greatest_seal_none_iff.mp hs
+            subst empty
+            simp at member
+        | some best =>
+            have observedLe := inductionHypothesis hs observed member
+            simp only [greatestSeal, hs] at h
+            by_cases lt : arrival.token < best.token
+            · rw [if_pos lt] at h
+              obtain rfl := Option.some.inj h
+              exact observedLe
+            · rw [if_neg lt] at h
+              obtain rfl := Option.some.inj h
+              exact Nat.le_trans observedLe (Nat.le_of_not_lt lt)
+
+/-- Under the well-fenced premise the greatest seal is a function of the
+    observed seal support: arrival order and multiplicity cannot move it.
+    Without the premise two seals at one token make the outcome
+    schedule-dependent — the committed control demonstrates exactly
+    that. -/
+theorem greatest_seal_of_support [BEq (Seal Digest)] [LawfulBEq (Seal Digest)]
+    {left right : List (Seal Digest)}
+    (wf : SealsWellFenced left) (same : SameDeliveredSet left right) :
+    greatestSeal left = greatestSeal right := by
+  have memIff : forall observed : Seal Digest,
+      observed ∈ left <-> observed ∈ right := by
+    intro observed
+    constructor
+    · intro member
+      exact List.contains_iff_mem.mp
+        (by rw [← same observed]; exact List.contains_iff_mem.mpr member)
+    · intro member
+      exact List.contains_iff_mem.mp
+        (by rw [same observed]; exact List.contains_iff_mem.mpr member)
+  cases hl : greatestSeal left with
+  | none =>
+      have empty := greatest_seal_none_iff.mp hl
+      subst empty
+      cases hr : greatestSeal right with
+      | none => rfl
+      | some topRight =>
+          have memberRight := greatest_seal_mem hr
+          have absurdMember : topRight ∈ ([] : List (Seal Digest)) :=
+            (memIff topRight).mpr memberRight
+          simp at absurdMember
+  | some topLeft =>
+      cases hr : greatestSeal right with
+      | none =>
+          have empty := greatest_seal_none_iff.mp hr
+          subst empty
+          have absurdMember : topLeft ∈ ([] : List (Seal Digest)) :=
+            (memIff topLeft).mp (greatest_seal_mem hl)
+          simp at absurdMember
+      | some topRight =>
+          have memberLeft : topLeft ∈ left := greatest_seal_mem hl
+          have memberRightInLeft : topRight ∈ left :=
+            (memIff topRight).mpr (greatest_seal_mem hr)
+          have leftLe : topLeft.token <= topRight.token :=
+            greatest_seal_is_ub hr topLeft ((memIff topLeft).mp memberLeft)
+          have rightLe : topRight.token <= topLeft.token :=
+            greatest_seal_is_ub hl topRight memberRightInLeft
+          exact congrArg some
+            (wf topLeft memberLeft topRight memberRightInLeft
+              (Nat.le_antisymm leftLe rightLe))
+
+/-- A seal strictly below the greatest observed token cannot displace
+    it. -/
+theorem stale_seal_inert {stale top : Seal Digest} {seals : List (Seal Digest)}
+    (h : greatestSeal seals = some top) (strict : stale.token < top.token) :
+    greatestSeal (stale :: seals) = some top := by
+  simp only [greatestSeal, h]
+  rw [if_pos strict]
+
+section ResolutionLaws
+
+variable {Petname : Type uH}
+variable {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
+variable [BEq Petname] [LawfulBEq Petname] [BEq Digest] [LawfulBEq Digest]
+
+omit [Std.LawfulEqCmp cmp] [LawfulBEq Petname] [LawfulBEq Digest] in
+/-- Observing a stale-token rebind changes nothing: resolution over the
+    seal history with the stale observation is resolution without it. Why
+    a stale token can never land in the register in the first place is
+    F5's I1/I2 — cited, never restated here. -/
+theorem stale_token_rebind_inert {identity : Digest -> Nat}
+    {directory : Directory Petname Digest cmp} {name : Petname}
+    {stale top : Seal Digest} {seals : List (Seal Digest)}
+    (h : greatestSeal seals = some top) (strict : stale.token < top.token) :
+    resolve identity directory name (stale :: seals) =
+      resolve identity directory name seals := by
+  simp only [resolve, stale_seal_inert h strict, h]
+
+/-- F12, support half: resolution is a function of the per-name binding
+    support and the seal support. -/
+theorem f12_resolution_of_support [BEq (Seal Digest)] [LawfulBEq (Seal Digest)]
+    (identity : Digest -> Nat) :
+    Laws.F12ResolutionOfSupport (cmp := cmp) identity := by
+  intro dir dir' name seals seals' distinct dirSame wf sealSame
+  unfold resolve
+  rw [greatest_seal_of_support wf sealSame,
+    candidates_of_same_bound distinct dirSame]
+
+omit [Std.LawfulEqCmp cmp] [LawfulBEq Petname] [LawfulBEq Digest] in
+/-- F12, arbitration half: with seals observed, the greatest observed
+    token decides. -/
+theorem f12_greatest_seal_wins (identity : Digest -> Nat) :
+    Laws.F12GreatestSealWins (cmp := cmp) identity := by
+  intro dir name seals _wf nonempty
+  cases h : greatestSeal seals with
+  | none => exact absurd (greatest_seal_none_iff.mp h) nonempty
+  | some top =>
+      refine ⟨top, greatest_seal_mem h, greatest_seal_is_ub h, ?_⟩
+      simp only [resolve, h]
+
+omit [Std.LawfulEqCmp cmp] [LawfulBEq Petname] [LawfulBEq Digest] in
+/-- F12, verdict characterization: each of the four resolution rows holds
+    exactly at its stated condition. This is computation accounting over
+    the arrival schedule, deliberately premise-free — without
+    `SealsWellFenced`, a tied top token resolves to the fold's first-kept
+    pick, visibly schedule-dependent, and the drop-seals-well-fenced
+    control exhibits it; the order-free meaning law is
+    `f12_greatest_seal_wins` under the premise. -/
+theorem f12_resolution_characterization (identity : Digest -> Nat) :
+    Laws.F12ResolutionCharacterization (cmp := cmp) identity := by
+  intro dir name seals
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · constructor
+    · intro h
+      cases hg : greatestSeal seals with
+      | some top =>
+          simp only [resolve, hg] at h
+          injection h
+      | none =>
+          refine ⟨greatest_seal_none_iff.mp hg, ?_⟩
+          simp only [resolve, hg] at h
+          split at h
+          · assumption
+          · injection h
+          · injection h
+    · rintro ⟨sealsEmpty, candidatesEmpty⟩
+      subst sealsEmpty
+      simp only [resolve, greatestSeal, candidatesEmpty]
+  · intro digest
+    constructor
+    · intro h
+      cases hg : greatestSeal seals with
+      | some top =>
+          simp only [resolve, hg] at h
+          injection h
+      | none =>
+          refine ⟨greatest_seal_none_iff.mp hg, ?_⟩
+          simp only [resolve, hg] at h
+          split at h
+          · injection h
+          · rename_i single singleEq
+            injection h with fieldEq
+            rw [singleEq, fieldEq]
+          · injection h
+    · rintro ⟨sealsEmpty, candidatesSingleton⟩
+      subst sealsEmpty
+      simp only [resolve, greatestSeal, candidatesSingleton]
+  · intro listing
+    constructor
+    · intro h
+      cases hg : greatestSeal seals with
+      | some top =>
+          simp only [resolve, hg] at h
+          injection h
+      | none =>
+          refine ⟨greatest_seal_none_iff.mp hg, ?_⟩
+          simp only [resolve, hg] at h
+          split at h
+          · injection h
+          · injection h
+          · rename_i first second rest listingEq
+            injection h with listEq
+            refine ⟨?_, ?_⟩
+            · rw [listingEq]
+              exact listEq
+            · rw [← listEq]
+              simp only [List.length_cons]
+              omega
+    · rintro ⟨sealsEmpty, candidatesListing, twoOrMore⟩
+      subst sealsEmpty
+      simp only [resolve, greatestSeal, candidatesListing]
+      cases listing with
+      | nil => simp at twoOrMore
+      | cons first rest =>
+          cases rest with
+          | nil => simp at twoOrMore
+          | cons second rest => rfl
+  · intro token digest
+    constructor
+    · intro h
+      cases hg : greatestSeal seals with
+      | none =>
+          simp only [resolve, hg] at h
+          split at h
+          · injection h
+          · injection h
+          · injection h
+      | some top =>
+          simp only [resolve, hg] at h
+          injection h with tokenEq digestEq
+          exact ⟨top, rfl, tokenEq, digestEq⟩
+    · rintro ⟨top, hg, tokenEq, digestEq⟩
+      subst tokenEq
+      subst digestEq
+      simp only [resolve, hg]
+
+end ResolutionLaws
+
+end F12Resolution
+
 end Fabric

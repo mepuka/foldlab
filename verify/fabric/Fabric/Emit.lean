@@ -31,6 +31,11 @@ def vectors : List Vector :=
   , querySeedAdmissionVector emitter_query_seed_admission.1
       emitter_query_seed_admission.2.1 emitter_query_seed_admission.2.2.1
       emitter_query_seed_admission.2.2.2
+  , f12AbsentVector emitter_f12_absent
+  , f12SingletonVector emitter_f12_singleton
+  , f12AmbiguousVector emitter_f12_ambiguous_across_orders
+  , f12GreatestSealVector emitter_f12_greatest_seal
+  , f12StaleRebindVector emitter_f12_stale_rebind
   ]
 
 open Fabric.Canonical in
@@ -47,6 +52,7 @@ def header : String :=
         , { key := "F7", value := nat 2 }
         , { key := "F9", value := nat 2 }
         , { key := "F11", value := nat 2 }
+        , { key := "F12", value := nat 5 }
         , { key := "alphabet-refusal", value := nat 1 }
         , { key := "query-admission", value := nat 1 }
         ]) }

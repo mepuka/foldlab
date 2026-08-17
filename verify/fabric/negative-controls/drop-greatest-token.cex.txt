@@ -1,0 +1,1 @@
+control=drop-greatest-token;vector=permuted-seal;lawful-left=sealed-at:9:200;lawful-right=sealed-at:9:200;mutant-left=sealed-at:9:200;mutant-right=sealed-at:7:100;verdict=refuted

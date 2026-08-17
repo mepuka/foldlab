@@ -329,4 +329,84 @@ theorem emitter_query_seed_admission :
       admitQueryInput (.declaredSeed 7) = some (.declaredSeed 7) :=
   ⟨rfl, rfl, rfl, rfl⟩
 
+/-- The absent row is an exact characterization instance: never-bound
+    name, no seals, the absence refusal. -/
+theorem emitter_f12_absent :
+    resolve id Emitter.groundDirectory Emitter.absentPetname
+      ([] : List (Seal Nat)) = .absent :=
+  (f12_resolution_characterization id Emitter.groundDirectory
+    Emitter.absentPetname []).1.mpr ⟨rfl, absent_name_candidates⟩
+
+/-- The singleton row is an exact characterization instance: one binding,
+    no seals, the bound digest. -/
+theorem emitter_f12_singleton :
+    resolve id Emitter.groundDirectory Emitter.singletonPetname
+      ([] : List (Seal Nat)) = .bound 300 :=
+  ((f12_resolution_characterization id Emitter.groundDirectory
+    Emitter.singletonPetname []).2.1 300).mpr ⟨rfl, singleton_name_candidates⟩
+
+/-- The ambiguous row's premises: its two bind orders carry one support,
+    and the contested name's bound digests are identity-distinct. -/
+theorem emitter_f12_bind_support_premise :
+    SameDeliveredSet Emitter.bindOrderOne Emitter.bindOrderTwo /\
+      IdentityDistinct id
+        (boundDigests Emitter.groundDirectory Emitter.groundPetname) :=
+  ⟨same_delivered_of_mutual_contains (by decide) (by decide),
+    by unfold IdentityDistinct; decide⟩
+
+/-- The ambiguous row: both bind orders refuse with one canonical
+    candidate listing. -/
+theorem emitter_f12_ambiguous_across_orders :
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+        Emitter.groundPetname [] = .ambiguous [100, 200] /\
+      resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+        Emitter.groundPetname [] = .ambiguous [100, 200] :=
+  ambiguity_refusal_survives_bind_orders
+
+/-- The greatest-seal row's premises: the seal support is well fenced and
+    its two arrival orders carry one support. -/
+theorem emitter_f12_seal_premise :
+    SealsWellFenced Emitter.sealOrderOne /\
+      SameDeliveredSet Emitter.sealOrderOne Emitter.sealOrderTwo :=
+  ⟨by unfold SealsWellFenced; decide,
+    same_delivered_of_mutual_contains (by decide) (by decide)⟩
+
+/-- The greatest-seal row: the token-9 seal decides across both arrival
+    orders — one half an exact characterization instance, the other half
+    carried across the schedules by resolution-of-support. -/
+theorem emitter_f12_greatest_seal :
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderOne = .sealedAt 9 200 /\
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderTwo = .sealedAt 9 200 := by
+  have first : resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.sealOrderOne = .sealedAt 9 200 :=
+    ((f12_resolution_characterization id Emitter.groundDirectory
+      Emitter.groundPetname Emitter.sealOrderOne).2.2.2 9 200).mpr
+      ⟨{ token := 9, holder := 1, digest := 200 }, by decide, rfl, rfl⟩
+  refine ⟨first, ?_⟩
+  rw [← f12_resolution_of_support id Emitter.groundDirectory
+    Emitter.groundDirectory Emitter.groundPetname
+    Emitter.sealOrderOne Emitter.sealOrderTwo
+    emitter_f12_bind_support_premise.2 (fun _ => Iff.rfl)
+    emitter_f12_seal_premise.1 emitter_f12_seal_premise.2]
+  exact first
+
+/-- The stale-rebind row: observing the stale token changes nothing, and
+    the landed history resolves at its greatest token. -/
+theorem emitter_f12_stale_rebind :
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+        (Emitter.staleSeal :: Emitter.landedSeals) =
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.landedSeals /\
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.landedSeals = .sealedAt 9 200 := by
+  constructor
+  · exact stale_token_rebind_inert
+      (top := { token := 9, holder := 1, digest := 200 })
+      (by decide) (by decide)
+  · exact ((f12_resolution_characterization id Emitter.groundDirectory
+      Emitter.groundPetname Emitter.landedSeals).2.2.2 9 200).mpr
+      ⟨{ token := 9, holder := 1, digest := 200 }, by decide, rfl, rfl⟩
+
 end Fabric

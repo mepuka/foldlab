@@ -1,0 +1,1 @@
+control=drop-join-minimality;vector=padded-join-not-least;lawful=1:10|2:20;mutant=1:10|2:20|99:990;verdict=refuted

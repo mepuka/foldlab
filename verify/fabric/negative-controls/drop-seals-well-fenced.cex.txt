@@ -1,0 +1,1 @@
+control=drop-seals-well-fenced;vector=two-seals-one-token;lawful-left=sealed-at:9:200;lawful-right=sealed-at:9:200;mutant-left=sealed-at:7:100;mutant-right=sealed-at:7:200;verdict=refuted

@@ -605,4 +605,229 @@ inductive DescendantEffective {Atom : Type uH} {cmp : Atom -> Atom -> Ordering}
       (descendant : DescendantEffective (Policy.meet root requested) child effective) :
       DescendantEffective root (.node requested (before ++ child :: after)) effective
 
+/-! ## The derived join order
+
+The order a join operation derives: `a ≤ b` exactly when joining `a` into
+`b` changes nothing. One general package over a raw join function — the
+`SemilatticeSup.mk'` construction transliterated: the order laws and
+least-upper-bound laws from associativity, commutativity, and idempotence
+alone — instantiated once per ACI carrier. -/
+
+/-- The derived order of a join operation. -/
+def supLe {alpha : Type uH} (sup : alpha -> alpha -> alpha)
+    (left right : alpha) : Prop :=
+  sup left right = right
+
+/-- The join-semilattice package: the derived order is reflexive,
+    antisymmetric, and transitive, and
+    the join is the least upper bound. Proved once from ACI
+    (`join_semilattice_of_aci`); each carrier instantiates it. -/
+def JoinSemilatticePackage {alpha : Type uH}
+    (sup : alpha -> alpha -> alpha) : Prop :=
+  (forall a, supLe sup a a) /\
+  (forall a b, supLe sup a b -> supLe sup b a -> a = b) /\
+  (forall a b c, supLe sup a b -> supLe sup b c -> supLe sup a c) /\
+  (forall a b, supLe sup a (sup a b)) /\
+  (forall a b, supLe sup b (sup a b)) /\
+  (forall a b c, supLe sup a c -> supLe sup b c -> supLe sup (sup a b) c)
+
+/-! ## The directory — naming as a map lattice
+
+A directory is `Map Petname (FiniteSet Digest)` under componentwise union.
+The carrier is the map's graph: a finite set of `(petname, digest)` pairs.
+Maps with absent-name-means-empty correspond exactly to binding-pair sets,
+and componentwise union of maps is union of graphs
+(`directory_merge_bindings` is the componentwise reading, proved). The
+graph side is the carrier because an empty-set-valued name is
+unrepresentable by construction — no well-formedness invariant exists to
+thread through the statements. -/
+
+/-- One directory binding: a petname bound to a digest. -/
+abbrev Binding (Petname : Type uH) (Digest : Type uV) := Petname × Digest
+
+/-- The directory carrier: the finite binding set under a declared
+    comparator. -/
+abbrev Directory (Petname : Type uH) (Digest : Type uV)
+    (cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering) :=
+  FiniteSet (Binding Petname Digest) cmp
+
+namespace Directory
+
+variable {Petname : Type uH} {Digest : Type uV}
+variable {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+variable [Std.TransCmp cmp]
+
+/-- The directory with no bindings. -/
+def empty : Directory Petname Digest cmp := ∅
+
+/-- Componentwise union of the induced maps: union of the graphs. -/
+def merge (left right : Directory Petname Digest cmp) :
+    Directory Petname Digest cmp :=
+  left ∪ right
+
+/-- The induced map, read as membership: `name` is bound to `digest`. -/
+def BoundTo (directory : Directory Petname Digest cmp) (name : Petname)
+    (digest : Digest) : Prop :=
+  (name, digest) ∈ directory
+
+/-- Two replicas hold exactly the same bindings. -/
+def SameBindingSet (left right : Directory Petname Digest cmp) : Prop :=
+  forall binding, binding ∈ left <-> binding ∈ right
+
+end Directory
+
+/-- The directory state reached by folding a raw bind-event trace. Arrival
+    order and multiplicity are forgotten — binding append is monotone,
+    coordination-free, and duplicate-safe. -/
+def foldBindings {Petname : Type uH} {Digest : Type uV}
+    (cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering)
+    [Std.TransCmp cmp] (events : List (Binding Petname Digest)) :
+    Directory Petname Digest cmp :=
+  Std.ExtTreeSet.ofList events cmp
+
+/-! ## Fenced resolution -/
+
+/-- The identity-ascending listing order: `byScoreThenIdentity` at the
+    constant score, so its totality, transitivity, and antisymmetry lemmas
+    apply verbatim. Ambiguity candidates list in identity order, never in
+    arrival order. -/
+abbrev byIdentity {Digest : Type uV} (identity : Digest -> Nat) :
+    Digest -> Digest -> Bool :=
+  byScoreThenIdentity (fun _ => 0) identity
+
+/-- The digests a directory binds at one name: the filtered projection of
+    the binding set's listing. -/
+def boundDigests {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname]
+    (directory : Directory Petname Digest cmp) (name : Petname) :
+    List Digest :=
+  (directory.toList.filter (fun binding => binding.1 == name)).map
+    (fun binding => binding.2)
+
+/-- The canonical candidate listing at a name: dedup, then sort under the
+    identity order — the `topK` normalisation at unbounded width. -/
+def candidates {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat)
+    (directory : Directory Petname Digest cmp) (name : Petname) :
+    List Digest :=
+  (dedup (boundDigests directory name)).mergeSort (byIdentity identity)
+
+/-- A seal: a fencing token, the holder that landed it, and the digest the
+    landed rebind decided. Tokens are modeled as `Nat`, a concrete linear
+    order; the running system's strictly increasing token order is the
+    register's (F5 I1, `verify/fabric-veil`). The holder is attributed
+    observation data and never an arbitration input — the token decides,
+    never the who — which is exactly the non-role the holder-arbitration
+    mutant drops. -/
+structure Seal (Digest : Type uV) where
+  token : Nat
+  holder : Nat
+  digest : Digest
+deriving Repr, DecidableEq
+
+/-- The greatest-token seal of a raw observed seal list. Replacement
+    happens only on a strictly larger token: at a token tie the earlier
+    arrival is kept, so no tie is decided anywhere in this function — only
+    the `SealsWellFenced` premise rules ties out. -/
+def greatestSeal {Digest : Type uV} : List (Seal Digest) -> Option (Seal Digest)
+  | [] => none
+  | arrival :: rest =>
+      match greatestSeal rest with
+      | none => some arrival
+      | some best =>
+          if arrival.token < best.token then some best else some arrival
+
+/-- Every token names at most one seal in the observed support. Discharged
+    by the Veil register package's F5 invariants I1/I2 — strictly
+    increasing fencing tokens, at most one landed commit per register —
+    carried here as a named premise and never restated in this toolchain:
+    the pinned-toolchain split makes import impossible, and a restatement
+    would be drift risk, not evidence. -/
+def SealsWellFenced {Digest : Type uV} (seals : List (Seal Digest)) : Prop :=
+  forall left, left ∈ seals -> forall right, right ∈ seals ->
+    left.token = right.token -> left = right
+
+/-- Resolution's four verdicts. -/
+inductive Resolution (Digest : Type uV) where
+  | bound (digest : Digest)
+  | absent
+  | ambiguous (candidates : List Digest)
+  | sealedAt (token : Nat) (digest : Digest)
+deriving Repr, DecidableEq
+
+/-- Head-relative fenced resolution. With any seal observed, the binding
+    sealed at the greatest token wins — computed over seal data alone,
+    because a seal is evidence of a landed fenced decision whose monotone
+    bind may still be in flight; requiring the sealed digest among the
+    candidates would leak a liveness fact into a correctness verdict. With
+    no seal, the candidate set answers: one binding, an absence refusal,
+    or an ambiguity refusal listing the candidates in identity order. -/
+def resolve {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat)
+    (directory : Directory Petname Digest cmp) (name : Petname)
+    (seals : List (Seal Digest)) : Resolution Digest :=
+  match greatestSeal seals with
+  | some top => .sealedAt top.token top.digest
+  | none =>
+      match candidates identity directory name with
+      | [] => .absent
+      | [digest] => .bound digest
+      | first :: second :: rest => .ambiguous (first :: second :: rest)
+
+namespace Emitter
+
+/-- The ground binding comparator: bindings share the observation
+    carrier's lexicographic shape. -/
+abbrev bindingCmp : Binding Nat Nat -> Binding Nat Nat -> Ordering :=
+  observationCmp
+
+/-- The concrete directory exercised by the generated corpus. -/
+abbrev GroundDirectory := Directory Nat Nat bindingCmp
+
+/-- The contested ground petname: two nodes bound it concurrently. -/
+def groundPetname : Nat := 1
+
+/-- The singleton-bound ground petname. -/
+def singletonPetname : Nat := 2
+
+/-- The never-bound ground petname. -/
+def absentPetname : Nat := 3
+
+/-- Bind arrival order one: name 1 contested across two nodes, name 2
+    bound once. -/
+def bindOrderOne : List (Binding Nat Nat) := [(1, 100), (2, 300), (1, 200)]
+
+/-- The same bind support in another arrival order. -/
+def bindOrderTwo : List (Binding Nat Nat) := [(1, 200), (1, 100), (2, 300)]
+
+/-- The ground directory state: the fold of arrival order one. -/
+def groundDirectory : GroundDirectory := foldBindings bindingCmp bindOrderOne
+
+/-- The permuted-seal row's first arrival order: (7,A) then (9,B). The
+    holders are attributed data; token 7's seal was landed by holder 9 so
+    a holder-arbitrating variant visibly disagrees with the token order. -/
+def sealOrderOne : List (Seal Nat) :=
+  [ { token := 7, holder := 9, digest := 100 }
+  , { token := 9, holder := 1, digest := 200 }
+  ]
+
+/-- The same seal support arriving (9,B) then (7,A). -/
+def sealOrderTwo : List (Seal Nat) :=
+  [ { token := 9, holder := 1, digest := 200 }
+  , { token := 7, holder := 9, digest := 100 }
+  ]
+
+/-- The landed seal history of the stale-rebind row. -/
+def landedSeals : List (Seal Nat) := [{ token := 9, holder := 1, digest := 200 }]
+
+/-- The stale rebind attempt: token 7 observed after token 9 landed. -/
+def staleSeal : Seal Nat := { token := 7, holder := 9, digest := 100 }
+
+end Emitter
+
 end Fabric
