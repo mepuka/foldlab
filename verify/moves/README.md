@@ -9,11 +9,33 @@ runner: fills are total, terminal meaning and journal are invariant under
 permutation of any fill/dispute bag, and refusal is characterized per move as
 an iff against the frozen `D85Refusal`. It checks with Lean 4.33.0 and core
 `Std` only. There is no `sorry`, `admit`, user axiom, or compiled-evaluation
-axiom; `./run.sh` verifies the frozen-spec sha256 pin, mechanically restricts
-every rostered theorem to the core-clean footprint
+override in the owned model sources: `./run.sh` rejects `@[implemented_by]`,
+non-allowlisted `@[extern]`, `panic!`, `partial`, and `sorry` before it builds.
+It also verifies the frozen-spec sha256 pin, mechanically restricts every
+rostered theorem to the core-clean footprint
 `{propext, Classical.choice, Quot.sound}`, and enforces the orphan rule:
 every public theorem is rostered or listed with a reason in
 `gate-exclusions.txt`.
+
+## Kernel-bound source hygiene
+
+The guarded source set is `Moves.lean` plus every `*.lean` file recursively
+under `Moves/`. That is the proof-bearing model library and automatically
+includes the ratified future `Moves.Wire` namespace. `Oracle/` and `Main.lean`
+are runtime-only corpus/transport adapters and are outside the kernel-bound
+set; in particular, the interactive oracle server's `partial def serve` is
+not a kernel declaration. The distinction is architectural, not an exception
+to the scanner, and is pinned in `DECISIONS.md`.
+
+`kernel-extern-allowlist.txt` is initially empty. A future `@[extern]` entry
+must pin the exact source location and source-line digest and carry an
+operator-ratified reason. `@[implemented_by]` has no allowlist. The source
+scanner removes nested Lean comments while preserving line numbers, then
+rejects the forbidden tokens; string contents stay visible because an
+interpolated string can contain compiled expressions. This closes the owned-source
+replacement and default-on-panic channels; it does not inspect inherited Lean
+`Init` externs or emitted C. The artifact-side panic-symbol count remains the
+REF-6 obligation.
 
 ## Ratified model
 
@@ -123,6 +145,8 @@ rules inherit interleaving independence without a new schedule proof.
 | `spec_mutant_legacy_killed_by_L2` | The same mutant reaches different terminal meanings on two permutations of a fill-only bag — meaning confluence kills it. |
 | `spec_mutant_refuseAll_killed` | Refuse-everything violates the refusal characterization on any fill. |
 | `spec_witness_three_fill`, `spec_witness_confirm_recorded` | Pinned executable witnesses: the three-fill bag admits all three and journals `(30, x)`; a confirming refill records the second holder (MOVES-5 closed). |
+| `negative-controls/implemented-by.lean` | A planted `@[implemented_by]` is rejected by the annotation source gate; the exact diagnostic is committed in `implemented-by.cex.txt`. |
+| `negative-controls/panic.lean` | A planted `panic!` is rejected by the panic-free source gate; the exact diagnostic is committed in `panic.cex.txt`. |
 
 The witnesses are transparent traces in `Moves/Violations.lean`. The two
 concrete choice calculations inside `fence_manipulable` are ordinary

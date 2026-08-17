@@ -9,6 +9,226 @@ if ! command -v lake >/dev/null 2>&1; then
   exit 2
 fi
 
+# ---- Kernel-bound source hygiene. `Moves.lean` and every Lean source under
+# `Moves/` are the proof-bearing model surface; the runtime-only Oracle library
+# and Main.lean executable adapter are deliberately outside this roster. A
+# future Moves/Wire.lean joins the sweep without changing this gate.
+kernel_sources=(Moves.lean)
+while IFS= read -r source; do
+  kernel_sources+=("$source")
+done < <(find Moves -type f -name '*.lean' -print | LC_ALL=C sort)
+
+kernel_extern_allowlist="kernel-extern-allowlist.txt"
+
+lean_code_only() {
+  # Keep line count stable while removing nested block comments and line
+  # comments. String text stays visible deliberately: interpolated strings can
+  # contain compiled expressions, so treating their contents as inert would
+  # open an evasion channel.
+  awk '
+    BEGIN { block_depth = 0; in_string = 0; escaped = 0 }
+    {
+      line = $0
+      out = ""
+      i = 1
+      while (i <= length(line)) {
+        c = substr(line, i, 1)
+        n = substr(line, i + 1, 1)
+
+        if (block_depth > 0) {
+          if (c == "/" && n == "-") {
+            block_depth++
+            out = out "  "
+            i += 2
+          } else if (c == "-" && n == "/") {
+            block_depth--
+            out = out "  "
+            i += 2
+          } else {
+            out = out " "
+            i++
+          }
+          continue
+        }
+
+        if (in_string) {
+          out = out c
+          if (escaped) {
+            escaped = 0
+          } else if (c == "\\") {
+            escaped = 1
+          } else if (c == "\"") {
+            in_string = 0
+          }
+          i++
+          continue
+        }
+
+        if (c == "-" && n == "-") {
+          while (i <= length(line)) {
+            out = out " "
+            i++
+          }
+        } else if (c == "/" && n == "-") {
+          block_depth++
+          out = out "  "
+          i += 2
+        } else if (c == "\"") {
+          in_string = 1
+          out = out c
+          i++
+        } else {
+          out = out c
+          i++
+        }
+      }
+      print out
+    }
+  ' "$1"
+}
+
+first_source_hit() {
+  local pattern="$1"
+  shift
+  local source hit
+  for source in "$@"; do
+    hit=$(lean_code_only "$source" | grep -nE "$pattern" | head -n 1 || true)
+    if [[ -n "$hit" ]]; then
+      printf '%s:%s\n' "$source" "$hit"
+      return 0
+    fi
+  done
+}
+
+hit_location() {
+  local hit="$1"
+  local source="${hit%%:*}"
+  local remainder="${hit#*:}"
+  local line="${remainder%%:*}"
+  printf '%s:%s' "$source" "$line"
+}
+
+check_kernel_hygiene() {
+  local allowlist="$1"
+  shift
+  local -a sources=("$@")
+  local location digest reason extra key hit source remainder line source_line
+  local -A allowed_extern=()
+
+  if [[ ! -f "$allowlist" ]]; then
+    echo "GATE: FAIL — kernel extern allowlist is missing: $allowlist" >&2
+    return 2
+  fi
+  if [[ "${#sources[@]}" -eq 0 ]]; then
+    echo "GATE: FAIL — kernel hygiene source roster is empty" >&2
+    return 2
+  fi
+
+  while IFS=$'\t' read -r location digest reason extra; do
+    [[ -z "$location" || "$location" == \#* ]] && continue
+    if [[ -n "${extra:-}" ||
+          ! "$location" =~ ^(Moves\.lean|Moves/[^:]+\.lean):[1-9][0-9]*$ ||
+          ! "$digest" =~ ^[0-9a-f]{64}$ ||
+          "$reason" != "operator-ratified: "* ]]; then
+      echo "GATE: FAIL — malformed kernel extern allowlist entry: $location" >&2
+      return 2
+    fi
+    key="$location:$digest"
+    if [[ -n "${allowed_extern[$key]:-}" ]]; then
+      echo "GATE: FAIL — duplicate kernel extern allowlist entry: $location" >&2
+      return 2
+    fi
+    allowed_extern["$key"]=1
+  done < "$allowlist"
+
+  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(implemented_by)($|[^A-Za-z0-9_'])" "${sources[@]}")
+  if [[ -n "$hit" ]]; then
+    echo "GATE: FAIL — forbidden @[implemented_by] at $(hit_location "$hit")" >&2
+    return 1
+  fi
+
+  while IFS= read -r hit; do
+    [[ -z "$hit" ]] && continue
+    source="${hit%%:*}"
+    remainder="${hit#*:}"
+    line="${remainder%%:*}"
+    location="$source:$line"
+    source_line=$(sed -n "${line}p" "$source")
+    digest=$(printf '%s' "$source_line" | sha256sum | cut -d ' ' -f 1)
+    key="$location:$digest"
+    if [[ -z "${allowed_extern[$key]:-}" ]]; then
+      echo "GATE: FAIL — unallowlisted @[extern] at $location" >&2
+      return 1
+    fi
+  done < <(
+    for source in "${sources[@]}"; do
+      while IFS= read -r hit; do
+        [[ -n "$hit" ]] && printf '%s:%s\n' "$source" "$hit"
+      done < <(lean_code_only "$source" | grep -nE "(^|[^A-Za-z0-9_'])(extern)($|[^A-Za-z0-9_'])" || true)
+    done
+  )
+
+  hit=$(first_source_hit 'panic!' "${sources[@]}")
+  if [[ -n "$hit" ]]; then
+    echo "GATE: FAIL — forbidden panic! at $(hit_location "$hit")" >&2
+    return 1
+  fi
+
+  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(partial)($|[^A-Za-z0-9_'])" "${sources[@]}")
+  if [[ -n "$hit" ]]; then
+    echo "GATE: FAIL — forbidden partial at $(hit_location "$hit")" >&2
+    return 1
+  fi
+
+  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(sorry)($|[^A-Za-z0-9_'])" "${sources[@]}")
+  if [[ -n "$hit" ]]; then
+    echo "GATE: FAIL — forbidden sorry at $(hit_location "$hit")" >&2
+    return 1
+  fi
+}
+
+if check_kernel_hygiene "$kernel_extern_allowlist" "${kernel_sources[@]}"; then
+  echo "GATE: PASS (kernel annotations: implemented_by absent, extern allowlist clean)"
+  echo "GATE: PASS (kernel sources: panic!, partial, and sorry absent)"
+else
+  exit $?
+fi
+
+check_hygiene_control() {
+  local source="$1"
+  local trace="$2"
+  local label="$3"
+  local output status expected
+
+  output=$(check_kernel_hygiene "$kernel_extern_allowlist" "$source" 2>&1)
+  status=$?
+  if [[ "$status" -eq 0 ]]; then
+    echo "GATE: FAIL — $label negative control was not refuted" >&2
+    exit 1
+  fi
+  if [[ "$status" -ne 1 ]]; then
+    printf '%s\n' "$output" >&2
+    echo "GATE: FAIL — $label negative control failed in gate machinery, not its planted violation" >&2
+    exit 1
+  fi
+  expected=$(cat "$trace")
+  if [[ "$output" != "$expected" ]]; then
+    diff -u "$trace" <(printf '%s\n' "$output") >&2 || true
+    echo "GATE: FAIL — $label negative control was not refuted on its named check" >&2
+    exit 1
+  fi
+  echo "GATE: PASS ($label negative control refuted on its named check)"
+}
+
+check_hygiene_control \
+  "negative-controls/implemented-by.lean" \
+  "negative-controls/implemented-by.cex.txt" \
+  "implemented_by"
+check_hygiene_control \
+  "negative-controls/panic.lean" \
+  "negative-controls/panic.cex.txt" \
+  "panic!"
+
 # ---- Frozen-spec pin: Spec.lean changes require a Rev re-pin ----
 expected_spec_sha256="36c3203e3e6edbcc15f7561ab91d1e2d0b03cf40bf6e23a8f9c58e47be2b5b43"
 actual_spec_sha256=$(sha256sum Moves/Spec.lean | cut -d ' ' -f 1)
@@ -134,4 +354,4 @@ if ! cmp -s "$regen_tmp" "$fixture"; then
   exit 1
 fi
 
-echo "GATE: PASS (move-calculus proofs, axiom footprint, spec pin, orphan rule, corpus regeneration)"
+echo "GATE: PASS (move-calculus proofs, kernel hygiene, axiom footprint, spec pin, orphan rule, corpus regeneration)"

@@ -103,3 +103,34 @@ numbered at merge per the repo-wide rule. D79's `runK` mention is
 historical; the surviving total runner is `runRepairK`, and its
 prose-only alignment invariant is now the proved
 `runRepairK_alignment` (`spec_alignment`).
+
+## Task 22 — kernel hygiene gates (2026-08-16; task-local D?? entries —
+final numbers assigned at merge)
+
+### D??. The kernel-bound roster is the `Moves` library, not the executable package
+
+Decided: scan `Moves.lean` and every `*.lean` file recursively under `Moves/`.
+This includes a future `Moves/Wire.lean` automatically. Exclude `Oracle/` and
+`Main.lean`: they are the corpus codec/generator and executable transport
+adapter, not definitions destined for the proved kernel surface. The scanner
+removes nested comments while retaining string contents conservatively because
+interpolated strings contain compiled expressions; the word “partial” in model
+prose is not a declaration, while any unsheltered `partial` token is refused.
+Alternatives: scan every Lean file in the Lake package,
+which would make the runtime-only interactive server's existing `partial def
+serve` a kernel violation; hand-roster today's model files; scan only the
+future `Moves.Wire` module. Why: the gate must follow the proof-bearing model
+surface as it grows without conflating an oracle transport loop with the
+stateless total kernel. **Load-bearing? yes** — scope determines which compiled
+definitions the no-replacement and no-default guarantees cover.
+
+### D??. Extern approvals bind to one exact source line
+
+Decided: `kernel-extern-allowlist.txt` is initially empty. A future row names
+`path:line`, the SHA-256 of the exact source line, and an
+`operator-ratified:` reason. `@[implemented_by]` is never allowlisted.
+Alternatives: allowlist a whole file; pin only a line number; allow any extern
+once the package has one. Why: a file- or line-only permission can silently
+authorize a changed annotation, while the digest makes annotation drift
+re-enter review. **Load-bearing? yes** — the annotation gate closes a compiled
+replacement channel that theorem axiom reports cannot observe.

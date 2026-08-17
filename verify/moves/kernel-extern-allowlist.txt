@@ -1,0 +1,9 @@
+# Kernel-owned @[extern] allowlist — intentionally empty at first freeze.
+#
+# Any future entry requires an operator-ratified reason recorded on the same
+# tab-separated row. Format:
+#   Moves/path.lean:LINE<TAB>SHA256_OF_EXACT_SOURCE_LINE<TAB>operator-ratified: DECISION-ID — reason
+#
+# The line digest makes an approval specific to one annotation rather than to
+# a whole file or line number. Moving or changing the annotation requires a new
+# ratification. Inherited Lean Init externs are outside this owned-source gate.

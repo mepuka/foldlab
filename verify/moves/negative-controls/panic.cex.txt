@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden panic! at negative-controls/panic.lean:2

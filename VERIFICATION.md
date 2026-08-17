@@ -721,8 +721,15 @@ single-seat stability, and the IC4 impossibility
 `Moves/Spec.lean` (statement drift is a gate failure requiring a Rev
 re-pin), `lake build` (Lean 4.33.0, core + Std, no mathlib),
 word-boundary source guards refusing `sorry`/`admit`/`axiom` in any
-position, the mechanical axiom-footprint check — `#print axioms` over
-all thirty-nine rostered theorems, failing on anything outside
+position, and the kernel-bound source-hygiene sweep over `Moves.lean`
+plus `Moves/**/*.lean`: `@[implemented_by]` is forbidden,
+`@[extern]` requires an exact line-digest allowlist entry with an
+operator-ratified reason (the initial allowlist is empty), and `panic!`,
+`partial`, and `sorry` are forbidden code tokens. Planted
+`@[implemented_by]` and `panic!` controls are each refuted on their named
+check with committed diagnostic traces. The mechanical axiom-footprint
+check — `#print axioms` over all thirty-nine rostered theorems, failing on
+anything outside
 `{propext, Classical.choice, Quot.sound}` — and the orphan rule: every
 public theorem is rostered or listed with a reason in
 `gate-exclusions.txt`. Controls and executable witnesses:
@@ -766,7 +773,12 @@ ties daemon folds and events to these states and moves — the daemon's
 synthesized two-candidate dispute and atomic close are instances the
 map must justify, not theorems here. Full audit:
 [docs/research/2026-08-15-model-audit-findings.md](docs/research/2026-08-15-model-audit-findings.md).
-Decision log: `verify/moves/DECISIONS.md` (D70–D79); the D85 absorb
+The hygiene sweep is source-level and owned-model-only: inherited Lean
+`Init` externs remain in the trusted base, `Oracle/**/*.lean` and
+`Main.lean` are runtime corpus/transport adapters outside the kernel-bound
+roster, and the emitted-C panic-symbol count is deferred to REF-6.
+Decision log: `verify/moves/DECISIONS.md` (D70–D79 plus the Task 22
+kernel-hygiene scope and allowlist decisions); the D85 absorb
 ratification and the D86 empty-offer refusal are recorded under the
 DEV-673 heading in `proto/DECISIONS.md` (numbers task-local until
 merge).
