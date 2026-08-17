@@ -89,7 +89,15 @@ reason a kill -9 costs nothing. No registers, no cells, no sessions.
    `F2bSerialSuccessorPremise`: in-window support equal to the
    contiguous positioned trace, multiplicity and arrival order free,
    stale deliveries admitted and harmless. Position is the message's
-   JetStream stream sequence. **The anchor floor is the derived record
+   sequence in ITS OWN `(lane, partition)` STREAM — dense `1,2,3…` by
+   construction under the DEV712-POS-1 ruling (one stream per declared
+   `(lane, partition)`; part 1 §6.3 as amended at `6f5be8736`): the
+   transport coordinate and the model's consecutive-position carrier
+   coincide, and no shared-stream global sequence is ever a position.
+   This sentence supersedes every earlier reading of "stream sequence"
+   in this spec, including the original decision-4 wording and the
+   2026-08-17 amendment's "everything else stands" clause where the two
+   would conflict. **The anchor floor is the derived record
    of the applied frontier — the resume coordinate — never itself the
    protector** (`guard_is_redundant` is the rostered proof that a
    position-floor guard is observationally redundant given the
