@@ -338,6 +338,20 @@ remains a bounded residual outside the populated-catalog one-step repair.
 - `{"k":"opaque"}` means any well-formed v0 value not structurally
   described here. It has no children; derivation targets render it
   permissively (`Schema.Unknown`, JSON Schema `{}`, Go `any`).
+  An opaque payload is UNINTERPRETED canonical bytes. Its identity is
+  byte equality by definition, so there is no semantics for identity to
+  diverge from and nothing here parses it — `checkValue` admits any
+  value under `opaque` because that is the law, not because the check
+  was omitted. Canonicity of an arriving opaque payload is enforced
+  upstream at the JCS seam (`go/canonical` ≡ `packages/core` jcs,
+  differentially walled against RFC 8785 Appendix B), which is where
+  non-integer numbers legitimately live: they reach the protocol only
+  as opaque bytes, never as a type term.
+- Every number position in a v0 TERM is integral — whole and within
+  ±(2^53−1) — in both the `int` leaf and a literal's `value`. One
+  predicate states the bound (`isIntegralJSONNumber`); the author fold
+  mirrors it with `Number.isSafeInteger`. The consequence is the point:
+  no v0 term canonicalizes through shortest-round-trip number printing.
 - `struct.optional` names must be declared, unique, and sorted by
   UTF-16 code units.
 - `union.of` is non-empty; members are recursively normalized, sorted

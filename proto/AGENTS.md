@@ -1,9 +1,20 @@
 # proto/ — tracer bullet contract (builder-written; SPEC.md is coordinator-owned)
 
-Read `SPEC.md` first — it is the behavioral spec and must not be
-edited. This file states the bullet's enforceable laws and the
-graduation map. Vocabulary lives in `CONTEXT.md`; every decision the
-spec did not fix is logged in `DECISIONS.md`.
+Read `SPEC.md` first — it is the behavioral spec and an executor does
+not edit it. The one exception, and its shape: a dispatching brief may
+DIRECT a spec edit when the operator has ratified a change to the
+behaviour the spec declares. The authority is the brief plus the named
+ruling, the edit is confined to what the brief names, and the exception
+is recorded in `DECISIONS.md` with the ruling it carries. An executor
+who wants a spec change nobody directed is looking at a blocker to
+report, not a file to edit — that is the law this exception does not
+touch. Two merged instances so far, both under the 2026-08-16/17
+post-sweep rulings: the float leaf leaving the grammar, and literal
+scalars narrowing to integers.
+
+This file states the bullet's enforceable laws and the graduation map.
+Vocabulary lives in `CONTEXT.md`; every decision the spec did not fix is
+logged in `DECISIONS.md`.
 
 ## Laws (each is a test; see SPEC.md W1–W10 for the full sentences)
 
@@ -51,6 +62,18 @@ spec did not fix is logged in `DECISIONS.md`.
   concurrent clients under the same principal remain legal.
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.
   A digest mismatch means a port drifted; never edit a fixture.
+  `types.json`, `chains.json`, `frames.json`, `concierge.json`, and
+  `sessions.json` regenerate byte-identically from
+  `go run ./cmd/wirefix -force`; a fixture without that property is not
+  frozen, it is stranded (`docs/FREEZING.md`).
+- `flb.type.v0` is declared once and restated sixteen times.
+  `GRAMMAR-SITES.md` is the list, and a grammar change visits all of it;
+  `float_leaf_test.go` greps the fourteen that live under `proto/`.
+  Every number position in a v0 term — the `int` leaf, a literal's
+  `value` — carries ONE integrality bound, stated once as
+  `isIntegralJSONNumber` and mirrored by `Number.isSafeInteger`, so no
+  term canonicalizes through shortest-round-trip number printing.
+  Non-integer numbers reach the protocol only as opaque bytes.
 - The MCP tool surface is derived from `contract.describe` at startup;
   there is no hand-written tool list to drift. Its `journal_read` tool is the
   READ verb and therefore returns the client's verified cursor, never the

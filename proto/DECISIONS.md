@@ -2778,3 +2778,89 @@ fixture family to be safe. Why: fixture identity is bytes, and a regeneration
 that also rewrites untouched evidence destroys the ability to read the diff as
 a claim. **Load-bearing? yes** — a stale grammar digest makes every session
 open refuse.
+
+### D??. The session grammar digest hard-cuts; pre-cut journals do not open
+
+Decided: no compatibility path is built for `flb.session.v0` journals opened
+under a superseded grammar digest. `d5ff3590…` (pre-float-drop) and
+`78aff5581…` (post-float-drop, pre-narrowing) journals are unopenable and
+unreplayable against a daemon at `ca4ac75f…`: `session.open` refuses on the
+digest, by the law that a session opens against the daemon's exact grammar
+digest. That is the intended behaviour of a content-addressed grammar fact,
+and it is recorded here because the float-drop entry recorded that the digest
+MOVED without recording what moving it costs. Alternatives: accept a set of
+historical digests at open; carry a migration that re-signs old journals under
+the new grammar. Why: accepting more than one digest is exactly the drift the
+descriptor exists to prevent — a journal replayed under a grammar it was not
+authored against is a journal whose terms may no longer be lawful. The blast
+radius is bounded by `proto/AGENTS.md`: tracer data is disposable, all
+JetStream stores live in temp dirs, and no persisted corpus depends on a
+pre-cut journal. **Load-bearing? yes** — it is the reason a grammar change is
+allowed to be a hard cut instead of owing a migration.
+
+### D??. `opaque` keeps its whole admission, and the law is written down
+
+Decided: no admission change — `checkValue` still returns nil for every value
+under `{"k":"opaque"}`. The law it enforces is now stated in
+`proto/wire/CONTRACT.md`: an opaque payload is uninterpreted canonical bytes,
+its identity IS byte equality by definition, nothing here parses it, and
+canonicity of an arriving payload is enforced upstream at the JCS seam.
+Alternatives: narrow `opaque` alongside `literal` so the value side is
+number-free too; leave the law unwritten because the code already behaves that
+way. Why: post-sweep ruling 6. There is no semantics for identity to diverge
+from, so REF-2a's opaque clause is trivially sound rather than unproven — but
+that is only legible if the definitional reading is written where the contract
+lives. Narrowing opaque would delete the one position where arbitrary JSON is
+allowed to cross the seam, which the sensor fixture uses on purpose.
+**Load-bearing? yes** — REF-2a's theorem leans on the definitional reading, and
+the shell's JCS seam is named in the trusted base because of it.
+
+### D??. The restatement survey lands in `proto/GRAMMAR-SITES.md`
+
+Decided: the sixteen-site survey brief 21 §1 required is committed as
+`proto/GRAMMAR-SITES.md`, beside `SPEC.md` where the grammar is declared, and
+`proto/AGENTS.md` points at it as the list a grammar change visits.
+Alternatives: a dated file under `docs/research/`; leave it in the closing
+report on the board, as brief 21 §Gates literally said. Why: a dated research
+file records an observation made once, and this list is consulted by every
+future grammar change — it belongs where the next executor of a grammar change
+is already reading. The report-only option is what produced finding F7: a
+deliverable no fresh checkout can read is a deliverable that does not exist.
+The committed table was verified site-by-site against the Rev seat's
+independently built one; the two agree, and the cut is complete.
+**Load-bearing? no** — it is a map, and the grep guard is the enforcement.
+
+### D??. The grep guard covers the fourteen sites inside `proto/`
+
+Decided: `float_leaf_test.go` greps all fourteen restatement sites under
+`proto/` — Go and TypeScript sources plus SPEC.md's declaration — for the
+quoted kind name itself rather than a shape around it, and adds a second guard
+requiring that only `walk.go` states the integrality bound. Sites 15 and 16,
+the Lean reference grammar and its semantics, are deliberately excluded: they
+are `verify/ir/` sources behind `bash verify/ir/run.sh`, and a Go test in
+`proto/` reaching across that boundary would make one gate's failure read as
+the other's. Alternatives: keep the narrow three-site subset; grep the Lean
+sources too; grep shapes (`case\s+"float"\s*:`) rather than the token. Why: the
+narrow subset omitted the certifier's own alphabet, and the shape pattern is
+evaded by `case "float", "int":` — which is exactly how a dropped leaf comes
+back. Both guards were verified to fire: a planted `vKind("float")` and a
+planted `9007199254740991` in `contract.go` each turned the suite red on its
+own guard, and the plant was removed. **Load-bearing? yes** — the guard is what
+makes "the leaf is gone" and "the bound is stated once" mechanical rather than
+asserted.
+
+### D??. The spec's do-not-edit law gains a recorded exception
+
+Decided: `proto/AGENTS.md` now states the exception under which `SPEC.md` is
+edited — a dispatching brief DIRECTS the edit, carrying an operator ruling,
+confined to what the brief names, and recorded here — and names the two merged
+instances (the float leaf leaving the grammar; literal scalars narrowing).
+Alternatives: leave the law absolute and treat the merged edits as unrecorded
+exceptions; move the grammar out of `SPEC.md` so the law needs no exception.
+Why: an absolute law with a merged counterexample teaches the next executor
+that the laws in this repository are approximate, which is more expensive than
+the exception itself. Root `AGENTS.md` carries the same absolute sentence ("An
+executor never edits the spec it builds against") and is coordinator-owned;
+aligning it is reported, not done here. **Load-bearing? maybe** — it governs
+who may change a behavioural declaration, which is the boundary between an
+executor and a coordinator.

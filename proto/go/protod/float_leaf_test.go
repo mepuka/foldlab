@@ -53,17 +53,43 @@ func TestRemovedFloatLeafIsNotAdmittedByProtocolValueCheck(t *testing.T) {
 	}
 }
 
-func TestFloatLeafSourceGrepGuard(t *testing.T) {
-	read := func(path string) string {
-		t.Helper()
-		content, err := os.ReadFile(filepath.Clean(path))
-		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
-		}
-		return string(content)
+// The grammar is restated at sixteen sites (proto/GRAMMAR-SITES.md). This
+// guard covers the fourteen that live under proto/: every executable
+// restatement of the kind alphabet in Go and TypeScript, plus SPEC.md's
+// declaration. The two it does not cover are the Lean reference grammar and
+// its semantics in verify/ir/, which are another lane's sources behind another
+// lane's gate (`bash verify/ir/run.sh`); a Go test in proto/ reaching across
+// that boundary would make one gate's failure look like the other's.
+//
+// The forbidden pattern is the quoted kind name itself, not a shape around it:
+// `case "float", "int":` evades `case\s+"float"\s*:` and is exactly how a
+// dropped leaf comes back. No guarded source has any honest use for the token.
+func grammarRestatementSites() []struct{ name, path string } {
+	return []struct{ name, path string }{
+		{"certifier kind list and leaf switch", "walk.go"},
+		{"protocol value checker", "value_check.go"},
+		{"completion corpus alphabet", "completion.go"},
+		{"frontier choices", "concierge.go"},
+		{"session grammar descriptor", "session.go"},
+		{"contract.describe surface", "contract.go"},
+		{"fixture corpus alphabet", filepath.Join("..", "cmd", "wirefix", "main.go")},
+		{"author fold", filepath.Join("..", "..", "ts", "src", "author.ts")},
+		{"derivation targets", filepath.Join("..", "..", "ts", "src", "codegen.ts")},
+		{"TypeScript session descriptor", filepath.Join("..", "..", "ts", "src", "session.ts")},
 	}
+}
 
-	spec := read(filepath.Join("..", "..", "SPEC.md"))
+func readGuardedSource(t *testing.T, path string) string {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(content)
+}
+
+func TestFloatLeafSourceGrepGuard(t *testing.T) {
+	spec := readGuardedSource(t, filepath.Join("..", "..", "SPEC.md"))
 	start := strings.Index(spec, "## The authoring grammar")
 	if start < 0 {
 		t.Fatal("could not locate SPEC.md's authoring grammar section")
@@ -76,30 +102,32 @@ func TestFloatLeafSourceGrepGuard(t *testing.T) {
 		t.Fatal("SPEC.md's flb.type.v0 grammar reintroduced the float leaf")
 	}
 
-	guards := []struct {
-		name      string
-		path      string
-		forbidden *regexp.Regexp
-	}{
-		{
-			name:      "protocol value checker",
-			path:      "value_check.go",
-			forbidden: regexp.MustCompile(`case\s+"float"\s*:`),
-		},
-		{
-			name:      "completion corpus alphabet",
-			path:      "completion.go",
-			forbidden: regexp.MustCompile(`leafCompletion\s*\(\s*"float"`),
-		},
-		{
-			name:      "fixture corpus alphabet",
-			path:      filepath.Join("..", "cmd", "wirefix", "main.go"),
-			forbidden: regexp.MustCompile(`leaf-float|m\(\s*"k"\s*,\s*"float"`),
-		},
-	}
-	for _, guard := range guards {
-		if guard.forbidden.MatchString(read(guard.path)) {
-			t.Errorf("%s reintroduced the float leaf in %s", guard.name, guard.path)
+	for _, site := range grammarRestatementSites() {
+		if strings.Contains(readGuardedSource(t, site.path), `"float"`) {
+			t.Errorf("%s reintroduced the float leaf in %s", site.name, site.path)
 		}
+	}
+}
+
+// The integrality bound is one predicate on purpose: a second statement of it
+// is how the int leaf and a literal's value start admitting different numbers.
+func TestIntegralityBoundIsStatedOnce(t *testing.T) {
+	for _, site := range grammarRestatementSites() {
+		if site.path == "walk.go" {
+			continue
+		}
+		if strings.Contains(readGuardedSource(t, site.path), "9007199254740991") {
+			t.Errorf("%s restates the safe-integer bound in %s; call isIntegralJSONNumber", site.name, site.path)
+		}
+	}
+	if matched := regexp.MustCompile(`func isIntegralJSONNumber\(`).
+		MatchString(readGuardedSource(t, "walk.go")); !matched {
+		t.Error("walk.go no longer declares the one integrality bound")
+	}
+	if !strings.Contains(
+		readGuardedSource(t, filepath.Join("..", "..", "ts", "src", "author.ts")),
+		"Number.isSafeInteger",
+	) {
+		t.Error("the author fold no longer mirrors the integrality bound")
 	}
 }
