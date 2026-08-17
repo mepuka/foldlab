@@ -90,6 +90,15 @@ deliberately untouched, never quietly fixed.
 - **Seats are separated on purpose.** Eng builds one issue; Rev reviews
   and posts findings; the operator ratifies. A repair pushed to a pull
   request under review mentions the Rev seat that filed the findings.
+- **GitHub API operations go through the executor MCP, not the host
+  `gh` CLI** (ruled 2026-08-17). Agent seats carry the `executor-cf`
+  MCP server; PRs, review comments, checks, and other GitHub API calls
+  run inside its `execute` tool via the `githubcopilot_mcp` integration
+  (call the executor's `skills` tool first for the workflow). The host
+  `gh` credential is not provisioned for seat environments — a failing
+  `gh` there is expected, not a blocker to file. Plain `git` transport
+  (fetch, push to your own branch over the configured remote) is
+  unchanged.
 
 ## Working precepts
 
