@@ -164,3 +164,40 @@ Effect success.” Why: that blanket was false for Stream, while named measured
 shapes keep the ledger claim and its controls in the same register.
 **Load-bearing? yes** — these exclusions are the exact ceiling on the proposed
 public-surface claim.
+
+### T10. The closed kind enumeration spans every register structural law
+
+Decided: rebasing onto the merged register slice, `StructuralRefusalKind`
+gains all eight kinds the register mints — `invalid-register-key`,
+`malformed-register-state`, `register-absent`, `register-substrate-shape`,
+`duplicate-grant`, `outcome-already-landed`, `stale-register-token`,
+`concurrent-register-update` — not only the two the dispatch named. The
+register's refusal helper now takes the closed kind union and a required
+taught `next`, so every mint site names its repair; the stale teaching is
+worded per operation (a superseded lease for renew, a superseded round for
+commit) while the kind stays one. Alternatives: admit only the dispatch's
+two kinds and leave the helper stringly typed; re-map the other six onto
+existing kinds. Why: the enumeration's own contract is "every structural
+kind the package can mint", the narrowed helper makes each literal site a
+compile-time member check, and renaming merged register laws is not a
+hygiene branch's act. The trigger wall's set equality then demands one
+demonstrated trigger per kind, which the refusal-repair test now carries.
+**Load-bearing? yes** — the closure claim is only true at the full set.
+
+### T11. The conflict kind is triggered by a held CAS append, not a timed race
+
+Decided: `concurrent-register-update` is demonstrated with a frame-aligned
+TCP tap between the register service and the live server: the tap parses
+client protocol commands, withholds the expire-steal's `HPUB` into the
+bucket's subject space (matched by command-line prefix only — the
+direct-get API embeds the same subject in its request), a rival revision
+lands over a second connection and is acknowledged, and only then is the
+held append released to fail its CAS and reconcile by read-back.
+Alternatives: race two stealers and hope; sleep between read and CAS;
+fault-inject the KV client with a module mock. Why: every register
+operation re-reads before it CASes, so no sequential out-of-band mutation
+can reach a failed append — the conflict window exists only between one
+operation's read and its write, and a barrier-ordered hold is the one
+deterministic way through it against the real substrate.
+**Load-bearing? no** — the trigger's mechanism; the minted refusal and its
+law are asserted by the wall itself.

@@ -28,6 +28,14 @@ export const StructuralRefusalKind = Schema.Literals([
   "inline-body-too-large",
   "digest-mismatch",
   "substrate-shape",
+  "invalid-register-key",
+  "malformed-register-state",
+  "register-absent",
+  "register-substrate-shape",
+  "duplicate-grant",
+  "outcome-already-landed",
+  "stale-register-token",
+  "concurrent-register-update",
 ])
 
 /** Every structural refusal kind the package can mint. */

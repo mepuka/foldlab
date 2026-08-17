@@ -11,7 +11,13 @@ import {
   type RegisterService,
   type RegisterState,
 } from "../Register.js"
-import { absenceRefusal, structuralRefusal, type Refusal } from "../Refusal.js"
+import {
+  absenceRefusal,
+  structuralRefusal,
+  type Next,
+  type Refusal,
+  type StructuralRefusalKind,
+} from "../Refusal.js"
 
 /**
  * NATS KV adapter for the commitment register.
@@ -63,12 +69,47 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
   })
 
 const lawRefusal = (
-  kind: string,
+  kind: StructuralRefusalKind,
   law: string,
   path: ReadonlyArray<string>,
   got: string | number,
   expected: string | number,
-): Refusal => structuralRefusal({ kind, law, path, got, expected, next: [] })
+  next: ReadonlyArray<Next>,
+): Refusal => structuralRefusal({ kind, law, path, got, expected, next })
+
+/** One taught repair per structural law; every refusal names its legal next step. */
+const teachRegisterKey: ReadonlyArray<Next> = [{
+  subject: "register.key",
+  note: "Present the work digest as one literal KV token without dots, whitespace, or wildcards.",
+}]
+const teachStoredState: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Restore the closed {holder, outcome} record at this key; only register operations write this bucket.",
+}]
+const teachGrantFirst: ReadonlyArray<Next> = [{
+  subject: "register.grant",
+  note: "Grant the register first; renew, commit, and expire-steal act only on a present register.",
+}]
+const teachObserveHolder: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Observe the register for its current holder and token; grant only an absent register.",
+}]
+const teachLandedOutcome: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Observe the landed outcome and take it as this work's result; an outcome, once set, never changes.",
+}]
+const teachSupersededLease: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Observe the register for the current token and holder; this lease is superseded; do not renew with this token.",
+}]
+const teachSupersededRound: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Observe the register for the current token and landed outcome; this round is superseded; do not retry this commit.",
+}]
+const teachReattemptSteal: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Re-read the register at its current revision and re-attempt the expire-steal against it.",
+}]
 
 const validWork = (work: string): Effect.Effect<string, Refusal> =>
   workPattern.test(work)
@@ -79,6 +120,7 @@ const validWork = (work: string): Effect.Effect<string, Refusal> =>
       ["work"],
       work,
       "one non-empty token without dots, whitespace, or wildcards",
+      teachRegisterKey,
     ))
 
 const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
@@ -90,6 +132,7 @@ const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
       ["value"],
       String(cause),
       "valid JSON register state",
+      teachStoredState,
     ),
   })
   return Effect.flatMap(parsed, (value) => {
@@ -102,6 +145,7 @@ const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
         ["value"],
         String(result.failure),
         "{ holder: string, outcome: null | { token, value } }",
+        teachStoredState,
       ))
   })
 }
@@ -156,6 +200,7 @@ const requirePresent = (
     ["register"],
     "absent",
     "present",
+    teachGrantFirst,
   ))
   : Effect.succeed(entry)
 
@@ -200,6 +245,17 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         max_bytes: status.max_bytes,
       }),
       "file/R=1/history=64/ttl=0/max_bytes=-1",
+      [{
+        subject: "bucket.ensure",
+        note: "Configure the register bucket file-backed with one replica, 64 retained revisions, and no age or size eviction.",
+        body: {
+          storage: StorageType.File,
+          replicas: 1,
+          history: REGISTER_HISTORY,
+          ttl: 0,
+          max_bytes: -1,
+        },
+      }],
     )
   }
 
@@ -225,11 +281,12 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
     readonly work: string
     readonly presented: number
     readonly intended: StoredRegister
-    readonly kind: string
+    readonly kind: StructuralRefusalKind
     readonly law: string
+    readonly next: ReadonlyArray<Next>
     readonly cause: unknown
   }): Effect.Effect<KvEntry, Refusal> => Effect.gen(function* () {
-    const { operation, work, presented, intended, kind, law, cause } = options
+    const { operation, work, presented, intended, kind, law, next, cause } = options
     const entry = yield* read(bucket, work)
     if (entry === null) {
       // Vanishing mid-flight is lifecycle mutation: outside the fixed
@@ -241,10 +298,10 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
       return entry
     }
     if (entry.revision !== presented) {
-      return yield* lawRefusal(kind, law, ["token"], presented, entry.revision)
+      return yield* lawRefusal(kind, law, ["token"], presented, entry.revision, next)
     }
     if (isCasRefusal(cause)) {
-      return yield* lawRefusal(kind, law, ["token"], presented, "the current revision")
+      return yield* lawRefusal(kind, law, ["token"], presented, "the current revision", next)
     }
     return yield* transportRefusal(operation, cause)
   })
@@ -259,6 +316,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         ["register"],
         "present",
         "absent",
+        teachObserveHolder,
       )
       const intended: StoredRegister = { holder, outcome: null }
       const created = yield* Effect.tryPromise({
@@ -281,6 +339,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
               ["register"],
               "present",
               "absent",
+              teachObserveHolder,
             )
           }
           if (isCasRefusal(cause)) {
@@ -290,6 +349,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
               ["register"],
               "present or concurrently created",
               "absent",
+              teachObserveHolder,
             )
           }
           return yield* transportRefusal("register.grant", cause)
@@ -310,6 +370,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         "outcome-already-landed",
         "an outcome, once set, never changes",
         ["outcome"], stored.outcome.value, "absent",
+        teachLandedOutcome,
       )
       if (token !== entry.revision) return yield* lawRefusal(
         "stale-register-token",
@@ -317,6 +378,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         ["token"],
         token,
         entry.revision,
+        teachSupersededLease,
       )
       const intended = stored
       const next = yield* Effect.tryPromise({
@@ -331,6 +393,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
             intended,
             kind: "stale-register-token",
             law: "renew requires the current fencing token",
+            next: teachSupersededLease,
             cause,
           }),
           (landedEntry) => landedEntry.revision,
@@ -348,11 +411,13 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         "outcome-already-landed",
         "an outcome, once set, never changes",
         ["outcome"], stored.outcome.value, "absent",
+        teachLandedOutcome,
       )
       if (token !== entry.revision) return yield* lawRefusal(
         "stale-register-token",
         "no stale token ever lands",
         ["token"], token, entry.revision,
+        teachSupersededRound,
       )
       const landed = { token, value: outcome }
       const intended: StoredRegister = { holder: stored.holder, outcome: landed }
@@ -367,6 +432,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
           intended,
           kind: "stale-register-token",
           law: "no stale token ever lands",
+          next: teachSupersededRound,
           cause,
         })))
       return { token, holder: stored.holder, outcome: landed }
@@ -382,6 +448,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         "outcome-already-landed",
         "an outcome, once set, never changes",
         ["outcome"], stored.outcome.value, "absent",
+        teachLandedOutcome,
       )
       const intended: StoredRegister = { holder, outcome: null }
       const next = yield* Effect.tryPromise({
@@ -396,6 +463,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
             intended,
             kind: "concurrent-register-update",
             law: "expire-steal grants a strictly larger token from the current revision",
+            next: teachReattemptSteal,
             cause,
           }),
           (landedEntry) => landedEntry.revision,
