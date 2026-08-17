@@ -1,11 +1,13 @@
 package substrate
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -13,6 +15,7 @@ import (
 func TestSubstrateEnvelopeShape(t *testing.T) {
 	harness := startPermissionedJetStream(t)
 	ctx := testContext(t)
+	assertApplicationPositiveControl(t, harness)
 	stream := createStream(t, harness.admin, journalEnvelopeConfig())
 	info, err := stream.Info(ctx)
 	if err != nil {
@@ -104,6 +107,174 @@ func TestSubstrateEnvelopeShape(t *testing.T) {
 			)
 		})
 	}
+
+	purgeStream := createStream(t, harness.admin, jetstream.StreamConfig{
+		Name:      "ASSUME_API_PURGE",
+		Subjects:  []string{"acl.purge"},
+		Storage:   jetstream.FileStorage,
+		Replicas:  1,
+		Retention: jetstream.LimitsPolicy,
+	})
+	if _, err := harness.admin.Publish(ctx, "acl.purge", []byte("destructive control")); err != nil {
+		t.Fatalf("seed API purge control: %v", err)
+	}
+	assertApplicationRefusedAPI(
+		t,
+		harness,
+		fmt.Sprintf(server.JSApiStreamPurgeT, "ASSUME_API_PURGE"),
+		[]byte("{}"),
+	)
+	if info, err := purgeStream.Info(ctx); err != nil || info.State.Msgs != 1 {
+		t.Fatalf("refused application stream purge moved state: info=%+v err=%v", info, err)
+	}
+	purgeResponse := adminPurgeStreamAPI(t, harness, "ASSUME_API_PURGE")
+	if info, err := purgeStream.Info(ctx); err != nil || info.State.Msgs != 0 {
+		t.Fatalf("admin stream purge left state: info=%+v err=%v", info, err)
+	}
+	t.Logf(
+		"TRACE acl-api subject=%s app=permission-refused admin=success purged=%d",
+		fmt.Sprintf(server.JSApiStreamPurgeT, "ASSUME_API_PURGE"),
+		purgeResponse.Purged,
+	)
+
+	journalDeleteSubject := fmt.Sprintf(server.JSApiStreamDeleteT, "ASSUME_JOURNAL")
+	assertApplicationRefusedAPI(t, harness, journalDeleteSubject, nil)
+	if _, err := stream.Info(ctx); err != nil {
+		t.Fatalf("refused application journal delete removed stream: %v", err)
+	}
+	adminDeleteStreamAPI(t, harness, "ASSUME_JOURNAL")
+	if _, err := harness.admin.Stream(ctx, "ASSUME_JOURNAL"); !errors.Is(err, jetstream.ErrStreamNotFound) {
+		t.Fatalf("admin journal delete left stream present: %v", err)
+	}
+	t.Logf("TRACE acl-api subject=%s app=permission-refused admin=success stream=gone", journalDeleteSubject)
+
+	kvDeleteSubject := fmt.Sprintf(server.JSApiStreamDeleteT, "KV_ASSUME_TERMINAL")
+	assertApplicationRefusedAPI(t, harness, kvDeleteSubject, nil)
+	if _, err := bucket.Get(ctx, "terminal.delete"); err != nil {
+		t.Fatalf("refused application KV backing-stream delete removed bucket: %v", err)
+	}
+	adminDeleteStreamAPI(t, harness, "KV_ASSUME_TERMINAL")
+	if _, err := harness.admin.Stream(ctx, "KV_ASSUME_TERMINAL"); !errors.Is(err, jetstream.ErrStreamNotFound) {
+		t.Fatalf("admin KV backing-stream delete left stream present: %v", err)
+	}
+	t.Logf("TRACE acl-api subject=%s app=permission-refused admin=success stream=gone", kvDeleteSubject)
+}
+
+func TestApplicationACLWideningPlant(t *testing.T) {
+	harness := startPermissionedJetStreamWithApplicationPermissions(t, []string{"$JS.API.>"}, nil)
+	ctx := testContext(t)
+	createStream(t, harness.admin, journalEnvelopeConfig())
+
+	subject := fmt.Sprintf(server.JSApiStreamDeleteT, "ASSUME_JOURNAL")
+	response, err := harness.applicationConn.Request(subject, nil, permissionTimeout)
+	if err != nil {
+		t.Fatalf("widened application delete request: %v", err)
+	}
+	var deleted server.JSApiStreamDeleteResponse
+	if err := json.Unmarshal(response.Data, &deleted); err != nil {
+		t.Fatalf("decode widened application delete response: %v", err)
+	}
+	if deleted.Error != nil || !deleted.Success {
+		t.Fatalf("widened application did not delete stream: %+v", deleted)
+	}
+	if _, err := harness.admin.Stream(ctx, "ASSUME_JOURNAL"); !errors.Is(err, jetstream.ErrStreamNotFound) {
+		t.Fatalf("widening plant left stream present: %v", err)
+	}
+	t.Logf("TRACE acl-plant allow=$JS.API.> subject=%s result=stream-deleted baseline=must-red", subject)
+}
+
+func TestApplicationDenyAllPlant(t *testing.T) {
+	harness := startPermissionedJetStreamWithApplicationPermissions(t, nil, []string{">"})
+	attempt := nats.NewMsg("flb.req.credential-control")
+	attempt.Data = []byte("legitimate application work")
+	expectPermissionViolation(t, harness, attempt)
+	t.Log("TRACE acl-plant deny=> legitimate-publish=permission-refused positive-control=must-red")
+}
+
+func assertApplicationPositiveControl(t *testing.T, harness *testHarness) {
+	t.Helper()
+	ctx := testContext(t)
+	work := createStream(t, harness.admin, jetstream.StreamConfig{
+		Name:     "ASSUME_APPLICATION_WORK",
+		Subjects: []string{"flb.req.>", "flb.ing.>"},
+		Storage:  jetstream.FileStorage,
+		Replicas: 1,
+	})
+	for _, subject := range []string{"flb.req.credential-control", "flb.ing.credential-control"} {
+		message := nats.NewMsg(subject)
+		message.Data = []byte("legitimate application work")
+		if _, err := harness.applicationConn.RequestMsg(message, permissionTimeout); err != nil {
+			t.Fatalf("application positive-control publish %s: %v", subject, err)
+		}
+	}
+	info, err := work.Info(ctx)
+	if err != nil {
+		t.Fatalf("read application positive-control stream: %v", err)
+	}
+	if info.State.Msgs != 2 {
+		t.Fatalf("application positive-control publishes stored=%d, want 2", info.State.Msgs)
+	}
+
+	bucket := createKeyValue(t, harness.admin, jetstream.KeyValueConfig{
+		Bucket:   "ASSUME_APP_SCOPE",
+		History:  1,
+		Storage:  jetstream.FileStorage,
+		Replicas: 1,
+	})
+	for revision, value := range []string{"application-scoped KV create", "application-scoped KV update"} {
+		message := nats.NewMsg("$KV.ASSUME_APP_SCOPE.credential-control")
+		message.Data = []byte(value)
+		message.Header.Set(jetstream.ExpectedLastSubjSeqHeader, fmt.Sprintf("%d", revision))
+		if _, err := harness.applicationConn.RequestMsg(message, permissionTimeout); err != nil {
+			t.Fatalf("application positive-control KV write revision=%d: %v", revision, err)
+		}
+	}
+	entry, err := bucket.Get(ctx, "credential-control")
+	if err != nil || entry.Revision() != 2 || string(entry.Value()) != "application-scoped KV update" {
+		t.Fatalf("application positive-control KV read entry=%v err=%v", entry, err)
+	}
+	t.Log("TRACE application-positive publishes=[flb.req,flb.ing] kv=$KV.ASSUME_APP_SCOPE:create+CAS-update credential=operational")
+}
+
+func assertApplicationRefusedAPI(t *testing.T, harness *testHarness, subject string, payload []byte) {
+	t.Helper()
+	message := nats.NewMsg(subject)
+	message.Data = payload
+	message.Reply = nats.NewInbox()
+	expectPermissionViolation(t, harness, message)
+}
+
+func adminDeleteStreamAPI(t *testing.T, harness *testHarness, stream string) {
+	t.Helper()
+	subject := fmt.Sprintf(server.JSApiStreamDeleteT, stream)
+	message, err := harness.adminConn.Request(subject, nil, permissionTimeout)
+	if err != nil {
+		t.Fatalf("admin stream delete API %s: %v", subject, err)
+	}
+	var response server.JSApiStreamDeleteResponse
+	if err := json.Unmarshal(message.Data, &response); err != nil {
+		t.Fatalf("decode admin stream delete API %s: %v", subject, err)
+	}
+	if response.Error != nil || !response.Success {
+		t.Fatalf("admin stream delete API %s response=%+v", subject, response)
+	}
+}
+
+func adminPurgeStreamAPI(t *testing.T, harness *testHarness, stream string) server.JSApiStreamPurgeResponse {
+	t.Helper()
+	subject := fmt.Sprintf(server.JSApiStreamPurgeT, stream)
+	message, err := harness.adminConn.Request(subject, []byte("{}"), permissionTimeout)
+	if err != nil {
+		t.Fatalf("admin stream purge API %s: %v", subject, err)
+	}
+	var response server.JSApiStreamPurgeResponse
+	if err := json.Unmarshal(message.Data, &response); err != nil {
+		t.Fatalf("decode admin stream purge API %s: %v", subject, err)
+	}
+	if response.Error != nil || !response.Success {
+		t.Fatalf("admin stream purge API %s response=%+v", subject, response)
+	}
+	return response
 }
 
 func journalEnvelopeConfig() jetstream.StreamConfig {

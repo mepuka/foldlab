@@ -20,8 +20,10 @@ afterEach(async () => {
   harness = undefined
 })
 
-const expectWrongLastSequence = async (
-  operation: "journal-cas" | "kv-create" | "kv-update",
+type WrongLastOperation = "journal-cas" | "kv-create" | "kv-update"
+type WrongLastClassification = "cas-conflict" | "key-exists" | "revision-mismatch"
+
+const captureWrongLastSequence = async (
   run: () => Promise<unknown>,
 ): Promise<JetStreamApiError> => {
   let refusal: unknown
@@ -32,12 +34,23 @@ const expectWrongLastSequence = async (
   }
   expect(refusal).toBeInstanceOf(JetStreamApiError)
   const apiError = refusal as JetStreamApiError
-  expect({ operation, status: apiError.status, code: apiError.code }).toEqual({
-    operation,
-    status: 400,
-    code: 10071,
-  })
+  expect({ status: apiError.status, code: apiError.code }).toEqual({ status: 400, code: 10071 })
   return apiError
+}
+
+const classifyWrongLastSequence = (
+  operation: WrongLastOperation,
+  refusal: JetStreamApiError,
+): WrongLastClassification => {
+  expect({ status: refusal.status, code: refusal.code }).toEqual({ status: 400, code: 10071 })
+  switch (operation) {
+    case "journal-cas":
+      return "cas-conflict"
+    case "kv-create":
+      return "key-exists"
+    case "kv-update":
+      return "revision-mismatch"
+  }
 }
 
 describe("@nats-io 3.4.0 substrate parity wall", () => {
@@ -84,7 +97,7 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
         seq: 2,
         duplicate: false,
       })
-      await expectWrongLastSequence("journal-cas", () =>
+      const journalCasRefusal = await captureWrongLastSequence(() =>
         js.publish("ts.parity.cas", encode("cas"), {
           msgID: "ts-cas-id",
           expect: { lastSubjectSequence: 0 },
@@ -107,17 +120,31 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
       })
       const created = await kv.create("alpha", encode("created"))
       expect(created).toBe(1)
-      await expectWrongLastSequence("kv-create", () =>
+      const duplicateCreateRefusal = await captureWrongLastSequence(() =>
         kv.create("alpha", encode("duplicate")),
       )
       const updated = await kv.update("alpha", encode("updated"), created)
       expect(updated).toBe(2)
-      await expectWrongLastSequence("kv-update", () =>
+      const staleUpdateRefusal = await captureWrongLastSequence(() =>
         kv.update("alpha", encode("stale"), created),
       )
 
+      const classifications: ReadonlyArray<WrongLastClassification> = [
+        classifyWrongLastSequence("journal-cas", journalCasRefusal),
+        classifyWrongLastSequence("kv-create", duplicateCreateRefusal),
+        classifyWrongLastSequence("kv-update", staleUpdateRefusal),
+      ]
+      expect(classifications).toEqual(["cas-conflict", "key-exists", "revision-mismatch"])
+
+      const labelSwapPlant: ReadonlyArray<WrongLastClassification> = [
+        classifyWrongLastSequence("journal-cas", journalCasRefusal),
+        classifyWrongLastSequence("kv-update", duplicateCreateRefusal),
+        classifyWrongLastSequence("kv-create", staleUpdateRefusal),
+      ]
+      expect(labelSwapPlant).not.toEqual(["cas-conflict", "key-exists", "revision-mismatch"])
+
       console.info(
-        "SUBSTRATE TS TRACE clients=@nats-io/*@3.4.0 errors=[journal-cas:400/10071,kv-create:400/10071,kv-update:400/10071] puback=[stream,seq,duplicate] cas-precedence=[2/new,400/10071,2/duplicate]",
+        "SUBSTRATE TS TRACE clients=@nats-io/*@3.4.0 errors=[journal-cas:400/10071=>cas-conflict,kv-create:400/10071=>key-exists,kv-update:400/10071=>revision-mismatch] label-swap=refused puback=[stream,seq,duplicate] cas-precedence=[2/new,400/10071,2/duplicate]",
       )
     } finally {
       await connection.close()

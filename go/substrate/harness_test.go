@@ -52,6 +52,9 @@ func TestMain(m *testing.M) {
 		runtime.GOARCH,
 		filesystem,
 	)
+	if runtime.GOOS == "windows" {
+		fmt.Println("SUBSTRATE BATTERY sigkill-recovery=SKIP reason=linux-process-signals-required")
+	}
 	os.Exit(m.Run())
 }
 
@@ -110,7 +113,20 @@ func startJetStream(t *testing.T) *testHarness {
 
 func startPermissionedJetStream(t *testing.T) *testHarness {
 	t.Helper()
+	return startPermissionedJetStreamWithApplicationPermissions(t, nil, nil)
+}
+
+func startPermissionedJetStreamWithApplicationPermissions(
+	t *testing.T,
+	extraPublishAllow []string,
+	publishDeny []string,
+) *testHarness {
+	t.Helper()
 	applicationErrors := make(chan error, 16)
+	publishAllow := append(
+		[]string{"flb.req.>", "flb.ing.>", "$KV.ASSUME_APP_SCOPE.>"},
+		extraPublishAllow...,
+	)
 	harness := startJetStreamWithOptions(t, &server.Options{
 		ServerName: "foldlab-substrate-permissions",
 		JetStream:  true,
@@ -124,7 +140,7 @@ func startPermissionedJetStream(t *testing.T) *testHarness {
 				Username: "application",
 				Password: "application",
 				Permissions: &server.Permissions{
-					Publish: &server.SubjectPermission{Allow: []string{"flb.req.>", "flb.ing.>"}},
+					Publish: &server.SubjectPermission{Allow: publishAllow, Deny: publishDeny},
 					Subscribe: &server.SubjectPermission{
 						Allow: []string{"_INBOX.>"},
 					},

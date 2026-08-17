@@ -11,13 +11,14 @@ a transport semantic, an in-process shutdown is not process crash, and a test-on
 helper leaves no production binary. **Load-bearing? yes** — weakening either seam
 would overstate what the gate witnesses.
 
-### T2. Keep terminality's destructive negative control on KV, not the journal
+### T2. Pin terminality across both data subjects and the JetStream API
 
-Decided: the journal stream independently pins `DenyDelete`/`DenyPurge`, while
-revision-checked KV delete and purge are attempted first with the application
-credential and then with the administrator. Alternatives: use administrator
-stream deletion as the control; omit the successful destructive control. Why:
-DEV-704 found that terminal KV records are mutable by an authorized client, so
-the exact same operation must fail only at the credential boundary to prove that
-boundary is load-bearing. **Load-bearing? yes** — a refusal without the admin
-success could be supplied by the mechanism and would not test the ACL claim.
+Decided: pair application refusal with administrator success for revision-checked
+KV delete/purge, journal-stream deletion, stream purge, and deletion of the KV
+backing stream. The application credential also proves its allowed publish and
+scoped-KV paths before the destructive probes run. Alternatives: witness only
+data-subject deletion; trust `DenyDelete`/`DenyPurge` to guard stream-management
+APIs; omit the successful destructive controls. Why: the credential is the only
+source of terminality, and `$JS.API.STREAM.DELETE` removes both the stream config
+and its messages. **Load-bearing? yes** — the committed `$JS.API.>` widening
+control deletes a stream, while a deny-all control kills legitimate work.

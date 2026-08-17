@@ -46,6 +46,9 @@ func TestSubjectCAS(t *testing.T) {
 	if got := classifyWrongLastSequence(t, operationJournalCAS, staleErr); got != "cas-conflict" {
 		t.Fatalf("journal CAS classification=%s", got)
 	}
+	if !errors.Is(staleErr, jetstream.ErrKeyExists) {
+		t.Fatalf("raw journal CAS no longer matches ErrKeyExists: %v", staleErr)
+	}
 	after, err := stream.Info(testContext(t))
 	if err != nil {
 		t.Fatalf("stream state after stale CAS: %v", err)
@@ -70,7 +73,7 @@ func TestSubjectCAS(t *testing.T) {
 	classifyWrongLastSequence(t, operationJournalCAS, ordinalErr)
 
 	t.Logf(
-		"TRACE subject-cas accepted=[a@1,b@2,a@3,b@4,a@5,b@6] stale=400/10071 state-unchanged cursor=latest-global-stream-sequence",
+		"TRACE subject-cas accepted=[a@1,b@2,a@3,b@4,a@5,b@6] stale=400/10071 ErrKeyExists=true state-unchanged cursor=latest-global-stream-sequence",
 	)
 }
 
@@ -179,6 +182,9 @@ func TestKVRevisionLifecycle(t *testing.T) {
 	if got := classifyWrongLastSequence(t, operationKVCreate, duplicateCreateErr); got != "key-exists" {
 		t.Fatalf("duplicate create classification=%s", got)
 	}
+	if !errors.Is(duplicateCreateErr, jetstream.ErrKeyExists) {
+		t.Fatalf("duplicate KV create no longer matches ErrKeyExists: %v", duplicateCreateErr)
+	}
 	other, err := bucket.Create(ctx, "other", []byte("other"))
 	if err != nil || other != 2 {
 		t.Fatalf("create other: revision=%d err=%v, want 2", other, err)
@@ -193,6 +199,9 @@ func TestKVRevisionLifecycle(t *testing.T) {
 	}
 	if !errors.Is(staleUpdateErr, jetstream.ErrKeyRevisionMismatch) {
 		t.Fatalf("stale update does not match ErrKeyRevisionMismatch: %v", staleUpdateErr)
+	}
+	if !errors.Is(staleUpdateErr, jetstream.ErrKeyExists) {
+		t.Fatalf("stale KV update no longer matches ErrKeyExists: %v", staleUpdateErr)
 	}
 	if err := bucket.Delete(ctx, "alpha", jetstream.LastRevision(created)); err == nil {
 		t.Fatal("stale revision delete succeeded")
@@ -302,7 +311,7 @@ func TestKVRevisionLifecycle(t *testing.T) {
 	traces = append(
 		traces,
 		fmt.Sprintf(
-			"lifecycle=[create:1 other:2 update:3 delete:4 recreate:5 purge:6 recreate:7] read-after-ack=[start:8 writes:512 final:%d stale:%d]",
+			"lifecycle=[create:1 other:2 update:3 delete:4 recreate:5 purge:6 recreate:7] read-after-ack=[start:8 writes:512 final:%d stale:%d] ErrKeyExists=[kv-create:true,kv-update:true]",
 			finalEntry.Revision(),
 			staleReads.Load(),
 		),
@@ -383,7 +392,9 @@ func TestDedupAndCASPrecedence(t *testing.T) {
 		t.Fatalf("configured duplicate window=%s, want %s", configuredInfo.Config.Duplicates, configuredDuplicateWait)
 	}
 
+	firstStartedAt := time.Now()
 	first, err := harness.admin.Publish(ctx, "dedup.window", []byte("first"), jetstream.WithMsgID("window-id"))
+	firstAcknowledgedAt := time.Now()
 	if err != nil || first.Sequence != 1 || first.Duplicate {
 		t.Fatalf("first dedup publish ack=%+v err=%v", first, err)
 	}
@@ -392,14 +403,41 @@ func TestDedupAndCASPrecedence(t *testing.T) {
 		t.Fatalf("immediate duplicate ack=%+v err=%v", immediate, err)
 	}
 	time.Sleep(500 * time.Millisecond)
+	insideStartedAt := time.Now()
 	inside, err := harness.admin.Publish(ctx, "dedup.window", []byte("inside"), jetstream.WithMsgID("window-id"))
+	insideAcknowledgedAt := time.Now()
+	insideAcknowledgedOffset := insideAcknowledgedAt.Sub(firstAcknowledgedAt)
+	if insideAcknowledgedOffset >= configuredDuplicateWait {
+		t.Fatalf(
+			"dedup no-refresh witness inconclusive: inside publish interval=[%s,%s] escaped original window=%s",
+			insideStartedAt.Sub(firstStartedAt),
+			insideAcknowledgedAt.Sub(firstStartedAt),
+			configuredDuplicateWait,
+		)
+	}
 	if err != nil || inside.Sequence != 1 || !inside.Duplicate {
 		t.Fatalf("inside-window duplicate ack=%+v err=%v", inside, err)
 	}
 	// This lands after the original's window but before a window measured from
 	// the suppressed retry would expire, proving retries do not refresh it.
 	time.Sleep(1700 * time.Millisecond)
+	outsideStartedAt := time.Now()
 	outside, err := harness.admin.Publish(ctx, "dedup.window", []byte("outside"), jetstream.WithMsgID("window-id"))
+	outsideAcknowledgedAt := time.Now()
+	retryOffset := insideStartedAt.Sub(firstAcknowledgedAt)
+	outsideStartedOffset := outsideStartedAt.Sub(firstAcknowledgedAt)
+	outsideAcknowledgedOffset := outsideAcknowledgedAt.Sub(firstAcknowledgedAt)
+	corridorEnd := configuredDuplicateWait + retryOffset
+	if outsideStartedOffset <= configuredDuplicateWait || outsideAcknowledgedOffset >= corridorEnd {
+		t.Fatalf(
+			"dedup no-refresh witness inconclusive: outside publish interval=[%s,%s] not wholly inside corridor=(%s,%s), retry-offset=%s",
+			outsideStartedOffset,
+			outsideAcknowledgedOffset,
+			configuredDuplicateWait,
+			corridorEnd,
+			retryOffset,
+		)
+	}
 	if err != nil || outside.Sequence != 2 || outside.Duplicate {
 		t.Fatalf("outside-window publish ack=%+v err=%v", outside, err)
 	}
@@ -420,7 +458,12 @@ func TestDedupAndCASPrecedence(t *testing.T) {
 	}
 
 	t.Logf(
-		"TRACE dedup default=2m configured=%s pure=[1/new,1/duplicate,1/duplicate,2/new] cas=[3/new,400/10071,3/duplicate] other-subject=3/duplicate namespace=stream-wide precedence=CAS-before-dedup",
+		"TRACE dedup default=2m configured=%s pure=[1/new,1/duplicate,1/duplicate,2/new] corridor=(%s,%s) outside=[%s,%s] retry-offset=%s cas=[3/new,400/10071,3/duplicate] other-subject=3/duplicate namespace=stream-wide precedence=CAS-before-dedup",
 		configuredDuplicateWait,
+		configuredDuplicateWait,
+		corridorEnd,
+		outsideStartedOffset,
+		outsideAcknowledgedOffset,
+		retryOffset,
 	)
 }

@@ -95,7 +95,7 @@ jobs:
       # TypeScript suite.
       - name: go — go test ./...
         working-directory: go
-        run: go test -count=1 ./... 2>&1 | tee ../ci-logs/go-test.log
+        run: go test -count=1 -v ./... 2>&1 | tee ../ci-logs/go-test.log
 
       # --- proto/go ------------------------------------------------------
       - name: proto/go — gofmt -l .
