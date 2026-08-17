@@ -169,8 +169,31 @@ cache does not track files it cannot attribute to the module — a plain
 `go test ./...` prints `ok (cached)` for this package even after a committed
 fixture has been mutated. That was measured, by mutating one. A gate that can
 report a stale pass on exactly the input it exists to watch is worse than no
-gate, because it is believed. Any future fixture gate that reads across a module
-boundary inherits this hazard.
+gate, because it is believed.
+
+The hazard is not future and it is not this package's alone. **Four committed
+readers cross a module boundary today**, and every one of them was measured
+reporting a stale pass under a one-byte fixture mutation and going red under
+`-count=1` on the same tree:
+
+| reader | fixture it reads across the boundary | measured stale pass → armed red |
+| --- | --- | --- |
+| `go/canonical/conformance_test.go`, `jcs_test.go` | `fixtures/golden-conformance.json`, `fixtures/jcs-rfc8785.json` | `ok foldlab/canonical (cached)` → `TestDigests: case 0: digest: got 74234e98… want 04234e98…` |
+| `go/journal/hardening_internal_test.go` | `proto/wire/fixtures/chains.json` | `ok foldlab/journal (cached)` → `sequential read differs from independent frozen chain oracle: cursor` |
+| `proto/go/protod/{wall_test.go, protocol_moves_test.go, refusal_sort_test.go, closure_law_test.go}` | `proto/wire/fixtures/*.json`, `proto/wire/refusal-sorts.json` | `ok foldlab/proto/protod (cached)` → `wall_test.go:55: leaf-string: digest drifted: got 3b67b844… want 0b67b844…` |
+| `proto/go/catalogr4/reply_conformance_test.go` | `proto/wire/reply-conformance.json` | `ok foldlab/proto/catalogr4 (cached)` → `create-valid: accepted = false, want true` |
+
+`proto/go/protod/closure_law_test.go` is the one that shows why this was worth
+arming at the class: it is the closure law's OWN corpus check, added by the same
+diff that discovered the hazard and armed exactly one package against it. So
+`scripts/gates.ts` now passes `-count=1` on the `go — tests` and
+`proto/go — tests` stages as well, which covers a reader added tomorrow without
+anyone remembering this paragraph. `proto/AGENTS.md` and `go/AGENTS.md` list the
+same flag. The cost is the whole Go battery running uncached on every gate run;
+that is the price of a wall that cannot report a stale pass.
+
+A fixture gate that reads across a module boundary — in this repository or a
+sibling one — inherits this hazard, and `-count=1` at the stage is the remedy.
 
 The diff is a FINDING, not a fixture to update — the gate's own failure message
 says so, because the moment a wall goes red is the moment step 1 of the ritual
