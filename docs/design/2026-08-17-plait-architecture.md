@@ -64,6 +64,11 @@ packages/plait/
     Models.ts             the provider seam (wraps pinned effect/unstable/ai); capability classes
     Toolkits.ts           model-facing toolkits derived from cataloged capabilities
     FabricClient.ts       connection + venue map; Scope-bound; LayerMap by venue
+    Venues.ts             venue records + the request-plane client to a venue's
+                          daemon (flb.req.*) — sessions are driven through here
+    Seats.ts              seat bindings and authority acts (close, deadline) as
+                          typed clients (both added 2026-08-17, DEV-700 findings
+                          H-3/H-4 — used by parts 2–3, owned by no module)
     Attest.ts             the conformance harness client; vector replay
     internal/             nats adapters (publish/consume/kv/obj), codecs, consumer pump,
                           heartbeats, cache-boundary mapping — nothing here is a public name
@@ -97,7 +102,10 @@ wire shape:
 
 ```ts
 // Digest.ts — identity is a brand; equality is the coherence check.
-export const Digest: Schema.Schema<Digest, string>           // sha256 hex, branded
+// (Signatures corrected 2026-08-17, DEV-700 finding H-1: at the pin,
+// Schema.Schema<out T> takes one parameter (Schema.ts:937); the
+// encoded/service-carrying form is Schema.Codec<T, E, RD, RE> (:1037).)
+export const Digest: Schema.Codec<Digest, string>            // sha256 hex, branded
 
 // Canonical.ts — THE byte form; encode is total on the wire grammar.
 export const canonicalBytes: (value: WireValue) => Uint8Array
@@ -108,8 +116,8 @@ export const digestOf: (value: WireValue) => Digest
 // payloads) from the environment; decode re-derives the digest of what
 // it fetched and refuses on mismatch — constrained decode with
 // resolution, as one composable schema.
-export interface Resolved<A> extends Schema.Schema<A, Digest, Catalog | Blobs> {}
-export const Resolved: <A>(schema: Schema.Schema<A, WireValue>) => Resolved<A>
+export interface Resolved<A> extends Schema.Codec<A, Digest, Catalog | Blobs, never> {}
+export const Resolved: <A>(schema: Schema.Codec<A, WireValue>) => Resolved<A>
 ```
 
 Consequences, each a deliberate DX property:
