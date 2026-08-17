@@ -52,7 +52,7 @@
   corrected exporter build: 60.7 seconds, exit 0. Trusted control build: 14.0
   seconds, exit 0 and `[sorryAx]` observed/refused. Live `run.sh` prints its own
   wall-clock and exit record on every execution; the final full Windows gate
-  recorded 45 seconds and exit 0.
+  recorded 40 seconds and exit 0.
 
 ## CI cache-fit measurement
 
