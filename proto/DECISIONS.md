@@ -3040,3 +3040,20 @@ exact position ruling 5 closed, so the cure made an already-stale sentence wrong
 rather than merely dated. Widening the model is REF-2b's lane and needs the
 float question ruled, not an executor's edit. **Load-bearing? no** — it is an
 abstraction note, and the theorems do not read it.
+
+### D??. New citations name the brief by number; existing paths stay as written
+
+Decided: the tracked prose this cure adds cites dispatch brief 26 and the
+operator rulings by NUMBER, never by path, while every pre-existing citation to
+an uncommitted coordinator record — brief 25 in `SPEC.md` and
+`GRAMMAR-SITES.md`, the grill record and the round-1 review elsewhere — is left
+exactly as written. Alternatives: cite brief 26 by path for symmetry with brief
+25 (adds a fourth dangling pointer); strip the existing path citations too
+(rewrites an authority record this seat was told to leave alone, and the records
+land on main at the merge). Why: finding N4, disposed by brief 26 R4b. A tracked
+file that points at a path a fresh checkout cannot open is the defect; a brief
+NUMBER is an identifier, not a promise that a file exists. The first pass of this
+cure did add two path citations and they were removed in a follow-up commit
+rather than silently amended, because the branch is the record.
+**Load-bearing? no** — it is citation hygiene, and the authority itself is
+recorded either way.

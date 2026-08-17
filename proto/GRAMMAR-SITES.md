@@ -23,8 +23,9 @@ Two runs built it independently and agree: the Eng survey required by
 enumeration in `docs/research/2026-08-16-review-float-hygiene-branch.md`
 §(g). Verified again against the tree at the brief-25 cure
 (`scratch/dispatch/25-float-hygiene-cure.md`, C7) and at the brief-26
-closure-law cure (`scratch/dispatch/26-closure-law-cure.md`, R1/R4a). A site
-that appears in the tree and not in this table is a finding.
+closure-law cure (R1/R4a — cited by number, because brief 26 is a
+coordinator record that lands with the merge). A site that appears in the
+tree and not in this table is a finding.
 
 "Touched" means the float-leaf drop, the literal narrowing, or the closure
 law edited the site. "Checked-clean" means the site was read and carries no

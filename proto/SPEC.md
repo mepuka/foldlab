@@ -108,11 +108,15 @@ a number whose canonical form needs shortest-round-trip printing, so a
 canonical-value law over this whole grammar owes no such proof
 obligation.
 
-Both edits are directed by `scratch/dispatch/26-closure-law-cure.md`
-under operator ruling 7 (2026-08-17), which follows ruling 5's
-position-by-position narrowing after that narrowing failed to converge;
-the spec's do-not-edit law and this brief-directed exception are
-recorded in `DECISIONS.md`.
+Ruling 5's literal narrowing, above, was directed by
+`scratch/dispatch/25-float-hygiene-cure.md`. Both edits in this section
+are directed by dispatch brief 26 under operator ruling 7 (2026-08-17),
+which follows ruling 5 after position-by-position narrowing failed to
+converge. That brief is cited by number rather than by path because it
+is a coordinator record that lands with the merge, and a tracked file
+should not point at a path a fresh checkout cannot open. The spec's
+do-not-edit law and both brief-directed exceptions are recorded in
+`DECISIONS.md`.
 
 ## Skeleton (the unanimous shape; internal layout is the builder's)
 
