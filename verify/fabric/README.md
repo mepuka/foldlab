@@ -1,0 +1,93 @@
+# Fabric algebra model
+
+`verify/fabric` is a standalone Lean 4.33.0 package with no Lake dependencies.
+It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, and F9, then
+executes the same definitions to author the runtime conformance corpus at
+`packages/plait/fixtures/fabric-conformance.ndjson`.
+
+## Guided tour
+
+- `Fabric/Definitions.lean` owns the objects and executable functions. A
+  `Cell` is a finite set of `(holder, observation)` pairs. `foldEvidence`
+  inserts a trace into that set. `guardedApply` reads consecutive positioned
+  operations above an anchor floor. `CommutativeAlgebra` declares the laws
+  required before partition folds may be merged. `Policy.meet` intersects the
+  four set-valued components and takes `Nat.min` across the four ceilings.
+- `Fabric/Laws.lean` contains statements only. F1 is cell ACI plus extensional
+  convergence; F2 identifies traces with equal observation support; F2b
+  quantifies over every finite schedule covering each consecutive position;
+  F3 is checkpoint resumption; F4 is partition/interleaving equivalence under
+  a declared commutative algebra; F9 is the full greatest-lower-bound law plus
+  descendant attenuation.
+- `Fabric/Proofs.lean` contains proofs only. The trace proofs reduce equality
+  to finite-set membership. F2b inducts over consecutive positions. F4 first
+  proves append and permutation lemmas. F9 proves set intersection and numeric
+  minimum componentwise, then follows an action-tree descendant derivation.
+- `Fabric/Mutants.lean` contains four variants, each dropping exactly one
+  required law. `Fabric/ControlProofs.lean` proves the retained laws and the
+  named counterexamples. `ControlMain.lean` emits the committed counterexample
+  traces checked by the gate.
+- `Fabric/Canonical.lean`, `Fabric/Corpus.lean`, and `Main.lean` are the
+  executable emitter. Object keys are sorted; strings occupy a fixed safe
+  ASCII grammar; numbers are non-negative integers. The integer rendering
+  transliterates the promoted RQ-9 path in
+  `docs/research/reference/rq9-rfc8785-numbers/EsNumberToString.lean`: strip
+  decimal trailing zeroes, then render ES2019 step 6. No float enters this
+  grammar.
+- `run.sh` is the gate: source hygiene, file partition, build, complete theorem
+  roster, proof footprint, four negative controls, pinned vector counts, and
+  byte-identical regeneration.
+
+## How a trace walks through `fold`
+
+`fold step initial [a, b, c]` is the left fold
+`step (step (step initial a) b) c`. `foldFrom` is the same walk starting from a
+checkpointed state. F3 proves that folding `[a, b]`, checkpointing its result,
+and resuming with `[c]` is definitionally the same computation as folding
+`[a, b, c]` once.
+
+F2 uses a different fold because evidence is a join-semilattice: inserting the
+trace into a finite set deliberately forgets both order and multiplicity. F2b
+handles non-idempotent steps. A schedule is finite and may be duplicated,
+reordered, and prefixed with stale deliveries. Coverage says that lookup at
+each consecutive position above the floor returns the trace's operation;
+`guardedApply` walks exactly those positions once. The theorem is generic in
+`step`, so counting and other non-idempotent folds are included.
+
+## Notation
+
+- `x ∈ cell`: observation `x` is a member of the finite cell.
+- `left ∪ right`: cell merge (set union).
+- `left ∩ right`: policy-component meet (set intersection).
+- `child ≤ parent`: every child set is a subset of the corresponding parent
+  set and every child numeric ceiling is at most the parent's.
+- `xs.Perm ys`: `ys` contains exactly the elements of `xs` in another order.
+- `xs ++ ys`: list concatenation.
+- `¬ p` and `x ≠ y`: proposition `p` is false, and `x` and `y` differ.
+
+## What the footprint proves
+
+For every theorem in the roster, the gate asks Lean to print its transitive
+axiom dependencies and permits only `propext`, `Classical.choice`, and
+`Quot.sound`. This catches proof routes that compile while importing an
+additional axiom. Source hygiene separately rejects the known evaluator and
+code-generation escape hatches.
+
+The footprint does not prove that the definitions are the right model of a
+running broker, that the emitter is RFC 8785-correct outside its narrowed
+integer/ASCII grammar, or that a TypeScript/Go consumer corresponds to Lean.
+Those are later wall and lockstep obligations. This package proves only the
+stated algebra over its definitions; it makes no liveness, NATS, crash, lease,
+or runtime-conformance claim.
+
+## Run
+
+```sh
+cd verify/fabric
+lake build
+lake exe emitter
+./run.sh
+```
+
+The first emitter line records `lake exe emitter`. Never edit the fixture or a
+counterexample trace by hand; regenerate them through their executable.

@@ -1,0 +1,1 @@
+# path:line:sha256 approvals only. Empty by construction for this package.

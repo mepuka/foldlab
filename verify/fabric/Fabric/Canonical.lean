@@ -1,0 +1,61 @@
+/-
+Canonical JSON for the emitter's deliberately narrowed grammar: ASCII strings,
+non-negative integers, arrays, and objects. Object keys are sorted before
+rendering. The integer path transliterates the promoted RQ-9 reference pattern
+at `docs/research/reference/rq9-rfc8785-numbers/EsNumberToString.lean`:
+strip decimal trailing zeroes, then take ES2019 step 6. This package has no
+floating-point grammar and therefore does not claim the unimplemented RQ-9
+shortest-round-trip step.
+-/
+import Fabric.ControlProofs
+
+namespace Fabric.Canonical
+
+structure Field where
+  key : String
+  value : String
+
+def zeros (count : Nat) : String := String.ofList (List.replicate count '0')
+
+def stripTrailingZeros (number : Nat) : Nat × Nat :=
+  let rec go (significand exponent fuel : Nat) : Nat × Nat :=
+    match fuel with
+    | 0 => (significand, exponent)
+    | fuel + 1 =>
+        if significand != 0 && significand % 10 == 0 then
+          go (significand / 10) (exponent + 1) fuel
+        else (significand, exponent)
+  go number 0 number
+
+/-- RFC 8785 / ES2019 rendering on the corpus's non-negative integer leaf. -/
+def nat (number : Nat) : String :=
+  if number == 0 then "0"
+  else
+    let (significand, exponent) := stripTrailingZeros number
+    toString significand ++ zeros exponent
+
+/-- The corpus constructs only safe ASCII identifiers and punctuation. -/
+def string (value : String) : String := "\"" ++ value ++ "\""
+
+def bool (value : Bool) : String := if value then "true" else "false"
+
+def array (values : List String) : String :=
+  "[" ++ String.intercalate "," values ++ "]"
+
+def insertField (field : Field) : List Field -> List Field
+  | [] => [field]
+  | head :: tail =>
+      match compare field.key head.key with
+      | .lt => field :: head :: tail
+      | .eq => field :: head :: tail
+      | .gt => head :: insertField field tail
+
+def sortFields (fields : List Field) : List Field :=
+  fields.foldr insertField []
+
+def object (fields : List Field) : String :=
+  let rendered := (sortFields fields).map fun field =>
+    string field.key ++ ":" ++ field.value
+  "{" ++ String.intercalate "," rendered ++ "}"
+
+end Fabric.Canonical
