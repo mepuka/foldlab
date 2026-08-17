@@ -126,6 +126,77 @@ now proves its cause, not only its exit code.
 over the real tree would make the safety test itself destructive, while an
 absence-only control would miss the warm-tree lockfile drift found in review.
 
+### T10. Shape the split F2b premise with bounded quantifiers
+
+Decided: `WindowCoverage` quantifies over the positioned trace (for every
+expected record, some arrival shares its position) and
+`PositionPayloadIntegrity` over the arrivals (every in-window arrival is
+exactly its trace record); `F2bSerialSuccessorPremise` is their conjunction,
+and the bundled iff-form `SerialSuccessorSchedule` definition is deleted
+rather than kept as an alias. `Positioned` now derives `DecidableEq` only, so
+its `BEq` comes from the lawful decidable-equality bridge. Alternatives: keep
+the old iff plus an equivalence theorem; state the payload half as
+operation-equality-at-position without trace membership. Why: the two premise
+roles carry separate citable names, and the bounded forall/exists forms make
+every concrete schedule instance decidable — the emitter premise witnesses
+became `decide` obligations instead of per-instance omega scripts.
+**Load-bearing? yes** — later families and statements cite the halves by
+name.
+
+### T11. Kill the dropped integrity half with the shipped consumer itself
+
+Decided: the fifth mutant `lastWriteBufferApply` is `guardedApply`'s own body
+run outside its premise, killed on the reviewer-shaped conflict row
+`(11,2)/(11,999)/(12,3)` with the intended trace fold as the lawful
+comparator; the retained side is pinned by coverage-still-holds and
+agrees-under-both-halves theorems. Alternatives: a structurally different
+conflict-resolving mutant; comparing against first-write buffering. Why: the
+runtime's protection against payload conflict IS the premise (redelivery of a
+journal position repeats its bytes), so the honest mutant is the consumer
+trusting its buffer where that premise fails — coverage holding isolates the
+kill to the integrity half alone. **Load-bearing? yes** — it demonstrates
+which premise half protects payload fidelity.
+
+### T12. Emit verdict bits from the bridge-theorem terms
+
+Decided: row constructors in `Corpus.lean` take the witness theorem's exact
+statement as an argument; `Fabric/Emit.lean` (definitions only, importing
+`BridgeProofs`) applies each constructor to its rostered theorem; the
+`verdictOf*` combinators compute the reported comparison while demanding the
+proof that fixes its outcome. Emitted bytes are unchanged. Alternatives:
+grep-asserting the pinned verdict fields `true` in the gate; per-field
+verdict theorems. Why: verdict truth becomes an elaboration fact — a verdict
+that drifted from its theorem no longer typechecks — while the emission stays
+a computed value and the corpus stays byte-diffed. **Load-bearing? yes** —
+this is the mechanical closure of the vector-to-theorem binding.
+
+### T13. Name the four durable-fold families in plain ASCII
+
+Decided: the composed resume-then-redeliver row carries kind `F3-F2b` (the
+corpus grammar is safe ASCII, so the composition symbol is transliterated
+with a hyphen); the ahead-of-ceiling, multi-gap, and redeliver-twice rows are
+kind `F2b`; row names are the dispatch's own phrases; the four rows append
+after the existing eleven so committed row bytes and the self-test's planted
+row indices stay fixed; the order- and duplication-sensitive rows use the
+append step, while ahead-of-ceiling mirrors the stale row's `Nat.add`
+carrier. Alternatives: a non-ASCII composed kind; one new kind per row;
+interleaving new rows among old kinds. Why: family identity stays visible in
+the pinned per-kind counts without moving a single committed byte of the
+existing rows. **Load-bearing? maybe** — the names and kinds are the
+consuming wall's family list; flagged to the coordinator in the closing
+report.
+
+### T14. Ground allowlist atoms that escalate on both new components
+
+Decided: `indexes` 60/{60,61}/60 and `resources` {70,71}/{71,72}/{71} for
+root, escalating request, and attenuated child, so the clamp row's request
+escalates on both allowlists and the tree row attenuates through them; the
+meet-clamping control keeps its budget discriminator, leaving its committed
+trace byte-stable. Alternatives: inherit escalation from existing components
+only. Why: the new fields should be exercised by the very row that audits
+clamping, not carried as dead weight. **Load-bearing? no** — any escalating
+values would do.
+
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 
 Decided: every battery typecheck — the root script's four projects and the

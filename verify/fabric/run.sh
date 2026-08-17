@@ -23,7 +23,7 @@ for required in lean-toolchain lakefile.toml lake-manifest.json Fabric.lean \
     Main.lean ControlMain.lean Fabric/Definitions.lean Fabric/Laws.lean \
     Fabric/Proofs.lean Fabric/Mutants.lean Fabric/ControlProofs.lean \
     Fabric/Canonical.lean Fabric/Corpus.lean Fabric/BridgeProofs.lean \
-    kernel-extern-allowlist.txt; do
+    Fabric/Emit.lean kernel-extern-allowlist.txt; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
     exit 1
@@ -56,7 +56,8 @@ echo "GATE: PASS (kernel source hygiene)"
 # declarations; law statements never carry proofs; proof files never mint
 # definitions. The import chain makes the statements part of the built gate.
 if grep -nE '^theorem ' Fabric/Definitions.lean Fabric/Laws.lean \
-    Fabric/Mutants.lean Fabric/Canonical.lean Fabric/Corpus.lean; then
+    Fabric/Mutants.lean Fabric/Canonical.lean Fabric/Corpus.lean \
+    Fabric/Emit.lean; then
   echo "GATE: FAIL — theorem escaped the proof partition" >&2
   exit 1
 fi
@@ -70,7 +71,7 @@ if grep -nE ':= by' Fabric/Laws.lean; then
   exit 1
 fi
 expected_laws=(
-  F1CellMergeACI F1SameVerifiedSetConverges F2TraceInvariant
+  F1CellMergeACI F1CellExtensional F1HistoryConvergence F2TraceInvariant
   F3ResumeExact F2bSerialSuccessorPremise F2bGuardedExactlyOnce F4PartitionFold
   F9PolicyMeetSemilattice F9TreeAttenuation
 )
@@ -80,7 +81,9 @@ mapfile -t actual_laws < <(
 )
 if [[ "${actual_laws[*]}" != "${expected_laws[*]}" ]] ||
     ! grep -q '^import Fabric.Laws' Fabric/Proofs.lean ||
-    ! grep -q '^import Fabric.BridgeProofs' Fabric.lean; then
+    ! grep -q '^import Fabric.BridgeProofs' Fabric.lean ||
+    ! grep -q '^import Fabric.BridgeProofs' Fabric/Emit.lean ||
+    ! grep -q '^import Fabric.Emit' Fabric.lean; then
   echo "GATE: FAIL — law partition is incomplete or orphaned" >&2
   exit 1
 fi
@@ -97,12 +100,12 @@ fi
 # file exists for this package.
 roster=(
   cell_merge_comm cell_merge_assoc cell_merge_idem f1_cell_merge_aci
-  f1_same_verified_set_converges f2_trace_invariant f2_permutation
+  f1_cell_extensional f1_history_convergence f2_trace_invariant f2_permutation
   f2_duplication emitter_observation_cmp_lawful_eq
   emitter_observation_cmp_lawful_beq
   emitter_observation_comparator_lawful f3_resume_exact
-  positioned_above positioned_unique ingest_preserves_lookup
-  ingest_lookup_of_raw_support schedule_buffer_covers apply_successors_exact
+  positioned_above positioned_within positioned_unique ingest_preserves_lookup
+  ingest_lookup_of_raw_support schedule_buffer_covers
   apply_successors_congr ingest_window_agrees guard_is_redundant
   f2b_guarded_exactly_once
   commutative_fold_append foldCommutative_eq_fold commutative_fold_permutation
@@ -117,14 +120,22 @@ roster=(
   drop_successor_discipline_keeps_contiguous_trace
   reordered_vector_has_serial_successor_premise
   arrival_order_apply_skips_six_before_five successor_discipline_survives_reordering
-  drop_successor_discipline_killed meet_clamp_survives_escalating_request
+  drop_successor_discipline_killed
+  drop_payload_integrity_keeps_disciplined_schedules
+  payload_conflict_has_window_coverage payload_conflict_lacks_payload_integrity
+  drop_payload_integrity_killed meet_clamp_survives_escalating_request
   drop_meet_clamping_keeps_already_attenuated drop_meet_clamping_killed
   emitter_f1_cell_merge_aci emitter_f2_duplication emitter_f2_permutation
   emitter_stale_schedule_premise emitter_f2b_stale_replay
   emitter_duplicate_schedule_premise emitter_f2b_duplication
   emitter_reordered_schedule_premise emitter_f2b_reordering
-  emitter_f3_resume emitter_f4_partition emitter_intruder_refused
-  finite_subset_bool_iff policyLeBool_iff emitter_f9_clamp emitter_f9_tree
+  emitter_ahead_schedule_premise emitter_ahead_of_ceiling
+  emitter_multi_gap_schedule_premise emitter_multi_gap_window
+  emitter_redeliver_twice_schedule_premise emitter_redeliver_twice_shuffled
+  emitter_f3_resume emitter_resume_suffix_premise emitter_resume_then_redeliver
+  emitter_f4_partition emitter_intruder_refused
+  finite_subset_bool_iff policyLeBool_iff emitter_f9_clamp
+  emitter_f9_request_escalates emitter_f9_tree
   emitter_string_escaping
   emitter_duplicate_key_collapse
 )
@@ -206,6 +217,7 @@ check_control() {
 check_control drop-idempotence
 check_control drop-commutativity
 check_control drop-successor-discipline
+check_control drop-payload-integrity
 check_control drop-meet-clamping
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
@@ -226,13 +238,17 @@ expected_vector_witnesses=(
   'F2b floor-violating-stale-replay emitter_f2b_stale_replay'
   'F2b duplicate-current-delivery emitter_f2b_duplication'
   'F2b bounded-reordered-delivery emitter_f2b_reordering'
+  'F2b ahead-of-ceiling-arrival emitter_ahead_of_ceiling'
+  'F2b multi-gap-window emitter_multi_gap_window'
+  'F2b redeliver-everything-twice-shuffled emitter_redeliver_twice_shuffled'
   'F3 checkpoint-resume emitter_f3_resume'
+  'F3-F2b resume-then-redeliver emitter_resume_then_redeliver'
   'F4 partition-interleaving emitter_f4_partition'
   'alphabet-refusal non-commuting-intruder emitter_intruder_refused'
   'F9 attenuation-request-clamped emitter_f9_clamp'
   'F9 delegation-tree-attenuation emitter_f9_tree'
 )
-if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 11 ]] ||
+if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 15 ]] ||
     ! diff -u <(printf '%s\n' "${expected_vector_witnesses[@]}" | LC_ALL=C sort) \
       <(LC_ALL=C sort "$corpus_witnesses_tmp"); then
   echo "GATE: FAIL — every emitted vector must name its exact theorem instance" >&2
@@ -340,13 +356,14 @@ check_corpus_regeneration() {
 if ! check_corpus_regeneration "$fixture" "$corpus_tmp"; then
   exit 1
 fi
-expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F2":2,"F2b":3,"F3":1,"F4":1,"F9":2,"alphabet-refusal":1},"format":1,"generator":"verify/fabric emitter","vectors":11}'
+expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F2":2,"F2b":6,"F3":1,"F3-F2b":1,"F4":1,"F9":2,"alphabet-refusal":1},"format":1,"generator":"verify/fabric emitter","vectors":15}'
 if [[ "$(head -n 1 "$corpus_tmp")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 12 ]] ||
+    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 16 ]] ||
     [[ "$(grep -c '"kind":"F1"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F2"' "$corpus_tmp")" -ne 2 ]] ||
-    [[ "$(grep -c '"kind":"F2b"' "$corpus_tmp")" -ne 3 ]] ||
+    [[ "$(grep -c '"kind":"F2b"' "$corpus_tmp")" -ne 6 ]] ||
     [[ "$(grep -c '"kind":"F3"' "$corpus_tmp")" -ne 1 ]] ||
+    [[ "$(grep -c '"kind":"F3-F2b"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F4"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F9"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"alphabet-refusal"' "$corpus_tmp")" -ne 1 ]]; then
@@ -459,4 +476,4 @@ if [[ "$self_test" == true ]]; then
   echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
-echo "GATE: PASS (4 law-dropping controls; 11 canonical model vectors; byte-identical regeneration)"
+echo "GATE: PASS (5 law-dropping controls; 15 canonical model vectors; byte-identical regeneration)"

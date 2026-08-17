@@ -1,4 +1,4 @@
-import Fabric.Corpus
+import Fabric.Emit
 
 open Fabric.Corpus
 

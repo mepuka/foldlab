@@ -20,10 +20,19 @@ def F1CellMergeACI : Prop :=
       Cell.merge left (Cell.merge middle right)) /\
   (forall cell : Cell Holder Value cmp, Cell.merge cell cell = cell)
 
-/-- F1, convergence half: the verified observation set determines the cell. -/
-def F1SameVerifiedSetConverges : Prop :=
+/-- F1, extensionality half: the verified observation set determines the
+    cell. Two replicas whose members coincide are one replica — a statement
+    about states, not about delivery histories. -/
+def F1CellExtensional : Prop :=
   forall left right : Cell Holder Value cmp,
     Cell.SameVerifiedSet left right -> left = right
+
+/-- F1, convergence half: two nodes that fold the same evidence multiset
+    under different delivery orders reach the same cell — the history-level
+    statement, derived from F2. -/
+def F1HistoryConvergence : Prop :=
+  forall left right : List (Observation Holder Value),
+    left.Perm right -> foldEvidence cmp left = foldEvidence cmp right
 
 /-- F2: schedule order and delivery multiplicity cannot move the terminal
     evidence cell. -/
@@ -39,12 +48,16 @@ def F3ResumeExact {State : Type uH} {Op : Type uV}
     foldFrom step (fold step initial xs) ys =
       fold step initial (xs ++ ys)
 
-/-- F2b's runtime premise. Deliveries are consumed in their listed order into
-    a bounded buffer, and effective application is serial within a partition:
-    only the contiguous successor at `floor + 1` may advance the frontier. -/
+/-- F2b's runtime premise, in its two named halves: `WindowCoverage` (every
+    window position eventually arrives) and `PositionPayloadIntegrity` (an
+    in-window arrival carries exactly its positioned payload). Multiplicity
+    and arrival order stay free; stale and out-of-window deliveries may be
+    present; only the contiguous successor at `floor + 1` may advance the
+    frontier. -/
 def F2bSerialSuccessorPremise {Op : Type uV} (floor : Nat)
     (operations : List Op) (deliveries : List (Positioned Op)) : Prop :=
-  SerialSuccessorSchedule floor operations deliveries
+  WindowCoverage floor operations deliveries /\
+    PositionPayloadIntegrity floor operations deliveries
 
 /-- F2b: for an arbitrary step function, a finite redelivery schedule has
     exactly the sequential meaning of its positioned trace under the explicit
