@@ -1,0 +1,4 @@
+host=bun version=1.3.14 platform=win32 arch=x64
+feat_shared.wasm     OK probe=42
+feat_atomic.wasm     OK probe=0
+feat_tailcall.wasm   validate+instantiate OK (not run)

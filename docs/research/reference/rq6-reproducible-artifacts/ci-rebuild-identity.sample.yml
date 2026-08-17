@@ -1,0 +1,133 @@
+# ci-rebuild-identity.sample.yml — own-authored sample, NOT an active workflow.
+#
+# The shape REF-6's regeneration gate can take, distilled from the techniques
+# surveyed in docs/research/2026-08-16-rq6-reproducible-artifacts.md. Three
+# tiers, deliberately separated, because they make different claims:
+#
+#   tier 1 (BLOCKING)  same-runner rebuild identity: build the kernel twice
+#                      from two independent clean checkouts at DIFFERENT
+#                      paths on the designated build platform. Two paths, not
+#                      two runs in one directory — a same-directory rebuild
+#                      cannot catch the build-path leak, which is the most
+#                      common failure (reproducible-builds.org/docs/build-path/).
+#
+#   tier 2 (BLOCKING)  deployment pin: the digest of the artifact the runtimes
+#                      actually embed equals the digest tier 1 produced. This
+#                      is the load-bearing pin under the amended D-bc.
+#
+#   tier 3 (DATUM)     cross-platform build identity: the same build on the
+#                      other platform, recorded and published, never gating.
+#                      Its companion IS blocking: the corpus driven through
+#                      the ONE deployed artifact on both platforms.
+#
+# Adapt paths and the build command; the structure is the point.
+
+name: rebuild-identity (sample)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- tier 1+2
+  designated-platform:
+    name: rebuild identity (designated build platform)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: checkout A
+        uses: actions/checkout@v4
+        with: { path: a }
+
+      # A second checkout at a path of a DIFFERENT LENGTH. If any absolute
+      # path reaches the artifact, these two digests diverge and the gate
+      # fails here rather than silently in a user's rebuild.
+      - name: checkout B (different path length on purpose)
+        uses: actions/checkout@v4
+        with: { path: b-checkout-with-a-longer-name }
+
+      - name: build kernel from A
+        run: ./a/scripts/build-kernel.sh --out "$RUNNER_TEMP/a.wasm"
+      - name: build kernel from B
+        run: ./b-checkout-with-a-longer-name/scripts/build-kernel.sh --out "$RUNNER_TEMP/b.wasm"
+
+      - name: tier 1 — the two rebuilds are byte-identical
+        run: |
+          A=$(sha256sum "$RUNNER_TEMP/a.wasm" | cut -d' ' -f1)
+          B=$(sha256sum "$RUNNER_TEMP/b.wasm" | cut -d' ' -f1)
+          echo "A=$A"; echo "B=$B"
+          if [ "$A" != "$B" ]; then
+            echo "::error::rebuild is not byte-identical across checkout paths"
+            # diffoscope is the field's standard triage tool for exactly this.
+            # Install and run it only in the failure path; it is slow.
+            command -v diffoscope >/dev/null && diffoscope "$RUNNER_TEMP/a.wasm" "$RUNNER_TEMP/b.wasm" || true
+            exit 1
+          fi
+          echo "KERNEL_DIGEST=$A" >> "$GITHUB_ENV"
+
+      - name: tier 2 — the committed/deployed artifact is that same artifact
+        run: |
+          D=$(sha256sum a/artifacts/kernel.wasm | cut -d' ' -f1)
+          [ "$D" = "$KERNEL_DIGEST" ] || {
+            echo "::error::deployed kernel.wasm ($D) is not the rebuild ($KERNEL_DIGEST)"; exit 1; }
+
+      - name: publish the digest as the pin other jobs consume
+        run: echo "$KERNEL_DIGEST" > "$RUNNER_TEMP/kernel.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-wasm
+          path: |
+            a/artifacts/kernel.wasm
+
+  # ------------------------------------------------------------------ tier 3
+  cross-platform:
+    name: cross-platform build identity (DATUM — never fails the build)
+    needs: designated-platform
+    continue-on-error: true      # a datum, by ratified decision, not a gate
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: build kernel here
+        shell: bash
+        run: ./scripts/build-kernel.sh --out "$RUNNER_TEMP/here.wasm"
+      - name: record (do not gate) whether it matches the designated build
+        shell: bash
+        run: |
+          H=$(sha256sum "$RUNNER_TEMP/here.wasm" | cut -d' ' -f1)
+          P=$(sha256sum artifacts/kernel.wasm | cut -d' ' -f1)
+          echo "### ${{ matrix.os }} build identity" >> "$GITHUB_STEP_SUMMARY"
+          echo "- built here:  \`$H\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- pinned:      \`$P\`" >> "$GITHUB_STEP_SUMMARY"
+          [ "$H" = "$P" ] && echo "- MATCH" >> "$GITHUB_STEP_SUMMARY" \
+                          || echo "- differs (expected; recorded as datum)" >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------------ the blocking cross-platform claim: BEHAVIOUR, one artifact
+  behaviour-everywhere:
+    name: corpus through the ONE deployed artifact (BLOCKING)
+    needs: designated-platform
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: kernel-wasm, path: dl }
+      - name: the artifact under test is the pinned one, byte for byte
+        shell: bash
+        run: |
+          D=$(sha256sum dl/artifacts/kernel.wasm | cut -d' ' -f1)
+          P=$(sha256sum artifacts/kernel.wasm | cut -d' ' -f1)
+          [ "$D" = "$P" ] || { echo "::error::artifact under test is not the pinned kernel"; exit 1; }
+      - name: drive the corpus through it in both hosts
+        shell: bash
+        run: |
+          ./scripts/corpus-through-kernel.sh --host go   --kernel dl/artifacts/kernel.wasm
+          ./scripts/corpus-through-kernel.sh --host bun  --kernel dl/artifacts/kernel.wasm

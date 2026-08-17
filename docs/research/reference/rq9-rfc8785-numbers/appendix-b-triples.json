@@ -1,0 +1,230 @@
+{
+  "_provenance": {
+    "generator": "docs/research/reference/rq9-rfc8785-numbers/make_triples.py",
+    "input": "fixtures/jcs-rfc8785.json (RFC 8785 Appendix B)",
+    "step5_source": "CPython repr (shortest round-trip); NOT the fixture's expected strings",
+    "generated": "2026-08-16"
+  },
+  "rows": [
+    {
+      "ieee754": "0000000000000000",
+      "comment": "Zero",
+      "zero": true,
+      "expected": "0"
+    },
+    {
+      "ieee754": "8000000000000000",
+      "comment": "Minus zero",
+      "zero": true,
+      "expected": "0"
+    },
+    {
+      "ieee754": "0000000000000001",
+      "comment": "Min positive number",
+      "sign": false,
+      "s": "5",
+      "k": 1,
+      "n": -323,
+      "expected": "5e-324"
+    },
+    {
+      "ieee754": "8000000000000001",
+      "comment": "Min negative number",
+      "sign": true,
+      "s": "5",
+      "k": 1,
+      "n": -323,
+      "expected": "-5e-324"
+    },
+    {
+      "ieee754": "7fefffffffffffff",
+      "comment": "Max positive number",
+      "sign": false,
+      "s": "17976931348623157",
+      "k": 17,
+      "n": 309,
+      "expected": "1.7976931348623157e+308"
+    },
+    {
+      "ieee754": "ffefffffffffffff",
+      "comment": "Max negative number",
+      "sign": true,
+      "s": "17976931348623157",
+      "k": 17,
+      "n": 309,
+      "expected": "-1.7976931348623157e+308"
+    },
+    {
+      "ieee754": "4340000000000000",
+      "comment": "Max positive integer represented by this binary64 value",
+      "sign": false,
+      "s": "9007199254740992",
+      "k": 16,
+      "n": 16,
+      "expected": "9007199254740992"
+    },
+    {
+      "ieee754": "c340000000000000",
+      "comment": "Max negative integer represented by this binary64 value",
+      "sign": true,
+      "s": "9007199254740992",
+      "k": 16,
+      "n": 16,
+      "expected": "-9007199254740992"
+    },
+    {
+      "ieee754": "4430000000000000",
+      "comment": "Approximately 2^68",
+      "sign": false,
+      "s": "29514790517935283",
+      "k": 17,
+      "n": 21,
+      "expected": "295147905179352830000"
+    },
+    {
+      "ieee754": "7fffffffffffffff",
+      "comment": "NaN",
+      "refuse": true
+    },
+    {
+      "ieee754": "7ff0000000000000",
+      "comment": "Infinity",
+      "refuse": true
+    },
+    {
+      "ieee754": "44b52d02c7e14af5",
+      "comment": "Exponent boundary neighbor",
+      "sign": false,
+      "s": "9999999999999997",
+      "k": 16,
+      "n": 23,
+      "expected": "9.999999999999997e+22"
+    },
+    {
+      "ieee754": "44b52d02c7e14af6",
+      "comment": "Exponent boundary",
+      "sign": false,
+      "s": "1",
+      "k": 1,
+      "n": 24,
+      "expected": "1e+23"
+    },
+    {
+      "ieee754": "44b52d02c7e14af7",
+      "comment": "Exponent boundary neighbor",
+      "sign": false,
+      "s": "10000000000000001",
+      "k": 17,
+      "n": 24,
+      "expected": "1.0000000000000001e+23"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef4e",
+      "comment": "Plain/exponent boundary neighbor",
+      "sign": false,
+      "s": "9999999999999997",
+      "k": 16,
+      "n": 21,
+      "expected": "999999999999999700000"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef4f",
+      "comment": "Plain/exponent boundary neighbor",
+      "sign": false,
+      "s": "9999999999999999",
+      "k": 16,
+      "n": 21,
+      "expected": "999999999999999900000"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef50",
+      "comment": "Plain/exponent boundary",
+      "sign": false,
+      "s": "1",
+      "k": 1,
+      "n": 22,
+      "expected": "1e+21"
+    },
+    {
+      "ieee754": "3eb0c6f7a0b5ed8c",
+      "comment": "Small-number boundary neighbor",
+      "sign": false,
+      "s": "9999999999999997",
+      "k": 16,
+      "n": -6,
+      "expected": "9.999999999999997e-7"
+    },
+    {
+      "ieee754": "3eb0c6f7a0b5ed8d",
+      "comment": "Small-number boundary",
+      "sign": false,
+      "s": "1",
+      "k": 1,
+      "n": -5,
+      "expected": "0.000001"
+    },
+    {
+      "ieee754": "41b3de4355555553",
+      "comment": "Long mantissa",
+      "sign": false,
+      "s": "3333333333333332",
+      "k": 16,
+      "n": 9,
+      "expected": "333333333.3333332"
+    },
+    {
+      "ieee754": "41b3de4355555554",
+      "comment": "Long mantissa",
+      "sign": false,
+      "s": "33333333333333325",
+      "k": 17,
+      "n": 9,
+      "expected": "333333333.33333325"
+    },
+    {
+      "ieee754": "41b3de4355555555",
+      "comment": "Long mantissa",
+      "sign": false,
+      "s": "3333333333333333",
+      "k": 16,
+      "n": 9,
+      "expected": "333333333.3333333"
+    },
+    {
+      "ieee754": "41b3de4355555556",
+      "comment": "Long mantissa",
+      "sign": false,
+      "s": "3333333333333334",
+      "k": 16,
+      "n": 9,
+      "expected": "333333333.3333334"
+    },
+    {
+      "ieee754": "41b3de4355555557",
+      "comment": "Long mantissa",
+      "sign": false,
+      "s": "33333333333333343",
+      "k": 17,
+      "n": 9,
+      "expected": "333333333.33333343"
+    },
+    {
+      "ieee754": "becbf647612f3696",
+      "comment": "Long mantissa",
+      "sign": true,
+      "s": "33333333333333333",
+      "k": 17,
+      "n": -5,
+      "expected": "-0.0000033333333333333333"
+    },
+    {
+      "ieee754": "43143ff3c1cb0959",
+      "comment": "Round to even",
+      "sign": false,
+      "s": "14249539237812062",
+      "k": 17,
+      "n": 16,
+      "expected": "1424953923781206.2"
+    }
+  ]
+}

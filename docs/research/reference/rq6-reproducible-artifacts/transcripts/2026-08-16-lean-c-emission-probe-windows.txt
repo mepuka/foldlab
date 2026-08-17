@@ -1,0 +1,16 @@
+# lean-c-emission-probe.sh — Windows 11 (10.0.26200), Git Bash, 2026-08-16
+# cwd: a scratch directory; cmd: bash lean-c-emission-probe.sh ./lp
+
+Lean (version 4.33.0, x86_64-w64-windows-gnu, commit d8b18978322de05a8f3dba51ef03cf5461676c17, Release)
+
+1. same dir, emitted twice (relative invocation): 5b53517becd404c75ce04cf67a2014a7687649ed037df7412babcfefab4f3acc
+                                                 : 5b53517becd404c75ce04cf67a2014a7687649ed037df7412babcfefab4f3acc
+2. different dir, relative invocation            : 5b53517becd404c75ce04cf67a2014a7687649ed037df7412babcfefab4f3acc
+3. different dir, ABSOLUTE invocation, no -R     : 832a710cba0d4a51a4083533c6cf6fc38ef779a6b0d8e2752883f45e92bac766
+                                                 : c4accc74048536f569a7c9ed394cd8134e40b74d9ec335fc36dd2961c5e90777
+CONFIRMED: the directory name is baked into the emitted C:
+< // Module: lp.«dir-a».Kern
+> // Module: lp.«dir-b-much-longer-name».Kern
+< LEAN_EXPORT lean_object* initialize_lp_dir_x2da_Kern(uint8_t builtin) {
+> LEAN_EXPORT lean_object* initialize_lp_dir_x2db_x2dmuch_x2dlonger_x2dname_Kern(uint8_t builtin) {
+exit=0

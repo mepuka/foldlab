@@ -1,0 +1,5 @@
+name = "exp"
+defaultTargets = ["Exp"]
+
+[[lean_lib]]
+name = "Exp"

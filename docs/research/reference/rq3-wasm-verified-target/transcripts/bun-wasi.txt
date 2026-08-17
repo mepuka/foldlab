@@ -1,0 +1,16 @@
+host=bun version=1.3.14 platform=win32 arch=x64
+hi
+wasi_min.wasm        TRACE fd_write(1,0,1,32) -> 0
+wasi_min.wasm        start returned normally
+wasi_min.wasm bun_process_exit=0
+host=bun version=1.3.14 platform=win32 arch=x64
+hi
+wasi_grow.wasm       TRACE fd_write(1,0,1,32) -> 0
+wasi_grow.wasm       start returned normally
+wasi_grow.wasm bun_process_exit=0
+host=bun version=1.3.14 platform=win32 arch=x64
+wasi_rand_ok.wasm    TRACE random_get(8,32) -> 32
+wasi_rand_ok.wasm bun_process_exit=32
+host=bun version=1.3.14 platform=win32 arch=x64
+wasi_rand_oob.wasm   TRACE random_get(1073741824,32) -> 32
+wasi_rand_oob.wasm bun_process_exit=32

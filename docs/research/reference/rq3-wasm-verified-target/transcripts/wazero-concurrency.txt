@@ -1,0 +1,37 @@
+# wazero v1.12.0 concurrency patterns, probe.wasm, windows/amd64, Go 1.26.5
+# 8 goroutines x 200 iterations; each writes a disjoint 256-byte region and checksums it.
+
+## RQ3_CONC=BC  (B: per-goroutine api.Function on one instance; C: instance per goroutine)
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+B shared instance + per-goroutine Function   mismatches=0 errors=0
+C instance per goroutine                     mismatches=0 errors=0
+process_exit=0
+
+## RQ3_CONC=A   (one api.Function shared across goroutines)
+-- attempt 1 --
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+unexpected fault address runtime: g 15: unexpected return pc for github.com/tetratelabs/wazero/internal/engine/wazevo.(*callEngine).callWithStack called from 0x32b0c5f8f008
+stack: frame={sp:0x32b0c5f3b5b0, fp:0x32b0c5f3be98} stack=[0x32b0c5f38000,0x32b0c5f3c000)
+                   7 6 5 4  3 2 1 0   f e d c  b a 9 8  0123456789abcdef
+000032b0c5f3b4b0: 00000000 00000000  00000000 00000000  ................
+000032b0c5f3b4c0: 000032b0 c5f3b4f0  00007ff7 fad77829  .....2..)x......
+                                     ^ <runtime.(*_panic).nextDefer+0xc9>
+000032b0c5f3b4d0: 00000000 00000000  00000000 00000000  ................
+process_exit=2
+-- attempt 2 --
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+fatal error: Exception 0xc0000005 0x8 0x350387c00008 0x350387c00008
+PC=0x350387c00008
+
+fault
+process_exit=2
+-- attempt 3 --
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+runtime: newstack sp=0x121d046515a0 stack=[0x121d04750000, 0x121d04752000]
+	morebuf={pc:0x7ff7faf53a39 sp:0x121d046515b0 lr:0x0}
+	sched={pc:0x7ff7faf547bc sp:0x121d046515a8 lr:0x0 ctxt:0x121d04651dc0}
+runtime: gp=0x121d04609860, goid=28, gp->status=0x2
+ runtime: split stack overflow: 0x121d046515a0 < 0x121d04750000
+fatal error: runtime: split stack overflow
+runtime: newstack sp=0x121d046515a0 stack=[0x121d04752000, 0x121d04754000]
+process_exit=2

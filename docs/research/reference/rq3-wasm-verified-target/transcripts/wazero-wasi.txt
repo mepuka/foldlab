@@ -1,0 +1,7 @@
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+hi
+wasi_min.wasm        ran to completion, exit=0
+hi
+wasi_grow.wasm       ran to completion, exit=0
+wasi_rand_ok.wasm    ran to completion, exit=0
+wasi_rand_oob.wasm   proc_exit code=21

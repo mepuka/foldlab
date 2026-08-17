@@ -1,0 +1,30 @@
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+artifact=probe.wasm sha256=ec49aa6decea4c8a6562c6ca5baadf08bd4466dc3368c42e92881ddc3a768b50
+engine=compiler imports=[]
+engine=compiler nan_f32 in=0x7fc00001 out=0x7fc00001
+engine=compiler nan_f32 in=0x7fa00000 out=0x7fe00000
+engine=compiler nan_f32 in=0xffc00001 out=0xffc00001
+engine=compiler nan_f32 in=0x7fc00000 out=0x7fc00000
+engine=compiler nan_f64 in=0x7ff8000000000001 out=0x7ff8000000000001
+engine=compiler nan_f64 in=0x7ff4000000000000 out=0x7ffc000000000000
+engine=compiler nan_f64 in=0xfff8000000000001 out=0xfff8000000000001
+engine=compiler nan_f64 in=0x7ff8000000000000 out=0x7ff8000000000000
+engine=compiler mem_grow(1)=1
+engine=compiler mem_grow(1)=-1
+engine=compiler mem_grow(0)=2
+engine=compiler checksum(0,256)=32640
+engine=compiler bump_sha256=9bc038d0a0fb391f3b33618dcf08b6553560ef0ae0f7ad557871598f27b7194b
+engine=interpreter imports=[]
+engine=interpreter nan_f32 in=0x7fc00001 out=0x7fc00001
+engine=interpreter nan_f32 in=0x7fa00000 out=0x7fe00000
+engine=interpreter nan_f32 in=0xffc00001 out=0xffc00001
+engine=interpreter nan_f32 in=0x7fc00000 out=0x7fc00000
+engine=interpreter nan_f64 in=0x7ff8000000000001 out=0x7ff8000000000001
+engine=interpreter nan_f64 in=0x7ff4000000000000 out=0x7ffc000000000000
+engine=interpreter nan_f64 in=0xfff8000000000001 out=0xfff8000000000001
+engine=interpreter nan_f64 in=0x7ff8000000000000 out=0x7ff8000000000000
+engine=interpreter mem_grow(1)=1
+engine=interpreter mem_grow(1)=-1
+engine=interpreter mem_grow(0)=2
+engine=interpreter checksum(0,256)=32640
+engine=interpreter bump_sha256=9bc038d0a0fb391f3b33618dcf08b6553560ef0ae0f7ad557871598f27b7194b

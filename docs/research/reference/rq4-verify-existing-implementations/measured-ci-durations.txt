@@ -1,0 +1,37 @@
+# Measured CI wall-clock, retrieved 2026-08-16 via the GitHub REST API (read-only).
+# Durations are (updated_at - run_started_at) as reported by the API; they include
+# runner provisioning and setup, not only the proof step.
+
+$ gh api repos/aws/s2n-tls/commits/main --jq "{sha,date}"
+{"date":"2026-08-13T21:20:46Z","sha":"72f5db1fb96635a655ec90569ade0d500ea0555c"}
+
+# --- aws/s2n-tls: CBMC bounded-model-checking gate (.github/workflows/proof_ci.yaml) ---
+$ gh api "repos/aws/s2n-tls/actions/workflows/proof_ci.yaml/runs?per_page=8&status=success"
+fix-mlock-after-cleanup start=2026-08-14T21:46:39Z end=2026-08-14T22:04:22Z
+fix-extension-uaf start=2026-08-14T21:08:11Z end=2026-08-14T21:26:07Z
+tls13-int-truncation start=2026-08-14T21:06:22Z end=2026-08-14T21:25:55Z
+fix-mlock-after-cleanup start=2026-08-14T18:56:24Z end=2026-08-14T19:13:50Z
+2026-08-14-default-alias start=2026-08-14T18:25:09Z end=2026-08-14T18:42:38Z
+2026-08-14-default-alias start=2026-08-14T18:21:53Z end=2026-08-14T18:42:10Z
+dependabot/cargo/bindings/rust/standard/s2n-codec-0.86 start=2026-08-14T08:06:51Z end=2026-08-14T08:29:21Z
+dependabot/cargo/bindings/rust/standard/s2n-codec-0.86 start=2026-08-14T08:06:50Z end=2026-08-14T08:26:16Z
+
+# --- viperproject/VerifiedSCION: Gobra deductive-verification gate (.github/workflows/gobra.yml) ---
+$ gh api "repos/viperproject/VerifiedSCION/actions/workflows/gobra.yml/runs?per_page=8"
+failure claude/scion-visibility-rules-dvh0uo start=2026-08-16T08:37:21Z end=2026-08-16T08:38:43Z
+failure claude/scion-visibility-rules-dvh0uo start=2026-08-16T08:22:38Z end=2026-08-16T08:23:56Z
+failure claude/scion-visibility-rules-dvh0uo start=2026-08-15T14:48:53Z end=2026-08-15T14:50:09Z
+failure claude/scion-visibility-rules-dvh0uo start=2026-08-13T22:01:11Z end=2026-08-13T22:02:30Z
+success master start=2026-08-11T22:08:21Z end=2026-08-11T23:00:58Z
+success claude/remove-slice-array-converters-wkydfe start=2026-08-11T20:01:24Z end=2026-08-11T20:59:05Z
+success claude/remove-slice-array-converters-wkydfe start=2026-08-11T19:59:28Z end=2026-08-11T20:56:46Z
+failure claude/remove-slice-array-converters-wkydfe start=2026-08-11T19:55:06Z end=2026-08-11T20:19:15Z
+
+# --- mit-pdos/perennial: Rocq proof CI (.github/workflows/ci.yml) ---
+$ gh api "repos/mit-pdos/perennial/actions/workflows/109282539/runs?per_page=6&status=success"
+dependabot/go_modules/golang.org/x/tools-0.48.0 start=2026-08-01T08:07:59Z end=2026-08-01T08:46:22Z
+dependabot/go_modules/github.com/pelletier/go-toml/v2-2.4.3 start=2026-08-01T08:07:53Z end=2026-08-01T08:47:27Z
+dependabot/github_actions/actions/setup-go-7 start=2026-08-01T08:04:23Z end=2026-08-01T08:44:36Z
+dependabot/github_actions/actions/setup-python-7 start=2026-08-01T08:03:49Z end=2026-08-01T08:44:06Z
+master start=2026-07-31T09:54:47Z end=2026-07-31T10:34:15Z
+master start=2026-07-30T09:50:31Z end=2026-07-30T10:28:33Z

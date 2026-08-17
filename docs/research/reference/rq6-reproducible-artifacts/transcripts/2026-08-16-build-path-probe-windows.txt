@@ -1,0 +1,15 @@
+# build-path-probe.sh — Windows 11 (10.0.26200), Git Bash, 2026-08-16
+# cwd: a scratch directory; cmd: bash build-path-probe.sh ./bp
+# (digests in cases 1 and 2 depend on the enclosing path by construction;
+#  the case-3 digest does not, which is the point of the probe.)
+
+go version go1.26.5 windows/amd64
+
+1. same directory, built twice          : 02cc5ada45b1d1dfaeae81df3a7fbee5a435ccc170916beb4b617ed554ed8058
+                                        : 02cc5ada45b1d1dfaeae81df3a7fbee5a435ccc170916beb4b617ed554ed8058
+2. different directory, no -trimpath    : 6e65e4828fbb75b12e73fdff7dad3217135eec5d84801d44104ed2f8fe9cf9a6
+3. different directory, with -trimpath  : 633c08cf8f8b9e8c1167e87e90d023f36c91963f0dfe96a8724dd6fa67ba223b
+                                        : 633c08cf8f8b9e8c1167e87e90d023f36c91963f0dfe96a8724dd6fa67ba223b
+
+sizes: untrimmed A=2605227 B=2605261 trimmed=2599957
+exit=0

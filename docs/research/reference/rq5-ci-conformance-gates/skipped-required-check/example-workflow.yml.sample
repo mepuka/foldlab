@@ -1,0 +1,46 @@
+// Own-authored illustration for RQ-5. The `.sample` extension is
+// deliberate: this file must never be picked up as a workflow. Its
+// subject is which jobs may carry an `if:` and which may not.
+//
+// (This header uses `//` so that a stray copy into .github/workflows/
+// fails to parse as YAML rather than running.)
+name: status-gate-shape
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # REQUIRED CHECK. No `if:`. No `paths:` filter on the workflow.
+  # A job that can be skipped by a conditional reports "Success" to
+  # branch protection (GitHub Docs, "Handling skipped but required
+  # checks"), so the job whose name appears in the required-checks list
+  # must be unconditional and must do the deciding itself.
+  status-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash -Eeuo pipefail {0}   # else `gate | tee log` reports tee's status
+    steps:
+      - uses: actions/checkout@v7
+
+      # The gate's own refutation runs FIRST and is cheap: if the checker
+      # cannot go red, nothing it says afterwards means anything.
+      - name: the status checker can fail
+        run: ./scripts/check-status.sh --self-test
+
+      - name: every documented status claim re-derived at HEAD
+        run: ./scripts/check-status.sh
+
+  # EXPENSIVE TIER. May carry an `if:`, may be scheduled, may be skipped —
+  # because its name is NOT in the required-checks list. Nothing reads its
+  # conclusion as a ledger truth-value.
+  full-proof-replay:
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - run: ./scripts/replay-everything.sh

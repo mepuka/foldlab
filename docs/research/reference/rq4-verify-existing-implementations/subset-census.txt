@@ -1,0 +1,65 @@
+# subset-census.mjs transcript
+
+$ bun docs/research/reference/rq4-verify-existing-implementations/subset-census.mjs
+
+subset census — retrieved/executed 2026-08-16
+
+## proto/go/protod/protocol_step.go  (384 lines, go)
+     8  dynamic `any` values             Gobra: interfaces are supported but the values here carry decoded-JSON dynamic types  [gobra-tutorial-448]
+     1  `encoding/json` calls            Gobra stdlib support list does not include encoding/json; reflection is out of scope  [gobra-tutorial-38]
+    23  string operations                Gobra: "support for strings ... is very limited"  [gobra-tutorial-448]
+     1  `sort.` calls                    higher-order comparator; needs a trusted spec  [gobra-tutorial-38]
+     1  closures                         Gobra closure support is incomplete  [gobra-readme-prototype]
+     8  maps                             goose: maps supported; Gobra: supported, historically buggy  [goose-impl]
+     3  signed ints                      goose: "no signed integers are supported"  [goose-writing]
+
+## go/canonical/canonical.go  (398 lines, go)
+    10  dynamic `any` values             Gobra: interfaces are supported but the values here carry decoded-JSON dynamic types  [gobra-tutorial-448]
+     7  `encoding/json` calls            Gobra stdlib support list does not include encoding/json; reflection is out of scope  [gobra-tutorial-38]
+    27  string operations                Gobra: "support for strings ... is very limited"  [gobra-tutorial-448]
+     1  `sort.` calls                    higher-order comparator; needs a trusted spec  [gobra-tutorial-38]
+     3  maps                             goose: maps supported; Gobra: supported, historically buggy  [goose-impl]
+     7  signed ints                      goose: "no signed integers are supported"  [goose-writing]
+     2  float64                          float reasoning is outside every SMT-backed Go verifier surveyed  [gillian-cav21-caveats]
+     1  strconv float parse/print        shortest-round-trip printing; see RQ-9  [gillian-cav21-caveats]
+     4  utf8/utf16                       surrogate-pair handling over strings  [gobra-tutorial-448]
+
+## packages/moves/src/kernel.ts  (450 lines, ts)
+    13  generic type params              Gillian-JS analyses ES5 Strict; types are elided before analysis  [gillian-cav21-caveats]
+    85  arrow functions                  ES6; Gillian-JS rewrites ES6 to ES5 Strict  [gillian-readme-es5]
+    66  `const`/`let`                    ES6 block scoping  [gillian-readme-es5]
+    22  template literals                ES6  [gillian-readme-es5]
+     7  spread/rest                      ES6  [gillian-readme-es5]
+    34  function-typed values (comparators, fences) "Gillian does not support higher-order reasoning"  [gillian-cav21-caveats]
+
+## packages/moves/src/wire.ts  (211 lines, ts)
+    26  arrow functions                  ES6; Gillian-JS rewrites ES6 to ES5 Strict  [gillian-readme-es5]
+    36  `const`/`let`                    ES6 block scoping  [gillian-readme-es5]
+    20  template literals                ES6  [gillian-readme-es5]
+     1  spread/rest                      ES6  [gillian-readme-es5]
+     2  function-typed values (comparators, fences) "Gillian does not support higher-order reasoning"  [gillian-cav21-caveats]
+     1  Number formatting                IEEE-754 shortest round trip; see RQ-9  [gillian-cav21-caveats]
+
+## packages/core/src/jcs.ts  (384 lines, ts)
+     4  `JSON.` calls                    JSON is a built-in library that must be axiomatised or transpiled away  [gillian-cav21-caveats]
+     7  arrow functions                  ES6; Gillian-JS rewrites ES6 to ES5 Strict  [gillian-readme-es5]
+    53  `const`/`let`                    ES6 block scoping  [gillian-readme-es5]
+    28  template literals                ES6  [gillian-readme-es5]
+     3  Number formatting                IEEE-754 shortest round trip; see RQ-9  [gillian-cav21-caveats]
+
+total Go seam lines: 782
+total TS seam lines: 1045
+
+# toolchain on the machine that produced this transcript (2026-08-16)
+$ go version
+go version go1.26.5 windows/amd64
+$ bun --version
+1.3.14
+$ lake --version
+Lake version 5.0.0-src+d8b1897 (Lean version 4.33.0)
+$ java -version
+mise ERROR No version is set for shim: java
+Set a global default version with one of the following:
+mise use -g java@temurin-21.0.12+8.0.LTS
+$ saw --version
+/usr/bin/bash: line 1: saw: command not found

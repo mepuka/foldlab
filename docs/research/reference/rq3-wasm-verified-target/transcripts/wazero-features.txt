@@ -1,0 +1,13 @@
+host=wazero goos=windows goarch=amd64 go=go1.26.5
+feat_shared.wasm default(V2)               COMPILE ERROR: section memory: shared memory requested but threads feature not enabled
+feat_shared.wasm +threads                  OK probe=42
+feat_shared.wasm +threads+tailcall+eh      OK probe=42
+
+feat_atomic.wasm default(V2)               COMPILE ERROR: section memory: shared memory requested but threads feature not enabled
+feat_atomic.wasm +threads                  OK probe=0
+feat_atomic.wasm +threads+tailcall+eh      OK probe=0
+
+feat_tailcall.wasm default(V2)             COMPILE ERROR: invalid function[0] export["probe"]: return_call invalid as feature "tail-call" is disabled
+feat_tailcall.wasm +threads                COMPILE ERROR: invalid function[0] export["probe"]: return_call invalid as feature "tail-call" is disabled
+feat_tailcall.wasm +threads+tailcall+eh    compile OK (not run)
+
