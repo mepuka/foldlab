@@ -125,3 +125,32 @@ now proves its cause, not only its exit code.
 **Load-bearing? yes** — a control
 over the real tree would make the safety test itself destructive, while an
 absence-only control would miss the warm-tree lockfile drift found in review.
+
+### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
+
+Decided: every battery typecheck — the root script's four projects and the
+`proto/ts` stage — runs `@typescript/native-preview` (`tsgo`), pinned EXACT at
+`7.0.0-dev.20260707.2` in the workspace devDependencies and spawned through its
+JS launcher, never a floating `bunx`. `typescript` stays installed: the Effect
+language-service CLI needs the TS API, editors keep the patched tsc, and tsc is
+the referee any future tsgo diagnostic is diffed against — a tsgo-vs-tsc
+disagreement is a FINDING to report, never silently absorbed by switching back.
+The Effect rules the patched tsc injected into `tsc --noEmit` run as their own
+lane, `effect-language-service diagnostics --project <tsconfig> --strict`, for
+each project whose sources import effect: `packages/plait` in the root
+typecheck script, `proto/ts` as a battery stage. The CLI checks ZERO files and
+passes when a project tsconfig lacks the language-service plugin entry, which
+is why `proto/ts/tsconfig.json` now carries one. Cutover evidence (this host,
+2026-08-17): healthy-tree diagnostic parity 0=0 on all five project configs;
+with `effect` hidden both compilers emit the same 102-diagnostic set, differing
+only in emission order and CRLF, with tsc exiting 2 where tsgo exits 1; three
+planted violations (TS2322, TS2375, indexed-access TS2322) refused; warm
+compile chain 12.4s → 2.7s. Alternatives: keep the patched tsc (the
+crisis-window cost that motivated the cutover); one root-project Effect lane
+instead of per-project lanes (superset coverage, but a shape the dispatch did
+not name); a version range (a dev-channel range makes every install an
+unreviewed compiler swap). Why: the native binary holds its speed on the cold
+trees fresh seats pay for, and parity was measured, not assumed.
+**Load-bearing? yes** — a dev-preview compiler is now the gate's judge; the
+exact pin, the retained referee, and the committed plant trace
+(`scripts/gates-typecheck.trace.txt`) are what keep that honest.

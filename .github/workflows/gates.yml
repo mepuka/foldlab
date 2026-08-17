@@ -122,9 +122,12 @@ jobs:
         working-directory: proto/ts
         run: bun install --frozen-lockfile 2>&1 | tee ../../ci-logs/proto-ts-install.log
 
-      - name: proto/ts — bunx tsc --noEmit
+      - name: proto/ts — typecheck (tsgo)
         working-directory: proto/ts
-        run: bunx tsc --noEmit 2>&1 | tee ../../ci-logs/proto-ts-typecheck.log
+        run: bun ../../node_modules/@typescript/native-preview/bin/tsgo --noEmit 2>&1 | tee ../../ci-logs/proto-ts-typecheck.log
+
+      - name: proto/ts — Effect rules
+        run: bun node_modules/@effect/language-service/cli.js diagnostics --project proto/ts/tsconfig.json --strict 2>&1 | tee ci-logs/proto-ts-effect-rules.log
 
       # Builds and spawns protod against temp JetStream stores.
       - name: proto/ts — bun test .
