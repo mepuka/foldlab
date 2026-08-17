@@ -27,8 +27,10 @@ bun run test
 ```
 
 The package test runs the unit and local-NATS suite, regenerates and byte-diffs
-the four-row corpus, and proves that a planted public `{ok}`-union export fails
-the compile-time refusal-channel inventory.
+the four-row corpus, and derives a compile-time refusal-channel check from the
+public barrel. Three planted controls prove it refuses a public `{ok}` union, a
+new Effect export with a non-Refusal error, and a Context service Layer with a
+non-Refusal error.
 
 The recorded claim is deliberately bounded: four generated envelopes and one
 local `nats-server v2.14.4`, file storage, `num_replicas: 1`. There is no claim

@@ -23,4 +23,16 @@ describe("canonicalBytes", () => {
     expect(refusal.expected).toBe("one RFC 8785 wire value")
     expect(refusal.next).toEqual([])
   })
+
+  test("preserves slash-bearing member names in translated refusal paths", async () => {
+    const literalKey = await Effect.runPromise(
+      Effect.flip(canonicalBytes({ "a/b": Number.NaN })),
+    )
+    const nestedKey = await Effect.runPromise(
+      Effect.flip(canonicalBytes({ a: { b: Number.NaN } })),
+    )
+
+    expect(literalKey.path).toEqual(["a/b"])
+    expect(nestedKey.path).toEqual(["a", "b"])
+  })
 })
