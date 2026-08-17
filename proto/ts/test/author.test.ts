@@ -9,7 +9,6 @@ describe("author fold maps the v0 slice", () => {
   test("leaves", () => {
     expect(foldSchema(Schema.String)).toMatchObject({ ok: true, structure: { k: "string" } })
     expect(foldSchema(Schema.Boolean)).toMatchObject({ ok: true, structure: { k: "bool" } })
-    expect(foldSchema(Schema.Number)).toMatchObject({ ok: true, structure: { k: "float" } })
     expect(foldSchema(Schema.Int)).toMatchObject({ ok: true, structure: { k: "int" } })
     expect(foldSchema(Schema.Null)).toMatchObject({ ok: true, structure: { k: "null" } })
     expect(foldSchema(Schema.Unknown)).toMatchObject({ ok: true, structure: { k: "opaque" } })
@@ -22,7 +21,7 @@ describe("author fold maps the v0 slice", () => {
   test("a realistic sensor schema folds to the fixture shape", () => {
     const Sensor = Schema.Struct({
       id: Schema.String.pipe(Schema.brand("SensorId")),
-      celsius: Schema.Number,
+      reading: Schema.Unknown,
       count: Schema.Int,
       mode: Schema.Union([Schema.Literal("on"), Schema.Literal("off")]),
       note: Schema.optionalKey(Schema.String),
@@ -34,7 +33,7 @@ describe("author fold maps the v0 slice", () => {
       k: "struct",
       fields: {
         id: { k: "brand", name: "SensorId", of: { k: "string" } },
-        celsius: { k: "float" },
+        reading: { k: "opaque" },
         count: { k: "int" },
         mode: {
           k: "union",
@@ -134,6 +133,12 @@ describe("beyond v0 refuses as data with the uniform shape", () => {
 
   test("transformations (encoding links)", () => {
     refusalShape(foldSchema(Schema.FiniteFromString))
+  })
+
+  test("non-integer number schemas have no v0 leaf", () => {
+    const refusal = refusalShape(foldSchema(Schema.Number))
+    expect(refusal.path).toEqual(["structure"])
+    expect(refusal.law).toContain("non-integer numbers have no v0 leaf")
   })
 
   test("records (index signatures)", () => {

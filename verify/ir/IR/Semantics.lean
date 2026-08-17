@@ -13,8 +13,8 @@ Abstractions, stated:
 - JSON values mirror the IR's list discipline (mutual inductives; objects
   are association lists — canonical objects have unique sorted keys, but
   the semantics is total over any object).
-- `int` and `float` both accept `num` (numeric-tower fidelity is the
-  number-determinism dossier's lane).
+- `int` accepts the model's integer `num`; non-integer JSON numbers remain
+  only in scalar literals and are outside this abstraction.
 - Structs are denotationally CLOSED — unknown value keys do not conform.
   Derived from the shipped json-schema target (`additionalProperties:
   false`, proto/ts/src/codegen.ts:243), not newly decided here.
@@ -103,7 +103,6 @@ def conforms (ρ : Resolver) : Nat → Ty → Json → Bool
     | .prim .string => (match j with | .str _  => true | _ => false)
     | .prim .bool   => (match j with | .bool _ => true | _ => false)
     | .prim .int    => (match j with | .num _  => true | _ => false)
-    | .prim .float  => (match j with | .num _  => true | _ => false)
     | .prim .null   => (match j with | .null   => true | _ => false)
     | .lit v        => scalarMatches v j
     | .list of      =>

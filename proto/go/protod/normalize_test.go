@@ -250,7 +250,7 @@ func normalizeIsIdempotent(
 }
 
 func generatedV0Term(rng *rand.Rand, depth int) any {
-	leaves := []string{"string", "bool", "int", "float", "null", "opaque"}
+	leaves := []string{"string", "bool", "int", "null", "opaque"}
 	if depth == 0 {
 		return map[string]any{"k": leaves[rng.IntN(len(leaves))]}
 	}

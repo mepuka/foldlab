@@ -8,7 +8,7 @@ only, no mathlib, no `sorry`. Gate: `./run.sh` (= `lake build`).
 
 ## What is stated once here that the code states many times
 
-- **The grammar as a type** (`IR/Syntax.lean`): `TyX H` — 13 kinds, with
+- **The grammar as a type** (`IR/Syntax.lean`): `TyX H` — 12 kinds, with
   the hole a type PARAMETER. `Ty = TyX Empty` is the closed grammar (C5
   "a hole never bears identity" holds because the hole is uninhabitable);
   `PTy = TyX Unit` is the authoring grammar. That holes exist only at type
@@ -41,8 +41,8 @@ only, no mathlib, no `sorry`. Gate: `./run.sh` (= `lake build`).
 
 ## Abstractions, stated
 
-Numerics are `Int` (float identity is the number-determinism dossier's
-lane); `check` args abstracted to the name; fields/members are mutual
+Numeric literals are abstracted to `Int` (non-integer literal identity is the
+number-determinism dossier's lane); `check` args are abstracted to the name; fields/members are mutual
 inductive lists (canonical field order is a well-formedness law, not a
 representation constraint); string ordering is Lean's, with the UTF-16
 surrogate edge case out of model.

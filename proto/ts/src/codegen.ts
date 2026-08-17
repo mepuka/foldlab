@@ -118,8 +118,6 @@ const toSchemaNode = (
       return Schema.Boolean
     case "int":
       return Schema.Int
-    case "float":
-      return Schema.Number
     case "null":
       return Schema.Null
     case "opaque":
@@ -213,8 +211,6 @@ const toJsonSchemaNode = (
       return { type: "boolean" }
     case "int":
       return { type: "integer" }
-    case "float":
-      return { type: "number" }
     case "null":
       return { type: "null" }
     case "opaque":
@@ -342,8 +338,6 @@ const toGoType = (value: Json, path: ReadonlyArray<string>): string | Fail => {
       return "bool"
     case "int":
       return "int64"
-    case "float":
-      return "float64"
     case "null":
       return "any // null"
     case "opaque":

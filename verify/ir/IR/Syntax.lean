@@ -7,11 +7,11 @@ and `Json` (TypeScript) with at least ten restatements between them; this
 file is the single statement they should all mirror.
 
 Abstractions, stated so they can be argued with:
-- The 13 kinds are faithful: five primitives, literal, list, struct, union,
+- The 12 kinds are faithful: four primitives, literal, list, struct, union,
   brand, check, ref, opaque (proto/SPEC.md grammar + the ratified opaque
   amendment). `check` args are abstracted to the check name; literal values
-  are abstracted to `Scalar` with integer numerics (float identity questions
-  are the number-determinism dossier's lane, not this file's).
+  are abstracted to `Scalar` with integer numerics (non-integer literal
+  identity questions are the number-determinism dossier's lane, not this file's).
 - Struct fields and union members are modeled as mutual inductive lists so
   every recursion is plainly structural.
 - The hole is a type PARAMETER: `TyX Empty` is the closed grammar (a hole is
@@ -25,7 +25,7 @@ Abstractions, stated so they can be argued with:
 namespace IR
 
 inductive PrimKind where
-  | string | bool | int | float | null
+  | string | bool | int | null
 deriving Repr, DecidableEq
 
 /-- JSON scalar payloads for `literal` nodes (numerics abstracted to Int). -/

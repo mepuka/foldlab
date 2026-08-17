@@ -231,7 +231,7 @@ describe("flb.session.v0", () => {
 
   test("U4 property: frontier is only a function of state and catalog head", async () => {
     const leafArbitrary = FastCheck.constantFrom<Json>(
-      { k: "string" }, { k: "bool" }, { k: "int" }, { k: "float" },
+      { k: "string" }, { k: "bool" }, { k: "int" },
       { k: "null" }, { k: "opaque" },
     )
     let caseIndex = 0

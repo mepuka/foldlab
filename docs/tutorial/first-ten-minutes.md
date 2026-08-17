@@ -213,7 +213,6 @@ The script submits a type whose node kind is misspelled — `strng` for
       "string",
       "bool",
       "int",
-      "float",
       "null",
       "opaque",
       "literal",

@@ -644,7 +644,8 @@ configs, committed counterexample traces, run record in README) and
 
 `flb.type.v0` stated once as an algebraic type (`TyX H`; the hole is a
 type parameter, so the closed and authoring grammars are one definition
-at two instantiations) with a denotational semantics `Conforms ρ t v`,
+at two instantiations) with four primitive leaves (`string`, `bool`, `int`,
+`null`) and a denotational semantics `Conforms ρ t v`,
 and the estate's prose laws about meaning proved over it: brands are
 denotationally invisible (the fiber theorem's premise); a ref means
 exactly its resolution; union meaning is a property of the member set,
@@ -682,8 +683,9 @@ inductive laws are `union_extensional`, `sort_preserves_meaning`,
 
 Model-level: the Lean grammar is the reference the Go/TS restatements
 should mirror (architecture audit §3); no correspondence proof ties it to
-`walk.go` or `codegen.ts`. Numerics abstracted to `Int`; check args to
-the check name; ref resolution fuel-indexed with DAG-depth sufficiency
+`walk.go` or `codegen.ts`. Numeric literal values are abstracted to `Int`;
+non-integer literal identity remains outside the model; check args to the
+check name; ref resolution fuel-indexed with DAG-depth sufficiency
 noted, not proved. Well-formedness residual laws and the parse theorem
 are the named next rungs in the README.
 

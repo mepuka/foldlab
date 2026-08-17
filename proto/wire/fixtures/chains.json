@@ -16,13 +16,13 @@
   {
     "name": "catalog-then-frame",
     "payloads": [
-      "{\"digest\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"off\"},{\"k\":\"literal\",\"value\":\"on\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]},\"submitter\":\"wirefix\"}",
-      "{\"payload\":{\"celsius\":21.5,\"count\":3,\"id\":\"s-1\",\"mode\":\"on\"},\"type\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\"}"
+      "{\"digest\":\"253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e\",\"scheme\":\"bytes-sha256-v1\",\"structure\":{\"fields\":{\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"off\"},{\"k\":\"literal\",\"value\":\"on\"}]},\"note\":{\"k\":\"string\"},\"reading\":{\"k\":\"opaque\"}},\"k\":\"struct\",\"optional\":[\"note\"]},\"submitter\":\"wirefix\"}",
+      "{\"payload\":{\"count\":3,\"id\":\"s-1\",\"mode\":\"on\",\"reading\":21.5},\"type\":\"253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e\"}"
     ],
     "entryDigests": [
-      "6c3ff7dce11c4cc22ea6fb4ac59ad42aea16592c1894545adc3cc44d1c286c9c",
-      "c3992173869c72cc3a5c8133c886f0f02c241017ff8ada59fd087e2db6c6bc86"
+      "932a28c8c132bb5a2c83046aa8e0dd4608ddd2274a6ffacad8a1993d86a30537",
+      "988bfc817a3a26223047e5390ec032eb1a9087aab6e50ec0a5fe33b199973436"
     ],
-    "head": "c3992173869c72cc3a5c8133c886f0f02c241017ff8ada59fd087e2db6c6bc86"
+    "head": "988bfc817a3a26223047e5390ec032eb1a9087aab6e50ec0a5fe33b199973436"
   }
 ]

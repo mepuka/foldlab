@@ -28,7 +28,6 @@ export const SESSION_GRAMMAR_DESCRIPTOR: Json = {
     { k: "bool", required: ["k"] },
     { k: "brand", required: ["k", "name", "of"], children: { name: "non-empty-string", of: "T" } },
     { k: "check", required: ["base", "check", "k"], children: { base: "T", check: "{name:non-empty-string,args:json-object}" } },
-    { k: "float", required: ["k"] },
     { k: "int", required: ["k"] },
     { k: "list", required: ["k", "of"], children: { of: "T" } },
     { k: "literal", required: ["k", "value"], children: { value: "json" } },

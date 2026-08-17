@@ -17,7 +17,7 @@ import (
 var hexDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 var v0Kinds = []string{
-	"string", "bool", "int", "float", "null", "opaque",
+	"string", "bool", "int", "null", "opaque",
 	"literal", "list", "struct", "union", "brand", "check", "ref",
 }
 
@@ -74,7 +74,7 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 	}
 
 	switch kind {
-	case "string", "bool", "int", "float", "null", "opaque":
+	case "string", "bool", "int", "null", "opaque":
 		return checkKeys(node, path, kind, "k")
 	case "hole":
 		if r := checkKeys(node, path, kind, "k"); r != nil {

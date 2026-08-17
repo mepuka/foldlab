@@ -2629,3 +2629,49 @@ repeat either law inside `protocolGrammarLawful`. Why: creation and replay
 must not drift on which identity-bearing declarations they admit.
 **Load-bearing? yes** — two restatements can make a catalog fact creatable
 but unreplayable, or replayable despite being uncreatable.
+
+## Task 21 — float leaf drop (2026-08-16; task-local D?? entries — final
+numbers assigned at merge)
+
+### D??. The removed float leaf uses the existing unknown-kind refusal
+
+Decided: `{"k":"float"}` falls through the existing `invalid-structure`
+unknown-kind path in type authoring and the existing nonconforming-value path
+in protocol fills. No float-specific refusal kind or law is added. The
+committed negative control pins `invalid-structure`, path `["partial","k"]`,
+and the existing unknown-kind law for a concierge fill vector. Alternatives:
+mint a `float-removed` refusal; retain a compatibility admission path; report
+the leaf as malformed JSON. Why: post-sweep ruling 2 narrows the grammar rather
+than adding a new failure ontology, and the existing refusal already names an
+unlawful kind precisely. **Load-bearing? yes** — a new refusal kind would move
+the frozen refusal-sort manifest for no new semantic distinction.
+
+### D??. Every active grammar mirror hard-cuts under the existing v0 name
+
+Decided: remove the leaf from the Go certifier, completion/frontier alphabets,
+session grammar descriptor, value checker, TypeScript author/session/codegen
+mirrors, and the Lean TyX reference grammar. `Schema.Number` now returns the
+existing local `beyond-v0` refusal; numeric check rows remain representable on
+`Schema.Int`. JSON-scalar numeric literals, `opaque` values, and the RFC 8785
+canonicalization seam remain unchanged. Alternatives: leave decode/codegen
+compatibility for cataloged float nodes; remove JSON numbers generally; defer
+the Lean change until the referee engine. Why: parallel compatibility would
+keep the drift the ruling exists to remove, while narrowing JCS would cross the
+explicit task boundary. **Load-bearing? yes** — REF-2a quantifies over this
+narrowed whole grammar.
+
+### D??. Regenerate only fixtures whose bytes depend on the removed leaf
+
+Decided: regenerate `types.json`, `chains.json`, `frames.json`, and
+`concierge.json` with `go run ./cmd/wirefix -force`, then mechanically
+recompute `sessions.json` with the TypeScript identity implementation because
+the session grammar digest and every dependent chain head move. The stated
+reason is **"post-sweep ruling 2, float leaf leaves v0"**. The sensor fixture
+uses `{"k":"opaque"}` for its number-valued `reading`, preserving evidence
+that arbitrary JSON numbers remain inside JCS without reintroducing a float
+type leaf. `owned-types-v1.json`, `scheme-bridges.json`, and protocol-move
+fixtures contain no float leaf and stay byte-identical. Alternatives: hand-edit
+expected digests; retain the float-bearing rows; regenerate unrelated fixture
+families. Why: fixture identity is bytes, so every dependent digest must come
+from the existing generators while unrelated frozen evidence stays fixed.
+**Load-bearing? yes** — stale fixture bytes would make both runtime walls fail.

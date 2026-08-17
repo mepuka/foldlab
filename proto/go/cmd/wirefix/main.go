@@ -93,7 +93,7 @@ func buildTypes() []typeVector {
 		"k", "struct",
 		"fields", m(
 			"id", m("k", "brand", "name", "SensorId", "of", str),
-			"celsius", m("k", "float"),
+			"reading", m("k", "opaque"),
 			"count", m("k", "int"),
 			"mode", union(
 				m("k", "literal", "value", "on"),
@@ -109,7 +109,6 @@ func buildTypes() []typeVector {
 		vector("leaf-string", str),
 		vector("leaf-bool", m("k", "bool")),
 		vector("leaf-int", m("k", "int")),
-		vector("leaf-float", m("k", "float")),
 		vector("leaf-null", m("k", "null")),
 		vector("literal-string", m("k", "literal", "value", "on")),
 		vector("literal-number-normalizes", m("k", "literal", "value", 10.0)),
@@ -153,7 +152,7 @@ func buildChains(types []typeVector) []chainVector {
 	)
 	framePayload := mustCanonical(m(
 		"type", sensor.Digest,
-		"payload", m("id", "s-1", "celsius", 21.5, "count", 3, "mode", "on"),
+		"payload", m("id", "s-1", "reading", 21.5, "count", 3, "mode", "on"),
 	))
 
 	simple := []string{"a", "b", "c"}
@@ -180,13 +179,13 @@ func buildFrames(types []typeVector) []frameVector {
 	sensor := types[len(types)-3]
 	plain := m(
 		"type", sensor.Digest,
-		"payload", m("id", "s-1", "celsius", 21.5, "count", 3, "mode", "on"),
+		"payload", m("id", "s-1", "reading", 21.5, "count", 3, "mode", "on"),
 	)
 	tricky := m(
 		"type", sensor.Digest,
 		"payload", m(
 			"id", "s-☃", // snowman: multibyte UTF-8
-			"celsius", 1.0, // JCS: serializes as "1"
+			"reading", 1.0, // JCS: serializes as "1"
 			"count", 1000000, // stays plain notation
 			"mode", "off",
 			"note", "line\nbreak \"q\"",

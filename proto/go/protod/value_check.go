@@ -45,10 +45,6 @@ func (d *Daemon) checkValue(structure, value any, path []string) *Refusal {
 		if number, ok := value.(float64); ok && math.Trunc(number) == number && math.Abs(number) <= 9007199254740991 {
 			return nil
 		}
-	case "float":
-		if _, ok := value.(float64); ok {
-			return nil
-		}
 	case "null":
 		if value == nil {
 			return nil

@@ -27,7 +27,6 @@ var closedTypeGrammar = completionGrammar{
 		leafCompletion("string"),
 		leafCompletion("bool"),
 		leafCompletion("int"),
-		leafCompletion("float"),
 		leafCompletion("null"),
 		leafCompletion("opaque"),
 		{

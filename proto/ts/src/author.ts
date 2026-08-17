@@ -162,7 +162,9 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
     case "Boolean":
       return { k: "bool" }
     case "Number":
-      return { k: isInt ? "int" : "float" }
+      return isInt
+        ? { k: "int" }
+        : beyond(path, node._tag, "non-integer numbers have no v0 leaf; use int, a literal, or opaque")
     case "Null":
       return { k: "null" }
     case "Unknown":

@@ -68,7 +68,7 @@ One thread, both directions, no trust anywhere:
 ## The authoring grammar — `flb.type.v0` (first cut of the owned structure, ratified)
 
 ```
-T ::= {"k":"string"|"bool"|"int"|"float"|"null"}
+T ::= {"k":"string"|"bool"|"int"|"null"}
     | {"k":"literal","value":<json scalar>}
     | {"k":"list","of":T}
     | {"k":"struct","fields":{<name>:T,...},"optional":[<name>,...]?}

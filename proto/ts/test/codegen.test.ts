@@ -78,43 +78,43 @@ const checkSemanticVectors: ReadonlyArray<CheckSemanticVector> = [
   },
   {
     name: "greaterThan",
-    authored: Schema.Number.check(Schema.isGreaterThan(1)),
+    authored: Schema.Int.check(Schema.isGreaterThan(1)),
     structure: {
       k: "check",
-      base: { k: "float" },
+      base: { k: "int" },
       check: { name: "greaterThan", args: { exclusiveMin: 1 } },
     },
     accepted: 2,
     refused: 1,
-    jsonConstraint: { type: "number", exclusiveMinimum: 1 },
+    jsonConstraint: { type: "integer", exclusiveMinimum: 1 },
   },
   {
     name: "min",
-    authored: Schema.Number.check(Schema.isGreaterThanOrEqualTo(1)),
-    structure: { k: "check", base: { k: "float" }, check: { name: "min", args: { min: 1 } } },
+    authored: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+    structure: { k: "check", base: { k: "int" }, check: { name: "min", args: { min: 1 } } },
     accepted: 1,
     refused: 0,
-    jsonConstraint: { type: "number", minimum: 1 },
+    jsonConstraint: { type: "integer", minimum: 1 },
   },
   {
     name: "lessThan",
-    authored: Schema.Number.check(Schema.isLessThan(5)),
+    authored: Schema.Int.check(Schema.isLessThan(5)),
     structure: {
       k: "check",
-      base: { k: "float" },
+      base: { k: "int" },
       check: { name: "lessThan", args: { exclusiveMax: 5 } },
     },
     accepted: 4,
     refused: 5,
-    jsonConstraint: { type: "number", exclusiveMaximum: 5 },
+    jsonConstraint: { type: "integer", exclusiveMaximum: 5 },
   },
   {
     name: "max",
-    authored: Schema.Number.check(Schema.isLessThanOrEqualTo(5)),
-    structure: { k: "check", base: { k: "float" }, check: { name: "max", args: { max: 5 } } },
+    authored: Schema.Int.check(Schema.isLessThanOrEqualTo(5)),
+    structure: { k: "check", base: { k: "int" }, check: { name: "max", args: { max: 5 } } },
     accepted: 5,
     refused: 6,
-    jsonConstraint: { type: "number", maximum: 5 },
+    jsonConstraint: { type: "integer", maximum: 5 },
   },
 ]
 
@@ -146,7 +146,6 @@ const decidedLeafArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
     { k: "string" },
     { k: "bool" },
     { k: "int" },
-    { k: "float" },
     { k: "null" },
     { k: "opaque" },
     { k: "literal", value: null },
@@ -314,6 +313,19 @@ describe("cross-target codegen laws", () => {
     }
   })
 
+  test("the removed float leaf is underivable in every target", () => {
+    for (const target of derivationTargets) {
+      const result = target.derive({ k: "float" })
+      expect(result.ok).toBe(false)
+      if (result.ok) throw new Error(`${target.name} derived the removed float leaf`)
+      expect(result.refusal).toMatchObject({
+        kind: "underivable",
+        path: ["structure", "k"],
+        got: "float",
+      })
+    }
+  })
+
   test("field traversal follows UTF-16 code-unit order through an astral key", () => {
     const maxCodePointFromStringEscapesFixture = "\u{10ffff}"
     const cases: ReadonlyArray<{
@@ -372,14 +384,14 @@ describe("json-schema target", () => {
       type: "object",
       additionalProperties: false,
       properties: {
-        celsius: { type: "number" },
         count: { type: "integer" },
         id: { type: "string", "x-flb-brand": "SensorId" },
         mode: { anyOf: [{ const: "off" }, { const: "on" }] },
         note: { type: "string" },
+        reading: {},
       },
     })
-    expect(derived.value["required"]).toEqual(["celsius", "count", "id", "mode"])
+    expect(derived.value["required"]).toEqual(["count", "id", "mode", "reading"])
   })
 
   test("checks land as constraints; the opaque node renders permissively", () => {
