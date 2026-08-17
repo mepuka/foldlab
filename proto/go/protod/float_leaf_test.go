@@ -180,10 +180,11 @@ func TestIntegralityBoundIsStatedOnce(t *testing.T) {
 	// author fold and the identity mint. Stating it once is the whole point —
 	// round 3 found the fold bounded and `structureDigest` unbounded, which is
 	// the certifier's own two-position defect one layer out.
-	tsSources := map[string]string{}
-	for _, name := range []string{"jcs.ts", "author.ts", "session.ts", "codegen.ts"} {
-		tsSources[name] = readGuardedSource(t, filepath.Join("..", "..", "ts", "src", name))
-	}
+	//
+	// The sweep is over the WHOLE of proto/ts/src, not a named list, for the same
+	// reason the closure law is over the whole term and not a list of positions:
+	// a module added tomorrow has to be caught without anyone editing this test.
+	tsSources := typeScriptSources(t)
 	if !strings.Contains(tsSources["jcs.ts"], "Number.isSafeInteger") {
 		t.Error("proto/ts/src/jcs.ts no longer states the TS integrality bound")
 	}
@@ -192,7 +193,7 @@ func TestIntegralityBoundIsStatedOnce(t *testing.T) {
 			continue
 		}
 		if strings.Contains(source, "Number.isSafeInteger") {
-			t.Errorf("%s restates the integrality bound; call findNonIntegralNumber", name)
+			t.Errorf("proto/ts/src/%s restates the integrality bound; call findNonIntegralNumber", name)
 		}
 	}
 	// And both TS positions that can turn a term into a v0 identity must run
@@ -206,6 +207,29 @@ func TestIntegralityBoundIsStatedOnce(t *testing.T) {
 			t.Errorf("%s%s no longer runs the closure sweep before minting", minter.file, minter.declaration)
 		}
 	}
+}
+
+// typeScriptSources reads every .ts file in proto/ts/src, keyed by base name.
+// Enumerating the directory rather than a list is what makes the one-statement
+// guard hold for modules that do not exist yet.
+func typeScriptSources(t *testing.T) map[string]string {
+	t.Helper()
+	dir := filepath.Join("..", "..", "ts", "src")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read %s: %v", dir, err)
+	}
+	sources := map[string]string{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".ts") {
+			continue
+		}
+		sources[entry.Name()] = readGuardedSource(t, filepath.Join(dir, entry.Name()))
+	}
+	if len(sources) == 0 {
+		t.Fatalf("no TypeScript sources found under %s", dir)
+	}
+	return sources
 }
 
 // functionBody returns the source from a top-level `export const name = ` up to
