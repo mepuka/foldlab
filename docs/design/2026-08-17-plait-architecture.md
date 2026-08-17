@@ -41,6 +41,10 @@ packages/plait/
     index.ts              curated barrel — the public surface, nothing else escapes
     Digest.ts             the identity primitive: branded digest, Schema, equality-as-coherence
     Canonical.ts          canonical bytes — a seam over packages/core's RFC 8785 jcs; no second canonicalizer
+    Catalog.ts            the content-addressed value store client: resolve digest → value
+                          (verify-on-read), admit via the certifier seam; the service
+                          Resolved<A> decode requires (added 2026-08-17, DEV-697 finding —
+                          §3 referenced the service with no module owning it)
     Refusal.ts            tagged refusal unions; sorts (structural | absence); retryAbsence policies
     Wire.ts               envelope Schema (closed struct; kinds emit|attest|checkpoint|sealed)
     Subjects.ts           the flb.fab.* grammar as typed constructors; subjects route, never identify

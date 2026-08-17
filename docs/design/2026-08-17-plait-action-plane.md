@@ -55,8 +55,11 @@ the loop structure; the action plane only supplies the limbs.
 declaration is a canonical value — {capability digest, context-program
 digest, input anchor set, policy digest, round} — and its digest is the
 work digest that keys a register (part 1, C5/F5). Consequence, by the
-already-planned lease-safety theorem: **exactly-once *effects* from
-at-least-once *attempts***. Schedulers may fire duplicates, nodes may
+already-planned lease-safety theorem: **at most one landed effect, no
+matter how many attempts** — the safety half only; that some attempt
+eventually lands is liveness and carries no claim (amended 2026-08-17,
+DevRel overclaim finding on DEV-697: part 1 refuses exactly-once as a
+claim, and this sentence previously used its vocabulary). Schedulers may fire duplicates, nodes may
 race, retries may storm — at most one outcome per declared action ever
 lands, and every landed outcome names the exact context its performer
 saw. Re-attempting *with new information* is not a retry but a **new
@@ -205,9 +208,10 @@ performer attribution, span head.
 Laws, all riding F5 with small additions (target: R5 for the algebra,
 R3→R4 for the register as in part 1):
 
-- **Effective exactly-once**: at most one landed outcome per declaration,
-  under arbitrary duplicate scheduling, racing claimants, crash-steal
-  interleavings. (F5's safety statement applied to action declarations.)
+- **At-most-one landed outcome**: per declaration, under arbitrary
+  duplicate scheduling, racing claimants, crash-steal interleavings.
+  (F5's safety statement applied to action declarations; eventual
+  landing is liveness, unclaimed.)
 - **Attempt/round separation**: a *retry* re-claims the same work digest
   (same declaration — idempotent by the register); a *revision* is a new
   declaration with `round` pinned (new work digest — deduplication never
@@ -256,10 +260,13 @@ no absence, no deadline**.
 with evidence merge: for monotone p, once p holds at state s it holds at
 every s' ⊒ s (stability), and evaluating over any duplicate-and-permute
 delivery of the substrate growth fires a set of *hints* whose landed
-*claims* are deduplicated by the register (C7). Net: **at-least-once
-observation, effective-exactly-once reaction** — no missed firings
-(stability), no double effects (register), no coordination anywhere in
-the reactive path.
+*claims* are deduplicated by the register (C7). Net, both halves
+safety: **an enabled firing never un-fires** (stability — the
+predicate holds at every later state) **and never lands twice** (the
+register); no coordination anywhere in the reactive path. That every
+enabled firing is *eventually evaluated* is liveness and carries no
+claim (amended 2026-08-17 — the previous "no missed firings" wording
+conflated the two).
 
 Non-monotone reactivity is not expressible, on purpose. "Fire if no
 evidence by Friday" is a decision that a candidate set is complete —
@@ -531,10 +538,12 @@ scoreboard's measured numbers.
 3. **§11 (demo):** the optional LLM scene is promoted to the
    **centerpiece of part 2's acceptance**, with gates that check the
    *coordination record*, not the prose: every action outcome's context
-   digest re-derives from its certificate; exactly one landed outcome
+   digest re-derives from its certificate; at most one landed outcome
    per declaration under the chaos schedule; the trigger scoreboard
-   shows zero missed and zero double reactions against the generated
-   growth trace; the attenuation audit passes over the live action tree.
+   shows every enabled reaction claimed exactly once at quiesce and
+   zero double-landed reactions against the generated growth trace (a
+   measured fact about this run, not a liveness claim); the attenuation
+   audit passes over the live action tree.
    Model output quality is explicitly ungated (nondeterminism is
    quarantined, not denied). The scene still waits on the two named
    dependencies: the MCP typing fix and — for any multi-party
