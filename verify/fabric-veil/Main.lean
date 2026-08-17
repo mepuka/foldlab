@@ -1,4 +1,9 @@
-import FabricVeil
+/- The exporter links only the corpus module's small closure (the pinned
+Trace files, never Veil proper): linking the full Veil/Mathlib closure into
+one executable is what deterministically killed the ubuntu CI link step.
+The corpus↔model agreement itself is enforced at library-build time by
+`FabricVeil/Bridge.lean`. -/
+import FabricVeil.Corpus
 
 open FabricVeil
 

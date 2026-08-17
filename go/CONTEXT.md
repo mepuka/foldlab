@@ -16,7 +16,8 @@ only the current revision can renew or commit.
 
 **Landed outcome**:
 The unique terminal value and the lease token under which it landed. A zombie
-with an older token is permanently refused.
+with an older token is refused within a fixed backing-stream incarnation;
+administrative lifecycle mutation is outside the credential guard.
 
 **Authority journal**:
 The single writable home of a journal's facts. Imports nothing

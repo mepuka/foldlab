@@ -28,7 +28,14 @@ export interface RegisterOptions {
   readonly connectionName?: string
 }
 
-/** The five-action register surface proved by the Veil model. */
+/**
+ * The five-action register surface walled against the proved Veil model.
+ *
+ * Every claim holds within a fixed backing-stream incarnation;
+ * administrative lifecycle mutation is outside the credential guard. The
+ * incarnation pin at open is a recorded deferral (DECISIONS); the DEV-716
+ * ACL suite is the other half of the guard.
+ */
 export interface RegisterService {
   readonly grant: (work: string, holder: string) => Effect.Effect<RegisterState, Refusal>
   readonly renew: (work: string, token: number) => Effect.Effect<RegisterState, Refusal>
@@ -63,7 +70,10 @@ export class Registers extends Context.Service<Registers, RegisterService>()(
 
 /**
  * Runs work under a scope-bound heartbeat. If a renewal loses its CAS fence,
- * the renewal branch fails and `raceFirst` interrupts the holder fiber.
+ * the renewal branch fails and `raceFirst` interrupts the holder fiber. The
+ * `Scope` requirement is intentional even though `hold` adds no finalizer of
+ * its own: a hold only runs inside the scope that owns the live `Registers`
+ * connection, so the heartbeat fiber can never outlive its transport.
  */
 export const hold = <A, R>(
   work: string,
@@ -75,7 +85,6 @@ export const hold = <A, R>(
     const registers = yield* Registers
     const initial = yield* registers.grant(work, holder)
     const token = yield* SynchronizedRef.make(initial.token)
-    yield* Effect.addFinalizer(() => Effect.void)
 
     const renewals = Effect.gen(function* () {
       while (true) {

@@ -58,8 +58,8 @@ func corpus(t *testing.T) []row {
 	if err := json.Unmarshal(scanner.Bytes(), &header); err != nil {
 		t.Fatal(err)
 	}
-	if header.Rows != 12 {
-		t.Fatalf("corpus count = %d, want 12", header.Rows)
+	if header.Rows != 15 {
+		t.Fatalf("corpus count = %d, want 15", header.Rows)
 	}
 	var rows []row
 	for scanner.Scan() {
@@ -193,8 +193,8 @@ func TestVeilCorpusReplayWall(t *testing.T) {
 		})
 		replayed++
 	}
-	if replayed != 12 {
-		t.Fatalf("replayed %d rows, want 12", replayed)
+	if replayed != 15 {
+		t.Fatalf("replayed %d rows, want 15", replayed)
 	}
 }
 
@@ -202,6 +202,24 @@ func statesEqual(a, b register.State) bool {
 	ab, _ := json.Marshal(a)
 	bb, _ := json.Marshal(b)
 	return string(ab) == string(bb)
+}
+
+// requireWrongLastSequence asserts the frozen DEV-704 classification: every
+// wrong-last-sequence refusal carries API code 10071, and the operation
+// context picks the sentinel (Create matches ErrKeyExists; Update wraps
+// ErrKeyRevisionMismatch while still matching ErrKeyExists).
+func requireWrongLastSequence(t *testing.T, err error, sentinel error, context string) {
+	t.Helper()
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("%s error = %v, want %v", context, err, sentinel)
+	}
+	var apiErr *nats.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("%s error = %v, want a JetStream APIError in the chain", context, err)
+	}
+	if apiErr.ErrorCode != nats.JSErrCodeStreamWrongLastSequence {
+		t.Fatalf("%s API code = %d, want %d", context, apiErr.ErrorCode, nats.JSErrCodeStreamWrongLastSequence)
+	}
 }
 
 func TestSubstrateCASProbes(t *testing.T) {
@@ -214,14 +232,18 @@ func TestSubstrateCASProbes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := kv.Create("probe", []byte("two")); err == nil {
+	_, err = kv.Create("probe", []byte("two"))
+	if err == nil {
 		t.Fatal("duplicate create succeeded")
 	}
+	requireWrongLastSequence(t, err, nats.ErrKeyExists, "duplicate create")
 	second, err := kv.Update("probe", []byte("two"), first)
 	if err != nil || second <= first {
 		t.Fatalf("fresh update = (%d, %v), want larger token", second, err)
 	}
-	if _, err := kv.Update("probe", []byte("zombie"), first); !errors.Is(err, nats.ErrKeyRevisionMismatch) {
-		t.Fatalf("stale update error = %v, want ErrKeyRevisionMismatch", err)
+	_, err = kv.Update("probe", []byte("zombie"), first)
+	if err == nil {
+		t.Fatal("stale update succeeded")
 	}
+	requireWrongLastSequence(t, err, nats.ErrKeyRevisionMismatch, "stale update")
 }

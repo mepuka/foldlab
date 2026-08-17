@@ -1,4 +1,19 @@
-FabricVeil.Controls.trusted_mode_control depends on axioms: [sorryAx]
+control-footprint REFUSED TrustedTwin.keep_stays_false axioms=[Classical.choice, Quot.sound, propext, sorryAx]
+control-footprint REFUSED TrustedTwin.initializer_stays_false axioms=[Classical.choice, Quot.sound, propext, sorryAx]
 
-This theorem is deliberately excluded from theorem-roster.txt. The gate runs it,
-observes sorryAx, and proves the claimed-footprint checker refuses that output.
+Controls/TrustedMode.lean is the DEV-711 review's plant committed as a
+control: its module discharges verification conditions with a trusted-mode
+override in force at #gen_spec while the file-level `set_option
+veil.smt.trust false` string stays present, defeating any positive-presence
+grep. #gen_theorems lands the trusted VC theorems and the axiom census
+(`FabricVeil.expectSorryFootprint`) observes `sorryAx` and REFUSES each —
+the lines above are the required build-log trace, and the build fails if
+either footprint comes back clean. The module is deliberately excluded from
+theorem-roster.txt.
+
+Measured while building the control: an override scoped `in
+#check_invariants` (round 1's literal plant site) is inert at this pin —
+dischargers bind options at spec finalization, so those proofs reconstruct
+and their census stays clean. The census distinguishes both runs either way;
+log and source greps distinguish neither, which is why they carry no
+evidentiary weight in this gate.

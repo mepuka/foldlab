@@ -39,9 +39,14 @@ local `nats-server v2.14.4`, file storage, `num_replicas: 1`. There is no claim
 of crash recovery, durable-consumer resumption, federation, clustering,
 exactly-once behavior, attribution, or liveness.
 
-The register slice adds a separately bounded safety wall: 12 generated Veil
+The register slice adds a separately bounded safety wall: 15 generated Veil
 rows on local NATS v2.14.4, a file-backed `flb-fab-reg` bucket with R=1,
-history 64, TTL 0, and no byte-size eviction. `hold` is a Scope-bound heartbeat
-surface whose renewal loss interrupts its holder fiber; heartbeats carry no
-theorem or liveness claim. The hard-kill wall runs TS holder → Go steal → TS
-zombie refusal → Go winner commit.
+history 64, TTL 0, and no byte-size eviction; every row is verified against
+the Veil module's generated transition relation at export time. All register
+claims hold within a fixed backing-stream incarnation; administrative
+lifecycle mutation is outside the credential guard (the incarnation pin at
+open is a recorded deferral; the DEV-716 ACL suite is the other half of the
+guard). `hold` is a Scope-bound heartbeat surface whose renewal loss
+interrupts its holder fiber; heartbeats carry no theorem or liveness claim.
+The hard-kill wall runs TS holder → Go steal → TS zombie refusal → Go winner
+commit.

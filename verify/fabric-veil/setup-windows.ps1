@@ -82,7 +82,11 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 if (-not (Test-Path -LiteralPath (Join-Path $libcxx "include\c++\v1"))) {
   New-Item -ItemType Directory -Force -Path $extractRoot | Out-Null
-  & tar -xf $archive -C $extractRoot
+  # Pin System32 bsdtar: under an MSYS-first PATH a bare `tar` resolves to
+  # Git's GNU tar, which reads `C:\...` as a remote host and dies.
+  $bsdtar = Join-Path $env:SystemRoot "System32\tar.exe"
+  if (-not (Test-Path -LiteralPath $bsdtar)) { throw "System32 tar.exe not found: $bsdtar" }
+  & $bsdtar -xf $archive -C $extractRoot
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 

@@ -1,5 +1,17 @@
-import FabricVeil.Definitions
 import Veil.Core.Tools.ModelChecker.Trace
+import Lean
+
+/-! # The exported register corpus
+
+This file deliberately imports only the pinned Veil `Trace` module (three
+small files), never the proved `Register` module: the exporter executable
+links this closure, and linking the whole Veil/Mathlib closure into one
+binary is what killed the CI exporter step. The semantic authority is NOT
+this file's `acceptedStep` twin — every scenario below, prefix step and
+attempt alike, is checked executably against the `Register` module's
+generated transition relation in `FabricVeil/Bridge.lean`, which builds
+with the library on every gate run. A twin/model disagreement is a red
+library build, so the exported rows are model-checked rows. -/
 
 namespace FabricVeil.Corpus
 
@@ -51,8 +63,17 @@ instance : ToJson Action where
         ("kind", "expire-steal"), ("holder", toJson holder)]
     | .observe => Json.mkObj [("kind", "observe")]
 
+/-- The trace theory is `Unit`; serialize it exactly as the pinned Veil
+`jsonOfRepr` catch-all did (`"()"`), keeping the fixture bytes stable
+without importing the full Veil closure. -/
+instance : ToJson Unit where
+  toJson _ := Json.str "()"
+
 def initial : State := { token := 0, holder := none, outcome := none }
 
+/-- The serialization twin of the model's step. Checked, not trusted: every
+exported step is verified against the module's generated transition relation
+by `FabricVeil/Bridge.lean` at library-build time. -/
 def acceptedStep (state : State) (act : Action) : Option State :=
   match act with
   | .grant holder =>
@@ -73,11 +94,6 @@ def acceptedStep (state : State) (act : Action) : Option State :=
       else none
   | .observe => some state
 
-def system : Veil.RelationalTransitionSystem Unit State Action where
-  assumptions := fun _ => True
-  init := fun _ state => state = initial
-  tr := fun _ state act next => acceptedStep state act = some next
-
 def pushAccepted
     (trc : Trace Unit State Action) (act : Action) :
     Except String (Trace Unit State Action) := do
@@ -90,14 +106,6 @@ def buildTrace (acts : List Action) : Except String (Trace Unit State Action) :=
     theory := (), initialState := initial, steps := #[]
   }
   acts.foldlM pushAccepted empty
-
-def traceValid (trc : Trace Unit State Action) : Bool :=
-  trc.initialState = initial &&
-    (trc.steps.foldl (fun current step =>
-      current.bind fun state =>
-        match acceptedStep state step.transitionLabel with
-        | some next => if next = step.nextState then some next else none
-        | none => none) (some trc.initialState)).isSome
 
 structure Scenario where
   id : String
@@ -125,12 +133,21 @@ def scenarios : List Scenario := [
   { id := "renew-then-steal", pre := [.grant "holder-a", .renew 1],
     attempt := .expireSteal "holder-b" },
   { id := "renewed-zombie-commit", pre := [.grant "holder-a", .renew 1, .expireSteal "holder-b"],
-    attempt := .commit 2 "zombie", law := "no stale token ever lands" }
+    attempt := .commit 2 "zombie", law := "no stale token ever lands" },
+  -- Post-terminal rows: the model freezes every mutating action after a
+  -- landing; these rows wall that freeze on all three non-commit actions.
+  -- renew presents the CURRENT token so the landed outcome, not staleness,
+  -- is the isolated refusing guard.
+  { id := "grant-after-commit", pre := [.grant "holder-a", .commit 1 "first"],
+    attempt := .grant "holder-b", law := "grant requires the register to be absent" },
+  { id := "renew-after-commit", pre := [.grant "holder-a", .commit 1 "first"],
+    attempt := .renew 1, law := "an outcome, once set, never changes" },
+  { id := "steal-after-commit", pre := [.grant "holder-a", .commit 1 "first"],
+    attempt := .expireSteal "holder-b", law := "an outcome, once set, never changes" }
 ]
 
 def scenarioJson (scenario : Scenario) : Except String Json := do
   let trc ← buildTrace scenario.pre
-  if !traceValid trc then throw s!"invalid trace construction: {scenario.id}"
   let accepted := acceptedStep trc.lastState scenario.attempt
   let observed := accepted.getD trc.lastState
   let verdict := if accepted.isSome then "accepted" else "refused"
@@ -151,38 +168,84 @@ def corpusText : Except String String := do
   ]
   pure <| String.intercalate "\n" ((header :: rows).map Json.compress) ++ "\n"
 
-def droppedCommitGuardState : State := {
-  token := 2,
-  holder := some "holder-b",
-  outcome := some { token := 1, value := "zombie" }
-}
+/-! ## Executed model-level mutants
 
-def droppedStealStrictnessState : State := {
-  token := 1,
-  holder := some "holder-b",
-  outcome := none
-}
+Each negative control is a real mutated step function. The control artifact
+is produced by RUNNING the mutant: the violating state below is computed by
+execution, never hand-assembled, and the generation itself refuses to emit
+an exhibit whose refutation did not execute. `FabricVeil/Bridge.lean`
+additionally executes the model-side refutation: the generated transition
+relation refuses each mutant's accepted step. -/
 
-def controlJson (name guard law : String) (trc : Trace Unit State Action)
-    (attempt : Action) (observed : State) : Json := Json.mkObj [
+/-- Mutant: `commit` with the fencing-token guard deleted. Everything else
+matches `acceptedStep`'s commit arm. -/
+def commitWithoutTokenGuard (state : State) (token : Nat) (outcome : String) : Option State :=
+  if state.holder.isSome && state.outcome.isNone then
+    some { state with outcome := some { token, value := outcome } }
+  else none
+
+/-- Mutant: `expire-steal` with the strict token increase deleted. Everything
+else matches `acceptedStep`'s expire-steal arm. -/
+def stealWithoutStrictIncrease (state : State) (holder : String) : Option State :=
+  if state.holder.isSome && state.outcome.isNone then
+    some { state with holder := some holder }
+  else none
+
+def controlJson (name guard law honestVerdict : String) (trc : Trace Unit State Action)
+    (attempt : Action) (mutantObserved : State) (witness : Json) : Json := Json.mkObj [
   ("control", toJson name),
   ("dropped_guard", toJson guard),
   ("violated_law", toJson law),
   ("trace", toJson trc),
   ("attempt", toJson attempt),
-  ("mutant_observed", toJson observed)
+  ("honest_verdict", toJson honestVerdict),
+  ("mutant_verdict", "accepted"),
+  ("mutant_observed", toJson mutantObserved),
+  ("violation_witness", witness)
 ]
 
-def controlTexts : Except String (String × String) := do
-  let staleTrace ← buildTrace [.grant "holder-a", .expireSteal "holder-b"]
-  let stealTrace ← buildTrace [.grant "holder-a"]
-  let stale := controlJson "drop-commit-token-guard"
+/-- Runs the commit-guard mutant to its violating state and refuses to emit
+the exhibit unless the refutation executed: the honest step refuses, the
+mutant accepts, and the landed token is provably stale on the produced state. -/
+def commitGuardControl : Except String Json := do
+  let trc ← buildTrace [.grant "holder-a", .expireSteal "holder-b"]
+  let pre := trc.lastState
+  let attempt : Action := .commit 1 "zombie"
+  if (acceptedStep pre attempt).isSome then
+    throw "commit-guard control is vacuous: the honest step accepted the stale commit"
+  let some mutantObserved := commitWithoutTokenGuard pre 1 "zombie"
+    | throw "commit-guard control did not execute: the mutant refused"
+  let some landed := mutantObserved.outcome
+    | throw "commit-guard control did not execute: the mutant landed nothing"
+  if landed.token == mutantObserved.token then
+    throw "commit-guard control produced no violation of: no stale token ever lands"
+  pure <| controlJson "drop-commit-token-guard"
     "commit requires the presented token to equal the current token"
-    "no stale token ever lands" staleTrace (.commit 1 "zombie") droppedCommitGuardState
-  let steal := controlJson "drop-steal-strict-increase"
+    "no stale token ever lands" "refused" trc attempt mutantObserved
+    (Json.mkObj [("landed_token", toJson landed.token), ("current_token", toJson mutantObserved.token)])
+
+/-- Runs the steal-strictness mutant and refuses to emit the exhibit unless
+the produced state fails strict increase while the honest step's succeeds. -/
+def stealStrictnessControl : Except String Json := do
+  let trc ← buildTrace [.grant "holder-a"]
+  let pre := trc.lastState
+  let some honest := acceptedStep pre (.expireSteal "holder-b")
+    | throw "steal-strictness control is vacuous: the honest steal refused"
+  if honest.token ≤ pre.token then
+    throw "steal-strictness control is vacuous: the honest steal did not strictly increase"
+  let some mutantObserved := stealWithoutStrictIncrease pre "holder-b"
+    | throw "steal-strictness control did not execute: the mutant refused"
+  if mutantObserved.token > pre.token then
+    throw "steal-strictness control produced no violation of: every steal strictly increases the token"
+  pure <| controlJson "drop-steal-strict-increase"
     "expire-steal assigns current token + 1"
-    "every steal strictly increases the token" stealTrace (.expireSteal "holder-b")
-    droppedStealStrictnessState
+    "every steal strictly increases the token" "accepted" trc (.expireSteal "holder-b") mutantObserved
+    (Json.mkObj [("pre_token", toJson pre.token), ("mutant_token", toJson mutantObserved.token),
+                 ("honest_token", toJson honest.token)])
+
+def controlTexts : Except String (String × String) := do
+  let stale ← commitGuardControl
+  let steal ← stealStrictnessControl
   pure (stale.compress ++ "\n", steal.compress ++ "\n")
 
 end FabricVeil.Corpus

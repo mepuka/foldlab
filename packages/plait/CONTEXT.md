@@ -35,7 +35,9 @@ holder name is descriptive and never decides authority.
 
 **Landed outcome**:
 The unique terminal value stored with the fencing token that was current when
-it committed. Once present, no later commit or steal is admitted.
+it committed. Once present, no later commit or steal is admitted within a
+fixed backing-stream incarnation; administrative lifecycle mutation is
+outside the credential guard.
 
 **Zombie**:
 A dispossessed holder that completes after a steal. Its stale token is evidence

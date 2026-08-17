@@ -106,6 +106,12 @@ invariant [landing_has_outcome]
 set_option veil.smt.trust false in
 #check_invariants
 
+/- Land every discharged verification-condition proof as an addressable theorem
+(`Register.<action>_<invariant>` plus the initialization obligations), so the
+roster census in `FabricVeil/Proofs.lean` can read each proof term's axiom
+footprint out of the kernel. -/
+#gen_theorems
+
 #model_check interpreted
   { holder := Fin 3, outcome := Fin 2 }
   { tokenCap := 3, presentedToken := fun h => h.val }

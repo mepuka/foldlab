@@ -1,4 +1,4 @@
-import { StorageType } from "@nats-io/jetstream"
+import { JetStreamApiCodes, JetStreamApiError, StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
 import type { NatsConnection } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
@@ -13,6 +13,19 @@ import {
 } from "../Register.js"
 import { absenceRefusal, structuralRefusal, type Refusal } from "../Refusal.js"
 
+/**
+ * NATS KV adapter for the commitment register.
+ *
+ * Incarnation bound: every claim this adapter's walls make holds within a
+ * fixed backing-stream incarnation; administrative lifecycle mutation is
+ * outside the credential guard. KV revisions are stream sequences, so a
+ * bucket delete+recreate resets the token order and a stale holder's
+ * `update(expected)` can land on the reborn bucket. The incarnation pin at
+ * open (record the backing stream's creation time; refuse on mismatch) is
+ * NOT yet implemented — recorded deferral, see packages/plait/DECISIONS.md;
+ * the DEV-716 ACL suite is the other half of the guard.
+ */
+
 const StoredOutcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
 const StoredRegister = Schema.Struct({
   holder: Schema.String,
@@ -26,6 +39,18 @@ const workPattern = /^[^.*>\s]+$/u
 
 const encode = (value: StoredRegister): Uint8Array =>
   encoder.encode(JSON.stringify(value))
+
+/**
+ * The definitive CAS refusal, classified by operation context plus code
+ * (DEV-704 seam rule 2): duplicate create and stale update are both
+ * `JetStreamApiError{status: 400, code: 10071}`, distinguished only by the
+ * operation that observed them. Anything else is transport-class and its
+ * outcome is ambiguous.
+ */
+const isCasRefusal = (cause: unknown): boolean =>
+  cause instanceof JetStreamApiError &&
+  cause.status === 400 &&
+  cause.code === JetStreamApiCodes.StreamWrongLastSequence
 
 const transportRefusal = (operation: string, cause: unknown): Refusal =>
   absenceRefusal({
@@ -80,6 +105,21 @@ const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
       ))
   })
 }
+
+/** Internal carrier for a failed KV call awaiting classification. */
+class KvFailure {
+  readonly _tag = "KvFailure"
+  constructor(readonly cause: unknown) {}
+}
+
+const sameOutcome = (
+  a: StoredRegister["outcome"],
+  b: StoredRegister["outcome"],
+): boolean =>
+  a === null ? b === null : b !== null && a.token === b.token && a.value === b.value
+
+const sameStored = (a: StoredRegister, b: StoredRegister): boolean =>
+  a.holder === b.holder && sameOutcome(a.outcome, b.outcome)
 
 const stateOf = Effect.fn("Registers.stateOf")(function* (
   entry: KvEntry,
@@ -163,6 +203,52 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
     )
   }
 
+  /**
+   * Reconciles one failed `update(presented)` per DEV-704 seam rules 1-2.
+   * The outcome of a failed CAS append is ambiguous (it may have LANDED
+   * before the failure surfaced), so the subject is read back and compared
+   * to the intended append — never resolved by expecting a duplicate PubAck:
+   * - read-back matches the intended record at a later revision: the append
+   *   landed; the read-back entry is returned as success evidence;
+   * - read-back shows a different current revision: a genuine CAS conflict;
+   *   the typed fencing refusal cites its law with the fresh revision;
+   * - read-back shows the presented revision unchanged: nothing landed; a
+   *   definitive wrong-last-sequence code still refuses on the law, while a
+   *   transport-class cause stays a retryable transport refusal, cause
+   *   preserved.
+   * Within this envelope only this register's contenders write the key, so
+   * a matching read-back identifies this call's append (holder names are
+   * descriptive; identical contender names are one principal).
+   */
+  const reconcileUpdate = (options: {
+    readonly operation: string
+    readonly work: string
+    readonly presented: number
+    readonly intended: StoredRegister
+    readonly kind: string
+    readonly law: string
+    readonly cause: unknown
+  }): Effect.Effect<KvEntry, Refusal> => Effect.gen(function* () {
+    const { operation, work, presented, intended, kind, law, cause } = options
+    const entry = yield* read(bucket, work)
+    if (entry === null) {
+      // Vanishing mid-flight is lifecycle mutation: outside the fixed
+      // backing-stream incarnation this adapter is bounded to.
+      return yield* transportRefusal(operation, cause)
+    }
+    const stored = yield* decode(entry)
+    if (entry.revision > presented && sameStored(stored, intended)) {
+      return entry
+    }
+    if (entry.revision !== presented) {
+      return yield* lawRefusal(kind, law, ["token"], presented, entry.revision)
+    }
+    if (isCasRefusal(cause)) {
+      return yield* lawRefusal(kind, law, ["token"], presented, "the current revision")
+    }
+    return yield* transportRefusal(operation, cause)
+  })
+
   const grant: RegisterService["grant"] = Effect.fn("Registers.grant")(
     function* (rawWork, holder) {
       const work = yield* validWork(rawWork)
@@ -174,17 +260,42 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         "present",
         "absent",
       )
-      const token = yield* Effect.tryPromise({
-        try: () => bucket.create(work, encode({ holder, outcome: null })),
-        catch: () => lawRefusal(
-          "duplicate-grant",
-          "grant requires the register to be absent",
-          ["register"],
-          "present or concurrently created",
-          "absent",
-        ),
-      })
-      return { token, holder, outcome: null }
+      const intended: StoredRegister = { holder, outcome: null }
+      const created = yield* Effect.tryPromise({
+        try: () => bucket.create(work, encode(intended)),
+        catch: (cause) => new KvFailure(cause),
+      }).pipe(
+        Effect.map((token): RegisterState => ({ token, holder, outcome: null })),
+        Effect.catch(({ cause }) => Effect.gen(function* () {
+          // Reconcile the ambiguous create by read-back (rule 1), classify
+          // the conflict by context plus code (rule 2).
+          const entry = yield* read(bucket, work)
+          if (entry !== null) {
+            const stored = yield* decode(entry)
+            if (sameStored(stored, intended)) {
+              return { token: entry.revision, holder, outcome: null } satisfies RegisterState
+            }
+            return yield* lawRefusal(
+              "duplicate-grant",
+              "grant requires the register to be absent",
+              ["register"],
+              "present",
+              "absent",
+            )
+          }
+          if (isCasRefusal(cause)) {
+            return yield* lawRefusal(
+              "duplicate-grant",
+              "grant requires the register to be absent",
+              ["register"],
+              "present or concurrently created",
+              "absent",
+            )
+          }
+          return yield* transportRefusal("register.grant", cause)
+        })),
+      )
+      return created
     },
   )
 
@@ -193,21 +304,37 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
       const work = yield* validWork(rawWork)
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
-      if (stored.outcome !== null || token !== entry.revision) return yield* lawRefusal(
+      // A landed outcome refuses on its own law even when the presented
+      // token is current: the outcome, not staleness, is the reason.
+      if (stored.outcome !== null) return yield* lawRefusal(
+        "outcome-already-landed",
+        "an outcome, once set, never changes",
+        ["outcome"], stored.outcome.value, "absent",
+      )
+      if (token !== entry.revision) return yield* lawRefusal(
         "stale-register-token",
         "renew requires the current fencing token",
         ["token"],
         token,
         entry.revision,
       )
+      const intended = stored
       const next = yield* Effect.tryPromise({
-        try: () => bucket.update(work, encode(stored), token),
-        catch: () => lawRefusal(
-          "stale-register-token",
-          "renew requires the current fencing token",
-          ["token"], token, "the current revision",
-        ),
-      })
+        try: () => bucket.update(work, encode(intended), token),
+        catch: (cause) => new KvFailure(cause),
+      }).pipe(Effect.catch(({ cause }) =>
+        Effect.map(
+          reconcileUpdate({
+            operation: "register.renew",
+            work,
+            presented: token,
+            intended,
+            kind: "stale-register-token",
+            law: "renew requires the current fencing token",
+            cause,
+          }),
+          (landedEntry) => landedEntry.revision,
+        )))
       return { token: next, holder: stored.holder, outcome: null }
     },
   )
@@ -228,14 +355,20 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         ["token"], token, entry.revision,
       )
       const landed = { token, value: outcome }
+      const intended: StoredRegister = { holder: stored.holder, outcome: landed }
       yield* Effect.tryPromise({
-        try: () => bucket.update(work, encode({ holder: stored.holder, outcome: landed }), token),
-        catch: () => lawRefusal(
-          "stale-register-token",
-          "no stale token ever lands",
-          ["token"], token, "the current revision",
-        ),
-      })
+        try: () => bucket.update(work, encode(intended), token),
+        catch: (cause) => new KvFailure(cause),
+      }).pipe(Effect.catch(({ cause }) =>
+        reconcileUpdate({
+          operation: "register.commit",
+          work,
+          presented: token,
+          intended,
+          kind: "stale-register-token",
+          law: "no stale token ever lands",
+          cause,
+        })))
       return { token, holder: stored.holder, outcome: landed }
     },
   )
@@ -250,14 +383,23 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         "an outcome, once set, never changes",
         ["outcome"], stored.outcome.value, "absent",
       )
+      const intended: StoredRegister = { holder, outcome: null }
       const next = yield* Effect.tryPromise({
-        try: () => bucket.update(work, encode({ holder, outcome: null }), entry.revision),
-        catch: () => lawRefusal(
-          "concurrent-register-update",
-          "expire-steal grants a strictly larger token from the current revision",
-          ["token"], entry.revision, "the current revision",
-        ),
-      })
+        try: () => bucket.update(work, encode(intended), entry.revision),
+        catch: (cause) => new KvFailure(cause),
+      }).pipe(Effect.catch(({ cause }) =>
+        Effect.map(
+          reconcileUpdate({
+            operation: "register.expireSteal",
+            work,
+            presented: entry.revision,
+            intended,
+            kind: "concurrent-register-update",
+            law: "expire-steal grants a strictly larger token from the current revision",
+            cause,
+          }),
+          (landedEntry) => landedEntry.revision,
+        )))
       return { token: next, holder, outcome: null }
     },
   )

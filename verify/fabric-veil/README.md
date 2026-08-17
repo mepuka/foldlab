@@ -29,24 +29,38 @@ An `invariant` is a proposition claimed for every reachable state.
 preservation obligation for every action/invariant pair. With
 `veil.smt.trust=false`, cvc5 supplies proofs that lean-smt reconstructs and the
 Lean kernel checks; cvc5's verdict alone is not installed as an axiom.
+`#gen_theorems` then lands every discharged obligation as an addressable
+theorem (`Register.<action>_<invariant>` plus the `initializer_*` forms).
 
-`FabricVeil/Proofs.lean` holds the two rostered capstones. The gate reads Lean's
-`#print axioms` output and permits only `propext`, `Classical.choice`, and
-`Quot.sound`; it refuses `sorryAx`. This proves the named theorem terms have no
-admitted proof in their dependency footprint. It does not prove the exporter,
-JSON printer, runtime, NATS server, SHA-256, or compiler correct. The trusted-mode
-control intentionally produces `sorryAx`, and the same checker must reject it.
+`FabricVeil/Proofs.lean` is the census over those claim-carrying theorems:
+all 36 generated verification conditions (six procedures × six invariant
+clauses, pinned in `theorem-roster.txt`) are read back out of the kernel and
+each proof term's axiom footprint must stay inside `propext`,
+`Classical.choice`, and `Quot.sound`. `sorryAx` — the trusted-mode channel —
+fails the build. This is enforcement by artifact: no log or source grep is
+evidence here, because a trusted run can be log-silent (the round-1 review
+proved it). The committed trusted-mode control (`Controls/TrustedMode.lean`)
+discharges a minimal module's obligations in genuinely trusted mode and the
+same census is shown refusing it on `sorryAx`. The two arithmetic warm-ups in
+`Proofs.lean` carry no claim and say so.
 
 `#model_check` interprets three holders, two outcomes, a token cap of three, and
 explores 66 states without a violation. That finite search is falsification
 evidence, never a proof substitute. Its value is fast counterexample discovery;
 the unbounded safety claim comes from invariant preservation.
 
-`FabricVeil/Corpus.lean` constructs valid Veil `Trace` values, checks each prefix
-against the transition relation, and deterministically exports 12 accepted or
-refused attempts. TypeScript and Go replay those rows on NATS KV. The exporter
-and printer are deliberately named trusted glue rather than smuggled into the
-kernel claim.
+`FabricVeil/Corpus.lean` deterministically exports 15 accepted or refused
+attempts, and `FabricVeil/Bridge.lean` drives every exported prefix step and
+attempt through the module's GENERATED transition relation (the same
+executable machinery `#model_check interpreted` runs) at a finite instance:
+verdicts and observed states must agree step by step or the library build
+fails, so the corpus can only regenerate as model-checked rows. The two
+model-level negative controls are executed mutants — a commit without its
+token guard and a steal without strict increase — whose violating states are
+computed by running them; the bridge additionally executes the model-side
+refutation of each (the generated relation refuses what the mutant accepts).
+TypeScript and Go replay all 15 rows on NATS KV. The exporter binary itself
+links only the corpus's small closure and stays trusted serialization glue.
 
 ## Bounds
 
@@ -54,6 +68,12 @@ The claim is SAFETY ONLY: token monotonicity, strict grant/steal fencing,
 at-most-one landed outcome, and no stale-token landing. It says nothing about
 liveness, fair retry, deadlines, lease progress, clustering, or behavior across
 different work digests. The runtime wall is single-node, non-clustered R=1.
+Every runtime claim holds within a fixed backing-stream incarnation;
+administrative lifecycle mutation is outside the credential guard. The
+incarnation pin at register-open is a recorded deferral
+(`packages/plait/DECISIONS.md`); the DEV-716 ACL suite is the other half of
+that guard. The corpus↔model bridge checks the exported rows at one finite
+interpreted instance; the invariants themselves are proved for all instances.
 
 ## Windows substrate
 
