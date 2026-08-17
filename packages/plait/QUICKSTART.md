@@ -25,13 +25,14 @@ minutes run today.
 | 0–2 | Boot a local commons | **Runs today** — E2, the spine |
 | 2–5 | Example 1 — two processes, one digest | **Runs today** — E2 |
 | 5–8 | Example 2 — kill it and get the same answer | **E4**, the durable fold — design only |
-| 8–10 | Example 3 — two workers, one outcome | **E5**, the register — design only. One further line makes the worker an LLM action (**E9**) |
+| 8–10 | Example 3 — two workers, one outcome | **Runs today** — E5, the register. One further line makes the worker an LLM action (**E9**) |
 
-Sections marked with an epic (E4, E5, E9) describe work that is designed and
+Sections marked with an epic (E4, E9) describe work that is designed and
 ratified in shape but not built. Their code blocks are sketches from the design
 record — copying them will not compile. Everything *not* marked with an epic was
 executed against `packages/plait` as merged on `main` (the spine, E2, merged at
-`b51d1d8c4`), and the console output shown is real output from that run.
+`b51d1d8c4`; the register, E5, merged at `591aeec`), and the console output shown
+is real output from that run.
 
 The journey shape here is the ratified one (DEV-697 §3, ratified in the
 2026-08-17 grill sheet). The epic labels are what keeps it honest while the
@@ -49,7 +50,7 @@ lower slices are still being built.
 | **envelope** | one message on a lane. A closed record — extra fields are refused, not ignored |
 | **digest** | lowercase hex SHA-256 over an envelope's canonical (RFC 8785) bytes. This is the envelope's identity |
 | **refusal** | a structured "no" carrying the law it enforced, the path that broke it, what it got, and what it expected. Refusals are values you can read, not stack traces |
-| **register** | a lease: work digest → (token, holder, outcome), advanced by compare-and-set. This is where the "decision points that are not sloppy" live (E5) |
+| **register** | a lease: work digest → (token, holder, outcome), advanced by compare-and-set. This is where the "decision points that are not sloppy" live (E5, merged) |
 
 ## 0–2 · Boot the commons
 
@@ -353,16 +354,64 @@ is checked; the wiring to the code is not" — and the Lean lane that guards it 
 not yet a required CI check. `VERIFICATION.md` records the same gap in its own
 words.
 
-## 8–10 · Example 3 — "two workers, one outcome" — **E5**, then **E9**
+## 8–10 · Example 3 — "two workers, one outcome", then **E9**
 
-**Not runnable yet. This section describes E5, the register.**
+**Runs today (E5).** The shape: two processes race for the same shard of work.
+One wins a lease. The other takes the lease over, and then the first process
+wakes up and tries to commit its result anyway. You print the register and see
+what happened.
 
-The shape: two processes race for the same shard of work. One wins a lease. The
-other is stopped mid-work, its lease is taken over, and then the stopped process
-wakes up and tries to commit its result anyway. You print the register history
-and see what happened.
+`quickstart/race.ts`:
 
-The sketch from the design record (part 1 §8.3):
+```ts
+import { Effect } from "effect"
+
+import { digestOf } from "@foldlab/plait/Digest"
+import { Registers } from "@foldlab/plait/Register"
+
+const program = Effect.gen(function* () {
+  const shard = yield* digestOf({ shard: "doc-1", round: null })
+  const registers = yield* Registers
+
+  const a = yield* registers.grant(shard, "worker-a")       // worker-a holds the lease
+  const b = yield* registers.expireSteal(shard, "worker-b") // worker-a stalls; b takes over
+
+  // worker-a wakes up holding the old token and tries to land its result.
+  yield* registers.commit(shard, a.token, "terms:doc-1@a").pipe(/* print the refusal */)
+
+  const landed = yield* registers.commit(shard, b.token, "terms:doc-1@b")
+  const seen = yield* registers.observe(shard)
+}).pipe(Effect.provide(Registers.layer({ servers: url })), Effect.scoped)
+```
+
+```
+$ bun run ./quickstart/race.ts
+granted    worker-a  token=1
+stolen     worker-b  token=2
+refused    worker-a  kind=stale-register-token  sort=structural
+           law=no stale token ever lands
+           got=1  expected=2
+committed  worker-b  token=2  outcome=terms:doc-1@b
+observed   token=2  outcome=terms:doc-1@b
+```
+
+The late-waking worker's *evidence* is welcome — it goes onto a lane like any
+other observation, attributed and harmless, because the evidence plane is the
+sloppy-safe side. Its *commit* is refused: the token it holds is no longer
+current, and the refusal says so in those words, with both numbers.
+
+Two things about that transcript. The refusal is `structural`, so no shipped
+retry policy will touch it — no amount of waiting makes a stale token current,
+and the refusal's `next` step says to observe the register rather than retry.
+And the token is the KV entry revision, which is a stream sequence: it is
+bucket-global, not a per-register counter. On a fresh store a first grant reads
+`token=1`, as above; on a store with history it will not. Treat a token as an
+opaque monotone ordinal, never as an attempt number.
+
+The **E9** shape for the same thing — the lease held around a whole body of
+work, with the evidence emitted unfenced inside it — is the design record's
+sketch (part 1 §8.3), and **it does not compile against the merged API**, whose
+`hold` takes `(work, holder, use)` positionally:
 
 ```ts
 const claimShard = Effect.fn("distill.claim")(function* (shard: Digest) {
@@ -377,11 +426,6 @@ const claimShard = Effect.fn("distill.claim")(function* (shard: Digest) {
 })
 ```
 
-The late-waking worker's *evidence* is welcome — it goes onto the lane like any
-other observation, attributed and harmless, because the evidence plane is the
-sloppy-safe side. Its *commit* is refused: the token it holds is no longer
-current.
-
 The claim, in the exact words the program uses: **at most one commit lands per
 work digest.** That is the F5 statement — lease tokens strictly increase, and a
 commit is accepted only against the current token. Read the quantifier
@@ -390,14 +434,36 @@ promises a commit lands at all, or that a stalled worker is noticed promptly;
 Plait makes no liveness claims. "Exactly once" is not the claim and is not
 vocabulary this program uses.
 
-Unlike F3 and F2b, F5 is not proved yet — not even at the model level. It lives
-in a separate Veil-pinned package that lands with E5, where it becomes a
-machine-checked safety theorem over a five-action transition system: tokens
-strictly increase under grant and steal, and at most one commit lands per work
-digest. That package must discharge its proofs as *reconstructed* SMT proofs
-rather than trusted ones, because trusting the solver would smuggle an axiom
-past the very gate the estate keeps. Today F5 is a statement with a dispatched
-spec behind it, and the ledger row follows the slice.
+Read the *noun* as carefully as the quantifier. **At-most-one landed OUTCOME is
+not at-most-one external side effect:** an external call may fire and then fail
+to land its outcome — the register bounds landings, never attempts (ruled G23;
+this sentence rides every action-consuming claim). A worker that called a
+payment API and then lost its lease has already called the payment API. Where a
+vendor supports an idempotency key the work digest is the natural one, stable
+across retries of the same declaration by construction; where none exists, the
+bound is the bound.
+
+Unlike F3 and F2b, F5 is proved in a separate Veil-pinned package —
+`verify/fabric-veil`, which merged with E5. It is a machine-checked safety
+theorem over a five-action transition system: tokens strictly increase under
+grant and steal, and at most one commit lands per work digest. Its proofs are
+discharged as *reconstructed* SMT proofs rather than trusted ones
+(`veil.smt.trust=false`), because trusting the solver would smuggle an axiom past
+the very gate the estate keeps — and a committed trusted-mode control shows the
+axiom census refusing a genuinely trusted discharge.
+
+F5 is also the one law on this page carried onto the running substrate rather
+than left at the model level: a replay wall drives all 15 model-exported rows
+through the TS `Registers` service *and* an independent Go twin over real NATS KV
+revision CAS, with verdict, law-name and observed-state equality and zero skips.
+The rung is **R3 plus that replay wall**; **R4 stays reserved** at the
+15,378-schedule bar and no R4 language attaches until a lockstep run at that bar
+exists. The bounds are in the ledger and one of them binds this example: every
+runtime claim holds within a **fixed backing-stream incarnation** — the
+incarnation pin at register-open is a recorded deferral, so a bucket destroyed
+and recreated underneath you is outside the guard. Read the whole row and its
+residuals in `VERIFICATION.md`, "The Plait register (F5)"; check it yourself with
+`bash verify/fabric-veil/run.sh`.
 
 ### The one-line change — **E9**
 
@@ -440,7 +506,9 @@ Read this section as part of the quickstart, not as fine print.
 
 - **No exactly-once.** The de-duplication window you saw in Example 1 is a
   bounded window on a stream. The coordination-plane property is at-most-one
-  commit landed per work digest, and it is a safety property.
+  commit landed per work digest, and it is a safety property. **At-most-one
+  landed outcome is not at-most-one external side effect** — the register bounds
+  landings, never attempts (ruled G23).
 - **No liveness.** Nothing here claims work completes, a lease is reclaimed
   promptly, or a partition heals. The commons in this configuration is a single
   non-clustered JetStream node — one process, and if it stops, everything stops.
@@ -450,9 +518,13 @@ Read this section as part of the quickstart, not as fine print.
   rather than a caveat on it. Nothing running consumes that model's corpus yet,
   so no claim on this page says the shipped code implements the proved model;
   that bridge lands with E4 and the CI slice, and the Lean lane guarding it is
-  not yet a required check. F5 is not proved at all yet; it lands with E5.
-  Claims enter `VERIFICATION.md` only as slices land, and that file states each
-  claim's bounds.
+  not yet a required check. **F5 is the exception, and only F5**: it is proved in
+  the Veil-pinned `verify/fabric-veil` (E5, merged) *and* carried onto the real
+  substrate by a 15-row replay wall across two independent runtimes — rung R3
+  plus that wall, with R4 reserved at the 15,378-schedule bar, and every runtime
+  claim scoped to a fixed backing-stream incarnation. Claims enter
+  `VERIFICATION.md` only as slices land, and that file states each claim's
+  bounds.
 - **The spine's own recorded claim is narrow.** Four generated envelope rows,
   digest-equal across an independent Go implementation, plus a two-process round
   trip — including across a consumer restart — over one local file-backed
@@ -478,5 +550,10 @@ Read this section as part of the quickstart, not as fine print.
 - `verify/fabric/` — the Lean package behind F1–F4, F2b and F9, with the
   negative controls that show each law is load-bearing. Run the gate yourself
   with `bash verify/fabric/run.sh`.
+- `verify/fabric-veil/` — the Veil package behind F5, the law under Example 3.
+  `bash verify/fabric-veil/run.sh`.
+- `packages/plait/FOR-WORKING-AGENTS.md` — the same substrate mapped onto the
+  jobs you already do: tool calling, domain schemas, skills, subagents, memory,
+  retrieval.
 - `VERIFICATION.md` — every claim the estate makes, its evidence rung, and its
   bounds. If a sentence anywhere contradicts this file, this file wins.
