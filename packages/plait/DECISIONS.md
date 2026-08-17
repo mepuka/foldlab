@@ -267,3 +267,43 @@ repairing them, per findings-before-fixes); the `unstable/codegen` pair, which
 this run demotes to a proposal in the document's addendum. **Load-bearing? no**
 — this decision fixes a document's home and evidence scope, and reverses at the
 cost of one `git mv`.
+
+### T15. DEV-725 round 2 — the quickstart repair's blast radius
+
+Decided: the coordinator's dispatch named two stale surfaces (the frontier
+table's minute 8-10 row and the closing section's F5 sentence); this repair reads
+"surface" as claim rather than as line, so it also moves the four other places
+the same two claims are asserted — the epic-marking paragraph under the frontier
+table, the glossary's register row, the `## 8-10` section's own
+"Not runnable yet" lead, and that section's "F5 is not proved yet — not even at
+the model level" paragraph, which was the strongest instance of the error.
+Alternatives: edit exactly the two named lines (leaves "not proved at all" and
+"not runnable yet" standing three hundred lines apart from their own correction —
+an internally contradictory page, which is worse than the stale one); rewrite the
+whole example ladder (outside the dispatch, and E4's Example 2 is still honestly
+unbuilt). Why: the two surfaces ARE the two claims, and a claim asserted in six
+places is repaired in six or not at all.
+
+Example 3's transcript is real output regenerated for this commit against a
+fresh file-backed store, not carried over from the round-1 run: the page's whole
+discipline is that a runnable label means someone ran it at that tree. The
+design-record sketch is kept below the transcript and relabelled — it does NOT
+compile against the merged API, whose `hold` takes `(work, holder, use)`
+positionally rather than the sketch's record argument, and saying so is more
+useful to a reader than deleting the sketch. The bucket-global token note is
+added because a reader who sees `token=1` on a fresh store and `token=6` on a
+used one will otherwise conclude the register is broken.
+
+Two edits land outside `QUICKSTART.md` and are deliberate, not scope creep:
+`FOR-WORKING-AGENTS.md`'s findings F-2 and F-5 are marked closed in place (with
+the coordinator's rejection of F-2's counter-reading recorded), because that
+document merges in the same PR and would otherwise ship two sentences asserting
+that a ruled-and-landed sentence is missing and that a repaired page is stale.
+Findings are marked, never deleted: the record of what was found stays beside
+what was done. **Load-bearing? no** — prose scope; reverses by `git revert`.
+
+Untouched deliberately: `VERIFICATION.md` (the G23 sentence landed there under
+the coordinator's own hand at `fe7fb3ac6`; its wrap runs long at the splice, which
+is cosmetic and is reported rather than silently reflowed); Example 2 and the
+`plait chaos` section, both still honestly E4; the three sample scripts, which
+stay uncommitted for DEV-715's doctest lane per T14.
