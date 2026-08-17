@@ -212,7 +212,7 @@ verifies the server binary is the `go.mod` pin. **Load-bearing? yes** — moving
 wall away from the package that resolves the clients could let dependency drift
 escape the witness.
 
-### T7. The parity wall pins wire-indistinguishability; classification stays a convention
+### T13. The parity wall pins wire-indistinguishability; classification stays a convention
 
 Decided: assert that the three wrong-last-sequence refusals (journal CAS,
 duplicate create, stale update) present one identical shape across every
@@ -227,5 +227,10 @@ the fact to pin); keep a label-swap control over the mapping switch (it tests
 the switch, not the wire). Why: the only drift this wall can catch is
 `@nats-io/*` starting to distinguish the refusals, and the pinned shape reds
 exactly then, while the state pin keeps one capture's refusal from standing
-in for another's. **Load-bearing? yes** — the ledger row's "context
+in for another's. The fixture seeds one extra journal frame so the three
+reported states are pairwise distinct — without that, two captures share a
+state and the pin binds only the odd one out — and the compared field set is
+itself pinned by a guard whose committed field-drop mutant
+(`negative-controls/SubstrateParity.field-drop.mutant.ts`) reds the battery
+if the guard weakens. **Load-bearing? yes** — the ledger row's "context
 classification" claim is scoped by this pin.

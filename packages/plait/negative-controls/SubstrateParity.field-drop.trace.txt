@@ -1,0 +1,1 @@
+Error: wrong-last-sequence shape compares [code,constructor,message,name,status], want [apiError,cause,code,constructor,message,name,status]

@@ -11,6 +11,11 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import {
+  assertDistinguishingFieldSet,
+  pinnedWrongLastSequenceShape,
+  wireShape,
+} from "./WrongLastSequenceShape.js"
 
 const encode = (value: string): Uint8Array => new TextEncoder().encode(value)
 let harness: NatsHarness | undefined
@@ -38,44 +43,14 @@ const captureWrongLastSequence = async (
   return apiError
 }
 
-// Journal state (the reported sequence number) masked, so shape comparisons
-// are about refusal kind rather than fixture state.
-const maskJournalState = (text: string): string => text.replace(/\d+/gu, "#")
-
-// Every distinguishing-capable field `JetStreamApiError` exposes at the
-// @nats-io/* 3.4.0 pin: subclass identity, name, status, code, message,
-// cause, and the raw wire ApiError (spread, so a field added by a future
-// release lands here and fails the pinned comparison).
-const wireShape = (refusal: JetStreamApiError) => ({
-  constructor: refusal.constructor.name,
-  name: refusal.name,
-  status: refusal.status,
-  code: refusal.code,
-  message: maskJournalState(refusal.message),
-  cause: refusal.cause,
-  apiError: {
-    ...refusal.apiError(),
-    description: maskJournalState(refusal.apiError().description),
-  },
-})
-
-const pinnedWrongLastSequenceShape = {
-  constructor: "JetStreamApiError",
-  name: "JetStreamApiError",
-  status: 400,
-  code: 10071,
-  message: "wrong last sequence: #",
-  cause: undefined,
-  apiError: { code: 400, description: "wrong last sequence: #", err_code: 10071 },
-}
-
 // The substrate emits no distinguishing signal for these refusals (DEV-704),
 // so classification can never be derived from the refusal: it is a
 // client-side convention keyed by operation context (part 1 §6.3). The
 // refusal contributes exactly two facts — it is a wrong-last-sequence
 // refusal, and it reports the journal state its capture site produced. The
-// state pin is what keeps one capture's refusal from standing in for
-// another's in a deterministic fixture.
+// fixture seeds the journal so the three reported states are PAIRWISE
+// DISTINCT (3, 1, 2), which is what lets the state pin refuse every
+// cross-position substitution rather than only the uniquely-numbered one.
 const classifyWrongLastSequence = (
   operation: WrongLastOperation,
   refusal: JetStreamApiError,
@@ -137,6 +112,17 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
         seq: 2,
         duplicate: false,
       })
+      // One seeded frame keeps the three refusals' reported journal states
+      // pairwise distinct (journal-cas: 3, kv-create: 1, kv-update: 2), so no
+      // captured refusal can stand in for another at any position.
+      const casSeed = await js.publish("ts.parity.cas", encode("seed"), {
+        expect: { lastSubjectSequence: 2 },
+      })
+      expect(casSeed).toEqual({
+        stream: "TS_SUBSTRATE_PARITY",
+        seq: 3,
+        duplicate: false,
+      })
       const journalCasRefusal = await captureWrongLastSequence(() =>
         js.publish("ts.parity.cas", encode("cas"), {
           msgID: "ts-cas-id",
@@ -145,7 +131,7 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
       )
       const casDuplicate = await js.publish("ts.parity.cas", encode("changed bytes"), {
         msgID: "ts-cas-id",
-        expect: { lastSubjectSequence: 2 },
+        expect: { lastSubjectSequence: 3 },
       })
       expect(casDuplicate).toEqual({
         stream: "TS_SUBSTRATE_PARITY",
@@ -174,7 +160,12 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
       // identical once journal state is masked; the day @nats-io/* starts
       // telling create-conflict from update-conflict apart, these three stop
       // matching one pinned shape and this wall REDS — that drift is the one
-      // thing the wall exists to catch.
+      // thing the wall exists to catch. The field-set guard pins WHAT the
+      // wall compares: narrowing either side of the comparison reds here.
+      assertDistinguishingFieldSet(pinnedWrongLastSequenceShape)
+      for (const refusal of [journalCasRefusal, duplicateCreateRefusal, staleUpdateRefusal]) {
+        assertDistinguishingFieldSet(wireShape(refusal))
+      }
       expect(wireShape(journalCasRefusal)).toEqual(pinnedWrongLastSequenceShape)
       expect(wireShape(duplicateCreateRefusal)).toEqual(pinnedWrongLastSequenceShape)
       expect(wireShape(staleUpdateRefusal)).toEqual(pinnedWrongLastSequenceShape)
@@ -182,17 +173,18 @@ describe("@nats-io 3.4.0 substrate parity wall", () => {
       // The convention, layered on that indistinguishable wire: operation
       // context decides the classification. The state pin binds each captured
       // refusal to the operation that raised it — journal CAS refused at
-      // subject sequence 2, duplicate create at bucket revision 1, stale
-      // update at bucket revision 2, all deterministic in this fixture.
+      // subject sequence 3, duplicate create at bucket revision 1, stale
+      // update at bucket revision 2: pairwise distinct by the seeded frame,
+      // deterministic in this fixture.
       const classifications: ReadonlyArray<WrongLastClassification> = [
-        classifyWrongLastSequence("journal-cas", journalCasRefusal, "wrong last sequence: 2"),
+        classifyWrongLastSequence("journal-cas", journalCasRefusal, "wrong last sequence: 3"),
         classifyWrongLastSequence("kv-create", duplicateCreateRefusal, "wrong last sequence: 1"),
         classifyWrongLastSequence("kv-update", staleUpdateRefusal, "wrong last sequence: 2"),
       ]
       expect(classifications).toEqual(["cas-conflict", "key-exists", "revision-mismatch"])
 
       console.info(
-        "SUBSTRATE TS TRACE clients=@nats-io/*@3.4.0 wrong-last-sequence=400/10071 wire-indistinguishable=[constructor,name,status,code,message,cause,apiError] classification=operation-context-convention states=[journal-cas:2,kv-create:1,kv-update:2] puback=[stream,seq,duplicate] cas-precedence=[2/new,400/10071,2/duplicate]",
+        "SUBSTRATE TS TRACE clients=@nats-io/*@3.4.0 wrong-last-sequence=400/10071 wire-indistinguishable=[constructor,name,status,code,message,cause,apiError] field-set=pinned classification=operation-context-convention states=[journal-cas:3,kv-create:1,kv-update:2]=pairwise-distinct puback=[stream,seq,duplicate] cas-precedence=[2/new,3/seed,400/10071,2/duplicate]",
       )
     } finally {
       await connection.close()
