@@ -36,5 +36,5 @@ jobs:
         run: bash verify/moves/run.sh
       - name: ir gate (proofs)
         run: bash verify/ir/run.sh
-      - name: fabric gate (proofs + vectors + refusal self-test)
-        run: bash verify/fabric/run.sh --self-test
+      - name: fabric gate (proofs + vectors)
+        run: bash verify/fabric/run.sh

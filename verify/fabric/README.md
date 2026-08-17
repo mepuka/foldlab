@@ -46,8 +46,7 @@ executes the same definitions to author the runtime conformance corpus at
   whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
   roster, proof footprint, four negative controls, pinned vector counts, and
-  byte-identical regeneration. A failed regeneration names the first divergent
-  zero-based NDJSON row, its kind, and the expected/got row digests.
+  byte-identical regeneration.
 
 ## How a trace walks through `fold`
 
@@ -105,11 +104,8 @@ cd verify/fabric
 lake build
 lake exe emitter
 ./run.sh
-./run.sh --self-test
 ```
 
 The first emitter line records the full command and output path. Never edit the
 fixture or a counterexample trace by hand; regenerate them through their
-executable. `--self-test` copies the corpus to a temporary file, plants one row
-mutation, and passes only when the regeneration gate refuses it with the exact
-row evidence.
+executable.

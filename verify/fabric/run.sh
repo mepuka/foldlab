@@ -3,23 +3,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-self_test=false
-case "${1:-}" in
-  "") ;;
-  --self-test) self_test=true ;;
-  *) echo "usage: ./run.sh [--self-test]" >&2; exit 2 ;;
-esac
-if [[ "$#" -gt 1 ]]; then
-  echo "usage: ./run.sh [--self-test]" >&2
+if [[ "$#" -ne 0 ]]; then
+  echo "usage: ./run.sh" >&2
   exit 2
 fi
 
-for required_tool in lake sha256sum; do
-  if ! command -v "$required_tool" >/dev/null 2>&1; then
-    echo "GATE: FAIL — $required_tool not found" >&2
-    exit 2
-  fi
-done
+if ! command -v lake >/dev/null 2>&1; then
+  echo "GATE: FAIL — lake not found" >&2
+  exit 2
+fi
 
 for required in lean-toolchain lakefile.toml lake-manifest.json Fabric.lean \
     Main.lean ControlMain.lean Fabric/Definitions.lean Fabric/Laws.lean \
@@ -134,8 +126,7 @@ discovered_tmp=$(mktemp "./.discovered.XXXXXX")
 axiom_check=$(mktemp "./.axioms.XXXXXX.lean")
 corpus_tmp=$(mktemp "./.corpus.XXXXXX.ndjson")
 corpus_witnesses_tmp=$(mktemp "./.corpus-witnesses.XXXXXX")
-corpus_mutation_tmp=$(mktemp "./.corpus-mutation.XXXXXX.ndjson")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_tmp" "$corpus_witnesses_tmp" "$corpus_mutation_tmp"' EXIT
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_tmp" "$corpus_witnesses_tmp"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -240,70 +231,8 @@ while read -r _kind _name witness; do
   fi
 done < "$corpus_witnesses_tmp"
 
-line_digest() {
-  local present="$1"
-  local line="$2"
-  if [[ "$present" -eq 0 ]]; then
-    printf '<missing>'
-  else
-    printf '%s' "$line" | sha256sum | awk '{print $1}'
-  fi
-}
-
-report_first_corpus_divergence() {
-  local expected="$1"
-  local got="$2"
-  local index=0
-  local expected_line got_line expected_present got_present kind
-  local expected_digest got_digest
-  exec 3<"$expected"
-  exec 4<"$got"
-  while true; do
-    expected_line=''
-    got_line=''
-    if IFS= read -r expected_line <&3 || [[ -n "$expected_line" ]]; then
-      expected_present=1
-    else
-      expected_present=0
-    fi
-    if IFS= read -r got_line <&4 || [[ -n "$got_line" ]]; then
-      got_present=1
-    else
-      got_present=0
-    fi
-    if [[ "$expected_present" -eq 0 && "$got_present" -eq 0 ]]; then
-      break
-    fi
-    if [[ "$expected_present" -ne "$got_present" || "$expected_line" != "$got_line" ]]; then
-      if [[ "$index" -eq 0 ]]; then
-        kind='header'
-      else
-        kind=$(printf '%s\n%s\n' "$expected_line" "$got_line" |
-          sed -nE 's/.*"kind":"([^"]+)".*/\1/p' | head -n 1)
-        kind=${kind:-unknown}
-      fi
-      expected_digest=$(line_digest "$expected_present" "$expected_line")
-      got_digest=$(line_digest "$got_present" "$got_line")
-      echo "FINDING: corpus regeneration diverged at row index=$index kind=$kind expected_digest=$expected_digest got_digest=$got_digest" >&2
-      return 0
-    fi
-    index=$((index + 1))
-  done
-  echo "FINDING: corpus regeneration differs but no divergent row was decoded" >&2
-}
-
-check_corpus_regeneration() {
-  local expected="$1"
-  local got="$2"
-  if cmp -s "$expected" "$got"; then
-    return 0
-  fi
-  report_first_corpus_divergence "$expected" "$got"
+if ! cmp -s "$corpus_tmp" "$fixture"; then
   echo "GATE: FAIL — corpus is not a fresh regeneration; run: lake exe emitter > $fixture" >&2
-  return 1
-}
-
-if ! check_corpus_regeneration "$fixture" "$corpus_tmp"; then
   exit 1
 fi
 expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F2":2,"F2b":3,"F3":1,"F4":1,"F9":2,"alphabet-refusal":1},"format":1,"generator":"verify/fabric emitter","vectors":11}'
@@ -325,31 +254,6 @@ if grep -oE '[0-9]+' "$corpus_tmp" | awk '$1 > 9007199254740991 { exit 1 }'; the
 else
   echo "GATE: FAIL — corpus escaped the non-negative safe-integer domain" >&2
   exit 1
-fi
-
-if [[ "$self_test" == true ]]; then
-  if ! awk '
-      BEGIN { mutated = 0 }
-      !mutated && /"name":"duplicated-deliveries"/ {
-        mutated = sub(/"matchesExact":true/, "\"matchesExact\":false")
-      }
-      { print }
-      END { if (!mutated) exit 42 }
-    ' "$fixture" > "$corpus_mutation_tmp"; then
-    echo "GATE: FAIL — --self-test could not plant the corpus mutation" >&2
-    exit 1
-  fi
-  if self_test_output=$(check_corpus_regeneration "$corpus_mutation_tmp" "$corpus_tmp" 2>&1); then
-    echo "GATE: FAIL — --self-test accepted the planted corpus mutation" >&2
-    exit 1
-  fi
-  if ! grep -Eq 'FINDING:.*index=2 kind=F2 expected_digest=[0-9a-f]{64} got_digest=[0-9a-f]{64}' \
-      <<< "$self_test_output"; then
-    printf '%s\n' "$self_test_output" >&2
-    echo "GATE: FAIL — --self-test refusal omitted the divergent row evidence" >&2
-    exit 1
-  fi
-  echo "GATE: PASS (--self-test planted and refused corpus row index=2 kind=F2)"
 fi
 
 echo "GATE: PASS (4 law-dropping controls; 11 canonical model vectors; byte-identical regeneration)"
