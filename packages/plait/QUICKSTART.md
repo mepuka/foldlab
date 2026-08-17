@@ -30,8 +30,8 @@ minutes run today.
 Sections marked with an epic (E4, E5, E9) describe work that is designed and
 ratified in shape but not built. Their code blocks are sketches from the design
 record — copying them will not compile. Everything *not* marked with an epic was
-executed against the spine as it stands on PR #67, and the console output shown
-is real output from that run.
+executed against `packages/plait` as merged on `main` (the spine, E2, merged at
+`b51d1d8c4`), and the console output shown is real output from that run.
 
 The journey shape here is the ratified one (DEV-697 §3, ratified in the
 2026-08-17 grill sheet). The epic labels are what keeps it honest while the
@@ -177,14 +177,18 @@ Two things happened that are worth slowing down for.
 **The reader did not take the sender's word for it.** The publisher writes the
 digest as the message's `Nats-Msg-Id`; the subscriber re-derives the digest from
 the received bytes and compares. If they differ you get a refusal, not a
-message. That check is in the client, not in your code
-(`src/internal/nats.ts`, `verifyEnvelopeDigest`).
+message. That check is in the client, not in your code: the rule is
+`verifyEnvelopeDigest` in `src/Wire.ts`, and the receive path applies it to every
+message before you see it (`src/internal/nats.ts`, `FabricClient.verifyReceived`).
 
 **The second publish returned the same sequence number.** The commons stream
 carries a message-id de-duplication window — two minutes on this stream — so a
 re-publish of identical bytes inside that window does not append a second copy.
-That is a bounded window with a known limit, not a delivery guarantee. Plait
-makes no exactly-once claim anywhere; see *What this page does not claim*.
+That is a bounded window with a known limit, not a delivery guarantee, and the
+slices being built on top of it are held to the same reading: the de-duplication
+window is never permitted to become a correctness mechanism, in those words, in
+the dispatch spec for the durable fold. Plait makes no exactly-once claim
+anywhere; see *What this page does not claim*.
 
 ### Check the identity yourself
 
@@ -307,17 +311,35 @@ to be the only verb: it resumes from the anchor if one exists and starts fresh
 if it does not, because the anchor is a fact keyed by `(fold digest, partition)`
 rather than a piece of mutable bookkeeping.
 
-That absence is the point, and it is downstream of two law statements in the
-design's proof plan: **F3**, that folding a resumed prefix and then the rest
-equals folding the whole, and **F2b**, that a position-floor discipline applied
-over an at-least-once redelivery schedule applies each event once. If those
-hold, a durability setting would have nothing left to choose between — so the
-API does not offer one.
+That absence is the point, and it is downstream of two laws: **F3**, that folding
+a resumed prefix and then the rest equals folding the whole, and **F2b**, that a
+*successor discipline* — buffer arrivals by position and apply only at the
+contiguous frontier, never over a gap — applies each event once over an
+at-least-once redelivery schedule. If those hold, a durability setting would have
+nothing left to choose between, so the API does not offer one.
 
-**Status, stated plainly:** F3 and F2b are *stated*, not cited here as proved.
-The Lean package that carries them is E3 and is in review; `VERIFICATION.md`
-gains a row for a claim only when the slice carrying it lands. This page cites
-no green proof gate.
+Get the attribution right, because it is easy to state backwards and the estate
+amended its own wording to fix exactly that. **The successor discipline protects;
+the anchor floor records.** The floor is the derived resume coordinate, not the
+mechanism that keeps a duplicate from being applied twice — and this is not a
+stylistic preference. The Lean package carries `guard_is_redundant`, the proof
+that a position-floor guard would be observationally redundant given the
+discipline. So the runtime ships no such guard: the estate declines to defend
+against a scenario the model proves cannot arise.
+
+**Status, stated plainly:** F3 and F2b are machine-checked *at the model level*.
+The Lean package that carries them — `verify/fabric`, epic E3 — is merged on
+`main`, and `bash verify/fabric/run.sh` is green: 70 rostered theorems with their
+axiom footprints checked, four law-dropping negative controls each refuted on the
+law it dropped, and an 11-row model-emitted vector corpus that regenerates
+byte-for-byte.
+
+Read the scope of that exactly, because it is narrower than it sounds. It is a
+proof about the *model* — schedules, positions, and a merge algebra as Lean
+objects. It is not a proof about the TypeScript you ran in Example 1: nothing in
+the runtime consumes that corpus yet. Walling `Folds.deploy` against those
+vectors row-for-row is precisely what E4 is for, and `VERIFICATION.md` records
+the same gap in its own words.
 
 ## 8–10 · Example 3 — "two workers, one outcome" — **E5**, then **E9**
 
@@ -335,7 +357,7 @@ const claimShard = Effect.fn("distill.claim")(function* (shard: Digest) {
   yield* Registers.hold({ work: shard }, (token) =>
     Effect.gen(function* () {
       const out = yield* distill(shard)
-      yield* Lanes.emit(DistillLane, out)                       // evidence: unfenced
+      yield* Lanes.emit(DistillLane, out)                       // monotone: unfenced
       yield* Registers.commit({ work: shard, token,             // outcome: fenced
                                 outcome: out.digest })
     })
@@ -356,9 +378,13 @@ promises a commit lands at all, or that a stalled worker is noticed promptly;
 Plait makes no liveness claims. "Exactly once" is not the claim and is not
 vocabulary this program uses.
 
-Like F3 and F2b, F5 is stated in the proof plan and its Lean package is not
-merged. Its home is the separate Veil-pinned `verify/fabric-veil` package, which
-lands with E5, and the ledger row follows the slice.
+F5 has not had the treatment F3 and F2b just got. Its Lean package is not
+merged — it is not written. Its home is a separate Veil-pinned
+`verify/fabric-veil` package landing with E5, where the register becomes a
+five-action transition system and both token monotonicity and at-most-one-landed
+commit are discharged as reconstructed — never trusted — SMT proofs. Until that
+gate is green, the claim above is a design commitment, not a theorem, and the
+ledger row follows the slice rather than the intention.
 
 ### The one-line change — **E9**
 
@@ -397,13 +423,14 @@ Read this section as part of the quickstart, not as fine print.
 - **No liveness.** Nothing here claims work completes, a lease is reclaimed
   promptly, or a partition heals. The commons in this configuration is a single
   non-clustered JetStream node — one process, and if it stops, everything stops.
-- **No proved-today claims.** F1–F5, F2b and F9 are law *statements* in the
-  design's proof plan, not proofs behind a green gate. The `verify/fabric`
-  package (F1–F4, F2b, F9) is E3 and in review; F5's Veil-pinned package lands
-  with E5. Claims enter `VERIFICATION.md` only as slices land, and no claim on
-  this page cites a green proof gate.
-- **The spine's own recorded claim is narrow**, and is itself still on the
-  spine's pull request rather than on `main`: four generated envelope rows,
+- **What is proved, and what it is proved about.** F1–F4, F2b and F9 are
+  machine-checked in Lean and merged (`verify/fabric`, E3, gate green). That
+  proof is about the model, not about the code you ran: no runtime consumes the
+  model's corpus today, and the gate's CI lane is not a required check. F5 is
+  not proved at all yet — its package lands with E5. Nothing on this page claims
+  that a running Plait program inherits a proof. Claims enter `VERIFICATION.md`
+  only as slices land, and that file states each claim's bounds.
+- **The spine's own recorded claim is narrow**: four generated envelope rows,
   digest-equal across an independent Go implementation, plus a two-process round
   trip over one local file-backed `nats-server v2.14.4` with one replica. It
   covers no crash recovery, no durable-consumer resumption, no federation, no
@@ -423,5 +450,8 @@ Read this section as part of the quickstart, not as fine print.
   policies, and the model seam.
 - `docs/design/2026-08-17-plait-ratification-record.md` — what has been ruled,
   and by whom.
+- `verify/fabric/` — the Lean package behind F1–F4, F2b and F9, with its
+  negative controls and its generated corpus. Run the gate yourself with
+  `bash verify/fabric/run.sh`.
 - `VERIFICATION.md` — every claim the estate makes, its evidence rung, and its
   bounds. If a sentence anywhere contradicts this file, this file wins.
