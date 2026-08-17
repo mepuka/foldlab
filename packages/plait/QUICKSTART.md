@@ -1,0 +1,482 @@
+# Plait in ten minutes
+
+Plait is a coordination framework for programs that work on the same data at
+the same time on different machines — services, agents, scripts, a person
+behind a tool. Its bet, in one sentence:
+
+> Programs coordinate by growing a shared, content-addressed body of evidence
+> that is safe to replicate sloppily, plus a small number of declared decision
+> points that are not. The mathematics says which is which, and the framework
+> keeps the two physically apart.
+
+*Content-addressed* means every piece of evidence is named by the SHA-256 hash
+of its own canonical bytes, so any reader can re-derive the name and check it.
+*Safe to replicate sloppily* means the evidence side tolerates out-of-order,
+repeated, and re-delivered messages by construction — you do not configure that
+away, and there is no ordering or conflict-resolution knob to get wrong.
+
+This page is the ten-minute version of that idea. It is honest about which
+minutes run today.
+
+## The runnable frontier
+
+| Minute | What you do | Status |
+| --- | --- | --- |
+| 0–2 | Boot a local commons | **Runs today** — E2, the spine |
+| 2–5 | Example 1 — two processes, one digest | **Runs today** — E2 |
+| 5–8 | Example 2 — kill it and get the same answer | **E4**, the durable fold — design only |
+| 8–10 | Example 3 — two workers, one outcome | **E5**, the register — design only. One further line makes the worker an LLM action (**E9**) |
+
+Sections marked with an epic (E4, E5, E9) describe work that is designed and
+ratified in shape but not built. Their code blocks are sketches from the design
+record — copying them will not compile. Everything *not* marked with an epic was
+executed against `packages/plait` as merged on `main` (the spine, E2, merged at
+`b51d1d8c4`), and the console output shown is real output from that run.
+
+The journey shape here is the ratified one (DEV-697 §3, ratified in the
+2026-08-17 grill sheet). The epic labels are what keeps it honest while the
+lower slices are still being built.
+
+### Words this page uses
+
+| Term | Meaning here |
+| --- | --- |
+| **fabric** | the whole system: venues, the commons, and nodes |
+| **commons** | the shared NATS JetStream server that carries evidence, registers, and blobs |
+| **venue** | one single-writer process with its own journals; the fabric scales by having many, never by replicating one |
+| **node** | any process that speaks the wire contract — an Effect program, a Go binary, a shell script, an LLM behind a tool interface. Nothing about a node's insides is trusted; only its bytes are |
+| **lane** | one stream of evidence: a declared schema, its partitions, and how keys are derived |
+| **envelope** | one message on a lane. A closed record — extra fields are refused, not ignored |
+| **digest** | lowercase hex SHA-256 over an envelope's canonical (RFC 8785) bytes. This is the envelope's identity |
+| **refusal** | a structured "no" carrying the law it enforced, the path that broke it, what it got, and what it expected. Refusals are values you can read, not stack traces |
+| **register** | a lease: work digest → (token, holder, outcome), advanced by compare-and-set. This is where the "decision points that are not sloppy" live (E5) |
+
+## 0–2 · Boot the commons
+
+There is no published package and no `plait` command yet. Today Plait is a
+workspace package inside the `foldlab` repo, and you run it from source.
+
+```bash
+git clone https://github.com/mepuka/foldlab
+cd foldlab
+bun install
+```
+
+The commons is one NATS JetStream server. Build the pinned one from the Go
+module already in the repo, so you are running the exact version the tests run:
+
+```bash
+mkdir -p .plait
+(cd go && go build -o ../.plait/nats-server github.com/nats-io/nats-server/v2)
+.plait/nats-server -v
+# nats-server: v2.14.4
+
+.plait/nats-server -js -sd .plait/store -a 127.0.0.1 -p 4222
+```
+
+On Windows the binary is `.plait\nats-server.exe`.
+
+You do not create a stream. The first client to connect creates it — file
+storage, one replica, and exactly the three `flb.fab.*` subject families — and
+if it finds a stream of a different shape it refuses to start rather than
+adapting to it (`packages/plait/src/internal/nats.ts`, `ensureStream`).
+
+> A single `plait dev` command that boots this for you is a proposal on the
+> board (DEV-697 R4). It has not been ruled, so it is not promised here.
+
+## 2–5 · Example 1 — two processes, one digest
+
+**Runs today (E2).** The claim to test: identity on this fabric is not a
+convention two programs agree to follow. The receiver re-derives it and refuses
+on mismatch.
+
+Create `packages/plait/quickstart/emit.ts`:
+
+```ts
+import { Effect } from "effect"
+
+import { digestOf } from "@foldlab/plait/Digest"
+import { FabricClient } from "@foldlab/plait/FabricClient"
+import { evidenceSubject } from "@foldlab/plait/Subjects"
+import type { Envelope } from "@foldlab/plait/Wire"
+
+const url = process.argv[2] ?? "nats://127.0.0.1:4222"
+
+const program = Effect.gen(function* () {
+  const lane = yield* digestOf({ lane: "quickstart" })
+  const envelope: Envelope = {
+    v: 0,
+    kind: "emit",
+    lane,
+    key: "doc-1",
+    holder: "writer-a",
+    body: { terms: { fabric: 2, plait: 1 } },
+    pins: [],
+  }
+
+  const fabric = yield* FabricClient
+  const subject = yield* evidenceSubject("quickstart", 0)
+
+  const first = yield* fabric.publish(subject, envelope)
+  console.log(`emitted    ${first.digest}  seq=${first.sequence}  duplicate=${first.duplicate}`)
+
+  const again = yield* fabric.publish(subject, envelope)
+  console.log(`re-emitted ${again.digest}  seq=${again.sequence}  duplicate=${again.duplicate}`)
+}).pipe(Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })))
+
+await Effect.runPromise(program)
+```
+
+And `packages/plait/quickstart/read.ts` — a different process:
+
+```ts
+import { Effect, Stream } from "effect"
+
+import { FabricClient } from "@foldlab/plait/FabricClient"
+import { evidenceSubject } from "@foldlab/plait/Subjects"
+
+const url = process.argv[2] ?? "nats://127.0.0.1:4222"
+
+const program = Effect.gen(function* () {
+  const fabric = yield* FabricClient
+  const subject = yield* evidenceSubject("quickstart", 0)
+  const messages = yield* fabric.subscribe(subject)
+
+  yield* messages.pipe(
+    Stream.take(1),
+    Stream.runForEach((received) =>
+      Effect.sync(() => {
+        console.log(`read       ${received.digest}`)
+        console.log(`body       ${JSON.stringify(received.envelope.body)}`)
+      })
+    ),
+    Effect.timeout("5 seconds"),
+  )
+}).pipe(
+  Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),
+  Effect.scoped,
+)
+
+await Effect.runPromise(program)
+```
+
+Run them from `packages/plait`:
+
+```
+$ bun run ./quickstart/emit.ts
+emitted    7e7d4129a391674e2f5b749b37e22e05b7ffb860ba4b9b7ee928d8ed9ea65b0a  seq=1  duplicate=false
+re-emitted 7e7d4129a391674e2f5b749b37e22e05b7ffb860ba4b9b7ee928d8ed9ea65b0a  seq=1  duplicate=true
+
+$ bun run ./quickstart/read.ts
+read       7e7d4129a391674e2f5b749b37e22e05b7ffb860ba4b9b7ee928d8ed9ea65b0a
+body       {"terms":{"fabric":2,"plait":1}}
+```
+
+Two things happened that are worth slowing down for.
+
+**The reader did not take the sender's word for it.** The publisher writes the
+digest as the message's `Nats-Msg-Id`; the subscriber re-derives the digest from
+the received bytes and compares. If they differ you get a refusal, not a
+message. That check is in the client, not in your code: the rule is
+`verifyEnvelopeDigest` in `src/Wire.ts`, and the receive path applies it to every
+message before you see it (`src/internal/nats.ts`, `FabricClient.verifyReceived`).
+
+**The second publish returned the same sequence number.** The commons stream
+carries a message-id de-duplication window — two minutes on this stream — so a
+re-publish of identical bytes inside that window does not append a second copy.
+That is a bounded window with a known limit, not a delivery guarantee, and the
+slices being built on top of it are held to the same reading: the de-duplication
+window is never permitted to become a correctness mechanism, in those words, in
+the dispatch spec for the durable fold. Plait makes no exactly-once claim
+anywhere; see *What this page does not claim*.
+
+The output above is from a fresh store. Run `emit.ts` again within two minutes
+and the *first* line reports `duplicate=true` as well — same bytes, same digest,
+same window. If you want the `false` back, stop the server and delete
+`.plait/store`. That the window is invisible from the API is a real rough edge,
+not something you are misreading.
+
+### Check the identity yourself
+
+The digest is a function of the envelope's canonical bytes and nothing else — no
+server, no connection, no clock. `quickstart/verify.ts`, with the body's keys
+written in the *other* order:
+
+```ts
+import { Effect } from "effect"
+
+import { digestOf } from "@foldlab/plait/Digest"
+import type { Envelope } from "@foldlab/plait/Wire"
+
+const program = Effect.gen(function* () {
+  const lane = yield* digestOf({ lane: "quickstart" })
+  const envelope: Envelope = {
+    v: 0,
+    kind: "emit",
+    lane,
+    key: "doc-1",
+    holder: "writer-a",
+    body: { terms: { plait: 1, fabric: 2 } },
+    pins: [],
+  }
+  console.log(`derived    ${yield* digestOf(envelope)}`)
+})
+
+await Effect.runPromise(program)
+```
+
+```
+$ bun run ./quickstart/verify.ts
+derived    7e7d4129a391674e2f5b749b37e22e05b7ffb860ba4b9b7ee928d8ed9ea65b0a
+```
+
+Same digest, no server involved, key order irrelevant — RFC 8785 canonical JSON
+fixes one byte form per value. There is no developer-supplied identifier
+anywhere in that chain to get wrong.
+
+### Cause a refusal on purpose
+
+The most useful thing to learn early is what the system refuses and how it tells
+you. `quickstart/refuse.ts` decodes an envelope with one extra field:
+
+```ts
+import { Effect } from "effect"
+
+import { decodeEnvelope } from "@foldlab/plait/Wire"
+
+const tampered = new TextEncoder().encode(JSON.stringify({
+  v: 0,
+  kind: "emit",
+  lane: "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862",
+  key: "doc-1",
+  holder: "writer-a",
+  body: { terms: { fabric: 2, plait: 1 } },
+  pins: [],
+  priority: "high",
+}))
+
+const refusal = await Effect.runPromise(Effect.flip(decodeEnvelope(tampered)))
+console.log(`kind       ${refusal.kind}`)
+console.log(`law        ${refusal.law}`)
+console.log(`path       ${JSON.stringify(refusal.path)}`)
+console.log(`expected   ${JSON.stringify(refusal.expected)}`)
+console.log(`sort       ${refusal.sort}`)
+```
+
+```
+$ bun run ./quickstart/refuse.ts
+kind       malformed-envelope
+law        Envelope v0 is a closed struct; excess properties are refused.
+path       ["priority"]
+expected   "no excess property"
+sort       structural
+```
+
+The refusal names the law it enforced and points at the field. `sort` matters:
+`structural` refusals are permanent — no retry policy shipped with Plait will
+retry one, because no amount of waiting makes an excess property legal.
+`absence` refusals mean *not here yet*, and those are the only class the shipped
+retry helper retries (`src/Refusal.ts`, `retryAbsence`).
+
+**What you should believe now:** on this fabric, a name is a checkable claim
+about bytes, and the checking is not your job.
+
+### Two things about Example 1 that are the spine's limits, not the design's
+
+- The `lane` field on an envelope is meant to hold the digest of a *lane
+  declaration* — its schema, partitions, and key derivation (`Lane.declare`,
+  design part 1 §8.3). That declaration machinery is not on the spine, so here
+  you pass any digest you like. The subject's `quickstart` token is separate: it
+  is routing, and routing never carries identity.
+- `key`, `holder`, `body`, `pins`, and the optional `cert` are the closed
+  envelope-v0 shape. `cert` is a recomputable derivation claim (which schema,
+  which program, which input anchor); the spine carries it, and the machinery
+  that checks it arrives with later slices.
+
+## 5–8 · Example 2 — "kill it and get the same answer" — **E4**
+
+**Not runnable yet. This section describes E4, the durable fold.**
+
+The shape: a word-count fold over a folder of documents. You deploy it, `kill -9`
+the process mid-stream, restart it, and diff the result against a
+single-process reference run. The digests match.
+
+The sketch from the design record (part 1 §8.3) — illustrative, not an API you
+can call today:
+
+```ts
+const run = Effect.fn("distill.run")(function* () {
+  const handle = yield* Folds.deploy(TermCounts, { checkpointEvery: 512 })
+  yield* handle.await
+})
+```
+
+Look at what is *absent*. There is no `durability` setting, no `reset`, no
+`rebuild`, no `invalidate`, and no offset management. `Folds.deploy` is intended
+to be the only verb: it resumes from the anchor if one exists and starts fresh
+if it does not, because the anchor is a fact keyed by `(fold digest, partition)`
+rather than a piece of mutable bookkeeping.
+
+That absence is the point, and it is downstream of two laws: **F3**, that folding
+a resumed prefix and then the rest equals folding the whole, and **F2b**, that a
+*successor discipline* — buffer arrivals by position and apply only at the
+contiguous frontier, never over a gap — applies each event once over an
+at-least-once redelivery schedule. F2b's in-window contiguity premise is part of
+the statement, not a caveat on it: arbitrary reordering without that discipline
+is out of scope by the theorem's own wording. If those hold, a durability setting
+would have nothing left to choose between, so the API does not offer one.
+
+Get the attribution right, because it is easy to state backwards and the estate
+amended its own wording to fix exactly that. **The successor discipline protects;
+the anchor floor records.** The floor is the derived resume coordinate, not the
+mechanism that keeps a duplicate from being applied twice — and this is not a
+stylistic preference. The Lean package carries `guard_is_redundant`, the proof
+that a position-floor guard would be observationally redundant given the
+discipline. So the runtime ships no such guard: the estate declines to defend
+against a scenario the model proves cannot arise.
+
+**Status, stated plainly:** F3 and F2b are machine-checked *at the model level*.
+The Lean package that carries them — `verify/fabric`, epic E3 — is merged on
+`main`, and `bash verify/fabric/run.sh` is green: 70 rostered theorems with their
+axiom footprints checked, four law-dropping negative controls each refuted on the
+law it dropped, and an 11-row model-emitted vector corpus that regenerates
+byte-for-byte.
+
+Read the scope of that exactly, because the distinction is the whole product. It
+is a proof about the *model* — schedules, positions, and a merge algebra as Lean
+objects. It is not a proof about the TypeScript you ran in Example 1. What does
+not exist yet is the bridge: **nothing in the running code consumes that model's
+corpus today**, so there is no proof that `Folds.deploy` implements what the Lean
+says. That correspondence wall, and the required-battery tripwire behind it, are
+E4's and the CI slice's work. Until then the honest sentence is "the mathematics
+is checked; the wiring to the code is not" — and the Lean lane that guards it is
+not yet a required CI check. `VERIFICATION.md` records the same gap in its own
+words.
+
+## 8–10 · Example 3 — "two workers, one outcome" — **E5**, then **E9**
+
+**Not runnable yet. This section describes E5, the register.**
+
+The shape: two processes race for the same shard of work. One wins a lease. The
+other is stopped mid-work, its lease is taken over, and then the stopped process
+wakes up and tries to commit its result anyway. You print the register history
+and see what happened.
+
+The sketch from the design record (part 1 §8.3):
+
+```ts
+const claimShard = Effect.fn("distill.claim")(function* (shard: Digest) {
+  yield* Registers.hold({ work: shard }, (token) =>
+    Effect.gen(function* () {
+      const out = yield* distill(shard)
+      yield* Lanes.emit(DistillLane, out)                       // monotone: unfenced
+      yield* Registers.commit({ work: shard, token,             // outcome: fenced
+                                outcome: out.digest })
+    })
+  )
+})
+```
+
+The late-waking worker's *evidence* is welcome — it goes onto the lane like any
+other observation, attributed and harmless, because the evidence plane is the
+sloppy-safe side. Its *commit* is refused: the token it holds is no longer
+current.
+
+The claim, in the exact words the program uses: **at most one commit lands per
+work digest.** That is the F5 statement — lease tokens strictly increase, and a
+commit is accepted only against the current token. Read the quantifier
+carefully. It is an at-most-one claim, and it is a safety claim. Nothing here
+promises a commit lands at all, or that a stalled worker is noticed promptly;
+Plait makes no liveness claims. "Exactly once" is not the claim and is not
+vocabulary this program uses.
+
+Unlike F3 and F2b, F5 is not proved yet — not even at the model level. It lives
+in a separate Veil-pinned package that lands with E5, where it becomes a
+machine-checked safety theorem over a five-action transition system: tokens
+strictly increase under grant and steal, and at most one commit lands per work
+digest. That package must discharge its proofs as *reconstructed* SMT proofs
+rather than trusted ones, because trusting the solver would smuggle an axiom
+past the very gate the estate keeps. Today F5 is a statement with a dispatched
+spec behind it, and the ledger row follows the slice.
+
+### The one-line change — **E9**
+
+Then change one line: the shard handler calls `Models.generate` instead of a
+local function.
+
+```ts
+const out = yield* Models.generate({ context: ctx, output: TermsSchema })
+```
+
+Nothing else moves. The same register fences it, the same evidence lane carries
+its output, the same refusal appears if the token is stale. That is the thesis
+in one diff: **an agent is a fenced action.** A model call is not a special kind
+of participant with its own coordination story — it is an action that happens to
+be non-deterministic, holding the same lease as anything else.
+
+## The closing move — `plait chaos` (**E4** ticket)
+
+This quickstart is designed to end one step past "it worked" — at "it worked
+under a kill schedule, and here is the law that says it had to."
+
+`plait chaos` is a ratified E4 ticket (grill sheet item 13, dispatch 31). Its
+scope is fenced deliberately, and the fence matters more than the feature:
+
+- It drives *your declared fold* — not an arbitrary program — through the
+  kill/restart/drain and duplicate-redelivery harnesses that E4 must build
+  anyway. Redeliveries are manufactured through the consumer protocol, not faked.
+- Its output is a measured scoreboard plus the digest-equality verdict.
+- **It does not prove anything at runtime.** The machine-checked half arrives by
+  citation — the law names and the corpus digest — not by re-deriving a proof
+  while your fold runs. A green run is a measurement that agrees with a proved
+  model, which is a different and weaker thing than a proof about your program.
+- The ticket is severable. If the entry point turns out to need chaos machinery
+  E4's gates do not already build, it is dropped rather than grown, and the full
+  distillation gauntlet (E10) is not pulled forward to rescue it.
+
+## What this page does not claim
+
+Read this section as part of the quickstart, not as fine print.
+
+- **No exactly-once.** The de-duplication window you saw in Example 1 is a
+  bounded window on a stream. The coordination-plane property is at-most-one
+  commit landed per work digest, and it is a safety property.
+- **No liveness.** Nothing here claims work completes, a lease is reclaimed
+  promptly, or a partition heals. The commons in this configuration is a single
+  non-clustered JetStream node — one process, and if it stops, everything stops.
+- **Proved about a model is not proved about the code.** F1, F2, F2b, F3, F4 and
+  F9 are proved in `verify/fabric` (E3, merged, gate green), at the model level,
+  and F2b carries an in-window contiguity premise that is part of the statement
+  rather than a caveat on it. Nothing running consumes that model's corpus yet,
+  so no claim on this page says the shipped code implements the proved model;
+  that bridge lands with E4 and the CI slice, and the Lean lane guarding it is
+  not yet a required check. F5 is not proved at all yet; it lands with E5.
+  Claims enter `VERIFICATION.md` only as slices land, and that file states each
+  claim's bounds.
+- **The spine's own recorded claim is narrow.** Four generated envelope rows,
+  digest-equal across an independent Go implementation, plus a two-process round
+  trip — including across a consumer restart — over one local file-backed
+  `nats-server v2.14.4` with one replica. It makes no claim about server crash
+  recovery, durable consumers, federation, clustering, attribution, or liveness.
+  Blob *content* retrieval is out of scope: the wire gate checks the digest
+  reference shape and the 256 KiB inline-body threshold, nothing more.
+- **No performance numbers.** There are none on this page on purpose. When
+  Plait publishes one it will publish the harness that produced it.
+- **No comparison claims.** Where Plait sits relative to other tools is a
+  question with a documented answer elsewhere; it is not something to assert in
+  passing here.
+
+## Where to go next
+
+- `packages/plait/README.md` — the module map of the spine.
+- `docs/design/2026-08-17-plait-coordination-fabric.md` — part 1: the fabric,
+  the law statements, and the slice ladder.
+- `docs/design/2026-08-17-plait-action-plane.md` — part 2: actions, triggers,
+  policies, and the model seam.
+- `docs/design/2026-08-17-plait-ratification-record.md` — what has been ruled,
+  and by whom.
+- `verify/fabric/` — the Lean package behind F1–F4, F2b and F9, with the
+  negative controls that show each law is load-bearing. Run the gate yourself
+  with `bash verify/fabric/run.sh`.
+- `VERIFICATION.md` — every claim the estate makes, its evidence rung, and its
+  bounds. If a sentence anywhere contradicts this file, this file wins.
