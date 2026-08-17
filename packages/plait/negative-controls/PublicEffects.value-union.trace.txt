@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.value-union.mutant.ts(13,3): error TS2344: Type 'false' does not satisfy the constraint 'true'.

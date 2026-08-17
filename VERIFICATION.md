@@ -38,6 +38,7 @@ The table points; the entries below carry the bounds.
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
+| Plait spine (envelope identity + local NATS round trip) | R0 differential + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1 | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -472,6 +473,51 @@ binary64 values, and share a 256-container nesting bound.
 [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts),
 [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go),
 and [go/canonical/probes/](go/canonical/probes/).
+
+## Plait spine — R0 differential + executable integration
+
+### Claim
+
+For the generated four-envelope slice-0 corpus, TypeScript and
+`go/canonical` derive equal SHA-256 digests from RFC 8785 canonical,
+uncompressed envelope bytes. A publisher and consumer running as separate
+Bun processes exchange all four envelopes through one local file-backed
+`nats-server v2.14.4` with `num_replicas: 1`; the publisher writes each
+envelope digest as `Nats-Msg-Id`, and the consumer constrained-decodes each
+closed envelope and re-derives the same digest before exposing it.
+
+### Evidence
+
+- The TypeScript emitter generates `packages/plait/fixtures/envelopes.ndjson`
+  with its generation command on the first line. The package gate regenerates
+  it byte-for-byte, and a committed negative control proves a hand-edited row
+  fails that comparison.
+- `go/cmd/plaitwall` reads the generated rows through the independent
+  `go/canonical` implementation and re-derives every digest. A planted mutant
+  that fingerprints gzip transport bytes instead is killed on the named first
+  row.
+- The integration gate builds the upstream NATS server command from the
+  checksum-locked `go/go.mod` pin, verifies the binary reports `v2.14.4`, and
+  starts it with JetStream and a temporary file store. The stream shape is
+  constrained to file storage and one replica. An excess-property frame is
+  refused structurally under the closed-envelope law.
+
+### Bounds and residuals
+
+The wall covers four generated rows spanning all envelope kinds, one inline
+Unicode body, one certificate, one blob reference, and pins; it is not an
+exhaustive enumeration of the JSON or envelope domains. The integration test
+covers live delivery while both processes and the single server remain up; it
+makes no crash-recovery, durable-consumer, federation, exactly-once, cluster,
+attribution, or liveness claim. Blob content retrieval is outside slice 0: the
+wire gate checks only the digest reference shape and the 256 KiB canonical-body
+threshold.
+
+### Checkable at
+
+[packages/plait/](packages/plait/),
+[packages/plait/fixtures/envelopes.ndjson](packages/plait/fixtures/envelopes.ndjson),
+and [go/cmd/plaitwall/](go/cmd/plaitwall/).
 
 ## Tracer conformance — R0/R1, single daemon
 
