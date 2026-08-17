@@ -44,13 +44,81 @@ The table points; the entries below carry the bounds.
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
 | E2 move calculus (D85 confluence package: strong no-loss, wire confluence, schedule-free fences, refusal characterization, WF preservation, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: fills are total under repair, every fill's holder-attributed pair survives into terminal journal evidence with no refusal disjunct, and the total runner's terminal state — meaning and journal both — is invariant under permutation of any fill/dispute bag; refusal is an iff against the frozen `D85Refusal`; discharged against a sha256-pinned frozen spec with kill-checked mutants. Decide-bearing bags are order-sensitive by design (decide enters only through the fence at close); conflict coverage is two fills for legacy theorems; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)). Identification (ruled 2026-08-17): a CvRDT of holder-attributed observations over an op-shaped wire — arbitration is a declared constant of the protocol value, not a function of the execution (cf. Burckhardt et al., POPL 2014, whose verified implementations recompute arbitration from run-time timestamps), which is why no clocks are needed to compute it; the declared close authority (D104) is the coordination point CALM requires for the one non-monotone act — fence determinism quantifies over runs of the same bag, never over parties who saw different bags. Bound, previously unwritten: self-supersession is inexpressible — with no causal metadata, a holder's correction of its own fill is indistinguishable from a two-party disagreement (the MV-register pays version vectors for the converse trade: this calculus is better on provenance, worse on supersession; the successor-round revision mode is the protocol-level compensation) | [verify/moves/](verify/moves/) |
 | TS move-calculus kernel ≡ Lean model | R0 differential + R1 | **Claimed** for the generated 2000-vector corpus and the property sample: the `@foldlab/moves` kernel replays every model-emitted vector byte-identically (receipts, reversed bags, fences, journal evidence included), five planted mutants each die against the corpus, and the frozen-spec laws re-run as fast-check properties. Agreement is evidence, not proof; the corpus is randomized, not exhaustive; not the DEV-670 daemon wall | [packages/moves/](packages/moves/), [verify/moves/Main.lean](verify/moves/Main.lean) |
-| Plait fabric algebra (F1 ACI cell merge and agreement; F2 permutation+duplication invariance; F2b successor-discipline exactly-once application; F3 anchored resumption; F4 partition merge for the commutative class; F9 policy meet-attenuation; `guard_is_redundant` documenting the removed floor guard) | model-level R5 (Lean) | **Claimed** at the model level: zero-dependency package at v4.33.0, 70 rostered theorems, footprint inside `{propext, Classical.choice, Quot.sound}`; the conformance corpus is emitted by the model and regeneration byte-diffs in the gate (sha256 `c1b97449…`); negative controls each drop exactly one law and die on named vectors (`drop-successor-discipline` included — the floor-guard control is unstatable, `guard_is_redundant` is the proof, deviation recorded in the package DECISIONS). Bounds: F2b's premise is the in-window contiguity discipline — arbitrary reordering without that discipline is out of scope by statement; no runtime correspondence yet — nothing consumes the emitted corpus today; its only guard is the non-required Lean CI lane, and the faithfulness wall plus the required-battery tripwire land with the E4 and CI dispatches (corrected 2026-08-17, fidelity review D1); no F5/F6, no crash/CAS/leases here (F5 is the Veil-package slice), no liveness anywhere | [verify/fabric/](verify/fabric/) |
+| Plait fabric algebra (F1 ACI cell merge and agreement; F2 permutation+duplication invariance; F2b successor-discipline once-only application; F3 anchored resumption; F4 partition merge for the commutative class; F9 policy meet-attenuation; `guard_is_redundant` documenting the removed floor guard) | model-level R5 (Lean) | **Claimed** at the model level: zero-dependency package at v4.33.0, 70 rostered theorems, footprint inside `{propext, Classical.choice, Quot.sound}`; the conformance corpus is emitted by the model and regeneration byte-diffs in the gate (sha256 `c1b97449…`); negative controls each drop exactly one law and die on named vectors (`drop-successor-discipline` included — the floor-guard control is unstatable, `guard_is_redundant` is the proof, deviation recorded in the package DECISIONS). Bounds: F2b's premise is the in-window contiguity discipline — arbitrary reordering without that discipline is out of scope by statement; no runtime correspondence yet — nothing consumes the emitted corpus today; its only guard is the non-required Lean CI lane, and the faithfulness wall plus the required-battery tripwire land with the E4 and CI dispatches (corrected 2026-08-17, fidelity review D1); no F5/F6, no crash/CAS/leases here (F5 is the Veil-package slice), no liveness anywhere | [verify/fabric/](verify/fabric/) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
+| Plait register (F5: token monotonicity, at-most-one-landed-commit, no stale-token landing) | R3 + replay wall (R4 RESERVED at the 15,378-schedule bar) | **Claimed** — re-earns the archived effector claims with the evidence in-tree; bounds in the section below | [verify/fabric-veil/](verify/fabric-veil/), [packages/plait/](packages/plait/), [go/register/](go/register/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
+
+## The Plait register (F5) — R3 + replay wall
+
+**Claim.** F5 — lease-register fencing safety and unique terminal
+outcome: token monotonicity with strict grant/steal increase (I1) and
+at-most-one-landed-commit with no stale-token landing (I2),
+machine-checked as inductive invariants of the five-action Veil module
+`Register` (`verify/fabric-veil`, Lean 4.28.0, Veil `300c305e`), and
+carried onto the real substrate by a replay wall: the TS `Registers`
+service and the fresh Go twin `go/register` replay all 15
+model-exported rows over real NATS KV revision CAS — one fresh server
+(one backing-stream incarnation) per row in both runtimes — with
+verdict, law-name, and observed-state equality and zero skips. This
+slice formally RE-EARNS the effector claims archived at the 2026-08-15
+estate purge — fencing safety and unique terminal outcome, whose proof
+artifacts were never shipped — with the evidence in-tree this time. The
+rung stamp is R3 plus the replay wall; **R4 stays RESERVED at the
+15,378-schedule bar**, and no R4 language attaches until a lockstep run
+at that bar exists.
+
+**Evidence.** The inductive invariant is kernel-checked through
+reconstructed SMT proofs with `veil.smt.trust=false`, enforced by
+artifact: all 36 generated verification-condition theorems (six
+procedures × six invariant clauses) are landed by `#gen_theorems`,
+rostered in `theorem-roster.txt`, and their kernel axiom footprints are
+censused in-build to `{propext, Classical.choice, Quot.sound}` —
+`sorryAx` in any rostered footprint is a failed build, and the
+committed trusted-mode control shows the same census refusing a
+genuinely trusted discharge at the load-bearing `#gen_spec` site. Every
+exported corpus row — prefix steps and attempt — is verified executably
+against the module's generated transition relation at export time
+(`FabricVeil/Bridge.lean`): 15 rows checked row-by-row against the
+generated relation — checked, not trusted. The model-level negative
+controls are executed mutants whose violating states are computed by
+running them, with their model-side refutations executed against the
+generated relation; the runtime control is the real commit path minus
+its token guard, killed on the live bucket with its executed trace
+committed and byte-compared. Both walls exercise the real CAS laws with
+the frozen classification asserted (400/10071 by operation context,
+read-back reconciliation for ambiguous outcomes), audit retained
+history per row, and pass the heterogeneous crash-steal schedule. The
+finite 66-state model check is falsification evidence, never a proof
+substitute.
+
+**Bounds and residuals.** SAFETY ONLY — no liveness, fair-retry, or
+lease-progress claim; heartbeats and deadlines are liveness machinery
+carrying no claims. Non-clustered R=1, single node, local pinned
+nats-server v2.14.4. Per-work-digest registers with no cross-register
+claim. Every runtime claim holds within a fixed backing-stream
+incarnation; administrative lifecycle mutation is outside the
+credential guard — the incarnation pin at register-open is not yet
+implemented (recorded deferral, `packages/plait/DECISIONS.md` T6); the
+DEV-716 ACL suite is the other half of the guard; epoch-bearing tokens
+are ruled out for v0. The corpus↔model bridge checks the exported rows
+at one finite interpreted instance; the invariants are proved for all
+instances. Trusted base: cvc5 with proof reconstruction, the corpus
+serializer with its name tables, the exporter binary, the bridge's
+instance choice, SHA-256, Lean/compiler, runtime decoders, and the
+substrate contract as probed.
+
+**Checkable at.** `bash verify/fabric-veil/run.sh`; `bun run gates`;
+`go test ./register/...`; PR #74 (CI green on ubuntu: gates,
+fabric-veil-gate, lean-gates, negative-controls).
 
 ## The effector (commitment register) — R3 + R4
 
-> **ARCHIVED 2026-08-15.** The running code and tests named below left
+> **ARCHIVED 2026-08-15; RE-EARNED 2026-08-17.** The claims below are
+> formally re-earned by the Plait register slice (section above) with
+> the evidence in-tree. The archived entry is kept as the historical
+> record of the purge.
+> The running code and tests named below left
 > the working tree in the estate-focus purge and are intact at tag
 > `archive/pre-estate-focus`
 > ([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
