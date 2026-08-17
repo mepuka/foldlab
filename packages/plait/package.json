@@ -7,10 +7,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./Canonical": "./src/Canonical.ts",
+    "./Catalog": "./src/Catalog.ts",
+    "./Cell": "./src/Cell.ts",
+    "./ContextProgram": "./src/ContextProgram.ts",
     "./Digest": "./src/Digest.ts",
     "./FabricClient": "./src/FabricClient.ts",
     "./Refusal": "./src/Refusal.ts",
     "./Register": "./src/Register.ts",
+    "./Resolved": "./src/Resolved.ts",
     "./Subjects": "./src/Subjects.ts",
     "./Wire": "./src/Wire.ts"
   },

@@ -19,8 +19,20 @@ and verified delivery over one file-backed, single-replica JetStream server.
   reads from the ruled JetStream stream; its fixture layer uses the same tag.
 - `Registers` is the five-action fenced commitment service. Its authoritative
   token is the KV revision-CAS order; holder strings are descriptive only.
+- `Catalog` owns the `Catalog` and `Blobs` services — the two content-addressed
+  stores a resolved reference decodes through.
+- `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
+  resolves it and re-derives its digest. Encode is total and publishes nothing;
+  `PublishingOf` is the explicit emit path.
+- `Cell` owns lattice cells: the join, the merge-then-`update(rev)` write loop
+  over the ruled `flb-fab-cell` bucket, and nothing else.
+- `ContextProgram` owns the selector/renderer/volatility declaration shapes.
+  There is no assembly executor and no F7 claim.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
+- `internal/cells` owns the cell bucket's shape check, CAS reconciliation, and
+  re-merge loop; `internal/refusals` owns the schema-issue bridge that
+  `Refusal.decodeRefusing` is the single public door to.
 
 ## Run
 
@@ -50,3 +62,24 @@ guard). `hold` is a Scope-bound heartbeat surface whose renewal loss
 interrupts its holder fiber; heartbeats carry no theorem or liveness claim.
 The hard-kill wall runs TS holder → Go steal → TS zombie refusal → Go winner
 commit.
+
+The context slice adds the cell wall, bounded the same way: the fabric model's
+F1 and F2 vector families (one F1 row, two F2 rows, counts pinned by the
+corpus header) replayed against a file-backed `flb-fab-cell` bucket with R=1,
+history 1, TTL 0, and no byte-size eviction on one local `nats-server v2.14.4`.
+Both merge schedules of the F1 row converge on the model's state; the F2 rows
+reach it under duplication and permutation of their delivery schedule; a lost
+CAS race, held deterministically by a frame-aligned tap, re-reads and re-merges
+without dropping an observation. The committed control is the real merge path
+with its join deleted — last-writer-wins — refuted by the F1 row with its
+executed trace (`negative-controls/cell-lww-mutant.trace.json`).
+
+What the cell wall does NOT claim: the model-level F1 (already claimed by the
+fabric row); anything about assembly, context values, or F7; agreement between
+the TypeScript canonical-bytes comparator's ORDER and the Lean carrier's own
+comparator (the claim is set equality, which is comparator-independent);
+watch semantics of any kind — no watch surface ships, because the KV watch
+probe suite is not on the substrate gate. All cell claims hold within a fixed
+backing-stream incarnation. Neither `Catalog` nor `Blobs` ships a durable
+layer: the catalog layer is process-local, and the payload layer answers
+absence until the object-store probe lands.
