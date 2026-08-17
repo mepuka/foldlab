@@ -9,8 +9,9 @@ coordination substrate; part 2
 fabric citizen. Part 3 takes the next ring outward: **the harness** —
 how an agent finds things, where things live and what they are called,
 and how ordinary production work (scheduling, watching, paying,
-approving, upgrading) rides the constructs already proven. **Everything
-new here is PROPOSED pending the coordinator's grill** (§12). This
+approving, upgrading) rides the constructs already proven. **Entered as
+PROPOSED; ruled 2026-08-17** — every §12 item landed on its recommended
+option (adoption banner below; the grill sheet is the ruling record). This
 document changes no code, no ledger row, no dispatch spec, and no seam
 status. Findings it raises against the ratified records are FILED in
 §11, not fixed.
@@ -110,7 +111,8 @@ embedding index is a fold over embedding evidence. Changing the
 embedder changes a capability digest, which changes the declarations,
 which changes the index digest: **re-embedding is a new fold, and
 silent in-place index mutation is not representable.** The old index
-stays a true record at its anchor. Approximate (ANN) structures are
+stays a true record at its anchor. Approximate nearest-neighbor (ANN)
+structures are
 handled honestly rather than waved at: they are order-sensitive and
 randomized, therefore *not* in the commutative class, therefore
 single-partition and resumable but never partition-merged — the
@@ -169,7 +171,7 @@ side effect** (§6.3).
 | Verifiable journal cursor `{seq, head}` rather than MCP's opaque cursor | measured demand row G9 | pagination of query results |
 | MCP: content-addressed resources are an ideal fit and are usable at the pin; `resources/subscribe` is stdio-only, evidence-free, and removed in the current revision — **RATIFIED-AGAINST** | measured ([MCP surface deep read](2026-08-14-mcp-surface-deep-read.md) §3.2) | the introspection surface serves declarations as digest resources and builds no subscription product |
 | MCP untyped-argument defect (`opaque` → `{}` schema) | measured, estate queue item 1 | named dependency for the search/config tools; not worked around |
-| Three-tier retention keyed on refusal sort; turn-budget exhaustion refusal kind; typed migration plan as a journal fact; dual-record digest scheme (**owed grilling #2**) | measured demand rows F10, D8, K11, F6 | §6's rows cite these as existing demands rather than minting new ones; the upgrade row defers to the owed grilling |
+| Three-tier retention keyed on refusal sort; turn-budget exhaustion refusal kind; typed migration plan as a journal fact; dual-record digest scheme (**owed grilling #2**) | measured demand rows F10, D8, K11, F6 — estate structures-map row ids, a namespace distinct from the fabric laws F1–F12 | §6's rows cite these as existing demands rather than minting new ones; the upgrade row defers to the owed grilling |
 | Ruling G12: programs, frames, toolkits are cataloged values with digests and walls, never files of prose config | ratified | extended to indexes, resources, directories, retention policies — one door, no exceptions |
 | Architecture §5: MCP is the introspection and configuration surface; tools are derived from the same declarations the runtime executes, walled served-equals-derived; the served tool list is projected through the caller's writ | ratified-binding | the both-audience door for every surface in this part |
 
@@ -989,9 +991,14 @@ an owner. Same shape as H-3.
 
 ---
 
-## 12. The grill sheet — open rulings
+## 12. The grill sheet — rulings (all landed 2026-08-17)
 
 One decision at a time, recommended option first, per house style.
+
+> **Ruled 2026-08-17**: every item below was ratified on its recommended
+> option ("Grill sheet is ratified with given recommendations"); the
+> grill sheet record carries the dispositions. The items are kept in
+> their asked form as the record of what was decided.
 
 - **G13 — adopt part 3 as the harness plane.** Recommended: yes —
   C10/C11 into the construct set, F11/F12 into the proof plan as
@@ -1078,6 +1085,8 @@ One decision at a time, recommended option first, per house style.
 | rebind authority | the declared authority whose fenced act picks among a petname's bindings |
 | compaction horizon | the minimum anchor floor across deployed folds on a lane — the derived limit of what may be compacted |
 | harness plane | this part's subject: search, resources, and the production-composition inventory over parts 1–2 |
+| ANN | approximate nearest-neighbor search — order-sensitive and randomized, hence outside the commutative class: single-partition, resumable, never partition-merged |
+| RAG | retrieval-augmented generation — retrieve, then prompt; on this fabric it is a context program whose retrieval selector commits `(index, anchor, query, k)` so F7 covers it |
 
 ---
 

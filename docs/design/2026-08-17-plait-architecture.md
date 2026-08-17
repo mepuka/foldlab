@@ -49,7 +49,9 @@ packages/plait/
     Wire.ts               envelope Schema (closed struct; kinds emit|attest|checkpoint|sealed)
     Subjects.ts           the flb.fab.* grammar as typed constructors; subjects route, never identify
     Lane.ts               declared evidence lanes (canonical declarations; partition derivation)
-    Cell.ts               lattice cells: joins, merge-write loop, watch
+    Cell.ts               lattice cells: joins, merge-write loop, watch (lands with E6 per
+                          ratified item 5 — this map is the target layout, not the slice-0
+                          manifest; the slice ladder times each module's arrival)
     Register.ts           lease registers: hold/renew/commit; fencing tokens
     Anchor.ts             fold checkpoint facts; the position floor
     Blob.ts               content-addressed payloads; inline/blob threshold

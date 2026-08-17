@@ -300,7 +300,8 @@ determinism extends to retrieval and an auditor reconstructs exactly
 what the model was shown, including why. Volatility class follows the
 anchor: pinned ⇒ `session` (stable prefix, reproducible on replay),
 head-relative ⇒ `live`. Grounding: without this production, **F7 is
-silently voided for every RAG-shaped program** (part 3 §4.2, named
+silently voided for every RAG-shaped program** (RAG:
+retrieval-augmented generation — retrieve, then prompt) (part 3 §4.2, named
 consumers); the DX consequence is free and aligned — the pinned form
 is simultaneously the reproducible path and the provider-cacheable
 prefix (part 2 §5.3), so the cheap path and the auditable path are

@@ -9,8 +9,9 @@ MCP-based APIs) through an Effect-constructed context and
 dependency-injection API, with context population (prompts, tool
 descriptions, static and dynamic context) drawn from the shared semantic
 substrate, and with a native account of how higher-tier frontier models
-and lower-tier subagent models ride the same substrate. **Everything new
-here is PROPOSED pending the operator's grill**; this document amends
+and lower-tier subagent models ride the same substrate. **Entered as
+PROPOSED; ruled 2026-08-17** — G8–G12 are recorded in the ratification
+record and the second-wave grill sheet carries the rest; this document amends
 part 1 (amendment map in §8) and changes no code, ledger row, or spec.
 Confidence tiers as in part 1 (ratified / proven / measured / shipped /
 proposed / lead).
@@ -545,9 +546,11 @@ scoreboard's measured numbers.
    *coordination record*, not the prose: every action outcome's context
    digest re-derives from its certificate; at most one landed outcome
    per declaration under the chaos schedule; the trigger scoreboard
-   shows every enabled reaction claimed exactly once at quiesce and
+   shows every enabled reaction claimed once — none unclaimed, none
+   claimed twice — at quiesce and
    zero double-landed reactions against the generated growth trace (a
-   measured fact about this run, not a liveness claim); the attenuation
+   measured fact about this run, not a liveness claim; "exactly-once"
+   stays refused vocabulary); the attenuation
    audit passes over the live action tree.
    Model output quality is explicitly ungated (nondeterminism is
    quarantined, not denied). The scene still waits on the two named

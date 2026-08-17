@@ -1,12 +1,15 @@
 # Plait — a braided-venue coordination fabric (design commission)
 
-Status: **commissioned exploration**, ordered by the operator 2026-08-17 as a
-separate lane beside the active REF program — separate, not distinct: every
+Status: **ratified and in build** — commissioned 2026-08-17 as a separate
+lane beside the active REF program (separate, not distinct: every
 construct below is either an estate artifact consumed at its recorded status
-or a new proposal marked as such. **Everything new here is PROPOSED pending
-the operator's grill.** This document changes no code, no ledger row, no
-dispatch spec, and no seam status. The working name "Plait" is itself
-unratified (grill sheet, G2).
+or a new proposal marked as such), then **ratified the same day**: G1–G12
+on the recommended options
+([ratification record](2026-08-17-plait-ratification-record.md)) and the
+second-wave items 1–21 likewise
+([grill sheet](2026-08-17-plait-grill-sheet.md) — which also ratifies the
+name). Amendments since ratification are marked in place with their
+provenance; the slice ladder (§10) is executing on the board.
 
 > **Amended 2026-08-17, same day:** the operator directed that action be
 > made a first-class consideration before further formalization. Part 2 —
@@ -71,9 +74,12 @@ agents is residue, not mechanism" — measured,
 [dispatch 21](../../scratch/dispatch/21-the-use-catalog.md)) survives the
 network unchanged.
 
-**2.2 CALM is the architecture, not a citation.** The estate's ratified
-identification of its move calculus — a join-semilattice of
-holder-attributed observations (a CvRDT), arbitration declared as a protocol
+**2.2 CALM is the architecture, not a citation.** CALM — Consistency As
+Logical Monotonicity: the theorem that monotone computations need no
+coordination, and non-monotone ones need exactly one point of it. The
+estate's ratified identification of its move calculus — a join-semilattice
+of holder-attributed observations (a CvRDT, a convergent replicated data
+type), arbitration declared as a protocol
 constant, and the one non-monotone act (close) at a declared coordination
 point, exactly where CALM proves one must exist (ratified,
 [determination](../research/2026-08-17-proof-support-determination.md)) —
@@ -81,7 +87,8 @@ becomes a physical partition. Plait has two planes: a **monotone plane**
 (evidence, checkpoints, attestations, sealed-fact records) carried on
 JetStream streams under at-least-once, unordered, duplicated delivery,
 harmless *by theorem shape*; and a **coordination plane** (close, lease,
-epoch) confined to compare-and-swap registers. REF-1 models no network
+epoch) confined to compare-and-swap registers. REF-1 — the estate's wire
+model, the first rung of its refinement ladder — models no network
 because its journal is single-homed — a licensed decision with the Gomes
 et al. network axioms as the foil (ratified,
 [spec 24](../../scratch/dispatch/24-ref1-wire-model-spec.md) §Academic
@@ -113,7 +120,8 @@ results are immutable truths; partition-parallel deployment is available
 only to algebras whose commutativity class earns it. §8.4 gives the table.
 
 **2.5 The demo is a chaos gauntlet with a byte-identical verdict, and it is
-honest about what it cannot claim yet.** The proven demo (§11) is a
+honest about what it cannot claim yet.** The demo the slices build toward
+(§11) is a
 frontier-data distillation run by heterogeneous nodes under a kill-and-
 duplicate chaos harness, accepted by one mechanical check: the final state
 digest equals the digest of a sequential single-process reference fold,
@@ -171,8 +179,10 @@ And three standing rulings shape what Plait may NOT be:
   mirroring or clustered replication in v0: the standing stream-shape gate
   refuses every eviction lever including mirroring (shipped, synthesis
   §2.3), the substrate assumptions gate refuses clustered JetStream and
-  R>1 KV (shipped, `go/substrate/assumptions_test.go` per the corpus
-  sweep), and the write path does not yet verify the chain link the read
+  R>1 KV (**archived** — the executable gate was purged 2026-08-15 to
+  `archive/pre-estate-focus`; its content is honored as the envelope and
+  its re-land against current pins is dispatched, DEV-716; see the
+  inherited-ground table), and the write path does not yet verify the chain link the read
   path checks — a wrong-`prev` entry winning CAS permanently bricks a
   journal the moment a second writer exists (measured, synthesis §2.3).
   Federation is verified replay at the application layer, and slice 3
@@ -195,7 +205,7 @@ What this design consumes, at the status it actually holds:
 | --- | --- | --- |
 | Move-calculus identification (CvRDT + declared arbitration + CALM close) | ratified | the shape of the monotone plane and the licensed placement of every coordination point |
 | `runRepairK_perm`, `fence_deterministic`, `decided_stable`, stability family | proven (model-level R5, footprint-clean) | the theorem shapes F1/F2/F4 restate over fabric objects |
-| RFC 8785 canonical bytes + structural digest discipline | shipped (R1 differential); law incoming as REF-2a | the identity function; coherence = digest equality |
+| RFC 8785 canonical bytes + structural digest discipline | shipped (R1 wall); law incoming as REF-2a | the identity function; coherence = digest equality |
 | Wire subjects `flb.req.*`, `flb.ing.*`; refusal envelope with kind/sort/law/path/next | shipped | the request plane Plait extends, and the error protocol every node speaks |
 | Session/protocol laws (fills idempotent per `(value, seat)`; close atomic at declared authority; final-state digest excludes journal head) | shipped (R0/R1, single daemon) | sessions ride venues unchanged; the fabric adds reach, not semantics |
 | Effector shape: one authority value per work digest, version-checked CAS, monotone fencing token | shipped; claims archived | the coordination plane's only primitive — re-verified as F5 |
@@ -228,7 +238,11 @@ Fabric state is four families of objects, all content-addressed:
 - **Journals** (per venue): append-only event logs, single-writer,
   CAS-appended, verify-on-read. Unchanged from the estate.
 - **Cells** (commons): join-semilattice values — evidence bags, membership
-  sets, index anchors — merged by least upper bound.
+  sets, index contribution sets — merged by least upper bound.
+- **Anchors** (commons): fold checkpoint facts keyed `(fold digest,
+  partition)`, holding `(position floor, state digest)` — advanced by
+  plain revision CAS, never merged: a checkpoint is a record, not a
+  lattice (§5.3).
 - **Registers** (commons): lease/epoch authorities — one per work digest,
   advanced only by version-checked CAS, carrying a monotone fencing token.
 - **The DAG**: the graph induced by digests-inside-values — sessions pin
@@ -355,7 +369,9 @@ Plait distributes exactly this and nothing more:
   for algebras that are not idempotent (counting is the canonical
   example): arrivals are admitted through a window and applied only at
   the contiguous frontier, so any at-least-once redelivery schedule
-  applies each event exactly once. The anchor's position floor is the
+  applies each event once — never twice, never skipped ("exactly-once"
+  is refused vocabulary here: this is an application-count fact about
+  admitted schedules, not a delivery guarantee). The anchor's position floor is the
   *derived record* of that frontier — the resume coordinate — not
   itself the protector (attribution corrected 2026-08-17: the DEV-695
   re-review proved a floor guard observationally redundant given the
@@ -449,7 +465,8 @@ negative controls (§10).
       ▼                     ▼
  ┌──────────────────────────────────────────────┐
  │ commons — evidence lanes (JetStream streams) │
- │           cells + anchors (KV, merged)       │
+ │           cells (KV, merged by join)         │
+ │           anchors (KV, revision CAS)         │
  │           lease registers (KV, CAS)          │
  │           blobs (object store, by digest)    │
  └──────────────────────────────────────────────┘
@@ -893,7 +910,7 @@ described (dogfood rule: never oversell a bound).
 | --- | --- | --- | --- |
 | F1 | fabric cell merge is a join-semilattice (ACI); same verified set ⇒ same state | restates proven estate laws (`Model.lean:200-256` shapes) over fabric cells; Shapiro '11 | R5 |
 | F2 | terminal state of an evidence trace is invariant under permutation + duplication | permutation half is `runRepairK_perm`'s shape; duplication half is new but small (idempotent union) | R5 |
-| F2b | successor-discipline application (buffer by position, apply only at the contiguous frontier) of any step function over an at-least-once redelivery schedule applies each event exactly once; the anchor floor is the derived resume record, not the protector | proven (`verify/fabric`, DEV-695); `guard_is_redundant` pins the attribution | R5 |
+| F2b | successor-discipline application (buffer by position, apply only at the contiguous frontier) of any step function over an at-least-once redelivery schedule applies each event once — never twice, never skipped; the anchor floor is the derived resume record, not the protector | proven (`verify/fabric`, DEV-695); `guard_is_redundant` pins the attribution | R5 |
 | F3 | `foldFrom (fold xs) ys = fold (xs ++ ys)` — anchors resume exactly | classical (`List.foldl_append` shape; Mathlib carries it); restated in-house | R5 |
 | F4 | for commutative-class algebras, merge of per-partition folds = sequential fold | `Multiset.fold_add` is this statement in Mathlib; in-house restatement over lane partitions | R5 |
 | F5 | lease register safety: tokens strictly increase; commit accepted iff token current; hence never two landed commits per work digest | new for the fabric; the archived effector claims re-earned. Transition system + inductive invariant — Veil's exact home turf (landscape verdict) | R3 (inductive invariant), then R4 (lockstep vs the running register) |
@@ -1193,7 +1210,7 @@ lattice, model seam, cataloged context programs) live in
 | lane | a declared, content-addressed evidence stream (schema, partitions, key derivation) |
 | cell | a lattice value in commons KV, merged by join |
 | register | a lease/epoch authority: work digest → (token, holder, outcome), CAS-advanced |
-| anchor floor | the per-partition applied-position in a fold's checkpoint fact — the derived record of the successor discipline's contiguous frontier (the resume coordinate); the discipline, not the floor, manufactures exactly-once application |
+| anchor floor | the per-partition applied-position in a fold's checkpoint fact — the derived record of the successor discipline's contiguous frontier (the resume coordinate); the discipline, not the floor, manufactures the once-only application |
 | monotone plane / coordination plane | the CALM split: what may be delivered sloppily vs the enumerated CAS points |
 | attest | the generated-vector conformance harness whose passing defines nodehood |
 

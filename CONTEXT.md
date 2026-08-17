@@ -71,7 +71,12 @@ evidence of the summarized prefix.
 
 **Anchor**:
 An entity's (key, head, state digest) triple: the seen-this-history-before
-index entry, and the raw material of provenance.
+index entry, and the raw material of provenance. The Plait fabric reuses
+the word for a distinct object — a fold's checkpoint fact keyed
+`(fold digest, partition)`, holding `(position floor, state digest)`,
+advanced by plain revision CAS and never merged; the Plait design records
+own that sense, and prose says "fabric anchor" where the two could
+collide.
 
 ### Walls
 
@@ -86,8 +91,11 @@ wall is not input validation: bytes are admitted by the **Certifier**,
 and the parse-don't-validate step is **Constrained decode**.
 
 **Fixture**:
-Frozen digest pins generated once by the Go side. A mismatch means a port
-drifted; the fixture is evidence, not a constant to update.
+Frozen digest pins generated once by the side that owns the model — Go
+for the substrate walls; a `verify/*` Lean emitter or a Veil trace export
+for model corpora. A mismatch means a port
+drifted; the fixture is evidence, not a constant to update. Hand-typed
+model verdicts are refused on sight (2026-08-15 ruling).
 
 **Transport**:
 Anything that moves or regroups bytes without touching identity —
@@ -255,7 +263,10 @@ way to obtain the admitted type. We say certifier because a validator
 advises; a certifier admits.
 
 **Catalog**:
-The journal of created types: per-daemon authority, mirrored elsewhere,
+The journal of created declarations — types first, and, ruled G12
+(2026-08-17), programs, frames, toolkits, indexes, resources, directories,
+and retention policies through the same one door. Per-daemon authority,
+mirrored elsewhere,
 union-resolved. A record is {structural digest, canonical encoding bytes,
 submitter}; the daemon recomputes every digest it commits — an asserted
 identity it cannot derive is refused. Absence is a typed refusal, never a
