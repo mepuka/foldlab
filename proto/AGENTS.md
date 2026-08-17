@@ -71,20 +71,33 @@ logged in `DECISIONS.md`.
   `go run ./cmd/wirefix -force`; a fixture without that property is not
   frozen, it is stranded (`docs/FREEZING.md`). That claim is now a gate:
   `cd proto/go && go test -count=1 ./cmd/wirefix/` regenerates into a
-  temp dir and byte-diffs all five. `-count=1` is required — the
-  fixtures are outside this Go module, so the test cache does not
-  invalidate on them.
+  temp dir and byte-diffs all five.
+- `-count=1` on EVERY Go test command here, not just the regeneration
+  one. Go's test cache records only files it can attribute to the
+  package's own module root, so anything read from outside the module —
+  `proto/wire/**` for `protod` and `catalogr4`, the root `fixtures/**`
+  and `proto/wire/**` for the `go/` module — is invisible to the cache
+  key, and `go test ./...` prints `ok (cached)` over a mutated fixture.
+  Measured on all four present readers. A wall that can report a stale
+  pass on the input it exists to watch is worse than no wall, because it
+  is believed (`docs/FREEZING.md`).
 - `flb.type.v0` is declared once and restated sixteen times.
   `GRAMMAR-SITES.md` is the list, and a grammar change visits all of it;
   `float_leaf_test.go` greps the fourteen that live under `proto/`.
   The closure law: no position in a v0 term admits a non-integral
   number. ONE bound (`isIntegralJSONNumber`) applied by ONE traversal
-  over the whole term (`requireIntegralNumbers`), mirrored by
-  `Number.isSafeInteger` over the folded term in the author fold, so no
-  term canonicalizes through shortest-round-trip number printing and a
+  over the whole term (`requireIntegralNumbers`), so no term
+  canonicalizes through shortest-round-trip number printing and a
   JSON-bearing position added later inherits the bound instead of
-  needing its own check. Non-integer numbers reach the protocol only as
-  opaque payload bytes, which are values and not terms.
+  needing its own check. That traversal is TOTAL over its domain and
+  refuses outside it: its `default:` case rejects any value
+  `canonical.Decode` could not have produced, so a Go-constructed
+  `float32` cannot carry a number past a switch that never named its
+  type. The TS mirror is `findNonIntegralNumber` in `src/jcs.ts`, stated
+  once and swept by BOTH places a TS term becomes an identity — the
+  author fold and `structureDigest` (with its `sessionStateDigest`
+  alias). Non-integer numbers reach the protocol only as opaque payload
+  bytes, which are values and not terms.
 - The MCP tool surface is derived from `contract.describe` at startup;
   there is no hand-written tool list to drift. Its `journal_read` tool is the
   READ verb and therefore returns the client's verified cursor, never the
@@ -111,7 +124,7 @@ logged in `DECISIONS.md`.
 
 ```
 cd proto/go && gofmt -l .        # prints nothing
-cd proto/go && go vet ./... && go test ./...
+cd proto/go && go vet ./... && go test -count=1 ./...
 cd proto/go && go test -count=1 ./cmd/wirefix/   # fixture regeneration
 cd proto/ts && bun install && bunx tsc --noEmit && bun test .
 ```

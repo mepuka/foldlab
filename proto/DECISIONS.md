@@ -3057,3 +3057,97 @@ cure did add two path citations and they were removed in a follow-up commit
 rather than silently amended, because the branch is the record.
 **Load-bearing? no** — it is citation hygiene, and the authority itself is
 recorded either way.
+
+## Task 27 — the final hygiene round (2026-08-17; task-local D?? entries — final
+numbers assigned at merge)
+
+### D??. Cache-defeat is armed at the STAGE, on every Go test stage
+
+Decided: `scripts/gates.ts` passes `-count=1` on `go — tests` and
+`proto/go — tests` as well as the regeneration stage, and `proto/AGENTS.md` and
+`go/AGENTS.md` list the same flag. The hazard is a property of the class — Go's
+test cache records only opened files it can attribute to the package's own
+module root, so a fixture read across a module boundary is invisible to the
+cache key. All four present cross-module readers were measured, each reporting
+`ok (cached)` over a one-byte fixture mutation and going red under `-count=1` on
+the same tree: `foldlab/canonical` (`fixtures/golden-conformance.json`),
+`foldlab/journal` (`proto/wire/fixtures/chains.json`), `foldlab/proto/protod`
+(`proto/wire/fixtures/*`), `foldlab/proto/catalogr4`
+(`proto/wire/reply-conformance.json`). Alternatives: arm the three test files the
+round-3 report named, which leaves the two readers in the `go/` module and the
+`catalogr4` reader unarmed; give each cross-module reader its own stage, which
+multiplies stages and still has to be remembered for the next reader; move the
+fixtures inside the Go modules, which relocates frozen evidence to satisfy a
+build tool. Why: the same argument as the closure law one layer out — a defense
+attached to the members that were measured is a defense a member added tomorrow
+does not inherit, and the round-3 finding was precisely that the previous cure
+armed one of four. The cost is the whole Go battery running uncached on every
+gate run and it is paid deliberately. **Load-bearing? yes** — one of the
+unarmed readers was `closure_law_test.go`, the closure law's own corpus check,
+which could report a stale pass on exactly the corpus it exists to watch.
+
+### D??. `requireIntegralNumbers` refuses its whole non-JSON domain, not a list of numeric types
+
+Decided: the traversal's type switch gains `case string, bool, nil` (the rest of
+`canonical.Decode`'s output) and a `default:` that REFUSES, under a stated
+`walkDomainLaw` naming the domain rather than restating the bound. Alternatives:
+enumerate the Go numeric types (`float32`, `int`, `int64`, `json.Number`, …) and
+refuse those; convert integral Go integers and admit them; write one comment
+saying the traversal's domain is `canonical.Decode`'s output and change no code.
+Why: round-3 finding R2 — `check.args {"min": float32(0.5)}` was ADMITTED with
+identity bytes `…"args":{"min":0.5}…` and digest `eae38e7e…`, because a switch
+with no default returns nil for anything it does not name. Enumerating the
+numeric types that need checking is the identical shape to enumerating the
+positions that need checking, which is the shape ruling 7 was issued against, so
+the default refuses everything outside the decoded domain instead. Not
+wire-reachable either way — `canonical.Decode` converts every `json.Number` to
+`float64` recursively at every depth — but the four tracked files state the law
+universally over TERMS, and a universal with a footnote about the caller's Go
+types is not the universal they state. Refusal, never panic: the probe asserts a
+returned `*Refusal` for float32, int, int64, uint8, `json.Number`, and a float32
+nested in an array. **Load-bearing? no** — no wire path reaches it; it makes an
+already-true sentence true without its footnote.
+
+### D??. The TS closure sweeps before the mint, and the traversal moves to `jcs.ts`
+
+Decided: sweep-before-mint, not value-side scoping. `findNonIntegralNumber`
+moves from `author.ts` into `jcs.ts` — below both places a TS term becomes an
+identity — and `structureDigest` runs it after canonicalization and before
+hashing, refusing as `{_tag:"NonIntegralNumber", path, reason}`; `foldSchema`
+calls the same traversal and wraps the coordinate in its own refusal wording.
+`sessionStateDigest` inherits it by staying a thin alias. The value-side option
+was considered against the evidence and REJECTED as inapplicable: the daemon
+derives a session state digest from the PARTIAL TERM after `walkPartial` has
+already applied the closure law (`session.go`'s `sessionStateDigest` →
+`normalizeSessionPartial` → `canonicalBytes`), and no TS module digests a fill
+value — values reach a digest through the daemon. Both utilities are term-side,
+so scoping around them would have been scoping around nothing. Alternatives:
+duplicate the traversal in `jcs.ts` (a second statement of the bound, the exact
+drift this lane dismantles); leave the utilities unbounded and only record the
+gap in `GRAMMAR-SITES.md` (the round-3 report's minimum, which leaves a client
+holding a v0-shaped identity for a fact no daemon will hold); sweep before
+canonicalization (then a cyclic value stack-overflows the traversal instead of
+refusing for its own reason). Why: round-3 finding R3 — `structureDigest` on the
+round-2 counterexample returned `{ok:true, digest:"ca76451e…"}` over canonical
+bytes `…"args":{"min":5e-324}…`, byte-identical to the digest the Go side
+derives for the same term. `float_leaf_test.go` now fails if `Number.isSafeInteger`
+appears in any `proto/ts/src` file other than `jcs.ts`, or if either minter stops
+calling the traversal. **Load-bearing? yes** — it is the difference between the
+TS mirror closing the law and the TS mirror closing it in one of the two places
+it holds a term.
+
+### D??. `verify/ir`'s abstraction notes state the second conjunct and where it lives
+
+Decided: `IR/Semantics.lean` and `IR/Syntax.lean` say that the wire's law is a
+CONJUNCTION — `Trunc(n) = n` and `|n| ≤ 2^53-1` — that `Int` carries only the
+first, that the magnitude half lives at the wire in `isIntegralJSONNumber` and in
+no definition or theorem of this package, and that the resulting gap runs
+model ⊇ wire. Prose only; no theorem, definition, or `Prim`/`Scalar` change, and
+`bash verify/ir/run.sh` is exit 0 before and after. Alternatives: bound
+`Scalar.num`/`Json.num` in the model (that is REF-2b's lane and needs the float
+question ruled, not an executor's edit); leave the note stating what the
+abstraction drops and say nothing about what it adds. Why: round-3 finding R4 —
+the corrected note stated one conjunct of a two-conjunct law while the diff that
+wrote it had the bound in hand, and the file's own charter is "Abstractions,
+stated so they can be argued with". **Load-bearing? no** — the theorems do not
+read the note, and the direction of the gap is the safe one.
