@@ -147,26 +147,32 @@ def ingestSchedule {Op : Type uV} (floor ceiling : Nat)
     (deliveries : List (Positioned Op)) : List (Positioned Op) :=
   deliveries.foldl (ingestDelivery floor ceiling) []
 
-/-- Apply the normalized positioned operations in increasing position order. -/
-def applyPositioned {State : Type uH} {Op : Type uV}
-    (step : State -> Op -> State) : State -> List (Positioned Op) -> State
-  | state, [] => state
-  | state, delivery :: deliveries =>
-      applyPositioned step (step state delivery.operation) deliveries
+/-- Drain only consecutive successors. A delivery ahead of `floor + 1` stays
+    unapplied; the caller must retain or refuse it rather than advancing over
+    a gap. -/
+def applySuccessors {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) : Nat -> State -> List (Positioned Op) -> State
+  | _, state, [] => state
+  | floor, state, delivery :: deliveries =>
+      if delivery.position = floor + 1 then
+        applySuccessors step delivery.position
+          (step state delivery.operation) deliveries
+      else state
 
-/-- Consume the actual redelivery schedule, using the checkpoint floor to
-    reject stale arrivals before draining the sorted, deduplicated buffer. -/
+/-- Consume the actual redelivery schedule in list order. The bounded buffer
+    retains ahead-of-frontier arrivals; application advances serially within
+    the partition and only at `floor + 1`. -/
 def guardedApply {State : Type uH} {Op : Type uV}
     (step : State -> Op -> State) (floor count : Nat)
     (deliveries : List (Positioned Op)) (initial : State) : State :=
-  applyPositioned step initial
+  applySuccessors step floor initial
     (ingestSchedule floor (floor + count) deliveries)
 
-/-- A finite delivery list is an at-least-once schedule when consuming it
-    through the position-floor guard yields exactly the positioned trace. This
-    admits duplicates, bounded reordering, and stale replays; the first arrival
-    at each admitted position decides that position's operation. -/
-def AtLeastOnceSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
+/-- The serial/successor discipline required of an at-least-once schedule:
+    consuming arrivals in list order into the bounded buffer must expose the
+    exact contiguous trace above the floor. Duplicates, bounded reordering, and
+    stale replays are admitted, but a consumer may not advance across a gap. -/
+def SerialSuccessorSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
     (deliveries : List (Positioned Op)) : Prop :=
   ingestSchedule floor (floor + operations.length) deliveries =
     positionTrace floor operations
@@ -189,8 +195,8 @@ def duplicatedPositionedDeliveries : List (Positioned Nat) :=
 
 /-- The exact bounded-reordering row used by the F2b bridge. -/
 def reorderedDeliveries : List (Positioned Nat) :=
-  [ { position := 12, operation := 3 }
-  , { position := 11, operation := 2 }
+  [ { position := 6, operation := 3 }
+  , { position := 5, operation := 2 }
   ]
 
 end Emitter

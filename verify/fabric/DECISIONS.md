@@ -13,19 +13,21 @@ equivalence generated jointly by arbitrary permutations and duplications, and
 the extensional finite-set proof is the house semilattice idiom. **Load-bearing?
 yes** — retaining multiplicity would destroy F2.
 
-### T2. Model bounded redelivery by consuming into a reorder buffer
+### T2. Model bounded redelivery with an explicit serial successor premise
 
 Decided: `ingestSchedule` traverses every arrival, applies the lower position
 floor and upper window, and inserts admitted operations into a position-sorted,
-deduplicated buffer. `AtLeastOnceSchedule` states that this executable buffer is
-the consecutive positioned trace; `guardedApply` drains it once. The finite
-delivery list may be permuted, duplicated, and contain stale entries at or
-below the floor. Alternatives: index the raw schedule by position; model an
-online transition system with a liveness/buffer-capacity policy. Why: the
-consumer now sees the schedule and the lower guard is a separable operation,
-while the theorem remains generic in the step function. **Load-bearing? yes** —
-a floor-only fold over arrival order would apply reordered non-commutative steps
-in the wrong order.
+deduplicated buffer. `F2bSerialSuccessorPremise` states that consuming the
+schedule exposes the consecutive positioned trace; `guardedApply` advances
+only at `floor + 1`. The finite delivery list may be permuted, duplicated, and
+contain stale entries at or below the floor, but application stays serial
+within a partition. Alternatives: a bare `position > floor` check; refuse every
+ahead-of-frontier delivery instead of buffering it; model buffer capacity and
+liveness. Why: delivery 6 before 5 falsifies the bare check — 6 advances the
+floor and 5 is skipped — while the theorem remains generic in the step
+function under the runtime's stated discipline. **Load-bearing? yes** — the
+premise is the boundary between the proved consumer and a falsifiable runtime
+restatement.
 
 ### T3. Represent policy components uniformly
 
@@ -54,13 +56,13 @@ change.
 Decided: a multiplicity-retaining cell over the shipped observation carrier
 drops idempotence while retaining associativity and commutativity; left choice
 over the shipped `GroundCell` drops commutativity while retaining associativity
-and idempotence; replay without the lower floor check retains the lawful
-consumer's sorting, deduplication, upper bound, and step; trusting the requested
-policy drops only meet-clamping. Alternatives: toy scalar algebras; copy four
-whole models. Why: every variant now shares the shipped carrier, vector data,
-or executable consumer and is killed by that exact named row. **Load-bearing?
-yes** — a mutant that drops two laws does not demonstrate which discriminator
-killed it.
+and idempotence; the replay mutant uses the bare `position > floor` check over
+the shipped 6-before-5 row and drops successor discipline; trusting the
+requested policy drops only meet-clamping. Alternatives: toy scalar algebras;
+copy four whole models. Why: every variant now shares the shipped carrier,
+vector data, or executable consumer and is killed by that exact named row.
+**Load-bearing? yes** — a mutant that drops two laws does not demonstrate which
+discriminator killed it.
 
 ### T6. Narrow canonical JSON to the actual corpus grammar
 

@@ -1,1 +1,1 @@
-control=drop-floor-guard;vector=floor-violating-stale-replay;lawful=5;mutant=105;verdict=refuted
+control=drop-floor-guard;vector=six-before-five-reordering;lawful=5;mutant=3;verdict=refuted

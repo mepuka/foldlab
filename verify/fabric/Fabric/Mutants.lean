@@ -33,24 +33,19 @@ def foldLeftBiased : List Emitter.GroundObservation -> Emitter.GroundCell
       observations.foldl (fun cell next =>
         leftBiasedCellMerge cell (Cell.singleton next)) (Cell.singleton observation)
 
-/-- Consume one arrival with only the upper bound. This is the lawful replay
-    consumer with exactly the lower position-floor guard removed. -/
-def ingestWithoutFloor {Op : Type} (ceiling : Nat)
-    (buffer : List (Positioned Op)) (delivery : Positioned Op) :
-    List (Positioned Op) :=
-  if delivery.position <= ceiling then insertPositioned delivery buffer else buffer
-
-/-- Drops only the lower position-floor guard: sorting, deduplication, the
-    upper bound, and the arbitrary step function are unchanged. -/
-def unguardedApply {State Op : Type} (step : State -> Op -> State)
-    (floor count : Nat) (deliveries : List (Positioned Op))
+/-- The falsifiable bare floor guard: any `position > floor` is applied in
+    arrival order and advances the floor, even when it skips a successor. -/
+def bareFloorApply {State Op : Type} (step : State -> Op -> State)
+    (floor : Nat) (deliveries : List (Positioned Op))
     (initial : State) : State :=
-  let ingested := deliveries.foldl (ingestWithoutFloor (floor + count)) []
-  applyPositioned step initial ingested
+  (deliveries.foldl (fun replay delivery =>
+    if replay.1 < delivery.position then
+      (delivery.position, step replay.2 delivery.operation)
+    else replay) (floor, initial)).2
 
-/-- The exact stale-replay row from the committed corpus. -/
+/-- The exact 6-before-5 reordering row from the committed corpus. -/
 def floorReplayVector : List (Positioned Nat) :=
-  Emitter.staleReplayDeliveries
+  Emitter.reorderedDeliveries
 
 abbrev GroundPolicy := Policy Nat compare
 

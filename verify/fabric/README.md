@@ -10,13 +10,15 @@ executes the same definitions to author the runtime conformance corpus at
 - `Fabric/Definitions.lean` owns the objects and executable functions. A
   `Cell` is a finite set of `(holder, observation)` pairs. `foldEvidence`
   inserts a trace into that set. `guardedApply` consumes every arrival through
-  a position-floor guard, sorting and deduplicating its bounded replay buffer
-  before applying operations. `CommutativeAlgebra` declares the laws
+  a position-floor guard, sorting and deduplicating its bounded replay buffer,
+  and applies only the contiguous successor at `floor + 1` before advancing.
+  `CommutativeAlgebra` declares the laws
   required before partition folds may be merged. `Policy.meet` intersects the
   four set-valued components and takes `Nat.min` across the four ceilings.
 - `Fabric/Laws.lean` contains statements only. F1 is cell ACI plus extensional
   convergence; F2 identifies traces with equal observation support; F2b
-  quantifies over every finite schedule covering each consecutive position;
+  states its serial/successor premise explicitly and quantifies over every
+  finite schedule whose consumed buffer is the contiguous positioned trace;
   F3 is checkpoint resumption; F4 is partition/interleaving equivalence under
   a declared commutative algebra; F9 is the full greatest-lower-bound law plus
   descendant attenuation.
@@ -40,7 +42,8 @@ executes the same definitions to author the runtime conformance corpus at
   the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
   roster, proof footprint, four negative controls, pinned vector counts, and
-  byte-identical regeneration.
+  byte-identical regeneration. A failed regeneration names the first divergent
+  zero-based NDJSON row, its kind, and the expected/got row digests.
 
 ## How a trace walks through `fold`
 
@@ -55,9 +58,12 @@ trace into a finite set deliberately forgets both order and multiplicity. F2b
 handles non-idempotent steps. A schedule is finite and may be duplicated,
 reordered, and prefixed with stale deliveries. `ingestSchedule` traverses the
 actual arrivals, rejects positions outside the floor/window, and builds a
-position-sorted buffer whose first delivery at a position wins. `guardedApply`
-then drains that buffer once. The theorem is generic in `step`, so counting and
-other non-idempotent folds are included.
+position-sorted buffer whose first delivery at a position wins. Under F2b's
+explicit `F2bSerialSuccessorPremise`, `guardedApply` drains only consecutive
+successors. A delivery of 6 before 5 is buffered; the bare `seq > floor`
+negative control applies 6 immediately, advances the floor, and skips 5. The
+theorem is generic in `step`, so counting and other non-idempotent folds are
+included.
 
 ## Notation
 
@@ -92,8 +98,11 @@ cd verify/fabric
 lake build
 lake exe emitter
 ./run.sh
+./run.sh --self-test
 ```
 
 The first emitter line records the full command and output path. Never edit the
 fixture or a counterexample trace by hand; regenerate them through their
-executable.
+executable. `--self-test` copies the corpus to a temporary file, plants one row
+mutation, and passes only when the regeneration gate refuses it with the exact
+row evidence.

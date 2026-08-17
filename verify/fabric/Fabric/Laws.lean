@@ -39,13 +39,21 @@ def F3ResumeExact {State : Type uH} {Op : Type uV}
     foldFrom step (fold step initial xs) ys =
       fold step initial (xs ++ ys)
 
+/-- F2b's runtime premise. Deliveries are consumed in their listed order into
+    a bounded buffer, and effective application is serial within a partition:
+    only the contiguous successor at `floor + 1` may advance the frontier. -/
+def F2bSerialSuccessorPremise {Op : Type uV} (floor : Nat)
+    (operations : List Op) (deliveries : List (Positioned Op)) : Prop :=
+  SerialSuccessorSchedule floor operations deliveries
+
 /-- F2b: for an arbitrary step function, a floor-guarded finite redelivery
-    schedule has exactly the sequential meaning of its positioned trace. -/
+    schedule has exactly the sequential meaning of its positioned trace under
+    the explicit serial/successor premise. -/
 def F2bGuardedExactlyOnce {State : Type uH} {Op : Type uV}
     (step : State -> Op -> State) : Prop :=
   forall (floor : Nat) (operations : List Op)
       (deliveries : List (Positioned Op)) (initial : State),
-    AtLeastOnceSchedule floor operations deliveries ->
+    F2bSerialSuccessorPremise floor operations deliveries ->
       guardedApply step floor operations.length deliveries initial =
         fold step initial operations
 

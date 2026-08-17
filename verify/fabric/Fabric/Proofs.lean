@@ -134,19 +134,21 @@ section F2b
 
 variable {State : Type uH} {Op : Type uV}
 
-/-- F2b: the position floor turns finite at-least-once delivery into the
-    arbitrary step function's exactly-once sequential fold. -/
+/-- F2b: under serial successor application, the position floor turns finite
+    at-least-once delivery into the arbitrary step function's exactly-once
+    sequential fold. -/
 theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
     Laws.F2bGuardedExactlyOnce step := by
   intro floor operations deliveries initial schedule
-  unfold AtLeastOnceSchedule at schedule
+  unfold Laws.F2bSerialSuccessorPremise SerialSuccessorSchedule at schedule
   unfold guardedApply
   rw [schedule]
   clear schedule deliveries
   induction operations generalizing floor initial with
   | nil => rfl
   | cons operation operations inductionHypothesis =>
-      simp only [positionTrace, applyPositioned, fold, foldFrom, List.foldl]
+      simp only [positionTrace, applySuccessors, fold, foldFrom, List.foldl,
+        ↓reduceIte]
       exact inductionHypothesis (floor := floor + 1)
         (initial := step initial operation)
 

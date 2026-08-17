@@ -87,8 +87,9 @@ def f2PermutationVector : Vector :=
       , { key := "state", value := renderCell state }
       ] }
 
-def guardedVector (name : String) (deliveries : List (Positioned Nat)) : Vector :=
-  let guarded := guardedApply Nat.add 10 2 deliveries 0
+def guardedVector (name : String) (floor : Nat)
+    (deliveries : List (Positioned Nat)) : Vector :=
+  let guarded := guardedApply Nat.add floor 2 deliveries 0
   let exact := fold Nat.add 0 [2, 3]
   { name
     kind := "F2b"
@@ -99,7 +100,7 @@ def guardedVector (name : String) (deliveries : List (Positioned Nat)) : Vector 
       else "Fabric.emitter_f2b_reordering"
     input := object
       [ { key := "deliveries", value := renderDeliveries deliveries }
-      , { key := "floor", value := nat 10 }
+      , { key := "floor", value := nat floor }
       ]
     verdict := object
       [ { key := "exact", value := nat exact }
@@ -107,13 +108,13 @@ def guardedVector (name : String) (deliveries : List (Positioned Nat)) : Vector 
       , { key := "matchesExact", value := bool (guarded == exact) }
       ] }
 
-def f2bStaleVector : Vector := guardedVector "floor-violating-stale-replay"
+def f2bStaleVector : Vector := guardedVector "floor-violating-stale-replay" 10
   Emitter.staleReplayDeliveries
 
-def f2bDuplicateVector : Vector := guardedVector "duplicate-current-delivery"
+def f2bDuplicateVector : Vector := guardedVector "duplicate-current-delivery" 10
   Emitter.duplicatedPositionedDeliveries
 
-def f2bReorderedVector : Vector := guardedVector "bounded-reordered-delivery"
+def f2bReorderedVector : Vector := guardedVector "bounded-reordered-delivery" 4
   Emitter.reorderedDeliveries
 
 inductive AlphabetCandidate where

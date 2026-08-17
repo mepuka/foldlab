@@ -18,9 +18,9 @@ def main (args : List String) : IO UInt32 := do
         (foldEvidence Emitter.observationCmp Emitter.permutedEvidence).toList.head!.1
         (Mutants.foldLeftBiased Emitter.permutedEvidence).toList.head!.1
   | ["drop-floor-guard"] =>
-      showControl "drop-floor-guard" "floor-violating-stale-replay"
-        (fold Nat.add 0 [2, 3])
-        (Mutants.unguardedApply Nat.add 10 2 Mutants.floorReplayVector 0)
+      showControl "drop-floor-guard" "six-before-five-reordering"
+        (guardedApply Nat.add 4 2 Mutants.floorReplayVector 0)
+        (Mutants.bareFloorApply Nat.add 4 Mutants.floorReplayVector 0)
   | ["drop-meet-clamping"] =>
       showControl "drop-meet-clamping" "attenuation-request-clamped"
         (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest).budget

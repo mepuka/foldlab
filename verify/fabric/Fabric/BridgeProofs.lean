@@ -38,9 +38,9 @@ theorem emitter_f2b_duplication :
 
 /-- The bounded-reordering row is accepted by the guarded schedule consumer. -/
 theorem emitter_f2b_reordering :
-    guardedApply Nat.add 10 2 Emitter.reorderedDeliveries 0 =
+    guardedApply Nat.add 4 2 Emitter.reorderedDeliveries 0 =
       fold Nat.add 0 [2, 3] := by
-  exact f2b_guarded_exactly_once Nat.add 10 [2, 3]
+  exact f2b_guarded_exactly_once Nat.add 4 [2, 3]
     Emitter.reorderedDeliveries 0 (by rfl)
 
 /-- The checkpoint row is an exact F3 instance. -/
