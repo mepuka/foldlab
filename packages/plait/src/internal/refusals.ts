@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, SchemaIssue } from "effect"
+import { Option, Schema, SchemaIssue } from "effect"
 
 import {
   AbsenceRefusal,
@@ -29,10 +29,6 @@ export const refusalIssue = (refusal: Refusal): SchemaIssue.Issue =>
     message: refusal.message,
     [REFUSAL_ANNOTATION]: refusal,
   })
-
-/** Fails a schema getter with a minted refusal. */
-export const refuse = (refusal: Refusal): Effect.Effect<never, SchemaIssue.Issue> =>
-  Effect.fail(refusalIssue(refusal))
 
 const annotatedRefusal = (
   annotations: Schema.Annotations.Issue | undefined,

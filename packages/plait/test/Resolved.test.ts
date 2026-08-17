@@ -128,9 +128,27 @@ describe("resolved references", () => {
     const round = Effect.runSync(
       Effect.gen(function* () {
         const wire = yield* Schema.encodeEffect(Emitted)({ lane: "l", body: terms })
-        return yield* Schema.decodeUnknownEffect(Emitted)(wire)
+        // The emit path decodes through the SAME seam every other path uses.
+        // Pinning decodeRefusing's encoding services to `never` closed this
+        // door and forced callers past the seam onto SchemaIssue (F-3).
+        return yield* decodeRefusing(Emitted)(wire)
       }).pipe(Effect.provide(substrateLayer)),
     )
     expect(round.body).toEqual(terms)
+  })
+
+  test("the seam covers the emit path: an emitted frame refuses as a Refusal", () => {
+    const Emitted = Schema.Struct({ lane: Schema.String, body: PublishingOf(TermMap) })
+    const refusal = Effect.runSync(
+      decodeRefusing(Emitted)({ lane: "l", body: termsDigest }).pipe(
+        Effect.provide(substrateLayer),
+        Effect.flip,
+      ),
+    )
+    // Not a SchemaIssue: the whole point of the seam is that no caller of a
+    // Plait codec ever sees one.
+    expect(refusal.sort).toBe("absence")
+    expect(refusal.kind).toBe("cataloged-value-absent")
+    expect(refusal.next.length).toBeGreaterThan(0)
   })
 })

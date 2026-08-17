@@ -2,10 +2,44 @@
   "control": "runtime-cell-lww-mutant",
   "corpusRow": "cell-merge-aci",
   "corpusWitness": "Fabric.emitter_f1_cell_merge_aci",
-  "corpusVerdict": { "commutes": true, "state": [[1, 10], [2, 20], [3, 30]] },
+  "corpusVerdict": {
+    "commutes": true,
+    "state": [
+      [
+        1,
+        10
+      ],
+      [
+        2,
+        20
+      ],
+      [
+        3,
+        30
+      ]
+    ]
+  },
   "modelStateDigest": "9843c590deb9fd3fc4352912a0e88605c5698d733b514910dbdf9e585535dc1d",
-  "mutantForwardState": [{ "holder": 2, "value": 20 }, { "holder": 3, "value": 30 }],
-  "mutantBackwardState": [{ "holder": 1, "value": 10 }, { "holder": 2, "value": 20 }],
+  "mutantForwardState": [
+    {
+      "holder": 2,
+      "value": 20
+    },
+    {
+      "holder": 3,
+      "value": 30
+    }
+  ],
+  "mutantBackwardState": [
+    {
+      "holder": 1,
+      "value": 10
+    },
+    {
+      "holder": 2,
+      "value": 20
+    }
+  ],
   "schedulesAgree": false,
   "violatedLaw": "cells merge by join before write; a lost CAS race re-reads and re-merges"
 }

@@ -145,8 +145,77 @@ class KvFailure {
   constructor(readonly cause: unknown) {}
 }
 
-export const makeCellService = Effect.fn("Cells.make")(function* (
+const sameBytes = Effect.fn("Cells.sameBytes")(function* (
+  left: ReadonlyArray<Observation>,
+  right: ReadonlyArray<Observation>,
+): Effect.fn.Return<boolean, Refusal> {
+  return decoder.decode(yield* canonicalBytes(left)) ===
+    decoder.decode(yield* canonicalBytes(right))
+})
+
+/**
+ * Whether a read-back already holds the delta. For a lattice this is the
+ * honest post-condition of a merge: the intended append may have landed, or a
+ * rival's join may have subsumed it, and F1 makes the two indistinguishable and
+ * equally correct. Byte comparison against one intended record — the register's
+ * reconciliation — would be too strict here, because a concurrent writer's
+ * larger state is still a state that carries this delta.
+ */
+const subsumes = Effect.fn("Cells.subsumes")(function* (
+  current: ReadonlyArray<Observation>,
+  delta: ReadonlyArray<Observation>,
+): Effect.fn.Return<boolean, Refusal> {
+  return yield* sameBytes(yield* join(current, delta), current)
+})
+
+/**
+ * The two steps of the merge loop a negative control may replace, named so a
+ * control deletes exactly one behaviour and provably shares everything else —
+ * connection, bucket shape check, key law, attempt loop, CAS mechanics,
+ * canonical encoding, and the step it does not touch. Package-internal: the
+ * public `Cells.layer` takes connection options and nothing else, so no
+ * discipline is selectable from outside this package.
+ */
+export interface MergeDiscipline {
+  /** The state a delta writes over the current state. The lawful step is the join (⊔). */
+  readonly next: (
+    current: ReadonlyArray<Observation>,
+    delta: ReadonlyArray<Observation>,
+  ) => Effect.Effect<ReadonlyArray<Observation>, Refusal>
+  /** Whether a read-back after a failed CAS already carries the delta. */
+  readonly reconciled: (
+    readBack: ReadonlyArray<Observation>,
+    delta: ReadonlyArray<Observation>,
+    intended: ReadonlyArray<Observation>,
+  ) => Effect.Effect<boolean, Refusal>
+}
+
+/** Cells merge by join and reconcile by subsumption. */
+export const lawfulMergeDiscipline: MergeDiscipline = {
+  next: (current, delta) => join(current, delta),
+  reconciled: (readBack, delta) => subsumes(readBack, delta),
+}
+
+/** Reconciles by byte-equality against the one intended record (T16's alternative). */
+export const byteEqualityReconciliation: MergeDiscipline = {
+  next: lawfulMergeDiscipline.next,
+  reconciled: (readBack, _delta, intended) => sameBytes(readBack, intended),
+}
+
+/** Writes the delta alone, discarding the current state (§6.3's refused merge). */
+export const lastWriterWinsMerge: MergeDiscipline = {
+  next: (_current, delta) => Effect.succeed(delta),
+  reconciled: lawfulMergeDiscipline.reconciled,
+}
+
+export const makeCellService = (
   options: CellOptions,
+): Effect.Effect<CellService, Refusal, Scope.Scope> =>
+  makeCellServiceWith(options, lawfulMergeDiscipline)
+
+export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
+  options: CellOptions,
+  discipline: MergeDiscipline,
 ): Effect.fn.Return<CellService, Refusal, Scope.Scope> {
   const connection = yield* Effect.acquireRelease(
     Effect.tryPromise({
@@ -206,24 +275,6 @@ export const makeCellService = Effect.fn("Cells.make")(function* (
     return entry === null ? [] : yield* decodeCell(entry)
   })
 
-  /**
-   * Whether a read-back already holds the delta. For a lattice this is the
-   * honest post-condition of a merge: the intended append may have landed, or
-   * a rival's join may have subsumed it, and F1 makes the two indistinguishable
-   * and equally correct. Byte comparison against one intended record — the
-   * register's reconciliation — would be too strict here, because a concurrent
-   * writer's larger state is still a state that carries this delta.
-   */
-  const subsumes = Effect.fn("Cells.subsumes")(function* (
-    current: ReadonlyArray<Observation>,
-    delta: ReadonlyArray<Observation>,
-  ): Effect.fn.Return<boolean, Refusal> {
-    const merged = yield* join(current, delta)
-    const left = yield* canonicalBytes(merged)
-    const right = yield* canonicalBytes(current)
-    return decoder.decode(left) === decoder.decode(right)
-  })
-
   const readCell: CellService["read"] = Effect.fn("Cells.read")(
     function* (rawCell) {
       const cell = yield* validCell(rawCell)
@@ -241,7 +292,7 @@ export const makeCellService = Effect.fn("Cells.make")(function* (
         // The join is idempotent: a delta already carried is not re-written,
         // so a settled cell costs one read and no CAS traffic at all.
         if (yield* subsumes(current, delta)) return yield* stateOf(current)
-        const merged = yield* join(current, delta)
+        const merged = yield* discipline.next(current, delta)
         const bytes = yield* canonicalBytes(merged)
         const landed = yield* Effect.tryPromise({
           try: () => entry === null
@@ -254,7 +305,7 @@ export const makeCellService = Effect.fn("Cells.make")(function* (
           // never by expecting a duplicate PubAck.
           Effect.catch(({ cause }) => Effect.gen(function* () {
             const readBack = yield* currentOf(yield* read(bucket, cell))
-            if (yield* subsumes(readBack, delta)) return true
+            if (yield* discipline.reconciled(readBack, delta, merged)) return true
             if (isCasRefusal(cause)) return false
             return yield* transportRefusal("cell.merge", cause)
           })),

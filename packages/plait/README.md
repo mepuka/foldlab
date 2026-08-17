@@ -70,9 +70,20 @@ history 1, TTL 0, and no byte-size eviction on one local `nats-server v2.14.4`.
 Both merge schedules of the F1 row converge on the model's state; the F2 rows
 reach it under duplication and permutation of their delivery schedule; a lost
 CAS race, held deterministically by a frame-aligned tap, re-reads and re-merges
-without dropping an observation. The committed control is the real merge path
-with its join deleted — last-writer-wins — refuted by the F1 row with its
-executed trace (`negative-controls/cell-lww-mutant.trace.json`).
+without dropping an observation; and a transport-class write failure whose
+read-back already carries the delta reports the converged state rather than
+refusing it.
+
+Two committed controls, each the shipped `makeCellServiceWith` with exactly one
+merge-discipline step replaced and everything else — connection, bucket shape
+check, key law, attempt loop, CAS mechanics, canonical encoding — shared by
+construction: the join deleted (last-writer-wins, the merge §6.3 refuses by
+name), refuted by the F1 row; and the read-back reconciliation swapped from
+subsumption to byte-equality against the one intended record, refuted by the
+transport-class row. Both traces are executed and byte-compared
+(`negative-controls/cell-lww-mutant.trace.json`,
+`negative-controls/cell-byte-equality-mutant.trace.json`); un-mutating either
+control reds its own row.
 
 What the cell wall does NOT claim: the model-level F1 (already claimed by the
 fabric row); anything about assembly, context values, or F7; agreement between

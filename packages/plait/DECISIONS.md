@@ -285,9 +285,32 @@ worse, refused); retry forever (an unbounded loop is a liveness promise this
 package never makes). Why: for a lattice, "my delta landed" and "someone
 else's join subsumed my delta" are indistinguishable AND equally correct — that
 indistinguishability is what F1 buys, so the reconciliation should read it
-rather than fight it. **Load-bearing? yes** — this is the concrete meaning of
-"a lost CAS race re-reads and re-merges — convergent by F1", and the
-deterministic hold-proxy test is its evidence.
+rather than fight it.
+
+Walled 2026-08-17 (DEV-727 finding F-2, round-2 charge R2-1) — and the charge's
+own scenario had to be corrected to build it. **Contention cannot discriminate
+these two reconciliations, and no schedule exists in which byte-equality
+exhausts `CELL_MERGE_ATTEMPTS` while subsumption lands.** Under a CAS-class
+failure the loop's idempotence guard (`subsumes(current, delta)` at the top of
+each attempt) re-reads and catches a rival's superset on the very next pass, so
+byte-equality costs one extra round trip and lands the identical state; and
+when the rival's state does NOT carry the delta, both disciplines behave
+identically and both exhaust. Cells are monotone — only joins write — so a
+read-back that carries the delta is never followed by a `current` that does
+not, which is exactly why the guard always rescues the byte-equality path.
+The separating schedule is the second half of this entry's own sentence: a
+**transport-class** write failure whose read-back carries the delta because a
+rival's join subsumed it. There subsumption reports the converged state, while
+byte-equality falls past the CAS branch to `transportRefusal` and REFUSES a
+merge whose delta is already in the cell. That row is
+`CellWall.test.ts` "T16: a rival's subsuming join is convergence under
+subsumption and a refusal under byte-equality", run against the live bucket
+with the hold proxy discarding the write frame so the write fails
+transport-class while the same connection's reconciliation read still lands.
+Its control is `negative-controls/cell-byte-equality-mutant.ts` — the shipped
+service with only `reconciled` replaced — refuted with its executed trace
+committed. **Load-bearing? yes** — the entry now names a behaviour a committed
+control demonstrates, and un-mutating that control reds the row.
 
 ### T17. Cell row isolation is a distinct key on one server, not a fresh incarnation per row
 
@@ -348,6 +371,21 @@ that quarantines NATS. **Load-bearing? yes** — the public-surface claim's
 mechanism reds if the bridge is re-exported, and the reason must be recorded so
 a later seat does not "fix" the walk instead.
 
+Amended 2026-08-17 (DEV-727 finding F-3, ruled at round-2 charge R2-2): the
+seam's codec parameter is `Schema.Codec<T, E, RD, RE>`, not
+`Schema.Codec<T, E, RD, never>`. Pinning encoding services to `never` was an
+accident of the first draft, not a constraint of the pin — the pinned
+`SchemaParser.decodeUnknownEffect<S extends Schema.Constraint>` reads only
+`S["Type"]` and `S["DecodingServices"]` — and it closed the seam against the
+package's own emit path, since `PublishingOf` carries `Catalog` on encode. The
+practical effect was that a caller decoding an emitted frame had to reach past
+the seam to `Schema.decodeUnknownEffect` and take `SchemaIssue.Issue` on the
+error channel, which is precisely what the single-seam claim forbids; the
+package's own test did exactly that, which is why nothing redded. Two rows now
+fence it: the emit-path round trip decodes through `decodeRefusing`, and an
+absent emitted reference refuses as a `Refusal` rather than an issue. The
+coordinator amends the architecture record's sentence to match.
+
 ### T21. The closed refusal-kind enumeration grows with this slice's mint sites
 
 Decided: `StructuralRefusalKind` gains four literals —
@@ -383,3 +421,28 @@ ambient or clock-reading selector is unrepresentable — while the
 declaration-time refusal that CITES F7 belongs to the slice that can name the
 theorem. **Load-bearing? yes** — the boundary between what this slice claims
 and what the assembly slice will claim is drawn here.
+
+### T23. Cell negative controls derive from the shipped service through one named seam
+
+Decided: `internal/cells.ts` exposes a package-internal `MergeDiscipline` — the
+merge loop's two swappable steps, `next` (lawfully the join) and `reconciled`
+(lawfully subsumption) — plus `makeCellServiceWith`. `makeCellService` is
+`makeCellServiceWith(options, lawfulMergeDiscipline)`, and each negative control
+is the same builder with exactly ONE member replaced:
+`lastWriterWinsMerge` deletes the join, `byteEqualityReconciliation` swaps the
+reconciliation. Alternatives: keep both controls as standalone
+re-implementations of the read-then-CAS sequence (the shape the first round
+shipped, and the shape `stale-token-mutant.ts` still has). Why: a
+re-implementation shares the bucket name and the canonicalizer but not the
+attempt loop, the shape check, the key law, or the reconciliation, so
+"the shipped path minus one step" is a claim the code does not support — DEV-727
+finding F-6 — and it made the control test-order dependent, because it opened a
+bucket some earlier test had to have created. Deriving through the seam makes
+the sharing a fact of the call graph rather than a promise in a comment, and
+each control ensures its own bucket through the shipped setup, so both run
+standalone. The seam is not a production hook: it lives in `internal/`, the
+public `Cells.layer` takes connection options and nothing else, and the
+public-effect gate walks the barrel, so no discipline is selectable by any
+consumer. **Load-bearing? yes** — the refutations are only attributable to the
+deleted step if everything else is provably the same code, and un-mutating
+either member reds its own row (verified both ways).

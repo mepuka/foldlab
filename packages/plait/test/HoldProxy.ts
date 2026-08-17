@@ -8,6 +8,13 @@ export interface HoldProxy {
   readonly captured: () => Promise<void>
   /** Forwards the withheld publish, and everything queued behind it, in order. */
   readonly release: () => void
+  /**
+   * Drops the withheld publish permanently and forwards everything queued
+   * behind it. The connection stays open, so the caller's write request never
+   * receives its acknowledgement and fails transport-class, while the same
+   * connection's subsequent reads still reach the server.
+   */
+  readonly discard: () => void
   readonly stop: () => Promise<void>
 }
 
@@ -127,6 +134,16 @@ export const startHoldProxy = async (
       released = true
       holding = false
       for (const part of held) upstream.write(part)
+      held = []
+    },
+    discard: () => {
+      const upstream = heldUpstream
+      if (upstream === undefined) throw new Error("discard before a bucket publish was captured")
+      released = true
+      holding = false
+      // held[0] is the captured publish frame; everything after it is traffic
+      // that merely queued behind the barrier and must still be delivered.
+      for (const part of held.slice(1)) upstream.write(part)
       held = []
     },
     stop: () => new Promise((resolve) => {

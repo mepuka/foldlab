@@ -134,8 +134,15 @@ export const retryAbsence: {
  * refusal. The bridge stays internal because `SchemaIssue.Issue` is a deep
  * recursive class union that diverges the public-surface type-level walk.
  *
+ * The codec's encoding services are unconstrained: the pinned
+ * `SchemaParser.decodeUnknownEffect` reads only `Type` and `DecodingServices`,
+ * so pinning `EncodingServices` to `never` would close this seam against the
+ * package's own emit path (`Resolved.PublishingOf`) for no reason the pin gives
+ * — corrected 2026-08-17, DEV-727 finding F-3.
+ *
  * @example
  * ```ts
+ * import { Digest } from "@foldlab/plait/Digest"
  * import { decodeRefusing } from "@foldlab/plait/Refusal"
  * import { Effect } from "effect"
  *
@@ -143,8 +150,8 @@ export const retryAbsence: {
  * // StructuralRefusal { kind: "malformed-value" }
  * ```
  */
-export const decodeRefusing = <T, E, RD>(
-  codec: Schema.Codec<T, E, RD, never>,
+export const decodeRefusing = <T, E, RD, RE>(
+  codec: Schema.Codec<T, E, RD, RE>,
 ): (input: unknown) => Effect.Effect<T, Refusal, RD> =>
   Effect.fn("Refusal.decodeRefusing")(function* (
     input: unknown,

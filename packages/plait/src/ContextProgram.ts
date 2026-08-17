@@ -127,9 +127,11 @@ export interface DeclaredProgram {
  *
  * @example
  * ```ts
- * import { orderedSegments } from "@foldlab/plait/ContextProgram"
+ * import { declare, orderedSegments } from "@foldlab/plait/ContextProgram"
+ * import { Effect } from "effect"
  *
- * orderedSegments(program).map((segment) => segment.name)
+ * const declared = Effect.runSync(declare({ v: 0, segments: [] }))
+ * orderedSegments(declared.program).map((segment) => segment.name)
  * ```
  */
 export const orderedSegments = (

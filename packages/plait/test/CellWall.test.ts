@@ -3,9 +3,10 @@ import { resolve as resolvePath } from "node:path"
 
 import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Fiber, Schema } from "effect"
+import { Effect, Fiber, Layer, Result, Schema } from "effect"
 
-import { mergeWithoutJoin } from "../negative-controls/cell-lww-mutant.js"
+import { byteEqualityLayer } from "../negative-controls/cell-byte-equality-mutant.js"
+import { lastWriterWinsLayer } from "../negative-controls/cell-lww-mutant.js"
 import { canonicalBytes } from "../src/Canonical.js"
 import {
   CELL_BUCKET,
@@ -14,9 +15,11 @@ import {
   join,
   stateOf,
   type CellService,
+  type CellState,
   type Observation,
 } from "../src/Cell.js"
 import type { Digest } from "../src/Digest.js"
+import type { Refusal } from "../src/Refusal.js"
 import {
   bucketPublishPrefixes,
   startHoldProxy,
@@ -63,6 +66,10 @@ const corpus = resolvePath(import.meta.dir, "../fixtures/fabric-conformance.ndjs
 const mutantTrace = resolvePath(
   import.meta.dir,
   "../negative-controls/cell-lww-mutant.trace.json",
+)
+const byteEqualityTrace = resolvePath(
+  import.meta.dir,
+  "../negative-controls/cell-byte-equality-mutant.trace.json",
 )
 
 const observationOf = ([holder, value]: readonly [number, number]): Observation =>
@@ -154,6 +161,8 @@ const withCellsAt = <A>(
 const withCells = async <A>(
   use: (cells: CellService) => Effect.Effect<A, unknown>,
 ): Promise<A> => withCellsAt((await server()).url, use)
+
+const serverUrl = async (): Promise<string> => (await server()).url
 
 afterAll(async () => {
   if (proxy !== undefined) await proxy.stop()
@@ -301,6 +310,97 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
     expect(settled.digest).toBe(converged.digest)
   }, 120_000)
 
+  /**
+   * T16's discriminating row.
+   *
+   * Contention alone does NOT separate subsumption from byte-equality: under a
+   * CAS-class failure the loop's own idempotence guard re-reads and catches a
+   * rival's superset on the next attempt, so both disciplines land the same
+   * state and neither exhausts the attempt bound. The separating schedule is
+   * the one T16 names — a TRANSPORT-class failure whose read-back carries the
+   * delta because a rival's join subsumed it. The tap discards the write frame
+   * while leaving the connection open, so the write times out transport-class
+   * and the same connection's reconciliation read still reaches the server.
+   */
+  const subsumedByRival = async (
+    layer: (options: { readonly servers: string }) => Layer.Layer<Cells, unknown>,
+    cell: string,
+  ): Promise<Result.Result<CellState, Refusal>> => {
+    const alpha = observationOf([1, 10])
+    const beta = observationOf([2, 20])
+    const gamma = observationOf([3, 30])
+    const url = (await server()).url
+
+    await withCells((cells) => cells.merge(cell, [alpha]))
+    // The rival's write is a superset of this merge's delta: it carries beta.
+    const rival = Effect.runSync(canonicalBytes(Effect.runSync(join([alpha, beta], [gamma]))))
+
+    if (proxy !== undefined) await proxy.stop()
+    proxy = await startHoldProxy(url, bucketPublishPrefixes(CELL_BUCKET))
+    const tap = proxy
+
+    return Effect.runPromise(
+      Effect.gen(function* () {
+        const cells = yield* Cells
+        yield* Effect.sync(() => tap.arm())
+        const merging = yield* Effect.forkChild(Effect.result(cells.merge(cell, [beta])))
+        yield* Effect.promise(() => tap.captured())
+        yield* Effect.promise(async () => {
+          const raw = await connect({ servers: url })
+          try {
+            const bucket = await new Kvm(raw).open(CELL_BUCKET)
+            const entry = await bucket.get(cell)
+            if (entry === null) throw new Error("the cell vanished before the rival write")
+            await bucket.update(cell, rival, entry.revision)
+          } finally {
+            await raw.close()
+          }
+        })
+        yield* Effect.sync(() => tap.discard())
+        return yield* Fiber.join(merging)
+      }).pipe(
+        Effect.provide(layer({ servers: tap.url })),
+        Effect.scoped,
+      ) as Effect.Effect<Result.Result<CellState, Refusal>, never>,
+    )
+  }
+
+  test("T16: a rival's subsuming join is convergence under subsumption and a refusal under byte-equality", async () => {
+    const lawful = await subsumedByRival(Cells.layer, "subsumed-lawful")
+    expect(Result.isSuccess(lawful)).toBe(true)
+    if (!Result.isSuccess(lawful)) throw new Error("the lawful merge did not converge")
+    // The delta is in the cell — carried there by the rival's join — so the
+    // merge reports the converged state rather than fighting for its own write.
+    expect(lawful.success.digest).toBe(modelDigest([[1, 10], [2, 20], [3, 30]]))
+
+    const mutant = await subsumedByRival(byteEqualityLayer, "subsumed-byte-equality")
+    expect(Result.isFailure(mutant)).toBe(true)
+    if (!Result.isFailure(mutant)) throw new Error("byte-equality reconciliation did not refuse")
+    expect(mutant.failure.sort).toBe("absence")
+    expect(mutant.failure.kind).toBe("cell-transport-unavailable")
+
+    // The mutant refused a merge whose delta the cell already carries: its own
+    // read-back holds beta, and it reported unavailability anyway.
+    const settled = await withCells((cells) => cells.read("subsumed-byte-equality"))
+    expect(settled.digest).toBe(modelDigest([[1, 10], [2, 20], [3, 30]]))
+
+    const record = {
+      control: "runtime-cell-byte-equality-mutant",
+      decision: "T16",
+      schedule: "transport-class write failure whose read-back carries the delta (rival join subsumed it)",
+      lawfulVerdict: "converged",
+      lawfulStateDigest: lawful.success.digest,
+      mutantVerdict: "refused",
+      mutantRefusal: { sort: mutant.failure.sort, kind: mutant.failure.kind },
+      cellStateAfterMutantRefusal: settled.digest,
+      violatedLaw:
+        "a read-back that already carries the delta is success, whether this append landed or a rival join subsumed it",
+    }
+    expect(JSON.stringify(record, null, 2) + "\n").toBe(
+      await Bun.file(byteEqualityTrace).text(),
+    )
+  }, 180_000)
+
   test("the real merge path minus its join is killed by cell-merge-aci on the live bucket", async () => {
     const { f1 } = await loadFamilies()
     const row = f1.find(({ name }) => name === "cell-merge-aci")
@@ -308,12 +408,24 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
     const left = row!.input.left.map(observationOf)
     const right = row!.input.right.map(observationOf)
 
-    // The mutant (merge with the join deleted) runs the SAME two schedules
-    // against the same live bucket the lawful path just converged on.
-    await mergeWithoutJoin((await server()).url, "mutant-forward", left)
-    await mergeWithoutJoin((await server()).url, "mutant-forward", right)
-    await mergeWithoutJoin((await server()).url, "mutant-backward", right)
-    await mergeWithoutJoin((await server()).url, "mutant-backward", left)
+    // The mutant is makeCellService with exactly the join deleted, so it
+    // ensures its own bucket and runs the SAME two schedules through the same
+    // shipped write path the lawful cells just converged on.
+    const mutantUrl = await serverUrl()
+    const mutantMerge = (cell: string, delta: ReadonlyArray<Observation>): Promise<unknown> =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const cells = yield* Cells
+          return yield* cells.merge(cell, delta)
+        }).pipe(
+          Effect.provide(lastWriterWinsLayer({ servers: mutantUrl })),
+          Effect.scoped,
+        ) as Effect.Effect<unknown, never>,
+      )
+    await mutantMerge("mutant-forward", left)
+    await mutantMerge("mutant-forward", right)
+    await mutantMerge("mutant-backward", right)
+    await mutantMerge("mutant-backward", left)
 
     const forward = await withCells((cells) => cells.read("mutant-forward"))
     const backward = await withCells((cells) => cells.read("mutant-backward"))
@@ -335,6 +447,6 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       violatedLaw:
         "cells merge by join before write; a lost CAS race re-reads and re-merges",
     }
-    expect(record).toEqual(JSON.parse(await Bun.file(mutantTrace).text()))
+    expect(JSON.stringify(record, null, 2) + "\n").toBe(await Bun.file(mutantTrace).text())
   }, 120_000)
 })
