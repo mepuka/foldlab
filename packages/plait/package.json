@@ -1,0 +1,29 @@
+{
+  "name": "@foldlab/plait",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Plait coordination fabric spine: canonical envelopes over NATS JetStream.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./Canonical": "./src/Canonical.ts",
+    "./Digest": "./src/Digest.ts",
+    "./FabricClient": "./src/FabricClient.ts",
+    "./Refusal": "./src/Refusal.ts",
+    "./Subjects": "./src/Subjects.ts",
+    "./Wire": "./src/Wire.ts"
+  },
+  "scripts": {
+    "check:corpus": "bun scripts/check-corpus.ts",
+    "generate:corpus": "bun scripts/generate-corpus.ts",
+    "test": "bun test ./test && bun run check:corpus"
+  },
+  "dependencies": {
+    "@nats-io/jetstream": "3.4.0",
+    "@nats-io/kv": "3.4.0",
+    "@nats-io/nats-core": "3.4.0",
+    "@nats-io/obj": "3.4.0",
+    "@nats-io/transport-node": "3.4.0",
+    "effect": "catalog:"
+  }
+}
