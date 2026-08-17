@@ -130,9 +130,10 @@ Eight fixtures, and what each one has.
 | `proto/wire/fixtures/chains.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
 | `proto/wire/fixtures/frames.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
 | `proto/wire/fixtures/concierge.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
+| `proto/wire/fixtures/sessions.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | yes (in `_provenance`) |
 
-(Nine rows, eight pre-existing fixtures plus the one this protocol's own lane
-added.)
+(Ten rows, eight pre-existing fixtures, the one this protocol's own lane added,
+and `sessions.json`, which gained its generator under the brief-25 cure.)
 
 **Two fixtures have no regeneration path.** `golden-conformance.json` has no
 `_provenance` field, no generator anywhere in the tree, and four readers.

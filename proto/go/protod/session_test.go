@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -136,6 +137,7 @@ func TestSessionExpectedHeadRaceAdmitsExactlyOneMove(t *testing.T) {
 }
 
 type sessionFixture struct {
+	Provenance    string `json:"_provenance"`
 	Version       string `json:"version"`
 	GrammarDigest string `json:"grammarDigest"`
 	StateScheme   string `json:"stateScheme"`
@@ -152,6 +154,11 @@ type sessionFixture struct {
 func TestSessionFixtureRederivesEveryPrefix(t *testing.T) {
 	var fixture sessionFixture
 	loadFixture(t, "sessions.json", &fixture)
+	// A regenerable fixture names its generator (docs/FREEZING.md): without the
+	// command, a disagreement cannot tell drift from corruption.
+	if !strings.Contains(fixture.Provenance, "go run ./cmd/wirefix") {
+		t.Fatalf("sessions.json provenance does not name its generator: %q", fixture.Provenance)
+	}
 	if fixture.Version != sessionVersion || fixture.GrammarDigest != sessionGrammarDigest() {
 		t.Fatalf("session version/grammar drifted: %+v", fixture)
 	}
