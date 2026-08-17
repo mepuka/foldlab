@@ -38,11 +38,13 @@ The table points; the entries below carry the bounds.
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
+| Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
-| E2 move calculus (D85 confluence package: strong no-loss, wire confluence, schedule-free fences, refusal characterization, WF preservation, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: fills are total under repair, every fill's holder-attributed pair survives into terminal journal evidence with no refusal disjunct, and the total runner's terminal state — meaning and journal both — is invariant under permutation of any fill/dispute bag; refusal is an iff against the frozen `D85Refusal`; discharged against a sha256-pinned frozen spec with kill-checked mutants. Decide-bearing bags are order-sensitive by design (decide enters only through the fence at close); conflict coverage is two fills for legacy theorems; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)) | [verify/moves/](verify/moves/) |
+| E2 move calculus (D85 confluence package: strong no-loss, wire confluence, schedule-free fences, refusal characterization, WF preservation, stability, resolute-choice impossibility) | model-level R5 (Lean) | **Claimed** over an arbitrary fixed finite hole carrier: fills are total under repair, every fill's holder-attributed pair survives into terminal journal evidence with no refusal disjunct, and the total runner's terminal state — meaning and journal both — is invariant under permutation of any fill/dispute bag; refusal is an iff against the frozen `D85Refusal`; discharged against a sha256-pinned frozen spec with kill-checked mutants. Decide-bearing bags are order-sensitive by design (decide enters only through the fence at close); conflict coverage is two fills for legacy theorems; single journal, no crash/CAS/liveness, attack/revision model, or code-model correspondence; IC4 framing reclassified pending disposition ([audit](docs/research/2026-08-15-model-audit-findings.md)). Identification (ruled 2026-08-17): a CvRDT of holder-attributed observations over an op-shaped wire — arbitration is a declared constant of the protocol value, not a function of the execution (cf. Burckhardt et al., POPL 2014, whose verified implementations recompute arbitration from run-time timestamps), which is why no clocks are needed to compute it; the declared close authority (D104) is the coordination point CALM requires for the one non-monotone act — fence determinism quantifies over runs of the same bag, never over parties who saw different bags. Bound, previously unwritten: self-supersession is inexpressible — with no causal metadata, a holder's correction of its own fill is indistinguishable from a two-party disagreement (the MV-register pays version vectors for the converse trade: this calculus is better on provenance, worse on supersession; the successor-round revision mode is the protocol-level compensation) | [verify/moves/](verify/moves/) |
 | TS move-calculus kernel ≡ Lean model | R0 differential + R1 | **Claimed** for the generated 2000-vector corpus and the property sample: the `@foldlab/moves` kernel replays every model-emitted vector byte-identically (receipts, reversed bags, fences, journal evidence included), five planted mutants each die against the corpus, and the frozen-spec laws re-run as fast-check properties. Agreement is evidence, not proof; the corpus is randomized, not exhaustive; not the DEV-670 daemon wall | [packages/moves/](packages/moves/), [verify/moves/Main.lean](verify/moves/Main.lean) |
+| Plait fabric algebra (F1 ACI cell merge and agreement; F2 permutation+duplication invariance; F2b successor-discipline exactly-once application; F3 anchored resumption; F4 partition merge for the commutative class; F9 policy meet-attenuation; `guard_is_redundant` documenting the removed floor guard) | model-level R5 (Lean) | **Claimed** at the model level: zero-dependency package at v4.33.0, 70 rostered theorems, footprint inside `{propext, Classical.choice, Quot.sound}`; the conformance corpus is emitted by the model and regeneration byte-diffs in the gate (sha256 `c1b97449…`); negative controls each drop exactly one law and die on named vectors (`drop-successor-discipline` included — the floor-guard control is unstatable, `guard_is_redundant` is the proof, deviation recorded in the package DECISIONS). Bounds: F2b's premise is the in-window contiguity discipline — arbitrary reordering without that discipline is out of scope by statement; no runtime correspondence yet — nothing consumes the emitted corpus today; its only guard is the non-required Lean CI lane, and the faithfulness wall plus the required-battery tripwire land with the E4 and CI dispatches (corrected 2026-08-17, fidelity review D1); no F5/F6, no crash/CAS/leases here (F5 is the Veil-package slice), no liveness anywhere | [verify/fabric/](verify/fabric/) |
 | Create-pipeline snapshot law | R2 (TLC) | **Claimed** for the snapshot rule; the head-read defect it refutes is **fixed and merged** on `main` (`3aebd2ba9`) — the shipped control is now a regression guard; orphan-fact crash residual model-checked (quiescence-guarded) | [verify/pipeline/](verify/pipeline/) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
 
@@ -472,6 +474,69 @@ binary64 values, and share a 256-container nesting bound.
 [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts),
 [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go),
 and [go/canonical/probes/](go/canonical/probes/).
+
+## Plait spine — R0 differential + executable integration
+
+### Claim
+
+For the generated four-envelope slice-0 corpus, TypeScript and
+`go/canonical` derive equal SHA-256 digests from RFC 8785 canonical,
+uncompressed envelope bytes. A publisher and consumer running as separate
+Bun processes exchange all four envelopes through one local file-backed
+`nats-server v2.14.4` with `num_replicas: 1`; the publisher writes each
+envelope digest as `Nats-Msg-Id`, and the consumer constrained-decodes each
+closed envelope and re-derives the same digest before exposing it.
+
+### Evidence
+
+- The TypeScript emitter generates `packages/plait/fixtures/envelopes.ndjson`
+  with its generation command on the first line. The package gate regenerates
+  it byte-for-byte, and a committed negative control proves a hand-edited row
+  fails that comparison.
+- `go/cmd/plaitwall` reads the generated rows through the independent
+  `go/canonical` implementation and re-derives every digest. A planted mutant
+  that fingerprints gzip transport bytes instead is killed on the named first
+  row.
+- The integration gate builds the upstream NATS server command from the
+  checksum-locked `go/go.mod` pin, verifies the binary reports `v2.14.4`, and
+  starts it with JetStream and a temporary file store. The stream shape is
+  constrained to file storage and one replica. An excess-property frame is
+  refused structurally under the closed-envelope law.
+- Refusals ride the Effect error channel throughout the public surface, and
+  the conformance gate quantifies over the package barrel itself
+  (`typeof import`), not a hand list: three planted violations — a new
+  nonconforming fallible export, a widened `FabricClient.layer`, a widened
+  service method — each redden the battery, with committed traces proven to
+  kill for the stated cause (making each mutant conformant collapses its
+  trace).
+- Path translation at the `packages/core` seam is escape-aware, survived
+  twelve adversarial probes (nested slash keys, escape lookalikes, unpaired
+  surrogates), and the core path join's unescaped-string limitation is filed
+  as an upstream finding rather than fixed cross-package.
+
+### Bounds and residuals
+
+The wall covers four generated rows spanning all envelope kinds, one inline
+Unicode body, one certificate, one blob reference, and pins; it is not an
+exhaustive enumeration of the JSON or envelope domains. The integration test
+covers live delivery including across a consumer restart — the sender and
+receiver need not overlap; the single server remains up throughout, and no
+crash-recovery-of-the-server, durable-consumer, federation, exactly-once,
+cluster, attribution, or liveness claim is made. The conformance-gate
+quantifier inspects function-typed exports whose immediate return is
+`Effect` or `Layer`; `Stream`-in-success-type, plain `Effect`/`Layer` value
+exports, curried data-last shapes, and exports nested below depth one are
+named hardening-brief scope with no live violation behind them. The
+joined-string fallback in path translation can mislocate when a value
+changes between passes — bound documented in the module JSDoc. Blob content
+retrieval is outside slice 0: the wire gate checks only the digest
+reference shape and the 256 KiB canonical-body threshold.
+
+### Checkable at
+
+[packages/plait/](packages/plait/),
+[packages/plait/fixtures/envelopes.ndjson](packages/plait/fixtures/envelopes.ndjson),
+and [go/cmd/plaitwall/](go/cmd/plaitwall/).
 
 ## Tracer conformance — R0/R1, single daemon
 

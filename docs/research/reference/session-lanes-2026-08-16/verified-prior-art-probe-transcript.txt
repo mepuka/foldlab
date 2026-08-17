@@ -1,0 +1,26 @@
+"E1 meaning      = disputed [(10, 0), (20, 0)]"
+"E1 evidence     = [(10, 0), (20, 0)]"
+"E1 receipts     = [true, true]"
+"E1 support(10)=1 support(20)=1"
+"E1b evidence    = [(10, 0), (10, 1), (20, 0)]"
+"E1b support(10)=2 support(20)=1"
+"E1b plurality  = 10"
+"E2 decide-early meaning = decided 10  receipts=[true, true, true, true]"
+"E2 decide-late  meaning = decided 10  receipts=[true, true, true, true]"
+"E2 decide-early evidence = [(10, 0), (20, 1), (30, 2)]"
+"E2 decide-late  evidence = [(10, 0), (20, 1), (30, 2)]"
+"E2 meanings equal? true"
+"E2b decide30 early meaning=disputed [(10, 0), (20, 1), (30, 2)] receipts=[true, true, false, true]"
+"E2b decide30 late  meaning=decided 30 receipts=[true, true, true, true]"
+"E3 honest evidence   = [(10, 0), (10, 1)]"
+"E3 attacked evidence = [(0, 0), (0, 1), (0, 2), (10, 0), (10, 1)]"
+"E3 attack receipts   = [true, true, true]"
+"E3 support(0)=3 support(10)=2"
+"E3 plurality=0 min=0"
+C:/Users/kokok/AppData/Local/Temp/claude/C--Users-kokok-Dev-foldlab/3c6800bd-d259-4f7d-a6b7-4817e42a5c9c/scratchpad/wf/verified-prior-art/Probe.lean:121:32: error(lean.synthInstanceFailed): failed to synthesize instance of type class
+  Decidable (WF (run attack))
+
+Hint: Type class instance resolution failures can be inspected with the `set_option trace.Meta.synthInstance true` command.
+"evidence = [(0, 0), (0, 1), (10, 0), (10, 1)]"
+"support(0)=2 support(10)=2"
+"plurality=0 min=0"

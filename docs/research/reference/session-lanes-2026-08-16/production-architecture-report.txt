@@ -1,0 +1,1321 @@
+# Lane report — concrete production architecture beyond core foldlab
+
+The practical and simplifying affordances layer around the daemon.
+
+Author: production-architecture lane subagent
+Date: 2026-08-16
+Repo: C:\Users\kokok\Dev\foldlab, branch agent/codex/kernel-hygiene-gates
+Scratch: C:\Users\kokok\AppData\Local\Temp\claude\C--Users-kokok-Dev-foldlab\3c6800bd-d259-4f7d-a6b7-4817e42a5c9c\scratchpad\wf\production-architecture
+
+---
+
+## 0. Method, environment, and what this lane did not check
+
+### 0.1 Toolchain, verified on this machine
+
+| Tool | Version | How checked |
+| --- | --- | --- |
+| Go | go1.26.5 windows/amd64 | `go version` |
+| Bun | 1.3.14 | `bun --version` |
+| Lean | 4.33.0, x86_64-w64-windows-gnu, commit d8b1897 | `lean --version` |
+| Lake | 5.0.0-src+d8b1897 | `lake --version` |
+| Git | 2.55.0.windows.2, `--object-format=sha256` available | `git --version`, `git init --object-format=sha256` |
+| Nix | NOT INSTALLED | `which nix`, `which nix-store` → not found |
+| nats-server (embedded) | 2.14.4, JetStream Strict: true, API Level: 4 | daemon startup log, transcript 02 |
+| nats.go | v1.53.1 | go/go.mod, proto/go/go.mod |
+| effect | 4.0.0-rc.108 (workspace catalog pin and repos/effect/packages/effect/package.json) | package.json, node -e |
+
+The task brief listed Lean/lake availability as UNKNOWN. Both are present and usable.
+Nix is not, so every Nix claim below is documentary, not executed, and is marked as such.
+
+### 0.2 Read-only discipline and a concurrency caveat
+
+Everything ran with GOTMPDIR pointed into the scratch tree. `go build ./...` over a
+multi-package pattern discards binaries by construction, so nothing was written into
+go/ or proto/go/. `git status --porcelain` was captured before and after the build
+sweep (transcript 01-build.txt).
+
+HONEST CAVEAT: the two git status snapshots differ — verify/moves/Moves/Model.lean
+became modified between them. That change is in the Lean model tree, not in anything
+the Go commands touch, and this lane wrote nothing to the repository. Another process
+(a concurrent lane or the operator's executor) is editing the working tree during this
+session. Every repo citation below should be read as "as of this session's checkout of
+agent/codex/kernel-hygiene-gates".
+
+### 0.3 Correction to the brief
+
+The task brief says "our effector already uses it — read go/ for how." That is not
+where the effector is. go/ contains exactly two packages, canonical and journal, plus
+cmd/jcsprobe. THERE IS NO EFFECTOR IN THE SHIPPED TREE. The effector source is a
+vendored reference at .reference/playground-mech/go-effector/effector.go (a different
+module, playground/kernel), and proto/go/protod/lifecycle_test.go:94 names an
+E_protected bucket only to prove application credentials cannot reach it. Grep for
+KeyValue|CreateKeyValue across go/ and proto/go/ returns one hit, and it is that test
+name. This matches the grounding brief's own gap list ("the effector … archived at
+archive/pre-estate-focus"); it does not match the experiment instruction, so I read the
+reference implementation instead and say so.
+
+### 0.4 Experiments run (transcripts in ./transcripts/)
+
+| # | File | What it establishes |
+| --- | --- | --- |
+| 1 | 01-build.txt | Both Go modules build and vet clean; repo untouched by this lane |
+| 2 | 02-lifecycle.txt | Daemon lifecycle refusals fire; embedded server version and JetStream mode |
+| 3 | 03-describe.txt | Live contract.describe from a running daemon; max_payload; $JS.API unreachable from an application connection |
+| 4 | 04-seat-authority.txt | SEAT IMPERSONATION SUCCEEDS ACROSS CONNECTIONS; seat bindings enter session identity |
+| 5 | 05-audit-read.txt | The journal records the *claimed* principal; any connection reads any journal by name |
+| 6 | 06-effect-execid.txt | Effect v4 workflow execution ids are 128-bit truncations of a delimiter-ambiguous pre-image |
+| 7 | 07-git-cas.txt | Git's object id is SHA-1("blob <len>\0<content>"), re-derived by hand; typed pre-image; fsck refusal |
+| 8 | 08-git-vs-canonical.txt | Git blob ids differ for the same JSON value; foldlab's canonicalizer collapses them |
+| 9 | 09-cross-venue-mirror.txt | CROSS-VENUE JOURNAL REPLICATION BY RE-APPEND IS BYTE-EXACT AND IDEMPOTENT; a wrong-prev entry is accepted on write and refused on read |
+| 10 | 10-go-tests.txt | `go test ./...` green in both modules |
+| 11 | 11-ed25519.txt | Ed25519 sign/verify available in Bun WebCrypto with no dependency |
+
+---
+
+## 1. The layer map: what actually exists, and where the seams are
+
+The daemon's own header states the surface: "The interface is data on subjects —
+canonical frames and requests in, facts and typed refusals out. Lifecycle (Acquire →
+URL → Release) is the only Go API a caller sees" (proto/go/protod/protod.go:1-6).
+
+Concretely, from the running daemon (transcript 03) and proto/go/protod/dispatch.go:16-31:
+
+- THREE VERBS — REQUEST on flb.req.*, PUBLISH on flb.ing.<journal>, READ (itself a
+  request, flb.req.journal.read). The TS client header names them: "The three-verb
+  client: READ / PUBLISH / REQUEST — the whole writ (W9)" (proto/ts/src/client.ts:1).
+- FOURTEEN REQUEST SUBJECTS, enumerated in dispatch.go:17-30. An unknown subject is
+  refused as data with the complete legal list (dispatch.go:92-108).
+- ONE REPLY GRAMMAR — {ok:true, …fact} or {ok:false, refusal}. From the live describe:
+  "every reply is either the request's fact shape or the uniform refusal {ok:false,
+  refusal}; refusals are data and nothing throws across this seam."
+
+Everything this report proposes must sit strictly above that. The rule that keeps it
+honest is already written into the current facade: "sugar strictly above the writ. Every
+method is exactly one client verb plus a transcript entry; no capability is added — a
+session can do nothing a bare three-verb client cannot" (proto/ts/src/session.ts:1-5).
+
+---
+
+## 2. Lane A — the SDK veneer
+
+### 2.1 Where Effect actually is today
+
+Grep for `from "effect"` across first-party TS (excluding node_modules and the vendored
+repos/effect) returns eight source hits:
+
+  proto/ts/src/author.ts:8,9   SchemaAST, Schema
+  proto/ts/src/client.ts:40    Schema
+  proto/ts/src/codegen.ts:7    Schema
+  proto/ts/src/mcp-main.ts:4   Effect, Layer
+  proto/ts/src/mcp.ts:11,12    Effect, Layer, Result, Schema, Sink, Stdio, Stream + effect/unstable/ai
+  proto/ts/src/wire.ts:4       Result, Schema
+
+So the present state is precise and worth naming: EFFECT IS A DECODE LIBRARY AND AN MCP
+HOST, NOT THE CLIENT SURFACE. ProtoClient is a promise-returning class over
+@nats-io/transport-node (client.ts:6, 80-86). Session and JournalSession are
+promise-returning classes (session.ts:108, 195). And packages/moves/src/kernel.ts — the
+transliterated calculus — has ZERO IMPORTS, deliberately: "no IO, no caching, no
+cleverness — divergence from the model is the only bug class" (kernel.ts:1-9).
+
+That layering is already correct and should not be disturbed. The kernel stays
+dependency-free. The veneer is a THIRD layer.
+
+### 2.2 The idiom the repo already uses, and what it licenses
+
+The decode path is Result-based, not exception-based:
+
+    const refused = Schema.decodeUnknownResult(RefusalReply, { onExcessProperty: "error" })(parsed)
+    if (Result.isSuccess(refused)) return { ok: false, refusal: refused.success.refusal }
+    (proto/ts/src/wire.ts:363-364)
+
+`onExcessProperty: "error"` is doing real work: it is constrained decode at the client
+edge, refusing an unexpected field rather than ignoring it. The file's header states the
+law: "Decoding is Result-based — a malformed reply is a local refusal value, never a
+throw across the seam (W8)" (wire.ts:1-3).
+
+This gives the veneer its central design constraint, and it cuts AGAINST the default
+Effect idiom. Effect's ergonomic error channel is Effect<A, E, R> with typed failures,
+and the natural translation of a refusal is Effect.fail(refusal). THAT TRANSLATION IS
+WRONG HERE. A refusal is a fact about the frontier — it carries law, path, got,
+expected, next, and an ontological sort of structural-vs-absence
+(proto/go/protod/refusal.go:37-59; live shape in transcript 04). A refusal is the
+answer, not the absence of one. Putting it in the error channel invites Effect.orDie,
+catchAll, and retry combinators that silently discard the next hints — the exact "silent
+drift channel" the REF ladder pre-registers against.
+
+So: THE VENEER'S SUCCESS CHANNEL CARRIES Reply<A> — THE REFUSAL INCLUDED — AND THE ERROR
+CHANNEL IS RESERVED FOR TRANSPORT FAULTS ONLY (unreachable, timeout, payload-bound).
+That matches what the client already does: it distinguishes daemon refusals from
+"client-local failures (unreachable, timeout, malformed reply) [which] become local
+refusal values (W8)" (client.ts:1-5), and it keeps the `local: true` flag meaningful.
+
+### 2.3 What the veneer should add — six affordances, each strictly above the writ
+
+Each is one or more writ calls plus pure local computation. None adds a capability.
+
+A1. A Layer-provided client service. Context.Service + Layer (repos/effect/.../Layer.ts,
+Context.ts) turn "which daemon am I talking to" into a dependency rather than a
+constructor argument. Cost: nearly nil — mcp-main.ts:4 already imports Effect, Layer.
+Value: tests provide a recorded-transcript layer; production provides a live one; the
+endpoint stops being threaded by hand.
+
+A2. willAdmit as pre-flight. packages/moves/src/kernel.ts:317 already ships
+`const willAdmit = (s, m) => !d85Refusal(s, m)` with the comment that the D85 theorem
+makes it "a total public prediction rather than a heuristic" (kernel.ts:302). The
+veneer's job is to OFFER IT AT THE CALL SITE: a propose(move) that runs willAdmit
+locally against the last known state and returns the model's refusal without a round
+trip. This is the cleanest instance of "every proved law becomes a convenience function
+with inherited correctness" the estate already has in hand. It is also the correct place
+for the LLM quarantine: an agent proposes, willAdmit filters to frontier-legal moves,
+and only survivors go on the wire.
+
+A3. A head-carrying, non-retrying stale-head combinator. flb.req.session.move takes a
+mandatory expectedHead and "stale heads refuse with the current head and exact move
+context, and sessions never use the effector" (live describe, transcript 03 line 857).
+The facade today does not retry — "This facade composes request only; it neither retries
+stale heads nor adds an authority protocol" (session.ts:106-107). The veneer should keep
+that and add the EXPLICIT version: resubmitAgainst(refusal) that takes the refusal's
+reported head and re-issues the same move against it, returning a value the caller must
+inspect. Not a Schedule.retry. A blind retry converts a semantic conflict into a race.
+
+A4. Frontier-shaped completion. The concierge already returns
+frontier: [{path, legal: [{kind, example}], refs}] (concierge.go:24-33; live in
+transcript 03). The veneer turns that into typed choices — a discriminated union per
+legal.kind — so an editor or an MCP completion list is derived from the daemon's own
+frontier rather than restated. proto/ts/src/mcp.ts already derives tools from
+contract.describe so "the tool list cannot drift"; the same derivation applied to the
+frontier is the natural next rung.
+
+A5. Transcript-as-evidence, promoted. Session.transcript already records
+{step, verb, subject, sent, received, endpoint, startedAt, completedAt}
+(session.ts:177-186). Today it is a debugging aid. Made canonical and digested, it
+becomes a CLIENT-SIDE RUN CERTIFICATE: the caller can prove what it sent and what it was
+told, independent of the daemon's journal. Cost: the digested portion must exclude
+wall-clock (startedAt/completedAt are deployment facts and must not enter identity).
+
+A6. Codec-derived request builders. author.ts already folds Effect Schema into
+flb.type.v0 and codegen.ts goes the other way (S5 codegen round-trip, walled). The
+veneer should expose forHole(holeType) returning an Effect Schema that decodes a
+candidate fill BEFORE it is sent — moving a class of value_check.go refusals to the
+client without changing who has authority. The daemon still re-checks at fill time and
+again on replay (value_check.go, S6 walled). Client-side checking is an optimisation,
+never an authority.
+
+### 2.4 What the veneer must refuse to add
+
+- No Effect.retry / Schedule on any writ verb by default. Retry is a policy; policy
+  belongs in the declared repair policy (§6), not in the transport.
+- No caching of session.state. JournalSession holds currentState and updates it on
+  successful moves (session.ts:111, 146). That is a LAST-KNOWN value, not a cache with a
+  TTL; the veneer must keep refresh() explicit.
+- No Effect.orDie on a refusal. Stated as a lint-able rule, since the type system will
+  not enforce it once refusals live in the success channel.
+- No Effect in packages/moves. The kernel's zero-import property is a verification asset.
+
+### 2.5 The Effect durable-execution surface: measured, not assumed
+
+Effect v4 rc.108 ships unstable/workflow (Workflow.ts, Activity.ts, DurableClock.ts,
+DurableDeferred.ts, DurableQueue.ts, WorkflowEngine.ts) and unstable/cluster (39 modules
+including ClusterWorkflowEngine.ts, SqlMessageStorage.ts, Sharding.ts). This is the
+obvious candidate for the P4 action-hole / external-binding engine the estate has
+designed and not built. Two measurements decide whether it fits.
+
+MEASUREMENT 1 — THE IDENTITY DERIVATION. Workflow.ts:317 reads:
+
+    makeHashDigest(`${self._tag}-${self.idempotencyKey(payload)}`)
+
+and workflow/internal/crypto.ts is:
+
+    const data = new Uint8Array(buffer)
+    let hexString = ""
+    for (let i = 0; i < 16; i++) {
+      hexString += data[i].toString(16).padStart(2, "0")
+    }
+
+I reimplemented both exactly and ran them (transcript 06-effect-execid.txt):
+
+    executionId('ingest-doc', 'corpus-42')     = cbffff752db3927e8c83a9a1a4d0db6f
+    executionId('ingest',     'doc-corpus-42') = cbffff752db3927e8c83a9a1a4d0db6f
+    collide (distinct workflows, same execution id)?  true
+    hex length = 32 => bits = 128
+    full SHA-256 of the same pre-image = cbffff752db3927e8c83a9a1a4d0db6f07ef64389d67e46de0da0738938b7fbe
+    execution id is a prefix of the full digest?  true
+    JSON.stringify key order: {"a":1,"b":2} vs {"b":2,"a":1} equal? false
+    executionIds differ for the same value in different key order: true
+
+Three facts, sized carefully:
+
+1. The execution id is a 128-BIT PREFIX of SHA-256, not a full digest.
+2. The pre-image `${tag}-${key}` is DELIMITER-AMBIGUOUS: distinct (tag, key) pairs
+   produce the same id. This does NOT by itself cause a storage collision, because
+   ClusterWorkflowEngine.ts:298-299 addresses the entity as
+   entityType: `Workflow/${workflowName}` with entityId = executionId (:157-161), so the
+   workflow name is carried outside the digest. I checked this specifically rather than
+   reporting the collision as an exploit. The residual is real but narrower: WITHIN ONE
+   WORKFLOW TAG, any two payloads whose idempotencyKey strings collide are the same
+   durable execution.
+3. idempotencyKey: (payload) => string (Workflow.ts:59) is a DEVELOPER-SUPPLIED FUNCTION
+   WITH NO CANONICALITY REQUIREMENT. The obvious implementation, JSON.stringify(payload),
+   is key-order sensitive, so the same value can yield two execution ids.
+
+Against the estate's thesis — identity is canonical bytes, digests are re-derived never
+asserted — Effect's durable identity is ASSERTED BY A DEVELOPER FUNCTION OVER AN
+UNCANONICALISED STRING. That is the gap. It is also trivially closable from our side:
+supply idempotencyKey = (p) => sha256Hex(canonicalize(p)) and treat the execution id as
+an opaque routing token, never as the work identity. The work identity remains the
+64-hex digest carried in the payload, exactly as the reference effector validates it
+(.reference/playground-mech/go-effector/effector.go:114, `^[0-9a-f]{64}$`).
+
+MEASUREMENT 2 — THE TRUSTED BASE. WorkflowEngine.layerMemory (WorkflowEngine.ts:663) is
+non-durable. Durability means ClusterWorkflowEngine.layer (:790), which requires
+Sharding, which requires MessageStorage and RunnerStorage (Sharding.ts:238-240), and the
+durable backends are SqlMessageStorage.ts / SqlRunnerStorage.ts. Sharding.ts:999 dies
+outright with "Sharding.sendOutgoing: Persisted messages require MessageStorage". So
+adopting Effect durable execution for real durability adds A SQL DATABASE AND A
+SHARD-RUNNER CONTROL PLANE beside a daemon whose entire substrate today is a file
+directory. That is the cost, and it is large.
+
+---
+
+## 3. Lane B — deployment shape of the daemon
+
+### 3.1 What ships today
+
+The binary is proto/go/cmd/protod/main.go. Its complete flag surface, quoted:
+
+    --store         "JetStream file storage directory (required)"
+    --listen        "host:port to listen on (port 0 = random)"     default 127.0.0.1:0
+    --sync-mode     "durability mode: crash-durable or power-durable (required)"
+    --memory-limit  "Go runtime memory limit in bytes"             default 512<<20
+    (main.go:63-66)
+
+It prints one line and serves: {"ready":true,"url":"nats://..."} then blocks until stdin
+closes or SIGINT — "closing stdin is the portable shutdown path for test harnesses
+(Windows has no SIGTERM to send)" (main.go:1-5).
+
+THE DEPLOYMENT SHAPE IS A LOCAL SIDECAR, NOT A NETWORK SERVICE. Default listen is
+loopback with a random port. The embedded NATS server is created in-process
+(protod.go:167-177) and the daemon's own connection is nats.InProcessServer
+(protod.go:199) — it does not traverse the socket. The socket exists only for external
+clients.
+
+### 3.2 The certified substrate envelope, and its executable refusals
+
+Acquire refuses four configurations BEFORE acquiring any resource, each naming the
+assumption it uncovers (protod.go:109-136; all four verified firing in transcript 02):
+
+| Configuration | Assumption uncovered |
+| --- | --- |
+| SyncMode unset | acknowledged-write-durability |
+| JetStreamClustered: true | linearizable-reads |
+| KVReplicas > 1 | linearizable-reads |
+| MemoryStorage: true | terminal-immutability |
+
+This is unusually good practice: the deployment envelope is DATA WITH A LAW SENTENCE,
+not a README warning. LifecycleError carries {Assumption, Configuration} and unwraps to
+ErrOutsideCertifiedEnvelope (protod.go:48-68).
+
+The linearizable-reads refusals are independently justified by the pinned server source.
+The subject-scoped CAS the journal relies on is enforced by loading the last message for
+the subject and comparing (nats-server@v2.14.4/server/stream.go:6441-6465):
+
+    sm, err := store.LoadLastMsg(seqSubj, &smv)
+    ...
+    if err != nil || fseq != seq {
+        resp.Error = NewJSStreamWrongLastSequenceError(fseq)
+
+In the non-clustered path this runs inside the stream's serialized write processing. In
+clustered mode the same check moves into checkMsgHeadersPreClusteredProposal
+(server/jetstream_batching.go:538-541, called from server/jetstream_cluster.go:10314) —
+i.e. BEFORE the Raft proposal, against local state. The client library independently
+documents the consequence: isWrongLastSeqErr must accept two error codes because
+"Replicated (R>1) streams report CAS conflicts as 10164 instead of 10071"
+(nats.go@v1.53.1/jetstream/kv.go:1096-1103). The daemon's refusal of clustered JetStream
+and R>1 KV is therefore grounded, not superstitious.
+
+ONE ENVELOPE GAP THIS LANE FOUND. SyncPowerDurable sets SyncAlways: true
+(protod.go:175), which sets O_SYNC on file writes (server/filestore.go:13946-13962). But
+immediately above that code:
+
+    // Windows does not support fsyncing directory metadata, it results in a panic, so
+    // we need to skip doing this there.
+    const canFsyncDirectories = runtime.GOOS != "windows"
+    (server/filestore.go:13958-13960)
+
+So on Windows — the operator's platform — power-durable delivers O_SYNC'd file contents
+but NO DIRECTORY-METADATA FSYNC. The acknowledged-write-durability assumption is
+therefore weaker on this OS than the mode name implies, and the envelope does not
+currently say so. This is a finding against the daemon's own honesty ladder, not against
+NATS.
+
+### 3.3 Persistence shape: what the journal pins
+
+journal.Open creates the stream and then re-checks its configuration against a 25-clause
+gate, refusing on any drift (go/journal/journal.go:77-105, 478-549). The gate is the
+retention/compaction policy surface, and it is currently set to REFUSE EVERY EVICTION
+LEVER THERE IS:
+
+- MaxMsgs, MaxBytes, MaxAge, MaxMsgsPerSubject — "an eviction limit is configured"
+- DenyDelete, DenyPurge must both be true — "delete and purge are not denied"
+- AllowRollup — "rollup can remove prior entries"
+- AllowMsgTTL, SubjectDeleteMarkerTTL — "per-message TTL can erase journal entries"
+- Compression — "storage compression is enabled"
+- AllowDirect, MirrorDirect — "direct access is outside the verified read path"
+- RePublish, SubjectTransform — can route or rewrite entries
+- Mirror, Sources — "stream imports messages from another stream"
+- PersistMode == Async — "persist mode is async"
+- AllowAtomicPublish, AllowMsgCounter, MaxMsgSize, consumer defaults, FirstSeq > 1,
+  NoAck, Sealed
+
+And the gate is STANDING, not one-shot: the journal subscribes to
+$JS.EVENT.ADVISORY.STREAM.UPDATED.<stream> and latches a violation on any post-open
+change, with the latch set BEFORE the confirming read so "a conformant change, or a
+forbidden change reverted before Info completes, cannot disappear" (journal.go:124-149).
+It also closes the subscribe-after-Info race by re-asserting once the subscription exists
+(journal.go:150-160).
+
+This is the single most production-relevant piece of engineering in the tree, and its
+consequence should be stated plainly: A FOLDLAB JOURNAL IS APPEND-ONLY FOREVER, BY
+EXECUTABLE GATE, AND IT CAN NEVER BE EVICTED, COMPACTED, MIRRORED, SOURCED, ROLLED UP,
+TTL'D, OR READ THROUGH THE DIRECT-GET FAST PATH. Storage grows monotonically. That is a
+deliberate choice, and the cost has not been paid yet because no deployment is
+long-lived.
+
+### 3.4 The retention policy that DOES exist — as declared data
+
+Every session event carries a retention tier (proto/go/protod/session.go:22-24, 752-761):
+
+| Event kind | Tier |
+| --- | --- |
+| fill, unfill, refusal, read | compactible |
+| adoption, commit | never-discardable |
+| everything else (incl. open) | irreducible |
+
+Protocol sessions mark the same way: open → irreducible (protocol_session.go:143),
+fill → compactible (:254), close → never-discardable (:317). I observed the marks on the
+wire in transcript 05.
+
+And compaction is a TOTAL PATH THAT REFUSES, with its blocking condition named:
+
+    Law:      "G4: session compaction refuses until structural refusals can be sealed into the refusal corpus",
+    Expected: "the flb.certification.v0 corpus seam and its emitted corpus digest",
+    (session.go:775-786, mirrored client-side at proto/ts/src/session.ts:84-104)
+
+So the policy surface is already the right shape — per-event declared tier, plus a
+refusal that says exactly what artifact would unblock it. What is missing is
+flb.certification.v0.
+
+ONE CONSEQUENCE NOBODY HAS WRITTEN DOWN. The fill tier is compactible and the fill event
+is the ONLY record of which principal acted (protocol_session.go:253, observed as
+"principal":"bob" in transcript 05). The open event carrying the bindings is
+irreducible. So when compaction eventually lands as specified, IT DISCARDS PER-FILL
+ATTRIBUTION WHILE RETAINING THE BINDING MAP AND THE TERMINAL STATE DIGEST. If seat
+attribution is meant to be durable evidence — and §4 argues it should become
+cryptographic — then fill cannot stay in the compactible tier, or the compaction summary
+must carry an attribution digest forward. This must be answered BEFORE
+flb.certification.v0 is built, not after.
+
+### 3.5 Sync modes: what the two choices actually buy
+
+| Mode | Server option | What it means |
+| --- | --- | --- |
+| crash-durable | SyncAlways: false | Writes land in the OS page cache; a process crash is survivable, a power loss may lose recent acknowledged appends |
+| power-durable | SyncAlways: true → O_SYNC | Each file write is synchronous (minus Windows directory metadata, §3.2) |
+
+The zero value is deliberately invalid: "callers must choose the crash-only residual or
+pay for synchronous storage writes" (protod.go:38-40). Keep that. It is "absence is
+typed" applied to a config field, and it is rare.
+
+### 3.6 Deployment recommendation
+
+THE DAEMON SHOULD STAY A SINGLE-WRITER, LOOPBACK, FILE-BACKED SIDECAR, AND THE LAYER
+ABOVE SHOULD STOP TRYING TO MAKE IT A CLUSTER. Everything in the envelope points the
+same way: no clustered JetStream, no R>1 KV, in-process daemon connection,
+per-connection account isolation, journals that refuse mirroring. Multi-node scale, when
+needed, arrives as MULTIPLE VENUES EACH SINGLE-WRITER (§5), not as one replicated venue.
+
+Two operational changes are worth making now:
+
+1. STOP PRINTING THE CREDENTIAL ON STDOUT. main.go:36-45 prints the full
+   nats://application:<password>@host:port URL. Any log capture is a credential capture.
+   Write the URL to a file with restrictive permissions, or to a named descriptor, and
+   print only the host:port on stdout.
+2. NAME THE WINDOWS DURABILITY CAVEAT IN THE ENVELOPE. Either add a fifth lifecycle
+   refusal (power-durable on runtime.GOOS == "windows" → an assumption refusal), or
+   downgrade the mode's declared assumption on that OS. Silence is the one option the
+   honesty ladder does not allow.
+
+---
+
+## 4. Lane C — principal identity and seat binding
+
+### 4.1 What is declared, and what is checked — measured
+
+The protocol record declares its identity scheme, and exactly one value is legal:
+
+    if !okField || definition.Identity != "trusted-principals" {
+        return protocolDefinition{}, protocolMalformed(append(path, "identity"), root["identity"], "trusted-principals")
+    }
+    (proto/go/protod/protocol.go:101-102)
+
+Bindings are fixed at session open, validated to be a total map over declared seats
+(protocol_session.go:437-447), and the authority check is:
+
+    func principalSeat(seats []string, bindings map[string]string, principal string) (string, bool) {
+        for _, seat := range seats {
+            if bindings[seat] == principal {
+    (protocol_session.go:525-527)
+
+request.Principal is a field of the request body (protocol_session.go:33). NOTHING
+ANYWHERE COMPARES IT TO THE CONNECTION.
+
+### 4.2 The experiment
+
+Two independent NATS connections to one daemon, one protocol round with
+bindings = {coordinator: "alice", operator: "bob"}. Connection B never authenticated as
+anyone. Full transcript in 04-seat-authority.txt:
+
+    ### two independent application connections to the same URL: both admitted
+    ### session key (content address of the open event): flb_protocol_session_v0_10fe979b...
+    ### session key when operator is bound to "mallory" instead: flb_protocol_session_v0_c46aa039...
+    ### => seat bindings enter session identity: true
+    ### [E1] connection B fills as principal "bob": ok = true
+    ### [E2] connection B fills as unbound principal "ghost": ok = false
+            refusal.kind = "seat-unauthorized", sort = "structural"
+            law = "a protocol fill principal must hold one of the target hole's declared seats"
+    ### [E3] connection B closes as principal "alice": ok = true
+            outcome = "completed"
+
+ONE UNAUTHENTICATED CLIENT DROVE AN ENTIRE PROTOCOL ROUND UNDER TWO DIFFERENT DECLARED
+IDENTITIES AND CLOSED IT AS completed. The resulting fill is sealed, and the journal
+records "principal":"bob" (transcript 05) — a string connection B typed. The refusal in
+E2 shows the check is exactly set-membership in the bindings map: unbound names are
+refused, bound names are accepted from anyone.
+
+Two further facts from the same runs:
+
+- ANY APPLICATION CONNECTION READS ANY JOURNAL BY NAME, including protocol sessions it
+  has no part in and the catalog (transcript 05). There is no read authorization surface
+  at all.
+- SEAT BINDINGS ALREADY ENTER SESSION IDENTITY. {coordinator: alice, operator: mallory}
+  produced a different session key from {coordinator: alice, operator: bob}, because the
+  session name is "flb_protocol_session_v0_" + DigestHex(canonicalBytes(openEvent)) and
+  the open event contains the bindings (protocol_session.go:140-149).
+
+That last fact is the lever. WHO MAY ACT IS ALREADY INSIDE THE CONTENT ADDRESS OF THE
+ROUND. It just happens to be a name rather than a key.
+
+### 4.3 What the connection layer DOES provide
+
+Do not understate the existing work. proto/go/protod/auth.go implements a custom
+authenticator that, for every accepted application connection, registers a FRESH PRIVATE
+NATS ACCOUNT (auth.go:70) importing only the two public service subjects, with publish
+restricted to flb.req.> / flb.ing.> and subscribe restricted to _INBOX.> (auth.go:82-91).
+The effects are real and tested:
+
+- An application connection cannot reach $JS.API — verified live: "nats: permissions
+  violation: Permissions Violation for Publish to \"$JS.API.STREAM.NAMES\"" and zero
+  streams enumerable (transcript 03).
+- An application cannot write KV delete/purge markers or forge a reply into another
+  connection's inbox — three "Publish Violation" lines in transcript 02, asserted by
+  TestAcquireProtectsRegisterBucketsFromApplicationCredentials.
+- Cross-connection inbox eavesdropping is refused by account isolation
+  (TestApplicationConnectionsCannotEavesdropReplyOrJetStreamTraffic,
+  lifecycle_test.go:125).
+- Anonymous connections are refused (TestListenerRequiresGeneratedApplicationCredential).
+
+So the connection layer gives ISOLATION AND CONFINEMENT. What it does not give is
+ATTRIBUTION: every admitted connection holds the same shared "application" password
+(protod.go:156, auth.go:64-67), so the daemon can distinguish CONNECTIONS but not WHOS.
+
+### 4.4 The four candidate mechanisms, costed
+
+The constraint to respect: seat authority is a DECLARED PROTOCOL FACT, and
+identity: "trusted-principals" is the declared scheme. Whatever we add must be a NEW
+DECLARED SCHEME VALUE, not a side-channel — otherwise the protocol record stops
+describing the round it governs.
+
+OPTION 1 — mTLS. NATS supports TLS client certificates; the daemon would map the
+certificate subject to a principal.
+- Adds to trusted base: X.509 parsing, a CA (its key material and issuance policy), chain
+  validation, expiry and clock, revocation (CRL/OCSP — a network oracle at admission
+  time).
+- Fit: identity becomes an assertion by a CA, verified at connection time and then
+  forgotten. The journal still records a bare string; an auditor reading entries a year
+  later cannot re-derive who acted. EVIDENCE DOES NOT FEDERATE.
+- Reversal: moderate — TLS config is external to the protocol grammar, so removing it
+  does not change any digest.
+
+OPTION 2 — NATS auth callout. The server delegates authentication to a service that
+returns a signed user JWT; the daemon reads the authenticated user from
+server.ClientAuthentication.
+- Adds to trusted base: nkeys and JWT signing (ALREADY in the dependency closure —
+  github.com/nats-io/nkeys v0.4.16, github.com/nats-io/jwt/v2 v2.8.2 are indirect deps of
+  both modules), plus an auth service to operate.
+- Fit: better than mTLS — the daemon can compare request.Principal to the connection's
+  authenticated user and refuse a mismatch. That is a small, well-shaped change: one new
+  refusal kind beside seat-unauthorized. But the evidence is still connection-scoped and
+  transient; the journal entry remains unverifiable after the fact.
+- Note: the daemon's Check already receives client.GetOpts() and calls
+  client.RegisterUser (auth.go:43, 58, 82), so the plumbing point exists.
+- Reversal: moderate; no wire-grammar change if the principal field is unchanged.
+
+OPTION 3 — OIDC. An ID token per request, validated against an issuer's JWKS.
+- Adds to trusted base: an identity provider, JWKS fetching AT REQUEST TIME (a live
+  network oracle), wall-clock validation of exp/nbf, and a revocation model.
+- Fit: WORST. It makes admission a function of wall-clock time and network reachability,
+  contradicting the estate's load-bearing "semantic space, not time" position that
+  outcomes are functions of what was said, never of arrival order. A fill that admits at
+  10:00 and refuses at 10:05 with identical inputs is exactly the drift channel the REF
+  ladder pre-registers against.
+- Recommendation: refuse at this layer. OIDC belongs in whatever human-facing UI CHOOSES
+  a principal, upstream of the writ, never inside admission.
+
+OPTION 4 — SIGNED MOVES. The seat binding names a PUBLIC KEY (or a digest of one); the
+fill/close request carries a signature over the canonical bytes of the move; the daemon
+verifies and journals the signature.
+- Adds to trusted base: one signature primitive. Ed25519 is crypto/ed25519 in the Go
+  standard library, and I verified it is available in Bun's WebCrypto with NO DEPENDENCY
+  — 64-byte signatures, 32-byte public keys, verify true on the canonical bytes and false
+  on tampered bytes (transcript 11). This is the smallest trusted-base delta of the four.
+- Fit: it is the ONLY option where THE EVIDENCE IS IN THE JOURNAL. A signed fill entry is
+  re-verifiable forever, offline, by anyone holding the entry bytes and the session's
+  open event — the daemon is not required to vouch. That is "evidence federates"
+  satisfied literally. And because bindings already enter session identity (§4.2),
+  binding KEYS means THE ROUND'S CONTENT ADDRESS COMMITS TO THE EXACT KEY SET AUTHORIZED
+  TO MOVE IT. Identity commits shapes; the authorized-signer set is a shape.
+- Costs, named:
+  * A WIRE CHANGE. protocol.session.fill currently takes {session, principal, hole,
+    value} with NO expectedHead (protocol_session.go:31-36; confirmed in the live
+    describe). A signature over that body alone is REPLAYABLE by any observer, and
+    journals are world-readable (§4.2). Making each signature single-use requires adding
+    expectedHead to the protocol fill request — which session.move already has. Under the
+    DEV-675 hard-cutover ruling ("flb.protocol.v0 is redefined in place … no v1 string"),
+    that is a redefinition, not a versioned addition.
+  * KEY ROTATION COSTS A SESSION. Bindings are immutable and in identity, so rotating a
+    compromised key mints a new round. Arguably correct — a change of who may act SHOULD
+    be a different round — but it must be stated, and the successor-round / predecessor
+    machinery (protocolPredecessor, protocol_session.go:20-23) is where it lands.
+  * CANONICAL BYTES FOR THE SIGNED PAYLOAD. The signature must be over the same RFC 8785
+    bytes both sides derive, which means the signing payload is itself a
+    flb.type.v0-describable value. This is a benefit disguised as a cost: it forces the
+    move to BE a value.
+- Reversal: the hardest of the four, because the grammar and the identity of every round
+  change. Reversal means a second in-place redefinition.
+
+### 4.5 Recommendation for this lane
+
+ADOPT OPTION 4, STAGED, WITH OPTION 2 AS THE INTERIM FLOOR.
+
+Stage 1 (small, reversible, closes the demonstrated hole): compare request.Principal to
+the authenticated connection identity and refuse mismatch with a new structural refusal
+kind. Even with the current shared password this is inert, so stage 1 is only meaningful
+together with per-principal credentials — which is exactly what auth callout provides.
+Cost: one refusal kind, one auth service, no grammar change.
+
+Stage 2 (the estate-native answer): a new declared identity scheme value beside
+trusted-principals — say signed-principals — where bindings maps seat → public key, fill
+and close carry expectedHead and a signature, and the journal records the signature. The
+declared-scheme field means the protocol record still fully describes its own authority
+model, and old rounds keep meaning what they meant.
+
+THE LAW THIS IS HUNTING (pre-registered, per the estate-of-safety through-line): A CLOSED
+ROUND'S TERMINAL STATE DIGEST IS REACHABLE ONLY FROM MOVES EACH OF WHICH IS SIGNED BY A
+KEY THE ROUND'S OWN CONTENT ADDRESS COMMITS TO. If that holds, seat authority stops being
+an honor system and becomes a property of the digest — and the audit trail becomes
+checkable by a third party with no access to the daemon. That is the shape of "extends
+safety by construction."
+
+---
+
+## 5. Lane D — multi-venue and mirroring topology for ontology packs
+
+### 5.1 The transport-level answer is refused, by design
+
+JetStream offers two replication primitives. Their semantics, from the NATS docs
+(retrieved 2026-08-16): a mirror preserves upstream identity — "A message in the mirror
+keeps the same sequence number, the same timestamp, and the same subject it had upstream"
+— and is "read-only. You can't publish to it directly, because it listens on no subjects
+of its own." Sources renumber: "the aggregate gives them fresh sequence numbers as they
+arrive."
+
+A mirror is therefore ALMOST EXACTLY the right shape for a read-only replica venue, since
+preserved sequence numbers keep positionFromStreamSequence (journal.go:582) valid. But
+journal.Open refuses it twice over:
+
+- config.Mirror != nil || len(config.Sources) != 0 → "stream imports messages from
+  another stream" (journal.go:509-511)
+- len(config.Subjects) != 1 || config.Subjects[0] != subject → "subject set is not the
+  pinned singleton" (journal.go:491-493) — and a mirror has no subjects of its own.
+
+Sources are worse still: renumbering breaks the position↔sequence identity outright.
+
+SO: JOURNALS CANNOT BE REPLICATED BY JETSTREAM MIRRORING, TODAY, BY EXECUTABLE GATE. That
+is a finding, not an oversight — and the gate is right, because a mirror's contents are
+vouched for by the transport rather than re-derived by the reader.
+
+### 5.2 The application-level answer works, and I ran it
+
+The journal package exports AppendEntry(ctx, entry) taking an explicit
+canonical.ChainEntry{Seq, Prev, Payload} (journal.go:222-232). Replaying one venue's
+verified entries into another venue's empty journal reproduces the chain exactly.
+Transcript 09-cross-venue-mirror.txt, two separate embedded JetStream servers with
+separate store directories:
+
+    ### home journal head: seq=2 head=a4a5d823b216790d9d2780dd9b4e6b3ce2222387e364445477a4945281065f78
+    ### verified entries read from home: 3
+    ### pass 1: stored=3 duplicate=0
+    ### pass 2 (same bytes again): stored=0 duplicate=3
+    ### away journal head after replication: seq=2 head=a4a5d823b216790d9d2780dd9b4e6b3ce2222387e364445477a4945281065f78
+    ### heads equal across venues: true
+    ### every entry byte-identical: true
+
+Two properties, both mechanical:
+
+1. BYTE-EXACT. The replicated head equals the source head. Acceptance is digest equality,
+   not transport trust — the wall discipline applied to replication.
+2. IDEMPOTENT. A second pass stores nothing and reports three duplicates. That comes free
+   from message.Header.Set("Nats-Msg-Id", digest) (journal.go:427) plus the stream's
+   Duplicates: 2 * time.Minute window (journal.go:87) and the CAS fallback that re-reads
+   and compares digests (journal.go:447-451). Replication is therefore restartable at any
+   point with no bookkeeping.
+
+### 5.3 The failure mode this exposes
+
+Same transcript, last two lines:
+
+    ### append with a wrong prev: outcome=stored err=<nil>
+    ### verified read of the tampered chain: journal entry failed verification at position 1: prev does not match the verified head
+
+THE WRITE PATH DOES NOT VERIFY THE CHAIN LINK; ONLY THE READ PATH DOES. appendEntry
+checks position (CAS), UTF-8 validity, and canonicality of its own encoding — it never
+checks that entry.Prev equals the current head. Verification lives in readLocked
+(journal.go:310-312). Combined with DenyDelete/DenyPurge, the consequence is sharp:
+
+  A SINGLE WRITER THAT WINS THE CAS AT POSITION N WITH A WRONG-prev ENTRY PERMANENTLY
+  BRICKS THE JOURNAL FROM POSITION N ONWARD. THERE IS NO REPAIR PATH — THE STREAM CANNOT
+  BE PURGED OR REWRITTEN.
+
+Inside the current single-writer daemon this is unreachable: the daemon always builds
+entries from its own cursor (journal.go:213-217). It becomes reachable EXACTLY WHEN A
+SECOND WRITER IS INTRODUCED — which is what mirroring is. So multi-venue replication must
+be architected as ONE WRITER PER JOURNAL PER VENUE, never as bidirectional sync.
+
+### 5.4 The wire has no replication verb
+
+At the daemon writ there is no way to do §5.2. flb.req.journal.read returns entries, but
+the only write path is ingress, which builds its own frame and explicitly refuses the
+catalog and every session journal:
+
+    if !validJournalName.MatchString(name) || name == catalogJournalName ||
+       strings.HasPrefix(name, sessionJournalPrefix) ||
+       strings.HasPrefix(name, protocolSessionJournalPrefix) {
+    (proto/go/protod/ingress.go:47-49)
+
+So today the replication mechanism exists in the library and is unreachable from any
+client. Closing that requires a new verb, and a new verb is the thing to be most careful
+about.
+
+### 5.5 Proposed topology for ontology packs
+
+An ONTOLOGY PACK is the natural unit: a set of cataloged flb.type.v0 and
+flb.protocol.v0 facts, named by the catalog head that seals them. Note the catalog IS a
+journal ("the catalog is just a journal named \"catalog\"", live describe line 505), so a
+pack is a catalog prefix, and a prefix is named by its head — a 32-byte commitment.
+
+RECOMMENDED TOPOLOGY: ONE HOME VENUE PER PACK, UNLIMITED READ-ONLY FOLLOWER VENUES,
+PULL-BASED, VERIFY-ON-IMPORT.
+
+- Each pack has exactly one HOME VENUE — the only writer for that catalog. Single-home
+  matches the estate's "decisions single-home" rule; a catalog entry is a decision about
+  identity.
+- A FOLLOWER VENUE pulls entries via journal.read from home, verifies the chain locally
+  against genesis (which the read path already does — the TS client "recomputed locally —
+  not the daemon's claim", client.ts:50-52), and re-appends them into its own journal of
+  the same name. Byte-exactness is the acceptance test, per §5.2.
+- EVIDENCE FEDERATES: any venue may hold any pack, and two venues holding the same pack
+  head hold byte-identical bytes, provably.
+- ABSENCE IS TYPED PER VENUE. A follower that has pulled to seq N must answer "I do not
+  have digest D" as an ABSENCE refusal relative to its own head, never as "D does not
+  exist." The refusal grammar already sorts unknown-ref and unknown-identity as absence
+  (proto/ts/src/wire.ts:35-36), so the shape exists; what is missing is that the absence
+  must carry the venue's head so a reader can tell "not yet replicated" from "never
+  existed."
+- CROSS-VENUE REFERENCE IS BY DIGEST, ALWAYS. A session in venue B referring to a type
+  cataloged in venue A refers to the digest; if B has not replicated it, B refuses with
+  absence and a next hint naming the home venue. This answers the sub-session grill G3's
+  cross-venue trust question ("may the child live in another venue"): trust is not
+  required, because the reference is a digest and the referent is re-derivable.
+
+WHAT THIS REFUSES: bidirectional sync, multi-writer packs, and any "eventually
+consistent" merge of two catalogs. Two catalogs that diverge are two packs; there is no
+merge. That is the discipline the journal's chain already enforces at position level,
+lifted to venues.
+
+NEW VERB NEEDED: a single flb.req.journal.import taking {journal, entries} and returning
+per-entry stored|duplicate|refused, admitting only into journals the venue is NOT home
+for, and only when each entry's prev chains from the importing venue's verified head.
+That last clause is the fix for §5.3: MAKE THE IMPORT PATH VERIFY THE LINK THE APPEND
+PATH DOES NOT. A follower can then never be bricked by a bad upstream, because the bad
+entry is refused at the door rather than accepted and discovered later.
+
+---
+
+## 6. Lane E — where the briefing corpus and the repair policy live
+
+Draft 21 §4 states the goal precisely: "make it a value, not a prompt," with the instinct
+to hold — "prompts decay silently; values are branchable, diffable, and
+provenance-carrying." It also names three open questions: where the corpus reference
+lives, whether a repair policy is advisory or admissible, and what of either enters
+identity. This lane answers them architecturally, from the machinery that exists.
+
+### 6.1 The briefing corpus
+
+IT IS A JOURNAL, AND IT NEEDS NO NEW MACHINERY. The existing ingress path is exactly the
+shape: publish a frame {type: <digest>, payload} to flb.ing.<journal>, admitted on
+identity resolution only — "payload conformance against the claimed structure was NOT
+checked" (ingress.go:19-20, live describe line 36). A corpus is a data journal of
+EXTERNAL-labeled evidence facts, each admitted against a cataloged flb.evidence.v0 type.
+The corpus's identity is its head — a 32-byte commitment to a history prefix, which is
+precisely the "hand every fleet member the same digest" unit §4 wants.
+
+Three placement rulings follow from the code:
+
+1. THE CORPUS REFERENCE BELONGS IN THE SESSION'S open EVENT, NOT PER-FILL. The open event
+   is irreducible (protocol_session.go:143) and it is the pre-image of the session key.
+   Putting the corpus head there means (a) it can never be compacted away, and (b) THE
+   SESSION'S IDENTITY COMMITS TO WHICH CORPUS BRIEFED IT — two agents briefed on
+   different corpora produce sessions with different keys, which is exactly the auditable
+   distinguishability §4 asks for. Same lever as §4.2's binding-in-identity, reused.
+2. PER-FILL PROVENANCE IS ADDITIONALLY NEEDED, AND IT IS A VALUE NOT A FIELD. "A fill
+   proposed from the corpus carries provenance to the evidence span it was read from." A
+   span is {corpusHead, entrySeq, path} — a value describable in flb.type.v0. The clean
+   move is to make provenance part of the HOLE'S DECLARED TYPE (a brand wrapping the
+   domain value, per contract.go:16), not a new wire field. Then value_check.go enforces
+   it for free at fill time and again on replay, and no grammar changes.
+3. THE CORPUS HEAD MUST BE PINNED, NOT LIVE. The corpus journal keeps growing; a session
+   that references "the corpus" without a head would silently change meaning. Pin the
+   head — same ruling as the sub-session grill's G7 instinct ("pin to head"), and for the
+   same reason.
+
+COST: the corpus reference in the open event changes flb.protocol.session.v0's open
+shape, which changes every existing session key. Under hard-cutover discipline that is a
+redefinition of the session grammar. Make it optional-in-grammar and it does not change
+keys for sessions that omit it — but "optional field that changes identity when present"
+is a footgun the estate has consistently refused. RECOMMEND: redefine in place, accept
+that existing session keys are invalidated, and do it BEFORE the DEV-670 corpus is
+generated, since the wall freezes these semantics.
+
+### 6.2 The repair policy
+
+IT IS A CATALOGED VALUE, AND IT IS ADVISORY — WITH ONE EXCEPTION.
+
+A repair policy is a mapping from refusal shape to repair method. The refusal shape is
+already fully typed data: kind, sort (structural | absence), law, path, next
+(refusal.go:37-59, live in transcript 04). So a policy is a value over a known domain,
+describable in flb.type.v0, catalogable through type.create, and therefore
+DIGEST-ADDRESSED AND SHAREABLE BY DIGEST — which is the whole ask.
+
+Why advisory rather than admissible:
+
+- A policy decides what the CLIENT does next. The daemon's job is to say yes or no to a
+  move, and it already does that identically regardless of why the move was proposed.
+  Making the policy admissible would mean the daemon consults it during admission — which
+  puts client strategy inside the authority boundary and gives the LLM a second channel
+  into the kernel. The quarantine is the point.
+- The sort field already does exactly the work a policy needs, daemon-side: structural
+  refusals mean "this shape is wrong, follow next"; absence refusals mean "not here yet,
+  the prerequisite is named." The client-side policy is a FOLD OVER THAT DATA, not a new
+  authority.
+
+THE ONE EXCEPTION: THE POLICY DIGEST SHOULD BE JOURNALLED IN THE SESSION. Not consulted —
+recorded. If a session's open event carries {corpus: <head>, policy: <digest>}, then
+"which policy repairs fastest" becomes a fold over session journals exactly as §4 wants,
+and the gauntlet can probe a (protocol, policy) pair because the pair is identifiable in
+the record. Recording is not admitting.
+
+WHAT ENTERS IDENTITY: corpus head — YES (it changes what the session means). Policy
+digest — YES, in the open event, because a session repaired under a different policy is a
+different experiment, and the whole measurability claim depends on being able to tell
+them apart. Neither is consulted at admission.
+
+### 6.3 Architectural placement summary
+
+| Object | Lives in | Identity | Consulted by the daemon? |
+| --- | --- | --- | --- |
+| Briefing corpus | a data journal, written through ingress | its head | no — never a live oracle |
+| Corpus reference | the session open event | enters the session key | no |
+| Per-fill provenance | inside the filled value, via a branded type | enters the fill's value digest | yes, by value_check.go, as ordinary type checking |
+| Repair policy | a cataloged flb.type.v0 value | its structural digest | no |
+| Policy reference | the session open event | enters the session key | no |
+| Policy execution | the SDK veneer (§2), client-side | — | no |
+
+---
+
+## 7. Prior art ledger
+
+For each: what the source establishes; what our evidence/decision/absence sort changes;
+what to copy and what to refuse.
+
+### 7.1 Temporal — durable execution vs journal+replay
+
+Source: docs.temporal.io "Temporal Workflow Definition", retrieved 2026-08-16.
+
+ESTABLISHES. Recovery is by replaying an event history through the SAME CODE, and the
+code must be deterministic for that to work. The doc names the exact API calls that
+produce Commands and therefore "must not be reordered, added, or removed without proper
+Versioning techniques": starting/cancelling a Timer; scheduling/cancelling Activity
+Executions; starting/cancelling Child Workflows; signalling external Workflows;
+scheduling/cancelling Nexus operations; and "Ending the Workflow Execution in any way."
+Non-determinism is quarantined into Activities: "To handle non-deterministic operations
+like API calls, LLM/AI invocations, database queries, and other external interactions,
+put them in Activities." And code change is constrained: "The Workflow Definition can
+change in very limited ways once there is a Workflow Execution depending on it."
+
+WHAT OUR SORT CHANGES. Temporal replays CODE against history; foldlab replays DATA into a
+fold. replayProtocolSession (protocol_session.go:157) reconstructs state from journalled
+events through a pure step function (protocol_step.go), and every event is a canonical
+value with a digest. The consequence is the interesting one: FOLDLAB HAS NO VERSIONING
+PROBLEM OF TEMPORAL'S KIND. If the fold changes, old journals still contain the same
+events; recomputing yields a different state digest, and that difference is VISIBLE rather
+than a replay crash. Temporal's non-determinism failure is our digest inequality — a
+fact, not an exception.
+
+COPY: the Activity boundary. Temporal's discipline that every external interaction is a
+named, result-recorded step is exactly the P4 action-hole design, and the
+recorded-result-on-replay rule is exactly what the effector's Do implements
+(.reference/playground-mech/go-effector/effector.go:272-321: lookup, claim, run, commit,
+and on a lost race return the committed outcome).
+
+REFUSE: replaying code as the recovery mechanism. It makes the program text part of the
+trusted base and makes every refactor a compatibility hazard. Our state is a fold over
+values; keep it that way.
+
+### 7.2 EventStoreDB / Kurrent — expected-version append
+
+Source: docs.kurrent.io "Appending events" (TCP .NET client 21.2), retrieved 2026-08-16.
+
+ESTABLISHES. The optimistic concurrency check compares expectedVersion to currentVersion
+with three outcomes: greater → "a WrongExpectedVersionException is thrown"; equal →
+"events are appended and acknowledged"; LESS → the EventIds of the events from
+expectedVersion onward are compared to those in the append, and if all were already
+committed, "the append operation is acknowledged as successful, but no duplicate events
+appended." With ExpectedVersion.Any, "Idempotence is NOT guaranteed … The chance of a
+duplicate event is small, but is possible."
+
+WHAT OUR SORT CHANGES. This is, structurally, exactly what journal.appendEntry does — and
+the two designs converged independently. On a lost CAS the journal re-reads the occupant
+and compares digests:
+
+    if stored, getErr := j.stream.GetMsg(ctx, uint64(entry.Seq+1)); getErr == nil &&
+        canonical.DigestHex(stored.Data) == digest {
+        j.recordAccepted(position, digest)
+        return Duplicate, nil
+    }
+    (journal.go:447-451)
+
+EventStore compares EventIds — client-assigned GUIDs. We compare RE-DERIVED DIGESTS OF
+CANONICAL BYTES. That is the difference the thesis makes: EventStore's idempotence
+depends on the client supplying a stable id; ours depends on the bytes being what they
+are. A client that regenerates its GUID loses EventStore's idempotence; nothing a client
+can do loses ours.
+
+COPY: the three-outcome vocabulary, and specifically the middle case — BEHIND is not
+always a conflict, it is sometimes a duplicate. The journal already implements it; naming
+it in the refusal grammar would help.
+
+REFUSE: ExpectedVersion.Any. The daemon has no equivalent and should never grow one.
+"Append wherever" is the one operation that makes the chain meaningless.
+
+### 7.3 Kafka compacted topics vs our journal
+
+Source: Apache Kafka design documentation, "Log Compaction" (Confluent-hosted rendering
+of the Apache design docs; kafka.apache.org's own page did not render for automated
+retrieval), retrieved 2026-08-16.
+
+ESTABLISHES. Compaction is "a mechanism to provide finer-grained per-record retention
+instead of coarser-grained time-based retention." The guarantees are: "Any consumer that
+stays caught-up to the head of the log will see every message that is written"; "Ordering
+of messages is always maintained. Compaction will never reorder messages, just remove
+some"; "The offset for a message never changes. It is the permanent identifier for a
+position in the log"; and "Any consumer progressing from the start of the log will see at
+least the final state of all records in the order they were written." Tombstones are
+null-payload messages, "cleaned out of the log after a period of time" governed by
+delete.retention.ms (default 24 hours).
+
+(Marked as a rendering of the primary design doc rather than the canonical page itself;
+the kafka.apache.org single-page app returned only navigation to automated fetch.)
+
+WHAT OUR SORT CHANGES. Kafka's guarantee is "at least the final state." Ours is stronger
+and different: EVERY state, because nothing is ever removed (badShapeReason refuses all
+eviction, §3.3). But Kafka's fourth guarantee is the one to steal for
+flb.certification.v0: it is precisely the shape a compaction summary must have — a lagging
+reader loses intermediate values but never the final one, and never ordering, and never
+offsets. Note the crucial third guarantee: OFFSETS NEVER CHANGE. Our positions must
+behave the same way; a compaction that renumbered would invalidate every stored cursor
+and every prev link. That constrains the design: compaction must be
+SUMMARY-PLUS-TOMBSTONE WITHIN THE SAME POSITION SPACE, not a rewrite.
+
+COPY: the offset-immutability invariant, and the two-phase tombstone idea — a summary is
+not immediately erasing; there is a window in which both the summary and the summarized
+are visible so lagging readers converge.
+
+REFUSE: time-based tombstone expiry. delete.retention.ms makes correctness a function of
+wall-clock and consumer lag. Our equivalent must be EVIDENCE-BASED: the summarized prefix
+dies when a corpus digest sealing it exists, which is exactly what the current refusal
+already demands ("the flb.certification.v0 corpus seam and its emitted corpus digest",
+session.go:781). Keep that; do not add a clock.
+
+### 7.4 Git as a CAS discipline
+
+Source: run locally, transcripts 07-git-cas.txt and 08-git-vs-canonical.txt,
+git 2.55.0.windows.2, 2026-08-16.
+
+ESTABLISHES — measured, not quoted:
+
+    hash-object a.txt: b6fc4c620b67d95f953a5c1c1230aaab5db5a1b0
+    printf 'blob 5\0hello' | sha1sum
+    b6fc4c620b67d95f953a5c1c1230aaab5db5a1b0
+
+Git's object id is SHA-1("<type> <length>\0<content>") — I re-derived it by hand and it
+matched. Three properties follow: the TYPE TAG IS INSIDE THE DIGEST (domain separation),
+the LENGTH IS INSIDE THE DIGEST (no ambiguity between concatenations), and minting an
+identity TYPE-CHECKS FIRST — `git hash-object -t commit` on non-commit bytes refuses:
+"error: object fails fsck: unterminatedHeader". That is certify(bytes) → identity |
+refusal with a constrained decode, shipped since 2005. Modern Git also offers full-width
+digests: `git init --object-format=sha256` produced a 64-hex blob id, the same width
+foldlab uses.
+
+WHAT OUR SORT CHANGES. Git hashes bytes as given. Two files holding the same JSON VALUE
+in different key order get different object ids:
+
+    git blob id of {"a":1,"b":2}: 73a5d70e33e32e09271e19a98a3326573331d88d
+    git blob id of {"b":2,"a":1}: f17206a2237359e30a21ee8d0063e18e96a483dd
+    same JSON value, same object id? false
+
+The foldlab canonicalizer collapses both to the same bytes and therefore the same digest
+(go/cmd/jcsprobe, run against both inputs):
+
+    {"accepted":true,"canonical":"{\"a\":1,\"b\":2}"}
+    {"accepted":true,"canonical":"{\"a\":1,\"b\":2}"}
+
+THAT SINGLE PAIR OF RESULTS IS THE CLEANEST STATEMENT OF WHAT FOLDLAB ADDS TO GIT: Git
+gives identity of BYTES; RFC 8785 plus a constrained decode gives identity of VALUES.
+
+COPY: the typed, length-prefixed pre-image. If a foldlab digest domain ever needs
+separating (evidence facts vs types vs protocol records vs signed moves), do it Git's way
+— inside the hash, with the type name and a length — rather than by prefixing the hex
+string afterwards.
+
+REFUSE: nothing here. Git's discipline is sound; it simply solves a different half of the
+problem.
+
+### 7.5 Nix as a CAS discipline
+
+Source: nix.dev Nix manual 2.28, "Store Path" and "Store Path Specification", retrieved
+2026-08-16. NIX IS NOT INSTALLED ON THIS MACHINE, so nothing in this subsection was
+executed.
+
+ESTABLISHES. A store path is "an opaque, unique identifier: The only way to obtain store
+path is by adding or building store objects." The digest is over a fingerprint string of
+the form `type ":sha256:" inner-digest ":" store ":" name`, and the result is a SHA-256
+hash "compressed to 160 bits" in "base-32 representation". The type component
+distinguishes text, source (with optional :self), and output:<id>.
+
+WHAT OUR SORT CHANGES. Two deliberate divergences, both in foldlab's favour for its
+purpose:
+
+1. THE STORE DIRECTORY AND THE HUMAN-READABLE NAME ARE INSIDE NIX'S DIGEST. That is a
+   DEPLOYMENT FACT INSIDE IDENTITY — the same object in a differently-located store gets a
+   different path. Foldlab's rule is the opposite: "deployment facts never [move
+   identity]." Nix does it on purpose so a store path can be a self-describing filesystem
+   location; we have no such requirement, and admitting one would make a fill's digest
+   depend on which venue produced it — fatal to §5's whole topology.
+2. NIX TRUNCATES TO 160 BITS, EFFECT TRUNCATES TO 128 (§2.5), both to keep identifiers
+   short. Foldlab keeps all 256. The cost is longer names; the benefit is that a digest is
+   never a summary of a digest, and journal.go can compare DigestHex(raw.Data) to
+   EntryDigest(entry) as THE SAME OBJECT rather than as prefixes.
+
+COPY: the typed fingerprint with an explicit type component, for the same reason as Git —
+and Nix's is the better-documented of the two.
+
+REFUSE: truncation, and store-location-in-identity.
+
+### 7.6 NATS JetStream KV CAS — read from the pinned source
+
+Source: github.com/nats-io/nats.go@v1.53.1/jetstream/kv.go and
+github.com/nats-io/nats-server/v2@v2.14.4/server/stream.go, both in this machine's module
+cache, read 2026-08-16.
+
+ESTABLISHES. The KV API's concurrency contract, from the interface doc comments:
+
+- Create — "will add the key/value pair if it does not exist. If the key already exists,
+  ErrKeyExists will be returned." (kv.go:118-123)
+- Update — "will update the value if the latest revision matches. If the provided revision
+  does not match the key's current revision, ErrKeyRevisionMismatch is returned."
+  (kv.go:125-129)
+
+And the implementation shows both are the SAME mechanism: updateRevision publishes with
+WithExpectLastSequencePerSubject(revision) (kv.go:1141), with Create passing revision 0.
+Server-side, the check is LoadLastMsg(seqSubj) compared to the header value, replying
+NewJSStreamWrongLastSequenceError(fseq) on mismatch (stream.go:6441-6465); the header is
+Nats-Expected-Last-Subject-Sequence (stream.go:637).
+
+THE UNIFICATION WORTH STATING. go/journal/journal.go:432 publishes with
+jetstream.WithExpectLastSequencePerSubject(uint64(entry.Seq)) — THE IDENTICAL PRIMITIVE.
+So:
+
+  THE JOURNAL AND THE EFFECTOR ARE ONE CAS, DIFFERENTLY KEYED. The journal keys by
+  position on a single subject (sequence = chain position). The KV keys by
+  key-per-subject (sequence = revision). There is one concurrency primitive in this
+  architecture, and it is a subject-scoped compare-and-set.
+
+That is a simplification worth making explicit, because it means one substrate assumption
+(linearizable-reads) covers both, and the four lifecycle refusals in §3.2 protect both.
+
+COPY: the effector's shape as-is. .reference/playground-mech/go-effector/effector.go
+already implements the fencing-token lease register correctly: monotone fence on re-claim
+(:167-171), Update with the read revision (:177) so a lost race is ErrHeld, a terminal
+done value that refuses further claims (:159-161), and a commit that classifies a
+same-fence same-result collision as an absorbed duplicate rather than an error (:422-435).
+It also does CANONICAL DECODE WITH DisallowUnknownFields AND A RE-ENCODE EQUALITY CHECK
+(:446-462) — constrained decode applied to KV values.
+
+REFUSE: kv.Purge, and KeyValueConfig.TTL != 0. The reference implementation's own
+badShapeReason already refuses non-zero TTL and bounded MaxBytes (effector.go:465-478);
+keep that when the effector is rebuilt into go/. Also refuse History > 1 reliance — the
+effector treats the KV as a register, not a log; the journal is the log.
+
+---
+
+## 8. Recommendations
+
+Each carries its cost and its reversal.
+
+R1. BUILD THE SDK VENEER AS A FOURTH LAYER WITH REFUSALS IN THE SUCCESS CHANNEL.
+Cost: a new package; a lint rule that no writ verb is wrapped in Effect.retry or
+Effect.orDie; two representations of a reply (Reply<A> and Effect's error channel) to
+keep straight. Adds effect as a runtime dependency of the client path, where today it is
+a decode-time one.
+Reversal: cheap — the veneer imports the client, not the reverse; deleting it leaves
+ProtoClient intact.
+
+R2. DO NOT ADOPT EFFECT unstable/workflow FOR DURABLE EXECUTION YET; ADOPT THE EFFECTOR
+INSTEAD.
+Cost: rebuilding .reference/playground-mech/go-effector/effector.go into go/effector/ and
+re-walling it. Foregoes Effect's Activity/DurableDeferred ergonomics.
+Reversal: the effector's surface (Claim/Commit/Lookup/Do) is small enough to sit behind an
+Effect WorkflowEngine-shaped facade later if that becomes desirable.
+Why: measured — Effect's durable identity is a 128-bit truncation of a developer-asserted,
+uncanonicalised pre-image (§2.5), and real durability drags in SQL plus shard runners. The
+effector's identity is a re-derived 64-hex digest and its substrate is the KV bucket the
+daemon already runs.
+
+R3. STOP PRINTING THE DAEMON CREDENTIAL ON STDOUT.
+Cost: one flag or one file write; every harness that parses the ready line must change
+(proto/go/cmd/protod/main_test.go and any TS harness).
+Reversal: trivial.
+
+R4. NAME THE WINDOWS power-durable CAVEAT IN THE SUBSTRATE ENVELOPE.
+Cost: either a fifth lifecycle refusal (which would refuse the operator's own platform for
+power-durable) or a weakened declared assumption on Windows. The first is honest and
+inconvenient; the second is honest and cheap.
+Reversal: trivial.
+Source: nats-server@v2.14.4/server/filestore.go:13958-13960.
+
+R5. CLOSE THE SEAT-AUTHORITY HOLE IN TWO STAGES: CONNECTION-IDENTITY CHECK NOW, SIGNED
+MOVES AS THE DECLARED SCHEME LATER.
+Cost: stage 1 needs per-principal credentials (auth callout) plus one refusal kind. Stage
+2 is a hard in-place redefinition of flb.protocol.v0 and flb.protocol.session.v0 —
+bindings map to keys, fill and close gain expectedHead and a signature, and every existing
+session key changes. Adds one signature primitive to the trusted base (Ed25519: Go stdlib;
+Bun WebCrypto, verified available with no dependency — transcript 11).
+Reversal: stage 1 is cheap. Stage 2 is the most expensive item here, because reversing it
+means a second in-place redefinition.
+Urgency: the hole is demonstrated, not theoretical (§4.2). Any use of the daemon by more
+than one agent today has no attribution guarantee whatsoever.
+
+R6. ADD flb.req.journal.import, AND MAKE IT VERIFY THE CHAIN LINK THE APPEND PATH DOES
+NOT.
+Cost: one new verb (the writ grows from fourteen subjects to fifteen), one new refusal
+kind, and the discipline that a venue never imports into a journal it is home for. Also
+requires deciding how a venue declares which packs it is home for.
+Reversal: moderate — a verb, once described, is in contract.describe and in the MCP tool
+list derived from it.
+Why: replication works today at the library level, byte-exactly and idempotently (§5.2),
+and is unreachable from any client (§5.4). And the import path is the natural place to fix
+the write-path/read-path verification asymmetry that lets a bad entry brick a journal
+permanently (§5.3).
+
+R7. PUT THE CORPUS HEAD AND THE POLICY DIGEST IN THE SESSION open EVENT, BEFORE THE
+DEV-670 CORPUS IS GENERATED.
+Cost: redefines the session open shape, invalidating existing session keys. Doing it after
+the wall is generated means regenerating the wall.
+Reversal: expensive after the wall exists; cheap before.
+
+R8. RE-TIER THE PROTOCOL fill EVENT OUT OF compactible, OR MAKE COMPACTION CARRY AN
+ATTRIBUTION DIGEST FORWARD.
+Cost: either more retained bytes forever, or a more complex compaction summary.
+Reversal: cheap now (a change to retentionTier), expensive once flb.certification.v0 ships
+and journals have been compacted under the current tiering.
+Why: the fill event is the only record of who acted (§3.4). If R5 lands, discarding it
+discards the signature too.
+
+R9. WRITE DOWN "ONE CAS, TWO KEYINGS" AS AN ARCHITECTURAL INVARIANT.
+Cost: none but the writing.
+Reversal: n/a.
+Why: it collapses two apparent subsystems into one substrate assumption (§7.6) and makes
+the four lifecycle refusals legibly protective of both.
+
+---
+
+## 9. Gaps — what this lane could not establish
+
+1. NO LOAD OR SCALE MEASUREMENT. Everything ran single-process on one machine with
+   three-entry journals. I have no evidence about journal read performance at 10^5
+   entries, about the readPipelineWindow = 16 concurrent-GetMsg schedule
+   (journal.go:58, 385-401) under contention, or about the memory cost of
+   replayProtocolSession on a long session. The estate's own residual list names
+   "backpressure on contended fences" as unresolved; I did not close it.
+2. THE MIRRORING PROPOSAL IS UNBUILT AND UNWALLED. §5.2 proves replication WORKS for a
+   three-entry journal between two venues in one process. It does not prove it works
+   across a network, under partial failure, or with a concurrent writer at the home
+   venue. The bricking failure mode (§5.3) is demonstrated; the proposed import-side fix
+   is designed, not tested.
+3. SIGNED MOVES ARE DESIGNED, NOT PROTOTYPED. I verified Ed25519 availability on both
+   runtimes and the canonical-bytes verify/tamper behaviour. I did not build a signed-fill
+   path, so the wire-shape cost of adding expectedHead to protocol.session.fill is
+   estimated from the grammar, not measured.
+4. THE KAFKA CITATION IS ONE REMOVE FROM PRIMARY. kafka.apache.org's documentation is a
+   single-page app that returned only navigation to automated retrieval, twice, on two URL
+   forms; the raw docs/design.html paths in the apache/kafka repository 404'd on both
+   trunk and 4.0. The quotes come from Confluent's hosted rendering of the same design
+   documentation. Treat them as high-confidence but not canonically located.
+5. NIX WAS NOT EXECUTED. No nix-store --query, no store-path derivation checked by hand.
+   The fingerprint format and the 160-bit compression are documentary only.
+6. NATS AUTH CALLOUT WAS NOT EXERCISED. I read auth.go and confirmed the plumbing point
+   (client.GetOpts(), RegisterUser), but I did not configure a callout service or verify
+   that the authenticated user is reachable from the request handler. MARK THE "STAGE 1"
+   CLAIM IN R5 AS DESIGN, NOT DEMONSTRATION.
+7. NO TYPESCRIPT BUILD OR TEST WAS RUN. `bun run typecheck` writes .tsbuildinfo and I
+   chose not to write into the repo. The Effect findings come from reading the vendored
+   source and from a standalone probe, not from building the repo's TS.
+8. WorkflowEngine BEHAVIOUR WAS READ, NOT RUN. The collision, the truncation, and the
+   key-order sensitivity were executed against a faithful reimplementation of the two
+   cited functions. I did not instantiate ClusterWorkflowEngine to observe end-to-end
+   behaviour, so the claim that the entityType prefix defuses the cross-tag collision rests
+   on reading ClusterWorkflowEngine.ts:157-161, 298-299, not on a run.
+9. I COULD NOT DETERMINE WHAT archive/pre-estate-focus CONTAINS. The branch is not in this
+   checkout's branch list, so the archived effector and workflow-replay claims were
+   assessed from the .reference vendored copy instead.
+10. ONTOLOGY-PACK SEMANTICS ARE PROPOSED, NOT RATIFIED. "A pack is a catalog prefix named
+    by its head" is my construction from the fact that the catalog is a journal. Nothing
+    in the repo defines a pack.
+
+---
+
+## 10. Sources
+
+### Repository code (this checkout, agent/codex/kernel-hygiene-gates, 2026-08-16)
+
+- proto/go/protod/protod.go — daemon lifecycle, Options, SyncMode, Assumption,
+  LifecycleError, embedded server construction (:29-46, 48-68, 70-82, 109-246)
+- proto/go/protod/auth.go — per-connection account isolation, shared application
+  credential (:16-21, 30-41, 43-93)
+- proto/go/protod/dispatch.go — the fourteen request subjects and the unknown-subject
+  refusal (:16-31, 60-108)
+- proto/go/protod/ingress.go — the only publish path; catalog and session journals refused
+  (:11-20, 45-56)
+- proto/go/protod/protocol.go — protocol grammar, identity: "trusted-principals",
+  seat/fence/close validation (:60-70, 81-220)
+- proto/go/protod/protocol_session.go — open/fill/close, session key derivation,
+  principalSeat, retention marks (:20-60, 102-172, 174-260, 275-320, 437-447, 525-527)
+- proto/go/protod/session.go — retention tiers and blocked compaction (:22-24, 752-761,
+  775-786)
+- proto/go/protod/contract.go — the describe surface, protocol request bodies (:9-160,
+  330-370)
+- proto/go/protod/lifecycle_test.go — the four envelope refusals plus isolation tests
+  (:17-227)
+- proto/go/cmd/protod/main.go — the binary's flags and ready line (:1-80)
+- go/journal/journal.go — chain journal, standing shape gate, CAS append, verify-on-read
+  (:41-58, 65-122, 124-162, 178-192, 200-232, 263-323, 361-383, 403-476, 478-549)
+- go/canonical/, go/cmd/jcsprobe/main.go — RFC 8785 canonicalization endpoint
+- proto/ts/src/client.ts — the three-verb client (:1-6, 40, 50-52, 80-103, 126-184)
+- proto/ts/src/session.ts — the facade and its "no capability added" law; retention tiers;
+  blocked compaction (:1-5, 58-104, 106-175, 177-273)
+- proto/ts/src/wire.ts — Effect Schema faces, refusal sorts, decodeReply (:1-4, 26-57,
+  344-372)
+- packages/moves/src/kernel.ts — the zero-import calculus and willAdmit (:1-9, 115, 302,
+  317, 447)
+- .reference/playground-mech/go-effector/effector.go — the fencing-token lease register
+  over JetStream KV (:26-49, 73-106, 108-184, 186-246, 272-321, 438-479)
+- scratch/dispatch/21-the-use-catalog.md §4 — the briefing corpus and repair policy
+  (:189-228)
+
+### Vendored dependency source (read in place, 2026-08-16)
+
+- repos/effect/packages/effect/package.json — version 4.0.0-rc.108
+- repos/effect/packages/effect/src/unstable/workflow/Workflow.ts — idempotencyKey (:59),
+  makeExecutionIdFromPayload (:317)
+- repos/effect/packages/effect/src/unstable/workflow/internal/crypto.ts — makeHashDigest,
+  16-byte loop
+- repos/effect/packages/effect/src/unstable/workflow/Activity.ts — Activity model and
+  idempotency helpers (:1-24, 246-261)
+- repos/effect/packages/effect/src/unstable/workflow/WorkflowEngine.ts — engine interface;
+  layerMemory (:663)
+- repos/effect/packages/effect/src/unstable/cluster/ClusterWorkflowEngine.ts — entity
+  addressing (:152-161, 293-304), layer (:790)
+- repos/effect/packages/effect/src/unstable/cluster/Sharding.ts — storage requirement
+  (:238-240, 999)
+- repos/effect/packages/effect/src/unstable/eventlog/EventJournal.ts — UUID-identified
+  journal entries (contrast case)
+- github.com/nats-io/nats.go@v1.53.1/jetstream/kv.go — Create/Update contracts (:118-129),
+  implementation (:1062-1145), two CAS error codes (:1096-1103)
+- github.com/nats-io/nats.go@v1.53.1/jetstream/stream_config.go — Mirror/Sources/
+  StreamSource, PersistMode (:133-141, 214-215, 375-403, 492-498)
+- github.com/nats-io/nats-server/v2@v2.14.4/server/stream.go —
+  Nats-Expected-Last-Subject-Sequence (:637), the CAS enforcement (:6441-6465),
+  errLastSeqMismatch (:6177, 6336)
+- github.com/nats-io/nats-server/v2@v2.14.4/server/jetstream_batching.go —
+  checkMsgHeadersPreClusteredProposal (:538-541)
+- github.com/nats-io/nats-server/v2@v2.14.4/server/filestore.go — SyncAlways → O_SYNC and
+  the Windows directory-fsync exclusion (:13946-13962)
+- github.com/nats-io/nats-server/v2@v2.14.4/server/opts.go — SyncAlways option (:470,
+  2681-2684)
+
+### External documentation (retrieved 2026-08-16)
+
+- Temporal, "Temporal Workflow Definition" — https://docs.temporal.io/workflow-definition
+  — deterministic constraints list; Activities for non-determinism; versioning requirement
+- Temporal, "About Temporal SDKs" / "Events and Event History" —
+  https://docs.temporal.io/encyclopedia/temporal-sdks ,
+  https://docs.temporal.io/workflow-execution/event — replay mechanism
+- Kurrent (EventStoreDB), "Appending events" —
+  https://docs.kurrent.io/clients/tcp/dotnet/21.2/appending — the three expected-version
+  outcomes; idempotence and ExpectedVersion.Any
+- Apache Kafka design documentation, "Log Compaction" —
+  https://docs.confluent.io/kafka/design/log_compaction.html — compaction guarantees,
+  offset immutability, tombstones and delete.retention.ms. (kafka.apache.org's own
+  single-page rendering did not return content to automated retrieval; apache/kafka
+  docs/design.html 404'd on trunk and 4.0.)
+- Nix manual 2.28, "Store Path" — https://nix.dev/manual/nix/2.28/store/store-path.html —
+  store paths as opaque identifiers
+- Nix manual 2.28, "Store Path Specification" —
+  https://nix.dev/manual/nix/2.28/protocols/store-path.html — the fingerprint format,
+  SHA-256 compressed to 160 bits, type component forms
+- NATS, "Source and Mirror" —
+  https://docs.nats.io/nats-concepts/jetstream/source_and_mirror — mirrors preserve
+  sequence numbers and are read-only; sources renumber
+
+### Experiment transcripts
+
+All under
+C:\Users\kokok\AppData\Local\Temp\claude\C--Users-kokok-Dev-foldlab\3c6800bd-d259-4f7d-a6b7-4817e42a5c9c\scratchpad\wf\production-architecture\transcripts\ :
+01-build.txt, 02-lifecycle.txt, 03-describe.txt, 04-seat-authority.txt, 05-audit-read.txt,
+06-effect-execid.txt, 07-git-cas.txt, 08-git-vs-canonical.txt, 09-cross-venue-mirror.txt,
+10-go-tests.txt, 11-ed25519.txt.
+
+Probe sources under …\production-architecture\probe\ : describe/main.go, seat/main.go,
+audit/main.go, mirror/main.go, effect-execid.ts, ed25519.ts, with go.mod using replace
+directives pointing at the repository (read-only; the module lives in scratch).

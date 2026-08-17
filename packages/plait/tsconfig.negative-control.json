@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "negative-controls/PublicEffects.value-union.mutant.ts",
+    "test/PublicEffects.typecheck.ts"
+  ]
+}

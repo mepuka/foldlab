@@ -1,0 +1,5 @@
+UTC: 2026-08-17T06:13:09.3049862Z
+Command: lake env lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilTrustAxioms.lean
+C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilTrustAxioms.lean:1:0: error: object file 'C:\Users\kokok\Dev\foldlab\repos\veil\.lake\build\lib\lean\Veil.olean' of module Veil does not exist
+Exit code: 1
+Elapsed seconds: 3.375

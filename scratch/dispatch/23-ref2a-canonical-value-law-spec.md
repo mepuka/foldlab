@@ -70,6 +70,12 @@ resting on a theorem.
 7. **Hygiene inherited**: the brief-22 gates cover this namespace by
    construction (same package) — no `panic!`/`partial`/`sorry`, no
    `@[implemented_by]`, no non-allowlisted `@[extern]`.
+8. **Corroborations carried, not re-derived** (determination
+   2026-08-17): DAG-CBOR independently forbids NaN and infinities —
+   a second standards lineage converging on the float drop; and the
+   measured JCS-vs-DAG-CBOR object-key-order divergence on pure
+   ASCII (DAG-CBOR sorts length-first) is the standing reason this
+   spec pins "RFC 8785" by name and never says "canonical JSON".
 
 ## Landed interfaces — build on, do not rebuild
 

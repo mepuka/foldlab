@@ -1,0 +1,33 @@
+=== E1: fill NEVER refuses, even for a certificate the checker would reject ===
+willAdmit(open, fill abandoned-cert) = true
+d85Refusal(open, fill) = false
+holes.impl after = {"tag":"filled","value":"{\"final_state_digest\":\"ab7724335464855159db94ed45add66567aedfd9aee9750810498b3ae0ad6e7a\",\"outcome\":\"abandoned\",\"session\":\"flb_protocol_session_v0_a90eef08d355572471ffd1721e9ea10446b5eb636a290274be3d88c24e61f2f6\"}"}
+  willAdmit(open, fill CHILD_A/other) = true
+  willAdmit(filled, fill CHILD_A/other) = true
+  willAdmit(disputed, fill CHILD_A/other) = true
+  willAdmit(decided, fill CHILD_A/other) = true
+
+=== E2: filled is NOT stable; decided IS stable ===
+after builder fills CHILD_A: {"tag":"filled","value":"{\"final_state_digest\":\"ab7724335464855159db94ed45add66567aedfd9aee9750810498b3ae0ad6e7a\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_a90eef08d355572471ffd1721e9ea10446b5eb636a290274be3d88c24e61f2f6\"}"}
+after reviewer fills CHILD_B: {"tag":"disputed","candidates":["reviewer:{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}","builder:{\"final_state_digest\":\"ab7724335464855159db94ed45add66567aedfd9aee9750810498b3ae0ad6e7a\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_a90eef08d355572471ffd1721e9ea10446b5eb636a290274be3d88c24e61f2f6\"}"]}
+  => a hole filled with a closed child was DEMOTED to disputed by a later fill
+after close/fence: {"tag":"decided","value":"{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}"}
+after rogue fill on decided: {"tag":"decided","value":"{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}"}
+  => decided value unchanged; evidence grew: 3 pairs
+
+=== E3: schedule-freedom holds when the value is an opaque certificate ===
+terminal meaning digests across 4 permutations: ["1c4d0751015b3b921fabc76b6142536bb46b197224dc72046b58456703b3a0db","1c4d0751015b3b921fabc76b6142536bb46b197224dc72046b58456703b3a0db","1c4d0751015b3b921fabc76b6142536bb46b197224dc72046b58456703b3a0db","1c4d0751015b3b921fabc76b6142536bb46b197224dc72046b58456703b3a0db"]
+  all equal: true
+
+=== E4: merge is bag union — two agents open different child sessions ===
+merge(L,R).impl = {"tag":"disputed","candidates":["reviewer:{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}","builder:{\"final_state_digest\":\"ab7724335464855159db94ed45add66567aedfd9aee9750810498b3ae0ad6e7a\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_a90eef08d355572471ffd1721e9ea10446b5eb636a290274be3d88c24e61f2f6\"}"]}
+merge(R,L).impl = {"tag":"disputed","candidates":["reviewer:{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}","builder:{\"final_state_digest\":\"ab7724335464855159db94ed45add66567aedfd9aee9750810498b3ae0ad6e7a\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_a90eef08d355572471ffd1721e9ea10446b5eb636a290274be3d88c24e61f2f6\"}"]}
+  meaningEq: true  stateEq: true
+fenced decision = {"tag":"decided","value":"{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}"}
+  => the fence picks ONE child session; the other child's work is orphaned but journaled
+
+=== E5: a state-gated admission (child-must-be-closed) BREAKS permutation invariance ===
+order1 impl = {"tag":"open"}
+order2 impl = {"tag":"filled","value":"{\"final_state_digest\":\"9ace6e289d03004b702e1782f5da4f3a3987a2e654d26635e655ca1a8521d0c3\",\"outcome\":\"completed\",\"session\":\"flb_protocol_session_v0_347e3eb97a8739d1438c69dc08a7b6c16f3050e8d42f569a1938bc63ff25e14b\"}"}
+  meaningEq under permutation: false
+  pure kernel meaningEq for the same bags: true

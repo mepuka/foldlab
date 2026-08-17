@@ -1,0 +1,13 @@
+name = "fabric"
+defaultTargets = ["Fabric", "emitter", "control"]
+
+[[lean_lib]]
+name = "Fabric"
+
+[[lean_exe]]
+name = "emitter"
+root = "Main"
+
+[[lean_exe]]
+name = "control"
+root = "ControlMain"

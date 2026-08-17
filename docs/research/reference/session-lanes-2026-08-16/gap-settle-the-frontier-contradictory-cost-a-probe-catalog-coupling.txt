@@ -1,0 +1,9 @@
+=== RUN   TestProbeCatalogDerivedFrontierMovesStateWithNoSessionMove
+    zz_catalog_coupling_test.go:61: head before = e66b4a271339f27bb3a43dc55018d4b08a48844978b49616eff3c2b8ec27bed9
+    zz_catalog_coupling_test.go:62: head after  = e66b4a271339f27bb3a43dc55018d4b08a48844978b49616eff3c2b8ec27bed9
+    zz_catalog_coupling_test.go:70: RESULT: state reply bytes CHANGED with NO session move and an UNCHANGED head
+    zz_catalog_coupling_test.go:71:   the reply is no longer a fold of the session journal alone
+    zz_catalog_coupling_test.go:72:   before len=1440 after len=1507
+--- PASS: TestProbeCatalogDerivedFrontierMovesStateWithNoSessionMove (0.04s)
+PASS
+ok  	foldlab/proto/protod	1.364s

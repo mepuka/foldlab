@@ -1,0 +1,7 @@
+ok  	foldlab/proto/catalogr4	26.714s
+?   	foldlab/proto/catalogr4/cmd	[no test files]
+?   	foldlab/proto/cmd/frontierprobe	[no test files]
+ok  	foldlab/proto/cmd/protod	(cached)
+ok  	foldlab/proto/cmd/wirefix	1.460s
+?   	foldlab/proto/internal/readreplyserver	[no test files]
+ok  	foldlab/proto/protod	10.295s

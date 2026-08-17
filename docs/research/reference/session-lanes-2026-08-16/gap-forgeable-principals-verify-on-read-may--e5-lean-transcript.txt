@@ -1,0 +1,20 @@
+EpistemicState : Type u_1 →
+  (Holder : Type u_2) →
+    (Value : Type u_3) → (Candidate Value Holder → Candidate Value Holder → Ordering) → Type (max (max u_2 u_1) u_3)
+FenceRule : (Holder : Type u_1) →
+  (Value : Type u_2) →
+    (candidateCmp : Candidate Value Holder → Candidate Value Holder → Ordering) →
+      [DecidableEq Value] → [Std.TransCmp candidateCmp] → Type (max u_1 u_2)
+([true, true], [true])
+([(10, 0), (20, 1)], [(10, 0), (20, 1)])
+true
+([(10, 0), (20, 1)], [(10, 0), (20, 1)])
+true
+true
+true
+'Moves.spec_discharged' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Moves.spec_no_loss_strong' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Moves.spec_fence_schedule_free' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Moves.spec_evidence_confluent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Moves.spec_meaning_confluent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Moves.spec_refusal_iff' depends on axioms: [propext, Classical.choice, Quot.sound]

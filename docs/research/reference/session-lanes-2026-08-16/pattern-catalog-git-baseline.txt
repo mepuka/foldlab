@@ -1,0 +1,26 @@
+ M .gitignore
+ M scratch/dispatch/07-moves-vector-wall.md
+ M verify/moves/run.sh
+?? docs/design/2026-08-16-ref0-extraction-grill-record.md
+?? docs/research/2026-08-16-review-float-hygiene-branch.md
+?? docs/research/2026-08-16-rq-synthesis.md
+?? docs/research/2026-08-16-rq1-lean-c-backend.md
+?? docs/research/2026-08-16-rq2-extraction-proved-or-trusted.md
+?? docs/research/2026-08-16-rq3-wasm-verified-target.md
+?? docs/research/2026-08-16-rq4-verify-existing-implementations.md
+?? docs/research/2026-08-16-rq5-ci-conformance-gates.md
+?? docs/research/2026-08-16-rq6-reproducible-artifacts.md
+?? docs/research/2026-08-16-rq7-run-certificates.md
+?? docs/research/2026-08-16-rq8-proof-maintenance.md
+?? docs/research/2026-08-16-rq9-rfc8785-numbers.md
+?? docs/research/reference/
+?? scratch/dispatch/17-the-refinement-ladder.md
+?? scratch/dispatch/18-ref0-hello-kernel-spike.md
+?? scratch/dispatch/19-refinement-research-questions.md
+?? scratch/dispatch/20-refinement-program-board-breakdown.md
+?? scratch/dispatch/21-float-leaf-drop.md
+?? scratch/dispatch/21-the-use-catalog.md
+?? scratch/dispatch/22-kernel-hygiene-gates.md
+?? scratch/dispatch/23-ref2a-canonical-value-law-spec.md
+?? scratch/dispatch/24-ref1-wire-model-spec.md
+?? scratch/dispatch/25-float-hygiene-cure.md

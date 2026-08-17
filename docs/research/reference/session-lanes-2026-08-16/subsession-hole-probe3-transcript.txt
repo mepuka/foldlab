@@ -1,0 +1,46 @@
+=== P7: the child session KEY is derivable with no journal access ===
+client-derived session key                       "flb_protocol_session_v0_4a3f40c34416a171bc9a0b6fdc9ac57f916a303b0f5ec7e795a5607a732e87a0"
+daemon-returned session key                      "flb_protocol_session_v0_4a3f40c34416a171bc9a0b6fdc9ac57f916a303b0f5ec7e795a5607a732e87a0"
+KEY IS A PURE FUNCTION OF THE OPEN EVENT         true
+
+--- open is convergent, not exclusive ---
+second open by a different caller                "flb_protocol_session_v0_4a3f40c34416a171bc9a0b6fdc9ac57f916a303b0f5ec7e795a5607a732e87a0"
+SAME SESSION (open is idempotent)                true
+open with different bindings                     "flb_protocol_session_v0_a3fa52c4ef47e7c8fa1efc1519b8226a0dbf0921c38b5af2e95323064063a11c"
+different bindings => different session          true
+
+=== P8: the final-state-digest coverage boundary ===
+stored final_state_digest at close               "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+recomputed from the fold at close                "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+digest re-derives from the closed fold           true
+stored final_state_digest after receipt          "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+recomputed from the CURRENT fold                 "15726cce356a4f03cfae37344dd942b52ae11bac378bb5be35363f5000a8635a"
+current fold still hashes to the pin             false
+  -> the pin commits to MEANING-AT-CLOSE; the post-close evidence tail is outside it
+
+=== P9: a genuinely fresh parent session; clean demotion transcript ===
+parent session                                   "flb_protocol_session_v0_60da0f0db591f496518237d2aadabb8d123fce9474ee2f2ff95afc0d9db6094b"
+coordinator fills the REAL certificate           ADMITTED
+impl state after one honest fill                 "filled"
+operator fills a FABRICATED certificate          ADMITTED
+impl state after the clash                       "disputed"
+parent close outcome                             "completed"
+fenced decision                                  {"final_state_digest":"bebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebe","outcome":"completed","protocol":"6a99edf48871f5de1b6e13ab22c922f71973edbbd8665a369e18bcd24471b92c","session":"flb_protocol_session_v0_bebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebe"}
+  -> seat-authority order [operator, coordinator] hands the hole to the fabricator
+
+=== P10: an abandoned child's certificate under a completed-only hole ===
+abandoned child outcome                          "abandoned"
+abandoned child final_state_digest               "98212b0503c1170eedd83acd64e53431082d6b2adfb84867dd400dd1ecf1af24"
+abandoned cert into a completed-only hole        kind=invalid-structure  sort=structural 
+completed cert into a completed-only hole        ADMITTED
+  -> outcome discrimination is ALREADY a declared type-level check, not a new hole kind
+
+=== P11: can a protocol digest cycle exist? (G5 well-foundedness) ===
+protocol X digest                                "7a23452f598909b3769f207bb58736098430d581a43cd8b3a5ea3cd9e5ae25c9"
+literal it names                                 "0000000000000000000000000000000000000000000000000000000000000000"
+  -> to make X name ITSELF, the literal would have to equal SHA-256 of bytes containing it
+  -> a protocol-digest cycle is a hash fixed point, not a validation question
+
+--- what the shipped recursion ban covers ---
+type ref to an uncataloged digest                kind=unknown-ref        sort=absence    
+  law                                            "W4/DAG: refs must resolve to cataloged digests — no forward refs, no cycles, no admission on faith"

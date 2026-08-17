@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.fabric-client.mutant.ts(36,3): error TS2344: Type '"FabricClient.FabricClient.layer"' does not satisfy the constraint 'never'.

@@ -306,3 +306,45 @@ record, and the synthesis §5 digest is the citable surface — a later
 reader cites the synthesis or the addenda, never an uncorrected
 paragraph. "Stands" dispositions required no action; the three
 re-grill items were ruled above.
+
+On the proof-support briefing's determination
+(`docs/research/2026-08-17-proof-support-determination.md`,
+investigating the parallel session's
+`2026-08-16-proof-support-briefing.md`), 2026-08-17, three further
+rulings, each taken as recommended:
+
+8. **The academic identification is adopted.** The move calculus's
+   citable name: a join-semilattice of holder-attributed
+   observations (a CvRDT, Shapiro et al. 2011) carried over an
+   op-shaped wire, with arbitration (Burckhardt et al., POPL 2014)
+   declared as a constant of the protocol value rather than derived
+   from the execution, and close as the declared coordination point
+   CALM requires for the one non-monotone act. VERIFICATION.md's E2
+   bounds prose gains the declared-arbitration sentence, the CALM
+   caveat, and the previously unwritten self-supersession bound —
+   citations paraphrase rather than quote, sidestepping the
+   briefing's ligature-extraction caveat.
+9. **The shipped fence gets its theorem pair.** A
+   `seatPriorityFenceRule : FenceRule` instance plus
+   injection-immunity and dictatorship lemmas, Violations.lean-
+   shaped, existing machinery only — the estate-of-safety
+   through-line applied to the one rule that ships. Dispatch brief:
+   `scratch/dispatch/28-seat-priority-fence-profile.md`; runs beside
+   REF-1.
+10. **The record set lands.** (a) PRE-REGISTERED: any child-closure
+    gate moves the confluence family from safety to liveness
+    (fair-retry premise), exceeding VERIFICATION.md's stated bounds
+    — stating such a theorem without ratifying the expansion is
+    refused in advance. (b) The MPST refusal is a durable page
+    (`docs/design/2026-08-17-mpst-refusal.md`) carrying the
+    projection-theorem IOU. (c) Declined and recorded: Sal (admits
+    SMT verdicts via `MVarId.admit` — the exact channel the hygiene
+    gates refuse; its design confirms brief 22 externally), Veil,
+    CSLib, and Mathlib for the live slices; the
+    `Multiset`-as-List-mod-Perm seed is recorded for a REF-9-class
+    future. (d) The absorb-wedge defect (single seat + `absorb` +
+    self-differing value wedges a session permanently open; ran-it
+    in the parallel session's gap lane) is filed as its own board
+    issue: reproduce first, then disposition — fix the daemon or
+    ratify the behavior — before or beside REF-1, which makes the
+    wedge statable.

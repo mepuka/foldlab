@@ -1,0 +1,6 @@
+ok  	foldlab/proto/catalogr4	27.636s
+?   	foldlab/proto/catalogr4/cmd	[no test files]
+ok  	foldlab/proto/cmd/protod	5.064s
+ok  	foldlab/proto/cmd/wirefix	1.708s
+?   	foldlab/proto/internal/readreplyserver	[no test files]
+ok  	foldlab/proto/protod	10.682s

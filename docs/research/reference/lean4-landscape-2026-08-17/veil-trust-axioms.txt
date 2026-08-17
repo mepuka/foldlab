@@ -1,0 +1,26 @@
+UTC: 2026-08-17T06:29:02.7067444Z
+Command: lake env lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilTrustAxioms.lean
+warning: cvc5: repository 'C:\Users\kokok\Dev\foldlab\repos\veil\.lake/packages\cvc5' has local changes
+libc++abi: libc++abi: terminating due to uncaught exception of type lean::exception: Could not find native implementation of external declaration 'cvc5.TermManager.new' (symbols 'lp_cvc5_cvc5_TermManager_new___boxed' or 'lp_cvc5_cvc5_TermManager_new').
+For declarations from `Init`, `Std`, or `Lean`, you need to set `supportInterpreter := true` in the relevant `lean_exe` statement in your `lakefile.lean`.terminating due to uncaught exception of type lean::exception: Could not find native implementation of external declaration 'cvc5.TermManager.new' (symbols 'lp_cvc5_cvc5_TermManager_new___boxed' or 'lp_cvc5_cvc5_TermManager_new').
+For declarations from `Init`, `Std`, or `Lean`, you need to set `supportInterpreter := true` in the relevant `lean_exe` statement in your `lakefile.lean`.
+
+Exit code: -1073740791
+Elapsed seconds: 13.259
+
+Retry UTC: 2026-08-17T06:29:30.2805745Z
+Command: lake lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilTrustAxioms.lean
+warning: cvc5: repository 'C:\Users\kokok\Dev\foldlab\repos\veil\.lake/packages\cvc5' has local changes
+⚠ [717/1277] Replayed Loom.MonadAlgebras.WP.Attr
+warning: Loom/MonadAlgebras/WP/Attr.lean:27:34: `Lean.Meta.DiscrTree.insertCore` has been deprecated: Use `Lean.Meta.DiscrTree.insertKeyValue` instead
+warning: Loom/MonadAlgebras/WP/Attr.lean:26:77: `Lean.Meta.DiscrTree.insertCore` has been deprecated: Use `Lean.Meta.DiscrTree.insertKeyValue` instead
+⚠ [753/1277] Replayed Smt.Reconstruct.BitVec.Bitblast
+warning: Smt/Reconstruct/BitVec/Bitblast.lean:36:4: declaration uses `sorry`
+⚠ [812/1277] Replayed Smt.Data.Sexp
+warning: Smt/Data/Sexp.lean:89:10: `String.next` has been deprecated: Use `String.Pos.Raw.next` instead
+
+Note: The updated constant is in a different namespace. Dot notation may need to be changed (e.g., from `x.next` to `Pos.Raw.next x`).
+'trusted_smt_reflexivity' depends on axioms: [sorryAx]
+'reconstructed_smt_reflexivity' depends on axioms: [propext, Classical.choice, Quot.sound]
+Exit code: 0
+Elapsed seconds: 9.451

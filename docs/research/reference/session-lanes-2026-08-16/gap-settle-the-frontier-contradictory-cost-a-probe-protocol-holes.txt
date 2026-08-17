@@ -1,0 +1,19 @@
+=== RUN   TestProbeOpaqueProtocolHoleAdmitsEverything
+    zz_frontier_probe_test.go:24: opaque type digest = 714cc72ebf92bfee7564a62f331920cde96ad36fee2d4bb43b36554f02d7456b
+    zz_frontier_probe_test.go:76: RESULT A: opaque-typed protocol hole accepted 7/7 mutually incompatible values
+    zz_frontier_probe_test.go:77: RESULT A: therefore `legal` for this hole enumerates the whole JSON value domain
+--- PASS: TestProbeOpaqueProtocolHoleAdmitsEverything (0.08s)
+=== RUN   TestProbeProtocolAdmissionIsSeatAndFenceRelative
+    zz_frontier_probe_test.go:139: RESULT B: identical type-legal value at the same hole
+    zz_frontier_probe_test.go:140:   builder(b-p)     ok=false refusalKind=seat-unauthorized
+    zz_frontier_probe_test.go:141:   coordinator(co-p) ok=true refusalKind=<nil>
+    zz_frontier_probe_test.go:146: RESULT B: therefore `legal` has no principal-independent truth value
+    zz_frontier_probe_test.go:150: RESULT B: state reply keys = [bindings head holes next ok protocol session status]
+--- PASS: TestProbeProtocolAdmissionIsSeatAndFenceRelative (0.04s)
+=== RUN   TestProbeTypeFrontierIsFiniteProtocolValueDomainIsNot
+    zz_frontier_probe_test.go:172: RESULT C: TYPE frontier legal alphabet size=12 kinds=[string bool int null opaque literal list struct union brand check ref]
+    zz_frontier_probe_test.go:173: RESULT C: entry keys = [legal path refs]
+    zz_frontier_probe_test.go:177: RESULT C: a {k:string} protocol hole admits an unbounded set (every string); digest=3b67b844b3d096bc06a752cfdb4ff7ba292aa25662d6ee36e65135df797f2fc0 — no finite `legal` list exists for it
+--- PASS: TestProbeTypeFrontierIsFiniteProtocolValueDomainIsNot (0.03s)
+PASS
+ok  	foldlab/proto/protod	1.489s

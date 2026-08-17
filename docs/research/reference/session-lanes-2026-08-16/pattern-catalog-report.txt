@@ -1,0 +1,677 @@
+# Lane report — the pattern catalog P1-P6, measured
+
+Lane: scratch/dispatch/21-the-use-catalog.md section 6, patterns P1-P6.
+Question: what runs TODAY, mechanically, versus what is missing; rank by
+distance-to-demo; name the next acceptance demo after 04-ontology-demo.md.
+
+All experiments run 2026-08-16 on this machine (Windows 11, repo
+C:\Users\kokok\Dev\foldlab, branch agent/codex/kernel-hygiene-gates,
+HEAD 0b75a6c0eff012e34c7801bc32c0715d6b99db46). Every artefact of this lane
+lives in
+C:\Users\kokok\AppData\Local\Temp\claude\C--Users-kokok-Dev-foldlab\3c6800bd-d259-4f7d-a6b7-4817e42a5c9c\scratchpad\wf\pattern-catalog\
+Nothing was written into the repository (see section 7).
+
+---
+
+## 0. Toolchain, checked not assumed
+
+| Tool | Command | Result |
+|---|---|---|
+| bun | bun --version | 1.3.14 |
+| go | go version | go1.26.5 windows/amd64 |
+| lake | lake --version | Lake version 5.0.0-src+d8b1897 (Lean version 4.33.0) |
+| lean | lean --version | 4.33.0, x86_64-w64-windows-gnu, commit d8b1897 |
+| elan | elan --version | elan 4.2.3 (b6cec7e10 2026-06-08) |
+
+The brief listed Lean/lake as UNKNOWN. Lean 4.33.0 and lake ARE on PATH here.
+I did not run `lake build` (out of lane; Lean claims below are read from
+source and marked primary-source, not ran-it).
+
+`bun install` was not needed: node_modules/ was already present and both
+suites ran from it.
+
+---
+
+## 1. The estate runs on this machine
+
+### 1.1 The daemon starts
+
+`go build -o <scratch>/bin/protod.exe ./cmd/protod` from proto/go -> BUILD OK.
+Started with the harness's own flags (proto/ts/test/harness.ts:102):
+`--store <scratch>/store --sync-mode crash-durable`. Ready line:
+
+    {"ready":true,"url":"nats://application:<64hex>@127.0.0.1:50064"}
+
+One trap worth recording: protod EXITS WHEN ITS STDIN CLOSES (the harness
+shuts it down that way, harness.ts:88). Running it with `< /dev/null`
+produces a clean start followed immediately by "Initiating Shutdown...".
+My runner (run-example.sh) holds stdin open with a `sleep` pipe.
+
+### 1.2 The suites are green
+
+| Suite | Command | Result |
+|---|---|---|
+| TS proto | bun test in proto/ts | 152 pass, 4 skip, 0 fail, 5298 expect() calls, 18 files, 15.37s |
+| Go daemon | go test ./protod/ in proto/go | ok foldlab/proto/protod 9.581s |
+
+### 1.3 The runnable slice is real
+
+`bun proto/ts/examples/task49-session.ts` against the live daemon: exit 0,
+559 lines of transcript (task49.stdout). A genuine three-seat session:
+
+- open -> session flb_protocol_session_v0_52b91725..., head 5433dc89...
+- four holes filled (spec, authorization, build_report, review), each reply
+  carrying hole_state.state:"filled" and a candidates array of {value, seat}
+- decision filled by coordinator ("revise"), countered by operator
+  ("accept") -> hole_state.state:"disputed" with BOTH candidates retained,
+  pair-attributed
+- codex filling decision -> refusal seat-unauthorized, sort structural,
+  law "a protocol fill principal must hold one of the target hole's declared
+  seats", expected ["coordinator","operator"]
+- close by fable -> refusal seat-unauthorized, law "a close principal must
+  hold one of the protocol's declared close seats", expected ["operator"]
+- close by mepuka -> outcome "completed"; terminal fold carries
+  final_state_digest 2ccc53aa4a1d11be470cf96657b8809251031db20bec9f2850992dc45fe20b7c,
+  decision.state "decided" with the operator's value, coordinator's losing
+  candidate retained.
+
+Draft 21's "three-agent transcript" claim is CONFIRMED BY EXECUTION,
+including the dispute and both refusals.
+
+### 1.4 The MCP face is real
+
+FLB_URL=<url> bun proto/ts/src/mcp-main.ts driven with hand-written JSON-RPC
+over stdio (run-mcp.sh, mcp-in.jsonl):
+
+- initialize -> {"protocolVersion":"2025-06-18","serverInfo":
+  {"name":"flb-proto","version":"0.0.1"}}
+- tools/list -> 15 tools derived from contract.describe: type_create,
+  type_fill, type_unfill, journal_read, contract_describe, session_open,
+  session_move, session_state, session_commit, protocol.create,
+  protocol.session.open, protocol.session.fill, protocol.session.close,
+  protocol.session.state, publish
+- tools/call type_create {"structure":{"k":"string"}} -> digest 3b67b844...,
+  created:true
+- tools/call type_create {"structure":{"k":"nonsense"}} -> a refusal in
+  structuredContent with isError: false.
+
+REFUSALS ARE DATA EVEN AT THE MCP BOUNDARY. This is the single most
+load-bearing DX fact for every pattern below.
+
+Honest defect: on stdin close the process exits 1 with
+"mcp-main: Error: All fibers interrupted without error". Cosmetic
+shutdown-path noise, but a supervisor treating non-zero exit as failure
+will misreport it.
+
+---
+
+## 2. Per-pattern mechanical verdict
+
+Every "runs" verdict was produced by executing against a live daemon this
+session. Probe scripts and captured stdout named per row.
+
+### P1 - Extraction : PARTIAL, blocked twice
+
+Runs: holes typed by a domain ontology (value_check.go checks every fill
+against the hole's cataloged flb.type.v0), two extractors disagreeing
+producing a pair-attributed dispute, the fence adjudicating at close, the
+completion declaration deciding completed vs abandoned.
+
+Two mechanical blockers, both measured:
+
+1. FABRICATED PROVENANCE IS ADMITTED. probe-p5-p1-controls.ts (p5p1.stdout,
+   P1-1) filled a hole whose type declares
+   provenance:{corpus_journal, seq, span, doc_digest} with a journal that
+   does not exist, seq 99999, span "page-404", doc_digest "ffff...".
+   Result: {"admitted": true, "state": "filled"}. Provenance is SHAPE-ONLY
+   today. The only resolvable reference in the grammar is ref.digest, and
+   value_check.go:113 shows what it does: resolve a TYPE and check the value
+   against it. It cannot point at evidence.
+
+2. PER-DOCUMENT SESSIONS ARE NOT OPENABLE. probe-identity.ts (ident.stdout,
+   I1): two protocol.session.open calls with identical protocol and bindings
+   returned the SAME session (flb_protocol_session_v0_c4720d3d...) and the
+   SAME head. Varying one principal string produced a distinct session (I1b).
+   The open request body is exactly {"protocol","bindings","predecessor"?}
+   (proto/wire/CONTRACT.md:189) - THERE IS NO SLOT FOR WHAT THE SESSION IS
+   ABOUT. So N documents cannot each get a session of one protocol under one
+   binding set. Workarounds, all with costs: smuggle the item into a
+   principal string (corrupts seat semantics; principal authentication is
+   already the named gap); cite predecessor (asserts successor-round
+   semantics falsely); mint one protocol per document via the free `name`
+   field (one catalog fact per document, and the protocol digest no longer
+   identifies "the extraction protocol").
+
+Ingress CAN carry a briefing corpus today: probe-p3-research.ts (p3.stdout,
+A1-A4) created a document type, published a frame to
+flb.ing.briefing_corpus, read it back with local head verification, and the
+uncataloged-type control refused unknown-identity, sort absence, law
+"W4: create before publish - an unknown identity never enters a journal;
+lag is absence, not admission on faith". The STORAGE half of the briefing
+corpus exists. The REFERENCE half does not.
+
+SINGLE SMALLEST MISSING PIECE: one optional, identity-bearing field on the
+flb.req.protocol.session.open event naming what the session is over (a
+corpus/subject coordinate the daemon resolves). It fixes individuation
+(blocker 2) and gives provenance something resolvable to point at
+(blocker 1's first half). DRAFT 21'S BRIEFING CORPUS IS SQUARELY ON P1'S
+CRITICAL PATH; the repair policy is not.
+
+### P2 - Process design : RUNS TODAY, END TO END, WITH A RE-DERIVABLE LINK
+
+probe-p2-process.ts (p2.stdout). A design session with three seats
+(designer, stakeholder, owner), a contested stage-boundary hole (gate_stage
+-> disputed), and a hole assembled_process typed {"k":"opaque"} holding the
+designed protocol record. Closed completed. Then:
+
+    sealed_value_sha256_over_jcs : 33e39ac600b7f2d26e8fbe8a3162fc89c40854a6049d315041effe9e417149ca
+    protocol_create_digest       : 33e39ac600b7f2d26e8fbe8a3162fc89c40854a6049d315041effe9e417149ca
+    equal                        : true
+    run_session_protocol_field   : 33e39ac600b7f2d26e8fbe8a3162fc89c40854a6049d315041effe9e417149ca
+
+The designed process was then opened as a session, filled, and closed
+completed. "THE PROCESS WE RAN IS THE PROCESS WE DESIGNED" IS A CHECKABLE
+DIGEST EQUALITY ON THIS MACHINE, NOT TESTIMONY.
+
+Negative controls in the same run:
+- completion: [] refuses at path ["protocol","completion"] with expected
+  "a non-empty, UTF-16-sorted, duplicate-free array of declared hole names
+  whose terminal states decide the close outcome" (P2-7).
+- An unknown key in a protocol value refuses at ["protocol","surprise"] with
+  expected enumerating the nine legal fields (P2-C3). You cannot smuggle
+  content through the opaque hole into the catalog.
+- Swapping two entries of holes yields a different digest (P2-C1 3da3813e...
+  vs P2-C2 02cb924c...). The identity is real, not order-insensitive.
+
+Residual, stated plainly: assembled_process is opaque, which by law "admits
+any value ... because that is the law, not because the check was omitted"
+(CONTRACT.md:335-349). The daemon does NOT check the tie; the reader
+re-derives it. Under the estate's own discipline (heads are claims, readers
+verify) that is the correct division of labour, but it must be said out loud
+in any demo record.
+
+SINGLE SMALLEST MISSING PIECE: a hole-type form meaning "a digest cataloged
+under scheme flb.protocol.v0", so a parent can hold a CHECKED reference
+rather than an opaque blob. THE DEMO DOES NOT NEED IT. Neither section-4
+object is on P2's critical path.
+
+### P3 - The research protocol : RUNS TODAY, END TO END
+
+probe-p3-research.ts (p3.stdout). Protocol research-program, seats
+coordinator/lane_a/lane_b/operator, two report holes plus a fenced synthesis
+hole, completion ["rq1","rq2","synthesis"], close ["coordinator"]. Three
+discipline refusals fired at exact paths:
+
+| Violation | path | expected |
+|---|---|---|
+| a claim with no evidence | ["value","claims","first","evidence"] | "a required field" |
+| confidence outside the vocabulary | ["value","claims","first","confidence"] | the four-literal union, got "pretty-sure" |
+| report_digest not a digest | ["value","report_digest"] | {"check":"pattern","args":{"source":"^[0-9a-f]{64}$"}} |
+
+Then two conforming lane reports were accepted, synthesis was disputed
+(coordinator "covered" vs operator "gap"), the coordinator closed, the fence
+(order ["operator","coordinator"]) decided "gap", and the session closed
+completed with final_state_digest
+5d2772431653eba25dee9572e18c9235714d6ecbf107f31a6a8a290e209fc807.
+
+Draft 21's P3 sentence - "holes typed 'dated report conforming to the
+dispatch discipline', fills carrying the report digest, refusals enforcing
+the discipline (a claim without a source refuses at its path)" - IS
+LITERALLY TRUE TODAY, and I ran it.
+
+One grammar limit found while building it: FLB.TYPE.V0 HAS NO LIST-LENGTH
+CHECK. checkValuePredicate implements minLength/maxLength only for strings
+(value.(string), value_check.go:133-150); the check-name table
+(CONTRACT.md:361-364) is minLength, maxLength, pattern, min, max,
+greaterThan, lessThan. "At least one source" is therefore expressed as a
+required `primary` plus an optional `additional` list - which works, but is
+a shape workaround, not a check.
+
+SINGLE SMALLEST MISSING PIECE: a convention, not a type form - that the
+report's own bytes are ingested so report_digest resolves. Today it is an
+asserted coordinate nothing checks (same defect class as P1-1). The briefing
+corpus is on the critical path of the HONEST version of P3, not of a demo
+of it.
+
+### P4 - Action holes : DOES NOT RUN
+
+- The external-binding engine is ABSENT FROM THE WORKING TREE. The only
+  effector implementation is under .reference/playground-mech/
+  (go-effector/effector.go, mech-src/effector.ts). Inside the shipped daemon
+  "effector" appears twice, both as prose asserting it is NOT used:
+  contract.go:268 ("sessions never use the effector") and session.go:668
+  ("stale evidence is refused without an effector").
+- Draft 21 P4 says "a pipeline program is already data with a digest, so
+  'run program P over input anchor A' is a hole type". THAT IS NOT TRUE OF
+  THIS TREE. grep -rln "pipeline program|PipelineProgram|pipelineProgram"
+  over *.go/*.ts excluding node_modules and .reference returns ZERO FILES.
+  packages/ contains only core (one file, jcs.ts) and moves; go/ contains
+  canonical, journal, cmd. The concept survives only in the CONTEXT.md
+  glossary (lines 112-118) and at tag archive/pre-estate-focus (tag
+  confirmed present). This is a FINDING AGAINST THE CATALOG TEXT, not
+  against the code.
+
+SINGLE SMALLEST MISSING PIECE: not a piece - an engine (work-digest
+idempotency key, attempt index, durable execution, plus at least one new
+request kind). Neither section-4 object is on its critical path; P4 is gated
+on a build that has been designed and grilled and not started.
+
+### P5 - LLM-task holes : RUNS, WITH THE WRONG FENCE
+
+probe-p5-p1-controls.ts (p5p1.stdout). One hole `extraction` typed
+{answer, method:{model, prompt_digest, temperature}}, three seats
+method_a/method_b/method_c standing for three declared methods,
+revision "absorb", close ["judge"]. All three filled; the hole became
+disputed with a three-element candidates array, each candidate carrying its
+seat AND its method record. The judge closed; the fence decided; the terminal
+fold shows state "decided" with method_c's value and the full candidate set
+retained.
+
+The machine for "candidate fills from N methods, dispute where judges
+disagree, replayable adjudication" exists and I ran it. Two gaps:
+
+1. THE FENCE-RULE VOCABULARY IS A SINGLETON. protocol.go:173 refuses
+   anything but "seat-authority"; CONTRACT.md:176-177 says every multi-seat
+   hole carries {"rule":"seat-authority","order":[...]}. For judging you want
+   a declared function of the CANDIDATE SET. In my run two of three methods
+   produced the identical answer and the fence ignored that fact entirely -
+   it picked by declared seat order. Meanwhile the model already has it:
+   pluralityFenceRule (verify/moves/Moves/Model.lean:1331),
+   pluralityCandidate_mem (:1324), plurality_fence_deterministic (:1398),
+   and Main.lean:24 emits a "plurality" field into the generated corpus.
+   (Read from source this session; not re-checked by lake build.) This is a
+   PROVED LAW WITH NO SHIPPED RIGHT - the universal-properties-to-DX rule
+   left un-exercised. Ceiling: no_fair_resolute_fence (Model.lean:1948) means
+   a fair resolute fence is impossible, so a plurality rule must ship with a
+   declared tie-break; the daemon already has one (smallest canonical value
+   bytes within the fence-chosen seat, CONTRACT.md:219-220).
+2. The per-item individuation problem of P1 blocker 2 applies verbatim: an
+   eval over N rows cannot open N sessions of one protocol.
+
+SINGLE SMALLEST MISSING PIECE: one more declared fence-rule name on the wire
+("plurality"), whose law is already proved model-side. Neither section-4
+object is on its critical path.
+
+### P6 - Human intake : PARTIAL, one reply field short
+
+Runs: the human as a seat, seat-unauthorized refusals teaching who may act,
+close authority declared and enforced (both refusals in task49.stdout), the
+concierge frontier for TYPE AUTHORING served as data (probe.stdout, and again
+through MCP type_fill).
+
+Missing, and this is the whole gap: PROTOCOL.SESSION.STATE HAS NO FRONTIER.
+grep -rn "frontier" over proto/go/protod/protocol.go, protocol_session.go,
+protocol_step.go returns nothing; frontier lives only in catalog.go,
+concierge.go, contract.go, session.go - the type-authoring side. The state
+fact's keys, read off the wire (p3.stdout, B1):
+
+    ["ok","session","protocol","bindings","holes","status","head","next"]
+
+holes gives per-hole state, and - after close - sealed/value; protocol is a
+bare digest. So "which holes are open, for my seat" must be reconstructed
+client-side. probe-p6-frontier.ts (p6.stdout) measured that reconstruction:
+2 WIRE ROUND-TRIPS (protocol.session.state plus journal.read
+{"journal":"catalog"}) and a SCAN OF ALL 11 CATALOG ENTRIES to find the
+protocol fact by digest and read its holes[].seats, completion, close. It
+works - the output is a correct per-principal frontier, and "may this
+principal close?" resolves mepuka:true, codex:false - but every client
+re-implements the join, and the join can drift from the daemon's own step
+semantics. There is also no read-one-fact verb: journal.read is the only
+read, so resolving one digest means scanning a journal.
+
+SINGLE SMALLEST MISSING PIECE: one reply field - `frontier` on the
+flb.req.protocol.session.state fact, computed solely from state (the same
+discipline flb.session.v0 already states: "The frontier is computed solely
+from the partial and the catalog snapshot named by catalogHead; session
+history is not an input", CONTRACT.md:143-145). No new request kind. Neither
+section-4 object is on its critical path.
+
+---
+
+## 3. Ranking by distance-to-demo
+
+| Rank | Pattern | Distance | What it costs |
+|---|---|---|---|
+| 1 | P2 process design | ZERO NEW WIRE - ran end to end this session, link re-derived | a protocol value, a runner, a record |
+| 2 | P3 research protocol | ZERO NEW WIRE - ran end to end this session | as above, plus an honest note that report_digest is asserted |
+| 3 | P6 human intake | ONE REPLY FIELD (frontier on the protocol-session state fact) | a daemon slice + its wall; no new request kind |
+| 4 | P5 LLM-task holes | ONE DECLARED FENCE-RULE NAME (plurality, law already model-proved) + the open-event subject slot for N items | a wire vocabulary change; a fence rule is identity-bearing in the protocol record |
+| 5 | P1 extraction | ONE OPEN-EVENT FIELD (the corpus/subject reference) + the corpus convention | the briefing-corpus grill, then a slice |
+| 6 | P4 action holes | AN ENGINE - nothing of it exists in this tree | the external-binding build, unstarted |
+
+---
+
+## 4. Canonical session shapes for the two closest patterns
+
+Every subject, field and value below is quoted from proto/wire/CONTRACT.md
+(this session's copy) or observed on the wire in the transcripts named.
+Nothing is invented.
+
+### 4.1 P2 - process design
+
+Protocol value (flb.req.protocol.create, body {"protocol": ...}). Fields
+exactly as CONTRACT.md:170-184 and as the daemon's own `expected` list in the
+P2-C3 refusal: scheme, name, seats, holes, completion, close, revision,
+identity, liveness.
+
+    {
+      "scheme": "flb.protocol.v0",
+      "name": "process-design",
+      "seats": ["designer", "stakeholder", "owner"],
+      "holes": [
+        { "name": "gate_stage", "type": "<hex64 of the stage type>",
+          "seats": ["designer", "stakeholder"],
+          "fence": { "rule": "seat-authority",
+                     "order": ["stakeholder", "designer"] } },
+        { "name": "assembled_process",
+          "type": "<hex64 of {\"k\":\"opaque\"}>",
+          "seats": ["designer"] }
+      ],
+      "completion": ["assembled_process", "gate_stage"],
+      "close": ["owner"],
+      "revision": "successor-round",
+      "identity": "trusted-principals",
+      "liveness": ["designer", "stakeholder", "owner"]
+    }
+
+completion and close are UTF-16 sorted, non-empty, duplicate-free (the
+daemon refuses otherwise, observed). revision is never defaulted.
+
+Hole types. gate_stage: a struct with required name, entry_criteria, role,
+each {"k":"check","base":{"k":"string"},
+"check":{"name":"minLength","args":{"min":1}}}. assembled_process:
+{"k":"opaque"} - "an opaque payload is UNINTERPRETED canonical bytes"
+(CONTRACT.md:341-343), the honest type for "a protocol record not yet
+certified".
+
+Session shape, step by step:
+
+| # | Subject | Body fields | Observed reply |
+|---|---|---|---|
+| 1 | flb.req.type.create x3 | {"structure": ..., "submitter"?} | {ok, created, digest, scheme:"flb.type.v1", catalogSeq, catalogHead, next} |
+| 2 | flb.req.protocol.create | {"protocol": ..., "submitter"?} | {ok, created, digest, scheme:"flb.protocol.v0", catalogSeq, catalogHead, next} |
+| 3 | flb.req.protocol.session.open | {"protocol":"<digest>","bindings":{"designer":"fable","stakeholder":"mepuka","owner":"mepuka"}} | {ok, session:"flb_protocol_session_v0_<hex64>", head, next} |
+| 4 | flb.req.protocol.session.fill | {"session","principal":"fable","hole":"gate_stage","value":...} | {ok, head, hole_state:{state:"filled", value, candidates:[{value,seat}]}, next} |
+| 5 | flb.req.protocol.session.fill | same hole, principal "mepuka", different value | hole_state.state:"disputed", both candidates retained with seat |
+| 6 | flb.req.protocol.session.fill | hole "assembled_process", value = the designed protocol record | hole_state.state:"filled" |
+| 7 | flb.req.protocol.session.close | {"session","principal":"mepuka"} | {ok, head, outcome:"completed", next} |
+| 8 | flb.req.protocol.session.state | {"session"} | {ok, session, protocol, bindings, holes, status:"closed", outcome, final_state_digest, head, next} |
+| 9 | flb.req.protocol.create | {"protocol": <sealed value from step 8's holes.assembled_process.value>} | {ok, created:true, digest: D} |
+| 10 | reader-side | sha256(RFC8785(sealed value)) | MUST EQUAL D - measured equal, 33e39ac6... |
+| 11 | flb.req.protocol.session.open | {"protocol": D, "bindings": ...} | a session whose fold's protocol field is D |
+
+Completion / close / fence. completion names both design holes, so a design
+round that leaves either open closes "abandoned" - the design is not "done"
+merely because someone stopped. close ["owner"] keeps ratification with the
+operator seat. The gate_stage fence resolves the contested stage boundary at
+close by declared seat order, with the within-seat tie-break "smallest
+canonical value bytes" (CONTRACT.md:219-220).
+
+Refusals this shape is expected to produce (all observed): a non-seat
+principal filling -> seat-unauthorized/structural; a non-close principal
+closing -> seat-unauthorized/structural; an illegal designed process at step
+9 -> invalid-structure/structural at the offending path, with
+next[0].subject "flb.req.protocol.create" and note "repair the protocol value
+at path and resubmit".
+
+### 4.2 P3 - the research protocol
+
+Protocol value:
+
+    {
+      "scheme": "flb.protocol.v0",
+      "name": "research-program",
+      "seats": ["coordinator", "lane_a", "lane_b", "operator"],
+      "holes": [
+        { "name": "rq1", "type": "<hex64 of the report type>",
+          "seats": ["lane_a"] },
+        { "name": "rq2", "type": "<hex64 of the report type>",
+          "seats": ["lane_b"] },
+        { "name": "synthesis", "type": "<hex64 of the coverage type>",
+          "seats": ["coordinator", "operator"],
+          "fence": { "rule": "seat-authority",
+                     "order": ["operator", "coordinator"] } }
+      ],
+      "completion": ["rq1", "rq2", "synthesis"],
+      "close": ["coordinator"],
+      "revision": "successor-round",
+      "identity": "trusted-principals",
+      "liveness": ["lane_a", "lane_b", "coordinator", "operator"]
+    }
+
+Hole types. The report type is a struct with required report_digest
+(check/pattern ^[0-9a-f]{64}$), dated (check/pattern
+^[0-9]{4}-[0-9]{2}-[0-9]{2}$), lane (check/minLength 1), and claims. claims
+is a struct of {first: Claim, rest?: list<Claim>} - the shape workaround for
+"at least one", because there is no list-length check. Claim is a struct of
+{claim: nonempty string, evidence: {primary: nonempty string, additional?:
+list<nonempty string>}, confidence: union of four literals "ran-it" |
+"primary-source" | "lead" | "unverified"}. The coverage type is
+{verdict: union<"covered","gap">, note?: nonempty string}.
+
+Session shape. Identical wire choreography to 4.1 steps 1-8, with rq1 filled
+by lane_a's principal, rq2 by lane_b's, synthesis filled by both fence seats
+to stage a genuine coverage dispute, closed by coordinator. Every discipline
+violation refuses at flb.req.protocol.session.fill with law "a protocol fill
+value must conform to the hole's cataloged flb.type.v0 structure", kind
+invalid-structure, sort structural, and a path reaching the offending field -
+the three rows in section 2/P3 are the observed instances.
+
+Completion / close / fence. completion names all three holes, so "coverage"
+is a declared set, not a vibe - a program that never reaches synthesis closes
+abandoned. close ["coordinator"] matches how draft 19 actually ran. The fence
+gives the operator seat final say over the coverage verdict while retaining
+the coordinator's dissent as a candidate forever.
+
+---
+
+## 5. The sub-session hole (section 7), measured
+
+Not in my remit to grill, but two of the nine questions now have mechanical
+answers, and both bear on ranking.
+
+G1 (what the checker consults) - MEASURED. probe-identity.ts (I2): a parent
+hole typed as a certificate struct {session, final_state_digest, outcome}
+accepted session "flb_protocol_session_v0_eeee...",
+final_state_digest "eeee...", outcome "completed" - a child that has never
+existed - as filled, and the parent then closed COMPLETED. Reading the cited
+child directly refuses unknown-journal, sort absence, law "lag is absence:
+this journal does not exist here (yet)". So A SESSION TREE BUILT TODAY ON
+STRUCT OR OPAQUE CERTIFICATES IS TESTIMONY, NOT EVIDENCE - precisely the W1
+violation G1 anticipates. The honest path also exists: probe-subsession.ts
+(ST-1..ST-3) ran a real child, pinned its (session, head, final_state_digest,
+outcome, protocol) into the parent, and the READER re-derived every field by
+re-reading the child (digest_matches true, outcome_matches true,
+child_protocol_equals_declared true).
+
+G7 (pin to head or to session identity) - CONSTRAINED BY MEASUREMENT. Since
+session identity is a pure function of (protocol, bindings, predecessor?)
+(I1), pinning "to a session identity" pins to something already determined by
+the parent's own choice of protocol and bindings - it carries no information
+about the run. The draft's instinct ("pin to head") is the only option that
+carries evidence.
+
+---
+
+## 6. Recommendation: the next acceptance demo after 04-ontology-demo.md
+
+First, a status correction the ranking depends on: ISSUE 04 IS NO LONGER
+BLOCKED. Its header says "BLOCKED ON: issue 03 (the completion declaration)".
+Issue 03 is now marked "RETIRED 2026-08-16: absorbed by
+16-debt-free-wire.md", and completion is live on the wire - I created
+protocols with it, and the empty-list refusal fired at
+["protocol","completion"] this session. 04 can be dispatched as written.
+
+THE NEXT ACCEPTANCE DEMO SHOULD BE P2 - PROCESS DESIGN.
+
+Why, in order of weight:
+
+1. ITS CLAIM IS A DIGEST EQUALITY, NOT A WORKFLOW. Every other candidate demo
+   produces a transcript you have to read; P2 produces a single checkable
+   sentence - sha256(RFC8785(sealed design value)) == protocol.create digest
+   == the run session's protocol field. I ran it; it holds (33e39ac6... three
+   times). That is the estate's whole thesis in one line, and it is the first
+   artefact that would state it about WORK rather than about types.
+2. IT EXERCISES THE ONE TOWER STEP 04 DOES NOT. In 04 the protocol is
+   authored by an agent out-of-session and then used. P2 is level-1 ->
+   level-2 (draft 21 section 5): the protocol is the PRODUCT OF A CLOSED
+   SESSION, and the link between levels is checkable. 04 proves prose ->
+   types -> protocol -> sessions for one domain; P2 proves session ->
+   protocol -> session. Together they close the tower's middle.
+3. ZERO NEW WIRE. It cannot slip on machinery. Every subject, field and
+   refusal it needs was executed this session against a stock daemon built
+   from HEAD.
+4. IT GENERATES THE EVIDENCE BASE FOR THE SECTION-7 GRILL INSTEAD OF PROSE.
+   P2's residual - the daemon does not check the tie, the reader re-derives -
+   is G1 in miniature, with a live artefact showing both the honest path and
+   the fabricated-certificate control (section 5). The sub-session grill would
+   open with measurements rather than instincts.
+
+COST, stated as required:
+
+- EFFORT: one dispatch slice. Deliverables: one design protocol value, one
+  designed protocol value produced INSIDE the session, a runner, and a dated
+  docs/research/ record with replay commands beside every digest (the 04
+  acceptance format). No daemon change, no new test infrastructure beyond one
+  re-derivation assertion.
+- WHAT IT ADDS TO THE TRUSTED BASE: nothing in the daemon - but it adds a
+  CONVENTION: "the designed-process hole is opaque, and the reader re-derives
+  the tie." That is a real cost. opaque admits any value BY LAW; a demo that
+  ships without naming this residual would be selling an unchecked hole as a
+  checked one, the exact failure mode AGENTS.md warns about for the
+  moves<->protod gap. The record must state it in the acceptance section, not
+  a footnote.
+- WHAT IT MAKES HARDER: it pre-commits the sub-session hole's answer toward
+  "certificate re-derived by the reader" before G1-G9 are grilled.
+  Mitigation: the demo must not upgrade any seam status (S4 stays walled),
+  must not claim a correspondence, and must carry the fabricated-certificate
+  control (section 5, I2) beside the honest run so the reader sees exactly
+  what the daemon declined to check.
+- REVERSAL: delete the record and the runner and revert one docs/scratch
+  commit. No wire changed, no seam status moved. The catalog facts the demo
+  mints are append-only but inert - an uncited protocol digest costs nothing.
+
+ALTERNATIVES CONSIDERED AND REJECTED:
+
+- P3 (rank 2, also zero-wire): rejected because the estate ALREADY RUNS P3 BY
+  HAND - draft 19 is the pattern, and mechanizing something already practised
+  demonstrates less new ground than P2's level-crossing. Worse, its central
+  artefact report_digest is an asserted coordinate nothing resolves, so an
+  honest P3 demo would have to either pull the ungrilled briefing corpus into
+  scope or ship an asserted identity. Both are worse than waiting. P3 is the
+  obvious demo AFTER the corpus grill.
+- P6 (rank 3): rejected as a DEMO because its gap is a wire change (the
+  frontier reply field). That is a dispatch slice, not an acceptance
+  artefact. It should be dispatched on its own merits - it is the cheapest
+  genuine capability increase on this list, and it is what makes every later
+  human-facing pattern stop re-implementing the same join.
+
+---
+
+## 7. Repo-integrity check
+
+git status --porcelain was captured before and after all work
+(git-baseline.txt, git-after.txt). The two differ in exactly two rows,
+NEITHER PRODUCED BY THIS LANE: verify/moves/run.sh went from modified to
+clean, and docs/research/2026-08-17-review-float-hygiene-cure.md appeared -
+both from concurrent lanes in this session. All of my writes went to the
+scratch directory: the protod binary was built with -o <scratch>/bin/protod.exe,
+every daemon instance used --store <scratch>/store, every probe and transcript
+is under .../scratchpad/wf/pattern-catalog/. No file under
+C:\Users\kokok\Dev\foldlab was created, edited, or deleted by me.
+
+---
+
+## 8. Gaps this lane did not close
+
+- THE LEAN MODEL WAS NOT BUILT. lake/lean 4.33.0 are present and I recorded
+  the check, but the plurality-fence claims (section 2/P5) are read from
+  verify/moves/Moves/Model.lean and Main.lean, not re-verified by lake build.
+  Marked primary-source, not ran-it.
+- SINGLE DAEMON ONLY. Every measurement is single-process, single-store,
+  loopback. G3's cross-venue trust question, federation, and multi-daemon
+  resolution are untouched.
+- NO SCALE MEASUREMENT. Journal sizes, hole counts, catalog scan cost as the
+  catalog grows (the P6 reconstruction scans the whole catalog journal; I
+  measured 11 entries, not 11,000).
+- ABSORB REVISION WAS EXERCISED ONCE (P5) and only on the dispute path. I did
+  not probe the absorb-vs-successor-round divergence systematically;
+  VERIFICATION.md states the daemon claim and its bounds.
+- THE MCP SURFACE WAS DRIVEN BY HAND-WRITTEN JSON-RPC, not by a real MCP
+  client library, and I did not exercise protocol.session.* tools through MCP
+  (only type_create, type_fill). 04's acceptance needs an agent-driven
+  tool-call transcript; my evidence establishes the surface serves, not that
+  an agent drives it well.
+- PRIOR ART WAS SURVEYED WITH TWO QUERIES, NOT EXHAUSTIVELY (section 9).
+- I DID NOT GRILL ANYTHING. Section 5's two answers are measurements offered
+  to the section-7 grill, not rulings.
+
+---
+
+## 9. Prior art searched, and what was and was not found
+
+Searched 2026-08-16 via WebSearch; retrieval date the same for all rows.
+
+- CLOSEST ANALOGUE FOUND: "Before the Pull Request: Mining Multi-Agent
+  Coordination", Dipankar Sarkar, arXiv 2606.19616, submitted 2026-06-17
+  (abstract fetched 2026-08-16). It introduces grite: agent coordination
+  through an append-only, signed event log stored in git. The abstract
+  confirms the append-only signed log and the "coordination as mineable
+  artefact" framing. It does NOT mention typed holes, declared
+  seats/authority, fences, or protocol values constraining which agent may
+  say what - I checked the abstract specifically for those and record their
+  absence rather than assuming it. Marked LEAD for anything beyond the
+  abstract; I did not read the full paper.
+- PROVENANCE-BEARING EXTRACTION is an active area (AEVS anchor-constrained KG
+  extraction with provenance, MDPI Computers 15(3):178, 2026-03; PaperTrail,
+  arXiv 2602.21045, CHI 2026; PARSE, arXiv 2510.08623, 2025-10). All LEADs -
+  titles and framing only, not read. The search surfaced NO work on
+  adjudicating disagreement BETWEEN extractors as a typed, replayable
+  protocol object; the search engine said so explicitly and I could not
+  contradict it.
+- ABSENCE, STATED AS A FINDING: searching for the P2 claim - a designed
+  process whose identity is a digest, tying design to run by equality - the
+  process-mining literature returned (ProAgent arXiv 2311.10751;
+  "Re-Thinking Process Mining in the AI-Based Agents Era" arXiv 2408.07720;
+  vendor material from ServiceNow, Salesforce, Kognitos) frames the
+  design/actual gap as a MEASUREMENT AND MINING problem, not an IDENTITY
+  problem. NO PRIOR ART FOUND for "the designed process is itself a
+  digest-addressed value whose identity ties design to run", having searched
+  those sources by those terms. This is the clearest differentiator I could
+  establish for the recommended demo, and I am sizing the claim to two
+  searches, not to a survey.
+
+---
+
+## 10. Sources
+
+Repository primary sources, all read this session at HEAD 0b75a6c0:
+proto/wire/CONTRACT.md; proto/go/protod/{protocol.go, protocol_session.go,
+protocol_step.go, value_check.go, catalog.go, certify.go, contract.go,
+dispatch.go, session.go}; proto/ts/src/{client.ts, protocol.ts, mcp.ts,
+mcp-main.ts, jcs.ts, wire.ts}; proto/ts/examples/{task49-session.ts,
+task49-round2.ts, bootstrap-protocol-v0.ts}; proto/ts/test/harness.ts;
+packages/moves/src/kernel.ts; verify/moves/Moves/Model.lean;
+verify/moves/Main.lean; AGENTS.md; proto/AGENTS.md; SLICE.md;
+VERIFICATION.md; CONTEXT.md; scratch/dispatch/{21-the-use-catalog.md,
+04-ontology-demo.md, 03-completion-declaration.md}.
+
+Run transcripts produced by this lane (all in the scratch directory):
+task49.stdout, probe.stdout, p3.stdout, p2.stdout, p5p1.stdout, p6.stdout,
+subsession.stdout, ident.stdout, mcp.stdout, proto-ts-test.txt, go-test.txt,
+git-baseline.txt, git-after.txt.
+
+Probe scripts: run-example.sh, run-mcp.sh, probe-surface.ts,
+probe-p3-research.ts, probe-p2-process.ts, probe-p5-p1-controls.ts,
+probe-p6-frontier.ts, probe-subsession.ts, probe-identity.ts.
+
+External sources (retrieved 2026-08-16):
+https://arxiv.org/abs/2606.19616 - Before the Pull Request: Mining
+  Multi-Agent Coordination
+https://www.mdpi.com/2073-431X/15/3/178 - Grounded Knowledge Graph
+  Extraction via LLMs
+https://arxiv.org/html/2602.21045v1 - PaperTrail
+https://arxiv.org/html/2510.08623v1 - PARSE
+https://arxiv.org/pdf/2311.10751 - ProAgent
+https://arxiv.org/abs/2408.07720 - Re-Thinking Process Mining in the
+  AI-Based Agents Era
