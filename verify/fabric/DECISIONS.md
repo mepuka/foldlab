@@ -102,3 +102,18 @@ fabric gate's own regeneration comparison and use the same Lean toolchain, so
 the adjacent step keeps the proof and diff machinery under one runner without
 changing the required battery. **Load-bearing? yes** — a self-test that CI
 never executes can silently stop detecting model/corpus divergence.
+
+### T9. Exercise install hermeticity through the gate runner self-test
+
+Decided: `bun run gates --self-test` drives the install preflight against two
+temporary absent-install roots and then the same present-install roots. It
+plants a lockfile mutation, the real `proto/ts` lock drift in a warm temporary
+tree, a stubbed frozen-install exit, and a successful install that omits
+`node_modules`; the committed trace pins all four refusals.
+Alternatives: a separate preflight control command; deleting the real checkout's
+installs during the runner self-test. Why: the runner owns the local/CI mirror,
+and temporary trees reproduce both dependency states without touching the
+working checkout; the warm drift control invokes CI's exact frozen command.
+**Load-bearing? yes** — a control
+over the real tree would make the safety test itself destructive, while an
+absence-only control would miss the warm-tree lockfile drift found in review.

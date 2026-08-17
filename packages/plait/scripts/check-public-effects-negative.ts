@@ -1,5 +1,10 @@
 import { resolve } from "node:path"
 
+import {
+  emitDeclarations,
+  inspectPublicDeclarations,
+} from "./public-effect-declarations.js"
+
 const packageRoot = resolve(import.meta.dir, "..")
 
 const controls = [
@@ -38,6 +43,31 @@ const controls = [
     project: "tsconfig.negative-deep-object.json",
     trace: "negative-controls/PublicEffects.deep-object.trace.txt",
   },
+  {
+    name: "Schema-shaped fallible decode",
+    project: "tsconfig.negative-schema-value.json",
+    trace: "negative-controls/PublicEffects.schema-value.trace.txt",
+  },
+  {
+    name: "plain class fallible static",
+    project: "tsconfig.negative-plain-class.json",
+    trace: "negative-controls/PublicEffects.plain-class.trace.txt",
+  },
+] as const
+
+const declarationControls = [
+  {
+    name: "fallible first overload signature",
+    project: "tsconfig.negative-overload-first.json",
+    entry: "negative-controls/PublicEffects.overload-first.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.overload-first.trace.txt",
+  },
+  {
+    name: "fallible last overload signature",
+    project: "tsconfig.negative-overload-last.json",
+    entry: "negative-controls/PublicEffects.overload-last.mutant.d.ts",
+    trace: "negative-controls/PublicEffects.overload-last.trace.txt",
+  },
 ] as const
 
 const normalize = (text: string): string =>
@@ -68,4 +98,34 @@ for (const control of controls) {
   }
 }
 
-console.log("PUBLIC EFFECT CONTROL: PASS (seven public-surface regressions refused)")
+for (const control of declarationControls) {
+  const emitted = emitDeclarations(control.project)
+  let failed = false
+  try {
+    const actual = inspectPublicDeclarations(
+      emitted.directory,
+      control.entry,
+      "plantedPublicApi",
+    ).violations
+    if (actual === "") {
+      console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`)
+      failed = true
+    } else {
+      const traceFile = Bun.file(resolve(packageRoot, control.trace))
+      const expected = await traceFile.exists() ? normalize(await traceFile.text()) : ""
+      if (normalize(actual) !== expected) {
+        console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} declaration trace moved`)
+        console.error("--- expected ---")
+        console.error(expected)
+        console.error("--- actual ---")
+        console.error(actual)
+        failed = true
+      }
+    }
+  } finally {
+    emitted.dispose()
+  }
+  if (failed) process.exit(1)
+}
+
+console.log("PUBLIC EFFECT CONTROL: PASS (eleven public-surface regressions refused)")

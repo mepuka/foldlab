@@ -99,3 +99,30 @@ the ruling explicitly admits a recorded deferral, and the DEV-716 ACL suite
 the other half of the guard. **Load-bearing? yes** — until the pin or the
 ACL suite lands, the bound sentence is the only fence around lifecycle
 mutation.
+
+### T7. Inspect every emitted overload signature through the compiler API
+
+Decided: the public-effect gate emits the package declarations, asks the pinned
+TypeScript compiler for every call signature, checks each resolved return error
+against `Refusal`, and byte-diffs a generated signature manifest. Alternatives:
+continue using `ReturnType`, which resolves only the last signature; encode a
+two-, three-, and four-overload inference ladder. Why: TypeScript exposes no
+general type-level reflection over an overload set, and a count-bounded ladder
+would reproduce the hand-maintained escape shape the derived gate replaced.
+**Load-bearing? yes** — `retryAbsence` is the first live four-signature export,
+and every non-final signature was otherwise outside the gate.
+
+### T8. Bound authored-surface recursion at eight edges
+
+Decided: the type-level public-surface walk stops after eight recursive edges,
+traverses plain classes including their prototype and statics, and subtracts
+only the imported `Schema.Top` protocol before traversing package-authored
+Schema extensions. The controls add a fallible static and a fallible `decode`
+to new surfaces, so both former blanket exemptions are under the quantifier.
+Alternatives: leave recursion unbounded; suppress every `ast` carrier; suppress
+every constructor. The review's removal test at `2853e48` was: both blanket
+arms removed → `TS2589`; `ast` only → clean; constructor only → clean. Why: the
+explicit counter covers the shipped namespace depth and the planted deep-object
+shape without asking TypeScript to expand cyclic vendor protocols indefinitely.
+**Load-bearing? yes** — removing the counter reintroduces `TS2589`, while either
+blanket arm restores a live escape.

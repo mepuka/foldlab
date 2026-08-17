@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.plain-class.mutant.ts(26,3): error TS2344: Type '"Classes.Added.load"' does not satisfy the constraint 'never'.

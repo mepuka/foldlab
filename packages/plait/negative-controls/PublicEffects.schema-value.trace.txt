@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.schema-value.mutant.ts(24,3): error TS2344: Type '"Schemas.Added.decode"' does not satisfy the constraint 'never'.

@@ -138,7 +138,8 @@ corpus_tmp="$regen_dir/fabric-conformance.ndjson"
 corpus_witnesses_tmp=$(mktemp "./.corpus-witnesses.XXXXXX")
 corpus_mutation_tmp=$(mktemp "$regen_dir/.corpus-mutation.XXXXXX.ndjson")
 emission_mutation_tmp=$(mktemp "$regen_dir/.emission-mutation.XXXXXX.ndjson")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_witnesses_tmp" "$corpus_mutation_tmp" "$emission_mutation_tmp"' EXIT
+row_deletion_tmp=$(mktemp "$regen_dir/.row-deletion.XXXXXX.ndjson")
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_witnesses_tmp" "$corpus_mutation_tmp" "$emission_mutation_tmp" "$row_deletion_tmp"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -246,32 +247,53 @@ done < "$corpus_witnesses_tmp"
 report_first_corpus_divergence() {
   local committed="$1"
   local model="$2"
-  local row=1
+  local index=0 row committed_count model_count
   local committed_line model_line committed_present model_present identity_line
+  local report_committed_present report_model_present
   local kind name
-  exec 3<"$committed"
-  exec 4<"$model"
-  while true; do
+  local -a committed_rows model_rows
+  mapfile -t committed_rows < "$committed"
+  mapfile -t model_rows < "$model"
+  committed_count=${#committed_rows[@]}
+  model_count=${#model_rows[@]}
+  while [[ "$index" -lt "$committed_count" || "$index" -lt "$model_count" ]]; do
+    committed_present=0
+    model_present=0
     committed_line=''
     model_line=''
-    if IFS= read -r committed_line <&3 || [[ -n "$committed_line" ]]; then
+    if [[ "$index" -lt "$committed_count" ]]; then
       committed_present=1
-    else
-      committed_present=0
+      committed_line="${committed_rows[$index]}"
     fi
-    if IFS= read -r model_line <&4 || [[ -n "$model_line" ]]; then
+    if [[ "$index" -lt "$model_count" ]]; then
       model_present=1
-    else
-      model_present=0
+      model_line="${model_rows[$index]}"
     fi
     if [[ "$committed_present" -eq 0 && "$model_present" -eq 0 ]]; then
       break
     fi
     if [[ "$committed_present" -ne "$model_present" || "$committed_line" != "$model_line" ]]; then
-      identity_line="$model_line"
-      if [[ "$model_present" -eq 0 ]]; then
+      report_committed_present=$committed_present
+      report_model_present=$model_present
+      if [[ "$committed_present" -eq 1 && "$model_present" -eq 1 &&
+          $((index + 1)) -lt "$committed_count" &&
+          "${committed_rows[$((index + 1))]}" == "$model_line" ]]; then
+        # The model omitted the committed row; report the row that vanished,
+        # not the row that shifted into its position.
+        report_model_present=0
+        identity_line="$committed_line"
+      elif [[ "$committed_present" -eq 1 && "$model_present" -eq 1 &&
+          $((index + 1)) -lt "$model_count" &&
+          "${model_rows[$((index + 1))]}" == "$committed_line" ]]; then
+        # The model inserted a row; the committed side has no matching row.
+        report_committed_present=0
+        identity_line="$model_line"
+      elif [[ "$model_present" -eq 1 ]]; then
+        identity_line="$model_line"
+      else
         identity_line="$committed_line"
       fi
+      row=$((index + 1))
       kind=$(printf '%s\n' "$identity_line" |
         sed -nE 's/.*"kind":"([^"]+)".*/\1/p')
       name=$(printf '%s\n' "$identity_line" |
@@ -284,13 +306,21 @@ report_first_corpus_divergence() {
         name=${name:-unknown}
       fi
       echo "FINDING: divergent corpus row=$row kind=$kind name=$name" >&2
-      echo "FINDING: model line: ${model_line:-<missing>}" >&2
-      echo "FINDING: committed line: ${committed_line:-<missing>}" >&2
+      if [[ "$report_model_present" -eq 1 ]]; then
+        echo "FINDING: model line: $model_line" >&2
+      else
+        echo "FINDING: model line: <missing>" >&2
+      fi
+      if [[ "$report_committed_present" -eq 1 ]]; then
+        echo "FINDING: committed line: $committed_line" >&2
+      else
+        echo "FINDING: committed line: <missing>" >&2
+      fi
       echo "FINDING: intended change — regenerate and commit corpus + manifest IN THE SAME COMMIT as the model change" >&2
       echo "FINDING: unintended change — report the finding and STOP; never edit the fixture to agree" >&2
       return 0
     fi
-    row=$((row + 1))
+    index=$((index + 1))
   done
   echo "FINDING: corpus regeneration differs but no divergent row was decoded" >&2
 }
@@ -302,7 +332,7 @@ check_corpus_regeneration() {
     return 0
   fi
   report_first_corpus_divergence "$committed" "$model"
-  echo "GATE: FAIL — corpus is not a fresh regeneration; model emission kept at $corpus_tmp" >&2
+  echo "GATE: FAIL — corpus is not a fresh regeneration; model emission kept at $model" >&2
   return 1
 }
 
@@ -378,6 +408,28 @@ if [[ "$self_test" == true ]]; then
   fi
   printf '%s\n' "$emission_control"
   echo "GATE: PASS (--self-test refused model emission without corpus regeneration at row=4 kind=F2 name=permuted-evidence-schedule)"
+
+  if ! awk '
+      /"name":"floor-violating-stale-replay"/ { removed += 1; next }
+      { print }
+      END { if (removed != 1) exit 42 }
+    ' "$corpus_tmp" > "$row_deletion_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the model-row deletion" >&2
+    exit 1
+  fi
+  if deletion_control=$(check_corpus_regeneration "$fixture" "$row_deletion_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted a deleted model row" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=5 kind=F2b name=floor-violating-stale-replay' \
+      <<< "$deletion_control" ||
+      ! grep -q 'FINDING: model line: <missing>' <<< "$deletion_control"; then
+    printf '%s\n' "$deletion_control" >&2
+    echo "GATE: FAIL — model-row deletion refusal misattributed the vanished row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$deletion_control"
+  echo "GATE: PASS (--self-test refused deleted model row=5 kind=F2b name=floor-violating-stale-replay)"
 fi
 
 echo "GATE: PASS (4 law-dropping controls; 11 canonical model vectors; byte-identical regeneration)"

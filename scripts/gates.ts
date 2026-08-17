@@ -1,4 +1,5 @@
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -116,10 +117,6 @@ const runInstallPreflight = (
 ): void => {
   for (const target of targets) {
     const modules = resolve(target.directory, "node_modules")
-    if (existsSync(modules)) {
-      console.log(`\n== preflight — ${target.label} (present)`)
-      continue
-    }
     if (!existsSync(target.lockfile)) {
       throw new Error(`preflight — ${target.label}: lockfile is missing`)
     }
@@ -158,11 +155,35 @@ const selfTestInstallPreflight = (): void => {
     const fired: Array<string> = []
     runInstallPreflight(targets, (target) => {
       fired.push(target.label)
-      mkdirSync(resolve(target.directory, "node_modules"))
+      mkdirSync(resolve(target.directory, "node_modules"), { recursive: true })
       return 0
     })
-    if (fired.join(",") !== "root control,proto/ts control") {
-      throw new Error(`install preflight did not fire for both absent states: ${fired.join(",")}`)
+    runInstallPreflight(targets, (target) => {
+      fired.push(target.label)
+      mkdirSync(resolve(target.directory, "node_modules"), { recursive: true })
+      return 0
+    })
+    if (fired.join(",") !==
+      "root control,proto/ts control,root control,proto/ts control") {
+      throw new Error(`install preflight did not verify absent and present states: ${fired.join(",")}`)
+    }
+
+    const refusalTrace: Array<string> = []
+    const requireRefusal = (
+      target: InstallTarget,
+      install: Install,
+      expected: string,
+    ): void => {
+      let actual = ""
+      try {
+        runInstallPreflight([target], install)
+      } catch (error) {
+        actual = error instanceof Error ? error.message : String(error)
+      }
+      if (actual !== expected) {
+        throw new Error(`install preflight refusal moved: got ${actual}, want ${expected}`)
+      }
+      refusalTrace.push(actual)
     }
 
     const refusalRoot = resolve(temporaryRoot, "lock-change")
@@ -173,21 +194,77 @@ const selfTestInstallPreflight = (): void => {
       lockfile: resolve(refusalRoot, "bun.lock"),
     }
     writeFileSync(refusalTarget.lockfile, "pinned-lock\n")
-    let refused = false
-    try {
-      runInstallPreflight([refusalTarget], (target) => {
+    requireRefusal(
+      refusalTarget,
+      (target) => {
         writeFileSync(target.lockfile, "moved-lock\n")
         mkdirSync(resolve(target.directory, "node_modules"))
         return 0
-      })
-    } catch (error) {
-      refused = String(error).includes("frozen install changed the lockfile")
-    }
-    if (!refused || readFileSync(refusalTarget.lockfile, "utf8") !== "pinned-lock\n") {
+      },
+      "preflight — lockfile-change control: frozen install changed the lockfile",
+    )
+    if (readFileSync(refusalTarget.lockfile, "utf8") !== "pinned-lock\n") {
       throw new Error("install preflight did not refuse and restore a moved lockfile")
     }
+
+    const warmLockfileRoot = resolve(temporaryRoot, "warm-lockfile-drift")
+    mkdirSync(resolve(warmLockfileRoot, "node_modules"), { recursive: true })
+    copyFileSync(resolve(repo, "proto/ts/package.json"), resolve(warmLockfileRoot, "package.json"))
+    const warmLockfile = resolve(warmLockfileRoot, "bun.lock")
+    copyFileSync(resolve(repo, "proto/ts/bun.lock"), warmLockfile)
+    const pinnedLock = readFileSync(warmLockfile, "utf8")
+    const driftedLock = pinnedLock.replaceAll("4.0.0-rc.108", "4.0.0-rc.107")
+    if (driftedLock === pinnedLock) {
+      throw new Error("warm lockfile-drift control could not plant the lock mismatch")
+    }
+    writeFileSync(warmLockfile, driftedLock)
+    const warmLockfileTarget = {
+      label: "warm lockfile-drift control",
+      directory: warmLockfileRoot,
+      lockfile: warmLockfile,
+    }
+    requireRefusal(
+      warmLockfileTarget,
+      installFrozen,
+      "preflight — warm lockfile-drift control: frozen install exited 1",
+    )
+
+    const frozenExitRoot = resolve(temporaryRoot, "frozen-exit")
+    mkdirSync(resolve(frozenExitRoot, "node_modules"), { recursive: true })
+    const frozenExitTarget = {
+      label: "failing-installer control",
+      directory: frozenExitRoot,
+      lockfile: resolve(frozenExitRoot, "bun.lock"),
+    }
+    writeFileSync(frozenExitTarget.lockfile, "pinned-lock\n")
+    requireRefusal(
+      frozenExitTarget,
+      () => 17,
+      "preflight — failing-installer control: frozen install exited 17",
+    )
+
+    const missingModulesRoot = resolve(temporaryRoot, "missing-modules")
+    mkdirSync(missingModulesRoot)
+    const missingModulesTarget = {
+      label: "missing node_modules control",
+      directory: missingModulesRoot,
+      lockfile: resolve(missingModulesRoot, "bun.lock"),
+    }
+    writeFileSync(missingModulesTarget.lockfile, "pinned-lock\n")
+    requireRefusal(
+      missingModulesTarget,
+      () => 0,
+      "preflight — missing node_modules control: install did not create node_modules",
+    )
+
+    const actualTrace = `${refusalTrace.join("\n")}\n`
+    const expectedTrace = readFileSync(resolve(repo, "scripts/gates-preflight.trace.txt"), "utf8")
+      .replaceAll("\r\n", "\n")
+    if (actualTrace !== expectedTrace) {
+      throw new Error(`install preflight trace moved\n${actualTrace}`)
+    }
     console.log(
-      "\ninstall preflight self-test: PASS (both absent installs fired; lockfile mutation refused and restored)",
+      "\ninstall preflight self-test: PASS (absent and present installs fired; warm lockfile drift, lockfile mutation, exit 17, and missing node_modules refused)",
     )
   } finally {
     if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&
@@ -226,7 +303,7 @@ const selfTest = (): void => {
   }
   selfTestInstallPreflight()
   console.log(
-    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, and install preflight controls refused)",
+    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, and five install preflight controls refused)",
   )
 }
 
