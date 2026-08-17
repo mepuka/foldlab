@@ -199,4 +199,5 @@ bash verify/moves/run.sh
 ```
 
 `verify/{catalog,ir,implication,pipeline}/run.sh` follow the same
-shape.
+shape. `verify/fabric/run.sh` is the Plait R5 algebra gate and also regenerates
+its proof-witnessed vector corpus byte-for-byte.

@@ -1,0 +1,1 @@
+control=drop-meet-clamping;vector=attenuation-request-clamped;lawful=10;mutant=20;verdict=refuted

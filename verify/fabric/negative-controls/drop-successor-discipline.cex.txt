@@ -1,0 +1,1 @@
+control=drop-successor-discipline;vector=six-before-five-reordering;lawful=23;mutant=3;verdict=refuted

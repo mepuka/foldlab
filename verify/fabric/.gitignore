@@ -1,0 +1,6 @@
+.lake/
+.axioms.*.lean
+.corpus-witnesses.*
+.corpus.*.ndjson
+.discovered.*
+.roster.*
