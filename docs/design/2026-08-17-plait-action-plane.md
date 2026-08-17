@@ -524,7 +524,12 @@ scoreboard's measured numbers.
 
 1. **§5 (constructs):** C6–C9 join C1–C5; F7–F10 join F1–F6 with homes
    as stated (F7/F9/F10 in `verify/fabric`, zero-dep; C7's laws ride the
-   Veil-pinned F5 package).
+   Veil-pinned F5 package). **F8 is ruled a corollary, not a theorem**
+   (2026-08-17, proof-program audit B-9): its safety content is F7
+   applied at pinned inputs plus F3's resumption plus the absence-sort
+   refusal semantics; no gate refusal cites F8 by name, and its
+   "repealed by reassembly" clause is never stated in an *eventually*
+   reading — that would be liveness. No seat authors an F8 theorem.
 2. **§10 (slices):** two insertions. **Slice 2a — contexts**: `Contexts`
    + assembly + memo wall; gates: byte-identical reassembly across TS/Go
    for a generated program corpus; a planted timestamp selector refused

@@ -533,7 +533,8 @@ arrive late and interleaved; with parallel in-flight processing,
 effective application order inside a node is arbitrary; across partitions
 and across streams there is no order at all; duplicates occur. Plait's
 response is not configuration but algebra: everything on this plane is
-ACI or floor-guarded, so *the semantics the transport actually has* is
+ACI or applied at the contiguous frontier by the successor discipline,
+so *the semantics the transport actually has* is
 already the semantics the theorems require. This is the design's center
 of gravity, inherited directly from the estate's at-least-once fill law
 (shipped): the transport was made safe by making the operations
@@ -892,7 +893,7 @@ described (dogfood rule: never oversell a bound).
 | --- | --- | --- | --- |
 | F1 | fabric cell merge is a join-semilattice (ACI); same verified set ⇒ same state | restates proven estate laws (`Model.lean:200-256` shapes) over fabric cells; Shapiro '11 | R5 |
 | F2 | terminal state of an evidence trace is invariant under permutation + duplication | permutation half is `runRepairK_perm`'s shape; duplication half is new but small (idempotent union) | R5 |
-| F2b | position-floor-guarded application of any step function over an at-least-once redelivery schedule applies each event exactly once | new; small lemma over position-carrying traces | R5 |
+| F2b | successor-discipline application (buffer by position, apply only at the contiguous frontier) of any step function over an at-least-once redelivery schedule applies each event exactly once; the anchor floor is the derived resume record, not the protector | proven (`verify/fabric`, DEV-695); `guard_is_redundant` pins the attribution | R5 |
 | F3 | `foldFrom (fold xs) ys = fold (xs ++ ys)` — anchors resume exactly | classical (`List.foldl_append` shape; Mathlib carries it); restated in-house | R5 |
 | F4 | for commutative-class algebras, merge of per-partition folds = sequential fold | `Multiset.fold_add` is this statement in Mathlib; in-house restatement over lane partitions | R5 |
 | F5 | lease register safety: tokens strictly increase; commit accepted iff token current; hence never two landed commits per work digest | new for the fabric; the archived effector claims re-earned. Transition system + inductive invariant — Veil's exact home turf (landscape verdict) | R3 (inductive invariant), then R4 (lockstep vs the running register) |
@@ -994,8 +995,13 @@ reference; duplicate-injection harness (redeliver everything twice,
 shuffled within JetStream's real semantics) — same digest. Gates: vectors
 regenerate byte-identically; chaos digest equality; negative controls: a
 fold deployed with `partitions: 2` over a non-commutative algebra is
-refused at declaration (the brand is absent), and a build with the floor
-guard removed fails the duplication vector. Consumer: slice 5's workers.
+refused at declaration (the brand is absent), and a build with the
+successor discipline dropped — arrivals applied on receipt instead of at
+the contiguous frontier — fails the duplication-and-reorder vector. A
+floor-guard-removal control is deliberately not demanded here:
+`guard_is_redundant` proves that build observationally identical, so the
+mutant that can die is the discipline-dropped one (amended 2026-08-17,
+proof-program audit A-4). Consumer: slice 5's workers.
 
 **Slice 2 — the register.** `verify/fabric-veil` lands F5 (invariant
 green under `trust=false`); the TS `Registers` service + the Go twin
@@ -1062,8 +1068,8 @@ a foreign frame.
    shard (F5 at L4) — checked from the registers' own history.
 4. Conformance monitor: zero violations from conformant nodes; the
    planted violator flagged on its exact first illegal frame.
-5. Negative controls re-run in the same invocation: floor guard removed →
-   digest diverges (and the run says so); verify-on-ingest disabled →
+5. Negative controls re-run in the same invocation: successor discipline
+   dropped → digest diverges (and the run says so); verify-on-ingest disabled →
    planted frame lands (in a sacrificial copy) and the gate names the
    missing law.
 6. The wire scoreboard the estate's dogfood rule demands: counts of
