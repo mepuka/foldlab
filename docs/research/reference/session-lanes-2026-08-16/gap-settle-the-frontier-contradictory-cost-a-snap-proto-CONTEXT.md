@@ -1,0 +1,162 @@
+# proto/ — bullet-local vocabulary
+
+Local terms behind this seam. The public language is root
+[CONTEXT.md](../CONTEXT.md); nothing here may leak into it.
+
+**Frame**:
+The unit of PUBLISH: a JSON object claiming a cataloged type by digest
+(`{"type":hex64,"payload":...}`). What a journal stores is the frame's
+canonical bytes — the sender's formatting never survives ingress.
+_Avoid_: event (a frame becomes an event once admitted), message.
+
+**Fact**:
+The ok-side of a reply: what the daemon now holds as true, plus `next`
+hints teaching the caller its options (W7). Facts are recomputable;
+refusals are their dual.
+
+**Refusal kind**:
+The machine-readable name of the one law that said no (`malformed`,
+`invalid-structure`, `unknown-ref`, `digest-mismatch`,
+`unknown-identity`, `bad-journal`, `unknown-journal`, `bad-cursor`,
+`unknown-request`; client-local: `unreachable`, `malformed-reply`,
+`verify-failed`, `beyond-v0`, `underivable`). The `local` flag names
+the side that uttered it. Every daemon refusal persists its `sort`:
+`structural` is permanent under its pinned grammar, while `absence` is a
+head-relative observation that later presence can repeal. Client-local kinds
+are outside that daemon table.
+
+**Structure walk**:
+The daemon's one pass over a submitted flb.type.v0 value: grammar
+validation, teachable refusal construction, and ref collection for
+catalog resolution. Strictness is what makes refusals teachable.
+
+**Hole**:
+The authoring-only node `{"k":"hole"}`. It marks one undecided type
+position in a partial and never bears identity. _Avoid_: placeholder
+(too broad), null (a decided value type).
+
+**Partial type**:
+An flb.type.v0 tree whose type-node positions may contain holes. It is
+the complete state passed through each stateless concierge request;
+union positions retain their order until final creation.
+
+**Frontier**:
+The deterministic list of a partial's holes, each with its path,
+currently legal kinds and accepted example subtrees, plus a bounded
+list of resolvable ref digests. Empty means the partial is decided.
+
+**Concierge step**:
+One pure `type.fill` or `type.unfill` request. It rewrites exactly one
+type-node path and returns the updated partial and frontier; the daemon
+retains no authoring session.
+
+**Scheme**:
+The identity-derivation seam (W10). `bytes-sha256-v1`: SHA-256 over
+RFC 8785 canonical structure bytes, retained as attestation-grade.
+`flb.type.v1`: SHA-256 over the RFC 8785 bytes of `normalize(term)` on
+the foldlab-owned walk. SchemaAST folds are derivation machinery and
+never an identity substrate.
+
+**Normal form**:
+The unique result of `normalize(term)` before `flb.type.v1` identity.
+The current reduction recursively normalizes type children and sorts
+union members by canonical bytes. The partial walk is the other
+reading discipline: it preserves positions and never normalizes.
+
+**Scheme bridge**:
+The append-only `flb.scheme-bridge.v0` evidence record linking one
+owned term's digest under a predecessor scheme to its digest under a
+successor. A bridge adds a fact; it never re-derives or rewrites a
+committed identity in place.
+
+**Author fold**:
+Effect Schema → flb.type.v0, partial by design: what v0 cannot express
+refuses (`beyond-v0`) with the uniform shape. Its check-name table is
+the pin-independence seam: representation ids in, foldlab-owned names
+out.
+
+**Declaration ref**:
+The non-parametric Effect Declaration used to author
+`{"k":"ref","digest"}`; its required `identifier` is the digest.
+The identifier bears identity because it is the Declaration node's only
+canonicalizable substance.
+
+**Round-trip wall**:
+derive → compile → re-fold → same digest, over the frozen fixture
+corpus. The proof that the effect-schema target and the author fold are
+inverse enough to trust.
+
+**Sketch target**:
+A derivation target whose output is deliberately coarser than the
+structure it renders (the Go one). Sketch status licenses imprecision
+about which legal inputs are represented; it never licenses admitting
+an illegal one, so a sketch still validates every child it glosses
+over (D47).
+
+**Identity-order traversal**:
+The one seam every derivation target walks object fields through
+(`fieldNamesInIdentityOrder`): RFC 8785's UTF-16 code-unit order, the
+same order identity's bytes use. It is why "the path that refused" is
+a fact rather than an artifact of how the value was constructed
+(D48 disposition, D49).
+
+**Cross-target consistency**:
+The generalized law that for one structure all targets derive or all
+refuse at the same path. It quantifies over future targets too, so
+adding a target means joining the property, not extending a list.
+
+**Ready line**:
+The single JSON line protod prints once its surfaces are live:
+`{"ready":true,"url":"nats://..."}`. Harnesses parse it; humans read it.
+
+**Transcript**:
+The session facade's send-ordered, owned record of every verb, subject,
+exact sent body, complete received reply, endpoint attribution, and start /
+completion time. A verified read retains both the daemon's claimed wire fact
+and the locally verified cursor. Returned transcripts are snapshots, so a
+consumer cannot erase the record. Sugar strictly above the writ.
+
+**Session journal**:
+One content-addressed `flb.session.v0` construction history under the reserved
+`flb_session_v0_` journal prefix. Its identity fold remembers exact open,
+fill/unfill, and commit traffic; its meaning fold carries the current partial.
+A move always names `expectedHead` and the asserted principal established by
+`open.author`; replay derives both principal and partial from the verified
+journal rather than treating cached state as authority. This ownership
+coordinate prevents accidental cross-author mutation but is not authentication:
+protod has no `auth_basis`, so a caller able to assert the same string can act as
+that principal. Concurrent clients under the same principal remain legal.
+
+**Session retention mark**:
+The storage tier carried by a session event: trace traffic is compactible,
+utterances/proposals are irreducible, and adoption/commit facts are never
+discardable. Until the refusal-corpus seam can export structural refusals and
+seal their corpus digest, compaction is a typed refusal rather than data loss.
+When enabled, absence refusals die with their head-relative trace while the
+state digest and sealed corpus digest remain as evidence of the summarized
+prefix.
+
+## MCP conformance constraints (standing design law, 2026-08-14 — issue #16)
+
+Recorded from the MCP deep-read at the pin against spec revision
+2026-07-28; these bind every foldlab MCP surface:
+
+- No per-connection variance of the served tool/resource/prompt list
+  (the spec forbids it; the pin's EnabledWhen gating is not used).
+- Digest-addressed resource URIs require exact-match routing proven
+  by a conformance test before any resource ships — a repaired URI
+  names a different value.
+- Nothing depends on transport sessions, subscriptions, or
+  server-initiated requests: the pin speaks a legacy protocol era
+  with a stated removal window, and session state belongs in the
+  journal, where it is recomputable evidence rather than transport
+  state.
+- Tool annotations are derived with the rest of the MCP surface:
+  contract and journal reads are read-only/non-destructive; the W3
+  create and C1 fill/unfill operations are convergent, non-destructive
+  mutations; ingress and every unclassified future request remain
+  destructive/non-idempotent until a law licenses a narrower claim.
+- Every tool carries `_meta["foldlab.dev/nats-subject"]`, derived from
+  the same live contract as its name and schema. This is the structural
+  bridge from NATS subjects in verbatim `next` hints to callable MCP
+  tool names; clients never parse descriptions to recover it.

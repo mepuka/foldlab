@@ -1,0 +1,9 @@
+UTC: 2026-08-17T06:10:22.0150046Z
+Command: lake env lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\CSLibCentralAxioms.lean
+'Cslib.Logic.HML.theoryEq_eq_bisimilarity' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Cslib.FLP.Algorithm.recvMsg_comm' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Cslib.FLP.Algorithm.tr_diamond' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Cslib.FLP.Consensus.one_not_exists' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Cslib.FLP.Consensus.ge_one_not_exists' depends on axioms: [propext, Classical.choice, Quot.sound]
+Exit code: 0
+Elapsed seconds: 96.581

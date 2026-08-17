@@ -1,0 +1,1 @@
+ok  	foldlab/proto/protod	9.581s

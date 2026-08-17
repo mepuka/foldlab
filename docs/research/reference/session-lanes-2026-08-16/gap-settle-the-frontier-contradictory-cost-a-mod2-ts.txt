@@ -1,0 +1,23 @@
+bun test v1.3.14 (0d9b296a)
+
+test\protocol-moves.test.ts:
+166 |         const reply = await execute(client, session, setup)
+167 |         expect(reply.ok).toBe(true)
+168 |         if (!reply.ok) throw new Error(`${vector.name} setup: ${JSON.stringify(reply.refusal)}`)
+169 |       }
+170 |       const before = await client.protocolSessionState(session)
+171 |       expect(before.ok).toBe(true)
+                              ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (C:\Users\kokok\AppData\Local\Temp\claude\C--Users-kokok-Dev-foldlab\3c6800bd-d259-4f7d-a6b7-4817e42a5c9c\scratchpad\wf\gap-settle-the-frontier-contradictory-cost-a\snap\proto\ts\test\protocol-moves.test.ts:171:25)
+(fail) the shared protocol move vectors pass through the typed client decode path [71.68ms]
+
+ 156 pass
+ 4 skip
+ 1 fail
+ 5205 expect() calls
+Ran 161 tests across 18 files. [12.34s]

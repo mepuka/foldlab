@@ -56,6 +56,50 @@ corpus regeneration.
    no `panic!`/`partial`/`sorry` in `Moves.Wire`; no
    `@[implemented_by]`; no non-allowlisted `@[extern]`.
 
+## Academic grounding (determination 2026-08-17, rulings 8/10)
+
+The model is built as what it provably is: a join-semilattice of
+holder-attributed observations (a CvRDT, Shapiro et al. 2011) over
+an op-shaped wire, arbitration declared as a protocol constant
+(Burckhardt et al., POPL 2014), close as the CALM-mandated
+coordination point. Consequences binding on this slice:
+
+1. **No network layer, as a licensed decision.** The Gomes et al.
+   Isabelle framework's network axioms are discharged by
+   construction and the closing tour says so, axiom by axiom:
+   `delivery_has_a_cause` (one writer appends; verify-on-read
+   re-derives digests), `msg_id_unique` (content addressing;
+   uniqueness = collision resistance, already in the trusted base),
+   `deliver_locally` (one journal; the appender reads it),
+   `causal_delivery` (vacuous: `repairK_comm` commutes ALL wire-move
+   pairs, so no delivery order is privileged), `histories_distinct`
+   (CAS append; idempotent union). What stays outside and named:
+   the client↔daemon transport, mirroring, and every bound
+   VERIFICATION.md already lists.
+2. **The partition is field-precedented**: Gomes et al. factor
+   abstract convergence / network / instantiation and attribute
+   their reuse to it; the gated definitions/laws/proofs partition is
+   the same discipline in Lean.
+3. **Total function, never simulation, never `Option`.** The
+   equation form is the dividend of daemon totalization
+   (DEV-671/674/675); simulation relations (Burckhardt's
+   replication-aware simulation, seL4's forward simulation) are what
+   nondeterministic implementations pay, and a partial step (Gomes's
+   `interp ⇀`) drags a no-failure side obligation through the whole
+   development. Refusal is a value. `Option` at the step seam, or
+   any `termination_by`/fuel apparatus, is a spec smell to report —
+   nothing in the wire surface is unboundedly recursive.
+4. **The REF-4 bridging lemma is named now, built later**:
+   `statusOfJournal j = s.status` as an invariant of lawful runs
+   (status stays a state field per the footprint ruling; the lemma
+   is REF-4 material — the executor leaves its seam, builds none of
+   it).
+5. **Reserved seam, barred theorem**: the layout may leave room for
+   a future gated run (child-closure), but stating any gated-run
+   theorem is refused in advance — ruling 10 pre-registers that a
+   fair-retry premise moves the confluence family from safety to
+   liveness, exceeding the ledger's stated bounds until ratified.
+
 ## Scope
 
 Session state and wire operations for the fill/dispute fragment plus

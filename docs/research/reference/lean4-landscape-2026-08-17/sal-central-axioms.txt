@@ -1,0 +1,10 @@
+UTC: 2026-08-17T06:12:46.2461386Z
+Command: lake env lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\SalCentralAxioms.lean
+Z3: Z3 version 4.15.2 - 64 bit
+'Sal.Emulation.ra_linearizable_of_core_join' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Sal.Emulation.ra_linearizable_of_core_lattice_cd' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Sal.ConditionedMRDTs.ra_linearizable3_of_join' depends on axioms: [propext, Quot.sound]
+'Sal.ConditionedMRDTs.ORSet_ra_linearizable3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Sal.ConditionedMRDTs.ORSet_ra_linearizable3_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+Exit code: 0
+Elapsed seconds: 12.347

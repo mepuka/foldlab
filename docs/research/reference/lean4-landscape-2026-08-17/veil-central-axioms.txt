@@ -1,0 +1,139 @@
+UTC: 2026-08-17T06:37:57.4859250Z
+Command: lake lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilCentralAxioms.lean
+warning: cvc5: repository 'C:\Users\kokok\Dev\foldlab\repos\veil\.lake/packages\cvc5' has local changes
+⚠ [717/1215] Replayed Loom.MonadAlgebras.WP.Attr
+warning: Loom/MonadAlgebras/WP/Attr.lean:27:34: `Lean.Meta.DiscrTree.insertCore` has been deprecated: Use `Lean.Meta.DiscrTree.insertKeyValue` instead
+warning: Loom/MonadAlgebras/WP/Attr.lean:26:77: `Lean.Meta.DiscrTree.insertCore` has been deprecated: Use `Lean.Meta.DiscrTree.insertKeyValue` instead
+⚠ [753/1215] Replayed Smt.Reconstruct.BitVec.Bitblast
+warning: Smt/Reconstruct/BitVec/Bitblast.lean:36:4: declaration uses `sorry`
+⚠ [812/1215] Replayed Smt.Data.Sexp
+warning: Smt/Data/Sexp.lean:89:10: `String.next` has been deprecated: Use `String.Pos.Raw.next` instead
+
+Note: The updated constant is in a different namespace. Dot notation may need to be changed (e.g., from `x.next` to `Pos.Raw.next x`).
+⚠ [1423/1424] Replayed Examples.Tutorial.FloodSet
+info: Examples/Tutorial/FloodSet.lean:361:0: ✅ No violation (explored 26496 states)
+info: Examples/Tutorial/FloodSet.lean:372:0: ✅ Satisfying trace found
+  Instantiation:
+    node = Fin 1
+    value = Fin 1
+  Theory:
+    f = 0
+  State 0 (via init):
+    W = [[0, 0]]
+    crashed = []
+    crashedInRound = [[0, 0]]
+    decision = []
+    initialValue = [[0, 0]]
+    numCrashed = 0
+    round = 0
+info: Examples/Tutorial/FloodSet.lean:379:0: ✅ Satisfying trace found
+  Instantiation:
+    node = Fin 2
+    value = Fin 1
+  Theory:
+    f = 0
+  State 0 (via init):
+    W = [[0, 0], [1, 0]]
+    crashed = []
+    crashedInRound = [[0, 0], [1, 0]]
+    decision = []
+    initialValue = [[0, 0], [1, 0]]
+    numCrashed = 0
+    round = 0
+  State 1 (via advanceRound):
+    W = [[0, 0], [1, 0]]
+    crashed = []
+    crashedInRound = [[0, 0], [1, 0]]
+    decision = []
+    initialValue = [[0, 0], [1, 0]]
+    numCrashed = 0
+    round = 1
+  State 2 (via nodeDecide(n=0)):
+    W = [[0, 0], [1, 0]]
+    crashed = []
+    crashedInRound = [[0, 0], [1, 0]]
+    decision = [[0, 0]]
+    initialValue = [[0, 0], [1, 0]]
+    numCrashed = 0
+    round = 1
+  State 3 (via nodeDecide(n=1)):
+    W = [[0, 0], [1, 0]]
+    crashed = []
+    crashedInRound = [[0, 0], [1, 0]]
+    decision = [[0, 0], [1, 0]]
+    initialValue = [[0, 0], [1, 0]]
+    numCrashed = 0
+    round = 1
+info: Examples/Tutorial/FloodSet.lean:407:0: Initialization must establish the invariant:
+  doesNotThrow ... ✅
+  agreement ... ✅
+  strong_validity ... ✅
+  every_seen_is_someones_initial ... ✅
+  decision_minimum_seen ... ✅
+  crash_limit ... ✅
+  no_crashes_def ... ✅
+  decision_crashed_after_end ... ✅
+  decision_only_at_end ... ✅
+  crashed_in_round_le_round ... ✅
+  initial_value_in_W ... ✅
+  decided_in_seen ... ✅
+  crashedInRound_default ... ✅
+  crash_round_gap ... ✅
+  crash_round_gap_or_current ... ✅
+  participants_have_equal_W_after_crash_free ... ✅
+The following set of actions must preserve the invariant and successfully terminate:
+  nodeDecide
+    doesNotThrow ... ✅
+    agreement ... ✅
+    strong_validity ... ✅
+    every_seen_is_someones_initial ... ✅
+    decision_minimum_seen ... ✅
+    crash_limit ... ✅
+    no_crashes_def ... ✅
+    decision_crashed_after_end ... ✅
+    decision_only_at_end ... ✅
+    crashed_in_round_le_round ... ✅
+    initial_value_in_W ... ✅
+    decided_in_seen ... ✅
+    crashedInRound_default ... ✅
+    crash_round_gap ... ✅
+    crash_round_gap_or_current ... ✅
+    participants_have_equal_W_after_crash_free ... ✅
+  crash
+    doesNotThrow ... ✅
+    agreement ... ✅
+    strong_validity ... ✅
+    every_seen_is_someones_initial ... ✅
+    decision_minimum_seen ... ✅
+    crash_limit ... ✅
+    no_crashes_def ... ✅
+    decision_crashed_after_end ... ✅
+    decision_only_at_end ... ✅
+    crashed_in_round_le_round ... ✅
+    initial_value_in_W ... ✅
+    decided_in_seen ... ✅
+    crashedInRound_default ... ✅
+    crash_round_gap ... ✅
+    crash_round_gap_or_current ... ✅
+    participants_have_equal_W_after_crash_free ... ✅
+  advanceRound
+    doesNotThrow ... ✅
+    agreement ... ✅
+    strong_validity ... ✅
+    every_seen_is_someones_initial ... ✅
+    decision_minimum_seen ... ✅
+    crash_limit ... ✅
+    no_crashes_def ... ✅
+    decision_crashed_after_end ... ✅
+    decision_only_at_end ... ✅
+    crashed_in_round_le_round ... ✅
+    initial_value_in_W ... ✅
+    decided_in_seen ... ✅
+    crashedInRound_default ... ✅
+    crash_round_gap ... ✅
+    crash_round_gap_or_current ... ✅
+    participants_have_equal_W_after_crash_free ... ✅
+warning: Examples/Tutorial/FloodSet.lean:407:0: Trusting SMT solver for 58 goals. `set_option veil.smt.trust false` to enable proof reconstruction.
+'FloodSet.nodeDecide_agreement' depends on axioms: [propext, Classical.choice, Quot.sound]
+Exit code: 0
+Elapsed seconds: 13.297

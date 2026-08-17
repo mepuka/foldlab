@@ -1,0 +1,13 @@
+diff --git a/lakefile.lean b/lakefile.lean
+index f7cd8e2..1d3cfe4 100644
+--- a/lakefile.lean
++++ b/lakefile.lean
+@@ -93,7 +93,7 @@ target ffi.o pkg : FilePath := do
+       "-I", (pkg.dir / s!"cvc5-{cvc5.target}" / "include").toString,
+       "-fPIC"
+     ]
+-    let compiler := if Platform.isWindows then "cc" else "clang"
++    let compiler := "clang"
+     buildO (compiler := compiler) oFile srcJob flags
+ 
+ input_file libcadical where

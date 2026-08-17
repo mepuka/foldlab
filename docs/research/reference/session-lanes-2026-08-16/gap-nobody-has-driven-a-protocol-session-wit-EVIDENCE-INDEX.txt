@@ -1,0 +1,64 @@
+EVIDENCE INDEX — lane "nobody has driven a protocol session with an agent"
+Date 2026-08-16. Full narrative report is in the agent's returned text (harness
+policy forbids writing report files); this file indexes the machine-readable
+evidence every claim in that report cites.
+
+GATES RE-RUN ON THIS TREE (all PASS, working tree untouched)
+  proto/go   go build ./... && go test ./...      protod 9.44s
+  proto/ts   bun test .                            157 pass / 4 skip / 0 fail
+  root       bun run typecheck                     pass
+  root       bun test                              41 pass / 0 fail
+  go/        go vet ./... && go test ./...          pass
+
+ARTIFACTS
+  bin/protod.exe                        protod built from this tree
+  client/harness.mjs                    protod spawn + official MCP SDK client + frame log
+  client/00-smoke.mjs                   connect / tools list / describe
+  client/01-raw-stdio.mjs               byte-level check of server stdout framing
+  client/10-session-run.mjs             RUN A  complete multi-seat session (25 steps)
+  client/20-fabrication-probes.mjs      PROBE B  additionalProperties + misspellings (11)
+  client/40-string-vs-object.mjs        PROBE C  refusal ladder, object vs JSON string
+  client/50-frontier-cost.mjs           PROBE D  mechanical refusal-follower, cost count
+  client/echo-server.mjs                foldlab-free control MCP server (5 tools)
+  client/60-echo-probe.mjs              PROBE F  schema-type attribution
+  client/61-echo-strict.mjs             PROBE F2 client-side additionalProperties
+  client/30-agent-run.mjs               RUN E  quarantined LLM agent loop
+  client/goal.txt                       agent task, no hints
+  client/goal-typed.txt                 agent task + one out-of-band typing sentence
+
+  transcripts/tools.json                the 15 derived tools as a client sees them
+  transcripts/10-session-run.jsonl      every JSON-RPC frame, both directions, RUN A
+  transcripts/10-session-steps.json     RUN A per-step args and replies
+  transcripts/20-fabrication-probes.jsonl / 20-probe-results.json
+  transcripts/40-string-vs-object.jsonl / 40-string-vs-object.json
+  transcripts/50-frontier-cost.jsonl    / 50-frontier-cost.json
+  transcripts/00-smoke.jsonl            includes the 3798-line self-inflicted logger
+                                        recursion described in the report's method note
+  transcripts/01-raw-stdout.bin         195 bytes, one newline-terminated frame
+
+  agent-runs/run4/stream.jsonl          AGENT RUN 1 (no hints)
+                                        61 tool calls, 62 turns, $5.15, 1729699 ms
+                                        63/63 untyped args sent as JSON strings
+                                        did NOT create a protocol; never reached a fill
+  agent-runs/run5-typed/stream.jsonl    AGENT RUN 2 (one typing sentence given)
+                                        92 tool calls, 93 turns, $6.52, 2185587 ms
+                                        87/87 untyped args sent as JSON strings
+                                        ~50 distinct protocol shapes tried; did NOT create
+  agent-runs/echo-probe/stream.jsonl    untyped/branded/described -> string;
+                                        {"type":"object"} -> object
+  agent-runs/echo-strict/stream.jsonl   fabricated `bogus` arg reached the server despite
+                                        advertised additionalProperties:false
+  agent-runs/run1..run3                 harness bring-up runs (word-split prompt, .cmd
+                                        spawn EINVAL, --bare auth) kept for provenance
+
+KEY NUMBERS
+  RUN A            25 steps, 0 exceptions, 6 data refusals, outcome "completed",
+                   fenced verdict "hold", final state digest a30d1df...
+  PROBE C          object arg -> 10-step field ladder; string arg -> 1 generic
+                   refusal, ladder never starts
+  PROBE D          16 round trips to a created protocol; 13 of them required a
+                   guess the refusal did not determine; type_fill frontier gives
+                   12 legal choices with worked examples in 1 round trip
+  Example field    concierge.go 14 sites, walk.go 1, read.go 3, ingress.go 2,
+                   certify.go 1; protocol.go / protocol_session.go /
+                   protocol_step.go / value_check.go / session.go: ZERO

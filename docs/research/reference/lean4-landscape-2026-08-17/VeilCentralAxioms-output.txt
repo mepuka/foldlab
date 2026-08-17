@@ -1,0 +1,23 @@
+UTC: 2026-08-17T06:13:12.7080202Z
+Command: lake env lean C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilCentralAxioms.lean
+C:\Users\kokok\Dev\foldlab\docs\research\reference\lean4-landscape-2026-08-17\queries\VeilCentralAxioms.lean:1:0: error: unknown module prefix 'Examples'
+
+No directory 'Examples' or file 'Examples.olean' in the search path entries:
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\cvc5\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\Cli\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\batteries\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\Qq\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\aesop\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\proofwidgets\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\importGraph\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\LeanSearchClient\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\plausible\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\mathlib\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\auto\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\smt\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\packages\Loom\.lake\build\lib\lean
+C:\Users\kokok\Dev\foldlab\repos\veil\.lake\build\lib\lean
+c:\Users\kokok\scoop\persist\elan\.elan\toolchains\leanprover--lean4---v4.28.0\lib\lean
+c:\Users\kokok\scoop\persist\elan\.elan\toolchains\leanprover--lean4---v4.28.0\lib\lean
+Exit code: 1
+Elapsed seconds: 2.668

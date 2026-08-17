@@ -1,0 +1,51 @@
+=== SETUP ===
+child protocol digest                          "6a99edf48871f5de1b6e13ab22c922f71973edbbd8665a369e18bcd24471b92c"
+parent protocol digest                         "de183bfa40c33656f730468986a5c0b957d87a4dfd0c3bab6df50aabbc0c1d62"
+
+=== P1: run a real child session, harvest its certificate ===
+child session                                  "flb_protocol_session_v0_4a3f40c34416a171bc9a0b6fdc9ac57f916a303b0f5ec7e795a5607a732e87a0"
+child fill ok                                  true
+child close outcome                            "completed"
+child final_state_digest                       "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+child head (moves; digest does not)            "5b8a5c76f2dbc2fcb0d2b885ae65eb400b8dc721c44dbcfb857281489b3697bd"
+
+=== P2: what checkCatalogedValue can/cannot resolve at fill time ===
+parent session                                 "flb_protocol_session_v0_b1ba2ad9f912000b5570929700d72b8517887b917950cc1c8d277b2c3fec6f61"
+fill with FABRICATED certificate [ADMITTED]    true
+  -> parent hole state                         {"candidates":[{"seat":"coordinator","value":{"final_state_digest":"adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad","outcome":"completed","protocol":"6a99edf48871f5de1b6e13ab22c922f71973edbbd8665a369e18bcd24471b92c","session":"flb_protocol_session_v0_dededededededededededededededededededededededededededededededede"}}],"state":"filled","value":{"final_state_digest":"adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad","outcome":"completed","protocol":"6a99edf48871f5de1b6e13ab22c922f71973edbbd8665a369e18bcd24471b92c","session":"flb_protocol_session_v0_dededededededededededededededededededededededededededededededede"}}
+fill with bad session pattern                  kind=invalid-structure  sort=structural  law="a protocol fill value must conform to the hole's cataloged flb.type.v0 structure"
+fill with wrong child protocol literal         kind=invalid-structure  sort=structural  law="a protocol fill value must conform to the hole's cataloged flb.type.v0 structure"
+fill with outcome=abandoned literal            kind=invalid-structure  sort=structural  law="a protocol fill value must conform to the hole's cataloged flb.type.v0 structure"
+
+=== P3: the shipped predecessor path re-derives, never asserts ===
+predecessor with REAL digest -> ok             true
+predecessor with WRONG digest                  kind=digest-mismatch    sort=structural  law="a successor cites the exact final state digest of a verified closed predecessor session"
+predecessor: session absent here               kind=unknown-journal    sort=absence     law="lag is absence: this journal does not exist here (yet)"
+predecessor: malformed session name            kind=bad-journal        sort=structural  law="flb.protocol.session.v0 addresses a content-addressed protocol-session journal"
+predecessor: still-open session                kind=digest-mismatch    sort=structural  law="a successor cites the exact final state digest of a verified closed predecessor session"
+
+=== P4: post-close evidence receipts move the fold, not the digest ===
+post-close refill, same pair (idempotent) [ADMITTED] true
+post-close refill, NEW pair [ADMITTED]         true
+head BEFORE receipt                            "5b8a5c76f2dbc2fcb0d2b885ae65eb400b8dc721c44dbcfb857281489b3697bd"
+head AFTER  receipt                            "1bea78457d5c8f8a9b541cc7afe1be8a4bbda8bdef589ce08df34a033223c32d"
+final_state_digest BEFORE                      "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+final_state_digest AFTER                       "e46e0d60eff5beb166203875b0592ac390b2b34b19a52d3303fa7f4386cd6711"
+hole fold BEFORE                               {"candidates":[{"seat":"builder","value":{"commit":"abc123"}}],"sealed":true,"state":"filled","value":{"commit":"abc123"}}
+hole fold AFTER                                {"candidates":[{"seat":"builder","value":{"commit":"abc123"}},{"seat":"builder","value":{"commit":"zzz999"}}],"sealed":true,"state":"filled","value":{"commit":"abc123"}}
+VERDICT                                        head moved=true  digest moved=false
+predecessor after evidence receipt [ADMITTED]  true
+
+=== P5: a parent hole filled with a child certificate is demoted by a clash ===
+after coordinator fill                         "disputed"
+after operator clash                           "disputed"
+parent close outcome                           "completed"
+fenced decision state                          "decided"
+fenced decision value                          {"final_state_digest":"bebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebe","outcome":"completed","protocol":"6a99edf48871f5de1b6e13ab22c922f71973edbbd8665a369e18bcd24471b92c","session":"flb_protocol_session_v0_bebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebebe"}
+  -> the seat-authority fence picked a certificate NO ONE RESOLVED; the real child lost
+
+=== P6: outcome=abandoned when a completion-named hole ends unfilled ===
+empty child close outcome                      "abandoned"
+its final_state_digest                         "36ddd6a98e437beb0ec7e426eadd1127b441000b73a476a4b89d60d8d19e9155"
+its hole state                                 {"state":"unfilled"}
+  -> an abandoned session STILL has a final_state_digest: the pin exists either way
