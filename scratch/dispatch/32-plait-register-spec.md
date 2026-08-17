@@ -26,9 +26,45 @@ plus the full section in the house four-part shape (Claim / Evidence /
 Bounds and residuals / Checkable at) — and the coordinator lands it.
 Decision 11 fixes what that proposal must say.
 
-> **[SEAM — coordinator folds any DEV-704 substrate findings here at
-> landing. The executor treats this block as absent if it is empty at
-> dispatch.]**
+> **[SEAM — DEV-704 substrate findings, folded 2026-08-17. Binding on
+> every register adapter and wall in this spec.]**
+>
+> 1. **CAS is checked before `Nats-Msg-Id` dedup.** An exact retry of an
+>    already-landed CAS append (original expected-last-subject-sequence,
+>    same ID) is refused `400/10071` — it does NOT return the original
+>    PubAck with `duplicate: true`. An ambiguous CAS outcome is
+>    reconciled by reading the subject's last message back and comparing
+>    it to the intended append: matching read-back means already landed;
+>    a different message is a real conflict. Never rely on a duplicate
+>    PubAck to resolve a CAS retry. Once the predicate passes,
+>    suppression is by ID alone, stream-wide, regardless of subject or
+>    bytes — `Nats-Msg-Id` must be unique across the whole stream.
+> 2. **Error classification is by operation context plus code, never
+>    `ErrKeyExists` alone.** Every wrong-last-sequence refusal is API
+>    code `10071`: in Go a raw journal CAS mismatch also matches
+>    `ErrKeyExists`, and KV `Update` wraps `ErrKeyRevisionMismatch` while
+>    still matching `ErrKeyExists`; in TS duplicate create and stale
+>    update are both `JetStreamApiError{status:400, code:10071}`.
+> 3. **Terminal immutability is credential-guarded, not
+>    mechanism-guarded.** Authorized revision-checked delete/purge
+>    succeed; no live shape gate exists on main. The re-land is DEV-716
+>    — off this slice's critical path; this spec's walls must not claim
+>    a standing shape gate until it lands.
+> 4. **KV revisions are bucket-global monotone stream sequences** —
+>    total order per key, never consecutive per key. Any
+>    consecutive-revision assumption is banned.
+> 5. **Transport delivery order is not application order.** Redeliveries
+>    interleave on either side of later sequences (witnesses:
+>    `1,2,3,4,1` on ack timeout; `1,2,3,1,4` on NAK with
+>    `MaxAckPending>1`).
+> 6. **Crash evidence is process-crash only.** R=1 file recovery is
+>    validated 6/6 under SIGKILL/TerminateProcess for both sync modes;
+>    power-loss durability is NOT validated and is never claimed.
+>    Power-durable configuration maps to `SyncAlways=true`.
+>
+> Authority for detail: the DEV-704 verdict comment (thread root
+> `74cc9949`, 2026-08-17), with `ran-it` transcripts and pinned-source
+> citations. Part 1 §6.3 carries the same amendments.
 
 ## Objective
 

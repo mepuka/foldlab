@@ -500,14 +500,24 @@ OBJ flb-fab-blob                 payloads > inline threshold, named by
 
 | Fabric object | JetStream mechanism | Semantics relied on | Semantics refused |
 | --- | --- | --- | --- |
-| venue journal | file-backed stream, CAS-append via expected-last-sequence-per-subject precondition | atomic conditional append; per-subject total order; terminal immutability | replication, mirroring, any eviction lever (standing shape gate) |
+| venue journal | file-backed stream, CAS-append via expected-last-sequence-per-subject precondition | atomic conditional append; per-subject total order (the CAS cursor is the global stream sequence of the subject's latest message, not a per-subject ordinal) | replication, mirroring, any eviction lever. Terminal immutability is supplied by the credential/shape guard, not by the mechanism — an authorized client's revision-checked delete and purge both succeed (probe-verified) — and no live guard exists on main today; the archived assumptions gate must be re-landed before "standing shape gate" is claimed again |
 | evidence lane | stream, limits-based retention by declared policy | at-least-once delivery; durable consumers; per-subject order within a partition | exactly-once (dedup window is bounded); cross-partition order (none exists) |
 | fold frontier | durable pull consumer; explicit ack; ack floor advances only after the anchor CAS lands | redelivery of unacked messages after crash | ack as a correctness mechanism (correctness is F3 + F2b; ack is flow control) |
 | cell / anchor | KV bucket; merge-then-`update(rev)` loop for cells; plain `update(rev)` for anchors | revision CAS; linearizable read within the (non-clustered) envelope | last-writer-wins as a merge (cells merge by ⊔ before write; a lost CAS race re-reads and re-merges — convergent by F1) |
 | lease register | KV `create` (grant) / `update(rev)` (renew, commit, steal-after-expiry) | revision CAS = the fencing token's total order per key | holder identity as authority (the token decides, never the who) |
 | blob | object store, digest-named | content-addressed chunked storage | any identity role for object-store metadata |
 | work distribution | work-queue-retention stream of claim *hints* | each hint delivered to one active consumer; redelivery on ack timeout; overlapping consumer filters refused by the server | exclusivity (a hint is advisory; exclusivity is the register's job — a raced hint costs duplicate work, never duplicate commits) |
-| dedup | `Nats-Msg-Id` = envelope digest | bandwidth suppression inside the per-stream window (default 2m0s; a suppressed duplicate returns the original sequence marked `duplicate: true`) | correctness (F2/F2b carry it) |
+| dedup | `Nats-Msg-Id` = envelope digest | bandwidth suppression inside the per-stream window (default 2m0s; a suppressed duplicate returns the original sequence marked `duplicate: true`). Probe-verified exception: on a publish that also carries the CAS precondition the server checks CAS *before* dedup — an exact retry of an already-landed CAS append is refused `400/10071`, never answered `duplicate: true`; and once the predicate passes, suppression is by ID alone, stream-wide, regardless of subject or bytes. An ambiguous CAS outcome is therefore resolved by reading the subject's last message back and comparing it to the intended append, never by expecting a duplicate PubAck | correctness (F2/F2b carry it); any ID-uniqueness scope below the whole stream |
+
+The probe-verified entries above were validated against the pinned
+substrate on 2026-08-17 (DEV-704): `nats-server v2.14.4` places the CAS
+check before the dedup lookup (`server/stream.go:6440-6466` vs
+`:6671-6690`), and KV revision-checked delete/purge succeed for an
+authorized client (`nats.go v1.53.1`, `jetstream/kv.go:1153-1205`). One
+client sharp edge rides with them: every wrong-last-sequence refusal is
+API code `10071`, so adapters classify by operation context plus code —
+never by `ErrKeyExists` alone. The register slice consumes the full
+finding set through its dispatch seam.
 
 Payloads: the server's default max payload is 1 MiB (raisable; 8 MiB is
 the documented recommended ceiling); the fabric inlines
