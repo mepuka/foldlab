@@ -1,0 +1,42 @@
+Command (PowerShell, from go/):
+
+  $probeServer = Join-Path $env:TEMP 'dev712-nats-server.exe'
+  go build -o $probeServer github.com/nats-io/nats-server/v2
+  & $probeServer -v
+  go run ..\docs\research\reference\dev712-partition-position\probe.go -server $probeServer
+
+Output (2026-08-17):
+
+nats-server: v2.14.4
+server=nats-server: v2.14.4
+stream=DEV712 subjects=[probe.partition.*] storage=file replicas=1
+PUBLISH payload=A1 subject=probe.partition.A stream_seq=1
+PUBLISH payload=B1 subject=probe.partition.B stream_seq=2
+PUBLISH payload=A2 subject=probe.partition.A stream_seq=3
+PUBLISH payload=B2 subject=probe.partition.B stream_seq=4
+PUBLISH payload=A3 subject=probe.partition.A stream_seq=5
+PUBLISH payload=B3 subject=probe.partition.B stream_seq=6
+DELIVER phase=before-client-restart/unacked payload=A1 subject=probe.partition.A stream_seq=1 consumer_seq=1 deliveries=1 pending=1
+DELIVER phase=before-client-restart/acked payload=B1 subject=probe.partition.B stream_seq=2 consumer_seq=1 deliveries=1 pending=1
+DELIVER phase=after-client-restart/redelivery payload=A1 subject=probe.partition.A stream_seq=1 consumer_seq=2 deliveries=2 pending=1
+DELIVER phase=after-client-restart/next-A payload=A2 subject=probe.partition.A stream_seq=3 consumer_seq=3 deliveries=1 pending=0
+DELIVER phase=after-client-restart/next-B payload=B2 subject=probe.partition.B stream_seq=4 consumer_seq=2 deliveries=1 pending=0
+DELIVER phase=after-server-restart/A payload=A1 subject=probe.partition.A stream_seq=1 consumer_seq=3 deliveries=3 pending=2
+DELIVER phase=after-server-restart/A payload=A2 subject=probe.partition.A stream_seq=3 consumer_seq=4 deliveries=1 pending=1
+DELIVER phase=after-server-restart/A payload=A3 subject=probe.partition.A stream_seq=5 consumer_seq=5 deliveries=1 pending=0
+DELIVER phase=after-server-restart/B payload=B2 subject=probe.partition.B stream_seq=4 consumer_seq=2 deliveries=1 pending=1
+DELIVER phase=after-server-restart/B payload=B3 subject=probe.partition.B stream_seq=6 consumer_seq=3 deliveries=1 pending=0
+UNIQUE partition=A stream_positions=[1 3 5] floor_plus_one=BLOCK floor=1 next_seen=3 missing=2
+UNIQUE partition=B stream_positions=[2 4 6] floor_plus_one=BLOCK floor=0 next_seen=2 missing=1
+
+Notes:
+
+- The minimum premise counterexample is only the first three publishes:
+  A1@1, B1@2, A2@3. Partition A cannot advance from floor 1 to A2@3 because
+  position 2 belongs to B and can never arrive through A's filter.
+- The later rows exercise durable client reattachment, redelivery, and abrupt
+  restart of the same file-backed server store. The hard server stop can replay
+  recently acknowledged records; this probe does not use that observation to
+  make an acknowledgement-durability claim. It is pertinent here only because
+  every replay preserves the event's stream sequence while consumer sequence
+  describes deliveries rather than event identity.
