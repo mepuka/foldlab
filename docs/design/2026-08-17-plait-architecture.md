@@ -43,8 +43,11 @@ packages/plait/
     Canonical.ts          canonical bytes — a seam over packages/core's RFC 8785 jcs; no second canonicalizer
     Catalog.ts            the content-addressed value store client: resolve digest → value
                           (verify-on-read), admit via the certifier seam; the service
-                          Resolved<A> decode requires (added 2026-08-17, DEV-697 finding —
-                          §3 referenced the service with no module owning it)
+                          resolved-reference decode requires (added 2026-08-17, DEV-697
+                          finding — §3 referenced the service with no module owning it)
+    Resolved.ts           the ResolvedOf combinator — references that decode by resolving;
+                          imports Digest.ts and Catalog.ts (own module to break the cycle;
+                          DEV-705 layout finding)
     Refusal.ts            tagged refusal unions; sorts (structural | absence); retryAbsence policies
     Wire.ts               envelope Schema (closed struct; kinds emit|attest|checkpoint|sealed)
     Subjects.ts           the flb.fab.* grammar as typed constructors; subjects route, never identify
@@ -113,14 +116,33 @@ export const Digest: Schema.Codec<Digest, string>            // sha256 hex, bran
 export const canonicalBytes: (value: WireValue) => Uint8Array
 export const digestOf: (value: WireValue) => Digest
 
-// Digest.ts — the R-channel move: a reference that DECODES BY RESOLVING.
-// Decoding a Resolved<A> requires the Catalog (and Blobs for large
-// payloads) from the environment; decode re-derives the digest of what
-// it fetched and refuses on mismatch — constrained decode with
-// resolution, as one composable schema.
-export interface Resolved<A> extends Schema.Codec<A, Digest, Catalog | Blobs, never> {}
-export const Resolved: <A>(schema: Schema.Codec<A, WireValue>) => Resolved<A>
+// Resolved.ts — the R-channel move: a reference that DECODES BY RESOLVING.
+// Decoding requires the Catalog (and Blobs for large payloads) from the
+// environment; decode re-derives the digest of what it fetched and
+// refuses on mismatch — constrained decode with resolution, as one
+// composable schema. Service channels PROPAGATE so resolved values may
+// themselves hold resolved references (corrected 2026-08-17, DEV-705
+// F-1: fixing the inner channels at never rejects any body that itself
+// carries a Resolved field — a frame referencing cataloged values is
+// the normal case; probe-verified at the pin, tsc exit 0):
+export interface ResolvedOf<A, RD = never, RE = never>
+  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, RE> {}
+export const ResolvedOf: <A, RD = never, RE = never>(
+  schema: Schema.Codec<A, WireValue, RD, RE>
+) => ResolvedOf<A, RD, RE>
+export type Resolved<A> = ResolvedOf<A>   // the leaf special case
 ```
+
+Two adjacent rulings ride the same probe (DEV-705), for the E6 spec's
+DECISIONS log: **encode is total, not publishing** — `encode` computes
+the digest and writes nothing, so `decode ∘ encode = id` holds only in a
+catalog already holding the value; publication is an explicit `publish`
+act, and a `Publishing<A>` write-through codec (`RE = Catalog`) is
+reserved for the explicit emit path only, so derivation, replay, and
+memo-key computation stay runnable with no environment. And the module
+split that avoids the `Digest.ts ↔ Catalog.ts` cycle: `Digest.ts` owns
+identity with no service imports; `Catalog.ts` owns the services;
+`Resolved.ts` owns the combinator and imports both.
 
 Consequences, each a deliberate DX property:
 
@@ -133,7 +155,12 @@ Consequences, each a deliberate DX property:
 - **Refusals are the error channel** (`Refusal.ts`): every decode/
   resolve failure is a tagged refusal with kind, sort, law, path,
   got/expected, `next` — the wire refusal envelope and the Effect error
-  type are one definition. `sort: "absence"` is the only class the
+  type are one definition, joined at one seam (corrected 2026-08-17,
+  DEV-705 F-2): schema getters can only fail with `SchemaIssue.Issue`
+  at the pin, so the refusal rides the issue's annotations and a single
+  lifting adapter at the parse boundary (`decodeRefusing`, living in
+  `Refusal.ts`) surfaces it — that adapter is the only place refusal
+  classification happens. `sort: "absence"` is the only class the
   shipped retry policies touch.
 - **Brands are earned, never asserted** (`Algebra.ts`): the
   `Commutative` brand's only constructor runs the generated fast-check
