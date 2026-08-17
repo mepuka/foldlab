@@ -16,11 +16,12 @@
   },
   "scripts": {
     "check:corpus": "bun scripts/check-corpus.ts",
+    "check:parity-control": "bun scripts/check-substrate-parity-negative.ts",
     "check:public-effects": "bun scripts/check-public-effects.ts",
     "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "generate:corpus": "bun scripts/generate-corpus.ts",
     "generate:public-effects": "bun scripts/check-public-effects.ts --write",
-    "test": "bun test ./test && bun run check:corpus && bun run check:public-effects && bun run check:type-control"
+    "test": "bun test ./test && bun run check:corpus && bun run check:public-effects && bun run check:type-control && bun run check:parity-control"
   },
   "dependencies": {
     "@foldlab/core": "workspace:*",

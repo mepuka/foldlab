@@ -65,7 +65,7 @@ const stages: ReadonlyArray<Stage> = [
   // A wall that can report a stale pass on exactly the input it exists to watch
   // is worse than no wall, because it is believed. Arming the stage rather than
   // the package is what keeps a reader added tomorrow from inheriting the gap.
-  { label: "go — tests", cwd: resolve(repo, "go"), command: ["go", "test", "-count=1", "./..."] },
+  { label: "go — tests", cwd: resolve(repo, "go"), command: ["go", "test", "-count=1", "-v", "./..."] },
   { label: "proto/go — formatting", cwd: resolve(repo, "proto/go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "proto/go — vet", cwd: resolve(repo, "proto/go"), command: ["go", "vet", "./..."] },
   { label: "proto/go — tests", cwd: resolve(repo, "proto/go"), command: ["go", "test", "-count=1", "./..."] },

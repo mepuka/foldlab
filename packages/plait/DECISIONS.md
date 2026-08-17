@@ -200,3 +200,37 @@ operation's read and its write, and a barrier-ordered hold is the one
 deterministic way through it against the real substrate.
 **Load-bearing? no** — the trigger's mechanism; the minted refusal and its
 law are asserted by the wall itself.
+
+### T12. Keep the TypeScript substrate parity wall at the consuming package seam
+
+Decided: the `@nats-io/* 3.4.0` error/PubAck parity witness runs as a Plait
+package test against the existing pinned-server harness. Alternatives:
+spawn Bun from the Go substrate package; add a root-only script outside the
+consuming package. Why: Plait owns the exact TypeScript dependency family and the
+package test is already a required battery stage, while the shared harness independently
+verifies the server binary is the `go.mod` pin. **Load-bearing? yes** — moving the
+wall away from the package that resolves the clients could let dependency drift
+escape the witness.
+
+### T13. The parity wall pins wire-indistinguishability; classification stays a convention
+
+Decided: assert that the three wrong-last-sequence refusals (journal CAS,
+duplicate create, stale update) present one identical shape across every
+distinguishing-capable `JetStreamApiError` field — subclass identity, name,
+status, code, state-masked message and wire `ApiError`, cause — and bind each
+captured refusal to its operation by the exact journal state its description
+reports in the deterministic fixture. Classification by operation context is
+asserted as a client-side convention layered on that wire, never derived from
+it. Alternatives: derive the classification from the refusal (unreachable —
+DEV-704 proved the substrate emits no distinguishing signal, which is itself
+the fact to pin); keep a label-swap control over the mapping switch (it tests
+the switch, not the wire). Why: the only drift this wall can catch is
+`@nats-io/*` starting to distinguish the refusals, and the pinned shape reds
+exactly then, while the state pin keeps one capture's refusal from standing
+in for another's. The fixture seeds one extra journal frame so the three
+reported states are pairwise distinct — without that, two captures share a
+state and the pin binds only the odd one out — and the compared field set is
+itself pinned by a guard whose committed field-drop mutant
+(`negative-controls/SubstrateParity.field-drop.mutant.ts`) reds the battery
+if the guard weakens. **Load-bearing? yes** — the ledger row's "context
+classification" claim is scoped by this pin.
