@@ -3,7 +3,6 @@ package protod
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -42,7 +41,7 @@ func (d *Daemon) checkValue(structure, value any, path []string) *Refusal {
 			return nil
 		}
 	case "int":
-		if number, ok := value.(float64); ok && math.Trunc(number) == number && math.Abs(number) <= 9007199254740991 {
+		if number, ok := value.(float64); ok && isIntegralJSONNumber(number) {
 			return nil
 		}
 	case "null":

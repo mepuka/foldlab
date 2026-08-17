@@ -168,7 +168,7 @@ func sessionGrammarDescriptor() any {
 			map[string]any{"k": "check", "required": []any{"base", "check", "k"}, "children": map[string]any{"base": "T", "check": "{name:non-empty-string,args:json-object}"}},
 			map[string]any{"k": "int", "required": []any{"k"}},
 			map[string]any{"k": "list", "required": []any{"k", "of"}, "children": map[string]any{"of": "T"}},
-			map[string]any{"k": "literal", "required": []any{"k", "value"}, "children": map[string]any{"value": "json"}},
+			map[string]any{"k": "literal", "required": []any{"k", "value"}, "children": map[string]any{"value": "string|integral-number|bool|null"}},
 			map[string]any{"k": "null", "required": []any{"k"}},
 			map[string]any{"k": "opaque", "required": []any{"k"}},
 			map[string]any{"k": "ref", "required": []any{"digest", "k"}, "children": map[string]any{"digest": "hex64"}},

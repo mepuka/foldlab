@@ -191,10 +191,20 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
       if (
         typeof literal === "string" ||
         typeof literal === "boolean" ||
-        (typeof literal === "number" && Number.isFinite(literal)) ||
         literal === null
       ) {
         return { k: "literal", value: literal }
+      }
+      // The certifier's one integrality bound, mirrored: a literal number is
+      // whole and inside the safe-integer range, so no v0 term carries a
+      // number whose canonical form needs shortest-round-trip printing.
+      if (typeof literal === "number") {
+        if (Number.isSafeInteger(literal)) return { k: "literal", value: literal }
+        return beyond(
+          path,
+          String(literal),
+          "a literal number is integral — whole and within ±(2^53-1); use opaque for other numbers",
+        )
       }
       return beyond(path, String(literal), "only JSON-scalar literals exist in v0")
     }

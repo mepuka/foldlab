@@ -37,6 +37,8 @@ const isWellFormedUnicode = (value: string): boolean => {
 const unicodeStringArbitrary = FastCheck.string({ maxLength: 16 }).filter(isWellFormedUnicode)
 const nonEmptyUnicodeStringArbitrary = FastCheck.string({ minLength: 1, maxLength: 16 })
   .filter(isWellFormedUnicode)
+// Check args are an unconstrained JSON object, so this arbitrary keeps the
+// non-integer extremes.
 const jsonScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
   FastCheck.constant(null),
   FastCheck.boolean(),
@@ -51,6 +53,15 @@ const jsonScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
     Number.MAX_VALUE,
   ),
 )
+// A literal's value does not: v0 admits string | integral number | bool |
+// null there, so generating 5e-324 would generate an unlawful term and test
+// the refusal path under the name of the admission path.
+const literalScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
+  FastCheck.constant(null),
+  FastCheck.boolean(),
+  unicodeStringArbitrary,
+  FastCheck.constantFrom(Number.MIN_SAFE_INTEGER, -1, 0, 1, Number.MAX_SAFE_INTEGER),
+)
 const decidedLeafArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
   FastCheck.constantFrom<Json>(
     { k: "string" },
@@ -61,7 +72,7 @@ const decidedLeafArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
     { k: "struct", fields: {}, optional: [] },
     { k: "union", of: [{ k: "null" }] },
   ),
-  jsonScalarArbitrary.map((value): Json => ({ k: "literal", value })),
+  literalScalarArbitrary.map((value): Json => ({ k: "literal", value })),
 )
 const partialWrapperArbitrary: FastCheck.Arbitrary<PartialWrapper> = FastCheck.oneof(
   FastCheck.constant({ kind: "list" } as const),

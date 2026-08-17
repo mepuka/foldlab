@@ -69,7 +69,7 @@ One thread, both directions, no trust anywhere:
 
 ```
 T ::= {"k":"string"|"bool"|"int"|"null"}
-    | {"k":"literal","value":<json scalar>}
+    | {"k":"literal","value":<string|integral number|bool|null>}
     | {"k":"list","of":T}
     | {"k":"struct","fields":{<name>:T,...},"optional":[<name>,...]?}
     | {"k":"union","of":[T,...]}
@@ -84,6 +84,19 @@ checks declared-metadata only; refs must resolve to cataloged digests
 (the catalog is a DAG by construction — no forward refs, no cycles).
 Unknown `"k"` refuses. The grammar grows toward full SchemaAST coverage
 under 004; it never gets a parallel competitor.
+
+Every number position in the grammar — the `int` leaf and a literal's
+`value` — carries the same integrality bound: whole, and within
+±(2^53−1). One bound, stated once in the certifier, admitted the same
+way everywhere. The consequence is what makes the bound worth having:
+no v0 term can carry a number whose canonical form needs
+shortest-round-trip printing, so a canonical-value law over this whole
+grammar owes no such proof obligation. Non-integer numbers reach the
+protocol only as opaque payloads, where they are uninterpreted bytes
+canonicalized at the JCS seam and never parsed here. This narrowing is
+directed by `scratch/dispatch/25-float-hygiene-cure.md` under the
+2026-08-17 operator ruling; the spec's do-not-edit law and this
+brief-directed exception are recorded in `DECISIONS.md`.
 
 ## Skeleton (the unanimous shape; internal layout is the builder's)
 

@@ -3,6 +3,7 @@ package protod
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"unicode/utf16"
@@ -22,6 +23,18 @@ var v0Kinds = []string{
 }
 
 var partialKinds = append(append([]string{}, v0Kinds...), "hole")
+
+// isIntegralJSONNumber is the ONE integrality bound in flb.type.v0: wherever
+// the grammar says "integral number" — the int leaf, a literal's value — a
+// JSON number is admitted exactly when it is whole and inside the IEEE-754
+// safe-integer range. It is stated once because two statements of a numeric
+// bound is how one grammar starts admitting different numbers in different
+// positions. The bound is what keeps non-integer numbers out of identity
+// bytes entirely: no construct in v0 can carry a value whose canonical form
+// needs shortest-round-trip printing.
+func isIntegralJSONNumber(number float64) bool {
+	return math.Trunc(number) == number && math.Abs(number) <= 9007199254740991
+}
 
 type refUse struct {
 	digest string
@@ -95,17 +108,24 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 		if !present {
 			return structureRefusal(path,
 				"flb.type.v0: a literal node carries its scalar in \"value\"",
-				node, `{"k":"literal","value":<json scalar>}`,
+				node, `{"k":"literal","value":<string|integral number|bool|null>}`,
 				map[string]any{"k": "literal", "value": "on"})
 		}
-		switch literal.(type) {
-		case string, float64, bool, nil:
+		switch scalar := literal.(type) {
+		case string, bool, nil:
 			return nil
-		default:
+		case float64:
+			if isIntegralJSONNumber(scalar) {
+				return nil
+			}
 			return structureRefusal(append(path, "value"),
-				"flb.type.v0: a literal value is a JSON scalar — string, number, bool, or null",
-				literal, "a JSON scalar", map[string]any{"k": "literal", "value": 1})
+				"flb.type.v0: a literal number is integral — whole and within ±(2^53-1); a non-integer number has no v0 form",
+				literal, "an integral number: Trunc(n) == n and |n| <= 9007199254740991",
+				map[string]any{"k": "literal", "value": 1})
 		}
+		return structureRefusal(append(path, "value"),
+			"flb.type.v0: a literal value is a JSON scalar — string, integral number, bool, or null",
+			literal, "a JSON scalar", map[string]any{"k": "literal", "value": 1})
 	case "list":
 		if r := checkKeys(node, path, kind, "k", "of"); r != nil {
 			return r

@@ -141,6 +141,27 @@ describe("beyond v0 refuses as data with the uniform shape", () => {
     expect(refusal.law).toContain("non-integer numbers have no v0 leaf")
   })
 
+  // The Go certifier's integrality bound, mirrored: these are the exact
+  // values that minted lawfully before the narrowing, and 5e-324 / 1e21 /
+  // 1e-7 are ES2019 shortest-round-trip renderings.
+  test.each([5e-324, 0.1, 1e21, 1e-7, -0.5, Number.MAX_VALUE, 2 ** 53])(
+    "a non-integer literal %p has no v0 form",
+    (value) => {
+      const refusal = refusalShape(foldSchema(Schema.Literal(value)))
+      expect(refusal.law).toContain("a literal number is integral")
+      expect(refusal.got).toBe(String(value))
+    },
+  )
+
+  test("integral literals inside the safe range still fold", () => {
+    for (const value of [0, -1, 10, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER]) {
+      expect(foldSchema(Schema.Literal(value))).toMatchObject({
+        ok: true,
+        structure: { k: "literal", value },
+      })
+    }
+  })
+
   test("records (index signatures)", () => {
     refusalShape(foldSchema(Schema.Record(Schema.String, Schema.Int)))
   })

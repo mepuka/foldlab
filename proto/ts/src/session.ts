@@ -30,7 +30,7 @@ export const SESSION_GRAMMAR_DESCRIPTOR: Json = {
     { k: "check", required: ["base", "check", "k"], children: { base: "T", check: "{name:non-empty-string,args:json-object}" } },
     { k: "int", required: ["k"] },
     { k: "list", required: ["k", "of"], children: { of: "T" } },
-    { k: "literal", required: ["k", "value"], children: { value: "json" } },
+    { k: "literal", required: ["k", "value"], children: { value: "string|integral-number|bool|null" } },
     { k: "null", required: ["k"] },
     { k: "opaque", required: ["k"] },
     { k: "ref", required: ["digest", "k"], children: { digest: "hex64" } },
