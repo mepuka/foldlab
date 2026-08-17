@@ -200,7 +200,7 @@ What this design consumes, at the status it actually holds:
 | Session/protocol laws (fills idempotent per `(value, seat)`; close atomic at declared authority; final-state digest excludes journal head) | shipped (R0/R1, single daemon) | sessions ride venues unchanged; the fabric adds reach, not semantics |
 | Effector shape: one authority value per work digest, version-checked CAS, monotone fencing token | shipped; claims archived | the coordination plane's only primitive — re-verified as F5 |
 | "One CAS, two keyings" (journal CAS-append and KV revision CAS are the same server-side check) | measured (synthesis §2.3) | one substrate assumption covers both planes |
-| Substrate assumptions gate (atomic create-if-absent, revision CAS, linearizable reads, terminal immutability; refuses clustered JS, R>1, in-memory) | shipped | the envelope Plait v0 stays inside; extending it is a named grill item (G3) |
+| Substrate assumptions gate (atomic create-if-absent, revision CAS, linearizable reads, terminal immutability; refuses clustered JS, R>1, in-memory) | **archived** — corrected 2026-08-17: the executable gate was purged 2026-08-15 with `go/effector/` and lives at `archive/pre-estate-focus`, not on main (wave-2 drafting finding); its *content* is honored as the envelope | the envelope Plait v0 stays inside; re-landing the executable gate rides E5's substrate probes; extending it is a named grill item (G3) |
 | Venue ruling (multiple single-writer venues) | measured + proposed (synthesis §2.3) | the topology |
 | At-least-once fill safety (redelivered `(value,seat)` replies OK, head unchanged) | shipped | the monotone plane needs no dedup layer for correctness |
 | MPST refusal + projection IOU | ratified | the conformance posture (§7) |
@@ -337,7 +337,10 @@ Plait distributes exactly this and nothing more:
   with a digest, cataloged like any type.
 - A deployed fold is a durable consumer whose **anchor** — the checkpoint
   fact `(fold digest, lane, partition) → (position floor, state digest,
-  head)` — lives in a commons cell. The anchor is a fact, not a cache:
+  head)` — lives as a commons KV fact, advanced by plain revision CAS
+  (single writer per fold-partition; not a merged lattice cell — the
+  §6.3 mapping row is authoritative; wording corrected 2026-08-17).
+  The anchor is a fact, not a cache:
   keyed by fold identity and history identity, it is an immutable truth
   wherever it federates.
 - **Resumption law (F3)**: folding a suffix from a checkpointed state
@@ -933,8 +936,11 @@ the landscape report, reversible by package deletion.
   byte-for-byte; hand-typed vectors refused on sight (ruling inherited).
 - The Veil package exports the F5 corpus via its trace JSON
   (`ToJson (Trace ρ σ l)`) with `Trace.isValid` proved over exported
-  runs — vectors that are *theorems about themselves* (landscape report
-  §D). The unproven wrapper glue (widget-to-CLI) is named in the trusted
+  runs — vectors that are *theorems about themselves* (verified directly
+  against the pinned Veil source: `Veil/Core/Tools/ModelChecker/Trace.lean`
+  — `ToJson (Trace ρ σ l)`, `Trace.isValid`, `push_isValid`; citation
+  corrected 2026-08-17, the earlier "§D" pointer was dangling). The
+  unproven wrapper glue (widget-to-CLI) is named in the trusted
   base, not hidden.
 - `plait attest` (L2) replays vectors against implementations over a real
   local NATS; the same corpus drives the TS runtime, the Go twin, and any

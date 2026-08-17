@@ -65,5 +65,7 @@ program's project management.
   fabric model ([dispatch 30](../../scratch/dispatch/30-plait-fabric-model-spec.md)).
 - **Standing fences** carried from the design: attribution-gated
   evidentiary claims; safety-only (no liveness claims); no
-  exactly-once claims; the substrate assumptions gate is the envelope;
+  exactly-once claims; the substrate assumptions gate's *content* is the
+  envelope (corrected 2026-08-17: the executable gate itself is archived
+  at `archive/pre-estate-focus`, purged 2026-08-15; re-landing rides E5);
   VERIFICATION.md rows land with their slices, never before.
