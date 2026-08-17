@@ -8,6 +8,7 @@ go/*.exe
 proto/go/*.exe
 ci-logs/
 tlc-out/
+verify/fabric/.regen/
 
 # scratch/ is TRACKED: the task briefs an agent needs are useless if a fresh
 # checkout cannot see them. Retired briefs and their build products are not.

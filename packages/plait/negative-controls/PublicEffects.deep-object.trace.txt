@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.deep-object.mutant.ts(24,3): error TS2344: Type '"Diagnostics.nested.open"' does not satisfy the constraint 'never'.

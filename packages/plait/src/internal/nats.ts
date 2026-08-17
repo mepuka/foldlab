@@ -48,7 +48,10 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS operation to be available",
-    next: [],
+    next: [{
+      subject: operation,
+      note: "Retry this absence with retryAbsence and a temporal Schedule.",
+    }],
   })
 
 const streamShapeRefusal = (got: string): Refusal =>
@@ -63,7 +66,16 @@ const streamShapeRefusal = (got: string): Refusal =>
       duplicate_window: messageIdWindowNanos,
       subjects: fabricSubjects,
     },
-    next: [],
+    next: [{
+      subject: "stream.ensure",
+      note: "Configure a file-backed commons stream with one replica and the ruled subjects.",
+      body: {
+        storage: StorageType.File,
+        num_replicas: 1,
+        duplicate_window: messageIdWindowNanos,
+        subjects: fabricSubjects,
+      },
+    }],
   })
 
 const ensureStream = Effect.fn("FabricClient.ensureStream")(function* (

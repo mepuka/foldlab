@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.curried.mutant.ts(24,3): error TS2344: Type '"Curried.read"' does not satisfy the constraint 'never'.

@@ -1,9 +1,10 @@
-import type { Effect, Layer } from "effect"
+import type { Effect, Layer, Stream } from "effect"
 
 import type { Refusal } from "../src/Refusal.js"
 
 type PublicApi = typeof import("../src/index.js")
 type PublicFunction = (...args: ReadonlyArray<never>) => unknown
+type PublicConstructor = abstract new (...args: ReadonlyArray<any>) => unknown
 type ServiceBaseKey =
   | "prototype"
   | "key"
@@ -24,17 +25,11 @@ type Join<Prefix extends string, Key extends string> =
 type ErrorViolation<Error, Path extends string> =
   [Error] extends [Refusal] ? never : Path
 
-type ReturnViolation<Return, Path extends string> =
-  Return extends Effect.Effect<any, infer Error, any>
-    ? ErrorViolation<Error, Path>
-    : Return extends Layer.Layer<any, infer Error, any>
-    ? ErrorViolation<Error, Path>
-    : never
-
-type ObjectViolations<Value, Path extends string> = {
+type ObjectViolations<Value, Path extends string, Seen> = {
   [Key in keyof Value & string]: PublicValueViolation<
     Value[Key],
-    Join<Path, Key>
+    Join<Path, Key>,
+    Seen
   >
 }[keyof Value & string]
 
@@ -42,34 +37,47 @@ type ServiceViolations<
   Value,
   Shape,
   Path extends string,
+  Seen,
 > =
-  | ObjectViolations<Shape, `${Path}#service`>
+  | ObjectViolations<Shape, `${Path}#service`, Seen>
   | {
     [Key in Exclude<keyof Value, ServiceBaseKey> & string]: PublicValueViolation<
       Value[Key],
-      Join<Path, Key>
+      Join<Path, Key>,
+      Seen
     >
   }[Exclude<keyof Value, ServiceBaseKey> & string]
 
-type PublicValueViolation<Value, Path extends string> =
-  [ServiceShape<Value>] extends [never]
-    ? Value extends PublicFunction
-      ? ReturnViolation<ReturnType<Value>, Path>
-      : never
-    : ServiceViolations<Value, ServiceShape<Value>, Path>
-
-type RootEntryViolations<Value, Path extends string> =
-  [ServiceShape<Value>] extends [never]
-    ? Value extends PublicFunction
-      ? ReturnViolation<ReturnType<Value>, Path>
+type PublicValueViolation<
+  Value,
+  Path extends string,
+  Seen = never,
+> = [Value] extends [Seen]
+  ? never
+  : [ServiceShape<Value>] extends [never]
+  ? Value extends Effect.Effect<infer Success, infer Error, any>
+    ? ErrorViolation<Error, Path>
+      | (Success extends Stream.Stream<any, infer StreamError, any>
+        ? ErrorViolation<StreamError, `${Path}#success`>
+        : never)
+    : Value extends Stream.Stream<any, infer Error, any>
+    ? ErrorViolation<Error, Path>
+    : Value extends Layer.Layer<any, infer Error, any>
+    ? ErrorViolation<Error, Path>
+    : Value extends PublicFunction
+      ? PublicValueViolation<ReturnType<Value>, Path, Seen | Value>
+      : Value extends { readonly ast: unknown }
+      ? never
+      : Value extends PublicConstructor
+      ? never
       : Value extends object
-      ? ObjectViolations<Value, Path>
+      ? ObjectViolations<Value, Path, Seen | Value>
       : never
-    : ServiceViolations<Value, ServiceShape<Value>, Path>
+  : ServiceViolations<Value, ServiceShape<Value>, Path, Seen | Value>
 
 /** Public Effect and Layer functions whose complete error type is not Refusal. */
 export type PublicSurfaceViolations<Value> = {
-  [Key in keyof Value & string]: RootEntryViolations<Value[Key], Key>
+  [Key in keyof Value & string]: PublicValueViolation<Value[Key], Key>
 }[keyof Value & string]
 
 /** Whether a public function returns an Effect whose complete error type is Refusal. */

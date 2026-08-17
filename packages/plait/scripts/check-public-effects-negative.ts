@@ -18,6 +18,26 @@ const controls = [
     project: "tsconfig.negative-fabric-client.json",
     trace: "negative-controls/PublicEffects.fabric-client.trace.txt",
   },
+  {
+    name: "Stream error inside Effect success",
+    project: "tsconfig.negative-stream-success.json",
+    trace: "negative-controls/PublicEffects.stream-success.trace.txt",
+  },
+  {
+    name: "plain Effect value export",
+    project: "tsconfig.negative-effect-value.json",
+    trace: "negative-controls/PublicEffects.effect-value.trace.txt",
+  },
+  {
+    name: "curried data-last Effect operation",
+    project: "tsconfig.negative-curried.json",
+    trace: "negative-controls/PublicEffects.curried.trace.txt",
+  },
+  {
+    name: "deeply nested Effect operation",
+    project: "tsconfig.negative-deep-object.json",
+    trace: "negative-controls/PublicEffects.deep-object.trace.txt",
+  },
 ] as const
 
 const normalize = (text: string): string =>
@@ -48,4 +68,4 @@ for (const control of controls) {
   }
 }
 
-console.log("PUBLIC EFFECT CONTROL: PASS (three public-surface regressions refused)")
+console.log("PUBLIC EFFECT CONTROL: PASS (seven public-surface regressions refused)")

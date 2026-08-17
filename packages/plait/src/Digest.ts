@@ -25,6 +25,8 @@ export type Digest = typeof Digest.Type
  * Effect.runSync(digestOf({ a: 1 }))
  * // "015abd7f..."
  * ```
+ *
+ * Inherits `Canonical`'s module-level residual bound on two-pass diagnostics.
  */
 export const digestOf = Effect.fn("Digest.digestOf")(function* (
   value: WireValue,

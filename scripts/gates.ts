@@ -1,3 +1,12 @@
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
+import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 
 type Stage = {
@@ -7,7 +16,28 @@ type Stage = {
   readonly requireEmptyStdout?: boolean
 }
 
+type InstallTarget = {
+  readonly label: string
+  readonly directory: string
+  readonly lockfile: string
+}
+
+type Install = (target: InstallTarget) => number
+
 const repo = resolve(import.meta.dir, "..")
+
+const installTargets: ReadonlyArray<InstallTarget> = [
+  {
+    label: "root dependencies",
+    directory: repo,
+    lockfile: resolve(repo, "bun.lock"),
+  },
+  {
+    label: "proto/ts dependencies",
+    directory: resolve(repo, "proto/ts"),
+    lockfile: resolve(repo, "proto/ts/bun.lock"),
+  },
+]
 
 const stages: ReadonlyArray<Stage> = [
   {
@@ -74,6 +104,100 @@ const run = (stage: Stage): number => {
   return 0
 }
 
+const installFrozen: Install = (target) => run({
+  label: `preflight — ${target.label}`,
+  cwd: target.directory,
+  command: ["bun", "install", "--frozen-lockfile"],
+})
+
+const runInstallPreflight = (
+  targets: ReadonlyArray<InstallTarget>,
+  install: Install,
+): void => {
+  for (const target of targets) {
+    const modules = resolve(target.directory, "node_modules")
+    if (existsSync(modules)) {
+      console.log(`\n== preflight — ${target.label} (present)`)
+      continue
+    }
+    if (!existsSync(target.lockfile)) {
+      throw new Error(`preflight — ${target.label}: lockfile is missing`)
+    }
+
+    const lockBefore = readFileSync(target.lockfile)
+    const exitCode = install(target)
+    const lockAfter = readFileSync(target.lockfile)
+    if (!lockBefore.equals(lockAfter)) {
+      writeFileSync(target.lockfile, lockBefore)
+      throw new Error(`preflight — ${target.label}: frozen install changed the lockfile`)
+    }
+    if (exitCode !== 0) {
+      throw new Error(`preflight — ${target.label}: frozen install exited ${exitCode}`)
+    }
+    if (!existsSync(modules)) {
+      throw new Error(`preflight — ${target.label}: install did not create node_modules`)
+    }
+  }
+}
+
+const selfTestInstallPreflight = (): void => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "foldlab-gates-preflight-"))
+  const resolvedTemp = resolve(tmpdir())
+  try {
+    const root = resolve(temporaryRoot, "root")
+    const proto = resolve(temporaryRoot, "proto/ts")
+    mkdirSync(root, { recursive: true })
+    mkdirSync(proto, { recursive: true })
+    const targets = [
+      { label: "root control", directory: root, lockfile: resolve(root, "bun.lock") },
+      { label: "proto/ts control", directory: proto, lockfile: resolve(proto, "bun.lock") },
+    ] as const
+    writeFileSync(targets[0].lockfile, "root-lock\n")
+    writeFileSync(targets[1].lockfile, "proto-lock\n")
+
+    const fired: Array<string> = []
+    runInstallPreflight(targets, (target) => {
+      fired.push(target.label)
+      mkdirSync(resolve(target.directory, "node_modules"))
+      return 0
+    })
+    if (fired.join(",") !== "root control,proto/ts control") {
+      throw new Error(`install preflight did not fire for both absent states: ${fired.join(",")}`)
+    }
+
+    const refusalRoot = resolve(temporaryRoot, "lock-change")
+    mkdirSync(refusalRoot)
+    const refusalTarget = {
+      label: "lockfile-change control",
+      directory: refusalRoot,
+      lockfile: resolve(refusalRoot, "bun.lock"),
+    }
+    writeFileSync(refusalTarget.lockfile, "pinned-lock\n")
+    let refused = false
+    try {
+      runInstallPreflight([refusalTarget], (target) => {
+        writeFileSync(target.lockfile, "moved-lock\n")
+        mkdirSync(resolve(target.directory, "node_modules"))
+        return 0
+      })
+    } catch (error) {
+      refused = String(error).includes("frozen install changed the lockfile")
+    }
+    if (!refused || readFileSync(refusalTarget.lockfile, "utf8") !== "pinned-lock\n") {
+      throw new Error("install preflight did not refuse and restore a moved lockfile")
+    }
+    console.log(
+      "\ninstall preflight self-test: PASS (both absent installs fired; lockfile mutation refused and restored)",
+    )
+  } finally {
+    if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&
+      !temporaryRoot.startsWith(`${resolvedTemp}/`)) {
+      throw new Error(`refusing to remove non-temporary preflight directory: ${temporaryRoot}`)
+    }
+    rmSync(temporaryRoot, { recursive: true, force: true })
+  }
+}
+
 const selfTest = (): void => {
   const passing = run({
     label: "runner self-control — known pass",
@@ -100,14 +224,16 @@ const selfTest = (): void => {
   if (noisy !== 1) {
     throw new Error(`gate runner accepted planted formatting output: got ${noisy}, want 1`)
   }
+  selfTestInstallPreflight()
   console.log(
-    "\ngate runner self-test: PASS (known pass accepted; planted exit 23 and formatting drift refused)",
+    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, and install preflight controls refused)",
   )
 }
 
 if (process.argv.includes("--self-test")) {
   selfTest()
 } else {
+  runInstallPreflight(installTargets, installFrozen)
   for (const stage of stages) {
     const exitCode = run(stage)
     if (exitCode !== 0) process.exit(exitCode)

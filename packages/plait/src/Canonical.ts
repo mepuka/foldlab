@@ -1,3 +1,14 @@
+/**
+ * Canonical JSON values and their unique RFC 8785 byte form.
+ *
+ * Core reports refusal locations as unescaped slash-joined strings. On failure
+ * this module re-runs that same canonicalizer over an order-preserving,
+ * key-escaped shadow so literal slashes survive as path segments. A stateful
+ * accessor or Proxy can change between the identity and diagnostic passes; if
+ * the shadow no longer refuses, the path falls back to the joined-string form.
+ *
+ * @module
+ */
 import {
   encodeJsonValue,
   type JsonValue,
@@ -88,7 +99,10 @@ const nonCanonicalValue = (
     path: pathSegments(value, refusal.path),
     got: refusal.reason,
     expected: "one RFC 8785 wire value",
-    next: [],
+    next: [{
+      subject: "canonicalize",
+      note: "Replace the refused value at the named path with one RFC 8785 wire value.",
+    }],
   })
 
 /**
@@ -103,11 +117,7 @@ const nonCanonicalValue = (
  * // Uint8Array.from([123, 34, 97, ...])
  * ```
  *
- * Core currently reports refusal locations as unescaped slash-joined strings.
- * On failure this seam re-runs that same canonicalizer over an order-preserving,
- * key-escaped shadow so literal slashes survive as path segments. A stateful
- * accessor or Proxy can change between the identity and diagnostic passes; if
- * the shadow no longer refuses, the path falls back to the joined-string form.
+ * The module JSDoc states the residual bound on its two-pass path diagnostic.
  */
 export const canonicalBytes = Effect.fn("Canonical.canonicalBytes")(function* (
   value: WireValue,

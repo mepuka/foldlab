@@ -92,3 +92,13 @@ a guard mutant. Why: the accepted theorem proves the guard cannot affect any
 result in this model, while the 6-before-5 row refutes removal of the actual
 successor discipline. **Load-bearing? yes** — it determines what the fourth
 negative control honestly claims.
+
+### T8. Run the corpus-diff self-test beside the fabric gate in Lean CI
+
+Decided: `lean-gates.yml` runs `verify/fabric/run.sh --self-test` immediately
+after the ordinary fabric gate. Alternatives: enroll it in
+`negative-controls.yml`; leave it local-only. Why: both controls exercise the
+fabric gate's own regeneration comparison and use the same Lean toolchain, so
+the adjacent step keeps the proof and diff machinery under one runner without
+changing the required battery. **Load-bearing? yes** — a self-test that CI
+never executes can silently stop detecting model/corpus divergence.

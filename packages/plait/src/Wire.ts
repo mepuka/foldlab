@@ -133,7 +133,10 @@ const envelopeSchemaRefusal = (
     path: located.path,
     got: observed(located.issue),
     expected: excess ? "no excess property" : envelopeExpectedAt(located.path),
-    next: [],
+    next: [{
+      subject: "decode",
+      note: "Submit one closed Envelope v0 value with the expected field shape.",
+    }],
   })
 }
 
@@ -161,7 +164,11 @@ const blobSchemaRefusal = (issue: SchemaIssue.Issue): StructuralRefusal => {
     expected: excess
       ? "no excess property"
       : "exactly one blob field carrying a lowercase SHA-256 digest",
-    next: [],
+    next: [{
+      subject: "decode",
+      note: "Replace the body with the exact {blob: Digest} form.",
+      body: { blob: "0".repeat(64) },
+    }],
   })
 }
 
@@ -195,7 +202,11 @@ const validateBody = Effect.fn("Wire.validateBody")(function* (
       path: ["body"],
       got: canonical.byteLength,
       expected: INLINE_BODY_MAX_BYTES,
-      next: [],
+      next: [{
+        subject: "decode",
+        note: "Store the body as a blob and submit the exact {blob: Digest} form.",
+        body: { blob: "0".repeat(64) },
+      }],
     })
   }
 })
@@ -267,6 +278,10 @@ export const verifyEnvelopeDigest = Effect.fn("Wire.verifyEnvelopeDigest")(funct
     path: ["Nats-Msg-Id"],
     got: messageId,
     expected: decoded.digest,
-    next: [],
+    next: [{
+      subject: "Nats-Msg-Id",
+      note: "Re-derive SHA-256 from the canonical uncompressed envelope bytes before publishing.",
+      body: decoded.digest,
+    }],
   })
 })
