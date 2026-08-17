@@ -95,7 +95,10 @@ substitute.
 
 **Bounds and residuals.** SAFETY ONLY — no liveness, fair-retry, or
 lease-progress claim; heartbeats and deadlines are liveness machinery
-carrying no claims. Non-clustered R=1, single node, local pinned
+carrying no claims. At-most-one landed OUTCOME is not at-most-one
+external side effect: an external call may fire and then fail to land
+its outcome — the register bounds landings, never attempts (ruled G23;
+this sentence rides every action-consuming claim). Non-clustered R=1, single node, local pinned
 nats-server v2.14.4. Per-work-digest registers with no cross-register
 claim. Every runtime claim holds within a fixed backing-stream
 incarnation; administrative lifecycle mutation is outside the
