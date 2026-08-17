@@ -52,7 +52,9 @@ func TestMain(m *testing.M) {
 		runtime.GOARCH,
 		filesystem,
 	)
-	if runtime.GOOS == "windows" {
+	// Mirrors the skip condition in recovery_test.go exactly: any non-Linux
+	// battery line must be distinguishable from a six-trial Linux line.
+	if runtime.GOOS != "linux" {
 		fmt.Println("SUBSTRATE BATTERY sigkill-recovery=SKIP reason=linux-process-signals-required")
 	}
 	os.Exit(m.Run())

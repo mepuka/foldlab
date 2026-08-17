@@ -22,3 +22,18 @@ APIs; omit the successful destructive controls. Why: the credential is the only
 source of terminality, and `$JS.API.STREAM.DELETE` removes both the stream config
 and its messages. **Load-bearing? yes** — the committed `$JS.API.>` widening
 control deletes a stream, while a deny-all control kills legitimate work.
+
+### T3. Witness the UPDATE verb through retention, and record who holds the seal
+
+Decided: pair application refusal with administrator success on
+`$JS.API.STREAM.UPDATE.ASSUME_JOURNAL`, using retention mutation (`MaxMsgs=1`
+over three stored frames, two evicted) as the destructive witness, and record
+that an update cancelling `DenyDelete` is refused `10052` by the server itself.
+The committed `$JS.API.STREAM.UPDATE.>` widening control shows the eviction
+that widening buys. Alternatives: probe the verb with a benign config echo;
+treat the `DenyDelete`/`DenyPurge` seal as covering the update surface. Why:
+the seal is server-immutable on update but retention is not, so the verb's
+reachable destructive surface is eviction, and a benign echo would witness
+reachability without the capability that makes the guard load-bearing.
+**Load-bearing? yes** — without the paired probe, `$JS.API.STREAM.UPDATE.>`
+destroys stored journal frames with the suite green.

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -137,6 +138,59 @@ func TestSubstrateEnvelopeShape(t *testing.T) {
 		purgeResponse.Purged,
 	)
 
+	// The UPDATE verb is the reachable retention surface: the seal
+	// (DenyDelete/DenyPurge) is server-immutable on update, but MaxMsgs and its
+	// siblings are not, and a widened credential could evict stored frames
+	// through them. The refusal is paired with admin success on the same
+	// subject, with the eviction as the destructive witness.
+	for frame := 1; frame <= 3; frame++ {
+		if _, err := harness.admin.Publish(ctx, "plait.journal.seed", []byte(fmt.Sprintf("frame-%d", frame))); err != nil {
+			t.Fatalf("seed journal frame %d: %v", frame, err)
+		}
+	}
+	seeded, err := stream.Info(ctx)
+	if err != nil || seeded.State.Msgs != 3 || seeded.State.FirstSeq != 1 || seeded.State.LastSeq != 3 {
+		t.Fatalf("seeded journal state=%+v err=%v, want msgs=3 first=1 last=3", seeded, err)
+	}
+	retentionMutation := journalEnvelopeConfig()
+	retentionMutation.MaxMsgs = 1
+	retentionBody, err := json.Marshal(retentionMutation)
+	if err != nil {
+		t.Fatalf("marshal retention mutation: %v", err)
+	}
+	journalUpdateSubject := fmt.Sprintf(server.JSApiStreamUpdateT, "ASSUME_JOURNAL")
+	assertApplicationRefusedAPI(t, harness, journalUpdateSubject, retentionBody)
+	unmoved, err := stream.Info(ctx)
+	if err != nil || unmoved.Config.MaxMsgs != -1 || unmoved.State.Msgs != 3 {
+		t.Fatalf("refused application stream update moved state: info=%+v err=%v", unmoved, err)
+	}
+
+	// The seal itself is held by the server, not the credential: an
+	// administrator update cancelling DenyDelete is refused 10052. Recorded so
+	// the envelope's DenyDelete/DenyPurge assertions are known to rest on this
+	// server-side immutability rule, while retention rests on the ACL alone.
+	sealCancel := journalEnvelopeConfig()
+	sealCancel.DenyDelete = false
+	sealCancelResponse := adminUpdateStreamAPI(t, harness, "ASSUME_JOURNAL", sealCancel)
+	if sealCancelResponse.Error == nil || sealCancelResponse.Error.ErrCode != 10052 ||
+		!strings.Contains(sealCancelResponse.Error.Description, "can not cancel deny message deletes") {
+		t.Fatalf("admin seal cancel response=%+v, want 10052 deny-delete refusal", sealCancelResponse.Error)
+	}
+
+	retentionResponse := adminUpdateStreamAPI(t, harness, "ASSUME_JOURNAL", retentionMutation)
+	if retentionResponse.Error != nil {
+		t.Fatalf("admin retention update must succeed as the load-bearing negative control: %+v", retentionResponse.Error)
+	}
+	evicted, err := stream.Info(ctx)
+	if err != nil || evicted.Config.MaxMsgs != 1 || evicted.State.Msgs != 1 ||
+		evicted.State.FirstSeq != 3 || evicted.State.LastSeq != 3 {
+		t.Fatalf("admin retention update state=%+v err=%v, want max-msgs=1 msgs=1 first=3 last=3", evicted, err)
+	}
+	t.Logf(
+		"TRACE acl-api subject=%s app=permission-refused admin=success max-msgs=1 msgs=3->1 first=1->3 seal-cancel=10052-refused",
+		journalUpdateSubject,
+	)
+
 	journalDeleteSubject := fmt.Sprintf(server.JSApiStreamDeleteT, "ASSUME_JOURNAL")
 	assertApplicationRefusedAPI(t, harness, journalDeleteSubject, nil)
 	if _, err := stream.Info(ctx); err != nil {
@@ -181,6 +235,49 @@ func TestApplicationACLWideningPlant(t *testing.T) {
 		t.Fatalf("widening plant left stream present: %v", err)
 	}
 	t.Logf("TRACE acl-plant allow=$JS.API.> subject=%s result=stream-deleted baseline=must-red", subject)
+}
+
+// TestApplicationRetentionWideningPlant records what the UPDATE widening buys
+// an attacker: with only $JS.API.STREAM.UPDATE.> allowed — touching no delete
+// or purge subject — the application mutates retention and the server evicts
+// stored journal frames. The eviction is the load-bearing capability; the
+// baseline suite must red under this widening at the paired UPDATE probe.
+func TestApplicationRetentionWideningPlant(t *testing.T) {
+	harness := startPermissionedJetStreamWithApplicationPermissions(t, []string{"$JS.API.STREAM.UPDATE.>"}, nil)
+	ctx := testContext(t)
+	stream := createStream(t, harness.admin, journalEnvelopeConfig())
+	for frame := 1; frame <= 3; frame++ {
+		if _, err := harness.admin.Publish(ctx, "plait.journal.seed", []byte(fmt.Sprintf("frame-%d", frame))); err != nil {
+			t.Fatalf("seed journal frame %d: %v", frame, err)
+		}
+	}
+
+	retentionMutation := journalEnvelopeConfig()
+	retentionMutation.MaxMsgs = 1
+	body, err := json.Marshal(retentionMutation)
+	if err != nil {
+		t.Fatalf("marshal retention mutation: %v", err)
+	}
+	subject := fmt.Sprintf(server.JSApiStreamUpdateT, "ASSUME_JOURNAL")
+	response, err := harness.applicationConn.Request(subject, body, permissionTimeout)
+	if err != nil {
+		t.Fatalf("widened application update request: %v", err)
+	}
+	var updated server.JSApiStreamUpdateResponse
+	if err := json.Unmarshal(response.Data, &updated); err != nil {
+		t.Fatalf("decode widened application update response: %v", err)
+	}
+	if updated.Error != nil {
+		t.Fatalf("widened application did not update stream: %+v", updated.Error)
+	}
+	info, err := stream.Info(ctx)
+	if err != nil || info.Config.MaxMsgs != 1 || info.State.Msgs != 1 || info.State.FirstSeq != 3 {
+		t.Fatalf("widened application retention update state=%+v err=%v, want max-msgs=1 msgs=1 first=3", info, err)
+	}
+	t.Logf(
+		"TRACE acl-plant allow=$JS.API.STREAM.UPDATE.> subject=%s result=retention-mutated max-msgs=1 msgs=3->1 first=1->3 baseline=must-red",
+		subject,
+	)
 }
 
 func TestApplicationDenyAllPlant(t *testing.T) {
@@ -258,6 +355,31 @@ func adminDeleteStreamAPI(t *testing.T, harness *testHarness, stream string) {
 	if response.Error != nil || !response.Success {
 		t.Fatalf("admin stream delete API %s response=%+v", subject, response)
 	}
+}
+
+// adminUpdateStreamAPI returns the raw response rather than failing on
+// response.Error: the seal-cancel witness needs the 10052 refusal itself.
+func adminUpdateStreamAPI(
+	t *testing.T,
+	harness *testHarness,
+	stream string,
+	config jetstream.StreamConfig,
+) server.JSApiStreamUpdateResponse {
+	t.Helper()
+	body, err := json.Marshal(config)
+	if err != nil {
+		t.Fatalf("marshal stream update config %s: %v", stream, err)
+	}
+	subject := fmt.Sprintf(server.JSApiStreamUpdateT, stream)
+	message, err := harness.adminConn.Request(subject, body, permissionTimeout)
+	if err != nil {
+		t.Fatalf("admin stream update API %s: %v", subject, err)
+	}
+	var response server.JSApiStreamUpdateResponse
+	if err := json.Unmarshal(message.Data, &response); err != nil {
+		t.Fatalf("decode admin stream update API %s: %v", subject, err)
+	}
+	return response
 }
 
 func adminPurgeStreamAPI(t *testing.T, harness *testHarness, stream string) server.JSApiStreamPurgeResponse {

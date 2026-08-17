@@ -402,11 +402,14 @@ func TestDedupAndCASPrecedence(t *testing.T) {
 	if err != nil || immediate.Sequence != 1 || !immediate.Duplicate {
 		t.Fatalf("immediate duplicate ack=%+v err=%v", immediate, err)
 	}
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 	insideStartedAt := time.Now()
 	inside, err := harness.admin.Publish(ctx, "dedup.window", []byte("inside"), jetstream.WithMsgID("window-id"))
 	insideAcknowledgedAt := time.Now()
-	insideAcknowledgedOffset := insideAcknowledgedAt.Sub(firstAcknowledgedAt)
+	// The window opens no earlier than firstStartedAt, so measuring the inside
+	// publish from there over-estimates its elapsed time — the safe direction
+	// for an "inside the original window" claim.
+	insideAcknowledgedOffset := insideAcknowledgedAt.Sub(firstStartedAt)
 	if insideAcknowledgedOffset >= configuredDuplicateWait {
 		t.Fatalf(
 			"dedup no-refresh witness inconclusive: inside publish interval=[%s,%s] escaped original window=%s",
@@ -419,8 +422,10 @@ func TestDedupAndCASPrecedence(t *testing.T) {
 		t.Fatalf("inside-window duplicate ack=%+v err=%v", inside, err)
 	}
 	// This lands after the original's window but before a window measured from
-	// the suppressed retry would expire, proving retries do not refresh it.
-	time.Sleep(1700 * time.Millisecond)
+	// the suppressed retry would expire, proving retries do not refresh it. The
+	// retry at ~1.5s puts the corridor's far edge near ~3.5s, so the ~2.5s
+	// outside publish keeps at least ~500ms of slack on both corridor bounds.
+	time.Sleep(1000 * time.Millisecond)
 	outsideStartedAt := time.Now()
 	outside, err := harness.admin.Publish(ctx, "dedup.window", []byte("outside"), jetstream.WithMsgID("window-id"))
 	outsideAcknowledgedAt := time.Now()
