@@ -337,10 +337,17 @@ An opaque, server-enforced epoch could support a stronger cross-lifecycle
 claim, but the coordinator has correctly kept epoch-bearing tokens out of v0.
 This report does not reopen that choice or prescribe a product repair.
 
+## Multica disposition record
+
+The material result was posted after the audit to the merged DEV-711 thread as
+reply `a168c37a-7417-4d22-ad12-1b576e4c4914` (2026-08-17 17:30:32Z). The post
+explicitly preserves the landed bounded claim and records the constraint on
+future T6/DEV-716 guard work.
+
 ## Explicit non-coverage
 
-- No product code, spec, fixture, `VERIFICATION.md`, or Multica state was
-  changed.
+- No product code, spec, fixture, or `VERIFICATION.md` was changed. Multica was
+  changed only by the source-cited finding reply identified above.
 - The probe is standalone R1 because that is the current DEV-711 envelope. It
   does not generalize the distinct clustered restore implementation.
 - Crash recovery of an interrupted restore, filesystem rollback outside the

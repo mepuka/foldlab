@@ -202,3 +202,7 @@ administrative procedure excluding delete, restore, rollback, and update while
 issued tokens are live. The next best probe target is the repaired DEV-716
 credential itself after its next head: verify both the denied management API
 surface and that the register runtime actually uses that identity.
+
+The result was posted to the merged DEV-711 thread as reply
+`a168c37a-7417-4d22-ad12-1b576e4c4914`; it preserves the landed bounded claim
+and prevents `Created` from being promoted to a safety epoch in later T6 work.
