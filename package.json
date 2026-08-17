@@ -16,7 +16,7 @@
   },
   "scripts": {
     "prepare": "bun scripts/prepare-effect-language-service.ts",
-    "typecheck": "bun scripts/prepare-effect-language-service.ts --require && tsc -p packages/core/tsconfig.json --noEmit && tsc -p packages/moves/tsconfig.json --noEmit && tsc -p packages/plait/tsconfig.json --noEmit && tsc --noEmit",
+    "typecheck": "bun scripts/prepare-effect-language-service.ts --require && tsgo -p packages/core/tsconfig.json --noEmit && tsgo -p packages/moves/tsconfig.json --noEmit && tsgo -p packages/plait/tsconfig.json --noEmit && tsgo --noEmit && effect-language-service diagnostics --project packages/plait/tsconfig.json --strict",
     "test": "bun test",
     "test:packages": "bun run --filter './packages/*' test",
     "gates": "bun scripts/gates.ts"
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@effect/language-service": "0.87.2",
     "@types/bun": "1.3.14",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "bun-types": "1.3.14",
     "typescript": "^5.9.2"
   }

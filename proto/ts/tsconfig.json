@@ -14,7 +14,8 @@
     "noUnusedLocals": true,
     "noImplicitOverride": true,
     "skipLibCheck": true,
-    "types": ["bun"]
+    "types": ["bun"],
+    "plugins": [{ "name": "@effect/language-service" }]
   },
   "include": ["src", "test"]
 }

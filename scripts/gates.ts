@@ -27,6 +27,39 @@ type Install = (target: InstallTarget) => number
 
 const repo = resolve(import.meta.dir, "..")
 
+// The gate compiler is the workspace-pinned tsgo, spawned through its JS
+// launcher so the invocation is byte-identical on Windows and Linux — a
+// `.bin` shim spells differently per platform, and a floating `bunx tsgo`
+// would resolve a version the lockfile never pinned. `tsc` stays installed
+// as the referee: a tsgo-vs-tsc diagnostic disagreement is a FINDING to
+// report, never a reason to silently switch back.
+const tsgoLauncher = resolve(
+  repo,
+  "node_modules",
+  "@typescript",
+  "native-preview",
+  "bin",
+  "tsgo",
+)
+const tsgoCommand = (
+  args: ReadonlyArray<string>,
+): readonly [string, ...ReadonlyArray<string>] => ["bun", tsgoLauncher, ...args]
+
+// The Effect rules left the typecheck stage when tsgo replaced the patched
+// tsc, so the battery runs them as their own lane through the same CLI the
+// editor patch comes from. `--strict` turns rule warnings into a nonzero
+// exit.
+const effectRulesCommand = (
+  project: string,
+): readonly [string, ...ReadonlyArray<string>] => [
+  "bun",
+  resolve(repo, "node_modules", "@effect", "language-service", "cli.js"),
+  "diagnostics",
+  "--project",
+  project,
+  "--strict",
+]
+
 const installTargets: ReadonlyArray<InstallTarget> = [
   {
     label: "root dependencies",
@@ -77,7 +110,17 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "proto/go"),
     command: ["go", "test", "-count=1", "./cmd/wirefix/"],
   },
-  { label: "proto/ts — typecheck", cwd: resolve(repo, "proto/ts"), command: ["bunx", "tsc", "--noEmit"] },
+  { label: "proto/ts — typecheck", cwd: resolve(repo, "proto/ts"), command: tsgoCommand(["--noEmit"]) },
+  // proto/ts imports effect but is its own install island, so its Effect
+  // rules run here rather than in the root typecheck script. The lane checks
+  // files only where the project's tsconfig carries the language-service
+  // plugin entry; without it the CLI reports "Checked 0 files" and passes
+  // vacuously.
+  {
+    label: "proto/ts — Effect rules",
+    cwd: repo,
+    command: effectRulesCommand("proto/ts/tsconfig.json"),
+  },
   { label: "proto/ts — tests", cwd: resolve(repo, "proto/ts"), command: ["bun", "test", "."] },
 ]
 
@@ -296,6 +339,93 @@ const selfTestInstallPreflight = (): void => {
   }
 }
 
+const selfTestTypecheckPlant = (): void => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "foldlab-gates-typecheck-"))
+  const resolvedTemp = resolve(tmpdir())
+  try {
+    // The temporary project extends the repository's own tsconfig.base.json,
+    // copied byte-for-byte, so the plants are judged under the battery's
+    // exact compiler options. One stated deviation: `types` is emptied,
+    // because ambient bun types do not resolve upward from a temporary
+    // directory and no planted violation involves them. The healthy control
+    // below is what proves the temporary project itself compiles — a red
+    // that appeared without it could be blaming the scaffolding, not the
+    // plant.
+    copyFileSync(
+      resolve(repo, "tsconfig.base.json"),
+      resolve(temporaryRoot, "tsconfig.base.json"),
+    )
+    writeFileSync(
+      resolve(temporaryRoot, "tsconfig.json"),
+      '{\n  "extends": "./tsconfig.base.json",\n  "compilerOptions": { "types": [] },\n  "include": ["plant.ts"]\n}\n',
+    )
+
+    const plant = resolve(temporaryRoot, "plant.ts")
+    writeFileSync(plant, [
+      'export const plain: string = "42"',
+      "export type Opt = { readonly value?: string }",
+      "export const opt: Opt = {}",
+      "const xs: ReadonlyArray<number> = [1, 2, 3]",
+      "export const indexed: number = xs[0] ?? 0",
+      "",
+    ].join("\n"))
+    const healthyExit = run({
+      label: "typecheck plant — healthy control",
+      cwd: temporaryRoot,
+      command: tsgoCommand(["-p", "tsconfig.json", "--noEmit"]),
+    })
+    if (healthyExit !== 0) {
+      throw new Error(`typecheck plant healthy control failed: tsgo exited ${healthyExit}`)
+    }
+
+    // Three planted violations, one per option class the battery leans on:
+    // plain strict assignability (TS2322), exactOptionalPropertyTypes
+    // (TS2375), and noUncheckedIndexedAccess (TS2322 again). The stage
+    // command is the same tsgo invocation the real stages use; a typecheck
+    // stage that cannot fail proves nothing.
+    writeFileSync(plant, [
+      "export const plain: string = 42",
+      "export type Opt = { readonly value?: string }",
+      "export const opt: Opt = { value: undefined }",
+      "const xs: ReadonlyArray<number> = [1, 2, 3]",
+      "export const indexed: number = xs[0]",
+      "",
+    ].join("\n"))
+    console.log("\n== typecheck plant — planted violations")
+    const refused = Bun.spawnSync({
+      cmd: [...tsgoCommand(["-p", "tsconfig.json", "--noEmit"])],
+      cwd: temporaryRoot,
+      stdout: "pipe",
+      stderr: "pipe",
+      env: process.env,
+    })
+    const output = `${text(refused.stdout)}${text(refused.stderr)}`
+    if (output !== "") process.stdout.write(output)
+    if (refused.exitCode !== 1) {
+      throw new Error(
+        `typecheck plant was not refused: tsgo exited ${refused.exitCode}, want 1`,
+      )
+    }
+    const actualTrace = output.replaceAll("\r\n", "\n")
+    const expectedTrace = readFileSync(
+      resolve(repo, "scripts/gates-typecheck.trace.txt"),
+      "utf8",
+    ).replaceAll("\r\n", "\n")
+    if (actualTrace !== expectedTrace) {
+      throw new Error(`typecheck plant trace moved\n${actualTrace}`)
+    }
+    console.log(
+      "\ntypecheck plant self-test: PASS (healthy control accepted; planted TS2322, TS2375, and indexed-access TS2322 refused)",
+    )
+  } finally {
+    if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&
+      !temporaryRoot.startsWith(`${resolvedTemp}/`)) {
+      throw new Error(`refusing to remove non-temporary typecheck plant directory: ${temporaryRoot}`)
+    }
+    rmSync(temporaryRoot, { recursive: true, force: true })
+  }
+}
+
 const selfTest = (): void => {
   const passing = run({
     label: "runner self-control — known pass",
@@ -323,8 +453,9 @@ const selfTest = (): void => {
     throw new Error(`gate runner accepted planted formatting output: got ${noisy}, want 1`)
   }
   selfTestInstallPreflight()
+  selfTestTypecheckPlant()
   console.log(
-    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, and five install preflight controls refused)",
+    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, five install preflight controls, and the typecheck plant refused)",
   )
 }
 
