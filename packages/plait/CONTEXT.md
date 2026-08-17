@@ -35,9 +35,10 @@ file-backed stream, so that stream's dense sequence is the fold position.
 
 **Declared algebra**:
 A content-addressed reducer definition and wire-grammar initial state. A
-commutative algebra carries a runtime witness earned by at least 32 generated
-identity, associativity, and commutativity cases; an asserted TypeScript cast
-does not earn it.
+commutative algebra carries a runtime witness earned from at least 32 distinct
+triples derived by the declaration door from a digest-seeded arbitrary, then
+checked for identity, associativity, and commutativity; caller-enumerated cases
+and asserted TypeScript casts do not earn it.
 
 **Declared fold**:
 A lane, algebra, and per-event contribution under one digest. Its step is

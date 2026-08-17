@@ -10,8 +10,13 @@ import {
   declare,
 } from "../src/Algebra.js"
 
+const arbitraryInteger = (seed: number): number => FastCheck.sample(
+  FastCheck.integer(),
+  { seed: seed | 0, numRuns: 1 },
+)[0]!
+
 describe("declared algebras", () => {
-  test("the generated law predicates earn a commutative brand", async () => {
+  test("digest-seeded derived law cases earn a commutative brand", async () => {
     const algebra = await Effect.runPromise(declare({
       declaration: { name: "integer-sum", version: 0 },
       reducer: Reducer.make<number>((left, right) => left + right, 0),
@@ -29,33 +34,34 @@ describe("declared algebras", () => {
         laws.commutative(left, middle),
     ))
 
-    const cases = FastCheck.sample(
-      FastCheck.record({
-        left: FastCheck.integer(),
-        middle: FastCheck.integer(),
-        right: FastCheck.integer(),
-      }),
-      { seed: 712, numRuns: 100 },
-    )
-    const earned = await Effect.runPromise(commutative(algebra, { cases, equals: Object.is }))
+    const earned = await Effect.runPromise(commutative(algebra, {
+      arbitrary: arbitraryInteger,
+      equals: Object.is,
+    }))
     expect(earned.digest).toBe(algebra.digest)
   })
 
-  test("a generated suite refuses a non-commutative claim", async () => {
+  test("a degenerate arbitrary cannot enumerate its way through the brand door", async () => {
+    const algebra = await Effect.runPromise(declare({
+      declaration: { name: "integer-sum", version: 0 },
+      reducer: Reducer.make<number>((left, right) => left + right, 0),
+    }))
+    const refusal = await Effect.runPromise(Effect.flip(commutative(algebra, {
+      arbitrary: () => 0,
+      equals: Object.is,
+    })))
+
+    expect(refusal.kind).toBe("unearned-commutative-algebra")
+    expect(refusal.path).toEqual(["suite", "arbitrary"])
+  })
+
+  test("a derived suite refuses a non-commutative claim", async () => {
     const algebra = await Effect.runPromise(declare({
       declaration: { name: "ordered-subtract", version: 0 },
       reducer: Reducer.make<number>((left, right) => left - right, 0),
     }))
-    const cases = FastCheck.sample(
-      FastCheck.record({
-        left: FastCheck.integer(),
-        middle: FastCheck.integer(),
-        right: FastCheck.integer(),
-      }),
-      { seed: 713, numRuns: 100 },
-    )
     const refusal = await Effect.runPromise(Effect.flip(
-      commutative(algebra, { cases, equals: Object.is }),
+      commutative(algebra, { arbitrary: arbitraryInteger, equals: Object.is }),
     ))
     expect(refusal.kind).toBe("unearned-commutative-algebra")
     expect(refusal.law).toContain("F4")

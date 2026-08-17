@@ -60,7 +60,10 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS KV operation to be available",
-    next: [],
+    next: [{
+      subject: "Folds.deploy",
+      note: "A transport refusal leaves this anchor write's outcome unknown. Do not retry it in place: detach and redeploy - resumption reads the landed anchor back, and a retried CAS that already landed refuses as lost-anchor-cas by design.",
+    }],
   })
 
 const malformed = (

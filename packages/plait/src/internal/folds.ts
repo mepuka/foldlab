@@ -27,7 +27,10 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS operation to be available",
-    next: [],
+    next: [{
+      subject: "Folds.deploy",
+      note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
+    }],
   })
 
 const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>

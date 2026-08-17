@@ -21,7 +21,7 @@ fenced register over one file-backed, single-replica JetStream server.
 - `Lane` declares content-addressed partition routing and emits canonical
   events. Every `(lane, partition)` receives one exact stream whose dense
   sequence is the durable fold position.
-- `Algebra` declares reducers. `commutative` runs generated ACI cases before
+- `Algebra` declares reducers. `commutative` derives digest-seeded distinct ACI cases before
   attaching the F4 witness that licenses partitioned folds.
 - `Fold` derives each step from a per-event contribution and exposes
   `Folds.deploy`, the only deployment/resumption verb.

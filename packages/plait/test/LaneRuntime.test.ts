@@ -52,8 +52,11 @@ describe("live evidence lanes", () => {
         expect(info.config.storage).toBe(StorageType.File)
         expect(info.config.num_replicas).toBe(1)
         expect(info.config.max_msgs).toBe(-1)
+        expect(info.config.max_msgs_per_subject).toBe(-1)
         expect(info.config.max_bytes).toBe(-1)
         expect(info.config.max_age).toBe(0)
+        expect(info.config.deny_delete).toBe(true)
+        expect(info.config.deny_purge).toBe(true)
       }
     } finally {
       await connection.close()

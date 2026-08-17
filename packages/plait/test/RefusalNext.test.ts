@@ -1,15 +1,28 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { createServer, connect as netConnect, type Socket } from "node:net"
+import { resolve } from "node:path"
 
-import { StorageType, jetstreamManager } from "@nats-io/jetstream"
+import {
+  AckPolicy,
+  DeliverPolicy,
+  ReplayPolicy,
+  StorageType,
+  jetstreamManager,
+  type JsMsg,
+} from "@nats-io/jetstream"
 import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Fiber } from "effect"
+import { Effect, Fiber, Reducer, Schema } from "effect"
 
+import * as Algebra from "../src/Algebra.js"
+import { ANCHOR_BUCKET, advance, initial } from "../src/Anchor.js"
 import { canonicalBytes } from "../src/Canonical.js"
+import { Digest } from "../src/Digest.js"
 import { FabricClient } from "../src/FabricClient.js"
+import * as Fold from "../src/Fold.js"
+import * as Lane from "../src/Lane.js"
 import {
-  structuralRefusal,
+  Next,
   StructuralRefusalKind,
   type Refusal,
   type StructuralRefusalKind as StructuralKind,
@@ -18,9 +31,18 @@ import { REGISTER_BUCKET, Registers } from "../src/Register.js"
 import { evidenceSubject } from "../src/Subjects.js"
 import {
   decodeEnvelope,
+  encodeEnvelope,
   INLINE_BODY_MAX_BYTES,
   verifyEnvelopeDigest,
 } from "../src/Wire.js"
+import { makeAnchorStore } from "../src/internal/anchors.js"
+import { ensureLaneStreams, laneStreamName } from "../src/internal/lanes.js"
+import {
+  decodeDurableMessage,
+  PUMP_BUFFER_BOUND,
+  preparePartitionPump,
+} from "../src/internal/pump.js"
+import { replaySuccessors } from "../src/internal/successors.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
 const utf8 = new TextEncoder()
@@ -34,6 +56,41 @@ const envelope = (body: unknown): Uint8Array => utf8.encode(JSON.stringify({
   body,
   pins: [],
 }))
+
+const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const probeEventSchema = Digest.make("a".repeat(64))
+const CliStructuralRefusal = Schema.Struct({
+  sort: Schema.Literal("structural"),
+  kind: StructuralRefusalKind,
+  law: Schema.String,
+  path: Schema.Array(Schema.String),
+  got: Schema.Json,
+  expected: Schema.Json,
+  next: Schema.Array(Next),
+})
+
+const declareProbeFold = (handle: string) => Effect.gen(function* () {
+  const lane = yield* Lane.declare({
+    handle,
+    event: ProbeEvent,
+    eventSchema: probeEventSchema,
+    partitions: 1 as const,
+    partitionKey: { path: ["tenant"] },
+  })
+  const algebra = yield* Algebra.declare({
+    declaration: { name: `${handle}-sum`, version: 0 },
+    reducer: Reducer.make<number>((left, right) => left + right, 0),
+  })
+  const fold = yield* Fold.declare({
+    lane,
+    algebra,
+    contribution: {
+      declaration: { name: `${handle}-delta`, version: 0 },
+      apply: (event: typeof ProbeEvent.Type) => event.delta,
+    },
+  })
+  return { lane, algebra, fold }
+})
 
 interface HoldProxy {
   readonly url: string
@@ -177,7 +234,7 @@ afterEach(async () => {
 
 describe("structural refusal repairs", () => {
   test("every shipped structural kind carries a taught next action", async () => {
-    const refusals = await Promise.all([
+    const refusals: Array<Refusal> = await Promise.all([
       Effect.runPromise(Effect.flip(canonicalBytes(Number.NaN))),
       Effect.runPromise(Effect.flip(evidenceSubject("lane.*", 0))),
       Effect.runPromise(Effect.flip(decodeEnvelope(utf8.encode("{}")))),
@@ -188,7 +245,95 @@ describe("structural refusal repairs", () => {
       Effect.runPromise(Effect.flip(verifyEnvelopeDigest(envelope(1), "0".repeat(64)))),
     ])
 
+    const invalidLane = await Effect.runPromise(Effect.flip(Lane.declare({
+      handle: "refusal-lane",
+      event: ProbeEvent,
+      eventSchema: probeEventSchema,
+      partitions: 0,
+      partitionKey: { path: ["tenant"] },
+    })))
+    refusals.push(invalidLane)
+
+    const invalidKeyLane = await Effect.runPromise(Lane.declare({
+      handle: "refusal-key",
+      event: ProbeEvent,
+      eventSchema: probeEventSchema,
+      partitions: 1 as const,
+      partitionKey: { path: ["missing"] },
+    }))
+    refusals.push(await Effect.runPromise(Effect.flip(Lane.partition(
+      invalidKeyLane,
+      { tenant: "north", delta: 1 },
+    ))))
+
+    refusals.push(await Effect.runPromise(Effect.flip(Algebra.declare({
+      declaration: { name: "invalid-initial", version: 0 },
+      reducer: Reducer.make<number>((left, right) => left + right, Number.NaN),
+    }))))
+
+    const probe = await Effect.runPromise(declareProbeFold("refusal-probe"))
+    refusals.push(await Effect.runPromise(Effect.flip(Algebra.commutative(
+      probe.algebra,
+      { arbitrary: () => 0, equals: Object.is },
+    ))))
+
+    const start = await Effect.runPromise(initial(0))
+    refusals.push(await Effect.runPromise(Effect.flip(advance(
+      start,
+      1,
+      Digest.make("1".repeat(64)),
+      2,
+    ))))
+    refusals.push(await Effect.runPromise(Effect.flip(replaySuccessors({
+      anchor: start,
+      state: 0,
+      deliveries: [{
+        position: 1,
+        event: 1,
+        digest: Digest.make("2".repeat(64)),
+      }],
+      step: () => Number.NaN,
+    }))))
+
+    const subject = await Effect.runPromise(evidenceSubject(probe.lane.handle, 0))
+    const mismatched = await Effect.runPromise(encodeEnvelope({
+      v: 0,
+      kind: "emit",
+      lane: Digest.make("f".repeat(64)),
+      key: "north",
+      holder: "seat-a",
+      body: { tenant: "north", delta: 1 },
+      pins: [],
+    }))
+    const message = {
+      data: mismatched.bytes,
+      headers: { get: () => mismatched.digest },
+      subject,
+      seq: 1,
+      ack: () => undefined,
+    } as unknown as JsMsg
+    refusals.push(await Effect.runPromise(Effect.flip(
+      decodeDurableMessage(probe.fold, 0, message),
+    )))
+
+    const cli = Bun.spawn({
+      cmd: ["bun", "run", "./src/cli.ts", "not-chaos"],
+      cwd: resolve(import.meta.dir, ".."),
+      stdout: "ignore",
+      stderr: "pipe",
+    })
+    const [cliExit, cliStderr] = await Promise.all([
+      cli.exited,
+      cli.stderr instanceof ReadableStream ? new Response(cli.stderr).text() : "",
+    ])
+    expect(cliExit).toBe(2)
+    refusals.push(Schema.decodeUnknownSync(CliStructuralRefusal)(
+      JSON.parse(cliStderr),
+      { onExcessProperty: "error" },
+    ) as unknown as Refusal)
+
     harness = await startNatsHarness()
+    const shapeProbe = await Effect.runPromise(declareProbeFold("shape-probe"))
     const connection = await connect({ servers: harness.url })
     try {
       const manager = await jetstreamManager(connection)
@@ -201,6 +346,12 @@ describe("structural refusal repairs", () => {
       // The register bucket on this server carries the wrong retention
       // shape, so register acquisition below refuses on the shape law.
       await new Kvm(connection).create(REGISTER_BUCKET, {
+        history: 1,
+        replicas: 1,
+        ttl: 0,
+        max_bytes: -1,
+      })
+      await new Kvm(connection).create(ANCHOR_BUCKET, {
         history: 1,
         replicas: 1,
         ttl: 0,
@@ -238,10 +389,70 @@ describe("structural refusal repairs", () => {
     }
     refusals.push(wrongShape)
 
+    const wrongAnchor = await Effect.runPromise(
+      Fold.Folds.pipe(
+        Effect.provide(Fold.Folds.layer({ servers: harness.url })),
+        Effect.scoped,
+        Effect.flip,
+      ),
+    )
+    if (wrongAnchor.sort !== "structural") {
+      throw new Error(`expected anchor-substrate-shape structural refusal, got ${wrongAnchor.kind}`)
+    }
+    refusals.push(wrongAnchor)
+
+    const laneShapeConnection = await connect({ servers: harness.url })
+    try {
+      const manager = await jetstreamManager(laneShapeConnection)
+      await manager.streams.delete("WRONG_SHAPE")
+      const laneSubject = await Effect.runPromise(evidenceSubject(shapeProbe.lane.handle, 0))
+      await manager.streams.add({
+        name: laneStreamName(shapeProbe.lane, 0),
+        subjects: [laneSubject],
+        storage: StorageType.File,
+        num_replicas: 1,
+        max_msgs: -1,
+        max_msgs_per_subject: -1,
+        max_bytes: -1,
+        max_age: 0,
+        duplicate_window: 2 * 60 * 1_000_000_000,
+        deny_delete: false,
+        deny_purge: false,
+      })
+    } finally {
+      await laneShapeConnection.close()
+    }
+    const laneShape = await Effect.runPromise(Effect.flip(Lane.emit(
+      shapeProbe.lane,
+      { tenant: "north", delta: 1 },
+      { holder: "seat-a" },
+    ).pipe(
+      Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
+      Effect.scoped,
+    )))
+    if (laneShape.sort !== "structural") {
+      throw new Error(`expected lane-substrate-shape structural refusal, got ${laneShape.kind}`)
+    }
+    expect(laneShape.expected).toEqual(expect.objectContaining({
+      max_msgs_per_subject: -1,
+      deny_delete: true,
+      deny_purge: true,
+    }))
+    refusals.push(laneShape)
+
     // The remaining register kinds run against a healthy register server,
     // every trigger through the public Registers surface.
     registerHarness = await startNatsHarness()
     const registerUrl = registerHarness.url
+    const invalidFoldDeclaration = await Effect.runPromise(
+      Fold.deploy(probe.fold, { checkpointEvery: 0 }).pipe(
+        Effect.flip,
+        Effect.provide(Fold.Folds.layer({ servers: registerUrl })),
+        Effect.scoped,
+      ),
+    )
+    refusals.push(invalidFoldDeclaration)
+
     const registerRefusals = await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
@@ -341,37 +552,70 @@ describe("structural refusal repairs", () => {
     expect(conflicted.kind).toBe("concurrent-register-update")
     refusals.push(conflicted)
 
-    // These kinds have focused runtime/control tests at their owning seams.
-    // This explicit six-field schema probe keeps additions to the closed kind
-    // union visible in this exhaustive recovery-guidance contract test.
-    const repairProbe = (kind: StructuralKind, subject: string, note: string) =>
-      structuralRefusal({
-        kind,
-        law: "the owning seam carries a taught structural repair",
-        path: ["probe", kind],
-        got: "invalid",
-        expected: "the ruled shape",
-        next: [{ subject, note }],
-      })
-    refusals.push(
-      repairProbe("invalid-lane-declaration", "Lane.declare", "Repair the lane declaration."),
-      repairProbe("invalid-partition-key", "Lane.partition", "Repair the declared partition key."),
-      repairProbe("lane-evidence-mismatch", "Lane.emit", "Emit through the declared lane."),
-      repairProbe("lane-substrate-shape", "Lane.emit", "Restore the ruled lane stream."),
-      repairProbe("invalid-algebra-declaration", "Algebra.declare", "Repair the algebra declaration."),
-      repairProbe("invalid-fold-declaration", "Fold.declare", "Repair the fold declaration."),
-      repairProbe("unearned-commutative-algebra", "Algebra.commutative", "Earn the F4 brand."),
-      repairProbe("invalid-anchor-advance", "Anchor.advance", "Apply only the contiguous successor."),
-      repairProbe("anchor-substrate-shape", "Folds.deploy", "Restore the ruled anchor bucket."),
-      repairProbe("malformed-anchor-state", "Folds.deploy", "Restore content-addressed anchor state."),
-      repairProbe("lost-anchor-cas", "Folds.deploy", "Detach the losing partition pump."),
-      repairProbe("consumer-substrate-shape", "Folds.deploy", "Restore the ruled durable consumer."),
-      repairProbe("fold-buffer-overflow", "Folds.deploy", "Detach the overflowing partition pump."),
-      repairProbe("invalid-chaos-request", "plait chaos", "Pin one admitted fold span."),
-      repairProbe("invalid-fold-state", "Fold.declare", "Return canonical fold state."),
-    )
+    const foldConnection = await connect({ servers: registerUrl })
+    try {
+      const anchors = await Effect.runPromise(makeAnchorStore(foldConnection))
+      const bucket = await new Kvm(foldConnection).open(ANCHOR_BUCKET)
 
-    expect(refusals.map((refusal) => refusal.kind).sort()).toEqual(
+      const malformedProbe = await Effect.runPromise(declareProbeFold("malformed-anchor"))
+      await bucket.put(anchors.key(malformedProbe.fold, 0), "not a canonical anchor")
+      refusals.push(await Effect.runPromise(Effect.flip(
+        anchors.initialize(malformedProbe.fold, 0),
+      )))
+
+      const lostProbe = await Effect.runPromise(declareProbeFold("lost-anchor"))
+      const [left, right] = await Effect.runPromise(Effect.all([
+        anchors.initialize(lostProbe.fold, 0),
+        anchors.initialize(lostProbe.fold, 0),
+      ]))
+      const eventDigest = Digest.make("3".repeat(64))
+      const leftNext = await Effect.runPromise(advance(left.anchor, 1, eventDigest, 1))
+      const rightNext = await Effect.runPromise(advance(right.anchor, 1, eventDigest, 1))
+      const lostKey = anchors.key(lostProbe.fold, 0)
+      await Effect.runPromise(anchors.commit(lostKey, left.revision, leftNext, 1))
+      refusals.push(await Effect.runPromise(Effect.flip(
+        anchors.commit(lostKey, right.revision, rightNext, 1),
+      )))
+
+      const consumerProbe = await Effect.runPromise(declareProbeFold("consumer-shape"))
+      await Effect.runPromise(ensureLaneStreams(foldConnection, consumerProbe.lane))
+      const loaded = await Effect.runPromise(anchors.initialize(consumerProbe.fold, 0))
+      const consumerSubject = await Effect.runPromise(evidenceSubject(consumerProbe.lane.handle, 0))
+      const manager = await jetstreamManager(foldConnection)
+      await manager.consumers.add(laneStreamName(consumerProbe.lane, 0), {
+        durable_name: `FLB_FOLD_${consumerProbe.fold.digest}`,
+        ack_policy: AckPolicy.Explicit,
+        deliver_policy: DeliverPolicy.StartSequence,
+        opt_start_seq: 1,
+        replay_policy: ReplayPolicy.Instant,
+        filter_subject: consumerSubject,
+        max_ack_pending: PUMP_BUFFER_BOUND - 1,
+      })
+      refusals.push(await Effect.runPromise(Effect.flip(preparePartitionPump(
+        foldConnection,
+        anchors,
+        consumerProbe.fold,
+        0,
+        loaded,
+        1,
+        {
+          messages: 0,
+          redeliveriesAbsorbed: 0,
+          bufferedOutOfOrderArrivals: 0,
+          bufferedOutOfOrderDrained: 0,
+          anchorWrites: 0,
+          refusals: {},
+        },
+      ))))
+    } finally {
+      await foldConnection.close()
+    }
+
+    const exemptions = new Set<StructuralKind>(["fold-buffer-overflow"])
+    expect([
+      ...refusals.map((refusal) => refusal.kind),
+      ...exemptions,
+    ].sort()).toEqual(
       [...StructuralRefusalKind.literals].sort(),
     )
     for (const refusal of refusals) {

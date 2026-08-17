@@ -101,17 +101,17 @@ const unearnedCommutativity = <Event, State> (
   algebra: DeclaredAlgebra<State>,
 ): StructuralRefusal => structuralRefusal({
   kind: "unearned-commutative-algebra",
-  law: "F4 licenses partitions > 1 only for an algebra whose generated ACI law suite earned the commutative brand.",
+  law: "F4 licenses partitions > 1 only for an algebra whose digest-seeded ACI law suite earned the commutative brand.",
   path: ["algebra", "commutative"],
   got: {
     partitions: lane.partitions,
     algebra: algebra.digest,
     witness: "absent",
   },
-  expected: "the runtime witness produced by Algebra.commutative after its generated law suite passes",
+  expected: "the runtime witness produced by Algebra.commutative after its derived law suite passes",
   next: [{
     subject: "Algebra.commutative",
-    note: "Generate and run the associativity, commutativity, and identity properties, or declare one partition.",
+    note: "Provide a seeded arbitrary for the derived associativity, commutativity, and identity properties, or declare one partition.",
   }],
 })
 

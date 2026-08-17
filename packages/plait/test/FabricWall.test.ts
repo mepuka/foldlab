@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 
-import { Effect } from "effect"
+import { Effect, Reducer } from "effect"
 
+import * as Algebra from "../src/Algebra.js"
 import { initial } from "../src/Anchor.js"
 import type { WireValue } from "../src/Canonical.js"
 import { digestOf } from "../src/Digest.js"
@@ -122,12 +123,40 @@ const replayRow = async (row: CorpusRow): Promise<WireValue> => {
     case "checkpoint-resume": {
       const prefix = row.input.prefix as ReadonlyArray<number>
       const suffix = row.input.suffix as ReadonlyArray<number>
-      return [...prefix, ...suffix].reduce((state, value) => state + value, 0)
+      const state = prefix.reduce((sum, value) => sum + value, 0)
+      const checkpoint = await Effect.runPromise(initial(state))
+      const deliveries = await Promise.all(suffix.map((event, index) =>
+        positioned(prefix.length + index + 1, event)))
+      const result = await Effect.runPromise(replaySuccessors({
+        anchor: { ...checkpoint, floor: prefix.length },
+        state,
+        deliveries,
+        step: (sum, event) => sum + event,
+      }))
+      return result.state
     }
     case "partition-interleaving": {
       const partitions = row.input.partitions as ReadonlyArray<ReadonlyArray<number>>
-      return partitions.map((part) => part.reduce((sum, value) => sum + value, 0))
-        .reduce((sum, value) => sum + value, 0)
+      const algebra = await Effect.runPromise(Algebra.declare({
+        declaration: { name: "fabric-wall-integer-sum", version: 0 },
+        reducer: Reducer.make<number>((left, right) => left + right, 0),
+      }))
+      const states = await Promise.all(partitions.map(async (part) => {
+        const anchor = await Effect.runPromise(initial(algebra.reducer.initialValue))
+        const deliveries = await Promise.all(part.map((event, index) =>
+          positioned(index + 1, event)))
+        const result = await Effect.runPromise(replaySuccessors({
+          anchor,
+          state: algebra.reducer.initialValue,
+          deliveries,
+          step: algebra.reducer.combine,
+        }))
+        return result.state
+      }))
+      return states.reduce(
+        (state, partitionState) => algebra.reducer.combine(state, partitionState),
+        algebra.reducer.initialValue,
+      )
     }
     case "resume-then-redeliver": {
       const prefix = row.input.prefix as ReadonlyArray<number>

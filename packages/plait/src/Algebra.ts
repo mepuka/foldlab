@@ -37,15 +37,20 @@ export interface CommutativeLaws<State> {
   readonly commutative: (left: State, right: State) => boolean
 }
 
-/** Generated property cases supplied by the CI law suite that earns F4. */
+/** A seeded state generator and equality used to earn F4 at the declaration door. */
 export interface CommutativeSuite<State> {
-  readonly cases: ReadonlyArray<{
-    readonly left: State
-    readonly middle: State
-    readonly right: State
-  }>
+  readonly arbitrary: (seed: number) => State
   readonly equals: (left: State, right: State) => boolean
 }
+
+interface CommutativeCase<State> {
+  readonly left: State
+  readonly middle: State
+  readonly right: State
+}
+
+const MINIMUM_COMMUTATIVE_CASES = 32
+const MAXIMUM_CASE_ATTEMPTS = MINIMUM_COMMUTATIVE_CASES * 32
 
 const commutativeWitness = Symbol("@foldlab/plait/Algebra/commutative")
 
@@ -71,15 +76,66 @@ const unearnedCommutativity = (
   expected: WireValue,
 ): StructuralRefusal => structuralRefusal({
   kind: "unearned-commutative-algebra",
-  law: "F4's commutative brand is earned only when the generated identity, associativity, and commutativity cases pass.",
+  law: "F4's commutative brand is earned only when digest-seeded, distinct identity, associativity, and commutativity cases pass.",
   path,
   got,
   expected,
   next: [{
     subject: "Algebra.commutative",
-    note: "Generate at least 32 property cases with fast-check and run the suite before partitioned deployment.",
+    note: "Provide a seeded arbitrary that can derive at least 32 distinct triples before partitioned deployment.",
   }],
 })
+
+const seedFromDigest = (digest: Digest): number => {
+  let seed = 0x811c9dc5
+  for (let index = 0; index < digest.length; index++) {
+    seed = Math.imul(seed ^ digest.charCodeAt(index), 0x01000193) >>> 0
+  }
+  return seed
+}
+
+const seededSequence = (digest: Digest): (() => number) => {
+  let state = seedFromDigest(digest)
+  return () => {
+    state = (state + 0x9e3779b9) >>> 0
+    let mixed = state
+    mixed = Math.imul(mixed ^ (mixed >>> 16), 0x21f0aaad)
+    mixed = Math.imul(mixed ^ (mixed >>> 15), 0x735a2d97)
+    return (mixed ^ (mixed >>> 15)) | 0
+  }
+}
+
+const sameCase = <State>(
+  equals: (left: State, right: State) => boolean,
+  left: CommutativeCase<State>,
+  right: CommutativeCase<State>,
+): boolean =>
+  equals(left.left, right.left) &&
+  equals(left.middle, right.middle) &&
+  equals(left.right, right.right)
+
+const deriveCases = <State>(
+  algebra: DeclaredAlgebra<State>,
+  suite: CommutativeSuite<State>,
+): ReadonlyArray<CommutativeCase<State>> => {
+  const nextSeed = seededSequence(algebra.digest)
+  const cases: Array<CommutativeCase<State>> = []
+  for (
+    let attempt = 0;
+    attempt < MAXIMUM_CASE_ATTEMPTS && cases.length < MINIMUM_COMMUTATIVE_CASES;
+    attempt++
+  ) {
+    const candidate = {
+      left: suite.arbitrary(nextSeed()),
+      middle: suite.arbitrary(nextSeed()),
+      right: suite.arbitrary(nextSeed()),
+    }
+    if (!cases.some((existing) => sameCase(suite.equals, existing, candidate))) {
+      cases.push(candidate)
+    }
+  }
+  return cases
+}
 
 /** Declares a reducer whose identity commits its definition and initial state. */
 export const declare = Effect.fn("Algebra.declare")(function*<State>(
@@ -123,25 +179,39 @@ export const commutativeLaws = <State>(
   }
 }
 
-/** Runs the generated law cases and attaches the witness only when they pass. */
+/** Derives distinct law cases from the algebra digest and witnesses only a passing algebra. */
 export const commutative = Effect.fn("Algebra.commutative")(function*<State>(
   algebra: DeclaredAlgebra<State>,
   suite: CommutativeSuite<State>,
 ): Effect.fn.Return<CommutativeAlgebra<State>, StructuralRefusal> {
-  if (suite.cases.length < 32) {
+  const cases = yield* Effect.try({
+    try: () => deriveCases(algebra, suite),
+    catch: (cause) => unearnedCommutativity(
+      ["suite", "arbitrary"],
+      String(cause),
+      "a total seeded arbitrary and equality over generated states",
+    ),
+  })
+  if (cases.length < MINIMUM_COMMUTATIVE_CASES) {
     return yield* unearnedCommutativity(
-      ["suite", "cases"],
-      suite.cases.length,
-      "at least 32 generated property cases",
+      ["suite", "arbitrary"],
+      cases.length,
+      `at least ${MINIMUM_COMMUTATIVE_CASES} distinct generated triples`,
     )
   }
   const laws = commutativeLaws(algebra, suite.equals)
   const failed = yield* Effect.try({
-    try: () => suite.cases.findIndex(({ left, middle, right }) =>
+    try: () => cases.findIndex(({ left, middle, right }) =>
       !laws.leftIdentity(left) ||
       !laws.rightIdentity(left) ||
+      !laws.leftIdentity(middle) ||
+      !laws.rightIdentity(middle) ||
+      !laws.leftIdentity(right) ||
+      !laws.rightIdentity(right) ||
       !laws.associative(left, middle, right) ||
-      !laws.commutative(left, middle)),
+      !laws.commutative(left, middle) ||
+      !laws.commutative(middle, right) ||
+      !laws.commutative(left, right)),
     catch: (cause) => unearnedCommutativity(
       ["suite", "evaluation"],
       String(cause),
@@ -150,7 +220,7 @@ export const commutative = Effect.fn("Algebra.commutative")(function*<State>(
   })
   if (failed !== -1) {
     return yield* unearnedCommutativity(
-      ["suite", "cases", String(failed)],
+      ["suite", "generated", String(failed)],
       "law returned false",
       "left identity, right identity, associativity, and commutativity",
     )

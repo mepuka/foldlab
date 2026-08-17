@@ -6,9 +6,10 @@ import type { FabricSubject } from "./Subjects.js"
 import type { Envelope } from "./Wire.js"
 import { makeNatsService } from "./internal/nats.js"
 
-/** Connection bootstrap for one file-backed slice-0 commons stream. */
+/** Connection bootstrap for the file-backed slice-0 fact/node commons gate. */
 export interface FabricClientOptions {
   readonly servers: string | ReadonlyArray<string>
+  /** Names only the fact/node commons stream ensured at construction; subscriptions discover their subject's owner. */
   readonly stream: string
   readonly connectionName?: string
 }

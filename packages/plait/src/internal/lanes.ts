@@ -37,7 +37,10 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS JetStream operation to be available",
-    next: [],
+    next: [{
+      subject: "Lane.emit",
+      note: "Reconnect and re-emit; F2 makes duplicate delivery harmless, and the envelope digest is the message id.",
+    }],
   })
 
 const shapeRefusal = (
@@ -55,9 +58,12 @@ const shapeRefusal = (
     storage: StorageType.File,
     num_replicas: 1,
     max_msgs: -1,
+    max_msgs_per_subject: -1,
     max_bytes: -1,
     max_age: 0,
     duplicate_window: messageIdWindowNanos,
+    deny_delete: true,
+    deny_purge: true,
   },
   next: [{
     subject: "Lane.emit",
@@ -75,7 +81,9 @@ const hasExpectedShape = (info: StreamInfo, subject: string): boolean => {
     config.max_bytes === -1 &&
     config.max_age === 0 &&
     config.max_msgs_per_subject === -1 &&
-    config.duplicate_window === messageIdWindowNanos
+    config.duplicate_window === messageIdWindowNanos &&
+    config.deny_delete === true &&
+    config.deny_purge === true
 }
 
 const ensurePartitionStream = Effect.fn("Lanes.ensurePartitionStream")(function* (

@@ -59,7 +59,10 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS consumer operation to be available",
-    next: [],
+    next: [{
+      subject: "plait chaos",
+      note: "Restore the consumer protocol and re-run the measurement against the same pinned span.",
+    }],
   })
 
 const nextMessage = (
@@ -74,7 +77,10 @@ const nextMessage = (
     path: ["consumer", "next"],
     got: "timeout",
     expected: "one message inside the pinned span",
-    next: [],
+    next: [{
+      subject: "plait chaos",
+      note: "Emit the complete pinned span, then re-run the measurement against that same span.",
+    }],
   }))
   : Effect.succeed(message)))
 

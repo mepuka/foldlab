@@ -28,11 +28,7 @@ export const declareChaosCounter = (handle: string) => Effect.gen(function* () {
     reducer: Reducer.make<number>((left, right) => left + right, 0),
   })
   const earned = yield* Algebra.commutative(plain, {
-    cases: Array.from({ length: 32 }, (_, value) => ({
-      left: value - 16,
-      middle: value,
-      right: 16 - value,
-    })),
+    arbitrary: (seed) => seed,
     equals: Object.is,
   })
   const fold = yield* Fold.declare({

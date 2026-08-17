@@ -48,11 +48,7 @@ describe("declared folds", () => {
   test("the step factors through event contributions by construction", async () => {
     const [lane, plain] = await Effect.runPromise(Effect.all([makeLane(), makeAlgebra()]))
     const earned = await Effect.runPromise(Algebra.commutative(plain, {
-      cases: Array.from({ length: 32 }, (_, value) => ({
-        left: value - 16,
-        middle: value,
-        right: 16 - value,
-      })),
+      arbitrary: (seed) => seed,
       equals: Object.is,
     }))
     const attemptedIntruder = {
