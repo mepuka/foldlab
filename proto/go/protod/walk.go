@@ -38,6 +38,12 @@ func isIntegralJSONNumber(number float64) bool {
 // position-specific predicate.
 const integralNumberLaw = "flb.type.v0: every number in a type term is integral — whole and within ±(2^53-1); a non-integer number has no v0 form"
 
+// walkDomainLaw is not a second bound; it is the domain the one bound is total
+// over. The closure law can only reach numbers this traversal can decode, so the
+// domain has to be stated where it is enforced instead of living in a comment
+// that says "in practice the caller always passes JSON".
+const walkDomainLaw = "flb.type.v0: a type term is JSON as canonical.Decode produces it — null, bool, number, string, array, object; a value outside that domain may carry a number no bound has seen"
+
 // requireIntegralNumbers is the closure law's enforcement: it decodes numbers,
 // not positions. Every JSON number reachable in a type term passes the bound —
 // a literal's value, a check's args, and whatever JSON-bearing position the
@@ -49,6 +55,10 @@ const integralNumberLaw = "flb.type.v0: every number in a type term is integral 
 // Members are visited in identity order (RFC 8785 UTF-16 code units, the same
 // traversal that orders every other walk here) so the refusal coordinate does
 // not depend on Go's randomized map iteration.
+//
+// The traversal is TOTAL over its stated domain and refuses outside it: the
+// switch has a default, so the universal "every number in a term is integral"
+// holds without the footnote "as long as the caller decoded it first".
 //
 // The sole exception in the estate is an opaque PAYLOAD: {"k":"opaque"} carries
 // no data in the term, and the value it later admits is uninterpreted canonical
@@ -78,6 +88,23 @@ func requireIntegralNumbers(value any, path []string) *Refusal {
 				return r
 			}
 		}
+	case string, bool, nil:
+		// The rest of canonical.Decode's output. No number here to bound.
+	default:
+		// A number this switch cannot see is a number the bound cannot reach.
+		// From the wire nothing else arrives — canonical.Decode converts every
+		// json.Number to float64 recursively at every depth — but an in-process
+		// caller can hand the walk a Go float32 or int64, and float32(0.5) used
+		// to fall through this switch to `return nil` and carry 0.5 into
+		// identity bytes. So the default REFUSES instead of admitting on faith,
+		// the same discipline as an unknown kind.
+		//
+		// It refuses the whole non-JSON domain rather than an enumeration of Go
+		// numeric types, because enumerating the types that need checking is the
+		// identical shape to enumerating the positions that need checking, and
+		// that shape has already failed twice in this file's history.
+		return structureRefusal(path, walkDomainLaw, fmt.Sprintf("%T", value),
+			"a value decoded by canonical.Decode — null, bool, number, string, array, or object", nil)
 	}
 	return nil
 }

@@ -285,6 +285,71 @@ func TestOpaqueRemainsTheSoleExceptionAndIsAValueNotATerm(t *testing.T) {
 	}
 }
 
+// The traversal's own domain, probed in process. Round 3 found that the type
+// switch was float64 | map | slice with no default, so a term constructed in Go
+// rather than decoded from the wire carried its numbers straight past the bound:
+// check.args {"min": float32(0.5)} was ADMITTED with identity bytes
+// {…"args":{"min":0.5}…} and digest eae38e7e…. Not wire-reachable — canonical.
+// Decode converts every json.Number to float64 recursively at every depth — but
+// the tracked files state the law universally over TERMS, so the universal has
+// to be true of the traversal and not only of the decoder in front of it.
+//
+// Refusal, never panic: each case asserts a returned *Refusal, and the subtest
+// would fail on a panic rather than report one.
+func TestWalkRefusesNumbersOutsideItsDecodedDomain(t *testing.T) {
+	for _, probe := range []struct {
+		name string
+		args map[string]any
+	}{
+		{"float32-non-integral", map[string]any{"min": float32(0.5)}},
+		{"float32-integral", map[string]any{"min": float32(1)}},
+		{"go-int", map[string]any{"min": 1}},
+		{"go-int64", map[string]any{"min": int64(1)}},
+		{"go-uint8", map[string]any{"min": uint8(1)}},
+		{"json-number", map[string]any{"min": json.Number("0.5")}},
+		{"nested-in-an-array", map[string]any{"deep": []any{1.0, float32(0.5)}}},
+	} {
+		t.Run(probe.name, func(t *testing.T) {
+			term := checkWithArgs(probe.args)
+			result, refusal := walkStructure(term, []string{})
+			if refusal == nil {
+				t.Fatalf("term %+v was admitted into flb.type.v0 (result %+v)", term, result)
+			}
+			if refusal.Law != walkDomainLaw {
+				t.Fatalf("refusal law = %q, want the walk-domain law", refusal.Law)
+			}
+			if refusal.Kind != KindInvalidStructure {
+				t.Fatalf("refusal kind = %q, want %q", refusal.Kind, KindInvalidStructure)
+			}
+		})
+	}
+
+	// The domain refusal must not narrow the domain: everything canonical.Decode
+	// actually emits still walks, and an integral wire number is still admitted.
+	admitted := checkWithArgs(mustDecode(t, `{"min":1,"note":"x","on":true,"off":null,"deep":[1,2]}`))
+	if _, refusal := walkStructure(admitted, []string{}); refusal != nil {
+		t.Fatalf("a decoded term refused: %+v", refusal)
+	}
+}
+
+// The float32 that used to mint an identity, in the position round 3 minted it,
+// checked against the exact digest it minted. This is the counterexample pinned
+// rather than described.
+func TestRoundThreeFloat32CounterexampleNoLongerMintsIdentity(t *testing.T) {
+	term := checkWithArgs(map[string]any{"min": float32(0.5)})
+	if _, refusal := walkStructure(term, []string{}); refusal == nil {
+		normalized, err := normalize(term)
+		if err != nil {
+			t.Fatalf("term admitted and unnormalizable: %v", err)
+		}
+		encoded, err := canonicalBytes(normalized)
+		if err != nil {
+			t.Fatalf("term admitted and uncanonicalizable: %v", err)
+		}
+		t.Fatalf("float32(0.5) minted identity bytes %s", encoded)
+	}
+}
+
 // Closure over the committed corpus: every structure in the frozen types
 // fixture is admitted, and planting one non-integral number anywhere a number
 // can go inside it turns each one into a refusal under the single law.
