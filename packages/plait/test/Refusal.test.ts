@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { Effect, Exit } from "effect"
+import { Clock, Effect, Exit, Fiber, Schedule } from "effect"
+import { TestClock } from "effect/testing"
 
 import {
   absenceRefusal,
@@ -11,7 +12,7 @@ import {
 describe("refusal retry class", () => {
   test("retries absence and never structural evidence", () => {
     const fields = {
-      kind: "not-here-yet",
+      kind: "malformed-envelope",
       law: "only missing evidence may be retried",
       path: ["body", "blob"],
       got: "missing",
@@ -30,7 +31,7 @@ describe("refusal retry class", () => {
 
   test("the shipped policy retries only absence-sorted failures", async () => {
     const fields = {
-      kind: "not-here-yet",
+      kind: "malformed-envelope",
       law: "only missing evidence may be retried",
       path: [],
       got: "missing",
@@ -56,5 +57,36 @@ describe("refusal retry class", () => {
     expect(Exit.isFailure(structuralExit)).toBe(true)
     expect(absenceAttempts).toBe(3)
     expect(structuralAttempts).toBe(1)
+  })
+
+  test("honors a supplied temporal schedule through the pipeable form", async () => {
+    const fields = {
+      kind: "not-here-yet",
+      law: "only missing evidence may be retried",
+      path: [],
+      got: "missing",
+      expected: "present",
+      next: [],
+    } as const
+    const attempts: Array<number> = []
+    const eventuallyPresent = Effect.gen(function* () {
+      attempts.push(yield* Clock.currentTimeMillis)
+      if (attempts.length < 3) return yield* absenceRefusal(fields)
+      return "present"
+    })
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const fiber = yield* eventuallyPresent.pipe(
+          retryAbsence(Schedule.spaced("1 second")),
+          Effect.forkChild,
+        )
+        yield* TestClock.adjust("2 seconds")
+        return yield* Fiber.join(fiber)
+      }).pipe(Effect.provide(TestClock.layer())),
+    )
+
+    expect(result).toBe("present")
+    expect(attempts).toEqual([0, 1_000, 2_000])
   })
 })

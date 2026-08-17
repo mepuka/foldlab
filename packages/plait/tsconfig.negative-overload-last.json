@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "negative-controls/PublicEffects.overload-last.mutant.ts"
+  ]
+}

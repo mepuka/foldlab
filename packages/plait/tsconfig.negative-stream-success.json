@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "negative-controls/PublicEffects.stream-success.mutant.ts",
+    "test/PublicEffects.typecheck.ts"
+  ]
+}

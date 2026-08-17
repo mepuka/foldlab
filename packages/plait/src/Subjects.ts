@@ -41,7 +41,10 @@ const invalidToken = (path: string, got: string | number): StructuralRefusal =>
     path: [path],
     got: typeof got === "number" && !Number.isFinite(got) ? String(got) : got,
     expected: "one literal NATS subject token",
-    next: [],
+    next: [{
+      subject: "flb.fab.ev.example.0",
+      note: "Replace the refused segment with a non-empty literal token such as example.",
+    }],
   })
 
 /** Constructs `flb.fab.ev.<lane>.<part>` without embedding identity. */

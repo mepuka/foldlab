@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.stream-success.mutant.ts(26,3): error TS2344: Type '"Feeds.follow#success"' does not satisfy the constraint 'never'.

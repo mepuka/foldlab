@@ -58,6 +58,9 @@ jobs:
       - name: root — bun install
         run: bun install --frozen-lockfile 2>&1 | tee ci-logs/root-install.log
 
+      - name: root — gate runner self-test
+        run: bun run gates --self-test 2>&1 | tee ci-logs/gate-runner-self-test.log
+
       - name: root — bun run typecheck
         run: bun run typecheck 2>&1 | tee ci-logs/root-typecheck.log
 
@@ -92,7 +95,7 @@ jobs:
       # TypeScript suite.
       - name: go — go test ./...
         working-directory: go
-        run: go test ./... 2>&1 | tee ../ci-logs/go-test.log
+        run: go test -count=1 ./... 2>&1 | tee ../ci-logs/go-test.log
 
       # --- proto/go ------------------------------------------------------
       - name: proto/go — gofmt -l .
@@ -111,7 +114,7 @@ jobs:
 
       - name: proto/go — go test ./...
         working-directory: proto/go
-        run: go test ./... 2>&1 | tee ../../ci-logs/proto-go-test.log
+        run: go test -count=1 ./... 2>&1 | tee ../../ci-logs/proto-go-test.log
 
       # --- proto/ts ------------------------------------------------------
       # Its own island: own lockfile, own bunfig test root.

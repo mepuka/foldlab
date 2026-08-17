@@ -54,6 +54,21 @@ theorem drop_commutativity_killed :
     decide
   · decide
 
+/-- Arrival-order application agrees with the sequential fold when arrivals
+    are already the contiguous positioned trace. The mutant differs from the
+    shipped consumer only when the network reorders that trace. -/
+theorem drop_successor_discipline_keeps_contiguous_trace
+    (step : State -> Op -> State) (floor : Nat) (operations : List Op)
+    (initial : State) :
+    Mutants.arrivalOrderApply step floor (positionTrace floor operations) initial =
+      fold step initial operations := by
+  induction operations generalizing floor initial with
+  | nil => rfl
+  | cons operation operations inductionHypothesis =>
+      simp only [positionTrace, Mutants.arrivalOrderApply, List.foldl_cons,
+        Nat.lt_add_one, if_true, fold, foldFrom, List.foldl]
+      exact inductionHypothesis (floor + 1) (step initial operation)
+
 theorem reordered_vector_has_serial_successor_premise :
     Laws.F2bSerialSuccessorPremise 4 [2, 3] Mutants.reorderedDeliveryVector := by
   intro delivery
@@ -86,6 +101,34 @@ theorem drop_successor_discipline_killed :
 theorem meet_clamp_survives_escalating_request :
     Policy.meet Mutants.rootPolicy Mutants.escalatingRequest <= Mutants.rootPolicy :=
   policy_meet_le_left _ _
+
+/-- The unclamped mutant agrees with the meet when the request is already
+    attenuated by the root policy. Its killed row therefore isolates
+    escalation rather than ordinary delegation. -/
+theorem drop_meet_clamping_keeps_already_attenuated
+    (root requested : Mutants.GroundPolicy) (attenuated : requested <= root) :
+    Mutants.unclampedChild root requested = Policy.meet root requested := by
+  apply Policy.ext
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.capabilities atom member, member⟩, And.right⟩
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.contextAllowlist atom member, member⟩, And.right⟩
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.toolkits atom member, member⟩, And.right⟩
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.writ atom member, member⟩, And.right⟩
+  · exact (Nat.min_eq_right attenuated.capabilityClass).symm
+  · exact (Nat.min_eq_right attenuated.effortClass).symm
+  · exact (Nat.min_eq_right attenuated.budget).symm
+  · exact (Nat.min_eq_right attenuated.spawnBound).symm
 
 /-- The attenuation vector refutes the variant that trusts the request. -/
 theorem drop_meet_clamping_killed :

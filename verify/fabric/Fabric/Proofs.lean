@@ -368,6 +368,30 @@ theorem commutative_fold_append (algebra : CommutativeAlgebra State)
       rw [inductionHypothesis]
       exact (algebra.associative _ _ _).symm
 
+/-- The contribution-form fold proved here is the ordinary step fold used by
+    deployment when its step merges each operation's contribution. -/
+theorem foldCommutative_eq_fold (algebra : CommutativeAlgebra State)
+    (contribution : Op -> State) (trace : List Op) :
+    foldCommutative algebra contribution trace =
+      fold (fun state operation => algebra.merge state (contribution operation))
+        algebra.empty trace := by
+  have rightIdentity (state : State) :
+      algebra.merge state algebra.empty = state := by
+    rw [algebra.commutative, algebra.leftIdentity]
+  have foldFromMerge (initial : State) (operations : List Op) :
+      List.foldl (fun state operation =>
+          algebra.merge state (contribution operation)) initial operations =
+        algebra.merge initial (foldCommutative algebra contribution operations) := by
+    induction operations generalizing initial with
+    | nil =>
+        exact (rightIdentity initial).symm
+    | cons operation operations inductionHypothesis =>
+        simp only [List.foldl_cons, foldCommutative]
+        rw [inductionHypothesis]
+        exact algebra.associative _ _ _
+  unfold fold foldFrom
+  rw [foldFromMerge, algebra.leftIdentity]
+
 /-- A declared commutative fold forgets only schedule order. -/
 theorem commutative_fold_permutation (algebra : CommutativeAlgebra State)
     (contribution : Op -> State) {left right : List Op}

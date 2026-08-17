@@ -92,3 +92,36 @@ a guard mutant. Why: the accepted theorem proves the guard cannot affect any
 result in this model, while the 6-before-5 row refutes removal of the actual
 successor discipline. **Load-bearing? yes** — it determines what the fourth
 negative control honestly claims.
+
+### T8. Run the corpus-diff self-test beside the fabric gate in Lean CI
+
+Decided: `lean-gates.yml` runs `verify/fabric/run.sh --self-test` immediately
+after the ordinary fabric gate. Its four plants exercise a corpus substitution,
+a model substitution, one-row deletion, and one-row insertion. The diagnostic
+states its positional ceiling as `positional-bound=one-row-lookahead`; longer
+edit runs and permutations are refused but are outside its row attribution
+claim. Alternatives: deepen the reporter to an edit script; enroll the controls
+in `negative-controls.yml`; leave them local-only. Why: the controls exercise
+the fabric gate's own regeneration comparison and use the same Lean toolchain,
+so the adjacent step keeps proof and diff machinery under one runner.
+**Load-bearing? yes** — a self-test that CI never executes can silently stop detecting
+model/corpus divergence, while an unstated lookahead bound overclaims diagnosis.
+
+### T9. Exercise install hermeticity through the gate runner self-test
+
+Decided: `bun run gates --self-test` drives the install preflight against two
+temporary absent-install roots and then the same present-install roots. It
+plants a lockfile mutation, the real `proto/ts` lock drift in a warm temporary
+tree, a stubbed frozen-install exit, and a successful install that omits
+`node_modules`; the committed trace pins all four refusals. The warm drift plant
+also requires Bun's output to contain `lockfile is frozen`, so an unrelated
+exit 1 cannot satisfy it. `gates.yml` runs this self-test after the root frozen
+install, putting the three runner controls and all preflight controls in CI.
+Alternatives: a separate preflight control command; deleting the real checkout's
+installs during the runner self-test. Why: the runner owns the local/CI mirror,
+and temporary trees reproduce both dependency states without touching the
+working checkout; the warm drift control invokes CI's exact frozen command and
+now proves its cause, not only its exit code.
+**Load-bearing? yes** — a control
+over the real tree would make the safety test itself destructive, while an
+absence-only control would miss the warm-tree lockfile drift found in review.

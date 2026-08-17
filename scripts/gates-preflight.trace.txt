@@ -1,0 +1,4 @@
+preflight — lockfile-change control: frozen install changed the lockfile
+preflight — warm lockfile-drift control: frozen install exited 1
+preflight — failing-installer control: frozen install exited 17
+preflight — missing node_modules control: install did not create node_modules

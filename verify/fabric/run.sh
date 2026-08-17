@@ -3,8 +3,14 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-if [[ "$#" -ne 0 ]]; then
-  echo "usage: ./run.sh" >&2
+self_test=false
+case "${1:-}" in
+  "") ;;
+  --self-test) self_test=true ;;
+  *) echo "usage: ./run.sh [--self-test]" >&2; exit 2 ;;
+esac
+if [[ "$#" -gt 1 ]]; then
+  echo "usage: ./run.sh [--self-test]" >&2
   exit 2
 fi
 
@@ -99,7 +105,7 @@ roster=(
   ingest_lookup_of_raw_support schedule_buffer_covers apply_successors_exact
   apply_successors_congr ingest_window_agrees guard_is_redundant
   f2b_guarded_exactly_once
-  commutative_fold_append commutative_fold_permutation
+  commutative_fold_append foldCommutative_eq_fold commutative_fold_permutation
   partition_folds_flatten f4_partition_fold policy_set_inter_comm
   policy_set_inter_assoc policy_set_inter_idem policy_le_refl policy_le_trans
   policy_meet_comm policy_meet_assoc policy_meet_idem policy_meet_le_left
@@ -108,10 +114,11 @@ roster=(
   drop_idempotence_keeps_associativity drop_idempotence_keeps_commutativity
   drop_idempotence_killed drop_commutativity_keeps_associativity
   drop_commutativity_keeps_idempotence drop_commutativity_killed
+  drop_successor_discipline_keeps_contiguous_trace
   reordered_vector_has_serial_successor_premise
   arrival_order_apply_skips_six_before_five successor_discipline_survives_reordering
   drop_successor_discipline_killed meet_clamp_survives_escalating_request
-  drop_meet_clamping_killed
+  drop_meet_clamping_keeps_already_attenuated drop_meet_clamping_killed
   emitter_f1_cell_merge_aci emitter_f2_duplication emitter_f2_permutation
   emitter_stale_schedule_premise emitter_f2b_stale_replay
   emitter_duplicate_schedule_premise emitter_f2b_duplication
@@ -125,9 +132,15 @@ roster=(
 roster_tmp=$(mktemp "./.roster.XXXXXX")
 discovered_tmp=$(mktemp "./.discovered.XXXXXX")
 axiom_check=$(mktemp "./.axioms.XXXXXX.lean")
-corpus_tmp=$(mktemp "./.corpus.XXXXXX.ndjson")
+regen_dir=".regen"
+mkdir -p "$regen_dir"
+corpus_tmp="$regen_dir/fabric-conformance.ndjson"
 corpus_witnesses_tmp=$(mktemp "./.corpus-witnesses.XXXXXX")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_tmp" "$corpus_witnesses_tmp"' EXIT
+corpus_mutation_tmp=$(mktemp "$regen_dir/.corpus-mutation.XXXXXX.ndjson")
+emission_mutation_tmp=$(mktemp "$regen_dir/.emission-mutation.XXXXXX.ndjson")
+row_deletion_tmp=$(mktemp "$regen_dir/.row-deletion.XXXXXX.ndjson")
+row_insertion_tmp=$(mktemp "$regen_dir/.row-insertion.XXXXXX.ndjson")
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$axiom_check" "$corpus_witnesses_tmp" "$corpus_mutation_tmp" "$emission_mutation_tmp" "$row_deletion_tmp" "$row_insertion_tmp"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -232,8 +245,99 @@ while read -r _kind _name witness; do
   fi
 done < "$corpus_witnesses_tmp"
 
-if ! cmp -s "$corpus_tmp" "$fixture"; then
-  echo "GATE: FAIL — corpus is not a fresh regeneration; run: lake exe emitter > $fixture" >&2
+report_first_corpus_divergence() {
+  local committed="$1"
+  local model="$2"
+  local index=0 row committed_count model_count
+  local committed_line model_line committed_present model_present identity_line
+  local report_committed_present report_model_present
+  local kind name
+  local -a committed_rows model_rows
+  mapfile -t committed_rows < "$committed"
+  mapfile -t model_rows < "$model"
+  committed_count=${#committed_rows[@]}
+  model_count=${#model_rows[@]}
+  while [[ "$index" -lt "$committed_count" || "$index" -lt "$model_count" ]]; do
+    committed_present=0
+    model_present=0
+    committed_line=''
+    model_line=''
+    if [[ "$index" -lt "$committed_count" ]]; then
+      committed_present=1
+      committed_line="${committed_rows[$index]}"
+    fi
+    if [[ "$index" -lt "$model_count" ]]; then
+      model_present=1
+      model_line="${model_rows[$index]}"
+    fi
+    if [[ "$committed_present" -eq 0 && "$model_present" -eq 0 ]]; then
+      break
+    fi
+    if [[ "$committed_present" -ne "$model_present" || "$committed_line" != "$model_line" ]]; then
+      report_committed_present=$committed_present
+      report_model_present=$model_present
+      if [[ "$committed_present" -eq 1 && "$model_present" -eq 1 &&
+          $((index + 1)) -lt "$committed_count" &&
+          "${committed_rows[$((index + 1))]}" == "$model_line" ]]; then
+        # The model omitted the committed row; report the row that vanished,
+        # not the row that shifted into its position.
+        report_model_present=0
+        identity_line="$committed_line"
+      elif [[ "$committed_present" -eq 1 && "$model_present" -eq 1 &&
+          $((index + 1)) -lt "$model_count" &&
+          "${model_rows[$((index + 1))]}" == "$committed_line" ]]; then
+        # The model inserted a row; the committed side has no matching row.
+        report_committed_present=0
+        identity_line="$model_line"
+      elif [[ "$model_present" -eq 1 ]]; then
+        identity_line="$model_line"
+      else
+        identity_line="$committed_line"
+      fi
+      row=$((index + 1))
+      kind=$(printf '%s\n' "$identity_line" |
+        sed -nE 's/.*"kind":"([^"]+)".*/\1/p')
+      name=$(printf '%s\n' "$identity_line" |
+        sed -nE 's/.*"name":"([^"]+)".*/\1/p')
+      if [[ "$row" -eq 1 ]]; then
+        kind=${kind:-header}
+        name=${name:-provenance}
+      else
+        kind=${kind:-unknown}
+        name=${name:-unknown}
+      fi
+      echo "FINDING: divergent corpus row=$row kind=$kind name=$name positional-bound=one-row-lookahead" >&2
+      if [[ "$report_model_present" -eq 1 ]]; then
+        echo "FINDING: model line: $model_line" >&2
+      else
+        echo "FINDING: model line: <missing>" >&2
+      fi
+      if [[ "$report_committed_present" -eq 1 ]]; then
+        echo "FINDING: committed line: $committed_line" >&2
+      else
+        echo "FINDING: committed line: <missing>" >&2
+      fi
+      echo "FINDING: intended change — regenerate and commit corpus + manifest IN THE SAME COMMIT as the model change" >&2
+      echo "FINDING: unintended change — report the finding and STOP; never edit the fixture to agree" >&2
+      return 0
+    fi
+    index=$((index + 1))
+  done
+  echo "FINDING: corpus regeneration differs but no divergent row was decoded" >&2
+}
+
+check_corpus_regeneration() {
+  local committed="$1"
+  local model="$2"
+  if cmp -s "$committed" "$model"; then
+    return 0
+  fi
+  report_first_corpus_divergence "$committed" "$model"
+  echo "GATE: FAIL — corpus is not a fresh regeneration; model emission kept at $model" >&2
+  return 1
+}
+
+if ! check_corpus_regeneration "$fixture" "$corpus_tmp"; then
   exit 1
 fi
 expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F2":2,"F2b":3,"F3":1,"F4":1,"F9":2,"alphabet-refusal":1},"format":1,"generator":"verify/fabric emitter","vectors":11}'
@@ -255,6 +359,104 @@ if grep -oE '[0-9]+' "$corpus_tmp" | awk '$1 > 9007199254740991 { exit 1 }'; the
 else
   echo "GATE: FAIL — corpus escaped the non-negative safe-integer domain" >&2
   exit 1
+fi
+
+if [[ "$self_test" == true ]]; then
+  if ! awk '
+      BEGIN { mutated = 0 }
+      !mutated && /"name":"duplicated-deliveries"/ {
+        mutated = sub(/"matchesExact":true/, "\"matchesExact\":True")
+      }
+      { print }
+      END { if (!mutated) exit 42 }
+    ' "$fixture" > "$corpus_mutation_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the one-byte corpus mutation" >&2
+    exit 1
+  fi
+  if corpus_control=$(check_corpus_regeneration "$corpus_mutation_tmp" "$corpus_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted the planted corpus mutation" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=3 kind=F2 name=duplicated-deliveries' \
+      <<< "$corpus_control"; then
+    printf '%s\n' "$corpus_control" >&2
+    echo "GATE: FAIL — corpus-mutation refusal omitted the divergent row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$corpus_control"
+  echo "GATE: PASS (--self-test refused one-byte corpus mutation at row=3 kind=F2 name=duplicated-deliveries)"
+
+  if ! awk '
+      BEGIN { mutated = 0 }
+      !mutated && /"name":"permuted-evidence-schedule"/ {
+        mutated = sub(/"matchesSequential":true/, "\"matchesSequential\":True")
+      }
+      { print }
+      END { if (!mutated) exit 42 }
+    ' "$corpus_tmp" > "$emission_mutation_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the model-emission mutation" >&2
+    exit 1
+  fi
+  if emission_control=$(check_corpus_regeneration "$fixture" "$emission_mutation_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted a model change without regeneration" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=4 kind=F2 name=permuted-evidence-schedule' \
+      <<< "$emission_control"; then
+    printf '%s\n' "$emission_control" >&2
+    echo "GATE: FAIL — emission-mutation refusal omitted the divergent row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$emission_control"
+  echo "GATE: PASS (--self-test refused model emission without corpus regeneration at row=4 kind=F2 name=permuted-evidence-schedule)"
+
+  if ! awk '
+      /"name":"floor-violating-stale-replay"/ { removed += 1; next }
+      { print }
+      END { if (removed != 1) exit 42 }
+    ' "$corpus_tmp" > "$row_deletion_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the model-row deletion" >&2
+    exit 1
+  fi
+  if deletion_control=$(check_corpus_regeneration "$fixture" "$row_deletion_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted a deleted model row" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=5 kind=F2b name=floor-violating-stale-replay' \
+      <<< "$deletion_control" ||
+      ! grep -q 'FINDING: model line: <missing>' <<< "$deletion_control"; then
+    printf '%s\n' "$deletion_control" >&2
+    echo "GATE: FAIL — model-row deletion refusal misattributed the vanished row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$deletion_control"
+  echo "GATE: PASS (--self-test refused deleted model row=5 kind=F2b name=floor-violating-stale-replay)"
+
+  if ! awk '
+      !inserted && /"name":"floor-violating-stale-replay"/ {
+        planted = $0
+        inserted = sub(/"name":"floor-violating-stale-replay"/, "\"name\":\"inserted-control-row\"", planted)
+        print planted
+      }
+      { print }
+      END { if (inserted != 1) exit 42 }
+    ' "$corpus_tmp" > "$row_insertion_tmp"; then
+    echo "GATE: FAIL — --self-test could not plant the model-row insertion" >&2
+    exit 1
+  fi
+  if insertion_control=$(check_corpus_regeneration "$fixture" "$row_insertion_tmp" 2>&1); then
+    echo "GATE: FAIL — --self-test accepted an inserted model row" >&2
+    exit 1
+  fi
+  if ! grep -q 'divergent corpus row=5 kind=F2b name=inserted-control-row' \
+      <<< "$insertion_control" ||
+      ! grep -q 'FINDING: committed line: <missing>' <<< "$insertion_control"; then
+    printf '%s\n' "$insertion_control" >&2
+    echo "GATE: FAIL — model-row insertion refusal misattributed the inserted row" >&2
+    exit 1
+  fi
+  printf '%s\n' "$insertion_control"
+  echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
 echo "GATE: PASS (4 law-dropping controls; 11 canonical model vectors; byte-identical regeneration)"

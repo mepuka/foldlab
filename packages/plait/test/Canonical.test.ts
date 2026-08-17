@@ -21,7 +21,10 @@ describe("canonicalBytes", () => {
     expect(refusal.path).toEqual([])
     expect(refusal.got).toBe("number is not finite")
     expect(refusal.expected).toBe("one RFC 8785 wire value")
-    expect(refusal.next).toEqual([])
+    expect(refusal.next).toEqual([{
+      subject: "canonicalize",
+      note: "Replace the refused value at the named path with one RFC 8785 wire value.",
+    }])
   })
 
   test("preserves slash-bearing member names in translated refusal paths", async () => {
