@@ -104,10 +104,9 @@ historical; the surviving total runner is `runRepairK`, and its
 prose-only alignment invariant is now the proved
 `runRepairK_alignment` (`spec_alignment`).
 
-## Task 22 — kernel hygiene gates (2026-08-16; task-local D?? entries —
-final numbers assigned at merge)
+## Task 22 — kernel hygiene gates (2026-08-16; D138-D139 assigned at merge f2d3b9c0d)
 
-### D??. The kernel-bound roster is the `Moves` library, not the executable package
+### D138. The kernel-bound roster is the `Moves` library, not the executable package
 
 **SUPERSEDED by task 25** (see "The corpus generator joins the kernel-bound
 roster" below): the roster now includes `Main.lean` and `Oracle/`, and the
@@ -131,7 +130,7 @@ surface as it grows without conflating an oracle transport loop with the
 stateless total kernel. **Load-bearing? yes** — scope determines which compiled
 definitions the no-replacement and no-default guarantees cover.
 
-### D??. Extern approvals bind to one exact source line
+### D139. Extern approvals bind to one exact source line
 
 Decided: `kernel-extern-allowlist.txt` is initially empty. A future row names
 `path:line`, the SHA-256 of the exact source line, and an
@@ -142,14 +141,13 @@ authorize a changed annotation, while the digest makes annotation drift
 re-enter review. **Load-bearing? yes** — the annotation gate closes a compiled
 replacement channel that theorem axiom reports cannot observe.
 
-## Task 25 — the hygiene cure (2026-08-17; task-local D?? entries — final
-numbers assigned at merge)
+## Task 25 — the hygiene cure (2026-08-17; D140-D145 assigned at merge f2d3b9c0d)
 
 Brief `scratch/dispatch/25-float-hygiene-cure.md`, items C3/C4/C5/C8c, curing
 findings F3, F4, F5 and F11 of `docs/research/2026-08-16-review-float-hygiene-branch.md`
 under operator rulings 5–6.
 
-### D??. The corpus generator joins the kernel-bound roster
+### D140. The corpus generator joins the kernel-bound roster
 
 Decided: the roster is every Lean source in the package — `Moves.lean`,
 `Moves/**`, `Main.lean`, and `Oracle/**`. Alternatives: keep the Task 22
@@ -166,7 +164,7 @@ rather than by a roster line: see the next two entries. **Load-bearing? yes** �
 this is what makes "the corpus generator the estate already trusts" a checked
 sentence rather than a premise.
 
-### D??. `partial def serve` is a per-site exception, never a roster carve-out
+### D141. `partial def serve` is a per-site exception, never a roster carve-out
 
 Decided: `partial` joins the allowlisted class alongside `@[extern]`, with its
 own `kernel-partial-allowlist.txt` in the same format — `path:line`, the
@@ -184,7 +182,7 @@ for the sake of a gate. **Load-bearing? yes** — the same mechanism now carries
 the only two approvals in the package, and both are arguable because both are
 written down.
 
-### D??. The panic-free gate refuses the naming convention, not the token
+### D142. The panic-free gate refuses the naming convention, not the token
 
 Decided: the gate refuses `panic!`, bare `panic`, `unsafe`, and the
 bang-accessor family. The bang family is matched as a convention, not a name
@@ -212,7 +210,7 @@ follows the Task 22 rule that string contents stay visible; and `x.foo!= y`
 written without spaces would read as a bang accessor, which is why the pattern
 excludes a following `=`.
 
-### D??. `native_decide` is forbidden in source; `noncomputable` is not
+### D143. `native_decide` is forbidden in source; `noncomputable` is not
 
 Decided: `native_decide` joins the forbidden tokens. `noncomputable` is
 deliberately NOT checked. Alternatives: rely on the axiom-footprint check for
@@ -230,7 +228,7 @@ would be machinery ahead of the decision that licenses it. **Load-bearing?
 yes** for `native_decide`; the `noncomputable` half is recorded so the next
 executor does not read its absence as an oversight.
 
-### D??. Every shipped check ships a control, and every control is run
+### D144. Every shipped check ships a control, and every control is run
 
 Decided: nine checks, nine committed negative controls, each planting exactly
 its own violation and clearing the checks that run before it; a control
@@ -244,7 +242,7 @@ already in this gate exists for the same reason, and a control nothing runs is
 a control that cannot fail. **Load-bearing? yes** — it is what makes the ledger
 sentence about this gate checkable rather than aspirational.
 
-### D??. The oracle parses its count and refuses a bad one
+### D145. The oracle parses its count and refuses a bad one
 
 Decided: `oracle emit N` parses `N` with `String.toNat?` and exits 2 with the
 usage line when it does not parse, replacing `n.toNat!`. Alternatives: keep the

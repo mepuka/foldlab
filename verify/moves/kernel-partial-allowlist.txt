@@ -9,4 +9,4 @@
 # kernel-bound roster. Moving or editing an approved line changes its digest
 # and re-enters review. A roster carve-out is never an acceptable substitute:
 # an exception that is not written down cannot be argued with.
-Main.lean:68	6dccd079c310a3d9a441d6e1bee5888e9cac891467ee15fed26ae8bd4bda90e6	operator-ratified: D?? (brief 25 C5) — the oracle serve loop is a non-terminating daemon transport, not a value-defaulting channel: it returns no value the corpus records
+Main.lean:68	6dccd079c310a3d9a441d6e1bee5888e9cac891467ee15fed26ae8bd4bda90e6	operator-ratified: D141 (brief 25 C5) — the oracle serve loop is a non-terminating daemon transport, not a value-defaulting channel: it returns no value the corpus records
