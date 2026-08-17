@@ -56,6 +56,68 @@ battery and the affected model gates, and record what moved and what it
 cost — the same way `verify/catalog/run.sh` records the jar it actually
 ran rather than trusting the tag.
 
+## Lean dependency store
+
+`verify/fabric-veil` needs roughly 8 GiB of fetched dependencies and their
+built artifacts before its first gate run, and a fresh worktree used to pay
+that cost from scratch. The host now keeps one populated `.lake/packages`
+per pin key at `%USERPROFILE%\.foldlab\lean-store\<key>\packages`, and every
+checkout at that key reaches it through an NTFS junction at
+`verify/fabric-veil/.lake/packages`, so attaching a new worktree takes
+seconds. The key is a byte-identical mirror of the CI cache key's
+`hashFiles()` in `.github/workflows/fabric-veil-gate.yml` — sha256 over the
+concatenated per-file sha256 digests of `lean-toolchain`,
+`lake-manifest.json`, and `setup-windows.ps1` — so a pin move invalidates CI
+and the store at the same commit. The package's own `.lake/build` stays
+per-tree, the gate scripts are unchanged, and the junction is invisible to
+`run.sh`. The weekly no-cache CI tier stays the cold-truth canary, which
+bounds any store corruption to one week.
+
+These are named procedures; the Ops seat is authorized to run them:
+
+- STORE VERIFY/ATTACH — `pwsh -File scripts/lean-store.ps1 -Tree <worktree>`
+  (no argument means the checkout the script sits in; Git Bash callers use
+  `bash scripts/lean-store.sh`). Idempotent: it prints the key, creates the
+  junction when the store already certifies the key, and verifies an
+  existing junction. Run it before the first gate run in any new worktree
+  and after any pin move.
+- STORE SEED — `pwsh -File scripts/lean-store.ps1 -Seed <built-tree>`. The
+  one-time migration of a fully built tree's real `.lake/packages` into the
+  store: a same-volume rename (never a copy), then the completion marker,
+  then the junction back. Run it only on coordinator direction.
+- The gate itself — `bash verify/fabric-veil/run.sh` — is unchanged.
+
+The script refuses with a nonzero exit on: a junction whose target does not
+match the key the tree's pins compute; a store entry without its completion
+marker (`.complete`, written only after a verified populate); a real
+`.lake/packages` directory where a junction is expected (the message offers
+the `-Seed` migration and nothing migrates automatically); and seeding over
+an existing entry. `scripts/lean-store-controls/run.ps1` re-executes every
+refusal against a scratch store and rewrites the committed trace beside it
+(`refusals.txt`); it never touches the real store.
+
+On a pin move the key changes. VERIFY/ATTACH then creates an empty entry
+plus a `.populating` breadcrumb, the first gate run populates the entry
+through the junction at cold cost, and a re-run of VERIFY/ATTACH writes the
+completion marker once every manifest package is materialized. Old key
+entries are garbage — delete them manually when disk pressure demands.
+
+Concurrency rule: one gate run per key at a time. Two `lake build`s through
+the same store entry is the one way this sharing corrupts anything. If
+parallel seats become the norm, the upgrade is per-seat `robocopy` clones of
+the store entry, not locks.
+
+Windows preconditions, each learned from a failed cold attempt:
+
+- `core.longpaths` must be in effect for deep worktree paths — the mathlib
+  clone dies with "Filename too long" under a ~120-character base path.
+  Process-scoped `GIT_CONFIG_PARAMETERS="'core.longpaths=true'"` suffices;
+  no global config edit is needed.
+- `C:\Windows\System32\tar.exe` (bsdtar) must exist — `setup-windows.ps1`
+  pins that absolute path for the substrate extraction and throws when it
+  is missing. Under an MSYS-first PATH a bare `tar` is GNU tar, which reads
+  `C:\...` as a remote host; the absolute pin removes the PATH-order hazard.
+
 ## Daemon durability and memory posture
 
 `protod` and `journald` require `--sync-mode crash-durable` or
