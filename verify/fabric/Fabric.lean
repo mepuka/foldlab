@@ -1,1 +1,1 @@
-import Fabric.ControlProofs
+import Fabric.BridgeProofs

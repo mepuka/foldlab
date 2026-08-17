@@ -9,8 +9,9 @@ executes the same definitions to author the runtime conformance corpus at
 
 - `Fabric/Definitions.lean` owns the objects and executable functions. A
   `Cell` is a finite set of `(holder, observation)` pairs. `foldEvidence`
-  inserts a trace into that set. `guardedApply` reads consecutive positioned
-  operations above an anchor floor. `CommutativeAlgebra` declares the laws
+  inserts a trace into that set. `guardedApply` consumes every arrival through
+  a position-floor guard, sorting and deduplicating its bounded replay buffer
+  before applying operations. `CommutativeAlgebra` declares the laws
   required before partition folds may be merged. `Policy.meet` intersects the
   four set-valued components and takes `Nat.min` across the four ceilings.
 - `Fabric/Laws.lean` contains statements only. F1 is cell ACI plus extensional
@@ -34,6 +35,9 @@ executes the same definitions to author the runtime conformance corpus at
   `docs/research/reference/rq9-rfc8785-numbers/EsNumberToString.lean`: strip
   decimal trailing zeroes, then render ES2019 step 6. No float enters this
   grammar.
+- `Fabric/BridgeProofs.lean` supplies the concrete theorem instance named by
+  every emitted row. The gate refuses a vector whose `witness` is absent from
+  the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
   roster, proof footprint, four negative controls, pinned vector counts, and
   byte-identical regeneration.
@@ -49,10 +53,11 @@ and resuming with `[c]` is definitionally the same computation as folding
 F2 uses a different fold because evidence is a join-semilattice: inserting the
 trace into a finite set deliberately forgets both order and multiplicity. F2b
 handles non-idempotent steps. A schedule is finite and may be duplicated,
-reordered, and prefixed with stale deliveries. Coverage says that lookup at
-each consecutive position above the floor returns the trace's operation;
-`guardedApply` walks exactly those positions once. The theorem is generic in
-`step`, so counting and other non-idempotent folds are included.
+reordered, and prefixed with stale deliveries. `ingestSchedule` traverses the
+actual arrivals, rejects positions outside the floor/window, and builds a
+position-sorted buffer whose first delivery at a position wins. `guardedApply`
+then drains that buffer once. The theorem is generic in `step`, so counting and
+other non-idempotent folds are included.
 
 ## Notation
 
@@ -89,5 +94,6 @@ lake exe emitter
 ./run.sh
 ```
 
-The first emitter line records `lake exe emitter`. Never edit the fixture or a
-counterexample trace by hand; regenerate them through their executable.
+The first emitter line records the full command and output path. Never edit the
+fixture or a counterexample trace by hand; regenerate them through their
+executable.

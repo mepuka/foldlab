@@ -61,6 +61,38 @@ def SameDeliveredSet {alpha : Type uH} [BEq alpha]
     (left right : List alpha) : Prop :=
   forall value, left.contains value = right.contains value
 
+/-! ## Executable ground instance -/
+
+namespace Emitter
+
+/-- The holder/value carrier used by every emitted evidence vector. -/
+abbrev GroundObservation := Nat × Nat
+
+/-- The concrete lexicographic comparator used by the emitter. Its lawful
+    instances are proved in `Fabric/Proofs.lean`. -/
+abbrev observationCmp : GroundObservation -> GroundObservation -> Ordering :=
+  compareLex (compareOn (·.1)) (compareOn (·.2))
+
+/-- The concrete evidence cell exercised by the generated corpus. -/
+abbrev GroundCell := Cell Nat Nat observationCmp
+
+/-- The exact duplication row shared by the emitter and its mutant control. -/
+def duplicatedEvidence : List GroundObservation :=
+  [(1, 10), (1, 10), (2, 20)]
+
+/-- The exactly-once counterpart of `duplicatedEvidence`. -/
+def exactEvidence : List GroundObservation := [(1, 10), (2, 20)]
+
+/-- The exact permutation row shared by the emitter and its mutant control. -/
+def permutedEvidence : List GroundObservation :=
+  [(3, 30), (1, 10), (2, 20)]
+
+/-- The sequential counterpart of `permutedEvidence`. -/
+def sequentialEvidence : List GroundObservation :=
+  [(1, 10), (2, 20), (3, 30)]
+
+end Emitter
+
 /-! ## Ordinary folds and checkpoint resumption -/
 
 /-- Continue a meaning fold from an already-computed state. -/
@@ -81,43 +113,87 @@ structure Positioned (Op : Type uV) where
   operation : Op
 deriving Repr, BEq, DecidableEq
 
-/-- Find the operation delivered at a position. Duplicate deliveries of the
-    same positioned operation are observationally irrelevant. -/
-def lookupPosition {Op : Type uV} (position : Nat) :
-    List (Positioned Op) -> Option Op
-  | [] => none
-  | delivery :: deliveries =>
-      if delivery.position == position then some delivery.operation
-      else lookupPosition position deliveries
-
-/-- Consume at most `count` consecutive positions above `floor`. Old replays
-    at or below the floor and deliveries beyond the bounded window are ignored. -/
-def guardedApply {State : Type uH} {Op : Type uV}
-    (step : State -> Op -> State) :
-    Nat -> Nat -> List (Positioned Op) -> State -> State
-  | _, 0, _, state => state
-  | floor, count + 1, deliveries, state =>
-      match lookupPosition (floor + 1) deliveries with
-      | none => guardedApply step (floor + 1) count deliveries state
-      | some operation =>
-          guardedApply step (floor + 1) count deliveries (step state operation)
-
-/-- A finite at-least-once schedule covers each consecutive expected
-    operation at its position. The list may contain duplicates, may be in any
-    order, and may include replays at or below the floor. -/
-def AtLeastOnceSchedule {Op : Type uV} :
-    Nat -> List Op -> List (Positioned Op) -> Prop
-  | _, [], _ => True
-  | floor, operation :: operations, deliveries =>
-      lookupPosition (floor + 1) deliveries = some operation /\
-        AtLeastOnceSchedule (floor + 1) operations deliveries
-
 /-- Assign consecutive positions immediately above a checkpoint floor. -/
 def positionTrace {Op : Type uV} : Nat -> List Op -> List (Positioned Op)
   | _, [] => []
   | floor, operation :: operations =>
       { position := floor + 1, operation } ::
         positionTrace (floor + 1) operations
+
+/-- Insert one delivery into a position-ordered buffer. The first delivery at
+    a position wins; later redeliveries at that position are no-ops. -/
+def insertPositioned {Op : Type uV} (delivery : Positioned Op) :
+    List (Positioned Op) -> List (Positioned Op)
+  | [] => [delivery]
+  | head :: tail =>
+      match compare delivery.position head.position with
+      | .lt => delivery :: head :: tail
+      | .eq => head :: tail
+      | .gt => head :: insertPositioned delivery tail
+
+/-- Consume one arrival into the bounded reorder buffer. This is the live
+    position-floor guard: stale replays and out-of-window futures have no
+    effect; admitted arrivals are sorted and deduplicated by position. -/
+def ingestDelivery {Op : Type uV} (floor ceiling : Nat)
+    (buffer : List (Positioned Op)) (delivery : Positioned Op) :
+    List (Positioned Op) :=
+  if floor < delivery.position /\ delivery.position <= ceiling then
+    insertPositioned delivery buffer
+  else buffer
+
+/-- Traverse the delivery schedule in arrival order, applying the floor guard
+    to every arrival and building the bounded reorder buffer. -/
+def ingestSchedule {Op : Type uV} (floor ceiling : Nat)
+    (deliveries : List (Positioned Op)) : List (Positioned Op) :=
+  deliveries.foldl (ingestDelivery floor ceiling) []
+
+/-- Apply the normalized positioned operations in increasing position order. -/
+def applyPositioned {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) : State -> List (Positioned Op) -> State
+  | state, [] => state
+  | state, delivery :: deliveries =>
+      applyPositioned step (step state delivery.operation) deliveries
+
+/-- Consume the actual redelivery schedule, using the checkpoint floor to
+    reject stale arrivals before draining the sorted, deduplicated buffer. -/
+def guardedApply {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) (floor count : Nat)
+    (deliveries : List (Positioned Op)) (initial : State) : State :=
+  applyPositioned step initial
+    (ingestSchedule floor (floor + count) deliveries)
+
+/-- A finite delivery list is an at-least-once schedule when consuming it
+    through the position-floor guard yields exactly the positioned trace. This
+    admits duplicates, bounded reordering, and stale replays; the first arrival
+    at each admitted position decides that position's operation. -/
+def AtLeastOnceSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
+    (deliveries : List (Positioned Op)) : Prop :=
+  ingestSchedule floor (floor + operations.length) deliveries =
+    positionTrace floor operations
+
+namespace Emitter
+
+/-- The exact stale-replay row shared by the emitter and floor-guard mutant. -/
+def staleReplayDeliveries : List (Positioned Nat) :=
+  [ { position := 9, operation := 100 }
+  , { position := 11, operation := 2 }
+  , { position := 12, operation := 3 }
+  ]
+
+/-- The exact duplicate-current row used by the F2b bridge. -/
+def duplicatedPositionedDeliveries : List (Positioned Nat) :=
+  [ { position := 11, operation := 2 }
+  , { position := 11, operation := 2 }
+  , { position := 12, operation := 3 }
+  ]
+
+/-- The exact bounded-reordering row used by the F2b bridge. -/
+def reorderedDeliveries : List (Positioned Nat) :=
+  [ { position := 12, operation := 3 }
+  , { position := 11, operation := 2 }
+  ]
+
+end Emitter
 
 /-! ## Commutative-class partition folds -/
 

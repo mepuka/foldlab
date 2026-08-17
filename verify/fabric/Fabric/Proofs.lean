@@ -81,6 +81,43 @@ theorem f2_duplication [LawfulBEq (Observation Holder Value)]
 
 end F2
 
+section EmitterComparator
+
+namespace Emitter
+
+/-- The emitter comparator returns equality only for equal holder/value pairs. -/
+instance observationCmpLawfulEq : Std.LawfulEqCmp observationCmp where
+  compare_self := by
+    intro observation
+    simp [observationCmp, compareLex, compareOn]
+  eq_of_compare := by
+    intro left right equalComparison
+    rcases left with ⟨leftHolder, leftValue⟩
+    rcases right with ⟨rightHolder, rightValue⟩
+    simp [observationCmp, compareLex, compareOn] at equalComparison
+    rcases equalComparison with ⟨rfl, rfl⟩
+    rfl
+
+/-- Boolean equality and comparator equality coincide on emitted observations. -/
+instance observationCmpLawfulBEq : Std.LawfulBEqCmp observationCmp where
+  compare_eq_iff_beq := by
+    intro left right
+    rcases left with ⟨leftHolder, leftValue⟩
+    rcases right with ⟨rightHolder, rightValue⟩
+    simp [observationCmp, compareLex, compareOn]
+
+end Emitter
+
+/-- The concrete comparator used at L1 satisfies every class required by the
+    generic F1/F2 proofs. -/
+theorem emitter_observation_comparator_lawful :
+    Std.TransCmp Emitter.observationCmp /\
+      Std.LawfulEqCmp Emitter.observationCmp /\
+      Std.LawfulBEqCmp Emitter.observationCmp :=
+  ⟨inferInstance, inferInstance, inferInstance⟩
+
+end EmitterComparator
+
 section F3
 
 variable {State : Type uH} {Op : Type uV}
@@ -102,15 +139,16 @@ variable {State : Type uH} {Op : Type uV}
 theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
     Laws.F2bGuardedExactlyOnce step := by
   intro floor operations deliveries initial schedule
+  unfold AtLeastOnceSchedule at schedule
+  unfold guardedApply
+  rw [schedule]
+  clear schedule deliveries
   induction operations generalizing floor initial with
   | nil => rfl
   | cons operation operations inductionHypothesis =>
-      simp only [AtLeastOnceSchedule] at schedule
-      rcases schedule with ⟨atNextPosition, tailCovered⟩
-      simp only [List.length_cons, guardedApply, atNextPosition, fold, foldFrom,
-        List.foldl]
+      simp only [positionTrace, applyPositioned, fold, foldFrom, List.foldl]
       exact inductionHypothesis (floor := floor + 1)
-        (initial := step initial operation) tailCovered
+        (initial := step initial operation)
 
 end F2b
 

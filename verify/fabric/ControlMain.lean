@@ -10,14 +10,17 @@ def main (args : List String) : IO UInt32 := do
   match args with
   | ["drop-idempotence"] =>
       showControl "drop-idempotence" "duplicated-deliveries"
-        (Nat.max 1 1) (Mutants.additiveMerge 1 1)
+        (foldEvidence Emitter.observationCmp Emitter.duplicatedEvidence).toList.length
+        (Mutants.foldMultiplicity Emitter.duplicatedEvidence (1, 10) +
+          Mutants.foldMultiplicity Emitter.duplicatedEvidence (2, 20))
   | ["drop-commutativity"] =>
       showControl "drop-commutativity" "permuted-evidence-schedule"
-        (Nat.max 1 2) (Mutants.leftBiasedMerge 1 2)
+        (foldEvidence Emitter.observationCmp Emitter.permutedEvidence).toList.head!.1
+        (Mutants.foldLeftBiased Emitter.permutedEvidence).toList.head!.1
   | ["drop-floor-guard"] =>
       showControl "drop-floor-guard" "floor-violating-stale-replay"
         (fold Nat.add 0 [2, 3])
-        (Mutants.unguardedApply Nat.add Mutants.floorReplayVector 0)
+        (Mutants.unguardedApply Nat.add 10 2 Mutants.floorReplayVector 0)
   | ["drop-meet-clamping"] =>
       showControl "drop-meet-clamping" "attenuation-request-clamped"
         (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest).budget

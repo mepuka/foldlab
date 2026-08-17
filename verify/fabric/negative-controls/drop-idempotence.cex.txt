@@ -1,1 +1,1 @@
-control=drop-idempotence;vector=duplicated-deliveries;lawful=1;mutant=2;verdict=refuted
+control=drop-idempotence;vector=duplicated-deliveries;lawful=2;mutant=3;verdict=refuted

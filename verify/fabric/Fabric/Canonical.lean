@@ -34,8 +34,27 @@ def nat (number : Nat) : String :=
     let (significand, exponent) := stripTrailingZeros number
     toString significand ++ zeros exponent
 
-/-- The corpus constructs only safe ASCII identifiers and punctuation. -/
-def string (value : String) : String := "\"" ++ value ++ "\""
+def hexDigit (digit : Nat) : Char :=
+  if digit < 10 then Char.ofNat ('0'.toNat + digit)
+  else Char.ofNat ('a'.toNat + digit - 10)
+
+def escapeChar (character : Char) : String :=
+  if character == '"' then "\\\""
+  else if character == '\\' then "\\\\"
+  else if character == '\u0008' then "\\b"
+  else if character == '\u000c' then "\\f"
+  else if character == '\n' then "\\n"
+  else if character == '\r' then "\\r"
+  else if character == '\t' then "\\t"
+  else if character.toNat < 0x20 then
+    "\\u00" ++ String.singleton (hexDigit (character.toNat / 16)) ++
+      String.singleton (hexDigit (character.toNat % 16))
+  else String.singleton character
+
+/-- RFC 8785 string escaping. The current corpus is safe ASCII, but the
+    canonicalizer cannot emit invalid JSON if that domain later widens. -/
+def string (value : String) : String :=
+  "\"" ++ String.join (value.toList.map escapeChar) ++ "\""
 
 def bool (value : Bool) : String := if value then "true" else "false"
 
@@ -47,7 +66,7 @@ def insertField (field : Field) : List Field -> List Field
   | head :: tail =>
       match compare field.key head.key with
       | .lt => field :: head :: tail
-      | .eq => field :: head :: tail
+      | .eq => field :: tail
       | .gt => head :: insertField field tail
 
 def sortFields (fields : List Field) : List Field :=

@@ -1,1 +1,1 @@
-control=drop-commutativity;vector=permuted-evidence-schedule;lawful=2;mutant=1;verdict=refuted
+control=drop-commutativity;vector=permuted-evidence-schedule;lawful=1;mutant=3;verdict=refuted

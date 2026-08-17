@@ -4,39 +4,59 @@ import Fabric.Mutants
 
 namespace Fabric
 
-/-- Addition retains the associative part of ACI. -/
-theorem drop_idempotence_keeps_associativity (left middle right : Nat) :
-    Mutants.additiveMerge (Mutants.additiveMerge left middle) right =
-      Mutants.additiveMerge left (Mutants.additiveMerge middle right) :=
-  Nat.add_assoc left middle right
+/-- The multiplicity cell retains the associative part of the shipped merge. -/
+theorem drop_idempotence_keeps_associativity
+    (left middle right : Mutants.MultiplicityCell) :
+    Mutants.multiplicityMerge (Mutants.multiplicityMerge left middle) right =
+      Mutants.multiplicityMerge left (Mutants.multiplicityMerge middle right) := by
+  funext observation
+  exact Nat.add_assoc _ _ _
 
-/-- Addition retains the commutative part of ACI. -/
-theorem drop_idempotence_keeps_commutativity (left right : Nat) :
-    Mutants.additiveMerge left right = Mutants.additiveMerge right left :=
-  Nat.add_comm left right
+/-- The multiplicity cell retains the commutative part of the shipped merge. -/
+theorem drop_idempotence_keeps_commutativity
+    (left right : Mutants.MultiplicityCell) :
+    Mutants.multiplicityMerge left right = Mutants.multiplicityMerge right left := by
+  funext observation
+  exact Nat.add_comm _ _
 
-/-- The duplication vector refutes the variant that dropped idempotence. -/
+/-- The exact duplication vector agrees in the shipped set cell and diverges
+    in the multiplicity-retaining variant. -/
 theorem drop_idempotence_killed :
-    Mutants.additiveMerge 1 1 ≠ 1 := by decide
+    foldEvidence Emitter.observationCmp Emitter.duplicatedEvidence =
+        foldEvidence Emitter.observationCmp Emitter.exactEvidence /\
+      Mutants.foldMultiplicity Emitter.duplicatedEvidence (1, 10) ≠
+        Mutants.foldMultiplicity Emitter.exactEvidence (1, 10) := by
+  constructor
+  · exact f2_duplication (cmp := Emitter.observationCmp) (1, 10) [(2, 20)]
+  · decide
 
 /-- Left choice retains associativity. -/
-theorem drop_commutativity_keeps_associativity (left middle right : Nat) :
-    Mutants.leftBiasedMerge (Mutants.leftBiasedMerge left middle) right =
-      Mutants.leftBiasedMerge left (Mutants.leftBiasedMerge middle right) := by
+theorem drop_commutativity_keeps_associativity
+    (left middle right : Emitter.GroundCell) :
+    Mutants.leftBiasedCellMerge (Mutants.leftBiasedCellMerge left middle) right =
+      Mutants.leftBiasedCellMerge left (Mutants.leftBiasedCellMerge middle right) := by
   rfl
 
 /-- Left choice retains idempotence. -/
-theorem drop_commutativity_keeps_idempotence (value : Nat) :
-    Mutants.leftBiasedMerge value value = value := by
+theorem drop_commutativity_keeps_idempotence (cell : Emitter.GroundCell) :
+    Mutants.leftBiasedCellMerge cell cell = cell := by
   rfl
 
-/-- The permutation vector refutes the variant that dropped commutativity. -/
+/-- The exact permutation vector agrees in the shipped set cell and diverges
+    in the left-biased variant over that same carrier. -/
 theorem drop_commutativity_killed :
-    Mutants.leftBiasedMerge 1 2 ≠ Mutants.leftBiasedMerge 2 1 := by decide
+    foldEvidence Emitter.observationCmp Emitter.permutedEvidence =
+        foldEvidence Emitter.observationCmp Emitter.sequentialEvidence /\
+      Mutants.foldLeftBiased Emitter.permutedEvidence ≠
+        Mutants.foldLeftBiased Emitter.sequentialEvidence := by
+  constructor
+  · apply f2_permutation (cmp := Emitter.observationCmp)
+    decide
+  · decide
 
 theorem floor_replay_vector_is_at_least_once :
     AtLeastOnceSchedule 10 [2, 3] Mutants.floorReplayVector := by
-  simp [AtLeastOnceSchedule, lookupPosition, Mutants.floorReplayVector]
+  rfl
 
 theorem floor_guard_survives_replay :
     guardedApply Nat.add 10 2 Mutants.floorReplayVector 0 = fold Nat.add 0 [2, 3] := by
@@ -45,7 +65,7 @@ theorem floor_guard_survives_replay :
 
 /-- The replay vector refutes the variant that dropped the floor guard. -/
 theorem drop_floor_guard_killed :
-    Mutants.unguardedApply Nat.add Mutants.floorReplayVector 0 ≠
+    Mutants.unguardedApply Nat.add 10 2 Mutants.floorReplayVector 0 ≠
       fold Nat.add 0 [2, 3] := by
   decide
 
@@ -58,7 +78,7 @@ theorem drop_meet_clamping_killed :
     ¬ Mutants.unclampedChild Mutants.rootPolicy Mutants.escalatingRequest <=
       Mutants.rootPolicy := by
   intro escalated
-  have impossible : ¬ 2 <= 1 := by decide
+  have impossible : ¬ 20 <= 10 := by decide
   exact impossible escalated.budget
 
 end Fabric

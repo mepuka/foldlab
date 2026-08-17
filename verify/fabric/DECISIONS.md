@@ -13,18 +13,19 @@ equivalence generated jointly by arbitrary permutations and duplications, and
 the extensional finite-set proof is the house semilattice idiom. **Load-bearing?
 yes** — retaining multiplicity would destroy F2.
 
-### T2. Model bounded redelivery by position coverage
+### T2. Model bounded redelivery by consuming into a reorder buffer
 
-Decided: `AtLeastOnceSchedule floor operations deliveries` recursively
-requires lookup of each consecutive position to return the expected operation;
-`guardedApply` processes exactly `operations.length` positions above the floor.
-The finite delivery list may be permuted, duplicated, and contain stale entries
-at or below the floor. Alternatives: sort/deduplicate the schedule first; model
-an online buffer transition system. Why: the relation states the safety fact
-F2b needs without inventing liveness or buffer-capacity policy; lookup makes
-bounded reordering observable while the theorem remains generic in the step
-function. **Load-bearing? yes** — a floor-only filter over arrival order would
-incorrectly skip an earlier position delivered after a later one.
+Decided: `ingestSchedule` traverses every arrival, applies the lower position
+floor and upper window, and inserts admitted operations into a position-sorted,
+deduplicated buffer. `AtLeastOnceSchedule` states that this executable buffer is
+the consecutive positioned trace; `guardedApply` drains it once. The finite
+delivery list may be permuted, duplicated, and contain stale entries at or
+below the floor. Alternatives: index the raw schedule by position; model an
+online transition system with a liveness/buffer-capacity policy. Why: the
+consumer now sees the schedule and the lower guard is a separable operation,
+while the theorem remains generic in the step function. **Load-bearing? yes** —
+a floor-only fold over arrival order would apply reordered non-commutative steps
+in the wrong order.
 
 ### T3. Represent policy components uniformly
 
@@ -50,19 +51,23 @@ change.
 
 ### T5. Use algebra-specific one-law mutants
 
-Decided: addition drops idempotence while retaining associativity and
-commutativity; left choice drops commutativity while retaining associativity
-and idempotence; sequential replay drops only the floor guard; trusting the
-requested policy drops only meet-clamping. Alternatives: mutate the production
-definition behind flags; copy four whole models. Why: each variant is small,
-cannot drift from unrelated production machinery, and its retained laws are
-theorems in the same footprint roster. **Load-bearing? yes** — a mutant that
-drops two laws does not demonstrate which discriminator killed it.
+Decided: a multiplicity-retaining cell over the shipped observation carrier
+drops idempotence while retaining associativity and commutativity; left choice
+over the shipped `GroundCell` drops commutativity while retaining associativity
+and idempotence; replay without the lower floor check retains the lawful
+consumer's sorting, deduplication, upper bound, and step; trusting the requested
+policy drops only meet-clamping. Alternatives: toy scalar algebras; copy four
+whole models. Why: every variant now shares the shipped carrier, vector data,
+or executable consumer and is killed by that exact named row. **Load-bearing?
+yes** — a mutant that drops two laws does not demonstrate which discriminator
+killed it.
 
 ### T6. Narrow canonical JSON to the actual corpus grammar
 
-Decided: object sorting, safe ASCII strings, arrays, booleans, and
-non-negative integer leaves only; transliterate and cite the RQ-9 integer path.
+Decided: object sorting with duplicate-key collapse, RFC 8785 string escaping,
+arrays, booleans, and non-negative safe-integer leaves only; transliterate and
+cite the RQ-9 integer path, and mechanically refuse a generated corpus above
+`9007199254740991`.
 Alternatives: Lean's general `Json.compress`; a new float renderer. Why: the
 dispatch bars floats and promotes the RQ-9 route; the narrower grammar makes
 the trusted emitter surface explicit and avoids re-deriving the unresolved

@@ -1,6 +1,6 @@
 # The pure-Lean model gates, per push.
 #
-# verify/moves/run.sh and verify/ir/run.sh are whole gates: lake build,
+# verify/moves/run.sh, verify/ir/run.sh, and verify/fabric/run.sh are whole gates: lake build,
 # a source guard refusing sorry/admit/axiom declarations, and — for
 # moves — the mechanical axiom-footprint check over every headline
 # theorem. Both projects are Lean 4.33.0 with core + Std only, so a
@@ -36,3 +36,5 @@ jobs:
         run: bash verify/moves/run.sh
       - name: ir gate (proofs)
         run: bash verify/ir/run.sh
+      - name: fabric gate (proofs + vectors)
+        run: bash verify/fabric/run.sh
