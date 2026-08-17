@@ -75,6 +75,105 @@ acknowledgements mostly mitigate that pressure but do not turn the queue into a
 lossless channel; reconcile from the journal rather than inferring recovery
 from the absence of the API-queue counter.
 
+## Multica runtime operations
+
+### Correlate a task with its worker
+
+Use the task UUID as the join key. Do not infer ownership from an issue status,
+branch name, or the most recently created workspace directory.
+
+```text
+multica daemon status
+multica issue runs <issue-key> --full-id --output json
+multica issue run-messages <task-id> --issue <issue-key> --output json
+multica daemon disk-usage --by-task --output json
+multica daemon logs --help
+multica daemon logs --lines <large-enough-tail>
+```
+
+Filter the daemon tail locally by the exact task id and incident window. The
+daemon prints host-local timestamps, so translate a UTC evidence window first.
+The useful records, in order, are `task received`, `task context`, `starting
+agent`, the provider's `started` record with PID and working directory, the
+server-side terminal-state record, and the provider's `finished` record. The
+current CLI has a line-count filter but no time-range filter, so choose a tail
+that reaches the incident and narrow the output after collection. Redact tokens,
+authorization headers, and secrets before quoting it.
+
+`starting agent` is authoritative for the physical working directory. A resumed
+task can carry `reuse_workdir=true` and run in an earlier task's directory; in
+that case `daemon disk-usage` reports the earlier directory id, not the resumed
+task id. A cancelled task can also have zero `run-messages` because the daemon
+discards its result after cancellation. Neither condition means the worker was
+never launched.
+
+On Windows, check whether the recorded provider PID or any related process still
+exists. Use both views: `Get-Process` supplies start time and executable path,
+while CIM supplies parent PID and command line.
+
+```powershell
+Get-Process -Id <provider-pid> -ErrorAction SilentlyContinue |
+  Select-Object Id, ProcessName, StartTime, Path
+
+Get-CimInstance Win32_Process |
+  Where-Object {
+    $_.ProcessId -eq <provider-pid> -or
+    $_.ParentProcessId -eq <provider-pid> -or
+    $_.CommandLine -like '*<task-id-or-workdir>*'
+  } |
+  Select-Object ProcessId, ParentProcessId, Name, CreationDate, CommandLine
+```
+
+Build the parent-child chain before drawing a conclusion. Match it against the
+daemon PID, provider start time, provider command, and exact working directory;
+process name alone is not attribution.
+
+### Cancellation bound
+
+Treat `cancel-task` as a request to stop and discard a task result, not as proof
+that every process with the task's credentials and working directory is gone.
+The daemon's `interrupting agent` and provider `finished` records confirm the
+wrapper lifecycle only. Cancellation is complete operationally only after the
+recorded PID and every correlated descendant or detached child are absent.
+
+DEV-714 established this bound on Windows with Multica daemon 0.4.20. At
+12:27:17Z the daemon launched `claude.cmd` PID 33712 for task `49d7ab3b` in the
+reused `cd286145` working directory. It observed the server-side cancellation at
+12:27:19Z and logged that wrapper as `aborted` at 12:27:29Z. The same execution
+path nevertheless authored commit `3e824ed` at 12:32:46Z and opened PR #70 at
+12:33:24Z; the independent task `ace25693` did not encounter that already-open
+PR until 12:35:30Z. The post-abort PID is not present in the retained logs, so
+the wrapper's abort proves that cancellation reached the launched wrapper while
+the later writes locate the failure at Windows wrapper/process-tree containment.
+The retained evidence does not distinguish a missing Job Object from another
+child-detachment mechanism; it does rule out failure to signal the wrapper. No
+DEV-708 provider process survived the later host inspection.
+
+The CLI help's interruption wording and the daemon's log message express intent;
+the observed behavior above is the operative guarantee until the runtime gains
+a verified process-tree kill. A coordinator must therefore treat `cancelled` as
+"result no longer tracked" until the process inspection is clean. Any branch,
+issue, or GitHub write after the cancellation timestamp is untrusted until it is
+reconciled deliberately.
+
+### Safely stop a surviving worker
+
+1. Record the full task UUID and cancellation timestamp, then use the correlation
+   procedure above. Do not stop or restart the daemon: it owns unrelated tasks.
+2. If a provider process or correlated child survives, report a finding with its
+   PID, parent chain, command line, start time, and working directory. Stop and
+   obtain coordinator authorization before terminating anything.
+3. After authorization, re-read the process table to defeat PID reuse. Require
+   the same executable, start time, command line, and task/workdir correlation.
+4. Terminate only each verified surviving root and its descendants. On Windows,
+   use `taskkill.exe /PID <verified-pid> /T /F`; never kill by process name or a
+   workspace-wide match. If the original wrapper is already absent, use the
+   exact verified orphan PID as the root.
+5. Re-run both process inspections and require no correlated process. Then check
+   the task's branch, issue comments, and pull requests for writes newer than the
+   cancellation timestamp before allowing another run to reuse the branch or
+   working directory.
+
 ## How work reaches `main`
 
 Work is dispatched as an issue on the Multica board (workspace `Dev`,
