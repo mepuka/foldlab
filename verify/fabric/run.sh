@@ -97,6 +97,7 @@ roster=(
   emitter_observation_comparator_lawful f3_resume_exact
   positioned_above positioned_unique ingest_preserves_lookup
   ingest_lookup_of_raw_support schedule_buffer_covers apply_successors_exact
+  apply_successors_congr ingest_window_agrees guard_is_redundant
   f2b_guarded_exactly_once
   commutative_fold_append commutative_fold_permutation
   partition_folds_flatten f4_partition_fold policy_set_inter_comm
@@ -107,9 +108,9 @@ roster=(
   drop_idempotence_keeps_associativity drop_idempotence_keeps_commutativity
   drop_idempotence_killed drop_commutativity_keeps_associativity
   drop_commutativity_keeps_idempotence drop_commutativity_killed
-  floor_replay_vector_has_serial_successor_premise
-  bare_floor_guard_skips_six_before_five floor_guard_survives_replay
-  drop_floor_guard_killed meet_clamp_survives_escalating_request
+  reordered_vector_has_serial_successor_premise
+  arrival_order_apply_skips_six_before_five successor_discipline_survives_reordering
+  drop_successor_discipline_killed meet_clamp_survives_escalating_request
   drop_meet_clamping_killed
   emitter_f1_cell_merge_aci emitter_f2_duplication emitter_f2_permutation
   emitter_stale_schedule_premise emitter_f2b_stale_replay
@@ -191,7 +192,7 @@ check_control() {
 
 check_control drop-idempotence
 check_control drop-commutativity
-check_control drop-floor-guard
+check_control drop-successor-discipline
 check_control drop-meet-clamping
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)

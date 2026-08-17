@@ -178,62 +178,51 @@ theorem positioned_unique (floor : Nat) (operations : List Op)
 
 /-- Once a position contains the expected operation, consuming further raw
     arrivals that agree at that position preserves it. -/
-theorem ingest_preserves_lookup (floor ceiling position : Nat)
+theorem ingest_preserves_lookup (position : Nat)
     (operation : Op) (deliveries : List (Positioned Op))
     (buffer : ReplayBuffer Op)
     (matching : forall delivery, delivery ∈ deliveries ->
-      InWindow floor ceiling delivery -> delivery.position = position ->
-        delivery.operation = operation)
+      delivery.position = position -> delivery.operation = operation)
     (present : buffer position = some operation) :
-    (deliveries.foldl (ingestDelivery floor ceiling) buffer) position =
+    (deliveries.foldl ingestDelivery buffer) position =
       some operation := by
   induction deliveries generalizing buffer with
   | nil => exact present
   | cons delivery deliveries inductionHypothesis =>
       simp only [List.foldl]
       apply inductionHypothesis
-      · intro candidate member inWindow samePosition
-        exact matching candidate (List.mem_cons_of_mem delivery member) inWindow
-          samePosition
-      · by_cases inWindow : floor < delivery.position /\ delivery.position <= ceiling
-        · by_cases samePosition : position = delivery.position
-          · have operationEqual := matching delivery (by simp) (by
-              simpa [InWindow] using inWindow) samePosition.symm
-            simp [ingestDelivery, inWindow, samePosition, operationEqual]
-          · simp [ingestDelivery, inWindow, samePosition, present]
-        · simp [ingestDelivery, inWindow, present]
+      · intro candidate member samePosition
+        exact matching candidate (List.mem_cons_of_mem delivery member) samePosition
+      · by_cases samePosition : position = delivery.position
+        · have operationEqual := matching delivery (by simp) samePosition.symm
+          simp [ingestDelivery, samePosition, operationEqual]
+        · simp [ingestDelivery, samePosition, present]
 
 /-- A raw in-window witness, together with agreement of all redeliveries at
     its position, determines the shipped buffer's lookup result. -/
-theorem ingest_lookup_of_raw_support (floor ceiling position : Nat)
+theorem ingest_lookup_of_raw_support (position : Nat)
     (operation : Op) (deliveries : List (Positioned Op))
     (matching : forall delivery, delivery ∈ deliveries ->
-      InWindow floor ceiling delivery -> delivery.position = position ->
-        delivery.operation = operation)
+      delivery.position = position -> delivery.operation = operation)
     (witness : { delivery : Positioned Op //
-      delivery ∈ deliveries /\ InWindow floor ceiling delivery /\
-        delivery.position = position /\ delivery.operation = operation }) :
-    (ingestSchedule floor ceiling deliveries) position = some operation := by
-  rcases witness with ⟨witness, witnessMember, witnessWindow,
-    witnessPosition, witnessOperation⟩
+      delivery ∈ deliveries /\ delivery.position = position /\
+        delivery.operation = operation }) :
+    (ingestSchedule deliveries) position = some operation := by
+  rcases witness with ⟨witness, witnessMember, witnessPosition, witnessOperation⟩
   obtain ⟨before, after, rfl⟩ := List.append_of_mem witnessMember
   unfold ingestSchedule
   rw [List.foldl_append]
   simp only [List.foldl]
-  apply ingest_preserves_lookup floor ceiling position operation after
-    (ingestDelivery floor ceiling
-      (List.foldl (ingestDelivery floor ceiling) emptyReplayBuffer before) witness)
-  · intro candidate member inWindow samePosition
+  apply ingest_preserves_lookup position operation after
+    (ingestDelivery (List.foldl ingestDelivery emptyReplayBuffer before) witness)
+  · intro candidate member samePosition
     apply matching candidate
     · simp only [List.mem_append, List.mem_cons]
       exact Or.inr (Or.inr member)
-    · exact inWindow
     · exact samePosition
-  · have window : floor < witness.position /\ witness.position <= ceiling := by
-      simpa [InWindow] using witnessWindow
-    subst position
+  · subst position
     subst operation
-    simp [ingestDelivery, window]
+    simp [ingestDelivery]
 
 /-- The raw schedule premise forces every positioned operation into the
     shipped buffer, independently of arrival order and multiplicity. -/
@@ -241,17 +230,20 @@ theorem schedule_buffer_covers (floor : Nat) (operations : List Op)
     (deliveries : List (Positioned Op))
     (schedule : SerialSuccessorSchedule floor operations deliveries)
     (expected : Positioned Op) (expectedMember : expected ∈ positionTrace floor operations) :
-    ingestSchedule floor (floor + operations.length) deliveries expected.position =
+    ingestSchedule deliveries expected.position =
       some expected.operation := by
   have covered := (schedule expected).mpr expectedMember
-  apply ingest_lookup_of_raw_support floor
-    (floor + operations.length) expected.position expected.operation deliveries
-  · intro delivery member inWindow samePosition
-    have deliveryMember := (schedule delivery).mp ⟨member, inWindow⟩
+  apply ingest_lookup_of_raw_support expected.position expected.operation deliveries
+  · intro delivery member samePosition
+    have deliveryWindow : InWindow floor (floor + operations.length) delivery := by
+      rcases covered.2 with ⟨expectedLower, expectedUpper⟩
+      exact ⟨by simpa [samePosition] using expectedLower,
+        by simpa [samePosition] using expectedUpper⟩
+    have deliveryMember := (schedule delivery).mp ⟨member, deliveryWindow⟩
     have equal := positioned_unique floor operations
       deliveryMember expectedMember samePosition
     exact congrArg Positioned.operation equal
-  · exact ⟨expected, covered.1, covered.2, rfl, rfl⟩
+  · exact ⟨expected, covered.1, rfl, rfl⟩
 
 /-- A buffer covering a contiguous positioned trace drains to the trace's
     sequential fold for any step function. -/
@@ -277,9 +269,77 @@ theorem apply_successors_exact (step : State -> Op -> State)
       apply covered delivery
       exact List.mem_cons_of_mem head member
 
+/-- The successor drain observes only positions in its finite window, so two
+    buffers that agree there produce the same state. -/
+theorem apply_successors_congr (step : State -> Op -> State)
+    (floor count : Nat) (initial : State) (left right : ReplayBuffer Op)
+    (agree : forall position, floor < position -> position <= floor + count ->
+      left position = right position) :
+    applySuccessors step floor count initial left =
+      applySuccessors step floor count initial right := by
+  induction count generalizing floor initial with
+  | zero => rfl
+  | succ count inductionHypothesis =>
+      simp only [applySuccessors]
+      have nextAgrees := agree (floor + 1) (by omega) (by omega)
+      rw [nextAgrees]
+      cases next : right (floor + 1) with
+      | none => rfl
+      | some operation =>
+          apply inductionHypothesis
+          intro position lower upper
+          apply agree position <;> omega
+
+/-- Ingesting every arrival agrees inside the finite window with first
+    discarding arrivals outside it. -/
+theorem ingest_window_agrees (floor ceiling : Nat)
+    (deliveries : List (Positioned Op)) (left right : ReplayBuffer Op)
+    (agree : forall position, floor < position -> position <= ceiling ->
+      left position = right position) (position : Nat)
+    (lower : floor < position) (upper : position <= ceiling) :
+    (deliveries.foldl ingestDelivery left) position =
+      (deliveries.foldl (fun buffer delivery =>
+        if floor < delivery.position /\ delivery.position <= ceiling then
+          ingestDelivery buffer delivery
+        else buffer) right) position := by
+  induction deliveries generalizing left right with
+  | nil => exact agree position lower upper
+  | cons delivery deliveries inductionHypothesis =>
+      simp only [List.foldl]
+      apply inductionHypothesis
+      intro candidate candidateLower candidateUpper
+      by_cases inWindow : floor < delivery.position /\ delivery.position <= ceiling
+      · by_cases samePosition : candidate = delivery.position
+        · simp [ingestDelivery, inWindow, samePosition]
+        · simp [ingestDelivery, inWindow, samePosition,
+            agree candidate candidateLower candidateUpper]
+      · have differentPosition : candidate ≠ delivery.position := by
+          intro samePosition
+          apply inWindow
+          simpa [samePosition] using And.intro candidateLower candidateUpper
+        simp [ingestDelivery, inWindow, differentPosition,
+          agree candidate candidateLower candidateUpper]
+
+/-- A lower/upper position guard is observationally redundant: the successor
+    drain already reads only the same finite window. This theorem documents
+    why the shipped ingestion path stores arrivals without that guard. -/
+theorem guard_is_redundant (step : State -> Op -> State)
+    (floor count : Nat) (deliveries : List (Positioned Op)) (initial : State) :
+    guardedApply step floor count deliveries initial =
+      applySuccessors step floor count initial
+        (deliveries.foldl (fun buffer delivery =>
+          if floor < delivery.position /\ delivery.position <= floor + count then
+            ingestDelivery buffer delivery
+          else buffer) emptyReplayBuffer) := by
+  unfold guardedApply ingestSchedule
+  apply apply_successors_congr
+  intro position lower upper
+  exact ingest_window_agrees floor (floor + count) deliveries
+    emptyReplayBuffer emptyReplayBuffer (fun _ _ _ => rfl) position lower upper
+
 /-- F2b: the raw-arrival buffer fold normalises every finite schedule with the
-    stated contiguous in-window support, then the position floor gives its
-    arbitrary step function exactly-once sequential meaning. -/
+    stated contiguous in-window support, then the successor discipline gives
+    its arbitrary step function exactly-once sequential meaning. -/
 theorem f2b_guarded_exactly_once (step : State -> Op -> State) :
     Laws.F2bGuardedExactlyOnce step := by
   intro floor operations deliveries initial schedule

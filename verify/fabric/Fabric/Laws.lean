@@ -46,18 +46,18 @@ def F2bSerialSuccessorPremise {Op : Type uV} (floor : Nat)
     (operations : List Op) (deliveries : List (Positioned Op)) : Prop :=
   SerialSuccessorSchedule floor operations deliveries
 
-/-- F2b: for an arbitrary step function, a floor-guarded finite redelivery
-    schedule has exactly the sequential meaning of its positioned trace under
-    the explicit serial/successor premise. The shipped raw-arrival buffer fold
-    appears in the statement: schedule robustness is proved, not supplied as
-    an equation about the buffer's output. -/
+/-- F2b: for an arbitrary step function, a finite redelivery schedule has
+    exactly the sequential meaning of its positioned trace under the explicit
+    serial/successor premise. The shipped raw-arrival buffer fold appears in
+    the statement: schedule robustness is proved, not supplied as an equation
+    about the buffer's output. -/
 def F2bGuardedExactlyOnce {State : Type uH} {Op : Type uV}
     (step : State -> Op -> State) : Prop :=
   forall (floor : Nat) (operations : List Op)
       (deliveries : List (Positioned Op)) (initial : State),
     F2bSerialSuccessorPremise floor operations deliveries ->
       applySuccessors step floor operations.length initial
-          (ingestSchedule floor (floor + operations.length) deliveries) =
+          (ingestSchedule deliveries) =
         fold step initial operations
 
 /-- F4: only a declared commutative algebra may identify a merged set of

@@ -9,9 +9,10 @@ executes the same definitions to author the runtime conformance corpus at
 
 - `Fabric/Definitions.lean` owns the objects and executable functions. A
   `Cell` is a finite set of `(holder, observation)` pairs. `foldEvidence`
-  inserts a trace into that set. `guardedApply` consumes every arrival through
-  a position-floor guard, folds admitted arrivals into a position-addressed
-  replay buffer, and applies only contiguous successors before advancing.
+  inserts a trace into that set. `guardedApply` records every arrival in a
+  position-addressed replay buffer and applies only contiguous successors
+  before advancing. That successor/contiguity discipline is the protection;
+  the floor is the anchor's derived resume coordinate, not a filter.
   `CommutativeAlgebra` declares the laws
   required before partition folds may be merged. `Policy.meet` intersects the
   four set-valued components and takes `Nat.min` across the four ceilings.
@@ -24,11 +25,15 @@ executes the same definitions to author the runtime conformance corpus at
   a declared commutative algebra; F9 is the full greatest-lower-bound law plus
   descendant attenuation.
 - `Fabric/Proofs.lean` contains proofs only. The trace proofs reduce equality
-  to finite-set membership. F2b inducts over consecutive positions. F4 first
-  proves append and permutation lemmas. F9 proves set intersection and numeric
-  minimum componentwise, then follows an action-tree descendant derivation.
+  to finite-set membership. F2b inducts over consecutive positions, and
+  `guard_is_redundant` proves that adding a position-floor/window filter before
+  the successor drain cannot change its result. F4 first proves append and
+  permutation lemmas. F9 proves set intersection and numeric minimum
+  componentwise, then follows an action-tree descendant derivation.
 - `Fabric/Mutants.lean` contains four variants, each dropping exactly one
-  required law. `Fabric/ControlProofs.lean` proves the retained laws and the
+  required law. The fourth drops the successor discipline and is killed by the
+  order-sensitive 6-before-5 row; it does not claim to drop the redundant
+  floor guard. `Fabric/ControlProofs.lean` proves the retained laws and the
   named counterexamples. `ControlMain.lean` emits the committed counterexample
   traces checked by the gate.
 - `Fabric/Canonical.lean`, `Fabric/Corpus.lean`, and `Main.lean` are the
@@ -60,16 +65,24 @@ F2 uses a different fold because evidence is a join-semilattice: inserting the
 trace into a finite set deliberately forgets both order and multiplicity. F2b
 handles non-idempotent steps. A schedule is finite and may be duplicated,
 reordered, and prefixed with stale deliveries. `ingestSchedule` traverses the
-actual arrivals, rejects positions outside the floor/window, and builds a
-position-addressed buffer. F2b's explicit `F2bSerialSuccessorPremise` describes
+actual arrivals and records them by position. F2b's explicit
+`F2bSerialSuccessorPremise` describes
 the raw schedule: inside the window it has exactly the support of the
 positioned trace, while duplicates, permutation, and stale deliveries remain
 allowed. The proof derives the buffer's coverage from that premise and drains
-only consecutive successors. A delivery of 6 before 5 is buffered; the bare
-`seq > floor` negative control applies operation 3 immediately, advances the
-floor, and skips operation 2. The order-sensitive append row therefore yields
-`[3]` in the mutant and `[2, 3]` in the lawful model. The theorem remains generic
-in `step`, so counting and other non-idempotent folds are included.
+only consecutive successors. A delivery of 6 before 5 is buffered; the
+arrival-order negative control drops the successor discipline, applies
+operation 3 immediately, advances the frontier, and skips operation 2. The
+order-sensitive append row therefore yields `[3]` in the mutant and `[2, 3]`
+in the lawful model. The theorem remains generic in `step`, so counting and
+other non-idempotent folds are included.
+
+The original dispatch requested a drop-floor-guard control. The round-3
+coordinator ruling on DEV-695 (comment
+`7cb08c80-7c12-4a1d-9a7e-0daed812a0e5`, 2026-08-17) records the approved
+deviation: `guard_is_redundant` proves that control is unstatable in this
+model, so the fourth control drops the load-bearing successor discipline
+instead.
 
 ## Notation
 

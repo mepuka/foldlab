@@ -22,7 +22,7 @@ theorem emitter_f2_permutation :
   apply f2_permutation (cmp := Corpus.observationCmp)
   decide
 
-/-- The stale-replay row is accepted by the guarded schedule consumer. -/
+/-- The stale-replay row is accepted by the successor-disciplined consumer. -/
 theorem emitter_stale_schedule_premise :
     Laws.F2bSerialSuccessorPremise 10 [2, 3]
       Emitter.staleReplayDeliveries := by
@@ -37,7 +37,7 @@ theorem emitter_f2b_stale_replay :
   simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
     Emitter.staleReplayDeliveries 0 emitter_stale_schedule_premise
 
-/-- The duplicate-current row is accepted by the guarded schedule consumer. -/
+/-- The duplicate-current row is accepted by the successor-disciplined consumer. -/
 theorem emitter_duplicate_schedule_premise :
     Laws.F2bSerialSuccessorPremise 10 [2, 3]
       Emitter.duplicatedPositionedDeliveries := by
@@ -52,7 +52,7 @@ theorem emitter_f2b_duplication :
   simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
     Emitter.duplicatedPositionedDeliveries 0 emitter_duplicate_schedule_premise
 
-/-- The bounded-reordering row is accepted by the guarded schedule consumer. -/
+/-- The bounded-reordering row is accepted by the successor-disciplined consumer. -/
 theorem emitter_reordered_schedule_premise :
     Laws.F2bSerialSuccessorPremise 4 [2, 3] Emitter.reorderedDeliveries := by
   intro delivery

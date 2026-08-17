@@ -15,20 +15,22 @@ yes** — retaining multiplicity would destroy F2.
 
 ### T2. Model bounded redelivery with an explicit serial successor premise
 
-Decided: `ingestSchedule` traverses every raw arrival, applies the lower
-position floor and upper window, and folds admitted operations into a buffer
-addressed by journal position. `F2bSerialSuccessorPremise` is not an equation
-about that buffer: it says the in-window support of the raw arrivals is exactly
-the consecutive positioned trace. The proof derives that the shipped buffer
+Decided: `ingestSchedule` traverses every raw arrival and folds operations into
+a buffer addressed by journal position. `F2bSerialSuccessorPremise` is not an
+equation about that buffer: it says the in-window support of the raw arrivals
+is exactly the consecutive positioned trace. The proof derives that the
+shipped buffer
 normalises every such duplicate/permuted schedule, and `guardedApply` advances
 only at `floor + 1`. Stale entries at or below the floor may be present, but
-application stays serial within a partition. Alternatives: a bare
-`position > floor` check; make the buffer-output equation the premise; refuse
-every ahead-of-frontier delivery instead of buffering it; model buffer capacity
-and liveness. Why: delivery 6 before 5 falsifies the bare check — an
-order-sensitive append step yields `[3]` instead of `[2, 3]` — while the theorem
-remains generic in the step function. **Load-bearing? yes** — the raw-support
-premise is the runtime discipline whose consequence the model proves.
+application stays serial within a partition. The floor is a derived resume
+coordinate; `guard_is_redundant` proves that pre-filtering arrivals by the
+floor/window cannot change a successor-drained result. Alternatives: make the
+buffer-output equation the premise; refuse every ahead-of-frontier delivery
+instead of buffering it; model buffer capacity and liveness. Why: delivery 6
+before 5 falsifies arrival-order application — an order-sensitive append step
+yields `[3]` instead of `[2, 3]` — while the theorem remains generic in the
+step function. **Load-bearing? yes** — the raw-support premise and successor
+discipline are the runtime rules whose consequence the model proves.
 
 ### T3. Represent policy components uniformly
 
@@ -59,13 +61,12 @@ change.
 Decided: a multiplicity-retaining cell over the shipped observation carrier
 drops idempotence while retaining associativity and commutativity; left choice
 over the shipped `GroundCell` drops commutativity while retaining associativity
-and idempotence; the replay mutant uses the bare `position > floor` check over
-the shipped 6-before-5 row and drops successor discipline; trusting the
-requested policy drops only meet-clamping. Alternatives: toy scalar algebras;
-copy four whole models. Why: every variant now shares the shipped carrier,
-vector data, or executable consumer and is killed by that exact named row.
-**Load-bearing? yes** — a mutant that drops two laws does not demonstrate which
-discriminator killed it.
+and idempotence; the arrival-order mutant uses the shipped 6-before-5 row and
+drops successor discipline; trusting the requested policy drops only
+meet-clamping. Alternatives: toy scalar algebras; copy four whole models. Why:
+every variant now shares the shipped carrier, vector data, or executable
+consumer and is killed by that exact named row. **Load-bearing? yes** — a
+mutant that drops two laws does not demonstrate which discriminator killed it.
 
 ### T6. Narrow canonical JSON to the actual corpus grammar
 
@@ -78,3 +79,16 @@ dispatch bars floats and promotes the RQ-9 route; the narrower grammar makes
 the trusted emitter surface explicit and avoids re-deriving the unresolved
 shortest-round-trip problem. **Load-bearing? yes** — canonical bytes are the
 wall identity.
+
+### T7. Record the unstatable floor-guard control as a proved deviation
+
+Decided: remove the observationally redundant ingestion guard, roster
+`guard_is_redundant`, and name the fourth negative-control family
+`drop-successor-discipline`. This is the coordinator-approved deviation from
+dispatch 30's requested drop-floor-guard control (DEV-695 round-3 ruling,
+comment `7cb08c80-7c12-4a1d-9a7e-0daed812a0e5`, 2026-08-17). Alternatives:
+retain the guard as defense-in-depth; continue naming the successor mutant as
+a guard mutant. Why: the accepted theorem proves the guard cannot affect any
+result in this model, while the 6-before-5 row refutes removal of the actual
+successor discipline. **Load-bearing? yes** — it determines what the fourth
+negative control honestly claims.

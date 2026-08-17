@@ -33,9 +33,9 @@ def foldLeftBiased : List Emitter.GroundObservation -> Emitter.GroundCell
       observations.foldl (fun cell next =>
         leftBiasedCellMerge cell (Cell.singleton next)) (Cell.singleton observation)
 
-/-- The falsifiable bare floor guard: any `position > floor` is applied in
-    arrival order and advances the floor, even when it skips a successor. -/
-def bareFloorApply {State Op : Type} (step : State -> Op -> State)
+/-- Drops the successor discipline: any arrival above the current frontier is
+    applied immediately, even when it skips the next contiguous position. -/
+def arrivalOrderApply {State Op : Type} (step : State -> Op -> State)
     (floor : Nat) (deliveries : List (Positioned Op))
     (initial : State) : State :=
   (deliveries.foldl (fun replay delivery =>
@@ -44,7 +44,7 @@ def bareFloorApply {State Op : Type} (step : State -> Op -> State)
     else replay) (floor, initial)).2
 
 /-- The exact 6-before-5 reordering row from the committed corpus. -/
-def floorReplayVector : List (Positioned Nat) :=
+def reorderedDeliveryVector : List (Positioned Nat) :=
   Emitter.reorderedDeliveries
 
 abbrev GroundPolicy := Policy Nat compare

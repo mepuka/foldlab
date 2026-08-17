@@ -120,7 +120,7 @@ def positionTrace {Op : Type uV} : Nat -> List Op -> List (Positioned Op)
       { position := floor + 1, operation } ::
         positionTrace (floor + 1) operations
 
-/-- A raw delivery lies inside the checkpoint's finite replay window. -/
+/-- A raw delivery belongs to the checkpoint's finite trace window. -/
 def InWindow {Op : Type uV} (floor ceiling : Nat) (delivery : Positioned Op) :
     Prop :=
   floor < delivery.position /\ delivery.position <= ceiling
@@ -131,22 +131,19 @@ abbrev ReplayBuffer (Op : Type uV) := Nat -> Option Op
 /-- No position has arrived. -/
 def emptyReplayBuffer {Op : Type uV} : ReplayBuffer Op := fun _ => none
 
-/-- Consume one raw arrival into the bounded reorder buffer. This is the live
-    position-floor guard: stale replays and out-of-window futures have no
-    effect; an admitted redelivery replaces only the same positioned entry. -/
-def ingestDelivery {Op : Type uV} (floor ceiling : Nat)
+/-- Consume one raw arrival into the position-addressed reorder buffer.
+    Redelivery replaces only the entry at the same journal position. -/
+def ingestDelivery {Op : Type uV}
     (buffer : ReplayBuffer Op) (delivery : Positioned Op) : ReplayBuffer Op :=
-  if floor < delivery.position /\ delivery.position <= ceiling then
-    fun position =>
-      if position = delivery.position then some delivery.operation
-      else buffer position
-  else buffer
+  fun position =>
+    if position = delivery.position then some delivery.operation
+    else buffer position
 
 /-- Traverse the raw delivery schedule in arrival order and fold every arrival
-    through the bounded position-floor guard. -/
-def ingestSchedule {Op : Type uV} (floor ceiling : Nat)
+    into the position-addressed buffer. -/
+def ingestSchedule {Op : Type uV}
     (deliveries : List (Positioned Op)) : ReplayBuffer Op :=
-  deliveries.foldl (ingestDelivery floor ceiling) emptyReplayBuffer
+  deliveries.foldl ingestDelivery emptyReplayBuffer
 
 /-- Drain exactly the consecutive successors present in the buffer. A gap
     stops application; an ahead-of-frontier entry never advances over it. -/
@@ -159,14 +156,14 @@ def applySuccessors {State : Type uH} {Op : Type uV}
       | some operation =>
           applySuccessors step (floor + 1) count (step state operation) buffer
 
-/-- Consume the actual redelivery schedule in list order. The bounded buffer
-    retains ahead-of-frontier arrivals; application advances serially within
-    the partition and only at `floor + 1`. -/
+/-- Consume the actual redelivery schedule in list order. The buffer retains
+    arrivals by position; the successor discipline provides exactly-once
+    protection by advancing only at `floor + 1` within the finite window. -/
 def guardedApply {State : Type uH} {Op : Type uV}
     (step : State -> Op -> State) (floor count : Nat)
     (deliveries : List (Positioned Op)) (initial : State) : State :=
   applySuccessors step floor count initial
-    (ingestSchedule floor (floor + count) deliveries)
+    (ingestSchedule deliveries)
 
 /-- The serial/successor discipline required of an at-least-once schedule.
     Inside the finite window, the raw arrivals have exactly the support of the
@@ -181,7 +178,7 @@ def SerialSuccessorSchedule {Op : Type uV} (floor : Nat) (operations : List Op)
 
 namespace Emitter
 
-/-- The exact stale-replay row shared by the emitter and floor-guard mutant. -/
+/-- The exact stale-replay row used by the F2b bridge. -/
 def staleReplayDeliveries : List (Positioned Nat) :=
   [ { position := 9, operation := 100 }
   , { position := 11, operation := 2 }

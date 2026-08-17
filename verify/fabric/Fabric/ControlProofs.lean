@@ -54,30 +54,32 @@ theorem drop_commutativity_killed :
     decide
   · decide
 
-theorem floor_replay_vector_has_serial_successor_premise :
-    Laws.F2bSerialSuccessorPremise 4 [2, 3] Mutants.floorReplayVector := by
+theorem reordered_vector_has_serial_successor_premise :
+    Laws.F2bSerialSuccessorPremise 4 [2, 3] Mutants.reorderedDeliveryVector := by
   intro delivery
   rcases delivery with ⟨position, operation⟩
-  simp [Mutants.floorReplayVector, Emitter.reorderedDeliveries, InWindow,
+  simp [Mutants.reorderedDeliveryVector, Emitter.reorderedDeliveries, InWindow,
     positionTrace]
   omega
 
-/-- A bare `seq > floor` consumer applies 6, advances to 6, then skips 5. -/
-theorem bare_floor_guard_skips_six_before_five :
-    Mutants.bareFloorApply Emitter.appendStep 4 Mutants.floorReplayVector [] =
+/-- An arrival-order consumer applies 6, advances to 6, then skips 5. -/
+theorem arrival_order_apply_skips_six_before_five :
+    Mutants.arrivalOrderApply Emitter.appendStep 4
+        Mutants.reorderedDeliveryVector [] =
       [3] := by
   decide
 
-theorem floor_guard_survives_replay :
-    guardedApply Emitter.appendStep 4 2 Mutants.floorReplayVector [] =
+theorem successor_discipline_survives_reordering :
+    guardedApply Emitter.appendStep 4 2 Mutants.reorderedDeliveryVector [] =
       fold Emitter.appendStep [] [2, 3] := by
   simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 4 [2, 3]
-    Mutants.floorReplayVector [] floor_replay_vector_has_serial_successor_premise
+    Mutants.reorderedDeliveryVector [] reordered_vector_has_serial_successor_premise
 
-/-- The 6-before-5 row refutes the bare floor guard because applying 6 first
-    advances the floor and causes 5 to be skipped forever. -/
-theorem drop_floor_guard_killed :
-    Mutants.bareFloorApply Emitter.appendStep 4 Mutants.floorReplayVector [] ≠
+/-- The 6-before-5 row refutes arrival-order application because applying 6
+    first advances the frontier and causes 5 to be skipped forever. -/
+theorem drop_successor_discipline_killed :
+    Mutants.arrivalOrderApply Emitter.appendStep 4
+        Mutants.reorderedDeliveryVector [] ≠
       fold Emitter.appendStep [] [2, 3] := by
   decide
 

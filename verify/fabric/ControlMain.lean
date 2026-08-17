@@ -20,16 +20,17 @@ def main (args : List String) : IO UInt32 := do
       showControl "drop-commutativity" "permuted-evidence-schedule"
         (foldEvidence Emitter.observationCmp Emitter.permutedEvidence).toList.head!.1
         (Mutants.foldLeftBiased Emitter.permutedEvidence).toList.head!.1
-  | ["drop-floor-guard"] =>
-      showControl "drop-floor-guard" "six-before-five-reordering"
-        (encodeTrace (guardedApply Emitter.appendStep 4 2 Mutants.floorReplayVector []))
-        (encodeTrace (Mutants.bareFloorApply Emitter.appendStep 4
-          Mutants.floorReplayVector []))
+  | ["drop-successor-discipline"] =>
+      showControl "drop-successor-discipline" "six-before-five-reordering"
+        (encodeTrace (guardedApply Emitter.appendStep 4 2
+          Mutants.reorderedDeliveryVector []))
+        (encodeTrace (Mutants.arrivalOrderApply Emitter.appendStep 4
+          Mutants.reorderedDeliveryVector []))
   | ["drop-meet-clamping"] =>
       showControl "drop-meet-clamping" "attenuation-request-clamped"
         (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest).budget
         (Mutants.unclampedChild Mutants.rootPolicy Mutants.escalatingRequest).budget
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (drop-idempotence|drop-commutativity|drop-floor-guard|drop-meet-clamping)"
+        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping)"
       return 2
