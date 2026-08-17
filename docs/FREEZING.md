@@ -117,7 +117,8 @@ diff of a frozen fixture is the diff of a claim.
 
 ## The frozen inventory
 
-Eight fixtures, and what each one has.
+Every frozen fixture in the tree, and what each one has. "Guard" is what stops a
+silent write or a silent drift; `-force` alone is only the first.
 
 | Fixture | Generator | Guard | Oracle | Domain stated |
 | --- | --- | --- | --- | --- |
@@ -126,21 +127,58 @@ Eight fixtures, and what each one has.
 | `fixtures/golden-conformance.json` | **NONE** | none | unstated | no |
 | `fixtures/wasm-wall-known-divergence.json` | `bun scripts/wasm-wall-divergence.ts --emit` | none | records a defect, not a truth | yes |
 | `packages/core/fixtures/fold-pin.json` | **NONE** (prose only: "generated once by the TypeScript fold implementation") | none | TS side, self-declared as a pin | partial |
-| `proto/wire/fixtures/types.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
-| `proto/wire/fixtures/chains.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
-| `proto/wire/fixtures/frames.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
-| `proto/wire/fixtures/concierge.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | no |
-| `proto/wire/fixtures/sessions.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` | Go side, walled by TS | yes (in `_provenance`) |
+| `proto/wire/fixtures/types.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` + regeneration diff | Go side, walled by TS | no |
+| `proto/wire/fixtures/chains.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` + regeneration diff | Go side, walled by TS | no |
+| `proto/wire/fixtures/frames.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` + regeneration diff | Go side, walled by TS | no |
+| `proto/wire/fixtures/concierge.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` + regeneration diff | Go side, walled by TS | no |
+| `proto/wire/fixtures/sessions.json` | `cd proto/go && go run ./cmd/wirefix` | `-force` + regeneration diff | Go side, walled by TS | yes (in `_provenance`) |
+| `proto/wire/fixtures/owned-types-v1.json` | **NONE** (hand-authored; no `_provenance` field) | none | Go normalize/digest, re-derived by TS | no (prose only, in `proto/wire/CONTRACT.md`) |
+| `proto/wire/fixtures/scheme-bridges.json` | **NONE** (hand-authored; no `_provenance` field) | none | Go canonical bytes + digest, re-derived by TS | no (prose only, in `proto/wire/CONTRACT.md`) |
+| `proto/wire/fixtures/protocol-moves.json` | **NONE** (hand-authored, and says so in `_provenance`) | none | `proto/wire/CONTRACT.md` prose, driven through the real Go runtime | yes (in `_provenance`, including what it does NOT claim) |
+| `proto/wire/reply-conformance.json` | **NONE** (hand-authored, and says so in `_provenance`) | none | Go `catalogr4` strict decoding, named as independent of the TS decoder | yes (in `_provenance`) |
+| `proto/wire/refusal-sorts.json` | **NONE** (hand-authored; no `_provenance` field) | embedded `grammarDigest`, pinned by `refusal_sort_test.go` | Go refusal classification, walled by TS | partial — the embedded `grammar` string names the grammars, not the input domain |
 
-(Ten rows, eight pre-existing fixtures, the one this protocol's own lane added,
-and `sessions.json`, which gained its generator under the brief-25 cure.)
+(Fifteen rows. The five `proto/wire` rows below `sessions.json` were missing
+from this inventory until the brief-26 cure; nothing about them changed, they
+are recorded here as they actually are.)
 
-**Two fixtures have no regeneration path.** `golden-conformance.json` has no
-`_provenance` field, no generator anywhere in the tree, and four readers.
-`fold-pin.json` names its producer in prose but no command. Both are read by
-gates that would go red on drift, and neither offers any way to tell drift
-from corruption. Restoring a generator for each is owed work, not a nicety:
-until then, a disagreement on either fixture is unresolvable by construction.
+**Seven fixtures have no regeneration path**: `golden-conformance.json`,
+`fold-pin.json`, and the five hand-authored `proto/wire` corpora. The two in the
+first group are the worse case — they claim to be recorded observations of an
+implementation and cannot be re-observed. The five `proto/wire` ones are honest
+about being hand-authored, and four of them name an oracle outside the file, so
+their missing generator is a smaller debt: they are contract vectors, not model
+verdicts, and `AGENTS.md`'s no-hand-authored-model-verdicts law does not reach
+them. `owned-types-v1.json` and `scheme-bridges.json` are the two to watch —
+they carry normal forms and digests, which is model-shaped evidence, with no
+`_provenance` line at all.
+
+## The regeneration gate
+
+The overwrite guard says a fixture cannot be rewritten by accident. It does not
+say the committed bytes are still what the generator emits — nothing did, for
+any fixture in this repository, until `proto/go/cmd/wirefix/regeneration_test.go`.
+That test runs the generator into a temporary directory and byte-compares all
+five wirefix fixtures against the committed ones, and it fails on any drift; it
+also refuses a sixth fixture that joins the generator without joining the diff.
+
+It rides `bun run gates` as its own stage, `proto/go — wire fixture
+regeneration`, which passes `-count=1`. That flag is the gate, not a habit: the
+fixtures live in `proto/wire/`, outside the `proto/go` module, and Go's test
+cache does not track files it cannot attribute to the module — a plain
+`go test ./...` prints `ok (cached)` for this package even after a committed
+fixture has been mutated. That was measured, by mutating one. A gate that can
+report a stale pass on exactly the input it exists to watch is worse than no
+gate, because it is believed. Any future fixture gate that reads across a module
+boundary inherits this hazard.
+
+The diff is a FINDING, not a fixture to update — the gate's own failure message
+says so, because the moment a wall goes red is the moment step 1 of the ritual
+below is easiest to skip.
+
+Extending this to the other generators (`streamfix`, `wasm-wall-divergence`) is
+owed work, not done here: `streamfix` writes to stdout, so the gate shape is the
+same but the guard question is different.
 
 ## The two dangling pointers
 

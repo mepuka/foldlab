@@ -479,28 +479,42 @@ func writeFixture(dir, name string, value any, force bool) error {
 	return os.WriteFile(path, append(data, '\n'), 0o644)
 }
 
+// fixtureNames is the family this generator owns, in a fixed order. The
+// regeneration gate reads it, so a fixture added here without a committed
+// counterpart — or a committed fixture dropped from here — is a gate failure
+// rather than a silent gap.
+func fixtureNames() []string {
+	return []string{"types.json", "chains.json", "frames.json", "concierge.json", "sessions.json"}
+}
+
+// generate is the whole of the command's work, so the regeneration gate runs
+// the generator rather than a re-implementation of it. main() adds only flag
+// parsing.
+func generate(dir string, force bool) error {
+	types := buildTypes()
+	values := map[string]any{
+		"types.json":     types,
+		"chains.json":    buildChains(types),
+		"frames.json":    buildFrames(types),
+		"concierge.json": buildConcierge(),
+		"sessions.json":  buildSessions(),
+	}
+	for _, name := range fixtureNames() {
+		if err := writeFixture(dir, name, values[name], force); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	force := flag.Bool("force", false, "overwrite frozen fixtures (requires a stated reason in the commit)")
 	dir := flag.String("dir", filepath.Join("..", "wire", "fixtures"), "fixture output directory")
 	flag.Parse()
 
-	types := buildTypes()
-	chains := buildChains(types)
-	frames := buildFrames(types)
-	concierge := buildConcierge()
-	sessions := buildSessions()
-
-	for name, value := range map[string]any{
-		"types.json":     types,
-		"chains.json":    chains,
-		"frames.json":    frames,
-		"concierge.json": concierge,
-		"sessions.json":  sessions,
-	} {
-		if err := writeFixture(*dir, name, value, *force); err != nil {
-			fmt.Fprintf(os.Stderr, "wirefix: %v\n", err)
-			os.Exit(1)
-		}
+	if err := generate(*dir, *force); err != nil {
+		fmt.Fprintf(os.Stderr, "wirefix: %v\n", err)
+		os.Exit(1)
 	}
 	fmt.Println("wirefix: fixtures written")
 }

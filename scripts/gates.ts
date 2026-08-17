@@ -24,6 +24,17 @@ const stages: ReadonlyArray<Stage> = [
   { label: "proto/go — formatting", cwd: resolve(repo, "proto/go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "proto/go — vet", cwd: resolve(repo, "proto/go"), command: ["go", "vet", "./..."] },
   { label: "proto/go — tests", cwd: resolve(repo, "proto/go"), command: ["go", "test", "./..."] },
+  // `-count=1` is load-bearing, not belt-and-braces. The wire fixtures live in
+  // proto/wire/, OUTSIDE the proto/go module, and Go's test cache does not
+  // track files it cannot attribute to the module — so `go test ./...` reports
+  // `ok (cached)` for cmd/wirefix even after a committed fixture is mutated,
+  // which was verified by mutating one. A regeneration gate that can report a
+  // stale pass is not a gate; this stage always re-runs it.
+  {
+    label: "proto/go — wire fixture regeneration",
+    cwd: resolve(repo, "proto/go"),
+    command: ["go", "test", "-count=1", "./cmd/wirefix/"],
+  },
   { label: "proto/ts — typecheck", cwd: resolve(repo, "proto/ts"), command: ["bunx", "tsc", "--noEmit"] },
   { label: "proto/ts — tests", cwd: resolve(repo, "proto/ts"), command: ["bun", "test", "."] },
 ]

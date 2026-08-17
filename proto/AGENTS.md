@@ -69,7 +69,11 @@ logged in `DECISIONS.md`.
   `types.json`, `chains.json`, `frames.json`, `concierge.json`, and
   `sessions.json` regenerate byte-identically from
   `go run ./cmd/wirefix -force`; a fixture without that property is not
-  frozen, it is stranded (`docs/FREEZING.md`).
+  frozen, it is stranded (`docs/FREEZING.md`). That claim is now a gate:
+  `cd proto/go && go test -count=1 ./cmd/wirefix/` regenerates into a
+  temp dir and byte-diffs all five. `-count=1` is required — the
+  fixtures are outside this Go module, so the test cache does not
+  invalidate on them.
 - `flb.type.v0` is declared once and restated sixteen times.
   `GRAMMAR-SITES.md` is the list, and a grammar change visits all of it;
   `float_leaf_test.go` greps the fourteen that live under `proto/`.
@@ -108,6 +112,7 @@ logged in `DECISIONS.md`.
 ```
 cd proto/go && gofmt -l .        # prints nothing
 cd proto/go && go vet ./... && go test ./...
+cd proto/go && go test -count=1 ./cmd/wirefix/   # fixture regeneration
 cd proto/ts && bun install && bunx tsc --noEmit && bun test .
 ```
 

@@ -2982,3 +2982,46 @@ spurious `{"k":"decimal"}` each turned the guard red on its own message, and
 both plants were removed. **Load-bearing? yes** — SPEC.md is the
 coordinator-owned declaration, and a reader who cannot trust it has to read the
 certifier instead.
+
+### D??. The regeneration claim gets a gate, five fixtures at a time
+
+Decided: `proto/go/cmd/wirefix/regeneration_test.go` runs the generator into a
+temp directory and byte-diffs all five committed fixtures, plus a second test
+requiring that the file set the generator writes equals the declared family and
+that each declared file is committed. `main()` is refactored so the gate runs
+`generate()` — the command's actual work — rather than a re-implementation of
+it. It rides `bun run gates` as its OWN stage with `-count=1`, which the next
+entry explains. Alternatives: shell out to `go run ./cmd/wirefix` from the test
+(slower, and adds a toolchain dependency inside a unit test); leave it inside
+`proto/go — tests` (measured to be a stale pass); do nothing, since both
+readers re-derive content. Why: finding N2. `docs/FREEZING.md` listed the guard
+for these five as `-force`, which is overwrite protection and says nothing about
+whether the committed bytes are a fresh emission — and brief 25 asked the cure
+to "join the gate that already covers the wirefix four", a gate that existed for
+none of them. The house law (no hand-authored model verdicts: "the gate diffs a
+fresh regeneration byte-for-byte") had no instance anywhere in this repository
+until now. Verified to fire: one byte flipped in `types.json`'s first digest
+turned the gate red naming the file and the offset, and the fixture was
+restored. **Load-bearing? yes** — without it, "these fixtures regenerate
+byte-identically" was a sentence in three documents and a claim nothing checked.
+
+### D??. The regeneration gate runs with `-count=1`, in a stage of its own
+
+Decided: `scripts/gates.ts` gains a `proto/go — wire fixture regeneration` stage
+running `go test -count=1 ./cmd/wirefix/`, and `proto/AGENTS.md` lists the same
+command beside the other proto gates. Reason, measured rather than assumed: the
+fixtures live in `proto/wire/`, outside the `proto/go` module, and Go's test
+cache does not track files it cannot attribute to the module. A committed
+fixture was mutated by one byte and `go test ./...` printed
+`ok  foldlab/proto/cmd/wirefix  (cached)` — twice, on identical arguments —
+while `go test -count=1` on the same tree failed naming the file and the byte
+offset. Alternatives: leave the test inside `proto/go — tests` and accept the
+window; move the fixtures inside the Go module so the cache tracks them (moves
+frozen evidence to satisfy a build tool, and the TypeScript side reads them from
+where they are); embed the committed bytes in the test package (a second copy of
+the evidence, which is the drift this whole lane is dismantling). Why: a gate
+that can report a stale pass on exactly the input it exists to watch is worse
+than no gate, because it is believed — this is the same failure shape as finding
+N2 itself, one layer down. Recorded in `docs/FREEZING.md` so the next
+cross-module fixture gate inherits the warning. **Load-bearing? yes** — it is
+the difference between the regeneration claim being checked and appearing to be.
