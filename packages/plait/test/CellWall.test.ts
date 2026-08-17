@@ -186,7 +186,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
   }, 60_000)
 
   test("F1: both merge schedules converge on the model's state", async () => {
-    const { f1 } = await loadFamilies()
+    const { f1, counts } = await loadFamilies()
     let replayed = 0
     for (const row of f1) {
       expect(row.witness).toStartWith("Fabric.emitter_")
@@ -212,11 +212,13 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       expect(reread.digest).toBe(forward.digest)
       replayed++
     }
-    expect(replayed).toBe(1)
+    // The corpus header pins the family size, so a wave that grows the F1
+    // family reds this wall rather than silently replaying a subset.
+    expect(replayed).toBe(pinnedCount(counts, "F1"))
   }, 120_000)
 
   test("F2: duplicated and permuted delivery schedules reach the model's state", async () => {
-    const { f2 } = await loadFamilies()
+    const { f2, counts } = await loadFamilies()
     let replayed = 0
     for (const row of f2) {
       expect(row.witness).toStartWith("Fabric.emitter_")
@@ -244,7 +246,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       expect(reversed.digest).toBe(arrival.digest)
       replayed++
     }
-    expect(replayed).toBe(2)
+    expect(replayed).toBe(pinnedCount(counts, "F2"))
   }, 120_000)
 
   test("a settled cell absorbs its own delta again without a write", async () => {

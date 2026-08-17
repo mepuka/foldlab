@@ -1,4 +1,7 @@
-/- Concrete theorem instances named by the generated conformance vectors. -/
+/- Concrete theorem instances named by the generated conformance vectors.
+The corpus assembly in `Fabric/Emit.lean` passes these terms into the row
+constructors, so every emitted verdict is licensed by the theorem its row
+names. -/
 import Fabric.Corpus
 
 namespace Fabric
@@ -22,14 +25,14 @@ theorem emitter_f2_permutation :
   apply f2_permutation (cmp := Corpus.observationCmp)
   decide
 
-/-- The stale-replay row is accepted by the successor-disciplined consumer. -/
+/-- The stale-replay row satisfies both premise halves: the stale entry at
+    position 9 sits outside the window, so integrity never speaks about it. -/
 theorem emitter_stale_schedule_premise :
     Laws.F2bSerialSuccessorPremise 10 [2, 3]
       Emitter.staleReplayDeliveries := by
-  intro delivery
-  rcases delivery with ⟨position, operation⟩
-  simp [Emitter.staleReplayDeliveries, InWindow, positionTrace]
-  omega
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
 
 theorem emitter_f2b_stale_replay :
     guardedApply Nat.add 10 2 Emitter.staleReplayDeliveries 0 =
@@ -37,14 +40,14 @@ theorem emitter_f2b_stale_replay :
   simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
     Emitter.staleReplayDeliveries 0 emitter_stale_schedule_premise
 
-/-- The duplicate-current row is accepted by the successor-disciplined consumer. -/
+/-- The duplicate-current row satisfies both premise halves: redelivery at
+    position 11 repeats exactly its positioned payload. -/
 theorem emitter_duplicate_schedule_premise :
     Laws.F2bSerialSuccessorPremise 10 [2, 3]
       Emitter.duplicatedPositionedDeliveries := by
-  intro delivery
-  rcases delivery with ⟨position, operation⟩
-  simp [Emitter.duplicatedPositionedDeliveries, InWindow, positionTrace]
-  omega
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
 
 theorem emitter_f2b_duplication :
     guardedApply Nat.add 10 2 Emitter.duplicatedPositionedDeliveries 0 =
@@ -52,13 +55,12 @@ theorem emitter_f2b_duplication :
   simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
     Emitter.duplicatedPositionedDeliveries 0 emitter_duplicate_schedule_premise
 
-/-- The bounded-reordering row is accepted by the successor-disciplined consumer. -/
+/-- The bounded-reordering row satisfies both premise halves. -/
 theorem emitter_reordered_schedule_premise :
     Laws.F2bSerialSuccessorPremise 4 [2, 3] Emitter.reorderedDeliveries := by
-  intro delivery
-  rcases delivery with ⟨position, operation⟩
-  simp [Emitter.reorderedDeliveries, InWindow, positionTrace]
-  omega
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
 
 theorem emitter_f2b_reordering :
     guardedApply Emitter.appendStep 4 2 Emitter.reorderedDeliveries [] =
@@ -66,11 +68,85 @@ theorem emitter_f2b_reordering :
   simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 4 [2, 3]
     Emitter.reorderedDeliveries [] emitter_reordered_schedule_premise
 
+/-- The ahead-of-ceiling row satisfies both premise halves: position 13 is
+    beyond the ceiling, so it is out of window — buffered, never applied. -/
+theorem emitter_ahead_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 10 [2, 3]
+      Emitter.aheadOfCeilingDeliveries := by
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
+
+theorem emitter_ahead_of_ceiling :
+    guardedApply Nat.add 10 2 Emitter.aheadOfCeilingDeliveries 0 =
+      fold Nat.add 0 [2, 3] := by
+  simpa [guardedApply] using f2b_guarded_exactly_once Nat.add 10 [2, 3]
+    Emitter.aheadOfCeilingDeliveries 0 emitter_ahead_schedule_premise
+
+/-- The multi-gap row satisfies both premise halves: distant positions arrive
+    first, so the buffer transiently holds more than one gap before the
+    window fills. -/
+theorem emitter_multi_gap_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 10 [2, 3, 4, 5]
+      Emitter.multiGapDeliveries := by
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
+
+theorem emitter_multi_gap_window :
+    guardedApply Emitter.appendStep 10 4 Emitter.multiGapDeliveries [] =
+      fold Emitter.appendStep [] [2, 3, 4, 5] := by
+  simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 10
+    [2, 3, 4, 5] Emitter.multiGapDeliveries []
+    emitter_multi_gap_schedule_premise
+
+/-- The redeliver-everything-twice row satisfies both premise halves: every
+    redelivery repeats its positioned payload, in a shuffled order. -/
+theorem emitter_redeliver_twice_schedule_premise :
+    Laws.F2bSerialSuccessorPremise 10 [2, 3, 4]
+      Emitter.redeliverTwiceShuffledDeliveries := by
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
+
+theorem emitter_redeliver_twice_shuffled :
+    guardedApply Emitter.appendStep 10 3
+        Emitter.redeliverTwiceShuffledDeliveries [] =
+      fold Emitter.appendStep [] [2, 3, 4] := by
+  simpa [guardedApply] using f2b_guarded_exactly_once Emitter.appendStep 10
+    [2, 3, 4] Emitter.redeliverTwiceShuffledDeliveries []
+    emitter_redeliver_twice_schedule_premise
+
 /-- The checkpoint row is an exact F3 instance. -/
 theorem emitter_f3_resume :
     foldFrom Nat.add (fold Nat.add 0 [1, 2]) [3, 4] =
       fold Nat.add 0 ([1, 2] ++ [3, 4]) :=
   f3_resume_exact Nat.add 0 [1, 2] [3, 4]
+
+/-- The kill-9 suffix schedule — reordered and duplicated above the
+    checkpoint floor — satisfies both premise halves. -/
+theorem emitter_resume_suffix_premise :
+    Laws.F2bSerialSuccessorPremise 2 [3, 4] Emitter.resumeSuffixDeliveries := by
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
+
+/-- The composed resume-then-redeliver row (the kill-9 shape): F2b gives the
+    duplicated, reordered suffix schedule its sequential meaning from the
+    checkpoint, and F3 stitches the checkpoint to the uninterrupted fold. -/
+theorem emitter_resume_then_redeliver :
+    guardedApply Emitter.appendStep 2 2 Emitter.resumeSuffixDeliveries
+        (fold Emitter.appendStep [] [1, 2]) =
+      fold Emitter.appendStep [] ([1, 2] ++ [3, 4]) := by
+  have suffix := f2b_guarded_exactly_once Emitter.appendStep 2 [3, 4]
+    Emitter.resumeSuffixDeliveries (fold Emitter.appendStep [] [1, 2])
+    emitter_resume_suffix_premise
+  calc guardedApply Emitter.appendStep 2 2 Emitter.resumeSuffixDeliveries
+        (fold Emitter.appendStep [] [1, 2])
+      = fold Emitter.appendStep (fold Emitter.appendStep [] [1, 2]) [3, 4] := by
+        simpa [guardedApply] using suffix
+    _ = fold Emitter.appendStep [] ([1, 2] ++ [3, 4]) :=
+        f3_resume_exact Emitter.appendStep [] [1, 2] [3, 4]
 
 /-- The partition/interleaving row is an exact F4 instance. -/
 theorem emitter_f4_partition :
@@ -87,7 +163,7 @@ theorem emitter_intruder_refused :
         fold Corpus.orderedSubtractStep 10 [3, 7] := by
   decide
 
-/-- The request-clamping row exercises all eight policy components. -/
+/-- The request-clamping row exercises all ten policy components. -/
 theorem finite_subset_bool_iff (left right : FiniteSet Nat compare) :
     Corpus.finiteSubsetBool left right = true <->
       forall atom, atom ∈ left -> atom ∈ right := by
@@ -99,13 +175,16 @@ theorem policyLeBool_iff (left right : Mutants.GroundPolicy) :
   constructor
   · intro ordered
     simp only [Corpus.policyLeBool, Bool.and_eq_true, decide_eq_true_eq] at ordered
-    rcases ordered with ⟨⟨⟨⟨⟨⟨⟨capabilities, contextAllowlist⟩, toolkits⟩,
-      writ⟩, capabilityClass⟩, effortClass⟩, budget⟩, spawnBound⟩
+    rcases ordered with ⟨⟨⟨⟨⟨⟨⟨⟨⟨capabilities, contextAllowlist⟩, toolkits⟩,
+      writ⟩, indexes⟩, resources⟩, capabilityClass⟩, effortClass⟩, budget⟩,
+      spawnBound⟩
     exact {
       capabilities := (by simpa [Corpus.finiteSubsetBool] using capabilities)
       contextAllowlist := (by simpa [Corpus.finiteSubsetBool] using contextAllowlist)
       toolkits := (by simpa [Corpus.finiteSubsetBool] using toolkits)
       writ := (by simpa [Corpus.finiteSubsetBool] using writ)
+      indexes := (by simpa [Corpus.finiteSubsetBool] using indexes)
+      resources := (by simpa [Corpus.finiteSubsetBool] using resources)
       capabilityClass
       effortClass
       budget
@@ -113,12 +192,14 @@ theorem policyLeBool_iff (left right : Mutants.GroundPolicy) :
     }
   · intro ordered
     simp only [Corpus.policyLeBool, Bool.and_eq_true, decide_eq_true_eq]
-    refine ⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ordered.capabilityClass⟩,
+    refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ordered.capabilityClass⟩,
       ordered.effortClass⟩, ordered.budget⟩, ordered.spawnBound⟩
     · simpa [Corpus.finiteSubsetBool] using ordered.capabilities
     · simpa [Corpus.finiteSubsetBool] using ordered.contextAllowlist
     · simpa [Corpus.finiteSubsetBool] using ordered.toolkits
     · simpa [Corpus.finiteSubsetBool] using ordered.writ
+    · simpa [Corpus.finiteSubsetBool] using ordered.indexes
+    · simpa [Corpus.finiteSubsetBool] using ordered.resources
 
 theorem emitter_f9_clamp :
     Corpus.policyLeBool
@@ -128,6 +209,17 @@ theorem emitter_f9_clamp :
         Mutants.rootPolicy := by
   have ordered := policy_meet_le_left Mutants.rootPolicy Mutants.escalatingRequest
   exact ⟨(policyLeBool_iff _ _).mpr ordered, ordered⟩
+
+/-- The clamp row's request escalates: its verdict reports the executable
+    order refusing `escalatingRequest <= rootPolicy`, licensed here rather
+    than emitted as an unchecked literal. -/
+theorem emitter_f9_request_escalates :
+    Corpus.policyLeBool Mutants.escalatingRequest Mutants.rootPolicy = false := by
+  cases ordered : Corpus.policyLeBool Mutants.escalatingRequest Mutants.rootPolicy with
+  | false => rfl
+  | true =>
+      have escalated := (policyLeBool_iff _ _).mp ordered
+      exact absurd escalated.budget (by decide)
 
 /-- The tree row constructs the actual two-level action tree and witnesses the
     descendant relation consumed by F9. -/
