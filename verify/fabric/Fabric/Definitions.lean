@@ -227,8 +227,12 @@ def aheadOfCeilingDeliveries : List (Positioned Nat) :=
   , { position := 12, operation := 3 }
   ]
 
-/-- The exact multi-gap row: distant positions arrive first, so the reorder
-    buffer transiently holds disconnected runs with more than one gap. -/
+/-- The exact multi-gap row: a delivery order whose positions arrive with
+    more than one gap open at once. This model ingests the whole schedule
+    and then drains, so no statement here describes a transient buffer
+    shape — the theorem's content is terminal equality over the window;
+    the incremental drain behaviour is the consuming wall's and the chaos
+    gates' to measure, not the model's. -/
 def multiGapDeliveries : List (Positioned Nat) :=
   [ { position := 13, operation := 4 }
   , { position := 11, operation := 2 }

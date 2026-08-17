@@ -89,6 +89,17 @@ if [[ "${actual_laws[*]}" != "${expected_laws[*]}" ]] ||
 fi
 echo "GATE: PASS (definitions / statements / proofs partition)"
 
+expected_private="applySuccessors_of_completeBuffer"
+mapfile -t actual_private < <(
+  grep -rhoE '^[[:space:]]*(private|protected)[[:space:]]+(theorem|lemma)[[:space:]]+[A-Za-z0-9_]+' Fabric/ \
+    | sed -E 's/.*(theorem|lemma)[[:space:]]+//' | sort
+)
+if [[ "${actual_private[*]}" != "$expected_private" ]]; then
+  echo "GATE: FAIL — private/protected theorem set moved (expected exactly: $expected_private; found: ${actual_private[*]:-none}). A visibility modifier removes a theorem from the roster and footprint sweep, so every private theorem is pinned here by name." >&2
+  exit 1
+fi
+echo "GATE: PASS (private theorem set pinned to the approved helper)"
+
 if lake build; then
   echo "GATE: PASS (lake build)"
 else

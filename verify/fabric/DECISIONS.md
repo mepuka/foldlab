@@ -126,7 +126,7 @@ now proves its cause, not only its exit code.
 over the real tree would make the safety test itself destructive, while an
 absence-only control would miss the warm-tree lockfile drift found in review.
 
-### T10. Shape the split F2b premise with bounded quantifiers
+### T15. Shape the split F2b premise with bounded quantifiers
 
 Decided: `WindowCoverage` quantifies over the positioned trace (for every
 expected record, some arrival shares its position) and
@@ -143,7 +143,7 @@ became `decide` obligations instead of per-instance omega scripts.
 **Load-bearing? yes** — later families and statements cite the halves by
 name.
 
-### T11. Kill the dropped integrity half with the shipped consumer itself
+### T16. Kill the dropped integrity half with the shipped consumer itself
 
 Decided: the fifth mutant `lastWriteBufferApply` is `guardedApply`'s own body
 run outside its premise, killed on the reviewer-shaped conflict row
@@ -157,7 +157,7 @@ trusting its buffer where that premise fails — coverage holding isolates the
 kill to the integrity half alone. **Load-bearing? yes** — it demonstrates
 which premise half protects payload fidelity.
 
-### T12. Emit verdict bits from the bridge-theorem terms
+### T17. Emit verdict bits from the bridge-theorem terms
 
 Decided: row constructors in `Corpus.lean` take the witness theorem's exact
 statement as an argument; `Fabric/Emit.lean` (definitions only, importing
@@ -170,11 +170,14 @@ that drifted from its theorem no longer typechecks — while the emission stays
 a computed value and the corpus stays byte-diffed. **Load-bearing? yes** —
 this is the mechanical closure of the vector-to-theorem binding.
 
-### T13. Name the four durable-fold families in plain ASCII
+### T18. Name the four durable-fold families in plain ASCII
 
-Decided: the composed resume-then-redeliver row carries kind `F3-F2b` (the
-corpus grammar is safe ASCII, so the composition symbol is transliterated
-with a hyphen); the ahead-of-ceiling, multi-gap, and redeliver-twice rows are
+Decided: the composed resume-then-redeliver row carries kind `F3-F2b` — an
+ASCII kind is the chosen convention for a wire family list, and it is a
+convention, not a grammar force (the canonical encoder passes non-ASCII
+through verbatim); the hyphen is pinned three separate ways — the header
+bytes, the per-kind counts, and the witness triple — which is what the
+consuming wall keys on; the ahead-of-ceiling, multi-gap, and redeliver-twice rows are
 kind `F2b`; row names are the dispatch's own phrases; the four rows append
 after the existing eleven so committed row bytes and the self-test's planted
 row indices stay fixed; the order- and duplication-sensitive rows use the
@@ -186,7 +189,7 @@ existing rows. **Load-bearing? maybe** — the names and kinds are the
 consuming wall's family list; flagged to the coordinator in the closing
 report.
 
-### T14. Ground allowlist atoms that escalate on both new components
+### T19. Ground allowlist atoms that escalate on both new components
 
 Decided: `indexes` 60/{60,61}/60 and `resources` {70,71}/{71,72}/{71} for
 root, escalating request, and attenuated child, so the clamp row's request
