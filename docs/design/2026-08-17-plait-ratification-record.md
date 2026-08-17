@@ -50,6 +50,17 @@ program's project management.
    system introspection and configuration; codegen from cataloged
    declarations; deep domain modeling in Effect Schema including custom
    schema types with R-channel (service-requiring) decode.
+6. **Model work is Fable-implemented until stability** (operator,
+   2026-08-17, superseding directive 1's delegation for this class):
+   Lean, proof, and other model-related work — model packages, theorem
+   statements and proofs, gates and controls over models, model-emitted
+   corpora — is implemented DIRECTLY by Fable agents, not codex seats,
+   from this ruling until the operator declares stability re-achieved.
+   Runtime, adapter, Go-twin, and non-model infrastructure work stays
+   on the board's codex/CC seats. Mixed slices are split at dispatch:
+   the model half to a Fable agent, the runtime half to a seat, the
+   coordinator owning the join. Review discipline is unchanged
+   (adversarial review still precedes every merge).
 
 ## Second ratification wave (same day)
 
