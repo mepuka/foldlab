@@ -1,0 +1,1 @@
+control=drop-identity-tiebreak;vector=two-arrival-orders;lawful-left=23,12,5;lawful-right=23,12,5;mutant-left=7,5,23;mutant-right=12,5,23;verdict=refuted

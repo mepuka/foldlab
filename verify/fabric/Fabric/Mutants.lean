@@ -66,6 +66,94 @@ def lastWriteBufferApply {State Op : Type} (step : State -> Op -> State)
     (initial : State) : State :=
   applySuccessors step floor count initial (ingestSchedule deliveries)
 
+/-! ### F7 assembly mutants -/
+
+/-- Drops the declared-reads frame: assembly consults one read the program
+    never declared — the model rendering of a timestamp selector. The body
+    is the lawful assembly of an EXTENDED program; the mutation is
+    consulting a read that is not in the declaration. -/
+def ambientAssemble {Addr Value : Type} (ambient : ContextRead Addr Value)
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  assemble { reads := program.reads ++ [ambient] } valuation
+
+/-- Drops the volatility-stable ordering: segments are emitted in the
+    ambient completion order of an evaluation schedule instead of the
+    declared class order. -/
+def scheduleOrderAssemble {Addr Value : Type} (schedule : List Nat)
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  let segments := renderReads program valuation
+  schedule.filterMap fun index => segments[index]?
+
+/-- The eager completion schedule of the two-schedules row: reads complete
+    in declared order, so the turn read lands first. -/
+def completionScheduleEager : List Nat := [0, 1, 2]
+
+/-- The late completion schedule of the same row: reads complete in the
+    reverse order. -/
+def completionScheduleLate : List Nat := [2, 1, 0]
+
+/-- The completion schedule that happens to coincide with the declared
+    class order of the ground program (static, session, turn sit at read
+    indices 1, 2, 0). -/
+def completionScheduleCanonical : List Nat := [1, 2, 0]
+
+/-- Reverses each class's segments while keeping the class blocks in the
+    fixed order: lawful under the congruence half and the class-projection
+    half, refuted by the within-class half. -/
+def reversedWithinClass {Addr : Type} (segments : List (ContextSegment Addr)) :
+    List (ContextSegment Addr) :=
+  Volatility.all.flatMap fun volatility =>
+    (segments.filter fun segment => segment.volatility == volatility).reverse
+
+/-- The rival assembler built from it: drops exactly the within-class
+    order — equal-class segments leave program order — while both other
+    F7 statements keep holding at every program and valuation. -/
+def rivalAssemble {Addr Value : Type} (program : ContextProgram Addr Value)
+    (valuation : Addr -> Value) : List (ContextSegment Addr) :=
+  reversedWithinClass (renderReads program valuation)
+
+/-- The two-reads-one-class program of the within-class row. The ground
+    program's three classes are pairwise distinct, so a within-class rival
+    is byte-identical there; this vector is where it becomes visible. -/
+def twoStaticProgram : ContextProgram Nat Nat where
+  reads :=
+    [ { addr := 10, render := Emitter.decimalRender, volatility := .static }
+    , { addr := 20, render := Emitter.taggedRender, volatility := .static }
+    ]
+
+/-! ### F11 query mutants -/
+
+/-- Drops the identity tie-break: take the first k of the support in
+    arrival order — insertion order becomes the tie-break. -/
+def arrivalOrderTopK (k : Nat) (entries : List Emitter.GroundEntry) :
+    List Emitter.GroundEntry :=
+  (dedup entries).take k
+
+/-- Drops schedule independence and nothing else: an answer with an extra
+    ambient-thread parameter it actually consults — an entry the thread
+    has seen gets a score boost — while the declared sort and tie-break
+    stay in force. At the empty thread it is definitionally the lawful
+    top-k, so a kill is attributable to consulting the thread alone. The
+    lawful query carrier has no such parameter to read. -/
+def ambientScheduleAnswer (ambient : List Emitter.GroundEntry) (k : Nat)
+    (entries : List Emitter.GroundEntry) : List Emitter.GroundEntry :=
+  topK
+    (fun entry =>
+      Emitter.groundScore entry + (if ambient.contains entry then 10 else 0))
+    id k entries
+
+/-- The empty ambient thread of the two-schedules row. -/
+def ambientThreadEmpty : List Emitter.GroundEntry := []
+
+/-- The boosting ambient thread of the same row: it has seen entry 12. -/
+def ambientThreadBoosting : List Emitter.GroundEntry := [12]
+
+/-- The duplicate-free presentation of arrival order one, for the retained
+    duplication pins. -/
+def queryArrivalOneExact : List Emitter.GroundEntry := [7, 5, 23, 12]
+
 abbrev GroundPolicy := Policy Nat compare
 
 def atoms (values : List Nat) : FiniteSet Nat compare :=

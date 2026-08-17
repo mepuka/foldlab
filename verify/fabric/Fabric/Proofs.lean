@@ -657,4 +657,381 @@ theorem f9_tree_attenuation :
 
 end F9
 
+section F7
+
+variable {Addr : Type uH} {Value : Type uV}
+
+/-- Rendering consults each read's declared address and nothing else: two
+    valuations that agree on the declared addresses render one segment
+    list. -/
+theorem render_reads_agree (program : ContextProgram Addr Value)
+    {left right : Addr -> Value}
+    (agree : forall addr, addr ∈ program.addresses -> left addr = right addr) :
+    renderReads program left = renderReads program right := by
+  unfold renderReads
+  apply List.map_congr_left
+  intro read member
+  rw [agree read.addr (List.mem_map_of_mem member)]
+
+/-- F7: assembly is a function of the program and the declared reads'
+    values — the frame/congruence statement. A variant consulting any
+    address off the declared read set is refutable, and is refuted in the
+    committed controls. -/
+theorem f7_assembly_reads_only_declared :
+    Laws.F7AssemblyReadsOnlyDeclared (Addr := Addr) (Value := Value) := by
+  intro program left right agree
+  unfold assemble
+  rw [render_reads_agree program agree]
+
+/-- Rendering preserves each read's declared class, in program order. -/
+theorem map_volatility_render_reads (program : ContextProgram Addr Value)
+    (valuation : Addr -> Value) :
+    (renderReads program valuation).map ContextSegment.volatility =
+      program.reads.map ContextRead.volatility := by
+  unfold renderReads
+  rw [List.map_map]
+  rfl
+
+/-- The stable ordering commutes with the class projection: the classes of
+    the ordered segments are the stable class sort of the segments'
+    classes. -/
+theorem map_volatility_order_by_volatility
+    (segments : List (ContextSegment Addr)) :
+    (orderByVolatility segments).map ContextSegment.volatility =
+      stableClassOrder (segments.map ContextSegment.volatility) := by
+  unfold orderByVolatility stableClassOrder
+  rw [List.map_flatMap]
+  congr 1
+  funext volatility
+  rw [List.filter_map]
+  rfl
+
+/-- F7: segment order is the stable class sort of the program's declared
+    order — a function of the program alone. This half constrains the
+    class projection; the within-class half below constrains equal-class
+    order. -/
+theorem f7_segment_order_stable :
+    Laws.F7SegmentOrderStable (Addr := Addr) (Value := Value) := by
+  intro program valuation
+  unfold assemble
+  rw [map_volatility_order_by_volatility, map_volatility_render_reads]
+
+/-- Ordering by volatility leaves each class's subsequence untouched: the
+    class filter absorbs the stable ordering, because exactly one class
+    block survives the filter and that block is itself a filter of the
+    input. -/
+theorem order_by_volatility_filter_class
+    (segments : List (ContextSegment Addr)) (volatility : Volatility) :
+    (orderByVolatility segments).filter
+        (fun segment => segment.volatility == volatility) =
+      segments.filter (fun segment => segment.volatility == volatility) := by
+  have distinctClassNil : forall (kept : Volatility), kept ≠ volatility ->
+      (segments.filter fun segment =>
+        (segment.volatility == volatility) && (segment.volatility == kept)) =
+        [] := by
+    intro kept distinct
+    refine List.filter_eq_nil_iff.mpr fun segment _ both => distinct ?_
+    simp only [Bool.and_eq_true] at both
+    exact (beq_iff_eq.mp both.2).symm.trans (beq_iff_eq.mp both.1)
+  have sameClassSelf :
+      (segments.filter fun segment =>
+        (segment.volatility == volatility) &&
+          (segment.volatility == volatility)) =
+        segments.filter fun segment => segment.volatility == volatility :=
+    List.filter_congr fun segment _ => Bool.and_self _
+  unfold orderByVolatility
+  rw [List.filter_flatMap]
+  simp only [List.filter_filter, Volatility.all, List.flatMap_cons,
+    List.flatMap_nil, List.append_nil]
+  cases volatility
+  case static =>
+    rw [sameClassSelf, distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil]
+  case policy =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .session (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case session =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide), distinctClassNil .live (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case live =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide),
+      distinctClassNil .turn (by decide)]
+    simp only [List.append_nil, List.nil_append]
+  case turn =>
+    rw [sameClassSelf, distinctClassNil .static (by decide),
+      distinctClassNil .policy (by decide),
+      distinctClassNil .session (by decide),
+      distinctClassNil .live (by decide)]
+    simp only [List.nil_append]
+
+/-- The class projection of one class's filtered segments is constant, so
+    reversing the filtered segments cannot move that projection. -/
+theorem reverse_map_volatility_filter_class
+    (segments : List (ContextSegment Addr)) (volatility : Volatility) :
+    ((segments.filter fun segment =>
+        segment.volatility == volatility).reverse).map
+        ContextSegment.volatility =
+      (segments.filter fun segment =>
+        segment.volatility == volatility).map ContextSegment.volatility := by
+  rw [List.map_reverse]
+  have allSame : forall clazz,
+      clazz ∈ (segments.filter fun segment =>
+        segment.volatility == volatility).map ContextSegment.volatility ->
+      clazz = volatility := by
+    intro clazz member
+    obtain ⟨segment, memberFilter, rfl⟩ := List.mem_map.mp member
+    exact beq_iff_eq.mp (List.mem_filter.mp memberFilter).2
+  rw [List.eq_replicate_of_mem allSame, List.reverse_replicate]
+
+/-- F7: within every volatility class, assembly preserves the program's
+    declared relative order — the per-class subsequence of the assembled
+    value is the program-order rendering's. With the class-projection
+    half this pins the assembled byte layout completely. -/
+theorem f7_within_class_order :
+    Laws.F7WithinClassOrder (Addr := Addr) (Value := Value) := by
+  intro program valuation volatility
+  unfold assemble
+  exact order_by_volatility_filter_class (renderReads program valuation)
+    volatility
+
+end F7
+
+section F11
+
+variable {Entry : Type uV}
+
+/-- Dedup membership is exactly input membership. -/
+theorem dedup_mem [BEq Entry] [LawfulBEq Entry]
+    {entries : List Entry} {entry : Entry} :
+    entry ∈ dedup entries <-> entry ∈ entries := by
+  induction entries with
+  | nil => simp [dedup]
+  | cons head tail inductionHypothesis =>
+      by_cases headMember : head ∈ tail
+      · rw [show dedup (head :: tail) = dedup tail by
+          simp [dedup, headMember]]
+        rw [inductionHypothesis]
+        simp only [List.mem_cons]
+        constructor
+        · exact Or.inr
+        · rintro (rfl | member)
+          · exact headMember
+          · exact member
+      · rw [show dedup (head :: tail) = head :: dedup tail by
+          simp [dedup, headMember]]
+        simp only [List.mem_cons, inductionHypothesis]
+
+/-- Dedup produces a duplicate-free list. -/
+theorem dedup_nodup [BEq Entry] [LawfulBEq Entry] (entries : List Entry) :
+    (dedup entries).Nodup := by
+  induction entries with
+  | nil => simp [dedup]
+  | cons head tail inductionHypothesis =>
+      by_cases headMember : head ∈ tail
+      · rw [show dedup (head :: tail) = dedup tail by
+          simp [dedup, headMember]]
+        exact inductionHypothesis
+      · rw [show dedup (head :: tail) = head :: dedup tail by
+          simp [dedup, headMember]]
+        exact List.nodup_cons.mpr
+          ⟨fun member => headMember (dedup_mem.mp member),
+            inductionHypothesis⟩
+
+/-- The declared order is total. -/
+theorem by_score_then_identity_total (score identity : Entry -> Nat)
+    (left right : Entry) :
+    (byScoreThenIdentity score identity left right ||
+      byScoreThenIdentity score identity right left) = true := by
+  simp only [byScoreThenIdentity, Bool.or_eq_true, Bool.and_eq_true,
+    decide_eq_true_eq]
+  omega
+
+/-- The declared order is transitive. -/
+theorem by_score_then_identity_trans (score identity : Entry -> Nat)
+    (left middle right : Entry)
+    (leftMiddle : byScoreThenIdentity score identity left middle = true)
+    (middleRight : byScoreThenIdentity score identity middle right = true) :
+    byScoreThenIdentity score identity left right = true := by
+  simp only [byScoreThenIdentity, Bool.or_eq_true, Bool.and_eq_true,
+    decide_eq_true_eq] at leftMiddle middleRight ⊢
+  omega
+
+/-- Mutual order forces equal identity bytes: with the named distinctness
+    premise this is antisymmetry — the hard step the identity tie-break
+    exists to discharge. -/
+theorem by_score_then_identity_antisymm (score identity : Entry -> Nat)
+    (left right : Entry)
+    (leftRight : byScoreThenIdentity score identity left right = true)
+    (rightLeft : byScoreThenIdentity score identity right left = true) :
+    identity left = identity right := by
+  simp only [byScoreThenIdentity, Bool.or_eq_true, Bool.and_eq_true,
+    decide_eq_true_eq] at leftRight rightLeft
+  omega
+
+/-- Two sorted, duplicate-free lists with the same members are one list —
+    the canonical presentation a support determines. Antisymmetry is
+    demanded only on the first list's members, which is exactly where the
+    named distinctness premise lands. -/
+theorem sorted_nodup_eq_of_same_mem (le : Entry -> Entry -> Bool) :
+    forall (left right : List Entry),
+      (forall a, a ∈ left -> forall b, b ∈ left ->
+        le a b = true -> le b a = true -> a = b) ->
+      left.Pairwise (le · · = true) -> right.Pairwise (le · · = true) ->
+      left.Nodup -> right.Nodup ->
+      (forall entry, entry ∈ left <-> entry ∈ right) ->
+      left = right
+  | [], [], _, _, _, _, _, _ => rfl
+  | [], head :: tail, _, _, _, _, _, sameMem =>
+      absurd ((sameMem head).mpr (List.mem_cons_self))
+        (List.not_mem_nil)
+  | leftHead :: leftTail, [], _, _, _, _, _, sameMem =>
+      absurd ((sameMem leftHead).mp (List.mem_cons_self))
+        (List.not_mem_nil)
+  | leftHead :: leftTail, rightHead :: rightTail, antisymm, sortedLeft,
+      sortedRight, nodupLeft, nodupRight, sameMem => by
+    obtain ⟨leftHeadLe, sortedLeftTail⟩ := List.pairwise_cons.mp sortedLeft
+    obtain ⟨rightHeadLe, sortedRightTail⟩ := List.pairwise_cons.mp sortedRight
+    obtain ⟨leftHeadAbsent, nodupLeftTail⟩ := List.nodup_cons.mp nodupLeft
+    obtain ⟨rightHeadAbsent, nodupRightTail⟩ := List.nodup_cons.mp nodupRight
+    have headsEqual : leftHead = rightHead := by
+      rcases List.mem_cons.mp ((sameMem leftHead).mp
+          (List.mem_cons_self)) with equal | leftHeadInRightTail
+      · exact equal
+      rcases List.mem_cons.mp ((sameMem rightHead).mpr
+          (List.mem_cons_self)) with equal | rightHeadInLeftTail
+      · exact equal.symm
+      exact antisymm leftHead (List.mem_cons_self)
+        rightHead (List.mem_cons_of_mem leftHead rightHeadInLeftTail)
+        (leftHeadLe rightHead rightHeadInLeftTail)
+        (rightHeadLe leftHead leftHeadInRightTail)
+    subst headsEqual
+    have tailSameMem : forall entry, entry ∈ leftTail <-> entry ∈ rightTail := by
+      intro entry
+      constructor
+      · intro member
+        rcases List.mem_cons.mp ((sameMem entry).mp
+            (List.mem_cons_of_mem leftHead member)) with equal | inTail
+        · exact absurd (equal ▸ member) leftHeadAbsent
+        · exact inTail
+      · intro member
+        rcases List.mem_cons.mp ((sameMem entry).mpr
+            (List.mem_cons_of_mem leftHead member)) with equal | inTail
+        · exact absurd (equal ▸ member) rightHeadAbsent
+        · exact inTail
+    rw [sorted_nodup_eq_of_same_mem le leftTail rightTail
+      (fun a aMember b bMember =>
+        antisymm a (List.mem_cons_of_mem leftHead aMember)
+          b (List.mem_cons_of_mem leftHead bMember))
+      sortedLeftTail sortedRightTail nodupLeftTail nodupRightTail tailSameMem]
+
+/-- F11, list half: top-k is a function of the delivered support —
+    permutation and duplication of the anchored entry list cannot move
+    it. -/
+theorem f11_topk_of_support [BEq Entry] [LawfulBEq Entry]
+    (score identity : Entry -> Nat) :
+    Laws.F11TopKOfSupport (Entry := Entry) score identity := by
+  intro k left right distinct same
+  have sameMember : forall entry : Entry, entry ∈ left <-> entry ∈ right := by
+    intro entry
+    rw [<- List.contains_iff_mem, <- List.contains_iff_mem, same entry]
+  have leftPerm :=
+    List.mergeSort_perm (dedup left) (byScoreThenIdentity score identity)
+  have rightPerm :=
+    List.mergeSort_perm (dedup right) (byScoreThenIdentity score identity)
+  unfold topK
+  apply congrArg (List.take k)
+  apply sorted_nodup_eq_of_same_mem (byScoreThenIdentity score identity)
+  · intro a aMember b bMember leftLe rightLe
+    exact distinct a (dedup_mem.mp (leftPerm.mem_iff.mp aMember))
+      b (dedup_mem.mp (leftPerm.mem_iff.mp bMember))
+      (by_score_then_identity_antisymm score identity a b leftLe rightLe)
+  · exact List.pairwise_mergeSort
+      (by_score_then_identity_trans score identity)
+      (by_score_then_identity_total score identity) (dedup left)
+  · exact List.pairwise_mergeSort
+      (by_score_then_identity_trans score identity)
+      (by_score_then_identity_total score identity) (dedup right)
+  · exact leftPerm.nodup_iff.mpr (dedup_nodup left)
+  · exact rightPerm.nodup_iff.mpr (dedup_nodup right)
+  · intro entry
+    rw [leftPerm.mem_iff, rightPerm.mem_iff, dedup_mem, dedup_mem]
+    exact sameMember entry
+
+/-- F11, state half: the answering state at an anchor is the resumed
+    fold — exactly F3, named at the query seam. -/
+theorem f11_state_of_anchor {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) (initial : State)
+    (prefixOps suffixOps : List Op) :
+    foldFrom step (fold step initial prefixOps) suffixOps =
+      fold step initial (prefixOps ++ suffixOps) :=
+  f3_resume_exact step initial prefixOps suffixOps
+
+/-- The support fold: appending deliveries from a checkpointed support is
+    list concatenation. -/
+theorem append_entry_fold_from (state entries : List Entry) :
+    foldFrom appendEntry state entries = state ++ entries := by
+  induction entries generalizing state with
+  | nil => simp [foldFrom]
+  | cons entry entries inductionHypothesis =>
+      show List.foldl appendEntry state (entry :: entries) =
+        state ++ entry :: entries
+      rw [List.foldl_cons]
+      have tail := inductionHypothesis (appendEntry state entry)
+      unfold foldFrom at tail
+      rw [tail]
+      simp [appendEntry]
+
+/-- Bounded mutual containment yields support equality: the decidable
+    bridge the concrete rows discharge by computation. -/
+theorem same_delivered_of_mutual_contains [BEq Entry] [LawfulBEq Entry]
+    {left right : List Entry}
+    (leftWithin : left.all right.contains = true)
+    (rightWithin : right.all left.contains = true) :
+    SameDeliveredSet left right := by
+  intro value
+  rw [List.all_eq_true] at leftWithin rightWithin
+  cases leftContains : left.contains value with
+  | true =>
+      rw [leftWithin value (List.contains_iff_mem.mp leftContains)]
+  | false =>
+      cases rightContains : right.contains value with
+      | true =>
+          rw [rightWithin value (List.contains_iff_mem.mp rightContains)]
+            at leftContains
+          cases leftContains
+      | false => rfl
+
+/-- F11, composed: the rendered answer at an anchored, resumed support is
+    invariant under re-anchoring by F3 and under permutation/duplication
+    of the delivered support — each half separately falsifiable, and each
+    refuted separately in the committed controls. -/
+theorem f11_query_deterministic [BEq Entry] [LawfulBEq Entry]
+    (score identity : Entry -> Nat) (render : List Entry -> String) :
+    Laws.F11QueryDeterministic (Entry := Entry) score identity render := by
+  intro k prefixLeft suffixLeft prefixRight suffixRight distinct same
+  apply congrArg render
+  show topK score identity k
+      (foldFrom appendEntry (fold appendEntry [] prefixLeft) suffixLeft) =
+    topK score identity k
+      (foldFrom appendEntry (fold appendEntry [] prefixRight) suffixRight)
+  rw [f11_state_of_anchor, f11_state_of_anchor]
+  have foldIsSupport : forall entries : List Entry,
+      fold appendEntry [] entries = entries := by
+    intro entries
+    have := append_entry_fold_from ([] : List Entry) entries
+    simpa [fold] using this
+  rw [foldIsSupport, foldIsSupport]
+  exact f11_topk_of_support score identity k
+    (prefixLeft ++ suffixLeft) (prefixRight ++ suffixRight) distinct same
+
+end F11
+
 end Fabric

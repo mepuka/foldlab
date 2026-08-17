@@ -200,6 +200,134 @@ only. Why: the new fields should be exercised by the very row that audits
 clamping, not carried as dead weight. **Load-bearing? no** — any escalating
 values would do.
 
+### T20. Shape the F7 carrier as declared reads with a filter-concatenation class sort
+
+Decided: a `ContextRead` is `(addr, render, volatility)` with the renderer a
+pure `Value -> String`; a `ContextProgram` is exactly its ordered read list;
+`assemble` is the class-stable ordering of the rendered reads, where the
+ordering is the five class filters concatenated in the fixed
+`Volatility.all` order. Stability is therefore constructive — equal-class
+segments keep program order by the shape of the function — and
+`f7_segment_order_stable` states it as a map/filter commutation, which no
+`rfl` closes. The congruence half quantifies two valuations over the
+declared address list, the `apply_successors_congr` shape. Alternatives: a
+general stable-sort routine with a stability lemma; segment order as part
+of the congruence statement. Why: the fixed five-class counting sort is the
+smallest function whose stability is inspectable, and the two halves stay
+separately falsifiable — the ambient-read mutant kills the congruence half,
+the completion-schedule mutant kills the order half. **Load-bearing? yes**
+— the class-filter order is the byte layout every lawful assembler must
+reproduce.
+
+### T21. Model the ambient read as an extended program, the schedule as an index list
+
+Decided: the F7 ambient mutant is `assemble` of the program EXTENDED with
+one undeclared read (the timestamp selector at address 99), killed on a
+two-valuations row that agrees on every declared address; the order mutant
+renders reads then emits segments in a completion-schedule index order,
+killed on a two-schedules row. Both kills use a drift-format control line
+(`lawful-left/right`, `mutant-left/right`; refuted when the mutant moves
+while the lawful value holds), because the crime is sensitivity to an
+input the lawful signature does not admit, not a wrong value on one input.
+Alternatives: a hand-written ambient assembler; encoding kills as single
+lawful-vs-mutant values. Why: reusing the lawful body isolates the one
+dropped law (the T16 idiom), and a single-value line cannot state "moved
+when only the undeclared input moved". **Load-bearing? maybe** — the trace
+format is the committed refutation evidence.
+
+### T22. State F11's support equality as `SameDeliveredSet` and name the distinctness premise
+
+Decided: the list-level half `f11_topk_of_support` quantifies two raw
+`List Entry` arrivals under `SameDeliveredSet` — F2's own premise name, so
+permutation and duplication are covered by one support equality — plus the
+named `IdentityDistinct` premise (identity bytes determine the entry
+within the support), which is exactly what makes `byScoreThenIdentity`
+antisymmetric; `topK` is keep-last dedup, then core `mergeSort` under
+score-descending/identity-ascending, then `take k`. The proof is the
+canonical-form induction `sorted_nodup_eq_of_same_mem` (sorted +
+duplicate-free + same members => equal), with antisymmetry demanded only
+on members so the distinctness premise lands where the card's hard-step
+note points. Ground entries are content-addressed (`id` is the identity),
+so the premise discharges by `decide`; the concrete rows reach the
+theorems through a decidable mutual-containment bridge
+(`same_delivered_of_mutual_contains`). Alternatives: an `ExtTreeSet`
+statement (carrier-discharged and unfalsifiable — refused by the DEV-706
+verdict); multiset quotients; a hand-rolled insertion sort. Why: the raw
+list formulation is where the insertion-order mutant dies, and core
+`mergeSort`'s `pairwise`/`perm` lemmas carry the sort obligations.
+**Load-bearing? yes** — dropping `IdentityDistinct` makes equal-score
+equal-identity entries order-ambiguous and the law false.
+
+### T23. Refuse ambient query inputs at admission as the constructor's closure
+
+Decided: `QueryAlgebra` has the single field `answer : State -> Query ->
+Result` — no seed, clock, schedule, or locale parameter exists to read —
+and admission is the structural map `admitQueryInput` from a candidate
+inductive that also enumerates the ambient shapes, each mapped to `none`;
+the declared-seed form is admitted as data (`declaredSeed 7` — the seed
+inside the declaration, hence inside the digest). Admissibility is never
+defined as "equal inputs give equal results" — that would smuggle F11's
+conclusion into its premise (the DEV-706 refusal, binding). The refusing
+corpus row carries `reason = "F11-undeclared-ambient-input"`.
+Alternatives: an admission predicate over an open evaluator type; refusing
+seeds entirely. Why: the closure IS the purity theorem's ground, and the
+declared-seed positive half keeps seeded ranking representable without an
+ambient door. **Load-bearing? yes** — the composed determinism theorem is
+sound only because the carrier cannot express an ambient read.
+
+### T24. Emit the M2 families as kinds F7, F11, and query-admission
+
+Decided: five appended rows — `F7` (assembly-declared-reads,
+assembly-volatility-order), `F11` (topk-across-arrival-orders,
+query-at-reanchored-state), `query-admission` (undeclared-seed-refused) —
+after the existing fifteen, so committed row bytes and the self-test's
+planted row indices stay fixed; the header count object gains the three
+kinds and moves `vectors` to 20. Ground query data: support {5, 7, 12, 23}
+under the decade-bucket score (a two-way tie at score 0 exercises the
+identity tie-break), k = 3, both arrivals carrying one duplication, the
+re-anchored row splitting the two schedules at different floors.
+Alternatives: one kind per row; folding admission into `alphabet-refusal`.
+Why: family identity is what the slice-1b/2a walls key on, and the
+admission row parallels the ACI intruder row's refusal shape.
+**Load-bearing? maybe** — the names and kinds are the consuming walls'
+family list; flagged to the coordinator in the closing report.
+
+### T25. State the within-class half; rebuild the thread mutant inside the declared sort
+
+Decided: F7 gains its third statement, `F7WithinClassOrder` — the per-class
+subsequence of the assembled value is exactly the program-order rendering's
+— after the M2 review (DEV-729) exhibited a rival assembler
+(`rivalAssemble`: reverse each class block) that satisfies both prior
+halves at every program and valuation yet moves bytes on any program with
+two reads in one class; the ground program's classes are pairwise
+distinct, so no prior row or control could see it
+(`rival_keeps_distinct_class_ground_row`). The proof is the filter/flatMap
+absorption `order_by_volatility_filter_class`; the tenth control kills the
+rival on a committed two-reads-one-class vector whose drift line compares
+two genuinely different presentations (assembled value vs program-order
+rendering, both filtered to the class), while general retained-side
+theorems keep the rival lawful under congruence and class projection. With
+the third statement, class projection plus per-class subsequences
+determine the assembled list — which is what licenses T20's sentence that
+the class-filter order is the byte layout every lawful assembler must
+reproduce. In the same round the ninth mutant is rebuilt as a score boost
+INSIDE the declared sort: the old partition-then-take shape also dropped
+the declared order (review finding — at the empty thread it was
+definitionally the eighth mutant), where the rebuilt variant is
+definitionally the lawful `topK` at the empty thread
+(`drop_schedule_independence_keeps_empty_thread`, a generic identity, not
+a concrete pin), so its kill is attributable to consulting the thread
+alone. Also from the review: both F11 law statements now carry
+`[LawfulBEq Entry]` — as written they were refutable at an unlawful
+instance while their theorems assumed lawfulness — and T24's tie count is
+corrected to two-way. Alternatives: stop claiming within-class order in
+the three prose sites (Laws docstring, T20, README) instead of stating
+it; keep the double-drop ninth with amended prose. Why: slice 2a's
+byte-identical reassembly wall keys on exactly the within-class claim,
+and a mutant that drops two laws cannot attribute its kill.
+**Load-bearing? yes** — the third statement is what turns "two lawful
+assemblers agree byte-for-byte" from a sentence into a theorem.
+
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 
 Decided: every battery typecheck — the root script's four projects and the
