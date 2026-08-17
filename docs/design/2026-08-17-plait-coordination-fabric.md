@@ -534,7 +534,15 @@ authorized client (`nats.go v1.53.1`, `jetstream/kv.go:1153-1205`). One
 client sharp edge rides with them: every wrong-last-sequence refusal is
 API code `10071`, so adapters classify by operation context plus code —
 never by `ErrKeyExists` alone. The register slice consumes the full
-finding set through its dispatch seam.
+finding set through its dispatch seam. One further bound from the same
+probe family (operator finding, DEV-711 thread, 2026-08-17): KV
+revisions are stream sequences, so deleting and recreating a bucket
+resets the token order and a stale holder's revision-checked update
+lands on the reborn bucket — F5-style claims therefore hold only
+**within a fixed backing-stream incarnation**. The guard is the
+application-credential ACL (no stream or bucket lifecycle operations)
+plus an incarnation pin recorded at register-open; epoch-bearing tokens
+are ruled out for v0.
 
 Payloads: the server's default max payload is 1 MiB (raisable; 8 MiB is
 the documented recommended ceiling); the fabric inlines

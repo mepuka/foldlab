@@ -61,6 +61,24 @@ Decision 11 fixes what that proposal must say.
 >    validated 6/6 under SIGKILL/TerminateProcess for both sync modes;
 >    power-loss durability is NOT validated and is never claimed.
 >    Power-durable configuration maps to `SyncAlways=true`.
+> 7. **F5 claims are bounded to a fixed backing-stream incarnation**
+>    (operator research finding, 2026-08-17, this thread — minimized
+>    trace with pinned sources): KV revisions ARE stream sequences, so
+>    bucket delete+recreate resets the token order and a stale holder's
+>    `Update(expected=n)` lands on the reborn bucket. The five-action
+>    LTS is closed to lifecycle mutation, so I1/I2 stand unchanged;
+>    what is bounded is the runtime correspondence: every runtime row
+>    and ledger claim carries "within a fixed backing-stream
+>    incarnation; administrative lifecycle mutation is outside the
+>    credential guard." The executable guards: the DEV-716 ACL suite
+>    (application credentials cannot delete or recreate streams and
+>    buckets — admin destructive success is the negative control), plus
+>    an incarnation pin at register-open (record the backing stream's
+>    creation time; refuse on mismatch). Epoch-bearing tokens are ruled
+>    OUT for v0 — re-grillable when federation or multi-admin arrives.
+>    Distinct edge, not this rule: whole-stream purge preserves
+>    `LastSeq` (no numeric token reuse) but forgets terminal outcomes —
+>    that half is rule 3's credential finding.
 >
 > Authority for detail: the DEV-704 verdict comment (thread root
 > `74cc9949`, 2026-08-17), with `ran-it` transcripts and pinned-source

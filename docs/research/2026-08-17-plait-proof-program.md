@@ -15,7 +15,14 @@
 > **B-9 ruled as recommended**: F8 is a corollary under F7+F3, no
 > separate theorem, no refusal cites it by name (part 2 §8 amendment 1
 > now says so). **B-2** is the acceptance reference for DEV-711's
-> register PR. B-10's obligations ride their named slices.
+> register PR — amended same day by operator research (DEV-711 thread):
+> every F5 *runtime* claim is bounded to a fixed backing-stream
+> incarnation, because KV revisions are stream sequences and bucket
+> delete+recreate resets the token order. The LTS stays closed to
+> lifecycle actions (I1/I2 unchanged); the bound rides every runtime
+> row; the guards are the DEV-716 ACL suite plus an incarnation pin at
+> register-open; epoch-bearing tokens are ruled out for v0.
+> B-10's obligations ride their named slices.
 
 Auditor: Fable proof-adequacy agent, 2026-08-17. Repository read at
 `main` `0d575c824`. Read-only run: no repairs, no ledger edits, no branch.
