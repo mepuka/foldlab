@@ -7,7 +7,7 @@ import { Effect, Option, Schema, Stream } from "effect"
 
 import { Digest } from "../src/Digest.js"
 import { FabricClient } from "../src/FabricClient.js"
-import { evidenceSubject } from "../src/Subjects.js"
+import { nodeSubject } from "../src/Subjects.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
 
 const ResultFile = Schema.Struct({ digests: Schema.Array(Digest) })
@@ -91,7 +91,7 @@ describe("local NATS envelope round trip", () => {
     const idleResult = await Promise.race([
       Effect.runPromise(
         Effect.gen(function* () {
-          const subject = yield* evidenceSubject("idle", 0)
+          const subject = yield* nodeSubject("idle")
           const client = yield* FabricClient
           const messages = yield* client.subscribe(subject)
           return yield* Stream.runHead(messages).pipe(

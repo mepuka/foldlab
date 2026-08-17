@@ -1,0 +1,1 @@
+FOLD CONTROL: PASS component=anchor-before-ack mutant=ack-before-anchor killed-by=hard-kill-resume observed-floor=0 expected-floor=3

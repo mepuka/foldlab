@@ -1,0 +1,1 @@
+FOLD CLI CONTROL: PASS component=digest-verdict mutant=state-between-arms exit=1 axis=kill status=diverged

@@ -1,0 +1,1 @@
+FOLD CONTROL: PASS component=step-algebra-compatibility mutant=incompatible-step ignored-by=Fold.declare derived=7 intruder=999

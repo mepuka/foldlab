@@ -24,7 +24,6 @@ import { absenceRefusal, structuralRefusal, type Refusal } from "../Refusal.js"
 import { encodeEnvelope, verifyEnvelopeDigest } from "../Wire.js"
 
 const fabricSubjects = [
-  "flb.fab.ev.*.*",
   "flb.fab.fact.*",
   "flb.fab.node.*",
 ] as const
@@ -57,7 +56,7 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
 const streamShapeRefusal = (got: string): Refusal =>
   structuralRefusal({
     kind: "substrate-shape",
-    law: "The slice-0 commons stream is file-backed with exactly one replica.",
+    law: "The commons control stream is file-backed R=1 and excludes partition evidence streams.",
     path: ["stream", "config"],
     got,
     expected: {
@@ -68,7 +67,7 @@ const streamShapeRefusal = (got: string): Refusal =>
     },
     next: [{
       subject: "stream.ensure",
-      note: "Configure a file-backed commons stream with one replica and the ruled subjects.",
+      note: "Configure the file-backed fact/node control stream with one replica and the ruled subjects.",
       body: {
         storage: StorageType.File,
         num_replicas: 1,
@@ -181,8 +180,15 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
 
   const subscribe: FabricClientService["subscribe"] = Effect.fn("FabricClient.subscribe")(
     function* (subject) {
+      const subscribedStream = yield* Effect.tryPromise({
+        try: async () => {
+          const manager = await jetstreamManager(connection)
+          return manager.streams.find(subject)
+        },
+        catch: (cause) => transportRefusal("subscribe.discover-stream", cause),
+      })
       const consumer = yield* Effect.acquireRelease(
-        acquireConsumer(js, options.stream, subject),
+        acquireConsumer(js, subscribedStream, subject),
         deleteConsumer,
       )
       return Stream.callback<JsMsg, Refusal>((queue) =>

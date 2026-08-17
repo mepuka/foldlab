@@ -8,7 +8,12 @@ import { Effect, Fiber } from "effect"
 
 import { canonicalBytes } from "../src/Canonical.js"
 import { FabricClient } from "../src/FabricClient.js"
-import { StructuralRefusalKind, type Refusal } from "../src/Refusal.js"
+import {
+  structuralRefusal,
+  StructuralRefusalKind,
+  type Refusal,
+  type StructuralRefusalKind as StructuralKind,
+} from "../src/Refusal.js"
 import { REGISTER_BUCKET, Registers } from "../src/Register.js"
 import { evidenceSubject } from "../src/Subjects.js"
 import {
@@ -335,6 +340,36 @@ describe("structural refusal repairs", () => {
     }
     expect(conflicted.kind).toBe("concurrent-register-update")
     refusals.push(conflicted)
+
+    // These kinds have focused runtime/control tests at their owning seams.
+    // This explicit six-field schema probe keeps additions to the closed kind
+    // union visible in this exhaustive recovery-guidance contract test.
+    const repairProbe = (kind: StructuralKind, subject: string, note: string) =>
+      structuralRefusal({
+        kind,
+        law: "the owning seam carries a taught structural repair",
+        path: ["probe", kind],
+        got: "invalid",
+        expected: "the ruled shape",
+        next: [{ subject, note }],
+      })
+    refusals.push(
+      repairProbe("invalid-lane-declaration", "Lane.declare", "Repair the lane declaration."),
+      repairProbe("invalid-partition-key", "Lane.partition", "Repair the declared partition key."),
+      repairProbe("lane-evidence-mismatch", "Lane.emit", "Emit through the declared lane."),
+      repairProbe("lane-substrate-shape", "Lane.emit", "Restore the ruled lane stream."),
+      repairProbe("invalid-algebra-declaration", "Algebra.declare", "Repair the algebra declaration."),
+      repairProbe("invalid-fold-declaration", "Fold.declare", "Repair the fold declaration."),
+      repairProbe("unearned-commutative-algebra", "Algebra.commutative", "Earn the F4 brand."),
+      repairProbe("invalid-anchor-advance", "Anchor.advance", "Apply only the contiguous successor."),
+      repairProbe("anchor-substrate-shape", "Folds.deploy", "Restore the ruled anchor bucket."),
+      repairProbe("malformed-anchor-state", "Folds.deploy", "Restore content-addressed anchor state."),
+      repairProbe("lost-anchor-cas", "Folds.deploy", "Detach the losing partition pump."),
+      repairProbe("consumer-substrate-shape", "Folds.deploy", "Restore the ruled durable consumer."),
+      repairProbe("fold-buffer-overflow", "Folds.deploy", "Detach the overflowing partition pump."),
+      repairProbe("invalid-chaos-request", "plait chaos", "Pin one admitted fold span."),
+      repairProbe("invalid-fold-state", "Fold.declare", "Return canonical fold state."),
+    )
 
     expect(refusals.map((refusal) => refusal.kind).sort()).toEqual(
       [...StructuralRefusalKind.literals].sort(),
