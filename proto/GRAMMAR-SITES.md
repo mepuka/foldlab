@@ -77,9 +77,24 @@ whole term after the grammar walk, so it does not enumerate positions and cannot
 fall behind one. The TypeScript mirror is the same shape and now at the same
 depth: ONE traversal, `findNonIntegralNumber` in `jcs.ts`, stated below both of
 the places a TS term becomes an identity — the author fold and the identity
-mint. `Number.isSafeInteger` appears in exactly one function in `proto/ts/src/`,
-and `float_leaf_test.go` fails if it appears anywhere else or if either minter
-stops calling the traversal.
+mint. The TERM law has exactly one statement, `findNonIntegralNumber`, and
+`Number.isSafeInteger` is not a synonym for it: `jcs.ts` calls that predicate in
+one other place, `sequenceRefusal`, which states a different law over a
+different domain — a chain entry's `seq` must be a safe UNSIGNED integer, the TS
+mirror of `catalogr4/reply.go:217`, and nothing to do with terms.
+
+What `float_leaf_test.go`'s `TestIntegralityBoundIsStatedOnce` actually enforces
+is FILE-granular: `jcs.ts` must contain `Number.isSafeInteger`, every other `.ts`
+file under `proto/ts/src` (enumerated from the directory, not from a list, so a
+module added tomorrow is covered) must not, and both minter bodies —
+`structureDigest` in `jcs.ts` and `foldSchema` in `author.ts` — must call
+`findNonIntegralNumber(` outside a comment. Its blind spot is stated so no one
+reads it as wider than it is: a SECOND statement of the term bound written inside
+`jcs.ts` itself passes, because the file-granular check cannot count functions.
+The wall against that is behavioural, not textual: `proto/ts/test/jcs.strict.test.ts`
+runs the counterexample through `structureDigest` and `sessionStateDigest` and
+fails if either mints it, and `proto/ts/test/author.test.ts` pins the fold's own
+refusal coordinates.
 
 The last two rows share one lesson with the table's own existence: a bound is
 only closed where the guard sits, so the audit question is never "which

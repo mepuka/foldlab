@@ -196,15 +196,27 @@ func TestIntegralityBoundIsStatedOnce(t *testing.T) {
 			t.Errorf("proto/ts/src/%s restates the integrality bound; call findNonIntegralNumber", name)
 		}
 	}
-	// And both TS positions that can turn a term into a v0 identity must run
-	// that traversal, each checked in its own function body.
+	// And both TS positions that can turn a term into a v0 identity must CALL
+	// that traversal. The check is a call expression over comment-stripped
+	// source, because the bare token is satisfied by prose: replacing the sweep
+	// with `// NonIntegralNumber: swept elsewhere` left the substring form of
+	// this check green while `structureDigest` minted the counterexample again.
+	//
+	// What it proves, exactly: the minter's own body contains a call to
+	// findNonIntegralNumber that is not commented out. It does NOT prove the
+	// sweep runs — a call in dead code would pass. That the sweep runs is proved
+	// behaviourally by proto/ts/test/jcs.strict.test.ts, which fails on the
+	// mutation above; this guard is the source-side tripwire that puts the
+	// deletion in front of a reviewer.
+	sweepCall := regexp.MustCompile(`findNonIntegralNumber\s*\(`)
 	for _, minter := range []struct{ file, declaration string }{
 		{"jcs.ts", "export const structureDigest = "},
 		{"author.ts", "export const foldSchema = "},
 	} {
-		body := functionBody(t, tsSources[minter.file], minter.declaration)
-		if !strings.Contains(body, "NonIntegralNumber") {
-			t.Errorf("%s%s no longer runs the closure sweep before minting", minter.file, minter.declaration)
+		body := stripComments(functionBody(t, tsSources[minter.file], minter.declaration))
+		if !sweepCall.MatchString(body) {
+			t.Errorf("proto/ts/src/%s: the body of `%s` has no live call to findNonIntegralNumber(",
+				minter.file, strings.TrimSpace(minter.declaration))
 		}
 	}
 }
@@ -230,6 +242,27 @@ func typeScriptSources(t *testing.T) map[string]string {
 		t.Fatalf("no TypeScript sources found under %s", dir)
 	}
 	return sources
+}
+
+// stripComments drops `//` line comments and the lines of a block comment, so a
+// guard over the result asks what the code does rather than what the text
+// mentions. It is not a TypeScript parser and does not need to be: it is the
+// minimum that makes "this function calls X" a different claim from "this
+// function's source contains the letters X".
+func stripComments(source string) string {
+	kept := make([]string, 0, strings.Count(source, "\n")+1)
+	for _, line := range strings.Split(source, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*") ||
+			strings.HasPrefix(trimmed, "*") {
+			continue
+		}
+		if index := strings.Index(line, "//"); index >= 0 {
+			line = line[:index]
+		}
+		kept = append(kept, line)
+	}
+	return strings.Join(kept, "\n")
 }
 
 // functionBody returns the source from a top-level `export const name = ` up to

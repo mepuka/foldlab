@@ -3151,3 +3151,30 @@ the corrected note stated one conjunct of a two-conjunct law while the diff that
 wrote it had the bound in hand, and the file's own charter is "Abstractions,
 stated so they can be argued with". **Load-bearing? no** — the theorems do not
 read the note, and the direction of the gap is the safe one.
+
+### D??. A pre-law catalog fact stays resolvable by digest, and no migration is built
+
+Decided: nothing is built for a daemon whose JetStream catalog predates the
+closure law. A fact cataloged before it stays resolvable BY DIGEST while every
+new term carrying such a number refuses — round 3's probe P8 planted
+`{"base":{"k":"string"},"check":{"args":{"min":5e-324},"name":"minLength"},"k":"check"}`,
+digest `ca76451e168b430da5a5614af038a9c2ac7802a8c02a0cdc954bc7e75710a726` — the
+same identity the TS mint returned before this round's sweep-before-mint entry
+above closed it. The exposure is direct digest resolution and nothing else:
+`walkRefGraph` re-walks every resolved target, so that fact cannot be reached
+through a `ref` in a NEW term either — probed, and it refuses under the closure
+law at `[structure of digest $resolved check args min]`. Alternatives: sweep the
+catalog at startup and tombstone pre-law facts (a migration for data this estate
+declares disposable); refuse resolution of any fact whose stored bytes fail the
+law, which turns a read path into a certifier and pays a walk per resolve;
+tombstone on first resolve; leave it unwritten, which is what round 3 did and
+what makes it round-4 finding W3 rather than a note. Why: the consequence is
+real, it was discovered by execution, and an unwritten consequence is one a
+future reader has to rediscover — the estate's own precedent is that a
+hard-cutover cost gets an entry with its bound, which is what the session
+grammar digest's entry does for journals. The bound here is the same one and is
+what makes acceptance cheap: `proto/AGENTS.md` — tracer data is disposable, all
+JetStream stores live in temp dirs, and no persisted catalog depends on a pre-law
+fact. **Load-bearing? yes** — it is the license under which the closure law lands
+as a hard cut rather than owing a catalog migration, the catalog-side twin of the
+session-digest hard cut.
