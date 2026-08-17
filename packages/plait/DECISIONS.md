@@ -134,7 +134,7 @@ most eight recursive transitions from an exported value. Member, prototype,
 service-shape, and index traversal each spend one edge; a call or construct
 return spends one edge. The committed ladder refuses
 `atBound.n1.n2.n3.n4.n5.load#call[1]` at edge eight and admits the otherwise
-identical branch with one extra `n6` member at edge nine. The supplemental
+identical branch with one extra `n6` member at edge nine. The load-bearing
 type-level walk retains its own eight-step cutoff, traverses plain classes, and
 subtracts imported `Schema.Top` protocol members before package-authored Schema
 extensions. Alternatives: leave either recursion unbounded; suppress every
@@ -267,3 +267,50 @@ repairing them, per findings-before-fixes); the `unstable/codegen` pair, which
 this run demotes to a proposal in the document's addendum. **Load-bearing? no**
 — this decision fixes a document's home and evidence scope, and reverses at the
 cost of one `git mv`.
+
+### T15. Guard the type-level walk's quantifier and control its cross-package class
+
+Decided: `PublicEffectErrorConformance` asserts over `BoundSurfaceViolations`,
+which puts two quantifier laws ahead of the carrier walk — refuse an empty
+surface by name, then require the walked surface to carry the whole barrel,
+compared against a SECOND, independent resolution of `../src/index.js`. The
+quantifier is named once at the assertion, so the DEV-722 mutation (narrowing it
+to `Pick<PublicApi, never>`, which left the whole battery green over a live
+cross-package violation) reddens the very assertion it weakened. Three committed
+controls carry the pair: `PublicEffects.empty-quantifier` drops refuse-empty,
+`PublicEffects.narrowed-quantifier` drops the bound witness alone (inhabited,
+still not the barrel), and `PublicEffects.core-probe` plants a fallible member
+authored in `packages/core/negative-controls/plait-public-surface-probe.ts` —
+one workspace package over — surfaced through the whole real barrel, which is
+T7's externally-authored class with an executable witness instead of a described
+one. Alternatives: assert inhabitation only (a one-key `Pick` passes it);
+compare the quantifier against `PublicApi` itself (a narrowed alias then
+compares to itself, vacuous in the same way); keep the plant inside plait's own
+`negative-controls/` (authored under this package's emit root, so it witnesses
+the wrong class); plant it in `packages/core/src` (that package's exports map is
+`./*` → `./src/*.ts`, so a deliberately unlawful member would enter a seam
+package's public surface). The eight synthetic-barrel controls keep asserting
+over the unbounded `PublicSurfaceViolations`: their planted APIs are not the
+barrel, and routing them through the guard would refute them on the quantifier
+law instead of the law each one drops. Why: a walk that quantifies over nothing
+reports nothing, and the type-level walk is load-bearing for a class no other
+mechanism reaches (T7) — so its quantifier needs the same refuse-empty-plus-bound-witness
+shape the declaration gate already has. **Load-bearing? yes** — until the
+guard and the cross-package control existed, the load-bearing half of T7's
+split had no executable evidence that it was still bound to the real surface.
+Residual, stated: the guard binds what the assertion quantifies over, not which
+walk the assertion calls — rewriting that line to call `PublicSurfaceViolations`
+directly is refused by review, not by the compiler.
+
+### T16. Teach the register's transport refusal instead of scoping the claim
+
+Decided: `transportRefusal` ships a taught `next` — reconnect to the pinned
+server and observe the register's landed holder, token, and outcome before
+retrying — so the integration commit's sentence, "no register refusal leaves
+without naming its repair", is true of the shipped code rather than of its
+structural half. Alternatives: scope the sentence to structural refusals (the
+absence sort is then the one register refusal a caller must improvise against);
+teach a bare retry (it would contradict seam rule 2 — a transport refusal leaves
+the operation's outcome ambiguous, and this adapter reconciles ambiguity by
+read-back, never by a retried write on faith). **Load-bearing? no** — the
+teaching states the repair the adapter already implements; no law moves with it.

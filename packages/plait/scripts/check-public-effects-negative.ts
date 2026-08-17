@@ -53,6 +53,21 @@ const controls = [
     project: "tsconfig.negative-plain-class.json",
     trace: "negative-controls/PublicEffects.plain-class.trace.txt",
   },
+  {
+    name: "cross-package member surfaced through the barrel",
+    project: "tsconfig.negative-core-probe.json",
+    trace: "negative-controls/PublicEffects.core-probe.trace.txt",
+  },
+  {
+    name: "walk quantified over an empty surface",
+    project: "tsconfig.negative-empty-quantifier.json",
+    trace: "negative-controls/PublicEffects.empty-quantifier.trace.txt",
+  },
+  {
+    name: "walk quantified over part of the barrel",
+    project: "tsconfig.negative-narrowed-quantifier.json",
+    trace: "negative-controls/PublicEffects.narrowed-quantifier.trace.txt",
+  },
 ] as const
 
 const declarationControls = [
@@ -164,4 +179,4 @@ for (const control of declarationControls) {
   if (failed) process.exit(1)
 }
 
-console.log("PUBLIC EFFECT CONTROL: PASS (seventeen public-surface regressions refused)")
+console.log("PUBLIC EFFECT CONTROL: PASS (twenty public-surface regressions refused)")

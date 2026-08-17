@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "negative-controls/PublicEffects.narrowed-quantifier.mutant.ts",
+    "test/PublicEffects.typecheck.ts"
+  ]
+}
