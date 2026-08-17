@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden sorry at negative-controls/sorry.lean:2

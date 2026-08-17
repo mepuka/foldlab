@@ -158,7 +158,6 @@ func frontierChoices(refs []string) []frontierChoice {
 		{Kind: "string", Example: map[string]any{"k": "string"}},
 		{Kind: "bool", Example: map[string]any{"k": "bool"}},
 		{Kind: "int", Example: map[string]any{"k": "int"}},
-		{Kind: "float", Example: map[string]any{"k": "float"}},
 		{Kind: "null", Example: map[string]any{"k": "null"}},
 		{Kind: "opaque", Example: map[string]any{"k": "opaque"}},
 		{Kind: "literal", Example: map[string]any{"k": "literal", "value": nil}},

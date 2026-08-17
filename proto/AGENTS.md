@@ -1,9 +1,24 @@
 # proto/ — tracer bullet contract (builder-written; SPEC.md is coordinator-owned)
 
-Read `SPEC.md` first — it is the behavioral spec and must not be
-edited. This file states the bullet's enforceable laws and the
-graduation map. Vocabulary lives in `CONTEXT.md`; every decision the
-spec did not fix is logged in `DECISIONS.md`.
+Read `SPEC.md` first — it is the behavioral spec and an executor does
+not edit it. The one exception, and its shape: a dispatching brief may
+DIRECT a spec edit when the operator has ratified a change to the
+behaviour the spec declares. The authority is the brief plus the named
+ruling, the edit is confined to what the brief names, and the exception
+is recorded in `DECISIONS.md` with the ruling it carries. An executor
+who wants a spec change nobody directed is looking at a blocker to
+report, not a file to edit — that is the law this exception does not
+touch. Three instances so far, all under the 2026-08-16/17 post-sweep
+rulings: the float leaf leaving the grammar (ruling 2), literal scalars
+narrowing to integers (ruling 5), and the closure law plus the missing
+`{"k":"opaque"}` production (ruling 7). The third is the tell worth
+reading: two position-by-position spec edits in two days is what a
+missing class-level law costs, and the exception is cheap enough to
+invoke that only the ruling keeps it rare.
+
+This file states the bullet's enforceable laws and the graduation map.
+Vocabulary lives in `CONTEXT.md`; every decision the spec did not fix is
+logged in `DECISIONS.md`.
 
 ## Laws (each is a test; see SPEC.md W1–W10 for the full sentences)
 
@@ -51,6 +66,38 @@ spec did not fix is logged in `DECISIONS.md`.
   concurrent clients under the same principal remain legal.
 - `proto/wire/fixtures/` is FROZEN — generated once by `cmd/wirefix`.
   A digest mismatch means a port drifted; never edit a fixture.
+  `types.json`, `chains.json`, `frames.json`, `concierge.json`, and
+  `sessions.json` regenerate byte-identically from
+  `go run ./cmd/wirefix -force`; a fixture without that property is not
+  frozen, it is stranded (`docs/FREEZING.md`). That claim is now a gate:
+  `cd proto/go && go test -count=1 ./cmd/wirefix/` regenerates into a
+  temp dir and byte-diffs all five.
+- `-count=1` on EVERY Go test command here, not just the regeneration
+  one. Go's test cache records only files it can attribute to the
+  package's own module root, so anything read from outside the module —
+  `proto/wire/**` for `protod` and `catalogr4`, the root `fixtures/**`
+  and `proto/wire/**` for the `go/` module — is invisible to the cache
+  key, and `go test ./...` prints `ok (cached)` over a mutated fixture.
+  Measured on all four present readers. A wall that can report a stale
+  pass on the input it exists to watch is worse than no wall, because it
+  is believed (`docs/FREEZING.md`).
+- `flb.type.v0` is declared once and restated sixteen times.
+  `GRAMMAR-SITES.md` is the list, and a grammar change visits all of it;
+  `float_leaf_test.go` greps the fourteen that live under `proto/`.
+  The closure law: no position in a v0 term admits a non-integral
+  number. ONE bound (`isIntegralJSONNumber`) applied by ONE traversal
+  over the whole term (`requireIntegralNumbers`), so no term
+  canonicalizes through shortest-round-trip number printing and a
+  JSON-bearing position added later inherits the bound instead of
+  needing its own check. That traversal is TOTAL over its domain and
+  refuses outside it: its `default:` case rejects any value
+  `canonical.Decode` could not have produced, so a Go-constructed
+  `float32` cannot carry a number past a switch that never named its
+  type. The TS mirror is `findNonIntegralNumber` in `src/jcs.ts`, stated
+  once and swept by BOTH places a TS term becomes an identity — the
+  author fold and `structureDigest` (with its `sessionStateDigest`
+  alias). Non-integer numbers reach the protocol only as opaque payload
+  bytes, which are values and not terms.
 - The MCP tool surface is derived from `contract.describe` at startup;
   there is no hand-written tool list to drift. Its `journal_read` tool is the
   READ verb and therefore returns the client's verified cursor, never the
@@ -77,7 +124,8 @@ spec did not fix is logged in `DECISIONS.md`.
 
 ```
 cd proto/go && gofmt -l .        # prints nothing
-cd proto/go && go vet ./... && go test ./...
+cd proto/go && go vet ./... && go test -count=1 ./...
+cd proto/go && go test -count=1 ./cmd/wirefix/   # fixture regeneration
 cd proto/ts && bun install && bunx tsc --noEmit && bun test .
 ```
 

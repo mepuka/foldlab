@@ -6,11 +6,13 @@ import { GoJcsProbe } from "../../../packages/core/test/jcsProbe.ts"
 import {
   canonicalize,
   canonicalizeStructure,
+  INTEGRAL_NUMBER_LAW,
   normalize,
   sha256Hex,
   structureDigest,
   type Json,
 } from "../src/jcs.ts"
+import { sessionStateDigest } from "../src/session.ts"
 
 const bytesOf = (outcome: ReturnType<typeof canonicalize>): string => {
   expect(outcome.ok).toBe(true)
@@ -133,6 +135,81 @@ describe("proto JCS has the core/Go canonical identity domain", () => {
     mutant.fields.nested.of.sort((left: Json, right: Json) =>
       bytesOf(canonicalize(left)).localeCompare(bytesOf(canonicalize(right))))
     expect(mutant).not.toEqual(before)
+  })
+})
+
+// Round 3, finding R3: the TS mirror's closure lived in `foldSchema` and nowhere
+// else, so the raw identity utilities minted a v0 identity for a term the daemon
+// refuses. The digest below is what `structureDigest` returned before this cure,
+// and it is byte-identical to the one the Go side derives for the same term —
+// both runtimes agreed on an identity neither certifier will mint.
+describe("the TS identity mint refuses exactly what the certifier refuses", () => {
+  const counterexample: Json = {
+    k: "check",
+    base: { k: "string" },
+    check: { name: "minLength", args: { min: 5e-324 } },
+  }
+  const mintedBeforeTheCure = "ca76451e168b430da5a5614af038a9c2ac7802a8c02a0cdc954bc7e75710a726"
+
+  test("the refusal is a v0 law, not an RFC 8785 one — the bytes are canonical", () => {
+    const encoded = canonicalizeStructure(counterexample)
+    expect(bytesOf(encoded)).toBe(
+      '{"base":{"k":"string"},"check":{"args":{"min":5e-324},"name":"minLength"},"k":"check"}',
+    )
+    // The exact ES2019 §7.1.12.1 shortest-round-trip rendering this whole lane
+    // exists to keep out of identity bytes. The canonicalizer is right to admit
+    // it; the mint is what must not.
+    expect(sha256Hex(bytesOf(encoded))).toBe(mintedBeforeTheCure)
+
+    const identity = structureDigest(counterexample)
+    if (identity.ok) throw new Error(`structureDigest minted ${identity.digest}`)
+    expect(identity.refusal).toEqual({
+      _tag: "NonIntegralNumber",
+      path: "$/check/args/min",
+      reason: INTEGRAL_NUMBER_LAW,
+    })
+  })
+
+  test("sessionStateDigest inherits it, because a partial IS a term", () => {
+    const partial: Json = {
+      k: "struct",
+      fields: { a: { k: "hole" }, b: counterexample },
+      optional: [],
+    }
+    const identity = sessionStateDigest(partial)
+    if (identity.ok) throw new Error(`sessionStateDigest minted ${identity.digest}`)
+    expect(identity.refusal).toMatchObject({
+      _tag: "NonIntegralNumber",
+      path: "$/fields/b/check/args/min",
+    })
+  })
+
+  test("the four canonical vectors die at any depth, and lawful terms still mint", () => {
+    for (const number of [5e-324, 0.1, 1e21, 1e-7]) {
+      const nested: Json = {
+        k: "list",
+        of: {
+          k: "check",
+          base: { k: "string" },
+          check: { name: "minLength", args: { deep: [1, { min: number }] } },
+        },
+      }
+      const identity = structureDigest(nested)
+      if (identity.ok) throw new Error(`${number} minted ${identity.digest}`)
+      expect(identity.refusal).toMatchObject({ path: "$/of/check/args/deep/1/min" })
+    }
+
+    // Controls: the bound is integrality, not the presence of a number, and the
+    // committed corpus still mints (proto/ts/test/wall.test.ts is the full net).
+    const lawful = structureDigest({
+      k: "check",
+      base: { k: "string" },
+      check: { name: "minLength", args: { min: 3 } },
+    })
+    expect(lawful.ok).toBe(true)
+    expect(structureDigest({ k: "literal", value: -0 }).ok).toBe(true)
+    expect(structureDigest({ k: "literal", value: 9007199254740991 }).ok).toBe(true)
+    expect(structureDigest({ k: "literal", value: 9007199254740992 }).ok).toBe(false)
   })
 })
 

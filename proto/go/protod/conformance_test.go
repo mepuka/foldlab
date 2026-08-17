@@ -136,7 +136,7 @@ func sampleStructure() map[string]any {
 		"k": "struct",
 		"fields": map[string]any{
 			"id":      map[string]any{"k": "brand", "name": "SensorId", "of": map[string]any{"k": "string"}},
-			"celsius": map[string]any{"k": "float"},
+			"reading": map[string]any{"k": "opaque"},
 		},
 		"optional": []any{},
 	}
@@ -178,7 +178,7 @@ func TestConformance(t *testing.T) {
 		weird := []byte(`{
 			"structure": {
 				"optional": [],
-				"fields":   {"celsius": {"k":"float"},
+				"fields":   {"reading": {"k":"opaque"},
 					"id": {"of":{"k":"string"},"name":"SensorId","k":"brand"}},
 				"k": "struct"
 			}
@@ -269,7 +269,7 @@ func TestConformance(t *testing.T) {
 
 	t.Run("W5 an admit reply means durably appended and readable", func(t *testing.T) {
 		admit := h.request("flb.ing.data", map[string]any{
-			"type": sampleDigest, "payload": map[string]any{"id": "s-1", "celsius": 21.5},
+			"type": sampleDigest, "payload": map[string]any{"id": "s-1", "reading": 21.5},
 		})
 		if admit["ok"] != true || admit["admitted"] != true {
 			t.Fatalf("publish refused: %v", admit)
@@ -661,8 +661,8 @@ func TestConciergeConformance(t *testing.T) {
 		})
 		entry := started["frontier"].([]any)[0].(map[string]any)
 		legal := entry["legal"].([]any)
-		if len(legal) != 13 {
-			t.Fatalf("frontier advertises %d kinds, want 13: %v", len(legal), legal)
+		if len(legal) != 12 {
+			t.Fatalf("frontier advertises %d kinds, want 12: %v", len(legal), legal)
 		}
 		refs := entry["refs"].([]any)
 		if len(refs) == 0 || len(refs) > 16 {
@@ -749,7 +749,7 @@ func TestUnknownRefRefusalTeachesOneStepRepair(t *testing.T) {
 	partial := map[string]any{
 		"k": "struct",
 		"fields": map[string]any{
-			"amount":   map[string]any{"k": "float"},
+			"amount":   map[string]any{"k": "int"},
 			"currency": map[string]any{"k": "hole"},
 		},
 		"optional": []any{},
@@ -804,7 +804,7 @@ func TestCatalogRebuildsFromStore(t *testing.T) {
 	structure := sampleStructure()
 	digest := digestOf(t, structure)
 	frame := map[string]any{
-		"type": digest, "payload": map[string]any{"id": "s-2", "celsius": 3},
+		"type": digest, "payload": map[string]any{"id": "s-2", "reading": 3},
 	}
 	archivedBytes := h.requestBytes("flb.ing.data", mustJSON(t, frame))
 	var archived reply

@@ -20,10 +20,32 @@ const stages: ReadonlyArray<Stage> = [
   { label: "workspace packages — test scripts", cwd: repo, command: ["bun", "run", "test:packages"] },
   { label: "go — formatting", cwd: resolve(repo, "go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "go — vet", cwd: resolve(repo, "go"), command: ["go", "vet", "./..."] },
-  { label: "go — tests", cwd: resolve(repo, "go"), command: ["go", "test", "./..."] },
+  // `-count=1` on EVERY Go test stage, because the hazard is a property of the
+  // class and not of the one member that was measured first. Go's test cache
+  // records only the opened files it can attribute to the package's own module
+  // root, so a fixture read from OUTSIDE the module is invisible to the cache
+  // key and `go test ./...` reports `ok (cached)` over a mutated one. All four
+  // present cross-module readers were measured, each stale-passing under a
+  // one-byte mutation and failing under `-count=1`:
+  //   foldlab/canonical       → fixtures/golden-conformance.json, jcs-rfc8785.json
+  //   foldlab/journal         → proto/wire/fixtures/chains.json
+  //   foldlab/proto/protod    → proto/wire/fixtures/*, proto/wire/refusal-sorts.json
+  //   foldlab/proto/catalogr4 → proto/wire/reply-conformance.json
+  // A wall that can report a stale pass on exactly the input it exists to watch
+  // is worse than no wall, because it is believed. Arming the stage rather than
+  // the package is what keeps a reader added tomorrow from inheriting the gap.
+  { label: "go — tests", cwd: resolve(repo, "go"), command: ["go", "test", "-count=1", "./..."] },
   { label: "proto/go — formatting", cwd: resolve(repo, "proto/go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "proto/go — vet", cwd: resolve(repo, "proto/go"), command: ["go", "vet", "./..."] },
-  { label: "proto/go — tests", cwd: resolve(repo, "proto/go"), command: ["go", "test", "./..."] },
+  { label: "proto/go — tests", cwd: resolve(repo, "proto/go"), command: ["go", "test", "-count=1", "./..."] },
+  // Kept as its own stage after the arming above absorbed its cache defense:
+  // the label is what a red line names, and "wire fixture regeneration" is a
+  // different claim from "proto/go tests" even when the same flag protects both.
+  {
+    label: "proto/go — wire fixture regeneration",
+    cwd: resolve(repo, "proto/go"),
+    command: ["go", "test", "-count=1", "./cmd/wirefix/"],
+  },
   { label: "proto/ts — typecheck", cwd: resolve(repo, "proto/ts"), command: ["bunx", "tsc", "--noEmit"] },
   { label: "proto/ts — tests", cwd: resolve(repo, "proto/ts"), command: ["bun", "test", "."] },
 ]

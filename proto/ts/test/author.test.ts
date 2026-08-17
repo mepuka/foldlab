@@ -9,7 +9,6 @@ describe("author fold maps the v0 slice", () => {
   test("leaves", () => {
     expect(foldSchema(Schema.String)).toMatchObject({ ok: true, structure: { k: "string" } })
     expect(foldSchema(Schema.Boolean)).toMatchObject({ ok: true, structure: { k: "bool" } })
-    expect(foldSchema(Schema.Number)).toMatchObject({ ok: true, structure: { k: "float" } })
     expect(foldSchema(Schema.Int)).toMatchObject({ ok: true, structure: { k: "int" } })
     expect(foldSchema(Schema.Null)).toMatchObject({ ok: true, structure: { k: "null" } })
     expect(foldSchema(Schema.Unknown)).toMatchObject({ ok: true, structure: { k: "opaque" } })
@@ -22,7 +21,7 @@ describe("author fold maps the v0 slice", () => {
   test("a realistic sensor schema folds to the fixture shape", () => {
     const Sensor = Schema.Struct({
       id: Schema.String.pipe(Schema.brand("SensorId")),
-      celsius: Schema.Number,
+      reading: Schema.Unknown,
       count: Schema.Int,
       mode: Schema.Union([Schema.Literal("on"), Schema.Literal("off")]),
       note: Schema.optionalKey(Schema.String),
@@ -34,7 +33,7 @@ describe("author fold maps the v0 slice", () => {
       k: "struct",
       fields: {
         id: { k: "brand", name: "SensorId", of: { k: "string" } },
-        celsius: { k: "float" },
+        reading: { k: "opaque" },
         count: { k: "int" },
         mode: {
           k: "union",
@@ -134,6 +133,56 @@ describe("beyond v0 refuses as data with the uniform shape", () => {
 
   test("transformations (encoding links)", () => {
     refusalShape(foldSchema(Schema.FiniteFromString))
+  })
+
+  test("non-integer number schemas have no v0 leaf", () => {
+    const refusal = refusalShape(foldSchema(Schema.Number))
+    expect(refusal.path).toEqual(["structure"])
+    expect(refusal.law).toContain("non-integer numbers have no v0 leaf")
+  })
+
+  // The Go certifier's integrality bound, mirrored: these are the exact
+  // values that minted lawfully before the narrowing, and 5e-324 / 1e21 /
+  // 1e-7 are ES2019 shortest-round-trip renderings. Under the closure law the
+  // sentence they refuse by name widened from "a literal number" to "every
+  // number in a type term" — the vectors and the refusal kind are unchanged.
+  test.each([5e-324, 0.1, 1e21, 1e-7, -0.5, Number.MAX_VALUE, 2 ** 53])(
+    "a non-integer literal %p has no v0 form",
+    (value) => {
+      const refusal = refusalShape(foldSchema(Schema.Literal(value)))
+      expect(refusal.law).toContain("every number in a type term is integral")
+      expect(refusal.got).toBe(String(value))
+      expect(refusal.path).toEqual(["structure", "value"])
+    },
+  )
+
+  // Closure, on the authoring side: a check bound the fold CAN express is
+  // refused when its args carry a non-integral number. Round 1 narrowed the
+  // literal position and left this one open on both sides.
+  test.each([5e-324, 0.1, 1e21, 1e-7])(
+    "a check argument %p has no v0 form",
+    (value) => {
+      const refusal = refusalShape(foldSchema(Schema.Int.check(Schema.isGreaterThan(value))))
+      expect(refusal.law).toContain("every number in a type term is integral")
+      expect(refusal.got).toBe(String(value))
+      expect(refusal.path).toEqual(["structure", "check", "args", "exclusiveMin"])
+    },
+  )
+
+  test("integral check arguments still fold", () => {
+    expect(foldSchema(Schema.String.check(Schema.isMinLength(3)))).toMatchObject({
+      ok: true,
+      structure: { k: "check", check: { name: "minLength", args: { min: 3 } } },
+    })
+  })
+
+  test("integral literals inside the safe range still fold", () => {
+    for (const value of [0, -1, 10, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER]) {
+      expect(foldSchema(Schema.Literal(value))).toMatchObject({
+        ok: true,
+        structure: { k: "literal", value },
+      })
+    }
   })
 
   test("records (index signatures)", () => {

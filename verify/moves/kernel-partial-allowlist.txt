@@ -1,0 +1,12 @@
+# Kernel-owned `partial` allowlist — the one per-site exception in the roster.
+#
+# Same mechanism and same ratification rule as the @[extern] allowlist: one
+# tab-separated row per approved site, pinned to the SHA-256 of the exact
+# source line. Format:
+#   PATH:LINE<TAB>SHA256_OF_EXACT_SOURCE_LINE<TAB>operator-ratified: DECISION-ID — reason
+#
+# PATH is Moves.lean, Main.lean, or a file under Moves/ or Oracle/ — the
+# kernel-bound roster. Moving or editing an approved line changes its digest
+# and re-enters review. A roster carve-out is never an acceptable substitute:
+# an exception that is not written down cannot be argued with.
+Main.lean:68	6dccd079c310a3d9a441d6e1bee5888e9cac891467ee15fed26ae8bd4bda90e6	operator-ratified: D?? (brief 25 C5) — the oracle serve loop is a non-terminating daemon transport, not a value-defaulting channel: it returns no value the corpus records

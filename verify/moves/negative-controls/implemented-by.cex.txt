@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden @[implemented_by] at negative-controls/implemented-by.lean:2

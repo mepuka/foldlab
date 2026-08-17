@@ -68,13 +68,14 @@ One thread, both directions, no trust anywhere:
 ## The authoring grammar — `flb.type.v0` (first cut of the owned structure, ratified)
 
 ```
-T ::= {"k":"string"|"bool"|"int"|"float"|"null"}
-    | {"k":"literal","value":<json scalar>}
+T ::= {"k":"string"|"bool"|"int"|"null"}
+    | {"k":"opaque"}
+    | {"k":"literal","value":<string|integral number|bool|null>}
     | {"k":"list","of":T}
     | {"k":"struct","fields":{<name>:T,...},"optional":[<name>,...]?}
     | {"k":"union","of":[T,...]}
     | {"k":"brand","name":<string>,"of":T}
-    | {"k":"check","base":T,"check":{"name":<string>,"args":{...}}}
+    | {"k":"check","base":T,"check":{"name":<string>,"args":<JSON object>}}
     | {"k":"ref","digest":<hex64>}
 ```
 
@@ -84,6 +85,38 @@ checks declared-metadata only; refs must resolve to cataloged digests
 (the catalog is a DAG by construction — no forward refs, no cycles).
 Unknown `"k"` refuses. The grammar grows toward full SchemaAST coverage
 under 004; it never gets a parallel competitor.
+
+`{"k":"opaque"}` is the amendment-3 production, written into the grammar
+here rather than described only in prose below: a declaration the
+certifier admits but the grammar block omits is a declaration that
+disagrees with its implementation.
+
+**The closure law.** No position in a v0 TERM admits a non-integral
+number — whole, and within ±(2^53−1). That is one law over the whole
+term, not a bound attached to the positions that happen to carry numbers
+today: the `int` leaf, a literal's `value`, every number nested anywhere
+inside a check's `args`, and any JSON-bearing position the grammar grows
+next. It is enforced where numbers are decoded rather than where
+positions are enumerated, so a new position inherits it instead of
+needing its own patch. Opaque PAYLOADS are the sole exception, and they
+are values, not terms: an opaque payload is uninterpreted canonical
+bytes, canonicalized at the JCS seam and never parsed here, so a
+non-integer number reaches the protocol only there.
+
+The consequence is what makes the law worth having: no v0 term can carry
+a number whose canonical form needs shortest-round-trip printing, so a
+canonical-value law over this whole grammar owes no such proof
+obligation.
+
+Ruling 5's literal narrowing, above, was directed by
+`scratch/dispatch/25-float-hygiene-cure.md`. Both edits in this section
+are directed by dispatch brief 26 under operator ruling 7 (2026-08-17),
+which follows ruling 5 after position-by-position narrowing failed to
+converge. That brief is cited by number rather than by path because it
+is a coordinator record that lands with the merge, and a tracked file
+should not point at a path a fresh checkout cannot open. The spec's
+do-not-edit law and both brief-directed exceptions are recorded in
+`DECISIONS.md`.
 
 ## Skeleton (the unanimous shape; internal layout is the builder's)
 

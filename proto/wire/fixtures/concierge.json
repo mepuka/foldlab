@@ -36,12 +36,6 @@
             },
             {
               "example": {
-                "k": "float"
-              },
-              "kind": "float"
-            },
-            {
-              "example": {
                 "k": "null"
               },
               "kind": "null"
@@ -140,7 +134,7 @@
         "k": "hole"
       }
     },
-    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"float\"},\"kind\":\"float\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"hole\"}}"
+    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"hole\"},\"path\":[],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"hole\"}}"
   },
   {
     "name": "fill-list-child",
@@ -227,12 +221,6 @@
                 "k": "int"
               },
               "kind": "int"
-            },
-            {
-              "example": {
-                "k": "float"
-              },
-              "kind": "float"
             },
             {
               "example": {
@@ -344,7 +332,7 @@
         }
       }
     },
-    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"float\"},\"kind\":\"float\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[\"of\"],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"path\":[\"of\"],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}"
+    "replyCanonical": "{\"frontier\":[{\"legal\":[{\"example\":{\"k\":\"string\"},\"kind\":\"string\"},{\"example\":{\"k\":\"bool\"},\"kind\":\"bool\"},{\"example\":{\"k\":\"int\"},\"kind\":\"int\"},{\"example\":{\"k\":\"null\"},\"kind\":\"null\"},{\"example\":{\"k\":\"opaque\"},\"kind\":\"opaque\"},{\"example\":{\"k\":\"literal\",\"value\":null},\"kind\":\"literal\"},{\"example\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"kind\":\"list\"},{\"example\":{\"fields\":{},\"k\":\"struct\",\"optional\":[]},\"kind\":\"struct\"},{\"example\":{\"k\":\"union\",\"of\":[{\"k\":\"hole\"}]},\"kind\":\"union\"},{\"example\":{\"k\":\"brand\",\"name\":\"Brand\",\"of\":{\"k\":\"hole\"}},\"kind\":\"brand\"},{\"example\":{\"base\":{\"k\":\"hole\"},\"check\":{\"args\":{},\"name\":\"check\"},\"k\":\"check\"},\"kind\":\"check\"}],\"path\":[\"of\"],\"refs\":[]}],\"next\":[{\"body\":{\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}},\"path\":[\"of\"],\"subtree\":{\"k\":\"string\"}},\"note\":\"fill the first remaining hole with any advertised legal example\",\"subject\":\"flb.req.type.fill\"},{\"body\":{},\"note\":\"request the daemon's contract; every subject and body shape is described there\",\"subject\":\"flb.req.contract.describe\"}],\"ok\":true,\"partial\":{\"k\":\"list\",\"of\":{\"k\":\"hole\"}}}"
   },
   {
     "name": "fill-non-hole-refusal",

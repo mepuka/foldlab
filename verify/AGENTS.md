@@ -50,9 +50,12 @@ rung definitions. Scoped laws:
 - `ir/` — `flb.type.v0` stated once as an algebraic type with a
   denotational semantics (Lean). The reference the Go and TS grammar
   restatements are meant to mirror; correspondence unproved.
-- `moves/` — the E2 move calculus: twenty-four gated axiom reports and five
-  controls. Its `run.sh` adds the mechanical axiom-footprint
-  check over every headline theorem (Lean).
+- `moves/` — the E2 move calculus: thirty-nine gated axiom reports, five
+  model-level violation controls in `Moves/Violations.lean` plus three frozen
+  mutant kills in `Moves/SpecProofs.lean`, and nine planted source-hygiene
+  controls with committed traces in `negative-controls/` — one per shipped
+  check. Its `run.sh` adds the mechanical axiom-footprint check over every
+  headline theorem (Lean).
 - `pipeline/` — the create-pipeline snapshot law with crashes enabled,
   plus the orphan-fact crash residual (TLC).
 - `replay/` — workflow replay soundness: Lean for the unbounded half,

@@ -3,27 +3,27 @@
     "name": "plain",
     "frame": {
       "payload": {
-        "celsius": 21.5,
         "count": 3,
         "id": "s-1",
-        "mode": "on"
+        "mode": "on",
+        "reading": 21.5
       },
-      "type": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f"
+      "type": "253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e"
     },
-    "canonical": "{\"payload\":{\"celsius\":21.5,\"count\":3,\"id\":\"s-1\",\"mode\":\"on\"},\"type\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\"}"
+    "canonical": "{\"payload\":{\"count\":3,\"id\":\"s-1\",\"mode\":\"on\",\"reading\":21.5},\"type\":\"253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e\"}"
   },
   {
     "name": "unicode-and-number-normalization",
     "frame": {
       "payload": {
-        "celsius": 1,
         "count": 1000000,
         "id": "s-☃",
         "mode": "off",
-        "note": "line\nbreak \"q\""
+        "note": "line\nbreak \"q\"",
+        "reading": 1
       },
-      "type": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f"
+      "type": "253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e"
     },
-    "canonical": "{\"payload\":{\"celsius\":1,\"count\":1000000,\"id\":\"s-☃\",\"mode\":\"off\",\"note\":\"line\\nbreak \\\"q\\\"\"},\"type\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\"}"
+    "canonical": "{\"payload\":{\"count\":1000000,\"id\":\"s-☃\",\"mode\":\"off\",\"note\":\"line\\nbreak \\\"q\\\"\",\"reading\":1},\"type\":\"253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e\"}"
   }
 ]

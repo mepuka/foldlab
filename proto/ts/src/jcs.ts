@@ -97,15 +97,96 @@ export const SCHEME = "flb.type.v1"
 /** The transition's attestation-grade predecessor. */
 export const ATTESTATION_SCHEME = "bytes-sha256-v1"
 
+/** The certifier's closure law, mirrored (operator ruling 7): every number in a
+ * flb.type.v0 term is integral. This is the MIRROR's sentence, kept verbatim
+ * from the author fold so no client-visible refusal text moved when the bound
+ * did; the daemon utters its own wording, and the bound the two state is the
+ * same one. */
+export const INTEGRAL_NUMBER_LAW =
+  "every number in a type term is integral — whole and within ±(2^53-1); use opaque for other numbers"
+
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
+
+/** Where the closure law was broken, as a term coordinate. */
+export interface NonIntegralNumber {
+  readonly path: ReadonlyArray<string>
+  readonly value: number
+}
+
+/** The one TS statement of the integrality bound, as ONE traversal over the
+ * whole term rather than a check per number-bearing position — the same shape
+ * as the Go walk, for the same reason: a position added later inherits the law
+ * instead of needing its own patch. `Number.isSafeInteger` is the exact mirror
+ * of `isIntegralJSONNumber`; members are visited in identity order so the
+ * refusal coordinate does not depend on object insertion order.
+ *
+ * It lives HERE rather than in the author fold because the fold is not the only
+ * place a term becomes an identity: `structureDigest` mints one from raw Json,
+ * and a bound stated at the fold alone is a bound the mint does not have — the
+ * exact shape of the certifier's own two blockers, one layer out. */
+export const findNonIntegralNumber = (
+  value: Json,
+  path: ReadonlyArray<string>,
+): NonIntegralNumber | undefined => {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) ? undefined : { path, value }
+  }
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      const found = findNonIntegralNumber(value[index] as Json, [...path, String(index)])
+      if (found !== undefined) return found
+    }
+    return undefined
+  }
+  if (value !== null && typeof value === "object") {
+    const members = value as Record<string, Json>
+    for (const name of Object.keys(members).sort(byCodeUnit)) {
+      const found = findNonIntegralNumber(members[name] as Json, [...path, name])
+      if (found !== undefined) return found
+    }
+  }
+  return undefined
+}
+
+export interface NonIntegralNumberRefusal {
+  readonly _tag: "NonIntegralNumber"
+  readonly path: string
+  readonly reason: string
+}
+
+/** A structure identity refuses for either reason a v0 identity can fail to
+ * exist: the value is outside the RFC 8785 domain, or it is a term the
+ * certifier would not admit. */
+export type StructureRefusal = CanonicalRefusal | NonIntegralNumberRefusal
+
 export type StructureDigestResult =
   | { readonly ok: true; readonly digest: string }
-  | { readonly ok: false; readonly refusal: CanonicalRefusal }
+  | { readonly ok: false; readonly refusal: StructureRefusal }
 
+/** SHA-256 over the canonical bytes of a normalized flb.type.v0 structure —
+ * and ONLY of a structure the daemon's certifier would admit. The closure sweep
+ * runs before the mint because this function and its `sessionStateDigest` alias
+ * are the TS side's identity mint: without it they returned `{ok:true}` for a
+ * term carrying 5e-324, byte-identical to the digest the Go side derives for the
+ * same term, so a client could hold what looks like a v0 identity for something
+ * no daemon will ever create. The sweep runs AFTER canonicalization so a cyclic
+ * or non-Unicode value still refuses for its own reason, and so the traversal
+ * only ever walks a finite acyclic value. */
 export const structureDigest = (structure: Json): StructureDigestResult => {
   const canonical = canonicalizeStructure(structure)
-  return canonical.ok
-    ? { ok: true, digest: sha256Hex(canonical.bytes) }
-    : canonical
+  if (!canonical.ok) return canonical
+  const nonIntegral = findNonIntegralNumber(structure, [])
+  if (nonIntegral !== undefined) {
+    return {
+      ok: false,
+      refusal: {
+        _tag: "NonIntegralNumber",
+        path: ["$", ...nonIntegral.path].join("/"),
+        reason: INTEGRAL_NUMBER_LAW,
+      },
+    }
+  }
+  return { ok: true, digest: sha256Hex(canonical.bytes) }
 }
 
 export interface ChainEntry {

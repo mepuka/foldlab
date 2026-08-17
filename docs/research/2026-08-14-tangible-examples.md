@@ -277,7 +277,7 @@ kind:
     "law": "flb.type.v0: unknown kind refuses — the grammar grows under ticket 004, never by admission on faith",
     "path": ["structure", "k"],
     "got": "strng",
-    "expected": ["string","bool","int","float","null","opaque","literal","list","struct","union","brand","check","ref"],
+    "expected": ["string","bool","int","null","opaque","literal","list","struct","union","brand","check","ref"],
     "example": { "k": "string" },
     "next": [
       { "subject": "flb.req.type.create",

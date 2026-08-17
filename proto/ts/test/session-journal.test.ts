@@ -50,6 +50,9 @@ const FixtureStep = Schema.Struct({
 type FixtureStep = typeof FixtureStep.Type
 
 const SessionFixture = Schema.Struct({
+  // A regenerable fixture names its generator (docs/FREEZING.md); decoding
+  // requires the line so it cannot quietly disappear from the file.
+  _provenance: Schema.String,
   version: Schema.String,
   grammarDigest: Schema.String,
   stateScheme: Schema.String,
@@ -64,6 +67,7 @@ const fixture = Schema.decodeUnknownSync(SessionFixture)(JSON.parse(readFileSync
 
 describe("flb.session.v0", () => {
   test("R0 fixture pins every chain head and normalized state digest", async () => {
+    expect(fixture._provenance).toContain("go run ./cmd/wirefix")
     expect(fixture.grammarDigest).toBe(SESSION_GRAMMAR_DIGEST)
     let previous = GENESIS
     for (const step of fixture.steps) {
@@ -231,7 +235,7 @@ describe("flb.session.v0", () => {
 
   test("U4 property: frontier is only a function of state and catalog head", async () => {
     const leafArbitrary = FastCheck.constantFrom<Json>(
-      { k: "string" }, { k: "bool" }, { k: "int" }, { k: "float" },
+      { k: "string" }, { k: "bool" }, { k: "int" },
       { k: "null" }, { k: "opaque" },
     )
     let caseIndex = 0

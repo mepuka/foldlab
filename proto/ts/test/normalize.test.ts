@@ -14,7 +14,7 @@ const rng = (seed: number): (() => number) => () => {
 }
 
 const generatedTerm = (next: () => number, depth: number): Json => {
-  const leaves = ["string", "bool", "int", "float", "null", "opaque"] as const
+  const leaves = ["string", "bool", "int", "null", "opaque"] as const
   if (depth === 0) return { k: leaves[next() % leaves.length]! }
   switch (next() % 8) {
     case 0:

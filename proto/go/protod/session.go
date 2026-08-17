@@ -160,16 +160,20 @@ func sessionGrammarDigest() string {
 // a shape change necessarily opens under a different grammar identity.
 func sessionGrammarDescriptor() any {
 	return map[string]any{
-		"name":        "flb.type.v0",
+		"name": "flb.type.v0",
+		// The closure law is a property of the TERM, not of one production, so
+		// the descriptor commits it once beside the productions rather than
+		// annotating each number-bearing row. A client holding this digest is
+		// told that no number anywhere in a term may be non-integral.
+		"numbers":     "integral",
 		"partialKind": map[string]any{"k": "hole", "required": []any{"k"}},
 		"productions": []any{
 			map[string]any{"k": "bool", "required": []any{"k"}},
 			map[string]any{"k": "brand", "required": []any{"k", "name", "of"}, "children": map[string]any{"name": "non-empty-string", "of": "T"}},
 			map[string]any{"k": "check", "required": []any{"base", "check", "k"}, "children": map[string]any{"base": "T", "check": "{name:non-empty-string,args:json-object}"}},
-			map[string]any{"k": "float", "required": []any{"k"}},
 			map[string]any{"k": "int", "required": []any{"k"}},
 			map[string]any{"k": "list", "required": []any{"k", "of"}, "children": map[string]any{"of": "T"}},
-			map[string]any{"k": "literal", "required": []any{"k", "value"}, "children": map[string]any{"value": "json"}},
+			map[string]any{"k": "literal", "required": []any{"k", "value"}, "children": map[string]any{"value": "string|integral-number|bool|null"}},
 			map[string]any{"k": "null", "required": []any{"k"}},
 			map[string]any{"k": "opaque", "required": []any{"k"}},
 			map[string]any{"k": "ref", "required": []any{"digest", "k"}, "children": map[string]any{"digest": "hex64"}},

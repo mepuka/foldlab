@@ -644,7 +644,8 @@ configs, committed counterexample traces, run record in README) and
 
 `flb.type.v0` stated once as an algebraic type (`TyX H`; the hole is a
 type parameter, so the closed and authoring grammars are one definition
-at two instantiations) with a denotational semantics `Conforms ρ t v`,
+at two instantiations) with four primitive leaves (`string`, `bool`, `int`,
+`null`) and a denotational semantics `Conforms ρ t v`,
 and the estate's prose laws about meaning proved over it: brands are
 denotationally invisible (the fiber theorem's premise); a ref means
 exactly its resolution; union meaning is a property of the member set,
@@ -682,8 +683,9 @@ inductive laws are `union_extensional`, `sort_preserves_meaning`,
 
 Model-level: the Lean grammar is the reference the Go/TS restatements
 should mirror (architecture audit §3); no correspondence proof ties it to
-`walk.go` or `codegen.ts`. Numerics abstracted to `Int`; check args to
-the check name; ref resolution fuel-indexed with DAG-depth sufficiency
+`walk.go` or `codegen.ts`. Numeric literal values are abstracted to `Int`;
+non-integer literal identity remains outside the model; check args to the
+check name; ref resolution fuel-indexed with DAG-depth sufficiency
 noted, not proved. Well-formedness residual laws and the parse theorem
 are the named next rungs in the README.
 
@@ -719,8 +721,25 @@ single-seat stability, and the IC4 impossibility
 `Moves/Spec.lean` (statement drift is a gate failure requiring a Rev
 re-pin), `lake build` (Lean 4.33.0, core + Std, no mathlib),
 word-boundary source guards refusing `sorry`/`admit`/`axiom` in any
-position, the mechanical axiom-footprint check — `#print axioms` over
-all thirty-nine rostered theorems, failing on anything outside
+position, and the kernel-bound source-hygiene sweep over every Lean
+source in the package — `Moves.lean` and `Moves/**/*.lean`, the model
+surface, plus `Main.lean` and `Oracle/**/*.lean`, the corpus generator
+that stands in for the model in
+`packages/moves/fixtures/moves-conformance.ndjson`. Nine checks.
+Seven refuse outright: `@[implemented_by]`, `panic!`, bare `panic`,
+the bang-accessor family (any bang-suffixed identifier reached by
+dot-notation or qualification, plus the curated unqualified core
+accessors — all of which return the type's `Inhabited` default and
+exit 0), `unsafe`, `native_decide`, and `sorry`. Two require an exact
+source-line-digest allowlist row with an operator-ratified reason:
+`@[extern]` (allowlist empty) and `partial` (one row, `Main.lean:68`,
+the oracle's non-terminating serve loop). Nine planted negative
+controls, one per check, each refuted on its named check with the
+committed diagnostic trace byte-compared, each clearing the checks
+that run before it, and none of them reachable from `lake build`; a
+control committed but never run fails the gate. The mechanical axiom-footprint
+check — `#print axioms` over all thirty-nine rostered theorems, failing on
+anything outside
 `{propext, Classical.choice, Quot.sound}` — and the orphan rule: every
 public theorem is rostered or listed with a reason in
 `gate-exclusions.txt`. Controls and executable witnesses:
@@ -764,7 +783,18 @@ ties daemon folds and events to these states and moves — the daemon's
 synthesized two-candidate dispute and atomic close are instances the
 map must justify, not theorems here. Full audit:
 [docs/research/2026-08-15-model-audit-findings.md](docs/research/2026-08-15-model-audit-findings.md).
-Decision log: `verify/moves/DECISIONS.md` (D70–D79); the D85 absorb
+The hygiene sweep is source-level and owned-source-only: inherited Lean
+`Init` externs remain in the trusted base and the emitted-C
+panic-symbol count is deferred to REF-6. Its own stated bounds: the
+bang-accessor convention branch does not see an unqualified bang name
+outside the curated thirteen; `noncomputable` is deliberately not
+checked, because it removes compiled code rather than adding a
+defaulting path and the extraction obligation it bears is REF-0's, to
+be met by a positive artifact check rather than a token ban.
+Decision log: `verify/moves/DECISIONS.md` (D70–D79, the Task 22
+kernel-hygiene scope and allowlist decisions, and the Task 25 roster
+widening, bang-accessor curation rule, and control-completeness
+entries); the D85 absorb
 ratification and the D86 empty-offer refusal are recorded under the
 DEV-673 heading in `proto/DECISIONS.md` (numbers task-local until
 merge).

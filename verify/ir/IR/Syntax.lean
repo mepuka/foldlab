@@ -7,11 +7,21 @@ and `Json` (TypeScript) with at least ten restatements between them; this
 file is the single statement they should all mirror.
 
 Abstractions, stated so they can be argued with:
-- The 13 kinds are faithful: five primitives, literal, list, struct, union,
+- The 12 kinds are faithful: four primitives, literal, list, struct, union,
   brand, check, ref, opaque (proto/SPEC.md grammar + the ratified opaque
   amendment). `check` args are abstracted to the check name; literal values
-  are abstracted to `Scalar` with integer numerics (float identity questions
-  are the number-determinism dossier's lane, not this file's).
+  are abstracted to `Scalar` with integer numerics. Both abstractions now drop
+  strictly less than they used to: under the wire's closure law (operator
+  ruling 7) no position of a type term — a literal's value or any depth inside
+  a check's args — admits a non-integral number, so integer numerics are the
+  whole of what a term can carry. Non-integer numbers survive only in opaque
+  PAYLOADS, which are values, not terms. What `Scalar.num : Int` ADDS is the
+  wire law's second conjunct: the bound is `Trunc(n) = n` AND `|n| ≤ 2^53-1`,
+  and `Int` is unbounded, so `Scalar.num (10^30)` is a term of this grammar and
+  not of the wire's. That half of the law lives at the wire, and no definition
+  or theorem here states it — deliberately; this note names it only to locate
+  it. The gap runs model ⊇ wire, so it widens what a theorem here quantifies
+  over rather than leaving wire terms unmodeled.
 - Struct fields and union members are modeled as mutual inductive lists so
   every recursion is plainly structural.
 - The hole is a type PARAMETER: `TyX Empty` is the closed grammar (a hole is
@@ -25,7 +35,7 @@ Abstractions, stated so they can be argued with:
 namespace IR
 
 inductive PrimKind where
-  | string | bool | int | float | null
+  | string | bool | int | null
 deriving Repr, DecidableEq
 
 /-- JSON scalar payloads for `literal` nodes (numerics abstracted to Int). -/

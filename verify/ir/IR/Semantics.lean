@@ -13,8 +13,26 @@ Abstractions, stated:
 - JSON values mirror the IR's list discipline (mutual inductives; objects
   are association lists — canonical objects have unique sorted keys, but
   the semantics is total over any object).
-- `int` and `float` both accept `num` (numeric-tower fidelity is the
-  number-determinism dossier's lane).
+- JSON numerics are abstracted to `Int` (`Json.num`), so `int` accepts exactly
+  the model's integers. What that abstraction DROPS is now almost nothing: the
+  wire's closure law (proto/SPEC.md, operator ruling 7, extending ruling 5's
+  literal narrowing) admits no non-integral number at any position of a type
+  TERM, and `int` values carry the same bound. The one survivor is an opaque
+  PAYLOAD (ruling 6) — uninterpreted canonical bytes whose identity is byte
+  equality — and `conforms` accepts every value under `.opaque`
+  unconditionally, so a non-integer number there cannot change a verdict this
+  file could get wrong. Non-integer numerics re-enter the model, if ever, with
+  floats through the REF-9 loop and REF-2b.
+  What the abstraction ADDS is the other half of the same law, and it is not
+  nothing. The wire's bound is a CONJUNCTION — `Trunc(n) = n` AND
+  `|n| ≤ 2^53-1` — and `Int` carries only the first: `Json.num` is unbounded, so
+  this model admits `num (10^30)` where the wire refuses it. The magnitude half
+  lives at the wire, in `isIntegralJSONNumber`; no definition or theorem in this
+  package states it, and this note names it only to locate it. The direction is
+  the safe one — model ⊇ wire — so a conformance result proved here covers every
+  value the wire admits, and the gap is exactly the values the wire refuses and
+  this model would accept. A theorem that needed the wire's magnitude bound would
+  have to import it rather than assume it.
 - Structs are denotationally CLOSED — unknown value keys do not conform.
   Derived from the shipped json-schema target (`additionalProperties:
   false`, proto/ts/src/codegen.ts:243), not newly decided here.
@@ -103,7 +121,6 @@ def conforms (ρ : Resolver) : Nat → Ty → Json → Bool
     | .prim .string => (match j with | .str _  => true | _ => false)
     | .prim .bool   => (match j with | .bool _ => true | _ => false)
     | .prim .int    => (match j with | .num _  => true | _ => false)
-    | .prim .float  => (match j with | .num _  => true | _ => false)
     | .prim .null   => (match j with | .null   => true | _ => false)
     | .lit v        => scalarMatches v j
     | .list of      =>

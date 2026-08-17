@@ -23,15 +23,18 @@ export const SESSION_JOURNAL_PREFIX = "flb_session_v0_"
 export const SESSION_STATE_SCHEME = "bytes-sha256-v1"
 export const SESSION_GRAMMAR_DESCRIPTOR: Json = {
   name: "flb.type.v0",
+  // The closure law: no number anywhere in a term is non-integral. It is a
+  // property of the term, so it is committed once here rather than annotated
+  // onto every number-bearing production.
+  numbers: "integral",
   partialKind: { k: "hole", required: ["k"] },
   productions: [
     { k: "bool", required: ["k"] },
     { k: "brand", required: ["k", "name", "of"], children: { name: "non-empty-string", of: "T" } },
     { k: "check", required: ["base", "check", "k"], children: { base: "T", check: "{name:non-empty-string,args:json-object}" } },
-    { k: "float", required: ["k"] },
     { k: "int", required: ["k"] },
     { k: "list", required: ["k", "of"], children: { of: "T" } },
-    { k: "literal", required: ["k", "value"], children: { value: "json" } },
+    { k: "literal", required: ["k", "value"], children: { value: "string|integral-number|bool|null" } },
     { k: "null", required: ["k"] },
     { k: "opaque", required: ["k"] },
     { k: "ref", required: ["digest", "k"], children: { digest: "hex64" } },
@@ -53,7 +56,13 @@ export const SESSION_GRAMMAR_DIGEST = sha256Hex(encodedSessionGrammar.bytes)
 
 /** The Task-37 state scheme is intentionally pinned to the current dual-record
  * side. When flb.type.v1 lands, old session commits remain bytes-sha256-v1
- * facts and bridge to the new digest; they are never rewritten in place. */
+ * facts and bridge to the new digest; they are never rewritten in place.
+ *
+ * It stays a thin alias of `structureDigest` because a PARTIAL is a term, not a
+ * value: the daemon derives its state digest from the partial after `walkPartial`
+ * has already applied the closure law, so the alias must inherit that law and
+ * not scope around it. Nothing here is value-side — fill values reach a digest
+ * through the daemon, never through this module. */
 export const sessionStateDigest = (partial: Json) => structureDigest(partial)
 
 export type SessionRetentionTier = "compactible" | "irreducible" | "never-discardable"

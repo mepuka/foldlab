@@ -11,9 +11,12 @@ import {
   canonicalize,
   canonicalizeStructure,
   compareCanonicalBytes,
+  findNonIntegralNumber,
+  INTEGRAL_NUMBER_LAW,
   structureDigest,
   type CanonicalRefusal,
   type Json,
+  type StructureRefusal,
 } from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
 
@@ -95,6 +98,15 @@ const nonCanonical = (path: ReadonlyArray<string>, refusal: CanonicalRefusal): F
 
 const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
+/** A structure identity can fail for two reasons and the fold reports each in
+ * its own words. The non-integral branch is unreachable from `foldSchema`, which
+ * sweeps the folded term before it mints, and it is written out rather than cast
+ * away because "unreachable" is a claim the next edit can silently break. */
+const noIdentity = (path: ReadonlyArray<string>, refusal: StructureRefusal): Fail =>
+  refusal._tag === "NonIntegralNumber"
+    ? beyond(path, refusal.path, refusal.reason)
+    : nonCanonical(path, refusal)
+
 interface FlatCheck {
   readonly id: string | undefined
   readonly payload: unknown
@@ -162,7 +174,9 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
     case "Boolean":
       return { k: "bool" }
     case "Number":
-      return { k: isInt ? "int" : "float" }
+      return isInt
+        ? { k: "int" }
+        : beyond(path, node._tag, "non-integer numbers have no v0 leaf; use int, a literal, or opaque")
     case "Null":
       return { k: "null" }
     case "Unknown":
@@ -189,11 +203,13 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
       if (
         typeof literal === "string" ||
         typeof literal === "boolean" ||
-        (typeof literal === "number" && Number.isFinite(literal)) ||
         literal === null
       ) {
         return { k: "literal", value: literal }
       }
+      // Shape only. The number bound is NOT restated here: the closure law in
+      // foldSchema passes every number in the finished term, this one included.
+      if (typeof literal === "number") return { k: "literal", value: literal }
       return beyond(path, String(literal), "only JSON-scalar literals exist in v0")
     }
     case "Arrays": {
@@ -266,10 +282,23 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
 export const foldSchema = (schema: Schema.Top): FoldResult => {
   const folded = foldNode(schema.ast, ["structure"])
   if (folded instanceof Fail) return { ok: false, refusal: folded.refusal }
+  // The closure law runs over the finished term, after the shape fold, so a
+  // shape v0 cannot express still teaches its own reason. Coordinates are the
+  // term's, matching the certifier's refusal paths exactly. The traversal is
+  // jcs.ts's, shared with the identity mint; only the refusal wording is the
+  // fold's, because a fold refusal and a mint refusal are uttered to different
+  // callers.
+  const nonIntegral = findNonIntegralNumber(folded as Json, ["structure"])
+  if (nonIntegral !== undefined) {
+    return {
+      ok: false,
+      refusal: beyond(nonIntegral.path, String(nonIntegral.value), INTEGRAL_NUMBER_LAW).refusal,
+    }
+  }
   const canonical = canonicalizeStructure(folded)
   if (!canonical.ok) return { ok: false, refusal: nonCanonical(["structure"], canonical.refusal).refusal }
   const identity = structureDigest(folded)
-  if (!identity.ok) return { ok: false, refusal: nonCanonical(["structure"], identity.refusal).refusal }
+  if (!identity.ok) return { ok: false, refusal: noIdentity(["structure"], identity.refusal).refusal }
   return {
     ok: true,
     structure: folded,

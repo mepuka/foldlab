@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden bang accessor at negative-controls/bang-accessor.lean:2

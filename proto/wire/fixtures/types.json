@@ -24,14 +24,6 @@
     "digest": "fba0840e5b717b29d9d4c1d10a2cb34e8826656d11bad47b1ee6b3d71beb1577"
   },
   {
-    "name": "leaf-float",
-    "structure": {
-      "k": "float"
-    },
-    "canonical": "{\"k\":\"float\"}",
-    "digest": "beea355664ce9e7867cebc2f4df0a438ac4c309f7498e748873246ed14e78ea4"
-  },
-  {
     "name": "leaf-null",
     "structure": {
       "k": "null"
@@ -165,9 +157,6 @@
     "name": "sensor-reading",
     "structure": {
       "fields": {
-        "celsius": {
-          "k": "float"
-        },
         "count": {
           "k": "int"
         },
@@ -193,6 +182,9 @@
         },
         "note": {
           "k": "string"
+        },
+        "reading": {
+          "k": "opaque"
         }
       },
       "k": "struct",
@@ -200,14 +192,14 @@
         "note"
       ]
     },
-    "canonical": "{\"fields\":{\"celsius\":{\"k\":\"float\"},\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"off\"},{\"k\":\"literal\",\"value\":\"on\"}]},\"note\":{\"k\":\"string\"}},\"k\":\"struct\",\"optional\":[\"note\"]}",
-    "digest": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f"
+    "canonical": "{\"fields\":{\"count\":{\"k\":\"int\"},\"id\":{\"k\":\"brand\",\"name\":\"SensorId\",\"of\":{\"k\":\"string\"}},\"mode\":{\"k\":\"union\",\"of\":[{\"k\":\"literal\",\"value\":\"off\"},{\"k\":\"literal\",\"value\":\"on\"}]},\"note\":{\"k\":\"string\"},\"reading\":{\"k\":\"opaque\"}},\"k\":\"struct\",\"optional\":[\"note\"]}",
+    "digest": "253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e"
   },
   {
     "name": "ref-with-check",
     "structure": {
       "base": {
-        "digest": "d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f",
+        "digest": "253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e",
         "k": "ref"
       },
       "check": {
@@ -218,8 +210,8 @@
       },
       "k": "check"
     },
-    "canonical": "{\"base\":{\"digest\":\"d4b078998f1d55cc13f1e72710f34901c6600b5bdfa844c6780c3a7f8bde1f2f\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
-    "digest": "3b12c67ef0b2a43089c27f605a48fb72f55fdb9101933a84686b9f54fa14f85d"
+    "canonical": "{\"base\":{\"digest\":\"253f8238e17e19e089e0c9631860bb14b2c07fdf1367f9a07473a0ea359d468e\",\"k\":\"ref\"},\"check\":{\"args\":{\"min\":1},\"name\":\"minLength\"},\"k\":\"check\"}",
+    "digest": "2b9dfdbeb5736d8c73280172ec734a69c8a8fc28c8a4d12783bff3b305692525"
   },
   {
     "name": "string-escapes",

@@ -3,6 +3,7 @@ package protod
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"unicode/utf16"
@@ -17,11 +18,96 @@ import (
 var hexDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 var v0Kinds = []string{
-	"string", "bool", "int", "float", "null", "opaque",
+	"string", "bool", "int", "null", "opaque",
 	"literal", "list", "struct", "union", "brand", "check", "ref",
 }
 
 var partialKinds = append(append([]string{}, v0Kinds...), "hole")
+
+// isIntegralJSONNumber is the ONE integrality bound in flb.type.v0: a JSON
+// number is admitted exactly when it is whole and inside the IEEE-754
+// safe-integer range. It is stated once because two statements of a numeric
+// bound is how one grammar starts admitting different numbers in different
+// positions.
+func isIntegralJSONNumber(number float64) bool {
+	return math.Trunc(number) == number && math.Abs(number) <= 9007199254740991
+}
+
+// integralNumberLaw is the closure law, and it is ONE law for every number: a
+// position-specific sentence per number position is the same drift as a
+// position-specific predicate.
+const integralNumberLaw = "flb.type.v0: every number in a type term is integral — whole and within ±(2^53-1); a non-integer number has no v0 form"
+
+// walkDomainLaw is not a second bound; it is the domain the one bound is total
+// over. The closure law can only reach numbers this traversal can decode, so the
+// domain has to be stated where it is enforced instead of living in a comment
+// that says "in practice the caller always passes JSON".
+const walkDomainLaw = "flb.type.v0: a type term is JSON as canonical.Decode produces it — null, bool, number, string, array, object; a value outside that domain may carry a number no bound has seen"
+
+// requireIntegralNumbers is the closure law's enforcement: it decodes numbers,
+// not positions. Every JSON number reachable in a type term passes the bound —
+// a literal's value, a check's args, and whatever JSON-bearing position the
+// grammar grows next — so closure is a property of where the guard sits rather
+// than of anyone remembering to patch the new position. Enumerating positions
+// is what admitted 5e-324 through check.args after the literal position was
+// narrowed.
+//
+// Members are visited in identity order (RFC 8785 UTF-16 code units, the same
+// traversal that orders every other walk here) so the refusal coordinate does
+// not depend on Go's randomized map iteration.
+//
+// The traversal is TOTAL over its stated domain and refuses outside it: the
+// switch has a default, so the universal "every number in a term is integral"
+// holds without the footnote "as long as the caller decoded it first".
+//
+// The sole exception in the estate is an opaque PAYLOAD: {"k":"opaque"} carries
+// no data in the term, and the value it later admits is uninterpreted canonical
+// bytes this walk never sees (checkValue admits opaque whole).
+func requireIntegralNumbers(value any, path []string) *Refusal {
+	switch typed := value.(type) {
+	case float64:
+		if isIntegralJSONNumber(typed) {
+			return nil
+		}
+		return structureRefusal(path, integralNumberLaw, typed,
+			"an integral number: Trunc(n) == n and |n| <= 9007199254740991", 1)
+	case map[string]any:
+		names := make([]string, 0, len(typed))
+		for name := range typed {
+			names = append(names, name)
+		}
+		sort.Slice(names, func(i, j int) bool { return utf16Less(names[i], names[j]) })
+		for _, name := range names {
+			if r := requireIntegralNumbers(typed[name], append(path, name)); r != nil {
+				return r
+			}
+		}
+	case []any:
+		for index, item := range typed {
+			if r := requireIntegralNumbers(item, append(path, fmt.Sprintf("%d", index))); r != nil {
+				return r
+			}
+		}
+	case string, bool, nil:
+		// The rest of canonical.Decode's output. No number here to bound.
+	default:
+		// A number this switch cannot see is a number the bound cannot reach.
+		// From the wire nothing else arrives — canonical.Decode converts every
+		// json.Number to float64 recursively at every depth — but an in-process
+		// caller can hand the walk a Go float32 or int64, and float32(0.5) used
+		// to fall through this switch to `return nil` and carry 0.5 into
+		// identity bytes. So the default REFUSES instead of admitting on faith,
+		// the same discipline as an unknown kind.
+		//
+		// It refuses the whole non-JSON domain rather than an enumeration of Go
+		// numeric types, because enumerating the types that need checking is the
+		// identical shape to enumerating the positions that need checking, and
+		// that shape has already failed twice in this file's history.
+		return structureRefusal(path, walkDomainLaw, fmt.Sprintf("%T", value),
+			"a value decoded by canonical.Decode — null, bool, number, string, array, or object", nil)
+	}
+	return nil
+}
 
 type refUse struct {
 	digest string
@@ -44,6 +130,14 @@ func walkPartial(value any, path []string) (*walkResult, *Refusal) {
 func walk(value any, path []string, allowHoles bool) (*walkResult, *Refusal) {
 	result := &walkResult{refs: []refUse{}, holes: [][]string{}}
 	if r := walkNode(value, path, result, allowHoles); r != nil {
+		return nil, r
+	}
+	// The closure law runs over the whole term, after the grammar walk so that
+	// a structurally broken node still teaches its own shape law. The order is
+	// the claim: nothing that reaches this line can be refused for its shape,
+	// so every term this walk ADMITS — the only terms that can bear identity —
+	// has passed the integrality bound at every number it carries.
+	if r := requireIntegralNumbers(value, path); r != nil {
 		return nil, r
 	}
 	return result, nil
@@ -74,7 +168,7 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 	}
 
 	switch kind {
-	case "string", "bool", "int", "float", "null", "opaque":
+	case "string", "bool", "int", "null", "opaque":
 		return checkKeys(node, path, kind, "k")
 	case "hole":
 		if r := checkKeys(node, path, kind, "k"); r != nil {
@@ -95,17 +189,18 @@ func walkNode(value any, path []string, result *walkResult, allowHoles bool) *Re
 		if !present {
 			return structureRefusal(path,
 				"flb.type.v0: a literal node carries its scalar in \"value\"",
-				node, `{"k":"literal","value":<json scalar>}`,
+				node, `{"k":"literal","value":<string|integral number|bool|null>}`,
 				map[string]any{"k": "literal", "value": "on"})
 		}
+		// Shape only. The number bound is NOT restated here: the closure law in
+		// walk() passes every number in the term, this position included.
 		switch literal.(type) {
-		case string, float64, bool, nil:
+		case string, bool, nil, float64:
 			return nil
-		default:
-			return structureRefusal(append(path, "value"),
-				"flb.type.v0: a literal value is a JSON scalar — string, number, bool, or null",
-				literal, "a JSON scalar", map[string]any{"k": "literal", "value": 1})
 		}
+		return structureRefusal(append(path, "value"),
+			"flb.type.v0: a literal value is a JSON scalar — string, integral number, bool, or null",
+			literal, "a JSON scalar", map[string]any{"k": "literal", "value": 1})
 	case "list":
 		if r := checkKeys(node, path, kind, "k", "of"); r != nil {
 			return r
@@ -331,6 +426,9 @@ func walkCheck(node map[string]any, path []string, result *walkResult, allowHole
 			"flb.type.v0: a declared check carries a non-empty name",
 			checkValue["name"], "a non-empty string", exampleCheck())
 	}
+	// Shape only, again: args is the grammar's one free-JSON position, and the
+	// closure law — not a bound restated here — is what keeps a non-integer
+	// number out of it however deeply it is nested.
 	if _, ok := checkValue["args"].(map[string]any); !ok {
 		return structureRefusal(append(path, "check", "args"),
 			"flb.type.v0: check args are a JSON object (possibly empty)",
