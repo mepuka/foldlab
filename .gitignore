@@ -5,6 +5,7 @@ bench/results/
 .env
 artifacts/receipts/*/corpus.json
 go/*.exe
+proto/go/*.exe
 ci-logs/
 tlc-out/
 

@@ -5,7 +5,34 @@ after the independent review — supersedes the earlier bounded-corpus
 draft, whose reviewed defects this design exists to avoid; re-pinned
 2026-08-16 by the coordinator after the debt-free-wire grill, brief
 16: hard-cutover v0 grammar with required `completion`/`revision`,
-absorb-declared corpus, no open-session fill divergence)
+absorb-declared corpus, no open-session fill divergence; re-pinned
+again 2026-08-16, fourth pass — the float ruling, block below)
+
+## Re-pin, fourth pass — 2026-08-16, the float ruling
+
+Post-sweep ruling 2 (grill record
+`docs/design/2026-08-16-ref0-extraction-grill-record.md`; executed by
+dispatch brief `scratch/dispatch/21-float-leaf-drop.md`, in review on
+branch `agent/codex/kernel-hygiene-gates`): the mintable float leaf
+leaves the v0 grammar. Consequences binding on this issue:
+
+1. **Generation barrier.** The corpus generates only against a main
+   that includes the float-drop merge. Generating against a
+   pre-drop main would bake a value grammar the estate has ruled
+   out; the emitted corpus would be wrong the day the branch lands.
+2. **The grammar is the narrowed one.** The emitter compiles against
+   the post-drop model: no float leaf exists to mint, by grammar
+   rather than by corpus self-restraint. Tier B's existing "no
+   floats" line becomes enforced by construction, not by choice.
+3. **The spelling alphabet stands.** Tier A's
+   `{0, -0, 10, 1.0e1, 20}` are spellings of INTEGER values probing
+   canonical-bytes collapse and refusal (`1.0e1` is a non-canonical
+   spelling of 10, RFC 8785 Appendix B as referee) — unaffected by
+   the ruling, which bars float-typed VALUES, not non-canonical
+   spellings of integers. If the landed float-drop turns out to
+   change spelling admission behavior, that is a FINDING to report
+   against the branch, not a corpus design change to absorb
+   silently.
 
 ## Why now
 
