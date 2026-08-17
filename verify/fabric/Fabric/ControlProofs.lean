@@ -181,4 +181,115 @@ theorem drop_meet_clamping_killed :
   have impossible : ¬ 20 <= 10 := by decide
   exact impossible escalated.budget
 
+/-- The ambient-consulting assembly retains the congruence frame over its
+    EXTENDED read set: agreement that also covers the ambient address
+    keeps its outputs equal, so the kill below is attributable to the one
+    undeclared read alone. -/
+theorem drop_declared_reads_keeps_extended_agreement
+    {Addr Value : Type} (ambient : ContextRead Addr Value)
+    (program : ContextProgram Addr Value) (left right : Addr -> Value)
+    (agree : forall addr, addr ∈ program.addresses -> left addr = right addr)
+    (ambientAgree : left ambient.addr = right ambient.addr) :
+    Mutants.ambientAssemble ambient program left =
+      Mutants.ambientAssemble ambient program right := by
+  unfold Mutants.ambientAssemble
+  apply f7_assembly_reads_only_declared
+  intro addr member
+  rw [show ({ reads := program.reads ++ [ambient] } :
+      ContextProgram Addr Value).addresses =
+        program.addresses ++ [ambient.addr] by
+    simp [ContextProgram.addresses]] at member
+  rcases List.mem_append.mp member with declared | ambientMember
+  · exact agree addr declared
+  · obtain rfl := List.mem_singleton.mp ambientMember
+    exact ambientAgree
+
+/-- The two-valuations row kills the ambient-read variant: the undeclared
+    timestamp address moved between the two valuations and the mutant's
+    output moved with it, while the lawful assembly cannot observe the
+    drift. -/
+theorem drop_declared_reads_killed :
+    Mutants.ambientAssemble Emitter.timestampRead Emitter.contextProgram
+        Emitter.valuationOne ≠
+      Mutants.ambientAssemble Emitter.timestampRead Emitter.contextProgram
+        Emitter.valuationTwo := by
+  decide
+
+/-- The schedule-order variant agrees with lawful assembly when the
+    completion schedule happens to be the declared class order: the kill
+    is attributable to schedule sensitivity alone. -/
+theorem drop_volatility_order_keeps_disciplined_schedule :
+    Mutants.scheduleOrderAssemble Mutants.completionScheduleCanonical
+        Emitter.contextProgram Emitter.valuationOne =
+      assemble Emitter.contextProgram Emitter.valuationOne := by
+  decide
+
+/-- An arrival-order assembly emits the turn segment first when the turn
+    read completes first: the class order the stability half pins is
+    observably broken. -/
+theorem arrival_order_assembly_breaks_class_order :
+    (Mutants.scheduleOrderAssemble Mutants.completionScheduleEager
+        Emitter.contextProgram Emitter.valuationOne).map
+        ContextSegment.volatility ≠
+      stableClassOrder (Emitter.contextProgram.reads.map
+        ContextRead.volatility) := by
+  decide
+
+/-- The two-schedules row kills the variant: same program, same valuation,
+    two completion orders, two different assembled values. The lawful
+    assembly has no schedule parameter to vary. -/
+theorem drop_volatility_order_killed :
+    Mutants.scheduleOrderAssemble Mutants.completionScheduleEager
+        Emitter.contextProgram Emitter.valuationOne ≠
+      Mutants.scheduleOrderAssemble Mutants.completionScheduleLate
+        Emitter.contextProgram Emitter.valuationOne := by
+  decide
+
+/-- The arrival-order top-k retains duplication absorption: its support
+    dedup survives, isolating the kill to the dropped tie-break. -/
+theorem drop_identity_tiebreak_keeps_duplication :
+    Mutants.arrivalOrderTopK Emitter.groundWidth Emitter.queryArrivalOne =
+      Mutants.arrivalOrderTopK Emitter.groundWidth
+        Mutants.queryArrivalOneExact := by
+  decide
+
+/-- The lawful top-k is one value across both committed arrival orders —
+    the two-orders row is exactly an F11 instance. -/
+theorem topk_survives_reordered_arrival :
+    topK Emitter.groundScore id Emitter.groundWidth Emitter.queryArrivalOne =
+      topK Emitter.groundScore id Emitter.groundWidth
+        Emitter.queryArrivalTwo := by
+  apply f11_topk_of_support
+  · unfold IdentityDistinct
+    decide
+  · exact same_delivered_of_mutual_contains (by decide) (by decide)
+
+/-- The two-orders row kills the arrival-order variant: insertion order
+    leaks straight into the result. -/
+theorem drop_identity_tiebreak_killed :
+    Mutants.arrivalOrderTopK Emitter.groundWidth Emitter.queryArrivalOne ≠
+      Mutants.arrivalOrderTopK Emitter.groundWidth
+        Emitter.queryArrivalTwo := by
+  decide
+
+/-- The ambient-thread variant retains duplication absorption under a
+    FIXED thread: the kill is attributable to consulting the thread
+    alone. -/
+theorem drop_schedule_independence_keeps_duplication :
+    Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
+        Emitter.groundWidth Emitter.queryArrivalOne =
+      Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
+        Emitter.groundWidth Mutants.queryArrivalOneExact := by
+  decide
+
+/-- The two-schedules row kills the variant: one anchored support, one
+    query, two ambient threads, two answers. The lawful algebra has no
+    thread parameter to vary. -/
+theorem drop_schedule_independence_killed :
+    Mutants.ambientScheduleAnswer Mutants.ambientThreadEmpty
+        Emitter.groundWidth Emitter.queryArrivalOne ≠
+      Mutants.ambientScheduleAnswer Mutants.ambientThreadBoosting
+        Emitter.groundWidth Emitter.queryArrivalOne := by
+  decide
+
 end Fabric

@@ -1,0 +1,1 @@
+control=drop-declared-reads;vector=off-read-set-valuation-drift;lawful-left=static:10:11|session:20:21|turn:30:#31;lawful-right=static:10:11|session:20:21|turn:30:#31;mutant-left=static:10:11|session:20:21|turn:30:#31|turn:99:100;mutant-right=static:10:11|session:20:21|turn:30:#31|turn:99:777;verdict=refuted

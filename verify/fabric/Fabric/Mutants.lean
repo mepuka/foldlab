@@ -66,6 +66,67 @@ def lastWriteBufferApply {State Op : Type} (step : State -> Op -> State)
     (initial : State) : State :=
   applySuccessors step floor count initial (ingestSchedule deliveries)
 
+/-! ### F7 assembly mutants -/
+
+/-- Drops the declared-reads frame: assembly consults one read the program
+    never declared — the model rendering of a timestamp selector. The body
+    is the lawful assembly of an EXTENDED program; the mutation is
+    consulting a read that is not in the declaration. -/
+def ambientAssemble {Addr Value : Type} (ambient : ContextRead Addr Value)
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  assemble { reads := program.reads ++ [ambient] } valuation
+
+/-- Drops the volatility-stable ordering: segments are emitted in the
+    ambient completion order of an evaluation schedule instead of the
+    declared class order. -/
+def scheduleOrderAssemble {Addr Value : Type} (schedule : List Nat)
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  let segments := renderReads program valuation
+  schedule.filterMap fun index => segments[index]?
+
+/-- The eager completion schedule of the two-schedules row: reads complete
+    in declared order, so the turn read lands first. -/
+def completionScheduleEager : List Nat := [0, 1, 2]
+
+/-- The late completion schedule of the same row: reads complete in the
+    reverse order. -/
+def completionScheduleLate : List Nat := [2, 1, 0]
+
+/-- The completion schedule that happens to coincide with the declared
+    class order of the ground program (static, session, turn sit at read
+    indices 1, 2, 0). -/
+def completionScheduleCanonical : List Nat := [1, 2, 0]
+
+/-! ### F11 query mutants -/
+
+/-- Drops the identity tie-break: take the first k of the support in
+    arrival order — insertion order becomes the tie-break. -/
+def arrivalOrderTopK (k : Nat) (entries : List Emitter.GroundEntry) :
+    List Emitter.GroundEntry :=
+  (dedup entries).take k
+
+/-- Drops schedule independence: an answer with an extra ambient-thread
+    parameter it actually consults — entries seen in the ambient thread
+    are boosted ahead of the declared order. The lawful query carrier has
+    no such parameter to read. -/
+def ambientScheduleAnswer (ambient : List Emitter.GroundEntry) (k : Nat)
+    (entries : List Emitter.GroundEntry) : List Emitter.GroundEntry :=
+  let support := dedup entries
+  (support.filter (fun entry => ambient.contains entry) ++
+    support.filter (fun entry => !ambient.contains entry)).take k
+
+/-- The empty ambient thread of the two-schedules row. -/
+def ambientThreadEmpty : List Emitter.GroundEntry := []
+
+/-- The boosting ambient thread of the same row: it has seen entry 12. -/
+def ambientThreadBoosting : List Emitter.GroundEntry := [12]
+
+/-- The duplicate-free presentation of arrival order one, for the retained
+    duplication pins. -/
+def queryArrivalOneExact : List Emitter.GroundEntry := [7, 5, 23, 12]
+
 abbrev GroundPolicy := Policy Nat compare
 
 def atoms (values : List Nat) : FiniteSet Nat compare :=

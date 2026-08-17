@@ -103,6 +103,51 @@ def F9TreeAttenuation {Atom : Type uH} {cmp : Atom -> Atom -> Ordering}
   forall (root descendant : Policy Atom cmp) (tree : ActionTree Atom cmp),
     DescendantEffective root tree descendant -> descendant <= root
 
+/-- F7, congruence half: assembly reads only the addresses the program
+    declares. Two input valuations that agree there assemble one value —
+    the frame statement a valuation drifting off the read set falsifies. -/
+def F7AssemblyReadsOnlyDeclared {Addr : Type uH} {Value : Type uV} : Prop :=
+  forall (program : ContextProgram Addr Value) (left right : Addr -> Value),
+    (forall addr, addr ∈ program.addresses -> left addr = right addr) ->
+      assemble program left = assemble program right
+
+/-- F7, stability half: segment order is the stable class sort of the
+    program's own declared order — a function of the program, never of
+    evaluation schedule. Two lawful implementations cannot disagree on
+    equal-class order. -/
+def F7SegmentOrderStable {Addr : Type uH} {Value : Type uV} : Prop :=
+  forall (program : ContextProgram Addr Value) (valuation : Addr -> Value),
+    (assemble program valuation).map ContextSegment.volatility =
+      stableClassOrder (program.reads.map ContextRead.volatility)
+
+/-- F11, list half: under the named distinctness premise, top-k is a
+    function of the delivered support — permutation and duplication of the
+    anchored entry list cannot move it. Stated over raw lists, where an
+    insertion-order mutant is refutable; over the extensional set carrier
+    the statement would be discharged by the carrier and falsify nothing. -/
+def F11TopKOfSupport {Entry : Type uV} [BEq Entry]
+    (score identity : Entry -> Nat) : Prop :=
+  forall (k : Nat) (left right : List Entry),
+    IdentityDistinct identity left -> SameDeliveredSet left right ->
+      topK score identity k left = topK score identity k right
+
+/-- F11, composed: the rendered answer at an anchored, resumed support is
+    a function of (support, query) — invariant under re-anchoring by F3
+    and under permutation/duplication of the delivered support. -/
+def F11QueryDeterministic {Entry : Type uV} [BEq Entry]
+    (score identity : Entry -> Nat) (render : List Entry -> String) : Prop :=
+  forall (k : Nat)
+      (prefixLeft suffixLeft prefixRight suffixRight : List Entry),
+    IdentityDistinct identity (prefixLeft ++ suffixLeft) ->
+    SameDeliveredSet (prefixLeft ++ suffixLeft)
+      (prefixRight ++ suffixRight) ->
+      render ((topKAlgebra score identity).answer
+          (foldFrom appendEntry (fold appendEntry [] prefixLeft)
+            suffixLeft) k) =
+        render ((topKAlgebra score identity).answer
+          (foldFrom appendEntry (fold appendEntry [] prefixRight)
+            suffixRight) k)
+
 end Laws
 
 end Fabric

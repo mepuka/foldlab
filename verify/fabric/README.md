@@ -1,9 +1,9 @@
 # Fabric algebra model
 
 `verify/fabric` is a standalone Lean 4.33.0 package with no Lake dependencies.
-It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, and F9, then
-executes the same definitions to author the runtime conformance corpus at
-`packages/plait/fixtures/fabric-conformance.ndjson`.
+It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, F7, F9, and
+F11, then executes the same definitions to author the runtime conformance
+corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
 
 ## Guided tour
 
@@ -14,8 +14,17 @@ executes the same definitions to author the runtime conformance corpus at
   before advancing. That successor/contiguity discipline is the protection;
   the floor is the anchor's derived resume coordinate, not a filter.
   `CommutativeAlgebra` declares the laws
-  required before partition folds may be merged. `Policy.meet` intersects the
-  four set-valued components and takes `Nat.min` across the four ceilings.
+  required before partition folds may be merged. A `ContextProgram` is an
+  ordered list of declared reads — address, pure renderer, volatility
+  class — and `assemble` is the class-stable ordering of the rendered
+  reads: the signature admits a program and a valuation, nothing else. A
+  `QueryAlgebra` answers from the anchored state and the query value
+  alone (the constructor's closure is the purity admission), `topK` is
+  keep-last dedup, then `mergeSort` under score-then-identity, then
+  `take k`, and `admitQueryInput` maps every ambient candidate shape —
+  seed, clock, schedule — to `none` while admitting the declared-seed
+  form as data. `Policy.meet` intersects the
+  six set-valued components and takes `Nat.min` across the four ceilings.
 - `Fabric/Laws.lean` contains statements only. F1 is cell ACI plus two
   distinct halves stated under their own names: extensionality (equal
   verified sets are equal replicas) and history-level convergence (equal
@@ -27,7 +36,15 @@ executes the same definitions to author the runtime conformance corpus at
   F3 is checkpoint resumption; F4 is partition/interleaving equivalence under
   a declared commutative algebra; F9 is the full greatest-lower-bound law plus
   descendant attenuation over ten policy components, the `indexes` and
-  `resources` allowlists included.
+  `resources` allowlists included. F7 has two halves stated separately:
+  assembly reads only its declared addresses (two valuations agreeing
+  there assemble one value), and segment order is the stable class sort
+  of the program's own declared order. F11 also has two halves: top-k is
+  a function of the delivered support — quantified over raw lists under
+  `SameDeliveredSet`, with the named `IdentityDistinct` premise making
+  the identity tie-break antisymmetric — and the composed law: the
+  rendered answer at an anchored, resumed support is invariant under
+  re-anchoring by F3 and under permutation/duplication of the support.
 - `Fabric/Proofs.lean` contains proofs only. The trace proofs reduce equality
   to finite-set membership. F2b inducts over consecutive positions — the
   complete-buffer drain lemma is a private helper whose premise is stated in
@@ -35,17 +52,35 @@ executes the same definitions to author the runtime conformance corpus at
   `guard_is_redundant` proves that adding a position-floor/window filter before
   the successor drain cannot change its result. F4 first proves append and
   permutation lemmas. F9 proves set intersection and numeric minimum
-  componentwise, then follows an action-tree descendant derivation.
-- `Fabric/Mutants.lean` contains five variants, each dropping exactly one
+  componentwise, then follows an action-tree descendant derivation. F7's
+  congruence is a map congruence over the declared reads; its stability
+  half is a map/filter commutation, not an `rfl`. F11's list half walks
+  the canonical-form induction: both sorted dedups are duplicate-free
+  presentations of one support, and sorted + duplicate-free + same
+  members forces equality, with antisymmetry discharged from
+  `IdentityDistinct` exactly where the tie-break needs it. The composed
+  F11 chains F3 (`f11_state_of_anchor`), the support fold, and the list
+  half under a rendered conclusion.
+- `Fabric/Mutants.lean` contains nine variants, each dropping exactly one
   required law or premise half. The fourth drops the successor discipline and
   is killed by the
   order-sensitive 6-before-5 row; it does not claim to drop the redundant
   floor guard. The fifth drops the position-payload-integrity half: on the
   conflict row `(11,2)/(11,999)/(12,3)` window coverage still holds, and the
   consumer that trusts its last-write buffer replays the late overwrite.
+  The sixth consults a read outside its declaration — the timestamp
+  selector — and dies on the two-valuations row whose drift lives
+  entirely off the declared read set. The seventh orders segments by an
+  evaluation completion schedule and dies on the two-schedules row. The
+  eighth takes the first k in arrival order — insertion order as the
+  tie-break — and dies on the two-arrival-orders row. The ninth consults
+  an ambient thread parameter the lawful query carrier does not have and
+  dies on the two-ambient-threads row.
   `Fabric/ControlProofs.lean` proves the retained laws and the
   named counterexamples. `ControlMain.lean` emits the committed counterexample
-  traces checked by the gate.
+  traces checked by the gate; the four M2 kills use a drift-format line,
+  refuted when the mutant's output moves across the row's two
+  presentations while the lawful output holds.
 - `Fabric/Canonical.lean`, `Fabric/Corpus.lean`, `Fabric/Emit.lean`, and
   `Main.lean` are the
   executable emitter. Object keys are sorted; strings occupy a fixed safe
@@ -65,7 +100,7 @@ executes the same definitions to author the runtime conformance corpus at
   The gate refuses a vector whose `(kind, name, witness)` triple is not pinned or
   whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
-  roster, proof footprint, five negative controls, pinned vector counts, and
+  roster, proof footprint, nine negative controls, pinned vector counts, and
   byte-identical regeneration.
 
 ## How a trace walks through `fold`
@@ -103,6 +138,31 @@ coordinator ruling on DEV-695 (comment
 deviation: `guard_is_redundant` proves that control is unstatable in this
 model, so the fourth control drops the load-bearing successor discipline
 instead.
+
+## How an assembly and a query stay deterministic
+
+`assemble program valuation` renders each declared read at its address and
+presents the segments in the fixed class order (static, policy, session,
+live, turn), equal-class segments keeping program order. Determinism is
+two theorems, not a signature: valuations that agree on the declared
+addresses assemble one value (so a variant consulting the undeclared
+timestamp address is refutable — and dies on the committed
+two-valuations row), and the segment order is a function of the program
+alone (so a variant ordering by evaluation completion dies on the
+two-schedules row).
+
+A query answers over an anchored support: the state is the entry list the
+admitted deliveries appended, resumption is F3, and `topK` dedups the
+support, sorts by declared score with the identity tie-break, and takes
+k. Two arrival schedules of one support — permuted, duplicated, split at
+different checkpoints — render one answer. The tie-break is why: at equal
+scores, identity bytes order entries, and the named `IdentityDistinct`
+premise (content-addressed entries: identity determines the entry) makes
+that order antisymmetric. The mutant that takes the first k in arrival
+order and the mutant that consults an ambient thread each die on their
+committed two-presentation rows. At admission, a query declaration
+naming an ambient seed, clock, or schedule is refused with F11 named;
+a seed declared as data — inside the digest — is admitted.
 
 ## Notation
 
