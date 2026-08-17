@@ -252,4 +252,81 @@ theorem emitter_duplicate_key_collapse :
       "{\"a\":1}" := by
   decide
 
+/-- The two-valuations row agrees on every declared address; the drift
+    lives entirely off the read set. -/
+theorem emitter_f7_agreement_premise :
+    forall addr, addr ∈ Emitter.contextProgram.addresses ->
+      Emitter.valuationOne addr = Emitter.valuationTwo addr := by
+  decide
+
+/-- The two-valuations row is an exact F7 congruence instance: one
+    assembled value despite the off-read-set drift. -/
+theorem emitter_f7_declared_reads :
+    assemble Emitter.contextProgram Emitter.valuationOne =
+      assemble Emitter.contextProgram Emitter.valuationTwo :=
+  f7_assembly_reads_only_declared Emitter.contextProgram
+    Emitter.valuationOne Emitter.valuationTwo emitter_f7_agreement_premise
+
+/-- The declared-out-of-order row is an exact F7 stability instance: the
+    assembled class order is the stable class sort of the declaration. -/
+theorem emitter_f7_segment_order :
+    (assemble Emitter.contextProgram Emitter.valuationOne).map
+        ContextSegment.volatility =
+      stableClassOrder (Emitter.contextProgram.reads.map
+        ContextRead.volatility) :=
+  f7_segment_order_stable Emitter.contextProgram Emitter.valuationOne
+
+/-- The two-orders row satisfies both F11 premises: the ground identities
+    are distinct, and the two arrival orders carry one support. -/
+theorem emitter_f11_support_premise :
+    IdentityDistinct id Emitter.queryArrivalOne /\
+      SameDeliveredSet Emitter.queryArrivalOne Emitter.queryArrivalTwo :=
+  ⟨by unfold IdentityDistinct; decide,
+    same_delivered_of_mutual_contains (by decide) (by decide)⟩
+
+/-- The two-orders row is an exact F11 list-half instance: one top-k
+    across permutation and duplication of the delivered support. -/
+theorem emitter_f11_topk_support :
+    topK Emitter.groundScore id Emitter.groundWidth
+        Emitter.queryArrivalOne =
+      topK Emitter.groundScore id Emitter.groundWidth
+        Emitter.queryArrivalTwo :=
+  f11_topk_of_support Emitter.groundScore id Emitter.groundWidth
+    Emitter.queryArrivalOne Emitter.queryArrivalTwo
+    emitter_f11_support_premise.1 emitter_f11_support_premise.2
+
+/-- The re-anchored row satisfies both composed premises over the full
+    delivered supports of its two anchor splits. -/
+theorem emitter_f11_reanchored_premise :
+    IdentityDistinct id (Emitter.queryPrefixOne ++ Emitter.querySuffixOne) /\
+      SameDeliveredSet (Emitter.queryPrefixOne ++ Emitter.querySuffixOne)
+        (Emitter.queryPrefixTwo ++ Emitter.querySuffixTwo) :=
+  ⟨by unfold IdentityDistinct; decide,
+    same_delivered_of_mutual_contains (by decide) (by decide)⟩
+
+/-- The re-anchored row is an exact composed F11 instance: the rendered
+    answer is one value across two anchor splits and two delivery
+    schedules of one support. -/
+theorem emitter_f11_reanchored :
+    Corpus.renderEntries ((topKAlgebra Emitter.groundScore id).answer
+        (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixOne)
+          Emitter.querySuffixOne) Emitter.groundWidth) =
+      Corpus.renderEntries ((topKAlgebra Emitter.groundScore id).answer
+        (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixTwo)
+          Emitter.querySuffixTwo) Emitter.groundWidth) :=
+  f11_query_deterministic Emitter.groundScore id Corpus.renderEntries
+    Emitter.groundWidth Emitter.queryPrefixOne Emitter.querySuffixOne
+    Emitter.queryPrefixTwo Emitter.querySuffixTwo
+    emitter_f11_reanchored_premise.1 emitter_f11_reanchored_premise.2
+
+/-- Admission is the constructor's closure: every ambient input form is
+    refused with F11 named at the row, and the declared-seed form — the
+    seed inside declaration data — is admitted. -/
+theorem emitter_query_seed_admission :
+    admitQueryInput .ambientSeed = none /\
+      admitQueryInput .ambientClock = none /\
+      admitQueryInput .ambientSchedule = none /\
+      admitQueryInput (.declaredSeed 7) = some (.declaredSeed 7) :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
 end Fabric

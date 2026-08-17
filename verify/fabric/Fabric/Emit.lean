@@ -24,6 +24,13 @@ def vectors : List Vector :=
   , f2bAheadOfCeilingVector emitter_ahead_of_ceiling
   , f2bMultiGapVector emitter_multi_gap_window
   , f2bRedeliverTwiceVector emitter_redeliver_twice_shuffled
+  , f7DeclaredReadsVector emitter_f7_declared_reads
+  , f7SegmentOrderVector emitter_f7_segment_order
+  , f11TopKVector emitter_f11_topk_support
+  , f11ReanchoredVector emitter_f11_reanchored
+  , querySeedAdmissionVector emitter_query_seed_admission.1
+      emitter_query_seed_admission.2.1 emitter_query_seed_admission.2.2.1
+      emitter_query_seed_admission.2.2.2
   ]
 
 open Fabric.Canonical in
@@ -37,8 +44,11 @@ def header : String :=
         , { key := "F3", value := nat 1 }
         , { key := "F3-F2b", value := nat 1 }
         , { key := "F4", value := nat 1 }
+        , { key := "F7", value := nat 2 }
         , { key := "F9", value := nat 2 }
+        , { key := "F11", value := nat 2 }
         , { key := "alphabet-refusal", value := nat 1 }
+        , { key := "query-admission", value := nat 1 }
         ]) }
     , { key := "format", value := nat 1 }
     , { key := "generator", value := string "verify/fabric emitter" }

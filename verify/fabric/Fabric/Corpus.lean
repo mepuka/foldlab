@@ -38,6 +38,10 @@ def verdictOfNone {alpha : Type} (option : Option alpha)
     (_ : option = none) : Bool :=
   option.isSome
 
+def verdictOfSome {alpha : Type} (option : Option alpha) (value : alpha)
+    (_ : option = some value) : Bool :=
+  option.isSome
+
 def verdictOfTrue (bit : Bool) (_ : bit = true) : Bool := bit
 
 def verdictOfFalse (bit : Bool) (_ : bit = false) : Bool := bit
@@ -425,6 +429,201 @@ def f9TreeVector
       , { key := "root", value := renderPolicy Mutants.rootPolicy }
       , { key := "withinRoot", value := bool (verdictOfTrue
           (policyLeBool descendantPolicy Mutants.rootPolicy) withinRoot) }
+      ] }
+
+/-! ## F7 assembly rows -/
+
+def renderVolatility (volatility : Volatility) : String :=
+  string volatility.name
+
+def renderSegment (segment : ContextSegment Nat) : String :=
+  object
+    [ { key := "class", value := renderVolatility segment.volatility }
+    , { key := "source", value := nat segment.source }
+    , { key := "text", value := string segment.text }
+    ]
+
+def renderSegments (segments : List (ContextSegment Nat)) : String :=
+  array (segments.map renderSegment)
+
+def renderRead (read : ContextRead Nat Nat) : String :=
+  object
+    [ { key := "addr", value := nat read.addr }
+    , { key := "class", value := renderVolatility read.volatility }
+    ]
+
+def renderProgram (program : ContextProgram Nat Nat) : String :=
+  array (program.reads.map renderRead)
+
+def renderDeclaredValues (valuation : Nat -> Nat) : String :=
+  object (Emitter.contextProgram.addresses.map fun addr =>
+    { key := toString addr, value := nat (valuation addr) })
+
+/-- The off-read-set drift of the two-valuations row: the undeclared
+    timestamp address and its two values. -/
+def renderOffReadSetDrift : String :=
+  object
+    [ { key := "addr", value := nat Emitter.timestampAddr }
+    , { key := "left", value := nat (Emitter.valuationOne Emitter.timestampAddr) }
+    , { key := "right", value := nat (Emitter.valuationTwo Emitter.timestampAddr) }
+    ]
+
+def f7DeclaredReadsVector
+    (byteEqual : assemble Emitter.contextProgram Emitter.valuationOne =
+      assemble Emitter.contextProgram Emitter.valuationTwo) : Vector :=
+  let assembled := assemble Emitter.contextProgram Emitter.valuationOne
+  { name := "assembly-declared-reads"
+    kind := "F7"
+    witness := "Fabric.emitter_f7_declared_reads"
+    input := object
+      [ { key := "declaredValues", value :=
+          renderDeclaredValues Emitter.valuationOne }
+      , { key := "offReadSet", value := renderOffReadSetDrift }
+      , { key := "program", value := renderProgram Emitter.contextProgram }
+      ]
+    verdict := object
+      [ { key := "assembled", value := renderSegments assembled }
+      , { key := "byteEqual", value := bool (verdictOfEq
+          (renderSegments (assemble Emitter.contextProgram
+            Emitter.valuationOne))
+          (renderSegments (assemble Emitter.contextProgram
+            Emitter.valuationTwo))
+          (congrArg renderSegments byteEqual)) }
+      ] }
+
+def renderClassOrder (classes : List Volatility) : String :=
+  array (classes.map renderVolatility)
+
+def f7SegmentOrderVector
+    (stable : (assemble Emitter.contextProgram Emitter.valuationOne).map
+        ContextSegment.volatility =
+      stableClassOrder (Emitter.contextProgram.reads.map
+        ContextRead.volatility)) : Vector :=
+  let assembled := assemble Emitter.contextProgram Emitter.valuationOne
+  let declaredOrder := Emitter.contextProgram.reads.map ContextRead.volatility
+  { name := "assembly-volatility-order"
+    kind := "F7"
+    witness := "Fabric.emitter_f7_segment_order"
+    input := object
+      [ { key := "declaredClassOrder", value := renderClassOrder declaredOrder }
+      , { key := "program", value := renderProgram Emitter.contextProgram }
+      ]
+    verdict := object
+      [ { key := "assembled", value := renderSegments assembled }
+      , { key := "assembledClassOrder", value :=
+          renderClassOrder (assembled.map ContextSegment.volatility) }
+      , { key := "matchesStableClassOrder", value := bool (verdictOfEq
+          (renderClassOrder (assembled.map ContextSegment.volatility))
+          (renderClassOrder (stableClassOrder declaredOrder))
+          (congrArg renderClassOrder stable)) }
+      ] }
+
+/-! ## F11 query rows -/
+
+def renderEntries (entries : List Nat) : String :=
+  array (entries.map nat)
+
+def f11TopKVector
+    (matchesAcrossOrders : topK Emitter.groundScore id Emitter.groundWidth
+        Emitter.queryArrivalOne =
+      topK Emitter.groundScore id Emitter.groundWidth
+        Emitter.queryArrivalTwo) : Vector :=
+  let resultOne :=
+    topK Emitter.groundScore id Emitter.groundWidth Emitter.queryArrivalOne
+  let resultTwo :=
+    topK Emitter.groundScore id Emitter.groundWidth Emitter.queryArrivalTwo
+  { name := "topk-across-arrival-orders"
+    kind := "F11"
+    witness := "Fabric.emitter_f11_topk_support"
+    input := object
+      [ { key := "arrivalOne", value := renderEntries Emitter.queryArrivalOne }
+      , { key := "arrivalTwo", value := renderEntries Emitter.queryArrivalTwo }
+      , { key := "k", value := nat Emitter.groundWidth }
+      , { key := "scoreFold", value := string "decade-bucket" }
+      ]
+    verdict := object
+      [ { key := "matchesAcrossOrders", value := bool (verdictOfEq
+          (renderEntries resultOne) (renderEntries resultTwo)
+          (congrArg renderEntries matchesAcrossOrders)) }
+      , { key := "result", value := renderEntries resultOne }
+      ] }
+
+def f11ReanchoredVector
+    (matchesAcrossAnchors :
+      renderEntries ((topKAlgebra Emitter.groundScore id).answer
+        (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixOne)
+          Emitter.querySuffixOne) Emitter.groundWidth) =
+      renderEntries ((topKAlgebra Emitter.groundScore id).answer
+        (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixTwo)
+          Emitter.querySuffixTwo) Emitter.groundWidth)) : Vector :=
+  let answerOne := (topKAlgebra Emitter.groundScore id).answer
+    (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixOne)
+      Emitter.querySuffixOne) Emitter.groundWidth
+  let answerTwo := (topKAlgebra Emitter.groundScore id).answer
+    (foldFrom appendEntry (fold appendEntry [] Emitter.queryPrefixTwo)
+      Emitter.querySuffixTwo) Emitter.groundWidth
+  { name := "query-at-reanchored-state"
+    kind := "F11"
+    witness := "Fabric.emitter_f11_reanchored"
+    input := object
+      [ { key := "anchorOnePrefix", value :=
+          renderEntries Emitter.queryPrefixOne }
+      , { key := "anchorOneSuffix", value :=
+          renderEntries Emitter.querySuffixOne }
+      , { key := "anchorTwoPrefix", value :=
+          renderEntries Emitter.queryPrefixTwo }
+      , { key := "anchorTwoSuffix", value :=
+          renderEntries Emitter.querySuffixTwo }
+      , { key := "k", value := nat Emitter.groundWidth }
+      ]
+    verdict := object
+      [ { key := "matchesAcrossAnchors", value := bool (verdictOfEq
+          (renderEntries answerOne) (renderEntries answerTwo)
+          matchesAcrossAnchors) }
+      , { key := "renderedAnswer", value := renderEntries answerOne }
+      ] }
+
+/-- The three ambient candidate shapes the admission row refuses. -/
+def renderAmbientCandidates : String :=
+  array
+    [ string "ambient-seed"
+    , string "ambient-clock"
+    , string "ambient-schedule"
+    ]
+
+/-- The admitted candidate: its seed is declaration data, inside the
+    digest. -/
+def renderDeclaredSeedCandidate : String :=
+  object
+    [ { key := "kind", value := string "declared-seed" }
+    , { key := "seed", value := nat 7 }
+    ]
+
+def querySeedAdmissionVector
+    (ambientSeedRefused : admitQueryInput .ambientSeed = none)
+    (ambientClockRefused : admitQueryInput .ambientClock = none)
+    (ambientScheduleRefused : admitQueryInput .ambientSchedule = none)
+    (declaredAdmitted : admitQueryInput (.declaredSeed 7) =
+      some (.declaredSeed 7)) : Vector :=
+  { name := "undeclared-seed-refused"
+    kind := "query-admission"
+    witness := "Fabric.emitter_query_seed_admission"
+    input := object
+      [ { key := "ambientCandidates", value := renderAmbientCandidates }
+      , { key := "declaredCandidate", value := renderDeclaredSeedCandidate }
+      ]
+    verdict := object
+      [ { key := "ambientClockAccepted", value := bool (verdictOfNone
+          (admitQueryInput .ambientClock) ambientClockRefused) }
+      , { key := "ambientScheduleAccepted", value := bool (verdictOfNone
+          (admitQueryInput .ambientSchedule) ambientScheduleRefused) }
+      , { key := "ambientSeedAccepted", value := bool (verdictOfNone
+          (admitQueryInput .ambientSeed) ambientSeedRefused) }
+      , { key := "declaredSeedAccepted", value := bool (verdictOfSome
+          (admitQueryInput (.declaredSeed 7)) (.declaredSeed 7)
+          declaredAdmitted) }
+      , { key := "reason", value := string "F11-undeclared-ambient-input" }
+      , { key := "seedInsideDeclaration", value := nat 7 }
       ] }
 
 end Fabric.Corpus

@@ -1,0 +1,1 @@
+control=drop-within-class-order;vector=two-reads-one-class;lawful-left=static:10:11|static:20:#21;lawful-right=static:10:11|static:20:#21;mutant-left=static:20:#21|static:10:11;mutant-right=static:10:11|static:20:#21;verdict=refuted

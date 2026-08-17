@@ -7,7 +7,7 @@ import Std.Data.ExtTreeSet.Lemmas
 
 namespace Fabric
 
-universe uH uV
+universe uH uV uR
 
 /-- A finite, canonical set under a declared comparator. -/
 abbrev FiniteSet (alpha : Type uH) (cmp : alpha -> alpha -> Ordering) :=
@@ -287,6 +287,250 @@ def mergePartitionFolds {State : Type uH} {Op : Type uV}
 def Interleaves {Op : Type uV}
     (partitions : List (List Op)) (interleaved : List Op) : Prop :=
   interleaved.Perm partitions.flatten
+
+/-! ## Context assembly programs -/
+
+/-- The declared volatility classes, listed once in the fixed order every
+    lawful assembly presents: stable content first, per-turn content last. -/
+inductive Volatility where
+  | static
+  | policy
+  | session
+  | live
+  | turn
+deriving Repr, DecidableEq
+
+/-- The fixed class order. Segment ordering is a function of this list and
+    of the program's declared order — never of evaluation schedule. -/
+def Volatility.all : List Volatility :=
+  [.static, .policy, .session, .live, .turn]
+
+/-- The wire name of a volatility class. -/
+def Volatility.name : Volatility -> String
+  | .static => "static"
+  | .policy => "policy"
+  | .session => "session"
+  | .live => "live"
+  | .turn => "turn"
+
+/-- One declared read: a selector address, a pure renderer, and a declared
+    volatility class. The renderer's domain is exactly the value at the
+    address — no clock, schedule, or ambient input exists to consult. -/
+structure ContextRead (Addr : Type uH) (Value : Type uV) where
+  addr : Addr
+  render : Value -> String
+  volatility : Volatility
+
+/-- A context program is exactly its ordered list of declared reads; the
+    declaration is the program's identity, and assembly may consult
+    nothing outside it. -/
+structure ContextProgram (Addr : Type uH) (Value : Type uV) where
+  reads : List (ContextRead Addr Value)
+
+/-- The addresses a program declares. F7 quantifies valuation agreement
+    over exactly this list. -/
+def ContextProgram.addresses {Addr : Type uH} {Value : Type uV}
+    (program : ContextProgram Addr Value) : List Addr :=
+  program.reads.map ContextRead.addr
+
+/-- One assembled segment: the declared class, the source address whose
+    value it rendered, and the rendered text. -/
+structure ContextSegment (Addr : Type uH) where
+  volatility : Volatility
+  source : Addr
+  text : String
+deriving Repr, DecidableEq
+
+/-- Render every declared read at an input valuation, in program order. -/
+def renderReads {Addr : Type uH} {Value : Type uV}
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  program.reads.map fun read =>
+    { volatility := read.volatility
+      source := read.addr
+      text := read.render (valuation read.addr) }
+
+/-- The stable class sort of a declared class list: the class filters
+    concatenated in the fixed order. Equal-class entries keep their
+    declared relative order — stability is constructive, not asserted. -/
+def stableClassOrder (classes : List Volatility) : List Volatility :=
+  Volatility.all.flatMap fun volatility =>
+    classes.filter fun declared => declared == volatility
+
+/-- Volatility-stable segment ordering: the same filter-concatenation over
+    assembled segments. -/
+def orderByVolatility {Addr : Type uH}
+    (segments : List (ContextSegment Addr)) : List (ContextSegment Addr) :=
+  Volatility.all.flatMap fun volatility =>
+    segments.filter fun segment => segment.volatility == volatility
+
+/-- Assembly: the volatility-stable ordering of the rendered declared
+    reads. The signature is the whole discipline — a program and an input
+    valuation, nothing else; no schedule or ambient address exists to
+    read. -/
+def assemble {Addr : Type uH} {Value : Type uV}
+    (program : ContextProgram Addr Value) (valuation : Addr -> Value) :
+    List (ContextSegment Addr) :=
+  orderByVolatility (renderReads program valuation)
+
+namespace Emitter
+
+/-- The decimal ground renderer used by the assembly rows. -/
+def decimalRender (value : Nat) : String := toString value
+
+/-- A second pure ground renderer, so the ground program exercises
+    renderer variety through the same declared-read shape. -/
+def taggedRender (value : Nat) : String := "#" ++ toString value
+
+/-- The ground assembly program: three reads declared out of class order —
+    the turn read first — so the stable class sort visibly reorders. -/
+def contextProgram : ContextProgram Nat Nat where
+  reads :=
+    [ { addr := 30, render := taggedRender, volatility := .turn }
+    , { addr := 10, render := decimalRender, volatility := .static }
+    , { addr := 20, render := decimalRender, volatility := .session }
+    ]
+
+/-- The address of the planted ambient selector: a timestamp-shaped input
+    no declared read names. -/
+def timestampAddr : Nat := 99
+
+/-- The ambient read the mutant assembly consults — the model rendering of
+    a timestamp selector. The lawful assembly cannot mention it, because
+    it is not in the program. -/
+def timestampRead : ContextRead Nat Nat where
+  addr := timestampAddr
+  render := decimalRender
+  volatility := .turn
+
+/-- Ground valuation one: every address holds its successor. -/
+def valuationOne (addr : Nat) : Nat := addr + 1
+
+/-- Ground valuation two agrees with valuation one on every declared
+    address and drifts exactly at the undeclared timestamp address. -/
+def valuationTwo (addr : Nat) : Nat :=
+  if addr == timestampAddr then 777 else addr + 1
+
+end Emitter
+
+/-! ## Query algebras over anchored supports -/
+
+/-- Remove duplicates, keeping each entry's last occurrence: the
+    executable support normalisation inside `topK`. Membership is exactly
+    the input's support. -/
+def dedup {Entry : Type uV} [BEq Entry] : List Entry -> List Entry
+  | [] => []
+  | entry :: entries =>
+      if entries.contains entry then dedup entries
+      else entry :: dedup entries
+
+/-- The declared result order: score descending, then identity ascending.
+    Distinct scores never consult identity; ties at one score break by
+    identity bytes, never by arrival. -/
+def byScoreThenIdentity {Entry : Type uV} (score identity : Entry -> Nat)
+    (left right : Entry) : Bool :=
+  decide (score right < score left) ||
+    (decide (score left = score right) &&
+      decide (identity left <= identity right))
+
+/-- The named distinctness premise: within a support, identity bytes
+    determine the entry. Content-addressed entries carry it by
+    construction, and it is exactly what makes the identity tie-break
+    antisymmetric. -/
+def IdentityDistinct {Entry : Type uV} (identity : Entry -> Nat)
+    (entries : List Entry) : Prop :=
+  forall left, left ∈ entries -> forall right, right ∈ entries ->
+    identity left = identity right -> left = right
+
+/-- Top-k: dedup the delivered support, sort under the declared
+    score/identity order, take the declared width. The signature admits no
+    seed, clock, schedule, or arrival-order parameter. -/
+def topK {Entry : Type uV} [BEq Entry] (score identity : Entry -> Nat)
+    (k : Nat) (entries : List Entry) : List Entry :=
+  ((dedup entries).mergeSort (byScoreThenIdentity score identity)).take k
+
+/-- A declared query algebra answers from the anchored state and the query
+    value alone. The constructor's closure is the purity admission: no
+    clock, seed, schedule, or locale parameter exists to read. -/
+structure QueryAlgebra (State : Type uH) (Query : Type uV)
+    (Result : Type uR) where
+  answer : State -> Query -> Result
+
+/-- The support step: an index's anchored state is the entry list its
+    admitted deliveries appended — the F3 resumption carrier for queries. -/
+def appendEntry {Entry : Type uV} (state : List Entry) (entry : Entry) :
+    List Entry :=
+  state ++ [entry]
+
+/-- The declared ground query algebra: answer width-k top-k over the
+    anchored support. -/
+def topKAlgebra {Entry : Type uV} [BEq Entry]
+    (score identity : Entry -> Nat) :
+    QueryAlgebra (List Entry) Nat (List Entry) where
+  answer state k := topK score identity k state
+
+/-- The semantic inputs an admitted query declaration may name. A seed is
+    admissible only as declaration data — inside the digest. -/
+inductive QueryInput where
+  | anchoredState
+  | queryValue
+  | declaredSeed (seed : Nat)
+deriving Repr, DecidableEq
+
+/-- Candidate inputs at declaration admission, including the ambient
+    shapes a runtime could try to smuggle past F11. -/
+inductive QueryInputCandidate where
+  | anchoredState
+  | queryValue
+  | declaredSeed (seed : Nat)
+  | ambientSeed
+  | ambientClock
+  | ambientSchedule
+deriving Repr, DecidableEq
+
+/-- Structural admission at declaration time. Every ambient form maps to
+    `none` because no admitted constructor exists to carry it: the refusal
+    is the closure of the query carrier, and the refusing row names F11. -/
+def admitQueryInput : QueryInputCandidate -> Option QueryInput
+  | .anchoredState => some .anchoredState
+  | .queryValue => some .queryValue
+  | .declaredSeed seed => some (.declaredSeed seed)
+  | .ambientSeed => none
+  | .ambientClock => none
+  | .ambientSchedule => none
+
+namespace Emitter
+
+/-- Ground query entries are content-addressed: the numeral IS the
+    identity. -/
+abbrev GroundEntry := Nat
+
+/-- The declared ground score: decade buckets, so distinct identities tie. -/
+def groundScore (entry : GroundEntry) : Nat := entry / 10
+
+/-- The declared ground result width. -/
+def groundWidth : Nat := 3
+
+/-- Arrival order one: the support with one duplicated delivery. -/
+def queryArrivalOne : List GroundEntry := [7, 23, 5, 23, 12]
+
+/-- Arrival order two: the same support, permuted, with a different entry
+    duplicated. -/
+def queryArrivalTwo : List GroundEntry := [12, 5, 7, 23, 7]
+
+/-- The anchored split of arrival one: checkpoint after two deliveries. -/
+def queryPrefixOne : List GroundEntry := [7, 23]
+
+/-- The suffix delivered after arrival one's checkpoint. -/
+def querySuffixOne : List GroundEntry := [5, 23, 12]
+
+/-- The anchored split of arrival two: checkpoint after three deliveries. -/
+def queryPrefixTwo : List GroundEntry := [12, 5, 7]
+
+/-- The suffix delivered after arrival two's checkpoint. -/
+def querySuffixTwo : List GroundEntry := [23, 7]
+
+end Emitter
 
 /-! ## Policies and attenuating action trees -/
 

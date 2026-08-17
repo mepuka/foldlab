@@ -184,9 +184,10 @@ one** — stable across retries of the same declaration and different for a new
 round, both by construction. Where a vendor supports none, the bound is the
 bound; the mitigation is declaration granularity (make the fenced unit the
 externally-visible unit) plus an ordinary compensating pattern, never a claim
-that the fabric made a foreign API transactional. This is ruling G23, and it is
-supposed to ride every page and every ledger row that claims an action property.
-It does not yet — see finding **F-2** below.
+that the fabric made a foreign API transactional. This is ruling G23, and it
+rides every page and every ledger row that claims an action property — including
+the register's own row in `VERIFICATION.md`, in these words: *the register bounds
+landings, never attempts.*
 
 ---
 
@@ -734,7 +735,9 @@ refusal `law` strings, so a refusal is a link.
 ## 9 · Findings
 
 Filed, not fixed — house law. Each is something the ratified records leave open
-or something checkable that is currently wrong; the coordinator routes them.
+or something checkable that was wrong; the coordinator routes them. Two have
+since been routed and closed and are marked in place rather than deleted, so the
+record of what was found stays legible next to what was done about it.
 
 **F-1 · A skill has no ratified home.** §3 above can describe a skill as
 frame + toolkit + policy because all three are ratified constructs, but nothing
@@ -746,8 +749,13 @@ derivation, the E11 MCP configuration plane, and any fleet that wants to pin a
 capability bundle. **Blocker for any DevRel page that uses the word "skill"
 concretely.**
 
-**F-2 · Ruling G23's standing bound is absent from the merged ledger row and from
-every reader-facing page.** G23 ratified that the external-effect bound
+**F-2 · RULED AND CLOSED (`fe7fb3ac6`, `06e38b8`+).** *Ruling G23's standing
+bound was absent from the merged ledger row and from every reader-facing page.*
+The counter-reading below was considered and rejected by the coordinator: the
+row's at-most-one claim is exactly what readers over-read, so the register row is
+**action-consuming** and carries the sentence. It now sits in that row's Bounds,
+and in `QUICKSTART.md` beside the at-most-one claim and in its does-not-claim
+list. Kept here as the record. — G23 ratified that the external-effect bound
 ("at-most-one landed outcome is not at-most-one external side effect") rides the
 design *and every action-touching* `VERIFICATION.md` row. Checked: the phrase
 appears in `docs/design/2026-08-17-plait-grill-sheet.md`,
@@ -786,17 +794,21 @@ package is built under `exactOptionalPropertyTypes`, so a TypeScript caller gets
 a compile error first (verified with `tsgo`). It bites untyped callers and
 non-TS nodes, which the node contract explicitly welcomes.
 
-**F-5 · `QUICKSTART.md` is stale against the ledger in two places** (reported
-here because it is the honesty-pattern page this document is modelled on, and it
-currently under-claims relative to `VERIFICATION.md`, which is declared the
-winner on conflict). Its runnable-frontier table marks minute 8–10 as
+**F-5 · REPAIRED in this document's second round.** *`QUICKSTART.md` was stale
+against the ledger in two places* (reported because it is the honesty-pattern
+page this document is modelled on, and it under-claimed relative to
+`VERIFICATION.md`, which is declared the winner on conflict). Minute 8–10 now
+reads *Runs today*, with a real executed transcript replacing the design-record
+sketch; the F5 sentences now carry the Veil proof, the replay wall, R4-reserved,
+and the fixed-incarnation bound. Kept here as the record. — Its
+runnable-frontier table marked minute 8–10 as
 "**E5**, the register — design only", and its closing section says "F5 is not
 proved at all yet; it lands with E5." Both were true when written and are not
 now: the register merged (`591aeec`, 09:15) and its ledger row landed
 (`5004471`, 12:08) after the page's last edit (`ee14c9e`, 07:39) on the same day.
 F5 is Claimed at R3 plus the replay wall, with R4 reserved. Example 3 in that
-page runs today — §1b of this document is that example, executed. Repair belongs
-to the DEV-715 doctest lane or whoever owns the page; not touched here.
+page runs today — §1b of this document is that example, executed. Repaired on
+coordinator dispatch after the finding was routed, not on discovery.
 
 Two further items are **already owned elsewhere** and are cited rather than
 filed: the declaration-upgrade law (ruling G22, part 3 gap-table row 11 — what a

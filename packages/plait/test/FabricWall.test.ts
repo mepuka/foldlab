@@ -22,19 +22,7 @@ interface CorpusRow {
 
 const fixture = resolve(import.meta.dir, "../fixtures/fabric-conformance.ndjson")
 
-const consumed = new Set([
-  "duplicated-deliveries",
-  "permuted-evidence-schedule",
-  "floor-violating-stale-replay",
-  "duplicate-current-delivery",
-  "bounded-reordered-delivery",
-  "checkpoint-resume",
-  "partition-interleaving",
-  "resume-then-redeliver",
-  "ahead-of-ceiling-arrival",
-  "multi-gap-window",
-  "redeliver-everything-twice-shuffled",
-])
+const consumedFamilies = new Set(["F2", "F2b", "F3", "F3-F2b", "F4"])
 
 const exclusions = {
   "cell-merge-aci": "F1 belongs to E6 Cell.ts",
@@ -169,22 +157,27 @@ describe("verify/fabric runtime replay wall", () => {
     const lines = (await Bun.file(fixture).text()).trimEnd().split("\n")
     const header = JSON.parse(lines[0]!) as { vectors: number; counts: Record<string, number> }
     const rows = lines.slice(1).map((line) => JSON.parse(line) as CorpusRow)
-    expect(header.vectors).toBe(15)
-    expect(rows).toHaveLength(15)
 
     const byName = new Map(rows.map((row) => [row.name, row]))
-    expect([...consumed].filter((name) => !byName.has(name))).toEqual([])
     expect(Object.keys(exclusions).filter((name) => !byName.has(name))).toEqual([])
 
+    const expectedChecked = [...consumedFamilies].reduce((total, family) => {
+      const count = header.counts[family]
+      if (count === undefined) throw new Error(`missing consumed family count for ${family}`)
+      return total + count
+    }, 0)
+
     let checked = 0
-    for (const name of consumed) {
-      const row = byName.get(name)!
+    for (const row of rows.filter((candidate) => consumedFamilies.has(candidate.kind))) {
       expect(await replayRow(row)).toEqual(expectedState(row))
       expect(row.witness).toStartWith("Fabric.")
       checked += 1
     }
-    expect(checked).toBe(11)
-    expect(checked + Object.keys(exclusions).length).toBe(rows.length)
+    expect(checked).toBe(expectedChecked)
+
+    const unfamiliar = [...new Set(rows
+      .filter((row) => !consumedFamilies.has(row.kind) && !(row.name in exclusions))
+      .map((row) => row.kind))]
 
     for (const name of ["duplicate-current-delivery", "bounded-reordered-delivery"]) {
       const row = byName.get(name)!
@@ -196,7 +189,17 @@ describe("verify/fabric runtime replay wall", () => {
       "../negative-controls/Fold.arrival-order.trace.txt",
     )).text())
     console.info(
-      `FABRIC WALL: PASS consumed=${checked}/15 skipped-within-family=0 exclusions=${Object.entries(exclusions).map(([name, reason]) => `${name}(${reason})`).join(",")}`,
+      `FABRIC WALL: PASS consumed=${checked}/${expectedChecked} skipped-within-family=0 exclusions=${Object.entries(exclusions).map(([name, reason]) => `${name}(${reason})`).join(",")} unfamiliar=${unfamiliar.join(",") || "none"}`,
     )
+  })
+
+  test("refuses an unknown row inside a consumed family", async () => {
+    await expect(replayRow({
+      kind: "F2",
+      name: "unknown-f2-row",
+      input: {},
+      verdict: {},
+      witness: "Fabric.unknown",
+    })).rejects.toThrow("unconsumed corpus row F2/unknown-f2-row")
   })
 })

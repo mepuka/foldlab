@@ -73,7 +73,8 @@ fi
 expected_laws=(
   F1CellMergeACI F1CellExtensional F1HistoryConvergence F2TraceInvariant
   F3ResumeExact F2bSerialSuccessorPremise F2bGuardedExactlyOnce F4PartitionFold
-  F9PolicyMeetSemilattice F9TreeAttenuation
+  F9PolicyMeetSemilattice F9TreeAttenuation F7AssemblyReadsOnlyDeclared
+  F7SegmentOrderStable F7WithinClassOrder F11TopKOfSupport F11QueryDeterministic
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+F[0-9A-Za-z_]+' \
@@ -149,6 +150,33 @@ roster=(
   emitter_f9_request_escalates emitter_f9_tree
   emitter_string_escaping
   emitter_duplicate_key_collapse
+  render_reads_agree f7_assembly_reads_only_declared
+  map_volatility_render_reads map_volatility_order_by_volatility
+  f7_segment_order_stable
+  order_by_volatility_filter_class reverse_map_volatility_filter_class
+  f7_within_class_order
+  dedup_mem dedup_nodup by_score_then_identity_total
+  by_score_then_identity_trans by_score_then_identity_antisymm
+  sorted_nodup_eq_of_same_mem f11_topk_of_support f11_state_of_anchor
+  append_entry_fold_from same_delivered_of_mutual_contains
+  f11_query_deterministic
+  drop_declared_reads_keeps_extended_agreement drop_declared_reads_killed
+  drop_volatility_order_keeps_disciplined_schedule
+  arrival_order_assembly_breaks_class_order drop_volatility_order_killed
+  drop_identity_tiebreak_keeps_duplication topk_survives_reordered_arrival
+  drop_identity_tiebreak_killed
+  drop_schedule_independence_keeps_empty_thread
+  drop_schedule_independence_keeps_duplication
+  drop_schedule_independence_killed
+  rival_keeps_declared_reads_frame rival_keeps_class_projection
+  rival_keeps_distinct_class_ground_row
+  within_class_order_survives_two_static
+  drop_within_class_order_killed
+  emitter_f7_agreement_premise emitter_f7_declared_reads
+  emitter_f7_segment_order
+  emitter_f11_support_premise emitter_f11_topk_support
+  emitter_f11_reanchored_premise emitter_f11_reanchored
+  emitter_query_seed_admission
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
@@ -230,6 +258,11 @@ check_control drop-commutativity
 check_control drop-successor-discipline
 check_control drop-payload-integrity
 check_control drop-meet-clamping
+check_control drop-declared-reads
+check_control drop-volatility-order
+check_control drop-identity-tiebreak
+check_control drop-schedule-independence
+check_control drop-within-class-order
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
 mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
@@ -258,8 +291,13 @@ expected_vector_witnesses=(
   'alphabet-refusal non-commuting-intruder emitter_intruder_refused'
   'F9 attenuation-request-clamped emitter_f9_clamp'
   'F9 delegation-tree-attenuation emitter_f9_tree'
+  'F7 assembly-declared-reads emitter_f7_declared_reads'
+  'F7 assembly-volatility-order emitter_f7_segment_order'
+  'F11 topk-across-arrival-orders emitter_f11_topk_support'
+  'F11 query-at-reanchored-state emitter_f11_reanchored'
+  'query-admission undeclared-seed-refused emitter_query_seed_admission'
 )
-if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 15 ]] ||
+if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 20 ]] ||
     ! diff -u <(printf '%s\n' "${expected_vector_witnesses[@]}" | LC_ALL=C sort) \
       <(LC_ALL=C sort "$corpus_witnesses_tmp"); then
   echo "GATE: FAIL — every emitted vector must name its exact theorem instance" >&2
@@ -367,17 +405,20 @@ check_corpus_regeneration() {
 if ! check_corpus_regeneration "$fixture" "$corpus_tmp"; then
   exit 1
 fi
-expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F2":2,"F2b":6,"F3":1,"F3-F2b":1,"F4":1,"F9":2,"alphabet-refusal":1},"format":1,"generator":"verify/fabric emitter","vectors":15}'
+expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F11":2,"F2":2,"F2b":6,"F3":1,"F3-F2b":1,"F4":1,"F7":2,"F9":2,"alphabet-refusal":1,"query-admission":1},"format":1,"generator":"verify/fabric emitter","vectors":20}'
 if [[ "$(head -n 1 "$corpus_tmp")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 16 ]] ||
+    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 21 ]] ||
     [[ "$(grep -c '"kind":"F1"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F2"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F2b"' "$corpus_tmp")" -ne 6 ]] ||
     [[ "$(grep -c '"kind":"F3"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F3-F2b"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F4"' "$corpus_tmp")" -ne 1 ]] ||
+    [[ "$(grep -c '"kind":"F7"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F9"' "$corpus_tmp")" -ne 2 ]] ||
-    [[ "$(grep -c '"kind":"alphabet-refusal"' "$corpus_tmp")" -ne 1 ]]; then
+    [[ "$(grep -c '"kind":"F11"' "$corpus_tmp")" -ne 2 ]] ||
+    [[ "$(grep -c '"kind":"alphabet-refusal"' "$corpus_tmp")" -ne 1 ]] ||
+    [[ "$(grep -c '"kind":"query-admission"' "$corpus_tmp")" -ne 1 ]]; then
   echo "GATE: FAIL — corpus count or canonical provenance pin moved" >&2
   exit 1
 fi
@@ -487,4 +528,4 @@ if [[ "$self_test" == true ]]; then
   echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
-echo "GATE: PASS (5 law-dropping controls; 15 canonical model vectors; byte-identical regeneration)"
+echo "GATE: PASS (10 law-dropping controls; 20 canonical model vectors; byte-identical regeneration)"
