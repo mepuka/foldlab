@@ -9,16 +9,28 @@ if ! command -v lake >/dev/null 2>&1; then
   exit 2
 fi
 
-# ---- Kernel-bound source hygiene. `Moves.lean` and every Lean source under
-# `Moves/` are the proof-bearing model surface; the runtime-only Oracle library
-# and Main.lean executable adapter are deliberately outside this roster. A
-# future Moves/Wire.lean joins the sweep without changing this gate.
-kernel_sources=(Moves.lean)
+# ---- Kernel-bound source hygiene. The roster is every Lean source in this
+# package: `Moves.lean` and `Moves/**` are the proof-bearing model surface, and
+# `Main.lean` plus `Oracle/**` are the corpus generator whose output stands in
+# for the model in `packages/moves/fixtures/moves-conformance.ndjson`. A
+# generator that defaults a value silently forges a model verdict, so it is held
+# to the same hygiene as the model. A future Moves/Wire.lean joins the sweep
+# without changing this gate. Where the generator legitimately needs a construct
+# the model forbids, it is approved per site by line digest — never by a roster
+# carve-out.
+for required in Moves.lean Main.lean Moves Oracle; do
+  if [[ ! -e "$required" ]]; then
+    echo "GATE: FAIL — kernel hygiene roster is missing $required" >&2
+    exit 2
+  fi
+done
+kernel_sources=(Moves.lean Main.lean)
 while IFS= read -r source; do
   kernel_sources+=("$source")
-done < <(find Moves -type f -name '*.lean' -print | LC_ALL=C sort)
+done < <(find Moves Oracle -type f -name '*.lean' -print | LC_ALL=C sort)
 
 kernel_extern_allowlist="kernel-extern-allowlist.txt"
+kernel_partial_allowlist="kernel-partial-allowlist.txt"
 
 lean_code_only() {
   # Keep line count stable while removing nested block comments and line
@@ -108,44 +120,75 @@ hit_location() {
   printf '%s:%s' "$source" "$line"
 }
 
-check_kernel_hygiene() {
+# The bang-accessor family. Lean's naming convention reserves a trailing `!` on
+# a term-level identifier for a partial function that PANICS on invalid input —
+# it prints one stderr line and returns the type's `Inhabited` default, exit 0.
+# That is the same channel `panic!` opens, spelled without the token, so the
+# gate refuses the convention rather than a list of names: any bang-suffixed
+# identifier reached by dot-notation or namespace qualification, plus the
+# unqualified core accessors an `open` could bring into scope. Curated from the
+# Lean 4.33.0 core scan (`def`/`abbrev` names ending in `!` under Init/ and
+# Std/); the curation rule and its stated bound are in DECISIONS.md. Syntax-level
+# bangs are untouched by construction: `s!`, `m!`, `f!` and the tactic variants
+# are never dot-prefixed and are not core accessor names.
+bang_accessor_pattern="(\.[A-Za-z_][A-Za-z0-9_']*!($|[^=]))"
+bang_accessor_pattern+="|((^|[^A-Za-z0-9_'.])"
+bang_accessor_pattern+="(back|get|getLast|head|max|min|next|peek|prev|set|tail|toInt|toNat)"
+bang_accessor_pattern+="!($|[^=]))"
+
+load_allowlist() {
+  # Validate one per-site allowlist and print its `path:line:digest` keys. A row
+  # nobody can parse is not an approval: malformed, duplicated, or missing files
+  # fail with status 2 (gate machinery), never 1 (a planted violation).
   local allowlist="$1"
-  shift
-  local -a sources=("$@")
-  local location digest reason extra key hit source remainder line source_line
-  local -A allowed_extern=()
+  local label="$2"
+  local location digest reason extra key approved=$'\n'
 
   if [[ ! -f "$allowlist" ]]; then
-    echo "GATE: FAIL — kernel extern allowlist is missing: $allowlist" >&2
+    echo "GATE: FAIL — kernel $label allowlist is missing: $allowlist" >&2
     return 2
   fi
-  if [[ "${#sources[@]}" -eq 0 ]]; then
-    echo "GATE: FAIL — kernel hygiene source roster is empty" >&2
-    return 2
-  fi
-
   while IFS=$'\t' read -r location digest reason extra; do
     [[ -z "$location" || "$location" == \#* ]] && continue
     if [[ -n "${extra:-}" ||
-          ! "$location" =~ ^(Moves\.lean|Moves/[^:]+\.lean):[1-9][0-9]*$ ||
+          ! "$location" =~ ^(Moves\.lean|Main\.lean|(Moves|Oracle)/[^:]+\.lean):[1-9][0-9]*$ ||
           ! "$digest" =~ ^[0-9a-f]{64}$ ||
           "$reason" != "operator-ratified: "* ]]; then
-      echo "GATE: FAIL — malformed kernel extern allowlist entry: $location" >&2
+      echo "GATE: FAIL — malformed kernel $label allowlist entry: $location" >&2
       return 2
     fi
     key="$location:$digest"
-    if [[ -n "${allowed_extern[$key]:-}" ]]; then
-      echo "GATE: FAIL — duplicate kernel extern allowlist entry: $location" >&2
+    if [[ "$approved" == *$'\n'"$key"$'\n'* ]]; then
+      echo "GATE: FAIL — duplicate kernel $label allowlist entry: $location" >&2
       return 2
     fi
-    allowed_extern["$key"]=1
+    approved+="$key"$'\n'
+    printf '%s\n' "$key"
   done < "$allowlist"
+}
 
-  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(implemented_by)($|[^A-Za-z0-9_'])" "${sources[@]}")
+check_forbidden_token() {
+  # A token class with no approval path: any code-visible occurrence refuses.
+  local pattern="$1"
+  local label="$2"
+  shift 2
+  local hit
+  hit=$(first_source_hit "$pattern" "$@")
   if [[ -n "$hit" ]]; then
-    echo "GATE: FAIL — forbidden @[implemented_by] at $(hit_location "$hit")" >&2
+    echo "GATE: FAIL — forbidden $label at $(hit_location "$hit")" >&2
     return 1
   fi
+}
+
+check_allowlisted_token() {
+  # A token class approved per site. The approval binds to the SHA-256 of the
+  # exact source line, so moving or editing the construct re-enters review; a
+  # file- or line-only permission could silently authorize a changed one.
+  local pattern="$1"
+  local label="$2"
+  local approved="$3"
+  shift 3
+  local hit source remainder line location digest source_line
 
   while IFS= read -r hit; do
     [[ -z "$hit" ]] && continue
@@ -155,44 +198,75 @@ check_kernel_hygiene() {
     location="$source:$line"
     source_line=$(sed -n "${line}p" "$source")
     digest=$(printf '%s' "$source_line" | sha256sum | cut -d ' ' -f 1)
-    key="$location:$digest"
-    if [[ -z "${allowed_extern[$key]:-}" ]]; then
-      echo "GATE: FAIL — unallowlisted @[extern] at $location" >&2
+    if [[ "$approved" != *$'\n'"$location:$digest"$'\n'* ]]; then
+      echo "GATE: FAIL — unallowlisted $label at $location" >&2
       return 1
     fi
   done < <(
-    for source in "${sources[@]}"; do
+    for source in "$@"; do
       while IFS= read -r hit; do
         [[ -n "$hit" ]] && printf '%s:%s\n' "$source" "$hit"
-      done < <(lean_code_only "$source" | grep -nE "(^|[^A-Za-z0-9_'])(extern)($|[^A-Za-z0-9_'])" || true)
+      done < <(lean_code_only "$source" | grep -nE "$pattern" || true)
     done
   )
-
-  hit=$(first_source_hit 'panic!' "${sources[@]}")
-  if [[ -n "$hit" ]]; then
-    echo "GATE: FAIL — forbidden panic! at $(hit_location "$hit")" >&2
-    return 1
-  fi
-
-  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(partial)($|[^A-Za-z0-9_'])" "${sources[@]}")
-  if [[ -n "$hit" ]]; then
-    echo "GATE: FAIL — forbidden partial at $(hit_location "$hit")" >&2
-    return 1
-  fi
-
-  hit=$(first_source_hit "(^|[^A-Za-z0-9_'])(sorry)($|[^A-Za-z0-9_'])" "${sources[@]}")
-  if [[ -n "$hit" ]]; then
-    echo "GATE: FAIL — forbidden sorry at $(hit_location "$hit")" >&2
-    return 1
-  fi
 }
 
-if check_kernel_hygiene "$kernel_extern_allowlist" "${kernel_sources[@]}"; then
-  echo "GATE: PASS (kernel annotations: implemented_by absent, extern allowlist clean)"
-  echo "GATE: PASS (kernel sources: panic!, partial, and sorry absent)"
+check_kernel_hygiene() {
+  local extern_allowlist="$1"
+  local partial_allowlist="$2"
+  shift 2
+  local -a sources=("$@")
+  local keys approved_extern approved_partial
+
+  if [[ "${#sources[@]}" -eq 0 ]]; then
+    echo "GATE: FAIL — kernel hygiene source roster is empty" >&2
+    return 2
+  fi
+
+  keys=$(load_allowlist "$extern_allowlist" "extern") || return 2
+  approved_extern=$'\n'"$keys"$'\n'
+  keys=$(load_allowlist "$partial_allowlist" "partial") || return 2
+  approved_partial=$'\n'"$keys"$'\n'
+
+  # Nine checks. Each ships a negative control refuted on exactly its own
+  # diagnostic; the controls are registered below, and the orphan rule there
+  # refuses a control that is committed but never run.
+  check_forbidden_token \
+    "(^|[^A-Za-z0-9_'])(implemented_by)($|[^A-Za-z0-9_'])" \
+    "@[implemented_by]" "${sources[@]}" || return $?
+  check_allowlisted_token \
+    "(^|[^A-Za-z0-9_'])(extern)($|[^A-Za-z0-9_'])" \
+    "@[extern]" "$approved_extern" "${sources[@]}" || return $?
+  check_forbidden_token 'panic!' "panic!" "${sources[@]}" || return $?
+  check_forbidden_token \
+    "(^|[^A-Za-z0-9_'])panic($|[^A-Za-z0-9_'!])" \
+    "panic" "${sources[@]}" || return $?
+  check_forbidden_token \
+    "$bang_accessor_pattern" \
+    "bang accessor" "${sources[@]}" || return $?
+  check_forbidden_token \
+    "(^|[^A-Za-z0-9_'])(unsafe)($|[^A-Za-z0-9_'])" \
+    "unsafe" "${sources[@]}" || return $?
+  check_forbidden_token \
+    "(^|[^A-Za-z0-9_'])(native_decide)($|[^A-Za-z0-9_'])" \
+    "native_decide" "${sources[@]}" || return $?
+  check_allowlisted_token \
+    "(^|[^A-Za-z0-9_'])(partial)($|[^A-Za-z0-9_'])" \
+    "partial" "$approved_partial" "${sources[@]}" || return $?
+  check_forbidden_token \
+    "(^|[^A-Za-z0-9_'])(sorry)($|[^A-Za-z0-9_'])" \
+    "sorry" "${sources[@]}" || return $?
+}
+
+if check_kernel_hygiene \
+  "$kernel_extern_allowlist" "$kernel_partial_allowlist" "${kernel_sources[@]}"; then
+  echo "GATE: PASS (kernel annotations: implemented_by absent, extern and partial allowlists clean)"
+  echo "GATE: PASS (kernel sources: panic!, panic, bang accessors, unsafe, native_decide, and sorry absent)"
 else
   exit $?
 fi
+
+declare -a exercised_controls=()
 
 check_hygiene_control() {
   local source="$1"
@@ -200,7 +274,8 @@ check_hygiene_control() {
   local label="$3"
   local output status expected
 
-  output=$(check_kernel_hygiene "$kernel_extern_allowlist" "$source" 2>&1)
+  output=$(check_kernel_hygiene \
+    "$kernel_extern_allowlist" "$kernel_partial_allowlist" "$source" 2>&1)
   status=$?
   if [[ "$status" -eq 0 ]]; then
     echo "GATE: FAIL — $label negative control was not refuted" >&2
@@ -217,17 +292,65 @@ check_hygiene_control() {
     echo "GATE: FAIL — $label negative control was not refuted on its named check" >&2
     exit 1
   fi
+  exercised_controls+=("$source")
   echo "GATE: PASS ($label negative control refuted on its named check)"
 }
 
+# One control per shipped check, each planting exactly its own violation: a
+# control that also trips an earlier check would prove nothing about the later
+# one. `negative-controls/` is not a lake_lib root, so none of these compile.
 check_hygiene_control \
   "negative-controls/implemented-by.lean" \
   "negative-controls/implemented-by.cex.txt" \
   "implemented_by"
 check_hygiene_control \
+  "negative-controls/extern.lean" \
+  "negative-controls/extern.cex.txt" \
+  "extern"
+check_hygiene_control \
   "negative-controls/panic.lean" \
   "negative-controls/panic.cex.txt" \
   "panic!"
+check_hygiene_control \
+  "negative-controls/panic-bare.lean" \
+  "negative-controls/panic-bare.cex.txt" \
+  "panic"
+check_hygiene_control \
+  "negative-controls/bang-accessor.lean" \
+  "negative-controls/bang-accessor.cex.txt" \
+  "bang accessor"
+check_hygiene_control \
+  "negative-controls/unsafe.lean" \
+  "negative-controls/unsafe.cex.txt" \
+  "unsafe"
+check_hygiene_control \
+  "negative-controls/native-decide.lean" \
+  "negative-controls/native-decide.cex.txt" \
+  "native_decide"
+check_hygiene_control \
+  "negative-controls/partial.lean" \
+  "negative-controls/partial.cex.txt" \
+  "partial"
+check_hygiene_control \
+  "negative-controls/sorry.lean" \
+  "negative-controls/sorry.cex.txt" \
+  "sorry"
+
+# Control orphan rule: a control committed but never run is a control that
+# cannot fail, which is the defect the controls exist to refuse.
+while IFS= read -r control; do
+  control_exercised=0
+  for exercised in "${exercised_controls[@]}"; do
+    if [[ "$exercised" == "$control" ]]; then
+      control_exercised=1
+      break
+    fi
+  done
+  if [[ "$control_exercised" -eq 0 ]]; then
+    echo "GATE: FAIL — committed negative control never exercised: $control" >&2
+    exit 1
+  fi
+done < <(find negative-controls -type f -name '*.lean' -print | LC_ALL=C sort)
 
 # ---- Frozen-spec pin: Spec.lean changes require a Rev re-pin ----
 expected_spec_sha256="36c3203e3e6edbcc15f7561ab91d1e2d0b03cf40bf6e23a8f9c58e47be2b5b43"

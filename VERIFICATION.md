@@ -721,13 +721,23 @@ single-seat stability, and the IC4 impossibility
 `Moves/Spec.lean` (statement drift is a gate failure requiring a Rev
 re-pin), `lake build` (Lean 4.33.0, core + Std, no mathlib),
 word-boundary source guards refusing `sorry`/`admit`/`axiom` in any
-position, and the kernel-bound source-hygiene sweep over `Moves.lean`
-plus `Moves/**/*.lean`: `@[implemented_by]` is forbidden,
-`@[extern]` requires an exact line-digest allowlist entry with an
-operator-ratified reason (the initial allowlist is empty), and `panic!`,
-`partial`, and `sorry` are forbidden code tokens. Planted
-`@[implemented_by]` and `panic!` controls are each refuted on their named
-check with committed diagnostic traces. The mechanical axiom-footprint
+position, and the kernel-bound source-hygiene sweep over every Lean
+source in the package — `Moves.lean` and `Moves/**/*.lean`, the model
+surface, plus `Main.lean` and `Oracle/**/*.lean`, the corpus generator
+that stands in for the model in
+`packages/moves/fixtures/moves-conformance.ndjson`. Nine checks.
+Seven refuse outright: `@[implemented_by]`, `panic!`, bare `panic`,
+the bang-accessor family (any bang-suffixed identifier reached by
+dot-notation or qualification, plus the curated unqualified core
+accessors — all of which return the type's `Inhabited` default and
+exit 0), `unsafe`, `native_decide`, and `sorry`. Two require an exact
+source-line-digest allowlist row with an operator-ratified reason:
+`@[extern]` (allowlist empty) and `partial` (one row, `Main.lean:68`,
+the oracle's non-terminating serve loop). Nine planted negative
+controls, one per check, each refuted on its named check with the
+committed diagnostic trace byte-compared, each clearing the checks
+that run before it, and none of them reachable from `lake build`; a
+control committed but never run fails the gate. The mechanical axiom-footprint
 check — `#print axioms` over all thirty-nine rostered theorems, failing on
 anything outside
 `{propext, Classical.choice, Quot.sound}` — and the orphan rule: every
@@ -773,12 +783,18 @@ ties daemon folds and events to these states and moves — the daemon's
 synthesized two-candidate dispute and atomic close are instances the
 map must justify, not theorems here. Full audit:
 [docs/research/2026-08-15-model-audit-findings.md](docs/research/2026-08-15-model-audit-findings.md).
-The hygiene sweep is source-level and owned-model-only: inherited Lean
-`Init` externs remain in the trusted base, `Oracle/**/*.lean` and
-`Main.lean` are runtime corpus/transport adapters outside the kernel-bound
-roster, and the emitted-C panic-symbol count is deferred to REF-6.
-Decision log: `verify/moves/DECISIONS.md` (D70–D79 plus the Task 22
-kernel-hygiene scope and allowlist decisions); the D85 absorb
+The hygiene sweep is source-level and owned-source-only: inherited Lean
+`Init` externs remain in the trusted base and the emitted-C
+panic-symbol count is deferred to REF-6. Its own stated bounds: the
+bang-accessor convention branch does not see an unqualified bang name
+outside the curated thirteen; `noncomputable` is deliberately not
+checked, because it removes compiled code rather than adding a
+defaulting path and the extraction obligation it bears is REF-0's, to
+be met by a positive artifact check rather than a token ban.
+Decision log: `verify/moves/DECISIONS.md` (D70–D79, the Task 22
+kernel-hygiene scope and allowlist decisions, and the Task 25 roster
+widening, bang-accessor curation rule, and control-completeness
+entries); the D85 absorb
 ratification and the D86 empty-offer refusal are recorded under the
 DEV-673 heading in `proto/DECISIONS.md` (numbers task-local until
 merge).

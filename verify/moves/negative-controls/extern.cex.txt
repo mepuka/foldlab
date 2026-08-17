@@ -1,0 +1,1 @@
+GATE: FAIL — unallowlisted @[extern] at negative-controls/extern.lean:1

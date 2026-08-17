@@ -81,8 +81,19 @@ partial def serve : IO Unit := do
       | .ok ms => out.putStrLn (verdict ms).compress; out.flush; loop
   loop
 
+def usage : IO UInt32 := do
+  (← IO.getStderr).putStrLn "usage: oracle (emit N | serve)"
+  return 2
+
 def main (args : List String) : IO UInt32 := do
   match args with
-  | ["emit", n] => emit (n.toNat!); return 0
+  -- The count is parsed explicitly and a non-numeric argument is REFUSED. A
+  -- bang accessor would have returned the `Inhabited` default instead, so
+  -- `oracle emit x` would have emitted the zero-vector corpus and exited 0 —
+  -- a forged model verdict with a successful exit code.
+  | ["emit", n] =>
+    match n.toNat? with
+    | some count => emit count; return 0
+    | none => usage
   | ["serve"]   => serve; return 0
-  | _ => (← IO.getStderr).putStrLn "usage: oracle (emit N | serve)"; return 2
+  | _ => usage

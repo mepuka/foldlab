@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden native_decide at negative-controls/native-decide.lean:2

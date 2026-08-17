@@ -109,6 +109,13 @@ final numbers assigned at merge)
 
 ### D??. The kernel-bound roster is the `Moves` library, not the executable package
 
+**SUPERSEDED by task 25** (see "The corpus generator joins the kernel-bound
+roster" below): the roster now includes `Main.lean` and `Oracle/`, and the
+`partial def serve` carve-out this entry reasons from became a per-site
+allowlist row. The entry stands as the record of what was ratified and why the
+Rev seat's F5 could reach it — the scope was drawn around the generator's
+existing violations, so the gate was green on day one by construction.
+
 Decided: scan `Moves.lean` and every `*.lean` file recursively under `Moves/`.
 This includes a future `Moves/Wire.lean` automatically. Exclude `Oracle/` and
 `Main.lean`: they are the corpus codec/generator and executable transport
@@ -134,3 +141,117 @@ once the package has one. Why: a file- or line-only permission can silently
 authorize a changed annotation, while the digest makes annotation drift
 re-enter review. **Load-bearing? yes** — the annotation gate closes a compiled
 replacement channel that theorem axiom reports cannot observe.
+
+## Task 25 — the hygiene cure (2026-08-17; task-local D?? entries — final
+numbers assigned at merge)
+
+Brief `scratch/dispatch/25-float-hygiene-cure.md`, items C3/C4/C5/C8c, curing
+findings F3, F4, F5 and F11 of `docs/research/2026-08-16-review-float-hygiene-branch.md`
+under operator rulings 5–6.
+
+### D??. The corpus generator joins the kernel-bound roster
+
+Decided: the roster is every Lean source in the package — `Moves.lean`,
+`Moves/**`, `Main.lean`, and `Oracle/**`. Alternatives: keep the Task 22
+model-only roster; add `Oracle/` but not `Main.lean`; add a second, weaker
+gate for the generator. Why: `packages/moves/fixtures/moves-conformance.ndjson`
+is a model-standing fixture, and the only thing standing behind it is this
+generator executing the model. A generator that defaults a value emits a
+verdict the model never reached, with exit status 0 — the exact shape house law
+calls a hand-authored model verdict, arriving mechanically. The Task 22 scope
+was recorded honestly but drawn around the generator's existing violations, so
+the gate was green on day one by construction (F5). Two constructs the model
+forbids are legitimately needed by an executable, and both are handled per site
+rather than by a roster line: see the next two entries. **Load-bearing? yes** —
+this is what makes "the corpus generator the estate already trusts" a checked
+sentence rather than a premise.
+
+### D??. `partial def serve` is a per-site exception, never a roster carve-out
+
+Decided: `partial` joins the allowlisted class alongside `@[extern]`, with its
+own `kernel-partial-allowlist.txt` in the same format — `path:line`, the
+SHA-256 of the exact source line, an `operator-ratified:` reason. The file
+carries exactly one row, `Main.lean:68`, whose ratified reason is that the
+oracle's interactive serve loop is a non-terminating daemon transport, not a
+value-defaulting channel: it returns no value the corpus records. Alternatives:
+exclude `Main.lean` from the roster (the Task 22 shape); allow `partial`
+anywhere outside `Moves/`; rewrite `serve` with fuel to remove the exception.
+Why: an exception drawn as a scope boundary silently covers every future
+violation in the same file, while a digest-pinned row covers one line and
+re-enters review when that line moves or changes. The refused alternative also
+matters: a fuel-bounded `serve` would put an arbitrary bound in the transport
+for the sake of a gate. **Load-bearing? yes** — the same mechanism now carries
+the only two approvals in the package, and both are arguable because both are
+written down.
+
+### D??. The panic-free gate refuses the naming convention, not the token
+
+Decided: the gate refuses `panic!`, bare `panic`, `unsafe`, and the
+bang-accessor family. The bang family is matched as a convention, not a name
+list: any bang-suffixed identifier reached by dot-notation or namespace
+qualification (`x.head!`, `List.head!`, `n.toNat!`), plus the unqualified core
+accessors an `open` could bring into scope — `back! get! getLast! head! max!
+min! next! peek! prev! set! tail! toInt! toNat!`, curated by scanning the Lean
+4.33.0 core sources under `Init/` and `Std/` for `def`/`abbrev` names ending in
+`!`. Alternatives: enumerate the ~90 core bang names (the full scan); match
+every trailing `!` and allowlist the syntax bangs; keep the `panic!` token
+check alone. Why: Lean reserves a trailing `!` on a term-level identifier for a
+function that panics on invalid input — one stderr line, the type's `Inhabited`
+default, exit 0. That is the RQ-1 default-return channel, and `panic!` is only
+its most legible spelling: `panic "x"` and `([] : List Nat).head!` both opened
+it while the token gate returned 0 (F4). Enumeration rots silently as core
+grows; matching the convention does not. The syntax bangs `s!`, `m!`, `f!` and
+the tactic variants are outside both branches by construction — never
+dot-prefixed, never core accessor names — so the generator's interpolated
+strings stay lawful without an exception. **Load-bearing? yes** — a gate scoped
+to a token proves only that the token is absent.
+
+Stated bounds. The convention branch does not see an unqualified bang name
+outside the curated thirteen; a string containing `.head!` is refused, which
+follows the Task 22 rule that string contents stay visible; and `x.foo!= y`
+written without spaces would read as a bang accessor, which is why the pattern
+excludes a following `=`.
+
+### D??. `native_decide` is forbidden in source; `noncomputable` is not
+
+Decided: `native_decide` joins the forbidden tokens. `noncomputable` is
+deliberately NOT checked. Alternatives: rely on the axiom-footprint check for
+`native_decide`; forbid `noncomputable` as an extraction hazard; forbid
+neither. Why for `native_decide`: it is a trust channel of the same family as
+`@[implemented_by]` — a compiled evaluator's verdict entering a proof as
+`Lean.ofReduceBool` — and the footprint check only observes the rostered
+theorems, so any of the seventy-six results excused in `gate-exclusions.txt`
+could carry it unobserved. FINDING-48-AXIOMS was exactly this defect found
+late. Why not for `noncomputable`: it removes compiled code rather than adding
+a defaulting path, so it is not this gate's channel. The obligation it does
+bear — every kernel definition extracts to code — is REF-0's, and it needs a
+positive check that the artifact builds, not a token ban; building that ban now
+would be machinery ahead of the decision that licenses it. **Load-bearing?
+yes** for `native_decide`; the `noncomputable` half is recorded so the next
+executor does not read its absence as an oversight.
+
+### D??. Every shipped check ships a control, and every control is run
+
+Decided: nine checks, nine committed negative controls, each planting exactly
+its own violation and clearing the checks that run before it; a control
+committed but never registered in `run.sh` fails the gate. Alternatives: keep
+the two controls Task 22's brief named; add controls without the orphan rule;
+assert the count against a hand-maintained constant. Why: house law is one
+control per dropped law, and Task 22 shipped five checks with two controls
+(F3), so three could have regressed silently while `VERIFICATION.md` claimed
+all five. The orphan rule closes the other direction — the theorem orphan rule
+already in this gate exists for the same reason, and a control nothing runs is
+a control that cannot fail. **Load-bearing? yes** — it is what makes the ledger
+sentence about this gate checkable rather than aspirational.
+
+### D??. The oracle parses its count and refuses a bad one
+
+Decided: `oracle emit N` parses `N` with `String.toNat?` and exits 2 with the
+usage line when it does not parse, replacing `n.toNat!`. Alternatives: keep the
+bang accessor and allowlist it; parse with a default of 0; leave it and exclude
+`Main.lean` from the roster. Why: `toNat!` returns the `Inhabited` default, so
+`oracle emit x` would have emitted the zero-vector corpus and exited 0 — a
+forged model verdict with a successful exit code, on the path that writes the
+fixture the TS kernel is walled against. A refusal is the only answer that
+cannot be mistaken for an answer. **Load-bearing? yes** — this is the one live
+violation the widened roster found (F5).

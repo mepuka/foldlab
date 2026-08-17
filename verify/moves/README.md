@@ -8,9 +8,12 @@ and — since D85 (DEV-673) — proves the confluence package over the total
 runner: fills are total, terminal meaning and journal are invariant under
 permutation of any fill/dispute bag, and refusal is characterized per move as
 an iff against the frozen `D85Refusal`. It checks with Lean 4.33.0 and core
-`Std` only. There is no `sorry`, `admit`, user axiom, or compiled-evaluation
-override in the owned model sources: `./run.sh` rejects `@[implemented_by]`,
-non-allowlisted `@[extern]`, `panic!`, `partial`, and `sorry` before it builds.
+`Std` only. There is no `sorry`, `admit`, user axiom, compiled-evaluation
+override, or value-defaulting path in the owned sources: before it builds,
+`./run.sh` rejects `@[implemented_by]`, `panic!`, bare `panic`, the
+bang-accessor family, `unsafe`, `native_decide`, and `sorry` outright, and
+rejects `@[extern]` and `partial` unless an operator-ratified allowlist row
+pins the exact source line. Nine checks, nine committed negative controls.
 It also verifies the frozen-spec sha256 pin, mechanically restricts every
 rostered theorem to the core-clean footprint
 `{propext, Classical.choice, Quot.sound}`, and enforces the orphan rule:
@@ -19,20 +22,38 @@ every public theorem is rostered or listed with a reason in
 
 ## Kernel-bound source hygiene
 
-The guarded source set is `Moves.lean` plus every `*.lean` file recursively
-under `Moves/`. That is the proof-bearing model library and automatically
-includes the ratified future `Moves.Wire` namespace. `Oracle/` and `Main.lean`
-are runtime-only corpus/transport adapters and are outside the kernel-bound
-set; in particular, the interactive oracle server's `partial def serve` is
-not a kernel declaration. The distinction is architectural, not an exception
-to the scanner, and is pinned in `DECISIONS.md`.
+The guarded source set is every Lean source in the package: `Moves.lean` and
+`Moves/**` — the proof-bearing model library, which automatically includes the
+ratified future `Moves.Wire` namespace — plus `Main.lean` and `Oracle/**`, the
+corpus generator. The generator is in scope because
+`packages/moves/fixtures/moves-conformance.ndjson` stands in for the model, and
+a generator that defaults a value emits a verdict the model never reached, at
+exit status 0. Where an executable legitimately needs a construct the model
+forbids, it is approved per site by line digest — never by a roster carve-out.
 
-`kernel-extern-allowlist.txt` is initially empty. A future `@[extern]` entry
-must pin the exact source location and source-line digest and carry an
-operator-ratified reason. `@[implemented_by]` has no allowlist. The source
-scanner removes nested Lean comments while preserving line numbers, then
-rejects the forbidden tokens; string contents stay visible because an
-interpolated string can contain compiled expressions. This closes the owned-source
+Two token classes carry allowlists, same format and same ratification rule:
+
+- `kernel-extern-allowlist.txt` — empty. `@[implemented_by]` has no allowlist
+  at all.
+- `kernel-partial-allowlist.txt` — one row, `Main.lean:68`: the interactive
+  oracle server's `partial def serve` is a non-terminating daemon transport,
+  not a value-defaulting channel.
+
+Everything else refuses outright. The panic-free half refuses the naming
+convention rather than a token: `panic!`, bare `panic` (Lean core's
+`panic [Inhabited α]`), and the bang-accessor family — any bang-suffixed
+identifier reached by dot-notation or qualification, plus the unqualified core
+accessors, all of which return the type's `Inhabited` default and exit 0.
+`unsafe` and `native_decide` refuse as well; `native_decide` because the
+axiom-footprint check below sees only the rostered theorems, so an excused one
+could carry `Lean.ofReduceBool` unobserved. `noncomputable` is deliberately not
+checked — the reason is in `DECISIONS.md`.
+
+The source scanner removes nested Lean comments while preserving line numbers,
+then applies the checks; string contents stay visible because an interpolated
+string can contain compiled expressions. The interpolation prefixes `s!`, `m!`,
+`f!` are outside the bang pattern by construction, so the generator's own
+strings stay lawful without an exception. This closes the owned-source
 replacement and default-on-panic channels; it does not inspect inherited Lean
 `Init` externs or emitted C. The artifact-side panic-symbol count remains the
 REF-6 obligation.
@@ -145,8 +166,22 @@ rules inherit interleaving independence without a new schedule proof.
 | `spec_mutant_legacy_killed_by_L2` | The same mutant reaches different terminal meanings on two permutations of a fill-only bag — meaning confluence kills it. |
 | `spec_mutant_refuseAll_killed` | Refuse-everything violates the refusal characterization on any fill. |
 | `spec_witness_three_fill`, `spec_witness_confirm_recorded` | Pinned executable witnesses: the three-fill bag admits all three and journals `(30, x)`; a confirming refill records the second holder (MOVES-5 closed). |
-| `negative-controls/implemented-by.lean` | A planted `@[implemented_by]` is rejected by the annotation source gate; the exact diagnostic is committed in `implemented-by.cex.txt`. |
-| `negative-controls/panic.lean` | A planted `panic!` is rejected by the panic-free source gate; the exact diagnostic is committed in `panic.cex.txt`. |
+| `negative-controls/implemented-by.lean` | A planted `@[implemented_by]` is rejected by the annotation source gate. |
+| `negative-controls/extern.lean` | A planted `@[extern]` with no allowlist row is rejected; the empty allowlist is therefore load-bearing, not decorative. |
+| `negative-controls/panic.lean` | A planted `panic!` is rejected by the panic-free source gate. |
+| `negative-controls/panic-bare.lean` | A planted bare `panic` is rejected — the token gate alone returned 0 on this (F4). |
+| `negative-controls/bang-accessor.lean` | A planted `.head!` is rejected: the `Inhabited`-default channel spelled without the `panic!` token. |
+| `negative-controls/unsafe.lean` | A planted `unsafe def` is rejected. |
+| `negative-controls/native-decide.lean` | A planted `native_decide` is rejected in source, where the axiom-footprint check would not have seen it on an excused theorem. |
+| `negative-controls/partial.lean` | A planted `partial def` with no allowlist row is rejected; `Main.lean:68`'s approval binds to that one line's digest and no other. |
+| `negative-controls/sorry.lean` | A planted `sorry` is rejected by the hygiene sweep, before the broader source grep. |
+
+Each control plants exactly its own violation and clears the checks that run
+before it, which is what proves the checks independent. The exact diagnostic is
+committed beside each control as `*.cex.txt` and byte-compared; `run.sh`
+requires status 1 (a planted refusal) and rejects status 2 (a refusal from the
+gate's own machinery). None of them compiles: `negative-controls/` is not a
+`lean_lib` root. A control that is committed but never run also fails the gate.
 
 The witnesses are transparent traces in `Moves/Violations.lean`. The two
 concrete choice calculations inside `fence_manipulable` are ordinary

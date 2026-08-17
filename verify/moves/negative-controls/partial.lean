@@ -1,0 +1,2 @@
+partial def plantedPartial (n : Nat) : Nat :=
+  plantedPartial n

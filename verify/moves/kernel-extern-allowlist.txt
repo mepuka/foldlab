@@ -2,8 +2,12 @@
 #
 # Any future entry requires an operator-ratified reason recorded on the same
 # tab-separated row. Format:
-#   Moves/path.lean:LINE<TAB>SHA256_OF_EXACT_SOURCE_LINE<TAB>operator-ratified: DECISION-ID — reason
+#   PATH:LINE<TAB>SHA256_OF_EXACT_SOURCE_LINE<TAB>operator-ratified: DECISION-ID — reason
+#
+# PATH is Moves.lean, Main.lean, or a file under Moves/ or Oracle/ — the
+# kernel-bound roster, which since task 25 includes the corpus generator.
 #
 # The line digest makes an approval specific to one annotation rather than to
 # a whole file or line number. Moving or changing the annotation requires a new
 # ratification. Inherited Lean Init externs are outside this owned-source gate.
+# `partial` uses the same mechanism in kernel-partial-allowlist.txt.

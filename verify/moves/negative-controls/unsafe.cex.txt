@@ -1,0 +1,1 @@
+GATE: FAIL — forbidden unsafe at negative-controls/unsafe.lean:1
