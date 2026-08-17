@@ -3025,3 +3025,18 @@ than no gate, because it is believed — this is the same failure shape as findi
 N2 itself, one layer down. Recorded in `docs/FREEZING.md` so the next
 cross-module fixture gate inherits the warning. **Load-bearing? yes** — it is
 the difference between the regeneration claim being checked and appearing to be.
+
+### D??. `verify/ir`'s abstraction notes are corrected in prose only
+
+Decided: `IR/Semantics.lean` and `IR/Syntax.lean` restate what their `Int`
+numerics abstraction drops — after rulings 5 and 7, nothing a type TERM can
+carry, and among values only an opaque payload, which `conforms` accepts
+unconditionally. No theorem, definition, or `Prim` alphabet changed; `bash
+verify/ir/run.sh` is green before and after (exit 0 both times). Alternatives:
+leave the notes and record the staleness as a finding; widen `Json.num` to model
+non-integer numerics. Why: finding N3 — the note pointed at "non-integer JSON
+numbers remain only in scalar literals" as the surviving case, which is the
+exact position ruling 5 closed, so the cure made an already-stale sentence wrong
+rather than merely dated. Widening the model is REF-2b's lane and needs the
+float question ruled, not an executor's edit. **Load-bearing? no** — it is an
+abstraction note, and the theorems do not read it.

@@ -13,8 +13,16 @@ Abstractions, stated:
 - JSON values mirror the IR's list discipline (mutual inductives; objects
   are association lists — canonical objects have unique sorted keys, but
   the semantics is total over any object).
-- `int` accepts the model's integer `num`; non-integer JSON numbers remain
-  only in scalar literals and are outside this abstraction.
+- JSON numerics are abstracted to `Int` (`Json.num`), so `int` accepts exactly
+  the model's integers. What that abstraction DROPS is now almost nothing: the
+  wire's closure law (proto/SPEC.md, operator ruling 7, extending ruling 5's
+  literal narrowing) admits no non-integral number at any position of a type
+  TERM, and `int` values carry the same bound. The one survivor is an opaque
+  PAYLOAD (ruling 6) — uninterpreted canonical bytes whose identity is byte
+  equality — and `conforms` accepts every value under `.opaque`
+  unconditionally, so a non-integer number there cannot change a verdict this
+  file could get wrong. Non-integer numerics re-enter the model, if ever, with
+  floats through the REF-9 loop and REF-2b.
 - Structs are denotationally CLOSED — unknown value keys do not conform.
   Derived from the shipped json-schema target (`additionalProperties:
   false`, proto/ts/src/codegen.ts:243), not newly decided here.
