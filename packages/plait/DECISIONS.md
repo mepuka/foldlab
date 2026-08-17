@@ -421,30 +421,55 @@ else's join subsumed my delta" are indistinguishable AND equally correct — tha
 indistinguishability is what F1 buys, so the reconciliation should read it
 rather than fight it.
 
-Walled 2026-08-17 (DEV-727 finding F-2, round-2 charge R2-1) — and the charge's
-own scenario had to be corrected to build it. **Contention cannot discriminate
-these two reconciliations, and no schedule exists in which byte-equality
-exhausts `CELL_MERGE_ATTEMPTS` while subsumption lands.** Under a CAS-class
-failure the loop's idempotence guard (`subsumes(current, delta)` at the top of
-each attempt) re-reads and catches a rival's superset on the very next pass, so
-byte-equality costs one extra round trip and lands the identical state; and
-when the rival's state does NOT carry the delta, both disciplines behave
-identically and both exhaust. Cells are monotone — only joins write — so a
-read-back that carries the delta is never followed by a `current` that does
-not, which is exactly why the guard always rescues the byte-equality path.
-The separating schedule is the second half of this entry's own sentence: a
-**transport-class** write failure whose read-back carries the delta because a
-rival's join subsumed it. There subsumption reports the converged state, while
-byte-equality falls past the CAS branch to `transportRefusal` and REFUSES a
-merge whose delta is already in the cell. That row is
-`CellWall.test.ts` "T16: a rival's subsuming join is convergence under
-subsumption and a refusal under byte-equality", run against the live bucket
-with the hold proxy discarding the write frame so the write fails
-transport-class while the same connection's reconciliation read still lands.
-Its control is `negative-controls/cell-byte-equality-mutant.ts` — the shipped
-service with only `reconciled` replaced — refuted with its executed trace
-committed. **Load-bearing? yes** — the entry now names a behaviour a committed
-control demonstrates, and un-mutating that control reds the row.
+Walled 2026-08-17 (DEV-727 finding F-2, round-2 charge R2-1) by TWO rows, and
+the ruling that produced them survived one wrong turn of mine that is recorded
+here because the reasoning matters more than the conclusion.
+
+**Retracted:** round 2 of this branch claimed that contention cannot
+discriminate the two reconciliations and that no schedule exists in which
+byte-equality exhausts `CELL_MERGE_ATTEMPTS` while subsumption lands. That is
+false, and the durable audit
+(`docs/research/2026-08-17-dev724-cell-subsump-reconciliation-audit.md`,
+`agent/research/DEV-724` at `8118d99`) refuted it. The argument I gave —
+the pre-CAS guard `subsumes(current, delta)` re-reads and rescues byte-equality
+on the next pass — holds for attempts 1 through 7 and fails at the boundary,
+because the guard runs at the TOP of an attempt and attempt 8 has no successor.
+Generalizing from the interior of the loop to its last iteration was the error.
+
+**Row 1 — the ruled discriminator, at the retry boundary.** Attempts 1..7 each
+lose their CAS to a lawful rival join whose read-back still lacks this delta, so
+both disciplines retry identically. Attempt 8 loses to a rival join carrying
+this delta plus one fresh observation, so the read-back is a STRICT superstate
+of the stale intended record. Subsumption sees the merge postcondition already
+established and returns success inside attempt 8; byte-equality rejects the
+superstate, finds no ninth guard, and reports `cell-update-contended` over a
+cell that already carries the delta. Executed on the live bucket:
+8/8 CAS attempts under both disciplines, success versus exhaustion, identical
+final cell digest (`negative-controls/cell-retry-boundary.trace.json`).
+
+**Row 2 — the ambiguity case, at attempt 1.** A transport-class write failure
+whose read-back carries the delta because a rival's join subsumed it:
+subsumption converges, byte-equality falls past the CAS branch to
+`transportRefusal`. A distinct result class — an absence refusal on the first
+attempt, not exhaustion — and it does not stand in for row 1
+(`negative-controls/cell-byte-equality-mutant.trace.json`).
+
+Both rows share one control, `negative-controls/cell-byte-equality-mutant.ts`,
+the shipped service with only `reconciled` replaced; un-mutating it reds both
+and only those.
+
+**Load-bearing? yes, narrowly.** The audit's scoping is adopted verbatim as the
+claim's ceiling: this licenses bounded RESULT CLASSIFICATION under an
+adversarial but finite monotone schedule. It does **not** make subsumption
+safer than byte-equality, and it is not convergence safety, fairness, progress,
+or any liveness statement — convergence safety is carried by the exact-digest
+comparison against the model verdict, not by this entry. Two further bounds the
+audit names and this entry inherits: the shipped predicate tests only
+`delta ≤ readBack`, not `current ⊔ delta ≤ readBack`, so preservation of the
+read state comes from the monotone-writer premise rather than from the check;
+and the whole rule is sound only given faithful semilattice bytes, an authentic
+committed read, one fixed backing-stream incarnation, and writers that are all
+inflationary. It proves neither CAS authorship nor integrity.
 
 ### T17. Cell row isolation is a distinct key on one server, not a fresh incarnation per row
 

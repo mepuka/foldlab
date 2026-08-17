@@ -1,0 +1,17 @@
+{
+  "control": "runtime-cell-byte-equality-mutant",
+  "decision": "T16",
+  "schedule": "attempts 1..7 lose CAS to rival joins lacking the delta; attempt 8 loses to a strict superstate carrying it",
+  "attemptBound": 8,
+  "lawfulVerdict": "converged",
+  "lawfulCasAttempts": 8,
+  "lawfulStateDigest": "35e68e88b7d24b71f7019238c5db860f67857c7096f9de0ea7baa808272926b7",
+  "mutantVerdict": "exhausted",
+  "mutantCasAttempts": 8,
+  "mutantRefusal": {
+    "sort": "absence",
+    "kind": "cell-update-contended"
+  },
+  "cellStateAfterMutantRefusal": "35e68e88b7d24b71f7019238c5db860f67857c7096f9de0ea7baa808272926b7",
+  "violatedLaw": "a read-back that already carries the delta is success, whether this append landed or a rival join subsumed it"
+}

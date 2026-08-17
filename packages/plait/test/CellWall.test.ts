@@ -11,6 +11,7 @@ import { canonicalBytes } from "../src/Canonical.js"
 import {
   CELL_BUCKET,
   CELL_HISTORY,
+  CELL_MERGE_ATTEMPTS,
   Cells,
   join,
   stateOf,
@@ -23,6 +24,7 @@ import type { Refusal } from "../src/Refusal.js"
 import {
   bucketPublishPrefixes,
   startHoldProxy,
+  startInterposingProxy,
   type HoldProxy,
 } from "./HoldProxy.js"
 import {
@@ -70,6 +72,10 @@ const mutantTrace = resolvePath(
 const byteEqualityTrace = resolvePath(
   import.meta.dir,
   "../negative-controls/cell-byte-equality-mutant.trace.json",
+)
+const boundaryTrace = resolvePath(
+  import.meta.dir,
+  "../negative-controls/cell-retry-boundary.trace.json",
 )
 
 const observationOf = ([holder, value]: readonly [number, number]): Observation =>
@@ -313,16 +319,19 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
   }, 120_000)
 
   /**
-   * T16's discriminating row.
+   * T16's second discriminating row: the ambiguity case, at attempt 1.
    *
-   * Contention alone does NOT separate subsumption from byte-equality: under a
-   * CAS-class failure the loop's own idempotence guard re-reads and catches a
-   * rival's superset on the next attempt, so both disciplines land the same
-   * state and neither exhausts the attempt bound. The separating schedule is
-   * the one T16 names — a TRANSPORT-class failure whose read-back carries the
-   * delta because a rival's join subsumed it. The tap discards the write frame
-   * while leaving the connection open, so the write times out transport-class
-   * and the same connection's reconciliation read still reaches the server.
+   * A TRANSPORT-class failure whose read-back carries the delta because a
+   * rival's join subsumed it. Subsumption reports the converged state;
+   * byte-equality cannot recognize the strict superstate, and because the
+   * cause is not CAS-class it falls straight to the transport branch and
+   * refuses a merge whose delta is already in the cell. The tap discards the
+   * write frame while leaving the connection open, so the write fails
+   * transport-class and the same connection's reconciliation read still lands.
+   *
+   * This is a DISTINCT result class from the retry-boundary row below — an
+   * attempt-1 absence refusal rather than an attempt-8 exhaustion — and it
+   * does not stand in for it.
    */
   const subsumedByRival = async (
     layer: (options: { readonly servers: string }) => Layer.Layer<Cells, unknown>,
@@ -402,6 +411,131 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       await Bun.file(byteEqualityTrace).text(),
     )
   }, 180_000)
+
+  /**
+   * T16's ruled discriminator: the retry boundary.
+   *
+   * Attempts 1..7 each lose their CAS to a lawful rival join whose read-back
+   * still lacks this delta, so both disciplines retry identically. Attempt 8 —
+   * the last the bound permits — loses to a rival join that carries this delta
+   * plus one fresh observation, so the read-back is a STRICT superstate of the
+   * stale intended record. Subsumption sees the merge postcondition already
+   * established and returns success inside attempt 8. Byte-equality rejects
+   * the superstate, and there is no ninth pre-CAS guard to rescue it, so it
+   * reports contention over a cell that already carries the delta.
+   *
+   * The pre-CAS guard is exactly why nothing before the boundary discriminates
+   * and exactly why the boundary does: it runs at the TOP of an attempt, and
+   * attempt 8 has no successor.
+   */
+  const contendedToExhaustion = async (
+    layer: (options: { readonly servers: string }) => Layer.Layer<Cells, unknown>,
+    cell: string,
+  ): Promise<{
+    readonly result: Result.Result<CellState, Refusal>
+    readonly casAttempts: number
+    readonly finalState: ReadonlyArray<Observation>
+  }> => {
+    const url = await serverUrl()
+    const alpha = observationOf([1, 10])
+    const beta = observationOf([2, 20])
+    const filler = (k: number): Observation => observationOf([100 + k, 1000 + k])
+
+    await withCells((cells) => cells.merge(cell, [alpha]))
+
+    // Every rival write is a lawful join — inflationary, never a replacement —
+    // so the schedule stays inside the cell invariant the whole way.
+    const rivals: Array<ReadonlyArray<Observation>> = []
+    let accumulated: ReadonlyArray<Observation> = [alpha]
+    for (let k = 1; k < CELL_MERGE_ATTEMPTS; k++) {
+      accumulated = Effect.runSync(join(accumulated, [filler(k)]))
+      rivals.push(accumulated)
+    }
+    // The last rival carries this merge's own delta PLUS one fresh observation,
+    // so the read-back is strictly above the intended record rather than equal
+    // to it — which is the whole difference between the two disciplines.
+    accumulated = Effect.runSync(join(accumulated, [beta, filler(CELL_MERGE_ATTEMPTS)]))
+    rivals.push(accumulated)
+
+    const landRival = async (index: number): Promise<void> => {
+      const state = rivals[index - 1]
+      if (state === undefined) return
+      const bytes = Effect.runSync(canonicalBytes(state))
+      const raw = await connect({ servers: url })
+      try {
+        const bucket = await new Kvm(raw).open(CELL_BUCKET)
+        const entry = await bucket.get(cell)
+        if (entry === null) throw new Error("the cell vanished before the rival write")
+        await bucket.update(cell, bytes, entry.revision)
+      } finally {
+        await raw.close()
+      }
+    }
+
+    const tap = await startInterposingProxy(
+      url,
+      bucketPublishPrefixes(CELL_BUCKET),
+      landRival,
+    )
+    try {
+      const result = await Effect.runPromise(
+        Effect.gen(function* () {
+          const cells = yield* Cells
+          return yield* Effect.result(cells.merge(cell, [beta]))
+        }).pipe(
+          Effect.provide(layer({ servers: tap.url })),
+          Effect.scoped,
+        ) as Effect.Effect<Result.Result<CellState, Refusal>, never>,
+      )
+      return { result, casAttempts: tap.interceptions(), finalState: accumulated }
+    } finally {
+      await tap.stop()
+    }
+  }
+
+  test("T16: at the retry boundary a subsuming rival is success under subsumption and exhaustion under byte-equality", async () => {
+    const lawful = await contendedToExhaustion(Cells.layer, "boundary-lawful")
+    expect(lawful.casAttempts).toBe(CELL_MERGE_ATTEMPTS)
+    expect(Result.isSuccess(lawful.result)).toBe(true)
+    if (!Result.isSuccess(lawful.result)) throw new Error("the lawful merge did not converge")
+    expect(lawful.result.success.digest).toBe(
+      Effect.runSync(stateOf(lawful.finalState)).digest,
+    )
+
+    const mutant = await contendedToExhaustion(byteEqualityLayer, "boundary-byte-equality")
+    expect(mutant.casAttempts).toBe(CELL_MERGE_ATTEMPTS)
+    expect(Result.isFailure(mutant.result)).toBe(true)
+    if (!Result.isFailure(mutant.result)) {
+      throw new Error("byte-equality reconciliation did not exhaust the attempt bound")
+    }
+    expect(mutant.result.failure.sort).toBe("absence")
+    expect(mutant.result.failure.kind).toBe("cell-update-contended")
+
+    // Both ran the same schedule and the same number of CAS attempts; the cell
+    // carries the delta in both cases. Only the result classification differs.
+    const settled = await withCells((cells) => cells.read("boundary-byte-equality"))
+    expect(settled.digest).toBe(Effect.runSync(stateOf(mutant.finalState)).digest)
+
+    const record = {
+      control: "runtime-cell-byte-equality-mutant",
+      decision: "T16",
+      schedule:
+        "attempts 1..7 lose CAS to rival joins lacking the delta; attempt 8 loses to a strict superstate carrying it",
+      attemptBound: CELL_MERGE_ATTEMPTS,
+      lawfulVerdict: "converged",
+      lawfulCasAttempts: lawful.casAttempts,
+      lawfulStateDigest: lawful.result.success.digest,
+      mutantVerdict: "exhausted",
+      mutantCasAttempts: mutant.casAttempts,
+      mutantRefusal: { sort: mutant.result.failure.sort, kind: mutant.result.failure.kind },
+      cellStateAfterMutantRefusal: settled.digest,
+      violatedLaw:
+        "a read-back that already carries the delta is success, whether this append landed or a rival join subsumed it",
+    }
+    expect(JSON.stringify(record, null, 2) + "\n").toBe(
+      await Bun.file(boundaryTrace).text(),
+    )
+  }, 300_000)
 
   test("the real merge path minus its join is killed by cell-merge-aci on the live bucket", async () => {
     const { f1 } = await loadFamilies()
