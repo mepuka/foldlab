@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.empty-quantifier.mutant.ts(14,3): error TS2344: Type '"the walked public surface is empty"' does not satisfy the constraint 'never'.

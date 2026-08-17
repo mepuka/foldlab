@@ -1,0 +1,1 @@
+negative-controls/PublicEffects.core-probe.mutant.ts(23,3): error TS2344: Type '"CoreProbe.load"' does not satisfy the constraint 'never'.

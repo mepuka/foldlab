@@ -58,6 +58,16 @@ const isCasRefusal = (cause: unknown): boolean =>
   cause.status === 400 &&
   cause.code === JetStreamApiCodes.StreamWrongLastSequence
 
+/**
+ * The absence sort's taught repair. A transport refusal leaves the operation's
+ * outcome ambiguous (seam rule 2), and the reconciliation this adapter uses
+ * everywhere else is read-back, never a retried write on faith.
+ */
+const teachTransportReadBack: ReadonlyArray<Next> = [{
+  subject: "register.observe",
+  note: "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it.",
+}]
+
 const transportRefusal = (operation: string, cause: unknown): Refusal =>
   absenceRefusal({
     kind: "register-transport-unavailable",
@@ -65,7 +75,7 @@ const transportRefusal = (operation: string, cause: unknown): Refusal =>
     path: [operation],
     got: String(cause),
     expected: "the pinned local NATS KV operation to be available",
-    next: [],
+    next: teachTransportReadBack,
   })
 
 const lawRefusal = (

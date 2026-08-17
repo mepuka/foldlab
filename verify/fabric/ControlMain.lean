@@ -30,7 +30,12 @@ def main (args : List String) : IO UInt32 := do
       showControl "drop-meet-clamping" "attenuation-request-clamped"
         (Policy.meet Mutants.rootPolicy Mutants.escalatingRequest).budget
         (Mutants.unclampedChild Mutants.rootPolicy Mutants.escalatingRequest).budget
+  | ["drop-payload-integrity"] =>
+      showControl "drop-payload-integrity" "payload-conflict-window"
+        (fold Nat.add 0 [2, 3])
+        (Mutants.lastWriteBufferApply Nat.add 10 2
+          Mutants.payloadConflictDeliveries 0)
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping)"
+        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity)"
       return 2

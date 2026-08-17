@@ -71,11 +71,9 @@ theorem drop_successor_discipline_keeps_contiguous_trace
 
 theorem reordered_vector_has_serial_successor_premise :
     Laws.F2bSerialSuccessorPremise 4 [2, 3] Mutants.reorderedDeliveryVector := by
-  intro delivery
-  rcases delivery with ⟨position, operation⟩
-  simp [Mutants.reorderedDeliveryVector, Emitter.reorderedDeliveries, InWindow,
-    positionTrace]
-  omega
+  simp only [Laws.F2bSerialSuccessorPremise, WindowCoverage,
+    PositionPayloadIntegrity, InWindow]
+  decide
 
 /-- An arrival-order consumer applies 6, advances to 6, then skips 5. -/
 theorem arrival_order_apply_skips_six_before_five :
@@ -96,6 +94,43 @@ theorem drop_successor_discipline_killed :
     Mutants.arrivalOrderApply Emitter.appendStep 4
         Mutants.reorderedDeliveryVector [] ≠
       fold Emitter.appendStep [] [2, 3] := by
+  decide
+
+/-- The last-write buffer consumer coincides with the lawful fold on every
+    schedule satisfying both premise halves: the kill below is attributable
+    to the dropped integrity half alone. -/
+theorem drop_payload_integrity_keeps_disciplined_schedules
+    (step : State -> Op -> State) (floor : Nat) (operations : List Op)
+    (deliveries : List (Positioned Op)) (initial : State)
+    (coverage : WindowCoverage floor operations deliveries)
+    (integrity : PositionPayloadIntegrity floor operations deliveries) :
+    Mutants.lastWriteBufferApply step floor operations.length deliveries initial =
+      fold step initial operations := by
+  simpa [Mutants.lastWriteBufferApply] using
+    f2b_guarded_exactly_once step floor operations deliveries initial
+      ⟨coverage, integrity⟩
+
+/-- The conflict row keeps the coverage half: positions 11 and 12 both
+    arrive, so nothing below is attributable to a missing successor. -/
+theorem payload_conflict_has_window_coverage :
+    WindowCoverage 10 [2, 3] Mutants.payloadConflictDeliveries := by
+  simp only [WindowCoverage]
+  decide
+
+/-- The conflict row drops exactly the integrity half: the in-window arrival
+    `(11, 999)` is not the positioned trace's record at position 11. -/
+theorem payload_conflict_lacks_payload_integrity :
+    ¬ PositionPayloadIntegrity 10 [2, 3] Mutants.payloadConflictDeliveries := by
+  simp only [PositionPayloadIntegrity, InWindow]
+  decide
+
+/-- The conflict row refutes the consumer that trusts its last-write buffer
+    outside the integrity premise: the late `(11, 999)` overwrite is drained
+    in place of operation 2, and the terminal state leaves the trace's
+    sequential meaning. -/
+theorem drop_payload_integrity_killed :
+    Mutants.lastWriteBufferApply Nat.add 10 2 Mutants.payloadConflictDeliveries 0 ≠
+      fold Nat.add 0 [2, 3] := by
   decide
 
 theorem meet_clamp_survives_escalating_request :
@@ -125,6 +160,14 @@ theorem drop_meet_clamping_keeps_already_attenuated
     intro atom
     simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
     exact ⟨fun member => ⟨attenuated.writ atom member, member⟩, And.right⟩
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.indexes atom member, member⟩, And.right⟩
+  · apply Std.ExtTreeSet.ext_mem
+    intro atom
+    simp only [Mutants.unclampedChild, Policy.meet, Std.ExtTreeSet.mem_inter_iff]
+    exact ⟨fun member => ⟨attenuated.resources atom member, member⟩, And.right⟩
   · exact (Nat.min_eq_right attenuated.capabilityClass).symm
   · exact (Nat.min_eq_right attenuated.effortClass).symm
   · exact (Nat.min_eq_right attenuated.budget).symm
