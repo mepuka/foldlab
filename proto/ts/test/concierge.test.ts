@@ -37,31 +37,21 @@ const isWellFormedUnicode = (value: string): boolean => {
 const unicodeStringArbitrary = FastCheck.string({ maxLength: 16 }).filter(isWellFormedUnicode)
 const nonEmptyUnicodeStringArbitrary = FastCheck.string({ minLength: 1, maxLength: 16 })
   .filter(isWellFormedUnicode)
-// Check args are an unconstrained JSON object, so this arbitrary keeps the
-// non-integer extremes.
-const jsonScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
-  FastCheck.constant(null),
-  FastCheck.boolean(),
-  unicodeStringArbitrary,
-  FastCheck.constantFrom(
-    Number.MIN_SAFE_INTEGER,
-    -1,
-    0,
-    1,
-    Number.MAX_SAFE_INTEGER,
-    Number.MIN_VALUE,
-    Number.MAX_VALUE,
-  ),
-)
-// A literal's value does not: v0 admits string | integral number | bool |
-// null there, so generating 5e-324 would generate an unlawful term and test
-// the refusal path under the name of the admission path.
-const literalScalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
+// The closure law (ruling 7): NO position in a v0 term admits a non-integral
+// number — check args included, however deeply nested. Round 1 left this
+// arbitrary holding Number.MIN_VALUE (5e-324) and Number.MAX_VALUE on the
+// premise that args were unconstrained JSON; that premise is dead, and
+// generating those values here would test the refusal path under the name of
+// the admission path. One arbitrary now serves both scalar positions, because
+// one law governs both.
+const scalarArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
   FastCheck.constant(null),
   FastCheck.boolean(),
   unicodeStringArbitrary,
   FastCheck.constantFrom(Number.MIN_SAFE_INTEGER, -1, 0, 1, Number.MAX_SAFE_INTEGER),
 )
+const jsonScalarArbitrary = scalarArbitrary
+const literalScalarArbitrary = scalarArbitrary
 const decidedLeafArbitrary: FastCheck.Arbitrary<Json> = FastCheck.oneof(
   FastCheck.constantFrom<Json>(
     { k: "string" },

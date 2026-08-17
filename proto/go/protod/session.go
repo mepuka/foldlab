@@ -160,7 +160,12 @@ func sessionGrammarDigest() string {
 // a shape change necessarily opens under a different grammar identity.
 func sessionGrammarDescriptor() any {
 	return map[string]any{
-		"name":        "flb.type.v0",
+		"name": "flb.type.v0",
+		// The closure law is a property of the TERM, not of one production, so
+		// the descriptor commits it once beside the productions rather than
+		// annotating each number-bearing row. A client holding this digest is
+		// told that no number anywhere in a term may be non-integral.
+		"numbers":     "integral",
 		"partialKind": map[string]any{"k": "hole", "required": []any{"k"}},
 		"productions": []any{
 			map[string]any{"k": "bool", "required": []any{"k"}},

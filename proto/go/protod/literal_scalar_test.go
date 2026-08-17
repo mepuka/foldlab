@@ -13,8 +13,15 @@ import (
 // values the review probes minted lawfully before the narrowing: 5e-324,
 // 1e+21, and 1e-7 are ES2019 shortest-round-trip renderings, and 0.1 is the
 // ordinary case that shows the bound is about integrality, not magnitude.
+//
+// Under the closure law (ruling 7) the literal position no longer states a
+// bound of its own, so the sentence these vectors refuse by name widened from
+// "a literal number" to "every number in a type term". Vectors, refusal kind,
+// and refusal paths are unchanged; the law they name is now the shared one, and
+// this file pins it through the same exported constant closure_law_test.go uses
+// so the two suites cannot drift onto two sentences.
 
-const nonIntegerLiteralLaw = "flb.type.v0: a literal number is integral — whole and within ±(2^53-1); a non-integer number has no v0 form"
+const nonIntegerLiteralLaw = integralNumberLaw
 
 func TestNonIntegerLiteralScalarsRefuseByName(t *testing.T) {
 	for _, source := range []string{"5e-324", "0.1", "1e21", "1e-7", "-0.5", "1.7976931348623157e308", "9007199254740992"} {

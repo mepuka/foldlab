@@ -88,7 +88,8 @@ func readGuardedSource(t *testing.T, path string) string {
 	return string(content)
 }
 
-func TestFloatLeafSourceGrepGuard(t *testing.T) {
+func specAuthoringGrammarSection(t *testing.T) string {
+	t.Helper()
 	spec := readGuardedSource(t, filepath.Join("..", "..", "SPEC.md"))
 	start := strings.Index(spec, "## The authoring grammar")
 	if start < 0 {
@@ -98,7 +99,58 @@ func TestFloatLeafSourceGrepGuard(t *testing.T) {
 	if end < 0 {
 		t.Fatal("could not locate SPEC.md's authoring grammar section")
 	}
-	if strings.Contains(spec[start:start+end], `"float"`) {
+	return spec[start : start+end]
+}
+
+// specGrammarProductionBlock returns the fenced `T ::=` block itself — the
+// DECLARATION, as opposed to the prose around it.
+func specGrammarProductionBlock(t *testing.T) string {
+	t.Helper()
+	section := specAuthoringGrammarSection(t)
+	opening := strings.Index(section, "```")
+	if opening < 0 {
+		t.Fatal("SPEC.md's authoring grammar section has no fenced production block")
+	}
+	rest := section[opening+3:]
+	closing := strings.Index(rest, "```")
+	if closing < 0 {
+		t.Fatal("SPEC.md's fenced production block is unterminated")
+	}
+	return rest[:closing]
+}
+
+// The declaration and the certifier must not disagree. `{"k":"opaque"}` was
+// ratified by SPEC.md's own amendment 3 and admitted by the certifier for as
+// long, while the grammar block never gained the production — a spec that
+// declares less than its implementation admits is a spec a reader cannot use.
+// This is set equality in both directions, so it also refuses a production
+// nobody implements.
+func TestSpecGrammarBlockDeclaresExactlyTheCertifierKinds(t *testing.T) {
+	block := specGrammarProductionBlock(t)
+	declared := map[string]bool{}
+	alternation := regexp.MustCompile(`"k":((?:"[a-z]+")(?:\|"[a-z]+")*)`)
+	quoted := regexp.MustCompile(`"([a-z]+)"`)
+	for _, production := range alternation.FindAllStringSubmatch(block, -1) {
+		for _, kind := range quoted.FindAllStringSubmatch(production[1], -1) {
+			declared[kind[1]] = true
+		}
+	}
+	if len(declared) == 0 {
+		t.Fatal("no kinds parsed out of SPEC.md's production block")
+	}
+	for _, kind := range v0Kinds {
+		if !declared[kind] {
+			t.Errorf("the certifier admits %q and SPEC.md's grammar block declares no production for it", kind)
+		}
+		delete(declared, kind)
+	}
+	for kind := range declared {
+		t.Errorf("SPEC.md's grammar block declares %q and the certifier does not admit it", kind)
+	}
+}
+
+func TestFloatLeafSourceGrepGuard(t *testing.T) {
+	if strings.Contains(specAuthoringGrammarSection(t), `"float"`) {
 		t.Fatal("SPEC.md's flb.type.v0 grammar reintroduced the float leaf")
 	}
 

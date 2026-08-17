@@ -95,6 +95,43 @@ const nonCanonical = (path: ReadonlyArray<string>, refusal: CanonicalRefusal): F
 
 const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
+/** The certifier's closure law, mirrored (operator ruling 7): every number in a
+ * type term is integral. Like the Go walk, the bound sits in ONE traversal over
+ * the term rather than at each number-bearing position — the literal's value,
+ * a check's args, and whatever the fold learns to emit next all inherit it, so
+ * the mirror cannot fall behind position by position the way the certifier's
+ * did. `Number.isSafeInteger` is the exact mirror of `isIntegralJSONNumber`;
+ * members are visited in identity order so the refusal coordinate is stable. */
+const requireIntegralNumbers = (
+  value: Json,
+  path: ReadonlyArray<string>,
+): Fail | undefined => {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value)
+      ? undefined
+      : beyond(
+        path,
+        String(value),
+        "every number in a type term is integral — whole and within ±(2^53-1); use opaque for other numbers",
+      )
+  }
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      const fail = requireIntegralNumbers(value[index] as Json, [...path, String(index)])
+      if (fail !== undefined) return fail
+    }
+    return undefined
+  }
+  if (value !== null && typeof value === "object") {
+    const members = value as Record<string, Json>
+    for (const name of Object.keys(members).sort(byCodeUnit)) {
+      const fail = requireIntegralNumbers(members[name] as Json, [...path, name])
+      if (fail !== undefined) return fail
+    }
+  }
+  return undefined
+}
+
 interface FlatCheck {
   readonly id: string | undefined
   readonly payload: unknown
@@ -195,17 +232,9 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
       ) {
         return { k: "literal", value: literal }
       }
-      // The certifier's one integrality bound, mirrored: a literal number is
-      // whole and inside the safe-integer range, so no v0 term carries a
-      // number whose canonical form needs shortest-round-trip printing.
-      if (typeof literal === "number") {
-        if (Number.isSafeInteger(literal)) return { k: "literal", value: literal }
-        return beyond(
-          path,
-          String(literal),
-          "a literal number is integral — whole and within ±(2^53-1); use opaque for other numbers",
-        )
-      }
+      // Shape only. The number bound is NOT restated here: the closure law in
+      // foldSchema passes every number in the finished term, this one included.
+      if (typeof literal === "number") return { k: "literal", value: literal }
       return beyond(path, String(literal), "only JSON-scalar literals exist in v0")
     }
     case "Arrays": {
@@ -278,6 +307,11 @@ const foldBase = (node: any, path: ReadonlyArray<string>, isInt: boolean): V0 | 
 export const foldSchema = (schema: Schema.Top): FoldResult => {
   const folded = foldNode(schema.ast, ["structure"])
   if (folded instanceof Fail) return { ok: false, refusal: folded.refusal }
+  // The closure law runs over the finished term, after the shape fold, so a
+  // shape v0 cannot express still teaches its own reason. Coordinates are the
+  // term's, matching the certifier's refusal paths exactly.
+  const nonIntegral = requireIntegralNumbers(folded as Json, ["structure"])
+  if (nonIntegral !== undefined) return { ok: false, refusal: nonIntegral.refusal }
   const canonical = canonicalizeStructure(folded)
   if (!canonical.ok) return { ok: false, refusal: nonCanonical(["structure"], canonical.refusal).refusal }
   const identity = structureDigest(folded)

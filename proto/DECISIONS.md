@@ -2864,3 +2864,121 @@ executor never edits the spec it builds against") and is coordinator-owned;
 aligning it is reported, not done here. **Load-bearing? maybe** — it governs
 who may change a behavioural declaration, which is the boundary between an
 executor and a coordinator.
+
+## Task 26 — the closure law (2026-08-17; task-local D?? entries — final
+numbers assigned at merge)
+
+### D??. The integrality bound moves to the number-decoding path, not to the next position
+
+Decided: `walk()` runs ONE traversal, `requireIntegralNumbers`, over the whole
+term after the grammar walk; no position states a bound of its own. The literal
+case and `walkCheck` are shape-only now, and a JSON-bearing position added later
+inherits the law without an edit. One law sentence goes with it — "every number
+in a type term is integral" — replacing the literal-specific sentence, because a
+per-position sentence is the same drift as a per-position predicate wearing
+teaching clothes. Alternatives: recurse `isIntegralJSONNumber` into `check.args`
+at the args site (the review's first option, and the shape ruling 7 named as
+non-convergent); narrow the universal in SPEC.md, CONTRACT.md, AGENTS.md and
+walk.go to the two positions it covered and re-price REF-2a; run the sweep
+BEFORE the grammar walk. Why: post-sweep ruling 7. Two serial blockers — the
+literal position, then `check.args` — is the evidence that enumerating positions
+does not converge, and the second one hid from a sixteen-site audit precisely
+because the survey enumerates KINDS and a number position is not a kind. The
+sweep runs after the grammar walk so a structurally broken node still teaches
+its own shape law; the claim that buys is exact and is stated in the code —
+every term the walk ADMITS, which is every term that can bear identity, has
+passed the bound at every number it carries. **Load-bearing? yes** — REF-2a's
+canonical-value theorem quantifies over this grammar, and one admitted
+non-integer number reinstates the shortest-round-trip proof obligation.
+
+### D??. The closure is guarded by a one-call-site rule, not by a vector list
+
+Decided: `closure_law_test.go` requires that `walk.go` call the bound from
+exactly ONE place and that the place be the number-decoding traversal. Vectors
+alone would pass just as happily against a per-position patch at `check.args`,
+which is the state this cure exists to leave. Alternatives: rely on the probe
+vectors; grep for the predicate name across `proto/` (too coarse —
+`value_check.go` legitimately calls it for the `int` leaf's VALUE). Verified to
+fire: restoring the old per-position literal branch turned the guard red with
+"walk.go calls the integrality bound 2 times", and the plant was removed.
+**Load-bearing? yes** — it is what makes "closed by construction" mechanical
+instead of asserted.
+
+### D??. The refusal coordinate is identity-ordered, not map-ordered
+
+Decided: the traversal visits object members through `utf16Less` — identity's
+RFC 8785 order, the same one D48/D49 put behind every other walk here. Go
+randomizes map iteration, so a term with two non-integral args would otherwise
+refuse at a different path on different runs. Alternatives: refuse at the first
+member Go hands back; collect every violation and refuse with a list. Why: a
+refusal path is a coordinate the author repairs at, and a coordinate that moves
+between runs is not one; the list form changes the refusal shape for one law
+only. A 64-iteration determinism check pins it. **Load-bearing? no** — the
+admission set is identical either way.
+
+### D??. The TypeScript mirror is one traversal over the folded term
+
+Decided: `foldSchema` sweeps the finished structure with
+`requireIntegralNumbers` (`Number.isSafeInteger`, the exact mirror of the Go
+predicate) instead of checking the literal position inline. Alternatives: keep
+the inline literal check and add a second one where check args are built;
+validate the Effect check payloads before mapping them. Why: the mirror has to
+mirror the SHAPE of the law, not just its verdict — a mirror made of
+per-position checks falls behind position by position, which is exactly how the
+author fold and the certifier both ended up with a narrowed literal and a wide
+`check.args` in the same commit. The property generator narrows with it:
+`jsonScalarArbitrary` no longer mints `Number.MIN_VALUE` into check args,
+because generating an unlawful value tests the refusal path under the name of
+the admission path. **Load-bearing? yes** — the author fold mints terms, so a
+wide mirror mints unlawful ones.
+
+### D??. The session grammar descriptor commits the law once, term-wide
+
+Decided: the descriptor gains a top-level `"numbers": "integral"` beside
+`productions`, in the Go daemon, the TypeScript mirror, and the deliberately
+hand-restated black-box copy in `session_conformance_test.go`. The grammar
+digest moves a third time in this lane, `d5ff3590… → 78aff5581… → ca4ac75f… →
+3cabc043…`, and `sessions.json` is regenerated. Alternatives: annotate the
+`check` row's children with an args-specific bound; leave the descriptor alone
+because `"args:json-object"` is still true, only less complete. Why: the
+descriptor commits production SHAPES so that a shape change necessarily opens
+under a different grammar identity, and the set of terms this grammar admits
+changed — a client holding the old digest would hold a digest that no longer
+says what the daemon admits. Annotating the `check` row would have restated the
+law at a position, which is the shape ruling 7 killed; the law is a property of
+the term, so it is committed as one. The hard-cut cost is unchanged and already
+recorded: pre-cut journals do not open. **Load-bearing? yes** — the digest is
+the client's only handle on which grammar it is authoring against.
+
+### D??. Regenerating `sessions.json` is again the whole fixture consequence
+
+Decided: `go run ./cmd/wirefix -force`, stated reason **"post-sweep ruling 7,
+the closure law: no position in a v0 term admits a non-integral number"**.
+Exactly nine values move — the grammar digest, the session key, step 0's
+`grammar` and `canonical`, and all five chain heads (`5569ca2d…` →
+`40856b6c…`); every state digest is unchanged, because state digests are taken
+over the partial term, not the grammar. `types.json`, `chains.json`,
+`frames.json`, and `concierge.json` regenerate byte-identical. A sweep of every
+committed JSON corpus for non-integral numbers ran BEFORE the regeneration and
+found exactly one: `frames.json[0].frame.payload.reading = 21.5`, which is an
+opaque PAYLOAD under `{"k":"opaque"}` — ruling 6's exception, a value and not a
+term — so no committed fixture carried a term the closure law refuses, and
+nothing else needed regenerating. **Load-bearing? yes** — a stale grammar digest
+makes every session open refuse.
+
+### D??. The grammar block and the certifier are checked for agreement
+
+Decided: a guard parses SPEC.md's fenced `T ::=` block and requires set equality
+in both directions with `v0Kinds`. `{"k":"opaque"}` joins the block under the
+same brief; it had been ratified by SPEC.md's own amendment 3 and admitted by
+the certifier since, with no production ever written. Alternatives: add the
+production and trust review to keep it; assert one direction only (that every
+certifier kind is declared). Why: the round-1 F1 defect class is a declaration
+and an implementation disagreeing, and the cheapest instance of it — a
+production the spec forgot — sat in the file the whole time. Both directions,
+because a production nobody implements teaches an author a term that refuses.
+Verified to fire in both directions: deleting the opaque production and adding a
+spurious `{"k":"decimal"}` each turned the guard red on its own message, and
+both plants were removed. **Load-bearing? yes** — SPEC.md is the
+coordinator-owned declaration, and a reader who cannot trust it has to read the
+certifier instead.

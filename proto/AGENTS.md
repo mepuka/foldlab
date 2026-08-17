@@ -8,9 +8,13 @@ ruling, the edit is confined to what the brief names, and the exception
 is recorded in `DECISIONS.md` with the ruling it carries. An executor
 who wants a spec change nobody directed is looking at a blocker to
 report, not a file to edit — that is the law this exception does not
-touch. Two merged instances so far, both under the 2026-08-16/17
-post-sweep rulings: the float leaf leaving the grammar, and literal
-scalars narrowing to integers.
+touch. Three instances so far, all under the 2026-08-16/17 post-sweep
+rulings: the float leaf leaving the grammar (ruling 2), literal scalars
+narrowing to integers (ruling 5), and the closure law plus the missing
+`{"k":"opaque"}` production (ruling 7). The third is the tell worth
+reading: two position-by-position spec edits in two days is what a
+missing class-level law costs, and the exception is cheap enough to
+invoke that only the ruling keeps it rare.
 
 This file states the bullet's enforceable laws and the graduation map.
 Vocabulary lives in `CONTEXT.md`; every decision the spec did not fix is
@@ -69,11 +73,14 @@ logged in `DECISIONS.md`.
 - `flb.type.v0` is declared once and restated sixteen times.
   `GRAMMAR-SITES.md` is the list, and a grammar change visits all of it;
   `float_leaf_test.go` greps the fourteen that live under `proto/`.
-  Every number position in a v0 term — the `int` leaf, a literal's
-  `value` — carries ONE integrality bound, stated once as
-  `isIntegralJSONNumber` and mirrored by `Number.isSafeInteger`, so no
-  term canonicalizes through shortest-round-trip number printing.
-  Non-integer numbers reach the protocol only as opaque bytes.
+  The closure law: no position in a v0 term admits a non-integral
+  number. ONE bound (`isIntegralJSONNumber`) applied by ONE traversal
+  over the whole term (`requireIntegralNumbers`), mirrored by
+  `Number.isSafeInteger` over the folded term in the author fold, so no
+  term canonicalizes through shortest-round-trip number printing and a
+  JSON-bearing position added later inherits the bound instead of
+  needing its own check. Non-integer numbers reach the protocol only as
+  opaque payload bytes, which are values and not terms.
 - The MCP tool surface is derived from `contract.describe` at startup;
   there is no hand-written tool list to drift. Its `journal_read` tool is the
   READ verb and therefore returns the client's verified cursor, never the

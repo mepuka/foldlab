@@ -23,6 +23,10 @@ export const SESSION_JOURNAL_PREFIX = "flb_session_v0_"
 export const SESSION_STATE_SCHEME = "bytes-sha256-v1"
 export const SESSION_GRAMMAR_DESCRIPTOR: Json = {
   name: "flb.type.v0",
+  // The closure law: no number anywhere in a term is non-integral. It is a
+  // property of the term, so it is committed once here rather than annotated
+  // onto every number-bearing production.
+  numbers: "integral",
   partialKind: { k: "hole", required: ["k"] },
   productions: [
     { k: "bool", required: ["k"] },

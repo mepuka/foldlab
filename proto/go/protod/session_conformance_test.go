@@ -205,6 +205,7 @@ func blackBoxSessionGrammarDigest(t *testing.T) string {
 	t.Helper()
 	descriptor := map[string]any{
 		"name":        "flb.type.v0",
+		"numbers":     "integral",
 		"partialKind": map[string]any{"k": "hole", "required": []any{"k"}},
 		"productions": []any{
 			map[string]any{"k": "bool", "required": []any{"k"}},

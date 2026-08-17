@@ -347,11 +347,17 @@ remains a bounded residual outside the populated-catalog one-step repair.
   differentially walled against RFC 8785 Appendix B), which is where
   non-integer numbers legitimately live: they reach the protocol only
   as opaque bytes, never as a type term.
-- Every number position in a v0 TERM is integral — whole and within
-  ±(2^53−1) — in both the `int` leaf and a literal's `value`. One
-  predicate states the bound (`isIntegralJSONNumber`); the author fold
-  mirrors it with `Number.isSafeInteger`. The consequence is the point:
-  no v0 term canonicalizes through shortest-round-trip number printing.
+- The closure law: NO position in a v0 TERM admits a non-integral number
+  — not the `int` leaf, not a literal's `value`, and not any depth of
+  JSON inside a check's `args`. One predicate states the bound
+  (`isIntegralJSONNumber`) and one traversal applies it to every number
+  in the term (`requireIntegralNumbers`), so a position added later
+  inherits the bound rather than needing its own check; the author fold
+  mirrors both with `Number.isSafeInteger` over the folded term. The
+  consequence is the point: no v0 term canonicalizes through
+  shortest-round-trip number printing. Opaque payloads are the sole
+  exception and are covered by the bullet above — they are values, not
+  terms.
 - `struct.optional` names must be declared, unique, and sorted by
   UTF-16 code units.
 - `union.of` is non-empty; members are recursively normalized, sorted

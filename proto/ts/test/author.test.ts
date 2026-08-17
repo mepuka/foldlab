@@ -143,15 +143,38 @@ describe("beyond v0 refuses as data with the uniform shape", () => {
 
   // The Go certifier's integrality bound, mirrored: these are the exact
   // values that minted lawfully before the narrowing, and 5e-324 / 1e21 /
-  // 1e-7 are ES2019 shortest-round-trip renderings.
+  // 1e-7 are ES2019 shortest-round-trip renderings. Under the closure law the
+  // sentence they refuse by name widened from "a literal number" to "every
+  // number in a type term" — the vectors and the refusal kind are unchanged.
   test.each([5e-324, 0.1, 1e21, 1e-7, -0.5, Number.MAX_VALUE, 2 ** 53])(
     "a non-integer literal %p has no v0 form",
     (value) => {
       const refusal = refusalShape(foldSchema(Schema.Literal(value)))
-      expect(refusal.law).toContain("a literal number is integral")
+      expect(refusal.law).toContain("every number in a type term is integral")
       expect(refusal.got).toBe(String(value))
+      expect(refusal.path).toEqual(["structure", "value"])
     },
   )
+
+  // Closure, on the authoring side: a check bound the fold CAN express is
+  // refused when its args carry a non-integral number. Round 1 narrowed the
+  // literal position and left this one open on both sides.
+  test.each([5e-324, 0.1, 1e21, 1e-7])(
+    "a check argument %p has no v0 form",
+    (value) => {
+      const refusal = refusalShape(foldSchema(Schema.Int.check(Schema.isGreaterThan(value))))
+      expect(refusal.law).toContain("every number in a type term is integral")
+      expect(refusal.got).toBe(String(value))
+      expect(refusal.path).toEqual(["structure", "check", "args", "exclusiveMin"])
+    },
+  )
+
+  test("integral check arguments still fold", () => {
+    expect(foldSchema(Schema.String.check(Schema.isMinLength(3)))).toMatchObject({
+      ok: true,
+      structure: { k: "check", check: { name: "minLength", args: { min: 3 } } },
+    })
+  })
 
   test("integral literals inside the safe range still fold", () => {
     for (const value of [0, -1, 10, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER]) {
