@@ -176,10 +176,50 @@ func TestIntegralityBoundIsStatedOnce(t *testing.T) {
 		MatchString(readGuardedSource(t, "walk.go")); !matched {
 		t.Error("walk.go no longer declares the one integrality bound")
 	}
-	if !strings.Contains(
-		readGuardedSource(t, filepath.Join("..", "..", "ts", "src", "author.ts")),
-		"Number.isSafeInteger",
-	) {
-		t.Error("the author fold no longer mirrors the integrality bound")
+	// The TS mirror states the bound in jcs.ts, below both consumers of it: the
+	// author fold and the identity mint. Stating it once is the whole point —
+	// round 3 found the fold bounded and `structureDigest` unbounded, which is
+	// the certifier's own two-position defect one layer out.
+	tsSources := map[string]string{}
+	for _, name := range []string{"jcs.ts", "author.ts", "session.ts", "codegen.ts"} {
+		tsSources[name] = readGuardedSource(t, filepath.Join("..", "..", "ts", "src", name))
 	}
+	if !strings.Contains(tsSources["jcs.ts"], "Number.isSafeInteger") {
+		t.Error("proto/ts/src/jcs.ts no longer states the TS integrality bound")
+	}
+	for name, source := range tsSources {
+		if name == "jcs.ts" {
+			continue
+		}
+		if strings.Contains(source, "Number.isSafeInteger") {
+			t.Errorf("%s restates the integrality bound; call findNonIntegralNumber", name)
+		}
+	}
+	// And both TS positions that can turn a term into a v0 identity must run
+	// that traversal, each checked in its own function body.
+	for _, minter := range []struct{ file, declaration string }{
+		{"jcs.ts", "export const structureDigest = "},
+		{"author.ts", "export const foldSchema = "},
+	} {
+		body := functionBody(t, tsSources[minter.file], minter.declaration)
+		if !strings.Contains(body, "NonIntegralNumber") {
+			t.Errorf("%s%s no longer runs the closure sweep before minting", minter.file, minter.declaration)
+		}
+	}
+}
+
+// functionBody returns the source from a top-level `export const name = ` up to
+// the next top-level declaration, which is enough to tell whether that function
+// calls something without parsing TypeScript.
+func functionBody(t *testing.T, source, declaration string) string {
+	t.Helper()
+	start := strings.Index(source, declaration)
+	if start < 0 {
+		t.Fatalf("declaration %q is gone", declaration)
+	}
+	rest := source[start+len(declaration):]
+	if end := strings.Index(rest, "\nexport "); end >= 0 {
+		return rest[:end]
+	}
+	return rest
 }

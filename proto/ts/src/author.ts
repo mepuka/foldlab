@@ -11,9 +11,12 @@ import {
   canonicalize,
   canonicalizeStructure,
   compareCanonicalBytes,
+  findNonIntegralNumber,
+  INTEGRAL_NUMBER_LAW,
   structureDigest,
   type CanonicalRefusal,
   type Json,
+  type StructureRefusal,
 } from "./jcs.ts"
 import { localRefusal, type Refusal } from "./wire.ts"
 
@@ -95,42 +98,14 @@ const nonCanonical = (path: ReadonlyArray<string>, refusal: CanonicalRefusal): F
 
 const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
-/** The certifier's closure law, mirrored (operator ruling 7): every number in a
- * type term is integral. Like the Go walk, the bound sits in ONE traversal over
- * the term rather than at each number-bearing position — the literal's value,
- * a check's args, and whatever the fold learns to emit next all inherit it, so
- * the mirror cannot fall behind position by position the way the certifier's
- * did. `Number.isSafeInteger` is the exact mirror of `isIntegralJSONNumber`;
- * members are visited in identity order so the refusal coordinate is stable. */
-const requireIntegralNumbers = (
-  value: Json,
-  path: ReadonlyArray<string>,
-): Fail | undefined => {
-  if (typeof value === "number") {
-    return Number.isSafeInteger(value)
-      ? undefined
-      : beyond(
-        path,
-        String(value),
-        "every number in a type term is integral — whole and within ±(2^53-1); use opaque for other numbers",
-      )
-  }
-  if (Array.isArray(value)) {
-    for (let index = 0; index < value.length; index++) {
-      const fail = requireIntegralNumbers(value[index] as Json, [...path, String(index)])
-      if (fail !== undefined) return fail
-    }
-    return undefined
-  }
-  if (value !== null && typeof value === "object") {
-    const members = value as Record<string, Json>
-    for (const name of Object.keys(members).sort(byCodeUnit)) {
-      const fail = requireIntegralNumbers(members[name] as Json, [...path, name])
-      if (fail !== undefined) return fail
-    }
-  }
-  return undefined
-}
+/** A structure identity can fail for two reasons and the fold reports each in
+ * its own words. The non-integral branch is unreachable from `foldSchema`, which
+ * sweeps the folded term before it mints, and it is written out rather than cast
+ * away because "unreachable" is a claim the next edit can silently break. */
+const noIdentity = (path: ReadonlyArray<string>, refusal: StructureRefusal): Fail =>
+  refusal._tag === "NonIntegralNumber"
+    ? beyond(path, refusal.path, refusal.reason)
+    : nonCanonical(path, refusal)
 
 interface FlatCheck {
   readonly id: string | undefined
@@ -309,13 +284,21 @@ export const foldSchema = (schema: Schema.Top): FoldResult => {
   if (folded instanceof Fail) return { ok: false, refusal: folded.refusal }
   // The closure law runs over the finished term, after the shape fold, so a
   // shape v0 cannot express still teaches its own reason. Coordinates are the
-  // term's, matching the certifier's refusal paths exactly.
-  const nonIntegral = requireIntegralNumbers(folded as Json, ["structure"])
-  if (nonIntegral !== undefined) return { ok: false, refusal: nonIntegral.refusal }
+  // term's, matching the certifier's refusal paths exactly. The traversal is
+  // jcs.ts's, shared with the identity mint; only the refusal wording is the
+  // fold's, because a fold refusal and a mint refusal are uttered to different
+  // callers.
+  const nonIntegral = findNonIntegralNumber(folded as Json, ["structure"])
+  if (nonIntegral !== undefined) {
+    return {
+      ok: false,
+      refusal: beyond(nonIntegral.path, String(nonIntegral.value), INTEGRAL_NUMBER_LAW).refusal,
+    }
+  }
   const canonical = canonicalizeStructure(folded)
   if (!canonical.ok) return { ok: false, refusal: nonCanonical(["structure"], canonical.refusal).refusal }
   const identity = structureDigest(folded)
-  if (!identity.ok) return { ok: false, refusal: nonCanonical(["structure"], identity.refusal).refusal }
+  if (!identity.ok) return { ok: false, refusal: noIdentity(["structure"], identity.refusal).refusal }
   return {
     ok: true,
     structure: folded,

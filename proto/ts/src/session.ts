@@ -56,7 +56,13 @@ export const SESSION_GRAMMAR_DIGEST = sha256Hex(encodedSessionGrammar.bytes)
 
 /** The Task-37 state scheme is intentionally pinned to the current dual-record
  * side. When flb.type.v1 lands, old session commits remain bytes-sha256-v1
- * facts and bridge to the new digest; they are never rewritten in place. */
+ * facts and bridge to the new digest; they are never rewritten in place.
+ *
+ * It stays a thin alias of `structureDigest` because a PARTIAL is a term, not a
+ * value: the daemon derives its state digest from the partial after `walkPartial`
+ * has already applied the closure law, so the alias must inherit that law and
+ * not scope around it. Nothing here is value-side — fill values reach a digest
+ * through the daemon, never through this module. */
 export const sessionStateDigest = (partial: Json) => structureDigest(partial)
 
 export type SessionRetentionTier = "compactible" | "irreducible" | "never-discardable"

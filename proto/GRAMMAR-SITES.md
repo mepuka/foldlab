@@ -69,11 +69,23 @@ kind list.
 | `check.args` | the term itself, at any JSON depth | the closure traversal in `walk()` |
 | opaque payload | the VALUE admitted under `{"k":"opaque"}` | nobody — the sole exception (ruling 6): uninterpreted canonical bytes, walled at the JCS seam |
 | any position added later | the term itself | the closure traversal in `walk()`, by construction |
+| a number the walk cannot decode | a term built in Go, not decoded from the wire — `float32`, `int64`, `json.Number` | `requireIntegralNumbers`' `default:` REFUSES the whole non-JSON domain. `canonical.Decode` makes every wire number a `float64` at every depth, so this is in-process only; before it existed, `check.args {"min": float32(0.5)}` was admitted with identity bytes `…"args":{"min":0.5}…` |
+| the TS identity mint | `structureDigest`, and its alias `session.ts`'s `sessionStateDigest` | `jcs.ts`'s `findNonIntegralNumber`, swept before minting. This row is the one round 3 found missing: the TS closure lived at `foldSchema` and nowhere else, so the raw mint returned `{ok:true}` for a term the certifier refuses — the same digest the Go side derives, for a fact no daemon will ever hold |
 
-The last row is the point. The traversal runs over the whole term after the
-grammar walk, so it does not enumerate positions and cannot fall behind one.
-The TypeScript mirror is the same shape: one traversal over the folded term
-in `foldSchema`, not a check per position.
+The "any position added later" row is the point. The traversal runs over the
+whole term after the grammar walk, so it does not enumerate positions and cannot
+fall behind one. The TypeScript mirror is the same shape and now at the same
+depth: ONE traversal, `findNonIntegralNumber` in `jcs.ts`, stated below both of
+the places a TS term becomes an identity — the author fold and the identity
+mint. `Number.isSafeInteger` appears in exactly one function in `proto/ts/src/`,
+and `float_leaf_test.go` fails if it appears anywhere else or if either minter
+stops calling the traversal.
+
+The last two rows share one lesson with the table's own existence: a bound is
+only closed where the guard sits, so the audit question is never "which
+positions are covered" but "which values can reach an identity without passing
+the guard". Three answers to that question have now been wrong — `check.args`
+(round 2), a Go-typed number (round 3, R2), and the TS mint (round 3, R3).
 
 Test-side restatements, all touched with their sources:
 `conformance_test.go`, `normalize_test.go`, `session_conformance_test.go`,
