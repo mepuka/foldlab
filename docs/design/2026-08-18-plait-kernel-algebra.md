@@ -1,7 +1,10 @@
 # Plait, part 5 — the kernel algebra: the API is a language, the language is the algebra
 
-Status: **PROPOSED — nothing below is ratified until the §11 grill
-sheet (K-1..K-10) is worked.** Commissioned 2026-08-18 by the
+Status: **RATIFIED 2026-08-18 — the operator ruled all ten grill items
+on their recommended options ("taking all recommendations"), with K-6
+ruled explicitly: the protocol declaration pins the language digest
+(the protocol-pin reading); the literal first-slot form is retired as
+the priced alternative.** Commissioned 2026-08-18 by the
 operator's ruled direction, dispatched through the coordinator;
 written by the Fable kernel-algebra seat against main at `fdfc0cc12`
 (the merged M3 wave: 206 theorem declarations counted across
