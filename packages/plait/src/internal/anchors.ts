@@ -1,5 +1,5 @@
 import { decodeJson } from "@foldlab/core/jcs"
-import { JetStreamApiCodes, JetStreamApiError, StorageType } from "@nats-io/jetstream"
+import { StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
 import type { NatsConnection } from "@nats-io/nats-core"
 import { Effect, Result, Schema } from "effect"
@@ -19,6 +19,7 @@ import {
   structuralRefusal,
   type Refusal,
 } from "../Refusal.js"
+import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
 
 export interface LoadedAnchor<State> {
   readonly anchor: AnchorValue
@@ -44,27 +45,16 @@ export interface AnchorStore {
   ) => string
 }
 
-class KvFailure {
-  constructor(readonly cause: unknown) {}
-}
-
-const isCasRefusal = (cause: unknown): boolean =>
-  cause instanceof JetStreamApiError &&
-  cause.status === 400 &&
-  cause.code === JetStreamApiCodes.StreamWrongLastSequence
-
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "anchor-transport-unavailable",
-    law: "Transport absence may be retried; anchor revision conflicts may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS KV operation to be available",
-    next: [{
-      subject: "Folds.deploy",
-      note: "A transport refusal leaves this anchor write's outcome unknown. Do not retry it in place: detach and redeploy - resumption reads the landed anchor back, and a retried CAS that already landed refuses as lost-anchor-cas by design.",
-    }],
-  })
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
+  kind: "anchor-transport-unavailable",
+  law: "Transport absence may be retried; anchor revision conflicts may not.",
+  expected: "the pinned local NATS KV operation to be available",
+  next: () => [{
+    subject: "Folds.deploy",
+    note: "A transport refusal leaves this anchor write's outcome unknown. Do not retry it in place: detach and redeploy - resumption reads the landed anchor back, and a retried CAS that already landed refuses as lost-anchor-cas by design.",
+  }],
+})
 
 const malformed = (
   path: ReadonlyArray<string>,

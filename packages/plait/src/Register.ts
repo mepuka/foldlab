@@ -1,4 +1,4 @@
-import { Context, Duration, Effect, Layer, Scope, SynchronizedRef } from "effect"
+import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
 
 import type { Refusal } from "./Refusal.js"
 import { makeRegisterService } from "./internal/registers.js"
@@ -75,25 +75,29 @@ export class Registers extends Context.Service<Registers, RegisterService>()(
  * its own: a hold only runs inside the scope that owns the live `Registers`
  * connection, so the heartbeat fiber can never outlive its transport.
  */
-export const hold = <A, R>(
+export const hold = Effect.fn("Register.hold")(function*<A, R> (
   work: string,
   holder: string,
   use: (currentToken: Effect.Effect<number>) => Effect.Effect<A, Refusal, R>,
   heartbeatEvery: Duration.Input = "1 second",
-): Effect.Effect<A, Refusal, R | Registers | Scope.Scope> =>
-  Effect.gen(function* () {
-    const registers = yield* Registers
-    const initial = yield* registers.grant(work, holder)
-    const token = yield* SynchronizedRef.make(initial.token)
+): Effect.fn.Return<A, Refusal, R | Registers | Scope.Scope> {
+  const registers = yield* Registers
+  const initial = yield* registers.grant(work, holder)
+  const token = yield* SynchronizedRef.make(initial.token)
 
-    const renewals = Effect.gen(function* () {
-      while (true) {
-        yield* Effect.sleep(heartbeatEvery)
-        const current = yield* SynchronizedRef.get(token)
-        const renewed = yield* registers.renew(work, current)
-        yield* SynchronizedRef.set(token, renewed.token)
-      }
-    })
+  /** Read-renew-write as one step under the ref's own semaphore. */
+  const renewOnce = SynchronizedRef.updateEffect(token, (current) =>
+    Effect.map(registers.renew(work, current), (renewed) => renewed.token))
 
-    return yield* Effect.raceFirst(use(SynchronizedRef.get(token)), renewals)
-  })
+  // `Effect.repeat` runs its source once before it steps the schedule, so the
+  // first heartbeat stays an explicit sleep and `Schedule.spaced` carries every
+  // later one — the same instants the hand-rolled loop produced. `spaced` never
+  // exhausts; the `never` tail is unreachable and states what the type cannot,
+  // that this branch only ever ends by failing its fence.
+  const renewals = Effect.sleep(heartbeatEvery).pipe(
+    Effect.andThen(Effect.repeat(renewOnce, Schedule.spaced(heartbeatEvery))),
+    Effect.andThen(Effect.never),
+  )
+
+  return yield* Effect.raceFirst(use(SynchronizedRef.get(token)), renewals)
+})

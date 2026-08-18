@@ -1,5 +1,3 @@
-import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
 import { Effect, Fiber, Scope } from "effect"
 
 import type {
@@ -8,36 +6,25 @@ import type {
   FoldService,
   FoldsOptions,
 } from "../Fold.js"
-import {
-  absenceRefusal,
-  structuralRefusal,
-  type Refusal,
-} from "../Refusal.js"
+import { structuralRefusal, type Refusal } from "../Refusal.js"
 import { makeAnchorStore } from "./anchors.js"
 import { ensureLaneStreams } from "./lanes.js"
 import {
   preparePartitionPump,
   type MutableFoldScoreboard,
 } from "./pump.js"
+import { acquireConnection, transportRefusalFor } from "./transport.js"
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "fold-transport-unavailable",
-    law: "Transport absence may be retried; declared fold laws may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS operation to be available",
-    next: [{
-      subject: "Folds.deploy",
-      note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
-    }],
-  })
-
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
+  kind: "fold-transport-unavailable",
+  law: "Transport absence may be retried; declared fold laws may not.",
+  expected: "the pinned local NATS operation to be available",
+  next: () => [{
+    subject: "Folds.deploy",
+    note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
+  }],
+})
 
 const snapshot = (scoreboard: MutableFoldScoreboard): FoldScoreboard => ({
   messages: scoreboard.messages,
@@ -51,15 +38,11 @@ const snapshot = (scoreboard: MutableFoldScoreboard): FoldScoreboard => ({
 export const makeFoldService = Effect.fn("Folds.make")(function* (
   options: FoldsOptions,
 ): Effect.fn.Return<FoldService, Refusal, Scope.Scope> {
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? "foldlab-plait-folds",
-      }),
-      catch: (cause) => transportRefusal("fold.connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait-folds",
+    "fold.connection.acquire",
+    transportRefusal,
   )
   const anchors = yield* makeAnchorStore(connection)
 

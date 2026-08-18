@@ -12,7 +12,6 @@ import {
   type JsMsg,
 } from "@nats-io/jetstream"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
 import { Effect, Queue, Result, Schema, Scope, Stream } from "effect"
 
 import type {
@@ -20,8 +19,13 @@ import type {
   FabricClientService,
   ReceivedEnvelope,
 } from "../FabricClient.js"
-import { absenceRefusal, structuralRefusal, type Refusal } from "../Refusal.js"
+import { structuralRefusal, type Refusal } from "../Refusal.js"
 import { encodeEnvelope, verifyEnvelopeDigest } from "../Wire.js"
+import {
+  acquireConnection,
+  teachRetryOperation,
+  transportRefusalFor,
+} from "./transport.js"
 
 const fabricSubjects = [
   "flb.fab.fact.*",
@@ -40,18 +44,13 @@ const StreamShape = Schema.Struct({
   }),
 })
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "transport-unavailable",
-    law: "Transport absence may be retried; structural envelope evidence may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS operation to be available",
-    next: [{
-      subject: operation,
-      note: "Retry this absence with retryAbsence and a temporal Schedule.",
-    }],
-  })
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
+  kind: "transport-unavailable",
+  law: "Transport absence may be retried; structural envelope evidence may not.",
+  expected: "the pinned local NATS operation to be available",
+  next: teachRetryOperation,
+})
 
 const streamShapeRefusal = (got: string): Refusal =>
   structuralRefusal({
@@ -114,12 +113,6 @@ const ensureStream = Effect.fn("FabricClient.ensureStream")(function* (
   }
 })
 
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
-
 const acquireConsumer = (
   js: JetStreamClient,
   stream: string,
@@ -150,15 +143,11 @@ const closeConsumerMessages = (messages: ConsumerMessages): Effect.Effect<void> 
 export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   options: FabricClientOptions,
 ): Effect.fn.Return<FabricClientService, Refusal, Scope.Scope> {
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? "foldlab-plait",
-      }),
-      catch: (cause) => transportRefusal("connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait",
+    "connection.acquire",
+    transportRefusal,
   )
   yield* ensureStream(connection, options.stream)
   const js = jetstream(connection)

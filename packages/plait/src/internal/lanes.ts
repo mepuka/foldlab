@@ -7,7 +7,6 @@ import {
   type StreamInfo,
 } from "@nats-io/jetstream"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
 import { Effect, Scope } from "effect"
 
 import type { WireValue } from "../Canonical.js"
@@ -17,31 +16,26 @@ import type {
   LaneService,
 } from "../Lane.js"
 import { partition } from "../Lane.js"
-import {
-  absenceRefusal,
-  structuralRefusal,
-  type Refusal,
-} from "../Refusal.js"
+import { structuralRefusal, type Refusal } from "../Refusal.js"
 import { evidenceSubject } from "../Subjects.js"
 import { encodeEnvelope, type Envelope } from "../Wire.js"
+import { acquireConnection, transportRefusalFor } from "./transport.js"
 
 const messageIdWindowNanos = 2 * 60 * 1_000_000_000
 
 export const laneStreamName = (lane: DeclaredLane<unknown>, part: number): string =>
   `FLB_FAB_EV_${lane.digest}_${part}`
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "lane-transport-unavailable",
-    law: "Transport absence may be retried; declared lane shape violations may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS JetStream operation to be available",
-    next: [{
-      subject: "Lane.emit",
-      note: "Reconnect and re-emit; F2 makes duplicate delivery harmless, and the envelope digest is the message id.",
-    }],
-  })
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
+  kind: "lane-transport-unavailable",
+  law: "Transport absence may be retried; declared lane shape violations may not.",
+  expected: "the pinned local NATS JetStream operation to be available",
+  next: () => [{
+    subject: "Lane.emit",
+    note: "Reconnect and re-emit; F2 makes duplicate delivery harmless, and the envelope digest is the message id.",
+  }],
+})
 
 const shapeRefusal = (
   lane: DeclaredLane<unknown>,
@@ -135,24 +129,14 @@ export const ensureLaneStreams = Effect.fn("Lanes.ensureStreams")(function* (
   )
 })
 
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
-
 export const makeLaneService = Effect.fn("Lanes.make")(function* (
   options: LaneOptions,
 ): Effect.fn.Return<LaneService, Refusal, Scope.Scope> {
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? "foldlab-plait-lanes",
-      }),
-      catch: (cause) => transportRefusal("lane.connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait-lanes",
+    "lane.connection.acquire",
+    transportRefusal,
   )
   const js = jetstream(connection)
   const ensured = new Set<string>()
