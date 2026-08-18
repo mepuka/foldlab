@@ -76,6 +76,12 @@ coordinator merges.
 | [0024](#0024--f2b-is-the-successor-discipline-the-floor-is-a-derived-record) | 2026-08-17 | `Folds` / `Anchors` | the discipline protects, the floor records; `guard_is_redundant` is rostered | ruled |
 | [0025](#0025--g7s-ceiling-is-external-dependencies-only) | 2026-08-17 | packaging | workspace seams are declared, not smuggled; G7 bounds external deps | ruled |
 | [0026](#0026--the-three-cas-disciplines-are-never-unified) | 2026-08-18 | `Cells` / `Registers` / `Anchors` | joins retry, registers reconcile, anchors detach — three laws, never one combinator | ruled |
+| [0027](#0027--memo-permanence-a-digest-keyed-entry-is-never-invalid-only-evictable) | 2026-08-18 | `Resolved`, every digest-keyed memo | G-3's licence generalized off the resolve path; validity and retention are different sentences | proposed |
+| [0028](#0028--batching-is-carriage-no-public-batch-verb) | 2026-08-18 | `Catalog` / `Payloads` / `Resolved` | resolvers batch underneath; `resolve(digest)` keeps its signature and no `resolveAll` ships | proposed |
+| [0029](#0029--the-consumer-seam-streams-by-unfold-and-ships-as-chatter) | 2026-08-18 | `Session` | the coalgebra half is `Stream.unfold` over the landed `read`; no parity claim until AE-4 | proposed |
+| [0030](#0030--fan-out-strategy-is-a-rung-claim-not-a-tuning-knob) | 2026-08-18 | watch feeds (`Cells` / `Registers`) | `sliding`/`dropping` are admissible only where the payload's algebra absorbs loss | proposed |
+| [0031](#0031--one-algebra-service-and-one-replay-driver-the-cas-disciplines-stay-three) | 2026-08-18 | `Algebra`, the internal drive loops | unify the algebra and F2b's loop; 0026's three write disciplines are untouched | proposed |
+| [0032](#0032--rungcombinator-the-license-table-materialized-in-types) | 2026-08-18 | the shared stream surface | a combinator's soundness side-condition is a law atom; §8.5's rows become compile errors | proposed |
 
 ---
 
@@ -693,3 +699,244 @@ coordinator merges.
 - **Source:** `docs/design/2026-08-17-plait-effect-affordances.md` A-7
   ("the three-way refusal, refereed G-4, adopted") and §C-2 G-4;
   dispatch 31 decision 6 (the anchor detach); DEV-704 seam rules 1–2.
+
+### 0027 — memo permanence: a digest-keyed entry is never invalid, only evictable
+
+- **Date:** 2026-08-18
+- **Surface:** `Resolved` / every digest-keyed memo in the package
+- **Decision:** the licence G-3 granted to one cache is stated as a rule
+  about a keyspace, so the next memo inherits it instead of re-deriving
+  it. Let `k` be a digest and `f` a function that returns only values it
+  has re-derived against `k`. Then any memo of `f` keyed by `k` is
+  **forever valid**: it has no invalidation protocol, no coherence
+  protocol, and no freshness parameter — not because they were omitted
+  but because there is nothing they could compute. Two clauses are the
+  point of the entry, being the parts not currently written anywhere
+  citable. **The eviction clause:** an entry may still be *removed*, by
+  capacity; removal costs a re-fetch and never a wrong answer, so "never
+  invalidates" and "never evicts" are different sentences and only the
+  first is claimed. The pin forces the distinction — `Cache.makeWith`'s
+  `capacity` is mandatory, so no unbounded cache exists to claim
+  permanence with. **The anti-clause:** any key naming *whatever is
+  current* — anchored, head-relative, `(directory, petname, anchor)`-shaped
+  — is outside the rule entirely and gets no memo from it.
+- **API consequence:** a digest memo may be shared across processes,
+  persisted, warmed, or handed between deployments without a protocol,
+  and its capacity is deployment configuration that never touches
+  identity. Two sites in the tree are inside the rule and have no memo
+  today: `truth/SchemaCanonical.ts:341` (a fresh writer derivation per
+  call, and once per record at `:388`) and `internal/anchors.ts:129-152`
+  (double canonicalization plus a redundant store write per checkpoint).
+- **Alternatives:** leave it as `ResolveCache`'s JSDoc (where it is
+  correct and complete, and where every future memo must re-derive it —
+  the two uncached sites above are what that costs); mint an F-number
+  now (over-claims: storage-stack §8.5 already carries `memoize forever
+  ← content addressing` as a license row, so the substance may already
+  be covered and only the clauses are missing).
+- **Status:** proposed — stated in
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §3.3
+  and flagged there as a candidate whose disposition (corollary of C3 /
+  widening of G-3 / new statement) is the coordinator's, not this
+  seat's.
+- **Source:** ruling G-3 and affordances A-8a (the ratified core, for
+  the resolve path); storage-stack §8.2 first inversion and §8.5 license
+  table (the prior statements, `proposed`); the shipped fence at
+  `packages/plait/src/planes/Resolved.ts:187` and `:198-239`; C3.
+
+### 0028 — batching is carriage: no public batch verb
+
+- **Date:** 2026-08-18
+- **Surface:** `Catalog` / `Payloads` / `Resolved`
+- **Decision:** coalescing K independent digest reads into one store
+  round trip is licensed by C3 — a digest names one value, so no read's
+  answer can depend on another read having happened — and it is
+  classified as **carriage, not meaning**, per the storage record's
+  ruling that *"batching is a placement-plane choice… invisible to every
+  fold"*. Under AE-8's admission test batched resolve **denotes nothing
+  new**: it is the same term, `resolve(d)`, with a different carrier. So
+  it rides in the environmental band and is fenced out of the fluent
+  surface. Concretely: `CatalogService` and `PayloadService` gain
+  `getMany` because a `RequestResolver` must sit on something, and the
+  **public surface gains nothing** — `resolve(digest)` keeps its exact
+  signature and coalesces underneath.
+- **API consequence:** no `resolveAll`, no `getMany` on any public seam,
+  no batch size parameter reachable by a caller. The one door is
+  unmoved: what batches is the *unverified* store fetch, and
+  `verified(digest, value)` still re-derives per digest, which is what
+  keeps a lying layer refusable (DECISIONS T18). And because DEV-766's
+  `Address` declared that it *"ships no service, no store, no layer, and
+  no cache"*, batching landing below it means iterated-resolve paths
+  inherit it with no line changed — while `at`'s own hop chain stays
+  unbatchable, being dependent by construction.
+- **Alternatives:** expose a batch verb for callers who know they hold K
+  digests (smuggles carriage into meaning, and is the "mostly algebraic
+  API with one ad-hoc verb" AE-8 §7.4 refuses by name); batch at the
+  verification boundary rather than the fetch (faster, and weakens the
+  one door — refused by the pedigree guard).
+- **Status:** proposed — and gated on a prior grill, since
+  `RequestResolver` has never been priced in this estate (the string
+  appears nowhere in `docs/`, `scratch/`, or `packages/`).
+- **Source:**
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §3.4
+  and §8 item 0; storage-stack §7.1/§7.4 (AE-8 and the admission test)
+  and the batching-is-placement line; C3; `planes/Resolved.ts:134-144`,
+  `:292-294`; `planes/Catalog.ts:51-54`, `:67-69`.
+
+### 0029 — the consumer seam streams by unfold, and ships as chatter
+
+- **Date:** 2026-08-18
+- **Surface:** `Session`
+- **Decision:** the stream form of a Plait consumer is one combinator
+  over the seam DEV-765 landed, not a subsystem. `Session.read` has the
+  signature `(session, fold) => Effect<Step<State>, Refusal>` where
+  `Step = { view, session }`, and the pin's `Stream.unfold` takes
+  exactly `(s: S) => Effect<readonly [A, S] | undefined, E, R>` — the
+  coalgebra signature. So `views` is `Stream.unfold` over `read`, and
+  there is nothing else to build. DEV-765's properties survive
+  unchanged, including the one it was careful about: admission is never
+  cached on a session and the writ is re-judged every step, which holds
+  because `unfold` calls `read` on every pull.
+- **API consequence:** the surface **ships as chatter and makes no
+  parity claim**, inheriting the storage record's fence on access
+  pattern 7 — the coalgebraic half's meta-language home is AE-4, which
+  nothing yet rules. When AE-4 lands the claim can be revisited; until
+  then a stream view is a convenience, and no digest equality is
+  asserted between it and any term.
+- **Alternatives:** a bespoke consumer-stream module with its own
+  lifecycle and buffering (invents machinery for a dual that is one
+  combinator wide, and would need its own soundness argument where
+  `unfold` inherits `read`'s); wait for AE-4 before offering any stream
+  form (defensible, and costs every consumer a hand-rolled pull loop in
+  the meantime — the polling debt at `surface/cli.ts:341-358` is what
+  that already looks like).
+- **Status:** proposed — blocked on PR #116 (DEV-765) merging; this
+  entry consumes that seam and does not duplicate it.
+- **Source:**
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §2;
+  PR #116 `packages/plait/src/planes/Session.ts` (the `read` signature
+  and its "coalgebra half stated as a signature" doc); storage-stack
+  access pattern 7 and its AE-4 fence; `repos/effect` `Stream.unfold` at
+  the pin.
+
+### 0030 — fan-out strategy is a rung claim, not a tuning knob
+
+- **Date:** 2026-08-18
+- **Surface:** watch feeds (`Cells` / `Registers`), and any future
+  `PubSub`-backed surface
+- **Decision:** a `PubSub` delivers to each subscriber independently, so
+  subscribers may observe publications in different orders and may
+  observe some twice. That is safe **because F1/F2 make it safe for an
+  ACI payload** — every subscriber reaching the same set reaches the
+  same state, whatever the permutation and whatever the duplication —
+  and for no other reason. The corollary is the decision: the pin's
+  `sliding` and `dropping` strategies **lose publications** under
+  pressure, and losing a publication is harmless over a monotone lattice
+  (the next one carries the join) and corrupting over a positional or
+  counting payload. So the strategy argument is a claim about the
+  payload's rung, not a performance dial, and it is chosen by the rung
+  rather than by a deployment preference.
+- **API consequence:** no watch surface takes a free-form strategy
+  parameter. This is the same species of trap entry 0026 pre-registered
+  against for CAS disciplines — shapes that look alike and are licensed
+  by different laws — and it is named here before a combinator exists to
+  fall into it.
+- **Alternatives:** expose the strategy as ordinary configuration
+  (indistinguishable at the call site from a correctness decision, which
+  is exactly how a lossy feed reaches a counting fold); always use the
+  lossless `suspend` strategy (safe everywhere, and forfeits the
+  coalescing A-8b already proved harmless for cells — a fence paid for
+  by every monotone consumer).
+- **Status:** proposed — gated on a prior grill, since `PubSub` has
+  never been priced in this estate, and additionally on DEV-731's probe
+  suite and the advisory-only, no-absence-reasoning fence A-8b already
+  carries.
+- **Source:**
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §3.2
+  and §8 item 0; F1 and F2; affordances A-8b (the coalescing licence and
+  its watch fence); the pin's `PubSub` constructors;
+  `packages/plait/src/planes/Cell.ts:226-237` (the exemplar).
+
+### 0031 — one algebra service and one replay driver; the CAS disciplines stay three
+
+- **Date:** 2026-08-18
+- **Surface:** `Algebra`, and the internal incremental-step loops
+- **Decision:** the package declares two parallel algebra interfaces for
+  one job — `DeclaredAlgebra<State>` over `Reducer.Reducer`
+  (`truth/Algebra.ts:13-22`) and `CasJoin<A>` (`internal/cas.ts:65-88`),
+  bridged one way by `joinOf` and never unified — and writes the
+  incremental-step loop out **five times**
+  (`internal/successors.ts:64-92`, `:95-118`, `:126-157`;
+  `internal/pump.ts:260-324`; `internal/chaos.ts:136-164`). No tag
+  exists anywhere in that chain, so a consumer cannot obtain "the fold
+  algebra" from the environment and every new carrier restates the loop.
+  Decided: the algebra's operations become one Layer-provided service in
+  `truth/` (layer by plane, not by NATS construct), `CasJoin` collapses
+  into it through `joinOf`, and the five loops become one
+  `Stream.mapAccumEffect` driver each consumer parameterises. `cellJoin`
+  (`internal/cells.ts:157-161`) then earns the commutative brand by
+  construction instead of forgoing it despite being provably ACI.
+- **The fence this entry exists to state:** **entry 0026 is untouched.**
+  What is unified is the *algebra* and F2b's *drive loop*; the three CAS
+  write disciplines — joins retry, registers reconcile, anchors detach —
+  stay three. A version of this that grew a "CAS strategy" parameter has
+  violated 0026 and is refused on sight. `arrivalOrderReplay` stays a
+  negative control and becomes a sharper one by parameterising the same
+  driver with the wrong discipline, since a hand-written twin can
+  accidentally agree.
+- **Alternatives:** leave the five loops (five proof obligations where
+  F2b is one, and two of the five have already drifted far enough to
+  re-implement `Anchor.advance` beside the anchor module rather than
+  through it); extract only the drive loop and leave the two algebra
+  interfaces (keeps the seam `internal/cas.ts:10-42` already argues for,
+  and leaves `cellJoin` unable to earn a brand it provably deserves).
+- **Status:** proposed — blocked on PR #118 (DEV-764) merging, whose
+  rung ladder the service's interface types consume.
+- **Source:**
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §4;
+  entry 0026 (the fence); `internal/cas.ts:10-42` (the extraction case,
+  in the tree's own words); F2b; storage-stack §7.3 (layer by plane);
+  reorg spec §5 stage 3.
+
+### 0032 — rung⇒combinator: the license table materialized in types
+
+- **Date:** 2026-08-18
+- **Surface:** the shared stream surface, and any rung-parameterised
+  service interface
+- **Decision:** the storage record's §8.5 license table — *"shard /
+  parallelize ← commutativity · retry, at-least-once ← idempotence ·
+  incremental / delta views ← associativity · memoize forever ← content
+  addressing"*, under the heading "optimization becomes proof" — is
+  materialized in the type system rather than left as documentation,
+  because **a combinator's soundness side-condition is a law atom**.
+  `Stream.mapEffect`'s `unordered: true` says the consumer does not care
+  about arrival order, which is commutativity and nothing else;
+  `Stream.changes` collapses repeats, which is sound exactly when
+  repeating is a no-op, which is idempotence and nothing else. So a
+  service parameterised by a fold's `Laws` exposes only the combinators
+  that rung licenses: `positioned` gets ordered pull and concurrency 1;
+  `multiset` adds `unordered` and partition merge (F4 verbatim); `set`
+  adds dedup and lossy fan-out (F2 verbatim).
+- **API consequence:** `unordered: true` on a positional payload becomes
+  a compile error rather than a review catch, which is the estate's
+  standing position on carrier misuse. This is the same trick
+  `LawsFor<LaneQuotient<P>>` already plays at the fold declaration door,
+  applied one level down at the combinator.
+- **The fence:** no rung licenses *dropping* a message on the durable
+  fold path. F2b is a statement about applying each event once, and
+  idempotence at the algebra does not license loss at the transport,
+  because a dropped message is not a duplicate — it is an absent one. A
+  reader discharging the pump-adapter finding by pointing at the `set`
+  row has made exactly this error.
+- **Alternatives:** keep the table as prose (the status quo, and the
+  storage record itself names the type-level form as the goal); brand by
+  rung name rather than by law set (cannot express an inherited rung,
+  which is a set intersection — KM-17 already priced and refused this).
+- **Status:** proposed — and dependent, since KM-17 is itself `proposed`
+  (its sheet's status line reads "All items PROPOSED"); this cannot
+  precede that ruling or PR #118.
+- **Source:**
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §5;
+  storage-stack §8.5 (the license table) and §4.3 (rung⇒carrier, whose
+  closing line names the TypeScript materialization as the goal); KM-17;
+  PR #118 `truth/Algebra.ts` (`DeepestQuotient`, `LawsFor`, `Reads`);
+  F2, F4, F2b.
