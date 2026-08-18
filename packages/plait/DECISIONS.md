@@ -1909,3 +1909,39 @@ than a diagnostic can no longer read as a control that failed for its committed
 reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
 six advisories it declines to gate on stay open findings for their modules'
 owners.
+
+## Task DEV-796 — the public type-universe inventory wall
+
+### T0. Corpus derivation is declaration-symbol ancestry, not module-level import presence
+
+Decided: the emitted `src/index.d.ts` barrel is the public-type quantifier, and
+each exported type follows only the declaration symbols its own declaration
+reaches. Reaching `KernelCorpusSchemas`, `KernelSchemas.generated`, or
+`KernelTables.generated` classifies the type as `corpus-derived`; an owner under
+`src/truth/` classifies it as `truth-floor`; every other type is `UNTRACED`.
+Alternatives: mark every type in a module corpus-derived when any import names a
+kernel file (an unused import would erase unrelated debt); inspect source text
+for type names (aliases and transitive declarations would escape); treat every
+type that reaches a truth primitive as floor (nearly every fabric-era type
+reaches `Digest` or `Refusal`, collapsing the inventory by construction). Why:
+declaration-symbol ancestry is the emitted type contract the compiler sees and
+keeps the two admitted roots narrow enough to mean something. **Load-bearing?
+yes** — broadening either root can turn an unification debt into a green row
+without changing the public type.
+
+### T1. Report and enforce consume one classification; only the exit contract changes
+
+Decided: report mode byte-compares the generated debt ledger and exits green
+with the three measured counts, while `--enforce` runs the same inspection and
+refuses every `UNTRACED` row. The committed ledger contains one Markdown row per
+untraced public type and names its owning source module; it deliberately omits
+one row per admitted type because it is a debt ledger, not a second public API
+manifest. The planted control exports one generated-table-derived sibling and
+one fabric-era sibling, then requires enforce mode to refuse exactly the latter
+against its committed trace. Alternatives: maintain separate report and enforce
+walks (the future flip could change the quantifier); freeze a baseline allowlist
+(that would turn debt into waivers before any unification ticket exists); make
+nonempty debt red now (contradicts this ticket's inventory-only stage). Why: the
+ratifiable object and the later wall are the same classification at two exit
+policies. **Load-bearing? yes** — a second enforcement path could go green over
+a different universe from the inventory the operator ratified.
