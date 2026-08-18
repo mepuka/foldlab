@@ -38,7 +38,7 @@ import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import { canonicalBytes } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
-import type { Refusal, StructuralRefusal } from "../truth/Refusal.js"
+import { WireValueSchema, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
 import { makeCellService } from "../internal/cells.js"
 
 /** The file-backed KV bucket that is authoritative for lattice cells. */
@@ -59,8 +59,8 @@ export const CELL_MERGE_ATTEMPTS = 8
 
 /** One holder-attributed observation: the only delta the evidence alphabet admits. */
 export const Observation = Schema.Struct({
-  holder: Schema.Json,
-  value: Schema.Json,
+  holder: WireValueSchema,
+  value: WireValueSchema,
 })
 
 /** One holder-attributed observation: the only delta the evidence alphabet admits. */

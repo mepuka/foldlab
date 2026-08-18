@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/big"
 	"sort"
 	"strconv"
 	"unicode/utf16"
@@ -99,7 +100,23 @@ func decodeJSONValue(decoder *json.Decoder, depth int) (any, error) {
 	case nil, bool, string:
 		return token, nil
 	case json.Number:
-		value, err := strconv.ParseFloat(string(token), 64)
+		text := string(token)
+		// The estate number domain (DEV-807): a pure-integer literal whose
+		// magnitude reaches 2^53 decodes exactly, never onto the nearest
+		// double. The boundary mirrors the TS seam's Number.isSafeInteger.
+		if isIntegerLiteral(text) {
+			parsed, ok := new(big.Int).SetString(text, 10)
+			if !ok {
+				return nil, errors.New("invalid integer literal")
+			}
+			if parsed.IsInt64() {
+				if small := parsed.Int64(); small > -(1<<53) && small < 1<<53 {
+					return float64(small), nil
+				}
+			}
+			return parsed, nil
+		}
+		value, err := strconv.ParseFloat(text, 64)
 		if err != nil || math.IsInf(value, 0) || math.IsNaN(value) {
 			return nil, errors.New("number is not finite in IEEE 754 binary64")
 		}
@@ -160,6 +177,18 @@ func decodeJSONValue(decoder *json.Decoder, depth int) (any, error) {
 	default:
 		return nil, errors.New("value is outside the JSON domain")
 	}
+}
+
+// isIntegerLiteral reports whether a JSON number literal is a pure integer:
+// optional minus, digits, no fraction, no exponent.
+func isIntegerLiteral(text string) bool {
+	for index := 0; index < len(text); index++ {
+		switch text[index] {
+		case '.', 'e', 'E':
+			return false
+		}
+	}
+	return true
 }
 
 func validateJSONStringEscapes(input []byte) error {
@@ -300,11 +329,24 @@ func appendCanonical(output *bytes.Buffer, value any) error {
 			output.WriteByte('0')
 			return nil
 		}
+		// The estate canon for every integer is its exact decimal digits
+		// (DEV-807): an integral double outside the safe range prints its one
+		// exact integer value, never a shortest-round-trip spelling, so the
+		// integer 10^21 has one byte form however it arrived.
+		if value == math.Trunc(value) && math.Abs(value) >= 1<<53 {
+			integer, _ := big.NewFloat(value).Int(nil)
+			output.WriteString(integer.String())
+			return nil
+		}
 		encoded, err := json.Marshal(value)
 		if err != nil {
 			return err
 		}
 		output.Write(encoded)
+	case *big.Int:
+		// The estate number domain: exact decimal digits, no exponent, no
+		// fraction, `-` only.
+		output.WriteString(value.String())
 	case string:
 		if !utf8.ValidString(value) {
 			return errors.New("string is not valid Unicode")

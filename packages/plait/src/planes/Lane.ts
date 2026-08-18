@@ -8,7 +8,7 @@ import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
-import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
+import { structuralRefusal, type Refusal, type StructuralRefusal, WireValueSchema } from "../truth/Refusal.js"
 import { evidenceSubject } from "../kernel/Subjects.js"
 import type { Certificate } from "../kernel/Wire.js"
 import { makeLaneService } from "../internal/lanes.js"
@@ -166,7 +166,7 @@ export const declare = Effect.fn("Lane.declare")(function*<Event, const Partitio
   if (Result.isFailure(parsedKey)) {
     return yield* declarationRefusal(
       ["partitionKey"],
-      Schema.is(Schema.Json)(options.partitionKey) ? options.partitionKey : String(options.partitionKey),
+      Schema.is(WireValueSchema)(options.partitionKey) ? options.partitionKey : String(options.partitionKey),
       "the closed { path: (string | number)[] } partition-key declaration",
     )
   }
@@ -221,7 +221,7 @@ export const partition = Effect.fn("Lane.partition")(function*<Event, const Part
   if (Result.isFailure(decoded)) {
     return yield* partitionRefusal(
       ["event"],
-      Schema.is(Schema.Json)(event) ? event : String(event),
+      Schema.is(WireValueSchema)(event) ? event : String(event),
       "one value admitted by the lane's event schema",
     )
   }
@@ -234,7 +234,7 @@ export const partition = Effect.fn("Lane.partition")(function*<Event, const Part
       "a present canonical event value",
     )
   }
-  if (!Schema.is(Schema.Json)(selected.value)) {
+  if (!Schema.is(WireValueSchema)(selected.value)) {
     return yield* partitionRefusal(
       ["partitionKey", ...lane.partitionKey.path.map(String)],
       String(selected.value),

@@ -6,14 +6,40 @@
 import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 
+import type { JsonValue } from "@foldlab/core/jcs"
+
 import { refusalOf } from "../internal/refusals.js"
 import { StructuralRefusalKind as GeneratedStructuralRefusalKind } from "./RefusalKinds.generated.js"
+
+const isWireValue = (value: unknown): value is JsonValue => {
+  if (
+    value === null || typeof value === "boolean" || typeof value === "string"
+    || typeof value === "bigint"
+  ) return true
+  if (typeof value === "number") return Number.isFinite(value)
+  if (Array.isArray(value)) return value.every(isWireValue)
+  if (typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== null && prototype !== Object.prototype) return false
+    return Object.values(value).every(isWireValue)
+  }
+  return false
+}
+
+/**
+ * A refusal payload speaks the estate wire domain, not `Schema.Json`: the
+ * estate number line carries exact integers as `bigint` (DEV-807), and a
+ * refusal whose `got` quotes such a value must survive its own schema.
+ */
+export const WireValueSchema = Schema.declare<JsonValue>(isWireValue, {
+  identifier: "WireValue",
+})
 
 /** One legal repair or inspection step attached to a refusal. */
 export const Next = Schema.Struct({
   subject: Schema.String,
   note: Schema.String,
-  body: Schema.optionalKey(Schema.Json),
+  body: Schema.optionalKey(WireValueSchema),
 })
 
 /** One legal repair or inspection step attached to a refusal. */
@@ -22,8 +48,8 @@ export type Next = typeof Next.Type
 const SharedRefusalFields = {
   law: Schema.String,
   path: Schema.Array(Schema.String),
-  got: Schema.Json,
-  expected: Schema.Json,
+  got: WireValueSchema,
+  expected: WireValueSchema,
   next: Schema.Array(Next),
 } as const
 
@@ -72,8 +98,8 @@ export interface RefusalFields {
   readonly kind: string
   readonly law: string
   readonly path: ReadonlyArray<string>
-  readonly got: typeof Schema.Json.Type
-  readonly expected: typeof Schema.Json.Type
+  readonly got: JsonValue
+  readonly expected: JsonValue
   readonly next: ReadonlyArray<Next>
 }
 

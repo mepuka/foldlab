@@ -115,3 +115,40 @@ describe("non-plain objects are outside the canonical domain (J1)", () => {
     expect(encodeJsonValue(nullProto)).toEqual({ ok: true, bytes: '{"a":1}' })
   })
 })
+
+describe("estate number domain (DEV-807)", () => {
+  test("the corpus canon vector round-trips byte-identically", () => {
+    const bytes = utf8("9007199254740993")
+    const decoded = decodeJson(bytes)
+    expect(decoded).toEqual({ ok: true, value: 9007199254740993n })
+    expect(canonicalizeJson(bytes)).toEqual({ ok: true, bytes: "9007199254740993" })
+  })
+
+  test("bigints serialize as exact decimal digits", () => {
+    expect(encodeJsonValue(9007199254740993n)).toEqual({ ok: true, bytes: "9007199254740993" })
+    expect(encodeJsonValue(-(10n ** 30n))).toEqual({ ok: true, bytes: "-1000000000000000000000000000000" })
+  })
+
+  test("the decoder boundary is Number.isSafeInteger, both sides agreeing", () => {
+    expect(decodeJson(utf8("9007199254740991"))).toEqual({ ok: true, value: 9007199254740991 })
+    expect(decodeJson(utf8("9007199254740992"))).toEqual({ ok: true, value: 9007199254740992n })
+    expect(decodeJson(utf8("-9007199254740991"))).toEqual({ ok: true, value: -9007199254740991 })
+    expect(decodeJson(utf8("-9007199254740992"))).toEqual({ ok: true, value: -9007199254740992n })
+  })
+
+  test("an integer has one byte form however it arrived — the refused RFC 8785 rounding", () => {
+    // RFC 8785 alone would canonicalize `1e21` as "1e+21" and the corpus
+    // vector's neighbor as a rounded double. Both spellings are refused by
+    // byte movement: the integer's exact digits are the only canonical form.
+    expect(canonicalizeJson(utf8("1e21"))).toEqual({ ok: true, bytes: "1000000000000000000000" })
+    expect(encodeJsonValue(2 ** 53)).toEqual({ ok: true, bytes: "9007199254740992" })
+    const jcsRounding = encodeJsonValue(Number("9007199254740993"))
+    expect(jcsRounding).toEqual({ ok: true, bytes: "9007199254740992" })
+    expect(jcsRounding).not.toEqual({ ok: true, bytes: "9007199254740993" })
+  })
+
+  test("integers beyond binary64 entirely still round-trip exactly", () => {
+    const digits = `1${"0".repeat(400)}7`
+    expect(canonicalizeJson(utf8(digits))).toEqual({ ok: true, bytes: digits })
+  })
+})

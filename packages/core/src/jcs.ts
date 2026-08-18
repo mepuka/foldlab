@@ -1,9 +1,24 @@
-/** RFC 8785 canonical JSON and its load-bearing constrained decoder. */
+/**
+ * Estate canonical JSON and its load-bearing constrained decoder.
+ *
+ * RFC 8785 in every respect except the number domain (DEV-807, operator
+ * ruling 2026-08-18). RFC 8785 canonicalizes numbers as IEEE 754 binary64
+ * shortest round-trip, which caps exact integers at 2^53 − 1; the kernel
+ * corpus rules identity labels as unbounded integers, with the canon vector
+ * 9007199254740993 (2^53 + 1) byte-identical across Lean, Go, and this seam.
+ * Both cannot hold, so the estate canon extends the number line: an integer
+ * rides as `bigint` and serializes as its exact decimal digits, an integral
+ * `number` outside the exact double range is refused rather than rounded, and
+ * the constrained decoder returns `bigint` for any pure-integer literal whose
+ * magnitude reaches 2^53. Every other law — key order, escapes, UTF-8,
+ * I-JSON uniqueness — is RFC 8785 unchanged.
+ */
 
 export type JsonValue =
   | null
   | boolean
   | number
+  | bigint
   | string
   | ReadonlyArray<JsonValue>
   | { readonly [key: string]: JsonValue }
@@ -68,7 +83,20 @@ const encodeValue = (
   }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) return refuseEncoding(path, "number is not finite")
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      // The estate canon for every integer is its exact decimal digits. An
+      // integral double outside the safe range has one exact integer value —
+      // print that, never RFC 8785's shortest-round-trip spelling, so the
+      // integer 10^21 has one byte form whether it arrived as `1e21`, as
+      // digits, or as a bigint. W2 holds: formatting never causes refusal.
+      return { ok: true, bytes: BigInt(value).toString(10) }
+    }
     return { ok: true, bytes: JSON.stringify(value) }
+  }
+  if (typeof value === "bigint") {
+    // The estate number domain: exact decimal digits, no exponent, no
+    // fraction, `-` only. BigInt.prototype.toString spells exactly that.
+    return { ok: true, bytes: value.toString(10) }
   }
   if (typeof value === "string") {
     if (hasUnpairedSurrogate(value)) return refuseEncoding(path, "string is not valid Unicode")
@@ -300,8 +328,9 @@ class JsonParser {
     return value
   }
 
-  private parseNumber(): number {
+  private parseNumber(): number | bigint {
     const start = this.offset
+    let integral = true
     if (this.source[this.offset] === "-") this.offset++
     if (this.source[this.offset] === "0") {
       this.offset++
@@ -314,6 +343,7 @@ class JsonParser {
       while (this.source[this.offset] !== undefined && this.source[this.offset]! >= "0" && this.source[this.offset]! <= "9")
     }
     if (this.source[this.offset] === ".") {
+      integral = false
       this.offset++
       const first = this.source[this.offset]
       if (first === undefined || first < "0" || first > "9") this.fail("fraction requires a digit")
@@ -322,6 +352,7 @@ class JsonParser {
     }
     const exponent = this.source[this.offset]
     if (exponent === "e" || exponent === "E") {
+      integral = false
       this.offset++
       const sign = this.source[this.offset]
       if (sign === "+" || sign === "-") this.offset++
@@ -330,7 +361,17 @@ class JsonParser {
       do this.offset++
       while (this.source[this.offset] !== undefined && this.source[this.offset]! >= "0" && this.source[this.offset]! <= "9")
     }
-    const value = Number(this.source.slice(start, this.offset))
+    const text = this.source.slice(start, this.offset)
+    const value = Number(text)
+    // The estate number domain (DEV-807): a pure-integer literal whose
+    // magnitude reaches 2^53 decodes as bigint, so the digits round-trip
+    // byte-identically instead of collapsing onto the nearest double. The
+    // boundary agrees with the encoder both ways — every number the decoder
+    // returns re-encodes, every bigint it returns re-encodes, and no value
+    // has two canonical spellings.
+    if (integral && !Number.isSafeInteger(value)) {
+      return BigInt(text)
+    }
     if (!Number.isFinite(value)) this.fail("number is not finite in IEEE 754 binary64")
     return value
   }
