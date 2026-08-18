@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "include": [
-    "negative-controls/PublicTypeUniverse.untraced.mutant.ts"
+    "negative-controls/PublicTypeUniverse.debt.mutant.ts"
   ]
 }

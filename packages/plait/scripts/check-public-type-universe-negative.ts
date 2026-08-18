@@ -8,7 +8,7 @@ import { inspectPublicTypeUniverse } from "./public-type-universe.js"
 const packageRoot = resolve(import.meta.dir, "..")
 const tracePath = resolve(
   packageRoot,
-  "negative-controls/PublicTypeUniverse.untraced.trace.txt",
+  "negative-controls/PublicTypeUniverse.debt.trace.txt",
 )
 
 class ControlFailure extends Schema.TaggedError<ControlFailure>()(
@@ -34,7 +34,7 @@ const control = Effect.fn("PublicTypeUniverse.control")(function* () {
   const inspection = yield* Effect.try({
     try: () => inspectPublicTypeUniverse(
       emitted.directory,
-      "negative-controls/PublicTypeUniverse.untraced.mutant.d.ts",
+      "negative-controls/PublicTypeUniverse.debt.mutant.d.ts",
     ),
     catch: (cause) => new ControlFailure({ message: messageOf(cause) }),
   })
@@ -57,16 +57,16 @@ const control = Effect.fn("PublicTypeUniverse.control")(function* () {
   }
 
   const anchored = inspection.classifications.find(
-    ({ publicType }) => publicType === "CorpusDerivedControl",
+    ({ publicType }) => publicType === "GeneratedCoreControl",
   )
-  if (anchored?.classification !== "corpus-derived") {
+  if (anchored?.classification !== "derives-from-the-generated-core") {
     return yield* new ControlFailure({
-      message: "PUBLIC TYPE UNIVERSE CONTROL: FAIL — anchored sibling was not corpus-derived",
+      message: "PUBLIC TYPE UNIVERSE CONTROL: FAIL — anchored sibling did not derive from the generated core",
     })
   }
 
   yield* Console.log(
-    "PUBLIC TYPE UNIVERSE CONTROL: PASS (planted UNTRACED type refused; anchored sibling admitted)",
+    "PUBLIC TYPE UNIVERSE CONTROL: PASS (planted ticketed debt refused; generated-core sibling admitted)",
   )
 })
 

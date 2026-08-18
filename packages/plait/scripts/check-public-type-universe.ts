@@ -77,25 +77,22 @@ const check = Effect.fn("PublicTypeUniverse.check")(function* () {
     }
   }
 
-  const corpusDerived = inspection.classifications.filter(
-    ({ classification }) => classification === "corpus-derived",
+  const generatedCoreDerived = inspection.classifications.filter(
+    ({ classification }) => classification === "derives-from-the-generated-core",
   ).length
-  const truthFloor = inspection.classifications.filter(
-    ({ classification }) => classification === "truth-floor",
-  ).length
-  const untraced = inspection.classifications.length - corpusDerived - truthFloor
+  const debt = inspection.classifications.length - generatedCoreDerived
 
   if (enforce && inspection.violations !== "") {
     return yield* new CheckFailure({
       exitCode: 1,
-      message: `${inspection.violations}PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses UNTRACED public types`,
+      message: `${inspection.violations}PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses public type debt`,
     })
   }
 
   yield* Console.log(
     enforce
-      ? `PUBLIC TYPE UNIVERSE: PASS (${inspection.classifications.length} public types classified; no UNTRACED types)`
-      : `PUBLIC TYPE UNIVERSE: REPORT (${inspection.classifications.length} public types classified: ${corpusDerived} corpus-derived, ${truthFloor} truth-floor, ${untraced} UNTRACED)`,
+      ? `PUBLIC TYPE UNIVERSE: PASS (${inspection.classifications.length} public types classified; no debt-with-a-ticket types)`
+      : `PUBLIC TYPE UNIVERSE: REPORT (${inspection.classifications.length} public types classified: ${generatedCoreDerived} derives-from-the-generated-core, ${debt} debt-with-a-ticket)`,
   )
 })
 
