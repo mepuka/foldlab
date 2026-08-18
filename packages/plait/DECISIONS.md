@@ -1589,3 +1589,168 @@ glossary reserves that word for frozen digest pins minted by the side that owns
 a model, and nothing here pins a model's answer — these are ordinary runtime
 inputs to a characterization probe. Raised as a DEV-753 round-1 minor charge.
 **Load-bearing? no** — vocabulary.
+
+
+## Task DEV-737 — the `casJoinLoop` extraction: the lawful class-(a) write path
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` A-7 whole (the refereed G-2
+extraction contract, ADOPT-AMENDED) and A-8b, friction card FH-2, Part C ticket
+4. G36 class: this ticket ships **class (a) machinery** — the lattice-join write
+path and the local mirror of one, nothing else; the register's decision path and
+the anchor's single-shot CAS stay where they are, and T7 below is the standing
+refusal to merge them.
+
+Behaviour is preserved, and the evidence is that the wall did not move: the
+588-line `CellWall.test.ts`, its three byte-compared traces, and T16's two
+discriminating rows (`test/CellWall.test.ts:379`, `:496`) run unchanged and green
+against the live bucket.
+
+### T0. The join is effectful, and a pure `Reducer` enters through `joinOf`
+
+Decided: `CasJoinOptions.join` is a `CasJoin<A>` — `combine` returning
+`Effect<A, Refusal>`, plus `initialValue` and `identical` — rather than the
+contract's literal `Reducer.Reducer<A>`, and `joinOf(reducer, identical)` lifts a
+declared algebra's reducer into that position. Alternatives: keep
+`Reducer.Reducer<A>` and run the cell join unsafely at the call site (a throw
+where the package's whole error discipline is a refusal value); keep it and give
+the loop no join at all, deriving everything from the discipline (deletes the
+pre-CAS guard's independence, T1). Why: the shipped carrier's join is not pure at
+the type level — `Cell.join` runs `canonicalize` and refuses values outside the
+RFC 8785 wire grammar — so a pure `combine` would have to throw or lie. This is
+the same amendment A-8b already made for `absorb`, applied to the seam the
+contract sketched before the shipped types were in front of it. The `Reducer`
+clause survives where it was load-bearing: the brand stays earned rather than
+asserted, because `joinOf` takes the exact value `Algebra.declare`
+content-addresses and `Algebra.commutative` brands. **Load-bearing? yes** — it is
+the signature every future class-(a) carrier is written against, and reopening it
+later moves every consumer.
+
+### T1. Carrier identity is a parameter, and the pre-CAS guard is derived from it
+
+Decided: `CasJoin` carries `identical`, and `carries(join, state, contribution)`
+— the lattice order, `c ≤ x` iff `x ⊔ c = x` — is computed in the combinator and
+used for the pre-CAS guard. The guard does NOT route through
+`discipline.reconciled`. Alternatives: pass the guard in as its own option (an
+option no carrier would ever supply differently, and one a control could then
+swap); let the discipline own it (fatal — see why). Why: the shipped loop's guard
+is subsumption under BOTH committed disciplines, and that is exactly why nothing
+before the retry boundary discriminates and why the boundary does. A discipline
+that owned the guard would make the byte-equality control differ in two places
+instead of one, and T16's boundary row — which needs the last attempt to have no
+successor guard — would stop measuring what it measures. **Load-bearing? yes** —
+it is the shares-everything-else property both committed cell mutants prove.
+
+### T2. The exhausted-bound refusal is the carrier's, passed in
+
+Decided: `CasJoinOptions.contended(attempts)` mints the absence, so the cell
+adapter keeps minting `cell-update-contended` with its own law, path
+(`["cell", <cell>]`), taught repair, and `got` equal to the bound it passed.
+Alternatives: let the combinator mint a generic `cas-join-contended`. Why: the
+kind string is what `retryAbsence` policies and the wall read —
+`CellWall.test.ts:512` asserts it by name and the committed boundary trace
+carries it in byte-compared JSON — so a generic kind would have been a behaviour
+change dressed as a refactor. It is also the honest split: the loop knows how
+many attempts it made, and the carrier knows what its absence means.
+**Load-bearing? yes** — the refusal kind is a consumer-visible contract.
+
+### T3. A refused write is carried past the read-back unclassified
+
+Decided: `create`/`update` fail with `CasWriteFailure(conflict, refuse)` —
+`conflict` the adapter's CAS classification (operation context plus code 10071),
+`refuse` a thunk that mints the adapter's transport absence — and the loop reads
+back FIRST, consults `conflict` second, and calls `refuse()` only on the branch
+that reaches it. Alternatives: have the adapter mint its refusal eagerly and hand
+the loop a `Refusal` (inverts reconcile-before-classify, seam rule 1); hand the
+loop the raw cause plus a classifier function (puts a NATS-shaped `unknown` into
+a carrier-generic module and makes the combinator classify, which A-7 forbids).
+Why: the mint is where a cause the pinned client never raised is rethrown as the
+defect it is (DEV-735), so calling it eagerly would kill a merge whose read-back
+already carries the delta — a defect where the shipped loop returns success. The
+thunk keeps both orders: reconcile before classify, and defect-at-the-mint.
+**Load-bearing? yes** — it is two rulings' ordering held in one shape, and
+`TransportDefects.test.ts`'s `genBody` seam is transcribed from it.
+
+### T4. `MergeDiscipline` becomes the combinator's, and the cell keeps an alias
+
+Decided: the seam is `internal/cas.ts`'s `MergeDiscipline<A>`;
+`internal/cells.ts` exports `MergeDiscipline` as its instantiation at the
+observation set and keeps `lawfulMergeDiscipline`, `byteEqualityReconciliation`,
+`lastWriterWinsMerge`, and `makeCellServiceWith` exactly where they were.
+Alternatives: leave the interface in `cells.ts` and have the loop take a
+structurally-typed record (the seam then has no home and the second carrier
+copies the interface); move the disciplines into `cas.ts` too (they are the cell
+carrier's specific behaviours, and the negative-control files import them from
+the adapter). Why: the two committed controls and the wall are the regression
+evidence for this extraction, so their import paths and their build shape had to
+survive it untouched — they did, with no edit to either control.
+**Load-bearing? yes** — an extraction that moved those imports would have
+rewritten its own witness.
+
+### T5. Internal-first, and no revision reaches the public seam
+
+Decided: `casJoinLoop` ships under `src/internal/`, is exported from no barrel,
+and `CellState` is unchanged — revisions stay inside the adapter, where
+`readState` pairs a decoded value with `KvEntry.revision` and nothing else sees
+one. Alternatives: promote the combinator to a public lawful surface now; surface
+`Versioned<A>` as the contract's original sketch proposed. Why: G-2 ships this
+internal-first and says publication is a separate later decision, and the
+`Versioned` sketch was superseded by the shipped `CellState` before this ticket
+existed. A public combinator would also need its law tests and its own JSDoc
+contract under ADR-0010, which is exactly the decision G-2 deferred.
+**Load-bearing? yes** — it bounds what this ticket added to the public surface to
+`Cell.replica` and `Cell.CellReplica`, and nothing else.
+
+### T6. The extraction's license is the kernel ratification, not a second consumer
+
+Decided: the module says in its own header that the second join consumers —
+directory bind, admission facts, memory cells — are chartered by the ratified
+G36/kernel rulings and are NOT shipped, so what licenses extracting this seam is
+the kernel ratification (`docs/design/2026-08-18-plait-kernel-algebra.md` §4.2
+names `casJoinLoop` as `join`'s runtime carrier), not a second adapter in this
+tree. The bit-union carrier in `test/Cas.test.ts` is a fixture and says so; it
+does not discharge this sentence. Alternatives: ship the extraction silently on
+"we will need it" (the hypothetical-seam failure FH-2 names); build a second
+consumer inside this ticket to earn it (unratified machinery, and outside the
+ticket's scope). Why: one adapter today would otherwise make this a hypothetical
+seam, and the honest form of that is to name the license instead of implying a
+consumer that does not exist. **Load-bearing? yes** — it is the sentence a
+reviewer checks the extraction's justification against.
+
+### T7. The three CAS disciplines are never unified
+
+Decided: pre-registered refusal, recorded here and in API log 0026. **Joins**
+retry through `casJoinLoop` because idempotence discharges the ambiguity of a
+lost race (F1) — a repeated delta adds nothing twice. **Registers** reconcile by
+read-back comparison against the one intended record, because outcomes land at
+most once (I2, seam rules 1-2; the shipped `reconcileUpdate`,
+`internal/registers.ts:256-288`). **Anchors** never retry: a lost anchor CAS is a
+fatal detach under the single-live-pump discipline (`lostCas` /
+`lost-anchor-cas`, `internal/anchors.ts:75-86`; dispatch 31 decision 6).
+Line citations are read at head after the DEV-734 spine extraction, which moved
+the numbers the affordances record recorded. Alternatives: route
+registers through the loop with a byte-equality discipline (their reconciliation
+is not a lattice order and their retry is not idempotent); route anchors through
+either loop with `attempts: 1` (an attempt bound that reads as flow control would
+then be carrying an exclusivity assumption). Why: three laws, three behaviours; a
+combinator licensed by F1 cannot be the carrier for a discipline F5 or the detach
+rule licenses, and the resemblance of the three CAS shapes is exactly the trap.
+**Load-bearing? yes** — it is the standing answer to a refactor that will be
+proposed again.
+
+### T8. The replica ships beside the loop, polling-only, with `absorb` effectful
+
+Decided: `Cell.ts` gains `CellReplica` and `replica(initial?)` —
+`current`/`changes`/`absorb` over `SubscriptionRef` — with the lower-bound,
+no-absence, no-durability sentences mandatory in its JSDoc, fed by polling
+`Cells.read`. `absorb` rides `SubscriptionRef.updateEffect`, not `update`.
+Alternatives: put the replica in its own module (the concept module owns its
+concept, API log 0018); make `absorb` pure by asserting the join cannot refuse
+(true on decode-verified observations, and a lie in the type). Why: the replica
+is the extracted loop's read-side sibling and its carrier is this module's;
+`updateEffect` is what the shipped join's structural channel forces, and the
+suite (`test/CellReplica.test.ts`) checks the two theorems A-8b cites by name
+rather than restating them. A watch feed is not licensed by the landed probe
+suite and is not built. **Load-bearing? yes** — the not-claimed list is what stops
+a caller reading "the replica does not contain X" as a fact about the fabric.

@@ -82,8 +82,12 @@ const seams = {
         ? Effect.fail(casRefusal)
         : Effect.fail(mint(operation, raised)))),
   /**
-   * `Effect.gen` body — 4 sites, transcribed from internal/cells.ts:279-284,
+   * `Effect.gen` body — 4 sites, transcribed from internal/cas.ts:205-209,
    * where a read-back precedes the mint and the CAS code is consulted first.
+   * That body was the cell adapter's until DEV-737 extracted it; the shape is
+   * unchanged, and the mint now arrives as the adapter's thunk (the loop calls
+   * it exactly where `cells.ts` used to call `transportRefusal` itself), so a
+   * defect still dies at this seam rather than at the write.
    */
   genBody: (mint: typeof registersRefusal, operation: string, cause: unknown) =>
     Effect.gen(function* () {

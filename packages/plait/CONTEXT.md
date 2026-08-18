@@ -100,7 +100,24 @@ Lean carrier's own comparator order is a different order and is never compared.
 Read the cell, join the delta locally, CAS at the observed revision, and on a
 lost race re-read and re-merge. A read-back that already carries the delta is
 success, whether this append landed or a rival's join subsumed it. Termination
-is liveness and is never claimed; convergence of the value is F1.
+is liveness and is never claimed; convergence of the value is F1. The loop is
+one module — `casJoinLoop` — shared by every lattice carrier; what a carrier
+supplies is its join, its empty state, its identity, its reads and writes, and
+the absence it refuses when the attempt bound runs out.
+
+**Merge discipline**:
+The two steps of that loop a negative control may replace: `next`, the state a
+delta writes over the current state, and `reconciled`, whether a read-back after
+a failed CAS carries the delta. The pre-CAS guard is deliberately outside the
+seam, so a control swaps exactly one behaviour and shares the rest by
+construction.
+
+**Local replica**:
+One process's join of everything it has observed, mirrored from a cell by
+polling. It is a lattice LOWER BOUND — "at least this", never "exactly this",
+and never "not present anywhere" — so it answers no absence question, carries no
+durability role, and a subscriber that misses intermediate values loses nothing
+because the latest join absorbs every state it skipped.
 
 **Payload seam**:
 The catalog-internal read of a cataloged value's bytes, under

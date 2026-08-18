@@ -39,15 +39,20 @@ fenced register over one file-backed, single-replica JetStream server.
 - `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
   resolves it and re-derives its digest. Encode is total and publishes nothing;
   `PublishingOf` is the explicit emit path.
-- `Cell` owns lattice cells: the join, the merge-then-`update(rev)` write loop
-  over the ruled `flb-fab-cell` bucket, and nothing else.
+- `Cell` owns lattice cells: the join, the cell service over the ruled
+  `flb-fab-cell` bucket, and the local replica — one process's join as
+  `current`/`changes`/`absorb`, a lower bound that answers no absence question
+  and carries no durability role.
 - `ContextProgram` owns the selector/renderer/volatility declaration shapes.
   There is no assembly executor and no F7 claim.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
-- `internal/cells` owns the cell bucket's shape check, CAS reconciliation, and
-  re-merge loop; `internal/refusals` owns the schema-issue bridge that
-  `Refusal.decodeRefusing` is the single public door to.
+- `internal/cas` owns the class-(a) write path: the bounded
+  merge-then-`update(rev)` loop, its reconcile-before-classify order, and the
+  discipline seam a negative control swaps exactly one step of. `internal/cells`
+  owns the cell bucket's shape check, key law, observation codec, and the
+  carrier it binds into that loop; `internal/refusals` owns the schema-issue
+  bridge that `Refusal.decodeRefusing` is the single public door to.
 - `internal/pump` owns positioned durable records, explicit ack ordering, the
   bounded successor buffer, and durable pull consumers. `internal/anchors`
   owns the anchor KV adapter and fatal lost-CAS detach.
@@ -120,6 +125,15 @@ reconciliation rows. All three traces are executed and byte-compared
 `negative-controls/cell-retry-boundary.trace.json`,
 `negative-controls/cell-byte-equality-mutant.trace.json`); un-mutating either
 control reds its own rows.
+
+Beneath that wall, two ordinary suites: the extracted loop's mechanics over an
+in-memory substrate (`test/Cas.test.ts` — the pre-CAS guard, the
+reconcile-before-classify order, the bound as a parameter), and the local
+replica's own (`test/CellReplica.test.ts` — absorbing never shrinks the local
+join, and the derived order is observation-set inclusion, the shapes
+`cell_absorb_inflationary` and `cell_le_iff_subset` describe). Both are tests of
+contract prose and claim nothing about the model; the live wall above is what
+holds the write path's behaviour still.
 
 What the reconciliation rows do NOT claim: they classify a bounded RESULT under
 an adversarial but finite monotone schedule. They do not make subsumption safer
