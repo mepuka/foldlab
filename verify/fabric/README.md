@@ -21,8 +21,9 @@ Wall here: `./run.sh` — the theorem roster, the axiom-footprint sweep, every
 control re-executed and diffed against its committed trace, and byte-identical
 re-emission of the corpus; `--self-test` checks the diff machinery still fails
 when it should, and CI runs both per push
-(`.github/workflows/lean-gates.yml`). Wall there: `bun run test:walls` in
-`packages/plait`.
+(`.github/workflows/lean-gates.yml`). Wall there: both halves of the
+`packages/plait` battery — `bun run test:walls` for the rows that need a broker,
+`bun run test:fast` for the 11 pure-algebra vectors that do not.
 
 One level deeper: `Fabric/Definitions.lean` for the objects and executable
 functions, `Fabric/Laws.lean` for statements only, `Fabric/Proofs.lean` for

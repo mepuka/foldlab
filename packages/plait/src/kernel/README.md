@@ -1,25 +1,25 @@
 # kernel — the language: corpus, door, programs, and wire grammar
 
-The one language the estate speaks. A Lean model emits a conformance corpus;
-this directory is that corpus's home in the runtime — the closed tables (kinds,
-hole stages, taught refusals, sort brands), the interchange schemas, the
-program builder, the admission-door seam, and the wire grammar. No door ships
-yet: `KernelDoor.ts` is the seam's type, and the reference door under
-`../../test/` is what the conformance replay targets.
+The one language the estate speaks. A Lean model emits a conformance corpus and
+this directory is that corpus's home in the runtime — its home, not yet its
+whole projection, and the first standing law makes that gap the point. Emitted:
+`KernelTables.generated.ts` (kinds, hole stages, taught refusals, sort brands)
+and `KernelBuilder.generated.ts`. Staged debt under it, being hand-written:
+`Wire.ts`, `Subjects.ts`, `KernelDoor.ts`, `KernelCorpusSchemas.ts`,
+`ContextProgram.ts`, and half of `KernelSchemas.generated.ts` — its own header
+says the record schemas re-export the file's hand-written grammar. No door ships
+yet; the reference door under `../../test/` is what the replay targets.
 
-Machine-generated: `KernelTables.generated.ts`, `KernelSchemas.generated.ts`,
-and `KernelBuilder.generated.ts`, all three from
-`../../fixtures/kernel-conformance.ndjson` — emitted by `verify/unity`'s
-emitter out of the `verify/kernel` model. Each names its own command in its own
-header; from `packages/plait`, regenerate with `bun run generate:kernel-tables`
-(likewise `-schemas`, `-builder`), and `generate:kernel-prose` renders the
-prose projection under `docs/generated/`. Never hand-edit a kind, a rank, a
-taught law, or a repair: a hand-typed table is drift with a green gate.
+The emitted three come from `../../fixtures/kernel-conformance.ndjson`, which
+`verify/unity`'s emitter writes out of the `verify/kernel` model. From
+`packages/plait`: `bun run generate:kernel-tables` (likewise `-schemas`,
+`-builder`), and `generate:kernel-prose` for the prose under `docs/generated/`.
+Never hand-edit a kind, a rank, a taught law, or a repair.
 
 Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
-a door whose refuse-everything mutant is what makes a pass evidence. Those four
-checks and `check:builder-control` are not yet reached by `bun run gates`
-(DEV-799 finding); run them by hand until they are.
+a door whose refuse-everything mutant makes a pass evidence. Those four and
+`check:builder-control` are unreached by `bun run gates` (DEV-799 finding); run
+them by hand — and `check:builder-control` is RED here on a moved trace.
 
-One level deeper: the corpus file itself, then `verify/kernel/README.md`.
+One level deeper: the corpus file, then `../../../../verify/kernel/README.md`.

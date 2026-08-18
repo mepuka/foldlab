@@ -11,14 +11,15 @@ type-level walk.
 
 Nothing in this directory is machine-generated.
 
-Wall: `bun run test:walls` — the substrate suites that pin what the broker
-actually does (ordered consumers, KV watch semantics, the object store,
-transport defects, pump backpressure) — plus `bun run check:parity-control`,
-whose planted field-drop mutant is refuted on
-`../../negative-controls/SubstrateParity.field-drop.trace.txt`. What keeps
-`cas.ts` honest is the pair of cell merge-discipline mutants beside it, each
-the shipped loop with exactly one step replaced.
+Wall: two of them, and which one runs a suite is derived rather than chosen —
+`../../scripts/run-test-group.ts` puts a file in the wall group exactly when it
+imports `./NatsHarness.js`. `bun run test:walls` brings up a `nats-server` and
+pins what the broker really does (ordered consumers, KV watch semantics, the
+object store), with `bun run check:parity-control` refuting a planted field-drop
+mutant on `../../negative-controls/SubstrateParity.field-drop.trace.txt`. The
+brokerless suites ride `bun run test:fast` instead, pinning adapter behaviour
+against constructed client values: transport defects and pump backpressure.
 
 One level deeper: each module's `@module` header; `../../CONTEXT.md` for the
-terms these adapters implement; `../planes/README.md` for the public seams
-they serve.
+terms these adapters implement; `../planes/README.md` for the public seams they
+serve, which is also the way down to the kernel corpus.

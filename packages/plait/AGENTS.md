@@ -7,7 +7,8 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first.
 One hop per level. Root `AGENTS.md` carries the standing estate laws, this file
 carries the package's, and each plane directory under `src/` carries a README
 saying what that layer is, what is machine-generated in it, how to regenerate
-that, and which wall proves it — then points one level deeper again.
+that, and which wall proves it — then points one level deeper, down the plane
+order, so that any descent lands on `src/kernel/` within three hops.
 
 - [`src/truth/`](src/truth/README.md) — the vocabulary every sentence speaks
 - [`src/kernel/`](src/kernel/README.md) — the language: corpus, door, programs,

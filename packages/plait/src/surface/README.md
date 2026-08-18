@@ -15,11 +15,11 @@ and construct signature with the error channel it carries. Regenerate from
 command, its second the authority the manifest claims.
 
 Wall: `bun run check:public-effects` re-emits the declarations and diffs that
-manifest, failing on any public Effect whose error channel is not a `Refusal`,
-and `bun run check:type-control` runs the twenty planted tsc controls in
-`../../negative-controls/PublicEffects.*`, each refuted on its own committed
-compiler trace. The CLI's own arm is the divergence control at
-`../../negative-controls/Fold.cli-divergence.trace.txt`.
+manifest, failing on any public Effect whose error channel is not a `Refusal`;
+`bun run check:type-control` runs the twenty planted tsc controls in
+`../../negative-controls/PublicEffects.*`, each refuted on a committed compiler
+trace. The CLI's arm is `../../negative-controls/Fold.cli-divergence.trace.txt`.
 
-One level deeper: `../index.ts` is the module list with a one-line law per
-export; `../../QUICKSTART.md` runs this surface end to end.
+One level deeper, down the plane order: `../carriage/README.md`, the clients
+this surface stands on. Beside it, `../index.ts` is the module list with a
+one-line law per export; `../../QUICKSTART.md` runs the surface end to end.
