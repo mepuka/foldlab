@@ -1,0 +1,9 @@
+name = "kernel"
+defaultTargets = ["Kernel", "control"]
+
+[[lean_lib]]
+name = "Kernel"
+
+[[lean_exe]]
+name = "control"
+root = "ControlMain"

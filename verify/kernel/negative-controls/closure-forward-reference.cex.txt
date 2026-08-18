@@ -1,0 +1,1 @@
+control=closure-forward-reference;candidate=never-admitted-referent;reason:forward-reference|law:pins name already-admitted digests (c7_pin_well_founded)|repair:declare the referent first; the reference graph is a DAG by admission order;verdict=refuted

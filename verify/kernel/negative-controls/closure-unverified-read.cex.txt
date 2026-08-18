@@ -1,0 +1,1 @@
+control=closure-unverified-read;candidate=trusted-asserted-bytes;reason:unverified-read|law:a decode re-derives the digest of what it fetched (verify-on-read)|repair:resolve and let the door re-derive; absence is retryable, a mismatch is structural;verdict=refuted

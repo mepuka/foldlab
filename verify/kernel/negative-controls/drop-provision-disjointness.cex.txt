@@ -1,0 +1,1 @@
+control=drop-provision-disjointness;vector=two-arrival-orders;lawful-left=1:10|2:20;lawful-right=1:10|2:20;mutant-left=1:10|2:_;mutant-right=1:99|2:_;verdict=refuted

@@ -1,0 +1,1 @@
+control=closure-clock-read;candidate=fold-carrying-wall-clock;reason:clock-read|law:the fold carrier has no clock parameter (f11_query_deterministic)|repair:emit the claimed time as a tick fact on an evidence lane; schedule through a declared schedule value;verdict=refuted

@@ -1,0 +1,1 @@
+control=closure-absence-trigger;candidate=on-absence-production;reason:absence-trigger|law:the trigger grammar is closed at five monotone productions (f10_stability)|repair:route acting-on-silence through the deadline seat: a fenced decide fed by tick facts;verdict=refuted

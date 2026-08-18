@@ -1,0 +1,1 @@
+control=closure-unfenced-decide;candidate=tokenless-commit;reason:unfenced-decide|law:only a fenced token commits (at_most_one_landed_commit)|repair:hold the register's token and commit with it; grant and renew are runtime liveness, not grammar;verdict=refuted
