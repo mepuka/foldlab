@@ -25,6 +25,7 @@ import {
   acquireConnection,
   teachRetryOperation,
   transportRefusalFor,
+  type TransportTerms,
 } from "./transport.js"
 
 const fabricSubjects = [
@@ -44,13 +45,15 @@ const StreamShape = Schema.Struct({
   }),
 })
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "transport-unavailable",
   law: "Transport absence may be retried; structural envelope evidence may not.",
   expected: "the pinned local NATS operation to be available",
   next: teachRetryOperation,
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const streamShapeRefusal = (got: string): Refusal =>
   structuralRefusal({

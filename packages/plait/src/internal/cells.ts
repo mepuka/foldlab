@@ -25,6 +25,7 @@ import {
   isCasRefusal,
   teachRetryOperation,
   transportRefusalFor,
+  type TransportTerms,
 } from "./transport.js"
 
 /**
@@ -54,13 +55,15 @@ const StoredCell = Schema.Array(Schema.suspend(() => Observation))
 const decoder = new TextDecoder()
 const cellPattern = /^[^.*>\s]+$/u
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "cell-transport-unavailable",
   law: "Transport absence may be retried; lattice-law refusals may not.",
   expected: "the pinned local NATS KV operation to be available",
   next: teachRetryOperation,
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 /** One taught repair per structural law; every refusal names its legal next step. */
 const teachCellKey: ReadonlyArray<Next> = [{

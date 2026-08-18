@@ -19,7 +19,7 @@ import {
   structuralRefusal,
   type Refusal,
 } from "../Refusal.js"
-import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
+import { KvFailure, isCasRefusal, transportRefusalFor, type TransportTerms } from "./transport.js"
 
 export interface LoadedAnchor<State> {
   readonly anchor: AnchorValue
@@ -45,8 +45,8 @@ export interface AnchorStore {
   ) => string
 }
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "anchor-transport-unavailable",
   law: "Transport absence may be retried; anchor revision conflicts may not.",
   expected: "the pinned local NATS KV operation to be available",
@@ -54,7 +54,9 @@ export const transportRefusal = transportRefusalFor({
     subject: "Folds.deploy",
     note: "A transport refusal leaves this anchor write's outcome unknown. Do not retry it in place: detach and redeploy - resumption reads the landed anchor back, and a retried CAS that already landed refuses as lost-anchor-cas by design.",
   }],
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const malformed = (
   path: ReadonlyArray<string>,

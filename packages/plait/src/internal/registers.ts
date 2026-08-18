@@ -20,6 +20,7 @@ import {
   acquireConnection,
   isCasRefusal,
   transportRefusalFor,
+  type TransportTerms,
 } from "./transport.js"
 
 /**
@@ -59,13 +60,15 @@ const teachTransportReadBack: ReadonlyArray<Next> = [{
   note: "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it.",
 }]
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "register-transport-unavailable",
   law: "Transport absence may be retried; fencing-law refusals may not.",
   expected: "the pinned local NATS KV operation to be available",
   next: () => teachTransportReadBack,
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const lawRefusal = (
   kind: StructuralRefusalKind,

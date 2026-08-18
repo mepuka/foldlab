@@ -13,10 +13,14 @@ import {
   preparePartitionPump,
   type MutableFoldScoreboard,
 } from "./pump.js"
-import { acquireConnection, transportRefusalFor } from "./transport.js"
+import {
+  acquireConnection,
+  transportRefusalFor,
+  type TransportTerms,
+} from "./transport.js"
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "fold-transport-unavailable",
   law: "Transport absence may be retried; declared fold laws may not.",
   expected: "the pinned local NATS operation to be available",
@@ -24,7 +28,9 @@ export const transportRefusal = transportRefusalFor({
     subject: "Folds.deploy",
     note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
   }],
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const snapshot = (scoreboard: MutableFoldScoreboard): FoldScoreboard => ({
   messages: scoreboard.messages,

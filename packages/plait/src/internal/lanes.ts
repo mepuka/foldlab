@@ -19,15 +19,19 @@ import { partition } from "../Lane.js"
 import { structuralRefusal, type Refusal } from "../Refusal.js"
 import { evidenceSubject } from "../Subjects.js"
 import { encodeEnvelope, type Envelope } from "../Wire.js"
-import { acquireConnection, transportRefusalFor } from "./transport.js"
+import {
+  acquireConnection,
+  transportRefusalFor,
+  type TransportTerms,
+} from "./transport.js"
 
 const messageIdWindowNanos = 2 * 60 * 1_000_000_000
 
 export const laneStreamName = (lane: DeclaredLane<unknown>, part: number): string =>
   `FLB_FAB_EV_${lane.digest}_${part}`
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "lane-transport-unavailable",
   law: "Transport absence may be retried; declared lane shape violations may not.",
   expected: "the pinned local NATS JetStream operation to be available",
@@ -35,7 +39,9 @@ export const transportRefusal = transportRefusalFor({
     subject: "Lane.emit",
     note: "Reconnect and re-emit; F2 makes duplicate delivery harmless, and the envelope digest is the message id.",
   }],
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const shapeRefusal = (
   lane: DeclaredLane<unknown>,

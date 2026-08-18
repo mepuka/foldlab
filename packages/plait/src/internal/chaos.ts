@@ -28,7 +28,11 @@ import {
   type PositionedEvent,
   type SuccessorMachine,
 } from "./successors.js"
-import { acquireConnection, transportRefusalFor } from "./transport.js"
+import {
+  acquireConnection,
+  transportRefusalFor,
+  type TransportTerms,
+} from "./transport.js"
 
 export interface RedeliveryChaosOptions<Event, State, Partitions extends number> {
   readonly servers: string | ReadonlyArray<string>
@@ -52,8 +56,8 @@ export interface RedeliveryChaosResult {
   readonly anchorWrites: number
 }
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "chaos-transport-unavailable",
   law: "The chaos schedule uses only the real durable-consumer protocol for redelivery.",
   expected: "the pinned local NATS consumer operation to be available",
@@ -61,7 +65,9 @@ export const transportRefusal = transportRefusalFor({
     subject: "plait chaos",
     note: "Restore the consumer protocol and re-run the measurement against the same pinned span.",
   }],
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const nextMessage = (
   consumer: Consumer,

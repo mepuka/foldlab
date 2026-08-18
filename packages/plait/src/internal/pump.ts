@@ -28,7 +28,7 @@ import {
   type PositionedEvent,
   type SuccessorMachine,
 } from "./successors.js"
-import { transportRefusalFor } from "./transport.js"
+import { transportRefusalFor, type TransportTerms } from "./transport.js"
 
 export const PUMP_BUFFER_BOUND = 256
 export const PUMP_ACK_WAIT_NANOS = 1 * 1_000_000_000
@@ -52,8 +52,8 @@ export interface MutableFoldScoreboard {
   refusals: Record<string, number>
 }
 
-/** Exported for the spine wall; no other `src` module imports it. */
-export const transportRefusal = transportRefusalFor({
+/** This adapter's transport terms; the spine wall derives its table from them. */
+export const transportTerms: TransportTerms = {
   kind: "fold-transport-unavailable",
   law: "Transport absence may be retried; consumer and checkpoint shape violations may not.",
   expected: "the pinned local NATS durable-consumer operation to be available",
@@ -61,7 +61,9 @@ export const transportRefusal = transportRefusalFor({
     subject: "Folds.deploy",
     note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
   }],
-})
+}
+
+const transportRefusal = transportRefusalFor(transportTerms)
 
 const consumerShapeRefusal = (
   foldDigest: string,

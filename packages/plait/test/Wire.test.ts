@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { Effect } from "effect"
+import { Effect, Tracer } from "effect"
 
 import {
   decodeEnvelope,
@@ -16,6 +16,19 @@ const frame = (extra: string): Uint8Array =>
     `{"v":0,"kind":"emit","lane":"${digest}","key":"entity-1","holder":"seat-a","body":{"value":1},"pins":[]${extra}}`,
   )
 
+/** Collects every span a program emits, per the pin's own tracer example. */
+const spanNamesOf = async (program: Effect.Effect<unknown, unknown>): Promise<Array<string>> => {
+  const names: Array<string> = []
+  const tracer = Tracer.make({
+    span(options) {
+      names.push(options.name)
+      return new Tracer.NativeSpan(options)
+    },
+  })
+  await Effect.runPromise(Effect.provideService(program, Tracer.Tracer, tracer))
+  return names
+}
+
 describe("decodeEnvelope", () => {
   test("carries holder verbatim and re-derives the envelope digest", async () => {
     const decoded = await Effect.runPromise(decodeEnvelope(frame("")))
@@ -24,6 +37,17 @@ describe("decodeEnvelope", () => {
     expect(String(decoded.digest)).toBe(
       "bb4f3e5e257ca09b067986bbcb6fa72f9b868eea9d4dff92afd94e2876aa795a",
     )
+  })
+
+  test("still emits the Digest.digestOf child span it emitted before B-5", async () => {
+    // B-5 removed one redundant canonicalization and nothing else. A trace is
+    // observable, so the decode's span tree must not change shape: the digest
+    // door is `Effect.fn("Digest.digestOf")` deliberately, under the old name.
+    const names = await spanNamesOf(decodeEnvelope(frame("")))
+
+    expect(names).toContain("Wire.decodeEnvelope")
+    expect(names).toContain("Canonical.canonicalBytes")
+    expect(names.filter((name) => name === "Digest.digestOf").length).toBe(1)
   })
 
   test("refuses an excess property with the closed-envelope law", async () => {

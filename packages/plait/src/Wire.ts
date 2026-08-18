@@ -251,10 +251,11 @@ export const decodeEnvelope = Effect.fn("Wire.decodeEnvelope")(function* (
 
   yield* validateBody(decoded.success.body)
   const bytesCanonical = yield* canonicalBytes(decoded.success)
+  const digest = yield* digestOfCanonicalBytes(bytesCanonical)
   return {
     envelope: decoded.success,
     bytes: bytesCanonical,
-    digest: digestOfCanonicalBytes(bytesCanonical),
+    digest,
   }
 })
 
