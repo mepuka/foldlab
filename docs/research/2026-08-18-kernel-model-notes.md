@@ -574,6 +574,32 @@ posture.
   isomorphic to the positioned reading but smuggles "timestamp"
   vocabulary where the estate has positions and tokens). Reversal:
   additive; the fold form and its laws stand unchanged either way.
+  Disposition sharpened in operator review — the surface, if adopted,
+  is exactly three things and nothing more: a ruling in the C10 shape
+  ("environments are directories" — one sentence, zero new
+  machinery); one well-known declared reduction (the greatest-position
+  algebra as a cataloged algebra declaration, outside the language
+  declaration — the no-standard-library fence holds); and builder
+  sugar in the TS projection compiling to the composition,
+  dual-constructed, inheriting the correspondence theorem. No new
+  generator, no new kind, no new carrier; lands WITH the K-4 builder
+  slice, whose executing nodes are its first consumer.
+- **KM-16 — path handling: iterated resolution from explicit roots,
+  and the no-ambient-root fence.** Raised by the operator: the
+  positioned reading suggests natural path handling. It does — a
+  hierarchical path is iterated directory resolution (each hop a
+  head-relative read; nesting is DAG-free by admission), and lexical
+  scoping, provision shadowing, and path shadowing are one algebra:
+  nearest-wins along an ordered chain, the correspondence theorem's
+  shape. The fence that keeps it lawful: paths are data (a petname
+  list) resolved from an explicitly named root digest at an anchor —
+  a current-directory is an ambient input, and relative escapes are
+  the implicit context stack the template record refused as
+  unrepresentable. A rootless path belongs on the closure list beside
+  the clock. Alternatives: a path sort in the grammar (premature — no
+  law distinguishes a path from a petname list plus a root); ambient
+  roots for ergonomics (refused on the closure discipline).
+  Reversal: additive; nothing ships until a consumer names it.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the
