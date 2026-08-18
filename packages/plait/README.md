@@ -29,8 +29,13 @@ fenced register over one file-backed, single-replica JetStream server.
   floor records the frontier; the successor discipline protects it.
 - `Registers` is the five-action fenced commitment service. Its authoritative
   token is the KV revision-CAS order; holder strings are descriptive only.
-- `Catalog` owns the `Catalog` and `Blobs` services — the two content-addressed
-  stores a resolved reference decodes through.
+- `Catalog` owns the `Catalog` service and the catalog-internal `Payloads`
+  seam — the two content-addressed reads a resolved reference decodes through.
+  Both are unverified by design; `Resolved.resolve` is their one verify door.
+- `Blob` owns the public `Blobs` store — put, verified get, presence — with
+  verification inside the service and absence as a `blob-absent` refusal. Its
+  first backend rides the pin's portable `FileSystem`; the object-store backend
+  waits on DEV-730.
 - `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
   resolves it and re-derives its digest. Encode is total and publishes nothing;
   `PublishingOf` is the explicit emit path.
@@ -127,14 +132,31 @@ inflationary, not on the check.
 What the cell wall does NOT claim: the model-level F1 (already claimed by the
 fabric row); anything about assembly, context values, or F7; agreement between
 the TypeScript canonical-bytes comparator's ORDER and the Lean carrier's own
-comparator (the claim is set equality, which is comparator-independent);
-watch semantics of any kind — no watch surface ships, because the KV watch
-probe suite is not on the substrate gate. All cell claims hold within a fixed
-backing-stream incarnation. Neither `Catalog` nor `Blobs` ships a durable
-layer: the catalog layer is process-local, and the payload layer answers
-absence. The tenth substrate suite now pins the object store's put/get
-integrity, chunk boundaries, delete semantics, and metadata stability, but no
-blob surface ships on it: the pinned client has no ranged read, its whole-object
-digest is checked only when the last chunk arrives, and object metadata is
-written by the client rather than derived by the server — so a reader that
-trusts metadata has verified nothing.
+comparator (the claim is set equality, which is comparator-independent). The
+ninth substrate suite now pins KV watch replay/coalescing, tombstones,
+resume-from-revision, and one same-server reconnect schedule, but no watch
+surface ships yet; any future feed is advisory, `isUpdate` is not an
+initial/live boundary, and silence never proves absence. The tenth substrate
+suite now pins the object store's put/get integrity, chunk boundaries, delete
+semantics, and metadata stability, but no blob surface ships on it: the pinned
+client has no ranged read, its whole-object digest is checked only when the
+last chunk arrives, and object metadata is written by the client rather than
+derived by the server — so a reader that trusts metadata has verified nothing.
+All cell claims hold within a fixed backing-stream incarnation. Neither
+`Catalog` nor `Payloads` ships a durable layer: the catalog layer is
+process-local, and the internal payload seam answers absence — the probed
+object store remains advisory evidence, never a backing store.
+
+What the blob conformance suite claims: that a `BlobsService` layer round-trips
+its bytes under the digest it derived, observes absence as `blob-absent`,
+refuses `digest-mismatch` on a store corrupted behind its back, is idempotent
+by content addressing, answers presence head-relative, and holds two distinct
+payloads at once — the last law is what a store addressed by a truncation of
+the digest rather than the whole of it fails, and every other law lets such a
+store through. It runs against the filesystem backend over the OS filesystem.
+The planted control per law is memory-backed, deliberately: a control has to
+drop one law and keep the rest, which is written directly rather than by
+deforming a real backend. It does NOT claim power-durability — the pin's `writeFile` does not fsync, so the
+backend is crash-durable only — and it exercises no platform layer: the
+application chooses `BunFileSystem` or `NodeFileSystem`, and that choice is the
+application's to verify.

@@ -7,7 +7,10 @@ export * as Algebra from "./Algebra.js"
 /** Durable fold checkpoint facts and their contiguous-frontier transition. */
 export * as Anchor from "./Anchor.js"
 
-/** The content-addressed value store and the payload store, as services. */
+/** The public content-addressed blob store: put, verified get, presence. */
+export * as Blob from "./Blob.js"
+
+/** The content-addressed value store and its internal payload seam. */
 export * as Catalog from "./Catalog.js"
 
 /** Lattice cells: the join, the merge-write loop, and the cell service. */

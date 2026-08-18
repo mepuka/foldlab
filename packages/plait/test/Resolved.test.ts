@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Layer, Option, Schema } from "effect"
 
-import { Blobs, Catalog, substrateLayer, type CatalogService } from "../src/Catalog.js"
+import { canonicalBytes } from "../src/Canonical.js"
+import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/Catalog.js"
 import { digestOf, type Digest } from "../src/Digest.js"
 import { decodeRefusing } from "../src/Refusal.js"
 import { PublishingOf, ResolvedOf, publish, resolve } from "../src/Resolved.js"
@@ -58,7 +59,7 @@ describe("resolved references", () => {
       decodeRefusing(Envelope)({ lane: "l", body: termsDigest }).pipe(
         Effect.provide(Layer.mergeAll(
           Catalog.testLayer(tamperedCatalog({ alpha: "TAMPERED" })),
-          Blobs.layer,
+          Payloads.layer,
         )),
         Effect.flip,
       ),
@@ -80,7 +81,7 @@ describe("resolved references", () => {
     }
     const refusal = Effect.runSync(
       decodeRefusing(Envelope)({ lane: "l", body: "not-a-digest" }).pipe(
-        Effect.provide(Layer.mergeAll(Catalog.testLayer(counting), Blobs.layer)),
+        Effect.provide(Layer.mergeAll(Catalog.testLayer(counting), Payloads.layer)),
         Effect.flip,
       ),
     )
@@ -89,25 +90,54 @@ describe("resolved references", () => {
     expect(asked).toBe(0)
   })
 
-  test("a payload resolves through the blob store and is re-derived there too", () => {
+  test("a payload resolves through the internal seam and is re-derived there too", () => {
     const bytes = new TextEncoder().encode(JSON.stringify(terms))
-    const blobsOnly = Layer.mergeAll(
+    const payloadsOnly = Layer.mergeAll(
       Catalog.testLayer({
         get: () => Effect.succeed(Option.none()),
         put: (value) => digestOf(value),
       }),
-      Blobs.testLayer({
+      Payloads.testLayer({
         get: (digest: Digest) =>
           Effect.succeed(digest === termsDigest ? Option.some(bytes) : Option.none()),
       }),
     )
-    expect(Effect.runSync(resolve(termsDigest).pipe(Effect.provide(blobsOnly)))).toEqual(terms)
+    expect(Effect.runSync(resolve(termsDigest).pipe(Effect.provide(payloadsOnly)))).toEqual(terms)
+  })
+
+  test("a lying payload layer is refused at the one verify door", () => {
+    // T18's control, written rather than argued. The payload seam is left
+    // unverified precisely so a layer can lie beneath it; this is the row that
+    // spends that freedom. The store answers `termsDigest` with the canonical
+    // bytes of a different wire value, and `resolve` — the one verify door on
+    // this path — re-derives and refuses. The Catalog leg already had such a
+    // row; the payload leg had none.
+    const otherTerms = { alpha: "ONE", beta: "two" }
+    const otherBytes = Effect.runSync(canonicalBytes(otherTerms))
+    const otherDigest = Effect.runSync(digestOf(otherTerms))
+    expect(otherDigest).not.toBe(termsDigest)
+
+    const lyingPayloads = Layer.mergeAll(
+      Catalog.testLayer({
+        get: () => Effect.succeed(Option.none()),
+        put: (value) => digestOf(value),
+      }),
+      Payloads.testLayer({ get: () => Effect.succeed(Option.some(otherBytes)) }),
+    )
+    const refusal = Effect.runSync(
+      resolve(termsDigest).pipe(Effect.provide(lyingPayloads), Effect.flip),
+    )
+    expect(refusal.sort).toBe("structural")
+    expect(refusal.kind).toBe("digest-mismatch")
+    expect(refusal.expected).toBe(termsDigest)
+    expect(refusal.got).toBe(otherDigest)
+    expect(refusal.next.length).toBeGreaterThan(0)
   })
 
   test("service channels propagate through nesting, and encoding stays empty", () => {
     type DecodeServices = Schema.Codec.DecodingServices<typeof Frame>
     type EncodeServices = Schema.Codec.EncodingServices<typeof Frame>
-    const decodeProof: DecodeServices extends Catalog | Blobs ? true : false = true
+    const decodeProof: DecodeServices extends Catalog | Payloads ? true : false = true
     const encodeProof: [EncodeServices] extends [never] ? true : false = true
     expect(decodeProof && encodeProof).toBe(true)
 

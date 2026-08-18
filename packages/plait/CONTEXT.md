@@ -102,6 +102,19 @@ lost race re-read and re-merge. A read-back that already carries the delta is
 success, whether this append landed or a rival's join subsumed it. Termination
 is liveness and is never claimed; convergence of the value is F1.
 
+**Payload seam**:
+The catalog-internal read of a cataloged value's bytes, under
+`Resolved.resolve` and verified there. Get-only, `Option`-returning, and
+unverified by design: it exists so a control can lie beneath the one verify
+door. It is not a blob store and application code never reaches for it.
+
+**Blob store**:
+The public content-addressed store of opaque byte payloads: put derives the
+digest over the exact bytes handed in, get re-derives it over the bytes fetched
+and refuses on disagreement, and presence is head-relative. Verification is
+inside the service, absence is a `blob-absent` refusal, and a backend is a
+`Layer` written against capabilities — never against a vendor's vocabulary.
+
 **Resolved reference**:
 A digest whose decode fetches the value and re-derives its identity before
 returning it. Decoding requires the catalog and payload services from the
@@ -110,6 +123,13 @@ environment; encoding requires nothing and publishes nothing.
 **Publication**:
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
+
+**Advisory**:
+The standing of a KV watch feed. An arriving entry is a hint that state has
+moved, joined like any other observation; the feed's silence, its ordering,
+and its `isUpdate` flag carry no information. Nothing advisory may answer
+"does this exist" or "has this stopped" — absence is read head-relative from
+the store, never inferred from a feed.
 
 **Context program**:
 The cataloged declaration of an ordered list of (selector, renderer) pairs,

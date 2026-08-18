@@ -28,11 +28,29 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   ordering parameter, and no conflict callback; a lost CAS race re-reads and
   re-merges. A cell surface that takes a rewrite function instead of a delta is
   a finding.
-- No watch surface ships on any KV-backed module until the watch probe suite
-  lands on the substrate gate, and no absence is ever inferred from a watch.
-- Verify-on-read happens at exactly one seam (`Resolved.resolve`). A store
-  service that verifies its own answers cannot be tampered with by a control,
-  so none does.
+- No watch surface ships on any KV-backed module without its own ruled ticket.
+  Probe evidence licenses advisory use and never grants the license to ship —
+  a landed suite discharges no fence by itself. Whatever ships is advisory:
+  `KvWatchEntry.isUpdate` is not an initial/live boundary, and no absence is
+  ever inferred from a watch.
+- Verify-on-read for a *resolved reference* happens at exactly one seam
+  (`Resolved.resolve`), and the two stores under it — `Catalog` and the
+  catalog-internal `Payloads` seam — stay unverified so a lying layer can be
+  supplied under them (T18). The *public* blob store (`Blob.ts`) is the one
+  place verification lives inside the service: its control flips bytes on the
+  substrate behind the API, so verified-get is testable without any unverified
+  public read path. Adding a second verify door to `Catalog`/`Payloads`, or an
+  unverified read to `Blob`, is a finding either way.
+- Public absence is an `AbsenceRefusal`, never `Option`. `Option.none` is
+  invisible to `retryAbsence` and carries no head-relative vocabulary; the
+  `Option` on the internal payload seam is plumbing and stays there.
+- No ranged or partial blob read ships until the chunk-manifest identity law
+  exists: a byte range cannot re-derive the whole-value digest, so a partial
+  read cannot verify on read. `get` is whole-value on every backend.
+- A blob backend ships only with the backend-agnostic conformance suite green,
+  and with a planted control per law. The probe gate binds the object-store
+  backend only — the filesystem backend's substrate is the OS filesystem and
+  its wall is that suite; the NATS object store waits on its probe.
 - Schema issues never cross a package seam. `internal/refusals` is the whole
   bridge and `Refusal.decodeRefusing` is its only public door; exporting a
   `SchemaIssue`-typed signature diverges the public-surface type-level walk.
