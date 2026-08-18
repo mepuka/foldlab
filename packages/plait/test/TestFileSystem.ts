@@ -18,8 +18,14 @@ import { Effect, FileSystem, Layer, PlatformError } from "effect"
  * behaviour of `BunFileSystem` or `NodeFileSystem` specifically is the
  * application's to verify.
  *
- * Only the operations the store uses are implemented; every other operation
- * keeps `makeNoop`'s refusal, so a store that reached for one would be caught.
+ * Only the operations the store uses are implemented — `makeDirectory`,
+ * `makeTempFile`, `writeFile`, `rename`, `readFile`, `exists`. What an
+ * unimplemented operation does is `makeNoop`'s business, and it is not one
+ * behaviour: most fail `NotFound`, the `makeTemp*` family and `makeDirectory`
+ * die "not implemented", and two answer without failing — `exists()` returns
+ * `false` (FileSystem.ts:846) and `remove()` returns `void` (:885). So a later
+ * backend reaching for most operations is caught, but one reaching for `remove`
+ * is silently accommodated. `exists` is overridden here, so it is moot.
  */
 const attempt = <A>(
   method: string,

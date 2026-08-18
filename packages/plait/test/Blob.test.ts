@@ -153,6 +153,65 @@ const memoryBackend = (
   },
 })
 
+/**
+ * A store that keys on the two-character fan-out prefix instead of the whole
+ * digest — the filesystem backend's layout mistaken for its identity. It still
+ * re-derives on read, so it never hands a caller wrong bytes; what it loses is
+ * whichever of two prefix-sharing payloads was stored first.
+ *
+ * It carries its own memory and its own `corrupt` door because the shared
+ * memory backend's door addresses entries by whole digest, which this store
+ * does not.
+ */
+const prefixAddressedBackend: BlobsBackend = {
+  name: "a store addressed by the two-character fan-out prefix, not the whole digest",
+  open: async () => {
+    const buckets = new Map<string, Uint8Array>()
+    const bucketOf = (digest: Digest): string => digest.slice(0, 2)
+    const service: BlobsService = {
+      put: (bytes) =>
+        Effect.sync(() => {
+          const digest = sha256(bytes)
+          buckets.set(bucketOf(digest), new Uint8Array(bytes))
+          return digest
+        }),
+      get: (digest) =>
+        Effect.suspend((): Effect.Effect<Uint8Array, Refusal> => {
+          const held = buckets.get(bucketOf(digest))
+          if (held === undefined) {
+            return Effect.fail(absenceRefusal({
+              kind: "blob-absent",
+              law: "A blob reads only from a store that holds it.",
+              path: ["blob", digest],
+              got: "absent",
+              expected: digest,
+              next: [{ subject: "blob.put", note: "Put the bytes first." }],
+            }))
+          }
+          const rederived = sha256(held)
+          return rederived === digest ? Effect.succeed(held) : Effect.fail(structuralRefusal({
+            kind: "digest-mismatch",
+            law: "A blob's identity is re-derived over the fetched bytes.",
+            path: ["blob", digest],
+            got: rederived,
+            expected: digest,
+            next: [{ subject: "blob.put", note: "Re-put the original bytes." }],
+          }))
+        }),
+      has: (digest) => Effect.sync(() => buckets.has(bucketOf(digest))),
+    }
+    return {
+      layer: Blobs.testLayer(service),
+      corrupt: async (digest) => {
+        const held = buckets.get(bucketOf(digest))
+        if (held === undefined) throw new Error(`control: nothing is stored at ${digest}`)
+        buckets.set(bucketOf(digest), flipFirstByte(held))
+      },
+      close: async () => {},
+    }
+  },
+}
+
 /** One planted backend per law, each dropping exactly that law. */
 const controls: ReadonlyArray<{ readonly backend: BlobsBackend; readonly drops: string }> = [
   {
@@ -253,6 +312,7 @@ const controls: ReadonlyArray<{ readonly backend: BlobsBackend; readonly drops: 
       (base) => ({ ...base, has: () => Effect.succeed(true) }),
     ),
   },
+  { drops: BLOB_LAWS.distinctness, backend: prefixAddressedBackend },
 ]
 
 describe("the conformance suite's negative controls", () => {

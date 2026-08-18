@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Layer, Option, Schema } from "effect"
 
+import { canonicalBytes } from "../src/Canonical.js"
 import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/Catalog.js"
 import { digestOf, type Digest } from "../src/Digest.js"
 import { decodeRefusing } from "../src/Refusal.js"
@@ -102,6 +103,35 @@ describe("resolved references", () => {
       }),
     )
     expect(Effect.runSync(resolve(termsDigest).pipe(Effect.provide(payloadsOnly)))).toEqual(terms)
+  })
+
+  test("a lying payload layer is refused at the one verify door", () => {
+    // T18's control, written rather than argued. The payload seam is left
+    // unverified precisely so a layer can lie beneath it; this is the row that
+    // spends that freedom. The store answers `termsDigest` with the canonical
+    // bytes of a different wire value, and `resolve` — the one verify door on
+    // this path — re-derives and refuses. The Catalog leg already had such a
+    // row; the payload leg had none.
+    const otherTerms = { alpha: "ONE", beta: "two" }
+    const otherBytes = Effect.runSync(canonicalBytes(otherTerms))
+    const otherDigest = Effect.runSync(digestOf(otherTerms))
+    expect(otherDigest).not.toBe(termsDigest)
+
+    const lyingPayloads = Layer.mergeAll(
+      Catalog.testLayer({
+        get: () => Effect.succeed(Option.none()),
+        put: (value) => digestOf(value),
+      }),
+      Payloads.testLayer({ get: () => Effect.succeed(Option.some(otherBytes)) }),
+    )
+    const refusal = Effect.runSync(
+      resolve(termsDigest).pipe(Effect.provide(lyingPayloads), Effect.flip),
+    )
+    expect(refusal.sort).toBe("structural")
+    expect(refusal.kind).toBe("digest-mismatch")
+    expect(refusal.expected).toBe(termsDigest)
+    expect(refusal.got).toBe(otherDigest)
+    expect(refusal.next.length).toBeGreaterThan(0)
   })
 
   test("service channels propagate through nesting, and encoding stays empty", () => {

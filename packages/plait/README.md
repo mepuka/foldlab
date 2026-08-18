@@ -142,9 +142,13 @@ answers absence because no probed substrate stands behind it.
 What the blob conformance suite claims: that a `BlobsService` layer round-trips
 its bytes under the digest it derived, observes absence as `blob-absent`,
 refuses `digest-mismatch` on a store corrupted behind its back, is idempotent
-by content addressing, and answers presence head-relative. It runs against the
-filesystem backend over the OS filesystem, with a planted control per law. It
-does NOT claim power-durability — the pin's `writeFile` does not fsync, so the
+by content addressing, answers presence head-relative, and holds two distinct
+payloads at once — the last law is what a store addressed by a truncation of
+the digest rather than the whole of it fails, and every other law lets such a
+store through. It runs against the filesystem backend over the OS filesystem.
+The planted control per law is memory-backed, deliberately: a control has to
+drop one law and keep the rest, which is written directly rather than by
+deforming a real backend. It does NOT claim power-durability — the pin's `writeFile` does not fsync, so the
 backend is crash-durable only — and it exercises no platform layer: the
 application chooses `BunFileSystem` or `NodeFileSystem`, and that choice is the
 application's to verify.

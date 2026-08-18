@@ -32,6 +32,19 @@ const utf8 = new TextEncoder()
 const ABC = utf8.encode("abc")
 const ABC_DIGEST = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 
+/**
+ * A second payload whose digest agrees with `ABC`'s on its first byte. Both
+ * digests are derived at run time by the store's own `put`; this line pins
+ * bytes, never an answer.
+ *
+ * The prefix agreement is what makes the distinctness law discriminating. A
+ * store that addresses content by a truncation of the digest — the two-
+ * character fan-out the filesystem backend uses for layout, mistaken for
+ * identity — holds only one of these two at a time, and every other law in
+ * this suite still passes on it.
+ */
+const PREFIX_TWIN = utf8.encode("distinct-payload-7")
+
 /** A digest no store holds, used to observe head-relative absence. */
 const NEVER_STORED = Digest.make("0".repeat(64))
 
@@ -62,6 +75,8 @@ export const BLOB_LAWS = {
   verifiedRead: "a corrupted store is refused digest-mismatch, never served",
   idempotence: "put is idempotent by content addressing",
   presence: "has is head-relative presence: false before the put, true after it",
+  distinctness:
+    "two distinct payloads coexist: each get returns its own bytes and each has is true",
 } as const
 
 const refuse = (law: string, detail: string): never => {
@@ -167,6 +182,34 @@ export const blobsConformanceChecks: ReadonlyArray<ConformanceCheck> = [
       const digest = await put(store, ABC)
       if (!(await has(store, digest))) {
         refuse(BLOB_LAWS.presence, "the store denies bytes it acknowledged putting")
+      }
+    },
+  },
+  {
+    law: BLOB_LAWS.distinctness,
+    run: async (store) => {
+      // Every other law exercises one payload in a fresh store, so a store that
+      // is not content-addressed at lookup ships green through all of them.
+      // This is the row that puts two in and asks for both back.
+      const first = await put(store, ABC)
+      const second = await put(store, PREFIX_TWIN)
+      if (first === second) {
+        refuse(BLOB_LAWS.distinctness, `two different payloads were both named ${first}`)
+      }
+      const firstBytes = await get(store, first).catch((cause) =>
+        refuse(BLOB_LAWS.distinctness, `the first payload no longer reads back: ${String(cause)}`)
+      )
+      if (!sameBytes(firstBytes, ABC)) {
+        refuse(BLOB_LAWS.distinctness, "the first payload came back as bytes it was not put with")
+      }
+      const secondBytes = await get(store, second).catch((cause) =>
+        refuse(BLOB_LAWS.distinctness, `the second payload no longer reads back: ${String(cause)}`)
+      )
+      if (!sameBytes(secondBytes, PREFIX_TWIN)) {
+        refuse(BLOB_LAWS.distinctness, "the second payload came back as bytes it was not put with")
+      }
+      if (!(await has(store, first)) || !(await has(store, second))) {
+        refuse(BLOB_LAWS.distinctness, "the store denies one of two payloads it acknowledged")
       }
     },
   },

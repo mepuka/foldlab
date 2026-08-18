@@ -63,9 +63,11 @@ describe("the catalog and its internal payload seam", () => {
   })
 
   test("the internal seam stays unverified: it hands back exactly what it holds", () => {
-    // T18's control, at the seam that keeps it writable. A layer that policed
-    // its own answers could not lie here, and `Resolved.resolve` — the one
-    // verify door for this path — would have nothing to refuse.
+    // Characterization, not a control: it records that the seam does not police
+    // its own answers, which is what leaves a lie writable beneath it. The
+    // control that spends that freedom lives at the verify door —
+    // "a lying payload layer is refused at the one verify door" in
+    // `Resolved.test.ts` — because a refusal is the only thing that can fail.
     const lie = new TextEncoder().encode("not the bytes of any digest asked for")
     const found = Effect.runSync(
       Effect.gen(function* () {

@@ -981,11 +981,11 @@ claim the suite makes.
 
 ### T6. The conformance suite throws plain errors and ships one planted control per law
 
-Decided: `test/BlobsConformance.ts` states five laws whose checks throw `Error`s
+Decided: `test/BlobsConformance.ts` states six laws whose checks throw `Error`s
 rather than calling a test framework's assertions; `blobsConformance` registers
 them against a backend, and `refutedLaws` runs them and returns the laws that
-refused. `Blob.test.ts` plants five backends, each dropping exactly one law,
-plus an unplanted base that must pass all five. Alternatives: write the checks
+refused. `Blob.test.ts` plants one backend per law, each dropping exactly that law,
+plus an unplanted base that must pass every law. Alternatives: write the checks
 with `expect` directly (shorter); assert only that a planted backend fails
 somewhere. Why: a prover that cannot fail proves nothing, and "fails somewhere"
 is the version of that gate which passes when the mutation broke a different law
@@ -1020,3 +1020,49 @@ nobody has measured. The rename also makes `put` quietly self-repairing over a
 store corrupted behind its back, which is a property worth having and not one
 worth claiming: nothing in the suite tests it, so nothing here promises it.
 **Load-bearing? no.**
+
+### T9. The T18 control is written at the verify door, not argued at the seam
+
+Decided: `Resolved.test.ts` gains "a lying payload layer is refused at the one
+verify door" — a `Payloads` layer answering `termsDigest` with the canonical
+bytes of a different wire value, and `resolve` refusing `structural/digest-
+mismatch` with `got` the other value's digest. The row that asserted the seam
+hands back what it holds stays, relabelled as characterization, because it
+records why a lie is writable there and pointing at the control that spends it.
+Alternatives: leave the argument in prose; move the whole thing into the
+Catalog suite. Why: `Layer.succeed` handing back the function it was given is a
+tautology over the fixture — it cannot fail, so it proves nothing, and the
+payload leg had no row that could. The Catalog leg already had a tampered-store
+row; this is its twin. Raised as a DEV-751 round-1 major charge.
+**Load-bearing? yes** — FH-3's locality clause and T18's amendment both rest on
+the control staying writable at the payload seam, and now something proves it.
+
+### T10. The conformance suite puts two payloads into one store
+
+Decided: a sixth law, `distinctness` — two payloads in, each `get` returns its
+own bytes, each `has` is true — with a planted control that keys on the
+two-character fan-out prefix instead of the whole digest. The second payload is
+chosen so its digest agrees with the FIPS vector's on the first byte, which is
+what makes the law discriminating; both digests are still learned at run time
+from the store's own `put`. Alternatives: leave the five laws; add a
+whole-digest-addressing law stated over a backend's mechanics. Why: every other
+law exercises one payload in a fresh store plus a never-stored digest, so a
+store that is not content-addressed at lookup ships green through all five —
+the prefix-keyed backend was built and passed them. What it actually does is
+lose whichever prefix-sharing payload arrived first, while `has` still answers
+true for bytes it no longer holds. A law stated over backend mechanics would
+not survive the object-store and remote backends, which is the whole point of a
+backend-agnostic suite. Raised as a DEV-751 round-1 major charge.
+**Load-bearing? yes** — this suite is the only wall the later backends meet.
+
+### T11. `FileSystemBlobOptions.root` stays a bare string, recorded rather than omitted
+
+Decided: the store root is deployment configuration and keeps its `string`
+type; it is recorded here so the DEV-740 identifier sweep has a disposition to
+apply rather than a gap to discover. Alternatives: brand it now; leave it
+unrecorded. Why: the affordances record's own band puts a store root beside
+connection names — it addresses a machine, carries no meaning inside the
+estate, and is never compared against an estate identifier. Branding it would
+buy nothing and would put a foldlab type on a path a deployment supplies.
+Raised as a DEV-751 round-1 minor charge. **Load-bearing? no** — nothing
+behaves differently; this is the row DEV-740 will read.
