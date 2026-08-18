@@ -7,7 +7,7 @@ import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 
 import { refusalOf } from "../internal/refusals.js"
-import { KernelRuntimeStructuralRefusalKind } from "../kernel/KernelSchemas.generated.js"
+import { StructuralRefusalKind as GeneratedStructuralRefusalKind } from "./RefusalKinds.generated.js"
 
 /** One legal repair or inspection step attached to a refusal. */
 export const Next = Schema.Struct({
@@ -27,12 +27,19 @@ const SharedRefusalFields = {
   next: Schema.Array(Next),
 } as const
 
-/** Every structural refusal kind the package can mint, projected from the kernel. */
-export const StructuralRefusalKind: typeof KernelRuntimeStructuralRefusalKind =
-  KernelRuntimeStructuralRefusalKind
+/**
+ * Every structural refusal kind the package can mint, projected from the
+ * kernel corpus into this plane by `generate:kernel-tables`.
+ *
+ * The projection is emitted as `RefusalKinds.generated.ts` — a sibling in
+ * `truth/` — rather than imported from `kernel/`, because `truth/` is the
+ * deepest plane and imports only itself.
+ */
+export const StructuralRefusalKind: typeof GeneratedStructuralRefusalKind =
+  GeneratedStructuralRefusalKind
 
 /** Every structural refusal kind the package can mint. */
-export type StructuralRefusalKind = typeof KernelRuntimeStructuralRefusalKind.Type
+export type StructuralRefusalKind = typeof GeneratedStructuralRefusalKind.Type
 
 /** A permanent statement that input violated a pinned structural law. */
 export class StructuralRefusal extends Schema.TaggedError<StructuralRefusal>()(
@@ -72,7 +79,7 @@ export interface RefusalFields {
 
 /** Fields accepted when constructing structural evidence. */
 export interface StructuralRefusalFields extends RefusalFields {
-  readonly kind: typeof KernelRuntimeStructuralRefusalKind.Type
+  readonly kind: typeof GeneratedStructuralRefusalKind.Type
 }
 
 /** Constructs structural evidence; shipped retry policies never retry it. */

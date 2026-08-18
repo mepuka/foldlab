@@ -2077,6 +2077,39 @@ small input makes current runtime truth explicit while every public and
 internal consumer gets the generated value. **Load-bearing? yes** — the runtime
 schema has no independent literal left.
 
+### T0a. The vocabulary is emitted into `truth/`, not imported up from `kernel/`
+
+Decided: the generator writes a second artifact,
+`src/truth/RefusalKinds.generated.ts`, and `truth/Refusal.ts` imports its
+sibling. Root Law 4 makes `truth/` the deepest plane and permits it to import
+only itself, so the first shape of this task — `truth/Refusal.ts` importing the
+schema from `kernel/KernelSchemas.generated.ts` — bought corpus ancestry by
+crossing the architecture boundary it was required to preserve, which is a
+blocker in its own right. Alternatives: leave the union hand-written in
+`truth/` (the twin Law 1 refuses); move `Refusal.ts` up into `kernel/` (moves a
+public export path and every plane's import of it); relax Law 4 for generated
+files (a law that admits its own exception stops being a wall). Why: a
+generated artifact carries no import-direction debt — its ancestry is the
+generator, and the emitted file is a corpus projection landing in the plane
+that speaks it. Two emissions of one projection are not two vocabularies:
+`check:kernel-tables` byte-compares both against one render, so they cannot
+part company. **Load-bearing? yes** — this is what makes the vocabulary
+corpus-derived and plane-lawful at the same time.
+
+### T0b. No identifier annotation rides the emitted schema
+
+Decided: the generated `StructuralRefusalKind` is a bare `Schema.Literals`. An
+earlier revision annotated it with `identifier` and `title`, which changed a
+failed decode's reported expectation from the admitted literal list to the
+schema's name, and changed the exported JSON Schema from an inline enum to a
+titled `$ref`. Both are wire-visible at every site that decodes a refusal kind.
+Alternatives: keep the annotation and pin the new texts (a persisted-vocabulary
+change this task has no licence to make); annotate and exempt the affected
+sites (an exemption list is the drift). Why: this task unifies where the
+vocabulary comes from and nothing else; `decodeRefusing` reports the same bytes
+at the head as at the base. **Load-bearing? yes** — the taught-payload wall
+below would otherwise be pinning texts this task itself had moved.
+
 ### T1. A corpus miss is generated Law 1 debt owned by DEV-804
 
 Decided: a runtime spelling present in the kernel refusal table is marked
@@ -2090,15 +2123,50 @@ debt without inventing model ancestry or changing a refusal payload.
 **Load-bearing? yes** — provenance is what distinguishes staged unification
 from a renamed hand-maintained twin.
 
-### T2. Containment has a runtime gate and a planted spelling
+### T2. Containment compares three artifacts, and the staged debt is pinned
 
-Decided: `check:refusal-vocabulary` requires the runtime schema tuple to be the
-generated projection, requires every runtime kind to occur in the generated
-vocabulary, and checks every staged row's `DEV-804` owner. Its committed
-negative control appends `hand-minted-refusal` and must fail for the named
-missing-generated-row reason. Alternatives: rely on TypeScript assignment
-alone (does not prove the subset at runtime and cannot demonstrate the wall
-failing); compare only counts (equal cardinality admits a substituted kind).
-Why: member-wise containment is the stated invariant, and a planted outsider
-proves the gate watches that invariant. **Load-bearing? yes** — the generated
-table is only authoritative if a runtime spelling outside it is refused.
+Decided: `check:refusal-vocabulary` reads the runtime union out of the
+truth-plane module's *source bytes* through the TypeScript AST, reads the
+refusal reasons out of the interchange fixture's *bytes*, and reads the
+staged-debt roster out of a reviewed pin at
+`test/fixtures/refusal-staged-debt.pin.txt` that no generator consumes. Every
+runtime kind must be a corpus reason or a pinned waiver; every pin must cite
+`DEV-804`, be genuinely absent from the corpus, and name a kind the union
+actually mints.
+
+The first shape of this gate compared the generated schema's `.literals` to the
+tuple that schema was generated from, against a vocabulary the generator had
+already defined as `corpus ∪ runtimeRows` — so the production check was
+`A ⊆ corpus ∪ A`, and adding a spelling to the manifest and regenerating stayed
+green. Its control planted an outsider into a helper's argument after
+generation, which proved a set helper could reject and proved nothing about
+production ancestry. That is verified-codegen's self-comparison failure, and
+both halves are replaced here. Alternatives: compare against the projection
+manifest (the generator's own input — vacuous again); drop the pin and let any
+corpus miss pass as debt (restores the hole the pin closes); require every
+runtime kind to be corpus-backed today (all 36 are honest misses, so the gate
+would be red on arrival with no repair inside this task). Why: three artifacts,
+no two of them views of one value, and the one that is hand-maintained is the
+one a reviewer reads. **Load-bearing? yes** — `check:refusal-control` plants
+`hand-minted-refusal` into the union source, runs the production readers and
+the production law over the planted bytes, and must fail for its committed
+reason.
+
+### T3. Taught payloads are pinned byte for byte
+
+Decided: `check:refusal-payloads` walks every object literal under `src/` that
+carries a `law` field together with one of the refusal constructor's other
+fields, renders its `kind`, `law`, `expected`, and `next` texts, and
+byte-compares the result against `test/RefusalPayloads.taught.txt`. A refusal's
+payload is persisted evidence — read by operators, matched by tooling, quoted
+in tickets — so an edit to one is a behaviour change even when no type moves
+and every test still passes. The vocabulary gate above watches which kinds
+exist; nothing watched what they teach. Alternatives: assert the payloads in a
+test per kind (57 assertions nobody updates together, and a deleted assertion
+is invisible); observe once in review that the diff did not touch the minting
+files (a one-time observation, not a committed wall); pin the runtime-minted
+refusals instead of the source literals (needs a live NATS server for most
+kinds, and pins what a run produced rather than what the source teaches). Why:
+one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
+field whose value is not written down as a literal renders `<expression>`, so
+the wall pins what the source teaches and claims nothing about computed values.

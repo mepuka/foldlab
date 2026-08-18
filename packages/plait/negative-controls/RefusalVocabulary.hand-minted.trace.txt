@@ -1,1 +1,1 @@
-runtime structural refusal kind "hand-minted-refusal" is absent from the generated kernel refusal vocabulary
+runtime structural refusal kind "hand-minted-refusal" is neither a kernel corpus refusal reason nor a pinned DEV-804 staged-debt waiver

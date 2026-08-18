@@ -485,65 +485,6 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
   },
 ] as const satisfies ReadonlyArray<KernelRuntimeStructuralRefusalRow>
 
-/** Every structural refusal spelling known to the generated kernel table. */
-export const KERNEL_REFUSAL_VOCABULARY = [
-  "clock-read",
-  "absence-trigger",
-  "unfenced-decide",
-  "last-writer-wins",
-  "unverified-read",
-  "cross-sort-identifier",
-  "minted-identifier",
-  "ambient-query-input",
-  "forward-reference",
-  "secret-carrier",
-  "absence-claim",
-  "past-mutation",
-  "off-writ-referent",
-  "closure-introspection",
-  "anchored-resolve",
-  "unfilled-hole",
-  "non-canonical-value",
-  "invalid-subject-token",
-  "malformed-envelope",
-  "malformed-blob-reference",
-  "inline-body-too-large",
-  "digest-mismatch",
-  "substrate-shape",
-  "invalid-lane-declaration",
-  "invalid-partition-key",
-  "lane-evidence-mismatch",
-  "lane-substrate-shape",
-  "invalid-algebra-declaration",
-  "invalid-fold-declaration",
-  "unearned-commutative-algebra",
-  "invalid-anchor-advance",
-  "anchor-substrate-shape",
-  "malformed-anchor-state",
-  "lost-anchor-cas",
-  "consumer-substrate-shape",
-  "fold-buffer-overflow",
-  "invalid-session-declaration",
-  "undeclared-view",
-  "invalid-chaos-request",
-  "invalid-fold-state",
-  "invalid-register-key",
-  "malformed-register-state",
-  "register-absent",
-  "register-substrate-shape",
-  "duplicate-grant",
-  "outcome-already-landed",
-  "stale-register-token",
-  "concurrent-register-update",
-  "malformed-value",
-  "invalid-cell-key",
-  "malformed-cell-state",
-  "cell-substrate-shape",
-] as const
-
-/** One structural refusal spelling known to the generated kernel table. */
-export type KernelRefusalVocabulary = (typeof KERNEL_REFUSAL_VOCABULARY)[number]
-
 /**
  * The compile-time brand carrier. The property never exists at runtime; it
  * exists so two sorts with the same representation refuse to unify.

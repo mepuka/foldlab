@@ -37,7 +37,6 @@
 import { Schema } from "effect"
 
 import * as Grammar from "./KernelCorpusSchemas.js"
-import { KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS } from "./KernelTables.generated.js"
 
 /** Where these schemas came from, carried as data for a consumer to assert. */
 export const KERNEL_SCHEMA_PROVENANCE = {
@@ -875,18 +874,6 @@ export const KernelDoor = Schema.Struct({
   description:
     "The admission context: the already-admitted catalog and the\nuniverse of referents the "
     + "acting writ pins. ",
-})
-
-/**
- * The existing structural-refusal kinds the runtime may mint. The literals
- * come from the generated kernel table; missing model rows carry DEV-804
- * waivers there rather than becoming a second schema vocabulary here.
- */
-export const KernelRuntimeStructuralRefusalKind = Schema.Literals(
-  KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS,
-).annotate({
-  identifier: "KernelRuntimeStructuralRefusalKind",
-  title: "The structural refusal kinds the runtime may mint.",
 })
 
 /** Every mini-AST schema, keyed by the model's short name for the type. */

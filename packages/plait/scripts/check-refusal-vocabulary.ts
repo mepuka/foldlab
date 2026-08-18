@@ -1,44 +1,60 @@
+import { resolve } from "node:path"
+
+import { KERNEL_RUNTIME_STRUCTURAL_REFUSALS } from "../src/kernel/KernelTables.generated.js"
 import {
-  KERNEL_REFUSAL_VOCABULARY,
-  KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS,
-  KERNEL_RUNTIME_STRUCTURAL_REFUSALS,
-} from "../src/kernel/KernelTables.generated.js"
-import { StructuralRefusalKind } from "../src/truth/Refusal.js"
-import { RUNTIME_REFUSAL_WAIVER_TICKET } from "./kernel-runtime-refusals.js"
-import { checkRefusalVocabulary } from "./refusal-vocabulary.js"
+  REFUSAL_VOCABULARY_PATHS,
+  RUNTIME_REFUSAL_WAIVER_TICKET,
+  checkProjectionAncestry,
+  checkRefusalVocabulary,
+  checkRuntimeUnionWiring,
+  readCorpusRefusalReasons,
+  readRuntimeRefusalKinds,
+  readStagedDebtPin,
+  type RefusalVocabularyEvidence,
+} from "./refusal-vocabulary.js"
 
-const checked = checkRefusalVocabulary(
-  StructuralRefusalKind.literals,
-  KERNEL_REFUSAL_VOCABULARY,
+const repository = resolve(import.meta.dir, "../../..")
+const read = (path: string): Promise<string> => Bun.file(resolve(repository, path)).text()
+
+// Annotated at the binding, not only at the arrow, so that TypeScript reads a
+// bare `fail(...)` as control flow that does not return and narrows after it.
+const fail: (reason: string) => never = (reason) => {
+  console.error(`REFUSAL VOCABULARY: FAIL — ${reason}`)
+  return process.exit(1)
+}
+
+const wiring = checkRuntimeUnionWiring(
+  await read(REFUSAL_VOCABULARY_PATHS.refusalModule),
+  REFUSAL_VOCABULARY_PATHS.refusalModule,
+  "./RefusalKinds.generated.js",
 )
-if (!checked.ok) {
-  console.error(`REFUSAL VOCABULARY: FAIL — ${checked.reason}`)
-  process.exit(1)
+if (!wiring.ok) fail(wiring.reason)
+
+const evidence: RefusalVocabularyEvidence = {
+  runtimeKinds: readRuntimeRefusalKinds(
+    await read(REFUSAL_VOCABULARY_PATHS.runtimeUnion),
+    REFUSAL_VOCABULARY_PATHS.runtimeUnion,
+  ),
+  corpusReasons: readCorpusRefusalReasons(
+    await read(REFUSAL_VOCABULARY_PATHS.corpusFixture),
+    REFUSAL_VOCABULARY_PATHS.corpusFixture,
+  ),
+  waivers: readStagedDebtPin(
+    await read(REFUSAL_VOCABULARY_PATHS.stagedDebtPin),
+    REFUSAL_VOCABULARY_PATHS.stagedDebtPin,
+  ),
+  waiverTicket: RUNTIME_REFUSAL_WAIVER_TICKET,
 }
 
-if (
-  JSON.stringify(StructuralRefusalKind.literals)
-  !== JSON.stringify(KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS)
-) {
-  console.error(
-    "REFUSAL VOCABULARY: FAIL — runtime schema is not the generated structural-refusal projection",
-  )
-  process.exit(1)
-}
+const checked = checkRefusalVocabulary(evidence)
+if (!checked.ok) fail(checked.reason)
 
-const wrongWaiver = KERNEL_RUNTIME_STRUCTURAL_REFUSALS.find(
-  (row) => row.source === "staged-debt" && row.waiver !== RUNTIME_REFUSAL_WAIVER_TICKET,
-)
-if (wrongWaiver !== undefined) {
-  console.error(
-    `REFUSAL VOCABULARY: FAIL — staged-debt row ${JSON.stringify(wrongWaiver.kind)} does not cite ${RUNTIME_REFUSAL_WAIVER_TICKET}`,
-  )
-  process.exit(1)
-}
+const ancestry = checkProjectionAncestry(KERNEL_RUNTIME_STRUCTURAL_REFUSALS, evidence)
+if (!ancestry.ok) fail(ancestry.reason)
 
-const stagedDebt = KERNEL_RUNTIME_STRUCTURAL_REFUSALS.filter(
-  (row) => row.source === "staged-debt",
-).length
 console.log(
-  `REFUSAL VOCABULARY: PASS (${StructuralRefusalKind.literals.length} runtime kinds contained in ${KERNEL_REFUSAL_VOCABULARY.length} generated reasons; ${stagedDebt} staged-debt waivers cite ${RUNTIME_REFUSAL_WAIVER_TICKET})`,
+  `REFUSAL VOCABULARY: PASS (${evidence.runtimeKinds.length} runtime kinds:`
+    + ` ${checked.corpusBacked} corpus-backed,`
+    + ` ${checked.stagedDebt} pinned ${RUNTIME_REFUSAL_WAIVER_TICKET} staged debt,`
+    + ` against ${evidence.corpusReasons.length} corpus refusal reasons)`,
 )

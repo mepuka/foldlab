@@ -541,7 +541,6 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   line("import { Schema } from \"effect\"")
   line()
   line("import * as Grammar from \"./KernelCorpusSchemas.js\"")
-  line("import { KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS } from \"./KernelTables.generated.js\"")
   line()
   line("/** Where these schemas came from, carried as data for a consumer to assert. */")
   line("export const KERNEL_SCHEMA_PROVENANCE = {")
@@ -709,19 +708,6 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
       line()
     }
   }
-
-  line("/**")
-  line(" * The existing structural-refusal kinds the runtime may mint. The literals")
-  line(" * come from the generated kernel table; missing model rows carry DEV-804")
-  line(" * waivers there rather than becoming a second schema vocabulary here.")
-  line(" */")
-  line("export const KernelRuntimeStructuralRefusalKind = Schema.Literals(")
-  line("  KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS,")
-  line(").annotate({")
-  line("  identifier: \"KernelRuntimeStructuralRefusalKind\",")
-  line("  title: \"The structural refusal kinds the runtime may mint.\",")
-  line("})")
-  line()
 
   line("/** Every mini-AST schema, keyed by the model's short name for the type. */")
   line("export const KERNEL_TYPE_SCHEMA = {")

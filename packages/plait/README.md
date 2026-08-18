@@ -75,8 +75,9 @@ bun run test
 ```
 
 It is the concatenation of three groups, each runnable on its own while you
-work: `test:fast` (the pure test files, corpus and refusal-vocabulary diffs,
-the public-effect manifest, and their negative controls), `test:walls` (every
+work: `test:fast` (the pure test files, the corpus, refusal-vocabulary, and
+taught-payload diffs, the public-effect manifest, and their negative
+controls), `test:walls` (every
 file that brings up a real `nats-server`), and `test:types` (the twenty tsc
 negative controls). The fast/wall partition is derived from whether a test file
 imports the NATS harness, so a file added later joins a group without being

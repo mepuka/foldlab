@@ -47,14 +47,22 @@ const tsgoCommand = (
 ): readonly [string, ...ReadonlyArray<string>] => ["bun", tsgoLauncher, ...args]
 
 // The Effect rules left the typecheck stage when tsgo replaced the patched
-// tsc, so the battery runs them as their own lane through the same CLI the
-// editor patch comes from. `--strict` turns rule warnings into a nonzero
-// exit.
+// tsc, so the battery runs them as their own lane. `--strict` turns rule
+// warnings into a nonzero exit.
+//
+// The lane runs `@effect/tsgo`, which is the CLI the root `typecheck` script
+// already uses and the one the workspace's TypeScript supports. Its
+// predecessor, `@effect/language-service`'s own CLI, resolves TypeScript from
+// the working directory and refuses anything past 6.x — so from the repository
+// root, where the workspace pins TypeScript 7, that stage could only report
+// `TypeScriptFoundIsNot5Or6` and exit 1. It had nothing to do with the project
+// it was pointed at: the language-service package stays installed because the
+// editor patch comes from it, but the battery's rule lane is tsgo's.
 const effectRulesCommand = (
   project: string,
 ): readonly [string, ...ReadonlyArray<string>] => [
   "bun",
-  resolve(repo, "node_modules", "@effect", "language-service", "cli.js"),
+  resolve(repo, "node_modules", "@effect", "tsgo", "dist", "effect-tsgo.cjs"),
   "diagnostics",
   "--project",
   project,
