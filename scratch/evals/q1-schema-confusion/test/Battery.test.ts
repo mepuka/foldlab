@@ -8,7 +8,8 @@ import { makePrompt, projectExpectedCall } from "../src/Prompt.ts"
 import { projectToolDocument, Variants } from "../src/Projection.ts"
 import { compileToolValidators } from "../src/Scoring.ts"
 
-const basePath = "../../../verify/kernel/projections/tools.schema.json"
+const basePath =
+  `${import.meta.dir}/../../../../verify/kernel/projections/tools.schema.json`
 
 describe("fixed battery", () => {
   test("covers every base tool once", async () => {
