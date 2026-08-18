@@ -1,11 +1,9 @@
 import type { KernelDeclKind } from "../src/kernel/KernelTables.generated.js"
 
-/** The anchored sibling proves enforcement does not reject every exported type. */
-export interface GeneratedCoreControl {
-  readonly kind: KernelDeclKind
-}
+/** The direct generated export proves enforcement does not reject every exported type. */
+export type {
+  KernelDeclKind as GeneratedCoreControl,
+} from "../src/kernel/KernelTables.generated.js"
 
-/** Planted ticketed debt: this declaration does not derive from the generated core. */
-export interface FabricEraControl {
-  readonly value: string
-}
+/** Planted laundering attempt: mentioning the core cannot bless hand-written widening. */
+export type LaunderedControl = KernelDeclKind | "handwritten-extra"

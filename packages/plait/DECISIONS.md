@@ -1912,20 +1912,22 @@ owners.
 
 ## Task DEV-796 — the public type-universe inventory wall
 
-### T0. Generated-core derivation is declaration-symbol ancestry, not module-level import presence
+### T0. Generated-core derivation belongs only to declarations owned by the generated core
 
 Decided: the emitted `src/index.d.ts` barrel is the public-type quantifier, and
-each exported type follows only the declaration symbols its own declaration
-reaches. Reaching `KernelCorpusSchemas`, `KernelSchemas.generated`, or
-`KernelTables.generated` classifies the type as
-`derives-from-the-generated-core`; every other type is
-`debt-with-a-ticket`. The truth vocabulary is debt under `DEV-795` stage 2+,
-not an admitted floor. Alternatives: accept `src/truth/` as a terminal floor
-(contradicts standing law 1); mark every type in a module as derived when any
-import names a kernel file (an unused import would erase unrelated debt);
-inspect source text for type names (aliases and transitive declarations would
-escape). Why: declaration-symbol ancestry is the emitted type contract the
-compiler sees, and the generated core is the only admitted root.
+an exported type classifies as `derives-from-the-generated-core` only when its
+resolved declaration is owned by `KernelCorpusSchemas`,
+`KernelSchemas.generated`, or `KernelTables.generated`. Every hand-written
+declaration is `debt-with-a-ticket`, including a wrapper, union, or structural
+twin that mentions a generated type. The truth vocabulary is debt under
+`DEV-795` stage 2+, not an admitted floor. Alternatives: accept `src/truth/` as
+a terminal floor (contradicts standing law 1); accept existential ancestry to
+a generated declaration (a hand-written union can add a member while retaining
+that ancestry); mark every type in a module as derived when any import names a
+kernel file (an unused import would erase unrelated debt); inspect source text
+for type names (aliases and transitive declarations would escape). Why:
+declaration ownership distinguishes generated authority from hand-written
+composition without trying to prove structural equivalence.
 **Load-bearing? yes** — adding any second admitted root can turn unification
 debt green without changing the public type.
 
@@ -1938,13 +1940,17 @@ module, existing ticket, and unification target: `DEV-795` stage 2+ for truth
 and hand-written kernel declarations, `DEV-795` stage 3 for plane declarations,
 and `DEV-763` stage 4 for carriage and surface judgment. An owner outside those
 ruled targets has no default waiver and makes generation fail. The planted
-control exports one generated-table-derived sibling and one ticketed fabric-era
-sibling, then requires enforce mode to refuse exactly the latter against its
-committed trace. Alternatives: maintain separate report and enforce walks (the
-future flip could change the quantifier); assign every unknown owner to the epic
+control directly re-exports one generated-table declaration and widens another
+through a hand-written union, then invokes the production check with
+`--enforce` and requires it to refuse exactly the widening against its committed
+trace. Alternatives: compare the inspection's violations in a second control
+path (the production enforcement branch could disappear while the control
+stayed green); maintain separate report and enforce walks (the future flip
+could change the quantifier); assign every unknown owner to the epic
 automatically (that would create unratified waivers); make nonempty debt red now
-(contradicts this ticket's inventory-only stage). Why: the ratifiable object and
-the later wall are the same classification at two exit policies.
+(contradicts this ticket's inventory-only stage). Why: the ratifiable object,
+the control, and the later wall execute the same classification and enforcement
+path.
 **Load-bearing? yes** — a second enforcement path or a catch-all target could go
 green over a different universe from the ticketed inventory the operator
 ratified.

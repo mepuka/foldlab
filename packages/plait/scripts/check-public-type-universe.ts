@@ -8,7 +8,7 @@ import { inspectPublicTypeUniverse } from "./public-type-universe.js"
 const packageRoot = resolve(import.meta.dir, "..")
 const inventoryPath = resolve(packageRoot, "test/PublicTypeUniverse.inventory.md")
 
-class CheckFailure extends Schema.TaggedError<CheckFailure>()(
+export class CheckFailure extends Schema.TaggedError<CheckFailure>()(
   "PublicTypeUniverseCheckFailure",
   {
     exitCode: Schema.Int,
@@ -16,14 +16,27 @@ class CheckFailure extends Schema.TaggedError<CheckFailure>()(
   },
 ) {}
 
-const messageOf = (cause: unknown): string =>
+export const messageOf = (cause: unknown): string =>
   Predicate.isError(cause) ? cause.message : String(cause)
 
-const normalize = (text: string): string =>
+export const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
-const check = Effect.fn("PublicTypeUniverse.check")(function* () {
-  const arguments_ = process.argv.slice(2)
+export interface PublicTypeUniverseCheckInput {
+  readonly cliArguments: ReadonlyArray<string>
+  readonly project: string
+  readonly entry: string
+}
+
+/**
+ * Report mode and the negative control enter through this one check. Passing
+ * the control declaration project exercises the production `--enforce` branch
+ * without creating a second enforcement implementation.
+ */
+export const checkPublicTypeUniverse = Effect.fn("PublicTypeUniverse.check")(function* (
+  input: PublicTypeUniverseCheckInput,
+) {
+  const arguments_ = input.cliArguments
   const unknown = arguments_.find((argument) =>
     argument !== "--write" && argument !== "--enforce")
   if (unknown !== undefined) {
@@ -37,15 +50,23 @@ const check = Effect.fn("PublicTypeUniverse.check")(function* () {
 
   const emitted = yield* Effect.acquireRelease(
     Effect.tryPromise({
-      try: () => emitDeclarations("tsconfig.public-declarations.json"),
+      try: () => emitDeclarations(input.project),
       catch: (cause) => new CheckFailure({ exitCode: 1, message: messageOf(cause) }),
     }),
     (declarations) => Effect.sync(declarations.dispose),
   )
   const inspection = yield* Effect.try({
-    try: () => inspectPublicTypeUniverse(emitted.directory, "src/index.d.ts"),
+    try: () => inspectPublicTypeUniverse(emitted.directory, input.entry),
     catch: (cause) => new CheckFailure({ exitCode: 1, message: messageOf(cause) }),
   })
+
+  if (enforce && inspection.violations !== "") {
+    return yield* new CheckFailure({
+      exitCode: 1,
+      message: `${inspection.violations}PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses public type debt`,
+    })
+  }
+
   const actual = normalize(inspection.inventory)
 
   if (write) {
@@ -82,13 +103,6 @@ const check = Effect.fn("PublicTypeUniverse.check")(function* () {
   ).length
   const debt = inspection.classifications.length - generatedCoreDerived
 
-  if (enforce && inspection.violations !== "") {
-    return yield* new CheckFailure({
-      exitCode: 1,
-      message: `${inspection.violations}PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses public type debt`,
-    })
-  }
-
   yield* Console.log(
     enforce
       ? `PUBLIC TYPE UNIVERSE: PASS (${inspection.classifications.length} public types classified; no debt-with-a-ticket types)`
@@ -96,14 +110,20 @@ const check = Effect.fn("PublicTypeUniverse.check")(function* () {
   )
 })
 
-await Effect.runPromise(
-  check().pipe(
-    Effect.scoped,
-    Effect.catch((failure) =>
-      Console.error(failure.message).pipe(
-        Effect.andThen(Effect.sync(() => {
-          process.exitCode = failure.exitCode
-        })),
-      )),
-  ),
-)
+if (import.meta.main) {
+  await Effect.runPromise(
+    checkPublicTypeUniverse({
+      cliArguments: process.argv.slice(2),
+      project: "tsconfig.public-declarations.json",
+      entry: "src/index.d.ts",
+    }).pipe(
+      Effect.scoped,
+      Effect.catch((failure) =>
+        Console.error(failure.message).pipe(
+          Effect.andThen(Effect.sync(() => {
+            process.exitCode = failure.exitCode
+          })),
+        )),
+    ),
+  )
+}
