@@ -102,6 +102,19 @@ lost race re-read and re-merge. A read-back that already carries the delta is
 success, whether this append landed or a rival's join subsumed it. Termination
 is liveness and is never claimed; convergence of the value is F1.
 
+**Payload seam**:
+The catalog-internal read of a cataloged value's bytes, under
+`Resolved.resolve` and verified there. Get-only, `Option`-returning, and
+unverified by design: it exists so a control can lie beneath the one verify
+door. It is not a blob store and application code never reaches for it.
+
+**Blob store**:
+The public content-addressed store of opaque byte payloads: put derives the
+digest over the exact bytes handed in, get re-derives it over the bytes fetched
+and refuses on disagreement, and presence is head-relative. Verification is
+inside the service, absence is a `blob-absent` refusal, and a backend is a
+`Layer` written against capabilities — never against a vendor's vocabulary.
+
 **Resolved reference**:
 A digest whose decode fetches the value and re-derives its identity before
 returning it. Decoding requires the catalog and payload services from the

@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Option } from "effect"
 
-import { Blobs, Catalog, substrateLayer } from "../src/Catalog.js"
+import { Catalog, Payloads, substrateLayer } from "../src/Catalog.js"
 import { digestOf } from "../src/Digest.js"
 
-describe("the catalog and payload services", () => {
+describe("the catalog and its internal payload seam", () => {
   test("admits a value under the digest of its canonical bytes", () => {
     const admitted = Effect.runSync(
       Effect.gen(function* () {
@@ -42,8 +42,8 @@ describe("the catalog and payload services", () => {
   test("the standing payload layer answers absence, because no probe licenses more", () => {
     const found = Effect.runSync(
       Effect.gen(function* () {
-        const blobs = yield* Blobs
-        return yield* blobs.get(yield* digestOf("anything"))
+        const payloads = yield* Payloads
+        return yield* payloads.get(yield* digestOf("anything"))
       }).pipe(Effect.provide(substrateLayer)),
     )
     expect(Option.isNone(found)).toBe(true)
@@ -53,13 +53,29 @@ describe("the catalog and payload services", () => {
     const stored = new Uint8Array([1, 2, 3])
     const found = Effect.runSync(
       Effect.gen(function* () {
-        const blobs = yield* Blobs
-        return yield* blobs.get(yield* digestOf("anything"))
+        const payloads = yield* Payloads
+        return yield* payloads.get(yield* digestOf("anything"))
       }).pipe(
-        Effect.provide(Blobs.testLayer({ get: () => Effect.succeed(Option.some(stored)) })),
+        Effect.provide(Payloads.testLayer({ get: () => Effect.succeed(Option.some(stored)) })),
       ),
     )
     expect(Option.getOrNull(found)).toEqual(stored)
+  })
+
+  test("the internal seam stays unverified: it hands back exactly what it holds", () => {
+    // T18's control, at the seam that keeps it writable. A layer that policed
+    // its own answers could not lie here, and `Resolved.resolve` — the one
+    // verify door for this path — would have nothing to refuse.
+    const lie = new TextEncoder().encode("not the bytes of any digest asked for")
+    const found = Effect.runSync(
+      Effect.gen(function* () {
+        const payloads = yield* Payloads
+        return yield* payloads.get(yield* digestOf({ asked: "for" }))
+      }).pipe(
+        Effect.provide(Payloads.testLayer({ get: () => Effect.succeed(Option.some(lie)) })),
+      ),
+    )
+    expect(Option.getOrNull(found)).toEqual(lie)
   })
 
   test("the process-local catalog is not shared between layer builds", () => {

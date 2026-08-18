@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Layer, Option, Schema } from "effect"
 
-import { Blobs, Catalog, substrateLayer, type CatalogService } from "../src/Catalog.js"
+import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/Catalog.js"
 import { digestOf, type Digest } from "../src/Digest.js"
 import { decodeRefusing } from "../src/Refusal.js"
 import { PublishingOf, ResolvedOf, publish, resolve } from "../src/Resolved.js"
@@ -58,7 +58,7 @@ describe("resolved references", () => {
       decodeRefusing(Envelope)({ lane: "l", body: termsDigest }).pipe(
         Effect.provide(Layer.mergeAll(
           Catalog.testLayer(tamperedCatalog({ alpha: "TAMPERED" })),
-          Blobs.layer,
+          Payloads.layer,
         )),
         Effect.flip,
       ),
@@ -80,7 +80,7 @@ describe("resolved references", () => {
     }
     const refusal = Effect.runSync(
       decodeRefusing(Envelope)({ lane: "l", body: "not-a-digest" }).pipe(
-        Effect.provide(Layer.mergeAll(Catalog.testLayer(counting), Blobs.layer)),
+        Effect.provide(Layer.mergeAll(Catalog.testLayer(counting), Payloads.layer)),
         Effect.flip,
       ),
     )
@@ -89,25 +89,25 @@ describe("resolved references", () => {
     expect(asked).toBe(0)
   })
 
-  test("a payload resolves through the blob store and is re-derived there too", () => {
+  test("a payload resolves through the internal seam and is re-derived there too", () => {
     const bytes = new TextEncoder().encode(JSON.stringify(terms))
-    const blobsOnly = Layer.mergeAll(
+    const payloadsOnly = Layer.mergeAll(
       Catalog.testLayer({
         get: () => Effect.succeed(Option.none()),
         put: (value) => digestOf(value),
       }),
-      Blobs.testLayer({
+      Payloads.testLayer({
         get: (digest: Digest) =>
           Effect.succeed(digest === termsDigest ? Option.some(bytes) : Option.none()),
       }),
     )
-    expect(Effect.runSync(resolve(termsDigest).pipe(Effect.provide(blobsOnly)))).toEqual(terms)
+    expect(Effect.runSync(resolve(termsDigest).pipe(Effect.provide(payloadsOnly)))).toEqual(terms)
   })
 
   test("service channels propagate through nesting, and encoding stays empty", () => {
     type DecodeServices = Schema.Codec.DecodingServices<typeof Frame>
     type EncodeServices = Schema.Codec.EncodingServices<typeof Frame>
-    const decodeProof: DecodeServices extends Catalog | Blobs ? true : false = true
+    const decodeProof: DecodeServices extends Catalog | Payloads ? true : false = true
     const encodeProof: [EncodeServices] extends [never] ? true : false = true
     expect(decodeProof && encodeProof).toBe(true)
 

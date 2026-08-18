@@ -29,8 +29,13 @@ fenced register over one file-backed, single-replica JetStream server.
   floor records the frontier; the successor discipline protects it.
 - `Registers` is the five-action fenced commitment service. Its authoritative
   token is the KV revision-CAS order; holder strings are descriptive only.
-- `Catalog` owns the `Catalog` and `Blobs` services — the two content-addressed
-  stores a resolved reference decodes through.
+- `Catalog` owns the `Catalog` service and the catalog-internal `Payloads`
+  seam — the two content-addressed reads a resolved reference decodes through.
+  Both are unverified by design; `Resolved.resolve` is their one verify door.
+- `Blob` owns the public `Blobs` store — put, verified get, presence — with
+  verification inside the service and absence as a `blob-absent` refusal. Its
+  first backend rides the pin's portable `FileSystem`; the object-store backend
+  waits on DEV-730.
 - `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
   resolves it and re-derives its digest. Encode is total and publishes nothing;
   `PublishingOf` is the explicit emit path.
@@ -130,6 +135,16 @@ the TypeScript canonical-bytes comparator's ORDER and the Lean carrier's own
 comparator (the claim is set equality, which is comparator-independent);
 watch semantics of any kind — no watch surface ships, because the KV watch
 probe suite is not on the substrate gate. All cell claims hold within a fixed
-backing-stream incarnation. Neither `Catalog` nor `Blobs` ships a durable
-layer: the catalog layer is process-local, and the payload layer answers
-absence until the object-store probe lands.
+backing-stream incarnation. Neither `Catalog` nor `Payloads` ships a durable
+layer: the catalog layer is process-local, and the internal payload seam
+answers absence because no probed substrate stands behind it.
+
+What the blob conformance suite claims: that a `BlobsService` layer round-trips
+its bytes under the digest it derived, observes absence as `blob-absent`,
+refuses `digest-mismatch` on a store corrupted behind its back, is idempotent
+by content addressing, and answers presence head-relative. It runs against the
+filesystem backend over the OS filesystem, with a planted control per law. It
+does NOT claim power-durability — the pin's `writeFile` does not fsync, so the
+backend is crash-durable only — and it exercises no platform layer: the
+application chooses `BunFileSystem` or `NodeFileSystem`, and that choice is the
+application's to verify.
