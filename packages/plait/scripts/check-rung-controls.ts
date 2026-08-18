@@ -50,6 +50,32 @@ const mutationArm = {
 const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
+/**
+ * Keeps the error diagnostics and drops every other severity.
+ *
+ * The pinned compiler is the Effect language service's patched `tsc`, so the
+ * stream also carries `suggestion` rows for whatever `src` files the control's
+ * project happens to pull in. Those rows are advisory, they say nothing about
+ * whether the planted spelling compiles, and they move whenever an unrelated
+ * module is edited — a trace that pinned them would turn a control on one law
+ * into a tripwire on the whole package. The severity is on the first line of a
+ * diagnostic and its continuation lines are indented, so the filter carries the
+ * severity down the continuations rather than matching each line.
+ */
+const errorsOnly = (output: string): string => {
+  const kept: Array<string> = []
+  let inError = false
+  for (const line of output.split("\n")) {
+    if (line.startsWith(" ") || line.startsWith("\t")) {
+      if (inError) kept.push(line)
+      continue
+    }
+    inError = /^[^(]*\(\d+,\d+\): error /.test(line)
+    if (inError) kept.push(line)
+  }
+  return kept.length === 0 ? "" : `${kept.join("\n")}\n`
+}
+
 const typecheck = (project: string): { readonly code: number; readonly output: string } => {
   const run = Bun.spawnSync({
     cmd: ["bunx", "tsc", "-p", project, "--noEmit", "--pretty", "false"],
@@ -59,7 +85,7 @@ const typecheck = (project: string): { readonly code: number; readonly output: s
   })
   return {
     code: run.exitCode,
-    output: normalize(`${run.stdout.toString()}${run.stderr.toString()}`),
+    output: errorsOnly(normalize(`${run.stdout.toString()}${run.stderr.toString()}`)),
   }
 }
 
