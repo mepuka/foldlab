@@ -8,16 +8,32 @@ brand is earned from generated cases rather than asserted. Nothing here
 reaches a substrate, a subject, or a connection; a truth module that imports
 one is a layering finding.
 
-Nothing in this directory is machine-generated. The closed structural-refusal
-union in `Refusal.ts` is hand-written, and it is exactly the sort of corpus
-twin the estate's first standing law stages as debt: the kernel corpus emits
-its own refusal table, and these converge under it.
+`RefusalKinds.generated.ts` is machine-generated and the only generated module
+here. It carries the closed structural-refusal union, projected from
+`../../fixtures/kernel-conformance.ndjson` plus the reviewed runtime roster in
+`../../scripts/kernel-runtime-refusals.ts`; `Refusal.ts` imports its sibling
+and mints no union of its own. The projection is emitted *into* this plane
+rather than imported up from `../kernel/`, because truth is the deepest plane
+and imports only itself — a generated artifact's ancestry is its generator,
+not an edge in the module graph. Regenerate with
+`bun run generate:kernel-tables`; the kernel table is the other half of that
+one render, and it carries each spelling's ancestry, with a corpus miss named
+as `DEV-804` staged debt.
 
-Wall: `bun run test:fast` (the pure suites beside each module) and
-`bun run check:public-effects`, which re-emits the package's public
-declarations and refuses any public Effect whose error channel is not a
-`Refusal`. Its planted controls are `../../negative-controls/PublicEffects.*`,
-each refuted on a committed compiler trace.
+Walls: `bun run check:kernel-tables` regenerates both halves and byte-compares
+them. `bun run check:refusal-vocabulary` reads the union out of this module's
+source bytes, the model's refusal reasons out of the fixture's bytes, and the
+staged-debt roster out of the reviewed pin at
+`../../test/fixtures/refusal-staged-debt.pin.txt` — three artifacts, no two of
+them views of one value — and `bun run check:refusal-control` plants a
+hand-minted kind into the union source and must be refused for its committed
+reason. `bun run check:refusal-payloads` pins every `law`, `expected`, and
+`next` text under `src/` byte for byte. `bun run test:fast` runs the pure
+suites beside each module, and `bun run check:public-effects` re-emits the
+package's public declarations and refuses any public Effect whose error
+channel is not a `Refusal`, with planted controls at
+`../../negative-controls/PublicEffects.*`, each refuted on a committed
+compiler trace.
 
 One level deeper: every module here opens with an `@module` header stating its
 own law; `../../CONTEXT.md` glosses the terms behind the seam; the refusal

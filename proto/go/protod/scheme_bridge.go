@@ -2,6 +2,9 @@ package protod
 
 import (
 	"bytes"
+	// encoding/json carriage: decoding a scheme-bridge record the DAEMON wrote
+	// into its own catalog journal, under DisallowUnknownFields and a
+	// trailing-data check. Not a submitter surface.
 	"encoding/json"
 	"fmt"
 	"io"

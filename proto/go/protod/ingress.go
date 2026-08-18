@@ -2,7 +2,6 @@ package protod
 
 import (
 	"context"
-	"encoding/json"
 	"regexp"
 	"strings"
 
@@ -57,7 +56,8 @@ func (d *Daemon) serveIngress(ctx context.Context, subject string, body []byte) 
 	}
 
 	var decoded frame
-	if refusal := decodeBody(body, &decoded); refusal != nil {
+	_, admittedBytes, refusal := decodeAdmitted(body, &decoded)
+	if refusal != nil {
 		return refuse(refusal)
 	}
 	if !hexDigest.MatchString(decoded.Type) {
@@ -89,27 +89,18 @@ func (d *Daemon) serveIngress(ctx context.Context, subject string, body []byte) 
 		})
 	}
 
-	// Identity is of canonical uncompressed bytes: the admitted payload
-	// is the canonical form of the frame, never the sender's formatting.
-	var value any
-	if err := json.Unmarshal(body, &value); err != nil {
-		return nil // unreachable: decodeBody already parsed
-	}
-	bytes, err := canonicalBytes(value)
-	if err != nil {
-		return refuse(&Refusal{
-			Kind: KindMalformed,
-			Law:  "W2: canonical or refused — this frame is outside the canonical JSON domain",
-			Got:  err.Error(),
-			Next: []NextHint{describeHint()},
-		})
-	}
+	// What is appended is the canonical form of the value CONSTRAINED
+	// admission read, never the sender's formatting (W2) and never a second
+	// decoder's reading of the same bytes. This path used to re-read the raw
+	// body with encoding/json and canonicalize that instead — the repairing
+	// decoder finding #36 named, still standing on the journal-identity path
+	// after the type-identity path was closed.
 
 	journalHandle, err := d.openJournal(ctx, name)
 	if err != nil {
 		return nil // substrate failure: time out, never a fake domain no
 	}
-	entry, _, err := journalHandle.Append(ctx, string(bytes))
+	entry, _, err := journalHandle.Append(ctx, string(admittedBytes))
 	if err != nil {
 		return nil
 	}
