@@ -66,6 +66,40 @@ the lane forces it, and say so when you do. The 2026-08-15 purge
 archived all off-path work at tag `archive/pre-estate-focus`
 ([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
 
+## Skills — read as documents, every harness
+
+Three estate skills carry the teaching material behind the standing
+laws. They live at `.claude/skills/<name>/SKILL.md` with references
+beside them — a path only the Claude harness auto-discovers, so every
+other seat (codex, pi, cursor, antigravity, opencode) MUST read them as
+ordinary files when the trigger below matches. Not optional: reviews
+already judge against the laws these teach, and misadherence to the API
+discipline is a high-severity finding.
+
+- `.claude/skills/architecture-to-algebra/` — mapping any system or
+  feature onto the algebra: truth plane, directory plane, fences, the
+  fold table with rungs and carriers, coalgebras. Read before designing
+  or re-deriving any service, capability, or data flow; its
+  `references/` carry the generators, the planes ladder, and worked
+  examples.
+- `.claude/skills/estate-api-development/` — the API discipline: every
+  public surface is a projection of the one algebra core, generated not
+  hand-written, judged by the one door, idiomatic Effect throughout.
+  Read before designing, building, or reviewing ANY public surface,
+  tool schema, CLI command, or wire format.
+- `.claude/skills/verified-codegen/` — generation that cannot silently
+  lie: emitters, generated types/schemas, conformance corpora,
+  canonical formats, gates. Read before building any generator,
+  checker, fixture, or cross-language projection; its `references/`
+  carry gate anatomy and canonical-form rules.
+
+Board acts have their own gate: `docs/agents/dispatch-gate.md` binds
+cutting and dispatch; `docs/agents/issue-tracker.md` is the tracker
+contract. Relocation of the skills to the cross-agent `.agents/skills/`
+convention (as the vendored `repos/effect` already does, with per-tool
+manifests) is board-tracked; until it lands, this section is the
+absorption path.
+
 ## Read first
 
 - `CONTEXT.md` — canonical domain language and invariants (seam-level
