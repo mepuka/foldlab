@@ -38,11 +38,12 @@ fenced register over one file-backed, single-replica JetStream server.
   waits on DEV-730.
 - `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
   resolves it and re-derives its digest. Encode is total and publishes nothing;
-  `PublishingOf` is the explicit emit path.
-- `Cell` owns lattice cells: the join, the cell service over the ruled
-  `flb-fab-cell` bucket, and the local replica — one process's join as
-  `current`/`changes`/`absorb`, a lower bound that answers no absence question
-  and carries no durability role.
+  `PublishingOf` is the explicit emit path. `ResolveCache` memoizes the verified
+  seam and nothing else — successes never expire because the keyspace is
+  immutable, failures are never recorded because absence is head-relative, and
+  capacity is a memory budget the layer is given.
+- `Cell` owns lattice cells: the join, the merge-then-`update(rev)` write loop
+  over the ruled `flb-fab-cell` bucket, and nothing else.
 - `ContextProgram` owns the selector/renderer/volatility declaration shapes.
   There is no assembly executor and no F7 claim.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral

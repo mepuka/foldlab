@@ -52,6 +52,13 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   substrate behind the API, so verified-get is testable without any unverified
   public read path. Adding a second verify door to `Catalog`/`Payloads`, or an
   unverified read to `Blob`, is a finding either way.
+- The resolve memo decorates the verify door and only it. A cache on
+  `Catalog.get` or the `Payloads` seam holds unverified bytes and is a finding;
+  so is a cache key that carries an anchor, a petname, or anything else naming
+  whatever is current — this keyspace is digests, which are immutable, which is
+  the entire licence for never expiring a hit. A recorded failure is a finding
+  twice over: absence is head-relative, and remembering it makes a retryable
+  observation permanent.
 - Public absence is an `AbsenceRefusal`, never `Option`. `Option.none` is
   invisible to `retryAbsence` and carries no head-relative vocabulary; the
   `Option` on the internal payload seam is plumbing and stays there.
