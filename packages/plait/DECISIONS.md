@@ -878,14 +878,21 @@ fabric makes, so none of them is minted as one. Alternatives: leave the channel
 one-sided and document the hazard; classify defects into a third refusal sort.
 Why: `Refusal.retryAbsence` retries the absence sort and only the absence sort
 (Refusal.ts:129-150), so the pre-disposition classification did not merely
-mislabel a bug, it guaranteed a retry loop over one — the wall measures exactly
-that, four attempts before and one after. A third sort was refused on the
+mislabel a bug, it guaranteed a retry loop over one — the gate measures exactly
+that, four attempts before and one after. (Gate, not wall: this suite compares
+one implementation against a stated rule; the glossary reserves "wall" for
+equal-input/equal-digest comparisons between implementations.) A third sort was refused on the
 ruling's own terms: a defect is not in the vocabulary, so it gets no word in it.
 Classification remains a client-side convention layered on an undistinguishing
 wire, unchanged from T13 of the DEV-711 task; nothing here is derived from the
 substrate. **Load-bearing? yes** — it is the error channel's shape.
 
 ### T1. The transport vocabulary is read from the client's registries, and includes the transport's unwrapped system error
+
+**Superseded by T3 and T4** (DEV-752 round-2). The second admission ground below
+was removed and the caller-validation carve-out this entry declined was ruled
+in. The entry is kept whole because the reasoning it records — including the
+probe evidence — is what T3 disposes of.
 
 Decided: `isTransportCause` (internal/transport.ts) admits a cause on two
 grounds. First, `instanceof` against the pinned client's own registries —
@@ -943,3 +950,66 @@ that can throw where its type says it returns, which is why the throw is
 documented at the mint and gated at all three seams by
 `test/TransportDefects.test.ts`. **Load-bearing? yes** — it is how a defect
 crosses the classification boundary at all.
+
+### T3. The structural admission is removed; the ENOTFOUND expansion is refused pending disposition
+
+Decided: `isTransportCause` admits by class membership and nothing else. The
+shape rule — an `Error` carrying string `code` and string `syscall` — is gone,
+and with it the unwrapped `ENOTFOUND` absence T1 bought with it. That expansion
+is REFUSED pending an operator disposition, not preserved. Alternatives: keep
+the shape rule; keep it and add an allowlist of Node `code` values; keep it and
+require the cause to arrive from a connect path. Why: the rule was a
+counterexample to the ruling it was implementing. Any foreign `Error` wearing
+those two fields became a retryable absence, and the reviewer planted the proof
+— a `TypeError` with invented `code` and `syscall` classified as transport
+evidence. A fence that a two-line forgery walks through is not a fence, and the
+whole point of the narrowing is that a defect cannot buy its way into the one
+retryable sort. The allowlist variants only move the forgery one step: the
+fields are still read off an object whose provenance nothing established.
+
+What this costs, stated plainly: `@nats-io/transport-node@3.4.0` really does
+rethrow an unresolvable-host error unwrapped, so "the host does not resolve" now
+dies as a defect. That is a genuine transport condition on the wrong side of the
+line, and it is the operator's to dispose of — either by ruling the client's
+rethrow a transport class this package may recognize by some evidence a
+counterfeit cannot manufacture, or by ruling an unresolvable host a deployment
+defect. The counterfeit and the real `ENOTFOUND` are both in the negative
+controls, side by side, so the cost is visible rather than argued. Raised as the
+DEV-752 round-2 blocker. **Load-bearing? yes** — it is what the classification
+now means.
+
+### T4. Caller-validation classes die as defects
+
+Decided: `InvalidArgumentError`, `InvalidOperationError`, and
+`InvalidSubjectError` are filtered out of the admitted registry and die as
+defects, with a negative-control row each. Alternatives: keep the
+whole-registry rule; keep them as absences and document the hazard. Why: T1
+declined this carve-out on the ground that this seat does not widen a ruling it
+was handed — but the ruling was already handed. The three classes mean the
+caller called the client wrong: an argument the API cannot use, a subject that
+is not one, an operation the object does not support (the pin's own example is
+iterating an object configured with a callback). That is the same thing a
+`TypeError` means, and T0's own text names "a mis-shaped call" on the defect
+side. Admitting them made the change's rule contradict the change's own
+decision, and made a bug retryable four times over. The three are the whole
+caller-validation family reachable here: the fourth, `@nats-io/jetstream`'s
+`InvalidNameError`, is absent from that package's entrypoint, so nothing admits
+it in the first place. Every other class in the registry — connection,
+authorization, protocol, timeout, permission, request — reports a condition of
+the substrate or the deployment, not of the call, and keeps its absence. Raised
+as the DEV-752 round-2 blocker. **Load-bearing? yes** — it is the boundary the
+whole-registry rule did not draw.
+
+### T5. Spine membership is derived from the source tree; the terms stay transcribed
+
+Decided: `TransportSpine.test.ts` reads which adapters mint a transport refusal
+off `src/internal/*.ts` and asserts that set equals its own rows. The row terms
+stay transcribed from the pre-extraction definitions. Alternatives: derive the
+terms too, by reading them from the adapters; leave membership hand-listed.
+Why: the two halves want opposite things. The terms are the oracle — reading
+them from the implementation would make the gate a mirror, green by
+construction, which is the failure the transcription exists to avoid. Membership
+is not an oracle, it is coverage, and hand-listed coverage silently omits: a
+ninth adapter could join the spine with no row and nothing would go red. Raised
+as a DEV-752 round-2 major charge. **Load-bearing? yes** — coverage that cannot
+notice an omission is not coverage.

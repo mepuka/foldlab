@@ -23,17 +23,25 @@ import {
  * (ruled 2026-08-18 — "defects are defects and are not part of the estate
  * domain language").
  *
- * `TransportSpine.test.ts` pins WHAT each adapter mints. This file pins WHEN it
- * mints at all: a cause the pinned client raised becomes that adapter's absence
- * exactly as before, and any other cause dies as a defect instead of entering
- * the one retryable sort.
+ * `TransportSpine.test.ts` pins WHAT each adapter mints. This regression suite
+ * pins WHEN it mints at all: a cause the pinned client raised as substrate
+ * evidence becomes that adapter's absence exactly as before, and any other
+ * cause dies as a defect instead of entering the one retryable sort. It
+ * compares one implementation against a stated rule, so it is a gate, never a
+ * wall — the glossary reserves that word for equal-input/equal-digest
+ * comparisons between implementations.
  *
  * The oracle is outside the spine twice over. The vocabulary is read from the
  * client's own registries — `@nats-io/nats-core`'s `errors` map and the two
- * `@nats-io/jetstream` roots — so the wall never asks the seam to confirm its
+ * `@nats-io/jetstream` roots — so this file never asks the seam to confirm its
  * own list. The harm is measured on `Refusal.retryAbsence`, the shipped retry
  * policy, not on a predicate: the finding was "a defect dressed as absence
  * invites a retry loop on a bug," and a retry count is what refutes it.
+ *
+ * Admission is class membership and nothing else. A structural rule that read
+ * `code` and `syscall` off a foreign object cannot tell the client's
+ * vocabulary from a counterfeit wearing the same two fields, and the planted
+ * counterfeit below is why that rule is gone.
  *
  * Its negative control is the pre-disposition mint — one that classifies every
  * cause as an absence — run through the same checkers.
@@ -118,19 +126,45 @@ const classify = async (
 const instanceOf = (klass: unknown): Error =>
   Object.create((klass as { prototype: object }).prototype) as Error
 
-/** Every error class the pinned client publishes, named by its own registry. */
+/**
+ * The classes in the pinned registry that mean "the caller called this wrong",
+ * named here as this file's own reading of the pin's declarations. They are the
+ * reason the whole-registry rule was replaced by a transport/connection
+ * boundary: a mis-shaped call is a defect by the same ruling that put a
+ * `TypeError` on the defect side, and shipping it as a retryable absence would
+ * retry a bug four times.
+ */
+const callerDefectNames = [
+  "InvalidArgumentError",
+  "InvalidOperationError",
+  "InvalidSubjectError",
+] as const
+
+/** Every transport/connection class the pinned client publishes, by its own registry. */
 const clientCauses: ReadonlyArray<readonly [string, unknown]> = [
-  ...Object.entries(errors).map(([name, klass]) => [name, instanceOf(klass)] as const),
+  ...Object.entries(errors)
+    .filter(([name]) => !(callerDefectNames as ReadonlyArray<string>).includes(name))
+    .map(([name, klass]) => [name, instanceOf(klass)] as const),
   ["JetStreamApiError", instanceOf(JetStreamApiError)] as const,
   ["JetStreamError", instanceOf(JetStreamError)] as const,
 ]
 
 /**
- * What must die. The first row is the disposition's named control; the rest are
- * the ways a defect reaches this seam in practice — a mis-shaped call inside
- * the client, a rejection that is not an error at all, and the near-miss that
- * proves the Node system-error admission is a shape and not a loophole
- * (`code` without `syscall` is `ERR_*`, a programming error).
+ * What must die.
+ *
+ * The first rows are the ways a defect reaches this seam in practice — a
+ * mis-shaped call inside the client, a rejection that is not an error at all.
+ * Then the three caller-validation classes from the pin's own registry, which
+ * the whole-registry rule admitted as retryable absences.
+ *
+ * The last two are the counterfeits. `isTransportCause` admits by class
+ * membership and nothing else; these carry the exact two fields a structural
+ * admission would have read — a string `code` and a string `syscall` — and die
+ * anyway. The `ENOTFOUND` row is the honest one: `@nats-io/transport-node@3.4.0`
+ * really does rethrow an unresolvable-host error unwrapped, so this cause is a
+ * genuine transport condition that now dies as a defect. That expansion is
+ * refused pending an operator disposition (DECISIONS T9) rather than kept by a
+ * rule the counterfeit above it walks straight through.
  */
 const defectCauses: ReadonlyArray<readonly [string, unknown]> = [
   ["TypeError", new TypeError("cannot read properties of undefined")],
@@ -143,37 +177,42 @@ const defectCauses: ReadonlyArray<readonly [string, unknown]> = [
   ["node ERR_ code without syscall", Object.assign(new TypeError("bad arg"), {
     code: "ERR_INVALID_ARG_TYPE",
   })],
+  ...callerDefectNames.map((name) =>
+    [name, instanceOf(errors[name])] as readonly [string, unknown]
+  ),
+  ["two-field counterfeit", Object.assign(new TypeError("not the client's error"), {
+    code: "INVENTED",
+    syscall: "invented",
+  })],
+  ["unwrapped ENOTFOUND", Object.assign(new Error("getaddrinfo ENOTFOUND"), {
+    code: "ENOTFOUND",
+    syscall: "getaddrinfo",
+    errno: -3008,
+  })],
 ]
 
-/**
- * The unresolvable-host cause, reproduced field-for-field from the DEV-735
- * probe against `@nats-io/transport-node@3.4.0`: only `ECONNREFUSED` is wrapped
- * as `ConnectionError`, so this one reaches the seam unwrapped and is transport
- * evidence all the same.
- */
-const nodeSystemError = Object.assign(new Error("getaddrinfo ENOTFOUND"), {
-  code: "ENOTFOUND",
-  syscall: "getaddrinfo",
-  errno: -3008,
-})
+/** A cause the client really does raise for a refused dial. */
+const connectionRefused = new errors.ConnectionError("connection refused")
 
 describe("a cause the pinned client raised keeps its absence", () => {
-  for (const [name, cause] of [...clientCauses, ["node system error", nodeSystemError] as const]) {
+  for (const [name, cause] of clientCauses) {
     test(`${name} is transport evidence`, () => {
       expect(isTransportCause(cause)).toBe(true)
     })
   }
 
-  test("the vocabulary covers the client's whole published registry", () => {
-    // 13 core classes + the 2 JetStream roots. The count is pinned so a pin
-    // move that adds a class reds here instead of silently widening.
-    expect(clientCauses.length).toBe(15)
+  test("the vocabulary is the registry minus its caller-validation family", () => {
+    // 13 core classes, less the 3 that mean a mis-shaped call, plus the 2
+    // JetStream roots. The count is pinned so a pin move that adds a class reds
+    // here instead of silently widening.
+    expect(Object.keys(errors).length).toBe(13)
+    expect(clientCauses.length).toBe(12)
     expect(clientCauses.every(([, cause]) => isTransportCause(cause))).toBe(true)
   })
 
   for (const seam of seamNames) {
     test(`${seam} still mints the adapter's own absence`, async () => {
-      const verdict = await classify(seam, registersRefusal, "register.read", nodeSystemError)
+      const verdict = await classify(seam, registersRefusal, "register.read", connectionRefused)
       expect(verdict._tag).toBe("absence")
       if (verdict._tag !== "absence") return
       expect(verdict.refusal.sort).toBe("absence")
@@ -181,7 +220,7 @@ describe("a cause the pinned client raised keeps its absence", () => {
       expect(verdict.refusal.path).toEqual(["register.read"])
       // The cause survives verbatim: the narrowing decides the sort, never the
       // evidence (DECISIONS T0's preserved half).
-      expect(verdict.refusal.got).toBe(String(nodeSystemError))
+      expect(verdict.refusal.got).toBe(String(connectionRefused))
       expect(isRetryable(verdict.refusal)).toBe(true)
     })
   }

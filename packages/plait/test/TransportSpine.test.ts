@@ -1,5 +1,6 @@
 import { errors } from "@nats-io/nats-core"
 import { describe, expect, test } from "bun:test"
+import { readdir } from "node:fs/promises"
 
 import type { Next } from "../src/Refusal.js"
 import { transportRefusal as anchorsRefusal } from "../src/internal/anchors.js"
@@ -179,11 +180,27 @@ const operations = ["connection.acquire", "some.other.operation"] as const
  * The mint now classifies before it terms: a cause the pinned client never
  * raised is rethrown as a defect and never reaches the terms measured here
  * (`internal/transport.ts`, and `TransportDefects.test.ts` for that half). The
- * substitution narrows nothing this wall claims — the rows are still exercised
+ * substitution narrows nothing this gate claims — the rows are still exercised
  * on the cause they are actually minted on, since `ConnectionError` is what
  * `@nats-io/transport-node@3.4.0` raises for a refused dial.
  */
 const plantedCause = (message: string): Error => new errors.ConnectionError(message)
+
+/**
+ * The adapters that actually mint a transport refusal, read from the source
+ * tree rather than listed here: every `src/internal/*.ts` module exporting a
+ * `transportRefusal` is a classification site the spine owns.
+ */
+const spineAdapters = async (): Promise<ReadonlyArray<string>> => {
+  const directory = new URL("../src/internal/", import.meta.url)
+  const found: Array<string> = []
+  for (const entry of (await readdir(directory)).sort()) {
+    if (!entry.endsWith(".ts")) continue
+    const module = (await import(new URL(entry, directory).href)) as Record<string, unknown>
+    if (typeof module["transportRefusal"] === "function") found.push(entry.slice(0, -3))
+  }
+  return found
+}
 
 describe("the transport spine mints each adapter's own refusal", () => {
   for (const row of rows) {
@@ -200,6 +217,15 @@ describe("the transport spine mints each adapter's own refusal", () => {
     // which is why eight sites carry seven kinds. The affordances record's
     // "six absence kinds" undercounts by one.
     expect(new Set(rows.map((row) => row.kind)).size).toBe(7)
+  })
+
+  test("membership is derived: every adapter that mints one has a row here", async () => {
+    // The row TERMS above are transcribed on purpose — the pre-extraction
+    // definitions are this file's oracle. WHICH adapters must appear is not
+    // transcribed: it is read off the source tree, so a ninth adapter cannot
+    // join the spine without joining this gate, and a row for an adapter that
+    // no longer mints one cannot linger.
+    expect(await spineAdapters()).toEqual([...rows.map((row) => row.adapter)].sort())
   })
 
   test("the refusal path names the operation and the cause survives verbatim", () => {

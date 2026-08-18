@@ -58,9 +58,33 @@ export const teachRetryOperation = (operation: string): ReadonlyArray<Next> => [
 }]
 
 /**
- * The pinned client's own error classes, read from the client's registries
- * rather than transcribed from them. `errors` is `@nats-io/nats-core@3.4.0`'s
- * own map of its thirteen classes, so a hand-listed copy cannot drift from it;
+ * The classes in the pinned registry whose meaning is a caller defect, excluded
+ * by name.
+ *
+ * `InvalidArgumentError` is raised when a caller passes a value the API cannot
+ * use, `InvalidSubjectError` when a caller names a subject that is not one, and
+ * `InvalidOperationError` when a caller performs an operation the object it
+ * holds does not support — the pin's own words: "trying to iterate on an object
+ * that was configured with a callback" (`nats-core/lib/errors.d.ts`). None of
+ * the three says anything about the substrate. Every one of them says this
+ * package called the client wrong, which is a defect, and a defect is not part
+ * of the estate domain language.
+ *
+ * `@nats-io/jetstream@3.4.0`'s caller-validation class, `InvalidNameError`, is
+ * absent from that package's entrypoint, so no `instanceof` can name it and
+ * nothing admits it in the first place.
+ */
+const callerDefectClasses: ReadonlyArray<unknown> = [
+  errors.InvalidArgumentError,
+  errors.InvalidOperationError,
+  errors.InvalidSubjectError,
+]
+
+/**
+ * The pinned client's transport and connection classes, read from the client's
+ * registries rather than transcribed from them, minus the caller-validation
+ * family above. `errors` is `@nats-io/nats-core@3.4.0`'s own map of its
+ * thirteen classes, so a hand-listed copy cannot drift from it;
  * `JetStreamApiError` and `JetStreamError` are the two roots every
  * `@nats-io/jetstream@3.4.0` class this package can observe descends from
  * (`ConsumerNotFoundError` and `StreamNotFoundError` extend the first,
@@ -73,44 +97,34 @@ export const teachRetryOperation = (operation: string): ReadonlyArray<Next> => [
  * `@nats-io/obj@3.4.0` declare no error class at all; they raise these.
  */
 const clientErrorClasses: ReadonlyArray<new (...args: Array<never>) => Error> = [
-  ...Object.values(errors),
+  ...Object.values(errors).filter((klass) => !callerDefectClasses.includes(klass)),
   JetStreamApiError,
   JetStreamError,
 ]
 
 /**
- * The transport's own unwrapped causes.
+ * Whether the pinned client raised this cause as substrate evidence.
  *
- * `@nats-io/transport-node@3.4.0` wraps exactly one dial failure — a Node
- * `ECONNREFUSED` becomes `ConnectionError` — and rethrows every other socket
- * error as it stands, so an unresolvable host reaches this seam as a plain
- * `Error` carrying `code` and `syscall`. Measured, not assumed (DEV-735 probe):
- * connecting to a closed port yields `ConnectionError`, connecting to an
- * unresolvable host yields `Error { code: "ENOTFOUND", syscall: "getaddrinfo" }`.
- * The client emits that shape as its transport vocabulary, so enumerating the
- * vocabulary honestly includes it; dropping it would file "the host does not
- * resolve" — the most ordinary retryable absence there is — as a defect.
- *
- * The shape is what admits it, not the class: both fields must be strings.
- * Node's `ERR_*` programming errors carry `code` alone and stay defects.
+ * Membership in a pinned class is the whole test. There is deliberately no
+ * structural admission — no rule that reads fields off a foreign object and
+ * infers transport from their shape — because such a rule cannot tell the
+ * client's vocabulary from an impostor wearing the same two fields, and a
+ * counterfeit that passes becomes a retryable absence over a bug. That is the
+ * fence this narrowing exists to hold, so the fence has no shape-shaped gate
+ * in it.
  */
-const isNodeSystemError = (cause: unknown): boolean =>
-  cause instanceof Error &&
-  typeof (cause as { readonly code?: unknown }).code === "string" &&
-  typeof (cause as { readonly syscall?: unknown }).syscall === "string"
-
-/** Whether the pinned client raised this cause as substrate evidence. */
 export const isTransportCause = (cause: unknown): boolean =>
-  clientErrorClasses.some((klass) => cause instanceof klass) || isNodeSystemError(cause)
+  clientErrorClasses.some((klass) => cause instanceof klass)
 
 /**
  * Binds one adapter's terms into the refusal it mints on every transport cause
  * — and only on a transport cause (audit B-7, ruled 2026-08-18: "defects are
  * defects and are not part of the estate domain language").
  *
- * A cause the pinned client did not raise is a defect of this package's own
- * making — a `TypeError` inside the client, a mis-shaped call — and it is
- * rethrown unchanged rather than dressed as an absence. The rethrow is how a
+ * A cause the pinned client did not raise as substrate evidence is a defect of
+ * this package's own making — a `TypeError` inside the client, a mis-shaped
+ * call the client rejected as an invalid argument, subject, or operation — and
+ * it is rethrown unchanged rather than dressed as an absence. The rethrow is how a
  * defect stays a defect through every seam an adapter classifies at: inside
  * `Effect.tryPromise`'s `catch` the pin states that a thrown value is treated
  * as a defect, and a throw in an `Effect.catch` handler or an `Effect.gen` body
