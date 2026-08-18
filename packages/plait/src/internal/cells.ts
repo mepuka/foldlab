@@ -1,7 +1,5 @@
-import { JetStreamApiCodes, JetStreamApiError, StorageType } from "@nats-io/jetstream"
+import { StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
-import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
 import { Effect, Result, Schema, Scope } from "effect"
 
 import { canonicalBytes } from "../Canonical.js"
@@ -21,6 +19,13 @@ import {
   type Next,
   type Refusal,
 } from "../Refusal.js"
+import {
+  KvFailure,
+  acquireConnection,
+  isCasRefusal,
+  teachRetryOperation,
+  transportRefusalFor,
+} from "./transport.js"
 
 /**
  * NATS KV adapter for lattice cells.
@@ -49,29 +54,12 @@ const StoredCell = Schema.Array(Schema.suspend(() => Observation))
 const decoder = new TextDecoder()
 const cellPattern = /^[^.*>\s]+$/u
 
-/**
- * The definitive CAS refusal, classified by operation context plus code
- * (DEV-704 seam rule 2): duplicate create and stale update are both
- * `JetStreamApiError{status: 400, code: 10071}`, distinguished only by the
- * operation that observed them.
- */
-const isCasRefusal = (cause: unknown): boolean =>
-  cause instanceof JetStreamApiError &&
-  cause.status === 400 &&
-  cause.code === JetStreamApiCodes.StreamWrongLastSequence
-
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "cell-transport-unavailable",
-    law: "Transport absence may be retried; lattice-law refusals may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS KV operation to be available",
-    next: [{
-      subject: operation,
-      note: "Retry this absence with retryAbsence and a temporal Schedule.",
-    }],
-  })
+const transportRefusal = transportRefusalFor({
+  kind: "cell-transport-unavailable",
+  law: "Transport absence may be retried; lattice-law refusals may not.",
+  expected: "the pinned local NATS KV operation to be available",
+  next: teachRetryOperation,
+})
 
 /** One taught repair per structural law; every refusal names its legal next step. */
 const teachCellKey: ReadonlyArray<Next> = [{
@@ -132,18 +120,6 @@ const read = (bucket: KV, cell: string): Effect.Effect<KvEntry | null, Refusal> 
     try: () => bucket.get(cell),
     catch: (cause) => transportRefusal("cell.read", cause),
   })
-
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
-
-/** Internal carrier for a failed KV call awaiting classification. */
-class KvFailure {
-  readonly _tag = "KvFailure"
-  constructor(readonly cause: unknown) {}
-}
 
 const sameBytes = Effect.fn("Cells.sameBytes")(function* (
   left: ReadonlyArray<Observation>,
@@ -217,15 +193,11 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
   options: CellOptions,
   discipline: MergeDiscipline,
 ): Effect.fn.Return<CellService, Refusal, Scope.Scope> {
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? "foldlab-plait-cell",
-      }),
-      catch: (cause) => transportRefusal("connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait-cell",
+    "connection.acquire",
+    transportRefusal,
   )
   const bucket = yield* Effect.tryPromise({
     try: () => new Kvm(connection).create(CELL_BUCKET, {

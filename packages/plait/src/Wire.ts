@@ -2,7 +2,8 @@ import { Effect, Predicate, Result, Schema, SchemaIssue } from "effect"
 
 import { decodeJson, type JsonValue } from "@foldlab/core/jcs"
 import { canonicalBytes } from "./Canonical.js"
-import { Digest, digestOf, type Digest as DigestValue } from "./Digest.js"
+import { Digest, type Digest as DigestValue } from "./Digest.js"
+import { digestOfCanonicalBytes } from "./internal/digests.js"
 import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
 
 /** The four monotone observation kinds admitted by envelope v0. */
@@ -75,6 +76,16 @@ interface LocatedIssue {
   readonly issue: SchemaIssue.Issue
 }
 
+/**
+ * Walks to the first leaf issue, keeping its `_tag`.
+ *
+ * An audited deviation from the pin's own formatters (audit B-9): the pinned
+ * `makeFormatterStandardSchemaV1` walk erases the leaf tag, and the refusal
+ * taxonomy below reads exactly that tag — `UnexpectedKey` is what separates the
+ * closed-struct law from the field-shape law. `internal/refusals.ts` walks
+ * issues too, for a different law (recovering the ridden refusal annotation);
+ * friction card FH-8 records the considered-and-refused merge of the two.
+ */
 const firstIssue = (
   issue: SchemaIssue.Issue,
   path: ReadonlyArray<string> = [],
@@ -240,11 +251,10 @@ export const decodeEnvelope = Effect.fn("Wire.decodeEnvelope")(function* (
 
   yield* validateBody(decoded.success.body)
   const bytesCanonical = yield* canonicalBytes(decoded.success)
-  const digest = yield* digestOf(decoded.success)
   return {
     envelope: decoded.success,
     bytes: bytesCanonical,
-    digest,
+    digest: digestOfCanonicalBytes(bytesCanonical),
   }
 })
 

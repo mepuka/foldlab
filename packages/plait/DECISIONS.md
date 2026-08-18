@@ -743,3 +743,68 @@ public-effect gate walks the barrel, so no discipline is selectable by any
 consumer. **Load-bearing? yes** — the refutations are only attributable to the
 deleted step if everything else is provably the same code, and un-mutating
 either member reds its own row (verified both ways).
+
+## Task DEV-734 — the transport spine + mechanical audit dispositions
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-1, B-2, B-3, B-5, B-6,
+B-8, B-9, B-11; cards FH-1, FH-5).
+
+### T0. `acquireConnection` carries the caller's refusal, not the spine's
+
+Decided: the spine's connect helper is
+`acquireConnection(options, defaultName, operation, refuse)` — four arguments,
+not the two the ticket sketched. The adapter passes the operation string that
+names the acquire in the refusal path and the `TransportRefusal` bound to its
+own absence kind. Alternatives: a two-argument helper minting one spine-owned
+connection refusal. Why: the ticket's own rule is that the absence-kind strings
+stay per-adapter data; a spine-owned refusal would silently retag five of the
+six connect paths (`register-transport-unavailable` and its four siblings all
+become one kind), which is a change to the persisted refusal taxonomy, not a
+behaviour-preserving extraction. Threading the refusal keeps every byte of
+every minted refusal identical to what the eight copies produced, which is what
+lets the existing walls stand as the regression gate. **Load-bearing? yes** —
+it is the reason this extraction is provably behaviour-preserving.
+
+### T1. `TransportTerms.next` is a function of the operation
+
+Decided: the per-adapter taught repair is `(operation: string) =>
+ReadonlyArray<Next>`, uniformly, and the spine exports `teachRetryOperation`
+for the two adapters (`nats`, `cells`) whose repair names the refused operation
+as its own subject. The six adapters with a fixed repair write `next: () =>
+teach…`. Alternatives: a union member `ReadonlyArray<Next> | ((operation) =>
+…)`, so fixed repairs stay bare arrays. Why: one shape reads and type-checks
+better than two, and the two dynamic adapters shared a verbatim note that now
+lives once. **Load-bearing? no** — presentation of the same data.
+
+### T2. `digestOfCanonicalBytes` lands in `internal/`, and `Digest.digestOf` is untouched
+
+Decided: B-5's helper is `src/internal/digests.ts`, consumed by
+`Wire.decodeEnvelope`; `Digest.ts` keeps its own canonicalize-then-hash body.
+Alternatives: export it from `Digest.ts` (the module that owns identity); have
+`digestOf` delegate to the internal helper. Why: `Digest.ts` is an export path,
+so an addition there is a public-surface addition — out of this ticket's scope
+and a manifest change. Delegating the other way would make `Digest.ts` import
+its own internal consumer and add a second module cycle to a package that
+documents the one it already has (`Cell.ts` ↔ `internal/cells.ts`). The cost is
+two duplicated lines of hashing; the precondition "these bytes are canonical"
+is not checkable, which is the other reason the door stays internal.
+**Load-bearing? maybe** — revisit when the sorts sweep (DEV-740) brands digest
+construction.
+
+### T3. The heartbeat keeps its leading sleep, and its branch keeps success type `never`
+
+Decided: B-3's loop is
+`Effect.sleep(h) → Effect.repeat(renewOnce, Schedule.spaced(h)) → Effect.never`,
+with `renewOnce` a single `SynchronizedRef.updateEffect`. Alternatives: the
+bare `Effect.repeat(renewOnce, Schedule.spaced(h))` the finding names. Why: at
+the pin, `Effect.repeat` evaluates its source once BEFORE stepping the schedule
+(`Effect.d.ts`, the repeat gotcha), so the bare form fires a renewal at grant
+time — an extra CAS write and an immediately-changed token, which is a
+behaviour change the ticket does not claim. The leading sleep reproduces the
+hand-rolled loop's instants exactly. `Schedule.spaced` never exhausts, so the
+`Effect.never` tail is unreachable; it exists because `repeat` types its
+success as the schedule's output and `raceFirst` would otherwise widen `hold`'s
+result to `A | number`. **Load-bearing? yes** — the first renewal's timing is
+observable to any holder that reads its token.

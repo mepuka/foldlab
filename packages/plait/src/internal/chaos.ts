@@ -8,7 +8,6 @@ import {
   type JsMsg,
 } from "@nats-io/jetstream"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
 import { Effect, Schema, Scope } from "effect"
 
 import { initial } from "../Anchor.js"
@@ -29,6 +28,7 @@ import {
   type PositionedEvent,
   type SuccessorMachine,
 } from "./successors.js"
+import { acquireConnection, transportRefusalFor } from "./transport.js"
 
 export interface RedeliveryChaosOptions<Event, State, Partitions extends number> {
   readonly servers: string | ReadonlyArray<string>
@@ -52,18 +52,15 @@ export interface RedeliveryChaosResult {
   readonly anchorWrites: number
 }
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "chaos-transport-unavailable",
-    law: "The chaos schedule uses only the real durable-consumer protocol for redelivery.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS consumer operation to be available",
-    next: [{
-      subject: "plait chaos",
-      note: "Restore the consumer protocol and re-run the measurement against the same pinned span.",
-    }],
-  })
+const transportRefusal = transportRefusalFor({
+  kind: "chaos-transport-unavailable",
+  law: "The chaos schedule uses only the real durable-consumer protocol for redelivery.",
+  expected: "the pinned local NATS consumer operation to be available",
+  next: () => [{
+    subject: "plait chaos",
+    note: "Restore the consumer protocol and re-run the measurement against the same pinned span.",
+  }],
+})
 
 const nextMessage = (
   consumer: Consumer,
@@ -83,12 +80,6 @@ const nextMessage = (
     }],
   }))
   : Effect.succeed(message)))
-
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
 
 const seededOrder = (length: number, seed: number): ReadonlyArray<number> => {
   const order = Array.from({ length }, (_, index) => index)
@@ -287,17 +278,11 @@ export const runRedeliveryChaos = Effect.fn("Chaos.runRedelivery")(function*<
       }],
     })
   }
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string"
-          ? options.servers
-          : [...options.servers],
-        name: "foldlab-plait-chaos",
-      }),
-      catch: (cause) => transportRefusal("chaos.connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait-chaos",
+    "chaos.connection.acquire",
+    transportRefusal,
   )
   const partitions = yield* Effect.forEach(
     options.heads,

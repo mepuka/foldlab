@@ -18,11 +18,7 @@ import type { Anchor } from "../Anchor.js"
 import { digestOf } from "../Digest.js"
 import type { DeclaredFold } from "../Fold.js"
 import { partition } from "../Lane.js"
-import {
-  absenceRefusal,
-  structuralRefusal,
-  type Refusal,
-} from "../Refusal.js"
+import { structuralRefusal, type Refusal } from "../Refusal.js"
 import { evidenceSubject } from "../Subjects.js"
 import { verifyEnvelopeDigest, type Envelope } from "../Wire.js"
 import type { AnchorStore, LoadedAnchor } from "./anchors.js"
@@ -32,6 +28,7 @@ import {
   type PositionedEvent,
   type SuccessorMachine,
 } from "./successors.js"
+import { transportRefusalFor } from "./transport.js"
 
 export const PUMP_BUFFER_BOUND = 256
 export const PUMP_ACK_WAIT_NANOS = 1 * 1_000_000_000
@@ -55,18 +52,15 @@ export interface MutableFoldScoreboard {
   refusals: Record<string, number>
 }
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "fold-transport-unavailable",
-    law: "Transport absence may be retried; consumer and checkpoint shape violations may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS durable-consumer operation to be available",
-    next: [{
-      subject: "Folds.deploy",
-      note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
-    }],
-  })
+const transportRefusal = transportRefusalFor({
+  kind: "fold-transport-unavailable",
+  law: "Transport absence may be retried; consumer and checkpoint shape violations may not.",
+  expected: "the pinned local NATS durable-consumer operation to be available",
+  next: () => [{
+    subject: "Folds.deploy",
+    note: "Reconnect and redeploy; resumption re-attaches at floor + 1, and redelivery replaces anything left unacknowledged.",
+  }],
+})
 
 const consumerShapeRefusal = (
   foldDigest: string,

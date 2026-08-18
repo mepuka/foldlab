@@ -118,6 +118,13 @@ export const isRetryable = (refusal: Refusal): refusal is AbsenceRefusal =>
 /**
  * Retries only absence observations using either a count or temporal schedule.
  * Structural evidence passes through once. Supports data-first and pipeable use.
+ *
+ * The error channel stays `Refusal` on purpose, and the pin is why: both call
+ * shapes below pass `while: isRetryable`, whose refinement would normally
+ * narrow the residual error to `AbsenceRefusal`'s complement, but the pinned
+ * `Retry.Return` conditional matches the `times` and `schedule` arms before it
+ * reaches the `while`-refinement arm. `Refusal` is also the honest type:
+ * exhausted retries surface the final `AbsenceRefusal` itself.
  */
 export const retryAbsence: {
   (times: number): <A, R>(

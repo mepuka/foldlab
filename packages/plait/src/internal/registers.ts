@@ -1,8 +1,6 @@
-import { JetStreamApiCodes, JetStreamApiError, StorageType } from "@nats-io/jetstream"
+import { StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
-import type { NatsConnection } from "@nats-io/nats-core"
-import { connect } from "@nats-io/transport-node"
-import { Effect, Result, Schema, Scope } from "effect"
+import { Effect, Equal, Result, Schema, Scope } from "effect"
 
 import {
   REGISTER_BUCKET,
@@ -12,12 +10,17 @@ import {
   type RegisterState,
 } from "../Register.js"
 import {
-  absenceRefusal,
   structuralRefusal,
   type Next,
   type Refusal,
   type StructuralRefusalKind,
 } from "../Refusal.js"
+import {
+  KvFailure,
+  acquireConnection,
+  isCasRefusal,
+  transportRefusalFor,
+} from "./transport.js"
 
 /**
  * NATS KV adapter for the commitment register.
@@ -47,18 +50,6 @@ const encode = (value: StoredRegister): Uint8Array =>
   encoder.encode(JSON.stringify(value))
 
 /**
- * The definitive CAS refusal, classified by operation context plus code
- * (DEV-704 seam rule 2): duplicate create and stale update are both
- * `JetStreamApiError{status: 400, code: 10071}`, distinguished only by the
- * operation that observed them. Anything else is transport-class and its
- * outcome is ambiguous.
- */
-const isCasRefusal = (cause: unknown): boolean =>
-  cause instanceof JetStreamApiError &&
-  cause.status === 400 &&
-  cause.code === JetStreamApiCodes.StreamWrongLastSequence
-
-/**
  * The absence sort's taught repair. A transport refusal leaves the operation's
  * outcome ambiguous (seam rule 2), and the reconciliation this adapter uses
  * everywhere else is read-back, never a retried write on faith.
@@ -68,15 +59,12 @@ const teachTransportReadBack: ReadonlyArray<Next> = [{
   note: "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it.",
 }]
 
-const transportRefusal = (operation: string, cause: unknown): Refusal =>
-  absenceRefusal({
-    kind: "register-transport-unavailable",
-    law: "Transport absence may be retried; fencing-law refusals may not.",
-    path: [operation],
-    got: String(cause),
-    expected: "the pinned local NATS KV operation to be available",
-    next: teachTransportReadBack,
-  })
+const transportRefusal = transportRefusalFor({
+  kind: "register-transport-unavailable",
+  law: "Transport absence may be retried; fencing-law refusals may not.",
+  expected: "the pinned local NATS KV operation to be available",
+  next: () => teachTransportReadBack,
+})
 
 const lawRefusal = (
   kind: StructuralRefusalKind,
@@ -146,7 +134,10 @@ const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
     ),
   })
   return Effect.flatMap(parsed, (value) => {
-    const result = Schema.decodeUnknownResult(StoredRegister)(value)
+    const result = Schema.decodeUnknownResult(StoredRegister, {
+      onExcessProperty: "error",
+      errors: "first",
+    })(value)
     return Result.isSuccess(result)
       ? Effect.succeed(result.success)
       : Effect.fail(lawRefusal(
@@ -159,21 +150,6 @@ const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
       ))
   })
 }
-
-/** Internal carrier for a failed KV call awaiting classification. */
-class KvFailure {
-  readonly _tag = "KvFailure"
-  constructor(readonly cause: unknown) {}
-}
-
-const sameOutcome = (
-  a: StoredRegister["outcome"],
-  b: StoredRegister["outcome"],
-): boolean =>
-  a === null ? b === null : b !== null && a.token === b.token && a.value === b.value
-
-const sameStored = (a: StoredRegister, b: StoredRegister): boolean =>
-  a.holder === b.holder && sameOutcome(a.outcome, b.outcome)
 
 const stateOf = Effect.fn("Registers.stateOf")(function* (
   entry: KvEntry,
@@ -195,12 +171,6 @@ const read = (
     catch: (cause) => transportRefusal("register.read", cause),
   })
 
-const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
-  Effect.tryPromise({
-    try: () => connection.close(),
-    catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
-
 const requirePresent = (
   entry: KvEntry | null,
 ): Effect.Effect<KvEntry, Refusal> => entry === null
@@ -217,15 +187,11 @@ const requirePresent = (
 export const makeRegisterService = Effect.fn("Registers.make")(function* (
   options: RegisterOptions,
 ): Effect.fn.Return<RegisterService, Refusal, Scope.Scope> {
-  const connection = yield* Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? "foldlab-plait-register",
-      }),
-      catch: (cause) => transportRefusal("connection.acquire", cause),
-    }),
-    closeConnection,
+  const connection = yield* acquireConnection(
+    options,
+    "foldlab-plait-register",
+    "connection.acquire",
+    transportRefusal,
   )
   const bucket = yield* Effect.tryPromise({
     try: () => new Kvm(connection).create(REGISTER_BUCKET, {
@@ -304,7 +270,11 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
       return yield* transportRefusal(operation, cause)
     }
     const stored = yield* decode(entry)
-    if (entry.revision > presented && sameStored(stored, intended)) {
+    // Whole-record equality, not a hand-listed field comparison: a field added
+    // to StoredRegister is compared the day it is added rather than silently
+    // dropped from the check. The closed decode above is the other half —
+    // foreign fields refuse instead of comparing equal.
+    if (entry.revision > presented && Equal.equals(stored, intended)) {
       return entry
     }
     if (entry.revision !== presented) {
@@ -340,7 +310,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
           const entry = yield* read(bucket, work)
           if (entry !== null) {
             const stored = yield* decode(entry)
-            if (sameStored(stored, intended)) {
+            if (Equal.equals(stored, intended)) {
               return { token: entry.revision, holder, outcome: null } satisfies RegisterState
             }
             return yield* lawRefusal(
