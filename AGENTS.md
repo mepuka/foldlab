@@ -210,3 +210,17 @@ bash verify/moves/run.sh
 `verify/{catalog,ir,implication,pipeline}/run.sh` follow the same
 shape. `verify/fabric/run.sh` is the Plait R5 algebra gate and also regenerates
 its proof-witnessed vector corpus byte-for-byte.
+
+## Vendored reference repositories
+
+`repos/effect` is the Effect source vendored as a git subtree at the
+version this repo pins, so every fresh checkout can read the real
+implementation. Use vendored repositories as READ-ONLY reference
+material: prefer examples and patterns from the vendored source over
+generated guesses — when writing Stream/PubSub/Cache/Layer/Schema
+code, open the real implementation and its tests first. Never edit
+files under `repos/`; never import from `repos/` in shipped code
+(dependencies come from the package manager); other `repos/*` clones
+are local-only and gitignored. Update the subtree only when the
+package pin advances:
+`git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git <ref> --squash`.
