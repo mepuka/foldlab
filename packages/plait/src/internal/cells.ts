@@ -7,7 +7,7 @@ import { StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
 import { Effect, Result, Schema, Scope } from "effect"
 
-import { canonicalBytes } from "../Canonical.js"
+import { canonicalBytes } from "../truth/Canonical.js"
 import {
   CELL_BUCKET,
   CELL_HISTORY,
@@ -17,13 +17,13 @@ import {
   stateOf,
   type CellOptions,
   type CellService,
-} from "../Cell.js"
+} from "../planes/Cell.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Next,
   type Refusal,
-} from "../Refusal.js"
+} from "../truth/Refusal.js"
 import {
   CasWriteFailure,
   carries,

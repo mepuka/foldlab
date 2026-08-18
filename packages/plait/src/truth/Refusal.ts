@@ -6,7 +6,7 @@
 import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 
-import { refusalOf } from "./internal/refusals.js"
+import { refusalOf } from "../internal/refusals.js"
 
 /** One legal repair or inspection step attached to a refusal. */
 export const Next = Schema.Struct({

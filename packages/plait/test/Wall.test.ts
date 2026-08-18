@@ -7,7 +7,7 @@ import { gzipSync } from "node:zlib"
 
 import { Effect, Schema } from "effect"
 
-import { decodeEnvelope } from "../src/Wire.js"
+import { decodeEnvelope } from "../src/kernel/Wire.js"
 
 const goRoot = resolve(import.meta.dir, "../../../go")
 const corpus = resolve(import.meta.dir, "../fixtures/envelopes.ndjson")

@@ -14,28 +14,28 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Predicate } from "effect"
 
-import * as Algebra from "./Algebra.js"
-import type { Anchor } from "./Anchor.js"
-import { canonicalBytes, type WireValue } from "./Canonical.js"
-import { digestOf, type Digest } from "./Digest.js"
+import * as Algebra from "../truth/Algebra.js"
+import type { Anchor } from "../planes/Anchor.js"
+import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
 import {
   Folds,
   declare as declareFold,
   deploy,
   type DeclaredFold,
   type FoldScoreboard,
-} from "./Fold.js"
-import * as Lane from "./Lane.js"
+} from "../planes/Fold.js"
+import * as Lane from "../planes/Lane.js"
 import {
   StructuralRefusal,
   structuralRefusal,
   type Refusal,
-} from "./Refusal.js"
+} from "../truth/Refusal.js"
 import {
   runRedeliveryChaos,
   type RedeliveryChaosResult,
-} from "./internal/chaos.js"
-import { laneStreamName } from "./internal/lanes.js"
+} from "../internal/chaos.js"
+import { laneStreamName } from "../internal/lanes.js"
 
 type ChaosFold = DeclaredFold<WireValue, WireValue, number>
 type Axis = "kill" | "duplicate" | "reorder"
@@ -426,7 +426,7 @@ const runKill = async (
 }
 
 const corpusDigest = async (): Promise<string> => {
-  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
+  const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
   const bytes = new Uint8Array(await Bun.file(join(packageRoot, "fixtures", "fabric-conformance.ndjson")).arrayBuffer())
   return new Bun.CryptoHasher("sha256").update(bytes).digest("hex")
 }

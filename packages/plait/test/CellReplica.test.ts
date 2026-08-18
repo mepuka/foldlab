@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { Deferred, Effect, Fiber, Stream } from "effect"
 
-import { join, replica, stateOf, type CellState, type Observation } from "../src/Cell.js"
-import type { Digest } from "../src/Digest.js"
+import { join, replica, stateOf, type CellState, type Observation } from "../src/planes/Cell.js"
+import type { Digest } from "../src/truth/Digest.js"
 
 /**
  * The local replica's own suite: the two theorems A-8b cites by name, and the

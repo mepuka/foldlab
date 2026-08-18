@@ -8,7 +8,7 @@ import { errors, type NatsConnection } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Scope } from "effect"
 
-import { absenceRefusal, type Next, type Refusal } from "../Refusal.js"
+import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
 
 /**
  * The transport spine every NATS adapter in this package sits on.

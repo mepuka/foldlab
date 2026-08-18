@@ -119,7 +119,7 @@ reason a kill -9 costs nothing. No registers, no cells, no sessions.
    is demanded for it.
 5. **The pump does NOT build over the shipped subscribe path**
    (fidelity review S1, adopted). The merged receive path
-   (`packages/plait/src/FabricClient.ts:23-39`,
+   (`packages/plait/src/carriage/FabricClient.ts:23-39`,
    `src/internal/nats.ts:170-202`) discards the stream position, the
    ack handle, and the delivered subject — exactly the coordinates the
    successor discipline and the anchor floor key on — and its consumer

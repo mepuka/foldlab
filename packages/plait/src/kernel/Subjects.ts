@@ -5,7 +5,7 @@
  */
 import { Effect, Schema } from "effect"
 
-import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
+import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 
 /** An evidence-lane routing subject. */
 export const EvidenceSubject = Schema.String

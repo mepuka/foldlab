@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Schema } from "effect"
 
-import { Digest } from "../src/Digest.js"
-import { declare, partition } from "../src/Lane.js"
+import { Digest } from "../src/truth/Digest.js"
+import { declare, partition } from "../src/planes/Lane.js"
 
 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
 const eventSchema = Digest.make("a".repeat(64))

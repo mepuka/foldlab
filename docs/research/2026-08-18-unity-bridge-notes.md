@@ -215,7 +215,7 @@ must-not-compile row proving it can fail (eleven mutated corpora each
 refused for its own named reason during development, and the probes
 caught a real defect: the first header-count check compared a list
 against itself). The plait package grew the generate/check pair for
-`src/KernelTables.generated.ts` (kind/stage registries, the sixteen-row
+`src/kernel/KernelTables.generated.ts` (kind/stage registries, the sixteen-row
 taught-refusal table, phantom brands per sort with per-kind digest
 aliases), the door seam type, and a conformance wall replaying all 17
 admission verdicts and 12 encoding round-trips against a pluggable

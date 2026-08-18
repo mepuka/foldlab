@@ -8,15 +8,15 @@ import { Context, Effect, Layer, Scope } from "effect"
 import type {
   CommutativeAlgebra,
   DeclaredAlgebra,
-} from "./Algebra.js"
-import { hasCommutativeWitness } from "./Algebra.js"
-import type { WireValue } from "./Canonical.js"
-import { digestOf, type Digest } from "./Digest.js"
+} from "../truth/Algebra.js"
+import { hasCommutativeWitness } from "../truth/Algebra.js"
+import type { WireValue } from "../truth/Canonical.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
 import type { DeclaredLane } from "./Lane.js"
-import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
-import type { Refusal } from "./Refusal.js"
+import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
+import type { Refusal } from "../truth/Refusal.js"
 import type { Anchor } from "./Anchor.js"
-import { makeFoldService } from "./internal/folds.js"
+import { makeFoldService } from "../internal/folds.js"
 
 /** A per-event contribution whose declaration names its executable behavior. */
 export interface Contribution<Event, State> {

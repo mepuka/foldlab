@@ -5,12 +5,12 @@
  */
 import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
 
-import type { WireValue } from "./Canonical.js"
-import { Digest, digestOf, type Digest as DigestValue } from "./Digest.js"
-import { structuralRefusal, type Refusal, type StructuralRefusal } from "./Refusal.js"
-import { evidenceSubject } from "./Subjects.js"
-import type { Certificate } from "./Wire.js"
-import { makeLaneService } from "./internal/lanes.js"
+import type { WireValue } from "../truth/Canonical.js"
+import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
+import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
+import { evidenceSubject } from "../kernel/Subjects.js"
+import type { Certificate } from "../kernel/Wire.js"
+import { makeLaneService } from "../internal/lanes.js"
 
 /** The closed, identity-bearing grammar for deriving a partition key. */
 export const PartitionKey = Schema.Struct({

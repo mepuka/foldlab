@@ -2,9 +2,9 @@ import { describe, test } from "bun:test"
 
 import { Effect, type Layer } from "effect"
 
-import { Blobs } from "../src/Blob.js"
-import { Digest } from "../src/Digest.js"
-import { isRetryable, type Refusal } from "../src/Refusal.js"
+import { Blobs } from "../src/planes/Blob.js"
+import { Digest } from "../src/truth/Digest.js"
+import { isRetryable, type Refusal } from "../src/truth/Refusal.js"
 
 /**
  * The backend-agnostic blob conformance suite — the wall a `BlobsService`

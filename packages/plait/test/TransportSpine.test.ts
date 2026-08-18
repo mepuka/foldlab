@@ -2,7 +2,7 @@ import { errors } from "@nats-io/nats-core"
 import { describe, expect, test } from "bun:test"
 import { readdir } from "node:fs/promises"
 
-import type { Next } from "../src/Refusal.js"
+import type { Next } from "../src/truth/Refusal.js"
 import { transportRefusal as anchorsRefusal } from "../src/internal/anchors.js"
 import { transportRefusal as cellsRefusal } from "../src/internal/cells.js"
 import { transportRefusal as chaosRefusal } from "../src/internal/chaos.js"

@@ -260,7 +260,7 @@ structure. That matters more for agents than for people: an agent can branch on
 `sort`, cite `law` in a report, and follow `next` without a model having to
 parse English. `sort: "absence"` is the only class the shipped retry policies
 touch, and structural refusals pass through once, by construction
-(`src/Refusal.ts`, `retryAbsence`).
+(`src/truth/Refusal.ts`, `retryAbsence`).
 
 Where other stacks give you "closed struct, excess properties refused" as a
 strictness setting you can turn off, here it is the law the wire contract is

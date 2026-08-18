@@ -1341,14 +1341,14 @@ hand-written**. A hand-typed `description` that restates a docstring has
 forked the model exactly as surely as a hand-typed refusal table would.
 
 **The TypeScript lane implements exactly this mapping.**
-`packages/plait/src/KernelSchemas.generated.ts` is emitted from the
+`packages/plait/src/kernel/KernelSchemas.generated.ts` is emitted from the
 corpus and carries `identifier`, `title`, `description`, and examples
 per the table below; its regeneration is byte-identical and gated. The
 mapping is therefore a description of shipped code, not a proposal —
 with one measured amendment, `canonicalExamples`, recorded after the
 table.
 
-The estate already annotates: `packages/plait/src/Digest.ts:12` carries
+The estate already annotates: `packages/plait/src/truth/Digest.ts:12` carries
 `.annotate({ identifier: "PlaitDigest" })`, and
 `packages/plait/src/internal/refusals.ts` already rides a structural
 refusal through `Schema.Annotations.Issue` under the
@@ -1783,7 +1783,7 @@ standard trick is an intersection with an otherwise-unused property.
 | `rank` | `const KIND_RANK: Record<DeclKind, number>` | Generated, never typed by hand. |
 | stage record | same shape; plus `stageReached(a, b) => RANK[a] >= RANK[b]` | |
 | refusal record | `type RefusalReason = "clock-read" \| ...` plus a generated `TAUGHT: Record<RefusalReason, Refusal>` | The wire reason *is* the TypeScript type. |
-| `Digest(program)` | `type ProgramDigest = Carrier & { readonly __kind: "program" }` | A string-literal brand. Two kinds do not unify; the brand name comes from the emitted kind table. `Carrier` is `bigint` if the surface mirrors the model's `id : Nat`, and `string` if it mirrors the estate's existing hex-digest surface (`packages/plait/src/Digest.ts`, 64 lowercase hex characters). The brand mechanism is the same either way; the carrier choice is the runtime's, not the schema's. |
+| `Digest(program)` | `type ProgramDigest = Carrier & { readonly __kind: "program" }` | A string-literal brand. Two kinds do not unify; the brand name comes from the emitted kind table. `Carrier` is `bigint` if the surface mirrors the model's `id : Nat`, and `string` if it mirrors the estate's existing hex-digest surface (`packages/plait/src/truth/Digest.ts`, 64 lowercase hex characters). The brand mechanism is the same either way; the carrier choice is the runtime's, not the schema's. |
 | `Digest(kind)` (bound) | `type Digest<K extends DeclKind> = Carrier & { readonly __kind: K }` | A genuine phantom type parameter. When the caller's kind is statically known, cross-kind mixing is a compile error. |
 | `Token(register)` (bound to a *value*) | `type Token<R extends ProgramDigest> = ...` only when the register is a literal type | See below. |
 | `type` record | a discriminated union per `inductive`; an interface per `structure` | `{ readonly _tag: "declare"; readonly kind: DeclKind; ... }`. |

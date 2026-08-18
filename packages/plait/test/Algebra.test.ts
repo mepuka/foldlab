@@ -8,7 +8,7 @@ import {
   commutative,
   commutativeLaws,
   declare,
-} from "../src/Algebra.js"
+} from "../src/truth/Algebra.js"
 
 const arbitraryInteger = (seed: number): number => FastCheck.sample(
   FastCheck.integer(),

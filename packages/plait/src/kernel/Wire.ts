@@ -6,10 +6,10 @@
 import { Effect, Predicate, Result, Schema, SchemaIssue } from "effect"
 
 import { decodeJson, type JsonValue } from "@foldlab/core/jcs"
-import { canonicalBytes } from "./Canonical.js"
-import { Digest, type Digest as DigestValue } from "./Digest.js"
-import { digestOfCanonicalBytes } from "./internal/digests.js"
-import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
+import { canonicalBytes } from "../truth/Canonical.js"
+import { Digest, type Digest as DigestValue } from "../truth/Digest.js"
+import { digestOfCanonicalBytes } from "../internal/digests.js"
+import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 
 /** The four monotone observation kinds admitted by envelope v0. */
 export const EnvelopeKind = Schema.Literals([

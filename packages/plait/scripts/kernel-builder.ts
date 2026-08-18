@@ -28,14 +28,14 @@
  *
  * @module
  */
-import type { KernelTypeRecord } from "../src/KernelCorpusSchemas.js"
+import type { KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { generatorFields, parseTypeReference, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The command a reader runs to reproduce the generated module. */
 export const GENERATE_BUILDER_COMMAND = "bun run generate:kernel-builder"
 
 /** Where the generated module is committed, relative to the repository root. */
-export const GENERATED_BUILDER_PATH = "packages/plait/src/KernelBuilder.generated.ts"
+export const GENERATED_BUILDER_PATH = "packages/plait/src/kernel/KernelBuilder.generated.ts"
 
 /** The result of comparing committed bytes with a fresh rendering. */
 export type KernelBuilderCheck =

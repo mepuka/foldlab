@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Layer, Option, Schema } from "effect"
 
-import { canonicalBytes } from "../src/Canonical.js"
-import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/Catalog.js"
-import { digestOf, type Digest } from "../src/Digest.js"
-import { decodeRefusing } from "../src/Refusal.js"
-import { PublishingOf, ResolvedOf, publish, resolve } from "../src/Resolved.js"
+import { canonicalBytes } from "../src/truth/Canonical.js"
+import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/planes/Catalog.js"
+import { digestOf, type Digest } from "../src/truth/Digest.js"
+import { decodeRefusing } from "../src/truth/Refusal.js"
+import { PublishingOf, ResolvedOf, publish, resolve } from "../src/planes/Resolved.js"
 
 const TermMap = Schema.Record(Schema.String, Schema.String)
 const terms = { alpha: "one", beta: "two" }

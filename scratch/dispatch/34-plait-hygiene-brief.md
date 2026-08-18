@@ -152,16 +152,16 @@ never buys a false red again.
    over a key-escaped shadow; a stateful accessor can change between
    passes, falling back to the joined-string form) is documented in
    the `canonicalBytes` FUNCTION JSDoc
-   (`packages/plait/src/Canonical.ts:106-111`); the charge said "the
+   (`packages/plait/src/truth/Canonical.ts:106-111`); the charge said "the
    module JSDoc". Move the note to a module-level doc block on
    `Canonical.ts`, keep a one-line pointer at the function, and add
    the one-line inheritance pointer at `digestOf`
-   (`packages/plait/src/Digest.ts`), which inherits the seam (the
+   (`packages/plait/src/truth/Digest.ts`), which inherits the seam (the
    DEV-701 R2 verdict sentence). Cosmetic; no behavior change; no
    fixture moves. *Source:* DEV-694 round-2 charge S2 (comment
    `e2e5d4de`); DEV-701 verdict R2.
 7. **`retryAbsence` gets the temporal semantics its sort names.** The
-   shipped helper (`packages/plait/src/Refusal.ts:68-73`) is
+   shipped helper (`packages/plait/src/truth/Refusal.ts:68-73`) is
    count-only, zero-delay, data-first-only — an immediate burst, which
    is semantically wrong for the one class it exists for (absence:
    "not-here-yet; retry later") and practically useless against

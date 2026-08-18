@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect } from "effect"
 
-import { canonicalize, empty, join, stateOf, type Observation } from "../src/Cell.js"
+import { canonicalize, empty, join, stateOf, type Observation } from "../src/planes/Cell.js"
 
 const run = <A>(effect: Effect.Effect<A, unknown>): A =>
   Effect.runSync(effect as Effect.Effect<A, never>)

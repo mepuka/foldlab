@@ -36,7 +36,7 @@ import type {
   KernelConstructorRecord,
   KernelProgramRecord,
   KernelTypeRecord,
-} from "../src/KernelCorpusSchemas.js"
+} from "../src/kernel/KernelCorpusSchemas.js"
 import { generatorFields, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The command a reader runs to reproduce the page. */

@@ -15,15 +15,15 @@ import {
   Anchor,
   initial,
   type Anchor as AnchorValue,
-} from "../Anchor.js"
-import { canonicalBytes, type WireValue } from "../Canonical.js"
-import { digestOf } from "../Digest.js"
-import type { DeclaredFold } from "../Fold.js"
+} from "../planes/Anchor.js"
+import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
+import { digestOf } from "../truth/Digest.js"
+import type { DeclaredFold } from "../planes/Fold.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Refusal,
-} from "../Refusal.js"
+} from "../truth/Refusal.js"
 import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
 
 export interface LoadedAnchor<State> {

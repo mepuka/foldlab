@@ -5,8 +5,8 @@
  */
 import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
 
-import type { Refusal } from "./Refusal.js"
-import { makeRegisterService } from "./internal/registers.js"
+import type { Refusal } from "../truth/Refusal.js"
+import { makeRegisterService } from "../internal/registers.js"
 
 /** The file-backed KV bucket that is authoritative for commitment registers. */
 export const REGISTER_BUCKET = "flb-fab-reg"

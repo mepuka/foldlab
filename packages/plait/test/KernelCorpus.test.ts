@@ -46,7 +46,7 @@ import {
   isCanonicalJsonText,
   parseCanonicalJson,
   type CanonicalJson,
-} from "../src/CanonicalJson.js"
+} from "../src/truth/CanonicalJson.js"
 
 const repository = resolve(import.meta.dir, "../../..")
 const source = await Bun.file(resolve(repository, CORPUS_PATH)).text()

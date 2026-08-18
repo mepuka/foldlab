@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 
-import type { CommutativeAlgebra } from "../../src/Algebra.js"
-import { declare } from "../../src/Fold.js"
+import type { CommutativeAlgebra } from "../../src/truth/Algebra.js"
+import { declare } from "../../src/planes/Fold.js"
 import { fold as declaredFold, lane as declaredLane } from "./chaos-fold.js"
 
 const betweenArmsBias = process.argv[2] === "__pump" ? 2 : 1

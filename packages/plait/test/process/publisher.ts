@@ -1,9 +1,9 @@
 import { Effect, Schema } from "effect"
 
-import { Digest } from "../../src/Digest.js"
-import { FabricClient, type PublishedEnvelope } from "../../src/FabricClient.js"
-import { factSubject } from "../../src/Subjects.js"
-import { Envelope } from "../../src/Wire.js"
+import { Digest } from "../../src/truth/Digest.js"
+import { FabricClient, type PublishedEnvelope } from "../../src/carriage/FabricClient.js"
+import { factSubject } from "../../src/kernel/Subjects.js"
+import { Envelope } from "../../src/kernel/Wire.js"
 
 const CorpusRow = Schema.Struct({
   case: Schema.String,

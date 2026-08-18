@@ -5,7 +5,7 @@ import {
   evidenceSubject,
   factSubject,
   nodeSubject,
-} from "../src/Subjects.js"
+} from "../src/kernel/Subjects.js"
 
 describe("fabric subject constructors", () => {
   test("construct exactly the ruled routing grammar", async () => {

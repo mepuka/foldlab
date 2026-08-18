@@ -1,6 +1,6 @@
 import type { Effect, Layer, Schema, Stream } from "effect"
 
-import type { Refusal } from "../src/Refusal.js"
+import type { Refusal } from "../src/truth/Refusal.js"
 
 /** The public barrel this walk quantifies over. */
 export type PublicApi = typeof import("../src/index.js")

@@ -3,10 +3,10 @@ import { resolve } from "node:path"
 
 import { Effect, Reducer } from "effect"
 
-import * as Algebra from "../src/Algebra.js"
-import { initial } from "../src/Anchor.js"
-import type { WireValue } from "../src/Canonical.js"
-import { digestOf } from "../src/Digest.js"
+import * as Algebra from "../src/truth/Algebra.js"
+import { initial } from "../src/planes/Anchor.js"
+import type { WireValue } from "../src/truth/Canonical.js"
+import { digestOf } from "../src/truth/Digest.js"
 import {
   arrivalOrderReplay,
   replaySuccessors,
