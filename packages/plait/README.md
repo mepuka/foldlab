@@ -11,6 +11,10 @@ fenced register over one file-backed, single-replica JetStream server.
   bytes only.
 - `Refusal` owns the structural/absence tagged errors and the absence-only retry
   policy.
+- `KernelDoor` is the one admission door. Its candidate, context, and
+  intrinsic-act types are projections of the model-generated schemas, its
+  `admit` is the model-vector-gated judgment over them, and CLI, `FabricClient`,
+  and `CasDaemon` export that exact function rather than a wrapper.
 - `Wire` constrained-decodes the closed Envelope v0 shape, enforces the inline
   body threshold, and verifies `Nats-Msg-Id` by re-derivation.
 - `Subjects` constructs the three ruled `flb.fab.*` routing families without
@@ -75,11 +79,14 @@ bun run test
 ```
 
 It is the concatenation of three groups, each runnable on its own while you
-work: `test:fast` (the pure test files, the corpus diff, the public-effect
-manifest, and the substrate-parity control), `test:walls` (every file that
-brings up a real `nats-server`), and `test:types` (the twenty tsc negative
-controls). The fast/wall partition is derived from whether a test file imports
-the NATS harness, so a file added later joins a group without being listed.
+work: `test:fast` (the pure test files, the corpus diff, the kernel table and
+schema diffs, the refusal-vocabulary and taught-payload diffs, the
+public-effect manifest, the public-type debt ledger, and the substrate-parity
+control), `test:walls` (every file that brings up a real `nats-server`), and
+`test:types` (the twenty public-effect negative controls plus the
+type-universe, refusal, and rung enforcement controls). The fast/wall
+partition is derived from whether a test file imports the NATS harness, so a
+file added later joins a group without being listed.
 
 The package test runs unit and local-NATS walls, byte-diffs generated corpora,
 replays every E4 `verify/fabric` row, and derives the refusal-channel manifest

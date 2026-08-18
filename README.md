@@ -64,8 +64,11 @@ Plait ships the checking, in the repository, runnable by you:
   is exactly what a wall is supposed to be testing.
 - **Negative controls that die for a stated reason.** A prover that
   cannot fail proves nothing. `packages/plait/negative-controls/`
-  carries 22 planted mutants, each paired with the committed trace of
-  the diagnostic that kills it — twenty public-surface regressions, one
+  carries 23 planted mutants, each paired with the committed trace of
+  the diagnostic that kills it — twenty public-effect regressions, one
+  set of six hand-written twins of a generated type that the public
+  type-universe walk refuses to launder — including one that merges
+  itself into the generated symbol rather than sitting beside it — one
   narrowed substrate field set, and one commit path with its token
   guard removed, killed on a live KV bucket. The Lean packages carry
   mutants that each drop exactly one law, die on their named vectors,

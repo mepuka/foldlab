@@ -2,6 +2,9 @@ package protod
 
 import (
 	"context"
+	// encoding/json carriage: projecting a stored catalog fact back into its
+	// typed protocol definition, over canonical bytes the daemon re-derived.
+	// Submitted protocol bytes enter through admission.go.
 	"encoding/json"
 	"fmt"
 	"sort"

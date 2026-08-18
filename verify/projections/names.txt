@@ -1,0 +1,23 @@
+# The closed kernel projection manifest, in declaration order.
+Kernel.DeclKind
+Kernel.Digest
+Kernel.Value
+Kernel.StateLabel
+Kernel.Petname
+Kernel.Token
+Kernel.LanePartition
+Kernel.Position
+Kernel.AnchorFact
+Kernel.HoleStage
+Kernel.KTriggerPredicate
+Kernel.Act
+Kernel.RawArg
+Kernel.CandidateAnchor
+Kernel.TokenClaim
+Kernel.MergeStrategy
+Kernel.CandidatePredicate
+Kernel.CandidateAct
+Kernel.RefusalReason
+Kernel.Refusal
+Kernel.Applicability
+Kernel.Door

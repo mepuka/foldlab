@@ -1,0 +1,298 @@
+{
+  "$provenance": {
+    "command": "bun run generate",
+    "base": "verify/kernel/projections/tools.schema.json",
+    "base_sha256": "8d9cb4b106c86f60f6e74ae60ff20ee57a3f0354e91227480f8562e6ea3bd7d4",
+    "corpus": "packages/plait/fixtures/kernel-conformance.ndjson",
+    "corpus_command": "bun run generate:kernel-builder"
+  },
+  "ledger": [
+    {
+      "key": "declare.writ",
+      "tool": "kernel_declare",
+      "field": "writ_digest",
+      "role": "Digest of the policy value this declaration acts under. Every referent inside value must lie in this writ's pinned universe (refusal: off-writ-referent).",
+      "digest": "sha256:7904bb53cb29dcd68fa8ef8508cfc98a2c35539a09f672bcdd07c9c9e8cad051",
+      "corpus_field": "writ",
+      "corpus_kind": "policy",
+      "cross_walk": "name"
+    },
+    {
+      "key": "resolve.digest",
+      "tool": "kernel_resolve",
+      "field": "digest",
+      "role": "The content address to resolve. Absence is retryable; a digest mismatch is structural.",
+      "digest": "sha256:b7326320a44e654f63659227fda89ada9f2fdacc3cb56d149f0e3bf39f27b2ff",
+      "corpus_field": "target",
+      "corpus_kind": null,
+      "cross_walk": "position"
+    },
+    {
+      "key": "emit.lane",
+      "tool": "kernel_emit",
+      "field": "lane_digest",
+      "role": "Digest of the declared evidence lane the envelope lands on.",
+      "digest": "sha256:cdbceb544c8733555161ad7b1b30fd203db1c8ff31a0006e1834a2905ca3730d",
+      "corpus_field": "lane",
+      "corpus_kind": "lane",
+      "cross_walk": "name"
+    },
+    {
+      "key": "join.cell",
+      "tool": "kernel_join",
+      "field": "cell_digest",
+      "role": "Digest of the declared cell resource whose ACI algebra governs the merge.",
+      "digest": "sha256:de3a9fc140f822bb5042e7baaeea4feca8e7bb64bfe04b4a73ba72568489bc13",
+      "corpus_field": "cell",
+      "corpus_kind": "resource",
+      "cross_walk": "name"
+    },
+    {
+      "key": "fold.reduction",
+      "tool": "kernel_fold",
+      "field": "reduction_digest",
+      "role": "Digest of the declared reduction (kind: index) being read.",
+      "digest": "sha256:a12bc0e89c0ade99c31eb45822a237dd0b6e3aad0c66934a84940e0c3198d195",
+      "corpus_field": null,
+      "corpus_kind": null,
+      "cross_walk": "unresolved"
+    },
+    {
+      "key": "fold.lane",
+      "tool": "kernel_fold",
+      "field": "lane_digest",
+      "role": "The lane whose partition the anchor coordinates name.",
+      "digest": "sha256:32fdd61cc519dc7f7ee859c40bd03ec42ed1c21b3d0d1029c9de1195c1295b24",
+      "corpus_field": null,
+      "corpus_kind": null,
+      "cross_walk": "unresolved"
+    },
+    {
+      "key": "decide.register",
+      "tool": "kernel_decide",
+      "field": "register_digest",
+      "role": "The work declaration digest that keys the register. No anonymous decision exists.",
+      "digest": "sha256:7f324824e0422e62e1f22bdd2e4976a7542bc162b243c69ec81b3a60b4b086fa",
+      "corpus_field": "register",
+      "corpus_kind": "program",
+      "cross_walk": "name"
+    },
+    {
+      "key": "trigger.declaration",
+      "tool": "kernel_trigger",
+      "field": "declaration_digest",
+      "role": "The declaration a firing hints at. Its landed claim dedups at the register.",
+      "digest": "sha256:de9337d1ea3d62a9481cbd582e2434a5373fd27c6aa9b67d0f8a22005526f743",
+      "corpus_field": "declaration",
+      "corpus_kind": "program",
+      "cross_walk": "name"
+    },
+    {
+      "key": "trigger.lane",
+      "tool": "kernel_trigger",
+      "field": "lane_digest",
+      "role": "evidence-appears, head-advanced-past.",
+      "digest": "sha256:e90c39761898623aacbdf3c1db69d5c99bc5d1ed676414fe481af91d4aab74c6",
+      "corpus_field": null,
+      "corpus_kind": null,
+      "cross_walk": "unresolved"
+    },
+    {
+      "key": "trigger.cell",
+      "tool": "kernel_trigger",
+      "field": "cell_digest",
+      "role": "cell-reaches.",
+      "digest": "sha256:29172d89860c2f50743aacfd29f3cb71970e2dbbc6b6ab6766102e63f63c7801",
+      "corpus_field": null,
+      "corpus_kind": null,
+      "cross_walk": "unresolved"
+    },
+    {
+      "key": "trigger.register",
+      "tool": "kernel_trigger",
+      "field": "register_digest",
+      "role": "outcome-landed.",
+      "digest": "sha256:8cc6d0d7780e4ec7166a6177ac065a9a35f319e00866dc0ec6ba7470a7f1ca5b",
+      "corpus_field": null,
+      "corpus_kind": null,
+      "cross_walk": "unresolved"
+    },
+    {
+      "key": "spawn.parent_writ",
+      "tool": "kernel_spawn",
+      "field": "parent_writ_digest",
+      "role": "The authority being attenuated.",
+      "digest": "sha256:cce455aa76c02c2553687b4bb4427ad442ea4bf4a2e90de7574b8dfeec1bcf5f",
+      "corpus_field": "parent",
+      "corpus_kind": "policy",
+      "cross_walk": "position"
+    },
+    {
+      "key": "spawn.request_writ",
+      "tool": "kernel_spawn",
+      "field": "request_writ_digest",
+      "role": "The requested authority; the child is parent meet request.",
+      "digest": "sha256:ad8885e94171fe48a0a7af92df53ee091337dc5b9396031421da5ad6ec54b597",
+      "corpus_field": "request",
+      "corpus_kind": "policy",
+      "cross_walk": "position"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "declare",
+      "tool": "kernel_declare",
+      "assignments": [
+        {
+          "ledger_key": "declare.writ",
+          "role": "Digest of the policy value this declaration acts under. Every referent inside value must lie in this writ's pinned universe (refusal: off-writ-referent)."
+        }
+      ],
+      "literals": {
+        "kind": "schema",
+        "value": "{\"slot\":\"value\"}"
+      },
+      "arguments": {
+        "kind": "schema",
+        "value": "{\"slot\":\"value\"}",
+        "writ_digest": "sha256:7904bb53cb29dcd68fa8ef8508cfc98a2c35539a09f672bcdd07c9c9e8cad051"
+      }
+    },
+    {
+      "id": "resolve",
+      "tool": "kernel_resolve",
+      "assignments": [
+        {
+          "ledger_key": "resolve.digest",
+          "role": "The content address to resolve. Absence is retryable; a digest mismatch is structural."
+        }
+      ],
+      "literals": {
+        "kind": "schema"
+      },
+      "arguments": {
+        "kind": "schema",
+        "digest": "sha256:b7326320a44e654f63659227fda89ada9f2fdacc3cb56d149f0e3bf39f27b2ff"
+      }
+    },
+    {
+      "id": "emit",
+      "tool": "kernel_emit",
+      "assignments": [
+        {
+          "ledger_key": "emit.lane",
+          "role": "Digest of the declared evidence lane the envelope lands on."
+        }
+      ],
+      "literals": {
+        "body": "{\"slot\":\"body\"}"
+      },
+      "arguments": {
+        "lane_digest": "sha256:cdbceb544c8733555161ad7b1b30fd203db1c8ff31a0006e1834a2905ca3730d",
+        "body": "{\"slot\":\"body\"}"
+      }
+    },
+    {
+      "id": "join",
+      "tool": "kernel_join",
+      "assignments": [
+        {
+          "ledger_key": "join.cell",
+          "role": "Digest of the declared cell resource whose ACI algebra governs the merge."
+        }
+      ],
+      "literals": {
+        "contribution": "{\"slot\":\"contribution\"}"
+      },
+      "arguments": {
+        "cell_digest": "sha256:de3a9fc140f822bb5042e7baaeea4feca8e7bb64bfe04b4a73ba72568489bc13",
+        "contribution": "{\"slot\":\"contribution\"}"
+      }
+    },
+    {
+      "id": "fold",
+      "tool": "kernel_fold",
+      "assignments": [
+        {
+          "ledger_key": "fold.reduction",
+          "role": "Digest of the declared reduction (kind: index) being read."
+        },
+        {
+          "ledger_key": "fold.lane",
+          "role": "The lane whose partition the anchor coordinates name."
+        }
+      ],
+      "literals": {
+        "shard": 44,
+        "anchor_floor": 82,
+        "anchor_state": "{\"slot\":\"anchor_state\"}",
+        "anchor_head": 42,
+        "query": "{\"slot\":\"query\"}"
+      },
+      "arguments": {
+        "reduction_digest": "sha256:a12bc0e89c0ade99c31eb45822a237dd0b6e3aad0c66934a84940e0c3198d195",
+        "lane_digest": "sha256:32fdd61cc519dc7f7ee859c40bd03ec42ed1c21b3d0d1029c9de1195c1295b24",
+        "shard": 44,
+        "anchor_floor": 82,
+        "anchor_state": "{\"slot\":\"anchor_state\"}",
+        "anchor_head": 42,
+        "query": "{\"slot\":\"query\"}"
+      }
+    },
+    {
+      "id": "decide",
+      "tool": "kernel_decide",
+      "assignments": [
+        {
+          "ledger_key": "decide.register",
+          "role": "The work declaration digest that keys the register. No anonymous decision exists."
+        }
+      ],
+      "literals": {
+        "token_fence": 53,
+        "outcome": "{\"slot\":\"outcome\"}"
+      },
+      "arguments": {
+        "register_digest": "sha256:7f324824e0422e62e1f22bdd2e4976a7542bc162b243c69ec81b3a60b4b086fa",
+        "token_fence": 53,
+        "outcome": "{\"slot\":\"outcome\"}"
+      }
+    },
+    {
+      "id": "trigger",
+      "tool": "kernel_trigger",
+      "assignments": [
+        {
+          "ledger_key": "trigger.declaration",
+          "role": "The declaration a firing hints at. Its landed claim dedups at the register."
+        }
+      ],
+      "literals": {
+        "production": "evidence-appears"
+      },
+      "arguments": {
+        "production": "evidence-appears",
+        "declaration_digest": "sha256:de9337d1ea3d62a9481cbd582e2434a5373fd27c6aa9b67d0f8a22005526f743"
+      }
+    },
+    {
+      "id": "spawn",
+      "tool": "kernel_spawn",
+      "assignments": [
+        {
+          "ledger_key": "spawn.parent_writ",
+          "role": "The authority being attenuated."
+        },
+        {
+          "ledger_key": "spawn.request_writ",
+          "role": "The requested authority; the child is parent meet request."
+        }
+      ],
+      "literals": {},
+      "arguments": {
+        "parent_writ_digest": "sha256:cce455aa76c02c2553687b4bb4427ad442ea4bf4a2e90de7574b8dfeec1bcf5f",
+        "request_writ_digest": "sha256:ad8885e94171fe48a0a7af92df53ee091337dc5b9396031421da5ad6ec54b597"
+      }
+    }
+  ]
+}

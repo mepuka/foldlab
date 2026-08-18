@@ -1,0 +1,55 @@
+# The staged-debt refusal roster.
+#
+# Every structural refusal kind the runtime can mint that the kernel model
+# corpus does not yet carry a refusal row for, with the ticket that owns
+# closing the gap. DEV-804 replaces each row here with its corpus declaration.
+#
+# This file is a reviewed control, never a source. Nothing generates it and no
+# generator reads it. `check:refusal-vocabulary` reads the shipped runtime
+# union out of the truth-plane module's source bytes and the refusal reasons
+# out of the interchange fixture's bytes, then requires every kind the corpus
+# does not carry to be pinned here. Adding a spelling to the generator manifest
+# and regenerating is therefore not enough to keep the wall green: the debt has
+# to be written down here as well, by hand, in a diff a reviewer reads.
+#
+# Format: one `<kind> <ticket>` line per waived kind, in the union's order.
+non-canonical-value DEV-804
+invalid-subject-token DEV-804
+malformed-envelope DEV-804
+malformed-blob-reference DEV-804
+inline-body-too-large DEV-804
+digest-mismatch DEV-804
+substrate-shape DEV-804
+invalid-lane-declaration DEV-804
+invalid-partition-key DEV-804
+lane-evidence-mismatch DEV-804
+lane-substrate-shape DEV-804
+invalid-algebra-declaration DEV-804
+invalid-fold-declaration DEV-804
+unearned-commutative-algebra DEV-804
+invalid-anchor-advance DEV-804
+anchor-substrate-shape DEV-804
+malformed-anchor-state DEV-804
+lost-anchor-cas DEV-804
+consumer-substrate-shape DEV-804
+fold-buffer-overflow DEV-804
+invalid-session-declaration DEV-804
+undeclared-view DEV-804
+invalid-chaos-request DEV-804
+invalid-fold-state DEV-804
+invalid-register-key DEV-804
+malformed-register-state DEV-804
+register-absent DEV-804
+register-substrate-shape DEV-804
+duplicate-grant DEV-804
+outcome-already-landed DEV-804
+stale-register-token DEV-804
+concurrent-register-update DEV-804
+malformed-value DEV-804
+invalid-cell-key DEV-804
+malformed-cell-state DEV-804
+cell-substrate-shape DEV-804
+invalid-petname DEV-804
+not-a-directory DEV-804
+unbound-petname DEV-804
+ambiguous-binding DEV-804

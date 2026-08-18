@@ -9,6 +9,9 @@ package protod
 
 import (
 	"bytes"
+	// encoding/json carriage: ENCODING only (json.Marshal) — turning an
+	// in-memory value into bytes for canonicalization. Encoders cannot repair
+	// a submission; only decoders can, and this file has none.
 	"encoding/json"
 	"errors"
 	"fmt"

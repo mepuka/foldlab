@@ -14,6 +14,7 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Predicate } from "effect"
 
+import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
@@ -39,6 +40,9 @@ import { laneStreamName } from "../internal/lanes.js"
 
 type ChaosFold = DeclaredFold<WireValue, WireValue, number>
 type Axis = "kill" | "duplicate" | "reorder"
+
+/** The kernel's one candidate-judgment function; the CLI defines no side door. */
+export const admit = kernelAdmit
 
 interface CliOptions {
   readonly modulePath?: string
@@ -187,63 +191,68 @@ const parse = (args: ReadonlyArray<string>): CliOptions => {
   }
 }
 
-const looksLikeFold = (candidate: unknown): candidate is ChaosFold =>
-  Predicate.isObject(candidate) &&
-  Predicate.isObject(candidate.declaration) &&
-  candidate.declaration.kind === "fold" &&
-  typeof candidate.digest === "string" &&
-  Predicate.isObject(candidate.lane) &&
-  Predicate.isObject(candidate.lane.declaration) &&
-  typeof candidate.lane.digest === "string" &&
-  typeof candidate.lane.handle === "string" &&
-  typeof candidate.lane.partitions === "number" &&
-  Predicate.isObject(candidate.algebra) &&
-  Predicate.isObject(candidate.algebra.declaration) &&
-  Predicate.isObject(candidate.algebra.reducer) &&
-  Predicate.isObject(candidate.contribution) &&
-  typeof candidate.contribution.apply === "function" &&
-  typeof candidate.step === "function"
+/**
+ * Guards the legacy chaos harness's untyped JavaScript module boundary. This
+ * is not candidate judgment: it accepts no `KernelCandidateAct`, constructs no
+ * `KernelAct`, and teaches no kernel refusal. That route is {@link admit}.
+ */
+const isChaosFoldExport = (exported: unknown): exported is ChaosFold =>
+  Predicate.isObject(exported) &&
+  Predicate.isObject(exported.declaration) &&
+  exported.declaration.kind === "fold" &&
+  typeof exported.digest === "string" &&
+  Predicate.isObject(exported.lane) &&
+  Predicate.isObject(exported.lane.declaration) &&
+  typeof exported.lane.digest === "string" &&
+  typeof exported.lane.handle === "string" &&
+  typeof exported.lane.partitions === "number" &&
+  Predicate.isObject(exported.algebra) &&
+  Predicate.isObject(exported.algebra.declaration) &&
+  Predicate.isObject(exported.algebra.reducer) &&
+  Predicate.isObject(exported.contribution) &&
+  typeof exported.contribution.apply === "function" &&
+  typeof exported.step === "function"
 
 const absoluteModulePath = (path: string): string => isAbsolute(path) ? path : resolve(process.cwd(), path)
 
-const certifyFold = async (candidate: ChaosFold): Promise<ChaosFold> => {
+const rebuildChaosFoldExport = async (exported: ChaosFold): Promise<ChaosFold> => {
   const lane = await Effect.runPromise(Lane.declare({
-    handle: candidate.lane.handle,
-    event: candidate.lane.event,
-    eventSchema: candidate.lane.declaration.eventSchema,
-    partitions: candidate.lane.partitions,
-    partitionKey: candidate.lane.partitionKey,
+    handle: exported.lane.handle,
+    event: exported.lane.event,
+    eventSchema: exported.lane.declaration.eventSchema,
+    partitions: exported.lane.partitions,
+    partitionKey: exported.lane.partitionKey,
   }))
-  if (lane.digest !== candidate.lane.digest) {
+  if (lane.digest !== exported.lane.digest) {
     throw cliRefusal(
       ["module", "fold", "lane", "digest"],
-      candidate.lane.digest,
+      exported.lane.digest,
       lane.digest,
       "Export the exact admitted lane returned by Lane.declare.",
     )
   }
   const algebra = await Effect.runPromise(Algebra.declare({
-    declaration: candidate.algebra.declaration.definition,
-    reducer: candidate.algebra.reducer,
+    declaration: exported.algebra.declaration.definition,
+    reducer: exported.algebra.reducer,
   }))
-  if (algebra.digest !== candidate.algebra.digest) {
+  if (algebra.digest !== exported.algebra.digest) {
     throw cliRefusal(
       ["module", "fold", "algebra", "digest"],
-      candidate.algebra.digest,
+      exported.algebra.digest,
       algebra.digest,
       "Export the exact admitted algebra returned by Algebra.declare.",
     )
   }
   const admitted = await Effect.runPromise(declareFold({
     lane,
-    algebra: candidate.algebra as Algebra.CommutativeAlgebra<WireValue>,
-    contribution: candidate.contribution,
+    algebra: exported.algebra as Algebra.CommutativeAlgebra<WireValue>,
+    contribution: exported.contribution,
   }))
-  const exportedDigest = await Effect.runPromise(digestOf(candidate.declaration as unknown as WireValue))
-  if (exportedDigest !== candidate.digest || admitted.digest !== candidate.digest) {
+  const exportedDigest = await Effect.runPromise(digestOf(exported.declaration as unknown as WireValue))
+  if (exportedDigest !== exported.digest || admitted.digest !== exported.digest) {
     throw cliRefusal(
       ["module", "fold", "digest"],
-      candidate.digest,
+      exported.digest,
       admitted.digest,
       "Export one internally consistent fold declaration returned by Fold.declare.",
     )
@@ -258,16 +267,16 @@ const loadFold = async (modulePath: string): Promise<ChaosFold> => {
   } catch (cause) {
     throw cliRefusal(["module"], String(cause), "an importable module exporting one declared fold", usage)
   }
-  const candidate = await Promise.resolve(namespace.fold ?? namespace.default)
-  if (!looksLikeFold(candidate)) {
+  const exported = await Promise.resolve(namespace.fold ?? namespace.default)
+  if (!isChaosFoldExport(exported)) {
     throw cliRefusal(
       ["module", "fold"],
-      candidate === undefined ? "missing" : "not a declared fold",
+      exported === undefined ? "missing" : "not a declared fold",
       "a `fold` or default export returned by Fold.declare",
       "Export the admitted fold value itself; plait chaos never invokes an arbitrary program export.",
     )
   }
-  return certifyFold(candidate)
+  return rebuildChaosFoldExport(exported)
 }
 
 const readHeads = async (
@@ -597,4 +606,4 @@ const main = async (): Promise<number> => {
   }
 }
 
-process.exitCode = await main()
+if (import.meta.main) process.exitCode = await main()

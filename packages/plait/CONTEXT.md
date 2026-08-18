@@ -9,6 +9,12 @@ The vocabulary every sentence speaks.
 **Kernel**:
 The language: corpus, door, programs, and wire grammar.
 
+**Admission door**:
+`KernelDoor.admit`: the one pure projection from a model-generated candidate
+and catalog/pinned-universe context to an intrinsic act or the generated
+reason/law/repair refusal. Model identity labels remain `bigint`; runtime
+content digests are independent evidence, not a conversion source.
+
 **Planes**:
 The state carriers, one seam per plane.
 
@@ -53,13 +59,48 @@ A content-addressed reducer definition and wire-grammar initial state. A
 commutative algebra carries a runtime witness earned from at least 32 distinct
 triples derived by the declaration door from a digest-seeded arbitrary, then
 checked for identity, associativity, and commutativity; caller-enumerated cases
-and asserted TypeScript casts do not earn it.
+and asserted TypeScript casts do not earn it. That witness is one law-atom set,
+so a rung is read off it rather than counted in symbols.
+
+**Law atom, rung, brand**:
+A law atom is one equation a declared reducer can be checked against — total,
+associative, identity, commutative, idempotent, bounded, inverse. A rung is a
+named bundle of atoms; climbing adds atoms, so "at least this rung" is set
+inclusion and the ladder is a poset, not a chain (an idempotent group is
+trivial, so the two tops are incomparable). A brand is the earned atom set,
+carried in the type and non-enumerably at runtime. A brand is earned by a
+suite, never asserted: the door walks the same atom list it then attaches, so
+the checked set and the earned set are one array, and an asserted cast erases
+at the door, which reads the runtime witness regardless of what the type said.
+Brands never reach canonical bytes, so nothing on this ladder changes a digest.
+
+Two bounds ride the atoms. `bounded` is entailed by `identity` — `e ∘ a = a` is
+`e ≤ a` under the derived order — so it is a named consequence rather than an
+independent obligation, and a bounded semilattice discriminates on `idempotent`
+alone. `inverse` has no predicate at all: a declared algebra carries a reducer
+and no inversion, so the two group rungs are type-level names with no door.
+
+**Brand durability**:
+The runtime witness is a non-enumerable own property, which is exactly why it
+never reaches the wire — and exactly why a spread or `Object.assign` copy drops
+it. A copied algebra keeps the phantom type and loses the witness, so the fold
+door refuses it on a value the compiler still calls commutative. Re-earn the
+brand after copying; do not re-assert it.
+
+**Quotient, and the rung⇒carrier rule**:
+Three stages, deepest last: the positioned plane keeps order and duplicates,
+the multiset presentation forgets order, the set plane forgets multiplicity
+too. A fold may read from the deepest quotient its algebra respects —
+commutative reaches the multiset presentation, commutative and idempotent
+reaches the set plane, anything weaker stays positional.
 
 **Declared fold**:
 A lane, algebra, and per-event contribution under one digest. Its step is
 derived as `combine(state, contribution(event))`, so step/algebra compatibility
-holds by construction. More than one partition requires the earned
-commutative witness at both the type and runtime doors.
+holds by construction. One partition keeps arrival order and reads the
+positioned plane; more than one erases that order and reads the multiset
+presentation, which demands the commutative rung at both the type and runtime
+doors.
 
 **Successor discipline**:
 The position-addressed pump rule: every raw arrival enters its own position,

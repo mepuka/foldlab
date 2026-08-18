@@ -14,10 +14,10 @@ the estate is cutting over to it. Before cutting any ticket, answer in
 the body:
 
 > **Does this work move the cutover?** Concretely: does it convert
-> UNTRACED public types to corpus-derived (the DEV-796 wall's count is
-> the meter), route judgment through the one door, replace a
-> hand-authored surface with a generated one, or harden a wall that
-> proves one of these?
+> ticketed-debt public types to generated-core-derived (the executed
+> DEV-796 walk's count is the meter), route judgment through the one
+> door, replace a hand-authored surface with a generated one, or harden
+> a wall that proves one of these?
 
 Work that does not move the cutover needs a stated reason to exist now.
 "Useful," "interesting," and "worth evaluating" are not reasons to
@@ -40,9 +40,11 @@ other.
 A ticket that cannot answer these is not dispatchable:
 
 1. **What type universe does this work speak?** The corpus and its
-   generated projections, the truth floor, or a staged-debt type wearing
-   its waiver. A ticket that introduces any other type universe is
-   refused at cutting time.
+   generated projections, or a staged-debt type wearing its unification
+   ticket. The truth primitives are in the second class until they
+   converge under the generated core; they are not a third floor. A
+   ticket that introduces any other type universe is refused at cutting
+   time.
 2. **Who ratified the vocabulary it uses?** New kinds, sorts, brands,
    refusal reasons, or notation cite their ruling (a grill record, a
    K/KM/AE row, an ADR). Unratified vocabulary in a ticket body is a

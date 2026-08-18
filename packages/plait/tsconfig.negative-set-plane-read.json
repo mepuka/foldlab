@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["negative-controls/Algebra.set-plane-read.mutant.ts"]
+}
