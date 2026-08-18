@@ -6,7 +6,6 @@ import { emitDeclarations } from "./public-effect-declarations.js"
 import { inspectPublicTypeUniverse } from "./public-type-universe.js"
 
 const packageRoot = resolve(import.meta.dir, "..")
-const inventoryPath = resolve(packageRoot, "test/PublicTypeUniverse.inventory.md")
 
 export class CheckFailure extends Schema.TaggedError<CheckFailure>()(
   "PublicTypeUniverseCheckFailure",
@@ -26,6 +25,14 @@ export interface PublicTypeUniverseCheckInput {
   readonly cliArguments: ReadonlyArray<string>
   readonly project: string
   readonly entry: string
+  /**
+   * The committed ledger this run regenerates and byte-compares. The control
+   * owns a separate one so its two arms fail apart: an accepted mutant is a
+   * refused enforcement, never an incidental diff against the package ledger.
+   */
+  readonly inventoryPath: string
+  /** The provenance line the ledger carries: the command that regenerates it. */
+  readonly generationCommand: string
 }
 
 /**
@@ -56,7 +63,8 @@ export const checkPublicTypeUniverse = Effect.fn("PublicTypeUniverse.check")(fun
     (declarations) => Effect.sync(declarations.dispose),
   )
   const inspection = yield* Effect.try({
-    try: () => inspectPublicTypeUniverse(emitted.directory, input.entry),
+    try: () =>
+      inspectPublicTypeUniverse(emitted.directory, input.entry, input.generationCommand),
     catch: (cause) => new CheckFailure({ exitCode: 1, message: messageOf(cause) }),
   })
 
@@ -69,14 +77,24 @@ export const checkPublicTypeUniverse = Effect.fn("PublicTypeUniverse.check")(fun
 
   const actual = normalize(inspection.inventory)
 
+  // Enforce mode answers one question — is there undischarged debt — and stops.
+  // Letting it also byte-compare the ledger would give the negative control a
+  // second way to go red, and the control could no longer name the law it drops.
+  if (enforce) {
+    yield* Console.log(
+      `PUBLIC TYPE UNIVERSE: PASS (${inspection.classifications.length} public types classified; no debt-with-a-ticket types)`,
+    )
+    return
+  }
+
   if (write) {
     yield* Effect.tryPromise({
-      try: () => Bun.write(inventoryPath, actual),
+      try: () => Bun.write(input.inventoryPath, actual),
       catch: (cause) => new CheckFailure({ exitCode: 1, message: messageOf(cause) }),
     })
     yield* Console.log("PUBLIC TYPE UNIVERSE: wrote generated debt ledger")
   } else {
-    const inventory = Bun.file(inventoryPath)
+    const inventory = Bun.file(input.inventoryPath)
     const expected = yield* Effect.tryPromise({
       try: async () => {
         const exists = await inventory.exists()
@@ -104,9 +122,7 @@ export const checkPublicTypeUniverse = Effect.fn("PublicTypeUniverse.check")(fun
   const debt = inspection.classifications.length - generatedCoreDerived
 
   yield* Console.log(
-    enforce
-      ? `PUBLIC TYPE UNIVERSE: PASS (${inspection.classifications.length} public types classified; no debt-with-a-ticket types)`
-      : `PUBLIC TYPE UNIVERSE: REPORT (${inspection.classifications.length} public types classified: ${generatedCoreDerived} derives-from-the-generated-core, ${debt} debt-with-a-ticket)`,
+    `PUBLIC TYPE UNIVERSE: REPORT (${inspection.classifications.length} public types classified: ${generatedCoreDerived} derives-from-the-generated-core, ${debt} debt-with-a-ticket)`,
   )
 })
 
@@ -116,6 +132,8 @@ if (import.meta.main) {
       cliArguments: process.argv.slice(2),
       project: "tsconfig.public-declarations.json",
       entry: "src/index.d.ts",
+      inventoryPath: resolve(packageRoot, "test/PublicTypeUniverse.inventory.md"),
+      generationCommand: "bun run generate:type-universe",
     }).pipe(
       Effect.scoped,
       Effect.catch((failure) =>

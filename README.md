@@ -66,9 +66,10 @@ Plait ships the checking, in the repository, runnable by you:
   cannot fail proves nothing. `packages/plait/negative-controls/`
   carries 23 planted mutants, each paired with the committed trace of
   the diagnostic that kills it — twenty public-effect regressions, one
-  public-type-universe violation, one narrowed substrate field set, and
-  one commit path with its token guard removed, killed on a live KV
-  bucket. The Lean packages carry
+  set of five hand-written twins of a generated type that the public
+  type-universe walk refuses to launder, one narrowed substrate field
+  set, and one commit path with its token guard removed, killed on a
+  live KV bucket. The Lean packages carry
   mutants that each drop exactly one law, die on their named vectors,
   and provably retain the laws they did not drop. A control that is
   committed but never run fails the gate.

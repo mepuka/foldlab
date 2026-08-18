@@ -1,2 +1,6 @@
-PUBLIC TYPE UNIVERSE VIOLATION: LaunderedControl owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE VIOLATION: LaunderedAlias owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE VIOLATION: LaunderedExtension owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE VIOLATION: LaunderedIntersection owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE VIOLATION: LaunderedMapped owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE VIOLATION: LaunderedWidening owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
 PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses public type debt

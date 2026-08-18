@@ -46,6 +46,7 @@
     "generate:kernel-tables": "bun scripts/generate-kernel-tables.ts",
     "generate:public-effects": "bun scripts/check-public-effects.ts --write",
     "generate:type-universe": "bun scripts/check-public-type-universe.ts --write",
+    "generate:type-universe-control": "bun scripts/check-public-type-universe-negative.ts --write",
     "test": "bun run test:fast && bun run test:walls && bun run test:types",
     "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control",
     "test:types": "bun run check:type-control && bun run check:type-universe-control",

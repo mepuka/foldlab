@@ -1939,18 +1939,36 @@ refuses every `debt-with-a-ticket` row. Each debt row names its owning source
 module, existing ticket, and unification target: `DEV-795` stage 2+ for truth
 and hand-written kernel declarations, `DEV-795` stage 3 for plane declarations,
 and `DEV-763` stage 4 for carriage and surface judgment. An owner outside those
-ruled targets has no default waiver and makes generation fail. The planted
-control directly re-exports one generated-table declaration and widens another
-through a hand-written union, then invokes the production check with
-`--enforce` and requires it to refuse exactly the widening against its committed
-trace. Alternatives: compare the inspection's violations in a second control
-path (the production enforcement branch could disappear while the control
-stayed green); maintain separate report and enforce walks (the future flip
-could change the quantifier); assign every unknown owner to the epic
-automatically (that would create unratified waivers); make nonempty debt red now
-(contradicts this ticket's inventory-only stage). Why: the ratifiable object,
-the control, and the later wall execute the same classification and enforcement
-path.
+ruled targets has no default waiver and makes generation fail. Alternatives:
+maintain separate report and enforce walks (the future flip could change the
+quantifier); assign every unknown owner to the epic automatically (that would
+create unratified waivers); make nonempty debt red now (contradicts this
+ticket's inventory-only stage). Why: the ratifiable object, the control, and the
+later wall execute the same classification and enforcement path.
 **Load-bearing? yes** — a second enforcement path or a catch-all target could go
 green over a different universe from the ticketed inventory the operator
 ratified.
+
+### T2. Enforce mode answers enforcement alone, so the control can name the law it drops
+
+Decided: `--enforce` classifies, refuses every debt row, and stops; the ledger
+byte-comparison belongs to report mode only. The planted control owns a second
+committed ledger of its own next to the mutant, and runs two arms through the
+production check: the refusal arm requires `--enforce` to refuse its five
+planted twins against the committed trace, and the admission arm requires report
+mode to reproduce the planted ledger byte-for-byte, one derived and five debt.
+Both committed artifacts are written by executing the control under `--write`.
+Alternatives: compare the inspection's violations in a second control path (the
+production enforcement branch could disappear while the control stayed green —
+the shape this ticket's review refused); let the control share the package
+ledger (measured: dropping the enforcement branch then failed the control on an
+incidental ledger diff, so the control reported a moved ledger for a missing
+refusal and could not name its own law); keep the ledger comparison inside
+enforce mode (same entanglement, one mutation away); plant only the union
+widening (an interface extension, intersection, alias, and mapped type are the
+other shapes a hand-written twin takes, and each had to be measured, not
+assumed). Why: a negative control asks one question, and an arm that can go red
+two ways answers neither.
+**Load-bearing? yes** — four mutation arms were run against this pair, and the
+two that drop enforcement now both report the accepted mutant rather than a
+ledger diff.
