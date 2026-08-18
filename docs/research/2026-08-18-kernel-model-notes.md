@@ -365,7 +365,12 @@ and candidate F13, §7 bootstrap, §11 K-1..K-10);
 `docs/design/2026-08-18-plait-agent-plane.md` §15 (the free-construct
 inventory and taxonomy);
 `docs/research/2026-08-18-template-algebra-investigation.md` (§3 the
-typed-hole algebra this lane's fill laws lift);
+typed-hole algebra this lane's fill laws lift — the template LANE was
+refused by operator ruling while this lane was in flight, and the
+refusal's own disposition keeps exactly this inheritance: the fill
+algebra was absorbed into the ratified kernel record as
+program-composition laws before the lane closed, which is the form —
+program-declaration filling, no template language — modeled here);
 `docs/research/2026-08-18-agentic-lean-lit-notes.md` (the pressure
 items: refusal parity, referent pinning, unit spaces — each answered
 by construction above);
