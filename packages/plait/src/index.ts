@@ -6,6 +6,9 @@
 /** Canonical JSON values and their unique RFC 8785 byte form. */
 export * as Canonical from "./truth/Canonical.js"
 
+/** Directories, explicit roots, and paths that walk by iterated resolve. */
+export * as Address from "./planes/Address.js"
+
 /** Declared reducers, the rung ladder of earned laws, and the carrier each rung licenses. */
 export * as Algebra from "./truth/Algebra.js"
 

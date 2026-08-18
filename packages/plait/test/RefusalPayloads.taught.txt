@@ -241,6 +241,30 @@ packages/plait/src/kernel/Wire.ts#5
   next[0].subject "Nats-Msg-Id"
   next[0].note "Re-derive SHA-256 from the canonical uncompressed envelope bytes before publishing."
   next[0].body <expression>
+packages/plait/src/planes/Address.ts#0
+  kind "invalid-petname"
+  law "A petname is one non-empty name carrying no separator and no control character, and is never . or ..: the relative forms name a position instead of a value."
+  expected "one literal petname"
+  next[0].subject "Address.at"
+  next[0].note "Replace the refused segment with a literal name; reach an enclosing directory by starting the walk at its own root digest, never by stepping out of this one."
+packages/plait/src/planes/Address.ts#1
+  kind "not-a-directory"
+  law "Every hop of a path opens a directory value; a walk never reinterprets a value that is not one."
+  expected "one directory value"
+  next[0].subject "Address.directory"
+  next[0].note "Publish a directory under this digest, or shorten the path to the value this hop already names."
+packages/plait/src/planes/Address.ts#2
+  kind "unbound-petname"
+  law "A name resolves only against a directory that binds it, and a root digest names one immutable directory, so the answer never moves."
+  expected "one binding for this name in the directory this hop opened"
+  next[0].subject "Address.directory"
+  next[0].note "Bind the name in a directory value, publish it, and walk from the digest that publication returned."
+packages/plait/src/planes/Address.ts#3
+  kind "ambiguous-binding"
+  law "A name bound to more than one digest resolves to none of them: the directory carries every candidate, and nothing in a walk arbitrates between them."
+  expected "exactly one digest bound to this name"
+  next[0].subject "Address.directory"
+  next[0].note "Publish a directory binding this name to exactly one digest and walk from that root; arbitration between concurrent binders is a fenced register decision and is not read here."
 packages/plait/src/planes/Anchor.ts#0
   kind "invalid-anchor-advance"
   law "An anchor records only a contiguous successor frontier; its floor advances by exactly one applied position."

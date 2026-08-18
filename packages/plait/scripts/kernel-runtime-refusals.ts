@@ -59,4 +59,10 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
   "invalid-cell-key",
   "malformed-cell-state",
   "cell-substrate-shape",
+  // Addressing (DEV-766). `ambiguous-binding` is the model's spelling on the
+  // F12 across-bind-orders row; the other three are the address door's own.
+  "invalid-petname",
+  "not-a-directory",
+  "unbound-petname",
+  "ambiguous-binding",
 ] as const

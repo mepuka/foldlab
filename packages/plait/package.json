@@ -9,6 +9,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./Address": "./src/planes/Address.ts",
     "./Blob": "./src/planes/Blob.ts",
     "./Canonical": "./src/truth/Canonical.ts",
     "./Catalog": "./src/planes/Catalog.ts",
@@ -29,6 +30,7 @@
     "./Wire": "./src/kernel/Wire.ts"
   },
   "scripts": {
+    "check:address-control": "bun scripts/check-address-negative.ts",
     "check:builder-control": "bun scripts/check-kernel-builder-negative.ts",
     "check:corpus": "bun scripts/check-corpus.ts",
     "check:kernel-builder": "bun scripts/check-kernel-builder.ts",
@@ -56,7 +58,7 @@
     "generate:type-universe-control": "bun scripts/check-public-type-universe-negative.ts --write",
     "test": "bun run test:fast && bun run test:walls && bun run test:types",
     "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:kernel-tables && bun run check:kernel-schemas && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control && bun run check:refusal-vocabulary && bun run check:refusal-control && bun run check:refusal-payloads",
-    "test:types": "bun run check:type-control && bun run check:type-universe-control && bun run check:rung-control",
+    "test:types": "bun run check:type-control && bun run check:type-universe-control && bun run check:rung-control && bun run check:address-control",
     "test:walls": "bun scripts/run-test-group.ts walls"
   },
   "dependencies": {

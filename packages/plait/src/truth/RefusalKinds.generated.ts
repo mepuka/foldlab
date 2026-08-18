@@ -68,6 +68,10 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "invalid-cell-key",
   "malformed-cell-state",
   "cell-substrate-shape",
+  "invalid-petname",
+  "not-a-directory",
+  "unbound-petname",
+  "ambiguous-binding",
 ] as const
 
 /**

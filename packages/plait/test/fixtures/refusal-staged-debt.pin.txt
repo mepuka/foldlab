@@ -49,3 +49,7 @@ malformed-value DEV-804
 invalid-cell-key DEV-804
 malformed-cell-state DEV-804
 cell-substrate-shape DEV-804
+invalid-petname DEV-804
+not-a-directory DEV-804
+unbound-petname DEV-804
+ambiguous-binding DEV-804

@@ -1910,6 +1910,232 @@ reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
 six advisories it declines to gate on stay open findings for their modules'
 owners.
 
+## Task DEV-766 — T-address: explicit roots and iterated-resolve path sugar
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §5/§6 (stage 3, the
+`at(root, ...names)` row); conceptual basis KM-15 and KM-16 in
+`docs/research/2026-08-18-kernel-model-notes.md`.
+
+The ticket's own bound, kept: **no new machinery.** `Address.ts` ships no
+service, no layer, no store, and no cache. Every hop is `Resolved.resolve`, so
+verify-on-read is inherited rather than restated, and the one row that spends
+that inheritance is the lying-catalog walk in `test/Address.test.ts`.
+
+### T0. The seam ships as public surface, and four manifest rows are the decision
+
+Decided: `Address` is exported from the barrel and from `package.json`, so the
+seam rides the T7 public-surface walk deliberately. The four rows it added to
+`test/PublicEffects.signatures.txt` are the whole surface change and are the
+auditable form of the ticket's "any new public surface is its own explicit
+decision, never a side effect". Alternatives: internal-first behind `internal/`
+(the Cell T5 shape) with a later export ticket; export the schemas as types only.
+Why: the spec's leverage line for this seam is that agents navigate by resolve,
+which is a claim about a surface callers can reach — an unexported walk would
+have been a sketch of that claim rather than the claim. **Load-bearing? yes** —
+it bounds what this ticket added to the public surface to `Address` and nothing
+else.
+
+### T1. `at` answers an address, not a value
+
+Decided: `at(root, ...names)` returns the `Digest` the path names; the value is
+one `Resolved.resolve` away and the caller performs it. Alternatives: return the
+resolved wire value (the spec sketch reads that way); ship both `at` and a
+`read` that composes it with `resolve`. Why: a binding names a digest, and
+whether that digest resolves — and against which store — is the reader's
+question, not the walk's. Returning the address also keeps `at` composable with
+`ResolvedOf` codecs, `Blob`, and the resolve memo without this module knowing any
+of them. A `read` helper would have been `Effect.flatMap(at(...), resolve)` with
+a name, which ADR-0010 prices as a public function with no law of its own.
+**Load-bearing? yes** — it is why the module has no second decode path.
+
+### T2. Unbound and ambiguous are structural, because a root pins a snapshot
+
+Decided: `unbound-petname` and `ambiguous-binding` are `StructuralRefusal`s.
+Alternatives: mint `unbound-petname` as an `AbsenceRefusal`, by analogy with
+`cataloged-value-absent` and `blob-absent`. Why: those two are head-relative
+because a store can acquire bytes it lacks; an unbound name under a *fixed root
+digest* cannot change, because the root names one immutable directory and a
+retry re-reads the same bytes. Classifying it as absence would put it inside
+`Refusal.retryAbsence`'s policy and spin a caller against a permanent answer.
+The head-relative fact on this path is whether a store holds the directory at
+all, and that arrives as `resolve`'s own absence, passed through untouched.
+**Load-bearing? yes** — it is the sentence that makes the sort assignment
+checkable rather than a habit.
+
+### T3. The carrier is a binding SET, so ambiguity is refused rather than decided
+
+Decided: `Directory.bindings` is a set of `(petname, digest)` pairs, not a map,
+so one name bound to two digests is representable; a walk that meets it refuses
+`ambiguous-binding` listing both candidates in identity order. The model's
+fourth verdict — the binding sealed at the greatest observed fencing token — is
+NOT read here, and the refusal's repair says arbitration is a fenced register
+decision. Alternatives: a map carrier, which makes the ambiguity unrepresentable
+by silently letting one binder overwrite another; read seals from `Registers` in
+this module. Why: the map carrier hides a concurrent-bind conflict as a
+last-writer-wins outcome, which is the shape this package refuses everywhere
+else; and reading seals here would stand a second arbitration path beside
+`Register.ts`, which owns the fencing token. **Load-bearing? yes** — it is why
+this module has an ambiguity refusal at all.
+
+### T4. The directory header is closed, so a wrong hop refuses instead of reading empty
+
+Decided: `Directory` carries `{ v: 0, kind: "directory", bindings }`, and a hop
+whose value does not decode against it refuses `not-a-directory` naming the
+segment that produced the digest. Alternatives: accept any `{ bindings }`-shaped
+value; let the parse boundary's generic `malformed-value` fly unwrapped. Why:
+without the discriminator every cataloged object without a `bindings` key would
+read as a directory that binds nothing, which turns a navigational error into an
+`unbound-petname` — a wrong repair, taught confidently. The wrapper adds only
+the position the walk was at, which the schema cannot know; the schema is still
+the judge. **Load-bearing? yes** — it is why a walk cannot silently reinterpret
+a value. NARROWED round 2 by T11: the header is what this kind answers for. A
+value whose header holds and whose bindings do not is a directory, and refusing
+it here taught a repair for a digest that already holds one.
+
+### T5. The explicit-root fence is a compile control, not a runtime check
+
+Decided: `at`'s first parameter is the root `Digest`, so a rootless walk has
+nowhere to be written, and `negative-controls/Address.rootless.mutant.ts` under
+`bun run check:address-control` is the evidence — a lawful twin beside the
+planted spelling, and the committed diagnostic compared byte-for-byte.
+Alternatives: accept a path object and refuse a missing root at runtime; document
+the fence only. Why: this is the ambient-input precedent the kernel builder's
+clock control already states — the surface refuses the shape by having no field
+to put it in, and a runtime check would leave the shape spellable. Escape
+attempts (`.`, `..`, separators, control characters) stay runtime refusals
+because they are string data and cannot be typed away. **Load-bearing? yes** —
+it is the ticket's ambient-input requirement in its strongest available form.
+
+### T6. Seven names, and the joins the module does not ship
+
+Decided: the surface is `Petname`, `Binding`, `Directory`, `directory`,
+`petname`, `at`, `list` — no `Path` value type, no `join`, no `read`, no watch.
+The join of two directories is `directory([...left.bindings, ...right.bindings])`
+and the JSDoc says so; a live view is the consumer seam's (DEV-765).
+Alternatives: ship `Path` as a cataloged struct so an address travels as data;
+ship `join` beside `directory` the way `Cell` ships `join` beside `canonicalize`.
+Why: a path travels as a root plus names today and no consumer names a `Path`
+value, so the struct would be a hypothetical seam; and `Cell.join` exists because
+a cell's join is the write path's operation, while a directory's join is one
+`directory` call over a concatenation. **Load-bearing? yes** — it is the standing
+answer to each of these being proposed as an obvious addition.
+
+### T7. Four refusal kinds, because four different repairs are taught
+
+Decided: `invalid-petname`, `not-a-directory`, `unbound-petname`, and
+`ambiguous-binding` enter `StructuralRefusalKind`, and each is triggered through
+the public surface in `test/RefusalNext.test.ts` — the gate that refuses a kind
+no shipped path can mint. Alternatives: reuse `malformed-value` for the first
+two and a single `unresolvable-path` for the last two. Why: the four name four
+distinct repairs — fix the name, publish a directory there, bind the name, bind
+it to exactly one digest — and a refusal that cannot say which one is a diagnosis
+the caller has to redo. **Load-bearing? no** — the classification could be merged
+without changing what any path admits. AMENDED round 2: the four are not four of
+a kind. `ambiguous-binding` is the model's own spelling and is walled against the
+corpus (T10); the other three are hand-written entries in a refusal vocabulary
+the generated taught-refusal table does not own, and they wear T9's Law 1 waiver
+citing DEV-796. The count is unchanged; what changed is that three of them are
+now recorded as debt rather than as design.
+
+### T8. The control records errors only, so the fence is not coupled to lint advice
+
+Decided: `check-address-negative.ts` compares the `error` diagnostics and drops
+every advisory severity, and an empty error set fails the control. Recorded on
+the rebase onto the `@effect/tsgo` / TypeScript 7 pin, which made the compiler
+emit `suggestion` diagnostics for every file the control's project pulls in —
+including `truth/Refusal.ts` lines this ticket does not own and may not edit.
+Alternatives: record the suggestions too (the trace then moves whenever anybody
+cleans up an unrelated module, and this fence starts reporting other people's
+work); silence the plugin for the control's project (a compiler flag this
+control would then depend on, in a file the ticket does not own). Why: the
+control's claim is that the rootless spelling does not compile, and for which
+reason — advisory lint output is not that claim, and a trace that encodes it
+fails for reasons the fence is not about. The prover can still fail: making the
+planted spelling lawful reports `typechecked` rather than a moved trace.
+**Load-bearing? yes** — it is why this control stayed green across a toolchain
+swap that moved the package's other committed traces. AMENDED round 2: DEV-797
+landed the same rule as `scripts/negative-trace.ts` for every control in the
+package, so this script no longer states it — it imports `errorDiagnostics` and
+applies it to both sides, fresh compile and committed file, which is the shape
+`check-public-effects-negative.ts` uses. A control carrying a private copy of
+the contract it claims to apply is a control that can drift from it.
+
+### T9. Petname derives from the generated projection; Binding and Directory wear a waiver
+
+Decided: `Petname`'s carrier is the generated `KernelPetname` — `{ text }`, from
+`kernel/KernelSchemas.generated.ts` — with this module's name law added as one
+admission check; `Binding` and `Directory` stay hand-written and carry an
+explicit **Law 1 waiver citing DEV-796** in the module header and on each type.
+Alternatives: keep the branded-string `Petname` beside the generated one (what
+round 1 shipped, and the defect the review named: two carriers and two laws for
+one concept); waive `Petname` too, since a waiver is cheaper than a wire-shape
+change; hand-write an F12 projection for `Binding`/`Directory` in this ticket
+and call it generated. Why: Law 1 admits exactly two answers — derive, or wear a
+waiver that cites the unification ticket — and which answer is available is a
+fact about the corpus, not a preference. `Petname` HAS a generated projection,
+so waiving it would be declining a derivation that exists; the F12 directory
+family does NOT, so a waiver is the only honest answer and inventing a
+"generated" projection by hand would be the served-equals-derived violation Law
+3 refuses. The cost is the wire shape: a binding's name is now `{ text: "…" }`
+rather than `"…"`, which is the model's shape and no consumer's yet. Paying it
+before the seam merges costs nothing; paying it after would be a migration.
+**Load-bearing? yes** — the waiver is the row these types occupy in DEV-796's
+debt ledger, and the derivation is why `Petname` is not in it.
+
+### T10. `ambiguous-binding` is read from the corpus, and the wall is what makes that true
+
+Decided: the reason string is the model's, taken from the F12
+`ambiguous-across-bind-orders` row of `fixtures/fabric-conformance.ndjson`, and
+`test/Address.test.ts` runs a real ambiguous walk and compares the refusal it
+mints against that row. The name stays a private constant: the wall reads the
+refusal, not an exported string. Alternatives: hand-type the literal and note
+the coincidence in prose (which is what round 1 did, and prose does not red);
+export the constant so the wall has something to compare (an eighth public name
+bought to test a private one); generate the whole `StructuralRefusalKind` union
+from the corpus (the right end state, and it is DEV-796's, not this ticket's —
+the other 36 kinds are not this ticket's to move). Why: the corpus already names
+this verdict, so a second spelling of it in the estate is drift with a green
+gate, and the difference between "we happened to pick the same word" and "the
+word is the model's" is a comparison that runs. The wall bites: renaming the
+minted kind fails it. **Load-bearing? yes** — it is the only mechanical link
+between this module's vocabulary and the model's, and the three kinds without
+one are exactly the three that wear the T9 waiver.
+
+### T11. A directory whose bindings do not decode is not `not-a-directory`
+
+Decided: a hop decodes the closed header first and the bindings second. Header
+failure is wrapped as `not-a-directory` naming the hop; a value whose header
+holds but whose bindings do not fails with the SCHEMA's own refusal, unwrapped,
+naming the field and the law. Alternatives: keep the single decode, which round
+1 shipped (a well-formed directory carrying one unlawful petname refused as
+`not-a-directory` and taught "publish a directory under this digest" for a
+digest that already holds one); add a fifth kind for the malformed-binding case.
+Why: T4's argument is that a wrong hop must not be reinterpreted, and T7's is
+that a refusal which cannot say which repair applies is a diagnosis the caller
+redoes — both point the same way here, because the value IS a directory and the
+navigational repair is wrong for it. The fifth kind was refused for T9's reason:
+a new hand-written refusal name needs a waiver it cannot earn when an existing
+refusal already says the right thing. **Load-bearing? yes** — it is why the two
+questions a hop asks have two answers.
+
+### T12. Canonical order is compared as bytes, because that is the sentence written down
+
+Decided: `directory` sorts bindings by their RFC 8785 canonical bytes compared
+as BYTES, not by those bytes decoded to a JavaScript string. Alternatives: keep
+the round-1 string comparison and reword the JSDoc and `CONTEXT.md` to say
+"UTF-16 order over canonical bytes". Why: both orders are deterministic
+functions of the set, so the fold's own property — the digest names the set —
+held either way, and this is not a repair of a broken invariant. It is a repair
+of a false sentence: UTF-16 code-unit order and UTF-8 byte order disagree
+outside the BMP, where a surrogate pair sorts below U+E000–U+FFFF as code units
+and above them as bytes, and `CONTEXT.md` tells a Go-side implementer that the
+order is RFC 8785 byte order. Rewording would have been equally honest and
+strictly worse: byte order is the one an implementation on another runtime
+reaches for. `test/Address.test.ts` pins it with an astral name and fails under
+the string comparison. **Load-bearing? yes** — it is a cross-runtime interop
+claim, and the test is what makes it one.
 ## Task DEV-796 — the public type-universe inventory wall
 
 ### T0. Generated-core derivation belongs only to declarations owned by the generated core

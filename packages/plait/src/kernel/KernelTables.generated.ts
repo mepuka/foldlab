@@ -287,6 +287,10 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
   "invalid-cell-key",
   "malformed-cell-state",
   "cell-substrate-shape",
+  "invalid-petname",
+  "not-a-directory",
+  "unbound-petname",
+  "ambiguous-binding",
 ] as const
 
 /** One structural-refusal kind the runtime can mint. */
@@ -480,6 +484,26 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
   },
   {
     kind: "cell-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-petname",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "not-a-directory",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "unbound-petname",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "ambiguous-binding",
     source: "staged-debt",
     waiver: "DEV-804",
   },
