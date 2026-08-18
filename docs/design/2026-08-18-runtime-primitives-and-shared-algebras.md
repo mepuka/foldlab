@@ -6,12 +6,26 @@
 a landed gate, or the pinned vendored Effect source. This record ships
 no code and asks for no merge beyond itself.
 
-**Reading order.** §1 states the test. §2 states the one reading that
-makes the rest mechanical. §3 prices the four primitives. §4 is the
-structural proposal (shared algebra layers). §5 is the type discipline
-that ties §3 and §4 to the rung ladder. §6 is the gap audit. §7 is the
-adoption ladder. §8 flags what is genuinely new. §9 states what this
-record does not claim.
+**Revised 2026-08-18 for the type-kernel ruling.** The operator ruled,
+on this ticket, that *the machine-generated type kernel is the ONLY
+language and the unified algebraic core*: shared-service Layers and
+primitive mappings take their types **from the generated corpus family**
+(`KernelCorpusSchemas` + the generated tables) and never define parallel
+shapes. The one-type-universe epic (**DEV-795**, parent of DEV-796) is
+the assumed substrate, and **T-door (DEV-763)** is its stage 4. §1.1 is
+the binding section; §6 is the host contract that targets the generated
+candidate form. Every proposal below was re-derived against that ruling,
+and where the ruling changed a proposal the change is marked rather than
+silently applied.
+
+**Reading order.** §1 states the test and §1.1 the type-universe
+binding. §2 states the one reading that makes the rest mechanical. §3
+prices the four primitives. §4 is the structural proposal (shared
+algebra layers). §5 is the type discipline that ties §3 and §4 to the
+rung ladder. §6 is the host contract for the generated candidate form.
+§7 is the gap audit. §8 is the adoption ladder. §9 flags what is
+genuinely new, and files two blockers plus a reading question against
+the epic. §10 states what this record does not claim.
 
 **Claim tiers**, as the estate defines them
 (`docs/design/2026-08-17-plait-coordination-fabric.md:21-31`, not
@@ -79,6 +93,84 @@ This record extends the same table one column to the right, to the
 *runtime* surfaces — which combinator, which cache, which fan-out
 strategy a given law licenses. The extension is mechanical, and §5 is
 where it becomes a type.
+
+### 1.1 The one type universe is the substrate
+
+**The ruling (operator, 2026-08-18, on this ticket).** The
+machine-generated type kernel is the ONLY language and the unified
+algebraic core. Shared-service Layers and primitive mappings take their
+types **from the generated corpus family** — `KernelCorpusSchemas` plus
+the generated tables — and never define parallel shapes. Epic
+**DEV-795** ("one type universe — every public type derives from the KM
+corpus") is the assumed substrate; **DEV-796** is its stage 1 wall;
+**T-door (DEV-763)** is its stage 4.
+
+**What the epic found, which this record now assumes rather than
+rediscovers.** There is not type-level agreement between the kernel
+language and the basic API elements. `Digest` is defined **twice** —
+`truth/Digest.ts` brands a hex string `@foldlab/plait/Digest`, while the
+kernel brands `~foldlab/plait/kernel/Digest/${Kind}` — and **7 of 8
+plane modules import nothing from `kernel/`**, carrying pre-kernel
+fabric-era types. Unification exists only inside the kernel family
+(corpus → generated tables/schemas/builder, Lean-conformance-gated).
+The referee chain is stated by the epic and is the one this record
+obeys: *the Lean model's vectors gate the corpus; the corpus gates the
+types; the wall gates the surface.*
+
+**The consequence for every proposal in this record**, stated once so
+each section can be read against it: a service interface proposed below
+names its sorts with generated types or it is a sketch that owes a
+unification ticket. Concretely — declaration kinds come from
+`KERNEL_DECL_KINDS` / `KernelDeclKind`; refusal reasons from
+`KERNEL_REFUSAL_REASONS` / `KernelRefusalReason`, with the taught law
+and repair **looked up** from `KERNEL_REFUSAL_BY_REASON` rather than
+restated; identity from the `KernelDigest` family; hole stages from
+`KERNEL_HOLE_STAGES`. Nothing below may introduce a second vocabulary
+for any of these, and where a proposal previously did, the revision is
+marked.
+
+#### The carrier parameter is the seam, and the generator already said so
+
+The single most useful fact for making this ruling cheap is emitted in
+the generated table's own prose, and this record found it by reading
+that table rather than by proposing it. `KernelTables.generated.ts:257-266`:
+
+> *"The sorts this module brands, and the parameters that index each.
+> The carrier is the model's own scalar; **a call site migrating a real
+> runtime value substitutes its carrier through the alias's second
+> parameter.**"*
+
+And the aliases are carrier-polymorphic by construction
+(`:278-287`, `:294-317`):
+
+```ts
+export type KernelDigest<Kind extends KernelDeclKind, Carrier = number> =
+  Carrier & KernelBrand<`~foldlab/plait/kernel/Digest/${Kind}`>
+export type AlgebraDigest<Carrier = number> = KernelDigest<"algebra", Carrier>
+export type LaneDigest<Carrier = number>    = KernelDigest<"lane", Carrier>
+```
+
+The model's carrier is `number` because the model indexes a catalog.
+The runtime's carrier is the 64-hex string. **Both are the same sort at
+different carriers, and the generated alias already takes the carrier as
+a parameter** — so unification is `AlgebraDigest<Digest>`, not a
+rewrite, not a wire change, and not a choice between the model's scalar
+and the runtime's. This is the cheapest available path for epic stage 2
+and it was designed in; nobody has to invent it.
+
+**What that buys, and what it does not.** It buys one brand namespace
+and kind-indexed identity at the runtime carrier, so a `LaneDigest` and
+an `AlgebraDigest` stop being the same type — which is the thing the
+kernel's own brand comment says brands exist for (*"two sorts with the
+same representation refuse to unify"*, `:249-255`). It does **not**
+by itself retire `truth/Digest.ts`: that module's runtime `Schema` —
+the hex-pattern check and the `Digest` codec — is the *carrier's*
+validation and has no generated equivalent, so stage 2's "one
+definition" is best read as *one brand, one schema, two exports*, with
+`truth/Digest` supplying the carrier and the corpus supplying the
+kind-indexed brand over it. Whether that satisfies the epic's "ONE
+definition" wording is a question for the epic's seat, not this one;
+it is filed in §9.
 
 ---
 
@@ -284,7 +376,7 @@ ruled in this estate. Unlike `Cache` (ratified as G-3) and `Stream`
 (priced twice in the affordances record), this primitive enters cold.
 Under the affordances catalog's own admission discipline, that means it
 takes the full G-treatment — recommended option first, alternatives
-priced, reversal cost stated — and it is listed in §8 as a grill item
+priced, reversal cost stated — and it is listed in §9 as a grill item
 rather than treated here as adoptable. Everything below is the
 *candidate*, not a proposal to build.
 
@@ -405,6 +497,23 @@ re-derived, never asserted.
 > reads are volatile by C6's volatility classes and are a different
 > question.
 
+**Typed from the corpus (revision for the type-kernel ruling).** "Keyed
+by a digest" is now a statement with a generated type behind it: the key
+is a `KernelDigest<Kind, Digest>` from the generated family, kind-indexed
+so a memo over algebra declarations cannot be handed a lane digest. The
+pre-ruling draft said "digest" and meant `truth/Digest`'s unindexed
+brand, which is a parallel shape and also strictly weaker — it makes the
+kind a comment rather than a type.
+
+**And the ruling narrows the law's reach**, which is worth stating here
+rather than only in §6.1: a **catalog index is not a digest**. The
+candidate form addresses referents as positions in an admitted catalog
+(`KernelRef = { kind, id: number }`), and an admitted catalog grows, so
+index → value is stable only within one catalog. Memo permanence does
+not cover it, and a memo keyed by `id` alone is precisely the
+head-relative key the anti-clause forbids. Any lawful memo at the door
+seam is keyed by `(catalog identity, KernelRef)` or not at all.
+
 **Its pedigree, honestly stated — and it is stronger than this seat
 first credited.** This law is not new, and it is not merely module
 prose. It has three prior homes, in ascending order of authority:
@@ -437,7 +546,7 @@ difference is the difference between a discovery and a tidy-up:
   digests only*, but the validity/retention split is not itself written
   as a clause anyone can cite.
 - **The generalization off the resolve path.** G-3 licensed *one* memo.
-  §6's H8 and H9 are two more sites keyed by something immutable, and
+  §7's H8 and H9 are two more sites keyed by something immutable, and
   neither has a memo — because the law was ratified as a decision about
   `ResolveCache`, not as a rule about digest keys. Lifting it is the
   proposal.
@@ -456,7 +565,7 @@ cache rather than of a keyspace:
 2. **A digest memo may be persisted.** The pin ships
    `RequestResolver.persisted({ storeId, timeToLive?, staleWhileRevalidate? })`
    requiring a `Persistence` service. A durable digest memo over the
-   estate's own NATS KV is a *lead* (§8), and it is only conceivable
+   estate's own NATS KV is a *lead* (§9), and it is only conceivable
    because the law says a stored entry cannot go wrong.
 3. **A digest memo may be warmed, pre-seeded, or handed between
    deployments.** All three are ordinary for a forever-valid keyspace
@@ -497,7 +606,7 @@ timeToLive: (exit) => Exit.isSuccess(exit) ? Duration.infinity : Duration.zero,
 That one line is the law in executable form, and it should be read as
 the reference implementation every future digest memo copies.
 
-**Where the law licenses memos that do not exist yet.** §6 lists them;
+**Where the law licenses memos that do not exist yet.** §7 lists them;
 the two largest are `truth/SchemaCanonical.ts:341`, where
 `canonicalWriter` builds a fresh `Map<SchemaAST.AST, Writer>` and
 re-walks the whole schema tree **on every call** — including once per
@@ -512,7 +621,7 @@ head-relative absence, is not recorded, and flows to the caller's
 `Refusal.retryAbsence` policy). Not durability (the memo caches over
 whatever durability the substrate has; losing every entry loses time).
 Not that any current memo is a measured win — **no benchmark is
-claimed anywhere in this record**, and §7's tickets each owe one.
+claimed anywhere in this record**, and §8's tickets each owe one.
 
 ### 3.4 Resolve traffic ↔ `RequestResolver` batching
 
@@ -539,7 +648,7 @@ fluent surface"*.
 Concretely, and this is the design consequence: **no public Plait
 surface gains a `getMany`, a `resolveAll`, or a batch verb.** The
 service *interfaces* gain `getMany` because a resolver must sit on
-something (§7's A-5), but the fluent surface callers write does not
+something (§8's A-5), but the fluent surface callers write does not
 change at all — `resolve(digest)` keeps its exact signature and simply
 coalesces underneath. A version of this proposal that exposed batching
 to callers would have smuggled carriage into meaning and should be
@@ -548,10 +657,30 @@ refused.
 **The same cold-entry fact as PubSub.** `RequestResolver` appears
 **nowhere** in `docs/`, `scratch/`, or `packages/`, and neither does
 any `Effect.batch` / request-batching discussion. It has never been
-priced or grilled here. Like §3.2, it is a §8 grill item, not an
+priced or grilled here. Like §3.2, it is a §9 grill item, not an
 adoptable proposal — with the mitigating fact that its classification
 (carriage) and its licence (C3) are both already ruled, so the grill
 question is narrow.
+
+**Revised for the type-kernel ruling: the better seam is the door's.**
+The `Request` type this resolver batches must name a corpus sort, and
+the corpus already has the right one — `KernelRef = { kind:
+KernelDeclKind; id: number }`, the kind-tagged reference the door's own
+doc calls *"the one lawful way a heterogeneous digest set travels."*
+That is a stronger statement than the pre-ruling draft's `Request` over
+`truth/Digest`, because a heterogeneous batch of references is exactly
+what a `KernelRef` array is *for*, and `KernelDoorContext` already
+carries two of them.
+
+The consequence is a **re-siting, not a cancellation**: the batching
+site with the best pedigree is the catalog lookup inside admission
+(§6.1), where K referents in one candidate's payload are mutually
+independent by construction. `planes/Resolved.ts`'s N+1 remains real
+and remains worth fixing, but it is a fabric-era surface that epic
+stage 3 is going to re-type anyway, so **batching it before stage 3
+would build a resolver over a shape that is scheduled to change.** A-5
+is re-ordered in §8 accordingly. That is the ruling doing real work on
+this record's plan rather than decorating it.
 
 **The site.** `planes/Resolved.ts:134-144` is a two-hop point lookup:
 
@@ -616,7 +745,7 @@ fence. So the shipped `ResolveCache` is not replaced by batching; it is
 capacity contract, its infinity/zero TTL fence, its dedup-of-concurrent-
 lookups property, and its published `ResolveCacheService` surface
 unchanged. That is the difference between an adoption ticket and a
-rewrite, and it is why §7 stages this one early.
+rewrite, and it is why §8 stages this one early.
 
 **The fence: batching must not batch the door.** Verification is
 per-value and stays per-value. `verified(digest, value)`
@@ -693,19 +822,41 @@ a bypassed proof still reads as a proof.
 
 **The proposal (`proposed`).**
 
-1. **The algebra becomes a service.** Each DECLARED algebra's
-   operations — `combine`, `initialValue`, `step`, `identical` — are
-   provided once through `Context.Service` + `Layer`, in the estate's
-   existing house style (nine tags already use it; the pattern is
-   `class X extends Context.Service<X, XService>()("tag")` with a
-   hand-written `static readonly layer`, since the pin auto-generates
-   no `.layer` and its options bag carries only `make`). `CasJoin`
-   collapses into it through `joinOf` so there is one algebra
+1. **The algebra becomes a service, typed from the corpus.** Each
+   DECLARED algebra's operations — `combine`, `initialValue`, `step`,
+   `identical` — are provided once through `Context.Service` + `Layer`,
+   in the estate's existing house style (nine tags already use it; the
+   pattern is `class X extends Context.Service<X, XService>()("tag")`
+   with a hand-written `static readonly layer`, since the pin
+   auto-generates no `.layer` and its options bag carries only `make`).
+   `CasJoin` collapses into it through `joinOf` so there is one algebra
    vocabulary, and `cellJoin` earns its brand by construction instead
    of forgoing it. The layering rule is the storage record's, not a new
    one: **layer by plane, not by NATS construct** (§7.3), which is why
    the algebra service belongs in `truth/` beside the ladder and not
    beside any adapter.
+
+   **Revised for the type-kernel ruling.** The service's *sorts* come
+   from the generated tables, not from this record: the algebra it
+   supplies is keyed by `AlgebraDigest<Digest>` — the generated alias
+   at the runtime carrier (§1.1) — and any refusal it raises names a
+   `KernelRefusalReason`, with law and repair looked up from
+   `KERNEL_REFUSAL_BY_REASON`. `algebra` is one of the twelve
+   `KERNEL_DECL_KINDS`, so this key exists today and needs nothing
+   minted. The pre-ruling draft left the key as `truth/Digest`'s
+   unindexed brand, which is precisely the parallel shape the ruling
+   forbids: it cannot distinguish an algebra digest from a lane digest,
+   and the generated family can.
+
+   **The layer-identity fence still binds and is worth restating here**,
+   because a shared algebra service is exactly where it could be
+   breached: a Layer **supplies an implementation for a digest and
+   never names, brands, or overrides an algebra**. The service resolves
+   `AlgebraDigest<Digest> → operations`; it does not decide what an
+   algebra *is*, does not mint identity, and two Layers supplying the
+   same digest must be interchangeable. A Layer that computed or
+   assigned a digest would be the two-sources failure the register
+   record rules against.
 2. **One replay driver.** The five loops become one
    `Stream.mapAccumEffect`-based driver parameterised by the algebra
    service, which `pump`, `chaos`, `replaySuccessors` and
@@ -730,7 +881,7 @@ that surrounds a CAS. A reviewer should read this section against 0026
 and hold it to that line; a version of this proposal that grew a "CAS
 strategy" parameter has violated 0026 and should be refused on sight.
 
-**Supporting findings in the same family** (details in §6):
+**Supporting findings in the same family** (details in §7):
 `AnchorStore` (`internal/anchors.ts:35-51`) is a complete four-method
 service interface with no tag and no Layer, constructed inline at
 `internal/folds.ts:52` from a raw `NatsConnection` — which is why
@@ -834,6 +985,31 @@ stream service can take the fold's `Laws` parameter and expose only the
 combinators that rung licenses — the same trick `LawsFor<LaneQuotient<P>>`
 already plays at the declaration door, one level down.
 
+**Revised for the type-kernel ruling: the ladder is a sketch until the
+corpus carries it.** DEV-764's brands are declared in
+`truth/Algebra.ts` as seven `declare const … : unique symbol` phantoms
+bundled into `LawSet`. The kernel's brand carrier is different in kind
+— `KernelBrand<Tag extends string>` with a string-literal tag
+(`KernelTables.generated.ts:253-255`) — so the tree now holds **two
+brand mechanisms for one job**, which is the shape the ruling exists to
+refuse. The direction is not in doubt and KM-17 already states it: the
+ladder lands as *"two add-only corpus record groups (`law`, `rung`),
+sourced from the model"*, with rungs ordered by law-set inclusion
+**proved rather than tabulated**. So `rungLaws` — DEV-764's
+hand-written table mapping six rung names to their law atoms — is a
+hand-maintained twin of a corpus group that does not exist yet, and
+under estate law 1 it is a **sketch owing a generator**, not a
+finished surface.
+
+This record therefore does **not** propose building §5's combinator
+gate on DEV-764's hand-written ladder. It proposes that the ladder be
+corpus-sourced first (KM-17's `law`/`rung` groups emitted into the
+generated tables, brands riding `KernelBrand`), and that the
+rung⇒combinator surface consume *those*. A-10 in §8 is re-gated
+accordingly. Nothing about the ladder's *content* is challenged here —
+DEV-764's law atoms, poset reading, and negative controls all stand;
+what changes is where the types come from.
+
 **The fence.** A brand claims that a declared reducer's equations held
 over the cases a suite drew — `truth/Algebra.ts` says so in its own
 header — and claims nothing about liveness, throughput, or a running
@@ -848,7 +1024,120 @@ exactly the error this paragraph exists to block.
 
 ---
 
-## 6. Gap audit
+## 6. The host contract: the generated candidate form
+
+The ruling directs this record's host-contract section at the generated
+candidate form, which is epic stage 4 and the thing **T-door (DEV-763)**
+is blocked on. This section states what that form actually is at HEAD,
+what a host contract over it must carry, and two consequences that no
+prior record in this shelf states — both of which are constraints on §3
+rather than freedoms.
+
+**What ships today.** `kernel/KernelDoor.ts` is types only, and says so:
+*"**No door ships in this package.** What ships here is the type of one:
+a hand-written implementation is checked verdict-for-verdict against the
+model's emitted admission vectors."* The form is:
+
+```ts
+export interface KernelDoor {
+  readonly admit: (candidate: KernelCandidateAct) => KernelVerdict
+}
+export type KernelVerdict =
+  | { readonly verdict: "admitted"; readonly encoded: ReadonlyArray<number> }
+  | { readonly verdict: "refused";  readonly reason: KernelRefusalReason }
+export interface KernelDoorContext {
+  readonly catalog: ReadonlyArray<KernelRef>
+  readonly pinned:  ReadonlyArray<KernelRef>
+}
+export interface KernelRef { readonly kind: KernelDeclKind; readonly id: number }
+```
+
+`KernelCandidateAct` is an eleven-constructor union covering every
+generator **and every unlawful shape** — `trustBytes`, `readLatest`,
+`updateInPlace`, `lastWriterWins`, a `negation`/`deadline`/`onAbsence`
+predicate —*"spellable precisely so the door's refusal of them is
+demonstrable rather than asserted"*. That is the right shape and this
+record proposes no change to it.
+
+### 6.1 Referents are catalog indices, not digests
+
+Every referent in the candidate form is a `number`: `resolveDigest`
+carries `target: number`, `join` carries `cell: number`, `fold` carries
+`declared: number`, `decide` carries `register: number`. `KernelRef`
+pairs a `KernelDeclKind` with an `id: number`, and `KernelDoorContext`
+is two arrays of those. So the candidate layer addresses **positions in
+an admitted catalog**, not content addresses.
+
+**The consequence for §3, stated plainly because it is a constraint the
+pre-ruling draft did not have.** A host contract over this form must
+carry the catalog and perform a *digest ⇄ index* translation at the
+seam, and that translation is itself a lookup that can fail — a
+referent may resolve in the catalog and *still* lie outside the pinned
+universe, which `KernelDoorContext`'s own doc calls out as its own
+refusal. Two things follow:
+
+1. **The translation is the natural batching site, and it is a better
+   one than §3.4's.** Admitting a candidate whose payload names K
+   referents needs K catalog lookups that are mutually independent —
+   the exact `RequestResolver` shape, at a seam the one language
+   already owns, keyed by `KernelRef` rather than by a fabric-era
+   digest. §3.4's proposal should be read as landing *here* once stage
+   4 exists, not beside it.
+2. **The digest memo of §3.3 does not automatically extend to the
+   catalog.** A catalog index is a position in an admitted set, and an
+   admitted set grows. Index → value is stable only within one
+   catalog; it is not content-addressed, so **memo permanence does not
+   cover it** and a cache keyed by `id` alone would be exactly the
+   head-relative key §3.3's anti-clause forbids. A lawful memo here is
+   keyed by `(catalog identity, KernelRef)` or not at all. This is the
+   sharpest new fence the ruling produced, and it narrows this record
+   rather than widening it.
+
+### 6.2 The door is total; the estate's surfaces are not
+
+`admit` returns a `KernelVerdict` **synchronously and totally** —
+candidate in, verdict out, no error channel, no `Effect`. API log entry
+**0022** rules that every fallible Plait surface returns
+`Effect<A, Refusal, R>` with refusals on the typed error channel. These
+are not in conflict, but the join between them has never been written
+down, and a host contract is exactly where it must be:
+
+- **The door itself stays total.** That is what makes it comparable
+  verdict-for-verdict against the model's emitted admission vectors,
+  which is the whole reason to trust it. Wrapping `admit` in an
+  `Effect` error channel would make the conformance comparison
+  awkward and buys nothing — a total function is the stronger
+  artifact.
+- **The host surface above it fails in the error channel**, by mapping
+  `{ verdict: "refused", reason }` to a refusal value. The taught law
+  and repair are **looked up** from `KERNEL_REFUSAL_BY_REASON`, never
+  restated — `KernelDoor.ts` says this in its own words (*"The refusal
+  vocabulary is not restated here. It is read from the generated
+  tables, so a reason this package can name is a reason the model
+  emitted"*).
+
+So the contract is: **totality inward, error channel outward, one
+translation between them, and the translation is a table lookup rather
+than a mapping anybody writes.** That preserves 0022 and preserves
+conformance, and it is the only arrangement this seat can find that
+preserves both.
+
+### 6.3 What this section does not resolve
+
+The refusal *carrier* is still doubled. `KERNEL_REFUSAL_BY_REASON`
+returns a `KernelRefusalRow`; `truth/Refusal.ts` ships
+`StructuralRefusal | AbsenceRefusal` as `Schema.TaggedError`s, and all
+68 rows of the public signature wall are typed in the latter. The
+ruling settles the *direction* — the generated table is the language,
+so the fabric-era pair is the parallel shape — but the bridge is epic
+stage 3's work and not this record's to design. What §7 previously
+filed as "two refusal vocabularies, no bridge" is therefore no longer a
+neutral observation: it is a **debt with a known direction**, and it is
+re-tiered accordingly below.
+
+---
+
+## 7. Gap audit
 
 Walked at the plane-aligned layout post-PR #113. Forty source files
 read. **Baseline, stated first because it reframes everything below:
@@ -870,6 +1159,28 @@ and the reason §4 is the structural proposal.
 Severity is this seat's judgment, not a ruling. Line numbers were read
 at HEAD; the four starred rows were re-verified by hand against the
 files.
+
+**Added for the type-kernel ruling — the corpus-tracing rows.** The
+epic's own finding is the headline of this audit now, and it outranks
+every Effect-idiom row below: **`Digest` is defined twice**
+(`truth/Digest.ts:13-16` brands `@foldlab/plait/Digest`;
+`KernelTables.generated.ts:278-279` brands
+`~foldlab/plait/kernel/Digest/${Kind}`), and **7 of 8 plane modules
+import nothing from `kernel/`**. Both are DEV-795's, cited not
+restated. Two further rows this seat adds from reading the generated
+tables:
+
+| # | Site | Finding | Severity |
+| --- | --- | --- | --- |
+| K1 | `truth/Algebra.ts` (DEV-764) vs `KernelTables.generated.ts:253-255` | **two brand mechanisms** — seven `unique symbol` phantoms vs `KernelBrand<Tag extends string>`; and `rungLaws` is a hand-maintained twin of KM-17's not-yet-emitted `law`/`rung` corpus groups | high — it is the ruling's exact failure mode, in the module the ruling most concerns |
+| K2 | `carriage/CasDaemon.ts:75-86` vs `truth/Refusal.ts` | **two refusal carriers** — `KernelRefusalRow` (generated) vs `StructuralRefusal \| AbsenceRefusal` (fabric-era, and the type of all 68 signature-wall rows) | **re-tiered**: the ruling settles that the generated table is the language, so the fabric-era pair is the parallel shape. The bridge is epic stage 3's work, not this record's |
+
+**Re-tiering note, stated rather than quietly applied.** Before the
+ruling this record listed K2 as a neutral low-severity curiosity ("two
+refusal type systems, no bridge"). That framing is now wrong: there is
+a right answer, the generated table has it, and the fabric-era
+vocabulary is the debt. The Low section below still carries the
+original wording for the reader's cross-check; this row supersedes it.
 
 ### High
 
@@ -957,7 +1268,7 @@ exemplary `SynchronizedRef` + `Schedule` + `raceFirst`.
 
 ---
 
-## 7. The adoption ladder
+## 8. The adoption ladder
 
 Severable and stage-gated. Each stage is independently valuable and
 independently abandonable; no stage depends on a later one. Stages 1
@@ -970,8 +1281,31 @@ here is `proposed`; none is dispatched by this record.**
 `planes/Address.ts`) are live on this surface. This record **consumes
 their PRs when they land and duplicates none of them**: §2's stream
 form is one combinator over DEV-765's `read`, §5 is a use of DEV-764's
-brands with no change to the ladder, and §3.4 lands strictly below
-DEV-766 in a module it declared it does not observe.
+brands with no change to the ladder's content, and §3.4 lands strictly
+below DEV-766 in a module it declared it does not observe.
+
+**Re-gated for the type-kernel ruling.** Epic **DEV-795** now sits
+under most of this ladder, and the re-gating is not cosmetic — it
+**re-orders two tickets and demotes a third**:
+
+- **A-5 (batched resolve) moves from stage 2 to stage 3** and behind
+  epic stage 3. Batching `planes/Resolved.ts` before its types are
+  re-typed would build a resolver over a shape scheduled to change
+  (§3.4). The N+1 is real; the fix is not urgent enough to pay for
+  twice.
+- **A-10 (rung⇒combinator in types) is demoted to blocked** behind
+  KM-17's corpus groups being emitted. Building it on DEV-764's
+  hand-written `rungLaws` would ship a second brand mechanism into the
+  surface the ruling most concerns (§7 K1).
+- **A-11 is new**: the host contract of §6, which is where the door
+  seam, the catalog translation, and the batching site with the best
+  pedigree all live.
+
+Tickets whose types are already corpus-clean or corpus-free — A-1
+(transport adapter), A-2 (memo over an AST), A-3/A-4 (connection and
+store services), A-9 (CLI) — are **unaffected** by the ruling and keep
+their stages. That is most of stage 1, so the ladder still starts
+immediately.
 
 | Stage | Ticket (proposed) | Scope | Gate it owes | Blocked by |
 | --- | --- | --- | --- | --- |
@@ -979,12 +1313,13 @@ DEV-766 in a module it declared it does not observe.
 | 1 | **A-2 — the digest memo law, applied** | `Cache` behind a Layer for `canonicalWriter` (H8) and anchor state-ensure (H9) | a `measured` before/after on the corpus round-trip; no claim without it | none |
 | 1 | **A-3 — `AnchorStore` becomes a service** | tag + `.layer`/`.testLayer`; connection as a Layer dependency (H5) | checkpoint tests that run without live NATS — the point of the ticket | none |
 | 2 | **A-4 — one connection, one policy** | connection service or `Pool` (H6); `transportRefusalFor`'s eight module-level closures become a policy service | the spine wall, unchanged, plus a test that N adapters open one connection | A-3 |
-| 2 | **A-5 — batched resolve** | `getMany` on `CatalogService`/`PayloadService`; `RequestResolver.make` over `Digest`; `ResolveCache` re-expressed via `asCache` preserving its published surface, capacity contract and `Exit`-keyed TTL. **No public batch verb** — carriage stays fenced out of the fluent surface | round-trip count on a K-reference decode (`measured`); the public-effects signature wall unchanged for `ResolveCache.resolve` | **the §8 item-0 grill on `RequestResolver`**; and **must land after PR #115 merges** so `Address` inherits it untouched |
+| 3 | **A-5 — batched resolve** *(moved from stage 2)* | `getMany` on `CatalogService`/`PayloadService`; `RequestResolver.make` over `KernelRef`; `ResolveCache` re-expressed via `asCache` preserving its published surface, capacity contract and `Exit`-keyed TTL. **No public batch verb** — carriage stays fenced out of the fluent surface | round-trip count on a K-reference decode (`measured`); the public-effects signature wall unchanged for `ResolveCache.resolve` | **the §9 item-0 grill on `RequestResolver`**; **epic stage 3** (re-typing `Resolved`/`Catalog`), else it is built over a shape scheduled to change; and **PR #115 merged** so `Address` inherits it untouched |
+| 3 | **A-11 — the host contract over the generated candidate form** *(new)* | §6: the digest⇄index translation at the door seam, refusals looked up from `KERNEL_REFUSAL_BY_REASON`, totality inward and error channel outward | a control that no judgment path bypasses the seam (T-door's own acceptance); refusal parity across every host | **epic stage 4** / **DEV-763**, which is blocked on exactly this form existing |
 | 3 | **A-6 — the shared algebra service** | algebra ops behind a tag; `CasJoin` collapsed via `joinOf`; `cellJoin` earns its brand | the rung negative controls DEV-764 ships, re-pointed at the service | **PR #118 merged** |
 | 3 | **A-7 — one replay driver** | five loops → one `Stream.mapAccumEffect` driver; `arrivalOrderReplay` stays a negative control by parameterisation | F2b's existing model gate, plus the committed control traces | A-6 |
-| 3 | **A-8 — `Session.views` as a Stream** | the §2 combinator; `Cells.changes`/`Registers.changes` when the watch feed lands | signature wall entry; rung-gated combinator surface per §5 | **PR #116 merged**; ships as *chatter* with no parity claim until AE-4 is ruled; the watch half additionally gated on the **§8 item-0 `PubSub` grill**, DEV-731's probe suite, and advisory-only with no absence reasoning |
+| 3 | **A-8 — `Session.views` as a Stream** | the §2 combinator; `Cells.changes`/`Registers.changes` when the watch feed lands | signature wall entry; rung-gated combinator surface per §5 | **PR #116 merged**; ships as *chatter* with no parity claim until AE-4 is ruled; the watch half additionally gated on the **§9 item-0 `PubSub` grill**, DEV-731's probe suite, and advisory-only with no absence reasoning |
 | 4 | **A-9 — the CLI on `effect/unstable/cli`** | H2, whole file | help text and command tree derived, not hand-written — a projection under estate law 1 | none technically; sequenced last as the largest single diff |
-| 4 | **A-10 — rung⇒combinator in types** | §5's table as a type-level surface over the shared stream service | one negative control per refused row (`unordered` on positional; `changes` on multiset) | A-6, A-8, PR #118 |
+| — | **A-10 — rung⇒combinator in types** *(demoted to blocked)* | §5's table as a type-level surface over the shared stream service, over **corpus-sourced** rung records | one negative control per refused row (`unordered` on positional; `changes` on multiset) | **KM-17's `law`/`rung` corpus groups being emitted** — building this on DEV-764's hand-written `rungLaws` would ship a second brand mechanism (§7 K1). Then A-6, A-8, PR #118 |
 
 **Deliberately excluded from the ladder**, so the exclusion is on the
 record rather than an omission: unifying the three CAS disciplines
@@ -995,7 +1330,7 @@ touches `fixtures/` or a digest.
 
 ---
 
-## 8. Flagged as genuinely new — candidates for the grill
+## 9. Flagged as genuinely new — candidates for the grill
 
 Per §1, these do not reduce cleanly to a proved construct. Each is
 stated as a candidate with its consumer named, and none is a proposal
@@ -1013,7 +1348,7 @@ this seat will act on.
    named"*. This record supplies the licences (F1/F2 for fan-out, C3
    for batching) and the fences (rung-chosen strategy; batching is
    carriage, fenced out of the fluent surface), but **supplies no
-   ruling** and asks that §7's A-5 and A-8 not start before the
+   ruling** and asks that §8's A-5 and A-8 not start before the
    grill closes. Naming bound, from the same catalog: no new module
    may shadow an `effect` barrel name — so neither of these mints a
    `PubSub.ts` or a `Cache.ts` in this package, the way 0017/0018
@@ -1059,12 +1394,67 @@ this seat will act on.
    Not a primitive question at all, but it surfaced in the sweep and it
    is a one-door question (estate law 2), so it is filed here rather
    than dropped. *Consumer:* anything that bridges kernel refusals to
-   fabric refusals. *This seat proposes nothing;* it reports that two
-   vocabularies exist with no bridge.
+   fabric refusals. **Updated by the ruling:** the *direction* is now
+   settled — the generated table is the language — so this is a debt
+   with a known answer rather than an open choice. The bridge itself is
+   epic stage 3's work. *This seat still proposes nothing.*
+
+### Filed against the epic — two blockers and a reading question
+
+All three were found by reading `KernelTables.generated.ts` and
+`KernelDoor.ts` at HEAD while re-deriving this record against the
+ruling. Per the seat law, findings against a ratified record are
+**FILED, not fixed**, and a blocker is reported rather than improvised
+around. None is a criticism of the epic's direction, which this record
+adopts wholesale. Items 5 and 6 are blockers — places where stage 3
+cannot mechanically complete at the current corpus. Item 7 is a reading
+this seat states and does not rule.
+
+5. **The closed kind universe has no `fold`, `cell`, or `register`.**
+   `KERNEL_DECL_KINDS` is twelve kinds — `schema`, `program`, `policy`,
+   `capability`, `lane`, `algebra`, `index`, `resource`, `ontology`,
+   `schedule`, `template`, `language` — and `KernelDeclKind` is
+   `(typeof KERNEL_DECL_KINDS)[number]`, i.e. closed. Epic stage 3
+   directs Cell, Fold, and Register to *"consume corpus types (kinds
+   from KernelTables…)"*, but **`DeclaredFold.digest`, a cell's
+   identity, and a register's work digest have no kind to consume.**
+   The candidate form is consistent with this — `join` carries a bare
+   `cell: number` and `decide` a bare `register: number`, neither
+   kind-tagged as a `KernelRef` — which reads as *cells and registers
+   are subjects, not declarations*. If that reading is right, stage 3's
+   wording over-reaches for three of its seven modules and they need a
+   different unification target than "a kind". If it is wrong, the
+   corpus needs three more kinds, which is a model change gated by Lean
+   conformance and therefore not a stage-3-sized task either way.
+   *Consumer:* DEV-796's inventory, which will have to classify these
+   three as UNTRACED with no obvious ticket to point at.
+6. **`AnchorFact` is explicitly un-aliased.**
+   `KERNEL_UNBRANDED_INDEXED_SORTS` carries exactly one entry —
+   `{ name: "AnchorFact", params: ["declared", "partition"] }` — with
+   the generator's own note that these are *"brand-indexed sorts with
+   no single carrier field, so no scalar alias is generated for them.
+   They are **reported rather than invented**: a structure with several
+   fields has no one value a brand could ride on."* So the anchor —
+   which §7's H5 wants to put behind an `AnchorStore` service, and
+   which epic stage 3 lists — **has a corpus sort with deliberately no
+   generated type to import.** A service over anchors must compose from
+   the record grammar rather than take an alias, and the epic's "every
+   public type derives from the corpus" needs a stated answer for the
+   sorts the corpus declines to alias. *Consumer:* A-3 in §8, and
+   DEV-796's waiver vocabulary.
+7. **Does "ONE definition" of `Digest` permit one brand over one
+   schema?** §1.1's reading is that stage 2 lands as *one brand
+   (`KernelDigest`, carrier-parameterized), one schema
+   (`truth/Digest`'s hex check, which has no generated equivalent), two
+   exports*. That satisfies "no parallel shapes" while keeping the
+   runtime validation the corpus does not carry. *Consumer:* epic stage
+   2. *This seat states the reading and does not rule it* — if the
+   operator means something stricter, the runtime loses its pattern
+   check and needs a generated replacement first.
 
 ---
 
-## 9. What this record does NOT claim
+## 10. What this record does NOT claim
 
 - **No measurement.** Not one number here is `measured`. Every
   performance statement is structural — "K sequential round trips
@@ -1075,7 +1465,7 @@ this seat will act on.
   every Plait record and with DEV-764's own brand fence.
 - **No new guarantee anywhere.** Every mapping in §3 collects a
   convenience an already-proved law licenses. Where something did not
-  reduce, §8 flags it rather than smuggling it.
+  reduce, §9 flags it rather than smuggling it.
 - **No claim that the pump is losing messages.** §3.1 claims an
   asymmetry of *pedigree* between two adapters, with the package's own
   prose as the oracle — not an observed failure.
@@ -1084,21 +1474,34 @@ this seat will act on.
   A-8b and B-4, and the license table this record materializes is the
   storage record's §8.5. Where this record found the argument already
   written, it says so and cites it. The genuinely uncited surfaces are
-  `PubSub` and `RequestResolver`, and §8 item 0 says exactly that.
+  `PubSub` and `RequestResolver`, and §9 item 0 says exactly that.
 - **No parity claim for any stream surface.** Access pattern 7 is
   chatter until AE-4 is ruled, and §2 inherits that fence rather than
   arguing with it.
+- **No door ships, and none is designed here.** §6 states a *contract*
+  over the generated candidate form — the translation, the totality
+  boundary, the lookup discipline. The door implementation and its
+  verdict-for-verdict conformance against the model's admission vectors
+  are T-door's (DEV-763), and this record does not pre-empt them.
+- **No claim that epic DEV-795 is complete or completable as worded.**
+  §9 items 5–7 file three places where its stage 3 does not
+  mechanically close at the current corpus. Those are filed for its
+  seat, not answered here, and this record adopts the epic's direction
+  regardless of how they are ruled.
+- **No re-litigation of DEV-764.** §5's revision changes where the rung
+  ladder's *types* come from, not its law atoms, its poset reading, or
+  its negative controls, all of which stand.
 - **No ruling on the deliberate absences.** The Cell watch feed,
   `Payloads.layer`'s stub, and `CasDaemon`'s tag-freedom are documented
   decisions owned elsewhere; this record notes their downstream cost
   and overrides none of them.
-- **No overlap with the three live PRs.** §7 states the dependency
+- **No overlap with the three live PRs.** §8 states the dependency
   edges; nothing here re-designs `Session`, the rung ladder, or
   `Address`.
 - **Line numbers are read at HEAD** (merge `62c78d4`, post-PR #113).
-  Four rows in §6 were re-verified by hand; the rest come from a full
+  Four rows in §7 were re-verified by hand; the rest come from a full
   40-file sweep and will drift as the live PRs merge.
-- **This record ships no code**, and nothing in §7 is dispatched by it.
+- **This record ships no code**, and nothing in §8 is dispatched by it.
 
 ---
 
@@ -1126,10 +1529,23 @@ KM-20–23 — the sheet's own status line reads *"All items PROPOSED"*);
 `.claude/skills/estate-api-development/` (the five laws and the
 admission test).
 
+The type-kernel ruling and its substrate: the operator ruling of
+2026-08-18 on DEV-792 (AGENTS.md law 1, hardened); epic **DEV-795**
+(one type universe, whose stage list and findings §1.1 cites rather
+than restates); **DEV-796** (the stage-1 wall, inventory mode);
+**DEV-763** (T-door, epic stage 4). Generated sources read at HEAD:
+`packages/plait/src/kernel/KernelTables.generated.ts` (the kind,
+refusal, brand and alias tables — `:36-52`, `:99-119`, `:130-247`,
+`:253-317`), `packages/plait/src/kernel/KernelCorpusSchemas.ts` (the
+corpus record grammar), `packages/plait/src/kernel/KernelDoor.ts` (the
+candidate form, the door contract, and its "no door ships" fence).
+
 API log: entry 0026 (the three CAS disciplines are never unified — the
-pre-registered refusal this record's §4 is held against); 0017/0018
-(no module may shadow an `effect` barrel name); 0025 (G7's ceiling is
-external dependencies only).
+pre-registered refusal this record's §4 is held against); 0022
+(refusals ride the error channel — the rule §6.2 joins to the door's
+totality); 0017/0018 (no module may shadow an `effect` barrel name);
+0025 (G7's ceiling is external dependencies only); 0023 (a gate that
+lists is a gate that drifts — the discipline DEV-796's wall inherits).
 
 In flight: PR #116 (DEV-765, `planes/Session.ts`); PR #118 (DEV-764,
 `truth/Algebra.ts`, `planes/Fold.ts`); PR #115 (DEV-766,
@@ -1141,3 +1557,4 @@ Every signature quoted in this record was copied from that source, and
 three APIs a memory-written record would have cited do not exist in the
 pin: `Stream.unfoldEffect`, `Stream.unwrapScoped`,
 `RequestResolver.makeBatched`.
+

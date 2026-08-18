@@ -82,6 +82,9 @@ coordinator merges.
 | [0030](#0030--fan-out-strategy-is-a-rung-claim-not-a-tuning-knob) | 2026-08-18 | watch feeds (`Cells` / `Registers`) | `sliding`/`dropping` are admissible only where the payload's algebra absorbs loss | proposed |
 | [0031](#0031--one-algebra-service-and-one-replay-driver-the-cas-disciplines-stay-three) | 2026-08-18 | `Algebra`, the internal drive loops | unify the algebra and F2b's loop; 0026's three write disciplines are untouched | proposed |
 | [0032](#0032--rungcombinator-the-license-table-materialized-in-types) | 2026-08-18 | the shared stream surface | a combinator's soundness side-condition is a law atom; §8.5's rows become compile errors | proposed |
+| [0033](#0033--every-shared-service-takes-its-sorts-from-the-generated-corpus) | 2026-08-18 | every shared-service Layer | the generated corpus family is the only type vocabulary; a parallel shape is a sketch owing a ticket | proposed |
+| [0034](#0034--the-carrier-parameter-is-the-unification-seam) | 2026-08-18 | `Digest` and the brand family | `KernelDigest<Kind, Carrier>` already takes the runtime carrier; unification is an instantiation, not a rewrite | proposed |
+| [0035](#0035--the-door-is-total-inward-and-the-error-channel-is-outward) | 2026-08-18 | `KernelDoor` / every host | `admit` stays a total function for conformance; hosts map the verdict to a refusal by table lookup | proposed |
 
 ---
 
@@ -940,3 +943,124 @@ coordinator merges.
   closing line names the TypeScript materialization as the goal); KM-17;
   PR #118 `truth/Algebra.ts` (`DeepestQuotient`, `LawsFor`, `Reads`);
   F2, F4, F2b.
+
+### 0033 — every shared service takes its sorts from the generated corpus
+
+- **Date:** 2026-08-18
+- **Surface:** every shared-service Layer proposed for Plait
+- **Decision:** the machine-generated type kernel is the only language,
+  so a shared service names its sorts with generated types or it is a
+  sketch that owes a unification ticket. Concretely: declaration kinds
+  from `KERNEL_DECL_KINDS` / `KernelDeclKind`; refusal reasons from
+  `KERNEL_REFUSAL_REASONS` / `KernelRefusalReason`, with law and repair
+  **looked up** from `KERNEL_REFUSAL_BY_REASON` rather than restated at
+  each site; identity from the `KernelDigest` family; hole stages from
+  `KERNEL_HOLE_STAGES`. No service may introduce a second vocabulary
+  for any of these. The shared algebra service of the runtime-primitives
+  record is therefore keyed by `AlgebraDigest<Digest>`, not by
+  `truth/Digest`'s unindexed brand — which is not merely more compliant
+  but strictly stronger, since the unindexed brand cannot distinguish an
+  algebra digest from a lane digest and the generated family can.
+- **API consequence:** the layer-identity fence composes with this and
+  is restated rather than assumed: a Layer **supplies an implementation
+  for a digest and never names, brands, or overrides an algebra**. Two
+  Layers supplying the same digest are interchangeable; a Layer that
+  computed or assigned a digest would be the two-sources failure. And
+  the admission test's question 1 ("which algebraic expression does this
+  surface name?") becomes mechanically checkable once DEV-796's wall
+  flips to enforce mode.
+- **Alternatives:** let each plane keep its fabric-era types and bridge
+  at the seams (the status quo, and the epic's finding is that it has
+  already produced `Digest` twice and seven plane modules with no kernel
+  import); unify onto the fabric-era types instead (inverts the referee
+  chain — the Lean model gates the corpus, the corpus gates the types,
+  and a hand-written type cannot be gated by a model vector).
+- **Status:** proposed — the ruling is the operator's (2026-08-18, on
+  DEV-792, AGENTS.md law 1 hardened); what is `proposed` here is this
+  entry's specific reading of which generated types each service takes.
+- **Source:** the operator ruling on DEV-792; epic DEV-795 (one type
+  universe) and DEV-796 (the stage-1 wall);
+  `packages/plait/src/kernel/KernelTables.generated.ts`;
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md`
+  §1.1 and §4; the algebraic-register record's layer fences.
+
+### 0034 — the carrier parameter is the unification seam
+
+- **Date:** 2026-08-18
+- **Surface:** `Digest`, and the whole generated brand family
+- **Decision:** `Digest` is currently defined twice — `truth/Digest.ts`
+  brands a 64-hex string `@foldlab/plait/Digest`, and the generated
+  table brands `~foldlab/plait/kernel/Digest/${Kind}` over the model's
+  `number` carrier. These are **the same sort at two carriers**, not two
+  sorts, and the generated aliases already take the carrier as a type
+  parameter: `KernelDigest<Kind extends KernelDeclKind, Carrier = number>`,
+  with `AlgebraDigest<Carrier = number>` and eleven siblings. The
+  generator says so in its own prose — *"the carrier is the model's own
+  scalar; a call site migrating a real runtime value substitutes its
+  carrier through the alias's second parameter"*. So unification is
+  `AlgebraDigest<Digest>`: an instantiation, not a rewrite, with no wire
+  change and no choice forced between the model's scalar and the
+  runtime's.
+- **API consequence:** one brand namespace, and kind-indexed identity at
+  the runtime carrier — so a `LaneDigest` and an `AlgebraDigest` stop
+  being the same type, which is what the kernel's brand comment says
+  brands are for. This entry reads epic stage 2's "ONE definition" as
+  *one brand, one schema, two exports*: the corpus supplies the
+  kind-indexed brand, `truth/Digest` supplies the carrier's hex-pattern
+  `Schema`, for which the corpus has no equivalent. If the operator
+  means something stricter, the runtime loses its pattern check and owes
+  a generated replacement first.
+- **Alternatives:** re-carrier the runtime onto the model's `number`
+  (breaks every wire value and every digest in every fixture, to adopt a
+  catalog index as an identity — refused); keep both brands and bridge
+  with casts (a cast is exactly the drift surface the wall exists to
+  find, and `as unknown as` already appears six times in `src`).
+- **Status:** proposed — the substrate ruling is the operator's; this
+  entry proposes the specific mechanism and its reading of stage 2.
+- **Source:** `KernelTables.generated.ts:249-317` (the brand carrier,
+  `KERNEL_BRANDED_SORTS`, and the twelve aliases);
+  `packages/plait/src/truth/Digest.ts:13-16`; epic DEV-795 stage 2;
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §1.1.
+
+### 0035 — the door is total inward, and the error channel is outward
+
+- **Date:** 2026-08-18
+- **Surface:** `KernelDoor`, and every host that judges a candidate
+  (`cli`, `FabricClient`, `CasDaemon`)
+- **Decision:** `KernelDoor.admit` has the shape
+  `(candidate: KernelCandidateAct) => KernelVerdict` — synchronous,
+  total, no error channel — while entry 0022 rules that every fallible
+  Plait surface returns `Effect<A, Refusal, R>`. These are joined, not
+  reconciled by changing either. **The door stays total**, because that
+  is what makes it comparable verdict-for-verdict against the model's
+  emitted admission vectors, which is the entire reason to trust a
+  hand-written door; wrapping it in an error channel would complicate
+  the conformance comparison and buy nothing. **The host surface above
+  it fails in the error channel**, mapping
+  `{ verdict: "refused", reason }` to a refusal whose law and repair are
+  **looked up** from `KERNEL_REFUSAL_BY_REASON` — never restated, which
+  `KernelDoor.ts` already requires in its own words.
+- **API consequence:** totality inward, error channel outward, and one
+  translation between them that is a table lookup rather than a mapping
+  anybody writes. A second consequence follows from the candidate form
+  and is easy to miss: every referent in it is a **catalog index**
+  (`KernelRef = { kind, id: number }`), not a content address, so a host
+  contract must carry the catalog and translate. That translation is the
+  natural `RequestResolver` batching site — K referents in one
+  candidate's payload are independent by construction — and it is
+  **not** covered by memo permanence, because a catalog index is a
+  position in a growing admitted set, not a digest. A memo there is
+  keyed by `(catalog identity, KernelRef)` or not at all.
+- **Alternatives:** make `admit` return an `Effect` (loses the clean
+  total artifact the conformance vectors compare against); let each host
+  restate the taught law beside its own refusal mapping (three copies of
+  a generated table, which is the hand-written-twin failure estate law 1
+  refuses).
+- **Status:** proposed — targets epic stage 4 and unblocks T-door
+  (DEV-763); no door ships from the record that states it.
+- **Source:** `packages/plait/src/kernel/KernelDoor.ts` (the candidate
+  form, `KernelVerdict`, `KernelDoorContext`, and the "no door ships"
+  fence); `KernelTables.generated.ts:130-247`
+  (`KERNEL_REFUSALS` / `KERNEL_REFUSAL_BY_REASON`); entry 0022; DEV-763;
+  epic DEV-795 stage 4;
+  `docs/design/2026-08-18-runtime-primitives-and-shared-algebras.md` §6.
