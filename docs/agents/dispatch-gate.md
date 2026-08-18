@@ -23,6 +23,18 @@ Work that does not move the cutover needs a stated reason to exist now.
 "Useful," "interesting," and "worth evaluating" are not reasons to
 dispatch; they are reasons to write a research note.
 
+## The admission test rides every public-surface ticket, verbatim
+
+The operator-authored API skill
+(`.claude/skills/estate-api-development/`) rules the mechanism: seats
+don't load skills — the ticket text is how the discipline reaches
+them. A ticket touching any public surface carries that skill's
+six-question admission test pasted verbatim into its body, plus the
+authorities it names. The ratification questions below are the
+board-level complement (they gate the ticket's existence; the
+admission test gates its surface), and neither substitutes for the
+other.
+
 ## The ratification questions (answerable in every ticket body)
 
 A ticket that cannot answer these is not dispatchable:
