@@ -1448,17 +1448,23 @@ what the module hides).
 
 ### C-1. The nine tickets, dependency-ordered
 
-| # | Ticket | Carries | Depends on | Priority |
+| # | Ticket (cut 2026-08-18, unassigned todo) | Carries | Depends on | Priority |
 | --- | --- | --- | --- | --- |
-| 1 | **Transport spine extraction + mechanical dispositions** | B-8 (eight sites → `internal/transport.ts`), B-1, B-2, B-3, B-5, B-6, B-9 comment, B-11 comment | — | high |
-| 2 | **Defect classification (B-7 disposition)** | narrow the spine's catch to the pinned client's error classes; defects die as defects | 1 | medium |
-| 3 | **Backpressure unification (B-4) + T4/T5 supersessions** | bounded commons pump (route a; route b recorded); DECISIONS entries; the dual-scope dedup sentence | 1 | medium |
-| 4 | **`casJoinLoop` extraction per the G-2 contract** | A-7 whole: `internal/cas.ts`, Reducer-parameterised, MergeDiscipline preserved, bounded, CellWall+T16 verbatim; A-8b's replica rides the module | 1 | high |
-| 5 | **The Blob split per G-5** | A-9 whole: internal seam renamed; `Blob.ts` `BlobsService` + `layerFileSystem` + conformance suite; G-6 refusal recorded | 1 | high |
-| 6 | **The resolve cache per G-3** | A-8a: verified-path decorator, digests-only, `Cache.makeWith`; name bound by API log 0018 | 5 | medium |
-| 7 | **The sorts sweep + the Symbol decision** | Part A3 whole: brands per the family table; the must-not-compile wall; the TypeId/PrimaryKey/Equal statements | 4, 5 | medium |
-| 8 | **The matcher set + equivalence instances + the coherence wall** | A-6 (all matchers, suites derived from the union artifacts), A-1 (the wall), A-2 (`byToken`), A-3 (`byDigest` ×2 + `envelopeEquivalence`) | 7 | medium |
-| 9 | **The durable Catalog layer per R-4** | A-11 fact 4 realized: KV-backed verified store on the anchors pattern; anchors become a Catalog consumer, never the reverse | 1, 5, 7 | high |
+| 1 · **DEV-734** | **Transport spine extraction + mechanical dispositions** | B-8 (eight sites → `internal/transport.ts`), B-1, B-2, B-3, B-5, B-6, B-9 comment, B-11 comment | — | high |
+| 2 · **DEV-735** | **Defect classification (B-7 disposition)** | narrow the spine's catch to the pinned client's error classes; defects die as defects | 1 | medium |
+| 3 · **DEV-736** | **Backpressure unification (B-4) + T4/T5 supersessions** | bounded commons pump (route a; route b recorded); DECISIONS entries; the dual-scope dedup sentence | 1 | medium |
+| 4 · **DEV-737** | **`casJoinLoop` extraction per the G-2 contract** | A-7 whole: `internal/cas.ts`, Reducer-parameterised, MergeDiscipline preserved, bounded, CellWall+T16 verbatim; A-8b's replica rides the module | 1 | high |
+| 5 · **DEV-738** | **The Blob split per G-5** | A-9 whole: internal seam renamed; `Blob.ts` `BlobsService` + `layerFileSystem` + conformance suite; G-6 refusal recorded | 1 | high |
+| 6 · **DEV-739** | **The resolve cache per G-3** | A-8a: verified-path decorator, digests-only, `Cache.makeWith`; name bound by API log 0018 | 5 | medium |
+| 7 · **DEV-740** | **The sorts sweep + the Symbol decision** | Part A3 whole: brands per the family table; the must-not-compile wall; the TypeId/PrimaryKey/Equal statements | 4, 5 | medium |
+| 8 · **DEV-741** | **The matcher set + equivalence instances + the coherence wall** | A-6 (all matchers, suites derived from the union artifacts), A-1 (the wall), A-2 (`byToken`), A-3 (`byDigest` ×2 + `envelopeEquivalence`) | 7 | medium |
+| 9 · **DEV-742** | **The durable Catalog layer per R-4** | A-11 fact 4 realized: KV-backed verified store on the anchors pattern; anchors become a Catalog consumer, never the reverse | 1, 5, 7 | high |
+
+Every in-text "ticket N" in Parts A/B/B2 resolves through this table:
+1=DEV-734, 2=DEV-735, 3=DEV-736, 4=DEV-737, 5=DEV-738, 6=DEV-739,
+7=DEV-740, 8=DEV-741, 9=DEV-742. All nine sit on the board unassigned
+at status todo; their descriptions are self-contained and cite this
+record at `c585c24c8`.
 
 Prose reading of the order: the spine first (everything touches the
 adapters, and eight copies of the transport shape would conflict with
@@ -1491,8 +1497,8 @@ at a glance.
 modules, with closure law tests generated from the unions.**
 *Status: refereed 2026-08-18 — ADOPT-AMENDED (timing after both
 merges — now satisfied; suites derived from the union artifacts;
-Lane's own matcher; dual-scope dedup JSDoc). Realized by ticket 8 on
-the operator's ruling.*
+Lane's own matcher; dual-scope dedup JSDoc). Realized by DEV-741 on the
+operator's ruling.*
 
 **G-2. `casJoinLoop` ships internal-first, consumed by the cell write
 path; publication as a lawful public combinator is a separate later
@@ -1501,13 +1507,13 @@ decision.**
 post-merge behavior-preserving extraction from `internal/cells.ts`,
 Reducer-parameterised, MergeDiscipline + bounded attempts +
 reconcile-before-classify preserved; CellWall + T16 rows verbatim).
-Realized by ticket 4 on the operator's ruling.*
+Realized by DEV-737 on the operator's ruling.*
 
 **G-3. The resolve cache is a wrapping layer on the verified resolve
 path, not a change to any service shape.**
 *Status: refereed 2026-08-18 — ADOPT-AMENDED (verified path only;
 keys are digests only; the store's boundlessness is R-4's question).
-Realized by ticket 6 on the operator's ruling; the surface name moves
+Realized by DEV-739 on the operator's ruling; the surface name moves
 beside `Resolved.resolve` per the amendment (A-8a naming note).*
 
 **G-4. Pre-register the refusal: the CAS disciplines are never
@@ -1516,15 +1522,15 @@ unified.**
 three-way: joins retry by idempotence (F1); registers reconcile by
 read-back because outcomes land once (I2); anchors never retry — a
 lost anchor CAS is a fatal detach (dispatch 31 decision 6)). Recorded
-in A-7; no build either way; the API-log sentence lands with ticket
-4's DECISIONS entry.*
+in A-7; no build either way; the API-log sentence lands with
+DEV-737's DECISIONS entry.*
 
 **G-5. Admit `Blob.ts` as the `BlobsService` interface (capabilities,
 never vendors) with `layerFileSystem` as the first backend — zero new
 plait dependencies.**
 *Status: refereed 2026-08-18 — ADOPT-AMENDED (the two-services split;
 absence is `AbsenceRefusal`, never `Option`; the probe gate binds the
-OBJ backend only). Realized by ticket 5 on the operator's ruling;
+OBJ backend only). Realized by DEV-738 on the operator's ruling;
 DEV-730 gates backend (b).*
 
 **G-6. Pre-register the refusal: no ranged/partial blob reads until a
@@ -1555,5 +1561,6 @@ citation re-verified in place this pass); NATS clients
 root (package.json:13-14). Main at `6234483a1`; merged waves PR #81
 `2b28d9efb`, PR #83 `6bae7007b`, M2 `52c5f8eab`, M3 `8d16f8111`;
 refereed verdicts at `af7a68d39`. No repository file other than this
-record changed by the amendment; the tickets cut are listed in the
-coordination log.*
+record changed by the amendment; the nine tickets cut on the board:
+DEV-734..DEV-742, unassigned, todo (the C-1 table maps them); DEV-730
+and DEV-731 pre-existed as the probe mints.*
