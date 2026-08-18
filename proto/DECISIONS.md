@@ -3204,3 +3204,76 @@ duplicate this removes — and `--self-test` plants six test files across
 `node_modules/` to prove the walk claims the first two and leaves the rest.
 **Load-bearing? yes** — the stage's honesty about what it covers is the whole
 reason it can be scoped down at all.
+
+## DEV-806 — the second repairing decoder, and the law it was not (2026-08-18)
+
+### D??. The finding #36 class gets a wall, not a second one-line repair
+
+Decided: protod's meaning path admits submitter bytes through
+`canonical.Decode` and nowhere else, and a source-level wall
+(`proto/go/protod/encoding_json_wall_test.go`) holds the whole class rather
+than the two lines that had it. The wall parses every non-test source under
+`proto/go/protod` and `proto/go/cmd/protod`, refuses any `json.Unmarshal` /
+`json.NewDecoder` whose input expression names request bytes (`body`,
+`msg.Data`), and requires every surviving `encoding/json` import to carry an
+`// encoding/json carriage:` classification at its import site. Alternatives:
+fix `serveIngress` alone (the shape that let the class survive `9207ab1` —
+the type-identity boundary was closed and the journal-identity boundary was
+not); ban the import outright (it would refuse reply serialization, journal
+payload reads, and the typed projection over already-admitted bytes, so it
+would be waived immediately and mean nothing); a review lens (findings #36
+and CG1 are the evidence that this class outlives the review that catches an
+instance of it). Why: a one-line repair has no memory. **Load-bearing? yes**
+— the wall is what makes "identity is derived from the reading constrained
+admission made" a property of the daemon rather than of two edits.
+
+### D??. `serveIngress` derives identity from the admitted reading, not a second one
+
+Decided: `decodeAdmitted` returns the admitted value together with its
+canonical bytes, and `serveIngress` appends those bytes. `ingress.go:95` on
+`origin/main` re-read the raw body with `encoding/json` after admission had
+already read it, and canonicalized THAT reading into the journal. Stated
+honestly: the residual decode was latent, not live — the constrained gate
+above it already refused every body the two decoders disagree about, so no
+admitted submission was being misread. It is removed because a second door on
+the identity path is refused on sight (the #36 entry above rejected exactly
+this shape as "a second repairing decoder on the identity path"), not because
+it was leaking. The committed control is red against the pre-#36 shape of that
+path: the lone-surrogate and invalid-UTF-8 frames both admit and derive the
+SAME journal head `7fe6b26c…` — two distinct submissions, one identity.
+**Load-bearing? no** — behaviour is unchanged; the seam is what moved.
+
+### D??. Presence checks ask the admitted value, never the raw bytes
+
+Decided: `requireRequestFields`, `requireSessionFields`, and
+`requireProtocolValue` ask `admittedFields` (a `canonical.Decode` reading)
+which members arrived, instead of `json.Unmarshal`-ing the raw body into
+`map[string]json.RawMessage`. Alternative: leave them, since each one's caller
+admits the body properly a moment later. Why: they emit MEANING refusals, and
+a refusal decided by a repairing reading of bytes the constrained decoder
+refuses is a refusal about a value that did not arrive — the same defect as
+#36 wearing a different verb. A body that does not decode still yields no
+verdict here; the caller's own admission step owns it. **Load-bearing? no.**
+
+### D??. W2 is NOT repealed: non-canonical formatting still admits
+
+Decided: the DEV-806 charter's directive — "a submission whose bytes are not
+the one canonical form refuses structurally (exactly one canonical byte form,
+excess refused)" — is NOT implemented, and is escalated as a blocker instead.
+It contradicts ratified law W2 (`proto/SPEC.md`: "Canonical or refused — but
+the daemon canonicalizes submitted JSON itself first: formatting can never
+move identity or cause refusal"), its two conformance cases, and D9's reading
+of W2 as "canonicalization is RFC 8785 only". It is also not what finding #36
+asked for: the issue's executed evidence is duplicate member names, a lone
+surrogate escape, and raw invalid UTF-8 — submissions distinct as VALUES that
+a repairing decoder collapsed — and its own repair comment records "Existing
+W2 hostile-but-lawful formatting remains green". Implemented and measured
+before reverting: holding `certify` to byte equality reddens
+`TestConformance/W2_formatting_never_moves_identity_or_refuses`,
+`TestConformance/struct_field_ordering_is_canonical:_permuted_fields_converge`,
+and three more. Alternatives: land it and update the conformance corpus (an
+executor rewriting the spec it builds against); land it behind a flag (two
+identity laws is worse than either). Why: "an executor never edits the spec it
+builds against" — repealing W2 is an operator ruling, not a ticket's side
+effect. **Load-bearing? yes** — W2 decides whether formatting is part of
+identity, which every client's encoder depends on.

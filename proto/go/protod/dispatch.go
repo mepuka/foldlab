@@ -2,6 +2,9 @@ package protod
 
 import (
 	"context"
+	// encoding/json carriage: reply serialization out (json.Marshal), and the
+	// typed projection in decodeAdmitted — which runs over bytes constrained
+	// admission has ALREADY accepted, never over the raw request body.
 	"encoding/json"
 
 	"github.com/nats-io/nats.go"
@@ -146,45 +149,49 @@ func (d *Daemon) serveCreate(ctx context.Context, body []byte) any {
 // that bears catalog identity. The typed decode runs only over bytes derived
 // from that admitted value, so encoding/json cannot silently repair duplicate
 // names, invalid UTF-8, or lone surrogate escapes before identity is derived.
+//
+// Formatting is still free (W2): the daemon canonicalizes the admitted value
+// itself, so member order, whitespace, and escape choice never move identity
+// and never refuse. What they can no longer do is reach identity through a
+// decoder that repairs them.
 func decodeBody(body []byte, into any) *Refusal {
-	probe, err := canonical.Decode(body)
-	if err != nil {
-		return &Refusal{
-			Kind:     KindMalformed,
-			Law:      "W2: requests are constrained JSON — this body has no canonical value",
-			Got:      truncateForReply(body),
-			Expected: "a JSON object",
-			Next:     []NextHint{describeHint()},
-		}
+	_, _, refusal := decodeAdmitted(body, into)
+	return refusal
+}
+
+// decodeAdmitted is decodeBody plus its own workings: it hands back the
+// admitted value and the canonical bytes of that value, so a caller that
+// derives identity from the request never decodes the raw body a second time.
+// A second decoder on the identity path is exactly the door finding #36 came
+// through, and the caller that needed these bytes (ingress) was reopening it
+// by re-reading msg.Data with encoding/json.
+func decodeAdmitted(body []byte, into any) (any, []byte, *Refusal) {
+	value, refusal := decodeConstrained(body)
+	if refusal != nil {
+		return nil, nil, refusal
 	}
-	if _, ok := probe.(map[string]any); !ok {
-		return &Refusal{
-			Kind:     KindMalformed,
-			Law:      "requests are JSON objects",
-			Got:      probe,
-			Expected: "a JSON object",
-			Next:     []NextHint{describeHint()},
-		}
-	}
-	canonicalBody, err := canonical.CanonicalizeValue(probe)
+	admitted, err := canonical.CanonicalizeValue(value)
 	if err != nil {
-		return &Refusal{
+		return nil, nil, &Refusal{
 			Kind:     KindMalformed,
 			Law:      "W2: requests are constrained JSON — this value has no canonical encoding",
-			Got:      probe,
+			Got:      value,
 			Expected: "a canonical JSON object",
 			Next:     []NextHint{describeHint()},
 		}
 	}
-	if err := json.Unmarshal(canonicalBody, into); err != nil {
-		return &Refusal{
+	// The typed projection, and only that: it runs over bytes constrained
+	// admission has already accepted, so encoding/json here can no longer
+	// repair anything identity depends on.
+	if err := json.Unmarshal(admitted, into); err != nil {
+		return nil, nil, &Refusal{
 			Kind: KindMalformed,
 			Law:  "request fields must carry their declared shapes",
-			Got:  probe,
+			Got:  value,
 			Next: []NextHint{describeHint()},
 		}
 	}
-	return nil
+	return value, admitted, nil
 }
 
 func truncateForReply(body []byte) string {
