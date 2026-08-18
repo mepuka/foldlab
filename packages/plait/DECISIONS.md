@@ -763,9 +763,31 @@ stay per-adapter data; a spine-owned refusal would silently retag five of the
 six connect paths (`register-transport-unavailable` and its four siblings all
 become one kind), which is a change to the persisted refusal taxonomy, not a
 behaviour-preserving extraction. Threading the refusal keeps every byte of
-every minted refusal identical to what the eight copies produced, which is what
-lets the existing walls stand as the regression gate. **Load-bearing? yes** —
-it is the reason this extraction is provably behaviour-preserving.
+every minted refusal identical to what the eight copies produced.
+**Load-bearing? yes** — it is the reason this extraction is provably
+behaviour-preserving.
+
+Amended 2026-08-18 (DEV-748 round-2, major charge). The entry originally
+claimed that byte-identical minting "lets the existing walls stand as the
+regression gate." That sentence was false and is withdrawn. Of the seven
+distinct transport absence kinds, only `cell-transport-unavailable` was named
+anywhere under `packages/plait/test` or `go/` (`CellWall.test.ts:391`); no
+taught-repair note string was asserted anywhere in the repo, and RefusalNext's
+exhaustiveness sweep enumerates `StructuralRefusalKind.literals` only, so
+absence kinds sit outside it by construction. The fidelity was true and was
+proved — twice, out of band: once by this seat's reading, once by the review's
+byte-for-byte dump of all eight bindings at `14298c2` and `963259d`. But it
+rested on nothing the repo executed, and a later homogenization would have
+landed green. The gate is now landed rather than owed:
+`test/TransportSpine.test.ts` is FH-1's stated deliverable — one row per
+adapter, `kind`/`law`/`expected`/`next` transcribed from the pre-extraction
+definitions at `14298c2`, exercised on each adapter's own operation and on a
+foreign one, with an in-file negative control that plants the homogenized spine
+and requires every adapter whose terms it erases to refute. Each adapter
+exports its own `transportRefusal` for that wall, the same
+derive-through-a-named-seam discipline the cell controls use (T23 of the
+DEV-724 task). DEV-735 narrows classification on this exact spine and now
+inherits a gated seam.
 
 ### T1. `TransportTerms.next` is a function of the operation
 
@@ -793,6 +815,18 @@ is not checkable, which is the other reason the door stays internal.
 **Load-bearing? maybe** — revisit when the sorts sweep (DEV-740) brands digest
 construction.
 
+Amended 2026-08-18 (DEV-748 round-2, minor charge): the new door is a pure
+function, so it emits no span, and every envelope decode — and every publish
+path that re-enters the decode — loses the `Digest.digestOf` child span it used
+to emit. That is an observable trace change, and it sits against the same
+architecture rule B-2 satisfies elsewhere in this ticket ("`Effect.fn` names
+every exported effectful function, spans for free"). It is accepted, not
+overlooked: the rule governs exported effectful functions, this door is neither
+exported nor effectful, and lifting it into an Effect purely to keep a span
+would re-import the failure B-5 exists to remove — the span would name a
+computation whose only remaining work is one hash. The decode's own
+`Wire.decodeEnvelope` span still covers it.
+
 ### T3. The heartbeat keeps its leading sleep, and its branch keeps success type `never`
 
 Decided: B-3's loop is
@@ -808,3 +842,19 @@ hand-rolled loop's instants exactly. `Schedule.spaced` never exhausts, so the
 success as the schedule's output and `raceFirst` would otherwise widen `hold`'s
 result to `A | number`. **Load-bearing? yes** — the first renewal's timing is
 observable to any holder that reads its token.
+
+### T4. The chaos connection name stays pinned by passing servers alone
+
+Decided: `internal/chaos.ts` calls the spine with `{ servers: options.servers }`
+rather than forwarding its whole options record, so `acquireConnection`'s
+`options.connectionName ?? defaultName` can only ever resolve to
+`"foldlab-plait-chaos"`. Alternatives: forward `options` like the other five
+adapters and rely on `RedeliveryChaosOptions` having no `connectionName` field
+(true today, and the extraction changed no behaviour because of it); note the
+exposure in prose and leave the call site alone. Why: the chaos harness's
+connection name is part of a pinned measurement trace, and the forwarding form
+makes it overridable the day that interface grows the field — silently, with no
+edit at this call site and nothing red. Pinning it by construction costs one
+object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
+charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
+pin.

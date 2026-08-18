@@ -52,7 +52,8 @@ export interface RedeliveryChaosResult {
   readonly anchorWrites: number
 }
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "chaos-transport-unavailable",
   law: "The chaos schedule uses only the real durable-consumer protocol for redelivery.",
   expected: "the pinned local NATS consumer operation to be available",
@@ -278,8 +279,12 @@ export const runRedeliveryChaos = Effect.fn("Chaos.runRedelivery")(function*<
       }],
     })
   }
+  // Servers only: the chaos connection name is part of a pinned measurement
+  // trace, so it is not overridable. Passing `options` through would make it
+  // overridable the day `RedeliveryChaosOptions` grows a `connectionName`, and
+  // silently — the pin would stop being a pin with no edit here.
   const connection = yield* acquireConnection(
-    options,
+    { servers: options.servers },
     "foldlab-plait-chaos",
     "chaos.connection.acquire",
     transportRefusal,

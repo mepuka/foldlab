@@ -26,7 +26,8 @@ const messageIdWindowNanos = 2 * 60 * 1_000_000_000
 export const laneStreamName = (lane: DeclaredLane<unknown>, part: number): string =>
   `FLB_FAB_EV_${lane.digest}_${part}`
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "lane-transport-unavailable",
   law: "Transport absence may be retried; declared lane shape violations may not.",
   expected: "the pinned local NATS JetStream operation to be available",

@@ -44,7 +44,8 @@ const StreamShape = Schema.Struct({
   }),
 })
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "transport-unavailable",
   law: "Transport absence may be retried; structural envelope evidence may not.",
   expected: "the pinned local NATS operation to be available",

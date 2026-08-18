@@ -52,7 +52,8 @@ export interface MutableFoldScoreboard {
   refusals: Record<string, number>
 }
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "fold-transport-unavailable",
   law: "Transport absence may be retried; consumer and checkpoint shape violations may not.",
   expected: "the pinned local NATS durable-consumer operation to be available",

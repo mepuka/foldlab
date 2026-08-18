@@ -15,7 +15,8 @@ import {
 } from "./pump.js"
 import { acquireConnection, transportRefusalFor } from "./transport.js"
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "fold-transport-unavailable",
   law: "Transport absence may be retried; declared fold laws may not.",
   expected: "the pinned local NATS operation to be available",

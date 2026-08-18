@@ -54,7 +54,8 @@ const StoredCell = Schema.Array(Schema.suspend(() => Observation))
 const decoder = new TextDecoder()
 const cellPattern = /^[^.*>\s]+$/u
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "cell-transport-unavailable",
   law: "Transport absence may be retried; lattice-law refusals may not.",
   expected: "the pinned local NATS KV operation to be available",

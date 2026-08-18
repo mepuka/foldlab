@@ -45,7 +45,8 @@ export interface AnchorStore {
   ) => string
 }
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "anchor-transport-unavailable",
   law: "Transport absence may be retried; anchor revision conflicts may not.",
   expected: "the pinned local NATS KV operation to be available",

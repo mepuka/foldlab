@@ -59,7 +59,8 @@ const teachTransportReadBack: ReadonlyArray<Next> = [{
   note: "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it.",
 }]
 
-const transportRefusal = transportRefusalFor({
+/** Exported for the spine wall; no other `src` module imports it. */
+export const transportRefusal = transportRefusalFor({
   kind: "register-transport-unavailable",
   law: "Transport absence may be retried; fencing-law refusals may not.",
   expected: "the pinned local NATS KV operation to be available",
