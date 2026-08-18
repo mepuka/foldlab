@@ -60,6 +60,93 @@ def showDriftControl (name vector : String)
     s!"control={name};vector={vector};lawful-left={lawfulLeft};lawful-right={lawfulRight};mutant-left={mutantLeft};mutant-right={mutantRight};verdict={if refuted then "refuted" else "survived"}"
   return if refuted then 0 else 1
 
+def isAdmitted : AdmitResult -> Bool
+  | .admitted _ => true
+  | .refused _ => false
+
+def isRefused : AdmitResult -> Bool
+  | .admitted _ => false
+  | .refused _ => true
+
+namespace StabilityControls
+
+def monotoneGrownDoor : Door where
+  catalog := (DeclKind.schema, 900) :: Planted.door.catalog
+  pinned := (DeclKind.schema, 900) :: Planted.door.pinned
+
+def droppedPinnedDoor : Door where
+  catalog := monotoneGrownDoor.catalog
+  pinned := []
+
+def emptyDoor : Door where
+  catalog := []
+  pinned := []
+
+def multiFault : CandidateAct :=
+  .emit 901 [.digestRef .schema 902, .clockNow]
+
+def multiFaultGrownDoor : Door where
+  catalog := [(DeclKind.schema, 902), (DeclKind.lane, 901)]
+  pinned := []
+
+def multiFaultDroppedIntrinsic : CandidateAct :=
+  .emit 901 [.digestRef .schema 902, .literal 0]
+
+def relativeOnly : CandidateAct :=
+  .emit 903 [.digestRef .schema 904]
+
+def incompleteRepairDoor : Door where
+  catalog := [(DeclKind.lane, 903)]
+  pinned := []
+
+end StabilityControls
+
+/-- Kill a growth implementation that replaces the pinned universe
+    instead of extending it. -/
+def showAdmitMonotonicityControl : IO UInt32 := do
+  let smaller := admit Planted.door Planted.lawfulDeclare
+  let larger := admit StabilityControls.monotoneGrownDoor Planted.lawfulDeclare
+  let mutant := admit StabilityControls.droppedPinnedDoor Planted.lawfulDeclare
+  let refuted :=
+    renderResult smaller == renderResult larger &&
+      renderResult smaller != renderResult mutant
+  IO.println
+    s!"control=drop-admit-monotonicity;candidate=declare-pinned-references;smaller={renderResult smaller};larger={renderResult larger};mutant={renderResult mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Exercise the multi-fault caveat: growth changes the surfaced reason
+    while refused status persists; only candidate rewriting admits. -/
+def showIntrinsicRefusalControl : IO UInt32 := do
+  let smaller :=
+    admit StabilityControls.emptyDoor StabilityControls.multiFault
+  let larger :=
+    admit StabilityControls.multiFaultGrownDoor StabilityControls.multiFault
+  let mutant :=
+    admit StabilityControls.multiFaultGrownDoor
+      StabilityControls.multiFaultDroppedIntrinsic
+  let refuted :=
+    isRefused smaller && isRefused larger &&
+      renderResult smaller != renderResult larger && isAdmitted mutant
+  IO.println
+    s!"control=drop-intrinsic-refusal;candidate=relative-before-clock;smaller={renderResult smaller};larger={renderResult larger};mutant={renderResult mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Kill a repair implementation that grows the door with only part of
+    the candidate's finite reference support. -/
+def showRelativeRepairControl : IO UInt32 := do
+  let smaller :=
+    admit StabilityControls.emptyDoor StabilityControls.relativeOnly
+  let repaired :=
+    admit
+      (repairingDoor StabilityControls.emptyDoor StabilityControls.relativeOnly)
+      StabilityControls.relativeOnly
+  let mutant :=
+    admit StabilityControls.incompleteRepairDoor StabilityControls.relativeOnly
+  let refuted := isRefused smaller && isAdmitted repaired && isRefused mutant
+  IO.println
+    s!"control=drop-relative-repair-growth;candidate=lane-and-schema-support;smaller={renderResult smaller};repaired={renderResult repaired};mutant={renderResult mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["closure-clock-read"] =>
@@ -113,6 +200,9 @@ def main (args : List String) : IO UInt32 := do
   | ["door-admits-lawful"] =>
       showAdmitControl "door-admits-lawful" "declare-pinned-references"
         Planted.lawfulDeclare Planted.lawfulDeclareAct
+  | ["drop-admit-monotonicity"] => showAdmitMonotonicityControl
+  | ["drop-intrinsic-refusal"] => showIntrinsicRefusalControl
+  | ["drop-relative-repair-growth"] => showRelativeRepairControl
   | ["drop-provision-disjointness"] =>
       showDriftControl "drop-provision-disjointness" "two-arrival-orders"
         (renderValuation (provisionFold Provision.disjointOrderOne))
@@ -121,5 +211,5 @@ def main (args : List String) : IO UInt32 := do
         (renderValuation (provisionFold Provision.overlapOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-provision-disjointness)"
+        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|drop-provision-disjointness)"
       return 2

@@ -557,6 +557,13 @@ structure Door where
   pinned : List Ref
 deriving Repr
 
+/-- Door growth is membership inclusion in both changing contexts:
+    the already-admitted catalog and the acting writ's pinned universe.
+    List order and duplicate entries carry no meaning at this seam. -/
+structure Door.Le (smaller larger : Door) : Prop where
+  catalog : forall ref, ref ∈ smaller.catalog -> ref ∈ larger.catalog
+  pinned : forall ref, ref ∈ smaller.pinned -> ref ∈ larger.pinned
+
 /-- The admission verdict: an intrinsic sentence, or a taught
     structural refusal. -/
 inductive AdmitResult where
@@ -761,6 +768,104 @@ def actArgs : CandidateAct -> List RawArg
   | .decide _ _ outcome => outcome
   | .updateInPlace _ payload => payload
   | _ => []
+
+/-- An atom-level fault whose presence is a function of candidate bytes
+    alone. Digest references and literals can become lawful as the door
+    grows; every other raw atom requires rewriting the candidate. -/
+def RawArg.Intrinsic : RawArg -> Prop
+  | .digestRef _ _ => False
+  | .literal _ => False
+  | _ => True
+
+/-- Candidate-intrinsic faults, independent of every door. Payload
+    atoms cover the six raw-argument rows; the remaining constructors
+    cover the candidate shapes whose signature or production is itself
+    unlawful. A candidate may also carry a door-relative fault before
+    one of these, so this predicate does not select a refusal reason. -/
+inductive IntrinsicFault : CandidateAct -> Prop where
+  | payload (candidate : CandidateAct) (arg : RawArg) :
+      arg ∈ actArgs candidate -> arg.Intrinsic -> IntrinsicFault candidate
+  | anchored (kind : DeclKind) (target anchor : Nat) :
+      IntrinsicFault (.resolveDigest kind target (some anchor))
+  | trusting (kind : DeclKind) (target asserted : Nat) :
+      IntrinsicFault (.trustBytes kind target asserted)
+  | lastWriter (cell : Nat) (contribution : List RawArg) :
+      IntrinsicFault (.join cell contribution .lastWriterWins)
+  | latest (subject : Nat) : IntrinsicFault (.readLatest subject)
+  | anchorless (declared : Nat) (query : List RawArg) :
+      IntrinsicFault (.fold declared none query)
+  | crossAnchor (declared : Nat) (anchor : CandidateAnchor)
+      (query : List RawArg) :
+      anchor.foldId ≠ declared ->
+      IntrinsicFault (.fold declared (some anchor) query)
+  | unfenced (register : Nat) (outcome : List RawArg) :
+      IntrinsicFault (.decide register none outcome)
+  | crossToken (register : Nat) (claim : TokenClaim)
+      (outcome : List RawArg) :
+      claim.register ≠ register ->
+      IntrinsicFault (.decide register (some claim) outcome)
+  | refusedPredicate (predicate : CandidatePredicate)
+      (declaration : Nat) (reason : RefusalReason) :
+      predicateRefusal predicate = some reason ->
+      IntrinsicFault (.trigger predicate declaration)
+  | mutation (target : Nat) (payload : List RawArg) :
+      IntrinsicFault (.updateInPlace target payload)
+
+/-- The digest references carried by a raw argument list. -/
+def argRefs : List RawArg -> List Ref
+  | [] => []
+  | .digestRef kind id :: rest => (kind, id) :: argRefs rest
+  | _ :: rest => argRefs rest
+
+/-- The finite catalog support a candidate needs after all intrinsic
+    faults are absent. Adding this support can repair every
+    forward-reference refusal without rewriting the candidate. -/
+def requiredCatalog : CandidateAct -> List Ref
+  | .declare _ payload writ =>
+      (DeclKind.policy, writ) :: argRefs payload
+  | .resolveDigest kind target _ => [(kind, target)]
+  | .trustBytes kind target _ => [(kind, target)]
+  | .emit lane body => (DeclKind.lane, lane) :: argRefs body
+  | .join cell contribution strategy =>
+      (DeclKind.resource, cell) ::
+        (match strategy with
+        | .declaredAlgebra algebra =>
+            (DeclKind.algebra, algebra) :: argRefs contribution
+        | .lastWriterWins => argRefs contribution)
+  | .readLatest _ => []
+  | .fold declared _ query =>
+      (DeclKind.index, declared) :: argRefs query
+  | .decide register _ outcome =>
+      (DeclKind.program, register) :: argRefs outcome
+  | .trigger _ declaration => [(DeclKind.program, declaration)]
+  | .spawn parent request =>
+      [(DeclKind.policy, parent), (DeclKind.policy, request)]
+  | .updateInPlace _ payload => argRefs payload
+
+/-- Only declarations inspect the acting writ's pinned universe. -/
+def requiredPinned : CandidateAct -> List Ref
+  | .declare _ payload _ => argRefs payload
+  | _ => []
+
+/-- The canonical finite repair door: preserve the old door and add
+    precisely the candidate's catalog and pinned-universe support. -/
+def repairingDoor (door : Door) (candidate : CandidateAct) : Door where
+  catalog := requiredCatalog candidate ++ door.catalog
+  pinned := requiredPinned candidate ++ door.pinned
+
+/-- The two refusal reasons whose truth is relative to a door rather
+    than fixed by candidate bytes. -/
+def RefusalReason.DoorRelative : RefusalReason -> Prop
+  | .forwardReference => True
+  | .offWritReferent => True
+  | _ => False
+
+/-- A currently surfaced door-relative refusal. This classifies the
+    returned reason only; a candidate may still carry a later intrinsic
+    fault, which is why repairability names that absence separately. -/
+def DoorRelativeRefusal (door : Door) (candidate : CandidateAct) : Prop :=
+  exists refusal, admit door candidate = .refused refusal /\
+    refusal.reason.DoorRelative
 
 /-- The unlawful candidate shapes, one constructor per closure row's
     spellable form (plus the two signature-discipline shapes: an

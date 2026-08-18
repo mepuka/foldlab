@@ -87,6 +87,25 @@ theorem ref_member_eq_false_of_not_mem {kind : DeclKind} {id : Nat}
   | false => rfl
   | true => exact absurd ((ref_member_iff kind id refs).mp found) notMem
 
+/-- Reference membership is monotone under list inclusion. -/
+theorem ref_member_monotone {kind : DeclKind} {id : Nat}
+    {smaller larger : List Ref}
+    (included : forall ref, ref ∈ smaller -> ref ∈ larger)
+    (present : refMember kind id smaller = true) :
+    refMember kind id larger = true := by
+  apply (ref_member_iff kind id larger).mpr
+  exact included (kind, id) ((ref_member_iff kind id smaller).mp present)
+
+/-- The canonical repair door is an extension of its source door in
+    both membership orders. -/
+theorem door_le_repairing (door : Door) (candidate : CandidateAct) :
+    Door.Le door (repairingDoor door candidate) := by
+  constructor
+  · intro ref mem
+    exact List.mem_append.mpr (Or.inr mem)
+  · intro ref mem
+    exact List.mem_append.mpr (Or.inr mem)
+
 end Membership
 
 /-! ## The taught table -/
@@ -130,6 +149,67 @@ theorem arg_sweep_none {door : Door} :
           rcases List.mem_cons.mp mem with rfl | memRest
           · exact found
           · exact inductionHypothesis sweepNone arg memRest
+
+/-- An individually clean atom stays clean when the catalog grows. -/
+theorem arg_refusal_none_monotone {smaller larger : Door}
+    (growth : Door.Le smaller larger) (arg : RawArg)
+    (clean : argRefusal smaller arg = none) :
+    argRefusal larger arg = none := by
+  cases arg with
+  | digestRef kind id =>
+      have present : refMember kind id smaller.catalog = true := by
+        simpa [argRefusal] using clean
+      have grown := ref_member_monotone growth.catalog present
+      simp [argRefusal, grown]
+  | literal value => rfl
+  | hole name => simp [argRefusal] at clean
+  | clockNow => simp [argRefusal] at clean
+  | randomSeed => simp [argRefusal] at clean
+  | secretBytes bytes => simp [argRefusal] at clean
+  | mintedId token => simp [argRefusal] at clean
+  | functionValue code => simp [argRefusal] at clean
+
+/-- A clean left-to-right sweep stays clean when the catalog grows. -/
+theorem arg_sweep_none_monotone {smaller larger : Door}
+    (growth : Door.Le smaller larger) :
+    forall args : List RawArg, argSweep smaller args = none ->
+      argSweep larger args = none := by
+  intro args
+  induction args with
+  | nil => intro _; rfl
+  | cons head rest inductionHypothesis =>
+      intro clean
+      cases found : argRefusal smaller head with
+      | some reason => simp [argSweep, found] at clean
+      | none =>
+          simp only [argSweep, found] at clean
+          have grownHead := arg_refusal_none_monotone growth head found
+          simp [argSweep, grownHead, inductionHypothesis clean]
+
+/-- A payload inside the smaller pinned universe remains inside the
+    larger pinned universe. -/
+theorem inside_universe_true_monotone {smaller larger : Door}
+    (growth : Door.Le smaller larger) :
+    forall args : List RawArg, insideUniverse smaller args = true ->
+      insideUniverse larger args = true := by
+  intro args
+  induction args with
+  | nil => intro _; rfl
+  | cons head rest inductionHypothesis =>
+      intro inside
+      cases head with
+      | digestRef kind id =>
+          simp only [insideUniverse, Bool.and_eq_true] at inside ⊢
+          exact
+            ⟨ref_member_monotone growth.pinned inside.1,
+              inductionHypothesis inside.2⟩
+      | literal value => exact inductionHypothesis inside
+      | hole name => exact inductionHypothesis inside
+      | clockNow => exact inductionHypothesis inside
+      | randomSeed => exact inductionHypothesis inside
+      | secretBytes bytes => exact inductionHypothesis inside
+      | mintedId token => exact inductionHypothesis inside
+      | functionValue code => exact inductionHypothesis inside
 
 /-- An unlawful atom in the payload blocks a clean sweep. -/
 theorem sweep_blocks {door : Door} {args : List RawArg} {arg : RawArg}
@@ -204,6 +284,535 @@ theorem sweep_refuses {door : Door} {candidate : CandidateAct}
       simp only [actArgs] at mem
       simp at mem
   | updateInPlace target payload => simp [admit] at h
+
+/-- A larger door preserves every admission and its translated act. -/
+theorem admit_monotone : Laws.KAdmitMonotone := by
+  intro smaller larger growth candidate act admitted
+  cases candidate with
+  | declare kind payload writ =>
+      simp only [admit] at admitted ⊢
+      cases swept : argSweep smaller payload with
+      | some reason => simp [swept] at admitted
+      | none =>
+          rw [swept] at admitted
+          have grownSweep := arg_sweep_none_monotone growth payload swept
+          rw [grownSweep]
+          cases universeFound : insideUniverse smaller payload with
+          | false => simp [universeFound] at admitted
+          | true =>
+              have grownUniverse :=
+                inside_universe_true_monotone growth payload universeFound
+              rw [grownUniverse]
+              cases present : refMember DeclKind.policy writ smaller.catalog with
+              | false => simp [universeFound, present] at admitted
+              | true =>
+                  have grownPresent := ref_member_monotone growth.catalog present
+                  rw [grownPresent]
+                  simpa [universeFound, present] using admitted
+  | resolveDigest kind target anchor =>
+      cases anchor with
+      | none =>
+          simp only [admit] at admitted ⊢
+          cases present : refMember kind target smaller.catalog with
+          | false => simp [present] at admitted
+          | true =>
+              have grownPresent := ref_member_monotone growth.catalog present
+              rw [grownPresent]
+              simpa [present] using admitted
+      | some anchor => simp [admit] at admitted
+  | trustBytes kind target asserted => simp [admit] at admitted
+  | emit lane body =>
+      simp only [admit] at admitted ⊢
+      cases swept : argSweep smaller body with
+      | some reason => simp [swept] at admitted
+      | none =>
+          rw [swept] at admitted
+          have grownSweep := arg_sweep_none_monotone growth body swept
+          rw [grownSweep]
+          cases present : refMember DeclKind.lane lane smaller.catalog with
+          | false => simp [present] at admitted
+          | true =>
+              have grownPresent := ref_member_monotone growth.catalog present
+              rw [grownPresent]
+              simpa [present] using admitted
+  | join cell contribution strategy =>
+      cases strategy with
+      | lastWriterWins => simp [admit] at admitted
+      | declaredAlgebra algebra =>
+          simp only [admit] at admitted ⊢
+          cases swept : argSweep smaller contribution with
+          | some reason => simp [swept] at admitted
+          | none =>
+              rw [swept] at admitted
+              have grownSweep :=
+                arg_sweep_none_monotone growth contribution swept
+              rw [grownSweep]
+              cases cellPresent :
+                  refMember DeclKind.resource cell smaller.catalog with
+              | false => simp [cellPresent] at admitted
+              | true =>
+                  have grownCell :=
+                    ref_member_monotone growth.catalog cellPresent
+                  rw [grownCell]
+                  cases algebraPresent :
+                      refMember DeclKind.algebra algebra smaller.catalog with
+                  | false => simp [algebraPresent] at admitted
+                  | true =>
+                      have grownAlgebra :=
+                        ref_member_monotone growth.catalog algebraPresent
+                      rw [grownAlgebra]
+                      simpa [cellPresent, algebraPresent] using admitted
+  | readLatest subject => simp [admit] at admitted
+  | fold declared anchor query =>
+      cases anchor with
+      | none => simp [admit] at admitted
+      | some anchor =>
+          simp only [admit] at admitted ⊢
+          by_cases sameFold : anchor.foldId = declared
+          · rw [if_pos sameFold] at admitted ⊢
+            cases swept : argSweep smaller query with
+            | some reason => simp [swept] at admitted
+            | none =>
+                rw [swept] at admitted
+                have grownSweep := arg_sweep_none_monotone growth query swept
+                rw [grownSweep]
+                cases present :
+                    refMember DeclKind.index declared smaller.catalog with
+                | false => simp [present] at admitted
+                | true =>
+                    have grownPresent :=
+                      ref_member_monotone growth.catalog present
+                    rw [grownPresent]
+                    simpa [present] using admitted
+          · simp [sameFold] at admitted
+  | decide register token outcome =>
+      cases token with
+      | none => simp [admit] at admitted
+      | some claim =>
+          simp only [admit] at admitted ⊢
+          by_cases sameRegister : claim.register = register
+          · rw [if_pos sameRegister] at admitted ⊢
+            cases swept : argSweep smaller outcome with
+            | some reason => simp [swept] at admitted
+            | none =>
+                rw [swept] at admitted
+                have grownSweep := arg_sweep_none_monotone growth outcome swept
+                rw [grownSweep]
+                cases present :
+                    refMember DeclKind.program register smaller.catalog with
+                | false => simp [present] at admitted
+                | true =>
+                    have grownPresent :=
+                      ref_member_monotone growth.catalog present
+                    rw [grownPresent]
+                    simpa [present] using admitted
+          · simp [sameRegister] at admitted
+  | trigger predicate declaration =>
+      simp only [admit] at admitted ⊢
+      cases refused : predicateRefusal predicate with
+      | some reason => simp [refused] at admitted
+      | none =>
+          simp only [refused] at admitted ⊢
+          cases translated : translatePredicate predicate with
+          | none => simp [translated] at admitted
+          | some result =>
+              simp only [translated] at admitted ⊢
+              cases present :
+                  refMember DeclKind.program declaration smaller.catalog with
+              | false => simp [present] at admitted
+              | true =>
+                  have grownPresent := ref_member_monotone growth.catalog present
+                  rw [grownPresent]
+                  simpa [present] using admitted
+  | spawn parent request =>
+      simp only [admit] at admitted ⊢
+      cases parentPresent :
+          refMember DeclKind.policy parent smaller.catalog with
+      | false => simp [parentPresent] at admitted
+      | true =>
+          have grownParent := ref_member_monotone growth.catalog parentPresent
+          rw [grownParent]
+          cases requestPresent :
+              refMember DeclKind.policy request smaller.catalog with
+          | false => simp [requestPresent] at admitted
+          | true =>
+              have grownRequest :=
+                ref_member_monotone growth.catalog requestPresent
+              rw [grownRequest]
+              simpa [parentPresent, requestPresent] using admitted
+  | updateInPlace target payload => simp [admit] at admitted
+
+/-- Every intrinsic raw atom earns a refusal independently of door
+    membership. -/
+theorem intrinsic_arg_refusal (door : Door) {arg : RawArg}
+    (fault : arg.Intrinsic) :
+    exists reason, argRefusal door arg = some reason := by
+  cases arg <;> simp [RawArg.Intrinsic, argRefusal] at fault ⊢
+
+/-- An intrinsic candidate fault rules out an admitted translation at
+    any door, without claiming which refusal reason wins the sweep. -/
+theorem intrinsic_fault_no_admission {candidate : CandidateAct}
+    (fault : IntrinsicFault candidate) (door : Door) :
+    forall act, admit door candidate ≠ .admitted act := by
+  cases fault with
+  | payload candidate arg mem intrinsic =>
+      obtain ⟨reason, refused⟩ := intrinsic_arg_refusal door intrinsic
+      exact sweep_refuses mem refused
+  | anchored kind target anchor =>
+      intro act h
+      simp [admit] at h
+  | trusting kind target asserted =>
+      intro act h
+      simp [admit] at h
+  | lastWriter cell contribution =>
+      intro act h
+      simp [admit] at h
+  | latest subject =>
+      intro act h
+      simp [admit] at h
+  | anchorless declared query =>
+      intro act h
+      simp [admit] at h
+  | crossAnchor declared anchor query differentFold =>
+      intro act h
+      simp [admit, differentFold] at h
+  | unfenced register outcome =>
+      intro act h
+      simp [admit] at h
+  | crossToken register claim outcome differentRegister =>
+      intro act h
+      simp [admit, differentRegister] at h
+  | refusedPredicate predicate declaration reason refused =>
+      intro act h
+      simp [admit, refused] at h
+  | mutation target payload =>
+      intro act h
+      simp [admit] at h
+
+/-- Candidate-intrinsic faults keep the verdict refused under every
+    door growth. The existential leaves the surfaced reason honest. -/
+theorem intrinsic_fault_refused_everywhere :
+    Laws.KIntrinsicFaultRefusedEverywhere := by
+  intro candidate fault door
+  cases result : admit door candidate with
+  | admitted act =>
+      exact False.elim (intrinsic_fault_no_admission fault door act result)
+  | refused refusal => exact ⟨refusal, rfl⟩
+
+/-- Every digest atom contributes its tagged reference to `argRefs`. -/
+theorem digest_mem_arg_refs {kind : DeclKind} {id : Nat} :
+    forall {args : List RawArg}, RawArg.digestRef kind id ∈ args ->
+      (kind, id) ∈ argRefs args := by
+  intro args mem
+  induction args with
+  | nil => simp at mem
+  | cons head rest inductionHypothesis =>
+      rcases List.mem_cons.mp mem with rfl | tailMem
+      · simp [argRefs]
+      · cases head <;> simp [argRefs, inductionHypothesis tailMem]
+
+/-- Every payload reference is included in the candidate's finite
+    catalog support. -/
+theorem required_catalog_contains_arg_ref {candidate : CandidateAct}
+    {kind : DeclKind} {id : Nat}
+    (mem : RawArg.digestRef kind id ∈ actArgs candidate) :
+    (kind, id) ∈ requiredCatalog candidate := by
+  have refMem := digest_mem_arg_refs mem
+  cases candidate with
+  | declare declaredKind payload writ =>
+      exact List.mem_cons_of_mem _ refMem
+  | resolveDigest declaredKind target anchor => simp [actArgs] at mem
+  | trustBytes declaredKind target asserted => simp [actArgs] at mem
+  | emit lane body => exact List.mem_cons_of_mem _ refMem
+  | join cell contribution strategy =>
+      cases strategy with
+      | lastWriterWins => exact List.mem_cons_of_mem _ refMem
+      | declaredAlgebra algebra =>
+          exact List.mem_cons_of_mem _ (List.mem_cons_of_mem _ refMem)
+  | readLatest subject => simp [actArgs] at mem
+  | fold declared anchor query => exact List.mem_cons_of_mem _ refMem
+  | decide register token outcome => exact List.mem_cons_of_mem _ refMem
+  | trigger predicate declaration => simp [actArgs] at mem
+  | spawn parent request => simp [actArgs] at mem
+  | updateInPlace target payload => exact refMem
+
+/-- Absence of an intrinsic candidate fault means every payload atom
+    is intrinsically clean. -/
+theorem payload_intrinsic_free {candidate : CandidateAct}
+    (clean : ¬ IntrinsicFault candidate) :
+    forall arg, arg ∈ actArgs candidate -> ¬ arg.Intrinsic := by
+  intro arg mem intrinsic
+  exact clean (.payload candidate arg mem intrinsic)
+
+/-- A supported, intrinsically clean payload has a clean sweep. -/
+theorem arg_sweep_none_of_supported {door : Door} :
+    forall args : List RawArg,
+      (forall kind id, RawArg.digestRef kind id ∈ args ->
+        (kind, id) ∈ door.catalog) ->
+      (forall arg, arg ∈ args -> ¬ arg.Intrinsic) ->
+      argSweep door args = none := by
+  intro args
+  induction args with
+  | nil => intro _ _; rfl
+  | cons head rest inductionHypothesis =>
+      intro supported clean
+      have restSupported : forall kind id,
+          RawArg.digestRef kind id ∈ rest ->
+          (kind, id) ∈ door.catalog := by
+        intro kind id mem
+        exact supported kind id (List.mem_cons_of_mem head mem)
+      have restClean : forall arg, arg ∈ rest -> ¬ arg.Intrinsic := by
+        intro arg mem
+        exact clean arg (List.mem_cons_of_mem head mem)
+      have restSweep := inductionHypothesis restSupported restClean
+      cases head with
+      | digestRef kind id =>
+          have present : refMember kind id door.catalog = true :=
+            (ref_member_iff kind id door.catalog).mpr
+              (supported kind id (by simp))
+          simp [argSweep, argRefusal, present, restSweep]
+      | literal value => simp [argSweep, argRefusal, restSweep]
+      | hole name =>
+          exact False.elim (clean (.hole name) (by simp) (by trivial))
+      | clockNow =>
+          exact False.elim (clean .clockNow (by simp) (by trivial))
+      | randomSeed =>
+          exact False.elim (clean .randomSeed (by simp) (by trivial))
+      | secretBytes bytes =>
+          exact False.elim (clean (.secretBytes bytes) (by simp) (by trivial))
+      | mintedId token =>
+          exact False.elim (clean (.mintedId token) (by simp) (by trivial))
+      | functionValue code =>
+          exact False.elim (clean (.functionValue code) (by simp) (by trivial))
+
+/-- The canonical repair door supports every payload reference. -/
+theorem repairing_arg_sweep_none (door : Door) (candidate : CandidateAct)
+    (clean : ¬ IntrinsicFault candidate) :
+    argSweep (repairingDoor door candidate) (actArgs candidate) = none := by
+  apply arg_sweep_none_of_supported
+  · intro kind id mem
+    exact List.mem_append.mpr
+      (Or.inl (required_catalog_contains_arg_ref mem))
+  · exact payload_intrinsic_free clean
+
+/-- A pinned universe containing `argRefs` contains every digest atom
+    in the payload. -/
+theorem inside_universe_true_of_supported {door : Door} :
+    forall args : List RawArg,
+      (forall kind id, RawArg.digestRef kind id ∈ args ->
+        (kind, id) ∈ door.pinned) ->
+      insideUniverse door args = true := by
+  intro args
+  induction args with
+  | nil => intro _; rfl
+  | cons head rest inductionHypothesis =>
+      intro supported
+      have restSupported : forall kind id,
+          RawArg.digestRef kind id ∈ rest ->
+          (kind, id) ∈ door.pinned := by
+        intro kind id mem
+        exact supported kind id (List.mem_cons_of_mem head mem)
+      have restInside := inductionHypothesis restSupported
+      cases head with
+      | digestRef kind id =>
+          have present : refMember kind id door.pinned = true :=
+            (ref_member_iff kind id door.pinned).mpr
+              (supported kind id (by simp))
+          simp [insideUniverse, present, restInside]
+      | literal value => exact restInside
+      | hole name => exact restInside
+      | clockNow => exact restInside
+      | randomSeed => exact restInside
+      | secretBytes bytes => exact restInside
+      | mintedId token => exact restInside
+      | functionValue code => exact restInside
+
+/-- A declaration's finite repair door pins all of its payload
+    references. -/
+theorem repairing_inside_universe (door : Door) (kind : DeclKind)
+    (payload : List RawArg) (writ : Nat) :
+    insideUniverse (repairingDoor door (.declare kind payload writ))
+      payload = true := by
+  apply inside_universe_true_of_supported
+  intro refKind id mem
+  apply List.mem_append.mpr
+  apply Or.inl
+  exact digest_mem_arg_refs mem
+
+/-- A predicate with no intrinsic refusal has a closed-grammar
+    translation. -/
+theorem translate_predicate_some_of_no_refusal
+    {predicate : CandidatePredicate}
+    (clean : predicateRefusal predicate = none) :
+    exists translated, translatePredicate predicate = some translated := by
+  cases predicate <;>
+    simp [predicateRefusal, translatePredicate] at clean ⊢
+  case holeReaches hole stage =>
+    cases ranked : rankToStage stage <;>
+      simp [ranked] at clean ⊢
+
+/-- Every intrinsically clean candidate admits after adding its finite
+    catalog and pinned-universe support. -/
+theorem intrinsically_clean_admitted_by_growth (door : Door)
+    (candidate : CandidateAct) (clean : ¬ IntrinsicFault candidate) :
+    exists act,
+      admit (repairingDoor door candidate) candidate = .admitted act := by
+  cases candidate with
+  | declare kind payload writ =>
+      have sweep :
+          argSweep (repairingDoor door (.declare kind payload writ)) payload =
+            none := by
+        simpa [actArgs] using
+          repairing_arg_sweep_none door (.declare kind payload writ) clean
+      have inside := repairing_inside_universe door kind payload writ
+      have writPresent :
+          refMember DeclKind.policy writ
+            (repairingDoor door (.declare kind payload writ)).catalog = true := by
+        apply (ref_member_iff DeclKind.policy writ _).mpr
+        simp [repairingDoor, requiredCatalog]
+      refine ⟨.declare kind ⟨canonicalBytes payload⟩ ⟨writ⟩, ?_⟩
+      simp [admit, sweep, inside, writPresent]
+  | resolveDigest kind target anchor =>
+      cases anchor with
+      | none =>
+          have present :
+              refMember kind target
+                (repairingDoor door (.resolveDigest kind target none)).catalog =
+                  true := by
+            apply (ref_member_iff kind target _).mpr
+            simp [repairingDoor, requiredCatalog]
+          refine ⟨.resolve kind ⟨target⟩, ?_⟩
+          simp [admit, present]
+      | some anchor => exact (clean (.anchored kind target anchor)).elim
+  | trustBytes kind target asserted =>
+      exact (clean (.trusting kind target asserted)).elim
+  | emit lane body =>
+      have sweep :
+          argSweep (repairingDoor door (.emit lane body)) body = none := by
+        simpa [actArgs] using
+          repairing_arg_sweep_none door (.emit lane body) clean
+      have present :
+          refMember DeclKind.lane lane
+            (repairingDoor door (.emit lane body)).catalog = true := by
+        apply (ref_member_iff DeclKind.lane lane _).mpr
+        simp [repairingDoor, requiredCatalog]
+      refine ⟨.emit ⟨lane⟩ ⟨canonicalBytes body⟩, ?_⟩
+      simp [admit, sweep, present]
+  | join cell contribution strategy =>
+      cases strategy with
+      | lastWriterWins => exact (clean (.lastWriter cell contribution)).elim
+      | declaredAlgebra algebra =>
+          have sweep :
+              argSweep
+                  (repairingDoor door
+                    (.join cell contribution (.declaredAlgebra algebra)))
+                  contribution = none := by
+            simpa [actArgs] using
+              repairing_arg_sweep_none door
+                (.join cell contribution (.declaredAlgebra algebra)) clean
+          have cellPresent :
+              refMember DeclKind.resource cell
+                (repairingDoor door
+                  (.join cell contribution (.declaredAlgebra algebra))).catalog =
+                    true := by
+            apply (ref_member_iff DeclKind.resource cell _).mpr
+            simp [repairingDoor, requiredCatalog]
+          have algebraPresent :
+              refMember DeclKind.algebra algebra
+                (repairingDoor door
+                  (.join cell contribution (.declaredAlgebra algebra))).catalog =
+                    true := by
+            apply (ref_member_iff DeclKind.algebra algebra _).mpr
+            simp [repairingDoor, requiredCatalog]
+          refine ⟨.join ⟨cell⟩ ⟨canonicalBytes contribution⟩, ?_⟩
+          simp [admit, sweep, cellPresent, algebraPresent]
+  | readLatest subject => exact (clean (.latest subject)).elim
+  | fold declared anchor query =>
+      cases anchor with
+      | none => exact (clean (.anchorless declared query)).elim
+      | some anchor =>
+          by_cases sameFold : anchor.foldId = declared
+          · have sweep :
+                argSweep
+                    (repairingDoor door (.fold declared (some anchor) query))
+                    query = none := by
+              simpa [actArgs] using
+                repairing_arg_sweep_none door
+                  (.fold declared (some anchor) query) clean
+            have present :
+                refMember DeclKind.index declared
+                  (repairingDoor door
+                    (.fold declared (some anchor) query)).catalog = true := by
+              apply (ref_member_iff DeclKind.index declared _).mpr
+              simp [repairingDoor, requiredCatalog]
+            refine
+              ⟨.fold ⟨declared⟩ ⟨⟨anchor.lane⟩, anchor.shard⟩
+                ⟨⟨anchor.floor⟩, ⟨anchor.state⟩, ⟨anchor.head⟩⟩
+                ⟨canonicalBytes query⟩, ?_⟩
+            simp [admit, sameFold, sweep, present]
+          · exact (clean (.crossAnchor declared anchor query sameFold)).elim
+  | decide register token outcome =>
+      cases token with
+      | none => exact (clean (.unfenced register outcome)).elim
+      | some claim =>
+          by_cases sameRegister : claim.register = register
+          · have sweep :
+                argSweep
+                    (repairingDoor door (.decide register (some claim) outcome))
+                    outcome = none := by
+              simpa [actArgs] using
+                repairing_arg_sweep_none door
+                  (.decide register (some claim) outcome) clean
+            have present :
+                refMember DeclKind.program register
+                  (repairingDoor door
+                    (.decide register (some claim) outcome)).catalog = true := by
+              apply (ref_member_iff DeclKind.program register _).mpr
+              simp [repairingDoor, requiredCatalog]
+            refine
+              ⟨.decide ⟨register⟩ ⟨claim.value⟩
+                ⟨canonicalBytes outcome⟩, ?_⟩
+            simp [admit, sameRegister, sweep, present]
+          · exact (clean (.crossToken register claim outcome sameRegister)).elim
+  | trigger predicate declaration =>
+      cases refused : predicateRefusal predicate with
+      | some reason =>
+          exact (clean (.refusedPredicate predicate declaration reason refused)).elim
+      | none =>
+          obtain ⟨translated, translatedEq⟩ :=
+            translate_predicate_some_of_no_refusal refused
+          have present :
+              refMember DeclKind.program declaration
+                (repairingDoor door (.trigger predicate declaration)).catalog =
+                  true := by
+            apply (ref_member_iff DeclKind.program declaration _).mpr
+            simp [repairingDoor, requiredCatalog]
+          refine ⟨.trigger translated ⟨declaration⟩, ?_⟩
+          simp [admit, refused, translatedEq, present]
+  | spawn parent request =>
+      have parentPresent :
+          refMember DeclKind.policy parent
+            (repairingDoor door (.spawn parent request)).catalog = true := by
+        apply (ref_member_iff DeclKind.policy parent _).mpr
+        simp [repairingDoor, requiredCatalog]
+      have requestPresent :
+          refMember DeclKind.policy request
+            (repairingDoor door (.spawn parent request)).catalog = true := by
+        apply (ref_member_iff DeclKind.policy request _).mpr
+        simp [repairingDoor, requiredCatalog]
+      refine ⟨.spawn ⟨parent⟩ ⟨request⟩, ?_⟩
+      simp [admit, parentPresent, requestPresent]
+  | updateInPlace target payload => exact (clean (.mutation target payload)).elim
+
+/-- Every genuinely door-relative refusal is repairable by the
+    canonical finite extension when no intrinsic fault remains. -/
+theorem relative_refusal_repairable_by_growth :
+    Laws.KRelativeRefusalRepairableByGrowth := by
+  intro door candidate _ clean
+  obtain ⟨act, admitted⟩ :=
+    intrinsically_clean_admitted_by_growth door candidate clean
+  exact ⟨repairingDoor door candidate, act,
+    door_le_repairing door candidate, admitted⟩
 
 /-- The admission half of the estate-of-safety candidate: whatever
     spells a closure-row shape, the door refuses — no unlawful
