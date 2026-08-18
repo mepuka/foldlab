@@ -35,6 +35,7 @@
  */
 import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
 
+import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
 import { canonicalBytes } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { Refusal, StructuralRefusal } from "../truth/Refusal.js"
@@ -72,10 +73,7 @@ export interface CellState {
 }
 
 /** Connection bootstrap for the cell bucket. */
-export interface CellOptions {
-  readonly servers: string | ReadonlyArray<string>
-  readonly connectionName?: string
-}
+export interface CellOptions extends ConnectionBootstrap {}
 
 /**
  * Reads a cell and joins a delta into it.

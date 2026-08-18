@@ -1883,3 +1883,60 @@ namespace that could not be added without moving a signature would be evidence
 the surface is not lawful, and the regenerated manifest is the evidence that it
 is. **Load-bearing? yes** — the barrel is the package's interface, and what
 enters it is a decision with a record.
+
+## Task DEV-775 — least-privilege carrier credentials
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+DEV-775, with the pinned server/client sources and the ran-it wall as substrate
+authority. The archived assumptions gate at `archive/pre-estate-focus` is
+mechanics reference only and is not claimed live.
+
+### T0. Permissions are fixed carrier roles instantiated at deployment coordinates
+
+Decided: `internal/permissions.ts` declares eight fixed roles — evidence, fact,
+and node publishers; one role for each of the cell, anchor, and register KV
+buckets; requester; responder — and `declareCarrierPermissionMap` instantiates
+their exact lane, stream, venue, node, bucket, and credential-owned inbox
+subjects. Alternatives: one application credential carrying their union; map
+the not-yet-shipped semantic policy lattice directly. Why: a union recreates
+the cross-lane and foreign-bucket authority this ticket exists to refuse, while
+the semantic `Policy` module is not yet a shipped source of roles. The carrier
+roles are the smallest current projection and can be unioned later only by the
+issuer for a process whose writ actually needs several. **Load-bearing? yes** —
+the cross-lane and foreign-bucket probes are red if their two roles collapse.
+
+### T1. Application roles inspect pre-provisioned resources but receive no lifecycle API
+
+Decided: JetStream roles receive exact `$JS.API.STREAM.INFO.<stream>` and KV
+roles receive exact stream-info, direct-get, and `$KV.<bucket>.>` subjects;
+they receive no stream create, update, purge, or delete subject. The shared
+read-only `$JS.API.INFO` grant is stated separately on every JetStream role.
+Alternatives: grant `$JS.API.>`; remove `$JS.API.INFO` by rewriting each pinned
+client adapter to suppress its manager preflight; allow exact create subjects
+so current adapters can provision on first use. Why: the ran-it wall observed
+that `@nats-io/jetstream@3.4.0`'s `jetstreamManager()` first publishes
+`$JS.API.INFO`, while the current deployment boundary already assigns resource
+provisioning to the operator/daemon. Exact info keeps the existing acquisition
+path operable without granting lifecycle mutation. Subject permissions cannot
+distinguish a KV put from a delete marker on the same `$KV` subject; this ticket
+therefore claims bucket isolation and no administrative lifecycle API, not
+per-key verb separation. **Load-bearing? yes** — `$JS.API.>` would reopen every
+foreign and destructive management API; omitting `$JS.API.INFO` makes the
+pinned client refuse before the exact stream check.
+
+### T2. Reply authority is credential-owned subscription plus tracked response
+
+Decided: every request-bearing client selects a unique custom inbox prefix and
+subscribes only to `<prefix>.>`; responder roles publish no inbox subject at
+all and instead carry `allow_responses: { max: 1, expires: "2s" }`. Connection
+passwords enter as `Redacted<string>` and are revealed only to the pinned
+authenticator. Alternatives: `_INBOX.>` subscription; `_INBOX.>` publish for
+responders; embed passwords in the permission declaration. Why: GitHub finding
+#56's live probe showed the global subscribe grant reads other clients' replies
+and JetStream control bodies; the pinned server's tracked-response permission
+allows only the reply subject a request actually delivered. Secrets are
+environmental and credential issuance remains DEV-745's daemon work.
+**Load-bearing? yes** — the wall proves a normal reply lands, an untracked reply
+publish refuses, and `_INBOX.>` subscription refuses as a named permission
+violation.

@@ -5,6 +5,7 @@
  */
 import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
 
+import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
 import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
@@ -56,10 +57,7 @@ export interface LanePartition {
 }
 
 /** Connection bootstrap for live evidence-lane streams. */
-export interface LaneOptions {
-  readonly servers: string | ReadonlyArray<string>
-  readonly connectionName?: string
-}
+export interface LaneOptions extends ConnectionBootstrap {}
 
 /** Provenance fields carried by one emitted event envelope. */
 export interface EmitOptions {

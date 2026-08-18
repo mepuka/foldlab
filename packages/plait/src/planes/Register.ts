@@ -5,6 +5,7 @@
  */
 import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
 
+import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
 import type { Refusal } from "../truth/Refusal.js"
 import { makeRegisterService } from "../internal/registers.js"
 
@@ -28,10 +29,7 @@ export interface RegisterState {
 }
 
 /** Connection bootstrap for the register bucket. */
-export interface RegisterOptions {
-  readonly servers: string | ReadonlyArray<string>
-  readonly connectionName?: string
-}
+export interface RegisterOptions extends ConnectionBootstrap {}
 
 /**
  * The five-action register surface walled against the proved Veil model.

@@ -4,10 +4,15 @@
  * @module
  */
 import { JetStreamApiCodes, JetStreamApiError, JetStreamError } from "@nats-io/jetstream"
-import { errors, type NatsConnection } from "@nats-io/nats-core"
+import {
+  errors,
+  usernamePasswordAuthenticator,
+  type NatsConnection,
+} from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Scope } from "effect"
+import { Effect, Redacted, Scope } from "effect"
 
+import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
 import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
 
 /**
@@ -33,10 +38,7 @@ import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
  */
 
 /** The connection bootstrap fields every adapter's options carry. */
-export interface ConnectionOptions {
-  readonly servers: string | ReadonlyArray<string>
-  readonly connectionName?: string | undefined
-}
+export interface ConnectionOptions extends ConnectionBootstrap {}
 
 /** Mints one adapter's transport absence for the operation that observed a cause. */
 export type TransportRefusal = (operation: string, cause: unknown) => Refusal
@@ -175,10 +177,20 @@ export const acquireConnection = (
 ): Effect.Effect<NatsConnection, Refusal, Scope.Scope> =>
   Effect.acquireRelease(
     Effect.tryPromise({
-      try: () => connect({
-        servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-        name: options.connectionName ?? defaultName,
-      }),
+      try: () => {
+        const credential = options.credential
+        return connect({
+          servers: typeof options.servers === "string" ? options.servers : [...options.servers],
+          name: options.connectionName ?? defaultName,
+          ...(credential === undefined ? {} : {
+            authenticator: usernamePasswordAuthenticator(
+              credential.user,
+              () => Redacted.value(credential.password),
+            ),
+            inboxPrefix: credential.inboxPrefix,
+          }),
+        })
+      },
       catch: (cause) => refuse(operation, cause),
     }),
     closeConnection,
