@@ -164,6 +164,27 @@ or drops is identity-bearing.
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
 
+**Petname**:
+One name inside a directory. Naming, never identity: nothing derives a digest
+from a petname. Non-empty, carrying no separator and no control character, and
+never `.` or `..` — the relative forms name a position rather than a value, and
+a path this package admits depends on its root and its names alone.
+
+**Directory**:
+The cataloged value a path walks through: the finite set of `(petname, digest)`
+bindings, merged by set union, under a closed `{ v, kind }` header. The set is
+the carrier, so one name bound to two digests is representable and resolution
+refuses it rather than choosing. Canonical binding order is declared — RFC 8785
+byte order — so a folded directory's digest is a name for the set.
+
+**Path**:
+An explicitly named root digest and a petname list read from it. Each hop
+resolves the current digest, decodes a directory, and reads one binding out of
+it; there is no current directory and no relative escape, so the answer is a
+function of the root and the names. Under a fixed root every verdict is
+permanent: unbound and ambiguous are structural, and the only head-relative
+fact on the walk is whether a store holds a directory yet.
+
 **Advisory**:
 The standing of a KV watch feed. An arriving entry is a hint that state has
 moved, joined like any other observation; the feed's silence, its ordering,

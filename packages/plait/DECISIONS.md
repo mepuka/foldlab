@@ -1909,3 +1909,143 @@ than a diagnostic can no longer read as a control that failed for its committed
 reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
 six advisories it declines to gate on stay open findings for their modules'
 owners.
+
+## Task DEV-766 — T-address: explicit roots and iterated-resolve path sugar
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §5/§6 (stage 3, the
+`at(root, ...names)` row); conceptual basis KM-15 and KM-16 in
+`docs/research/2026-08-18-kernel-model-notes.md`.
+
+The ticket's own bound, kept: **no new machinery.** `Address.ts` ships no
+service, no layer, no store, and no cache. Every hop is `Resolved.resolve`, so
+verify-on-read is inherited rather than restated, and the one row that spends
+that inheritance is the lying-catalog walk in `test/Address.test.ts`.
+
+### T0. The seam ships as public surface, and four manifest rows are the decision
+
+Decided: `Address` is exported from the barrel and from `package.json`, so the
+seam rides the T7 public-surface walk deliberately. The four rows it added to
+`test/PublicEffects.signatures.txt` are the whole surface change and are the
+auditable form of the ticket's "any new public surface is its own explicit
+decision, never a side effect". Alternatives: internal-first behind `internal/`
+(the Cell T5 shape) with a later export ticket; export the schemas as types only.
+Why: the spec's leverage line for this seam is that agents navigate by resolve,
+which is a claim about a surface callers can reach — an unexported walk would
+have been a sketch of that claim rather than the claim. **Load-bearing? yes** —
+it bounds what this ticket added to the public surface to `Address` and nothing
+else.
+
+### T1. `at` answers an address, not a value
+
+Decided: `at(root, ...names)` returns the `Digest` the path names; the value is
+one `Resolved.resolve` away and the caller performs it. Alternatives: return the
+resolved wire value (the spec sketch reads that way); ship both `at` and a
+`read` that composes it with `resolve`. Why: a binding names a digest, and
+whether that digest resolves — and against which store — is the reader's
+question, not the walk's. Returning the address also keeps `at` composable with
+`ResolvedOf` codecs, `Blob`, and the resolve memo without this module knowing any
+of them. A `read` helper would have been `Effect.flatMap(at(...), resolve)` with
+a name, which ADR-0010 prices as a public function with no law of its own.
+**Load-bearing? yes** — it is why the module has no second decode path.
+
+### T2. Unbound and ambiguous are structural, because a root pins a snapshot
+
+Decided: `unbound-petname` and `ambiguous-binding` are `StructuralRefusal`s.
+Alternatives: mint `unbound-petname` as an `AbsenceRefusal`, by analogy with
+`cataloged-value-absent` and `blob-absent`. Why: those two are head-relative
+because a store can acquire bytes it lacks; an unbound name under a *fixed root
+digest* cannot change, because the root names one immutable directory and a
+retry re-reads the same bytes. Classifying it as absence would put it inside
+`Refusal.retryAbsence`'s policy and spin a caller against a permanent answer.
+The head-relative fact on this path is whether a store holds the directory at
+all, and that arrives as `resolve`'s own absence, passed through untouched.
+**Load-bearing? yes** — it is the sentence that makes the sort assignment
+checkable rather than a habit.
+
+### T3. The carrier is a binding SET, so ambiguity is refused rather than decided
+
+Decided: `Directory.bindings` is a set of `(petname, digest)` pairs, not a map,
+so one name bound to two digests is representable; a walk that meets it refuses
+`ambiguous-binding` listing both candidates in identity order. The model's
+fourth verdict — the binding sealed at the greatest observed fencing token — is
+NOT read here, and the refusal's repair says arbitration is a fenced register
+decision. Alternatives: a map carrier, which makes the ambiguity unrepresentable
+by silently letting one binder overwrite another; read seals from `Registers` in
+this module. Why: the map carrier hides a concurrent-bind conflict as a
+last-writer-wins outcome, which is the shape this package refuses everywhere
+else; and reading seals here would stand a second arbitration path beside
+`Register.ts`, which owns the fencing token. **Load-bearing? yes** — it is why
+this module has an ambiguity refusal at all.
+
+### T4. The directory header is closed, so a wrong hop refuses instead of reading empty
+
+Decided: `Directory` carries `{ v: 0, kind: "directory", bindings }`, and a hop
+whose value does not decode against it refuses `not-a-directory` naming the
+segment that produced the digest. Alternatives: accept any `{ bindings }`-shaped
+value; let the parse boundary's generic `malformed-value` fly unwrapped. Why:
+without the discriminator every cataloged object without a `bindings` key would
+read as a directory that binds nothing, which turns a navigational error into an
+`unbound-petname` — a wrong repair, taught confidently. The wrapper adds only
+the position the walk was at, which the schema cannot know; the schema is still
+the judge. **Load-bearing? yes** — it is why a walk cannot silently reinterpret
+a value.
+
+### T5. The explicit-root fence is a compile control, not a runtime check
+
+Decided: `at`'s first parameter is the root `Digest`, so a rootless walk has
+nowhere to be written, and `negative-controls/Address.rootless.mutant.ts` under
+`bun run check:address-control` is the evidence — a lawful twin beside the
+planted spelling, and the committed diagnostic compared byte-for-byte.
+Alternatives: accept a path object and refuse a missing root at runtime; document
+the fence only. Why: this is the ambient-input precedent the kernel builder's
+clock control already states — the surface refuses the shape by having no field
+to put it in, and a runtime check would leave the shape spellable. Escape
+attempts (`.`, `..`, separators, control characters) stay runtime refusals
+because they are string data and cannot be typed away. **Load-bearing? yes** —
+it is the ticket's ambient-input requirement in its strongest available form.
+
+### T6. Six names, and the joins the module does not ship
+
+Decided: the surface is `Petname`, `Binding`, `Directory`, `directory`,
+`petname`, `at`, `list` — no `Path` value type, no `join`, no `read`, no watch.
+The join of two directories is `directory([...left.bindings, ...right.bindings])`
+and the JSDoc says so; a live view is the consumer seam's (DEV-765).
+Alternatives: ship `Path` as a cataloged struct so an address travels as data;
+ship `join` beside `directory` the way `Cell` ships `join` beside `canonicalize`.
+Why: a path travels as a root plus names today and no consumer names a `Path`
+value, so the struct would be a hypothetical seam; and `Cell.join` exists because
+a cell's join is the write path's operation, while a directory's join is one
+`directory` call over a concatenation. **Load-bearing? yes** — it is the standing
+answer to each of these being proposed as an obvious addition.
+
+### T7. Four refusal kinds, because four different repairs are taught
+
+Decided: `invalid-petname`, `not-a-directory`, `unbound-petname`, and
+`ambiguous-binding` enter `StructuralRefusalKind`, and each is triggered through
+the public surface in `test/RefusalNext.test.ts` — the gate that refuses a kind
+no shipped path can mint. Alternatives: reuse `malformed-value` for the first
+two and a single `unresolvable-path` for the last two. Why: the four name four
+distinct repairs — fix the name, publish a directory there, bind the name, bind
+it to exactly one digest — and a refusal that cannot say which one is a diagnosis
+the caller has to redo. **Load-bearing? no** — the classification could be merged
+without changing what any path admits.
+
+### T8. The control records errors only, so the fence is not coupled to lint advice
+
+Decided: `check-address-negative.ts` compares the `error` diagnostics and drops
+every advisory severity, and an empty error set fails the control. Recorded on
+the rebase onto the `@effect/tsgo` / TypeScript 7 pin, which made the compiler
+emit `suggestion` diagnostics for every file the control's project pulls in —
+including `truth/Refusal.ts` lines this ticket does not own and may not edit.
+Alternatives: record the suggestions too (the trace then moves whenever anybody
+cleans up an unrelated module, and this fence starts reporting other people's
+work); silence the plugin for the control's project (a compiler flag this
+control would then depend on, in a file the ticket does not own). Why: the
+control's claim is that the rootless spelling does not compile, and for which
+reason — advisory lint output is not that claim, and a trace that encodes it
+fails for reasons the fence is not about. The prover can still fail: making the
+planted spelling lawful reports `typechecked` rather than a moved trace.
+**Load-bearing? yes** — it is why this control stayed green across a toolchain
+swap that moved the package's other committed traces.

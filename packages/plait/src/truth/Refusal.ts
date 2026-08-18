@@ -64,6 +64,10 @@ export const StructuralRefusalKind = Schema.Literals([
   "invalid-cell-key",
   "malformed-cell-state",
   "cell-substrate-shape",
+  "invalid-petname",
+  "not-a-directory",
+  "unbound-petname",
+  "ambiguous-binding",
 ])
 
 /** Every structural refusal kind the package can mint. */

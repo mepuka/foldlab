@@ -59,6 +59,24 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   the entire licence for never expiring a hit. A recorded failure is a finding
   twice over: absence is head-relative, and remembering it makes a retryable
   observation permanent.
+- A path resolves from an explicitly named root digest. There is no current
+  directory, no ambient root, and no relative escape: `at` takes the root as its
+  first parameter, so a rootless walk is a compile error and not a validation
+  (`negative-controls/Address.rootless.mutant.ts`), and `.` and `..` are refused
+  names. Adding a root-defaulting overload, a session root, or a path-string
+  parser is a finding.
+- Addressing adds no store, service, layer, or cache. Every hop is
+  `Resolved.resolve`, so verify-on-read is inherited rather than restated; a
+  second fetch or verify path under `Address.ts` is a finding.
+- A root digest names one immutable directory, so every addressing verdict under
+  it is permanent: unbound and ambiguous are structural. The only absence on
+  that walk is `resolve`'s own `cataloged-value-absent`, and minting an
+  `AbsenceRefusal` for an unbound name is a finding — it would make `retryAbsence`
+  spin against bytes that cannot change.
+- A directory carries a binding SET, so one name bound to two digests is
+  representable and `ambiguous-binding` refuses it. Nothing in a walk arbitrates:
+  the model's sealed-at verdict reads the commitment register's evidence, and
+  reading a seal here would be a second arbitration path beside `Register.ts`.
 - Public absence is an `AbsenceRefusal`, never `Option`. `Option.none` is
   invisible to `retryAbsence` and carries no head-relative vocabulary; the
   `Option` on the internal payload seam is plumbing and stays there.
