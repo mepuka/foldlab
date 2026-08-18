@@ -355,6 +355,24 @@ K-series stays the design record's and is not renumbered here.
   say so wherever the fourteen are counted. Alternative: widen the
   closure list (renumbers a ratified inventory — not this lane's
   call).
+- **KM-11 — the fold-declaration kind is named `index`, and the name
+  over-suggests search.** Raised by the operator in review: the fold
+  constructor demands `Digest DeclKind.index`, which reads as binding
+  fold to search. It does not — search appears nowhere in the model;
+  what a reduction is *for* lives entirely in its declared content and
+  its query values. But the kind name carries the connotation, and the
+  granularity question underneath is real. Recommended: rename the
+  kind to `reduction` (one kind for every declared fold; roles are
+  data or ontology annotations), on the test that two declarations
+  deserve distinct kinds only when the door checks them differently —
+  a view and a search index share shape, checks, and laws, so a kind
+  split would fragment identity with zero law gain. Alternatives: a
+  closed fold-class of kinds with a kind-generic constructor and
+  subsort premise (the resolve pattern — the known upgrade path if a
+  law ever distinguishes fold families at the door; speculative
+  before one exists); one kind per fold family (refused by the test).
+  Reversal: a rename is a one-line brand swap pre-consumer; a split
+  adopted and then retired strands identities.
 
 ## 12. Sources
 
