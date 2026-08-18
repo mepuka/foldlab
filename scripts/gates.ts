@@ -86,6 +86,33 @@ const stagedElsewhere = new Set([
   "scratch",
 ])
 
+// The candidates git ignores, out of the paths a working-tree walk found. One
+// batched `check-ignore` call judges the whole list: the paths go in and come
+// back in the identical `./`-prefixed, `/`-separated spelling the walk built,
+// so the echo compares as plain strings, and `-z` keeps quoting out of it.
+// Exit 1 is check-ignore's "nothing matched"; any other failure — 128 when
+// the root is no git repository at all — means git can name nothing to
+// ignore, and the walk stands as it would have without git.
+const gitIgnored = (
+  root: string,
+  candidates: ReadonlyArray<string>,
+): ReadonlySet<string> => {
+  if (candidates.length === 0) return new Set()
+  const result = Bun.spawnSync({
+    cmd: ["git", "check-ignore", "--stdin", "-z"],
+    cwd: root,
+    stdin: new TextEncoder().encode(candidates.map((path) => `${path}\u0000`).join("")),
+    stdout: "pipe",
+    stderr: "pipe",
+    env: process.env,
+  })
+  if (result.exitCode !== 0) return new Set()
+  return new Set(
+    new TextDecoder().decode(result.stdout).split("\u0000")
+      .filter((path) => path !== ""),
+  )
+}
+
 /**
  * The test files the repository root itself owns, named rather than
  * discovered.
@@ -98,6 +125,14 @@ const stagedElsewhere = new Set([
  * walk is over the working tree, so a test file added tomorrow outside those
  * staged trees joins this stage by construction rather than by someone
  * remembering to list it.
+ *
+ * The working tree, minus what git ignores. A gitignored local playground —
+ * a `.reference/` clone, a spike parked beside the repository — exists only
+ * on the host that grew it, so a stage that claimed its tests would make
+ * "battery green" a claim about which machine ran the battery. The walk's
+ * candidates pass through one batched `git check-ignore` before the stage
+ * owns them: an ignored file can neither join this stage nor redden it. A
+ * root outside any git repository ignores nothing.
  */
 const rootOwnedTests = (root: string): ReadonlyArray<string> => {
   const found: Array<string> = []
@@ -114,11 +149,13 @@ const rootOwnedTests = (root: string): ReadonlyArray<string> => {
     }
   }
   visit(root, "")
+  const ignored = gitIgnored(root, found)
+  const claimed = found.filter((path) => !ignored.has(path))
   // An empty argument list would send `bun test` back to bunfig discovery and
   // silently restore the duplicate this stage exists to remove, so an empty
   // walk is a refusal rather than a skip.
-  if (found.length === 0) throw new Error("root test discovery found no test file")
-  return found.sort()
+  if (claimed.length === 0) throw new Error("root test discovery found no test file")
+  return claimed.sort()
 }
 
 const installTargets: ReadonlyArray<InstallTarget> = [
@@ -472,6 +509,32 @@ const selfTestRootTestDiscovery = (): void => {
       throw new Error(`root test discovery moved: got ${found}, want ${wanted}`)
     }
 
+    // The assertion above ran while the tree was no repository — the walk
+    // that git cannot advise must claim exactly what a bare walk claims. Now
+    // the same tree becomes a repository that ignores a local playground,
+    // and the plant inside it must leave discovery while the claimed plants
+    // stay: an ignore filter inverted, dropped, or matching on the wrong
+    // path spelling all turn this red.
+    const init = Bun.spawnSync({
+      cmd: ["git", "init", "--quiet"],
+      cwd: temporaryRoot,
+      stdout: "pipe",
+      stderr: "pipe",
+      env: process.env,
+    })
+    if (init.exitCode !== 0) {
+      throw new Error(`ignored-plant control could not init a repository: git exited ${init.exitCode}`)
+    }
+    writeFileSync(resolve(temporaryRoot, ".gitignore"), "local-playground/\n")
+    mkdirSync(resolve(temporaryRoot, "local-playground"))
+    writeFileSync(resolve(temporaryRoot, "local-playground", "planted.test.ts"), "")
+    const foundUnderIgnore = rootOwnedTests(temporaryRoot).join(",")
+    if (foundUnderIgnore !== wanted) {
+      throw new Error(
+        `root test discovery did not exclude the gitignored plant: got ${foundUnderIgnore}, want ${wanted}`,
+      )
+    }
+
     const emptyRoot = resolve(temporaryRoot, "no-tests")
     mkdirSync(emptyRoot)
     let refusal = ""
@@ -484,7 +547,7 @@ const selfTestRootTestDiscovery = (): void => {
       throw new Error(`root test discovery accepted an empty tree: ${refusal}`)
     }
     console.log(
-      "\nroot test discovery self-test: PASS (scripts and verify plants claimed; packages, proto, vendored, node_modules, and scratch plants left to their stages; empty tree refused)",
+      "\nroot test discovery self-test: PASS (scripts and verify plants claimed; packages, proto, vendored, node_modules, and scratch plants left to their stages; gitignored playground plant excluded; empty tree refused)",
     )
   } finally {
     if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&
