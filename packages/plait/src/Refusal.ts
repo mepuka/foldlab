@@ -1,5 +1,7 @@
-import { Effect, Schedule, Schema } from "effect"
+import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
+
+import { refusalOf } from "./internal/refusals.js"
 
 /** One legal repair or inspection step attached to a refusal. */
 export const Next = Schema.Struct({
@@ -36,6 +38,10 @@ export const StructuralRefusalKind = Schema.Literals([
   "outcome-already-landed",
   "stale-register-token",
   "concurrent-register-update",
+  "malformed-value",
+  "invalid-cell-key",
+  "malformed-cell-state",
+  "cell-substrate-shape",
 ])
 
 /** Every structural refusal kind the package can mint. */
@@ -120,3 +126,38 @@ export const retryAbsence: {
   typeof policy === "number"
     ? Effect.retry(self, { times: policy, while: isRetryable })
     : Effect.retry(self, { schedule: policy, while: isRetryable }))
+
+/**
+ * Decodes through a codec with `Refusal` — never `SchemaIssue` — on the error
+ * channel. This is the package's only parse boundary, and its classification
+ * seam (`internal/refusals.ts`) is the only place a schema issue becomes a
+ * refusal. The bridge stays internal because `SchemaIssue.Issue` is a deep
+ * recursive class union that diverges the public-surface type-level walk.
+ *
+ * The codec's encoding services are unconstrained: the pinned
+ * `SchemaParser.decodeUnknownEffect` reads only `Type` and `DecodingServices`,
+ * so pinning `EncodingServices` to `never` would close this seam against the
+ * package's own emit path (`Resolved.PublishingOf`) for no reason the pin gives
+ * — corrected 2026-08-17, DEV-727 finding F-3.
+ *
+ * @example
+ * ```ts
+ * import { Digest } from "@foldlab/plait/Digest"
+ * import { decodeRefusing } from "@foldlab/plait/Refusal"
+ * import { Effect } from "effect"
+ *
+ * Effect.runSync(Effect.flip(decodeRefusing(Digest)("not-a-digest")))
+ * // StructuralRefusal { kind: "malformed-value" }
+ * ```
+ */
+export const decodeRefusing = <T, E, RD, RE>(
+  codec: Schema.Codec<T, E, RD, RE>,
+): (input: unknown) => Effect.Effect<T, Refusal, RD> =>
+  Effect.fn("Refusal.decodeRefusing")(function* (
+    input: unknown,
+  ): Effect.fn.Return<T, Refusal, RD> {
+    return yield* Effect.catch(
+      SchemaParser.decodeUnknownEffect(codec)(input),
+      (issue) => Effect.fail(refusalOf(issue)),
+    )
+  })
