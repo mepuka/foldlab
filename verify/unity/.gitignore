@@ -2,3 +2,4 @@
 .roster.*
 .discovered.*
 .footprint.*.lean
+.corpus.*.ndjson

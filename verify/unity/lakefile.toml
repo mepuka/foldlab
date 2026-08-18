@@ -1,5 +1,5 @@
 name = "unity"
-defaultTargets = ["Unity", "control"]
+defaultTargets = ["Unity", "control", "emit"]
 
 [[require]]
 name = "fabric"
@@ -11,7 +11,12 @@ path = "../kernel"
 
 [[lean_lib]]
 name = "Unity"
+globs = ["Unity", "Unity.Emit", "Unity.Shapes"]
 
 [[lean_exe]]
 name = "control"
 root = "ControlMain"
+
+[[lean_exe]]
+name = "emit"
+root = "EmitMain"

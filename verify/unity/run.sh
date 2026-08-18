@@ -15,8 +15,9 @@ if ! command -v lake >/dev/null 2>&1; then
 fi
 
 for required in lean-toolchain lakefile.toml lake-manifest.json Unity.lean \
-    ControlMain.lean Unity/Definitions.lean Unity/Laws.lean \
-    Unity/Proofs.lean citations.txt; do
+    ControlMain.lean EmitMain.lean ShapeCheck.lean Unity/Definitions.lean \
+    Unity/Laws.lean Unity/Proofs.lean Unity/Emit.lean Unity/Shapes.lean \
+    citations.txt; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
     exit 1
@@ -70,7 +71,7 @@ fi
 echo "GATE: PASS (topology: two read-only path requires, both models untouched)"
 
 mapfile -t lean_sources < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
-lean_sources+=(Unity.lean ControlMain.lean)
+lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ShapeCheck.lean)
 
 # Kernel-bound source hygiene, at the kernel's own word list.
 if grep -nE "(^|[^A-Za-z0-9_'])(sorry|partial|panic|implemented_by|extern|native_decide|unsafe|axiom|seal)($|[^A-Za-z0-9_'])|panic!" \
@@ -212,7 +213,9 @@ roster=(
 roster_tmp=$(mktemp "./.roster.XXXXXX")
 discovered_tmp=$(mktemp "./.discovered.XXXXXX")
 footprint_check=$(mktemp "./.footprint.XXXXXX.lean")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check"' EXIT
+corpus_first=$(mktemp "./.corpus.XXXXXX.ndjson")
+corpus_second=$(mktemp "./.corpus.XXXXXX.ndjson")
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$corpus_first" "$corpus_second"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -286,6 +289,79 @@ if [[ "${committed_controls[*]}" != "${exercised_sorted[*]}" ]]; then
   exit 1
 fi
 
+# The kernel conformance corpus. Every row is computed by running the
+# kernel model's own definitions, so a moved rank, a reworded taught
+# repair, a changed door verdict or a different sentence framing moves
+# these bytes. The emitter refuses its own document if a vector fails
+# to decode back to its framing, if the header's counts disagree with
+# the records rendered, or if the planted set stops refusing sixteen
+# and admitting one.
+fixture="../../packages/plait/fixtures/kernel-conformance.ndjson"
+if [[ ! -f "$fixture" ]]; then
+  echo "GATE: FAIL — the committed kernel conformance corpus is missing" >&2
+  exit 1
+fi
+if ! lake exe emit > "$corpus_first"; then
+  echo "GATE: FAIL — the emitter refused its own document" >&2
+  exit 1
+fi
+if ! lake exe emit > "$corpus_second"; then
+  echo "GATE: FAIL — the emitter refused its own document on the second run" >&2
+  exit 1
+fi
+if ! cmp -s "$corpus_first" "$corpus_second"; then
+  echo "GATE: FAIL — emission is not deterministic across two runs" >&2
+  exit 1
+fi
+if ! diff -u "$fixture" "$corpus_first"; then
+  echo "GATE: FAIL — the committed corpus is not a fresh regeneration" >&2
+  echo "FINDING: intended model change — regenerate and commit the corpus IN THE SAME COMMIT as the change" >&2
+  echo "FINDING: unintended change — report the finding and STOP; never edit the fixture to agree" >&2
+  exit 1
+fi
+
+# The frozen interchange: header, record counts, printable ASCII on
+# every line (which also refuses a carriage return), and the
+# non-negative safe-integer domain the runtime consumer reads.
+expected_header='{"record":"header","format":1,"generator":"verify/unity emit","source":"verify/kernel","counts":{"kind":12,"stage":5,"refusal":16,"type":22,"encoding":12,"admission":17}}'
+if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 85 ]] ||
+    [[ "$(grep -c '^{"record":"kind",' "$fixture")" -ne 12 ]] ||
+    [[ "$(grep -c '^{"record":"stage",' "$fixture")" -ne 5 ]] ||
+    [[ "$(grep -c '^{"record":"refusal",' "$fixture")" -ne 16 ]] ||
+    [[ "$(grep -c '^{"record":"type",' "$fixture")" -ne 22 ]] ||
+    [[ "$(grep -c '^{"record":"encoding",' "$fixture")" -ne 12 ]] ||
+    [[ "$(grep -c '^{"record":"admission",' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 16 ]] ||
+    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 1 ]]; then
+  echo "GATE: FAIL — corpus header or record counts moved" >&2
+  exit 1
+fi
+if LC_ALL=C grep -n '[^ -~]' "$fixture"; then
+  echo "GATE: FAIL — corpus left printable ASCII (a carriage return counts)" >&2
+  exit 1
+fi
+if grep -oE '[0-9]+' "$fixture" | awk '$1 > 9007199254740991 { exit 1 }'; then
+  :
+else
+  echo "GATE: FAIL — corpus escaped the non-negative safe-integer domain" >&2
+  exit 1
+fi
+echo "GATE: PASS (85-record corpus regenerates byte-identically; header, counts, ASCII and numeral domain pinned)"
+
+# The shape check: every record whose truth lives in the Lean
+# environment — the mini-AST of the sort system, the kind and stage
+# tables, the refusal order, the admission names — rebuilt from
+# `getConstInfo` and compared with the emitted bytes.
+if shape_output=$(lake env lean ShapeCheck.lean 2>&1); then
+  printf '%s\n' "$shape_output"
+  echo "GATE: PASS (corpus agrees with the environment)"
+else
+  printf '%s\n' "$shape_output" >&2
+  echo "GATE: FAIL — the emitted corpus disagrees with the Lean environment" >&2
+  exit 1
+fi
+
 # The must-not-compile class: each control file must be REFUSED by the
 # elaborator with its pinned diagnosis, and its witness twin must
 # elaborate, so the refusal is attributable to the sort discipline and
@@ -324,6 +400,7 @@ check_must_not_compile() {
 }
 
 check_must_not_compile cross-model-stage
+check_must_not_compile wrong-shape
 
 mapfile -t committed_refusals < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
 mapfile -t exercised_refusals_sorted < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
@@ -332,4 +409,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; 1 must-not-compile refusal; roster ${#roster[@]})"
+echo "GATE: PASS (3 translation controls; 2 must-not-compile refusals; roster ${#roster[@]}; 85-record kernel conformance corpus)"

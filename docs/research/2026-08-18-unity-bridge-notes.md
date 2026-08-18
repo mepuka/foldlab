@@ -196,3 +196,71 @@ translation architect's ruling, backed by fabric's own premise-free
 characterization precedent), and upstream gates asserted rather than
 re-run inside the bridge gate (keeps failure attribution
 one-directional).
+
+## Addendum: parity driver stages B1–B3, landed
+
+Same day, second wave — three parallel build lanes on disjoint
+territories, integrated and re-verified by the coordinator (all
+commands re-run: three gates, root typecheck, plait suite).
+
+What landed: `verify/unity` grew its second executable — the kernel
+conformance emitter, producing the 85-record schema-v1 corpus at
+`packages/plait/fixtures/kernel-conformance.ndjson` by executing the
+kernel model (no retyped strings anywhere), refused unless every
+encoding vector decodes back to its framing and every header count
+matches the document; a meta shape checker rebuilds every mini-AST,
+kind, stage, refusal, and admission row from the Lean environment and
+fails elaboration on any disagreement, with a wrong-shape
+must-not-compile row proving it can fail (eleven mutated corpora each
+refused for its own named reason during development, and the probes
+caught a real defect: the first header-count check compared a list
+against itself). The plait package grew the generate/check pair for
+`src/KernelTables.generated.ts` (kind/stage registries, the sixteen-row
+taught-refusal table, phantom brands per sort with per-kind digest
+aliases), the door seam type, and a conformance wall replaying all 17
+admission verdicts and 12 encoding round-trips against a pluggable
+door (reference implementation shipped; no production door exists yet
+— that is B3's remaining half). The normative schema document landed
+at `docs/design/2026-08-18-km-conformance-schema.md` with TS/Go/prose
+mapping tables, a 28-item consumer checklist, and its reconciliation
+table resolved at integration (key order, `mk`, twelve vectors). A
+runnable Go exemplar (generator, generated package, brand probe,
+twelve validator controls) sits un-wired under `scratch/km-polyglot/`;
+a live `go/` module (go1.26) exists for eventual promotion.
+
+Verification, coordinator-run after integration: unity gate green
+including the new corpus and shape arms (roster 19; 3 controls; 2
+must-not-compile; 85-record corpus byte-identical); kernel gate green
+(60/18/4); fabric gate green (16 controls, 27 vectors); root
+typecheck 87 files 0 errors; plait 118 pass 0 fail, kernel walls all
+PASS, both generated artifacts regenerate byte-identically.
+
+New KB rows:
+
+- KB-13 (hand-transcribed control): the runtime lane's corroboration
+  sample is a hand transcription that agreed 72/72 with the emission
+  on the closed vocabulary. It brushes the generated-vectors ruling;
+  its role is a control, nothing is generated from it. Keep or
+  delete — operator's call.
+- KB-14 (public surface): `KernelTables.generated.ts` and
+  `KernelDoor.ts` are deliberately not exported; the public-effect
+  gate still reports 60 signatures. Exposing them is a surface
+  decision, not a codegen one.
+- KB-15 (schema v2 candidate): admission records name planted
+  candidates without carrying their structure, so the corpus is not
+  self-replayable; the runtime carries a hand transcription of
+  `Kernel.Planted` keyed by those names. A v2 payload field would
+  delete that table. Related assumption to ratify: admission row
+  order equals refusal declaration order (holds today, checked by
+  the consumer checklist).
+- KB-16 (door honesty): the reference door is a transliteration of
+  the same Lean source — 17/17 agreement rules out transcription
+  slips, not shared misreadings; and its canonical-bytes fold throws
+  past the JS safe-integer bound rather than rounding (refuses
+  instead of lying). A production door needs BigInt or the runtime's
+  own canonicalizer, and its conformance run is the evidence that
+  matters.
+- KB-17 (Go promotion): the polyglot exemplar is scratch-only and
+  wired to nothing; promoting Go requires the two brand-leak
+  analyzer checks the schema document names, which have no standard
+  implementation.
