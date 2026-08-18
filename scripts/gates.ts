@@ -47,14 +47,23 @@ const tsgoCommand = (
 ): readonly [string, ...ReadonlyArray<string>] => ["bun", tsgoLauncher, ...args]
 
 // The Effect rules left the typecheck stage when tsgo replaced the patched
-// tsc, so the battery runs them as their own lane through the same CLI the
-// editor patch comes from. `--strict` turns rule warnings into a nonzero
-// exit.
+// tsc, so the battery runs them as their own lane. That lane followed the
+// TypeScript 7 cutover with it: `@effect/language-service` refuses TS 7 by
+// design (`TypeScriptFoundIsNot5Or6`) and names `@effect/tsgo` as its
+// successor, so the rules now run through the tsgo CLI — the same mechanism
+// the CI workflow moved to at b93d29a. Spawned through the package's own
+// entrypoint rather than `node_modules/.bin`, for the reason `tsgoLauncher`
+// above states: on POSIX that path is a symlink into this very file, on
+// Windows it is a generated shim with a different name.
+//
+// `--strict` is kept from the pre-cutover lane and means the same thing in
+// both CLIs — warnings exit nonzero. Without it the 15 warning-severity rules
+// print and pass, which is a coverage drop wearing a green tick.
 const effectRulesCommand = (
   project: string,
 ): readonly [string, ...ReadonlyArray<string>] => [
   "bun",
-  resolve(repo, "node_modules", "@effect", "language-service", "cli.js"),
+  resolve(repo, "node_modules", "@effect", "tsgo", "dist", "effect-tsgo.cjs"),
   "diagnostics",
   "--project",
   project,
@@ -156,7 +165,11 @@ const stages: ReadonlyArray<Stage> = [
   // rules run here rather than in the root typecheck script. The lane checks
   // files only where the project's tsconfig carries the language-service
   // plugin entry; without it the CLI reports "Checked 0 files" and passes
-  // vacuously.
+  // vacuously. The tsgo CLI inherited that hazard unchanged, and it still
+  // looks for the entry spelled `@effect/language-service`: renaming the
+  // plugin to `@effect/tsgo` to match the new CLI measures "Checked 0 files
+  // out of 28" and exits 0. `proto/ts/tsconfig.json` keeps the old spelling
+  // on purpose.
   {
     label: "proto/ts — Effect rules",
     cwd: repo,

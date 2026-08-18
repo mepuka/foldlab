@@ -1,9 +1,18 @@
 # Wire to wire: the door chain, and the twin that was reverted
 
-Status: coordination record, 2026-08-18. Operator order: the wire-to-wire
-chain lives in scratch and its rule lives in the codegen skill. The
-shipping implementation is PR #131 (DEV-763, Eng CX PC, in adversarial
-review as DEV-803) — NOT the coordinator's reverted attempt below.
+Status: coordination record, 2026-08-18, CORRECTED 22:30Z. Operator
+order: the wire-to-wire chain lives in scratch and its rule lives in
+the codegen skill.
+
+**The chain below is the TARGET, not a description of any current
+head.** The first version of this file stated it as accomplished fact,
+which was wrong on two counts: PR #131's round 2 had regressed to the
+coordinator's reverted hand-written twin (DEV-803 blocker, ancestry
+proven by identical blob hash), and this file's confident chain
+diagram is one plausible reason a seat restored those files. A brief
+that reads as a description of the tree, while actually describing an
+intent, is itself a drift surface. Every link below is marked with
+whether it holds today.
 
 ## The chain, link by link, with the wall that holds each
 
@@ -29,7 +38,11 @@ review as DEV-803) — NOT the coordinator's reverted attempt below.
       │  wall: check:kernel-schemas / check:kernel-tables, regeneration
       ▼
     THE SHIPPED DOOR — KernelDoor.admit(context, candidate) over those
-      GENERATED schemas; model identities stay bigint
+      GENERATED schemas; model identities stay bigint end to end
+      │  STATUS: NOT HELD at PR #131's head as of 22:30Z — the head
+      │  re-spells the surface by hand (number, null, hand unions).
+      │  Achieved once, at that PR's commit 4a08a51, and charged for
+      │  round 3.
       │  walls: the 17-vector conformance replay points at the SHIPPING
       │  door (the reference twin removed in the same PR); a no-bypass
       │  mutant; taught refusals carry reason · law · repair ·
@@ -38,6 +51,7 @@ review as DEV-803) — NOT the coordinator's reverted attempt below.
     the hosts — cli, FabricClient (live and test construction),
       CasDaemon route through the exact same function object; KernelDoor
       is the eighteenth public namespace
+      │  STATUS: held at #131's head — this half of round 2 is earned.
       │  wall: T7 public-surface walk; KernelDoor.routes.test.ts
 
 ## The lesson this record exists to carry
@@ -59,6 +73,26 @@ revert, 324/0); PR #131 stands as the shipping chain. Two rules follow.
 2. **Never do seat-assigned work coordinator-hand while the seat is in
    flight.** If the work must move faster, reassign or take the ticket
    explicitly — never race it.
+3. **A reverted commit still teaches.** `git revert` leaves the
+   original reachable, so a bad artifact remains one `git show` away
+   and a downstream run can restore it in good faith. When reverting
+   for a LAW violation, say so on the ticket that owns the work, not
+   only in the revert message.
+4. **Write briefs in the tense they have earned.** State per link
+   whether it holds now; a target written as a description is a
+   drift surface with a friendly face.
+
+## The bug the twin actually carried
+
+DEV-803's review executed a generated candidate
+`{ _tag: "resolveDigest", target: 8n, anchor: undefined }` — the shape
+`Schema.UndefinedOr` produces for an absent anchor. The hand-written
+door tests `anchor !== null`, so `undefined !== null` refused a LAWFUL
+sentence as `anchoredResolve`. The planted corpus spells absence as
+`null`, so a full conformance replay passes while the door is wrong on
+inputs the generated schema actually produces. That is the strongest
+argument for law 1 available: the twin was not merely impure, it was
+incorrect in a way its own vectors could not see.
 
 ## The open question the review should rule on
 
