@@ -300,6 +300,29 @@ def F10HintsOfSupport [BEq (Observation Holder Value)] : Prop :=
         enabledDeclarations triggers
           { evidence := foldEvidence cmp right, cells, holes, landed, head }
 
+/-- C7, well-foundedness: under the inductive admission order — every
+    pin names an already-admitted digest, every digest admits at most
+    once — the pin relation of an admitted ledger is well-founded: the
+    action DAG is acyclic by construction. That a real digest cycle
+    would need a hash preimage stays in the trusted base. -/
+def C7PinWellFounded : Prop :=
+  forall (ledger : List ActionDeclaration), Admission ledger ->
+    WellFounded (PinsWithin ledger)
+
+/-- F3's compaction corollary: compacting a lane at or below a deployed
+    fold's anchor floor preserves that fold's resumed terminal state —
+    resuming from the fold's own anchor over the compacted remainder is
+    the uncompacted fold. `Retention.horizon` and the
+    compaction-past-horizon refusal cite this by name; the statement
+    covers the boundary inclusively, so compaction strictly below the
+    minimum anchor floor is licensed with margin. -/
+def F3CompactBelowFloor {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) (initial : State) : Prop :=
+  forall (upTo floor : Nat) (trace : List Op), upTo <= floor ->
+    foldFrom step (fold step initial (trace.take floor))
+        ((trace.drop upTo).drop (floor - upTo)) =
+      fold step initial trace
+
 end Laws
 
 end Fabric

@@ -473,6 +473,33 @@ productions are the ruled grammar; the containment overlap is consumer
 ergonomics). **Load-bearing? yes** — stability in reaches-form is the
 statement E9's trigger pump wall keys on.
 
+### T33. Embed the pin order in admission rank; state compaction boundary-inclusive
+
+Decided: C7's admission order is an inductive over newest-first ledgers
+whose `admit` step demands every pin name an already-admitted work
+digest AND the new digest be fresh — freshness is the in-model reading
+of content addressing (one value, one digest), and the real-world half
+(a digest cycle needs a hash preimage) stays in the trusted base, on
+the row. Well-foundedness is the index embedding: pins descend strictly
+in admission rank (`pin_rank_lt`), and `Subrelation.wf` over
+`InvImage` pulls `Nat`'s order back along the rank — no accessibility
+surgery. The compaction corollary is stated boundary-inclusive
+(`upTo <= floor`): resuming a fold's own anchor over the compacted
+remainder is the uncompacted fold, with `compact_preserves_anchor_state`
+carrying the half where the premise is load-bearing (past the floor
+there is no anchor left to reconstruct), and the horizon form
+quantifying every deployed anchor at or below `minimumFloor`.
+Alternatives: acyclicity via transitive-closure irreflexivity (needs
+closure machinery the corollary consumer never cites); a strict
+`upTo < floor` statement (weaker than what is true — the ruled
+"strictly below the horizon" sentence is licensed with margin by the
+inclusive form). Why: the rank embedding is the whole proof, and the
+refusal boundary cites the theorem, not the inequality's edge.
+**Load-bearing? yes** — `Retention.horizon` and the
+compaction-past-horizon refusal cite `compact_below_floor_preserves_resumption`
+by name, and E9's row cites the admission order's freshness as the
+content-addressing seam.
+
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 
 Decided: every battery typecheck — the root script's four projects and the

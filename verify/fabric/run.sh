@@ -78,7 +78,7 @@ expected_laws=(
   F1CellJoinSemilattice F12DirectoryMergeACI F12DirectoryExtensional
   F12DirectoryConvergence F12DirectoryJoinSemilattice F12ResolutionOfSupport
   F12GreatestSealWins F12ResolutionCharacterization
-  F10Stability F10HintsOfSupport
+  F10Stability F10HintsOfSupport C7PinWellFounded F3CompactBelowFloor
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
@@ -214,6 +214,11 @@ roster=(
   drop_trigger_stability_killed
   emitter_f10_growth_premise emitter_f10_no_unfire
   emitter_f10_hint_support_premise emitter_f10_hints
+  admission_rank_lt_length admitted_pins_have_admitted_works
+  pin_rank_lt c7_pin_well_founded c7_pin_irrefl
+  compact_preserves_anchor_state
+  compact_below_floor_preserves_resumption
+  minimum_floor_le compact_below_horizon_preserves_resumption
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")

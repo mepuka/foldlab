@@ -1702,4 +1702,191 @@ theorem f10_hints_of_support [BEq (Observation Holder Value)]
 
 end F10
 
+section C7
+
+/-- An admitted work digest ranks strictly inside the ledger. -/
+theorem admission_rank_lt_length {ledger : List ActionDeclaration}
+    {work : Nat}
+    (member : exists declaration,
+      declaration ∈ ledger /\ declaration.work = work) :
+    admissionRank ledger work < ledger.length := by
+  induction ledger with
+  | nil =>
+      obtain ⟨declaration, memberNil, _⟩ := member
+      simp at memberNil
+  | cons head ledger inductionHypothesis =>
+      simp only [admissionRank]
+      by_cases hit : head.work == work
+      · rw [if_pos hit]
+        simp only [List.length_cons]
+        omega
+      · rw [if_neg hit]
+        obtain ⟨declaration, memberCons, workEq⟩ := member
+        rcases List.mem_cons.mp memberCons with rfl | memberTail
+        · exact absurd (beq_iff_eq.mpr workEq) hit
+        · have := inductionHypothesis ⟨declaration, memberTail, workEq⟩
+          simp only [List.length_cons]
+          omega
+
+/-- Every pin of an admitted declaration is an admitted work digest. -/
+theorem admitted_pins_have_admitted_works
+    {ledger : List ActionDeclaration} (admission : Admission ledger)
+    {child : ActionDeclaration} (member : child ∈ ledger)
+    {pin : Nat} (pinned : pin ∈ child.pins) :
+    exists prior, prior ∈ ledger /\ prior.work = pin := by
+  induction admission with
+  | empty => simp at member
+  | admit rest declaration admission pinsAdmitted fresh inductionHypothesis =>
+      rcases List.mem_cons.mp member with rfl | memberRest
+      · obtain ⟨prior, priorMember, priorWork⟩ := pinsAdmitted pin pinned
+        exact ⟨prior, List.mem_cons_of_mem _ priorMember, priorWork⟩
+      · obtain ⟨prior, priorMember, priorWork⟩ :=
+          inductionHypothesis memberRest
+        exact ⟨prior, List.mem_cons_of_mem _ priorMember, priorWork⟩
+
+/-- Pins descend strictly in admission rank: a declaration only ever
+    pins digests admitted strictly earlier. This is the index embedding
+    that carries well-foundedness. -/
+theorem pin_rank_lt {ledger : List ActionDeclaration}
+    (admission : Admission ledger) {parent child : ActionDeclaration}
+    (pins : PinsWithin ledger parent child) :
+    admissionRank ledger parent.work < admissionRank ledger child.work := by
+  induction admission with
+  | empty =>
+      obtain ⟨childMember, _, _⟩ := pins
+      simp at childMember
+  | admit rest declaration admission pinsAdmitted fresh inductionHypothesis =>
+      obtain ⟨childMember, parentMember, pinned⟩ := pins
+      rcases List.mem_cons.mp childMember with rfl | childInRest
+      · have parentInRest : parent ∈ rest := by
+          rcases List.mem_cons.mp parentMember with rfl | parentInRest
+          · obtain ⟨prior, priorMember, priorWork⟩ :=
+              pinsAdmitted parent.work pinned
+            exact absurd priorWork (fresh prior priorMember)
+          · exact parentInRest
+        have headHit : (child.work == child.work) = true :=
+          beq_iff_eq.mpr rfl
+        have headMiss : ¬ ((child.work == parent.work) = true) := by
+          intro equal
+          exact fresh parent parentInRest (beq_iff_eq.mp equal).symm
+        simp only [admissionRank]
+        rw [if_pos headHit, if_neg headMiss]
+        exact admission_rank_lt_length ⟨parent, parentInRest, rfl⟩
+      · have parentInRest : parent ∈ rest := by
+          rcases List.mem_cons.mp parentMember with rfl | parentInRest
+          · obtain ⟨prior, priorMember, priorWork⟩ :=
+              admitted_pins_have_admitted_works admission childInRest pinned
+            exact absurd priorWork (fresh prior priorMember)
+          · exact parentInRest
+        have parentMiss : ¬ ((declaration.work == parent.work) = true) := by
+          intro equal
+          exact fresh parent parentInRest (beq_iff_eq.mp equal).symm
+        have childMiss : ¬ ((declaration.work == child.work) = true) := by
+          intro equal
+          exact fresh child childInRest (beq_iff_eq.mp equal).symm
+        simp only [admissionRank]
+        rw [if_neg parentMiss, if_neg childMiss]
+        exact inductionHypothesis ⟨childInRest, parentInRest, pinned⟩
+
+/-- C7: the pin relation of an admitted ledger is well-founded — the
+    admission-rank embedding pulls `Nat`'s order back along the pins. -/
+theorem c7_pin_well_founded : Laws.C7PinWellFounded := by
+  intro ledger admission
+  exact Subrelation.wf
+    (fun {parent child} pins => pin_rank_lt admission pins)
+    (InvImage.wf
+      (fun (declaration : ActionDeclaration) =>
+        admissionRank ledger declaration.work)
+      Nat.lt_wfRel.wf)
+
+/-- No admitted declaration pins itself: the rank embedding refutes the
+    one-step cycle directly. -/
+theorem c7_pin_irrefl {ledger : List ActionDeclaration}
+    (admission : Admission ledger) (declaration : ActionDeclaration) :
+    ¬ PinsWithin ledger declaration declaration :=
+  fun pins => absurd (pin_rank_lt admission pins) (Nat.lt_irrefl _)
+
+end C7
+
+section Compaction
+
+variable {State : Type uH} {Op : Type uV}
+
+/-- Resuming a fold's anchor from the compaction state reconstructs the
+    anchor state exactly: the compaction pair plus the retained prefix up
+    to the anchor is the anchor. This is where `upTo <= floor` is
+    load-bearing — past the floor there is no anchor left to
+    reconstruct. -/
+theorem compact_preserves_anchor_state (step : State -> Op -> State)
+    (initial : State) (upTo floor : Nat) (trace : List Op)
+    (below : upTo <= floor) :
+    foldFrom step (fold step initial (trace.take upTo))
+        ((trace.drop upTo).take (floor - upTo)) =
+      fold step initial (trace.take floor) := by
+  have splitTake : trace.take floor =
+      trace.take upTo ++ (trace.drop upTo).take (floor - upTo) := by
+    rw [← List.take_add, Nat.add_sub_cancel' below]
+  rw [splitTake]
+  exact f3_resume_exact step initial (trace.take upTo)
+    ((trace.drop upTo).take (floor - upTo))
+
+/-- F3's compaction corollary: at or below a deployed fold's anchor
+    floor, compaction preserves the fold's resumed terminal state. -/
+theorem compact_below_floor_preserves_resumption
+    (step : State -> Op -> State) (initial : State) :
+    Laws.F3CompactBelowFloor step initial := by
+  intro upTo floor trace below
+  rw [List.drop_drop, Nat.add_sub_cancel' below]
+  calc foldFrom step (fold step initial (trace.take floor))
+        (trace.drop floor)
+      = fold step initial (trace.take floor ++ trace.drop floor) :=
+        f3_resume_exact step initial (trace.take floor) (trace.drop floor)
+    _ = fold step initial trace := by rw [List.take_append_drop]
+
+/-- The horizon really is the minimum: it sits at or below every
+    deployed anchor floor. -/
+theorem minimum_floor_le {floor : Nat} {floors : List Nat} :
+    forall anchor, anchor ∈ floor :: floors ->
+      minimumFloor floor floors <= anchor := by
+  induction floors generalizing floor with
+  | nil =>
+      intro anchor member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact Nat.le_refl _
+      · simp at member
+  | cons head tail inductionHypothesis =>
+      intro anchor member
+      have unfoldMin : minimumFloor floor (head :: tail) =
+          Nat.min head (minimumFloor floor tail) := rfl
+      rcases List.mem_cons.mp member with rfl | member
+      · rw [unfoldMin]
+        exact Nat.le_trans (Nat.min_le_right _ _)
+          (inductionHypothesis anchor List.mem_cons_self)
+      · rcases List.mem_cons.mp member with rfl | member
+        · rw [unfoldMin]
+          exact Nat.min_le_left _ _
+        · rw [unfoldMin]
+          exact Nat.le_trans (Nat.min_le_right _ _)
+            (inductionHypothesis anchor
+              (List.mem_cons_of_mem _ member))
+
+/-- Compaction at or below the horizon — the minimum anchor floor across
+    every deployed fold — preserves every deployed fold's resumed
+    terminal state. `Retention.horizon` serves this bound; compaction
+    past it is refused, not warned about. -/
+theorem compact_below_horizon_preserves_resumption
+    (step : State -> Op -> State) (initial : State)
+    (upTo floor : Nat) (floors : List Nat) (trace : List Op)
+    (below : upTo <= minimumFloor floor floors) :
+    forall anchor, anchor ∈ floor :: floors ->
+      foldFrom step (fold step initial (trace.take anchor))
+          ((trace.drop upTo).drop (anchor - upTo)) =
+        fold step initial trace :=
+  fun anchor member =>
+    compact_below_floor_preserves_resumption step initial upTo anchor trace
+      (Nat.le_trans below (minimum_floor_le anchor member))
+
+end Compaction
+
+
 end Fabric

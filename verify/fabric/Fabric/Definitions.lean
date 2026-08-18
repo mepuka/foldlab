@@ -992,4 +992,49 @@ def hintStateOf (deliveries : List GroundObservation) :
 
 end Emitter
 
+/-! ## Action admission and the pin order (C7) -/
+
+/-- An action declaration: its work digest and the digests it pins.
+    Digests are modeled as identity labels; that a real digest cycle
+    would need a hash preimage is the trusted base's sentence, never
+    proved here. -/
+structure ActionDeclaration where
+  work : Nat
+  pins : List Nat
+deriving Repr, DecidableEq
+
+/-- The inductive admission order: a ledger grows one declaration at a
+    time (newest first), every pin names an already-admitted work
+    digest, and a work digest admits at most once — the in-model reading
+    of content addressing. -/
+inductive Admission : List ActionDeclaration -> Prop where
+  | empty : Admission []
+  | admit (ledger : List ActionDeclaration)
+      (declaration : ActionDeclaration) (admission : Admission ledger)
+      (pinsAdmitted : forall pin, pin ∈ declaration.pins ->
+        exists prior, prior ∈ ledger /\ prior.work = pin)
+      (fresh : forall prior, prior ∈ ledger ->
+        prior.work ≠ declaration.work) :
+      Admission (declaration :: ledger)
+
+/-- The pin relation inside a ledger: `parent` is pinned by `child`. -/
+def PinsWithin (ledger : List ActionDeclaration)
+    (parent child : ActionDeclaration) : Prop :=
+  child ∈ ledger /\ parent ∈ ledger /\ parent.work ∈ child.pins
+
+/-- The admission rank of a work digest: its distance from the oldest
+    admission. Later admissions rank strictly higher. -/
+def admissionRank : List ActionDeclaration -> Nat -> Nat
+  | [], _ => 0
+  | declaration :: ledger, work =>
+      if declaration.work == work then ledger.length
+      else admissionRank ledger work
+
+/-! ## Compaction below the anchor floor -/
+
+/-- The minimum anchor floor across a nonempty family of deployed folds:
+    the compaction horizon is derived, never chosen. -/
+def minimumFloor (floor : Nat) (floors : List Nat) : Nat :=
+  floors.foldr Nat.min floor
+
 end Fabric

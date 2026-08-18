@@ -255,6 +255,29 @@ evidence support fires one hint set (`enabledDeclarations`, monotone by
 `enabled_declarations_monotone`). That a fired hint's landed claim never
 lands twice is the register's F5 I2 — cited, never restated here.
 
+## How the action DAG stays acyclic, and where compaction may cut
+
+C7's pin order is admission itself: `Admission` grows a ledger one
+declaration at a time, every pin naming an already-admitted work digest
+and every digest admitted at most once (the in-model reading of content
+addressing — that a real digest cycle would need a hash preimage is the
+trusted base's sentence, not a theorem here). Pins therefore descend
+strictly in admission rank, and `c7_pin_well_founded` pulls `Nat`'s
+order back along that rank: the action DAG is well-founded — acyclic —
+by construction.
+
+The compaction horizon is derived, never chosen:
+`compact_below_floor_preserves_resumption` proves that compacting a lane
+at or below a deployed fold's anchor floor preserves the fold's resumed
+terminal state (resume the anchor over the compacted remainder and you
+have the uncompacted fold — an F3 instance), and
+`compact_below_horizon_preserves_resumption` quantifies it over every
+deployed anchor at or below the minimum floor. `Retention.horizon`
+serves that bound; a compaction act past it is refused, not warned
+about. The minimum anchor floor plays the role recovery systems give a
+minimum recovery position: truncation below it is safe exactly because
+every resumption is anchored above it.
+
 ## Notation
 
 - `x ∈ cell`: observation `x` is a member of the finite cell.
