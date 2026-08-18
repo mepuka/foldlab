@@ -12,6 +12,31 @@ and is imported by nothing — the blast radius is this directory plus
 one research record (`docs/research/2026-08-18-kernel-model-notes.md`,
 which argues the modeling decisions and carries the KM grill list).
 
+## Agent direction
+
+Read `../AGENTS.md` first for the model-gate laws this package works under.
+This is the model, not the runtime, and what leaves here is the language
+itself: `verify/unity` requires this package by path, its emitter writes
+`packages/plait/fixtures/kernel-conformance.ndjson` at interchange format 2,
+and from that one file the runtime generates its kernel tables, schemas, and
+program builder. (The status paragraph above predates that consumer — its
+"imported by nothing" is filed as a finding, not repaired here.)
+
+What is machine-generated inside this directory is
+`negative-controls/*.cex.txt`, each control's executed refutation, which
+`./run.sh` re-runs and diffs — a
+drifted trace is a red gate, never a stale file to update by hand.
+`projections/` is the opposite case: hand-derived sketches that generation
+still owes, so a divergence there is a defect in them, not in the model.
+
+Wall: `./run.sh`, described below — no CI workflow runs it. Downstream,
+`packages/plait/src/kernel/README.md` names the four regeneration commands and
+their byte-identity checks; never hand-edit an artifact below the corpus.
+
+One level deeper: `Kernel/Definitions.lean` for the objects,
+`Kernel/Laws.lean` for statements, `Kernel/Proofs.lean` for proofs, and
+`negative-controls/` for the executed refutations.
+
 Zero external dependencies; the toolchain and empty-manifest pins are
 gate-checked. File partition follows `verify/fabric`: objects in
 `Kernel/Definitions.lean`, law statements in `Kernel/Laws.lean`

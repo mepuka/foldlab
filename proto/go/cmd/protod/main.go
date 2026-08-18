@@ -7,6 +7,8 @@ package main
 
 import (
 	"context"
+	// encoding/json carriage: TRANSPORT/startup only — encoding the single
+	// stdout ready line. This binary decodes no request bytes.
 	"encoding/json"
 	"flag"
 	"fmt"

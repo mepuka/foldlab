@@ -178,17 +178,17 @@ const rawArg = (argument: KernelArgRef, where: string): KernelRawArg => {
   if (argument.arg === "digest") {
     const kind = KERNEL_DECL_KINDS.find((known) => known === argument.kind)
     if (kind === undefined) throw new Error(`${where}: ${argument.kind} names no kind`)
-    return { _tag: "digestRef", kind, id: Number(argument.id) }
+    return { _tag: "digestRef", kind, id: argument.id }
   }
-  if (argument.arg === "literal") return { _tag: "literal", value: Number(argument.value) }
+  if (argument.arg === "literal") return { _tag: "literal", value: argument.value }
   throw new Error(`${where}: an inside reference is not an act-level argument`)
 }
 
-const digestId = (argument: KernelArgRef | undefined, where: string): number => {
+const digestId = (argument: KernelArgRef | undefined, where: string): bigint => {
   if (argument === undefined || argument.arg !== "digest") {
     throw new Error(`${where}: the argument is not a digest reference`)
   }
-  return Number(argument.id)
+  return argument.id
 }
 
 /** A node offered to a door, or the reason it cannot be. */
@@ -269,7 +269,7 @@ export const projectNode = (
             _tag: "resolveDigest",
             kind: kind!,
             target: digestId(node.args.target, where),
-            anchor: null,
+            anchor: undefined,
           },
         }
       case "emit": {

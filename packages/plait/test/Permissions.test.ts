@@ -188,7 +188,7 @@ const expectPermissionRefusal = async (
 }
 
 beforeAll(async () => {
-  harness = await startNatsHarness({ configuration: serverConfiguration() })
+  harness = await startNatsHarness({ config: serverConfiguration() })
   const admin = await connect({
     servers: harness.url,
     user: "admin",

@@ -47,14 +47,23 @@ const tsgoCommand = (
 ): readonly [string, ...ReadonlyArray<string>] => ["bun", tsgoLauncher, ...args]
 
 // The Effect rules left the typecheck stage when tsgo replaced the patched
-// tsc, so the battery runs them as their own lane through the same CLI the
-// editor patch comes from. `--strict` turns rule warnings into a nonzero
-// exit.
+// tsc, so the battery runs them as their own lane. That lane followed the
+// TypeScript 7 cutover with it: `@effect/language-service` refuses TS 7 by
+// design (`TypeScriptFoundIsNot5Or6`) and names `@effect/tsgo` as its
+// successor, so the rules now run through the tsgo CLI — the same mechanism
+// the CI workflow moved to at b93d29a. Spawned through the package's own
+// entrypoint rather than `node_modules/.bin`, for the reason `tsgoLauncher`
+// above states: on POSIX that path is a symlink into this very file, on
+// Windows it is a generated shim with a different name.
+//
+// `--strict` is kept from the pre-cutover lane and means the same thing in
+// both CLIs — warnings exit nonzero. Without it the 15 warning-severity rules
+// print and pass, which is a coverage drop wearing a green tick.
 const effectRulesCommand = (
   project: string,
 ): readonly [string, ...ReadonlyArray<string>] => [
   "bun",
-  resolve(repo, "node_modules", "@effect", "language-service", "cli.js"),
+  resolve(repo, "node_modules", "@effect", "tsgo", "dist", "effect-tsgo.cjs"),
   "diagnostics",
   "--project",
   project,
@@ -63,8 +72,19 @@ const effectRulesCommand = (
 
 // Top-level trees the root test stage never owns. `packages/` and `proto/`
 // have stages of their own below, and `repos/` is vendored reference source no
-// gate may discover (root AGENTS.md, "Effect v4").
-const stagedElsewhere = new Set([".git", "node_modules", "packages", "proto", "repos"])
+// gate may discover (root AGENTS.md, "Effect v4"). `scratch/` joined them when
+// the Q1 eval landed: its tests import `ajv` from its own install island, so a
+// root stage that claimed them would resolve the import from a gitignored
+// `node_modules` on the authoring host and from nothing at all on a fresh
+// clone — a green row that only ever proved where it was run.
+const stagedElsewhere = new Set([
+  ".git",
+  "node_modules",
+  "packages",
+  "proto",
+  "repos",
+  "scratch",
+])
 
 /**
  * The test files the repository root itself owns, named rather than
@@ -112,6 +132,11 @@ const installTargets: ReadonlyArray<InstallTarget> = [
     directory: resolve(repo, "proto/ts"),
     lockfile: resolve(repo, "proto/ts/bun.lock"),
   },
+  {
+    label: "q1 eval dependencies",
+    directory: resolve(repo, "scratch/evals/q1-schema-confusion"),
+    lockfile: resolve(repo, "scratch/evals/q1-schema-confusion/bun.lock"),
+  },
 ]
 
 const stages: ReadonlyArray<Stage> = [
@@ -156,13 +181,51 @@ const stages: ReadonlyArray<Stage> = [
   // rules run here rather than in the root typecheck script. The lane checks
   // files only where the project's tsconfig carries the language-service
   // plugin entry; without it the CLI reports "Checked 0 files" and passes
-  // vacuously.
+  // vacuously. The tsgo CLI inherited that hazard unchanged, and it still
+  // looks for the entry spelled `@effect/language-service`: renaming the
+  // plugin to `@effect/tsgo` to match the new CLI measures "Checked 0 files
+  // out of 28" and exits 0. `proto/ts/tsconfig.json` keeps the old spelling
+  // on purpose.
   {
     label: "proto/ts — Effect rules",
     cwd: repo,
     command: effectRulesCommand("proto/ts/tsconfig.json"),
   },
   { label: "proto/ts — tests", cwd: resolve(repo, "proto/ts"), command: ["bun", "test", "."] },
+  // The Q1 eval is its own install island, like proto/ts, so its compiler and
+  // rules stages run from the repository root against its project while its
+  // tests run where its dependencies resolve. Law 9 is what puts the last two
+  // rows here: a generated artifact needs a check wired into the battery and a
+  // control proving that check can fail, or the artifacts are unwalled.
+  {
+    label: "q1 eval — typecheck",
+    cwd: repo,
+    command: tsgoCommand([
+      "-p",
+      "scratch/evals/q1-schema-confusion/tsconfig.json",
+      "--noEmit",
+    ]),
+  },
+  {
+    label: "q1 eval — Effect rules",
+    cwd: repo,
+    command: effectRulesCommand("scratch/evals/q1-schema-confusion/tsconfig.json"),
+  },
+  {
+    label: "q1 eval — tests",
+    cwd: resolve(repo, "scratch/evals/q1-schema-confusion"),
+    command: ["bun", "test", "./test"],
+  },
+  {
+    label: "q1 eval — generated artifacts",
+    cwd: resolve(repo, "scratch/evals/q1-schema-confusion"),
+    command: ["bun", "run", "check:generated"],
+  },
+  {
+    label: "q1 eval — generated-artifact control",
+    cwd: resolve(repo, "scratch/evals/q1-schema-confusion"),
+    command: ["bun", "run", "check:generated-control"],
+  },
 ]
 
 const text = (bytes: Uint8Array | undefined): string =>
@@ -384,10 +447,12 @@ const selfTestRootTestDiscovery = (): void => {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "foldlab-gates-root-tests-"))
   const resolvedTemp = resolve(tmpdir())
   try {
-    // Two plants the root stage must claim, and four it must leave to the
+    // Two plants the root stage must claim, and five it must leave to the
     // stage that owns them. A discovery that stopped walking would pass a
     // stage that runs nothing; a discovery that stopped excluding would
-    // restore the duplicate run this stage exists to remove.
+    // restore the duplicate run this stage exists to remove — or, for the
+    // scratch plant, would claim a test whose dependencies the root install
+    // does not carry.
     const planted = [
       "scripts",
       "verify/unit",
@@ -395,6 +460,7 @@ const selfTestRootTestDiscovery = (): void => {
       "proto/ts",
       "repos/effect",
       "docs/node_modules",
+      "scratch/evals/q1-schema-confusion/test",
     ] as const
     for (const directory of planted) {
       mkdirSync(resolve(temporaryRoot, directory), { recursive: true })
@@ -418,7 +484,7 @@ const selfTestRootTestDiscovery = (): void => {
       throw new Error(`root test discovery accepted an empty tree: ${refusal}`)
     }
     console.log(
-      "\nroot test discovery self-test: PASS (scripts and verify plants claimed; packages, proto, vendored, and node_modules plants left to their stages; empty tree refused)",
+      "\nroot test discovery self-test: PASS (scripts and verify plants claimed; packages, proto, vendored, node_modules, and scratch plants left to their stages; empty tree refused)",
     )
   } finally {
     if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&

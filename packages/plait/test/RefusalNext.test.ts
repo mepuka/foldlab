@@ -13,9 +13,11 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Fiber, Reducer, Schema } from "effect"
 
+import * as Address from "../src/planes/Address.js"
 import * as Algebra from "../src/truth/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
-import { canonicalBytes } from "../src/truth/Canonical.js"
+import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
+import { substrateLayer } from "../src/planes/Catalog.js"
 import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/planes/Cell.js"
 import { Digest } from "../src/truth/Digest.js"
 import { FabricClient } from "../src/carriage/FabricClient.js"
@@ -29,12 +31,14 @@ import {
   type StructuralRefusalKind as StructuralKind,
 } from "../src/truth/Refusal.js"
 import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import { publish } from "../src/planes/Resolved.js"
 import * as Session from "../src/planes/Session.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import {
   decodeEnvelope,
   encodeEnvelope,
   INLINE_BODY_MAX_BYTES,
+  MAX_PAYLOAD_BYTES,
   verifyEnvelopeDigest,
 } from "../src/kernel/Wire.js"
 import { makeAnchorStore } from "../src/internal/anchors.js"
@@ -102,11 +106,14 @@ const declareProbeFold = (handle: string) => Effect.gen(function* () {
 let harness: NatsHarness | undefined
 let registerHarness: NatsHarness | undefined
 let cellHarness: NatsHarness | undefined
+let payloadHarness: NatsHarness | undefined
 let proxy: HoldProxy | undefined
 
 afterEach(async () => {
   if (proxy !== undefined) await proxy.stop()
   proxy = undefined
+  if (payloadHarness !== undefined) await payloadHarness.stop()
+  payloadHarness = undefined
   if (cellHarness !== undefined) await cellHarness.stop()
   cellHarness = undefined
   if (registerHarness !== undefined) await registerHarness.stop()
@@ -130,6 +137,34 @@ describe("structural refusal repairs", () => {
       // value the declared schema does not admit crosses decodeRefusing.
       Effect.runPromise(Effect.flip(decodeRefusing(Digest)("not-a-digest"))),
     ])
+
+    // The addressing kinds share one in-memory catalog: every walk below reads
+    // directories this block published, so the tree and the refusals it earns
+    // are one story rather than four fixtures.
+    const addressRefusals = await Effect.runPromise(
+      Effect.gen(function* () {
+        const walked: Array<Refusal> = []
+        // invalid-petname: a relative name is refused before any store is asked.
+        walked.push(yield* Effect.flip(Address.petname("..")))
+        const tool = (yield* publish({ tool: "grep" })).digest
+        const one = (yield* publish({ model: "one" })).digest
+        const two = (yield* publish({ model: "two" })).digest
+        const folded = yield* Address.directory([
+          { name: Address.Petname.make({ text: "tool" }), digest: tool },
+          { name: Address.Petname.make({ text: "model" }), digest: one },
+          { name: Address.Petname.make({ text: "model" }), digest: two },
+        ])
+        const root = (yield* publish(folded as unknown as WireValue)).digest
+        // unbound-petname: the directory under this root binds no such name.
+        walked.push(yield* Effect.flip(Address.at(root, "absent")))
+        // ambiguous-binding: one name, two candidate digests, no arbitration.
+        walked.push(yield* Effect.flip(Address.at(root, "model")))
+        // not-a-directory: a hop landing on a value that is not one.
+        walked.push(yield* Effect.flip(Address.at(root, "tool", "deeper")))
+        return walked
+      }).pipe(Effect.provide(substrateLayer)),
+    )
+    refusals.push(...addressRefusals)
 
     const invalidLane = await Effect.runPromise(Effect.flip(Lane.declare({
       handle: "refusal-lane",
@@ -367,6 +402,26 @@ describe("structural refusal repairs", () => {
       deny_purge: true,
     }))
     refusals.push(laneShape)
+
+    // payload-substrate-shape: the same pinned binary started with a lowered
+    // `max_payload` cannot carry an emit at the inline threshold, so the emit
+    // seam refuses at acquisition. The measurement that pins the threshold
+    // against the budget is `test/MaxPayloadSemantics.test.ts`.
+    payloadHarness = await startNatsHarness({ config: "max_payload: 65536\n" })
+    const budgetProbe = await Effect.runPromise(declareProbeFold("payload-budget"))
+    const budget = await Effect.runPromise(Effect.flip(Lane.emit(
+      budgetProbe.lane,
+      { tenant: "north", delta: 1 },
+      { holder: "seat-a" },
+    ).pipe(
+      Effect.provide(Lane.Lanes.layer({ servers: payloadHarness.url })),
+      Effect.scoped,
+    )))
+    if (budget.sort !== "structural") {
+      throw new Error(`expected payload-substrate-shape structural refusal, got ${budget.kind}`)
+    }
+    expect(budget.expected).toBe(MAX_PAYLOAD_BYTES)
+    refusals.push(budget)
 
     // The remaining register kinds run against a healthy register server,
     // every trigger through the public Registers surface.

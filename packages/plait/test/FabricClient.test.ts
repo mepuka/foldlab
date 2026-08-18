@@ -27,14 +27,16 @@ describe("FabricClient", () => {
       }),
     })
 
-    const published = await Effect.runPromise(
+    const [published, admissionRoute] = await Effect.runPromise(
       Effect.gen(function* () {
         const client = yield* FabricClient
-        return yield* client.publish(subject, decoded.envelope)
+        const result = yield* client.publish(subject, decoded.envelope)
+        return [result, client.admit] as const
       }).pipe(Effect.provide(layer)),
     )
 
     expect(String(published.digest)).toBe(String(decoded.digest))
     expect(published.sequence).toBe(1)
+    expect(admissionRoute).toBe(FabricClient.admit)
   })
 })

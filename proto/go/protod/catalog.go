@@ -2,6 +2,9 @@ package protod
 
 import (
 	"context"
+	// encoding/json carriage: reading back bytes the DAEMON wrote — canonical
+	// bytes it just derived, and catalog journal payloads it appended itself.
+	// No submitter bytes are decoded here; those enter through admission.go.
 	"encoding/json"
 	"fmt"
 	"sort"

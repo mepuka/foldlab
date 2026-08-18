@@ -28,8 +28,16 @@ export interface NatsHarness {
 }
 
 export interface NatsServerOptions {
-  /** Additional server configuration, used by walls that exercise authorization. */
-  readonly configuration?: string
+  /**
+   * Server configuration lines this incarnation loads before its flags.
+   *
+   * The flags below still win — nats-server applies `-c` first and lets the
+   * command line override it — so a caller can lower a config-only setting
+   * without touching JetStream, the store, or the port. `max_payload` is exactly
+   * such a setting: it has no flag, and the payload-budget shape check needs a
+   * real server that advertises less than the pin, not a mocked INFO block.
+   */
+  readonly config?: string
 }
 
 const waitForPorts = async (directory: string): Promise<string> => {
@@ -122,14 +130,16 @@ export const startNatsServer = async (
   options: NatsServerOptions = {},
 ): Promise<NatsHarness> => {
   const directory = await mkdtemp(join(tmpdir(), "plait-nats-"))
-  const configurationPath = join(directory, "nats.conf")
-  if (options.configuration !== undefined) {
-    await writeFile(configurationPath, options.configuration, "utf8")
+  let configArguments: ReadonlyArray<string> = []
+  if (options.config !== undefined) {
+    const path = join(directory, "server.conf")
+    await writeFile(path, options.config, "utf8")
+    configArguments = ["-c", path]
   }
   const server = Bun.spawn({
     cmd: [
       prebuilt,
-      ...(options.configuration === undefined ? [] : ["-c", configurationPath]),
+      ...configArguments,
       "-js",
       "-sd",
       join(directory, "store"),
@@ -171,7 +181,9 @@ export const startNatsServer = async (
 }
 
 /** Resolves the pinned binary and starts one fresh server on it. */
-export const startNatsHarness = async (options: NatsServerOptions = {}): Promise<NatsHarness> =>
+export const startNatsHarness = async (
+  options: NatsServerOptions = {},
+): Promise<NatsHarness> =>
   startNatsServer((await buildServerBinary()).binary, options)
 
 export const waitForFile = async (path: string): Promise<void> => {

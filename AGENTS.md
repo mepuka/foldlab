@@ -5,12 +5,27 @@ Compatibility files such as `CLAUDE.md` only point here.
 
 ## The current lane
 
-One lane is active: **make the Lean ground-truth model the executable
-referee for `flb.type.v0`** — the first rung of "the Lean models power
-type generation." Ratified 2026-08-15
-([grill record](docs/design/2026-08-15-estate-focus-grill-record.md)),
-audited adversarially the same day
-([findings](docs/research/2026-08-15-model-audit-findings.md)).
+One lane is active: **the machine-generated type kernel is the core
+of the estate** (operator ruling 2026-08-18; law 1 in "Standing
+estate laws" below — read that section before writing any code). The
+kernel language lives in `verify/kernel/` (the Lean model and gate)
+and `packages/plait/src/kernel/` (the corpus and its generated
+projections, conformance-gated against the model's vectors). All
+work flows through the Multica board **project `plait`**: the
+one-type-universe epic (type unification behind the corpus), the
+plane-aligned layout (`truth/ kernel/ planes/ carriage/ surface/`),
+and the deep-Effect integration design. Progressive discovery: this
+file → the standing laws → `packages/plait/AGENTS.md` →
+`src/kernel/` — each level points one deeper.
+
+### The prior lane (standing evidence, superseded 2026-08-18)
+
+The previous active lane — **the Lean ground-truth model as
+executable referee for `flb.type.v0`** — ratified 2026-08-15
+([grill record](docs/design/2026-08-15-estate-focus-grill-record.md),
+[audit](docs/research/2026-08-15-model-audit-findings.md)) — stands
+as evidence and its gates stay green; its remaining work items are
+board-scheduled, not this file's steering.
 
 - `verify/ir/` carries it — TyX, the grammar stated once with a
   denotational semantics, eight laws machine-checked in Lean 4.33.0.
@@ -50,6 +65,40 @@ RFC 8785 Appendix B as referee) must stay green. Touch them only when
 the lane forces it, and say so when you do. The 2026-08-15 purge
 archived all off-path work at tag `archive/pre-estate-focus`
 ([manifest](docs/research/2026-08-15-estate-focus-retirement.md)).
+
+## Skills — read as documents, every harness
+
+Three estate skills carry the teaching material behind the standing
+laws. They live at `.claude/skills/<name>/SKILL.md` with references
+beside them — a path only the Claude harness auto-discovers, so every
+other seat (codex, pi, cursor, antigravity, opencode) MUST read them as
+ordinary files when the trigger below matches. Not optional: reviews
+already judge against the laws these teach, and misadherence to the API
+discipline is a high-severity finding.
+
+- `.claude/skills/architecture-to-algebra/` — mapping any system or
+  feature onto the algebra: truth plane, directory plane, fences, the
+  fold table with rungs and carriers, coalgebras. Read before designing
+  or re-deriving any service, capability, or data flow; its
+  `references/` carry the generators, the planes ladder, and worked
+  examples.
+- `.claude/skills/estate-api-development/` — the API discipline: every
+  public surface is a projection of the one algebra core, generated not
+  hand-written, judged by the one door, idiomatic Effect throughout.
+  Read before designing, building, or reviewing ANY public surface,
+  tool schema, CLI command, or wire format.
+- `.claude/skills/verified-codegen/` — generation that cannot silently
+  lie: emitters, generated types/schemas, conformance corpora,
+  canonical formats, gates. Read before building any generator,
+  checker, fixture, or cross-language projection; its `references/`
+  carry gate anatomy and canonical-form rules.
+
+Board acts have their own gate: `docs/agents/dispatch-gate.md` binds
+cutting and dispatch; `docs/agents/issue-tracker.md` is the tracker
+contract. Relocation of the skills to the cross-agent `.agents/skills/`
+convention (as the vendored `repos/effect` already does, with per-tool
+manifests) is board-tracked; until it lands, this section is the
+absorption path.
 
 ## Read first
 
@@ -231,10 +280,19 @@ Each law names its mechanical wall. A law without a wall is listed
 with its debt. Violations are findings at the named severity, never
 style notes.
 
-1. **One type universe.** Every public type derives from the KM
-   corpus (kernel/KernelCorpusSchemas + generated tables) or wears an
-   explicit sketch waiver citing its unification ticket. Wall:
-   the type-universe walk (DEV-796, inventory → enforce). Severity: blocker.
+1. **The machine-generated type kernel IS the core.** Operator
+   ruling, verbatim intent: the kernel language — machine validated
+   (Lean conformance), machine generated (the corpus and its
+   generated projections), machine centralized — is the ONLY
+   language and the unified algebraic core of the estate. Every
+   public type derives from kernel/KernelCorpusSchemas and the
+   generated tables. A hand-written definition of a corpus concept
+   (a second Digest, a private candidate shape, a twin refusal enum)
+   is a DEFECT, not a style choice; existing hand-written types are
+   staged debt wearing explicit waivers that cite their unification
+   ticket, and the truth/ primitives themselves converge under the
+   generated core. Wall: the type-universe walk (DEV-796,
+   inventory → enforce). Severity: blocker.
 2. **One door.** All judgment routes through kernel admission; a
    private validator is a second door. Wall: pending the shared
    candidate form (DEV-763/796 stage 4). Severity: blocker.
@@ -265,3 +323,16 @@ Coordinators run the standing loop at every checkpoint (delivery,
 merge, block, or 30 idle minutes): review-queue depth → merge train;
 seat saturation (floor: three active); law-vs-wall audit for any new
 surface; escalations surfaced to the operator rather than parked.
+
+9. **Corpus artifacts are never scratch.** Anything machine-generated
+   from the KM corpus — emitters, generated types/schemas/tools,
+   denotations, conformance vectors — lives in its package home with
+   full machine validation (a check:* gate wired into the battery,
+   byte-identical regeneration, an executed negative control),
+   committed generated artifacts, and documentation. scratch/ holds
+   briefs and spikes only; a spike that produces corpus artifacts
+   graduates or dies. Progressive discovery is part of "documented":
+   every level (root → package → module) carries a short agent
+   direction pointing one level deeper — what this is, how to
+   regenerate it, which wall proves it. Wall: the battery's check
+   scripts + review. Severity: blocker.

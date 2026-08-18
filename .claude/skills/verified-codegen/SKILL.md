@@ -127,6 +127,29 @@ for themselves immediately:
   run's own pass lines is a report of nothing; "a report without the
   run is a failed run."
 
+### 6b. Ship the target, not the twin — wire to wire
+
+A conformance harness needs a target before the real artifact exists, so
+a reference implementation gets written test-side. That is scaffolding
+with an expiry date: when the artifact ships, PROMOTE the reference into
+the shipping tree and re-point the harness at the shipped object — the
+vectors must gate the thing callers call, never a test-only twin beside
+it. Two failure modes bite here, and the second is subtler:
+
+- **The surviving twin.** A reference left test-side means two
+  implementations of one judgment, one checked and one shipped.
+- **The hand-written re-spelling.** Promoting the logic while
+  hand-typing its types re-creates the drift you just removed one layer
+  up: machine-VALIDATED is not machine-GENERATED. Before writing any
+  type in a generated domain, grep the generated family for it — the
+  emitter has usually already produced it.
+
+The chain reads wire to wire, each link with its own wall: model →
+emitter → corpus → generated schemas and tables → shipped
+implementation → one public seam → hosts. (Worked example, including a
+reverted twin and why:
+`scratch/dispatch/2026-08-18-wire-to-wire-door-brief.md`.)
+
 ### 7. Keep the blast radius deletable
 
 Prefer a new package/directory that *reads* existing code over edits

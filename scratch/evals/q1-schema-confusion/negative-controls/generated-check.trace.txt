@@ -1,0 +1,4 @@
+healthy control: PASS (7 artifacts)
+byte mutation:   FAIL - generated/battery.json is not byte-identical to its regeneration
+dropped file:    FAIL - generated/battery.json is missing from the working tree
+extra file:      FAIL - generated/never-generated.json is committed and no longer generated
