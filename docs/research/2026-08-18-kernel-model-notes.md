@@ -666,6 +666,40 @@ posture.
   string surface (refused — a second assembler). Reversal: doc-layer
   notation is inert; aliases are generated and retire by
   regeneration.
+- **KM-19 — the combinator discipline for new algebras (HSP).**
+  Raised in operator review: is there a general approach to
+  developing algebras from the proven theorem classes? Yes — the
+  rung ladder's classes are equational varieties, and varieties are
+  closed under homomorphic images, subalgebras, and products
+  (Birkhoff), so the lawful constructor set is: products and
+  pointwise lifting (which alone generate histograms, vector clocks,
+  and the standard sketches — HyperLogLog is pointwise max, Bloom
+  pointwise or, Count-Min pointwise plus), contribution transformers
+  (map, and filter via the fusion law — a filter is a step
+  transformer and preserves rung; predicates are declared data, and
+  filtering on absence routes to the deadline seat), subalgebras,
+  and one free object per rung (lists, multisets, finite sets — the
+  quotient chain the planes already are; F2 is the factorization
+  through its end). Two constructions deliberately leave the
+  variety and stay fenced where the estate already fences them: the
+  finishing projection (read-time only, never merged — F11's
+  quarantine) and arbitration (greatest-by-data or decide). Method:
+  classify by rights to pick the minimal rung; construct by
+  combinators; the brand transports by preservation metatheorem
+  (the join_semilattice_of_aci precedent generalized) and the
+  generated suite confirms rather than discovers; anything
+  unreachable by combinators is a new algebra and a grill item —
+  the K-1 growth discipline at algebra scale. "Merge" disambiguates
+  under this discipline into four routed operations: state join
+  (semilattice), shard merge (commutative brand), ordered-stream
+  interleaving (deterministic only by-position or under
+  commutativity — the shuffle of two sequences has no canonical
+  element), and candidate arbitration (never an algebra operation).
+  Alternatives: hand-built algebras with per-instance suites only
+  (loses inheritance and invites unlawful merges); an open
+  combinator set (loses the novelty trigger). Reversal: the
+  combinator library is catalog content; retiring it strands no
+  identity.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the
