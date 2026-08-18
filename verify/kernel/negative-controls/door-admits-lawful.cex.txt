@@ -1,0 +1,1 @@
+control=door-admits-lawful;candidate=declare-pinned-references;admitted:[0, 0, 7000051000172, 4];verdict=refuted

@@ -1,0 +1,1 @@
+control=anchored-resolve;candidate=anchor-on-identity-read;reason:anchored-resolve|law:a digest names one value forever, so no anchor can change a resolve|repair:drop the anchor; read head-relative state through a fold at an anchor;verdict=refuted

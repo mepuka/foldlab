@@ -1,0 +1,1 @@
+control=closure-off-writ-referent;candidate=referent-outside-pinned-universe;reason:off-writ-referent|law:a declaration's identifiers lie inside the universe its writ pins|repair:spawn under a writ that pins the referent, or request the referent into the pinned universe;verdict=refuted

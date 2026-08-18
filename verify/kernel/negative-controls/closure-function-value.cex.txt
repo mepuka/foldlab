@@ -1,0 +1,1 @@
+control=closure-function-value;candidate=closure-bytes-as-data;reason:closure-introspection|law:a program's identity is its declaration, never its closure bytes|repair:reference computation by digest: declare the fold and pin its digest;verdict=refuted

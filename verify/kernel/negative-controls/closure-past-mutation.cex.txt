@@ -1,0 +1,1 @@
+control=closure-past-mutation;candidate=update-in-place;reason:past-mutation|law:journals are append-only; anchored resumption survives compaction (compact_below_floor_preserves_resumption)|repair:declare a successor value pinning its predecessor; forgetting is fenced compaction above the horizon;verdict=refuted

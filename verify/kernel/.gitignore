@@ -1,0 +1,4 @@
+.lake/
+.roster.*
+.discovered.*
+.footprint.*.lean
