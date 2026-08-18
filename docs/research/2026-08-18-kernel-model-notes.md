@@ -416,6 +416,70 @@ K-series stays the design record's and is not renumbered here.
   constructor), with conformance checking structural by
   construction.
 
+## 11a. Ratification addendum — the projection rulings (2026-08-18)
+
+After the projection survey landed, the operator ruled: **go with the
+recommendations** — four adoptions, each realized in this lane the
+same day:
+
+1. **Machine-marked next moves.** The Rust diagnostic distinction is
+   adopted for taught repairs. The model now carries `Applicability`
+   (`machineApplicable` | `advisory`) and the total marking
+   `RefusalReason.applicability`, under the stated criterion: a
+   repair is machine-applicable exactly when the lawful rewrite is a
+   function of the refused candidate alone. Four qualify (anchored
+   resolve, unverified read, past mutation, last-writer-wins);
+   twelve are advisory. Wiring the marking into the wire `Refusal`
+   value is the runtime projection's step, deliberately not taken in
+   the model's `Refusal` structure to keep committed control traces
+   byte-stable.
+2. **The prose projection.** Adopted. Reference sketch at
+   `verify/kernel/projections/prose.md` — the eight sentences in
+   speech-act form, the closure as silences, refusals-teach. The
+   ratified assembly path (F7 over the cataloged language
+   declaration) is owed; the sketch is what assembly must reproduce.
+3. **JSON Schema at the wire.** Adopted, with the survey leans
+   applied: eight flat tools, no oneOf anywhere, compound
+   self-descriptive field names (`schema_digest`-convention — a field
+   is named for the value it carries), digests as prefixed
+   pattern-constrained strings, integers in the I-JSON safe range
+   (floats have no spelling), trigger productions flattened to an
+   enum plus per-production slots. Reference sketch at
+   `verify/kernel/projections/tools.schema.json`, refusal result
+   shape included with the applicability marking. The Q1 field-name
+   eval remains worth running; the convention is adopted as the
+   working spelling it would confirm or amend.
+4. **The TypeScript projection.** Adopted with the operator's four
+   requirements: complete, simple, fully self-contained, 100%
+   fidelity, language examples showable in plain TypeScript.
+   Reference sketch at `verify/kernel/projections/kernel.ts`: zero
+   imports, every closed inventory mirrored at full cardinality
+   (8 generators, 12 kinds, 5 productions, 5 stages, 16 refusal rows
+   with law/repair/applicability), branded digests with
+   literal-carrying inference, dependent ties (token-at-register,
+   anchor-at-reduction-and-partition) enforced at constructors with
+   `NoInfer`, and the four must-not-compile controls carried natively
+   as `@ts-expect-error` lines — the file type-checks only if they
+   fail to. Verified under the pinned tsgo with tsc as referee, both
+   green. The unlawful candidate spellings are deliberately
+   unprojected: an SDK that cannot spell the crime is the dual
+   construction's point.
+
+- **KM-13 — the projection wall.** The three projection files are
+  hand-derived from the model, which is exactly the drift class the
+  estate refuses everywhere else; they are labeled as the reference
+  sketches generation owes. The obligation: a projections emitter in
+  the model package (the fabric emitter precedent) whose output is
+  byte-compared against committed projections in the gate — at
+  minimum, inventory-cardinality and wire-name checks tying
+  `kernel.ts`, `tools.schema.json`, and `prose.md` to the Lean
+  inventories. Until that wall exists, the gate does not see the
+  projections, and a model change can silently strand them.
+  Recommended: build the emitter with the language-declaration slice
+  (K-5), where the grammar becomes data anyway. Alternative: gate-side
+  grep counts now (cheap, shallow — catches cardinality drift, not
+  wording). Reversal: none needed — the wall is additive.
+
 ## 12. Sources
 
 Estate records, read in place this session:

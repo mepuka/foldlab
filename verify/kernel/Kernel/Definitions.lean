@@ -505,6 +505,49 @@ def taught : RefusalReason -> Refusal
         law := "only closed programs execute; a hole is a declared parameter, not a wildcard"
         repair := "fill every declared hole; disjoint fills commute, so fill order is free" }
 
+/-- How a taught repair may be applied. A repair is machine-applicable
+    exactly when the lawful rewrite is a function of the refused
+    candidate alone — an agent may apply it mechanically, with no new
+    information; it is advisory when the repair needs something the
+    candidate does not carry (a token to hold, a value to declare, an
+    authority to request). The Rust diagnostic discipline, adopted by
+    the operator's ruling. -/
+inductive Applicability where
+  | machineApplicable
+  | advisory
+deriving Repr, DecidableEq
+
+/-- The applicability marking of each reason's taught repair. Four
+    repairs are functions of the refused candidate alone: drop the
+    anchor (anchored resolve), resolve instead of trusting bytes
+    (unverified read), rewrite the in-place update as a successor
+    declaration pinning its predecessor (past mutation), and drop the
+    unlawful strategy so the declared algebra governs (last-writer-
+    wins). Every other repair needs information the candidate does
+    not carry, so it is advisory. -/
+def RefusalReason.applicability : RefusalReason -> Applicability
+  | .anchoredResolve => .machineApplicable
+  | .unverifiedRead => .machineApplicable
+  | .pastMutation => .machineApplicable
+  | .lastWriterWins => .machineApplicable
+  | .clockRead => .advisory
+  | .absenceTrigger => .advisory
+  | .unfencedDecide => .advisory
+  | .crossSortIdentifier => .advisory
+  | .mintedIdentifier => .advisory
+  | .ambientQueryInput => .advisory
+  | .forwardReference => .advisory
+  | .secretCarrier => .advisory
+  | .absenceClaim => .advisory
+  | .offWritReferent => .advisory
+  | .closureIntrospection => .advisory
+  | .unfilledHole => .advisory
+
+/-- The wire spelling of an applicability marking. -/
+def Applicability.wire : Applicability -> String
+  | .machineApplicable => "machine-applicable"
+  | .advisory => "advisory"
+
 /-! ## The door -/
 
 /-- The admission context: the already-admitted catalog and the
