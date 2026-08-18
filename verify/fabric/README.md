@@ -231,7 +231,12 @@ schedule; the order-free meaning law is `f12_greatest_seal_wins` under
 the premise, and `f12_resolution_of_support` carries schedule
 independence. Observing a stale-token rebind is inert
 (`stale_token_rebind_inert`); why a stale token can never land in the
-register in the first place is F5's, cited above.
+register in the first place is F5's, cited above. One bound rides every
+resolution theorem: the model resolves a snapshot pair — a directory
+state and an observed seal history — and says nothing about how a
+runtime obtains a coherent snapshot of the two planes; that atomicity
+is the consuming slice's harness question, not covered by these
+theorems.
 
 ## How a trigger stays fired
 

@@ -235,8 +235,11 @@ def F12ResolutionOfSupport {Petname : Type uH} {Digest : Type uV}
 
 /-- F12, arbitration half: with any seal observed, resolution is the
     binding sealed at the greatest token — a member of the observed seal
-    support that every observed token bounds. The holder appears nowhere:
-    the token decides, never the who. -/
+    support that every observed token bounds, and under the well-fenced
+    premise THE member: any observed seal at the top token is that seal.
+    The uniqueness clause is exactly what the premise buys — without it,
+    two seals at one token leave "the greatest" undetermined. The holder
+    appears nowhere: the token decides, never the who. -/
 def F12GreatestSealWins {Petname : Type uH} {Digest : Type uV}
     {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
     [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
@@ -246,6 +249,8 @@ def F12GreatestSealWins {Petname : Type uH} {Digest : Type uV}
     SealsWellFenced seals -> seals ≠ [] ->
       exists top, top ∈ seals /\
         (forall observed, observed ∈ seals -> observed.token <= top.token) /\
+        (forall observed, observed ∈ seals ->
+          observed.token = top.token -> observed = top) /\
         resolve identity dir name seals = .sealedAt top.token top.digest
 
 /-- F12, verdict characterization: the four resolution rows are exhaustive

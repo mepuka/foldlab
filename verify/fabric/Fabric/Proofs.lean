@@ -1505,15 +1505,19 @@ theorem f12_resolution_of_support [BEq (Seal Digest)] [LawfulBEq (Seal Digest)]
 
 omit [Std.LawfulEqCmp cmp] [LawfulBEq Petname] [LawfulBEq Digest] in
 /-- F12, arbitration half: with seals observed, the greatest observed
-    token decides. -/
+    token decides, and the well-fenced premise makes the deciding seal
+    unique — the uniqueness conjunct is the premise's work, false at any
+    two-seals-one-token support. -/
 theorem f12_greatest_seal_wins (identity : Digest -> Nat) :
     Laws.F12GreatestSealWins (cmp := cmp) identity := by
-  intro dir name seals _wf nonempty
+  intro dir name seals wf nonempty
   cases h : greatestSeal seals with
   | none => exact absurd (greatest_seal_none_iff.mp h) nonempty
   | some top =>
-      refine ⟨top, greatest_seal_mem h, greatest_seal_is_ub h, ?_⟩
-      simp only [resolve, h]
+      refine ⟨top, greatest_seal_mem h, greatest_seal_is_ub h, ?_, ?_⟩
+      · intro observed member tokenEq
+        exact wf observed member top (greatest_seal_mem h) tokenEq
+      · simp only [resolve, h]
 
 omit [Std.LawfulEqCmp cmp] [LawfulBEq Petname] [LawfulBEq Digest] in
 /-- F12, verdict characterization: each of the four resolution rows holds
