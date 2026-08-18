@@ -1,5 +1,7 @@
-import { Effect, Stream } from "effect"
+import { Effect, Layer, Stream } from "effect"
 
+import { Admission } from "../../src/kernel/Admission.js"
+import { admissionContextOver } from "../../src/kernel/Candidates.js"
 import { FabricClient } from "../../src/carriage/FabricClient.js"
 import { factSubject } from "../../src/kernel/Subjects.js"
 
@@ -22,7 +24,10 @@ const program = Effect.gen(function* () {
     digests: Array.from(received, (message) => message.digest),
   })))
 }).pipe(
-  Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),
+  Effect.provide(Layer.provide(
+    FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" }),
+    Admission.layer(admissionContextOver([])),
+  )),
   Effect.scoped,
 )
 

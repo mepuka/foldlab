@@ -16,8 +16,19 @@ model-emitted reason. Candidate, sentence, and context are the types derived
 from `KernelSchemas.generated.ts`, including their bigint identities; there is
 no parallel runtime spelling or numeric conversion. `Admission` is the one Effect service that translates
 that verdict into the runtime `Refusal` family; `Admission.admit` is the exact
-accessor every host carries. Hosts supply the service, never assemble its
-context or derive a model identity from a runtime digest.
+accessor every host carries, and every host operation with an outside — a
+publication, a store write, a span read — is judged through it before the
+transport is reached.
+
+**Candidate mapping**:
+`Candidates.ts` states, once and in the kernel plane, what each host operation
+says in the generated candidate language, and holds the single map from a
+runtime content address to a model identity label (`kernelIdentity`). The map
+is the trusted base's, not a theorem: base-16 is a reading of the same bytes.
+Hosts hand their input to a constructor there and never spell a candidate or
+perform the conversion themselves. An admission context is data a host
+supplies from what it already holds admitted; the verdict over it stays the
+door's.
 
 **Planes**:
 The state carriers, one seam per plane.

@@ -14,7 +14,18 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Predicate } from "effect"
 
-import { admit as admissionAdmit } from "../kernel/Admission.js"
+import {
+  Admission,
+  admit as admissionAdmit,
+  type KernelSentence,
+} from "../kernel/Admission.js"
+import {
+  admissionContextOver,
+  anchoredRead,
+  kernelIdentity,
+  latestRead,
+} from "../kernel/Candidates.js"
+import type { KernelDoorContext } from "../kernel/KernelDoor.js"
 import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
@@ -44,7 +55,8 @@ type Axis = "kill" | "duplicate" | "reorder"
 /** The one candidate-judgment route; the CLI defines no side door. */
 export const admit = admissionAdmit
 
-interface CliOptions {
+/** The parsed `plait chaos` request. */
+export interface CliOptions {
   readonly modulePath?: string
   readonly foldDigest?: string
   readonly lane?: string
@@ -69,6 +81,16 @@ interface KillMeasurement {
   readonly equal: boolean
 }
 
+/**
+ * The CLI's own refusals, which are not judgments of meaning.
+ *
+ * Two things and no third are refused here: a request this command's grammar
+ * cannot parse, and a module export whose re-derived identity disagrees with
+ * the identity it carries. Whether the requested act is lawful — whether a
+ * span may be read unpinned, whether a fold or a lane is one the catalog
+ * admitted — is the kernel door's answer, reached through {@link admitChaosRun}
+ * and never restated in this file.
+ */
 const cliRefusal = (
   path: ReadonlyArray<string>,
   got: WireValue,
@@ -76,7 +98,7 @@ const cliRefusal = (
   note: string,
 ): StructuralRefusal => structuralRefusal({
   kind: "invalid-chaos-request",
-  law: "plait chaos runs one pinned span of one admitted declared fold; no ambient head or arbitrary program is accepted.",
+  law: "plait chaos parses one declared request and re-derives the identity of the fold module it is handed; admission of the act itself is the kernel door's.",
   path,
   got,
   expected,
@@ -162,9 +184,9 @@ const parse = (args: ReadonlyArray<string>): CliOptions => {
   if (modulePath !== undefined && foldDigest !== undefined) {
     throw cliRefusal(["fold"], "module path and digest", "exactly one fold selector", usage)
   }
-  if (head === undefined && !pinHead) {
-    throw cliRefusal(["head"], "unpinned", "--head <position> or --pin-head", "Pin the span before running either arm.")
-  }
+  // An unpinned span parses. Whether it may be READ is the door's answer, and
+  // the door teaches the anchor as the repair; a second copy of that law here
+  // is the private door Law 2 refuses.
   if (head !== undefined && pinHead) {
     throw cliRefusal(["head"], "two head selectors", "exactly one head selector", usage)
   }
@@ -191,10 +213,91 @@ const parse = (args: ReadonlyArray<string>): CliOptions => {
   }
 }
 
+/** The three declarations a loaded chaos module asserts already exist. */
+export interface ChaosFoldRefs {
+  readonly fold: string
+  readonly lane: string
+  readonly algebra: string
+}
+
 /**
- * Guards the legacy chaos harness's untyped JavaScript module boundary. This
- * is not candidate judgment: it accepts no `KernelCandidateAct`, constructs no
- * `KernelAct`, and teaches no kernel refusal. That route is {@link admit}.
+ * What the operator's module says the catalog holds.
+ *
+ * The catalog is derived from the module — the declarations it carries are the
+ * ones already admitted — and the candidate is derived from argv. The two
+ * sources are different, which is what makes the judgment below non-vacuous: a
+ * selector the operator typed is judged against a catalog they did not.
+ */
+export const chaosContext = (refs: ChaosFoldRefs | undefined): KernelDoorContext =>
+  admissionContextOver(refs === undefined ? [] : [
+    { kind: "lane", digest: refs.lane },
+    { kind: "algebra", digest: refs.algebra },
+    { kind: "index", digest: refs.fold },
+  ])
+
+/**
+ * The one judgment `plait chaos` makes, and it makes it through the door.
+ *
+ * An unpinned run is a `readLatest`: there is no lawful spelling of "whatever
+ * is current", so the door refuses it `ambient-query-input` and teaches the
+ * anchor. A pinned run is a `fold` at that anchor, with the lane riding the
+ * query as a digest reference — so a `--fold` digest the module did not
+ * declare and a `--lane` the fold did not commit are both refused
+ * `forward-reference`, by the kernel's law and in the kernel's words.
+ *
+ * `execute` calls exactly this function; there is no second path.
+ *
+ * Two bounds, stated rather than left to be read out of the code. The anchor's
+ * floor, state, and head carry the requested position, which for `--pin-head`
+ * is not known until the substrate is read — what the door judges is that the
+ * read IS anchored and which fold and lane it names, not where the head
+ * eventually lands. And when nothing names a fold at all, the subject is zero;
+ * `parse` requires one of the two selectors, so the only shape that reaches
+ * that fallback is an unpinned run, which the door refuses on its tag alone.
+ */
+export const admitChaosRun = (
+  options: CliOptions,
+  refs: ChaosFoldRefs | undefined,
+): Effect.Effect<KernelSentence, Refusal, Admission> => {
+  const candidate = ((): Parameters<typeof admissionAdmit>[0] => {
+    if (options.head === undefined && !options.pinHead) {
+      return latestRead(
+        kernelIdentity(refs?.fold ?? options.foldDigest ?? "0".repeat(64)),
+      )
+    }
+    const declared = kernelIdentity(refs?.fold ?? options.foldDigest ?? "0".repeat(64))
+    const position = BigInt(options.head ?? 0)
+    return anchoredRead(
+      declared,
+      {
+        foldId: declared,
+        lane: kernelIdentity(refs?.lane ?? "0".repeat(64)),
+        shard: 0n,
+        floor: position,
+        state: position,
+        head: position,
+      },
+      refs === undefined
+        ? []
+        : [{
+          _tag: "digestRef",
+          kind: "lane",
+          id: kernelIdentity(options.lane ?? refs.lane),
+        }],
+    )
+  })()
+  return admissionAdmit(candidate)
+}
+
+/**
+ * Decodes the legacy chaos harness's untyped JavaScript module boundary.
+ *
+ * This is a decode of an `any`-typed module namespace into the shape this
+ * command can call, and it is the whole of what remains here. It reaches no
+ * law: the questions that used to be answered beside it — may this span be
+ * read, is this fold cataloged, is this lane the fold's — moved to
+ * {@link admitChaosRun}, and the door answers them in the kernel's own reason,
+ * law, and repair.
  */
 const isChaosFoldExport = (exported: unknown): exported is ChaosFold =>
   Predicate.isObject(exported) &&
@@ -215,6 +318,15 @@ const isChaosFoldExport = (exported: unknown): exported is ChaosFold =>
 
 const absoluteModulePath = (path: string): string => isAbsolute(path) ? path : resolve(process.cwd(), path)
 
+/**
+ * Re-derives the exported fold's identity from its own declarations.
+ *
+ * Identity re-derivation, not admission: the package's trusted base is that a
+ * value's address is SHA-256 over its canonical bytes, and this checks that
+ * the module's three carried addresses are the ones its declarations actually
+ * produce. A module that lies about its own identity would otherwise seed the
+ * admission catalog with a name nothing owns.
+ */
 const rebuildChaosFoldExport = async (exported: ChaosFold): Promise<ChaosFold> => {
   const lane = await Effect.runPromise(Lane.declare({
     handle: exported.lane.handle,
@@ -456,27 +568,37 @@ const axisRecord = (
 })
 
 const execute = async (options: CliOptions): Promise<{ readonly scoreboard: WireValue; readonly exit: number }> => {
-  if (options.foldDigest !== undefined) {
-    throw cliRefusal(
-      ["fold"],
-      options.foldDigest,
-      "a cataloged fold available through the future catalog slice",
-      "v0 can load a declared fold module; digest lookup is refused until the catalog exists.",
-    )
+  // A module is loaded only when the request could name one. An unpinned run
+  // and a bare `--fold` digest both reach the door with the catalog they
+  // actually have, which is how the door gets to refuse them instead of the
+  // CLI pre-empting the verdict.
+  const anchored = options.head !== undefined || options.pinHead
+  const fold = anchored && options.modulePath !== undefined
+    ? await loadFold(options.modulePath)
+    : undefined
+  const refs = fold === undefined ? undefined : {
+    fold: fold.digest,
+    lane: fold.lane.digest,
+    algebra: fold.algebra.digest,
   }
+  await Effect.runPromise(
+    admitChaosRun(options, refs).pipe(
+      Effect.provide(Admission.layer(chaosContext(refs))),
+    ),
+  )
+
+  // Reachable only through an admitted `fold` sentence, and that sentence is
+  // judged against a catalog only a loaded module can supply.
+  const loaded = fold!
   const modulePath = options.modulePath!
-  const fold = await loadFold(modulePath)
-  if (options.lane !== undefined && options.lane !== fold.lane.digest) {
-    throw cliRefusal(["lane"], options.lane, fold.lane.digest, "Use the lane committed by the fold declaration.")
-  }
   const servers = process.env.PLAIT_NATS_URL ?? "nats://127.0.0.1:4222"
-  const heads = await readHeads(servers, fold, options.head)
+  const heads = await readHeads(servers, loaded, options.head)
   const started = performance.now()
   const runs: Array<RedeliveryChaosResult> = []
   for (let repeat = 0; repeat < options.repeat; repeat++) {
     runs.push(await Effect.runPromise(runRedeliveryChaos({
       servers,
-      fold,
+      fold: loaded,
       heads,
       seed: options.seed + repeat,
     }).pipe(Effect.scoped)))
@@ -525,8 +647,8 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
     v: 0,
     kind: "plait-chaos-scoreboard",
     run: {
-      fold: fold.digest,
-      lane: fold.lane.digest,
+      fold: loaded.digest,
+      lane: loaded.lane.digest,
       heads: [...heads],
       seed: options.seed,
       repeat: options.repeat,

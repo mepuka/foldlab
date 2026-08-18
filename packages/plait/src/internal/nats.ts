@@ -21,11 +21,11 @@ import { Effect, Result, Schema, Scope, Stream } from "effect"
 
 import type {
   FabricClientOptions,
-  FabricClientService,
+  FabricTransport,
   ReceivedEnvelope,
 } from "../carriage/FabricClient.js"
 import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
-import { encodeEnvelope, verifyEnvelopeDigest } from "../kernel/Wire.js"
+import { verifyEnvelopeDigest } from "../kernel/Wire.js"
 import {
   acquireConnection,
   teachRetryOperation,
@@ -229,7 +229,7 @@ export const commonsPump = (
 
 export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   options: FabricClientOptions,
-): Effect.fn.Return<Omit<FabricClientService, "admit">, Refusal, Scope.Scope> {
+): Effect.fn.Return<FabricTransport, Refusal, Scope.Scope> {
   const connection = yield* acquireConnection(
     options,
     "foldlab-plait",
@@ -239,9 +239,8 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   yield* ensureStream(connection, options.stream)
   const js = jetstream(connection)
 
-  const publish: FabricClientService["publish"] = Effect.fn("FabricClient.publish")(
-    function* (subject, envelope) {
-      const encoded = yield* encodeEnvelope(envelope)
+  const publish: FabricTransport["publish"] = Effect.fn("FabricTransport.publish")(
+    function* (subject, encoded) {
       const acknowledgement = yield* Effect.tryPromise({
         try: () => js.publish(subject, encoded.bytes, { msgID: encoded.digest }),
         catch: (cause) => transportRefusal("publish", cause),
@@ -254,7 +253,7 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
     },
   )
 
-  const subscribe: FabricClientService["subscribe"] = Effect.fn("FabricClient.subscribe")(
+  const subscribe: FabricTransport["subscribe"] = Effect.fn("FabricTransport.subscribe")(
     function* (subject) {
       const subscribedStream = yield* Effect.tryPromise({
         try: async () => {

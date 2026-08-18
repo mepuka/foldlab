@@ -97,13 +97,25 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   replays the model-emitted verdicts against that shipping implementation;
   its candidate, intrinsic-act, and context types are derived directly from
   `KernelSchemas.generated.ts` and retain the model's bigint carrier. Never
-  restate that algebra in a host-facing `number` type or add a digest bridge.
+  restate that algebra in a host-facing `number` type, and never spell a
+  candidate shape by hand — grep the generated family first.
   `Admission.admit` is the single service accessor CLI, `FabricClient`, and
-  `CasDaemon` re-export by identity. Carriage and surface never import
-  `Door.ts`, build a context, translate a runtime digest into a model identity,
-  or accept a fixture-owned judgment function. A harness may replace the door
-  only at `Admission.fromDoor`; the refuse-everything control proves every host
-  reaches that boundary. Conformance is agreement with the model's verdicts,
-  never a runtime guarantee promoted out of a model theorem.
+  `CasDaemon` re-export by identity, and route identity is necessary, never
+  sufficient: every host operation with an outside is judged through it before
+  the transport, store, or harness is reached, and a route with no operation
+  behind it is a doorless host wearing a green control.
+- `src/kernel/Candidates.ts` states what a host operation says in the generated
+  language, and `kernelIdentity` there is the ONE place a runtime digest
+  becomes a model identity label. Carriage and surface never import `Door.ts`,
+  spell a candidate, perform that conversion, or accept a fixture-owned
+  judgment function; they hand their input to a constructor in that module and
+  supply an admission context built from what they already hold admitted. A
+  fixture supplies a transport or a store, never a service: `FabricClient` and
+  `casDaemonOver` install the door above whatever byte-mover they are handed.
+  A harness may replace the door only at `Admission.fromDoor`; the
+  refuse-everything control drives each real operation and requires the
+  byte-moving half to have been called zero times. Conformance is agreement
+  with the model's verdicts, never a runtime guarantee promoted out of a model
+  theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.

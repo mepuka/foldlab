@@ -1917,30 +1917,39 @@ prevents this ticket from deciding the catalog's durable context assembly.
 
 ### T2. Fixture transport cannot replace judgment
 
-Decided: `FabricClient.testLayer` accepts `Omit<FabricClientService, "admit">`
-and writes `Admission.admit` after spreading the fixture. The control passes a
-structurally compatible object carrying a poisoned extra `admit`; the service
-still returns the production accessor. The only sanctioned replacement is
-`Admission.fromDoor`, where every host sees the same door. Alternatives: accept
-a complete `FabricClientService` fixture (lets a transport test become a second
-door); rely on excess-property checking (variables and JavaScript callers can
-carry extras). Why: a no-bypass claim must survive the fixture surface, not only
-the live layer. **Load-bearing? yes** — the poison is the executable control for
-the common bypass path.
+Decided (strengthened in round 3, see T7): `FabricClient.testLayer` accepts a
+`FabricTransport` — bytes, not a service — and the client builds the judged
+`publish` above it. A poisoned extra `admit` on a fixture reaches nothing
+because the fixture never supplies the service at all. The only sanctioned
+replacement is `Admission.fromDoor`, where every host sees the same door.
+Alternatives: accept a complete `FabricClientService` fixture (lets a transport
+test become a second door — this was the round-2 shape, and spreading
+`Admission.admit` over it only fixed the accessor, not the operation); rely on
+excess-property checking (variables and JavaScript callers can carry extras).
+Why: a no-bypass claim must survive the fixture surface, not only the live
+layer, and the surface a fixture owns should not be able to spell judgment in
+the first place. **Load-bearing? yes** — it is the executable control for the
+common bypass path.
 
 ### T3. The host wall proves both routing and refusal parity
 
-Decided: `KernelDoor.routes.test.ts` carries three independent observations:
-every exposed route is reference-identical to `Admission.admit`; a lawful
-candidate passed under the test-side refuse-everything door is refused through
-every host (so a private shipping-door call would be caught); and a real
-`clock-read` refusal has byte-for-value-identical reason, law, repair, and
-applicability at every route. Alternatives: identity alone (cannot prove the
-Effect environment is consulted); one real refusal alone (a private copy of the
-shipping door could agree); snapshot only the reason (drops the taught repair
-contract). Why: the identity, planted divergence, and parity assertions cover
-different failure modes and none substitutes for another. **Load-bearing? yes**
-— this is the ticket's acceptance wall.
+Decided: `KernelDoor.routes.test.ts` carries five independent observations.
+Three are about the exposed routes: every one is reference-identical to
+`Admission.admit`; a lawful candidate passed under the refuse-everything door
+is refused through every host; and a real `clock-read` refusal has
+value-identical reason, law, repair, and applicability at every route. Two more
+were added in round 3, because the first three are all satisfiable by a host
+that never calls the route it exports: each real operation is driven behind a
+spy that counts calls into the transport or store, and the refuse-everything
+door is substituted under those same operations and required to leave the count
+at zero. The publish arm additionally compares its refusal, field for field,
+against what the seam returns for the identical candidate. Alternatives:
+identity alone (cannot prove the Effect environment is consulted); planted
+divergence over the exported accessor alone (green while `publish` completed —
+the DEV-803 finding); snapshot only the reason (drops the taught repair
+contract). Why: the failure the review found was not disagreement between door
+and host, it was a host that never asked. Only a counted operation catches
+that. **Load-bearing? yes** — this is the ticket's acceptance wall.
 
 ### T4. Expose the seam and its candidate contract, not the door implementation
 
@@ -1955,20 +1964,25 @@ is one service accessor, while the type contract is nameable and the shipping
 implementation remains behind it. **Load-bearing? yes** — the exports map is
 part of the no-bypass boundary.
 
-### T5. The legacy chaos-module guard is not kernel candidate judgment
+### T5. The chaos CLI's meaning judgments move to the door; its decode stays
 
-Decided: the CLI retains its structural guard and rebuild of an untyped
-JavaScript fold export, renamed `isChaosFoldExport` and
-`rebuildChaosFoldExport` and documented at the boundary. They accept no
-`KernelCandidateAct`, construct no intrinsic sentence, and teach no kernel
-refusal; the actual candidate route is the exported `Admission.admit` alias.
-Alternatives: delete the guard (lets arbitrary imports reach the chaos harness);
-pretend a fold export can be converted into a kernel candidate (the missing
-type-universe projection by another name). Why: "one candidate door" does not
-mean an executable stops parsing flags or guarding JavaScript module shape; it
-means those checks cannot mint kernel meaning. **Load-bearing? yes** — it states
-the boundary that keeps the acceptance claim honest rather than absolute over
-unrelated input validation.
+Decided (revised in round 3; the earlier form of this entry claimed the rename
+was sufficient, and the DEV-803 review was right that it was not): every
+question `plait chaos` used to answer about MEANING is now a kernel candidate
+judged through `Admission`. An unpinned span is a `readLatest` and is refused
+`ambient-query-input`; a `--fold` digest with no module behind it and a
+`--lane` the fold never committed are refused `forward-reference`. The CLI
+keeps exactly two refusals of its own, and both are stated in `cliRefusal`'s
+docstring: a request its grammar cannot parse, and a module export it cannot
+decode or whose carried identity disagrees with the identity its own
+declarations re-derive. Alternatives: delete the module decode as well (an
+untyped `import()` has to be read into some shape before anything can be said
+about it, and deleting the re-derivation would let a module seed the catalog
+with a name nothing owns); leave the meaning judgments and re-document them
+(what round 2 did — a private door with a comment). Why: Law 2 asks where
+judgment happens, not what it is called. The split that survives review is
+decode-and-re-derive on this side, admit on the door's. **Load-bearing? yes** —
+it is the half of the one-door control that a rename cannot fake.
 
 ### T6. The generated kernel algebra is the door's only language
 
@@ -1987,6 +2001,57 @@ schemas already carrying the algebra). Why: the generated model language is
 the estate's unified algebraic core, and the door must consume it rather than
 restate it. **Load-bearing? yes** — this is the no-twin half of the one-door
 control.
+
+### T7. Hosts route real operations, and a fixture supplies bytes, never verdicts
+
+Decided: `FabricClient` splits into a `FabricTransport` (subject plus an
+already-canonical envelope, in, acknowledgement out) and the client service
+that installs the door above it. `publish` canonicalizes, judges the emission
+the envelope names, and only then calls the transport. `CasDaemon` gains
+`casDaemonOver(store)`, which does the same for its four operations over a
+`CasStore` that still has no implementation. Both layers therefore require
+`Admission`, and `testLayer` takes a transport rather than a service.
+Alternatives: keep the `admit` re-export beside untouched operations (what
+round 2 shipped — route identity with nothing behind it, and a no-bypass
+control that stayed green while `publish` completed); put the gate inside
+`internal/nats.ts` (a fixture transport would then skip it, which is the same
+hole one layer down). Why: a control that cannot fail proves nothing, and the
+only way to make the no-bypass arm falsifiable was to give it an operation to
+stop. The arms now count calls into the byte-moving half and require zero.
+**Load-bearing? yes** — it is what makes "one door" a property of the running
+system rather than of an exported symbol.
+
+### T8. One digest-to-identity map, in the kernel plane, named as trusted base
+
+Decided: `kernel/Candidates.ts` holds `kernelIdentity` — `BigInt("0x" + hex)` —
+and every host-operation-to-candidate constructor. Carriage and surface call
+those constructors and never perform the conversion. The map is documented as
+the trusted base's, injective on lowercase 64-hex digests because base-16 is a
+reading of the same bytes, and claiming nothing about hashes. Alternatives:
+forbid the conversion outright (round 2's rule, which is why every host was
+doorless — a runtime whose identities are digests cannot judge anything about
+them without a map, so the rule forbade the feature rather than the defect);
+let each host map its own (two hosts, two vocabularies, and the second door
+arrives as a translation layer). Why: the conversion is unavoidable and small;
+what matters is that it is stated once, bounded in prose, and reviewable by
+reading one function. **Load-bearing? yes** — it is the seam the earlier rule
+was protecting, relocated instead of denied.
+
+### T9. `KernelProgram`'s declare candidate becomes the generated candidate
+
+Decided: `KernelDeclareCandidate` — a hand-spelled `{_tag, kind, declaration,
+bytes, digestHex, writ}` — is deleted. `toDeclareCandidate(writ)` returns a
+`KernelCandidateAct`, with the declaration's lineage as `digestRef` atoms and
+its address as a `literal`; the canonical bytes and address are still available
+from the program value and from the new exported `declarationIdentity`. The
+stub's error channel becomes the runtime `Refusal` family, matching the
+package's own rule that a public operation carries only `Refusal`.
+Alternatives: leave it (Law 1 names "a private candidate shape" as a defect by
+example, and the twin rule says to grep the generated family before writing a
+type — this one predates both and was not caught by the round-2 review either).
+Why: `CasDaemon.publish` needed a candidate, and there was already one in the
+generated family. **Load-bearing? yes** — it removes the last hand-written
+candidate spelling in the package.
 
 ## Task DEV-797 — the negative trace's diagnostic class
 

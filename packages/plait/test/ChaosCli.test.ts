@@ -4,6 +4,10 @@ import { join, resolve } from "node:path"
 import { Effect } from "effect"
 
 import { canonicalBytes } from "../src/truth/Canonical.js"
+import {
+  KERNEL_REFUSAL_BY_REASON,
+  type KernelRefusalReason,
+} from "../src/kernel/KernelTables.generated.js"
 import * as Lane from "../src/planes/Lane.js"
 import { lane } from "./fixtures/chaos-fold.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
@@ -150,14 +154,34 @@ describe("plait chaos CLI", () => {
   }, 120_000)
 
   test("refuses an unpinned head and a module without a fold in six fields", async () => {
+    const sixFields = ["expected", "got", "kind", "law", "next", "path", "sort"].sort()
+    const taught = (
+      refusal: Record<string, unknown>,
+      reason: KernelRefusalReason,
+    ): void => {
+      const row = KERNEL_REFUSAL_BY_REASON[reason]
+      expect(refusal.kind).toBe("kernel-admission")
+      expect(refusal.law).toBe(row.law)
+      expect(refusal.next).toEqual([{
+        subject: row.reason,
+        note: row.repair,
+        body: { applicability: row.applicability },
+      }])
+    }
+
+    // Unpinned: a read of whatever is current. The CLI no longer owns that
+    // law — the door refuses it, in the model's reason and with the model's
+    // repair, through the process boundary.
     const unpinned = await runCli(["chaos", "./test/fixtures/chaos-fold.ts"])
     expect(unpinned.exit).toBe(2)
     const unpinnedRefusal = JSON.parse(unpinned.stderr) as Record<string, unknown>
-    expect(Object.keys(unpinnedRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
-    expect(unpinnedRefusal.path).toEqual(["head"])
+    expect(Object.keys(unpinnedRefusal).sort()).toEqual(sixFields)
+    expect(unpinnedRefusal.path).toEqual(["admit", "readLatest"])
+    taught(unpinnedRefusal, "ambient-query-input")
 
+    // A module that exports no fold is a DECODE failure at an untyped
+    // boundary, and stays the CLI's own refusal: there is no candidate to
+    // judge when the export cannot be read at all.
     const noFold = await runCli([
       "chaos",
       "./test/fixtures/no-fold.ts",
@@ -166,12 +190,12 @@ describe("plait chaos CLI", () => {
     ])
     expect(noFold.exit).toBe(2)
     const noFoldRefusal = JSON.parse(noFold.stderr) as Record<string, unknown>
-    expect(Object.keys(noFoldRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
+    expect(Object.keys(noFoldRefusal).sort()).toEqual(sixFields)
     expect(noFoldRefusal.path).toEqual(["module", "fold"])
     expect(noFoldRefusal.kind).toBe("invalid-chaos-request")
 
+    // A fold nothing admitted: the catalog is empty, and the reason is the
+    // kernel's forward-reference rather than a CLI note about a future slice.
     const uncataloged = await runCli([
       "chaos",
       "--fold",
@@ -181,11 +205,11 @@ describe("plait chaos CLI", () => {
     ])
     expect(uncataloged.exit).toBe(2)
     const uncatalogedRefusal = JSON.parse(uncataloged.stderr) as Record<string, unknown>
-    expect(Object.keys(uncatalogedRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
-    expect(uncatalogedRefusal.path).toEqual(["fold"])
-    const trace = "FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head,uncataloged-fold,module-without-fold exit=2"
+    expect(Object.keys(uncatalogedRefusal).sort()).toEqual(sixFields)
+    expect(uncatalogedRefusal.path).toEqual(["admit", "fold"])
+    taught(uncatalogedRefusal, "forward-reference")
+
+    const trace = "FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head:kernel/ambient-query-input,uncataloged-fold:kernel/forward-reference,module-without-fold:cli/decode exit=2"
     expect(`${trace}\n`).toBe(await Bun.file(resolve(
       import.meta.dir,
       "../negative-controls/Fold.cli-refusal.trace.txt",

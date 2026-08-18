@@ -6,6 +6,12 @@
 /** The one admission seam: generated candidate in, sentence or taught refusal out. */
 export * as Admission from "./kernel/Admission.js"
 
+/** Host operations written in the generated candidate language; one identity map. */
+export * as Candidates from "./kernel/Candidates.js"
+
+/** The content-addressed daemon's four operations, each behind the one door. */
+export * as CasDaemon from "./carriage/CasDaemon.js"
+
 /** Canonical JSON values and their unique RFC 8785 byte form. */
 export * as Canonical from "./truth/Canonical.js"
 

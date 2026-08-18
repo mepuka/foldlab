@@ -1,1 +1,1 @@
-FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head,uncataloged-fold,module-without-fold exit=2
+FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head:kernel/ambient-query-input,uncataloged-fold:kernel/forward-reference,module-without-fold:cli/decode exit=2

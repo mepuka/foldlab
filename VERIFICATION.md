@@ -563,6 +563,14 @@ reason, law, repair, and repair applicability. Candidate, intrinsic sentence,
 and context types are derived from `KernelSchemas.generated.ts`, and the door
 compares emitted encodings on the same unbounded bigint carrier.
 
+Further: each of those three hosts routes a REAL operation through that
+accessor, and reaches nothing outside itself when the verdict is a refusal.
+`FabricClient.publish` judges the emission the envelope names before any byte
+reaches JetStream; the four `CasDaemon` operations judge their act before the
+store is called; `plait chaos` judges the span the operator asked for before
+the harness runs. Each of the three previously accepted an input it now
+refuses, in the model's own reason, law, and repair.
+
 ### Evidence
 
 - `KernelConformance.test.ts` replays the emitted admission vectors against
@@ -571,8 +579,18 @@ compares emitted encodings on the same unbounded bigint carrier.
   conversion, and a value above `Number.MAX_SAFE_INTEGER` crosses the shipping
   door with its exact encoding pinned independently.
 - `KernelDoor.routes.test.ts` asserts every host route is the same
-  `Admission.admit` function. A poisoned extra `admit` on a
-  `FabricClient.testLayer` fixture is overwritten by that accessor.
+  `Admission.admit` function. A `FabricClient.testLayer` fixture supplies a
+  transport, never a service, so a poisoned extra `admit` on it reaches
+  nothing.
+- The same suite drives the real operations behind spies and counts what
+  reached the byte-moving half. An envelope on an undeclared lane refuses
+  `forward-reference` with `publishCalls = 0`; a declaration under an
+  unadmitted writ and an unfenced landing refuse `forward-reference` and
+  `unfenced-decide` with `storeCalls = 0`; an unpinned `plait chaos` span
+  refuses `ambient-query-input` and a `--lane` the fold never committed
+  refuses `forward-reference`. Substituting the refuse-everything door turns
+  every one of those operations into a `clock-read` refusal with the same zero
+  counts — the arm that stayed green while the hosts were doorless.
 - The same suite supplies the refuse-everything door through
   `Admission.fromDoor` and offers a candidate the shipping door admits; every
   host instead returns the planted `clock-read` refusal. A host that called a
@@ -585,13 +603,25 @@ compares emitted encodings on the same unbounded bigint carrier.
 
 The conformance result is agreement on the finite committed corpus, not a
 proof over all candidates. `Admission.layer` still receives an explicit
-generated catalog/pinned-universe context from its caller; this slice neither
-assembles a durable catalog snapshot nor converts runtime digests into model
-identities. Hosts speak the generated kernel language directly.
-`CasDaemon` remains a type and route with no tag, layer, or daemon
-implementation; the current chaos CLI accepts no kernel candidate. The claim
-is that the judgment routes those hosts expose cannot bypass the service when
-called, not that this slice adds a daemon runtime or a new CLI command.
+generated catalog/pinned-universe context from its caller; this slice does not
+assemble a durable catalog snapshot, and the catalog a host supplies is only
+as good as what the host was handed.
+
+The digest-to-identity map is the trusted base's, not a theorem: it lives at
+one seam (`Candidates.kernelIdentity`), it is injective on lowercase 64-hex
+digests because base-16 reads the same bytes, and nothing here proves that a
+model identity label corresponds to any hash.
+
+What each mapping does NOT carry is stated at its constructor. An envelope's
+`pins` do not reach the emit candidate, because a bare digest cannot fill the
+kernel's kind-bearing `digestRef` without inventing a kind; pin
+well-foundedness stays the fabric's own check. `CasDaemon` still ships no tag,
+no layer, and no store: what is claimed is that a store wired under
+`casDaemonOver` cannot be called for a refused act, not that a daemon runtime
+exists. `plait chaos` judges the span its argv names against a catalog derived
+from the module it loaded; that module's internal identity is re-derived, not
+admitted, and the CLI still refuses an unparseable request and an unreadable
+module export itself.
 
 ### Checkable at
 

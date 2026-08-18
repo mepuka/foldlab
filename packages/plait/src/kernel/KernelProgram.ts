@@ -26,9 +26,10 @@
  * Building always produces a declaration and its identity, and building never
  * publishes. {@link toDeclareCandidate} is the publication act, it is a method
  * the caller has to reach for, and it demands the writ under whose authority
- * the declaration would be made. What it returns is a *candidate*: a sentence
- * as an agent spells it, which a door then admits or refuses. This module
- * contains no door and admits nothing.
+ * the declaration would be made. What it returns is a *candidate* in the
+ * model-generated candidate language — a `KernelCandidateAct`, not a shape
+ * spelled here — which a door then admits or refuses. This module contains no
+ * door and admits nothing.
  *
  * ## Nothing here runs
  *
@@ -58,11 +59,14 @@ import { createHash } from "node:crypto"
 import type { Effect } from "effect"
 
 import { encodeCanonicalJson, type CanonicalJson } from "../truth/CanonicalJson.js"
+import type { Refusal } from "../truth/Refusal.js"
 import type {
   CasDaemon,
   CasHoleRequirement,
   CasProgramOutcome,
 } from "../carriage/CasDaemon.js"
+import { declarationPublication } from "./Candidates.js"
+import type { KernelCandidateAct } from "./KernelDoor.js"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
@@ -84,7 +88,6 @@ import {
 import {
   KERNEL_DECL_KIND_RANK,
   type KernelDeclKind,
-  type KernelRefusalRow,
 } from "./KernelTables.generated.js"
 
 /** Raised when a program body says something the declaration form cannot carry. */
@@ -140,23 +143,27 @@ export type KernelProgramRequirements<HoleName extends bigint> =
   | CasDaemon
   | CasHoleRequirement<HoleName>
 
-/**
- * A declaration offered for publication under a writ.
- *
- * This is a candidate, not an act. It carries the declaration value, the bytes
- * that are its identity, and the authority the caller chose to declare it
- * under. A door turns it into a sentence or refuses it with the law it
- * defends; nothing in this package is that door.
- */
-export interface KernelDeclareCandidate {
-  readonly _tag: "declare"
-  /** Always `program`: what is being declared is a program declaration. */
-  readonly kind: "program"
-  readonly declaration: KernelProgramDeclaration
+/** One declaration's canonical serialization and the address over it. */
+export interface KernelDeclarationIdentity {
   readonly bytes: string
   readonly digestHex: string
-  /** The authority the declaration would be made under, named by digest. */
-  readonly writ: bigint
+}
+
+/**
+ * A declaration's canonical bytes and the address over them.
+ *
+ * The hash is the runtime's **trusted base**: the model carries identity
+ * labels and states nothing about any hash function, so this address is
+ * believed because SHA-256 is believed, not because anything here was proved.
+ */
+export const declarationIdentity = (
+  declaration: KernelProgramDeclaration,
+): KernelDeclarationIdentity => {
+  const bytes = encodeCanonicalJson(declaration as unknown as CanonicalJson)
+  return {
+    bytes,
+    digestHex: createHash("sha256").update(bytes, "utf8").digest("hex"),
+  }
 }
 
 /** One built program: the declaration, its identity, and the two acts it enables. */
@@ -183,11 +190,11 @@ export interface KernelProgram<HoleName extends bigint> {
    * who wants a declaration published asks for the candidate and hands it to a
    * door under a named writ.
    */
-  readonly toDeclareCandidate: (writ: bigint) => KernelDeclareCandidate
+  readonly toDeclareCandidate: (writ: bigint) => KernelCandidateAct
   /** The typed stub. Nothing runs; see {@link KernelEffectStub}. */
   readonly effect: KernelEffectStub<
     CasProgramOutcome,
-    KernelRefusalRow,
+    Refusal,
     KernelProgramRequirements<HoleName>
   >
 }
@@ -389,8 +396,7 @@ export const program = <
     lineage: spec.lineage ?? [],
     nodes: newestFirst.map(canonicalNode),
   }
-  const bytes = encodeCanonicalJson(declaration as unknown as CanonicalJson)
-  const digestHex = createHash("sha256").update(bytes, "utf8").digest("hex")
+  const { bytes, digestHex } = declarationIdentity(declaration)
 
   return {
     name,
@@ -398,14 +404,8 @@ export const program = <
     bytes,
     digestHex,
     requirements: holes.map((hole) => hole.name),
-    toDeclareCandidate: (writ: bigint): KernelDeclareCandidate => ({
-      _tag: "declare",
-      kind: "program",
-      declaration,
-      bytes,
-      digestHex,
-      writ,
-    }),
+    toDeclareCandidate: (writ: bigint): KernelCandidateAct =>
+      declarationPublication("program", declaration.lineage, digestHex, writ),
     effect: { stub: "typed-stub" },
   }
 }
@@ -452,22 +452,15 @@ export const fill = (
       name: node.name,
     })),
   }
-  const bytes = encodeCanonicalJson(declaration as unknown as CanonicalJson)
-  const digestHex = createHash("sha256").update(bytes, "utf8").digest("hex")
+  const { bytes, digestHex } = declarationIdentity(declaration)
   return {
     name: built.name,
     declaration,
     bytes,
     digestHex,
     requirements: declaration.holes.map((hole) => hole.name),
-    toDeclareCandidate: (writ: bigint): KernelDeclareCandidate => ({
-      _tag: "declare",
-      kind: "program",
-      declaration,
-      bytes,
-      digestHex,
-      writ,
-    }),
+    toDeclareCandidate: (writ: bigint): KernelCandidateAct =>
+      declarationPublication("program", declaration.lineage, digestHex, writ),
     effect: { stub: "typed-stub" },
   }
 }

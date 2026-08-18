@@ -312,11 +312,15 @@ describe("the fences", () => {
   test("building publishes nothing; the declare candidate is a separate act", () => {
     const built = PROGRAM_RECIPES["ground-two-node"]!()
     const candidate = built.toDeclareCandidate(4n)
-    expect(candidate._tag).toBe("declare")
+    if (candidate._tag !== "declare") throw new Error("the publication act is a declare")
     expect(candidate.kind).toBe("program")
     expect(candidate.writ).toBe(4n)
-    expect(candidate.bytes).toBe(built.bytes)
-    expect(candidate.digestHex).toBe(built.digestHex)
+    // The candidate is the generated language, so the declaration's identity
+    // rides as the model's own literal atom rather than as a second field.
+    expect(candidate.payload).toContainEqual({
+      _tag: "literal",
+      value: BigInt(`0x${built.digestHex}`),
+    })
     console.log(
       "PROGRAM PUBLICATION: PASS act=explicit writ=required-argument" +
         " build-side-effects=none",

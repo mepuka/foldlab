@@ -1,6 +1,8 @@
-import { Effect, Schema } from "effect"
+import { Effect, Layer, Schema } from "effect"
 
 import { Digest } from "../../src/truth/Digest.js"
+import { Admission } from "../../src/kernel/Admission.js"
+import { admissionContextOver } from "../../src/kernel/Candidates.js"
 import { FabricClient, type PublishedEnvelope } from "../../src/carriage/FabricClient.js"
 import { factSubject } from "../../src/kernel/Subjects.js"
 import { Envelope } from "../../src/kernel/Wire.js"
@@ -36,7 +38,15 @@ const program = Effect.gen(function* () {
     duplicate,
   })))
 }).pipe(
-  Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),
+  // The lanes this publisher is authorized to emit onto are the ones the
+  // corpus it was handed declares. The door refuses any other, and the
+  // transport is never reached.
+  Effect.provide(Layer.provide(
+    FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" }),
+    Admission.layer(admissionContextOver(
+      rows.map((row) => ({ kind: "lane" as const, digest: row.envelope.lane })),
+    )),
+  )),
 )
 
 await Effect.runPromise(program)

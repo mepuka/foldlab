@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test"
 
-import { Effect, Stream } from "effect"
+import { Effect, Layer, Stream } from "effect"
 
+import { Admission } from "../src/kernel/Admission.js"
+import { admissionContextOver } from "../src/kernel/Candidates.js"
 import { FabricClient } from "../src/carriage/FabricClient.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import { decodeEnvelope } from "../src/kernel/Wire.js"
@@ -18,14 +20,17 @@ describe("FabricClient", () => {
       )),
     ]))
 
-    const layer = FabricClient.testLayer({
-      publish: Effect.fn("FabricClient.fixture.publish")(function* () {
-        return { digest: decoded.digest, sequence: 1, duplicate: false }
+    const layer = Layer.provide(
+      FabricClient.testLayer({
+        publish: Effect.fn("FabricClient.fixture.publish")(function* () {
+          return { digest: decoded.digest, sequence: 1, duplicate: false }
+        }),
+        subscribe: Effect.fn("FabricClient.fixture.subscribe")(function* () {
+          return Stream.empty
+        }),
       }),
-      subscribe: Effect.fn("FabricClient.fixture.subscribe")(function* () {
-        return Stream.empty
-      }),
-    })
+      Admission.layer(admissionContextOver([{ kind: "lane", digest: lane }])),
+    )
 
     const [published, admissionRoute] = await Effect.runPromise(
       Effect.gen(function* () {

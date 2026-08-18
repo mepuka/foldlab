@@ -15,6 +15,12 @@ fenced register over one file-backed, single-replica JetStream server.
   context language and names the door contract. `Door` is the shipping,
   model-vector-gated implementation over those shapes; `Admission` is its one public
   Effect service and `Admission.admit` is the accessor every host re-exports.
+- `Candidates` says what each host operation means in that generated language
+  and holds the one runtime-digest-to-model-identity map. Every host operation
+  with an outside is judged through `Admission` before its transport, store, or
+  harness is reached — `FabricClient.publish` before JetStream, the four
+  `CasDaemon.casDaemonOver` operations before the store, `plait chaos` before
+  the run.
 - `Wire` constrained-decodes the closed Envelope v0 shape, enforces the inline
   body threshold, and verifies `Nats-Msg-Id` by re-derivation.
 - `Subjects` constructs the three ruled `flb.fab.*` routing families without

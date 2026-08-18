@@ -11,7 +11,7 @@ import {
 } from "@nats-io/jetstream"
 import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Fiber, Reducer, Schema } from "effect"
+import { Effect, Fiber, Layer, Reducer, Schema } from "effect"
 
 import { Admission } from "../src/kernel/Admission.js"
 import { PLANTED_CONTEXT } from "./KernelDoor.reference.js"
@@ -20,6 +20,7 @@ import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
 import { canonicalBytes } from "../src/truth/Canonical.js"
 import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/planes/Cell.js"
 import { Digest } from "../src/truth/Digest.js"
+import { admissionContextOver } from "../src/kernel/Candidates.js"
 import { FabricClient } from "../src/carriage/FabricClient.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
@@ -278,10 +279,10 @@ describe("structural refusal repairs", () => {
     }
     const substrate = await Effect.runPromise(
       FabricClient.pipe(
-        Effect.provide(FabricClient.layer({
-          servers: harness.url,
-          stream: "WRONG_SHAPE",
-        })),
+        Effect.provide(Layer.provide(
+          FabricClient.layer({ servers: harness.url, stream: "WRONG_SHAPE" }),
+          Admission.layer(admissionContextOver([])),
+        )),
         Effect.scoped,
         Effect.flip,
       ),

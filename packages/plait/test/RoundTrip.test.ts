@@ -3,9 +3,11 @@ import { join, resolve } from "node:path"
 
 import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Option, Schema, Stream } from "effect"
+import { Effect, Layer, Option, Schema, Stream } from "effect"
 
 import { Digest } from "../src/truth/Digest.js"
+import { Admission } from "../src/kernel/Admission.js"
+import { admissionContextOver } from "../src/kernel/Candidates.js"
 import { FabricClient } from "../src/carriage/FabricClient.js"
 import { evidenceSubject, nodeSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
@@ -98,7 +100,10 @@ describe("local NATS envelope round trip", () => {
             Effect.timeoutOption("250 millis"),
           )
         }).pipe(
-          Effect.provide(FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" })),
+          Effect.provide(Layer.provide(
+            FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" }),
+            Admission.layer(admissionContextOver([])),
+          )),
           Effect.scoped,
         ),
       ),
@@ -114,7 +119,10 @@ describe("local NATS envelope round trip", () => {
         const client = yield* FabricClient
         return yield* Effect.flip(client.subscribe(subject))
       }).pipe(
-        Effect.provide(FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" })),
+        Effect.provide(Layer.provide(
+          FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" }),
+          Admission.layer(admissionContextOver([])),
+        )),
         Effect.scoped,
       ),
     )
