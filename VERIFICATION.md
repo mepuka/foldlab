@@ -39,6 +39,7 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
+| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -548,6 +549,63 @@ binary64 values, and share a 256-container nesting bound.
 [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts),
 [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go),
 and [go/canonical/probes/](go/canonical/probes/).
+
+## Plait kernel admission door — R0 differential + executable no-bypass control
+
+### Claim
+
+For every model-emitted admission vector in the committed kernel corpus, the
+shipping `KernelDoor.admit` returns the emitted verdict. CLI, `FabricClient`,
+and `CasDaemon` export that exact function object, so every host surfaces the
+same verdict value — for a refusal, the generated table's reason, law, repair,
+and repair applicability. Candidate, context, and intrinsic-act types are
+derived from `KernelSchemas.generated.ts`; the model's identity labels stay
+`bigint` from candidate to encoding, and no runtime content digest supplies or
+converts one.
+
+### Evidence
+
+- `KernelConformance.test.ts` replays all seventeen emitted admission vectors
+  against the shipping door, not a test-side transliteration. Its
+  refuse-everything door remains a killed control, and the replay carries no
+  bigint-to-number conversion: a literal above `Number.MAX_SAFE_INTEGER`
+  crosses the door with its exact encoding pinned independently.
+- The same file holds the absence control. The corpus carries the anchored
+  resolve that must be refused but not the bare one that must be admitted, so
+  one row decodes a lawful `resolveDigest` through the generated codec — its
+  anchor absent, spelled `undefined` because that is what `Schema.UndefinedOr`
+  produces — admits it, and pins the resulting sentence against the corpus's
+  own `resolve-schema` vector. A door reading absence as `null` refuses a
+  lawful sentence while all seventeen vectors still agree; this row is what
+  catches that.
+- `KernelDoor.routes.test.ts` asserts every host route is reference-identical
+  to `KernelDoor.admit` and to the barrel's `KernelDoor.admit`, kills an
+  invented host function with the same comparison, and checks that a poisoned
+  extra `admit` on a `FabricClient.testLayer` fixture is overwritten by the
+  production route rather than accepted.
+- The same suite offers one refused candidate through every host route and
+  compares the complete taught refusal — reason, law, repair, applicability —
+  value for value.
+
+### Bounds and residuals
+
+The conformance result is agreement on the finite committed corpus, not a proof
+over all candidates, and agreement with the model is never a runtime guarantee
+promoted out of a model theorem. `admit` takes its generated catalog and
+pinned-universe context as an explicit parameter: this slice neither assembles
+a durable catalog snapshot nor invents an ambient source for one. `CasDaemon`
+remains a type and a route with no tag, layer, or daemon implementation, and
+the chaos CLI accepts no kernel candidate — the claim is that the judgment
+routes those hosts expose cannot bypass the door, not that this slice adds a
+daemon runtime or a CLI command. No Effect service wraps the door; a Layer
+seam, if one is wanted, would wrap this generated door and is not claimed here.
+
+### Checkable at
+
+[packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts),
+[packages/plait/test/KernelConformance.test.ts](packages/plait/test/KernelConformance.test.ts),
+and
+[packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts).
 
 ## Plait spine — R0 differential + executable integration
 

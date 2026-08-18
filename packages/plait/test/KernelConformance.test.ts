@@ -6,6 +6,13 @@
  * emitted admission verdict is the verdict a runtime door returns, for all
  * seventeen planted candidates.
  *
+ * Two controls stand beside them for the things seventeen vectors cannot say.
+ * The corpus's identity labels are unbounded, so one row drives a value past
+ * what a double holds exactly and pins the encoding it must keep. And the
+ * corpus carries the anchored resolve that must be REFUSED but not the bare
+ * one that must be ADMITTED, so one row spells absence the way the generated
+ * schema spells it and holds the door to admitting it.
+ *
  * A fourth claim used to stand here: a second reading of the model, transcribed
  * from its Lean sources by hand, agreed with the emission line for line. It is
  * retired. The standing ruling is that model-to-runtime vectors are generated
@@ -16,14 +23,15 @@
  * its own canonical form, and everything derived from it regenerates
  * byte-identically.
  *
- * The door under test is the reference transliteration, because no admission
- * door ships in this package yet; the harness takes its target as a parameter,
- * so a real door is checked by editing one line of this file. The mutant row
- * below is what makes the pass mean something: a replay that cannot fail is
- * not evidence.
+ * The door under test is the shipping admission seam. The mutant row below is
+ * what makes the pass mean something: a replay that cannot fail is not
+ * evidence.
  */
 import { describe, expect, test } from "bun:test"
 
+import { Schema } from "effect"
+
+import { Candidate, decodeAct, make } from "../src/kernel/KernelDoor.js"
 import {
   KERNEL_DECL_KINDS,
   KERNEL_DECL_KIND_RANK,
@@ -44,14 +52,13 @@ import {
 import {
   PLANTED_CANDIDATES,
   PLANTED_CONTEXT,
-  referenceDoor,
   refuseEverythingDoor,
-} from "./KernelDoor.reference.js"
+} from "./KernelDoor.fixtures.js"
 
 const corpus = await loadKernelArtifact()
 
-/** The door the wall replays. Swap this for a shipping door when one lands. */
-const doorUnderTest = referenceDoor(PLANTED_CONTEXT)
+/** The shipping door: the production seam must agree with every emitted vector. */
+const doorUnderTest = make(PLANTED_CONTEXT)
 
 describe("kernel conformance tables", () => {
   test("the committed tables carry the artifact's provenance", () => {
@@ -129,8 +136,66 @@ describe("kernel door conformance", () => {
     const admittedCount = corpus.admissions.length - refusedCount
     expect(admittedCount).toBe(1)
     console.info(
-      `KERNEL DOOR: PASS target=reference replayed=${replays.length}/${corpus.admissions.length}` +
+      `KERNEL DOOR: PASS target=shipping replayed=${replays.length}/${corpus.admissions.length}` +
         ` refused=${refusedCount} admitted=${admittedCount} skipped=0`,
+    )
+  })
+
+  test("the generated bigint carrier crosses the shipping door without rounding", () => {
+    const beyondDouble = 9007199254740993n
+    const verdict = doorUnderTest.admit({
+      _tag: "declare",
+      kind: "schema",
+      payload: [{ _tag: "literal", value: beyondDouble }],
+      writ: 4n,
+    })
+    expect(verdict).toEqual({
+      verdict: "admitted",
+      act: {
+        _tag: "declare",
+        kind: "schema",
+        value: { bytes: 7n * 1_000_003n + 2n + beyondDouble * 16n },
+        writ: { id: 4n },
+      },
+      encoded: [0n, 0n, 7n * 1_000_003n + 2n + beyondDouble * 16n, 4n],
+    })
+  })
+
+  test("absence spelled the generated way is admitted, executed, and its trace committed", () => {
+    // The candidate comes out of the generated codec rather than being written
+    // here, because the whole class this control watches is a door that reads
+    // absence by a spelling the schema does not use. `Schema.UndefinedOr` is
+    // the model's `none`, so a door testing `!== null` refuses this LAWFUL
+    // sentence and no planted vector says so: the corpus carries the anchored
+    // resolve that must be refused, never the bare one that must be admitted.
+    const candidate = Schema.decodeUnknownSync(Candidate)({
+      _tag: "resolveDigest",
+      kind: "schema",
+      target: 8n,
+      anchor: undefined,
+    })
+    expect(candidate).toMatchObject({ _tag: "resolveDigest", anchor: undefined })
+
+    const verdict = doorUnderTest.admit(candidate)
+    expect(verdict).toEqual({
+      verdict: "admitted",
+      act: { _tag: "resolve", kind: "schema", target: { id: 8n } },
+      encoded: [1n, 0n, 8n],
+    })
+
+    // The trace is written out independently above and then held against the
+    // model's own committed vector, so neither side can drift alone.
+    const committed = corpus.encodings.find((encoding) => encoding.name === "resolve-schema")
+    expect(committed?.act).toEqual([1n, 0n, 8n])
+    expect(decodeAct([1n, 0n, 8n])).toEqual({
+      _tag: "resolve",
+      kind: "schema",
+      target: { id: 8n },
+    })
+
+    console.info(
+      "KERNEL ABSENCE: PASS candidate=resolveDigest anchor=undefined verdict=admitted" +
+        " vector=resolve-schema trace=[1,0,8]",
     )
   })
 

@@ -6,7 +6,10 @@
 /** Canonical JSON values and their unique RFC 8785 byte form. */
 export * as Canonical from "./truth/Canonical.js"
 
-/** Declared reducers and the earned commutative deployment brand. */
+/** Directories, explicit roots, and paths that walk by iterated resolve. */
+export * as Address from "./planes/Address.js"
+
+/** Declared reducers, the rung ladder of earned laws, and the carrier each rung licenses. */
 export * as Algebra from "./truth/Algebra.js"
 
 /** Durable fold checkpoint facts and their contiguous-frontier transition. */
@@ -35,6 +38,9 @@ export * as Fold from "./planes/Fold.js"
 
 /** Declared partitioned evidence lanes and durable emission. */
 export * as Lane from "./planes/Lane.js"
+
+/** The generated candidate language and its one admission function. */
+export * as KernelDoor from "./kernel/KernelDoor.js"
 
 /** Structural and absence refusals plus the absence-only retry policy. */
 export * as Refusal from "./truth/Refusal.js"

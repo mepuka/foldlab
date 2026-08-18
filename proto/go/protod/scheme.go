@@ -1,6 +1,9 @@
 package protod
 
 import (
+	// encoding/json carriage: ENCODING only (json.Marshal) — an in-memory
+	// value into bytes for canonical.Canonicalize. Encoders cannot repair a
+	// submission; only decoders can, and this file has none.
 	"encoding/json"
 
 	"foldlab/canonical"

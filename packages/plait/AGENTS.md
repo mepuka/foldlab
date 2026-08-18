@@ -1,6 +1,31 @@
 # packages/plait — agent contract
 
-The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
+The slice-0 coordination-fabric spine. Read root `AGENTS.md` first.
+
+## Where to look next
+
+One hop per level. Root `AGENTS.md` carries the standing estate laws, this file
+carries the package's, and each plane directory under `src/` carries a README
+saying what that layer is, what is machine-generated in it, how to regenerate
+that, and which wall proves it — then points one level deeper, down the plane
+order, so that any descent lands on `src/kernel/` within three hops.
+
+- [`src/truth/`](src/truth/README.md) — the vocabulary every sentence speaks
+- [`src/kernel/`](src/kernel/README.md) — the language: corpus, door, programs,
+  and wire grammar. Start here for the generated core and the model behind it
+- [`src/planes/`](src/planes/README.md) — the state carriers, one seam per
+  plane
+- [`src/carriage/`](src/carriage/README.md) — hosts and transport clients
+- [`src/surface/`](src/surface/README.md) — entry points
+- [`src/internal/`](src/internal/README.md) — private adapters
+
+Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
+[`README.md`](README.md) states each claim with its bounds,
+[`DECISIONS.md`](DECISIONS.md) logs every decision the spec did not fix, and
+[`QUICKSTART.md`](QUICKSTART.md) with
+[`FOR-WORKING-AGENTS.md`](FOR-WORKING-AGENTS.md) are the outsider-facing pages.
+
+## Scoped laws
 
 - `Canonical.ts` delegates to `@foldlab/core/jcs`. There is one RFC 8785
   canonicalizer; never add or copy another.
@@ -68,6 +93,36 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   the entire licence for never expiring a hit. A recorded failure is a finding
   twice over: absence is head-relative, and remembering it makes a retryable
   observation permanent.
+- A path resolves from an explicitly named root digest. There is no current
+  directory, no ambient root, and no relative escape: `at` takes the root as its
+  first parameter, so a rootless walk is a compile error and not a validation
+  (`negative-controls/Address.rootless.mutant.ts`), and `.` and `..` are refused
+  names. Adding a root-defaulting overload, a session root, or a path-string
+  parser is a finding.
+- A lawful root is read AT AN ANCHOR and handed to the walk as data — KM-16's
+  positive half, and the reason for every negative above. `Anchor.ts` owns that
+  read: a checkpoint fact's `stateDigest` or `head`, or a digest a publication
+  returned. The read is head-relative, so it belongs to the plane that owns
+  anchors; a root obtained inside `Address.ts` would be resolving against
+  whatever is current, which is the ambient input the fence exists to refuse.
+- Addressing types trace to the corpus or wear a waiver, and the module header
+  says which. `Petname` derives from the generated `KernelPetname`;
+  `ambiguous-binding` is the model's spelling, walled against
+  `fixtures/fabric-conformance.ndjson`; `Binding`, `Directory`, and the other
+  three refusal kinds wear a Law 1 waiver citing DEV-796. Adding a fourth
+  hand-written type here without one of those three answers is a finding.
+- Addressing adds no store, service, layer, or cache. Every hop is
+  `Resolved.resolve`, so verify-on-read is inherited rather than restated; a
+  second fetch or verify path under `Address.ts` is a finding.
+- A root digest names one immutable directory, so every addressing verdict under
+  it is permanent: unbound and ambiguous are structural. The only absence on
+  that walk is `resolve`'s own `cataloged-value-absent`, and minting an
+  `AbsenceRefusal` for an unbound name is a finding — it would make `retryAbsence`
+  spin against bytes that cannot change.
+- A directory carries a binding SET, so one name bound to two digests is
+  representable and `ambiguous-binding` refuses it. Nothing in a walk arbitrates:
+  the model's sealed-at verdict reads the commitment register's evidence, and
+  reading a seal here would be a second arbitration path beside `Register.ts`.
 - Public absence is an `AbsenceRefusal`, never `Option`. `Option.none` is
   invisible to `retryAbsence` and carries no head-relative vocabulary; the
   `Option` on the internal payload seam is plumbing and stays there.
@@ -95,18 +150,43 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   declared, writ-scoped image — in prose, a docstring, or a claim ledger — is an
   overclaim until the law is proved; this seam ships its shape, not its
   enforcement.
-- `src/kernel/KernelTables.generated.ts` is generated only, from
-  `fixtures/kernel-conformance.ndjson`, and `bun run check:kernel-tables` must
-  regenerate it byte-identically. Never hand-edit a kind, a rank, a taught law,
-  or a repair: the model emits them, and a hand-typed table is drift with a
-  green gate. `test/fixtures/kernel-conformance.sample.ndjson` is the
-  independently transcribed control the wall compares against, never a source.
-- No admission door ships yet. `src/kernel/KernelDoor.ts` is the seam's type only; the
-  reference door under `test/` exists so the conformance replay has a target
-  and is not the thing to build on. A real door is checked by pointing
-  `KernelConformance.test.ts` at it — the harness takes its target as a
-  parameter, and its refuse-everything mutant is what makes the pass evidence.
-  Conformance is agreement with the model's verdicts, never a runtime guarantee
-  promoted out of a model theorem.
+- `src/kernel/KernelTables.generated.ts` and
+  `src/truth/RefusalKinds.generated.ts` are generated only, from
+  `fixtures/kernel-conformance.ndjson` plus the reviewed runtime-refusal
+  projection in `scripts/kernel-runtime-refusals.ts`, and
+  `bun run check:kernel-tables` must regenerate both byte-identically. Never
+  hand-edit a kind, a rank, a taught law, or a repair: the model emits its rows;
+  runtime spellings absent from that corpus carry an explicit `DEV-804`
+  staged-debt waiver in the generated ancestry.
+  `test/fixtures/kernel-conformance.sample.ndjson` is the independently
+  transcribed control the corpus wall compares against, never a source.
+- The refusal vocabulary is emitted INTO `truth/`, never imported up from
+  `kernel/`. `truth/` is the deepest plane and imports only itself; a generated
+  artifact carries no import-direction debt because its ancestry is the
+  generator, not an edge in the module graph. A truth module that reaches into
+  `kernel/` for the vocabulary is a Law 4 finding, and so is a hand-written
+  literal union standing beside the generated one.
+- `check:refusal-vocabulary` compares three artifacts and never two views of
+  one value: the runtime union read from the truth-plane module's source bytes,
+  the refusal reasons read from the interchange fixture's bytes, and the
+  reviewed staged-debt pin at `test/fixtures/refusal-staged-debt.pin.txt`. The
+  pin is nothing's input — adding a spelling to the projection manifest and
+  regenerating does not satisfy the wall, because the debt must also be written
+  into the pin by hand. `check:refusal-control` plants a hand-minted kind into
+  the union source and must fail for its committed reason.
+- A refusal's taught payload is persisted evidence. `check:refusal-payloads`
+  pins every `law`, `expected`, and `next` text under `src/` in
+  `test/RefusalPayloads.taught.txt` and byte-compares it, so editing one
+  minting site's teaching reddens the wall and shows the edit. Regenerate with
+  `bun run generate:refusal-payloads`, and treat a moved text as a wire change
+  wanting its own ruled ticket, never a rendering detail.
+- `src/kernel/KernelDoor.ts` is the one shipping admission door. Its candidate,
+  context, and intrinsic-act types derive from `KernelSchemas.generated.ts` and
+  retain the model's `bigint` identity labels; runtime hex digests do not map
+  them. CLI, `FabricClient`, and `CasDaemon` export that exact `admit` function,
+  never a wrapper or private candidate validator. `KernelConformance.test.ts`
+  replays the emitted verdicts against it; its refuse-everything mutant and
+  host-identity control make the pass evidence. Conformance is agreement with the
+  model's verdicts, never a runtime guarantee promoted out of a model theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.

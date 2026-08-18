@@ -4,9 +4,10 @@
  * Reads the format-2 interchange file emitted from the Lean kernel model and
  * renders the runtime's derived type layer: the declaration-kind and hole-stage
  * registries with their ranks, the taught-refusal table, and the compile-time
- * brands of the sort system. Nothing here is hand-typed from the model; every
- * name, rank, and taught text is read out of the corpus, so a model that moves
- * reddens the regeneration check instead of drifting quietly.
+ * brands of the sort system. Every model name, rank, and taught text is read
+ * out of the corpus, so a model that moves reddens the regeneration check
+ * instead of drifting quietly. The runtime refusal projection is a separate
+ * reviewed input: rows absent from the model remain named staged debt.
  *
  * Reading and validating the corpus is not this module's job - `kernel-corpus`
  * owns that, schema decode and byte checks together, and hands over a value
@@ -25,6 +26,11 @@
  */
 import type { KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { CORPUS_PATH, type KernelCorpus } from "./kernel-corpus.js"
+import {
+  RUNTIME_REFUSAL_PROJECTION_PATH,
+  RUNTIME_REFUSAL_WAIVER_TICKET,
+  RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
+} from "./kernel-runtime-refusals.js"
 
 /** The result of comparing committed bytes with a fresh rendering. */
 export type KernelTableCheck =
@@ -42,6 +48,18 @@ export const ARTIFACT_PATH = CORPUS_PATH
 
 /** Where the generated module is committed, relative to the repository root. */
 export const GENERATED_PATH = "packages/plait/src/kernel/KernelTables.generated.ts"
+
+/**
+ * Where the generated refusal vocabulary is committed, relative to the
+ * repository root.
+ *
+ * The vocabulary lands in `truth/` rather than being imported up from
+ * `kernel/`, because `truth/` is the deepest plane and root Law 4 permits it
+ * to import only itself. A generated artifact carries no import-direction
+ * debt: it is a corpus projection emitted into the plane that speaks it, and
+ * its ancestry is the generator, not an edge in the module graph.
+ */
+export const REFUSAL_KINDS_PATH = "packages/plait/src/truth/RefusalKinds.generated.ts"
 
 // Annotated at the binding, not only at the arrow, so that TypeScript reads a
 // bare `refuse(...)` as control flow that does not return and narrows after it.
@@ -129,6 +147,24 @@ const brandDomains: { readonly [param: string]: string } = {
 
 const brandConstraint = (param: string): string => brandDomains[param] ?? "string"
 
+interface RuntimeRefusalProjectionRow {
+  readonly kind: string
+  readonly source: "kernel-corpus" | "staged-debt"
+  readonly waiver?: typeof RUNTIME_REFUSAL_WAIVER_TICKET
+}
+
+const runtimeRefusalRows = (corpus: KernelCorpus): ReadonlyArray<RuntimeRefusalProjectionRow> => {
+  const projected = new Set<string>(RUNTIME_STRUCTURAL_REFUSAL_PROJECTION)
+  if (projected.size !== RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length) {
+    return refuse("the runtime structural-refusal projection names a kind twice")
+  }
+  const corpusReasons = new Set(corpus.refusals.map((row) => row.reason))
+  return RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map((kind) =>
+    corpusReasons.has(kind)
+      ? { kind, source: "kernel-corpus" }
+      : { kind, source: "staged-debt", waiver: RUNTIME_REFUSAL_WAIVER_TICKET })
+}
+
 /**
  * Renders the generated module. The rendering is a total function of the
  * corpus and its repository-relative path, so two runs over one corpus produce
@@ -140,6 +176,7 @@ export const renderKernelTables = (
 ): string => {
   const { branded, skipped } = brandedSorts(corpus.types)
   const digests = branded.find((sort) => sort.name === "Digest")
+  const runtimeRows = runtimeRefusalRows(corpus)
   const out: Array<string> = []
   const line = (value = ""): void => void out.push(value)
 
@@ -156,7 +193,8 @@ export const renderKernelTables = (
   line(" * The kernel model's closed tables, projected into the runtime's type layer:")
   line(" * the declaration-kind and hole-stage registries with their ranks, the taught")
   line(" * refusals with the law each defends and the repair each teaches, and the")
-  line(" * compile-time brands of the sort system.")
+  line(" * compile-time brands of the sort system. The existing runtime refusal")
+  line(" * projection is also generated here; corpus gaps wear an owned waiver.")
   line(" *")
   line(" * These are safety-side names and texts, never runtime guarantees. A model")
   line(" * theorem stays in the model; what crosses the seam is the vocabulary the")
@@ -175,6 +213,8 @@ export const renderKernelTables = (
   line(`  command: ${quote(GENERATE_COMMAND)},`)
   line(`  format: ${corpus.header.format}n,`)
   line(`  generator: ${quote(corpus.header.generator)},`)
+  line(`  runtimeProjection: ${quote(RUNTIME_REFUSAL_PROJECTION_PATH)},`)
+  line(`  runtimeWaiverTicket: ${quote(RUNTIME_REFUSAL_WAIVER_TICKET)},`)
   line(`  source: ${quote(corpus.header.source)},`)
   line("} as const")
   line()
@@ -250,6 +290,35 @@ export const renderKernelTables = (
   line("} as const satisfies { readonly [Reason in KernelRefusalReason]: KernelRefusalRow }")
   line()
 
+  line("/** The existing runtime structural-refusal spellings, generated from the projection manifest. */")
+  line("export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [")
+  for (const row of runtimeRows) line(`  ${quote(row.kind)},`)
+  line("] as const")
+  line()
+  line("/** One structural-refusal kind the runtime can mint. */")
+  line("export type KernelRuntimeStructuralRefusalKind =")
+  line("  (typeof KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS)[number]")
+  line()
+  line("/** How one runtime spelling traces to the generated kernel vocabulary. */")
+  line("export type KernelRuntimeStructuralRefusalRow =")
+  line("  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: \"kernel-corpus\" }")
+  line(`  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: "staged-debt"; readonly waiver: ${quote(RUNTIME_REFUSAL_WAIVER_TICKET)} }`)
+  line()
+  line("/**")
+  line(" * The runtime projection with derivation ancestry on every row. Missing corpus")
+  line(" * rows are explicit Law 1 staged debt owned by DEV-804, never silent twins.")
+  line(" */")
+  line("export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [")
+  for (const row of runtimeRows) {
+    line("  {")
+    line(`    kind: ${quote(row.kind)},`)
+    line(`    source: ${quote(row.source)},`)
+    if (row.waiver !== undefined) line(`    waiver: ${quote(row.waiver)},`)
+    line("  },")
+  }
+  line("] as const satisfies ReadonlyArray<KernelRuntimeStructuralRefusalRow>")
+  line()
+
   line("/**")
   line(" * The compile-time brand carrier. The property never exists at runtime; it")
   line(" * exists so two sorts with the same representation refuse to unify.")
@@ -311,6 +380,77 @@ export const renderKernelTables = (
   return out.join("\n")
 }
 
+/**
+ * Renders the truth-plane refusal vocabulary.
+ *
+ * The same projection the kernel table records ancestry for is emitted a
+ * second time, as the module the minting sites actually speak. Two emissions
+ * of one projection are not two vocabularies: both are total functions of the
+ * corpus and the reviewed manifest, and `check:kernel-tables` byte-compares
+ * both, so they cannot part company without reddening.
+ *
+ * No identifier annotation rides the emitted schema. An identifier replaces
+ * the admitted-literal list in a failed decode's `got` text with a type name,
+ * which is wire-visible behaviour at every site that decodes a refusal kind —
+ * a change this projection has no licence to make.
+ */
+export const renderRefusalKinds = (
+  corpus: KernelCorpus,
+  corpusPath: string,
+): string => {
+  const runtimeRows = runtimeRefusalRows(corpus)
+  const out: Array<string> = []
+  const line = (value = ""): void => void out.push(value)
+
+  line("/**")
+  line(" * Plane: truth — the vocabulary every sentence speaks.")
+  line(" *")
+  line(" * GENERATED FILE - DO NOT EDIT.")
+  line(" *")
+  line(` * Artifact: ${corpusPath}`)
+  line(` * Command:  ${GENERATE_COMMAND}`)
+  line(` * Source:   ${corpus.header.source}, emitted by ${quote(corpus.header.generator)}`)
+  line(` *           at interchange format ${corpus.header.format}.`)
+  line(" *")
+  line(" * The structural refusal kinds this package can mint, emitted into the plane")
+  line(" * that speaks them. `truth/` is the deepest plane and imports only itself, so")
+  line(" * the vocabulary lands here rather than being imported up from `kernel/`; the")
+  line(" * kernel table carries the same rows with their derivation ancestry in")
+  line(" * `KERNEL_RUNTIME_STRUCTURAL_REFUSALS`, where a spelling the model corpus does")
+  line(` * not yet carry is named staged debt owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}.`)
+  line(" *")
+  line(" * @module")
+  line(" */")
+  line("import { Schema } from \"effect\"")
+  line()
+  line("/** Where this vocabulary came from, carried as data for a consumer to assert. */")
+  line("export const REFUSAL_KIND_PROVENANCE = {")
+  line(`  artifact: ${quote(corpusPath)},`)
+  line(`  command: ${quote(GENERATE_COMMAND)},`)
+  line(`  format: ${corpus.header.format}n,`)
+  line(`  generator: ${quote(corpus.header.generator)},`)
+  line(`  runtimeProjection: ${quote(RUNTIME_REFUSAL_PROJECTION_PATH)},`)
+  line(`  runtimeWaiverTicket: ${quote(RUNTIME_REFUSAL_WAIVER_TICKET)},`)
+  line(`  source: ${quote(corpus.header.source)},`)
+  line("} as const")
+  line()
+  line("/** Every structural refusal kind the package can mint, in its persisted order. */")
+  line("export const STRUCTURAL_REFUSAL_KINDS = [")
+  for (const row of runtimeRows) line(`  ${quote(row.kind)},`)
+  line("] as const")
+  line()
+  line("/**")
+  line(" * Every structural refusal kind the package can mint.")
+  line(" *")
+  line(" * Deliberately unannotated: an `identifier` would replace the admitted")
+  line(" * literals in a failed decode's reported expectation with this schema's name.")
+  line(" */")
+  line("export const StructuralRefusalKind = Schema.Literals(STRUCTURAL_REFUSAL_KINDS)")
+  line()
+
+  return out.join("\n")
+}
+
 /** Checks that committed generated bytes equal a fresh rendering. */
 export const checkKernelTables = (
   committed: string,
@@ -322,4 +462,17 @@ export const checkKernelTables = (
     : {
       ok: false,
       reason: "committed kernel tables failed byte-identical regeneration",
+    }
+
+/** Checks that the committed truth-plane vocabulary equals a fresh rendering. */
+export const checkRefusalKinds = (
+  committed: string,
+  corpus: KernelCorpus,
+  corpusPath: string,
+): KernelTableCheck =>
+  committed === renderRefusalKinds(corpus, corpusPath)
+    ? { ok: true }
+    : {
+      ok: false,
+      reason: "committed truth-plane refusal vocabulary failed byte-identical regeneration",
     }

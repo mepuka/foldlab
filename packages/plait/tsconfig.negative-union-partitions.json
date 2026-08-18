@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["negative-controls/Fold.union-partitions.mutant.ts"]
+}

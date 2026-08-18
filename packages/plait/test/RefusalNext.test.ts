@@ -13,9 +13,11 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Fiber, Reducer, Schema } from "effect"
 
+import * as Address from "../src/planes/Address.js"
 import * as Algebra from "../src/truth/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
-import { canonicalBytes } from "../src/truth/Canonical.js"
+import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
+import { substrateLayer } from "../src/planes/Catalog.js"
 import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/planes/Cell.js"
 import { Digest } from "../src/truth/Digest.js"
 import { FabricClient } from "../src/carriage/FabricClient.js"
@@ -29,6 +31,7 @@ import {
   type StructuralRefusalKind as StructuralKind,
 } from "../src/truth/Refusal.js"
 import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import { publish } from "../src/planes/Resolved.js"
 import * as Session from "../src/planes/Session.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import {
@@ -134,6 +137,34 @@ describe("structural refusal repairs", () => {
       // value the declared schema does not admit crosses decodeRefusing.
       Effect.runPromise(Effect.flip(decodeRefusing(Digest)("not-a-digest"))),
     ])
+
+    // The addressing kinds share one in-memory catalog: every walk below reads
+    // directories this block published, so the tree and the refusals it earns
+    // are one story rather than four fixtures.
+    const addressRefusals = await Effect.runPromise(
+      Effect.gen(function* () {
+        const walked: Array<Refusal> = []
+        // invalid-petname: a relative name is refused before any store is asked.
+        walked.push(yield* Effect.flip(Address.petname("..")))
+        const tool = (yield* publish({ tool: "grep" })).digest
+        const one = (yield* publish({ model: "one" })).digest
+        const two = (yield* publish({ model: "two" })).digest
+        const folded = yield* Address.directory([
+          { name: Address.Petname.make({ text: "tool" }), digest: tool },
+          { name: Address.Petname.make({ text: "model" }), digest: one },
+          { name: Address.Petname.make({ text: "model" }), digest: two },
+        ])
+        const root = (yield* publish(folded as unknown as WireValue)).digest
+        // unbound-petname: the directory under this root binds no such name.
+        walked.push(yield* Effect.flip(Address.at(root, "absent")))
+        // ambiguous-binding: one name, two candidate digests, no arbitration.
+        walked.push(yield* Effect.flip(Address.at(root, "model")))
+        // not-a-directory: a hop landing on a value that is not one.
+        walked.push(yield* Effect.flip(Address.at(root, "tool", "deeper")))
+        return walked
+      }).pipe(Effect.provide(substrateLayer)),
+    )
+    refusals.push(...addressRefusals)
 
     const invalidLane = await Effect.runPromise(Effect.flip(Lane.declare({
       handle: "refusal-lane",

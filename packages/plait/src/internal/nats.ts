@@ -229,7 +229,7 @@ export const commonsPump = (
 
 export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   options: FabricClientOptions,
-): Effect.fn.Return<FabricClientService, Refusal, Scope.Scope> {
+): Effect.fn.Return<Omit<FabricClientService, "admit">, Refusal, Scope.Scope> {
   const connection = yield* acquireConnection(
     options,
     "foldlab-plait",

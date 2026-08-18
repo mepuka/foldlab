@@ -9,6 +9,12 @@ The vocabulary every sentence speaks.
 **Kernel**:
 The language: corpus, door, programs, and wire grammar.
 
+**Admission door**:
+`KernelDoor.admit`: the one pure projection from a model-generated candidate
+and catalog/pinned-universe context to an intrinsic act or the generated
+reason/law/repair refusal. Model identity labels remain `bigint`; runtime
+content digests are independent evidence, not a conversion source.
+
 **Planes**:
 The state carriers, one seam per plane.
 
@@ -63,13 +69,48 @@ A content-addressed reducer definition and wire-grammar initial state. A
 commutative algebra carries a runtime witness earned from at least 32 distinct
 triples derived by the declaration door from a digest-seeded arbitrary, then
 checked for identity, associativity, and commutativity; caller-enumerated cases
-and asserted TypeScript casts do not earn it.
+and asserted TypeScript casts do not earn it. That witness is one law-atom set,
+so a rung is read off it rather than counted in symbols.
+
+**Law atom, rung, brand**:
+A law atom is one equation a declared reducer can be checked against — total,
+associative, identity, commutative, idempotent, bounded, inverse. A rung is a
+named bundle of atoms; climbing adds atoms, so "at least this rung" is set
+inclusion and the ladder is a poset, not a chain (an idempotent group is
+trivial, so the two tops are incomparable). A brand is the earned atom set,
+carried in the type and non-enumerably at runtime. A brand is earned by a
+suite, never asserted: the door walks the same atom list it then attaches, so
+the checked set and the earned set are one array, and an asserted cast erases
+at the door, which reads the runtime witness regardless of what the type said.
+Brands never reach canonical bytes, so nothing on this ladder changes a digest.
+
+Two bounds ride the atoms. `bounded` is entailed by `identity` — `e ∘ a = a` is
+`e ≤ a` under the derived order — so it is a named consequence rather than an
+independent obligation, and a bounded semilattice discriminates on `idempotent`
+alone. `inverse` has no predicate at all: a declared algebra carries a reducer
+and no inversion, so the two group rungs are type-level names with no door.
+
+**Brand durability**:
+The runtime witness is a non-enumerable own property, which is exactly why it
+never reaches the wire — and exactly why a spread or `Object.assign` copy drops
+it. A copied algebra keeps the phantom type and loses the witness, so the fold
+door refuses it on a value the compiler still calls commutative. Re-earn the
+brand after copying; do not re-assert it.
+
+**Quotient, and the rung⇒carrier rule**:
+Three stages, deepest last: the positioned plane keeps order and duplicates,
+the multiset presentation forgets order, the set plane forgets multiplicity
+too. A fold may read from the deepest quotient its algebra respects —
+commutative reaches the multiset presentation, commutative and idempotent
+reaches the set plane, anything weaker stays positional.
 
 **Declared fold**:
 A lane, algebra, and per-event contribution under one digest. Its step is
 derived as `combine(state, contribution(event))`, so step/algebra compatibility
-holds by construction. More than one partition requires the earned
-commutative witness at both the type and runtime doors.
+holds by construction. One partition keeps arrival order and reads the
+positioned plane; more than one erases that order and reads the multiset
+presentation, which demands the commutative rung at both the type and runtime
+doors.
 
 **Successor discipline**:
 The position-addressed pump rule: every raw arrival enters its own position,
@@ -173,6 +214,34 @@ or drops is identity-bearing.
 **Publication**:
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
+
+**Petname**:
+One name inside a directory. Naming, never identity: nothing derives a digest
+from a petname. The carrier is the model's own — the generated `KernelPetname`,
+`{ text }` — and this package adds the law it needs to walk with: non-empty,
+carrying no separator and no control character, and never `.` or `..`, because
+the relative forms name a position rather than a value and a path this package
+admits depends on its root and its names alone.
+
+**Directory**:
+The cataloged value a path walks through: the finite set of `(petname, digest)`
+bindings, merged by set union, under a closed `{ v, kind }` header. The set is
+the carrier, so one name bound to two digests is representable and resolution
+refuses it rather than choosing. Canonical binding order is declared — the RFC
+8785 canonical bytes of each binding, compared as bytes — so a folded
+directory's digest is a name for the set. Byte order, not UTF-16 order: the two
+disagree outside the BMP, and a directory fold written on another runtime has
+to agree with this one.
+
+**Path**:
+An explicitly named root digest and a petname list read from it. Each hop
+resolves the current digest, decodes a directory, and reads one binding out of
+it; there is no current directory and no relative escape, so the answer is a
+function of the root and the names. A lawful root is read at an anchor and
+handed in — `Anchor.ts` owns that read, because it is head-relative and a walk
+that performed one would be resolving against whatever is current. Under a fixed
+root every verdict is permanent: unbound and ambiguous are structural, and the
+only head-relative fact on the walk is whether a store holds a directory yet.
 
 **Advisory**:
 The standing of a KV watch feed. An arriving entry is a hint that state has
