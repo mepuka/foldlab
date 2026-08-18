@@ -63,6 +63,10 @@ the package's identity authority inaccurate.
 
 ### T4. Verified reads use an ephemeral ordered JetStream consumer
 
+SUPERSEDED BY: task DEV-736's T1 — the callback adapter this entry chose is
+replaced by the client's own pulled iterator, which is the bounded form that
+carries the one property T4 was decided on.
+
 Decided: `FabricClient.subscribe` creates a subject-filtered ordered consumer
 with `DeliverPolicy.All`, adapts its synchronous callback through
 `Stream.callback`, and deletes it with the surrounding scope. Alternatives: a
@@ -75,14 +79,16 @@ shape outside the evidence path.
 
 Amended 2026-08-18 (DEV-736). This entry chose the callback adapter on the
 strength of one property — interruption closes an idle pump — and never stated
-its cost. The cost is now measured and load-bearing: the pinned client's
-callback is synchronous by contract, so the adapter's only offer is
-`Queue.offerUnsafe`, which cannot suspend, so the pump admits no client-side
-bound that does not lose messages (task DEV-736, T0). The adapter stays for now
-and the buffer stays unbounded; DEV-736's T1 records the replacement. This is
-an amendment, not the supersession Part C ticket 3 ordered — that supersession
-was to be carried by a landed bounded form, and no sound bounded form exists at
-this adapter.
+its cost. The cost is measured and load-bearing: the pinned client's callback
+is synchronous by contract, so the adapter's only offer is `Queue.offerUnsafe`,
+which cannot suspend, so the pump admits no client-side bound that does not
+lose messages (task DEV-736, T0).
+
+Superseded the same day, once the operator ruled route (b) and the bounded
+form landed. The adapter is gone; the ordered ephemeral consumer, the
+`DeliverPolicy.All` read and the scope-owned delete all stand. Only the
+adaptation moved, and the one property this entry was decided on moved with
+it (DEV-736 T1).
 
 ### T5. Pin the message-id duplicate window explicitly
 
@@ -879,15 +885,22 @@ pin.
 Task-local placeholders (rule 1): T-numbers restart per task and collide across
 tasks by design; repository D-numbers are assigned at merge. Spec authority:
 `docs/design/2026-08-17-plait-effect-affordances.md` (B-4; card FH-6; Part C
-ticket 3), read at `c585c24c8`; the code line numbers it cites are pre-DEV-734
-and the pump now sits at `src/internal/nats.ts:183-195`.
+ticket 3), read at `c585c24c8`, and the operator's ruling of 2026-08-18 on the
+dispatching thread, which lifted ticket 3's withholding of route (b) and gave
+the repair to this ticket. The record's code line numbers are pre-DEV-734; the
+pump now sits at `src/internal/nats.ts:140-223`.
+
+T0 and T1 were written as a refusal and a recorded follow-up when the ruling
+was still owed. They are amended in place, on the operator's instruction, to
+the dispositions that landed: the refusal of route (a) stands as the record of
+why, and route (b) is built.
 
 ### T0. Route (a) is REFUSED — with a producer that cannot suspend, a buffer strategy picks which messages are lost, not whether
 
 Decided: the commons subscribe pump does NOT gain
-`{ bufferSize, strategy: "suspend" }`, and its buffer stays unbounded. The
-record's route (a) is refused on executed evidence, and the finding is reported
-rather than repaired.
+`{ bufferSize, strategy: "suspend" }`. The record's route (a) is refused on
+executed evidence. B-4 is repaired by T1's pull form instead, so the refusal
+below is the record of why the smallest diff was not the one taken.
 
 The measurement, minimized and committed as `test/CommonsPumpBackpressure.test.ts`.
 `Stream.callback`'s buffer options (`Stream.ts:694-699` at the pin) configure
@@ -900,58 +913,94 @@ only offer is `Queue.offerUnsafe`, and at the pin (`Queue.ts:708-726`) that
 function does not suspend on a full queue: under `"suspend"` and `"dropping"`
 it returns `false` and discards the message, and under `"sliding"` it evicts
 the oldest and returns `true`. Forty envelopes through a bound of eight
-deliver eight under every strategy and none under no strategy. Under realistic
-arrival — messages spread across event-loop turns, a downstream paying digest
-verification per message — a bound of sixteen lost 73 of 200 envelopes under
-`"suspend"`, 63 under `"dropping"`, and 63 under `"sliding"`, the first loss
-landing at index 47 rather than at the tail.
+deliver eight under every strategy and none under no strategy.
 
-That last number is the reason this is a refusal and not a trade. The loss is
-not truncation; it is a hole punched in the middle of an ordered read, with no
-error raised, no refusal minted, and — under `"sliding"` — no false return for
-the call site to notice. `FabricClient.subscribe` is the package's verified-read
-path: every envelope it yields has had its digest re-derived and checked. A
-pump that silently omits envelopes makes that verification answer a question
-nobody asked, because the guarantee readers rely on is over the sequence, not
-over each survivor. Today's bug spends memory. Route (a) spends evidence, which
-this package does not have to spend.
+The load shape is in the tree too, and both routes are measured at it: 200
+real envelopes arriving over ten event-loop turns the consumer cannot slow, a
+downstream paying the pump's own digest verification per message, a bound of
+sixteen. Route (a) delivered 160 of 200 under `"suspend"` and `"dropping"`,
+identical across twenty runs — the consumer drains the bound between turns, so
+each turn of twenty loses exactly the four the bound could not hold — with the
+first hole at index 16 and the read carrying on past it. `"sliding"` lost as
+many and reported every offer accepted. The committed row asserts the shape of
+that loss rather than the count, because the count is a fact about this host's
+scheduler and the shape is a fact about the adapter.
 
-Alternatives, all refused here and named for the ruling: keep `"suspend"` and
+The first hole's index is the reason this is a refusal and not a trade. The
+loss is not truncation; it is a hole punched in the middle of an ordered read,
+with no error raised, no refusal minted, and — under `"sliding"` — no false
+return for the call site to notice. `FabricClient.subscribe` is the package's
+verified-read path: every envelope it yields has had its digest re-derived and
+checked. A pump that silently omits envelopes makes that verification answer a
+question nobody asked, because the guarantee readers rely on is over the
+sequence, not over each survivor. The unbounded buffer spends memory. Route (a)
+spends evidence, which this package does not have to spend.
+
+Alternatives, all named for the ruling and all refused: keep `"suspend"` and
 fail the stream when `offerUnsafe` returns `false` (honest and loud, but it
 mints a new absence kind and a new failure mode on a public seam — a ruling,
 not an implementation detail); bound the pump server-side the way the fold pump
 does (`consume({ max_messages })`, `internal/pump.ts:157-173`) — that bounds
 the pull window, not the queue downstream of the callback, and the fold's real
 bound is `max_ack_pending` under explicit acks, which an ordered ephemeral
-consumer at `AckPolicy.None` has no equivalent for; build route (b) now (the
-repair, but Part C ticket 3 explicitly withholds it from this ticket).
+consumer at `AckPolicy.None` has no equivalent for; accept the unbounded buffer
+and close B-4 as a recorded bound rather than an enforced one. The operator
+ruled route (b) on 2026-08-18 and it landed as T1.
 
-**Load-bearing? yes** — it is the reason FH-6's two answers stay two for now,
-and the reason the record's preference order inverts.
+**Load-bearing? yes** — it is the reason the record's preference order
+inverted, and the reason no buffer strategy appears at this seam.
 
-### T1. Route (b) is the recorded follow-up, and it is the repair rather than the tidier option
+### T1. Route (b) is LANDED — the commons pump is the client's own iterator, pulled
 
-Decided: `Stream.fromAsyncIterable` (`Stream.ts:1277`) over the client's own
+Decided: `commonsPump` (`src/internal/nats.ts:208-223`) is
+`Stream.fromAsyncIterable` (`Stream.ts:1277`) over the client's own
 `ConsumerMessages` — a `QueuedIterator<JsMsg>` at the pin
 (`lib/types.d.ts:708`) — under the existing `acquireRelease`/`Stream.unwrap`
-(`Stream.ts:1633`), with `messages.close()` in the release, is the recorded
-disposition for the commons pump's bound. It is not built here.
+(`Stream.ts:1633`), with the client's close in the release. The hand-rolled
+queue pump is gone, and with it the question of what to size it to.
 
-Why it is the repair and not merely the deeper diff: backpressure requires a
-producer that can stop producing. An iterator pulls, so a slow consumer stops
-pulling, so the client's own flow control applies and the bound needs no
-second implementation — the answer becomes the client's, which is what FH-6
-asks for. The callback adapter cannot reach that property at any setting
-(T0). T4's stated reason for the adapter survives the move: interruption still
-closes an idle pump, because the release's `messages.close()` ends the iterator.
+The measurement, at the load shape T0 records and in the same committed file:
+200 of 200 delivered, in order, where the bounded callback adapter delivered
+160 with the first hole at index 16. An iterator is pulled, so this pump owns
+no queue to size and discards nothing.
 
-What the ruling owes before this lands: whether the follow-up ships as route
-(b) or as the fail-loud form named in T0's alternatives, and — if route (b) —
-whether the resulting bound is stated in `FabricClientOptions`' JSDoc as the
-client's own or made selectable. This entry records the option, not the ruling.
+What landing forced, and what a reader should not lose: the pump withholds its
+iterator's `return`. `ConsumerMessages` is an async generator, and a generator
+parked on an `await` cannot be preempted by `return()` — the return queues
+behind the pending pull and never runs. An idle subscription is parked exactly
+there, and `Stream.fromAsyncIterable` registers `iter.return()` as a scope
+finalizer when the iterator offers one (`Channel.ts:1867-1883`), so the naive
+form hangs its scope on interruption forever. That is committed as its own
+counterexample row beside the positive one, and the live wall that first caught
+it — `RoundTrip.test.ts`'s idle-subscription interruption — is green. `close()`
+is the end that does reach a parked pump: it unsubscribes the inbox, cancels
+the timers and stops the status iterator synchronously, then queues the
+iterator's stop behind the pending pull, which that pull delivers
+(`lib/consumer.js:581-607`). Waiting on the close is sound while a pull is
+outstanding and only there, so the release waits exactly then. T4's one stated
+property therefore survives the move, and is asserted rather than assumed.
 
-**Load-bearing? maybe** — it decides where this package's backpressure answer
-lives, and it is the entry a later reader will check when FH-6 is closed.
+The honest limit, since the finding was written about memory: the pull form
+ends loss, not buffering. The client refills its `consume()` pull window when
+messages ARRIVE, not when they are consumed (`lib/consumer.js:253`), so a slow
+reader still accumulates in the client's own `QueuedIterator`. What moved is
+that there is now one buffer instead of two, it belongs to the client, and its
+knob is the client's `max_messages` rather than a number this package invents.
+A memory ceiling would need a reader that acks, which an ordered ephemeral
+consumer at `AckPolicy.None` has no equivalent for — the same asymmetry T0
+records against the fold pump's server-side bound. FH-6's two answers are still
+two; neither is a queue this package sizes.
+
+Alternatives: route (a) (T0, refused on measurement); the fail-loud form (T0,
+refused — it mints an absence kind); accept the unbounded buffer (refused by
+the ruling). No new absence kind was minted and no public signature moved: the
+emitted manifest is unchanged at 60 signatures, and `FabricClientOptions` gains
+no field, because the bound this ticket was to make visible turned out to be
+the client's and is stated in `commonsPump`'s JSDoc rather than in an option.
+
+**Load-bearing? yes** — it is where this package's backpressure answer lives,
+and the withheld `return` is the difference between an interruptible
+subscription and a hung scope.
 
 ### T2. The duplicate window is scoped per STREAM, and this package now runs two stream families
 
