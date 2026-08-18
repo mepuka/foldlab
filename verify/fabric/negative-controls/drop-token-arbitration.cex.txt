@@ -1,0 +1,1 @@
+control=drop-token-arbitration;vector=permuted-seal-holder-disagrees;lawful=sealed-at:9:200;mutant=sealed-at:7:100;verdict=refuted

@@ -1,0 +1,1 @@
+control=drop-trigger-stability;vector=hole-stage-growth;lawful-left=true;lawful-right=true;mutant-left=true;mutant-right=false;verdict=refuted

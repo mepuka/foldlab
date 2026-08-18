@@ -1,9 +1,10 @@
 # Fabric algebra model
 
 `verify/fabric` is a standalone Lean 4.33.0 package with no Lake dependencies.
-It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, F7, F9, and
-F11, then executes the same definitions to author the runtime conformance
-corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
+It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, F7, F9, F10,
+F11, and F12, plus the join-semilattice package the F1/F12 carriers share, then
+executes the same definitions to author the runtime conformance corpus at
+`packages/plait/fixtures/fabric-conformance.ndjson`.
 
 ## Guided tour
 
@@ -66,8 +67,8 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   `IdentityDistinct` exactly where the tie-break needs it. The composed
   F11 chains F3 (`f11_state_of_anchor`), the support fold, and the list
   half under a rendered conclusion.
-- `Fabric/Mutants.lean` contains ten variants, each dropping exactly one
-  required law or premise half. The fourth drops the successor discipline and
+- `Fabric/Mutants.lean` contains sixteen variants, each dropping exactly
+  one required law or premise half. The fourth drops the successor discipline and
   is killed by the
   order-sensitive 6-before-5 row; it does not claim to drop the redundant
   floor guard. The fifth drops the position-payload-integrity half: on the
@@ -87,6 +88,19 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   under the congruence and class-projection statements at every program,
   it dies on the two-reads-one-class row that the within-class statement
   pins.
+  The eleventh pads the join with a sentinel — an upper bound that is
+  never least, killed against the lawful join of two distinct cells with
+  both upper-bound laws provably retained. The twelfth runs the lawful
+  `resolve` outside its well-fenced premise (two seals at one token) and
+  dies on the two-orders drift; the thirteenth decides a contested name
+  by last write and dies where the lawful answer is one ambiguity
+  refusal; the fourteenth arbitrates seals by holder and dies on the
+  permuted-seal row against the token order; the fifteenth resolves to
+  the last-arrived seal and dies on the same row's two arrival orders.
+  The sixteenth fires a hole trigger only while the hole sits EXACTLY at
+  the target stage — growth un-fires it — and dies on the committed
+  growth row where the lawful reached-at-least production holds at both
+  states.
   `Fabric/ControlProofs.lean` proves the retained laws and the
   named counterexamples. `ControlMain.lean` emits the committed counterexample
   traces checked by the gate; the five assembly/query kills use a
@@ -111,7 +125,7 @@ corpus at `packages/plait/fixtures/fabric-conformance.ndjson`.
   The gate refuses a vector whose `(kind, name, witness)` triple is not pinned or
   whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
-  roster, proof footprint, ten negative controls, pinned vector counts, and
+  roster, proof footprint, sixteen negative controls, pinned vector counts, and
   byte-identical regeneration.
 
 ## How a trace walks through `fold`
@@ -176,6 +190,98 @@ order and the mutant that consults an ambient thread each die on their
 committed two-presentation rows. At admission, a query declaration
 naming an ambient seed, clock, or schedule is refused with F11 named;
 a seed declared as data — inside the digest — is admitted.
+
+## How a name resolves under a fence
+
+A directory is `Map Petname (FiniteSet Digest)` under componentwise
+union, carried as its graph: a finite set of `(petname, digest)` pairs,
+where union of graphs IS componentwise union of the induced maps
+(`directory_merge_bindings`), and an empty-set-valued name is
+unrepresentable by construction. Binding append is monotone,
+coordination-free, and duplicate-safe — the F1-for-maps package
+(`f12_directory_merge_aci`, `f12_directory_extensional`,
+`f12_directory_convergence`) says exactly that, and both the cell and
+the directory instantiate one general join-semilattice package
+(`join_semilattice_of_aci`, the `SemilatticeSup.mk'` construction from
+ACI alone): the derived order `supLe sup a b := (sup a b = b)` is
+reflexive, antisymmetric, and transitive, the join is the least upper
+bound, and every absorb is an inflation — `cell_absorb_inflationary`
+is the theorem that a replica's current cell is a lattice lower bound
+of every state it can reach.
+
+`resolve identity dir name seals` computes: with any seal observed, the
+binding sealed at the greatest observed fencing token — over seal data
+alone, because a seal is evidence of a landed fenced decision whose
+monotone bind may still be in flight; with no seal, the candidate set
+answers — one binding, an absence refusal, or an `ambiguous-binding`
+refusal listing the candidates in identity order. A seal is
+`{token, holder, digest}`; the holder is attributed data and never an
+arbitration input — the token decides, never the who — and the
+holder-arbitrating mutant dies on the committed permuted-seal row.
+`SealsWellFenced` (every observed token names one seal) is a named
+premise discharged by citation of the register package's F5 invariants
+I1/I2 (`verify/fabric-veil`, Lean 4.28.0 under the ruled toolchain
+split), never restated here: `greatestSeal` keeps the earlier arrival
+at a token tie, so nothing in this package decides a tie — outside the
+premise the drop-seals-well-fenced control shows resolution turning
+schedule-dependent, which is the premise's load-bearing proof. The
+verdict characterization (`f12_resolution_characterization`) is
+deliberately premise-free computation accounting over the arrival
+schedule; the order-free meaning law is `f12_greatest_seal_wins` under
+the premise, and `f12_resolution_of_support` carries schedule
+independence. Observing a stale-token rebind is inert
+(`stale_token_rebind_inert`); why a stale token can never land in the
+register in the first place is F5's, cited above. One bound rides every
+resolution theorem: the model resolves a snapshot pair — a directory
+state and an observed seal history — and says nothing about how a
+runtime obtains a coherent snapshot of the two planes; that atomicity
+is the consuming slice's harness question, not covered by these
+theorems.
+
+## How a trigger stays fired
+
+A trigger is a declared monotone predicate over the fabric state — the
+closed five-production grammar `TriggerPredicate` (evidence-appears,
+cell-reaches, hole-reaches, outcome-landed, head-advanced-past). Absence,
+negation, and deadline are unrepresentable: no constructor exists to
+carry them, so the non-monotone shapes are refused by the grammar's
+closure itself, and the deadline seat stays a fenced session act outside
+this algebra. The fabric order is componentwise (`FabricState.Le`): the
+evidence and per-cell components grow in the derived semilattice order —
+`cell_le_iff_subset` bridges it to membership — hole stages only rise
+along the epistemic rank (opened, filled, disputed, decided, sealed; the
+high-water reading), landed outcomes grow by inclusion, and the head by
+the journal prefix order projected to its length. `f10_stability` says a
+predicate that holds keeps holding under growth — an enabled firing
+never un-fires — with the hole production stable in its reached-at-least
+form only (the is-exactly variant is the committed control), and
+`f10_hints_of_support` says duplicate-and-permute delivery of one
+evidence support fires one hint set (`enabledDeclarations`, monotone by
+`enabled_declarations_monotone`). That a fired hint's landed claim never
+lands twice is the register's F5 I2 — cited, never restated here.
+
+## How the action DAG stays acyclic, and where compaction may cut
+
+C7's pin order is admission itself: `Admission` grows a ledger one
+declaration at a time, every pin naming an already-admitted work digest
+and every digest admitted at most once (the in-model reading of content
+addressing — that a real digest cycle would need a hash preimage is the
+trusted base's sentence, not a theorem here). Pins therefore descend
+strictly in admission rank, and `c7_pin_well_founded` pulls `Nat`'s
+order back along that rank: the action DAG is well-founded — acyclic —
+by construction.
+
+The compaction horizon is derived, never chosen:
+`compact_below_floor_preserves_resumption` proves that compacting a lane
+at or below a deployed fold's anchor floor preserves the fold's resumed
+terminal state (resume the anchor over the compacted remainder and you
+have the uncompacted fold — an F3 instance), and
+`compact_below_horizon_preserves_resumption` quantifies it over every
+deployed anchor at or below the minimum floor. `Retention.horizon`
+serves that bound; a compaction act past it is refused, not warned
+about. The minimum anchor floor plays the role recovery systems give a
+minimum recovery position: truncation below it is safe exactly because
+every resumption is anchored above it.
 
 ## Notation
 

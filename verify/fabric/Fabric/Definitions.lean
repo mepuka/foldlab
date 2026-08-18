@@ -605,4 +605,436 @@ inductive DescendantEffective {Atom : Type uH} {cmp : Atom -> Atom -> Ordering}
       (descendant : DescendantEffective (Policy.meet root requested) child effective) :
       DescendantEffective root (.node requested (before ++ child :: after)) effective
 
+/-! ## The derived join order
+
+The order a join operation derives: `a ≤ b` exactly when joining `a` into
+`b` changes nothing. One general package over a raw join function — the
+`SemilatticeSup.mk'` construction transliterated: the order laws and
+least-upper-bound laws from associativity, commutativity, and idempotence
+alone — instantiated once per ACI carrier. -/
+
+/-- The derived order of a join operation. -/
+def supLe {alpha : Type uH} (sup : alpha -> alpha -> alpha)
+    (left right : alpha) : Prop :=
+  sup left right = right
+
+/-- The join-semilattice package: the derived order is reflexive,
+    antisymmetric, and transitive, and
+    the join is the least upper bound. Proved once from ACI
+    (`join_semilattice_of_aci`); each carrier instantiates it. -/
+def JoinSemilatticePackage {alpha : Type uH}
+    (sup : alpha -> alpha -> alpha) : Prop :=
+  (forall a, supLe sup a a) /\
+  (forall a b, supLe sup a b -> supLe sup b a -> a = b) /\
+  (forall a b c, supLe sup a b -> supLe sup b c -> supLe sup a c) /\
+  (forall a b, supLe sup a (sup a b)) /\
+  (forall a b, supLe sup b (sup a b)) /\
+  (forall a b c, supLe sup a c -> supLe sup b c -> supLe sup (sup a b) c)
+
+/-! ## The directory — naming as a map lattice
+
+A directory is `Map Petname (FiniteSet Digest)` under componentwise union.
+The carrier is the map's graph: a finite set of `(petname, digest)` pairs.
+Maps with absent-name-means-empty correspond exactly to binding-pair sets,
+and componentwise union of maps is union of graphs
+(`directory_merge_bindings` is the componentwise reading, proved). The
+graph side is the carrier because an empty-set-valued name is
+unrepresentable by construction — no well-formedness invariant exists to
+thread through the statements. -/
+
+/-- One directory binding: a petname bound to a digest. -/
+abbrev Binding (Petname : Type uH) (Digest : Type uV) := Petname × Digest
+
+/-- The directory carrier: the finite binding set under a declared
+    comparator. -/
+abbrev Directory (Petname : Type uH) (Digest : Type uV)
+    (cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering) :=
+  FiniteSet (Binding Petname Digest) cmp
+
+namespace Directory
+
+variable {Petname : Type uH} {Digest : Type uV}
+variable {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+variable [Std.TransCmp cmp]
+
+/-- The directory with no bindings. -/
+def empty : Directory Petname Digest cmp := ∅
+
+/-- Componentwise union of the induced maps: union of the graphs. -/
+def merge (left right : Directory Petname Digest cmp) :
+    Directory Petname Digest cmp :=
+  left ∪ right
+
+/-- The induced map, read as membership: `name` is bound to `digest`. -/
+def BoundTo (directory : Directory Petname Digest cmp) (name : Petname)
+    (digest : Digest) : Prop :=
+  (name, digest) ∈ directory
+
+/-- Two replicas hold exactly the same bindings. -/
+def SameBindingSet (left right : Directory Petname Digest cmp) : Prop :=
+  forall binding, binding ∈ left <-> binding ∈ right
+
+end Directory
+
+/-- The directory state reached by folding a raw bind-event trace. Arrival
+    order and multiplicity are forgotten — binding append is monotone,
+    coordination-free, and duplicate-safe. -/
+def foldBindings {Petname : Type uH} {Digest : Type uV}
+    (cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering)
+    [Std.TransCmp cmp] (events : List (Binding Petname Digest)) :
+    Directory Petname Digest cmp :=
+  Std.ExtTreeSet.ofList events cmp
+
+/-! ## Fenced resolution -/
+
+/-- The identity-ascending listing order: `byScoreThenIdentity` at the
+    constant score, so its totality, transitivity, and antisymmetry lemmas
+    apply verbatim. Ambiguity candidates list in identity order, never in
+    arrival order. -/
+abbrev byIdentity {Digest : Type uV} (identity : Digest -> Nat) :
+    Digest -> Digest -> Bool :=
+  byScoreThenIdentity (fun _ => 0) identity
+
+/-- The digests a directory binds at one name: the filtered projection of
+    the binding set's listing. -/
+def boundDigests {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname]
+    (directory : Directory Petname Digest cmp) (name : Petname) :
+    List Digest :=
+  (directory.toList.filter (fun binding => binding.1 == name)).map
+    (fun binding => binding.2)
+
+/-- The canonical candidate listing at a name: dedup, then sort under the
+    identity order — the `topK` normalisation at unbounded width. -/
+def candidates {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat)
+    (directory : Directory Petname Digest cmp) (name : Petname) :
+    List Digest :=
+  (dedup (boundDigests directory name)).mergeSort (byIdentity identity)
+
+/-- A seal: a fencing token, the holder that landed it, and the digest the
+    landed rebind decided. Tokens are modeled as `Nat`, a concrete linear
+    order; the running system's strictly increasing token order is the
+    register's (F5 I1, `verify/fabric-veil`). The holder is attributed
+    observation data and never an arbitration input — the token decides,
+    never the who — which is exactly the non-role the holder-arbitration
+    mutant drops. -/
+structure Seal (Digest : Type uV) where
+  token : Nat
+  holder : Nat
+  digest : Digest
+deriving Repr, DecidableEq
+
+/-- The greatest-token seal of a raw observed seal list. Replacement
+    happens only on a strictly larger token: at a token tie the earlier
+    arrival is kept, so no tie is decided anywhere in this function — only
+    the `SealsWellFenced` premise rules ties out. -/
+def greatestSeal {Digest : Type uV} : List (Seal Digest) -> Option (Seal Digest)
+  | [] => none
+  | arrival :: rest =>
+      match greatestSeal rest with
+      | none => some arrival
+      | some best =>
+          if arrival.token < best.token then some best else some arrival
+
+/-- Every token names at most one seal in the observed support. Discharged
+    by the Veil register package's F5 invariants I1/I2 — strictly
+    increasing fencing tokens, at most one landed commit per register —
+    carried here as a named premise and never restated in this toolchain:
+    the pinned-toolchain split makes import impossible, and a restatement
+    would be drift risk, not evidence. -/
+def SealsWellFenced {Digest : Type uV} (seals : List (Seal Digest)) : Prop :=
+  forall left, left ∈ seals -> forall right, right ∈ seals ->
+    left.token = right.token -> left = right
+
+/-- Resolution's four verdicts. -/
+inductive Resolution (Digest : Type uV) where
+  | bound (digest : Digest)
+  | absent
+  | ambiguous (candidates : List Digest)
+  | sealedAt (token : Nat) (digest : Digest)
+deriving Repr, DecidableEq
+
+/-- Head-relative fenced resolution. With any seal observed, the binding
+    sealed at the greatest token wins — computed over seal data alone,
+    because a seal is evidence of a landed fenced decision whose monotone
+    bind may still be in flight; requiring the sealed digest among the
+    candidates would leak a liveness fact into a correctness verdict. With
+    no seal, the candidate set answers: one binding, an absence refusal,
+    or an ambiguity refusal listing the candidates in identity order. -/
+def resolve {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat)
+    (directory : Directory Petname Digest cmp) (name : Petname)
+    (seals : List (Seal Digest)) : Resolution Digest :=
+  match greatestSeal seals with
+  | some top => .sealedAt top.token top.digest
+  | none =>
+      match candidates identity directory name with
+      | [] => .absent
+      | [digest] => .bound digest
+      | first :: second :: rest => .ambiguous (first :: second :: rest)
+
+namespace Emitter
+
+/-- The ground binding comparator: bindings share the observation
+    carrier's lexicographic shape. -/
+abbrev bindingCmp : Binding Nat Nat -> Binding Nat Nat -> Ordering :=
+  observationCmp
+
+/-- The concrete directory exercised by the generated corpus. -/
+abbrev GroundDirectory := Directory Nat Nat bindingCmp
+
+/-- The contested ground petname: two nodes bound it concurrently. -/
+def groundPetname : Nat := 1
+
+/-- The singleton-bound ground petname. -/
+def singletonPetname : Nat := 2
+
+/-- The never-bound ground petname. -/
+def absentPetname : Nat := 3
+
+/-- Bind arrival order one: name 1 contested across two nodes, name 2
+    bound once. -/
+def bindOrderOne : List (Binding Nat Nat) := [(1, 100), (2, 300), (1, 200)]
+
+/-- The same bind support in another arrival order. -/
+def bindOrderTwo : List (Binding Nat Nat) := [(1, 200), (1, 100), (2, 300)]
+
+/-- The ground directory state: the fold of arrival order one. -/
+def groundDirectory : GroundDirectory := foldBindings bindingCmp bindOrderOne
+
+/-- The permuted-seal row's first arrival order: (7,A) then (9,B). The
+    holders are attributed data; token 7's seal was landed by holder 9 so
+    a holder-arbitrating variant visibly disagrees with the token order. -/
+def sealOrderOne : List (Seal Nat) :=
+  [ { token := 7, holder := 9, digest := 100 }
+  , { token := 9, holder := 1, digest := 200 }
+  ]
+
+/-- The same seal support arriving (9,B) then (7,A). -/
+def sealOrderTwo : List (Seal Nat) :=
+  [ { token := 9, holder := 1, digest := 200 }
+  , { token := 7, holder := 9, digest := 100 }
+  ]
+
+/-- The landed seal history of the stale-rebind row. -/
+def landedSeals : List (Seal Nat) := [{ token := 9, holder := 1, digest := 200 }]
+
+/-- The stale rebind attempt: token 7 observed after token 9 landed. -/
+def staleSeal : Seal Nat := { token := 7, holder := 9, digest := 100 }
+
+end Emitter
+
+/-! ## Triggers over fabric state -/
+
+/-- The epistemic stages of a hole. `opened` is the protocol stage named
+    open; Lean's keyword forces the spelling. -/
+inductive HoleStage where
+  | opened
+  | filled
+  | disputed
+  | decided
+  | sealed
+deriving Repr, DecidableEq
+
+/-- The numeric rank of a stage: opened, filled, disputed, decided,
+    sealed, in rising order. A hole production observes rank only in the
+    reached-at-least direction. -/
+def HoleStage.rank : HoleStage -> Nat
+  | .opened => 0
+  | .filled => 1
+  | .disputed => 2
+  | .decided => 3
+  | .sealed => 4
+
+/-- The fabric state a trigger observes: the evidence bag, per-cell
+    states, hole stages, landed outcomes, and the journal head. -/
+structure FabricState (Holder : Type uH) (Value : Type uV)
+    (cmp : Observation Holder Value -> Observation Holder Value -> Ordering)
+    where
+  evidence : Cell Holder Value cmp
+  cells : Nat -> Cell Holder Value cmp
+  holes : Nat -> HoleStage
+  landed : FiniteSet Nat compare
+  head : Nat
+
+/-- Componentwise fabric growth. The evidence and per-cell components
+    grow in the derived semilattice order; hole stages only rise along
+    the epistemic rank — the high-water reading; whether the runtime's
+    hole stages are monotone along real evolution is the projection
+    lane's question, not this model's — and landed outcomes and the head
+    are monotone reads of the journal, the head being the prefix order
+    projected to its length. -/
+structure FabricState.Le {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp]
+    (before after : FabricState Holder Value cmp) : Prop where
+  evidence : supLe Cell.merge before.evidence after.evidence
+  cells : forall cell, supLe Cell.merge (before.cells cell) (after.cells cell)
+  holes : forall hole, (before.holes hole).rank <= (after.holes hole).rank
+  landed : forall outcome, outcome ∈ before.landed -> outcome ∈ after.landed
+  head : before.head <= after.head
+
+/-- The closed trigger grammar: exactly the five ruled monotone
+    productions. Absence, negation, and deadline are unrepresentable —
+    no constructor exists to carry them; the grammar's closure IS the
+    structural enforcement, and the deadline seat stays a fenced session
+    act outside this algebra. -/
+inductive TriggerPredicate (Holder : Type uH) (Value : Type uV) where
+  | evidenceAppears (pattern : List (Observation Holder Value))
+  | cellReaches (cell : Nat) (threshold : List (Observation Holder Value))
+  | holeReaches (hole : Nat) (target : HoleStage)
+  | outcomeLanded (work : Nat)
+  | headAdvancedPast (position : Nat)
+
+/-- The denotation of a trigger predicate at a fabric state. Every
+    production reads its component upward: presence, reached-at-least,
+    landed, advanced-past. -/
+def holds {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] :
+    TriggerPredicate Holder Value -> FabricState Holder Value cmp -> Prop
+  | .evidenceAppears pattern, state =>
+      forall observation, observation ∈ pattern ->
+        observation ∈ state.evidence
+  | .cellReaches cell threshold, state =>
+      forall observation, observation ∈ threshold ->
+        observation ∈ state.cells cell
+  | .holeReaches hole target, state =>
+      target.rank <= (state.holes hole).rank
+  | .outcomeLanded work, state => work ∈ state.landed
+  | .headAdvancedPast position, state => position < state.head
+
+/-- The executable evaluation of a trigger predicate. -/
+def holdsBool {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] :
+    TriggerPredicate Holder Value -> FabricState Holder Value cmp -> Bool
+  | .evidenceAppears pattern, state =>
+      pattern.all fun observation => state.evidence.contains observation
+  | .cellReaches cell threshold, state =>
+      threshold.all fun observation => (state.cells cell).contains observation
+  | .holeReaches hole target, state =>
+      decide (target.rank <= (state.holes hole).rank)
+  | .outcomeLanded work, state => state.landed.contains work
+  | .headAdvancedPast position, state => decide (position < state.head)
+
+/-- A declared trigger: a monotone predicate and the action-declaration
+    template digest its firing hints at. That the landed CLAIMS of those
+    hints never land twice is the register's F5 I2 — cited, never
+    restated here. -/
+structure Trigger (Holder : Type uH) (Value : Type uV) where
+  predicate : TriggerPredicate Holder Value
+  declaration : Nat
+
+/-- The declarations a trigger set hints at a state: the enabled set. -/
+def enabledDeclarations {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] (triggers : List (Trigger Holder Value))
+    (state : FabricState Holder Value cmp) : List Nat :=
+  (triggers.filter fun trigger => holdsBool trigger.predicate state).map
+    fun trigger => trigger.declaration
+
+namespace Emitter
+
+/-- The small ground state: one observation, hole 0 open, nothing landed,
+    head at 3. -/
+def smallState : FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp [(1, 10)]
+  cells := fun cell =>
+    if cell == 5 then foldEvidence observationCmp [] else Cell.empty
+  holes := fun _ => .opened
+  landed := Std.ExtTreeSet.ofList [] compare
+  head := 3
+
+/-- The grown ground state: more evidence, cell 5 grown, hole 0 filled,
+    outcome 42 landed, head advanced to 7 — componentwise above
+    `smallState`. -/
+def grownState : FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp [(1, 10), (2, 20)]
+  cells := fun cell =>
+    if cell == 5 then foldEvidence observationCmp [(2, 20)] else Cell.empty
+  holes := fun hole => if hole == 0 then .filled else .opened
+  landed := Std.ExtTreeSet.ofList [42] compare
+  head := 7
+
+/-- The ground trigger set: one trigger per production. -/
+def groundTriggers : List (Trigger Nat Nat) :=
+  [ { predicate := .evidenceAppears [(1, 10)], declaration := 100 }
+  , { predicate := .holeReaches 0 .filled, declaration := 101 }
+  , { predicate := .outcomeLanded 42, declaration := 102 }
+  , { predicate := .headAdvancedPast 5, declaration := 103 }
+  , { predicate := .cellReaches 5 [(2, 20)], declaration := 104 }
+  ]
+
+/-- Hint arrival order one: the grown evidence support with one
+    duplicated delivery. -/
+def hintOrderOne : List GroundObservation := [(1, 10), (2, 20), (1, 10)]
+
+/-- The same evidence support, permuted, duplicating the other
+    observation. -/
+def hintOrderTwo : List GroundObservation := [(2, 20), (1, 10), (2, 20)]
+
+/-- The trigger-observed state at a delivered evidence schedule, the
+    non-evidence components held at the grown state. -/
+def hintStateOf (deliveries : List GroundObservation) :
+    FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp deliveries
+  cells := grownState.cells
+  holes := grownState.holes
+  landed := grownState.landed
+  head := grownState.head
+
+end Emitter
+
+/-! ## Action admission and the pin order (C7) -/
+
+/-- An action declaration: its work digest and the digests it pins.
+    Digests are modeled as identity labels; that a real digest cycle
+    would need a hash preimage is the trusted base's sentence, never
+    proved here. -/
+structure ActionDeclaration where
+  work : Nat
+  pins : List Nat
+deriving Repr, DecidableEq
+
+/-- The inductive admission order: a ledger grows one declaration at a
+    time (newest first), every pin names an already-admitted work
+    digest, and a work digest admits at most once — the in-model reading
+    of content addressing. -/
+inductive Admission : List ActionDeclaration -> Prop where
+  | empty : Admission []
+  | admit (ledger : List ActionDeclaration)
+      (declaration : ActionDeclaration) (admission : Admission ledger)
+      (pinsAdmitted : forall pin, pin ∈ declaration.pins ->
+        exists prior, prior ∈ ledger /\ prior.work = pin)
+      (fresh : forall prior, prior ∈ ledger ->
+        prior.work ≠ declaration.work) :
+      Admission (declaration :: ledger)
+
+/-- The pin relation inside a ledger: `parent` is pinned by `child`. -/
+def PinsWithin (ledger : List ActionDeclaration)
+    (parent child : ActionDeclaration) : Prop :=
+  child ∈ ledger /\ parent ∈ ledger /\ parent.work ∈ child.pins
+
+/-- The admission rank of a work digest: its distance from the oldest
+    admission. Later admissions rank strictly higher. -/
+def admissionRank : List ActionDeclaration -> Nat -> Nat
+  | [], _ => 0
+  | declaration :: ledger, work =>
+      if declaration.work == work then ledger.length
+      else admissionRank ledger work
+
+/-! ## Compaction below the anchor floor -/
+
+/-- The minimum anchor floor across a nonempty family of deployed folds:
+    the compaction horizon is derived, never chosen. -/
+def minimumFloor (floor : Nat) (floors : List Nat) : Nat :=
+  floors.foldr Nat.min floor
+
 end Fabric

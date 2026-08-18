@@ -164,6 +164,170 @@ def F11QueryDeterministic {Entry : Type uV} [BEq Entry] [LawfulBEq Entry]
           (foldFrom appendEntry (fold appendEntry [] prefixRight)
             suffixRight) k)
 
+/-- F1, semilattice half: cell merge carries the full join-semilattice
+    package under its derived order — the order laws plus least upper
+    bound, all consequences of the ACI laws already proved. The replica
+    reading: a node's current cell is a lattice lower bound of every
+    state it can reach by absorbing observations. -/
+def F1CellJoinSemilattice : Prop :=
+  JoinSemilatticePackage (Cell.merge (Holder := Holder) (Value := Value)
+    (cmp := cmp))
+
+/-- F12, algebra half: componentwise union of directories is associative,
+    commutative, and idempotent — the F1-for-maps ACI package on the new
+    carrier. -/
+def F12DirectoryMergeACI {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  (forall left right : Directory Petname Digest cmp,
+    Directory.merge left right = Directory.merge right left) /\
+  (forall left middle right : Directory Petname Digest cmp,
+    Directory.merge (Directory.merge left middle) right =
+      Directory.merge left (Directory.merge middle right)) /\
+  (forall directory : Directory Petname Digest cmp,
+    Directory.merge directory directory = directory)
+
+/-- F12, extensionality half: the binding set determines the directory —
+    a statement about states, not delivery histories. -/
+def F12DirectoryExtensional {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  forall left right : Directory Petname Digest cmp,
+    Directory.SameBindingSet left right -> left = right
+
+/-- F12, convergence half: two nodes folding the same bind-event support
+    under different delivery orders and multiplicities reach one
+    directory. -/
+def F12DirectoryConvergence {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq (Binding Petname Digest)] : Prop :=
+  forall left right : List (Binding Petname Digest),
+    SameDeliveredSet left right ->
+      foldBindings cmp left = foldBindings cmp right
+
+/-- F12, semilattice half: the directory join carries the same general
+    package as the cell — one derived order, one least-upper-bound law
+    set, instantiated at the map carrier. -/
+def F12DirectoryJoinSemilattice {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] : Prop :=
+  JoinSemilatticePackage (Directory.merge (Petname := Petname)
+    (Digest := Digest) (cmp := cmp))
+
+/-- F12, support half: resolution is a function of the bindings observed
+    at the name and the seal support — never of arrival order or
+    multiplicity. The distinctness premise is what makes the ambiguity
+    listing canonical; the well-fenced premise is what makes the greatest
+    seal unique, and it is discharged by citation of the register's F5
+    invariants, never restated here. -/
+def F12ResolutionOfSupport {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest] [BEq (Seal Digest)]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir dir' : Directory Petname Digest cmp) (name : Petname)
+      (seals seals' : List (Seal Digest)),
+    IdentityDistinct identity (boundDigests dir name) ->
+    (forall digest, Directory.BoundTo dir name digest <->
+      Directory.BoundTo dir' name digest) ->
+    SealsWellFenced seals ->
+    SameDeliveredSet seals seals' ->
+      resolve identity dir name seals = resolve identity dir' name seals'
+
+/-- F12, arbitration half: with any seal observed, resolution is the
+    binding sealed at the greatest token — a member of the observed seal
+    support that every observed token bounds, and under the well-fenced
+    premise THE member: any observed seal at the top token is that seal.
+    The uniqueness clause is exactly what the premise buys — without it,
+    two seals at one token leave "the greatest" undetermined. The holder
+    appears nowhere: the token decides, never the who. -/
+def F12GreatestSealWins {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir : Directory Petname Digest cmp) (name : Petname)
+      (seals : List (Seal Digest)),
+    SealsWellFenced seals -> seals ≠ [] ->
+      exists top, top ∈ seals /\
+        (forall observed, observed ∈ seals -> observed.token <= top.token) /\
+        (forall observed, observed ∈ seals ->
+          observed.token = top.token -> observed = top) /\
+        resolve identity dir name seals = .sealedAt top.token top.digest
+
+/-- F12, verdict characterization: the four resolution rows are exhaustive
+    and mutually exclusive — each verdict holds exactly at its stated
+    condition, the refusal-iff idiom. Deliberately premise-free: this is
+    computation accounting over the arrival schedule (without
+    `SealsWellFenced` a tied top token resolves to the first-kept pick,
+    visibly schedule-dependent); the order-free meaning law is
+    `F12GreatestSealWins` under the premise. -/
+def F12ResolutionCharacterization {Petname : Type uH} {Digest : Type uV}
+    {cmp : Binding Petname Digest -> Binding Petname Digest -> Ordering}
+    [Std.TransCmp cmp] [BEq Petname] [BEq Digest]
+    (identity : Digest -> Nat) : Prop :=
+  forall (dir : Directory Petname Digest cmp) (name : Petname)
+      (seals : List (Seal Digest)),
+    (resolve identity dir name seals = .absent <->
+      seals = [] /\ candidates identity dir name = []) /\
+    (forall digest, resolve identity dir name seals = .bound digest <->
+      seals = [] /\ candidates identity dir name = [digest]) /\
+    (forall listing, resolve identity dir name seals = .ambiguous listing <->
+      seals = [] /\ candidates identity dir name = listing /\
+        2 <= listing.length) /\
+    (forall token digest,
+      resolve identity dir name seals = .sealedAt token digest <->
+        exists top, greatestSeal seals = some top /\
+          top.token = token /\ top.digest = digest)
+
+/-- F10, stability half: a predicate of the closed trigger grammar that
+    holds at a state holds at every componentwise-grown state — an
+    enabled firing never un-fires. Every production is monotone by
+    construction; the hole production is stable in its reached-at-least
+    form only, and the is-exactly variant is the committed negative
+    control. That a fired hint's landed claim never lands twice is the
+    register's F5 I2 — cited, never restated. -/
+def F10Stability : Prop :=
+  forall (predicate : TriggerPredicate Holder Value)
+      (before after : FabricState Holder Value cmp),
+    FabricState.Le before after -> holds predicate before ->
+      holds predicate after
+
+/-- F10, hints half: the enabled declaration set is a function of the
+    delivered evidence support — duplicate-and-permute delivery of one
+    support fires one hint set. -/
+def F10HintsOfSupport [BEq (Observation Holder Value)] : Prop :=
+  forall (triggers : List (Trigger Holder Value))
+      (left right : List (Observation Holder Value))
+      (cells : Nat -> Cell Holder Value cmp) (holes : Nat -> HoleStage)
+      (landed : FiniteSet Nat compare) (head : Nat),
+    SameDeliveredSet left right ->
+      enabledDeclarations triggers
+          { evidence := foldEvidence cmp left, cells, holes, landed, head } =
+        enabledDeclarations triggers
+          { evidence := foldEvidence cmp right, cells, holes, landed, head }
+
+/-- C7, well-foundedness: under the inductive admission order — every
+    pin names an already-admitted digest, every digest admits at most
+    once — the pin relation of an admitted ledger is well-founded: the
+    action DAG is acyclic by construction. That a real digest cycle
+    would need a hash preimage stays in the trusted base. -/
+def C7PinWellFounded : Prop :=
+  forall (ledger : List ActionDeclaration), Admission ledger ->
+    WellFounded (PinsWithin ledger)
+
+/-- F3's compaction corollary: compacting a lane at or below a deployed
+    fold's anchor floor preserves that fold's resumed terminal state —
+    resuming from the fold's own anchor over the compacted remainder is
+    the uncompacted fold. `Retention.horizon` and the
+    compaction-past-horizon refusal cite this by name; the statement
+    covers the boundary inclusively, so compaction strictly below the
+    minimum anchor floor is licensed with margin. -/
+def F3CompactBelowFloor {State : Type uH} {Op : Type uV}
+    (step : State -> Op -> State) (initial : State) : Prop :=
+  forall (upTo floor : Nat) (trace : List Op), upTo <= floor ->
+    foldFrom step (fold step initial (trace.take floor))
+        ((trace.drop upTo).drop (floor - upTo)) =
+      fold step initial trace
+
 end Laws
 
 end Fabric

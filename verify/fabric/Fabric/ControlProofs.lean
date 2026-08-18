@@ -360,4 +360,216 @@ theorem drop_within_class_order_killed :
         (fun segment => segment.volatility == Volatility.static) := by
   decide
 
+/-- The padded join retains both upper-bound laws at every pair of cells:
+    each side stays below it, so the kill below is attributable to the
+    dropped minimality alone. Reflexivity, antisymmetry, and transitivity
+    read only the lawful merge and are untouched by construction. -/
+theorem padded_join_keeps_upper_bounds
+    (left right : Emitter.GroundCell) :
+    supLe Cell.merge left (Mutants.paddedJoin left right) /\
+      supLe Cell.merge right (Mutants.paddedJoin left right) := by
+  constructor
+  · exact le_trans cell_merge_assoc
+      (le_sup_left cell_merge_assoc cell_merge_idem left right)
+      (le_sup_left cell_merge_assoc cell_merge_idem
+        (Cell.merge left right) (Cell.singleton (99, 990)))
+  · exact le_trans cell_merge_assoc
+      (le_sup_right cell_merge_comm cell_merge_assoc cell_merge_idem
+        left right)
+      (le_sup_left cell_merge_assoc cell_merge_idem
+        (Cell.merge left right) (Cell.singleton (99, 990)))
+
+/-- The committed row kills the padded join: it is not below the lawful
+    join of the two distinct cells, so it is an upper bound that is not
+    least. -/
+theorem drop_join_minimality_killed :
+    ¬ supLe Cell.merge (Mutants.paddedJoin Mutants.joinLeft Mutants.joinRight)
+        (Cell.merge Mutants.joinLeft Mutants.joinRight) := by
+  unfold supLe
+  decide
+
+/-- The lawful resolution is one value across the permuted-seal row's two
+    arrival orders — the well-fenced instance of resolution-of-support. -/
+theorem drop_seals_well_fenced_keeps_fenced_support :
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderOne =
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderTwo := by
+  apply f12_resolution_of_support id Emitter.groundDirectory
+    Emitter.groundDirectory Emitter.groundPetname
+    Emitter.sealOrderOne Emitter.sealOrderTwo
+  · unfold IdentityDistinct
+    decide
+  · exact fun _ => Iff.rfl
+  · unfold SealsWellFenced
+    decide
+  · exact same_delivered_of_mutual_contains (by decide) (by decide)
+
+/-- The unfenced row keeps the seal-support equality: its two orders carry
+    one support, so nothing below is attributable to a support change. -/
+theorem unfenced_row_keeps_seal_support :
+    SameDeliveredSet Mutants.unfencedSealOrderOne
+      Mutants.unfencedSealOrderTwo :=
+  same_delivered_of_mutual_contains (by decide) (by decide)
+
+/-- The unfenced row drops exactly the well-fenced premise: two seals
+    share token 7. Why that support can never be observed of a running
+    register is F5's I1/I2 — the premise's discharge, cited, never
+    restated. -/
+theorem unfenced_row_lacks_well_fencing :
+    ¬ SealsWellFenced Mutants.unfencedSealOrderOne := by
+  unfold SealsWellFenced
+  decide
+
+/-- Outside the well-fenced premise the lawful resolve becomes
+    schedule-dependent: the two arrival orders of one unfenced support
+    resolve to two different seals — the premise is load-bearing. -/
+theorem drop_seals_well_fenced_killed :
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+        Mutants.unfencedSealOrderOne ≠
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Mutants.unfencedSealOrderTwo := by
+  decide
+
+/-- The contested name's canonical candidate listing, established through
+    `candidates_eq_canonical` because the canonical sort does not kernel-
+    reduce. -/
+theorem contested_name_candidates :
+    candidates id Emitter.groundDirectory Emitter.groundPetname =
+      [100, 200] := by
+  apply candidates_eq_canonical
+  · unfold IdentityDistinct
+    decide
+  · decide
+  · decide
+  · intro digest
+    rw [← bound_digests_mem,
+      show boundDigests Emitter.groundDirectory Emitter.groundPetname =
+        [100, 200] from by decide]
+
+/-- The singleton name's canonical candidate listing. -/
+theorem singleton_name_candidates :
+    candidates id Emitter.groundDirectory Emitter.singletonPetname =
+      [300] := by
+  apply candidates_eq_canonical
+  · unfold IdentityDistinct
+    decide
+  · decide
+  · decide
+  · intro digest
+    rw [← bound_digests_mem,
+      show boundDigests Emitter.groundDirectory Emitter.singletonPetname =
+        [300] from by decide]
+
+/-- The never-bound name's canonical candidate listing is empty. -/
+theorem absent_name_candidates :
+    candidates id Emitter.groundDirectory Emitter.absentPetname = [] := by
+  apply candidates_eq_canonical
+  · unfold IdentityDistinct
+    decide
+  · decide
+  · decide
+  · intro digest
+    rw [← bound_digests_mem,
+      show boundDigests Emitter.groundDirectory Emitter.absentPetname =
+        [] from by decide]
+
+/-- The lawful resolution refuses with one canonical ambiguity listing
+    across both bind arrival orders. -/
+theorem ambiguity_refusal_survives_bind_orders :
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+        Emitter.groundPetname [] = .ambiguous [100, 200] /\
+      resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+        Emitter.groundPetname [] = .ambiguous [100, 200] := by
+  have first : resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+      Emitter.groundPetname [] = .ambiguous [100, 200] :=
+    ((f12_resolution_characterization id _ _ _).2.2.1 [100, 200]).mpr
+      ⟨rfl, contested_name_candidates, by decide⟩
+  have converge : foldBindings Emitter.bindingCmp Emitter.bindOrderOne =
+      foldBindings Emitter.bindingCmp Emitter.bindOrderTwo :=
+    f12_directory_convergence Emitter.bindOrderOne Emitter.bindOrderTwo
+      (same_delivered_of_mutual_contains (by decide) (by decide))
+  exact ⟨first, converge ▸ first⟩
+
+/-- The last-write mutant agrees with the lawful resolution on a
+    singleton-bound name: its kill is attributable to arbitrating a
+    contested name alone. -/
+theorem lww_keeps_singleton_binding (name digest : Nat) :
+    Mutants.lwwResolve [(name, digest)] name = .bound digest := by
+  simp [Mutants.lwwResolve]
+
+/-- The two bind orders kill the last-write mutant: arrival order leaks
+    straight into the decided binding, where the lawful answer is one
+    ambiguity refusal. -/
+theorem drop_ambiguity_refusal_killed :
+    Mutants.lwwResolve Emitter.bindOrderOne Emitter.groundPetname ≠
+      Mutants.lwwResolve Emitter.bindOrderTwo Emitter.groundPetname := by
+  decide
+
+/-- On the aligned row — holder order agreeing with token order — the
+    holder-arbitrating mutant coincides with the lawful resolution, so
+    its kill is attributable to consulting the holder alone. -/
+theorem token_arbitration_keeps_aligned_row :
+    Mutants.holderArbitratedResolve Mutants.alignedSeals =
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Mutants.alignedSeals := by
+  decide
+
+/-- The permuted-seal row kills holder arbitration: the token order says
+    the token-9 seal, the holder order says the token-7 seal — the token
+    decides, never the who. -/
+theorem drop_token_arbitration_killed :
+    Mutants.holderArbitratedResolve Emitter.sealOrderOne ≠
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderOne := by
+  decide
+
+/-- On a token-ascending arrival schedule the last arrival is the
+    greatest seal, so the last-arrival mutant coincides with the lawful
+    resolution there. -/
+theorem last_arrival_keeps_ascending_schedule :
+    Mutants.lastArrivalResolve Emitter.sealOrderOne =
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+        Emitter.sealOrderOne := by
+  decide
+
+/-- The permuted-seal row kills the last-arrival mutant: two arrival
+    orders of one seal support give it two answers, while the lawful
+    resolution reads only the support. -/
+theorem drop_greatest_token_killed :
+    Mutants.lastArrivalResolve Emitter.sealOrderOne ≠
+      Mutants.lastArrivalResolve Emitter.sealOrderTwo := by
+  decide
+
+/-- Wherever the is-exactly variant fires, the lawful reached-at-least
+    production fires too, so the kill below is attributable to the
+    dropped reaches form alone. -/
+theorem exact_stage_implies_reached (hole : Nat) (target : HoleStage)
+    (state : FabricState Nat Nat Emitter.observationCmp)
+    (exact : Mutants.isExactlyStageEnabled hole target state = true) :
+    holdsBool (.holeReaches hole target) state = true := by
+  simp only [Mutants.isExactlyStageEnabled, beq_iff_eq] at exact
+  simp [holdsBool, exact]
+
+/-- The lawful reaches-form production holds at the small state and stays
+    held at the grown state — the second half derived through stability
+    itself. -/
+theorem trigger_stability_survives_growth
+    (grow : FabricState.Le Emitter.smallState Emitter.grownState) :
+    holds (.holeReaches 0 .opened) Emitter.smallState /\
+      holds (.holeReaches 0 .opened) Emitter.grownState := by
+  have small : holds (TriggerPredicate.holeReaches 0 .opened)
+      (cmp := Emitter.observationCmp) Emitter.smallState := by
+    show HoleStage.rank .opened <= (Emitter.smallState.holes 0).rank
+    decide
+  exact ⟨small, f10_stability _ _ _ grow small⟩
+
+/-- The growth row kills the is-exactly variant: it fires at the small
+    state and un-fires at the grown state, while the lawful production
+    holds at both. -/
+theorem drop_trigger_stability_killed :
+    Mutants.isExactlyStageEnabled 0 .opened Emitter.smallState = true /\
+      Mutants.isExactlyStageEnabled 0 .opened Emitter.grownState = false := by
+  decide
+
 end Fabric

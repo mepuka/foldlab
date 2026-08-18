@@ -1,0 +1,1 @@
+control=drop-ambiguity-refusal;vector=two-bind-orders;lawful-left=ambiguous:100,200;lawful-right=ambiguous:100,200;mutant-left=bound:200;mutant-right=bound:100;verdict=refuted

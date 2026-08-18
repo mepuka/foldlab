@@ -599,6 +599,291 @@ def renderDeclaredSeedCandidate : String :=
     , { key := "seed", value := nat 7 }
     ]
 
+/-! ## F12 resolution rows -/
+
+def renderSeal (observed : Seal Nat) : String :=
+  object
+    [ { key := "digest", value := nat observed.digest }
+    , { key := "holder", value := nat observed.holder }
+    , { key := "token", value := nat observed.token }
+    ]
+
+def renderSeals (seals : List (Seal Nat)) : String :=
+  array (seals.map renderSeal)
+
+def renderBinding (binding : Binding Nat Nat) : String :=
+  object
+    [ { key := "digest", value := nat binding.2 }
+    , { key := "name", value := nat binding.1 }
+    ]
+
+def renderBindEvents (events : List (Binding Nat Nat)) : String :=
+  array (events.map renderBinding)
+
+def renderDirectory (directory : Emitter.GroundDirectory) : String :=
+  array (directory.toList.map renderBinding)
+
+def renderResolution : Resolution Nat -> String
+  | .bound digest => object
+      [ { key := "digest", value := nat digest }
+      , { key := "verdict", value := string "bound" }
+      ]
+  | .absent => object [{ key := "verdict", value := string "absent" }]
+  | .ambiguous listing => object
+      [ { key := "candidates", value := array (listing.map nat) }
+      , { key := "verdict", value := string "ambiguous" }
+      ]
+  | .sealedAt token digest => object
+      [ { key := "digest", value := nat digest }
+      , { key := "token", value := nat token }
+      , { key := "verdict", value := string "sealed-at" }
+      ]
+
+/-- The stale-rebind row's provenance for its well-fenced seal history:
+    the Veil register package's exported corpus vintage. -/
+def veilCorpusCitation : String :=
+  "F5 I1/I2, verify/fabric-veil: packages/plait/fixtures/register-traces.ndjson (15 rows, sha256 376503be58dcaa01)"
+
+def f12AbsentVector
+    (absentRefusal : resolve id Emitter.groundDirectory Emitter.absentPetname
+      ([] : List (Seal Nat)) = .absent) : Vector :=
+  let resolution :=
+    resolve id Emitter.groundDirectory Emitter.absentPetname []
+  { name := "resolution-absent-name"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_absent"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.absentPetname }
+      , { key := "seals", value := renderSeals [] }
+      ]
+    verdict := object
+      [ { key := "isAbsenceRefusal", value := bool (verdictOfEq
+          (renderResolution resolution) (renderResolution .absent)
+          (congrArg renderResolution absentRefusal)) }
+      , { key := "resolution", value := renderResolution resolution }
+      ] }
+
+def f12SingletonVector
+    (singletonBound : resolve id Emitter.groundDirectory
+      Emitter.singletonPetname ([] : List (Seal Nat)) = .bound 300) : Vector :=
+  let resolution :=
+    resolve id Emitter.groundDirectory Emitter.singletonPetname []
+  { name := "resolution-singleton-binding"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_singleton"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.singletonPetname }
+      , { key := "seals", value := renderSeals [] }
+      ]
+    verdict := object
+      [ { key := "boundDigest", value := nat 300 }
+      , { key := "isSingletonBinding", value := bool (verdictOfEq
+          (renderResolution resolution) (renderResolution (.bound 300))
+          (congrArg renderResolution singletonBound)) }
+      , { key := "resolution", value := renderResolution resolution }
+      ] }
+
+def f12AmbiguousVector
+    (acrossOrders :
+      resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+          Emitter.groundPetname [] = .ambiguous [100, 200] /\
+        resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+          Emitter.groundPetname [] = .ambiguous [100, 200]) : Vector :=
+  let resolutionOne :=
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderOne)
+      Emitter.groundPetname []
+  let resolutionTwo :=
+    resolve id (foldBindings Emitter.bindingCmp Emitter.bindOrderTwo)
+      Emitter.groundPetname []
+  { name := "ambiguous-across-bind-orders"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_ambiguous_across_orders"
+    input := object
+      [ { key := "bindOrderOne", value := renderBindEvents Emitter.bindOrderOne }
+      , { key := "bindOrderTwo", value := renderBindEvents Emitter.bindOrderTwo }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      ]
+    verdict := object
+      [ { key := "equalAcrossOrders", value := bool (verdictOfEq
+          (renderResolution resolutionOne) (renderResolution resolutionTwo)
+          (congrArg renderResolution
+            (acrossOrders.1.trans acrossOrders.2.symm))) }
+      , { key := "refusal", value := string "ambiguous-binding" }
+      , { key := "resolution", value := renderResolution resolutionOne }
+      ] }
+
+def f12GreatestSealVector
+    (acrossOrders :
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.sealOrderOne = .sealedAt 9 200 /\
+        resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.sealOrderTwo = .sealedAt 9 200) : Vector :=
+  let resolutionOne :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.sealOrderOne
+  let resolutionTwo :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.sealOrderTwo
+  { name := "greatest-seal-across-orders"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_greatest_seal"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      , { key := "sealOrderOne", value := renderSeals Emitter.sealOrderOne }
+      , { key := "sealOrderTwo", value := renderSeals Emitter.sealOrderTwo }
+      ]
+    verdict := object
+      [ { key := "equalAcrossOrders", value := bool (verdictOfEq
+          (renderResolution resolutionOne) (renderResolution resolutionTwo)
+          (congrArg renderResolution
+            (acrossOrders.1.trans acrossOrders.2.symm))) }
+      , { key := "resolution", value := renderResolution resolutionOne }
+      ] }
+
+def f12StaleRebindVector
+    (staleInert :
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          (Emitter.staleSeal :: Emitter.landedSeals) =
+        resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.landedSeals /\
+      resolve id Emitter.groundDirectory Emitter.groundPetname
+          Emitter.landedSeals = .sealedAt 9 200) : Vector :=
+  let withStale :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      (Emitter.staleSeal :: Emitter.landedSeals)
+  let withoutStale :=
+    resolve id Emitter.groundDirectory Emitter.groundPetname
+      Emitter.landedSeals
+  { name := "stale-token-rebind-inert"
+    kind := "F12"
+    witness := "Fabric.emitter_f12_stale_rebind"
+    input := object
+      [ { key := "directory", value := renderDirectory Emitter.groundDirectory }
+      , { key := "landedSeals", value := renderSeals Emitter.landedSeals }
+      , { key := "petname", value := nat Emitter.groundPetname }
+      , { key := "staleAttempt", value := renderSeal Emitter.staleSeal }
+      , { key := "wellFencedBy", value := string veilCorpusCitation }
+      ]
+    verdict := object
+      [ { key := "resolution", value := renderResolution withoutStale }
+      , { key := "staleObservationInert", value := bool (verdictOfEq
+          (renderResolution withStale) (renderResolution withoutStale)
+          (congrArg renderResolution staleInert.1)) }
+      ] }
+
+/-! ## F10 trigger rows -/
+
+def stageName : HoleStage -> String
+  | .opened => "opened"
+  | .filled => "filled"
+  | .disputed => "disputed"
+  | .decided => "decided"
+  | .sealed => "sealed"
+
+def renderPredicate : TriggerPredicate Nat Nat -> String
+  | .evidenceAppears pattern => object
+      [ { key := "pattern", value := array (pattern.map renderObservation) }
+      , { key := "production", value := string "evidence-appears" }
+      ]
+  | .cellReaches cell threshold => object
+      [ { key := "cell", value := nat cell }
+      , { key := "production", value := string "cell-reaches" }
+      , { key := "threshold", value := array (threshold.map renderObservation) }
+      ]
+  | .holeReaches hole target => object
+      [ { key := "hole", value := nat hole }
+      , { key := "production", value := string "hole-reaches" }
+      , { key := "target", value := string (stageName target) }
+      ]
+  | .outcomeLanded work => object
+      [ { key := "production", value := string "outcome-landed" }
+      , { key := "work", value := nat work }
+      ]
+  | .headAdvancedPast position => object
+      [ { key := "past", value := nat position }
+      , { key := "production", value := string "head-advanced-past" }
+      ]
+
+def renderTrigger (trigger : Trigger Nat Nat) : String :=
+  object
+    [ { key := "declaration", value := nat trigger.declaration }
+    , { key := "predicate", value := renderPredicate trigger.predicate }
+    ]
+
+def renderFabricState (state : FabricState Nat Nat Emitter.observationCmp) :
+    String :=
+  object
+    [ { key := "cell5", value := renderCell (state.cells 5) }
+    , { key := "evidence", value := renderCell state.evidence }
+    , { key := "head", value := nat state.head }
+    , { key := "hole0", value := string (stageName (state.holes 0)) }
+    , { key := "landedOutcomes", value := array (state.landed.toList.map nat) }
+    ]
+
+def f10StabilityVector
+    (noUnfire : forall declaration,
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.smallState ->
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.grownState) : Vector :=
+  let enabledBefore :=
+    enabledDeclarations Emitter.groundTriggers Emitter.smallState
+  let enabledAfter :=
+    enabledDeclarations Emitter.groundTriggers Emitter.grownState
+  { name := "trigger-stability-under-growth"
+    kind := "F10"
+    witness := "Fabric.emitter_f10_no_unfire"
+    input := object
+      [ { key := "grownState", value := renderFabricState Emitter.grownState }
+      , { key := "smallState", value := renderFabricState Emitter.smallState }
+      , { key := "triggers", value :=
+          array (Emitter.groundTriggers.map renderTrigger) }
+      ]
+    verdict := object
+      [ { key := "enabledAfterGrowth", value := array (enabledAfter.map nat) }
+      , { key := "enabledBeforeGrowth", value :=
+          array (enabledBefore.map nat) }
+      , { key := "noEnabledFiringUnfires", value := bool (verdictOfTrue
+          (enabledBefore.all fun declaration =>
+            enabledAfter.contains declaration)
+          (List.all_eq_true.mpr fun declaration member =>
+            List.contains_iff_mem.mpr (noUnfire declaration member))) }
+      ] }
+
+def renderHints (hints : List Nat) : String :=
+  array (hints.map nat)
+
+def f10HintsVector
+    (hintsAgree :
+      enabledDeclarations Emitter.groundTriggers
+          (Emitter.hintStateOf Emitter.hintOrderOne) =
+        enabledDeclarations Emitter.groundTriggers
+          (Emitter.hintStateOf Emitter.hintOrderTwo)) : Vector :=
+  let hintsOne := enabledDeclarations Emitter.groundTriggers
+    (Emitter.hintStateOf Emitter.hintOrderOne)
+  let hintsTwo := enabledDeclarations Emitter.groundTriggers
+    (Emitter.hintStateOf Emitter.hintOrderTwo)
+  { name := "hints-across-arrival-orders"
+    kind := "F10"
+    witness := "Fabric.emitter_f10_hints"
+    input := object
+      [ { key := "deliveryOrderOne", value :=
+          array (Emitter.hintOrderOne.map renderObservation) }
+      , { key := "deliveryOrderTwo", value :=
+          array (Emitter.hintOrderTwo.map renderObservation) }
+      , { key := "triggers", value :=
+          array (Emitter.groundTriggers.map renderTrigger) }
+      ]
+    verdict := object
+      [ { key := "firedHints", value := renderHints hintsOne }
+      , { key := "matchesAcrossOrders", value := bool (verdictOfEq
+          (renderHints hintsOne) (renderHints hintsTwo)
+          (congrArg renderHints hintsAgree)) }
+      ] }
+
 def querySeedAdmissionVector
     (ambientSeedRefused : admitQueryInput .ambientSeed = none)
     (ambientClockRefused : admitQueryInput .ambientClock = none)

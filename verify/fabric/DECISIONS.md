@@ -328,6 +328,178 @@ and a mutant that drops two laws cannot attribute its kill.
 **Load-bearing? yes** — the third statement is what turns "two lawful
 assemblers agree byte-for-byte" from a sentence into a theorem.
 
+### T26. Carry the directory as the graph of the name-to-set map
+
+Decided: `Directory Petname Digest cmp := FiniteSet (Binding Petname Digest) cmp`
+— the graph of `Map Petname (FiniteSet Digest)` — with `merge` as set union
+and the componentwise reading proved (`directory_merge_bindings`: at every
+name, the bindings of a merged directory are the union of the two sides'
+bindings). Maps with absent-name-means-empty correspond exactly to binding
+graphs, and componentwise union of maps is union of graphs. An empty-set-valued
+key is unrepresentable because a key exists iff a pair exists, so no
+well-formedness invariant threads through any statement. Alternatives: a
+canonical association-list map (needs a no-empty-values invariant carried
+through every merge); generalizing `Cell` to a parametric carrier (ruled
+out — it reopens landed F1 statements mid-push). Why: the graph side gives
+state extensionality on the same footing as the cell, keeps every raw-list
+law statable (the falsifiability split: schedule-level laws quantify raw
+event lists, where the LWW and seal mutants die), and emits
+deterministically. **Load-bearing? yes** — it is the carrier of every F12
+statement.
+
+### T27. Observe seals as raw arrival lists with first-kept ties and seal-plane-wins
+
+Decided: `resolve` consumes the observed seal history as a raw
+`List (Seal Digest)` — `Seal` is `{token, holder, digest}`, the holder
+attributed data and never an arbitration input — and `greatestSeal`
+replaces its running maximum only on a strictly larger token, so at a
+token tie the earlier arrival is kept. The tie is therefore decided
+nowhere except by the `SealsWellFenced` premise (every observed token
+names one seal), which is discharged by citation of the register's F5
+invariants I1/I2 (`verify/fabric-veil`) and never restated in this
+toolchain. With any seal observed the sealed digest wins regardless of
+candidate membership: a seal is evidence of a landed fenced decision
+whose monotone bind may still be in flight, and demanding the digest
+among the candidates would leak a head-relative absence — a liveness
+fact — into a correctness verdict. Alternatives: a canonical seal-set
+carrier (a set fold makes ties schedule-independent by an undeclared
+arbitration rule — exactly what a load-bearing premise forbids); total
+tie-breaking by digest order (an arbitration rule nobody declared);
+requiring the sealed digest among the candidates. Why: the raw list
+keeps the drop-seals-well-fenced control statable — outside the premise
+the two arrival orders of one unfenced support visibly resolve
+differently — and under the premise `greatest_seal_of_support` proves
+schedule independence. **Load-bearing? yes** — the premise's
+load-bearingness is demonstrated by the committed control, and its
+discharge is the named F5 citation.
+
+### T28. List candidates canonically through the T22 sort machinery
+
+Decided: `candidates` is keep-last dedup then core `mergeSort` under
+`byIdentity identity := byScoreThenIdentity (fun _ => 0) identity`, so
+the T22 totality/transitivity/antisymmetry lemmas apply verbatim and the
+ambiguity listing is canonical in identity order, never arrival order.
+Ground candidate facts go through `candidates_eq_canonical` (a sorted,
+duplicate-free listing with exactly the bound digests is the canonical
+listing) because core `mergeSort` is opaque to kernel reduction — a
+`decide` through the sort does not evaluate. Alternatives: a bespoke
+structurally recursive insertion sort (kernel-reduces, but re-proves the
+sort obligations T22 already carries); relying on the binding set's
+listing order (couples the statement to tree internals). Why: one sort
+order, one lemma set, and the decide-friendly bridge keeps every ground
+row's witness an exact law instance. **Load-bearing? yes** — ambiguity
+listings are wire bytes, and their order must be a function of the
+support.
+
+### T29. Prove one hypothesis-parameterized semilattice package; the minimality control mutates the join
+
+Decided: the join-semilattice package is proved once over a raw join
+function with the three ACI facts as hypotheses — the
+`SemilatticeSup.mk'` construction transliterated, names kept
+(`le_refl`, `le_antisymm`, `le_trans`, `le_sup_left`, `le_sup_right`,
+`sup_le`) — with `supLe sup a b := (sup a b = b)` as the derived order,
+and instantiated twice (cell, directory), the replica lower bound
+rostered as `absorb_inflationary` with per-carrier instances. Under the
+derived order, lub-ness is a theorem of ACI, so no mutant can keep the
+algebra intact and break minimality alone — a minimality-only drop is
+inexpressible over an intact algebra. The honest control therefore
+mutates the join itself (`paddedJoin`: always union a sentinel), with
+both upper-bound laws provably retained and the kill row pinned at two
+distinct cells against their lawful join. Alternatives: a bundled
+structure carrying proof fields (its instances cannot live in the
+definition partition, whose files must not depend on the proof files);
+two concrete per-carrier packages (duplicates every lemma). Why: the
+hypothesis form is the general shape proved once, and the partition
+stays clean. **Load-bearing? yes** — the A-8b affordance sentence cites
+`cell_absorb_inflationary`, and the control's attribution rests on the
+retained upper-bound theorems.
+
+### T30. State the resolution characterization premise-free
+
+Decided: `f12_resolution_characterization` carries no `SealsWellFenced`
+premise — it is computation accounting over the arrival schedule, an
+iff per verdict row (which carries exhaustiveness and mutual exclusion
+inherently), whose sealedAt clause speaks of `greatestSeal`'s own
+first-kept pick. The order-free meaning law is `f12_greatest_seal_wins`
+under the premise, and schedule independence is
+`f12_resolution_of_support` under the premise. Alternatives: threading
+the premise through every clause (weakens a total statement with a
+hypothesis it does not use, and dresses the premise as decorative
+exactly where the drop-seals-well-fenced control proves it
+load-bearing elsewhere). Why: fewer premises where premises add nothing
+is the stronger and more honest form; the premise stays exactly where
+its drop is refutable. **Load-bearing? yes** — the division of labor is
+what the row text must state so the sealedAt clause is never over-read
+as the resolution law.
+
+### T31. Enumerate every capitalized law definition in the gate
+
+Decided: the gate's law enumeration matches `def [A-Z]...` in
+`Fabric/Laws.lean` instead of `def F...`, so a law statement whose name
+does not begin with F (the C7 admission-order law) cannot silently
+escape the expected-laws diff. Alternatives: keep the F-prefix pattern
+and F-prefix every law name. Why: strictly wider detection, no rename
+churn. **Load-bearing? yes** — an unenumerated law def would be an
+unreviewed statement surface.
+
+### T32. Close the trigger grammar as a five-production inductive over a product fabric order
+
+Decided: `TriggerPredicate` has exactly the five ruled constructors —
+evidence-appears, cell-reaches, hole-reaches, outcome-landed,
+head-advanced-past — and no admission map: absence, negation, and
+deadline have no constructor to carry them, so the grammar's closure IS
+the structural enforcement. `FabricState` is a product carrier whose
+order is componentwise: the evidence and per-cell components grow in
+the derived semilattice order (`supLe Cell.merge`, bridged to
+membership by `cell_le_iff_subset` — the semilattice synergy made
+citable), hole stages rise along the epistemic rank
+(opened < filled < disputed < decided < sealed; the high-water reading —
+runtime monotonicity of real hole evolution is the projection lane's
+question), landed outcomes by inclusion, and the head by `Nat` order as
+the journal prefix order projected to length — the prefix order is not
+forced into the semilattice. The hole production is reached-at-least
+only; the is-exactly variant IS the negative control, killed on the
+committed growth row while the lawful form holds at both states.
+`holdsBool` is the executable twin with `holds_iff_holds_bool` the
+bridge, and hint emission is `enabledDeclarations`, monotone along the
+order (`enabled_declarations_monotone`) with support-determinism riding
+F2 (`f10_hints_of_support` under `SameDeliveredSet`). That a fired
+hint's landed claim never lands twice is the register's F5 I2 — cited,
+never restated. Alternatives: a trigger-admission candidate map
+mirroring T23 (rejected — a corpus row without machinery behind it is
+what the corpus discipline refuses; the closed inductive already
+enforces G9); folding evidence-appears into cell-reaches (the five
+productions are the ruled grammar; the containment overlap is consumer
+ergonomics). **Load-bearing? yes** — stability in reaches-form is the
+statement E9's trigger pump wall keys on.
+
+### T33. Embed the pin order in admission rank; state compaction boundary-inclusive
+
+Decided: C7's admission order is an inductive over newest-first ledgers
+whose `admit` step demands every pin name an already-admitted work
+digest AND the new digest be fresh — freshness is the in-model reading
+of content addressing (one value, one digest), and the real-world half
+(a digest cycle needs a hash preimage) stays in the trusted base, on
+the row. Well-foundedness is the index embedding: pins descend strictly
+in admission rank (`pin_rank_lt`), and `Subrelation.wf` over
+`InvImage` pulls `Nat`'s order back along the rank — no accessibility
+surgery. The compaction corollary is stated boundary-inclusive
+(`upTo <= floor`): resuming a fold's own anchor over the compacted
+remainder is the uncompacted fold, with `compact_preserves_anchor_state`
+carrying the half where the premise is load-bearing (past the floor
+there is no anchor left to reconstruct), and the horizon form
+quantifying every deployed anchor at or below `minimumFloor`.
+Alternatives: acyclicity via transitive-closure irreflexivity (needs
+closure machinery the corollary consumer never cites); a strict
+`upTo < floor` statement (weaker than what is true — the ruled
+"strictly below the horizon" sentence is licensed with margin by the
+inclusive form). Why: the rank embedding is the whole proof, and the
+refusal boundary cites the theorem, not the inequality's edge.
+**Load-bearing? yes** — `Retention.horizon` and the
+compaction-past-horizon refusal cite `compact_below_floor_preserves_resumption`
+by name, and E9's row cites the admission order's freshness as the
+content-addressing seam.
+
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 
 Decided: every battery typecheck — the root script's four projects and the
