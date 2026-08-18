@@ -231,6 +231,17 @@ def alignedSeals : List (Seal Nat) :=
   , { token := 9, holder := 9, digest := 200 }
   ]
 
+/-! ### F10 trigger mutant -/
+
+/-- Drops the reached-at-least form: fires only while the hole sits
+    EXACTLY at the target stage, so growth un-fires it. Whenever it
+    fires, the lawful reaches-form predicate fires too — the retained
+    theorem — so its kill on the growth row is attributable to the
+    dropped form alone. -/
+def isExactlyStageEnabled (hole : Nat) (target : HoleStage)
+    (state : FabricState Nat Nat Emitter.observationCmp) : Bool :=
+  state.holes hole == target
+
 abbrev GroundPolicy := Policy Nat compare
 
 def atoms (values : List Nat) : FiniteSet Nat compare :=

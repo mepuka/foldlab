@@ -151,6 +151,12 @@ def main (args : List String) : IO UInt32 := do
         (showResolution (resolve id Emitter.groundDirectory
           Emitter.groundPetname Emitter.sealOrderOne))
         (showResolution (Mutants.holderArbitratedResolve Emitter.sealOrderOne))
+  | ["drop-trigger-stability"] =>
+      showDriftControl "drop-trigger-stability" "hole-stage-growth"
+        (toString (holdsBool (.holeReaches 0 .opened) Emitter.smallState))
+        (toString (holdsBool (.holeReaches 0 .opened) Emitter.grownState))
+        (toString (Mutants.isExactlyStageEnabled 0 .opened Emitter.smallState))
+        (toString (Mutants.isExactlyStageEnabled 0 .opened Emitter.grownState))
   | ["drop-greatest-token"] =>
       showDriftControl "drop-greatest-token" "permuted-seal"
         (showResolution (resolve id Emitter.groundDirectory
@@ -161,5 +167,5 @@ def main (args : List String) : IO UInt32 := do
         (showResolution (Mutants.lastArrivalResolve Emitter.sealOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence|drop-within-class-order|drop-join-minimality|drop-seals-well-fenced|drop-ambiguity-refusal|drop-token-arbitration|drop-greatest-token)"
+        "usage: control (drop-idempotence|drop-commutativity|drop-successor-discipline|drop-meet-clamping|drop-payload-integrity|drop-declared-reads|drop-volatility-order|drop-identity-tiebreak|drop-schedule-independence|drop-within-class-order|drop-join-minimality|drop-seals-well-fenced|drop-ambiguity-refusal|drop-token-arbitration|drop-greatest-token|drop-trigger-stability)"
       return 2

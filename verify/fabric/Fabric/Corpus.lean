@@ -774,6 +774,116 @@ def f12StaleRebindVector
           (congrArg renderResolution staleInert.1)) }
       ] }
 
+/-! ## F10 trigger rows -/
+
+def stageName : HoleStage -> String
+  | .opened => "opened"
+  | .filled => "filled"
+  | .disputed => "disputed"
+  | .decided => "decided"
+  | .sealed => "sealed"
+
+def renderPredicate : TriggerPredicate Nat Nat -> String
+  | .evidenceAppears pattern => object
+      [ { key := "pattern", value := array (pattern.map renderObservation) }
+      , { key := "production", value := string "evidence-appears" }
+      ]
+  | .cellReaches cell threshold => object
+      [ { key := "cell", value := nat cell }
+      , { key := "production", value := string "cell-reaches" }
+      , { key := "threshold", value := array (threshold.map renderObservation) }
+      ]
+  | .holeReaches hole target => object
+      [ { key := "hole", value := nat hole }
+      , { key := "production", value := string "hole-reaches" }
+      , { key := "target", value := string (stageName target) }
+      ]
+  | .outcomeLanded work => object
+      [ { key := "production", value := string "outcome-landed" }
+      , { key := "work", value := nat work }
+      ]
+  | .headAdvancedPast position => object
+      [ { key := "past", value := nat position }
+      , { key := "production", value := string "head-advanced-past" }
+      ]
+
+def renderTrigger (trigger : Trigger Nat Nat) : String :=
+  object
+    [ { key := "declaration", value := nat trigger.declaration }
+    , { key := "predicate", value := renderPredicate trigger.predicate }
+    ]
+
+def renderFabricState (state : FabricState Nat Nat Emitter.observationCmp) :
+    String :=
+  object
+    [ { key := "cell5", value := renderCell (state.cells 5) }
+    , { key := "evidence", value := renderCell state.evidence }
+    , { key := "head", value := nat state.head }
+    , { key := "hole0", value := string (stageName (state.holes 0)) }
+    , { key := "landedOutcomes", value := array (state.landed.toList.map nat) }
+    ]
+
+def f10StabilityVector
+    (noUnfire : forall declaration,
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.smallState ->
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.grownState) : Vector :=
+  let enabledBefore :=
+    enabledDeclarations Emitter.groundTriggers Emitter.smallState
+  let enabledAfter :=
+    enabledDeclarations Emitter.groundTriggers Emitter.grownState
+  { name := "trigger-stability-under-growth"
+    kind := "F10"
+    witness := "Fabric.emitter_f10_no_unfire"
+    input := object
+      [ { key := "grownState", value := renderFabricState Emitter.grownState }
+      , { key := "smallState", value := renderFabricState Emitter.smallState }
+      , { key := "triggers", value :=
+          array (Emitter.groundTriggers.map renderTrigger) }
+      ]
+    verdict := object
+      [ { key := "enabledAfterGrowth", value := array (enabledAfter.map nat) }
+      , { key := "enabledBeforeGrowth", value :=
+          array (enabledBefore.map nat) }
+      , { key := "noEnabledFiringUnfires", value := bool (verdictOfTrue
+          (enabledBefore.all fun declaration =>
+            enabledAfter.contains declaration)
+          (List.all_eq_true.mpr fun declaration member =>
+            List.contains_iff_mem.mpr (noUnfire declaration member))) }
+      ] }
+
+def renderHints (hints : List Nat) : String :=
+  array (hints.map nat)
+
+def f10HintsVector
+    (hintsAgree :
+      enabledDeclarations Emitter.groundTriggers
+          (Emitter.hintStateOf Emitter.hintOrderOne) =
+        enabledDeclarations Emitter.groundTriggers
+          (Emitter.hintStateOf Emitter.hintOrderTwo)) : Vector :=
+  let hintsOne := enabledDeclarations Emitter.groundTriggers
+    (Emitter.hintStateOf Emitter.hintOrderOne)
+  let hintsTwo := enabledDeclarations Emitter.groundTriggers
+    (Emitter.hintStateOf Emitter.hintOrderTwo)
+  { name := "hints-across-arrival-orders"
+    kind := "F10"
+    witness := "Fabric.emitter_f10_hints"
+    input := object
+      [ { key := "deliveryOrderOne", value :=
+          array (Emitter.hintOrderOne.map renderObservation) }
+      , { key := "deliveryOrderTwo", value :=
+          array (Emitter.hintOrderTwo.map renderObservation) }
+      , { key := "triggers", value :=
+          array (Emitter.groundTriggers.map renderTrigger) }
+      ]
+    verdict := object
+      [ { key := "firedHints", value := renderHints hintsOne }
+      , { key := "matchesAcrossOrders", value := bool (verdictOfEq
+          (renderHints hintsOne) (renderHints hintsTwo)
+          (congrArg renderHints hintsAgree)) }
+      ] }
+
 def querySeedAdmissionVector
     (ambientSeedRefused : admitQueryInput .ambientSeed = none)
     (ambientClockRefused : admitQueryInput .ambientClock = none)

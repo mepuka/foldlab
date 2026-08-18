@@ -1,8 +1,8 @@
 # Fabric algebra model
 
 `verify/fabric` is a standalone Lean 4.33.0 package with no Lake dependencies.
-It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, F7, F9, F11,
-and F12, plus the join-semilattice package the F1/F12 carriers share, then
+It states and proves the Plait fabric laws F1, F2, F2b, F3, F4, F7, F9, F10,
+F11, and F12, plus the join-semilattice package the F1/F12 carriers share, then
 executes the same definitions to author the runtime conformance corpus at
 `packages/plait/fixtures/fabric-conformance.ndjson`.
 
@@ -67,7 +67,7 @@ executes the same definitions to author the runtime conformance corpus at
   `IdentityDistinct` exactly where the tie-break needs it. The composed
   F11 chains F3 (`f11_state_of_anchor`), the support fold, and the list
   half under a rendered conclusion.
-- `Fabric/Mutants.lean` contains fifteen variants, each dropping exactly
+- `Fabric/Mutants.lean` contains sixteen variants, each dropping exactly
   one required law or premise half. The fourth drops the successor discipline and
   is killed by the
   order-sensitive 6-before-5 row; it does not claim to drop the redundant
@@ -97,6 +97,10 @@ executes the same definitions to author the runtime conformance corpus at
   refusal; the fourteenth arbitrates seals by holder and dies on the
   permuted-seal row against the token order; the fifteenth resolves to
   the last-arrived seal and dies on the same row's two arrival orders.
+  The sixteenth fires a hole trigger only while the hole sits EXACTLY at
+  the target stage — growth un-fires it — and dies on the committed
+  growth row where the lawful reached-at-least production holds at both
+  states.
   `Fabric/ControlProofs.lean` proves the retained laws and the
   named counterexamples. `ControlMain.lean` emits the committed counterexample
   traces checked by the gate; the five assembly/query kills use a
@@ -121,7 +125,7 @@ executes the same definitions to author the runtime conformance corpus at
   The gate refuses a vector whose `(kind, name, witness)` triple is not pinned or
   whose witness is absent from the complete theorem and footprint roster.
 - `run.sh` is the gate: source hygiene, file partition, build, complete theorem
-  roster, proof footprint, fifteen negative controls, pinned vector counts, and
+  roster, proof footprint, sixteen negative controls, pinned vector counts, and
   byte-identical regeneration.
 
 ## How a trace walks through `fold`
@@ -228,6 +232,28 @@ the premise, and `f12_resolution_of_support` carries schedule
 independence. Observing a stale-token rebind is inert
 (`stale_token_rebind_inert`); why a stale token can never land in the
 register in the first place is F5's, cited above.
+
+## How a trigger stays fired
+
+A trigger is a declared monotone predicate over the fabric state — the
+closed five-production grammar `TriggerPredicate` (evidence-appears,
+cell-reaches, hole-reaches, outcome-landed, head-advanced-past). Absence,
+negation, and deadline are unrepresentable: no constructor exists to
+carry them, so the non-monotone shapes are refused by the grammar's
+closure itself, and the deadline seat stays a fenced session act outside
+this algebra. The fabric order is componentwise (`FabricState.Le`): the
+evidence and per-cell components grow in the derived semilattice order —
+`cell_le_iff_subset` bridges it to membership — hole stages only rise
+along the epistemic rank (opened, filled, disputed, decided, sealed; the
+high-water reading), landed outcomes grow by inclusion, and the head by
+the journal prefix order projected to its length. `f10_stability` says a
+predicate that holds keeps holding under growth — an enabled firing
+never un-fires — with the hole production stable in its reached-at-least
+form only (the is-exactly variant is the committed control), and
+`f10_hints_of_support` says duplicate-and-permute delivery of one
+evidence support fires one hint set (`enabledDeclarations`, monotone by
+`enabled_declarations_monotone`). That a fired hint's landed claim never
+lands twice is the register's F5 I2 — cited, never restated here.
 
 ## Notation
 

@@ -830,4 +830,166 @@ def staleSeal : Seal Nat := { token := 7, holder := 9, digest := 100 }
 
 end Emitter
 
+/-! ## Triggers over fabric state -/
+
+/-- The epistemic stages of a hole. `opened` is the protocol stage named
+    open; Lean's keyword forces the spelling. -/
+inductive HoleStage where
+  | opened
+  | filled
+  | disputed
+  | decided
+  | sealed
+deriving Repr, DecidableEq
+
+/-- The numeric rank of a stage: opened, filled, disputed, decided,
+    sealed, in rising order. A hole production observes rank only in the
+    reached-at-least direction. -/
+def HoleStage.rank : HoleStage -> Nat
+  | .opened => 0
+  | .filled => 1
+  | .disputed => 2
+  | .decided => 3
+  | .sealed => 4
+
+/-- The fabric state a trigger observes: the evidence bag, per-cell
+    states, hole stages, landed outcomes, and the journal head. -/
+structure FabricState (Holder : Type uH) (Value : Type uV)
+    (cmp : Observation Holder Value -> Observation Holder Value -> Ordering)
+    where
+  evidence : Cell Holder Value cmp
+  cells : Nat -> Cell Holder Value cmp
+  holes : Nat -> HoleStage
+  landed : FiniteSet Nat compare
+  head : Nat
+
+/-- Componentwise fabric growth. The evidence and per-cell components
+    grow in the derived semilattice order; hole stages only rise along
+    the epistemic rank — the high-water reading; whether the runtime's
+    hole stages are monotone along real evolution is the projection
+    lane's question, not this model's — and landed outcomes and the head
+    are monotone reads of the journal, the head being the prefix order
+    projected to its length. -/
+structure FabricState.Le {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp]
+    (before after : FabricState Holder Value cmp) : Prop where
+  evidence : supLe Cell.merge before.evidence after.evidence
+  cells : forall cell, supLe Cell.merge (before.cells cell) (after.cells cell)
+  holes : forall hole, (before.holes hole).rank <= (after.holes hole).rank
+  landed : forall outcome, outcome ∈ before.landed -> outcome ∈ after.landed
+  head : before.head <= after.head
+
+/-- The closed trigger grammar: exactly the five ruled monotone
+    productions. Absence, negation, and deadline are unrepresentable —
+    no constructor exists to carry them; the grammar's closure IS the
+    structural enforcement, and the deadline seat stays a fenced session
+    act outside this algebra. -/
+inductive TriggerPredicate (Holder : Type uH) (Value : Type uV) where
+  | evidenceAppears (pattern : List (Observation Holder Value))
+  | cellReaches (cell : Nat) (threshold : List (Observation Holder Value))
+  | holeReaches (hole : Nat) (target : HoleStage)
+  | outcomeLanded (work : Nat)
+  | headAdvancedPast (position : Nat)
+
+/-- The denotation of a trigger predicate at a fabric state. Every
+    production reads its component upward: presence, reached-at-least,
+    landed, advanced-past. -/
+def holds {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] :
+    TriggerPredicate Holder Value -> FabricState Holder Value cmp -> Prop
+  | .evidenceAppears pattern, state =>
+      forall observation, observation ∈ pattern ->
+        observation ∈ state.evidence
+  | .cellReaches cell threshold, state =>
+      forall observation, observation ∈ threshold ->
+        observation ∈ state.cells cell
+  | .holeReaches hole target, state =>
+      target.rank <= (state.holes hole).rank
+  | .outcomeLanded work, state => work ∈ state.landed
+  | .headAdvancedPast position, state => position < state.head
+
+/-- The executable evaluation of a trigger predicate. -/
+def holdsBool {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] :
+    TriggerPredicate Holder Value -> FabricState Holder Value cmp -> Bool
+  | .evidenceAppears pattern, state =>
+      pattern.all fun observation => state.evidence.contains observation
+  | .cellReaches cell threshold, state =>
+      threshold.all fun observation => (state.cells cell).contains observation
+  | .holeReaches hole target, state =>
+      decide (target.rank <= (state.holes hole).rank)
+  | .outcomeLanded work, state => state.landed.contains work
+  | .headAdvancedPast position, state => decide (position < state.head)
+
+/-- A declared trigger: a monotone predicate and the action-declaration
+    template digest its firing hints at. That the landed CLAIMS of those
+    hints never land twice is the register's F5 I2 — cited, never
+    restated here. -/
+structure Trigger (Holder : Type uH) (Value : Type uV) where
+  predicate : TriggerPredicate Holder Value
+  declaration : Nat
+
+/-- The declarations a trigger set hints at a state: the enabled set. -/
+def enabledDeclarations {Holder : Type uH} {Value : Type uV}
+    {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+    [Std.TransCmp cmp] (triggers : List (Trigger Holder Value))
+    (state : FabricState Holder Value cmp) : List Nat :=
+  (triggers.filter fun trigger => holdsBool trigger.predicate state).map
+    fun trigger => trigger.declaration
+
+namespace Emitter
+
+/-- The small ground state: one observation, hole 0 open, nothing landed,
+    head at 3. -/
+def smallState : FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp [(1, 10)]
+  cells := fun cell =>
+    if cell == 5 then foldEvidence observationCmp [] else Cell.empty
+  holes := fun _ => .opened
+  landed := Std.ExtTreeSet.ofList [] compare
+  head := 3
+
+/-- The grown ground state: more evidence, cell 5 grown, hole 0 filled,
+    outcome 42 landed, head advanced to 7 — componentwise above
+    `smallState`. -/
+def grownState : FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp [(1, 10), (2, 20)]
+  cells := fun cell =>
+    if cell == 5 then foldEvidence observationCmp [(2, 20)] else Cell.empty
+  holes := fun hole => if hole == 0 then .filled else .opened
+  landed := Std.ExtTreeSet.ofList [42] compare
+  head := 7
+
+/-- The ground trigger set: one trigger per production. -/
+def groundTriggers : List (Trigger Nat Nat) :=
+  [ { predicate := .evidenceAppears [(1, 10)], declaration := 100 }
+  , { predicate := .holeReaches 0 .filled, declaration := 101 }
+  , { predicate := .outcomeLanded 42, declaration := 102 }
+  , { predicate := .headAdvancedPast 5, declaration := 103 }
+  , { predicate := .cellReaches 5 [(2, 20)], declaration := 104 }
+  ]
+
+/-- Hint arrival order one: the grown evidence support with one
+    duplicated delivery. -/
+def hintOrderOne : List GroundObservation := [(1, 10), (2, 20), (1, 10)]
+
+/-- The same evidence support, permuted, duplicating the other
+    observation. -/
+def hintOrderTwo : List GroundObservation := [(2, 20), (1, 10), (2, 20)]
+
+/-- The trigger-observed state at a delivered evidence schedule, the
+    non-evidence components held at the grown state. -/
+def hintStateOf (deliveries : List GroundObservation) :
+    FabricState Nat Nat observationCmp where
+  evidence := foldEvidence observationCmp deliveries
+  cells := grownState.cells
+  holes := grownState.holes
+  landed := grownState.landed
+  head := grownState.head
+
+end Emitter
+
 end Fabric

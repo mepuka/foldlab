@@ -78,6 +78,7 @@ expected_laws=(
   F1CellJoinSemilattice F12DirectoryMergeACI F12DirectoryExtensional
   F12DirectoryConvergence F12DirectoryJoinSemilattice F12ResolutionOfSupport
   F12GreatestSealWins F12ResolutionCharacterization
+  F10Stability F10HintsOfSupport
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
@@ -207,6 +208,12 @@ roster=(
   emitter_f12_bind_support_premise emitter_f12_ambiguous_across_orders
   emitter_f12_seal_premise emitter_f12_greatest_seal
   emitter_f12_stale_rebind
+  f10_stability holds_iff_holds_bool enabled_declarations_monotone
+  f10_hints_of_support
+  exact_stage_implies_reached trigger_stability_survives_growth
+  drop_trigger_stability_killed
+  emitter_f10_growth_premise emitter_f10_no_unfire
+  emitter_f10_hint_support_premise emitter_f10_hints
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
@@ -298,6 +305,7 @@ check_control drop-seals-well-fenced
 check_control drop-ambiguity-refusal
 check_control drop-token-arbitration
 check_control drop-greatest-token
+check_control drop-trigger-stability
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
 mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
@@ -336,8 +344,10 @@ expected_vector_witnesses=(
   'F12 ambiguous-across-bind-orders emitter_f12_ambiguous_across_orders'
   'F12 greatest-seal-across-orders emitter_f12_greatest_seal'
   'F12 stale-token-rebind-inert emitter_f12_stale_rebind'
+  'F10 trigger-stability-under-growth emitter_f10_no_unfire'
+  'F10 hints-across-arrival-orders emitter_f10_hints'
 )
-if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 25 ]] ||
+if [[ "$(wc -l < "$corpus_witnesses_tmp" | tr -d ' ')" -ne 27 ]] ||
     ! diff -u <(printf '%s\n' "${expected_vector_witnesses[@]}" | LC_ALL=C sort) \
       <(LC_ALL=C sort "$corpus_witnesses_tmp"); then
   echo "GATE: FAIL — every emitted vector must name its exact theorem instance" >&2
@@ -445,9 +455,9 @@ check_corpus_regeneration() {
 if ! check_corpus_regeneration "$fixture" "$corpus_tmp"; then
   exit 1
 fi
-expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F11":2,"F12":5,"F2":2,"F2b":6,"F3":1,"F3-F2b":1,"F4":1,"F7":2,"F9":2,"alphabet-refusal":1,"query-admission":1},"format":1,"generator":"verify/fabric emitter","vectors":25}'
+expected_header='{"command":"cd verify/fabric && lake exe emitter > ../../packages/plait/fixtures/fabric-conformance.ndjson","counts":{"F1":1,"F10":2,"F11":2,"F12":5,"F2":2,"F2b":6,"F3":1,"F3-F2b":1,"F4":1,"F7":2,"F9":2,"alphabet-refusal":1,"query-admission":1},"format":1,"generator":"verify/fabric emitter","vectors":27}'
 if [[ "$(head -n 1 "$corpus_tmp")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 26 ]] ||
+    [[ "$(wc -l < "$corpus_tmp" | tr -d ' ')" -ne 28 ]] ||
     [[ "$(grep -c '"kind":"F1"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F2"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F2b"' "$corpus_tmp")" -ne 6 ]] ||
@@ -456,6 +466,7 @@ if [[ "$(head -n 1 "$corpus_tmp")" != "$expected_header" ]] ||
     [[ "$(grep -c '"kind":"F4"' "$corpus_tmp")" -ne 1 ]] ||
     [[ "$(grep -c '"kind":"F7"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F9"' "$corpus_tmp")" -ne 2 ]] ||
+    [[ "$(grep -c '"kind":"F10"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F11"' "$corpus_tmp")" -ne 2 ]] ||
     [[ "$(grep -c '"kind":"F12"' "$corpus_tmp")" -ne 5 ]] ||
     [[ "$(grep -c '"kind":"alphabet-refusal"' "$corpus_tmp")" -ne 1 ]] ||
@@ -569,4 +580,4 @@ if [[ "$self_test" == true ]]; then
   echo "GATE: PASS (--self-test refused inserted model row=5 kind=F2b name=inserted-control-row)"
 fi
 
-echo "GATE: PASS (15 law-dropping controls; 25 canonical model vectors; byte-identical regeneration)"
+echo "GATE: PASS (16 law-dropping controls; 27 canonical model vectors; byte-identical regeneration)"

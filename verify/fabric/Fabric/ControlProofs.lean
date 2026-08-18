@@ -541,4 +541,35 @@ theorem drop_greatest_token_killed :
       Mutants.lastArrivalResolve Emitter.sealOrderTwo := by
   decide
 
+/-- Wherever the is-exactly variant fires, the lawful reached-at-least
+    production fires too, so the kill below is attributable to the
+    dropped reaches form alone. -/
+theorem exact_stage_implies_reached (hole : Nat) (target : HoleStage)
+    (state : FabricState Nat Nat Emitter.observationCmp)
+    (exact : Mutants.isExactlyStageEnabled hole target state = true) :
+    holdsBool (.holeReaches hole target) state = true := by
+  simp only [Mutants.isExactlyStageEnabled, beq_iff_eq] at exact
+  simp [holdsBool, exact]
+
+/-- The lawful reaches-form production holds at the small state and stays
+    held at the grown state — the second half derived through stability
+    itself. -/
+theorem trigger_stability_survives_growth
+    (grow : FabricState.Le Emitter.smallState Emitter.grownState) :
+    holds (.holeReaches 0 .opened) Emitter.smallState /\
+      holds (.holeReaches 0 .opened) Emitter.grownState := by
+  have small : holds (TriggerPredicate.holeReaches 0 .opened)
+      (cmp := Emitter.observationCmp) Emitter.smallState := by
+    show HoleStage.rank .opened <= (Emitter.smallState.holes 0).rank
+    decide
+  exact ⟨small, f10_stability _ _ _ grow small⟩
+
+/-- The growth row kills the is-exactly variant: it fires at the small
+    state and un-fires at the grown state, while the lawful production
+    holds at both. -/
+theorem drop_trigger_stability_killed :
+    Mutants.isExactlyStageEnabled 0 .opened Emitter.smallState = true /\
+      Mutants.isExactlyStageEnabled 0 .opened Emitter.grownState = false := by
+  decide
+
 end Fabric

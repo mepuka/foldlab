@@ -392,6 +392,57 @@ theorem emitter_f12_greatest_seal :
     emitter_f12_seal_premise.1 emitter_f12_seal_premise.2]
   exact first
 
+/-- The growth row's premise: the grown state sits componentwise above
+    the small state in the fabric order. -/
+theorem emitter_f10_growth_premise :
+    FabricState.Le Emitter.smallState Emitter.grownState := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · unfold supLe
+    decide
+  · intro cell
+    unfold supLe
+    unfold Emitter.smallState Emitter.grownState
+    by_cases target : cell == 5 <;> simp [target] <;> decide
+  · intro hole
+    unfold Emitter.smallState Emitter.grownState
+    by_cases target : hole == 0 <;> simp [target, HoleStage.rank]
+  · intro outcome member
+    simp only [Emitter.smallState] at member
+    rw [Std.ExtTreeSet.mem_ofList] at member
+    simp at member
+  · decide
+
+/-- The growth row: no enabled firing un-fires — every hint enabled at
+    the small state stays enabled at the grown state, through stability
+    at the trigger-set level. -/
+theorem emitter_f10_no_unfire :
+    forall declaration,
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.smallState ->
+      declaration ∈ enabledDeclarations Emitter.groundTriggers
+        Emitter.grownState :=
+  enabled_declarations_monotone Emitter.groundTriggers
+    emitter_f10_growth_premise
+
+/-- The hint row's premise: its two delivery orders carry one evidence
+    support. -/
+theorem emitter_f10_hint_support_premise :
+    SameDeliveredSet Emitter.hintOrderOne Emitter.hintOrderTwo :=
+  same_delivered_of_mutual_contains (by decide) (by decide)
+
+/-- The hint row: duplicate-and-permute delivery of one support fires one
+    hint set — an exact hints-of-support instance. -/
+theorem emitter_f10_hints :
+    enabledDeclarations Emitter.groundTriggers
+        (Emitter.hintStateOf Emitter.hintOrderOne) =
+      enabledDeclarations Emitter.groundTriggers
+        (Emitter.hintStateOf Emitter.hintOrderTwo) :=
+  f10_hints_of_support Emitter.groundTriggers
+    Emitter.hintOrderOne Emitter.hintOrderTwo
+    Emitter.grownState.cells Emitter.grownState.holes
+    Emitter.grownState.landed Emitter.grownState.head
+    emitter_f10_hint_support_premise
+
 /-- The stale-rebind row: observing the stale token changes nothing, and
     the landed history resolves at its greatest token. -/
 theorem emitter_f12_stale_rebind :

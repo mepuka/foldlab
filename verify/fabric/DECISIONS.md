@@ -442,6 +442,37 @@ and F-prefix every law name. Why: strictly wider detection, no rename
 churn. **Load-bearing? yes** — an unenumerated law def would be an
 unreviewed statement surface.
 
+### T32. Close the trigger grammar as a five-production inductive over a product fabric order
+
+Decided: `TriggerPredicate` has exactly the five ruled constructors —
+evidence-appears, cell-reaches, hole-reaches, outcome-landed,
+head-advanced-past — and no admission map: absence, negation, and
+deadline have no constructor to carry them, so the grammar's closure IS
+the structural enforcement. `FabricState` is a product carrier whose
+order is componentwise: the evidence and per-cell components grow in
+the derived semilattice order (`supLe Cell.merge`, bridged to
+membership by `cell_le_iff_subset` — the semilattice synergy made
+citable), hole stages rise along the epistemic rank
+(opened < filled < disputed < decided < sealed; the high-water reading —
+runtime monotonicity of real hole evolution is the projection lane's
+question), landed outcomes by inclusion, and the head by `Nat` order as
+the journal prefix order projected to length — the prefix order is not
+forced into the semilattice. The hole production is reached-at-least
+only; the is-exactly variant IS the negative control, killed on the
+committed growth row while the lawful form holds at both states.
+`holdsBool` is the executable twin with `holds_iff_holds_bool` the
+bridge, and hint emission is `enabledDeclarations`, monotone along the
+order (`enabled_declarations_monotone`) with support-determinism riding
+F2 (`f10_hints_of_support` under `SameDeliveredSet`). That a fired
+hint's landed claim never lands twice is the register's F5 I2 — cited,
+never restated. Alternatives: a trigger-admission candidate map
+mirroring T23 (rejected — a corpus row without machinery behind it is
+what the corpus discipline refuses; the closed inductive already
+enforces G9); folding evidence-appears into cell-reaches (the five
+productions are the ruled grammar; the containment overlap is consumer
+ergonomics). **Load-bearing? yes** — stability in reaches-form is the
+statement E9's trigger pump wall keys on.
+
 ### T10. Compile the gate battery with tsgo; keep tsc as the installed referee
 
 Decided: every battery typecheck — the root script's four projects and the

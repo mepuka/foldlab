@@ -273,6 +273,33 @@ def F12ResolutionCharacterization {Petname : Type uH} {Digest : Type uV}
         exists top, greatestSeal seals = some top /\
           top.token = token /\ top.digest = digest)
 
+/-- F10, stability half: a predicate of the closed trigger grammar that
+    holds at a state holds at every componentwise-grown state — an
+    enabled firing never un-fires. Every production is monotone by
+    construction; the hole production is stable in its reached-at-least
+    form only, and the is-exactly variant is the committed negative
+    control. That a fired hint's landed claim never lands twice is the
+    register's F5 I2 — cited, never restated. -/
+def F10Stability : Prop :=
+  forall (predicate : TriggerPredicate Holder Value)
+      (before after : FabricState Holder Value cmp),
+    FabricState.Le before after -> holds predicate before ->
+      holds predicate after
+
+/-- F10, hints half: the enabled declaration set is a function of the
+    delivered evidence support — duplicate-and-permute delivery of one
+    support fires one hint set. -/
+def F10HintsOfSupport [BEq (Observation Holder Value)] : Prop :=
+  forall (triggers : List (Trigger Holder Value))
+      (left right : List (Observation Holder Value))
+      (cells : Nat -> Cell Holder Value cmp) (holes : Nat -> HoleStage)
+      (landed : FiniteSet Nat compare) (head : Nat),
+    SameDeliveredSet left right ->
+      enabledDeclarations triggers
+          { evidence := foldEvidence cmp left, cells, holes, landed, head } =
+        enabledDeclarations triggers
+          { evidence := foldEvidence cmp right, cells, holes, landed, head }
+
 end Laws
 
 end Fabric

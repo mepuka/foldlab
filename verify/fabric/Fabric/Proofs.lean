@@ -1615,4 +1615,91 @@ end ResolutionLaws
 
 end F12Resolution
 
+section F10
+
+variable {Holder : Type uH} {Value : Type uV}
+variable {cmp : Observation Holder Value -> Observation Holder Value -> Ordering}
+variable [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
+
+/-- F10, stability: every production of the closed grammar reads its
+    component upward, so componentwise growth preserves it. The evidence
+    and cell cases go through the semilattice bridge — the derived order
+    is membership inclusion. -/
+theorem f10_stability : Laws.F10Stability (cmp := cmp) := by
+  intro predicate before after grow now
+  cases predicate with
+  | evidenceAppears pattern =>
+      intro observation member
+      exact cell_le_iff_subset.mp grow.evidence observation
+        (now observation member)
+  | cellReaches cell threshold =>
+      intro observation member
+      exact cell_le_iff_subset.mp (grow.cells cell) observation
+        (now observation member)
+  | holeReaches hole target =>
+      exact Nat.le_trans now (grow.holes hole)
+  | outcomeLanded work =>
+      exact grow.landed work now
+  | headAdvancedPast position =>
+      exact Nat.lt_of_lt_of_le now grow.head
+
+omit [Std.LawfulEqCmp cmp] in
+/-- The executable evaluation agrees with the denotation. -/
+theorem holds_iff_holds_bool (predicate : TriggerPredicate Holder Value)
+    (state : FabricState Holder Value cmp) :
+    holds predicate state <-> holdsBool predicate state = true := by
+  cases predicate with
+  | evidenceAppears pattern =>
+      show (forall observation, observation ∈ pattern ->
+          observation ∈ state.evidence) <->
+        (pattern.all fun observation =>
+          state.evidence.contains observation) = true
+      simp [List.all_eq_true]
+  | cellReaches cell threshold =>
+      show (forall observation, observation ∈ threshold ->
+          observation ∈ state.cells cell) <->
+        (threshold.all fun observation =>
+          (state.cells cell).contains observation) = true
+      simp [List.all_eq_true]
+  | holeReaches hole target =>
+      show target.rank <= (state.holes hole).rank <->
+        decide (target.rank <= (state.holes hole).rank) = true
+      simp
+  | outcomeLanded work =>
+      show work ∈ state.landed <-> state.landed.contains work = true
+      exact Std.ExtTreeSet.mem_iff_contains
+  | headAdvancedPast position =>
+      show position < state.head <-> decide (position < state.head) = true
+      simp
+
+/-- Growth can only enable more hints: the enabled declaration set is
+    monotone along the fabric order — the no-un-fire reading of
+    stability at the trigger-set level. -/
+theorem enabled_declarations_monotone
+    (triggers : List (Trigger Holder Value))
+    {before after : FabricState Holder Value cmp}
+    (grow : FabricState.Le before after) :
+    forall declaration,
+      declaration ∈ enabledDeclarations triggers before ->
+        declaration ∈ enabledDeclarations triggers after := by
+  intro declaration member
+  unfold enabledDeclarations at member ⊢
+  obtain ⟨trigger, memberFilter, projection⟩ := List.mem_map.mp member
+  obtain ⟨memberList, holdsBefore⟩ := List.mem_filter.mp memberFilter
+  apply List.mem_map.mpr
+  refine ⟨trigger, List.mem_filter.mpr ⟨memberList, ?_⟩, projection⟩
+  exact (holds_iff_holds_bool trigger.predicate after).mp
+    (f10_stability trigger.predicate before after grow
+      ((holds_iff_holds_bool trigger.predicate before).mpr holdsBefore))
+
+/-- F10, hints: equal delivered evidence support gives one enabled
+    declaration set — the F2 convergence carried to the trigger seam. -/
+theorem f10_hints_of_support [BEq (Observation Holder Value)]
+    [Std.LawfulBEqCmp cmp] :
+    Laws.F10HintsOfSupport (cmp := cmp) := by
+  intro triggers left right cells holes landed head same
+  rw [f2_trace_invariant left right same]
+
+end F10
+
 end Fabric
