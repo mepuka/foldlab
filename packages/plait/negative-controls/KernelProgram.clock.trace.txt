@@ -1,0 +1,1 @@
+negative-controls/KernelProgram.clock.mutant.ts(24,5): error TS2353: Object literal may only specify known properties, and 'clock' does not exist in type 'KernelEmitArgs'.

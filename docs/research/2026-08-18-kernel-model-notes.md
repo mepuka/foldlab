@@ -264,6 +264,37 @@ cannot quietly grow a proof or a consumer without a ruling.
    spelling several unlawful shapes at once, which refusal fires is
    the fixed check order, not a ruling (KM-5). The planted programs
    are single-fault, so the controls do not see the ordering.
+8. **Attribution is absent.** The record's emit is attributed and the
+   fabric's observations carry holders; the kernel's emit carries a
+   lane and a body only, and the world's evidence contribution is a
+   bare value. Deliberate — every "who" waits on the estate's
+   attribution decision — but it means no kernel statement mentions a
+   holder, and the F2 correspondence is to the value half only.
+9. **R10 is modeled at one act, not all ten rules.** The record makes
+   the writ premise a typing condition on every generator
+   application; the model carries a writ only on declare (with the
+   universe check) and on spawn's two ends. Emit, join, fold, decide,
+   and trigger sentences carry no writ slot, and no meet algebra
+   exists in the package (KM-7's bound, widened here to the full
+   premise).
+10. **Hole signatures and lineage are untyped in the Lean layer.**
+   The record's program declaration types each hole by a schema
+   digest and carries lineage; the Lean model's holes are bare names
+   and its program layer has no lineage field, so fill performs no
+   conformance check (G26-at-fill is unmodeled). The TS projection
+   carries both — the one place a projection is RICHER than the
+   model, which inverts the projection-wall direction KM-13 assumes
+   and should be reconciled when the wall lands.
+11. **Reads return no value.** The record's fold signature returns
+   state-and-anchor; the model's interpretation is a world
+   transformer, so resolve and fold are identities and their returned
+   values are unmodeled. Determinism of the returned value is the
+   fabric's F11 territory, cited not restated; nothing here claims
+   it.
+12. **Fabric law names in the refusal table are unchecked strings.**
+   Verified against the fabric roster when written; a fabric rename
+   goes stale here silently. The repair belongs with the projection
+   wall or VERIFICATION.md wiring at ratification.
 
 ## 10. The first theorem for adversarial review
 
@@ -600,6 +631,123 @@ posture.
   law distinguishes a path from a petname list plus a root); ambient
   roots for ergonomics (refused on the closure discipline).
   Reversal: additive; nothing ships until a consumer names it.
+- **KM-17 — the algebra ladder as the brand hierarchy.** Raised in
+  operator review of the algebraic canon: the rung classification
+  (magma ⊂ monoid ⊂ commutative monoid ⊂ bounded semilattice; group
+  beside) becomes the earned-brand lattice on algebra declarations,
+  carried by KindContent .algebra (KM-12) and checked by generated
+  law suites (the F4 Commutative-brand discipline widened to the
+  whole ladder). Rights follow rungs mechanically: join elaborates
+  only at semilattice-branded carriers, partition merge demands
+  commutative-or-better, and the unearned-brand refusal generalizes
+  from one row to the ladder. The named measurement catalog (count,
+  sum, max, distinct-set, sketches, histograms) lands as cataloged
+  algebra declarations with rungs — a standard library in the
+  catalog, never in the language declaration. Alternatives: rungs as
+  documentation only (loses the compile-time routing and the taught
+  refusals); a full typeclass tower (more structure than any current
+  law consumes). Reversal: brands are additive metadata on declared
+  values; retiring a rung strands no identity.
+- **KM-18 — algebraic notation as a projection register, evaled not
+  assumed.** Notation lives in three lawful places and no fourth:
+  the type/doc layer (every generator's JSDoc opens with its
+  algebraic sentence — the Dvořák rule extended), the prose
+  projection's second register (plain-word and algebraic
+  concretizations generated from one rule datum, the GF shape the
+  survey verified; refusals teach in both registers), and — as an
+  experiment only — generated bracket-property aliases
+  (`cell["∨"](x)`; bare math-symbol identifiers are impossible in
+  JS and refused by the plain-words ruling regardless). Whether
+  symbol surfaces help or hurt LLM population is unknown; the Q1
+  eval harness gains a notation arm (same tasks, three surfaces,
+  lawfulness and wrong-slot rates) before any alias ships.
+  Alternatives: notation in identifiers (refused twice — JS
+  identifier grammar and the naming ruling); a parsed math DSL
+  string surface (refused — a second assembler). Reversal: doc-layer
+  notation is inert; aliases are generated and retire by
+  regeneration.
+- **KM-19 — the combinator discipline for new algebras (HSP).**
+  Raised in operator review: is there a general approach to
+  developing algebras from the proven theorem classes? Yes — the
+  rung ladder's classes are equational varieties, and varieties are
+  closed under homomorphic images, subalgebras, and products
+  (Birkhoff), so the lawful constructor set is: products and
+  pointwise lifting (which alone generate histograms, vector clocks,
+  and the standard sketches — HyperLogLog is pointwise max, Bloom
+  pointwise or, Count-Min pointwise plus), contribution transformers
+  (map, and filter via the fusion law — a filter is a step
+  transformer and preserves rung; predicates are declared data, and
+  filtering on absence routes to the deadline seat), subalgebras,
+  and one free object per rung (lists, multisets, finite sets — the
+  quotient chain the planes already are; F2 is the factorization
+  through its end). Two constructions deliberately leave the
+  variety and stay fenced where the estate already fences them: the
+  finishing projection (read-time only, never merged — F11's
+  quarantine) and arbitration (greatest-by-data or decide). Method:
+  classify by rights to pick the minimal rung; construct by
+  combinators; the brand transports by preservation metatheorem
+  (the join_semilattice_of_aci precedent generalized) and the
+  generated suite confirms rather than discovers; anything
+  unreachable by combinators is a new algebra and a grill item —
+  the K-1 growth discipline at algebra scale. "Merge" disambiguates
+  under this discipline into four routed operations: state join
+  (semilattice), shard merge (commutative brand), ordered-stream
+  interleaving (deterministic only by-position or under
+  commutativity — the shuffle of two sequences has no canonical
+  element), and candidate arbitration (never an algebra operation).
+  Alternatives: hand-built algebras with per-instance suites only
+  (loses inheritance and invites unlawful merges); an open
+  combinator set (loses the novelty trigger). Reversal: the
+  combinator library is catalog content; retiring it strands no
+  identity.
+- **KM-20 — the refusal stability law family (CALM applied to the
+  door).** Raised in operator review: treat refusals first-class.
+  The sixteen reasons split by monotonicity under door growth:
+  candidate-intrinsic reasons (a function of the candidate's bytes
+  alone — permanent, only rewriting repairs) versus door-relative
+  reasons (forward-reference, off-writ-referent — anti-monotone:
+  catalog or universe growth repairs the unchanged candidate). The
+  record's structural/absence split becomes a provable family with
+  named statements for the proof lane: `admit_monotone` (a larger
+  door admits everything a smaller one did, to the same act),
+  `intrinsic_fault_refused_everywhere` (any intrinsic fault refuses
+  at every door), `relative_refusal_repairable_by_growth` (every
+  door-relative refusal has an admitting door extension). Honest
+  caveat, stated: on multi-fault candidates the refused STATUS is
+  stable under growth, not the reason string — a clearing relative
+  fault can surface an intrinsic one behind it. Payoff: the
+  retry-versus-rewrite decision becomes theorem-backed. Recommended:
+  prove in the model as the next increment after the unity bridge;
+  the proofs are membership-monotonicity inductions over the door
+  checks. Reversal: additive laws; nothing ships on them yet.
+- **KM-21 — refusal identity, arbitration, repair functions, and
+  re-entry.** Four adoptions making the refusal a full citizen: (1)
+  refusals are declared values with digests, and a repaired
+  candidate PINS the refusal it answers — the repair loop becomes
+  catalog lineage, and the self-containment gate's refusal leg
+  becomes checkable data rather than assessment; (2) KM-5 dissolves
+  into the arbitration-by-declared-order pattern: the fault set
+  R(candidate) is a finite-set semilattice, the priority is a
+  declared total order on reasons cataloged in the language
+  declaration, the door returns the minimum with the full fault
+  listing beside it (the F12 ambiguity-listing precedent at the
+  door — never hide the support behind the arbitration); (3) the
+  four machine-applicable repairs become a partial function
+  repair : Candidate × Reason ⇀ Candidate with the soundness family
+  `machine_repair_clears_reason` (clearing one reason may surface
+  another — composition follows the priority order and terminates
+  because the fault-set minimum strictly clears); (4) refusals
+  re-enter the monotone plane as certifier-attributed evidence on a
+  refusal lane, so the measurement canon applies to refusals
+  (counts per reason, distinct candidates, latest-per-work) and
+  triggers lawfully react to refusal patterns through the existing
+  evidence-appears production — refuse, journal, trigger, hint
+  repair, decide, all inside the current grammar. Alternatives:
+  refusals as transient returns only (loses provenance, automation,
+  and the checkable repair leg); a new refusal-reaction generator
+  (refused — the existing production already carries it).
+  Reversal: each adoption is additive; the lane and priority order
+  are declared values, retirable pre-consumer.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the

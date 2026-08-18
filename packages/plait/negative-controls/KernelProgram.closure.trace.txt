@@ -1,0 +1,1 @@
+negative-controls/KernelProgram.closure.mutant.ts(27,5): error TS2322: Type '(left: bigint, right: bigint) => bigint' is not assignable to type 'KernelValueArg'.

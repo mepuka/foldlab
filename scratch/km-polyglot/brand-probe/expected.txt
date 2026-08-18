@@ -1,0 +1,2 @@
+invalid operation: p == q (mismatched types ProgramDigest and PolicyDigest)
+cannot use u (variable of struct type Token[LaneBrand]) as Token[ProgramBrand] value in assignment

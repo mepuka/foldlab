@@ -1,0 +1,3 @@
+negative-controls/KernelProgram.cross-sort.mutant.ts(25,60): error TS2322: Type 'KernelHandle<"emit", null>' is not assignable to type 'KernelDigestArg<"policy">'.
+  Type 'KernelHandle<"emit", null>' is not assignable to type 'KernelHandle<"join" | "declare" | "resolve" | "emit" | "fold" | "decide" | "trigger" | "spawn", "policy">'.
+    Type 'null' is not assignable to type '"policy"'.

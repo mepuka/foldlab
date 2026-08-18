@@ -1,0 +1,31 @@
+name = "unity"
+defaultTargets = ["Unity", "control", "emit"]
+
+[[require]]
+name = "fabric"
+path = "../fabric"
+
+[[require]]
+name = "kernel"
+path = "../kernel"
+
+[[lean_lib]]
+name = "Unity"
+globs = [
+  "Unity",
+  "Unity.Canon",
+  "Unity.Program",
+  "Unity.Shape",
+  "Unity.Reflect",
+  "Unity.Emit",
+  "Unity.Check",
+  "Unity.Dsl",
+]
+
+[[lean_exe]]
+name = "control"
+root = "ControlMain"
+
+[[lean_exe]]
+name = "emit"
+root = "EmitMain"

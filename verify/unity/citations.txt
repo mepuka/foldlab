@@ -1,0 +1,8 @@
+at_most_one_landed_commit	veil
+c7_pin_well_founded	fabric
+cell_absorb_inflationary	fabric
+compact_below_floor_preserves_resumption	fabric
+f10_stability	fabric
+f11_query_deterministic	fabric
+f11_topk_of_support	fabric
+f1_cell_merge_aci	fabric

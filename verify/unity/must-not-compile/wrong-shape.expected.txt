@@ -1,0 +1,3 @@
+conformance: mini-AST row disagrees with the environment
+type: Digest
+"params":[{"name":"kind","role":"brand"}]

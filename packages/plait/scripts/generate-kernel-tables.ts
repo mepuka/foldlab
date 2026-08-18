@@ -1,0 +1,16 @@
+import { resolve } from "node:path"
+
+import { loadKernelCorpus } from "./kernel-corpus.js"
+import { ARTIFACT_PATH, GENERATED_PATH, renderKernelTables } from "./kernel-tables.js"
+
+const repository = resolve(import.meta.dir, "../../..")
+const corpus = await loadKernelCorpus(repository)
+await Bun.write(
+  resolve(repository, GENERATED_PATH),
+  renderKernelTables(corpus, ARTIFACT_PATH),
+)
+console.log(
+  `KERNEL TABLES: wrote ${GENERATED_PATH} from ${ARTIFACT_PATH}` +
+    ` (${corpus.kinds.length} kinds, ${corpus.stages.length} stages,` +
+    ` ${corpus.refusals.length} refusals, ${corpus.types.length} types)`,
+)

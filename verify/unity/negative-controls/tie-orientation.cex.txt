@@ -1,0 +1,1 @@
+control=tie-orientation;vector=two-facts-one-token;kernel-read=99;fabric-read=10;verdict=refuted
