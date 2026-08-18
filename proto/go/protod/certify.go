@@ -16,8 +16,10 @@ type certificate struct {
 // certify is the catalog's sole admission entry point. Its bytes are the full
 // type.create request body so malformed envelopes, grammar refusals, identity
 // derivation, ref-graph closure, and durable commit all make one decision at
-// one seam. Substrate failure remains the separate error result and is never
-// disguised as a domain refusal.
+// one seam. Those bytes enter through constrained admission (admission.go) and
+// nothing else, so the catalog certifies the value that arrived rather than a
+// decoder's repair of it. Substrate failure remains the separate error result
+// and is never disguised as a domain refusal.
 func (d *Daemon) certify(
 	ctx context.Context,
 	bytes []byte,

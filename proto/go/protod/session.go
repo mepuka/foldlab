@@ -3,6 +3,9 @@ package protod
 import (
 	"bytes"
 	"context"
+	// encoding/json carriage: encoding in-memory values for canonicalization,
+	// and reading back session-journal payloads the daemon appended itself.
+	// Submitted session bytes enter through admission.go.
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -787,14 +790,17 @@ func sessionCompaction(name string, events []sessionEvent) ([]retentionMark, *Re
 	}
 }
 
+// requireSessionFields asks the ADMITTED value which members arrived — never
+// the raw bytes. Presence read by a second, repairing decoder could answer for
+// a body constrained admission refuses (finding #36).
 func requireSessionFields(body []byte, fields ...string) *Refusal {
-	var decoded map[string]json.RawMessage
-	if err := json.Unmarshal(body, &decoded); err != nil {
+	decoded := admittedFields(body)
+	if decoded == nil {
 		return nil
 	}
 	for _, field := range fields {
 		raw, present := decoded[field]
-		if !present || string(raw) == "null" {
+		if !present || raw == nil {
 			return malformedSessionField(field, nil, "a required session request field")
 		}
 	}
