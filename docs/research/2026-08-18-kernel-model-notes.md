@@ -264,6 +264,37 @@ cannot quietly grow a proof or a consumer without a ruling.
    spelling several unlawful shapes at once, which refusal fires is
    the fixed check order, not a ruling (KM-5). The planted programs
    are single-fault, so the controls do not see the ordering.
+8. **Attribution is absent.** The record's emit is attributed and the
+   fabric's observations carry holders; the kernel's emit carries a
+   lane and a body only, and the world's evidence contribution is a
+   bare value. Deliberate — every "who" waits on the estate's
+   attribution decision — but it means no kernel statement mentions a
+   holder, and the F2 correspondence is to the value half only.
+9. **R10 is modeled at one act, not all ten rules.** The record makes
+   the writ premise a typing condition on every generator
+   application; the model carries a writ only on declare (with the
+   universe check) and on spawn's two ends. Emit, join, fold, decide,
+   and trigger sentences carry no writ slot, and no meet algebra
+   exists in the package (KM-7's bound, widened here to the full
+   premise).
+10. **Hole signatures and lineage are untyped in the Lean layer.**
+   The record's program declaration types each hole by a schema
+   digest and carries lineage; the Lean model's holes are bare names
+   and its program layer has no lineage field, so fill performs no
+   conformance check (G26-at-fill is unmodeled). The TS projection
+   carries both — the one place a projection is RICHER than the
+   model, which inverts the projection-wall direction KM-13 assumes
+   and should be reconciled when the wall lands.
+11. **Reads return no value.** The record's fold signature returns
+   state-and-anchor; the model's interpretation is a world
+   transformer, so resolve and fold are identities and their returned
+   values are unmodeled. Determinism of the returned value is the
+   fabric's F11 territory, cited not restated; nothing here claims
+   it.
+12. **Fabric law names in the refusal table are unchecked strings.**
+   Verified against the fabric roster when written; a fabric rename
+   goes stale here silently. The repair belongs with the projection
+   wall or VERIFICATION.md wiring at ratification.
 
 ## 10. The first theorem for adversarial review
 
