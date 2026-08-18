@@ -1,0 +1,2 @@
+negative-controls/Fold.positional-shards.mutant.ts(31,53): error TS2322: Type 'DeclaredAlgebra<number>' is not assignable to type 'DeclaredAlgebra<number> & Total & Associative & Identity & Commutative'.
+  Property '[TotalTypeId]' is missing in type 'DeclaredAlgebra<number>' but required in type 'Total'.

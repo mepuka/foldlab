@@ -6,10 +6,12 @@
 import { Context, Effect, Layer, Scope } from "effect"
 
 import type {
-  CommutativeAlgebra,
+  Algebra,
   DeclaredAlgebra,
+  LawsFor,
+  LawSet,
 } from "../truth/Algebra.js"
-import { hasCommutativeWitness } from "../truth/Algebra.js"
+import { hasRung } from "../truth/Algebra.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { DeclaredLane } from "./Lane.js"
@@ -33,22 +35,53 @@ export interface FoldDeclaration {
   readonly step: Digest
 }
 
-/** A declared fold whose step factors through its algebra by construction. */
-export interface DeclaredFold<Event, State, Partitions extends number = number> {
+/**
+ * The quotient a lane's partitioning makes its fold read.
+ *
+ * One partition keeps arrival order, so the fold reads the positioned plane.
+ * More than one erases the order across partitions, so the fold reads the
+ * multiset presentation and its algebra must respect that erasure.
+ */
+export type LaneQuotient<Partitions extends number> = Partitions extends 1 ? "positioned"
+  : "multiset"
+
+/**
+ * A declared fold whose step factors through its algebra by construction.
+ *
+ * The handle carries the algebra's earned laws, so a right that demands a rung
+ * reads it off the fold rather than re-deriving it. The brand is phantom and
+ * the declaration bytes below it are unchanged, so a fold's digest is the same
+ * value it was before any rung existed.
+ */
+export interface DeclaredFold<
+  Event,
+  State,
+  Partitions extends number = number,
+  Laws extends LawSet = LawSet,
+> {
   readonly declaration: FoldDeclaration
   readonly digest: Digest
   readonly lane: DeclaredLane<Event, Partitions>
-  readonly algebra: DeclaredAlgebra<State>
+  readonly algebra: Algebra<State, Laws>
   readonly contribution: Contribution<Event, State>
   readonly step: (state: State, event: Event) => State
 }
 
-/** Inputs accepted by the only fold-declaration door. */
-export interface DeclareOptions<Event, State, Partitions extends number> {
+/**
+ * Inputs accepted by the only fold-declaration door.
+ *
+ * The algebra's rung is bounded below by the quotient the lane makes the fold
+ * read: this is the rung⇒carrier rule, and an algebra that has not earned the
+ * laws its carrier erases does not type-check here.
+ */
+export interface DeclareOptions<
+  Event,
+  State,
+  Partitions extends number,
+  Laws extends LawsFor<LaneQuotient<Partitions>> = LawsFor<LaneQuotient<Partitions>>,
+> {
   readonly lane: DeclaredLane<Event, Partitions>
-  readonly algebra: Partitions extends 1
-    ? DeclaredAlgebra<State>
-    : CommutativeAlgebra<State>
+  readonly algebra: DeclaredAlgebra<State> & Laws
   readonly contribution: Contribution<Event, State>
 }
 
@@ -131,10 +164,11 @@ export const declare = Effect.fn("Fold.declare")(function*<
   Event,
   State,
   const Partitions extends number,
+  Laws extends LawsFor<LaneQuotient<Partitions>>,
 >(
-  options: DeclareOptions<Event, State, Partitions>,
-): Effect.fn.Return<DeclaredFold<Event, State, Partitions>, StructuralRefusal> {
-  if (options.lane.partitions > 1 && !hasCommutativeWitness(options.algebra)) {
+  options: DeclareOptions<Event, State, Partitions, Laws>,
+): Effect.fn.Return<DeclaredFold<Event, State, Partitions, Laws>, StructuralRefusal> {
+  if (options.lane.partitions > 1 && !hasRung(options.algebra, "commutative-monoid")) {
     return yield* unearnedCommutativity(options.lane, options.algebra)
   }
   const stepDigest = yield* digestOf({
