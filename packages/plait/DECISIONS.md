@@ -63,6 +63,10 @@ the package's identity authority inaccurate.
 
 ### T4. Verified reads use an ephemeral ordered JetStream consumer
 
+SUPERSEDED BY: task DEV-736's T1 — the callback adapter this entry chose is
+replaced by the client's own pulled iterator, which is the bounded form that
+carries the one property T4 was decided on.
+
 Decided: `FabricClient.subscribe` creates a subject-filtered ordered consumer
 with `DeliverPolicy.All`, adapts its synchronous callback through
 `Stream.callback`, and deletes it with the surrounding scope. Alternatives: a
@@ -73,7 +77,24 @@ policy. The callback adapter lets interruption close an idle message pump.
 **Load-bearing? yes** — core interest delivery would leave storage and replica
 shape outside the evidence path.
 
+Amended 2026-08-18 (DEV-736). This entry chose the callback adapter on the
+strength of one property — interruption closes an idle pump — and never stated
+its cost. The cost is measured and load-bearing: the pinned client's callback
+is synchronous by contract, so the adapter's only offer is `Queue.offerUnsafe`,
+which cannot suspend, so the pump admits no client-side bound that does not
+lose messages (task DEV-736, T0).
+
+Superseded the same day, once the operator ruled route (b) and the bounded
+form landed. The adapter is gone; the ordered ephemeral consumer, the
+`DeliverPolicy.All` read and the scope-owned delete all stand. Only the
+adaptation moved, and the one property this entry was decided on moved with
+it (DEV-736 T1).
+
 ### T5. Pin the message-id duplicate window explicitly
+
+SUPERSEDED BY: task DEV-736's T2 — the window is per STREAM, and this package
+now runs two stream families, so one scope sentence no longer covers the
+duplicate bit.
 
 Decided: the slice-0 stream declares a two-minute (`120_000_000_000` ns)
 duplicate window and the shape check requires it. Alternatives: inherit the
@@ -1221,3 +1242,171 @@ is not an oracle, it is coverage, and hand-listed coverage silently omits: a
 ninth adapter could join the spine with no row and nothing would go red. Raised
 as a DEV-752 round-2 major charge. **Load-bearing? yes** — coverage that cannot
 notice an omission is not coverage.
+
+## Task DEV-736 — the commons pump's bound, and the T4/T5 supersessions
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-4; card FH-6; Part C
+ticket 3), read at `c585c24c8`, and the operator's ruling of 2026-08-18 on the
+dispatching thread, which lifted ticket 3's withholding of route (b) and gave
+the repair to this ticket. The record's code line numbers are pre-DEV-734; the
+pump now sits at `src/internal/nats.ts:140-223`.
+
+T0 and T1 were written as a refusal and a recorded follow-up when the ruling
+was still owed. They are amended in place, on the operator's instruction, to
+the dispositions that landed: the refusal of route (a) stands as the record of
+why, and route (b) is built.
+
+### T0. Route (a) is REFUSED — with a producer that cannot suspend, a buffer strategy picks which messages are lost, not whether
+
+Decided: the commons subscribe pump does NOT gain
+`{ bufferSize, strategy: "suspend" }`. The record's route (a) is refused on
+executed evidence. B-4 is repaired by T1's pull form instead, so the refusal
+below is the record of why the smallest diff was not the one taken.
+
+The measurement, minimized and committed as `test/CommonsPumpBackpressure.test.ts`.
+`Stream.callback`'s buffer options (`Stream.ts:694-699` at the pin) configure
+the queue the producer offers into. The producer here is
+`consumer.consume({ callback })`, and that callback is synchronous by the
+pinned client's own contract — `ConsumerCallbackFn = (r: JsMsg) => void |
+Promise<never>`, documented "the callback cannot be async"
+(`@nats-io/jetstream@3.4.0` `lib/types.d.ts:540-547`). A synchronous producer's
+only offer is `Queue.offerUnsafe`, and at the pin (`Queue.ts:708-726`) that
+function does not suspend on a full queue: under `"suspend"` and `"dropping"`
+it returns `false` and discards the message, and under `"sliding"` it evicts
+the oldest and returns `true`. Forty envelopes through a bound of eight
+deliver eight under every strategy and none under no strategy.
+
+The load shape is in the tree too, and both routes are measured at it: 200
+real envelopes arriving over ten event-loop turns the consumer cannot slow, a
+downstream paying the pump's own digest verification per message, a bound of
+sixteen. Route (a) delivered 160 of 200 under `"suspend"` and `"dropping"`,
+identical across twenty runs — the consumer drains the bound between turns, so
+each turn of twenty loses exactly the four the bound could not hold — with the
+first hole at index 16 and the read carrying on past it. `"sliding"` lost as
+many and reported every offer accepted. The committed row asserts the shape of
+that loss rather than the count, because the count is a fact about this host's
+scheduler and the shape is a fact about the adapter.
+
+The first hole's index is the reason this is a refusal and not a trade. The
+loss is not truncation; it is a hole punched in the middle of an ordered read,
+with no error raised, no refusal minted, and — under `"sliding"` — no false
+return for the call site to notice. `FabricClient.subscribe` is the package's
+verified-read path: every envelope it yields has had its digest re-derived and
+checked. A pump that silently omits envelopes makes that verification answer a
+question nobody asked, because the guarantee readers rely on is over the
+sequence, not over each survivor. The unbounded buffer spends memory. Route (a)
+spends evidence, which this package does not have to spend.
+
+Alternatives, all named for the ruling and all refused: keep `"suspend"` and
+fail the stream when `offerUnsafe` returns `false` (honest and loud, but it
+mints a new absence kind and a new failure mode on a public seam — a ruling,
+not an implementation detail); bound the pump server-side the way the fold pump
+does (`consume({ max_messages })`, `internal/pump.ts:157-173`) — that bounds
+the pull window, not the queue downstream of the callback, and the fold's real
+bound is `max_ack_pending` under explicit acks, which an ordered ephemeral
+consumer at `AckPolicy.None` has no equivalent for; accept the unbounded buffer
+and close B-4 as a recorded bound rather than an enforced one. The operator
+ruled route (b) on 2026-08-18 and it landed as T1.
+
+**Load-bearing? yes** — it is the reason the record's preference order
+inverted, and the reason no buffer strategy appears at this seam.
+
+### T1. Route (b) is LANDED — the commons pump is the client's own iterator, pulled
+
+Decided: `commonsPump` (`src/internal/nats.ts:208-223`) is
+`Stream.fromAsyncIterable` (`Stream.ts:1277`) over the client's own
+`ConsumerMessages` — a `QueuedIterator<JsMsg>` at the pin
+(`lib/types.d.ts:708`) — under the existing `acquireRelease`/`Stream.unwrap`
+(`Stream.ts:1633`), with the client's close in the release. The hand-rolled
+queue pump is gone, and with it the question of what to size it to.
+
+The measurement, at the load shape T0 records and in the same committed file:
+200 of 200 delivered, in order, where the bounded callback adapter delivered
+160 with the first hole at index 16. An iterator is pulled, so this pump owns
+no queue to size and discards nothing.
+
+What landing forced, and what a reader should not lose: the pump withholds its
+iterator's `return`. `ConsumerMessages` is an async generator, and a generator
+parked on an `await` cannot be preempted by `return()` — the return queues
+behind the pending pull and never runs. An idle subscription is parked exactly
+there, and `Stream.fromAsyncIterable` registers `iter.return()` as a scope
+finalizer when the iterator offers one (`Channel.ts:1867-1883`), so the naive
+form hangs its scope on interruption forever. That is committed as its own
+counterexample row beside the positive one, and the live wall that first caught
+it — `RoundTrip.test.ts`'s idle-subscription interruption — is green. `close()`
+is the end that does reach a parked pump: it unsubscribes the inbox, cancels
+the timers and stops the status iterator synchronously, then queues the
+iterator's stop behind the pending pull, which that pull delivers
+(`lib/consumer.js:581-607`). Waiting on the close is sound while a pull is
+outstanding and only there, so the release waits exactly then. T4's one stated
+property therefore survives the move, and is asserted rather than assumed.
+
+The honest limit, since the finding was written about memory: the pull form
+ends loss, not buffering. The client refills its `consume()` pull window when
+messages ARRIVE, not when they are consumed (`lib/consumer.js:253`), so a slow
+reader still accumulates in the client's own `QueuedIterator`. What moved is
+that there is now one buffer instead of two, it belongs to the client, and its
+knob is the client's `max_messages` rather than a number this package invents.
+A memory ceiling would need a reader that acks, which an ordered ephemeral
+consumer at `AckPolicy.None` has no equivalent for — the same asymmetry T0
+records against the fold pump's server-side bound. FH-6's two answers are still
+two; neither is a queue this package sizes.
+
+Alternatives: route (a) (T0, refused on measurement); the fail-loud form (T0,
+refused — it mints an absence kind); accept the unbounded buffer (refused by
+the ruling). No new absence kind was minted and no public signature moved: the
+emitted manifest is unchanged at 60 signatures, and `FabricClientOptions` gains
+no field, because the bound this ticket was to make visible turned out to be
+the client's and is stated in `commonsPump`'s JSDoc rather than in an option.
+
+**Load-bearing? yes** — it is where this package's backpressure answer lives,
+and the withheld `return` is the difference between an interruptible
+subscription and a hung scope.
+
+### T2. The duplicate window is scoped per STREAM, and this package now runs two stream families
+
+Decided: T5's scope sentence is superseded by this one, which both duplicate
+bits cite.
+
+A `PublishedEnvelope.duplicate` means suppressed by `Nats-Msg-Id` within the
+pinned two-minute window of the **commons stream**
+(`src/internal/nats.ts:35,95`). An `EmittedEvent.duplicate` means suppressed
+within the two-minute window of that **(lane, partition) stream**
+(`src/internal/lanes.ts:24,106`) — one stream per partition under the
+DEV712-POS-1 ruling, so two events in different partitions never share a
+window, and the same event re-emitted to its own partition does.
+
+Alternatives: leave T5's single sentence and let readers infer the second scope
+from the stream layout; state the scope twice, once per matcher JSDoc. Why:
+the two bits are the same word over different substrates, and a reader holding
+T5's sentence would carry the commons window's guarantee onto a per-partition
+stream that never had it. Stating it once, here, is what keeps the two matcher
+JSDocs from drifting apart — enumerations that are listed, drift.
+
+**Load-bearing? yes** — `duplicate` is a public bit on two public types, and
+its bound is the window of the stream that stored the frame.
+
+### T3. The staged matcher JSDoc for DEV-741 cites T2 and does not restate it
+
+Decided: `FabricClient.matchPublished` and `Lane.matchEmitted` are not written
+here — DEV-741 owns them (record A-6) — and their JSDoc is staged as two
+sentences that point at T2 rather than copying it:
+
+- `matchPublished`: "A `duplicate` arm means the commons stream suppressed this
+  envelope by `Nats-Msg-Id` inside its pinned two-minute window; the window is
+  the stream's, not the package's (DECISIONS DEV-736 T2)."
+- `matchEmitted`: "A `duplicate` arm means that `(lane, partition)` stream
+  suppressed this event by `Nats-Msg-Id` inside its pinned two-minute window;
+  partitions do not share a window (DECISIONS DEV-736 T2)."
+
+Alternatives: write both matchers here and let DEV-741 inherit them (it owns
+the settled union and the coherence wall; two seats minting the same public
+surface is the R-2 union lesson); inline the full scope sentence in each JSDoc.
+Why: A-6 amendment 3 keeps the two matchers deliberately unshared because the
+acknowledgement types answer different subscriptions, which is exactly the
+shape that lets two hand-copied sentences drift into disagreement about one
+word. One sentence, two citations.
+
+**Load-bearing? no** — wording, staged for the seat that owns the surface.
