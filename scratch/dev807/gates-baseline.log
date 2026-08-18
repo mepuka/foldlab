@@ -1,0 +1,825 @@
+$ bun scripts/gates.ts
+
+== preflight — root dependencies
+bun install v1.3.14 (0d9b296a)
+
+Checked 37 installs across 72 packages (no changes) [489.00ms]
+
+$ effect-tsgo patch --typescript --no-oxlint --typescript-package @typescript/native-preview --skip-missing
+typescript skipped because its hash matches the replacement.
+
+== preflight — proto/ts dependencies
+bun install v1.3.14 (0d9b296a)
+
+Checked 21 installs across 27 packages (no changes) [3.00ms]
+
+== bootstrap — Effect language-service prepare guard
+bun test v1.3.14 (0d9b296a)
+
+ 3 pass
+ 0 fail
+ 9 expect() calls
+Ran 3 tests across 1 file. [11.00ms]
+
+== root — typecheck
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/internal/pump.ts:192:26 - message effect(preferTypedSchemaDecoder):[0m This input is already assignable to the schema's Encoded type. Use `decodeResult` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownResult`.
+
+192   const decoded = Schema.decodeUnknownResult(fold.lane.event, {
+  [96m                         ~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/internal/registers.ts:43:53 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+43 const StoredOutcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
+  [96m                                                    ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/internal/transport.ts:161:11 - message effect(catchToIgnore):[0m `Effect.ignore` expresses ignored failure more directly than `Effect.catch` returning `Effect.void`.
+
+161   }).pipe(Effect.catch(() => Effect.void))
+  [96m          ~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/planes/Blob.ts:160:59 - message effect(redundantOrDie):[0m This generator applies `Effect.orDie` to every yielded effect. Hoist it once to the generator result: `Effect.gen(...).pipe(Effect.orDie)`, or `Effect.fn(function*(){ ... }, Effect.orDie)`.
+
+160   const put: BlobsService["put"] = Effect.fn("Blobs.put")(function* (bytes) {
+  [96m                                                          ~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/planes/Lane.ts:17:58 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+17   path: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
+  [96m                                                         ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/planes/Lane.ts:164:28 - message effect(preferTypedSchemaDecoder):[0m This input is already assignable to the schema's Encoded type. Use `decodeResult` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownResult`.
+
+164   const parsedKey = Schema.decodeUnknownResult(PartitionKey, {
+  [96m                           ~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/truth/Refusal.ts:103:17 - message effect(unnecessaryTypeofType):[0m This `typeof ... .Type` query can be replaced with `Schema.Json`.
+
+103   readonly got: typeof Schema.Json.Type
+  [96m                ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/truth/Refusal.ts:104:22 - message effect(unnecessaryTypeofType):[0m This `typeof ... .Type` query can be replaced with `Schema.Json`.
+
+104   readonly expected: typeof Schema.Json.Type
+  [96m                     ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/truth/Refusal.ts:188:19 - message effect(catchAllToMapError):[0m `Effect.mapError` expresses the same error-type transformation more directly than `Effect.catch` followed by `Effect.fail`.
+
+188     return yield* Effect.catch(
+  [96m                  ~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/src/truth/SchemaCanonical.ts:367:26 - message effect(preferTypedSchemaDecoder):[0m This input is already assignable to the schema's Encoded type. Use `decodeResult` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownResult`.
+
+367   const decoded = Schema.decodeUnknownResult(schema)(parsed)
+  [96m                         ~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/AnchorCas.test.ts:24:49 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+24     const Event = Schema.Struct({ value: Schema.Number })
+  [96m                                                ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/CellWall.test.ts:37:35 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+37 const Pair = Schema.Tuple([Schema.Number, Schema.Number])
+  [96m                                  ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/CellWall.test.ts:37:50 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+37 const Pair = Schema.Tuple([Schema.Number, Schema.Number])
+  [96m                                                 ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/CellWall.test.ts:40:47 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+40   counts: Schema.Record(Schema.String, Schema.Number),
+  [96m                                              ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/CellWall.test.ts:43:19 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+43   vectors: Schema.Number,
+  [96m                  ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/ChaosFixture.ts:10:19 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+10   ordinal: Schema.Number,
+  [96m                  ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/ChaosFixture.ts:11:17 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+11   delta: Schema.Number,
+  [96m                ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/ContextProgram.test.ts:18:15 - message effect(unnecessaryTypeofType):[0m This `typeof ... .Type` query can be replaced with `VolatilityClass`.
+
+18   volatility: typeof VolatilityClass.Type,
+  [96m              ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Fold.test.ts:11:71 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+11 const Event = Schema.Struct({ partition: Schema.String, delta: Schema.Number })
+  [96m                                                                      ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/FoldRuntime.test.ts:12:75 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+12 const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                          ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/KernelSchemas.test.ts:139:60 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+139     expect(() => canonicalWriter(Schema.Struct({ n: Schema.Number })))
+  [96m                                                           ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Lane.test.ts:8:68 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+8 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                   ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/LaneRuntime.test.ts:12:68 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+12 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                   ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/RefusalNext.test.ts:67:73 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+67 const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                        ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/RefusalNext.test.ts:175:44 - message effect(unnecessaryTypeofType):[0m This `typeof ... .Type` query can be replaced with `Digest`.
+
+175       views: ["not-a-digest" as unknown as typeof Digest.Type],
+  [96m                                           ~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:27:47 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+27 const Outcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
+  [96m                                              ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:29:17 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+29   token: Schema.Number,
+  [96m                ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:35:64 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+35   Schema.Struct({ kind: Schema.Literal("renew"), token: Schema.Number }),
+  [96m                                                               ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:38:19 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+38     token: Schema.Number,
+  [96m                  ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:47:17 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+47   index: Schema.Number,
+  [96m                ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:59:72 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+59 const Header = Schema.Struct({ provenance: Schema.String, rows: Schema.Number })
+  [96m                                                                       ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Register.test.ts:321:76 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+321       const ready = Schema.decodeUnknownSync(Schema.Struct({ token: Schema.Number }))(
+  [96m                                                                           ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Resolved.test.ts:16:42 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+16 const Frame = Schema.Struct({ at: Schema.Number, terms: ResolvedOf(TermMap) })
+  [96m                                         ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Resolved.test.ts:51:30 - message effect(preferTypedSchemaDecoder):[0m This input is already assignable to the schema's Encoded type. Use `decodeEffect` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownEffect`.
+
+51         return yield* Schema.decodeUnknownEffect(Envelope)(encoded)
+  [96m                             ~~~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/RoundTrip.test.ts:18:22 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+18     sequence: Schema.Number,
+  [96m                     ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/Session.test.ts:12:68 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+12 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                   ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/SessionRuntime.test.ts:13:75 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+13 const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+  [96m                                                                          ~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/process/register-zombie.ts:9:22 - message effect(preferTypedSchemaDecoder):[0m This input is already assignable to the schema's Encoded type. Use `decodeSync` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownSync`.
+
+9 const token = Schema.decodeUnknownSync(Schema.NumberFromString)(tokenText)
+  [96m                     ~~~~~~~~~~~~~~~~~[0m
+
+[96m/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/packages/plait/test/process/register-zombie.ts:9:47 - message effect(schemaNumber):[0m This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.FiniteFromString` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line.
+
+9 const token = Schema.decodeUnknownSync(Schema.NumberFromString)(tokenText)
+  [96m                                              ~~~~~~~~~~~~~~~~[0m
+
+Checked 129 files out of 129 files. 
+0 errors, 0 warnings and 39 messages.
+$ tsgo -p packages/core/tsconfig.json --noEmit && tsgo -p packages/moves/tsconfig.json --noEmit && tsgo -p packages/plait/tsconfig.json --noEmit && tsgo --noEmit && effect-tsgo diagnostics --project packages/plait/tsconfig.json
+
+== root — tests
+bun test v1.3.14 (0d9b296a)
+
+ 3 pass
+ 0 fail
+ 9 expect() calls
+Ran 3 tests across 1 file. [12.00ms]
+
+== workspace packages — test scripts
+@foldlab/core test: bun test v1.3.14 (0d9b296a)
+@foldlab/core test: 
+@foldlab/core test:  19 pass
+@foldlab/core test:  0 fail
+@foldlab/core test:  547 expect() calls
+@foldlab/core test: Ran 19 tests across 2 files. [656.00ms]
+@foldlab/core test: Exited with code 0
+@foldlab/moves test: bun test v1.3.14 (0d9b296a)
+@foldlab/plait test: $ bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:public-effects && bun run check:parity-control
+@foldlab/plait test: bun test v1.3.14 (0d9b296a)
+@foldlab/plait test: 
+@foldlab/plait test: test/Algebra.test.ts:
+@foldlab/plait test: FOLD CONTROL: PASS component=earned-commutative-brand mutant=ordered-subtract refusal=structural/unearned-commutative-algebra law=F4
+@foldlab/moves test: 
+@foldlab/moves test:  22 pass
+@foldlab/moves test:  0 fail
+@foldlab/moves test:  17 expect() calls
+@foldlab/moves test: Ran 22 tests across 3 files. [275.00ms]
+@foldlab/moves test: Exited with code 0
+@foldlab/plait test: 
+@foldlab/plait test: test/FabricWall.test.ts:
+@foldlab/plait test: FABRIC WALL: PASS consumed=11/11 skipped-within-family=0 exclusions=cell-merge-aci(F1 belongs to E6 Cell.ts),non-commuting-intruder(alphabet admission is slice 0's envelope/lane wall),attenuation-request-clamped(F9 belongs to the action plane),delegation-tree-attenuation(F9 belongs to the action plane) unfamiliar=F7,F11,query-admission,F12,F10
+@foldlab/plait test: 
+@foldlab/plait test: test/Fold.test.ts:
+@foldlab/plait test: FOLD CONTROL: PASS component=step-algebra-compatibility mutant=incompatible-step ignored-by=Fold.declare derived=7 intruder=999
+@foldlab/plait test: 
+@foldlab/plait test: test/KernelConformance.test.ts:
+@foldlab/plait test: KERNEL TABLES: PASS kinds=12 stages=5 refusals=16 machine-applicable=last-writer-wins,unverified-read,past-mutation,anchored-resolve
+@foldlab/plait test: KERNEL ENCODING: PASS round-tripped=12/12 vectors=lawful-declare,resolve-schema,emit-lane,join-cell,fold-at-anchor,decide-fenced,trigger-evidence-appears,trigger-cell-reaches,trigger-hole-reaches,trigger-outcome-landed,trigger-head-advanced-past,spawn-under-writ
+@foldlab/plait test: KERNEL DOOR: PASS target=reference replayed=17/17 refused=16 admitted=1 skipped=0
+@foldlab/plait test: KERNEL DOOR CONTROL: PASS mutant=refuse-everything caught=16/17 killed-by=absenceTrigger,unfencedDecide,lastWriterJoin
+@foldlab/plait test: 
+@foldlab/plait test: test/KernelCorpus.test.ts:
+@foldlab/plait test: CANONICAL BOTH-WAYS: PASS lines=121 bytes=25949 corpus=packages/plait/fixtures/kernel-conformance.ndjson
+@foldlab/plait test: CANON STRONG: PASS constructed=10/10 vectors=empty-object,empty-array,empty-string,zero,big-integer,key-order,nested-object,nested-array,string-escapes,control-char
+@foldlab/plait test: CANON GAPS: PASS covered=control-char-surrounded,hex-letter,every-two-char-escape,literals reason=not-exercised-by-the-emitted-ten
+@foldlab/plait test: CORPUS CONTROLS: PASS refused=member-swap,double-rounded-integer,long-form-escape,canon-bytes-drift,unknown-format,miscount,carriage-return,missing-final-lf,non-ascii skipped-group=future
+@foldlab/plait test: CORPUS SHAPE: PASS lines=121 groups=9 rule=lines-equals-one-plus-sum-of-counts
+@foldlab/plait test: 
+@foldlab/plait test: test/KernelProgram.test.ts:
+@foldlab/plait test: PROGRAM GROUP: PASS vectors=4 names=ground-two-node,holey,holey-filled,distill-shape lines=121 rule=add-only-within-format-2
+@foldlab/plait test: PROGRAM BOTH-WAYS: PASS lines=4 writer=derived-from-ast parse-then-reemit=byte-identical
+@foldlab/plait test: PROGRAM SELF-TEST: PASS vectors=4 pairing=value-and-bytes
+@foldlab/plait test: PROGRAM BUILD: PASS built=4/4 vectors=ground-two-node,holey,holey-filled,distill-shape surface=generated-from-the-Act-record
+@foldlab/plait test: PROGRAM IDENTITY: PASS vectors=4 hash=sha256-over-canonical-bytes basis=trusted-base-not-a-theorem
+@foldlab/plait test: PROGRAM ADMISSION: PASS erased=ground-two-node=2,holey=2,holey-filled=2,distill-shape=4 order=newest-first relation=Kernel.ProgramAdmission
+@foldlab/plait test: PROGRAM EDGES: PASS redundancy=checked order=node-walk-newest-first-then-field-order
+@foldlab/plait test: PROGRAM REQUIREMENTS: PASS correspondence=holes-are-requirements
+@foldlab/plait test: PROGRAM DOOR SCOPE: PASS nodes=10 act-level=0 withheld=consumes-a-local,no-declaration-kind-in-the-value,reads-a-hole note=a-declaration-is-not-a-sentence
+@foldlab/plait test: PROGRAM DOOR: PASS witness=admitted off-catalog-twin=refused:forward-reference door=reference-transliteration
+@foldlab/plait test: PROGRAM FILL: PASS filled=holey->holey-filled bytes=equal address=equal remaining-requirements=0
+@foldlab/plait test: PROGRAM CONTROL: PASS mutant=dropped-edges vector=ground-two-node killed-by=edge-argument-disagreement
+@foldlab/plait test: PROGRAM CONTROL: PASS mutant=flattened-holes vector=holey killed-by=undeclared-hole
+@foldlab/plait test: PROGRAM PUBLICATION: PASS act=explicit writ=required-argument build-side-effects=none
+@foldlab/plait test: PROGRAM EFFECT: PASS stub=typed-stub channels=phantom runtime-members=1 executes=nothing
+@foldlab/plait test: PROGRAM SURFACE: PASS generators=8 fields=20 clock-fields=0 seed-fields=0 secret-fields=0 no-reference-form=fold.partition,fold.anchor,decide.token,trigger.predicate
+@foldlab/plait test: 
+@foldlab/plait test: test/KernelSchemas.test.ts:
+@foldlab/plait test: KERNEL ANNOTATIONS: PASS described=22/22 source=verify/kernel format=2
+@foldlab/plait test: KERNEL EXAMPLES: PASS record-examples=30 encoding-vectors=12 canon-vectors=10
+@foldlab/plait test: SCHEMA BOTH-WAYS: PASS lines=120 groups=9 writer=derived-from-ast
+@foldlab/plait test: JSON SCHEMA: PASS definition=KernelCanonRecord title="Canonical form vector" canonical-examples=10 dialect=draft-2020-12
+@foldlab/plait test: JSON SCHEMA GAP: PASS bigint-examples=dropped-silently string-examples=kept workaround=canonicalExamples
+@foldlab/plait test: JSON SCHEMA CAVEAT: PASS bigint-renders-as=string-with-integer-pattern wire-form=json-number note=export-describes-effects-json-codec-not-the-corpus
+@foldlab/plait test: 
+@foldlab/plait test: test/Session.test.ts:
+@foldlab/plait test: SESSION CONTROL: PASS mutant=open-door-service admitted=declared-view refused=undeclared-view judged-at=Session.subscribe
+@foldlab/plait test: 
+@foldlab/plait test: test/Successors.test.ts:
+@foldlab/plait test: FOLD CONTROL: PASS component=successor-discipline mutant=arrival-order killed-by=duplicate-current-delivery,bounded-reordered-delivery lawful=[2,3] mutant=[3,2]
+@foldlab/plait test: 
+@foldlab/plait test:  283 pass
+@foldlab/plait test:  0 fail
+@foldlab/plait test:  998 expect() calls
+@foldlab/plait test: Ran 283 tests across 31 files. [2.03s]
+@foldlab/plait test: $ bun scripts/check-corpus.ts
+@foldlab/plait test: CORPUS: PASS (byte-identical regeneration)
+@foldlab/plait test: $ bun scripts/check-public-effects.ts
+@foldlab/plait test: PUBLIC EFFECT GATE: PASS (75 emitted signatures inspected)
+@foldlab/plait test: $ bun scripts/check-substrate-parity-negative.ts
+@foldlab/plait test: SUBSTRATE PARITY CONTROL: PASS (narrowed field set refused on the committed trace)
+@foldlab/plait test: $ bun scripts/run-test-group.ts walls
+@foldlab/plait test: bun test v1.3.14 (0d9b296a) 4x PARALLEL
+@foldlab/plait test: 
+@foldlab/plait test: test/ObjectStoreSemantics.test.ts:
+@foldlab/plait test: SUBSTRATE OBJ TRACE round-trip=bytes-identical digest=SHA-256-base64url-padded oracle=node-crypto client-digest=computed-client-side meta-after-tamper=[size,chunks,digest]-unchanged whole-read=refused delivered-before-refusal=[131072,131072,3]
+@foldlab/plait test: SUBSTRATE OBJ TRACE default-max-chunk=131072 chunks=[0B:0,131071B:1,131072B:1,131073B:2,3158073B:25] read-boundaries=stored-chunks zero-byte-read=[0] declared-max=100:10-chunks
+@foldlab/plait test: SUBSTRATE OBJ TRACE ranged-read=absent get-arity=1 getBlob-arity=1 result-keys=[data,error,info] partial=cancel-only prefix=131072B-unverified error-promise=undefined-on-success,null-on-zero-size
+@foldlab/plait test: SUBSTRATE OBJ TRACE delete=purge(chunks)+rollup(meta) purged=3 messages=4->1 tombstone=[deleted:true,size:0,chunks:0,digest:''] nuid=retained mtime=retained revision=advanced get=null list=omits re-delete=success:true,purged:0 unknown-delete=success:false
+@foldlab/plait test: SUBSTRATE OBJ TRACE put-same-name=[digest-stable,nuid-fresh,mtime-recomputed-nondecreasing,description-cleared] mtime=client-clock-ms-resolution revision=meta-stream-sequence step=chunks+1 revisions=[2,4,6] previousRevision=stale-refused-wrong-last-sequence list-entry=no-revision-field
+@foldlab/plait test: 
+@foldlab/plait test: test/OrderedConsumerSemantics.test.ts:
+@foldlab/plait test: SUBSTRATE ORDERED TRACE gap=server-reset-to-5 last-delivered=2 delivered=[1,2,3,4,5,6,7,8] reset=nk8vh0K8tfuSaZMz5QcUJ0_1 recreated=nk8vh0K8tfuSaZMz5QcUJ0_2 skipped=0 duplicates=0
+@foldlab/plait test: 
+@foldlab/plait test: test/FoldChaos.test.ts:
+@foldlab/plait test: FOLD CONTROL: PASS component=anchor-before-ack mutant=ack-before-anchor killed-by=hard-kill-resume observed-floor=0 expected-floor=3
+@foldlab/plait test: FOLD CHAOS: PASS protocol=NAK redeliveries=8 buffered=2 drained=2 successor-equal=true arrival-order-mutant-diverged=true
+@foldlab/plait test: 
+@foldlab/plait test: test/OrderedConsumerSemantics.test.ts:
+@foldlab/plait test: SUBSTRATE ORDERED TRACE heartbeat-loss=inbound-hold deleted=nk8vh0K8tfuSaZMz5QcUgi_1 delivered=[1,2,3,4,5,6,7,8] heartbeat-notifications=[next,heartbeats_missed] recovery-notifications=[next,heartbeats_missed,consumer_deleted,consumer_deleted,consumer_not_found,reset,ordered_consumer_recreated] recreated=nk8vh0K8tfuSaZMz5QcUgi_2 skipped=0 duplicates=0
+@foldlab/plait test: SUBSTRATE ORDERED TRACE direct-delete=nk8vh0K8tfuSaZMz5QcUy6_1 bounded-notifications=[consumer_deleted,next,no_responders,next,no_responders,next,no_responders] heartbeat-missed=0 recreated=0 finding=consume-repulls-deleted-name
+@foldlab/plait test: SUBSTRATE ORDERED TRACE slow-reader load=1024 max_messages=256 client-peak-pending=256 delivered=1024 skipped=0 duplicates=0
+@foldlab/plait test: SUBSTRATE ORDERED TRACE batch-read messages=256 getBatch-requests=1 getBatch-ms=4.64 per-message-requests=256 per-message-ms=29.74 sequence-payload-equality=true
+@foldlab/plait test: 
+@foldlab/plait test: test/SubstrateParity.test.ts:
+@foldlab/plait test: SUBSTRATE TS TRACE clients=@nats-io/*@3.4.0 wrong-last-sequence=400/10071 wire-indistinguishable=[constructor,name,status,code,message,cause,apiError] field-set=pinned classification=operation-context-convention states=[journal-cas:3,kv-create:1,kv-update:2]=pairwise-distinct puback=[stream,seq,duplicate] cas-precedence=[2/new,3/seed,400/10071,2/duplicate]
+@foldlab/plait test: 
+@foldlab/plait test: test/KVWatchSemantics.test.ts:
+@foldlab/plait test: SUBSTRATE KV WATCH TRACE default-replay=[beta@2,alpha@3,gamma@4] pre-watch-alpha@1=coalesced live=[beta@5,alpha@6] order=bucket-global initial-isUpdate=three-key:[false,false,true],one-key:[true]
+@foldlab/plait test: SUBSTRATE KV WATCH TRACE concurrent-live-burst=32/32 in-flight-together order=1..32 coalesced=0 bound=single-node-R1-one-connected-client
+@foldlab/plait test: SUBSTRATE KV WATCH TRACE tombstones=[PUT@1,DEL@2,PUT@3,PURGE@4] marker-bytes=empty resume=start-inclusive cursor=bucket-global first-seen=5 gap-other=6 resumed=[PUT@7,DEL@8]
+@foldlab/plait test: 
+@foldlab/plait test: test/FoldChaos.test.ts:
+@foldlab/plait test: FOLD CHAOS: PASS hard-kill=signal-9 partitions=2 events=200 resumed-anchor-writes=179 state-digest-equality=true
+@foldlab/plait test: 
+@foldlab/plait test: test/KVWatchSemantics.test.ts:
+@foldlab/plait test: SUBSTRATE KV WATCH TRACE reconnect=forced-750ms during-disconnect=[revision-1,2,3] after-reconnect=[revision-4] delivered=[1,2,3,4] coalesced=0 bound=same-server-same-consumer-no-process-restart
+@foldlab/plait test: 
+@foldlab/plait test: test/ChaosCli.test.ts:
+@foldlab/plait test: FOLD CLI CONTROL: PASS component=digest-verdict mutant=state-between-arms exit=1 axis=kill status=diverged
+@foldlab/plait test: FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head,uncataloged-fold,module-without-fold exit=2
+@foldlab/plait test: 
+@foldlab/plait test:  41 pass
+@foldlab/plait test:  0 fail
+@foldlab/plait test:  589 expect() calls
+@foldlab/plait test: Ran 41 tests across 14 files. [12.71s]
+@foldlab/plait test: $ bun run check:type-control
+@foldlab/plait test: $ bun scripts/check-public-effects-negative.ts
+@foldlab/plait test: PUBLIC EFFECT CONTROL: PASS (twenty public-surface regressions refused)
+@foldlab/plait test: Exited with code 0
+$ bun run --filter './packages/*' test
+
+== go — formatting
+
+== go — vet
+
+== go — tests
+=== RUN   TestTheCleanArmProducesNoFinding
+--- PASS: TestTheCleanArmProducesNoFinding (0.00s)
+=== RUN   TestTheLeakyArmProducesExactlyThePinnedFindings
+--- PASS: TestTheLeakyArmProducesExactlyThePinnedFindings (0.00s)
+=== RUN   TestTheEscapeDirectiveIsNotABlanketSilence
+--- PASS: TestTheEscapeDirectiveIsNotABlanketSilence (0.00s)
+=== RUN   TestABrandWithoutItsDirectiveIsNotABrand
+--- PASS: TestABrandWithoutItsDirectiveIsNotABrand (0.00s)
+=== RUN   TestAPackageThatDoesNotTypeCheckIsRefused
+--- PASS: TestAPackageThatDoesNotTypeCheckIsRefused (0.00s)
+=== RUN   TestTheGapsAreNamed
+--- PASS: TestTheGapsAreNamed (0.00s)
+PASS
+ok  	foldlab/brandlint	0.391s
+=== RUN   TestCanonicalizeIdempotent
+--- PASS: TestCanonicalizeIdempotent (0.00s)
+=== RUN   TestCanonicalizeFromIndented
+--- PASS: TestCanonicalizeFromIndented (0.00s)
+=== RUN   TestCanonicalizeFromGoRemarshal
+--- PASS: TestCanonicalizeFromGoRemarshal (0.00s)
+=== RUN   TestDigests
+--- PASS: TestDigests (0.00s)
+=== RUN   TestEntryDigestLiteral
+--- PASS: TestEntryDigestLiteral (0.00s)
+=== RUN   TestChainFoldConsistency
+--- PASS: TestChainFoldConsistency (0.00s)
+=== RUN   TestEntryDigestAgreesWithCanonicalize
+--- PASS: TestEntryDigestAgreesWithCanonicalize (0.00s)
+=== RUN   TestChains
+--- PASS: TestChains (0.00s)
+=== RUN   TestJCSDeterministicDifferential
+--- PASS: TestJCSDeterministicDifferential (0.04s)
+=== RUN   TestEntryDigestRefusesInvalidUTF8
+--- PASS: TestEntryDigestRefusesInvalidUTF8 (0.00s)
+=== RUN   TestEntryDigestRefusesSharedInvalidSequenceVector
+--- PASS: TestEntryDigestRefusesSharedInvalidSequenceVector (0.00s)
+=== RUN   TestBuildChainPropagatesInvalidUTF8Refusal
+--- PASS: TestBuildChainPropagatesInvalidUTF8Refusal (0.00s)
+=== RUN   TestRFC8785SerializesNegativeZeroAsZero
+--- PASS: TestRFC8785SerializesNegativeZeroAsZero (0.00s)
+=== RUN   TestRFC8785AppendixBNumberVectors
+--- PASS: TestRFC8785AppendixBNumberVectors (0.00s)
+=== RUN   TestCanonicalizeValueRefusesInvalidUTF8StringsAndNames
+--- PASS: TestCanonicalizeValueRefusesInvalidUTF8StringsAndNames (0.00s)
+=== RUN   TestConstrainedDecodeAcceptsOneUnambiguousValue
+--- PASS: TestConstrainedDecodeAcceptsOneUnambiguousValue (0.00s)
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/duplicate_member_names
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/escape-equivalent_duplicate_member_names
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/lone_high_surrogate
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/lone_low_surrogate
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/trailing_second_value
+=== RUN   TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/invalid_UTF-8
+--- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/duplicate_member_names (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/escape-equivalent_duplicate_member_names (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/lone_high_surrogate (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/lone_low_surrogate (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/trailing_second_value (0.00s)
+    --- PASS: TestConstrainedDecodeRefusesMalformedOrAmbiguousInput/invalid_UTF-8 (0.00s)
+=== RUN   FuzzJCSDifferential
+=== RUN   FuzzJCSDifferential/seed#0
+=== RUN   FuzzJCSDifferential/seed#1
+=== RUN   FuzzJCSDifferential/seed#2
+=== RUN   FuzzJCSDifferential/seed#3
+=== RUN   FuzzJCSDifferential/seed#4
+=== RUN   FuzzJCSDifferential/seed#5
+=== RUN   FuzzJCSDifferential/seed#6
+=== RUN   FuzzJCSDifferential/seed#7
+=== RUN   FuzzJCSDifferential/seed#8
+=== RUN   FuzzJCSDifferential/seed#9
+=== RUN   FuzzJCSDifferential/seed#10
+=== RUN   FuzzJCSDifferential/seed#11
+=== RUN   FuzzJCSDifferential/seed#12
+=== RUN   FuzzJCSDifferential/seed#13
+=== RUN   FuzzJCSDifferential/seed#14
+=== RUN   FuzzJCSDifferential/seed#15
+=== RUN   FuzzJCSDifferential/seed#16
+=== RUN   FuzzJCSDifferential/seed#17
+=== RUN   FuzzJCSDifferential/seed#18
+=== RUN   FuzzJCSDifferential/seed#19
+=== RUN   FuzzJCSDifferential/seed#20
+=== RUN   FuzzJCSDifferential/seed#21
+=== RUN   FuzzJCSDifferential/seed#22
+=== RUN   FuzzJCSDifferential/seed#23
+=== RUN   FuzzJCSDifferential/seed#24
+=== RUN   FuzzJCSDifferential/seed#25
+--- PASS: FuzzJCSDifferential (0.03s)
+    --- PASS: FuzzJCSDifferential/seed#0 (0.02s)
+    --- PASS: FuzzJCSDifferential/seed#1 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#2 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#3 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#4 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#5 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#6 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#7 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#8 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#9 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#10 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#11 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#12 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#13 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#14 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#15 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#16 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#17 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#18 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#19 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#20 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#21 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#22 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#23 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#24 (0.00s)
+    --- PASS: FuzzJCSDifferential/seed#25 (0.00s)
+PASS
+ok  	foldlab/canonical	0.268s
+?   	foldlab/canonical/probes/cg1-go	[no test files]
+?   	foldlab/cmd/brandlint	[no test files]
+?   	foldlab/cmd/jcsprobe	[no test files]
+=== RUN   TestGeneratedTablesAreAFreshEmission
+    regeneration_test.go:38: kmconform/tables_generated.go is a fresh emission (29620 bytes)
+--- PASS: TestGeneratedTablesAreAFreshEmission (0.00s)
+=== RUN   TestTheEmissionIsGofmtCanonical
+--- PASS: TestTheEmissionIsGofmtCanonical (0.00s)
+=== RUN   TestTheGeneratorIsDeterministic
+--- PASS: TestTheGeneratorIsDeterministic (0.00s)
+=== RUN   TestTheGeneratorRefusesAMalformedCorpus
+--- PASS: TestTheGeneratorRefusesAMalformedCorpus (0.00s)
+=== RUN   TestExportedIdentIsTotalOverTheCorpusNames
+--- PASS: TestExportedIdentIsTotalOverTheCorpusNames (0.00s)
+PASS
+ok  	foldlab/cmd/kmgen	0.572s
+?   	foldlab/cmd/plaitwall	[no test files]
+?   	foldlab/cmd/registerwall	[no test files]
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/persist-mode-async
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/republish
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/subject-transform
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/message-ttl
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/delete-marker-ttl
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/allow-direct
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/mirror-direct
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/atomic-publish
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/message-counter
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/compression
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/max-message-size
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/consumer-max-ack-pending
+=== RUN   TestBadShapeReasonRefusesEveryTask19Hazard/consumer-inactive-threshold
+--- PASS: TestBadShapeReasonRefusesEveryTask19Hazard (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/persist-mode-async (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/republish (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/subject-transform (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/message-ttl (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/delete-marker-ttl (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/allow-direct (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/mirror-direct (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/atomic-publish (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/message-counter (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/compression (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/max-message-size (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/consumer-max-ack-pending (0.00s)
+    --- PASS: TestBadShapeReasonRefusesEveryTask19Hazard/consumer-inactive-threshold (0.00s)
+=== RUN   TestPipelinedReadMatchesSequentialOnFrozenFixture
+--- PASS: TestPipelinedReadMatchesSequentialOnFrozenFixture (0.01s)
+=== RUN   TestCursorPositionChecksPlatformBoundary
+=== PAUSE TestCursorPositionChecksPlatformBoundary
+=== RUN   TestPositionFromStreamSequenceRejectsZero
+=== PAUSE TestPositionFromStreamSequenceRejectsZero
+=== RUN   TestConflictResyncsLoserCursor
+--- PASS: TestConflictResyncsLoserCursor (0.00s)
+=== RUN   TestConflictClassifiedWhenReReadFails
+--- PASS: TestConflictClassifiedWhenReReadFails (0.00s)
+=== RUN   TestOpenPinsStreamShape
+--- PASS: TestOpenPinsStreamShape (0.00s)
+=== RUN   TestOpenRefusesWrongShape
+--- PASS: TestOpenRefusesWrongShape (0.01s)
+=== RUN   TestOpenRefusesAfterAnyOwnedStreamConfigChange
+--- PASS: TestOpenRefusesAfterAnyOwnedStreamConfigChange (0.00s)
+=== RUN   TestAppendReadRoundTrip
+--- PASS: TestAppendReadRoundTrip (0.00s)
+=== RUN   TestJournalStateIsPerStream
+--- PASS: TestJournalStateIsPerStream (0.00s)
+=== RUN   TestOpenAcceptsConformantVariant
+--- PASS: TestOpenAcceptsConformantVariant (0.00s)
+=== RUN   TestAppendCASConflict
+--- PASS: TestAppendCASConflict (0.00s)
+=== RUN   TestUncertainRetryDuplicate
+--- PASS: TestUncertainRetryDuplicate (0.00s)
+=== RUN   TestResumeCursor
+--- PASS: TestResumeCursor (0.00s)
+=== RUN   TestForgedTailDetected
+--- PASS: TestForgedTailDetected (0.00s)
+=== RUN   TestNonCanonicalWireRejected
+--- PASS: TestNonCanonicalWireRejected (0.00s)
+=== RUN   TestReopenContinues
+--- PASS: TestReopenContinues (0.00s)
+=== RUN   TestOpenRefusesNonCanonicalTail
+--- PASS: TestOpenRefusesNonCanonicalTail (0.00s)
+=== RUN   TestAppendRefusesInvalidUTF8
+--- PASS: TestAppendRefusesInvalidUTF8 (0.00s)
+=== RUN   TestReadRefusesForgedGenesisHead
+--- PASS: TestReadRefusesForgedGenesisHead (0.00s)
+=== RUN   TestReadRefusesForgedTailHead
+--- PASS: TestReadRefusesForgedTailHead (0.00s)
+=== RUN   TestRejectedFutureCursorDoesNotPoisonAppend
+--- PASS: TestRejectedFutureCursorDoesNotPoisonAppend (0.00s)
+=== RUN   TestReadAcceptsStoredCursorAfterAppend
+--- PASS: TestReadAcceptsStoredCursorAfterAppend (0.00s)
+=== CONT  TestCursorPositionChecksPlatformBoundary
+--- PASS: TestCursorPositionChecksPlatformBoundary (0.00s)
+=== CONT  TestPositionFromStreamSequenceRejectsZero
+--- PASS: TestPositionFromStreamSequenceRejectsZero (0.00s)
+PASS
+ok  	foldlab/journal	0.555s
+=== RUN   TestThisPackageIsBrandClean
+--- PASS: TestThisPackageIsBrandClean (0.35s)
+=== RUN   TestTheLintSeesEveryGeneratedBrand
+--- PASS: TestTheLintSeesEveryGeneratedBrand (0.27s)
+=== RUN   TestCanonicalIsAFixedPoint
+--- PASS: TestCanonicalIsAFixedPoint (0.00s)
+=== RUN   TestCanonicalizeNormalizes
+--- PASS: TestCanonicalizeNormalizes (0.00s)
+=== RUN   TestIntegersSurviveArbitraryPrecision
+--- PASS: TestIntegersSurviveArbitraryPrecision (0.00s)
+=== RUN   TestParseRefusesTheNumberDomainViolations
+--- PASS: TestParseRefusesTheNumberDomainViolations (0.00s)
+=== RUN   TestParseCanonicalRefusesNonCanonicalForms
+--- PASS: TestParseCanonicalRefusesNonCanonicalForms (0.00s)
+=== RUN   TestNonASCIIIsRefusedBothWays
+--- PASS: TestNonASCIIIsRefusedBothWays (0.00s)
+=== RUN   TestEmitterRefusesValuesOutsideTheDomain
+--- PASS: TestEmitterRefusesValuesOutsideTheDomain (0.00s)
+=== RUN   TestObjectValueSortsOnConstruction
+--- PASS: TestObjectValueSortsOnConstruction (0.00s)
+=== RUN   TestNativeCanonVectorsMatchTheSchemaBytes
+--- PASS: TestNativeCanonVectorsMatchTheSchemaBytes (0.00s)
+=== RUN   TestTheTwoOpenVectorsMeetTheFreezeStructurally
+--- PASS: TestTheTwoOpenVectorsMeetTheFreezeStructurally (0.00s)
+=== RUN   TestCorpusCarriesTheTenCanonVectorsInOrder
+--- PASS: TestCorpusCarriesTheTenCanonVectorsInOrder (0.00s)
+=== RUN   TestCorpusCanonRecordsSatisfyTheWeakCheck
+--- PASS: TestCorpusCanonRecordsSatisfyTheWeakCheck (0.00s)
+=== RUN   TestCorpusCanonRecordsAgreeWithNativeConstruction
+--- PASS: TestCorpusCanonRecordsAgreeWithNativeConstruction (0.00s)
+=== RUN   TestThePositiveControl
+--- PASS: TestThePositiveControl (0.00s)
+=== RUN   TestSingleMutationControls
+--- PASS: TestSingleMutationControls (0.01s)
+=== RUN   TestAReflowedDocstringIsNotCaughtHere
+--- PASS: TestAReflowedDocstringIsNotCaughtHere (0.00s)
+=== RUN   TestCorpusSatisfiesTheBothWaysLaw
+    corpus_test.go:72: both-ways: 25949 bytes over 121 lines, byte-identical
+--- PASS: TestCorpusSatisfiesTheBothWaysLaw (0.00s)
+=== RUN   TestByteLevelRefusals
+--- PASS: TestByteLevelRefusals (0.00s)
+=== RUN   TestHeaderAndGroupOrder
+    corpus_test.go:129: line count: 121 lines = 1 header + 120 counted records
+--- PASS: TestHeaderAndGroupOrder (0.00s)
+=== RUN   TestUnknownFormatIsRefused
+--- PASS: TestUnknownFormatIsRefused (0.00s)
+=== RUN   TestUnrecognisedRecordGroupsAreSkippedAndLogged
+--- PASS: TestUnrecognisedRecordGroupsAreSkippedAndLogged (0.00s)
+=== RUN   TestHeaderCountsMatchTheRecordsRead
+    corpus_test.go:212: the header carries the counts key "program" = 4, beyond the eight structural groups
+--- PASS: TestHeaderCountsMatchTheRecordsRead (0.00s)
+=== RUN   TestTables
+--- PASS: TestTables (0.00s)
+=== RUN   TestVectors
+--- PASS: TestVectors (0.00s)
+=== RUN   TestDocGroup
+--- PASS: TestDocGroup (0.00s)
+=== RUN   TestCrossRecordInvariants
+--- PASS: TestCrossRecordInvariants (0.00s)
+=== RUN   TestProvenance
+--- PASS: TestProvenance (0.00s)
+=== RUN   TestTheGrownCorpusSatisfiesTheBothWaysLaw
+    program_test.go:98: both-ways (nine groups, 4 program records): 25949 bytes over 121 lines, byte-identical
+--- PASS: TestTheGrownCorpusSatisfiesTheBothWaysLaw (0.00s)
+=== RUN   TestTheGrownCorpusCountsAccountForEveryLine
+    program_test.go:129: counts: 121 lines = 1 header + 120 counted records, program=4
+--- PASS: TestTheGrownCorpusCountsAccountForEveryLine (0.00s)
+=== RUN   TestTheProgramGroupComesLast
+--- PASS: TestTheProgramGroupComesLast (0.00s)
+=== RUN   TestEveryProgramRecordSelfTests
+    program_test.go:171: self-test: 4 program records, declaration re-canonicalizes to bytes
+--- PASS: TestEveryProgramRecordSelfTests (0.00s)
+=== RUN   TestNativeProgramVectorsMatchTheRecords
+    program_test.go:222: ground-two-node, natively constructed and byte-identical: {"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1}},"generator":"emit","name":2},{"args":{},"generator":"declare","name":1}]}
+    program_test.go:239: native construction agrees with 4 of the corpus's 4 program vectors
+--- PASS: TestNativeProgramVectorsMatchTheRecords (0.00s)
+=== RUN   TestTheFilledTwinIsTheValuationApplied
+    program_test.go:281: valuation correspondence: hole 7 := 42 carries holey to holey-filled byte for byte
+--- PASS: TestTheFilledTwinIsTheValuationApplied (0.00s)
+=== RUN   TestEveryDeclarationErasesToAnAdmissibleNodeList
+    program_test.go:292: erasure: 4 declarations satisfy the model's ProgramAdmission
+--- PASS: TestEveryDeclarationErasesToAnAdmissibleNodeList (0.00s)
+=== RUN   TestProgramMutationControls
+    program_test.go:510: control "an edge dropped"                                    refused: program vector "ground-two-node": the edge 2->1 is implied by a local argument reference and is not declared; the edge set must equal exactly the consumptions the nodes imply
+    program_test.go:510: control "an edge invented"                                   refused: program vector "distill-shape": the edge 4->1 is declared and no local argument reference implies it; the edge set must equal exactly the consumptions the nodes imply
+    program_test.go:510: control "a bytes and declaration mismatch"                   refused: program vector "ground-two-node": canonicalizing the declaration yields {"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1}},"generator":"emit","name":2},{"args":{},"generator":"declare","name":1}]}, the record declares {"edges":[{"from":4,"to":3},{"from":3,"to":2},{"from":2,"to":1}],"holes":[],"lineage":[9],"nodes":[{"args":{"cell":{"arg":"digest","id":6,"kind":"resource"},"contribution":{"arg":"local","name":3}},"generator":"join","name":4},{"args":{"body":{"arg":"local","name":2},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":3},{"args":{"outcome":{"arg":"local","name":1},"register":{"arg":"digest","id":5,"kind":"program"}},"generator":"decide","name":2},{"args":{"target":{"arg":"digest","id":8,"kind":"index"}},"generator":"resolve","name":1}]}
+    program_test.go:510: control "an unsorted args object"                            refused: line 119: offset 676: member "value" follows "writ"; members are sorted lexicographically by key
+    program_test.go:510: control "a counts miss"                                      refused: header declares 3 program records, the file carries 4
+    program_test.go:510: control "the counts key omitted while the records are present" refused: header counts omit "program"
+    program_test.go:510: control "a generator outside the model's eight"              refused: program vector "ground-two-node": node 2 applies the generator "sleep", which the model's Act record does not declare
+    program_test.go:510: control "an argument the generator does not declare"         refused: program vector "ground-two-node": node 2 binds the argument "clock", which the generator "emit" does not declare; its fields are [lane, body]
+    program_test.go:510: control "a digest reference of no declared kind"             refused: program vector "distill-shape": node 4 argument "cell" references a digest of kind "closure", which is not one of the model's twelve declaration kinds
+    program_test.go:510: control "the node list in oldest-first order"                refused: program vector "ground-two-node": node 2 consumes 1, which is not an already-admitted node; nodes are newest-first, so a consumed node stands strictly later in the list
+    program_test.go:510: control "one node name admitted twice"                       refused: program vector "distill-shape": node name 3 admits twice; a name admits at most once
+    program_test.go:510: control "holes out of order"                                 refused: program vector "holey": hole 7 follows hole 8; holes ascend by name
+    program_test.go:510: control "an argument standing in an undeclared hole"         refused: program vector "holey": node 1 argument "value" stands in hole 7, which the declaration does not declare; a hole is a declared parameter, never a wildcard
+    program_test.go:510: control "an argument tag outside the closed set"             refused: line 119: program vector "holey": nodes[1]: args.value: argument tag "closure" is outside the closed set {digest, hole, literal, local}
+    program_test.go:510: control "the program group before the canon group"           refused: line 118: record "canon" appears after "program"; the group order is fixed
+    program_test.go:510: control "a vector the freeze names dropped"                  refused: the program group carries no vector named "distill-shape"; the freeze names it outright
+    program_test.go:510: control "two program records under one name"                 refused: two program records name the vector "ground-two-node"
+--- PASS: TestProgramMutationControls (0.02s)
+=== RUN   TestGeneratedKindsMatchTheCorpus
+--- PASS: TestGeneratedKindsMatchTheCorpus (0.00s)
+=== RUN   TestGeneratedStagesMatchTheCorpus
+--- PASS: TestGeneratedStagesMatchTheCorpus (0.00s)
+=== RUN   TestGeneratedRefusalsCarryTheCorpusTexts
+--- PASS: TestGeneratedRefusalsCarryTheCorpusTexts (0.00s)
+=== RUN   TestTheCodemodCatalogIsTheMachineApplicableFour
+--- PASS: TestTheCodemodCatalogIsTheMachineApplicableFour (0.00s)
+=== RUN   TestARefusalErrorTeachesTheLegalNextMove
+--- PASS: TestARefusalErrorTeachesTheLegalNextMove (0.00s)
+=== RUN   TestGeneratedVectorsMatchTheCorpus
+--- PASS: TestGeneratedVectorsMatchTheCorpus (0.00s)
+=== RUN   TestGeneratedProgramVectorsMatchTheCorpus
+--- PASS: TestGeneratedProgramVectorsMatchTheCorpus (0.00s)
+=== RUN   TestGeneratedDocsMatchTheCorpus
+--- PASS: TestGeneratedDocsMatchTheCorpus (0.00s)
+=== RUN   TestGeneratedTypeNamesAreTheClosedList
+--- PASS: TestGeneratedTypeNamesAreTheClosedList (0.00s)
+=== RUN   TestBrandsCoverEveryKind
+--- PASS: TestBrandsCoverEveryKind (0.00s)
+=== RUN   TestTheValueLevelBrandsAreRuntimeChecks
+--- PASS: TestTheValueLevelBrandsAreRuntimeChecks (0.00s)
+PASS
+ok  	foldlab/kmconform	0.901s
+=== RUN   TestVeilCorpusReplayWall
+=== RUN   TestVeilCorpusReplayWall/grant-first
+=== RUN   TestVeilCorpusReplayWall/duplicate-grant
+=== RUN   TestVeilCorpusReplayWall/renew-current
+=== RUN   TestVeilCorpusReplayWall/renew-stale
+=== RUN   TestVeilCorpusReplayWall/steal-after-grant
+=== RUN   TestVeilCorpusReplayWall/zombie-stale-commit
+=== RUN   TestVeilCorpusReplayWall/winner-commit
+=== RUN   TestVeilCorpusReplayWall/second-commit
+=== RUN   TestVeilCorpusReplayWall/observe-absent
+=== RUN   TestVeilCorpusReplayWall/observe-held
+=== RUN   TestVeilCorpusReplayWall/renew-then-steal
+=== RUN   TestVeilCorpusReplayWall/renewed-zombie-commit
+=== RUN   TestVeilCorpusReplayWall/grant-after-commit
+=== RUN   TestVeilCorpusReplayWall/renew-after-commit
+=== RUN   TestVeilCorpusReplayWall/steal-after-commit
+--- PASS: TestVeilCorpusReplayWall (0.05s)
+    --- PASS: TestVeilCorpusReplayWall/grant-first (0.01s)
+    --- PASS: TestVeilCorpusReplayWall/duplicate-grant (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/renew-current (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/renew-stale (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/steal-after-grant (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/zombie-stale-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/winner-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/second-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/observe-absent (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/observe-held (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/renew-then-steal (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/renewed-zombie-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/grant-after-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/renew-after-commit (0.00s)
+    --- PASS: TestVeilCorpusReplayWall/steal-after-commit (0.00s)
+=== RUN   TestSubstrateCASProbes
+--- PASS: TestSubstrateCASProbes (0.00s)
+PASS
+ok  	foldlab/register	0.794s
+SUBSTRATE ENV server=v2.14.4 go-client=v1.53.1 os=darwin arch=arm64 filesystem=/ sync-modes=crash-durable(SyncAlways=false),power-durable(SyncAlways=true)
+SUBSTRATE BATTERY sigkill-recovery=SKIP reason=linux-process-signals-required
+=== RUN   TestSubjectCAS
+    cas_kv_dedup_test.go:75: TRACE subject-cas accepted=[a@1,b@2,a@3,b@4,a@5,b@6] stale=400/10071 ErrKeyExists=true state-unchanged cursor=latest-global-stream-sequence
+--- PASS: TestSubjectCAS (0.01s)
+=== RUN   TestKVRevisionLifecycle
+=== RUN   TestKVRevisionLifecycle/concurrent_create_and_single_CAS_winner
+=== NAME  TestKVRevisionLifecycle
+    cas_kv_dedup_test.go:320: TRACE kv create-race=1/31 cas-race=1/1 errors=operation-context+400/10071
+    cas_kv_dedup_test.go:320: TRACE kv lifecycle=[create:1 other:2 update:3 delete:4 recreate:5 purge:6 recreate:7] read-after-ack=[start:8 writes:512 final:520 stale:0] ErrKeyExists=[kv-create:true,kv-update:true] errors=operation-context+400/10071
+--- PASS: TestKVRevisionLifecycle (0.04s)
+    --- PASS: TestKVRevisionLifecycle/concurrent_create_and_single_CAS_winner (0.00s)
+=== RUN   TestDedupAndCASPrecedence
+    cas_kv_dedup_test.go:465: TRACE dedup default=2m configured=2s pure=[1/new,1/duplicate,1/duplicate,2/new] corridor=(2s,3.500059375s) outside=[2.500387875s,2.5009115s] retry-offset=1.500059375s cas=[3/new,400/10071,3/duplicate] other-subject=3/duplicate namespace=stream-wide precedence=CAS-before-dedup
+--- PASS: TestDedupAndCASPrecedence (2.51s)
+=== RUN   TestDeliveryEnvelope
+=== RUN   TestDeliveryEnvelope/ack_timeout_admits_later_work_before_redelivery
+    delivery_workqueue_test.go:38: TRACE delivery timeout witness=[1/1,2/1,3/1,4/1,1/2] predicate=later-sequence-before-timeout-redelivery
+=== RUN   TestDeliveryEnvelope/NAK_queues_redelivery_before_later_work
+    delivery_workqueue_test.go:67: TRACE delivery NAK witness=[1/1,2/1,3/1,1/2,4/1] predicate=NAK-redelivery-before-undelivered-later-sequence
+--- PASS: TestDeliveryEnvelope (2.05s)
+    --- PASS: TestDeliveryEnvelope/ack_timeout_admits_later_work_before_redelivery (2.01s)
+    --- PASS: TestDeliveryEnvelope/NAK_queues_redelivery_before_later_work (0.01s)
+=== RUN   TestWorkQueueShape
+    delivery_workqueue_test.go:224: TRACE work-queue overlap=400/10100 disjoint=accepted first-ack=removed get-seq1=404/10037 second-fetch=empty
+--- PASS: TestWorkQueueShape (0.27s)
+=== RUN   TestSubstrateEnvelopeShape
+    envelope_test.go:19: TRACE application-positive publishes=[flb.req,flb.ing] kv=$KV.ASSUME_APP_SCOPE:create+CAS-update credential=operational
+    envelope_test.go:28: TRACE envelope stream=ASSUME_JOURNAL storage=file replicas=1 cluster=none limits=unbounded delete=denied purge=denied imports=none
+=== RUN   TestSubstrateEnvelopeShape/delete
+    envelope_test.go:103: TRACE envelope operation=delete app=permission-refused admin=success create-after=3 original=1
+=== RUN   TestSubstrateEnvelopeShape/purge
+    envelope_test.go:103: TRACE envelope operation=purge app=permission-refused admin=success create-after=6 original=4
+=== NAME  TestSubstrateEnvelopeShape
+    envelope_test.go:135: TRACE acl-api subject=$JS.API.STREAM.PURGE.ASSUME_API_PURGE app=permission-refused admin=success purged=1
+    envelope_test.go:189: TRACE acl-api subject=$JS.API.STREAM.UPDATE.ASSUME_JOURNAL app=permission-refused admin=success max-msgs=1 msgs=3->1 first=1->3 seal-cancel=10052-refused
+    envelope_test.go:203: TRACE acl-api subject=$JS.API.STREAM.DELETE.ASSUME_JOURNAL app=permission-refused admin=success stream=gone
+    envelope_test.go:214: TRACE acl-api subject=$JS.API.STREAM.DELETE.KV_ASSUME_TERMINAL app=permission-refused admin=success stream=gone
+--- PASS: TestSubstrateEnvelopeShape (0.02s)
+    --- PASS: TestSubstrateEnvelopeShape/delete (0.00s)
+    --- PASS: TestSubstrateEnvelopeShape/purge (0.00s)
+=== RUN   TestApplicationACLWideningPlant
+    envelope_test.go:237: TRACE acl-plant allow=$JS.API.> subject=$JS.API.STREAM.DELETE.ASSUME_JOURNAL result=stream-deleted baseline=must-red
+--- PASS: TestApplicationACLWideningPlant (0.00s)
+=== RUN   TestApplicationRetentionWideningPlant
+    envelope_test.go:277: TRACE acl-plant allow=$JS.API.STREAM.UPDATE.> subject=$JS.API.STREAM.UPDATE.ASSUME_JOURNAL result=retention-mutated max-msgs=1 msgs=3->1 first=1->3 baseline=must-red
+--- PASS: TestApplicationRetentionWideningPlant (0.00s)
+=== RUN   TestApplicationDenyAllPlant
+    envelope_test.go:288: TRACE acl-plant deny=> legitimate-publish=permission-refused positive-control=must-red
+--- PASS: TestApplicationDenyAllPlant (0.00s)
+=== RUN   TestPinnedVersions
+--- PASS: TestPinnedVersions (0.00s)
+=== RUN   TestSIGKILLRecovery
+    recovery_test.go:57: SIGKILL process-crash witness runs on Linux; SyncAlways configuration assertion passed
+--- SKIP: TestSIGKILLRecovery (0.00s)
+=== RUN   TestRecoveryServerProcess
+--- PASS: TestRecoveryServerProcess (0.00s)
+PASS
+ok  	foldlab/substrate	5.898s
+
+== proto/go — formatting
+
+== proto/go — vet
+
+== proto/go — tests
+ok  	foldlab/proto/catalogr4	20.467s
+?   	foldlab/proto/catalogr4/cmd	[no test files]
+ok  	foldlab/proto/cmd/protod	1.383s
+ok  	foldlab/proto/cmd/wirefix	0.878s
+?   	foldlab/proto/internal/readreplyserver	[no test files]
+ok  	foldlab/proto/protod	7.704s
+
+== proto/go — wire fixture regeneration
+ok  	foldlab/proto/cmd/wirefix	0.425s
+
+== proto/ts — typecheck
+
+== proto/ts — Effect rules
+[16:17:43.239] ERROR (#1): TypeScriptFoundIsNot5Or6: @effect/language-service supports TypeScript 5.x and 6.x; for TypeScript 7.x and forward use @effect/tsgo or refer to side-by-side usage on https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0.
+    at <anonymous> (/Users/pooks/multica_workspaces/087b5079-093d-45e9-9460-dce43211cd6b/b4ffde8f/workdir/foldlab/node_modules/.bun/@effect+language-service@0.87.2/node_modules/@effect/language-service/cli.js:20334:23)
+error: script "gates" exited with code 1

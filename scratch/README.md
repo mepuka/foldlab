@@ -14,6 +14,11 @@ exists. That goes in `docs/` or on the board.
 
 ## Live
 
+- `dev807/` — the DEV-807 tripwire finding: the canonical number domain is
+  ruled twice, in opposite directions. `FINDING-CANON-DOMAIN-001.md` is the
+  finding, the three scripts beside it are re-runnable evidence, and the
+  collapse the ticket dispatched was not performed. OPEN, awaiting the
+  operator's grill.
 - `codex/48-moves-model.md` — the brief that produced `verify/moves/`.
   Its "reference implementation" section points at `meaning-scheduler/`
   below and restates the semantics in full, so it stands alone.
