@@ -400,7 +400,21 @@ K-series stays the design record's and is not renumbered here.
   discipline the must-not-compile class rests on). Reversal: the
   content family is additive over the existing kinds; retiring it
   reverts to the opaque abstraction without touching sentence
-  identity.
+  identity. Worked example, from the operator's review: typing the
+  ontology kind against its ratified shape (members as schema digests,
+  the closed four-production relation grammar, lineage; relations
+  claims-tier, no reasoner) immediately surfaces a bound prose hid —
+  members are schemas only, so an ontology cannot contain another
+  ontology, and the ontology-of-ontology goal is served in v0 by
+  lineage alone. Whether members widen to kind-tagged refs or the
+  content gains an imports field is a grillable amendment to a
+  ratified shape — the record owner's call, surfaced here because the
+  content typing made it mechanical to see. Typing the schema kind
+  the same way yields the closed field-shape grammar over the
+  canonical value grammar (sorted-key objects, escaped strings,
+  arrays, booleans, non-negative safe integers; a float has no
+  constructor), with conformance checking structural by
+  construction.
 
 ## 12. Sources
 
