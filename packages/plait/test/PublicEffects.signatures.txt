@@ -25,6 +25,7 @@ Cell.Cells.testLayer#call[1] Layer error=never
 Cell.canonicalize#call[1] Effect error=StructuralRefusal
 Cell.empty Effect error=StructuralRefusal
 Cell.join#call[1] Effect error=StructuralRefusal
+Cell.replica#call[1] Effect error=StructuralRefusal
 Cell.stateOf#call[1] Effect error=StructuralRefusal
 ContextProgram.declare#call[1] Effect error=StructuralRefusal | AbsenceRefusal
 Digest.digestOf#call[1] Effect error=StructuralRefusal

@@ -28,6 +28,17 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   ordering parameter, and no conflict callback; a lost CAS race re-reads and
   re-merges. A cell surface that takes a rewrite function instead of a delta is
   a finding.
+- One lattice write path exists: `internal/cas.ts`'s `casJoinLoop`. A second
+  bounded re-merge loop written into an adapter is a finding, and so is a
+  carrier that reaches around it. The three CAS disciplines are never unified —
+  joins retry because idempotence discharges the ambiguity, registers reconcile
+  by read-back against the one intended record because outcomes land at most
+  once, and anchors never retry at all. Routing an anchor through either loop
+  would smuggle its exclusivity assumption into a combinator a different law
+  licenses.
+- A local replica is a lower bound, never an oracle. Nothing derives absence,
+  freshness, or durability from `CellReplica`; it is fed by polling, and a watch
+  feed needs its own ruled ticket before it may feed anything.
 - No watch surface ships on any KV-backed module without its own ruled ticket.
   Probe evidence licenses advisory use and never grants the license to ship —
   a landed suite discharges no fence by itself. Whatever ships is advisory:

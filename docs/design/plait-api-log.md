@@ -75,6 +75,7 @@ coordinator merges.
 | [0023](#0023--the-conformance-gate-enumerates-the-public-surface) | 2026-08-17 | package gates | the refusal-channel gate derives from the barrel; a gate that lists is a gate that drifts | ruled |
 | [0024](#0024--f2b-is-the-successor-discipline-the-floor-is-a-derived-record) | 2026-08-17 | `Folds` / `Anchors` | the discipline protects, the floor records; `guard_is_redundant` is rostered | ruled |
 | [0025](#0025--g7s-ceiling-is-external-dependencies-only) | 2026-08-17 | packaging | workspace seams are declared, not smuggled; G7 bounds external deps | ruled |
+| [0026](#0026--the-three-cas-disciplines-are-never-unified) | 2026-08-18 | `Cells` / `Registers` / `Anchors` | joins retry, registers reconcile, anchors detach — three laws, never one combinator | ruled |
 
 ---
 
@@ -650,3 +651,45 @@ coordinator merges.
 - **Source:** the DEV-694 coordinator ruling comment (2026-08-17);
   ruling G7 (ratification record); the DEV-697 spine observation about
   the cross-package relative import.
+
+### 0026 — the three CAS disciplines are never unified
+
+- **Date:** 2026-08-18
+- **Surface:** `Cells` / `Registers` / `Anchors` (internal write paths)
+- **Decision:** the merged tree runs three revision-CAS write paths, and
+  they stay three. **Joins** retry through `casJoinLoop`
+  (`internal/cas.ts`) because idempotence discharges the ambiguity of a
+  lost race — a repeated delta adds nothing twice (F1,
+  `f1_cell_merge_aci`). **Registers** reconcile by read-back comparison
+  against the one intended record, because an outcome lands at most once
+  (I2, DEV-704 seam rules 1–2; the shipped `reconcileUpdate`,
+  `internal/registers.ts:256-288`). **Anchors** never retry at all: a
+  lost anchor revision CAS is a fatal detach under the single-live-pump
+  discipline (`lostCas`, `internal/anchors.ts:75-86`). The resemblance of
+  the three shapes is the trap this entry exists to disarm. (Line
+  citations are read at head after the DEV-734 spine extraction; the
+  affordances record's own numbers predate it.)
+- **API consequence:** no surface offers a shared "CAS strategy"
+  parameter, and no adapter reaches into another's loop. Routing anchors
+  through either retry loop — even with the bound set to one — would
+  smuggle their exclusivity assumption into a combinator licensed by a
+  different law; routing registers through the join loop would give a
+  non-idempotent write the retry a lattice earns. The attempt bound on
+  the join loop is flow control with no correctness stake, and reading it
+  as a general CAS knob is the misreading this entry pre-registers
+  against.
+- **Alternatives:** unify all three behind one combinator with a
+  discipline parameter (one module, three laws, and the first reviewer to
+  read it would have to reconstruct which law each caller depends on);
+  unify joins and registers only (their reconciliation predicates differ
+  in kind — subsumption is a lattice order, byte-equality is identity
+  against one intended record — which is the exact difference the
+  committed cell control is built to expose).
+- **Status:** ruled — grill G-4, refereed 2026-08-18 as ADOPT-AMENDED in
+  the affordances record's §C-2 sheet, which widened the original two-way
+  sentence to this three-way one; no build either way, and it lands with
+  DEV-737's DECISIONS entry (`packages/plait/DECISIONS.md`, task DEV-737
+  T7).
+- **Source:** `docs/design/2026-08-17-plait-effect-affordances.md` A-7
+  ("the three-way refusal, refereed G-4, adopted") and §C-2 G-4;
+  dispatch 31 decision 6 (the anchor detach); DEV-704 seam rules 1–2.
