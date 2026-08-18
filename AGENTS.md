@@ -274,3 +274,16 @@ Coordinators run the standing loop at every checkpoint (delivery,
 merge, block, or 30 idle minutes): review-queue depth → merge train;
 seat saturation (floor: three active); law-vs-wall audit for any new
 surface; escalations surfaced to the operator rather than parked.
+
+9. **Corpus artifacts are never scratch.** Anything machine-generated
+   from the KM corpus — emitters, generated types/schemas/tools,
+   denotations, conformance vectors — lives in its package home with
+   full machine validation (a check:* gate wired into the battery,
+   byte-identical regeneration, an executed negative control),
+   committed generated artifacts, and documentation. scratch/ holds
+   briefs and spikes only; a spike that produces corpus artifacts
+   graduates or dies. Progressive discovery is part of "documented":
+   every level (root → package → module) carries a short agent
+   direction pointing one level deeper — what this is, how to
+   regenerate it, which wall proves it. Wall: the battery's check
+   scripts + review. Severity: blocker.
