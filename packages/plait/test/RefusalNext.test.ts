@@ -587,7 +587,7 @@ describe("structural refusal repairs", () => {
       await Effect.runPromise(
         Effect.gen(function*() {
           const door = yield* Admission
-          return yield* Effect.flip(door.admit({ _tag: "readLatest", subject: 6 }))
+          return yield* Effect.flip(door.admit({ _tag: "readLatest", subject: 6n }))
         }).pipe(Effect.provide(Admission.layer(PLANTED_CONTEXT))),
       ),
     )

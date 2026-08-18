@@ -16,7 +16,8 @@
  * and the repair's machine-applicability — is looked up from the generated
  * table, never restated here. The reason travels as `next[0].subject`, the
  * repair as `next[0].note`, the applicability in `next[0].body`; the refused
- * candidate itself rides `got` so a repair loop can pin what it answers.
+ * candidate itself rides `got` in the refusal family's JSON diagnostic form:
+ * bigint fields are decimal strings and absent optional fields stay absent.
  *
  * @module
  */
@@ -29,11 +30,26 @@ import { KERNEL_REFUSALS, type KernelRefusalReason } from "./KernelTables.genera
 
 /** One admitted sentence: its canonical encoding and the intrinsic act it names. */
 export interface KernelSentence {
-  readonly encoded: ReadonlyArray<number>
+  readonly encoded: ReadonlyArray<bigint>
   readonly act: KernelAct
 }
 
 const taughtByReason = new Map(KERNEL_REFUSALS.map((row) => [row.reason, row]))
+
+const diagnosticJson = (value: unknown): RefusalFields["got"] => {
+  if (value === null || typeof value === "boolean" || typeof value === "number") return value
+  if (typeof value === "string") return value
+  if (typeof value === "bigint") return value.toString(10)
+  if (Array.isArray(value)) return value.map(diagnosticJson)
+  if (typeof value === "object") {
+    const out: { [key: string]: RefusalFields["got"] } = {}
+    for (const [key, member] of Object.entries(value)) {
+      if (member !== undefined) out[key] = diagnosticJson(member)
+    }
+    return out
+  }
+  return String(value)
+}
 
 const taughtRefusal = (
   reason: KernelRefusalReason,
@@ -44,7 +60,7 @@ const taughtRefusal = (
     kind: "kernel-admission",
     law: taught?.law ?? reason,
     path: ["admit", candidate._tag],
-    got: candidate as unknown as RefusalFields["got"],
+    got: diagnosticJson(candidate),
     expected: "a lawful kernel sentence",
     next: [
       {

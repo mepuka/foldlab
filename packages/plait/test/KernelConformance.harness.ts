@@ -7,13 +7,9 @@
  * ships in this package it is checked by the same replay that checks the
  * reference one, with nothing about the harness edited.
  *
- * One seam is worth naming. The corpus carries every integer at arbitrary
- * precision, because an encoded sentence multiplies by about a million per
- * argument and leaves the range a JavaScript number holds exactly. The door
- * under test speaks `number`. So the crossing is written out, and it refuses
- * rather than rounds: the day a vector exceeds the safe range, the replay says
- * so at that vector instead of quietly comparing two rounded values and
- * agreeing.
+ * The corpus and the door both carry unbounded integers as `bigint`. There is
+ * no numeric conversion at this wall: the generated language, the shipping
+ * implementation, and the emitted vector compare on the same carrier.
  *
  * Agreement is agreement, not proof. A green replay says the runtime returns
  * the model's verdict on the model's committed candidates; it promotes no
@@ -32,22 +28,6 @@ export const corpusPath = resolve(repository, CORPUS_PATH)
 
 /** Loads and validates the format-2 corpus the tables were generated from. */
 export const loadKernelArtifact = async (): Promise<KernelCorpus> => loadKernelCorpus(repository)
-
-/**
- * The corpus's unbounded integers, as the numbers the door speaks. Refuses
- * above the safe range rather than rounding: two rounded values that agree
- * agree about nothing.
- */
-export const toNumbers = (
-  values: ReadonlyArray<bigint>,
-  where: string,
-): ReadonlyArray<number> =>
-  values.map((value) => {
-    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error(`${where}: ${value} is past what a number holds exactly`)
-    }
-    return Number(value)
-  })
 
 /** One replayed admission: what the model emitted, what the door answered. */
 export interface AdmissionReplay {
@@ -68,7 +48,7 @@ export interface EncodingReplay {
 const render = (verdict: {
   readonly verdict: string
   readonly reason?: string
-  readonly encoded?: ReadonlyArray<number>
+  readonly encoded?: ReadonlyArray<bigint>
 }): string =>
   verdict.verdict === "admitted"
     ? `admitted:[${(verdict.encoded ?? []).join(",")}]`
@@ -87,7 +67,7 @@ export const replayAdmissions = (
 ): ReadonlyArray<AdmissionReplay> =>
   corpus.admissions.map((admission) => {
     const expected = admission.verdict === "admitted"
-      ? `admitted:[${toNumbers(admission.encoded, admission.name).join(",")}]`
+      ? `admitted:[${admission.encoded.join(",")}]`
       : `refused:${admission.reason}`
     const candidate = candidates[admission.name]
     if (candidate === undefined) {
@@ -107,7 +87,7 @@ export const replayEncodings = (
   corpus: KernelCorpus,
 ): ReadonlyArray<EncodingReplay> =>
   corpus.encodings.map((encoding) => {
-    const act = toNumbers(encoding.act, encoding.name)
+    const act = encoding.act
     const vector = act.join(",")
     const decoded = decodeAct(act)
     const roundTrip = decoded === null ? "undecodable" : encodeAct(decoded).join(",")

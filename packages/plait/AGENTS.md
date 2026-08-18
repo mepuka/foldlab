@@ -95,6 +95,9 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
 - `src/kernel/Door.ts` is the shipping admission implementation and
   `src/kernel/Admission.ts` is its one Effect service. The conformance harness
   replays the model-emitted verdicts against that shipping implementation;
+  its candidate, intrinsic-act, and context types are derived directly from
+  `KernelSchemas.generated.ts` and retain the model's bigint carrier. Never
+  restate that algebra in a host-facing `number` type or add a digest bridge.
   `Admission.admit` is the single service accessor CLI, `FabricClient`, and
   `CasDaemon` re-export by identity. Carriage and surface never import
   `Door.ts`, build a context, translate a runtime digest into a model identity,

@@ -1,26 +1,24 @@
 /**
  * Plane: kernel — the language: corpus, door, programs, and wire grammar.
  *
- * THE shipping admission door. Promoted from the test-only reference
- * transliteration of the kernel model's `Kernel.admit`
- * (`verify/kernel/Kernel/Definitions.lean`): the conformance harness replays
- * the model's own emitted admission vectors against THIS implementation, so
- * the thing the vectors gate is the thing the runtime ships — never a
- * test-only twin. Conformance to those vectors is agreement with the model,
- * not a runtime guarantee promoted out of it.
+ * The shipping admission door. Its input, context, and intrinsic output are
+ * the model-generated algebraic constructs from `KernelSchemas.generated.ts`,
+ * with bigint identities preserved end to end. The conformance harness replays
+ * the model's own emitted admission vectors against this implementation.
  *
  * The check order inside a candidate is fixed — signature shape, then
- * reference sweep, then universe — so the door is deterministic, which is
- * what makes a verdict comparable to the model's at all.
+ * reference sweep, then universe — so the verdict is deterministic.
  *
  * @module
  */
 import type {
+  KernelAct,
   KernelCandidateAct,
   KernelCandidatePredicate,
   KernelDoor,
   KernelDoorContext,
   KernelRawArg,
+  KernelTriggerPredicate,
   KernelVerdict,
 } from "./KernelDoor.js"
 import {
@@ -31,212 +29,208 @@ import {
   type KernelRefusalReason,
 } from "./KernelTables.generated.js"
 
-/** The closed trigger grammar: exactly the five monotone productions. */
-export type KernelTriggerPredicate =
-  | { readonly _tag: "evidenceAppears"; readonly lane: number; readonly pattern: number }
-  | { readonly _tag: "cellReaches"; readonly cell: number; readonly threshold: number }
-  | { readonly _tag: "holeReaches"; readonly hole: number; readonly target: KernelHoleStage }
-  | { readonly _tag: "outcomeLanded"; readonly register: number }
-  | {
-    readonly _tag: "headAdvancedPast"
-    readonly lane: number
-    readonly shard: number
-    readonly position: number
-  }
+export type { KernelAct, KernelTriggerPredicate } from "./KernelDoor.js"
 
-/** One lawful kernel sentence: the eight generators at their intrinsic sorts. */
-export type KernelAct =
-  | {
-    readonly _tag: "declare"
-    readonly kind: KernelDeclKind
-    readonly value: number
-    readonly writ: number
-  }
-  | { readonly _tag: "resolve"; readonly kind: KernelDeclKind; readonly target: number }
-  | { readonly _tag: "emit"; readonly lane: number; readonly body: number }
-  | { readonly _tag: "join"; readonly cell: number; readonly contribution: number }
-  | {
-    readonly _tag: "fold"
-    readonly declared: number
-    readonly lane: number
-    readonly shard: number
-    readonly floor: number
-    readonly state: number
-    readonly head: number
-    readonly query: number
-  }
-  | {
-    readonly _tag: "decide"
-    readonly register: number
-    readonly token: number
-    readonly outcome: number
-  }
-  | {
-    readonly _tag: "trigger"
-    readonly predicate: KernelTriggerPredicate
-    readonly declaration: number
-  }
-  | { readonly _tag: "spawn"; readonly parent: number; readonly request: number }
+const kindRank = (kind: KernelDeclKind): bigint =>
+  BigInt(KERNEL_DECL_KINDS.indexOf(kind))
 
-const kindRank = (kind: KernelDeclKind): number => KERNEL_DECL_KINDS.indexOf(kind)
+const stageRank = (stage: KernelHoleStage): bigint =>
+  BigInt(KERNEL_HOLE_STAGES.indexOf(stage))
 
-const stageRank = (stage: KernelHoleStage): number => KERNEL_HOLE_STAGES.indexOf(stage)
+/** The decode half of the generated declaration-kind order. */
+export const rankToKind = (rank: bigint): KernelDeclKind | null =>
+  KERNEL_DECL_KINDS.find((_, index) => BigInt(index) === rank) ?? null
 
-/** The decode half of the kind rank: every in-range rank names exactly one kind. */
-export const rankToKind = (rank: number): KernelDeclKind | null =>
-  KERNEL_DECL_KINDS[rank] ?? null
+/** The decode half of the generated hole-stage order. */
+export const rankToStage = (rank: bigint): KernelHoleStage | null =>
+  KERNEL_HOLE_STAGES.find((_, index) => BigInt(index) === rank) ?? null
 
-/** The decode half of the stage rank. */
-export const rankToStage = (rank: number): KernelHoleStage | null =>
-  KERNEL_HOLE_STAGES[rank] ?? null
-
-/** The canonical framing of a trigger predicate: a tag and three field slots. */
-export const encodePred = (predicate: KernelTriggerPredicate): ReadonlyArray<number> => {
+/** The model's canonical framing of an intrinsic trigger predicate. */
+export const encodePred = (
+  predicate: KernelTriggerPredicate,
+): ReadonlyArray<bigint> => {
   switch (predicate._tag) {
     case "evidenceAppears":
-      return [0, predicate.lane, predicate.pattern, 0]
+      return [0n, predicate.lane.id, predicate.pattern.bytes, 0n]
     case "cellReaches":
-      return [1, predicate.cell, predicate.threshold, 0]
+      return [1n, predicate.cell.id, predicate.threshold.bytes, 0n]
     case "holeReaches":
-      return [2, predicate.hole, stageRank(predicate.target), 0]
+      return [2n, predicate.hole, stageRank(predicate.target), 0n]
     case "outcomeLanded":
-      return [3, predicate.register, 0, 0]
+      return [3n, predicate.register.id, 0n, 0n]
     case "headAdvancedPast":
-      return [4, predicate.lane, predicate.shard, predicate.position]
+      return [
+        4n,
+        predicate.partition.lane.id,
+        predicate.partition.shard,
+        predicate.position.value,
+      ]
   }
 }
 
-/** The decode half of the predicate framing. */
+/** The decode half of the intrinsic predicate framing. */
 export const decodePred = (
-  tag: number,
-  a: number,
-  b: number,
-  c: number,
+  tag: bigint,
+  a: bigint,
+  b: bigint,
+  c: bigint,
 ): KernelTriggerPredicate | null => {
   switch (tag) {
-    case 0:
-      return { _tag: "evidenceAppears", lane: a, pattern: b }
-    case 1:
-      return { _tag: "cellReaches", cell: a, threshold: b }
-    case 2: {
+    case 0n:
+      return { _tag: "evidenceAppears", lane: { id: a }, pattern: { bytes: b } }
+    case 1n:
+      return { _tag: "cellReaches", cell: { id: a }, threshold: { bytes: b } }
+    case 2n: {
       const target = rankToStage(b)
       return target === null ? null : { _tag: "holeReaches", hole: a, target }
     }
-    case 3:
-      return { _tag: "outcomeLanded", register: a }
-    case 4:
-      return { _tag: "headAdvancedPast", lane: a, shard: b, position: c }
+    case 3n:
+      return { _tag: "outcomeLanded", register: { id: a } }
+    case 4n:
+      return {
+        _tag: "headAdvancedPast",
+        partition: { lane: { id: a }, shard: b },
+        position: { value: c },
+      }
     default:
       return null
   }
 }
 
-/** The canonical framing of a kernel sentence: a generator tag and its fields. */
-export const encodeAct = (act: KernelAct): ReadonlyArray<number> => {
+/** The model's canonical framing of an intrinsic kernel sentence. */
+export const encodeAct = (act: KernelAct): ReadonlyArray<bigint> => {
   switch (act._tag) {
     case "declare":
-      return [0, kindRank(act.kind), act.value, act.writ]
+      return [0n, kindRank(act.kind), act.value.bytes, act.writ.id]
     case "resolve":
-      return [1, kindRank(act.kind), act.target]
+      return [1n, kindRank(act.kind), act.target.id]
     case "emit":
-      return [2, act.lane, act.body]
+      return [2n, act.lane.id, act.body.bytes]
     case "join":
-      return [3, act.cell, act.contribution]
+      return [3n, act.cell.id, act.contribution.bytes]
     case "fold":
-      return [4, act.declared, act.lane, act.shard, act.floor, act.state, act.head, act.query]
+      return [
+        4n,
+        act.declared.id,
+        act.partition.lane.id,
+        act.partition.shard,
+        act.anchor.floor.value,
+        act.anchor.state.value,
+        act.anchor.head.value,
+        act.query.bytes,
+      ]
     case "decide":
-      return [5, act.register, act.token, act.outcome]
+      return [5n, act.register.id, act.token.value, act.outcome.bytes]
     case "trigger":
-      return [6, ...encodePred(act.predicate), act.declaration]
+      return [6n, ...encodePred(act.predicate), act.declaration.id]
     case "spawn":
-      return [7, act.parent, act.request]
+      return [7n, act.parent.id, act.request.id]
   }
 }
 
-/** The decode half: every encoded sentence decodes to itself, which names it. */
-export const decodeAct = (encoded: ReadonlyArray<number>): KernelAct | null => {
+/** Every well-framed model encoding decodes to the generated intrinsic type. */
+export const decodeAct = (encoded: ReadonlyArray<bigint>): KernelAct | null => {
   const [tag] = encoded
-  if (tag === 0 && encoded.length === 4) {
+  if (tag === 0n && encoded.length === 4) {
     const kind = rankToKind(encoded[1]!)
-    return kind === null ? null : { _tag: "declare", kind, value: encoded[2]!, writ: encoded[3]! }
+    return kind === null
+      ? null
+      : {
+        _tag: "declare",
+        kind,
+        value: { bytes: encoded[2]! },
+        writ: { id: encoded[3]! },
+      }
   }
-  if (tag === 1 && encoded.length === 3) {
+  if (tag === 1n && encoded.length === 3) {
     const kind = rankToKind(encoded[1]!)
-    return kind === null ? null : { _tag: "resolve", kind, target: encoded[2]! }
+    return kind === null
+      ? null
+      : { _tag: "resolve", kind, target: { id: encoded[2]! } }
   }
-  if (tag === 2 && encoded.length === 3) {
-    return { _tag: "emit", lane: encoded[1]!, body: encoded[2]! }
+  if (tag === 2n && encoded.length === 3) {
+    return { _tag: "emit", lane: { id: encoded[1]! }, body: { bytes: encoded[2]! } }
   }
-  if (tag === 3 && encoded.length === 3) {
-    return { _tag: "join", cell: encoded[1]!, contribution: encoded[2]! }
-  }
-  if (tag === 4 && encoded.length === 8) {
+  if (tag === 3n && encoded.length === 3) {
     return {
-      _tag: "fold",
-      declared: encoded[1]!,
-      lane: encoded[2]!,
-      shard: encoded[3]!,
-      floor: encoded[4]!,
-      state: encoded[5]!,
-      head: encoded[6]!,
-      query: encoded[7]!,
+      _tag: "join",
+      cell: { id: encoded[1]! },
+      contribution: { bytes: encoded[2]! },
     }
   }
-  if (tag === 5 && encoded.length === 4) {
-    return { _tag: "decide", register: encoded[1]!, token: encoded[2]!, outcome: encoded[3]! }
+  if (tag === 4n && encoded.length === 8) {
+    const partition = {
+      lane: { id: encoded[2]! },
+      shard: encoded[3]!,
+    }
+    return {
+      _tag: "fold",
+      declared: { id: encoded[1]! },
+      partition,
+      anchor: {
+        floor: { value: encoded[4]! },
+        state: { value: encoded[5]! },
+        head: { value: encoded[6]! },
+      },
+      query: { bytes: encoded[7]! },
+    }
   }
-  if (tag === 6 && encoded.length === 6) {
+  if (tag === 5n && encoded.length === 4) {
+    return {
+      _tag: "decide",
+      register: { id: encoded[1]! },
+      token: { value: encoded[2]! },
+      outcome: { bytes: encoded[3]! },
+    }
+  }
+  if (tag === 6n && encoded.length === 6) {
     const predicate = decodePred(encoded[1]!, encoded[2]!, encoded[3]!, encoded[4]!)
-    return predicate === null ? null : { _tag: "trigger", predicate, declaration: encoded[5]! }
+    return predicate === null
+      ? null
+      : { _tag: "trigger", predicate, declaration: { id: encoded[5]! } }
   }
-  if (tag === 7 && encoded.length === 3) {
-    return { _tag: "spawn", parent: encoded[1]!, request: encoded[2]! }
+  if (tag === 7n && encoded.length === 3) {
+    return {
+      _tag: "spawn",
+      parent: { id: encoded[1]! },
+      request: { id: encoded[2]! },
+    }
   }
   return null
 }
 
-const atomWeight = (arg: KernelRawArg): number => {
+const atomWeight = (arg: KernelRawArg): bigint => {
   switch (arg._tag) {
     case "digestRef":
-      return 1 + kindRank(arg.kind) * 4096 + arg.id
+      return 1n + kindRank(arg.kind) * 4096n + arg.id
     case "literal":
-      return 2 + arg.value * 16
+      return 2n + arg.value * 16n
     case "hole":
-      return 3 + arg.name * 16
+      return 3n + arg.name * 16n
     case "clockNow":
-      return 4
+      return 4n
     case "randomSeed":
-      return 5
+      return 5n
     case "secretBytes":
-      return 6 + arg.bytes * 16
+      return 6n + arg.bytes * 16n
     case "mintedId":
-      return 7 + arg.token * 16
+      return 7n + arg.token * 16n
     case "functionValue":
-      return 8 + arg.code * 16
+      return 8n + arg.code * 16n
   }
 }
 
-/**
- * The model canonicalizer for a raw payload: a positional fold into one byte
- * identity. The model computes over unbounded naturals; this runs on doubles,
- * so the fold refuses past the exact-integer boundary rather than returning a
- * rounded identity that would compare equal to a different payload.
- */
-export const canonicalBytes = (args: ReadonlyArray<KernelRawArg>): number => {
-  let accumulator = 7
-  for (const arg of args) {
-    accumulator = accumulator * 1000003 + atomWeight(arg)
-    if (!Number.isSafeInteger(accumulator)) {
-      throw new Error("canonicalBytes left the exact-integer range; the identity would be rounded")
-    }
-  }
+/** The model canonicalizer over its native unbounded integer carrier. */
+export const canonicalBytes = (args: ReadonlyArray<KernelRawArg>): bigint => {
+  let accumulator = 7n
+  for (const arg of args) accumulator = accumulator * 1000003n + atomWeight(arg)
   return accumulator
 }
 
 const refMember = (
-  refs: ReadonlyArray<{ readonly kind: KernelDeclKind; readonly id: number }>,
+  refs: KernelDoorContext["catalog"],
   kind: KernelDeclKind,
-  id: number,
+  id: bigint,
 ): boolean => refs.some((ref) => ref.kind === kind && ref.id === id)
 
 const argRefusal = (
@@ -304,39 +298,45 @@ const translatePredicate = (
 ): KernelTriggerPredicate | null => {
   switch (predicate._tag) {
     case "evidenceAppears":
-      return { _tag: "evidenceAppears", lane: predicate.lane, pattern: predicate.pattern }
+      return {
+        _tag: "evidenceAppears",
+        lane: { id: predicate.lane },
+        pattern: { bytes: predicate.pattern },
+      }
     case "cellReaches":
-      return { _tag: "cellReaches", cell: predicate.cell, threshold: predicate.threshold }
+      return {
+        _tag: "cellReaches",
+        cell: { id: predicate.cell },
+        threshold: { bytes: predicate.threshold },
+      }
     case "holeReaches": {
       const target = rankToStage(predicate.stage)
       return target === null ? null : { _tag: "holeReaches", hole: predicate.hole, target }
     }
     case "outcomeLanded":
-      return { _tag: "outcomeLanded", register: predicate.register }
+      return { _tag: "outcomeLanded", register: { id: predicate.register } }
     case "headAdvancedPast":
       return {
         _tag: "headAdvancedPast",
-        lane: predicate.lane,
-        shard: predicate.shard,
-        position: predicate.position,
+        partition: { lane: { id: predicate.lane }, shard: predicate.shard },
+        position: { value: predicate.position },
       }
     default:
       return null
   }
 }
 
-const refused = (reason: KernelRefusalReason): KernelVerdict => ({ verdict: "refused", reason })
+const refused = (reason: KernelRefusalReason): KernelVerdict => ({
+  verdict: "refused",
+  reason,
+})
 
 const admitted = (act: KernelAct): KernelVerdict => ({
   verdict: "admitted",
   encoded: encodeAct(act),
 })
 
-/**
- * Builds THE kernel door over one admission context. The runtime's single
- * constructor of intrinsic sentences: if a candidate did not come through
- * here, it has no sentence.
- */
+/** Builds the one shipping door over a generated admission context. */
 export const makeKernelDoor = (context: KernelDoorContext): KernelDoor => ({
   admit: (candidate: KernelCandidateAct): KernelVerdict => {
     switch (candidate._tag) {
@@ -350,31 +350,39 @@ export const makeKernelDoor = (context: KernelDoorContext): KernelDoor => ({
         return admitted({
           _tag: "declare",
           kind: candidate.kind,
-          value: canonicalBytes(candidate.payload),
-          writ: candidate.writ,
+          value: { bytes: canonicalBytes(candidate.payload) },
+          writ: { id: candidate.writ },
         })
       }
       case "resolveDigest": {
-        if (candidate.anchor !== null) return refused("anchored-resolve")
+        if (candidate.anchor !== undefined) return refused("anchored-resolve")
         if (!refMember(context.catalog, candidate.kind, candidate.target)) {
           return refused("forward-reference")
         }
-        return admitted({ _tag: "resolve", kind: candidate.kind, target: candidate.target })
+        return admitted({
+          _tag: "resolve",
+          kind: candidate.kind,
+          target: { id: candidate.target },
+        })
       }
       case "trustBytes":
         return refused("unverified-read")
       case "emit": {
         const swept = argSweep(context, candidate.body)
         if (swept !== null) return refused(swept)
-        if (!refMember(context.catalog, "lane", candidate.lane)) return refused("forward-reference")
+        if (!refMember(context.catalog, "lane", candidate.lane)) {
+          return refused("forward-reference")
+        }
         return admitted({
           _tag: "emit",
-          lane: candidate.lane,
-          body: canonicalBytes(candidate.body),
+          lane: { id: candidate.lane },
+          body: { bytes: canonicalBytes(candidate.body) },
         })
       }
       case "join": {
-        if (candidate.strategy._tag === "lastWriterWins") return refused("last-writer-wins")
+        if (candidate.strategy._tag === "lastWriterWins") {
+          return refused("last-writer-wins")
+        }
         const swept = argSweep(context, candidate.contribution)
         if (swept !== null) return refused(swept)
         if (!refMember(context.catalog, "resource", candidate.cell)) {
@@ -385,35 +393,40 @@ export const makeKernelDoor = (context: KernelDoorContext): KernelDoor => ({
         }
         return admitted({
           _tag: "join",
-          cell: candidate.cell,
-          contribution: canonicalBytes(candidate.contribution),
+          cell: { id: candidate.cell },
+          contribution: { bytes: canonicalBytes(candidate.contribution) },
         })
       }
       case "readLatest":
         return refused("ambient-query-input")
       case "fold": {
         const anchor = candidate.anchor
-        if (anchor === null) return refused("ambient-query-input")
+        if (anchor === undefined) return refused("ambient-query-input")
         if (anchor.foldId !== candidate.declared) return refused("cross-sort-identifier")
         const swept = argSweep(context, candidate.query)
         if (swept !== null) return refused(swept)
         if (!refMember(context.catalog, "index", candidate.declared)) {
           return refused("forward-reference")
         }
+        const partition = {
+          lane: { id: anchor.lane },
+          shard: anchor.shard,
+        }
         return admitted({
           _tag: "fold",
-          declared: candidate.declared,
-          lane: anchor.lane,
-          shard: anchor.shard,
-          floor: anchor.floor,
-          state: anchor.state,
-          head: anchor.head,
-          query: canonicalBytes(candidate.query),
+          declared: { id: candidate.declared },
+          partition,
+          anchor: {
+            floor: { value: anchor.floor },
+            state: { value: anchor.state },
+            head: { value: anchor.head },
+          },
+          query: { bytes: canonicalBytes(candidate.query) },
         })
       }
       case "decide": {
         const claim = candidate.token
-        if (claim === null) return refused("unfenced-decide")
+        if (claim === undefined) return refused("unfenced-decide")
         if (claim.register !== candidate.register) return refused("cross-sort-identifier")
         const swept = argSweep(context, candidate.outcome)
         if (swept !== null) return refused(swept)
@@ -422,23 +435,23 @@ export const makeKernelDoor = (context: KernelDoorContext): KernelDoor => ({
         }
         return admitted({
           _tag: "decide",
-          register: candidate.register,
-          token: claim.value,
-          outcome: canonicalBytes(candidate.outcome),
+          register: { id: candidate.register },
+          token: { value: claim.value },
+          outcome: { bytes: canonicalBytes(candidate.outcome) },
         })
       }
       case "trigger": {
         const reason = predicateRefusal(candidate.predicate)
         if (reason !== null) return refused(reason)
-        const translated = translatePredicate(candidate.predicate)
-        if (translated === null) return refused("absence-trigger")
+        const predicate = translatePredicate(candidate.predicate)
+        if (predicate === null) return refused("absence-trigger")
         if (!refMember(context.catalog, "program", candidate.declaration)) {
           return refused("forward-reference")
         }
         return admitted({
           _tag: "trigger",
-          predicate: translated,
-          declaration: candidate.declaration,
+          predicate,
+          declaration: { id: candidate.declaration },
         })
       }
       case "spawn": {
@@ -448,7 +461,11 @@ export const makeKernelDoor = (context: KernelDoorContext): KernelDoor => ({
         if (!refMember(context.catalog, "policy", candidate.request)) {
           return refused("forward-reference")
         }
-        return admitted({ _tag: "spawn", parent: candidate.parent, request: candidate.request })
+        return admitted({
+          _tag: "spawn",
+          parent: { id: candidate.parent },
+          request: { id: candidate.request },
+        })
       }
       case "updateInPlace":
         return refused("past-mutation")

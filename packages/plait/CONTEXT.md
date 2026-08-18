@@ -12,7 +12,9 @@ The language: corpus, door, programs, and wire grammar.
 **Admission door**:
 `Door.makeKernelDoor` is the vector-gated projection from a kernel candidate
 and explicit catalog/pinned-universe context to an intrinsic sentence or
-model-emitted reason. `Admission` is the one Effect service that translates
+model-emitted reason. Candidate, sentence, and context are the types derived
+from `KernelSchemas.generated.ts`, including their bigint identities; there is
+no parallel runtime spelling or numeric conversion. `Admission` is the one Effect service that translates
 that verdict into the runtime `Refusal` family; `Admission.admit` is the exact
 accessor every host carries. Hosts supply the service, never assemble its
 context or derive a model identity from a runtime digest.

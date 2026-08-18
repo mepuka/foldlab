@@ -11,8 +11,9 @@ fenced register over one file-backed, single-replica JetStream server.
   bytes only.
 - `Refusal` owns the structural/absence tagged errors and the absence-only retry
   policy.
-- `KernelDoor` names the candidate language and door contract. `Door` is the
-  shipping, model-vector-gated implementation; `Admission` is its one public
+- `KernelDoor` projects the generated bigint candidate, intrinsic-act, and
+  context language and names the door contract. `Door` is the shipping,
+  model-vector-gated implementation over those shapes; `Admission` is its one public
   Effect service and `Admission.admit` is the accessor every host re-exports.
 - `Wire` constrained-decodes the closed Envelope v0 shape, enforces the inline
   body threshold, and verifies `Nats-Msg-Id` by re-derivation.

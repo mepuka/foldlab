@@ -221,7 +221,7 @@ describe("the door, where a node is a sentence", () => {
     expect(refusal.verdict === "refused" ? refusal.reason : "").toBe("forward-reference")
     console.log(
       "PROGRAM DOOR: PASS witness=admitted off-catalog-twin=refused:forward-reference" +
-        " door=reference-transliteration",
+      " door=shipping",
     )
   })
 })

@@ -1,184 +1,66 @@
 /**
  * Plane: kernel — the language: corpus, door, programs, and wire grammar.
  *
- * The admission door seam: candidate in, verdict out.
+ * The admission contract over the model-generated kernel language. Candidate,
+ * intrinsic-act, raw-argument, predicate, and context types below are
+ * projections of `KernelSchemas.generated.ts`; this module does not restate
+ * their fields or replace the model's bigint identities with runtime digests.
  *
- * The kernel model splits its sentences in two. The intrinsic layer has no
- * constructor for an unlawful act, so unlawfulness is unspellable there. The
- * candidate layer spells everything an agent can say, including every unlawful
- * shape, and one door either translates a candidate into an intrinsic sentence
- * or refuses it with the law it defends. This module is the runtime's spelling
- * of that candidate layer and of the door's contract.
- *
- * The shipping implementation lives in `Door.ts`; `Admission.ts` exposes it
- * as the one Effect service and translates its verdict into the runtime
- * refusal family. The conformance harness checks that shipping implementation
- * verdict-for-verdict against the model's emitted admission vectors.
- * Conformance to those vectors is agreement with the model, never a runtime
- * guarantee promoted out of it.
- *
- * The refusal vocabulary is not restated here. It is read from the generated
- * tables, so a reason this package can name is a reason the model emitted.
+ * `Door.ts` is the shipping implementation and `Admission.ts` is the one
+ * Effect seam used by every host. The conformance harness replays the model's
+ * emitted vectors against that shipping implementation.
  *
  * @module
  */
-import type { KernelDeclKind, KernelRefusalReason } from "./KernelTables.generated.js"
+import type {
+  KernelAct as KernelActSchema,
+  KernelCandidateAct as KernelCandidateActSchema,
+  KernelCandidateAnchor as KernelCandidateAnchorSchema,
+  KernelCandidatePredicate as KernelCandidatePredicateSchema,
+  KernelDoor as KernelDoorContextSchema,
+  KernelKTriggerPredicate as KernelTriggerPredicateSchema,
+  KernelMergeStrategy as KernelMergeStrategySchema,
+  KernelRawArg as KernelRawArgSchema,
+  KernelTokenClaim as KernelTokenClaimSchema,
+} from "./KernelSchemas.generated.js"
+import type { KernelRefusalReason } from "./KernelTables.generated.js"
+
+/** The model-generated raw-argument language. */
+export type KernelRawArg = typeof KernelRawArgSchema.Type
+
+/** The model-generated candidate anchor. */
+export type KernelCandidateAnchor = typeof KernelCandidateAnchorSchema.Type
+
+/** The model-generated token claim. */
+export type KernelTokenClaim = typeof KernelTokenClaimSchema.Type
+
+/** The model-generated merge-strategy language. */
+export type KernelMergeStrategy = typeof KernelMergeStrategySchema.Type
+
+/** The model-generated candidate trigger language. */
+export type KernelCandidatePredicate = typeof KernelCandidatePredicateSchema.Type
+
+/** The model-generated raw candidate language. */
+export type KernelCandidateAct = typeof KernelCandidateActSchema.Type
+
+/** The model-generated intrinsic trigger language. */
+export type KernelTriggerPredicate = typeof KernelTriggerPredicateSchema.Type
+
+/** The model-generated intrinsic sentence language. */
+export type KernelAct = typeof KernelActSchema.Type
+
+/** The model-generated catalog and pinned-universe admission context. */
+export type KernelDoorContext = typeof KernelDoorContextSchema.Type
 
 /**
- * A raw argument atom. The lawful atoms are digest references and literals;
- * a hole is lawful inside a program declaration and refused in a single
- * sentence; the rest stay spellable precisely so the door's refusal of them is
- * demonstrable rather than asserted.
- */
-export type KernelRawArg =
-  | { readonly _tag: "digestRef"; readonly kind: KernelDeclKind; readonly id: number }
-  | { readonly _tag: "literal"; readonly value: number }
-  | { readonly _tag: "hole"; readonly name: number }
-  | { readonly _tag: "clockNow" }
-  | { readonly _tag: "randomSeed" }
-  | { readonly _tag: "secretBytes"; readonly bytes: number }
-  | { readonly _tag: "mintedId"; readonly token: number }
-  | { readonly _tag: "functionValue"; readonly code: number }
-
-/**
- * A candidate resume coordinate. Its fold rides as data rather than as a type
- * index, which is exactly what lets a cross-fold anchor be spelled and refused.
- */
-export interface KernelCandidateAnchor {
-  readonly foldId: number
-  readonly lane: number
-  readonly shard: number
-  readonly floor: number
-  readonly state: number
-  readonly head: number
-}
-
-/**
- * A raw token claim: the register the claimant believes the token belongs to,
- * carried as data so a cross-register claim is spellable and refused.
- */
-export interface KernelTokenClaim {
-  readonly register: number
-  readonly value: number
-}
-
-/**
- * A candidate merge strategy. The lawful one names a declared merge algebra;
- * last-writer-wins is spellable and refused, because no such carrier exists.
- */
-export type KernelMergeStrategy =
-  | { readonly _tag: "declaredAlgebra"; readonly algebra: number }
-  | { readonly _tag: "lastWriterWins" }
-
-/**
- * The candidate trigger grammar: the five lawful monotone productions plus the
- * shapes the closed grammar deliberately cannot carry.
- */
-export type KernelCandidatePredicate =
-  | { readonly _tag: "evidenceAppears"; readonly lane: number; readonly pattern: number }
-  | { readonly _tag: "cellReaches"; readonly cell: number; readonly threshold: number }
-  | { readonly _tag: "holeReaches"; readonly hole: number; readonly stage: number }
-  | { readonly _tag: "outcomeLanded"; readonly register: number }
-  | {
-    readonly _tag: "headAdvancedPast"
-    readonly lane: number
-    readonly shard: number
-    readonly position: number
-  }
-  | { readonly _tag: "onAbsence"; readonly subject: number }
-  | { readonly _tag: "negation"; readonly inner: KernelCandidatePredicate }
-  | { readonly _tag: "deadline"; readonly tick: number }
-  | { readonly _tag: "absentEverywhere"; readonly cell: number }
-
-/**
- * The raw candidate grammar. Every generator is spellable, and so is every
- * unlawful shape: an anchored resolve, a trusted read, an unfenced or
- * cross-register decide, a last-writer-wins join, an unanchored latest read,
- * and an in-place mutation of the past. A `null` optional field is the model's
- * `none`.
- */
-export type KernelCandidateAct =
-  | {
-    readonly _tag: "declare"
-    readonly kind: KernelDeclKind
-    readonly payload: ReadonlyArray<KernelRawArg>
-    readonly writ: number
-  }
-  | {
-    readonly _tag: "resolveDigest"
-    readonly kind: KernelDeclKind
-    readonly target: number
-    readonly anchor: number | null
-  }
-  | {
-    readonly _tag: "trustBytes"
-    readonly kind: KernelDeclKind
-    readonly target: number
-    readonly asserted: number
-  }
-  | { readonly _tag: "emit"; readonly lane: number; readonly body: ReadonlyArray<KernelRawArg> }
-  | {
-    readonly _tag: "join"
-    readonly cell: number
-    readonly contribution: ReadonlyArray<KernelRawArg>
-    readonly strategy: KernelMergeStrategy
-  }
-  | { readonly _tag: "readLatest"; readonly subject: number }
-  | {
-    readonly _tag: "fold"
-    readonly declared: number
-    readonly anchor: KernelCandidateAnchor | null
-    readonly query: ReadonlyArray<KernelRawArg>
-  }
-  | {
-    readonly _tag: "decide"
-    readonly register: number
-    readonly token: KernelTokenClaim | null
-    readonly outcome: ReadonlyArray<KernelRawArg>
-  }
-  | {
-    readonly _tag: "trigger"
-    readonly predicate: KernelCandidatePredicate
-    readonly declaration: number
-  }
-  | { readonly _tag: "spawn"; readonly parent: number; readonly request: number }
-  | {
-    readonly _tag: "updateInPlace"
-    readonly target: number
-    readonly payload: ReadonlyArray<KernelRawArg>
-  }
-
-/** A kind-tagged reference: the one lawful way a heterogeneous digest set travels. */
-export interface KernelRef {
-  readonly kind: KernelDeclKind
-  readonly id: number
-}
-
-/**
- * The admission context: the already-admitted catalog and the universe of
- * referents the acting writ pins. A referent can resolve in the catalog and
- * still lie outside the pinned universe, which is its own refusal.
- */
-export interface KernelDoorContext {
-  readonly catalog: ReadonlyArray<KernelRef>
-  readonly pinned: ReadonlyArray<KernelRef>
-}
-
-/**
- * The verdict of one admission. An admitted candidate carries the canonical
- * encoding of the intrinsic sentence it translated into — the sentence's
- * identity, and therefore the thing a conformance vector can compare. A
- * refusal carries the wire reason, and the taught law and repair are looked up
- * from the generated table rather than restated at each door.
+ * One door verdict. The admitted encoding uses the corpus's unbounded integer
+ * carrier end to end; a refusal uses the generated wire vocabulary.
  */
 export type KernelVerdict =
-  | { readonly verdict: "admitted"; readonly encoded: ReadonlyArray<number> }
+  | { readonly verdict: "admitted"; readonly encoded: ReadonlyArray<bigint> }
   | { readonly verdict: "refused"; readonly reason: KernelRefusalReason }
 
-/**
- * One admission door. The runtime's single constructor of intrinsic acts: if a
- * candidate did not come through here, it has no sentence.
- */
+/** The single admission operation over the generated candidate language. */
 export interface KernelDoor {
   readonly admit: (candidate: KernelCandidateAct) => KernelVerdict
 }

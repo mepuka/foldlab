@@ -559,13 +559,17 @@ shipping `Door.makeKernelDoor` returns the emitted verdict. CLI,
 `FabricClient`, and `CasDaemon` carry one reference-identical
 `Admission.admit` accessor; when the supplied service refuses a candidate,
 each route surfaces the same runtime refusal value, including the model's
-reason, law, repair, and repair applicability.
+reason, law, repair, and repair applicability. Candidate, intrinsic sentence,
+and context types are derived from `KernelSchemas.generated.ts`, and the door
+compares emitted encodings on the same unbounded bigint carrier.
 
 ### Evidence
 
 - `KernelConformance.test.ts` replays the emitted admission vectors against
   `src/kernel/Door.ts`, not a test-side implementation. Its refuse-everything
-  door remains a killed control.
+  door remains a killed control; the replay contains no bigint-to-number
+  conversion, and a value above `Number.MAX_SAFE_INTEGER` crosses the shipping
+  door with its exact encoding pinned independently.
 - `KernelDoor.routes.test.ts` asserts every host route is the same
   `Admission.admit` function. A poisoned extra `admit` on a
   `FabricClient.testLayer` fixture is overwritten by that accessor.
@@ -581,8 +585,9 @@ reason, law, repair, and repair applicability.
 
 The conformance result is agreement on the finite committed corpus, not a
 proof over all candidates. `Admission.layer` still receives an explicit
-catalog/pinned-universe context from its caller: no durable context assembly
-or runtime-digest-to-model-identity projection is claimed or invented here.
+generated catalog/pinned-universe context from its caller; this slice neither
+assembles a durable catalog snapshot nor converts runtime digests into model
+identities. Hosts speak the generated kernel language directly.
 `CasDaemon` remains a type and route with no tag, layer, or daemon
 implementation; the current chaos CLI accepts no kernel candidate. The claim
 is that the judgment routes those hosts expose cannot bypass the service when

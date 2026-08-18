@@ -132,6 +132,20 @@ describe("kernel door conformance", () => {
     )
   })
 
+  test("the generated bigint carrier crosses the shipping door without rounding", () => {
+    const beyondDouble = 9007199254740993n
+    const verdict = doorUnderTest.admit({
+      _tag: "declare",
+      kind: "schema",
+      payload: [{ _tag: "literal", value: beyondDouble }],
+      writ: 4n,
+    })
+    expect(verdict).toEqual({
+      verdict: "admitted",
+      encoded: [0n, 0n, 7n * 1000003n + 2n + beyondDouble * 16n, 4n],
+    })
+  })
+
   test("a door that refuses everything is caught by the same replay", () => {
     const replays = replayAdmissions(refuseEverythingDoor, corpus, PLANTED_CANDIDATES)
     const caught = replays.filter((replay) => !replay.agreed)

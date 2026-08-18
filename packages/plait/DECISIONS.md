@@ -1970,6 +1970,24 @@ means those checks cannot mint kernel meaning. **Load-bearing? yes** — it stat
 the boundary that keeps the acceptance claim honest rather than absolute over
 unrelated input validation.
 
+### T6. The generated kernel algebra is the door's only language
+
+Decided: `KernelDoor.ts` derives candidate, intrinsic-act, predicate, raw-
+argument, and context types from `KernelSchemas.generated.ts`; `Door.ts`
+preserves their bigint identities through admission and encoded-sentence
+comparison. No hand-written `number` twin and no digest-to-model conversion
+sits between the emitted corpus and the door. The runtime refusal family's
+JSON-only `got` field receives a diagnostic projection with bigint values
+rendered as decimal strings; that projection happens after judgment and has no
+role in admission. Alternatives: retain a parallel numeric language (machine-
+validated but not machine-generated); convert host digests into model ids
+(assigns semantics the model/corpus does not supply); delay all host routing
+until a later emitter (leaves two delivery lanes stalled despite the generated
+schemas already carrying the algebra). Why: the generated model language is
+the estate's unified algebraic core, and the door must consume it rather than
+restate it. **Load-bearing? yes** — this is the no-twin half of the one-door
+control.
+
 ## Task DEV-797 — the negative trace's diagnostic class
 
 ### T0. A committed negative trace commits to error-class diagnostics only
