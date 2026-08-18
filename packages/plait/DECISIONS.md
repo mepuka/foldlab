@@ -73,7 +73,22 @@ policy. The callback adapter lets interruption close an idle message pump.
 **Load-bearing? yes** — core interest delivery would leave storage and replica
 shape outside the evidence path.
 
+Amended 2026-08-18 (DEV-736). This entry chose the callback adapter on the
+strength of one property — interruption closes an idle pump — and never stated
+its cost. The cost is now measured and load-bearing: the pinned client's
+callback is synchronous by contract, so the adapter's only offer is
+`Queue.offerUnsafe`, which cannot suspend, so the pump admits no client-side
+bound that does not lose messages (task DEV-736, T0). The adapter stays for now
+and the buffer stays unbounded; DEV-736's T1 records the replacement. This is
+an amendment, not the supersession Part C ticket 3 ordered — that supersession
+was to be carried by a landed bounded form, and no sound bounded form exists at
+this adapter.
+
 ### T5. Pin the message-id duplicate window explicitly
+
+SUPERSEDED BY: task DEV-736's T2 — the window is per STREAM, and this package
+now runs two stream families, so one scope sentence no longer covers the
+duplicate bit.
 
 Decided: the slice-0 stream declares a two-minute (`120_000_000_000` ns)
 duplicate window and the shape check requires it. Alternatives: inherit the
@@ -858,3 +873,128 @@ edit at this call site and nothing red. Pinning it by construction costs one
 object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
 charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
 pin.
+
+## Task DEV-736 — the commons pump's bound, and the T4/T5 supersessions
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-4; card FH-6; Part C
+ticket 3), read at `c585c24c8`; the code line numbers it cites are pre-DEV-734
+and the pump now sits at `src/internal/nats.ts:183-195`.
+
+### T0. Route (a) is REFUSED — with a producer that cannot suspend, a buffer strategy picks which messages are lost, not whether
+
+Decided: the commons subscribe pump does NOT gain
+`{ bufferSize, strategy: "suspend" }`, and its buffer stays unbounded. The
+record's route (a) is refused on executed evidence, and the finding is reported
+rather than repaired.
+
+The measurement, minimized and committed as `test/CommonsPumpBackpressure.test.ts`.
+`Stream.callback`'s buffer options (`Stream.ts:694-699` at the pin) configure
+the queue the producer offers into. The producer here is
+`consumer.consume({ callback })`, and that callback is synchronous by the
+pinned client's own contract — `ConsumerCallbackFn = (r: JsMsg) => void |
+Promise<never>`, documented "the callback cannot be async"
+(`@nats-io/jetstream@3.4.0` `lib/types.d.ts:540-547`). A synchronous producer's
+only offer is `Queue.offerUnsafe`, and at the pin (`Queue.ts:708-726`) that
+function does not suspend on a full queue: under `"suspend"` and `"dropping"`
+it returns `false` and discards the message, and under `"sliding"` it evicts
+the oldest and returns `true`. Forty envelopes through a bound of eight
+deliver eight under every strategy and none under no strategy. Under realistic
+arrival — messages spread across event-loop turns, a downstream paying digest
+verification per message — a bound of sixteen lost 73 of 200 envelopes under
+`"suspend"`, 63 under `"dropping"`, and 63 under `"sliding"`, the first loss
+landing at index 47 rather than at the tail.
+
+That last number is the reason this is a refusal and not a trade. The loss is
+not truncation; it is a hole punched in the middle of an ordered read, with no
+error raised, no refusal minted, and — under `"sliding"` — no false return for
+the call site to notice. `FabricClient.subscribe` is the package's verified-read
+path: every envelope it yields has had its digest re-derived and checked. A
+pump that silently omits envelopes makes that verification answer a question
+nobody asked, because the guarantee readers rely on is over the sequence, not
+over each survivor. Today's bug spends memory. Route (a) spends evidence, which
+this package does not have to spend.
+
+Alternatives, all refused here and named for the ruling: keep `"suspend"` and
+fail the stream when `offerUnsafe` returns `false` (honest and loud, but it
+mints a new absence kind and a new failure mode on a public seam — a ruling,
+not an implementation detail); bound the pump server-side the way the fold pump
+does (`consume({ max_messages })`, `internal/pump.ts:157-173`) — that bounds
+the pull window, not the queue downstream of the callback, and the fold's real
+bound is `max_ack_pending` under explicit acks, which an ordered ephemeral
+consumer at `AckPolicy.None` has no equivalent for; build route (b) now (the
+repair, but Part C ticket 3 explicitly withholds it from this ticket).
+
+**Load-bearing? yes** — it is the reason FH-6's two answers stay two for now,
+and the reason the record's preference order inverts.
+
+### T1. Route (b) is the recorded follow-up, and it is the repair rather than the tidier option
+
+Decided: `Stream.fromAsyncIterable` (`Stream.ts:1277`) over the client's own
+`ConsumerMessages` — a `QueuedIterator<JsMsg>` at the pin
+(`lib/types.d.ts:708`) — under the existing `acquireRelease`/`Stream.unwrap`
+(`Stream.ts:1633`), with `messages.close()` in the release, is the recorded
+disposition for the commons pump's bound. It is not built here.
+
+Why it is the repair and not merely the deeper diff: backpressure requires a
+producer that can stop producing. An iterator pulls, so a slow consumer stops
+pulling, so the client's own flow control applies and the bound needs no
+second implementation — the answer becomes the client's, which is what FH-6
+asks for. The callback adapter cannot reach that property at any setting
+(T0). T4's stated reason for the adapter survives the move: interruption still
+closes an idle pump, because the release's `messages.close()` ends the iterator.
+
+What the ruling owes before this lands: whether the follow-up ships as route
+(b) or as the fail-loud form named in T0's alternatives, and — if route (b) —
+whether the resulting bound is stated in `FabricClientOptions`' JSDoc as the
+client's own or made selectable. This entry records the option, not the ruling.
+
+**Load-bearing? maybe** — it decides where this package's backpressure answer
+lives, and it is the entry a later reader will check when FH-6 is closed.
+
+### T2. The duplicate window is scoped per STREAM, and this package now runs two stream families
+
+Decided: T5's scope sentence is superseded by this one, which both duplicate
+bits cite.
+
+A `PublishedEnvelope.duplicate` means suppressed by `Nats-Msg-Id` within the
+pinned two-minute window of the **commons stream**
+(`src/internal/nats.ts:35,95`). An `EmittedEvent.duplicate` means suppressed
+within the two-minute window of that **(lane, partition) stream**
+(`src/internal/lanes.ts:24,106`) — one stream per partition under the
+DEV712-POS-1 ruling, so two events in different partitions never share a
+window, and the same event re-emitted to its own partition does.
+
+Alternatives: leave T5's single sentence and let readers infer the second scope
+from the stream layout; state the scope twice, once per matcher JSDoc. Why:
+the two bits are the same word over different substrates, and a reader holding
+T5's sentence would carry the commons window's guarantee onto a per-partition
+stream that never had it. Stating it once, here, is what keeps the two matcher
+JSDocs from drifting apart — enumerations that are listed, drift.
+
+**Load-bearing? yes** — `duplicate` is a public bit on two public types, and
+its bound is the window of the stream that stored the frame.
+
+### T3. The staged matcher JSDoc for DEV-741 cites T2 and does not restate it
+
+Decided: `FabricClient.matchPublished` and `Lane.matchEmitted` are not written
+here — DEV-741 owns them (record A-6) — and their JSDoc is staged as two
+sentences that point at T2 rather than copying it:
+
+- `matchPublished`: "A `duplicate` arm means the commons stream suppressed this
+  envelope by `Nats-Msg-Id` inside its pinned two-minute window; the window is
+  the stream's, not the package's (DECISIONS DEV-736 T2)."
+- `matchEmitted`: "A `duplicate` arm means that `(lane, partition)` stream
+  suppressed this event by `Nats-Msg-Id` inside its pinned two-minute window;
+  partitions do not share a window (DECISIONS DEV-736 T2)."
+
+Alternatives: write both matchers here and let DEV-741 inherit them (it owns
+the settled union and the coherence wall; two seats minting the same public
+surface is the R-2 union lesson); inline the full scope sentence in each JSDoc.
+Why: A-6 amendment 3 keeps the two matchers deliberately unshared because the
+acknowledgement types answer different subscriptions, which is exactly the
+shape that lets two hand-copied sentences drift into disagreement about one
+word. One sentence, two citations.
+
+**Load-bearing? no** — wording, staged for the seat that owns the surface.
