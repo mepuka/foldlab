@@ -15,11 +15,11 @@ Nothing here is machine-generated. What holds these modules still is generated:
 rows, from `verify/fabric-veil`). Each carries its command on line 1.
 
 Wall: both halves of the battery. `bun run test:walls` replays the broker-bound
-rows against the shipped services — cells, chaos folds, registers — while the
-11 pure-algebra vectors (F2, F2b, F3, F3-F2b, F4) and the dropped-successor
-trace replay brokerless in `bun run test:fast`. The mutants in
-`../../negative-controls/` ship as installable layers: *applying* one reds its
-own rows, which is why the tree ships green. Bounds: `../../README.md`.
+rows against the shipped services — cells, chaos folds, registers — while the 11
+pure-algebra vectors (F2, F2b, F3, F3-F2b, F4) and the dropped-successor trace
+replay brokerless in `bun run test:fast`. Mutants in `../../negative-controls/`
+are installable layers: *applying* one reds its rows. Bounds: `../../README.md`.
 
 One level deeper, down the plane order: `../kernel/README.md`, the corpus these
-seams speak; then `../../../../verify/fabric/README.md` for the algebra itself.
+seams speak; then the algebra behind the vectors, in
+[`verify/fabric/README.md`](../../../../verify/fabric/README.md).

@@ -2,10 +2,9 @@
 
 Where the fabric is reached, not where anything is decided. `FabricClient` is
 the public Effect service whose live layer owns a NATS connection in `Scope`
-and whose fixture layer wears the same tag, so a test and a deployment differ
-by a layer and nothing else. `CasDaemon` is a service *shape* and deliberately
-nothing more — no tag, no layer, not even a throwing stub — because a
-placeholder service is how "not wired" becomes "wired wrong" three slices later.
+and whose fixture layer wears the same tag. `CasDaemon` is a service *shape*
+and nothing more — no tag, no layer, not even a throwing stub — because a
+placeholder service is how "not wired" becomes "wired wrong" three slices on.
 
 Plane layering seats carriage above planes. The tree is narrower and wider than
 that at once: carriage imports `kernel`, `truth`, and `internal`
@@ -14,7 +13,8 @@ import back up — `../kernel/KernelProgram.ts` takes `CasDaemon`'s shape and
 `../internal/nats.ts` takes `FabricClient`'s. Both are type-only; the layering
 law carves out no exception, so both are open findings under its pending lint.
 
-Nothing in this directory is machine-generated.
+Nothing here is machine-generated, and both service shapes are hand-written
+declarations of corpus concepts — staged debt under the first standing law.
 
 Wall: `bun run test:fast` for the fixture layer's contract
 (`../../test/FabricClient.test.ts`) and `bun run test:walls` for the live

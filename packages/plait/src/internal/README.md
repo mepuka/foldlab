@@ -5,11 +5,11 @@ This is the machinery no consumer may name: the NATS connection, the exact
 stream shape, ordered and durable consumers, the positioned pump with its
 bounded successor buffer and explicit ack order, the KV adapters, the one
 lattice write path (`cas.ts`'s `casJoinLoop`, shared by every class-(a)
-writer), the schema-issue bridge, and the chaos schedules. NATS types stay
-here; a `SchemaIssue`-typed signature that escapes diverges the public
-type-level walk.
+writer), the schema-issue bridge, and the chaos schedules. NATS types stay here;
+a `SchemaIssue`-typed signature that escapes diverges the public type walk.
 
-Nothing in this directory is machine-generated.
+Nothing here is machine-generated, and nothing restates a corpus concept:
+`digests.ts` and `refusals.ts` delegate to `truth`, so no first-law debt is due.
 
 Wall: two of them, and which one runs a suite is derived rather than chosen —
 `../../scripts/run-test-group.ts` puts a file in the wall group exactly when it
