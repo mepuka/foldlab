@@ -64,6 +64,14 @@ export const StructuralRefusalKind = Schema.Literals([
   "invalid-cell-key",
   "malformed-cell-state",
   "cell-substrate-shape",
+  // Addressing (DEV-766). `ambiguous-binding` is the MODEL's spelling — the
+  // corpus emits it on the F12 across-bind-orders row of
+  // `fixtures/fabric-conformance.ndjson`, and `test/Address.test.ts` walls the
+  // string this package mints against that row. The other three are this
+  // module's door refusals, which the corpus does not name, and they carry a
+  // **Law 1 waiver (DEV-796)**: a hand-written entry in a refusal vocabulary
+  // beside the generated taught-refusal table is staged debt, not design, and
+  // these three are ledger rows for the type-universe walk until it lands.
   "invalid-petname",
   "not-a-directory",
   "unbound-petname",

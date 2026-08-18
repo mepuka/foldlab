@@ -146,9 +146,9 @@ describe("structural refusal repairs", () => {
         const one = (yield* publish({ model: "one" })).digest
         const two = (yield* publish({ model: "two" })).digest
         const folded = yield* Address.directory([
-          { name: Address.Petname.make("tool"), digest: tool },
-          { name: Address.Petname.make("model"), digest: one },
-          { name: Address.Petname.make("model"), digest: two },
+          { name: Address.Petname.make({ text: "tool" }), digest: tool },
+          { name: Address.Petname.make({ text: "model" }), digest: one },
+          { name: Address.Petname.make({ text: "model" }), digest: two },
         ])
         const root = (yield* publish(folded as unknown as WireValue)).digest
         // unbound-petname: the directory under this root binds no such name.

@@ -20,9 +20,16 @@
  * that the rootless walk does not compile, and for which reason - so the
  * comparison is over the errors, and an empty error set fails the control.
  *
+ * That rule is not this script's to state twice: `scripts/negative-trace.ts`
+ * (DEV-797) owns it for every committed control in the package, and this one
+ * reads it from there. A second copy of the contract would be a control that
+ * drifts from the rule it claims to apply.
+ *
  * Run with `--write` to re-record the trace after a deliberate change.
  */
 import { resolve } from "node:path"
+
+import { errorDiagnostics } from "./negative-trace.js"
 
 const packageRoot = resolve(import.meta.dir, "..")
 
@@ -37,25 +44,6 @@ const controls = [
 const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
-/** Opens a diagnostic block: a file position, a severity, and a TS code. */
-const diagnosticHead = /^\S.*: (error|suggestion|warning|message) TS[0-9]+:/
-
-/**
- * Keeps the `error` diagnostics and drops every other severity, carrying each
- * diagnostic's indented continuation lines with the line that opened it.
- */
-const errorsOnly = (text: string): string => {
-  const kept: Array<string> = []
-  let keeping = false
-  for (const line of text.split("\n")) {
-    const opened = diagnosticHead.exec(line)
-    if (opened !== null) keeping = opened[1] === "error"
-    else if (line.trim() === "") keeping = false
-    if (keeping) kept.push(line)
-  }
-  return kept.length === 0 ? "" : `${kept.join("\n")}\n`
-}
-
 const write = process.argv.includes("--write")
 
 for (const control of controls) {
@@ -66,7 +54,7 @@ for (const control of controls) {
     stderr: "pipe",
   })
 
-  const actual = errorsOnly(
+  const actual = errorDiagnostics(
     normalize(`${run.stdout.toString()}${run.stderr.toString()}`),
   )
   if (actual === "") {
@@ -79,7 +67,11 @@ for (const control of controls) {
     console.log(`ADDRESS CONTROL: wrote ${control.trace}`)
     continue
   }
-  const expected = normalize(await Bun.file(resolve(packageRoot, control.trace)).text())
+  // The rule reads BOTH sides, so a re-recorded trace cannot smuggle an
+  // advisory into the contract this control compares against.
+  const expected = errorDiagnostics(
+    normalize(await Bun.file(resolve(packageRoot, control.trace)).text()),
+  )
   if (actual !== expected) {
     console.error(`ADDRESS CONTROL: FAIL - ${control.name} compiler trace moved`)
     console.error("--- expected ---")

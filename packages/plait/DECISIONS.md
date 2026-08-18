@@ -1990,7 +1990,9 @@ read as a directory that binds nothing, which turns a navigational error into an
 `unbound-petname` — a wrong repair, taught confidently. The wrapper adds only
 the position the walk was at, which the schema cannot know; the schema is still
 the judge. **Load-bearing? yes** — it is why a walk cannot silently reinterpret
-a value.
+a value. NARROWED round 2 by T11: the header is what this kind answers for. A
+value whose header holds and whose bindings do not is a directory, and refusing
+it here taught a repair for a digest that already holds one.
 
 ### T5. The explicit-root fence is a compile control, not a runtime check
 
@@ -2006,7 +2008,7 @@ attempts (`.`, `..`, separators, control characters) stay runtime refusals
 because they are string data and cannot be typed away. **Load-bearing? yes** —
 it is the ticket's ambient-input requirement in its strongest available form.
 
-### T6. Six names, and the joins the module does not ship
+### T6. Seven names, and the joins the module does not ship
 
 Decided: the surface is `Petname`, `Binding`, `Directory`, `directory`,
 `petname`, `at`, `list` — no `Path` value type, no `join`, no `read`, no watch.
@@ -2030,7 +2032,12 @@ two and a single `unresolvable-path` for the last two. Why: the four name four
 distinct repairs — fix the name, publish a directory there, bind the name, bind
 it to exactly one digest — and a refusal that cannot say which one is a diagnosis
 the caller has to redo. **Load-bearing? no** — the classification could be merged
-without changing what any path admits.
+without changing what any path admits. AMENDED round 2: the four are not four of
+a kind. `ambiguous-binding` is the model's own spelling and is walled against the
+corpus (T10); the other three are hand-written entries in a refusal vocabulary
+the generated taught-refusal table does not own, and they wear T9's Law 1 waiver
+citing DEV-796. The count is unchanged; what changed is that three of them are
+now recorded as debt rather than as design.
 
 ### T8. The control records errors only, so the fence is not coupled to lint advice
 
@@ -2048,4 +2055,84 @@ reason — advisory lint output is not that claim, and a trace that encodes it
 fails for reasons the fence is not about. The prover can still fail: making the
 planted spelling lawful reports `typechecked` rather than a moved trace.
 **Load-bearing? yes** — it is why this control stayed green across a toolchain
-swap that moved the package's other committed traces.
+swap that moved the package's other committed traces. AMENDED round 2: DEV-797
+landed the same rule as `scripts/negative-trace.ts` for every control in the
+package, so this script no longer states it — it imports `errorDiagnostics` and
+applies it to both sides, fresh compile and committed file, which is the shape
+`check-public-effects-negative.ts` uses. A control carrying a private copy of
+the contract it claims to apply is a control that can drift from it.
+
+### T9. Petname derives from the generated projection; Binding and Directory wear a waiver
+
+Decided: `Petname`'s carrier is the generated `KernelPetname` — `{ text }`, from
+`kernel/KernelSchemas.generated.ts` — with this module's name law added as one
+admission check; `Binding` and `Directory` stay hand-written and carry an
+explicit **Law 1 waiver citing DEV-796** in the module header and on each type.
+Alternatives: keep the branded-string `Petname` beside the generated one (what
+round 1 shipped, and the defect the review named: two carriers and two laws for
+one concept); waive `Petname` too, since a waiver is cheaper than a wire-shape
+change; hand-write an F12 projection for `Binding`/`Directory` in this ticket
+and call it generated. Why: Law 1 admits exactly two answers — derive, or wear a
+waiver that cites the unification ticket — and which answer is available is a
+fact about the corpus, not a preference. `Petname` HAS a generated projection,
+so waiving it would be declining a derivation that exists; the F12 directory
+family does NOT, so a waiver is the only honest answer and inventing a
+"generated" projection by hand would be the served-equals-derived violation Law
+3 refuses. The cost is the wire shape: a binding's name is now `{ text: "…" }`
+rather than `"…"`, which is the model's shape and no consumer's yet. Paying it
+before the seam merges costs nothing; paying it after would be a migration.
+**Load-bearing? yes** — the waiver is the row these types occupy in DEV-796's
+debt ledger, and the derivation is why `Petname` is not in it.
+
+### T10. `ambiguous-binding` is read from the corpus, and the wall is what makes that true
+
+Decided: the reason string is the model's, taken from the F12
+`ambiguous-across-bind-orders` row of `fixtures/fabric-conformance.ndjson`, and
+`test/Address.test.ts` runs a real ambiguous walk and compares the refusal it
+mints against that row. The name stays a private constant: the wall reads the
+refusal, not an exported string. Alternatives: hand-type the literal and note
+the coincidence in prose (which is what round 1 did, and prose does not red);
+export the constant so the wall has something to compare (an eighth public name
+bought to test a private one); generate the whole `StructuralRefusalKind` union
+from the corpus (the right end state, and it is DEV-796's, not this ticket's —
+the other 36 kinds are not this ticket's to move). Why: the corpus already names
+this verdict, so a second spelling of it in the estate is drift with a green
+gate, and the difference between "we happened to pick the same word" and "the
+word is the model's" is a comparison that runs. The wall bites: renaming the
+minted kind fails it. **Load-bearing? yes** — it is the only mechanical link
+between this module's vocabulary and the model's, and the three kinds without
+one are exactly the three that wear the T9 waiver.
+
+### T11. A directory whose bindings do not decode is not `not-a-directory`
+
+Decided: a hop decodes the closed header first and the bindings second. Header
+failure is wrapped as `not-a-directory` naming the hop; a value whose header
+holds but whose bindings do not fails with the SCHEMA's own refusal, unwrapped,
+naming the field and the law. Alternatives: keep the single decode, which round
+1 shipped (a well-formed directory carrying one unlawful petname refused as
+`not-a-directory` and taught "publish a directory under this digest" for a
+digest that already holds one); add a fifth kind for the malformed-binding case.
+Why: T4's argument is that a wrong hop must not be reinterpreted, and T7's is
+that a refusal which cannot say which repair applies is a diagnosis the caller
+redoes — both point the same way here, because the value IS a directory and the
+navigational repair is wrong for it. The fifth kind was refused for T9's reason:
+a new hand-written refusal name needs a waiver it cannot earn when an existing
+refusal already says the right thing. **Load-bearing? yes** — it is why the two
+questions a hop asks have two answers.
+
+### T12. Canonical order is compared as bytes, because that is the sentence written down
+
+Decided: `directory` sorts bindings by their RFC 8785 canonical bytes compared
+as BYTES, not by those bytes decoded to a JavaScript string. Alternatives: keep
+the round-1 string comparison and reword the JSDoc and `CONTEXT.md` to say
+"UTF-16 order over canonical bytes". Why: both orders are deterministic
+functions of the set, so the fold's own property — the digest names the set —
+held either way, and this is not a repair of a broken invariant. It is a repair
+of a false sentence: UTF-16 code-unit order and UTF-8 byte order disagree
+outside the BMP, where a surrogate pair sorts below U+E000–U+FFFF as code units
+and above them as bytes, and `CONTEXT.md` tells a Go-side implementer that the
+order is RFC 8785 byte order. Rewording would have been equally honest and
+strictly worse: byte order is the one an implementation on another runtime
+reaches for. `test/Address.test.ts` pins it with an astral name and fails under
+the string comparison. **Load-bearing? yes** — it is a cross-runtime interop
+claim, and the test is what makes it one.

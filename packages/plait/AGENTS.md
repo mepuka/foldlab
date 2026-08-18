@@ -65,6 +65,18 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   (`negative-controls/Address.rootless.mutant.ts`), and `.` and `..` are refused
   names. Adding a root-defaulting overload, a session root, or a path-string
   parser is a finding.
+- A lawful root is read AT AN ANCHOR and handed to the walk as data — KM-16's
+  positive half, and the reason for every negative above. `Anchor.ts` owns that
+  read: a checkpoint fact's `stateDigest` or `head`, or a digest a publication
+  returned. The read is head-relative, so it belongs to the plane that owns
+  anchors; a root obtained inside `Address.ts` would be resolving against
+  whatever is current, which is the ambient input the fence exists to refuse.
+- Addressing types trace to the corpus or wear a waiver, and the module header
+  says which. `Petname` derives from the generated `KernelPetname`;
+  `ambiguous-binding` is the model's spelling, walled against
+  `fixtures/fabric-conformance.ndjson`; `Binding`, `Directory`, and the other
+  three refusal kinds wear a Law 1 waiver citing DEV-796. Adding a fourth
+  hand-written type here without one of those three answers is a finding.
 - Addressing adds no store, service, layer, or cache. Every hop is
   `Resolved.resolve`, so verify-on-read is inherited rather than restated; a
   second fetch or verify path under `Address.ts` is a finding.

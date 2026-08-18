@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
+import { resolve as resolvePath } from "node:path"
 
-import { Effect, Layer, Option } from "effect"
+import { Effect, Layer, Option, Schema } from "effect"
 
 import {
   Binding,
@@ -11,16 +12,26 @@ import {
   list,
   petname,
 } from "../src/planes/Address.js"
+import { KernelPetname } from "../src/kernel/KernelSchemas.generated.js"
 import type { WireValue } from "../src/truth/Canonical.js"
 import { Catalog, Payloads, substrateLayer, type CatalogService } from "../src/planes/Catalog.js"
 import { Digest, digestOf } from "../src/truth/Digest.js"
 import { isRetryable } from "../src/truth/Refusal.js"
 import { publish } from "../src/planes/Resolved.js"
 
+/** The model's own emitted vectors — the authority for what this module names. */
+const corpus = resolvePath(import.meta.dir, "../fixtures/fabric-conformance.ndjson")
+
+interface ModelRow {
+  readonly kind: string
+  readonly name: string
+  readonly verdict: { readonly refusal?: string }
+}
+
 const wire = (value: Directory): WireValue => value as unknown as WireValue
 
 const binding = (name: string, digest: Digest): Binding => ({
-  name: Petname.make(name),
+  name: Petname.make({ text: name }),
   digest,
 })
 
@@ -125,8 +136,11 @@ describe("addressing", () => {
 
     // A name is not a path: ordinary dots, hyphens, and spaces are literal.
     for (const name of ["model", "config.json", "my-name", "two words", "..."]) {
-      const admitted: string = Effect.runSync(petname(name))
-      expect(admitted, name).toBe(name)
+      // The carrier is the generated `KernelPetname`, so an admitted name IS
+      // the model's shape and not a second one this module invented.
+      const admitted = Effect.runSync(petname(name))
+      expect(admitted.text, name).toBe(name)
+      expect(Object.keys(admitted), name).toEqual(["text"])
     }
   })
 
@@ -217,10 +231,29 @@ describe("addressing", () => {
     // spends that: the store answers a walk's hop with a directory that does
     // not hash to the digest the hop asked for, and `Resolved.resolve` — the
     // one door under every hop — re-derives and refuses.
+    //
+    // The store lies only AFTER a hop it answered truthfully, which is the
+    // whole point: a catalog that lies at the root would prove nothing about
+    // hops, because the walk would end before taking one. Here the root opens,
+    // `config` resolves to a digest, and the SECOND resolve is the one that
+    // gets a value which does not hash to what it asked for.
     const built = Effect.runSync(tree().pipe(Effect.provide(substrateLayer)))
-    const wrong = Effect.runSync(directory([binding("model", built.tool)]))
+    const honest = Effect.runSync(
+      Effect.gen(function* () {
+        const root = yield* directory([
+          binding("config", built.config),
+          binding("tool", built.tool),
+        ])
+        return wire(root)
+      }),
+    )
+    const wrong = wire(Effect.runSync(directory([binding("model", built.tool)])))
+    let asked = 0
     const lying: CatalogService = {
-      get: () => Effect.succeed(Option.some(wire(wrong))),
+      get: (digest) => {
+        asked++
+        return Effect.succeed(Option.some(digest === built.root ? honest : wrong))
+      },
       put: (value) => digestOf(value),
     }
 
@@ -233,7 +266,11 @@ describe("addressing", () => {
 
     expect(refusal.kind).toBe("digest-mismatch")
     expect(refusal.sort).toBe("structural")
-    expect(refusal.expected).toBe(built.root)
+    // The refusal is about the SECOND hop's digest, not the root's, so a hop
+    // after a successful hop is what verified here.
+    expect(refusal.expected).toBe(built.config)
+    expect(refusal.expected).not.toBe(built.root)
+    expect(asked).toBe(2)
   })
 })
 
@@ -252,6 +289,21 @@ describe("the directory fold", () => {
     expect(fold([...left, ...fold(right).bindings])).toEqual(
       fold([...fold(left).bindings, ...right]),
     )
+  })
+
+  test("canonical order is RFC 8785 BYTE order, which is not UTF-16 order", () => {
+    // The two disagree exactly outside the BMP: a surrogate pair sorts BELOW
+    // U+E000-U+FFFF as UTF-16 code units and ABOVE them as UTF-8 bytes. The
+    // documented sentence — and any directory fold written elsewhere to it —
+    // says bytes, so this pins bytes. Both bindings carry the same digest, so
+    // the canonical key's leading `digest` member cannot decide the order and
+    // the name is what is compared.
+    const astral = "\u{1D11E}"
+    const bmp = ""
+    expect(astral < bmp).toBe(true) // UTF-16 order, the one NOT used
+
+    const folded = fold([binding(astral, alpha), binding(bmp, alpha)])
+    expect(folded.bindings.map((entry) => entry.name.text)).toEqual([bmp, astral])
   })
 
   test("the folded value is the canonical set, so its digest names the set", () => {
@@ -297,5 +349,76 @@ describe("the directory fold", () => {
     expect(outcome.nested).toEqual([binding("model", outcome.model)])
     expect(outcome.refusal.kind).toBe("not-a-directory")
     expect(outcome.refusal.path).toEqual(["names", "0"])
+  })
+})
+
+describe("what this module takes from the corpus rather than coining", () => {
+  test("a directory whose bindings do not decode is not `not-a-directory`", () => {
+    // The value IS a directory — closed header, bindings array — carrying one
+    // binding whose name breaks the petname law. Answering `not-a-directory`
+    // here teaches "publish a directory under this digest" for a digest that
+    // already holds one, so the schema's own refusal flies instead, naming the
+    // field that failed.
+    const refusal = Effect.runSync(
+      Effect.gen(function* () {
+        const leaf = yield* publishValue({ model: "opus" })
+        const root = yield* publishValue(
+          { v: 0, kind: "directory", bindings: [{ name: { text: ".." }, digest: leaf }] } as
+            unknown as WireValue,
+        )
+        return yield* Effect.flip(list(root))
+      }).pipe(Effect.provide(substrateLayer)),
+    )
+
+    expect(refusal.kind).not.toBe("not-a-directory")
+    expect(refusal.kind).toBe("malformed-value")
+    // The diagnosis names the refused field and the law it broke, which is the
+    // whole reason this case does not wear the navigational kind.
+    expect(String(refusal.got)).toContain("one literal petname")
+    expect(String(refusal.got)).toContain("name")
+  })
+
+  test("`ambiguous-binding` is the model's spelling, read from the corpus", async () => {
+    // Law 1: a reason the corpus already names is not this package's to coin.
+    // The model emits this one on the F12 across-bind-orders row, so the wall
+    // is a comparison and not a second opinion — a rename in `verify/fabric`
+    // reds here rather than leaving two spellings of one reason in the estate.
+    const lines = (await Bun.file(corpus).text()).trimEnd().split("\n")
+    const rows = lines.slice(1).map((line) => JSON.parse(line) as ModelRow)
+    const ambiguous = rows.filter(
+      (row) => row.kind === "F12" && row.name === "ambiguous-across-bind-orders",
+    )
+
+    // Exactly one, so a corpus that dropped the row reds instead of vacuously
+    // passing over an empty filter.
+    expect(ambiguous).toHaveLength(1)
+    const emitted = ambiguous[0]!.verdict.refusal
+    // A row that stopped carrying a refusal name is a moved corpus, not a pass.
+    if (emitted === undefined) throw new Error("the F12 ambiguity row names no refusal")
+
+    const refusal = Effect.runSync(
+      Effect.gen(function* () {
+        const left = yield* publishValue({ model: "one" })
+        const right = yield* publishValue({ model: "two" })
+        const root = yield* publishDirectory([
+          binding("model", left),
+          binding("model", right),
+        ])
+        return yield* Effect.flip(at(root, "model"))
+      }).pipe(Effect.provide(substrateLayer)),
+    )
+
+    expect(refusal.kind).toBe(emitted)
+  })
+
+  test("`Petname` carries the generated projection, not a second definition", () => {
+    // The carrier is `KernelPetname` and the brand rides on it, so a value this
+    // module admits decodes against the generated schema unchanged. Two
+    // carriers for one concept is the Law 1 defect this asserts the absence of.
+    // `decodeSync`, not `decodeUnknownSync`: the compiler has to accept an
+    // admitted petname as the generated schema's Encoded type, which is half
+    // the claim and the half a runtime assertion cannot make.
+    const admitted = Effect.runSync(petname("model"))
+    expect(Schema.decodeSync(KernelPetname)(admitted)).toEqual({ text: "model" })
   })
 })
