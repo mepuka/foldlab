@@ -43,7 +43,7 @@ const run = (cliArguments: ReadonlyArray<string>) =>
  * enforcement branch that stopped refusing falls through to a ledger that still
  * matches, and the arm reports the accepted mutant instead of an unrelated
  * diff. The admission arm then pins the classification itself — a laundering
- * rule that blessed any of the five hand-written twins moves the committed
+ * rule that blessed any of the six hand-written twins moves the committed
  * counts, and a rule that stopped admitting the direct re-export moves them too.
  */
 const control = Effect.fn("PublicTypeUniverse.control")(function* () {
@@ -84,7 +84,7 @@ const control = Effect.fn("PublicTypeUniverse.control")(function* () {
   )
 
   yield* Console.log(
-    "PUBLIC TYPE UNIVERSE CONTROL: PASS (five hand-written twins refused by enforce mode; direct generated export admitted)",
+    "PUBLIC TYPE UNIVERSE CONTROL: PASS (six hand-written twins refused by enforce mode, augmentation among them; direct generated export admitted)",
   )
 })
 

@@ -28,3 +28,20 @@ export interface LaunderedExtension extends KernelRefusalRow {
 export type LaunderedMapped = {
   readonly [Field in keyof KernelRefusalRow]: KernelRefusalRow[Field]
 }
+
+/**
+ * A sixth shape, and the only one that does not resolve to a declaration this
+ * file owns: a module augmentation merges a hand-written member into the
+ * GENERATED symbol itself, so the laundered type reaches the anchor through its
+ * own declaration list. Admitting a symbol because merely one of its
+ * declarations is generated blesses this one while refusing the five above.
+ */
+declare module "../src/kernel/KernelTables.generated.js" {
+  interface KernelRefusalRow {
+    readonly handwrittenRider?: string
+  }
+}
+
+export type {
+  KernelRefusalRow as LaunderedAugmentation,
+} from "../src/kernel/KernelTables.generated.js"

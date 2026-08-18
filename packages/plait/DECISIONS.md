@@ -1954,9 +1954,9 @@ ratified.
 Decided: `--enforce` classifies, refuses every debt row, and stops; the ledger
 byte-comparison belongs to report mode only. The planted control owns a second
 committed ledger of its own next to the mutant, and runs two arms through the
-production check: the refusal arm requires `--enforce` to refuse its five
+production check: the refusal arm requires `--enforce` to refuse its six
 planted twins against the committed trace, and the admission arm requires report
-mode to reproduce the planted ledger byte-for-byte, one derived and five debt.
+mode to reproduce the planted ledger byte-for-byte, one derived and six debt.
 Both committed artifacts are written by executing the control under `--write`.
 Alternatives: compare the inspection's violations in a second control path (the
 production enforcement branch could disappear while the control stayed green —
@@ -1972,3 +1972,30 @@ two ways answers neither.
 **Load-bearing? yes** — four mutation arms were run against this pair, and the
 two that drop enforcement now both report the accepted mutant rather than a
 ledger diff.
+
+### T3. A symbol is generated only if nothing hand-written declares into it
+
+Decided: derivation quantifies universally over the resolved symbol's whole
+declaration list, and a symbol carrying no declaration is debt. The five twins
+T2 plants all resolve to a declaration the mutant file owns, so an existential
+test refuses them and reads as sufficient. Measured, it is not: a module
+augmentation declares INTO the generated symbol rather than beside it, so after
+`declare module ".../KernelTables.generated.js" { interface KernelRefusalRow {
+readonly handwrittenRider?: string } }` the public type carries a hand-written
+member while its declaration list still holds the generated one. Executed on the
+existential rule, the control ledger recorded two derived types — the direct
+re-export and the augmented row — and the augmented row raised no violation at
+all. That is the false-positive direction law 1 forbids, reached without a
+wrapper, an alias, or a twin, and it is the only one of the six shapes that
+survives an ownership test written existentially. Alternatives: forbid
+augmentation by review (an unwalled rule the emitted barrel cannot see); ban
+`declare module` by lint (it would miss interface merging that arrives another
+way); compare emitted members against the corpus (structural equivalence is the
+proof this wall deliberately does not attempt). The universal test costs nothing
+on a clean surface — a generated declaration nothing augments satisfies it
+unchanged, and the package ledger's 93 rows and 0 derived count are identical
+either way. The empty-list guard carries its own weight: `every` is vacuously
+true, so an undeclared symbol would otherwise pass as generated core.
+**Load-bearing? yes** — restoring the existential rule re-admits the
+augmentation, and the control's committed trace goes red naming the shape that
+went missing.

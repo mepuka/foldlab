@@ -120,12 +120,20 @@ const createProgram = (directory: string): ts.Program => {
   return program
 }
 
+/**
+ * Every declaration of the resolved symbol must be owned by a generated anchor.
+ * Asking for only one would bless a symbol a hand-written module augmentation
+ * had merged into: that type keeps the generated declaration in its list while
+ * carrying a hand-written member, which is the false-positive direction law 1
+ * forbids. A symbol with no declaration at all is debt, never a vacuous pass.
+ */
 const isDeclaredByGeneratedCore = (
   directory: string,
   symbol: ts.Symbol,
 ): boolean => {
   const emittedRoot = `${normalizePath(resolve(directory))}/`
-  return (symbol.declarations ?? []).some((declaration) => {
+  const declarations = symbol.declarations ?? []
+  return declarations.length > 0 && declarations.every((declaration) => {
     const file = normalizePath(declaration.getSourceFile().fileName)
     if (!file.startsWith(emittedRoot)) return false
     const relative = file.slice(emittedRoot.length)
