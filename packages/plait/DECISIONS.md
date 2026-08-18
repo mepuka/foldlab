@@ -1491,3 +1491,101 @@ contract puts module vocabulary in the module glossary; the root file is the
 public language and watch is behind the seam. Raised as a DEV-750 round-2 minor
 charge. **Load-bearing? no** — the fence is enforced by `AGENTS.md` and the
 tests; this makes the fence word readable to someone who has not read the plan.
+## Task DEV-730 — tenth substrate probe suite
+
+Task-local placeholders restart for this task. Spec authority:
+`docs/design/2026-08-17-plait-next-phase-plan.md` item 10 and
+`docs/design/2026-08-17-plait-effect-affordances.md` A-9 backend (b).
+
+### T0. Probe the TypeScript object-store client at the consuming seam
+
+Decided: the tenth suite is `test/ObjectStoreSemantics.test.ts`, beside the
+ninth, and builds the server from `go/go.mod` through `NatsHarness`.
+Alternatives: probe `nats.go`'s object store under `go/substrate`; land a
+`Blob.ts` slot while probing it. Why: the gated consumer is
+`@nats-io/obj@3.4.0`, whose chunking, digest, and metadata behaviour is client
+code — the Go client would test the wrong seam, and the ticket mints evidence
+only. **Load-bearing? yes** — a different client would not discharge the gate
+named by the plan.
+
+### T1. Record the missing ranged read as an enumerated absence
+
+Decided: the ranged-read arm enumerates the client's reachable surface, pins
+`get`/`getBlob` at one argument and `ObjectResult` at `{info, error, data}`,
+and asserts that no member names a range, offset, seek, partial, or slice.
+Alternatives: skip the arm with a note that the API looks absent; build a
+ranged read out of raw chunk-subject reads and probe that. Why: an enumerated
+surface is evidence that fails when the pin moves, where a skipped test is
+silence; and hand-rolling a read the client does not offer would probe our own
+invention, not the substrate. **Load-bearing? yes** — G-6's deferred
+chunk-manifest law rests on this absence being a fact about the pin.
+
+### T2. Pair the digest claim with a tamper control
+
+Decided: the round-trip arm injects one extra chunk message behind the client's
+back and pins three consequences — metadata unchanged, whole-object `getBlob`
+refused, and every byte delivered to the reader before the refusal arrives.
+Alternatives: assert only that the reported digest equals an independent
+SHA-256; corrupt bytes in the file store directly. Why: a digest that agrees
+with itself proves only self-consistency, so the control is what makes the
+verify-on-read claim mean anything, and it is the same control that exposes the
+unverified prefix; corrupting the file store beneath JetStream would probe
+storage, not the client's read path. **Load-bearing? yes** — the delivery order
+is the finding a future blob reader must design around.
+
+### T3. Capture refusal messages instead of asserting through `.rejects`
+
+Decided: refusals are captured with a small helper that returns the first line
+of the error and compared as values. Alternatives: `expect(promise).rejects.toThrow(...)`.
+Why: at the harness pin that matcher reported `timeout` for refusals the same
+operations produce immediately under a plain `try`/`catch`, which would have
+recorded a false observation and cost five seconds per arm. **Load-bearing?
+no** — the observed refusals are identical either way; this keeps the recorded
+value the one the client actually produced.
+
+### T4. The record carries transcripts and pinned citations, not narration
+
+Decided: the findings record gains a replay command, the suite's verbatim trace
+lines, and a per-mechanism section pairing the observation with the pinned
+`@nats-io/obj@3.4.0` line that implements it — client-side digest derivation,
+the last-chunk check, the metadata write/check boundary, and revision-as-meta
+-stream-sequence. Alternatives: leave the prose narration; cite upstream GitHub
+rather than the shipped pin. Why: the ticket asked for ran-it transcripts plus
+pinned-source citations in the DEV-704 idiom, and the tamper arm alone proves
+only that injected bytes leave metadata unchanged — it does not establish the
+four mechanisms the record attributes. A reader could not check any of them.
+Citing the checkout's own `node_modules/@nats-io/obj/lib/` keeps every line
+number verifiable at the pin this suite actually runs against; an upstream link
+resolves to a different tree. Raised as a DEV-753 round-1 major charge.
+**Load-bearing? yes** — a record that cannot be checked is narration.
+
+### T5. The `mtime` claim is weakened to what the client actually does
+
+Decided: every record now says `mtime` is recomputed on every put and observed
+nondecreasing, and says outright that it is not a freshness oracle. The suite
+asserts nondecrease across the exercised puts and that the value round-trips
+as an ISO string. Alternatives: assert strict freshness across puts. Why: it
+would flake, and the pin says why — `info.mtime = new Date().toISOString()`
+(`objectstore.js:405`) is a client clock at millisecond resolution, so two puts
+inside one millisecond carry the same string. "Every put mints a fresh `mtime`"
+was a claim no gate enforced and no gate could. Raised as a DEV-753 round-1
+major charge. **Load-bearing? yes** — a consumer ordering puts by `mtime` would
+have been building on a tie it was told could not happen.
+
+### T6. One scoped probe helper owns the lifecycle; each arm owns its observation
+
+Decided: `probe(bucket, observe)` opens the connection, creates a fresh
+file-backed R=1 bucket, and closes however the arm ends. Alternatives: leave
+five copies of the connect/create/`try`/`finally` block. Why: the repetition
+was the only thing standing between a reader and each arm's actual claim, and
+one copy of a `finally` is one place for a leaked connection to be fixed rather
+than five. Raised as a DEV-753 round-1 minor charge. **Load-bearing? no** — the
+observations are unchanged.
+
+### T7. The LCG produces probe inputs, not fixtures
+
+Decided: the generator's comment no longer calls its output a fixture. The root
+glossary reserves that word for frozen digest pins minted by the side that owns
+a model, and nothing here pins a model's answer — these are ordinary runtime
+inputs to a characterization probe. Raised as a DEV-753 round-1 minor charge.
+**Load-bearing? no** — vocabulary.
