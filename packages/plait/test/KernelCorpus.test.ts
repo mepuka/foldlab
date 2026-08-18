@@ -262,7 +262,7 @@ describe("the corpus reader", () => {
       admissions: corpus.admissions.length,
       docs: corpus.docs.length,
       canons: corpus.canons.length,
-      lines: corpus.lines.length,
+      programs: corpus.programs.length,
     }).toEqual({
       kinds: 12,
       stages: 5,
@@ -272,8 +272,23 @@ describe("the corpus reader", () => {
       admissions: 17,
       docs: 22,
       canons: 10,
-      lines: 117,
+      programs: 4,
     })
+  })
+
+  test("the line count is the header's own sum, not a literal", () => {
+    // The add-only rule lets a group join without a format bump, and the ninth
+    // one did. A pinned line count breaks on that where the sum does not, so
+    // the sum is what is checked - and the file is still required to carry
+    // every record its header counts and no other.
+    const pinned = Object.values(corpus.header.counts)
+      .reduce((total, count) => total + count, 0n)
+    expect(BigInt(corpus.lines.length)).toBe(1n + pinned)
+    console.info(
+      `CORPUS SHAPE: PASS lines=${corpus.lines.length} groups=${
+        Object.keys(corpus.header.counts).length
+      } rule=lines-equals-one-plus-sum-of-counts`,
+    )
   })
 
   test("admission row i and refusal row i name the same reason", () => {

@@ -1,5 +1,6 @@
 /- Law statements only. Proofs live in `Unity/Proofs.lean`. -/
 import Unity.Definitions
+import Unity.Program
 import Kernel.Laws
 
 namespace Unity
@@ -135,6 +136,85 @@ def UGreatestTieDiverges : Prop :=
       (fun best => best.2) = some 99
   /\ (Fabric.greatestSeal (Unity.recordsAt Unity.Planted.tiedFacts 1)).map
       (fun record => record.digest) = some 10
+
+/-! ## The program declaration carrier
+
+The meta DAG language written down as one canonical value. These laws
+say what the encoding preserves, what the redundant edge list is
+redundant WITH, and what the committed vectors are on the kernel side.
+Admission on the fabric side is not restated here: it arrives through
+U3 and U4 applied to the erasure, which is the point of having the
+transport at all. -/
+
+/-- U14, encoding: a declaration survives its own canonical encoding.
+    Decoding what the encoder wrote returns the declaration, so no
+    field of the carrier is written to a place the reader cannot find
+    it and no field is silently dropped. -/
+def UProgramEncodingRoundTrips : Prop :=
+  forall declaration : Unity.Program.Declaration,
+    Unity.Program.readDeclaration
+      (Unity.Program.declarationValue declaration) = some declaration
+
+/-- U15, redundancy checked: the edges a declaration's arguments imply
+    are exactly the edges its erasure's uses imply. The edge list is
+    duplicated data by design — this is the law that says which
+    derivation it duplicates, so a consumer may read either and get
+    one graph. -/
+def UProgramEdgesAreErasedUses : Prop :=
+  forall declaration : Unity.Program.Declaration,
+    Unity.Program.consumptionEdges declaration =
+      Unity.Program.erasedEdges (Unity.Program.erase declaration)
+
+/-- U16, soundness of the emitter's guard: the computable admission
+    verdict the emitter runs implies the kernel's admission
+    proposition. Without this the emit-time check would be a shell
+    habit; with it, a corpus that emitted is a corpus whose programs
+    the kernel admits. -/
+def UProgramAdmissibleSound : Prop :=
+  forall nodes : List Kernel.ProgramNode,
+    Unity.Program.admissible nodes = true -> Kernel.ProgramAdmission nodes
+
+/-- U17, the committed vectors are lawful programs: every vector in
+    the corpus erases to a program kernel admission accepts. U3 and U4
+    then carry that admission and its pin edges to the fabric ledger
+    with nothing further to prove. -/
+def UProgramVectorsAdmitted : Prop :=
+  forall entry : String × Unity.Program.Declaration,
+    entry ∈ Unity.Program.vectors ->
+      Kernel.ProgramAdmission (Unity.Program.erase entry.2)
+
+/-- U18, the committed vectors state their own graph honestly: each
+    vector's edge list is exactly the consumptions its arguments
+    imply. A vector that dropped an edge while keeping the argument
+    would be refused here rather than shipped. -/
+def UProgramVectorsEdgeConsistent : Prop :=
+  forall entry : String × Unity.Program.Declaration,
+    entry ∈ Unity.Program.vectors ->
+      entry.2.edges = Unity.Program.consumptionEdges entry.2
+
+/-- U19, the lift is the planted program: the ground vector's erasure
+    is the very two-node program the bridge's transport and
+    inhabitation laws already speak about, not a look-alike. That is
+    what lets U7's inhabited pin edge be an inhabited edge OF A
+    COMMITTED CORPUS VECTOR. -/
+def UGroundLiftErasesToPlanted : Prop :=
+  Unity.Program.erase Unity.Program.Vectors.groundTwoNode =
+    Unity.Planted.groundProgram
+
+/-- U20, the parameter channel at the vectors: filling the holey
+    vector at its valuation lands the filled vector exactly, the holey
+    vector requires its one parameter, and the filled vector requires
+    nothing. The general shape is the kernel's own requirement law
+    (`KRequiresExclude`); this is that law's shadow on committed
+    bytes, which is what a consumer can actually replay. -/
+def UHoleyFillCorrespondence : Prop :=
+  Kernel.fillProgram Unity.Program.Vectors.holeValuation
+      (Unity.Program.erase Unity.Program.Vectors.holey) =
+    Unity.Program.erase Unity.Program.Vectors.holeyFilled
+  /\ Kernel.requiresOf (Unity.Program.erase Unity.Program.Vectors.holey) =
+    [Unity.Program.Vectors.holeName]
+  /\ Kernel.requiresOf
+    (Unity.Program.erase Unity.Program.Vectors.holeyFilled) = []
 
 end Laws
 

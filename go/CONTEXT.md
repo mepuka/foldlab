@@ -58,3 +58,16 @@ survives only as a run-time check.
 The refusal rows: reason, the law defended, the repair, and whether the
 repair is a function of the refused candidate alone. The door never
 refuses without teaching the legal next move, so no field is optional.
+
+**Program declaration**:
+One named DAG of generator applications, and the ninth corpus group. Nodes
+are newest-first; a node's arguments are tagged references — a digest, an
+older local node, a literal, or one of the program's declared holes — and
+the edge list is exactly the consumptions those local references imply. It
+is a declaration and its identity, never an execution record: nothing runs
+one, and there is no argument tag for a clock, a seed, or a closure.
+
+**Hole**:
+A declared parameter of a program, not a wildcard. Filling one turns it into
+a literal wherever it stands and retires it from the parameter list, which
+is the valuation correspondence the holey and holey-filled vectors carry.

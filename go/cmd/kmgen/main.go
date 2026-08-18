@@ -128,6 +128,7 @@ func writeSource(out *strings.Builder, corpus *kmconform.Corpus) error {
 	if err := writeAdmissions(out, corpus); err != nil {
 		return err
 	}
+	writePrograms(out, corpus)
 	return nil
 }
 
@@ -589,6 +590,59 @@ var AdmissionVectors = []AdmissionVector{
 	}
 	out.WriteString("}\n")
 	return nil
+}
+
+func writePrograms(out *strings.Builder, corpus *kmconform.Corpus) {
+	out.WriteString(`// ---- Program vectors ----
+//
+// The ninth corpus group: the DAG builder's committed declarations, each with
+// the canonical bytes it serializes to.
+//
+// WHY BYTES AND NOT THE DECLARATION. The declaration already has a Go form —
+// kmconform.ProgramDeclaration, hand-written and conformance-walled — and
+// emitting a second Go spelling of the same grammar here would be two
+// spellings of one thing, which is the exact defect generation exists to
+// prevent. What a consumer actually needs from a table is the model's answer
+// to compare its own construction against, and that answer is a byte string.
+// It is the same reasoning that puts canonical examples on the TypeScript
+// surface as strings rather than as values.
+//
+// These are DECLARATIONS, never execution records. Nothing here runs.
+
+// ProgramVector is one committed program declaration, named, with the
+// canonical serialization the corpus carries for it.
+type ProgramVector struct {
+	Name  string
+	Bytes string
+}
+
+// ProgramVectorTable is the program group in corpus order.
+var ProgramVectorTable = []ProgramVector{
+`)
+	for _, row := range corpus.Programs {
+		fmt.Fprintf(out, "\t{Name: %s, Bytes: %s},\n",
+			strconv.Quote(row.Name), strconv.Quote(row.Bytes))
+	}
+	out.WriteString(`}
+
+// ProgramVectorNames is the committed vector names in corpus order.
+var ProgramVectorNames = []string{
+`)
+	for _, row := range corpus.Programs {
+		fmt.Fprintf(out, "\t%s,\n", strconv.Quote(row.Name))
+	}
+	out.WriteString(`}
+
+// ProgramVectorByName resolves a vector. Unknown names are refused.
+func ProgramVectorByName(name string) (ProgramVector, bool) {
+	for _, vector := range ProgramVectorTable {
+		if vector.Name == name {
+			return vector, true
+		}
+	}
+	return ProgramVector{}, false
+}
+`)
 }
 
 // uint64List renders a Nat sequence as a Go literal, refusing any value that

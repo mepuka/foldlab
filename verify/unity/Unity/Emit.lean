@@ -33,6 +33,7 @@ It changes neither upstream tree, and it promotes nothing: the rows
 report what the model decides, and a conformance vector is a check on
 an implementation, never a guarantee about one.
 -/
+import Unity.Program
 import Unity.Reflect
 
 namespace Unity.Emit
@@ -47,20 +48,10 @@ executable carries no environment; `Unity/Check.lean` asks the
 environment on the gate's behalf and refuses a spelling that drifted.
 -/
 
-/-- The name of a declaration kind. -/
-def kindName : Kernel.DeclKind -> String
-  | .schema => "schema"
-  | .program => "program"
-  | .policy => "policy"
-  | .capability => "capability"
-  | .lane => "lane"
-  | .algebra => "algebra"
-  | .index => "index"
-  | .resource => "resource"
-  | .ontology => "ontology"
-  | .schedule => "schedule"
-  | .template => "template"
-  | .language => "language"
+/-- The name of a declaration kind. The spelling table lives beside
+    the program carrier, which also has to write kind names, so the
+    interchange has one place a kind is spelled and not two. -/
+def kindName : Kernel.DeclKind -> String := Program.kindName
 
 /-- The name of a hole stage, at the model's spelling. -/
 def stageName : Kernel.HoleStage -> String
@@ -306,11 +297,40 @@ def canonRow (entry : String × Canon.Value) : String :=
 /-- The canon rows. -/
 def canonRows : List String := canonVectors.map canonRow
 
+/-! ## The program vectors
+
+The ninth group: program declarations as data. Each record carries the
+declaration value and that value's own canonical bytes, so a consumer
+that parses the declaration and re-encodes it has a self-test with the
+answer beside the question — the same discipline the canon group
+applies to the byte form, applied one level up to the meta DAG
+language.
+
+The vectors themselves are committed in `Unity/Program.lean`, beside
+the erasure and the laws about them, because they are model data the
+proofs quantify over and not a rendering decision. What happens here
+is rendering, and the emit-time checks below refuse a rendering whose
+declaration would not survive the round trip.
+-/
+
+/-- One program record: the declaration, and the declaration's own
+    canonical bytes carried as a string. -/
+def programRow (entry : String × Program.Declaration) : String :=
+  Canon.render (.obj
+    [ ("record", .str "program")
+    , ("name", .str entry.1)
+    , ("declaration", Program.declarationValue entry.2)
+    , ("bytes", .str (Program.declarationBytes entry.2)) ])
+
+/-- The program rows. -/
+def programRows : List String := Program.vectors.map programRow
+
 /-! ## The document -/
 
 /-- The record groups, in the order the freeze fixes them. -/
 def groupOrder : List String :=
-  ["kind", "stage", "refusal", "type", "encoding", "admission", "doc", "canon"]
+  ["kind", "stage", "refusal", "type", "encoding", "admission", "doc",
+    "canon", "program"]
 
 /-- The counts the header declares. The emitter re-derives every one of
     them from the RENDERED document before printing: a declared count is
@@ -324,7 +344,8 @@ def counts : List (String × Nat) :=
   , ("encoding", encodingRows.length)
   , ("admission", admissionRows.length)
   , ("doc", docRows.length)
-  , ("canon", canonRows.length) ]
+  , ("canon", canonRows.length)
+  , ("program", programRows.length) ]
 
 /-- The header. -/
 def header : String :=
@@ -338,7 +359,7 @@ def header : String :=
 /-- The whole artifact, one line per record, in the frozen order. -/
 def document : List String :=
   header :: kindRows ++ stageRows ++ refusalRows ++ typeRows ++
-    encodingRows ++ admissionRows ++ docRows ++ canonRows
+    encodingRows ++ admissionRows ++ docRows ++ canonRows ++ programRows
 
 /-! ## Emit-time checks
 
@@ -435,9 +456,37 @@ def canonFailures : List String :=
 def bothWaysFailures : List String :=
   Canon.bothWaysFailures document
 
+/-- Every program vector, checked the way a consumer will check it:
+    the edges must be the consumptions the arguments imply, the
+    erasure must be a program the kernel admits, the declared
+    parameters must ascend, the rendered declaration must read back to
+    the committed carrier, and the `bytes` field must be that
+    declaration's own canonical form. The order is the order a reader
+    wants: the graph first, then the identity of the bytes. -/
+def programFailures : List String :=
+  (Program.vectors.zip programRows).flatMap fun entry =>
+    let name := entry.1.1
+    let declaration := entry.1.2
+    Program.wellFormedFailures name declaration ++
+      (match Canon.parse entry.2 with
+       | .error reason =>
+           [s!"emit: a program record does not parse: {reason}"]
+       | .ok record =>
+           match Canon.member record "declaration",
+               Canon.stringAt record "bytes" with
+           | some value, some bytes =>
+               (if Program.readDeclaration value == some declaration then []
+                else
+                  [s!"emit: program vector {name} does not read back to its own declaration"]) ++
+               (if Canon.render value == bytes then [] else
+                  [s!"emit: program vector {name} carries bytes that are not its declaration's canonical form"])
+           | _, _ =>
+               [s!"emit: a program record is missing a field: {entry.2}"])
+
 /-- Every reason the emitter would refuse to print. -/
 def emitFailures : List String :=
   parseFailures ++ bothWaysFailures ++ countFailures ++ orderFailures ++
-    roundTripFailures ++ verdictFailures ++ asciiFailures ++ canonFailures
+    roundTripFailures ++ verdictFailures ++ asciiFailures ++
+    canonFailures ++ programFailures
 
 end Unity.Emit

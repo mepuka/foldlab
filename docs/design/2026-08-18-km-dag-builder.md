@@ -166,3 +166,28 @@ re-runs every gate.
   confirm, or rule the kernel model grows typed holes first.
 - Naming and placement of the builder package surface (public surface
   ruling KB-14 still open).
+
+## 8. Freeze reconciliation at integration (measured, normative)
+
+The build corrected the dispatch freeze in three places; the emitted
+corpus is normative and every consumer implements these:
+
+- **A fourth argref form exists**: `{"arg":"hole","name":<nat>}`,
+  erasing to the kernel's hole argument. The freeze's own
+  holey/filled demand required it — with only digest/local/literal
+  there is no way to stand an argument in a hole, filling is the
+  identity, and the twin is the same program. Found by the unity
+  lane; independently and identically guessed by the Go lane before
+  the emission landed.
+- **The args map is a subset** of the generator's declared fields,
+  never required to be total (a declare node may bind nothing). A
+  validator demanding totality rejects every committed vector.
+- **Edge rows follow the node walk** (newest-first, then field
+  order); the SET is the law (edges must equal exactly the
+  consumptions the local and hole references imply), the order is
+  the emission's convention, and consumers may compare as sets.
+
+The four committed vectors are ground-two-node, holey, holey-filled,
+distill-shape; ground-two-node's erasure IS the bridge's planted
+program, so the inhabitation edge of U7 is now an edge of a corpus
+vector.

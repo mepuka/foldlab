@@ -16,13 +16,27 @@ adds two record groups (`doc` and `canon`). §7 is the migration note.
 
 **The corpus exists.** Everything byte-exact in this document was read
 back out of the emitted file at
-`packages/plait/fixtures/kernel-conformance.ndjson` — 117 lines, 22632
-bytes, LF after every record — and not typed by hand. Three
-implementations (Lean in `verify/unity`, TypeScript in
-`packages/plait`, Go in `go/kmconform`) demonstrate the both-ways law of
-§1.4 over exactly those bytes and construct all ten canon vectors
-natively. §8 reports what was measured; §12 records what that
-measurement closed.
+`packages/plait/fixtures/kernel-conformance.ndjson` — at the time of
+format 2's minting, 117 lines and 22632 bytes, LF after every record —
+and not typed by hand. Three implementations (Lean in `verify/unity`,
+TypeScript in `packages/plait`, Go in `go/kmconform`) demonstrate the
+both-ways law of §1.4 over exactly those bytes and construct all ten
+canon vectors natively. §8 reports what was measured; §12 records what
+that measurement closed.
+
+**A ninth group, `program`, has been added under the add-only rule of
+§6** — new group, new counts key, format unchanged at `2`. It carries
+the canonical form of a *program declaration*: the DAG of generator
+applications that the builder slice
+(`docs/design/2026-08-18-km-dag-builder.md`) authors and addresses.
+§2.7 specifies it and quotes its four emitted records. Two consequences
+ride along and are applied throughout this document: the file's line and
+byte totals are measurements of a moment rather than constants of the
+format, so every count-shaped rule is stated as a **counts-derived**
+rule (`lines == 1 + sum(header.counts)`); and `counts` now names nine
+groups, not eight, which is exactly the situation §6's corollaries were
+written for. A consumer that skips the `program` group entirely is
+still conforming.
 
 ## 0. What this file is, in one paragraph
 
@@ -198,6 +212,8 @@ untested territory; it is a format bump and a fresh reading of RFC 8785
 > canonical form reproduces the input file byte for byte.
 > For every `canon` record: canonicalizing the record's `value` member
 > yields exactly the string in its `bytes` member.
+> For every `program` record: canonicalizing the record's `declaration`
+> member yields exactly the string in its `bytes` member (§2.7).
 
 This is a conformance *requirement*, not a property to admire. Each
 implementation — Lean, TypeScript, Go, and any fourth — MUST have a test
@@ -261,18 +277,23 @@ this order, with no interleaving:
 | 7 | `admission` | 17 | |
 | 8 | `doc` | 22 | yes |
 | 9 | `canon` | 10 | yes |
+| 10 | `program` | 4 | yes (add-only) |
 
 The six v1 groups keep their relative order and their per-group internal
-order; the two new groups come strictly after all of them. Total file
-length is **117 lines**: 1 header + 116 records, and 22632 bytes.
+order; the new groups come strictly after all of them, in the order they
+were added. At the time of format 2's minting — before the `program`
+group — the file was **117 lines**: 1 header + 116 records, and 22632
+bytes.
 
-Both numbers are measurements of today's corpus, not constants of the
-format. A consumer should validate the line count as
-`lines == 1 + sum(header.counts)` rather than pinning the literal 117:
-the add-only rule of §6 lets a ninth group join without a format bump,
-and a literal breaks on that where the sum does not. The Go consumer
-states the check that way and says so in its own comment; §11 check 12
-carries the rule.
+Those numbers are measurements of a corpus at a moment, not constants of
+the format, and the `program` group is the concrete case that proves it.
+A consumer MUST validate the line count as
+`lines == 1 + sum(header.counts)` rather than pinning any literal: the
+add-only rule of §6 lets a further group join without a format bump, and
+a literal breaks on that where the sum does not. The Go consumer states
+the check that way and says so in its own comment; §11 check 12 carries
+the rule. Wherever this document quotes a figure measured at minting, it
+says so; the counts-derived rule is what carries forward.
 
 Within a group the order is fixed and is never alphabetical-by-accident:
 
@@ -283,6 +304,7 @@ Within a group the order is fixed and is never alphabetical-by-accident:
 - `admission` — the kernel gate's `check_control` order, lawful twin last.
 - `doc` — type declaration order, i.e. the same order as `type`.
 - `canon` — the order listed in §3.
+- `program` — the vector order listed in §2.7.4.
 
 ### 2.2 Record grammar, group by group
 
@@ -291,15 +313,35 @@ Examples marked *(from the corpus)* were produced by canonicalizing the
 committed format-1 record, not typed by hand.
 
 **Header** — exactly one, on line 1. Keys: `counts`, `format`,
-`generator`, `record`, `source`; `counts` keys are the eight group names
-other than `header`, sorted.
+`generator`, `record`, `source`; `counts` keys are the group names other
+than `header`, sorted. *(from the corpus)*
 
 ```json
-{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
+{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
 ```
 
 Every count MUST equal the number of records of that group actually
 emitted.
+
+**The counts key sorts, it does not append.** `counts` is an object, so
+its members obey §1's member sort like every other object in the file —
+a new group's key lands wherever the sort puts it, never at the end.
+`program` sorts sixth of nine, between `kind` and `refusal`:
+
+```
+admission, canon, doc, encoding, kind, program, refusal, stage, type
+```
+
+That is worth stating because the *group order in the file* (§2.1) and
+the *key order inside `counts`* are two different orders and disagree
+here: `program` is last in the file and sixth in the header. A consumer
+reading `counts` positionally rather than by key has already lost, and
+the header line above is the proof rather than the warning: read it left
+to right and the group order is not what you get.
+
+`scratch/km-canon/check_doc.py` compares that quoted line against the
+corpus's own first line on every run, so a regenerated corpus and a
+stale document cannot both be green.
 
 **Kind** — twelve, ranks 0..11 (`schema`, `program`, `policy`,
 `capability`, `lane`, `algebra`, `index`, `resource`, `ontology`,
@@ -393,6 +435,14 @@ holds that value's canonical serialization, as a JSON string.
 ```json
 {"bytes":"{\"a\":2,\"b\":1}","name":"key-order","record":"canon","value":{"a":2,"b":1}}
 ```
+
+**Program** *(new, add-only)* — the program declaration vectors, in the
+order of §2.7.4. Keys: `bytes`, `declaration`, `name`, `record`.
+`declaration` holds the declaration value; `bytes` holds that value's
+canonical serialization, as a JSON string — the same self-testing shape
+as `canon`, for the same reason. §2.7 is the whole specification: the
+declaration grammar, the argref forms, the edge rule, and the
+consistency law.
 
 ### 2.3 Field-by-field semantics
 
@@ -494,6 +544,23 @@ the lawful twin is not optional.
 | `value` | The JSON value itself — whatever kind of value it is. This is the only place in the corpus where a value is not a string, a natural, an array of naturals, or a structured record. |
 | `bytes` | The canonical serialization of `value`, carried as a JSON string. The both-ways law (§1.4) binds these two fields together. |
 
+#### Program
+
+| Field | Meaning |
+|---|---|
+| `record` | Discriminator. Always the literal `"program"`. |
+| `name` | The vector label, hyphen-separated, from the list of §2.7.4. Stable within a format; not a Lean name and not a program's identity. |
+| `declaration` | The program declaration value itself, in the grammar of §2.7.1. An object with exactly the four members `edges`, `holes`, `lineage`, `nodes`. |
+| `bytes` | The canonical serialization of `declaration`, carried as a JSON string. The both-ways law (§1.4) binds these two fields together, exactly as it does a `canon` record's pair. |
+
+A `program` record therefore self-tests every consumer twice over: once
+through the per-line canonicality check that binds every record (§11
+check 5), and once through the `bytes`-equals-canonicalize-`declaration`
+identity that is specific to this group and to `canon`. The second is
+the one that catches a consumer whose canonicalizer is right about
+corpus records and wrong about the nested declaration value it will
+actually be asked to address.
+
 ### 2.4 The closed type list
 
 Exactly these twenty-two, in `Kernel/Definitions.lean` declaration order,
@@ -580,6 +647,402 @@ never reorders an array. Getting this backwards — sorting the fields —
 destroys the meaning of `AnchorFact(declared,partition)`, whose
 arguments are resolved against *preceding* fields.
 
+### 2.7 The program group
+
+The ninth counted group — row 10 of §2.1's table, which numbers the
+header as row 1 — added under §6's add-only rule: appended after
+`canon`, a new `counts` key, `format` still `2`. Nothing about the
+earlier groups changes, and a consumer that does not know this one skips
+it and stays conforming.
+
+#### 2.7.0 What a program declaration is, glossed once
+
+The eight generators of §0 are single sentences. A **program** is a
+paragraph: a finite set of generator applications, each with a
+program-local name, where one application may consume the result of an
+earlier one. Because consumption is the only way the applications relate,
+a program is a directed acyclic graph, and because every application's
+arguments are either program-local names, content addresses, or plain
+numbers, the whole paragraph has one canonical serialization and
+therefore one identity.
+
+Three things follow, and they are the reason this group exists at all:
+
+- **The declaration is data, not code.** It carries no function values
+  and no closures — computation is referenced by digest, never carried
+  (§2.7.5). A declaration can be hashed, diffed, and re-read years
+  later.
+- **Building is not publishing.** Serializing a declaration and taking
+  its identity is total and always available; *declaring* it into a
+  catalog is a separate, explicit act. The corpus carries declarations.
+- **Nothing here runs.** A `program` record is a declaration, never an
+  execution record, never a trace, never a replay. §2.7.5's non-claims
+  are as binding as its claims.
+
+#### 2.7.1 The declaration value grammar
+
+The value under `declaration` is a JSON object with exactly four
+members. Shown here in canonical form, so keys are sorted at every
+level:
+
+```
+declaration ::= { "edges"   : [ edge, ... ],
+                  "holes"   : [ hole, ... ],
+                  "lineage" : [ nat, ... ],
+                  "nodes"   : [ node, ... ] }
+
+edge        ::= { "from" : nat, "to" : nat }
+hole        ::= { "name" : nat, "schema" : nat }
+node        ::= { "args" : { fieldName : argref, ... },
+                  "generator" : gen,
+                  "name" : nat }
+
+gen         ::= "declare" | "resolve" | "emit" | "join"
+              | "fold"    | "decide"  | "trigger" | "spawn"
+
+argref      ::= { "arg" : "digest",  "id"   : nat, "kind" : kindName }
+              | { "arg" : "local",   "name" : nat }
+              | { "arg" : "literal", "value": nat }
+              | { "arg" : "hole",    "name" : nat }
+
+kindName    ::= one of the twelve DeclKind constructor names (§2.2)
+nat         ::= an unbounded non-negative integer (§1.2)
+```
+
+All four members are always present, including as empty arrays. A
+program with no holes carries `"holes":[]`, not an absent key: the
+grammar is fixed-shape so a consumer's decoder has no optional-member
+branch, and an absent member is malformed rather than defaulted.
+
+Member by member:
+
+| Member | Meaning |
+|---|---|
+| `nodes` | The generator applications, **newest first** (§2.7.3). Each carries a program-local `name`, the `generator` it applies, and its `args`. Node names are unique within a declaration. |
+| `edges` | The consumption relation made explicit: one entry per consumption, `from` the consuming (younger) node's name, `to` the consumed (older) node's name. Redundant with the `args` by construction, and deliberately so (§2.7.3). |
+| `holes` | The program's declared typed parameters, ascending by `name`. `name` is the hole's program-local identifier; `schema` is the identity label of the schema declaration that types it. A hole is a *declared parameter*, never a wildcard (§0). |
+| `lineage` | Identity labels of the declarations this one descends from, as an ordered list. Provenance carried in the value, so it is inside the identity rather than beside it. |
+
+**Digests are identity labels.** Every `nat` that stands for a digest —
+an argref's `id`, a hole's `schema`, a `lineage` entry — is the model's
+identity label for a value, not a hash. The model has always carried
+identities as naturals; real hashing is the runtime's trusted base and
+is not modelled here, and no property in this document depends on a
+digest being collision-resistant.
+
+**`args` is keyed by field name, and is a partial map.** Every key of a
+node's `args` object is one of the generator's field names, exactly as
+the corpus's own `type` record for `Act` gives them — which is the point
+of having the mini-AST in the corpus at all. A consumer joins the two
+groups rather than carrying its own table:
+
+| `generator` | `args` keys (the `Act` constructor's fields, in declaration order) |
+|---|---|
+| `declare` | `kind`, `value`, `writ` |
+| `resolve` | `kind`, `target` |
+| `emit` | `lane`, `body` |
+| `join` | `cell`, `contribution` |
+| `fold` | `declared`, `partition`, `anchor`, `query` |
+| `decide` | `register`, `token`, `outcome` |
+| `trigger` | `predicate`, `declaration` |
+| `spawn` | `parent`, `request` |
+
+**Subset, not equality — measured, and the one place a validator written
+from the freeze alone would be wrong.** The emitted vectors do *not*
+carry every field of every generator. `ground-two-node`'s `declare` node
+carries `"args":{}` and its `emit` node carries only `body`;
+`distill-shape`'s `decide` carries `outcome` and `register` but no
+`token`, and its `resolve` carries `target` but no `kind`. So the rule
+is:
+
+> **Every key of `args` MUST be a field name of that node's generator.
+> Not every field name need appear.**
+
+A consumer MUST check membership, never equality. What an omitted field
+means at the model seam — an argument the erasure supplies, or a
+position the declaration leaves to the runtime — is the unity lane's to
+say; what the corpus fixes is the subset rule, and R21 in §12 carries
+the semantics as an open question rather than letting the checker's
+leniency pass for an answer.
+
+Two traps in the table above, both worth a sentence.
+
+- **`args` is an object, so its keys sort; the field list is an array,
+  so it does not.** In the serialized node, `declare`'s arguments appear
+  as `kind`, `value`, `writ` — which happens to be both sorted *and*
+  declaration order — while `fold`'s appear as `anchor`, `declared`,
+  `partition`, `query`, which is sorted and **not** declaration order.
+  Nothing is lost, because the keys name the fields; but a consumer
+  reconstructing a positional argument list MUST re-order by the `type`
+  record's field order and never by the serialized key order. This is
+  §2.6's warning one level up.
+- **`trigger`'s field is named `declaration`.** It is a field of the
+  `Act.trigger` constructor and has nothing to do with the `program`
+  record's top-level `declaration` member. The collision is inherited
+  from the model's vocabulary, not introduced here.
+
+**The `args` count is not the encoding arity.** A node's `args` has one
+entry per constructor field; the `encoding` group's arrays are a
+*flattened* positional framing where a structured field spreads over
+several naturals. For six of the eight generators the two happen to
+line up — arity is one tag plus one natural per field — and for two they
+do not: `fold` has four fields and arity 8, `trigger` has two fields and
+arity 6. The coincidence is not a rule, and a consumer that cross-checks
+one count against the other is right six times and wrong twice, which is
+the worst way to be wrong.
+
+#### 2.7.2 The four argument-reference forms
+
+An argref is a tagged object; `arg` is the discriminator and the member
+set is fixed per tag. Note that `"local"` and `"hole"` carry the same
+member set and differ only by tag, so a consumer MUST discriminate on
+`arg` and never on shape.
+
+| `arg` | Members | Reads as |
+|---|---|---|
+| `"digest"` | `id`, `kind` | An **outside** reference: a content address that must resolve, carrying the `DeclKind` it names so a program digest and a policy digest cannot be confused. Erases to the model's `RawArg.digestRef`. |
+| `"local"` | `name` | An **inside** reference: the result of another node of this same declaration, by its program-local name. This is the only form that creates an edge. |
+| `"literal"` | `value` | An immediate natural. Erases to the model's `RawArg.literal`. |
+| `"hole"` | `name` | A reference to one of the declaration's own **holes**, by the hole's name. Erases to the model's `RawArg.hole`, which is what `Kernel.requiresOf` reads to compute a program's requirement set. Creates no edge: a hole is a parameter, not a prior node. |
+
+The inside/outside split is the whole discipline: local names are
+meaningful only within the one canonical value, and every reference that
+leaves the value is a digest that must resolve. That is what lets a
+declaration inherit acyclicity by admission rather than by a separate
+cycle check — an outside reference cannot point back into a program
+being built, because the program has no identity until its bytes exist.
+
+**The `"hole"` form is where this document was corrected by the
+emission.** The freeze listed three forms and no hole reference, but the
+model reads a program's requirements out of node arguments
+(`Kernel.requiresOf` over `RawArg.hole`), not out of a declaration-level
+list — so under three forms alone, `holey` and `holey-filled` would
+erase to identical node arguments and the valuation correspondence would
+have nothing to demonstrate. This document flagged the gap before the
+emission and the emission closed it by adding the form. The `holes`
+array declares a parameter; a `"hole"` argref *uses* it; filling
+rewrites the use to a `"literal"` and drops the declaration (§2.7.4).
+Recorded as R16, CLOSED.
+
+#### 2.7.3 Orientation, and why the edges are written down twice
+
+**Nodes are newest-first.** The array's head is the youngest
+application, its tail the oldest — the house ledger orientation, and
+exactly the orientation of `Kernel.ProgramNode` lists, where
+`ProgramAdmission` admits by *prepending* (`node :: nodes`) and requires
+every use to name a node already in the tail. Two consequences a
+validator can check directly:
+
+1. For a node at index *i*, every `"local"` argref names a node at some
+   index *j* with *j* > *i*. A local reference always points *later* in
+   the array, i.e. *older* in time.
+2. Node names are unique. (This is `ProgramAdmission`'s freshness half:
+   a name admits at most once.)
+
+Together those two are acyclicity. There is no separate cycle check and
+no need for one.
+
+**Holes ascend by `name`.** The `holes` array is sorted ascending on
+`name`, which makes it a canonical rendering of a set rather than an
+arrival order.
+
+**The edge rule (NORMATIVE).** The `edges` array MUST equal exactly the
+consumptions implied by the nodes' local argrefs — no edge without an
+argref, no argref without an edge. Written as a check:
+
+> Collect, over every node *n* and every member of `n.args` whose `arg`
+> is `"local"`, the pair (`n.name`, that argref's `name`). The `edges`
+> array, read as `from`/`to` pairs, MUST equal that collection.
+
+Only `"local"` argrefs count. A `"digest"` argref points outside the
+declaration, a `"literal"` points nowhere, and a `"hole"` names a
+parameter rather than a prior node — none of the three is a consumption
+and none contributes an edge.
+
+Why write down twice what is already there? Because a redundant encoding
+that a validator checks is a **consistency oracle**, and this is the one
+place the corpus can catch a whole class of builder bug for free. A
+builder that drops an edge, flattens a hole, or rewires a node produces
+a declaration whose `edges` and `args` disagree, and the disagreement is
+mechanical, local, and visible in a one-line diff — before any
+downstream consumer has to reason about graph shape. The DAG-builder
+slice's mutant arm is built on exactly this: a deliberately degenerate
+builder that drops edges must visibly diverge from the committed
+vectors.
+
+The redundancy also gives a consumer that only wants the graph — a
+renderer, a diff tool, a topological sort — a direct read, with no need
+to understand the argref grammar at all.
+
+#### 2.7.4 The committed vectors
+
+Exactly these four, in this order — `counts.program` is 4. Each entry
+names the vector and says what it is for; the byte quotes below it are
+the corpus's own.
+
+| # | `name` | Intent |
+|---|---|---|
+| 1 | `ground-two-node` | The bridge's planted two-node program, lifted into declaration form: an `emit` consuming a `declare`. The smallest declaration with an edge in it, and the one whose erasure is literally the `groundProgram` the unity bridge already proves admitted. It is the group's floor: a consumer that cannot replay this one has not implemented the grammar. |
+| 2 | `holey` | A one-hole program: the declaration side of a typed parameter, and the vector that shows what an *unfilled* requirement looks like in the bytes. |
+| 3 | `holey-filled` | Its filled twin — the same program with the hole's value supplied. The pair demonstrates the **valuation correspondence**: filling is a total, mechanical rewrite of the declaration, and it changes the bytes, therefore the identity. A filled program is a *different declaration*, not an annotated one. |
+| 4 | `distill-shape` | The ratified record's four-node sketch at ground identities: `resolve`, then `decide`, then `emit`, then `join` — which, newest-first, serializes as `join`, `emit`, `decide`, `resolve`. The first vector with a non-trivial graph, and the one that exercises four different generators' `args` shapes in one value. |
+
+The `holey` / `holey-filled` pair is two records, named exactly that:
+the freeze permitted the unity lane a different paired convention and it
+took the primary spelling.
+
+**The four records, byte for byte** *(from the corpus)*, on its last
+four lines:
+
+```json
+{"bytes":"{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1}},\"generator\":\"emit\",\"name\":2},{\"args\":{},\"generator\":\"declare\",\"name\":1}]}","declaration":{"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1}},"generator":"emit","name":2},{"args":{},"generator":"declare","name":1}]},"name":"ground-two-node","record":"program"}
+{"bytes":"{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[{\"name\":7,\"schema\":88}],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":2},{\"args\":{\"value\":{\"arg\":\"hole\",\"name\":7},\"writ\":{\"arg\":\"digest\",\"id\":4,\"kind\":\"policy\"}},\"generator\":\"declare\",\"name\":1}]}","declaration":{"edges":[{"from":2,"to":1}],"holes":[{"name":7,"schema":88}],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":2},{"args":{"value":{"arg":"hole","name":7},"writ":{"arg":"digest","id":4,"kind":"policy"}},"generator":"declare","name":1}]},"name":"holey","record":"program"}
+{"bytes":"{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":2},{\"args\":{\"value\":{\"arg\":\"literal\",\"value\":42},\"writ\":{\"arg\":\"digest\",\"id\":4,\"kind\":\"policy\"}},\"generator\":\"declare\",\"name\":1}]}","declaration":{"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":2},{"args":{"value":{"arg":"literal","value":42},"writ":{"arg":"digest","id":4,"kind":"policy"}},"generator":"declare","name":1}]},"name":"holey-filled","record":"program"}
+{"bytes":"{\"edges\":[{\"from\":4,\"to\":3},{\"from\":3,\"to\":2},{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[9],\"nodes\":[{\"args\":{\"cell\":{\"arg\":\"digest\",\"id\":6,\"kind\":\"resource\"},\"contribution\":{\"arg\":\"local\",\"name\":3}},\"generator\":\"join\",\"name\":4},{\"args\":{\"body\":{\"arg\":\"local\",\"name\":2},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":3},{\"args\":{\"outcome\":{\"arg\":\"local\",\"name\":1},\"register\":{\"arg\":\"digest\",\"id\":5,\"kind\":\"program\"}},\"generator\":\"decide\",\"name\":2},{\"args\":{\"target\":{\"arg\":\"digest\",\"id\":8,\"kind\":\"index\"}},\"generator\":\"resolve\",\"name\":1}]}","declaration":{"edges":[{"from":4,"to":3},{"from":3,"to":2},{"from":2,"to":1}],"holes":[],"lineage":[9],"nodes":[{"args":{"cell":{"arg":"digest","id":6,"kind":"resource"},"contribution":{"arg":"local","name":3}},"generator":"join","name":4},{"args":{"body":{"arg":"local","name":2},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":3},{"args":{"outcome":{"arg":"local","name":1},"register":{"arg":"digest","id":5,"kind":"program"}},"generator":"decide","name":2},{"args":{"target":{"arg":"digest","id":8,"kind":"index"}},"generator":"resolve","name":1}]},"name":"distill-shape","record":"program"}
+```
+
+Read `ground-two-node` against §2.7.1: two nodes, the younger `emit`
+(name 2) first, its `body` a `"local"` reference to the elder `declare`
+(name 1); one edge `2 -> 1` matching that one local argref; no holes, no
+lineage. The `declare` node carries `"args":{}` — the subset rule of
+§2.7.1 in its starkest form, and the reason a validator must check
+membership rather than equality.
+
+Its erasure is exact rather than approximate, which is what makes it the
+group's floor: the `emit` node's one local argref becomes `uses := [1]`
+and leaves `args := []`, the `declare` node erases to `args := []`,
+`uses := []`, and the pair is literally `Unity.Planted.groundProgram` —
+the two-node program the bridge already proves admitted.
+
+Read the `holey` / `holey-filled` pair side by side and the valuation
+correspondence is visible in the diff, which is the whole point of
+shipping them as a pair:
+
+| | `holey` | `holey-filled` |
+|---|---|---|
+| `holes` | `[{"name":7,"schema":88}]` | `[]` |
+| `declare`'s `value` argref | `{"arg":"hole","name":7}` | `{"arg":"literal","value":42}` |
+| everything else | identical | identical |
+
+Filling is a total, mechanical rewrite: the use becomes a literal, the
+declaration goes away, and **the bytes change, therefore the identity
+changes**. A filled program is a different declaration, not an annotated
+one. That answers R18 — a filled program does not keep declaring the
+hole it filled.
+
+`distill-shape` is the group's only non-trivial graph: four nodes,
+authored `resolve` then `decide` then `emit` then `join`, serialized
+newest-first as `join` (4), `emit` (3), `decide` (2), `resolve` (1). Its
+three edges appear in the nodes' own order — `4 -> 3`, `3 -> 2`,
+`2 -> 1` — which is the emission's answer to the edge-ordering half of
+R19. It is also the only vector with a non-empty `lineage` (`[9]`), a
+single element, so it pins the member's presence and not its
+orientation.
+
+#### 2.7.5 The consistency law, and the non-claims
+
+> **Consistency law (NORMATIVE).** Every vector's `declaration` erases
+> to a list of `Kernel.ProgramNode` satisfying
+> `Kernel.ProgramAdmission`.
+
+The erasure drops the declaration's extra structure onto the model's
+node shape: a node's `name` and `generator` carry across unchanged; its
+`"digest"`, `"literal"`, and `"hole"` argrefs become the model's
+`RawArg.digestRef`, `RawArg.literal`, and `RawArg.hole`, taken in the
+`type` record's **field declaration order**, not the serialized key
+order (§2.7.1); and its `"local"` argrefs become the node's `uses` list.
+Edges become uses; args flatten. The exact carrier is the unity lane's
+to define (§2.7.6); what is frozen is that it lands in
+`ProgramAdmission`.
+
+The `"hole"` arm is what makes the erasure carry a program's
+*requirements*: `Kernel.requiresOf` is a fold over exactly those
+`RawArg.hole` occurrences, so the requirement set of an erased
+declaration is the set of holes its nodes still use — which is why
+`holey` erases to a program that requires something and `holey-filled`
+erases to one that requires nothing.
+
+The law is short and the payoff is not. `ProgramAdmission` is what the
+bridge's transport theorems U3–U7 are stated over, so an admitted
+erasure carries a built program's well-foundedness to the fabric side
+**for free** — no new proof per vector, no new proof per program. This
+is the estate-of-safety move in its usual shape: prove the property once
+at the seam, and every artifact that erases through the seam inherits
+it.
+
+For a consumer, the law is also a validation target that costs almost
+nothing, because §2.7.3's two index conditions plus name uniqueness
+*are* `ProgramAdmission` read as a checklist. §11 checks 37–38 state it
+that way.
+
+**What the group does not claim, stated as plainly as §0's disclaimer.**
+
+- **No execution.** A `program` record is a declaration. Nothing in this
+  group is a trace, a run, a replay, or evidence that anything ever
+  executed. A consumer that reads a vector as an execution record has
+  misread it.
+- **No scheduler, no clock, no engine.** No member of the grammar
+  carries a time, a delay, a retry, a priority, or an ordering other
+  than the consumption DAG. The declaration says what depends on what,
+  and stops.
+- **No closures.** There is no argref form for a function value, and
+  there will not be one: a closure has no canonical bytes, so it has no
+  identity, so it cannot be content-addressed. Computation is referenced
+  by digest. Closure introspection stays refused.
+- **No liveness and no correspondence to any runtime.** That an
+  erasure is admitted says the declaration is a well-founded DAG in the
+  model. It says nothing about whether a program is useful, terminates,
+  or is executable by anything.
+
+#### 2.7.6 What the emission settled, and what is still open
+
+This section was drafted from the freeze, ahead of the emission. Where
+the freeze was silent, **the unity lane's implementation is normative
+and this document was corrected to match it** — the same rule §2 states
+for the corpus generally, and the same way R10 and R11 were settled when
+format 2 was minted. The group has since been emitted, so most of what
+was pending is now measured. Every point is carried in §12 as R15–R21.
+
+**Settled by the emission, and this document rewritten accordingly:**
+
+1. **`counts.program` is 4** — `ground-two-node`, `holey`,
+   `holey-filled`, `distill-shape`, in that order (R15).
+2. **A fourth argref form exists**, `{"arg":"hole","name":<nat>}`
+   (§2.7.2). This document had flagged its absence from the freeze as
+   the most likely correction a consumer would need, and it was
+   (R16).
+3. **`args` is a partial map**, not one entry per field (§2.7.1). This
+   is the correction the draft did *not* anticipate: a validator written
+   from the freeze alone would demand equality and reject all four
+   vectors (R21).
+4. **A filled program drops the hole it filled**: `holey-filled` carries
+   `"holes":[]`, and the pair is named `holey` / `holey-filled` (R18).
+5. **Edges follow the nodes' own order** — `distill-shape` emits
+   `4 -> 3`, `3 -> 2`, `2 -> 1` against nodes 4, 3, 2, 1 (half of R19).
+
+**Still open, and honestly so:**
+
+6. **How a `DeclKind`-typed field would be spelled.** No emitted vector
+   carries one: every node that has a `kind` field omits it under the
+   subset rule. So the question is untouched rather than answered, and
+   no argref form carries a bare kind (R17).
+7. **`lineage` orientation.** The only non-empty `lineage` in the corpus
+   is `[9]`, one element, which pins presence and not order (the rest
+   of R19).
+8. **Whether `edges` deduplicates.** No vector consumes the same local
+   through two arguments, so nothing measures it. Set semantics is the
+   reading §2.7.3 states (the rest of R19).
+9. **What an omitted `args` field means at the model seam** — supplied
+   by the erasure, or left to the runtime (R21).
+10. **Whether the program vector set is add-only** (R20). A ruling, not
+    a measurement.
+
+Never in doubt, because the freeze states them: the record's four keys,
+the four declaration members, newest-first nodes, ascending holes, the
+edge-equals-consumptions rule, the
+`bytes`-equals-canonicalize-`declaration` self-test, and the consistency
+law.
+
 ---
 
 ## 3. The canon vectors, byte-exact
@@ -609,7 +1072,9 @@ words; §3.1 says what that costs and where the cost is paid instead.
 The `bytes` column above is the literal byte content, unescaped. Inside
 the corpus that content is itself a JSON string and picks up a second
 layer of escaping. The ten complete records, byte for byte, as they
-stand on lines 108–117 of the corpus:
+stand on lines 108–117 of the corpus — its last ten lines at format 2's
+minting, and still its lines 108–117 now that the `program` group
+appends after them:
 
 ```json
 {"bytes":"{}","name":"empty-object","record":"canon","value":{}}
@@ -743,7 +1208,13 @@ neither a gate:
   corpus's own bytes, that every count quoted here is the corpus's own
   count, and that the ten lines `canon_vectors.py` derives from §3
   match the corpus's canon group exactly. It is how the numbers in this
-  document stay true to the file.
+  document stay true to the file. It also validates the `program` group
+  against §2.7 — the record shape, the declaration members, the argref
+  forms, the newest-first order, the edge rule, and the
+  `bytes`-equals-canonicalize-`declaration` self-test — and when the
+  group is not in the corpus it prints **WAITING** lines rather than
+  passes or failures, so its output is honest in both tree states
+  instead of green by silence.
 - `scratch/km-canon/recanonicalize_v1.py` reads the corpus read-only and
   prints one canonically-serialized record per group plus the header
   line implied by the group counts. It was written against the format-1
@@ -987,10 +1458,20 @@ meaning.
   MUST skip unrecognised record groups rather than fail — this is the
   one place leniency is correct, and it is what makes the add-only rule
   usable.
+  - **`program` is the worked instance.** The ninth group (§2.7) is
+    added exactly this way: appended after `canon`, existing records
+    untouched, `format` still `2`. It is the rule being exercised rather
+    than merely stated, and a consumer written against the eight-group
+    corpus must keep passing against the nine-group one without an edit.
   - Corollary: a consumer MUST NOT validate `counts` by requiring that
-    its keys be exactly the eight it knows. It must check that every key
+    its keys be exactly the ones it knows. It must check that every key
     it knows is present and agrees; an unknown counts key belongs to an
     unknown group and is skipped with it.
+  - Corollary: a `counts` key is a *member of an object*, so it lands in
+    sorted position, not at the end. `program` sorts sixth of nine
+    (§2.2). A consumer reading `counts` positionally is broken by any
+    add-only group, which is one more reason the rule above is stated
+    over keys.
   - Corollary: adding a type to the §2.4 closed list, or an encoding
     vector, is add-only. Removing one is a bump. A `doc` record is not
     added independently: it arrives with its type, because the extractor
@@ -1001,6 +1482,10 @@ meaning.
     set is a bump. A consumer that wants coverage beyond the ten adds
     **native** vectors in its own suite (§3.1), which bind nobody else
     and need no bump.
+  - Corollary, **unruled**: whether the `program` vector set is add-only
+    within the group is not settled by the freeze. The canon set is not,
+    for a stated reason that may or may not carry over. §12 R20 keeps it
+    open rather than letting silence become a rule.
 - **The wire reason is the stable identifier.** Consumers key on
   `reason`, never on a refusal's position in the file. Positions are
   stable within a format but are not the contract; only `rank` is
@@ -1023,8 +1508,8 @@ meaning.
 | Serialization | Bespoke: a fixed, non-alphabetical key order per record type | Estate canonical JSON (§1): members sorted, one rule for everything |
 | Numbers | "no floats", width unspecified | Unbounded non-negative integers, minimal decimal, arbitrary-precision parse required |
 | Round-trip | Not specified | The both-ways law (§1.4), normative on every consumer |
-| Groups | 6 + header, 85 lines | 8 + header, 117 lines |
-| New groups | — | `doc` (22), `canon` (10) |
+| Groups | 6 + header, 85 lines | 8 + header, 117 lines at minting; add-only since |
+| New groups | — | `doc` (22), `canon` (10) at the bump; `program` added after, add-only (§2.7) |
 | Emitter risk | An order-preserving writer per producer | None: the natural sorted-map rendering is correct |
 | Consumer parse | Must be order-preserving or lose a check | A hash-map parse is safe |
 
@@ -1035,8 +1520,9 @@ format-2 record by parsing it and re-serializing it canonically —
 which is what `scratch/km-canon/recanonicalize_v1.py` demonstrated
 against the format-1 corpus while it was the committed one. That corpus
 has since been replaced by the format-2 emission, so the script now
-reports the same fixed-point property over 117 records rather than 85.
-The property is the point; the count is whatever file it is pointed at.
+reports the same fixed-point property over the format-2 record set
+rather than over 85 records. The property is the point; the count is
+whatever file it is pointed at.
 
 ### 7.2 Why the v1 fixed key order was retired
 
@@ -1059,11 +1545,11 @@ mis-orders keys ships a wrong file.
 
 The rule in §6 is why this bump is safe to make in one commit. Every
 format-1 consumer refuses a `"format":2` file loudly, at the first line,
-naming both integers — it does not read 85 of 117 lines and quietly
-build a table missing the `doc` group. A consumer that had been written
-"leniently" would instead half-succeed, and the failure would surface as
-a wrong annotation or a missing description somewhere downstream, weeks
-later.
+naming both integers — it does not read the 85 lines it recognises and
+quietly build a table missing the `doc` group. A consumer that had been
+written "leniently" would instead half-succeed, and the failure would
+surface as a wrong annotation or a missing description somewhere
+downstream, weeks later.
 
 The practical consequence: **a consumer is upgraded and the corpus is
 regenerated in the same commit.** There is no window in which a
@@ -1081,8 +1567,10 @@ written from results, not from a plan.
 
 ### 8.1 What agreement means, and what was measured
 
-**Three parse-reemit identities, over the same 22632 bytes.** All three
-hold.
+**Three parse-reemit identities, over the same file** — 22632 bytes when
+this was measured, at format 2's minting and before the `program` group.
+All three hold. The identity is over whatever the committed corpus is,
+not over a pinned size.
 
 | Implementation | Where | The identity | Gate | Status |
 |---|---|---|---|---|
@@ -1153,7 +1641,10 @@ itemized rather than summarized.
 
 - [ ] Whole-corpus parse-reemit is byte-identical to the input file
 - [ ] Every `canon` record's `value`, canonicalized, equals its `bytes`
-- [ ] Both of the above run inside a gate this implementation's build
+- [ ] Every `program` record's `declaration`, canonicalized, equals its
+      `bytes` (§2.7) — or the group is skipped wholesale, per the
+      add-only rule
+- [ ] All of the above run inside a gate this implementation's build
       already executes
 
 **Grammar**
@@ -1163,9 +1654,30 @@ itemized rather than summarized.
 - [ ] Every `counts` key the consumer knows equals the records it read;
       unknown counts keys are skipped with their group
 - [ ] The line count is validated as `1 + sum(header.counts)`, **not**
-      against a literal 117 (§2.1, §11 check 12)
+      against any literal (§2.1, §11 check 12) — the `program` group is
+      the case that breaks a pinned 117
 - [ ] The full structural checklist of §11 passes, except where §11
       marks a check consumer-optional
+
+**Program group** *(required of a consumer that reads the group; a
+consumer that skips it ticks the skip row instead)*
+
+- [ ] The group is either fully validated or fully skipped — never
+      half-read
+- [ ] Each `declaration` has exactly the members `edges`, `holes`,
+      `lineage`, `nodes`, all present, arrays possibly empty
+- [ ] Every node's `generator` is one of the eight names, and every
+      `args` key is a field name of that constructor from the `type`
+      group — **a subset, not an equality** (§2.7.1)
+- [ ] Every argref's `arg` is `digest`, `local`, `literal`, or `hole`,
+      with that tag's exact member set; `"local"` and `"hole"` are
+      distinguished by tag, not by shape
+- [ ] Every `"hole"` argref names a hole the declaration declares
+- [ ] Node names are unique, and every `local` argref names a node
+      appearing **later** in the array (§2.7.3)
+- [ ] `edges` equals exactly the consumptions implied by the local
+      argrefs — no more and no fewer
+- [ ] `holes` ascends by `name`
 
 **Recommended, not required**
 
@@ -1183,7 +1695,8 @@ Measured, not projected. A gap is named as a gap.
 | Ten canon vectors, native | yes | yes | yes |
 | Native gap vectors beyond the ten | — | yes, four (§3.1) | — |
 | Generated tables from the corpus | n/a (it is the producer) | yes, regeneration checked | yes, regeneration checked |
-| Line count validated from `counts` | yes, per group against records present | snapshot pins the literal 117 beside the eight group counts | yes, `lines == 1 + sum(counts)`, and says why in its own comment |
+| Line count validated from `counts` | yes, per group against records present | snapshot pins the literal 117 beside the eight group counts — **the one place the `program` group will force an edit**, and the reason §11 check 12 states the rule as a sum | yes, `lines == 1 + sum(counts)`, and says why in its own comment |
+| `program` group (§2.7) | producer — the four vectors are emitted from the model | the builder slice's coherence wall replays them | read-only replay (parse, validate, re-emit) |
 | §11 check 19, act-decoder round-trip | yes | yes | **not implementable — no act decoder exists in Go** |
 | Brand enforcement lint | n/a | n/a | 2 of the 4 checks §9.2 asks; see below |
 
@@ -1225,6 +1738,13 @@ The whole obligation, with nothing hidden. A fourth consumer needs:
    §6.
 6. **The ten canon vectors, constructed natively**, per §3.2.
 7. **The both-ways law**, per §1.4, wired into its gate.
+
+**The `program` group adds nothing to that list.** Its records are
+ordinary canonical JSON, so items 1–4 already cover reading and
+re-emitting them, and §6's skip rule means a fourth consumer may ignore
+the group entirely and still conform. Understanding the declaration
+grammar of §2.7 is what a consumer needs to *use* programs, not what it
+needs to read the corpus faithfully — the same line §9 draws.
 
 Items 1–4 are the serializer, and the serializer is small: the reference
 implementation in `scratch/km-canon/canon_vectors.py` is under a hundred
@@ -1271,6 +1791,7 @@ standard trick is an intersection with an otherwise-unused property.
 | `canon` record | the conformance suite's fixture table, plus a `canonicalExamples` annotation | §3.2 strong check; §4.3 for why the byte-string annotation exists. |
 | encoding vector | `readonly bigint[]` fixture | |
 | admission vector | test table | |
+| `program` record | a `Declaration` type — a discriminated union per argref tag, `readonly` arrays for `edges`/`holes`/`lineage`/`nodes` — plus the vectors as a fixture table | §2.7. The union discriminates on `arg`, exactly as the act union discriminates on `_tag`. The builder's own output is compared to these bytes, so the fixture is a conformance oracle rather than a snapshot. |
 
 **Where TypeScript falls short.** A brand parameter bound to a *value*
 (the register of a token, the partition of a position) can be tracked
@@ -1322,6 +1843,7 @@ definition. That gives kind brands directly and at compile time.
 | `Position(partition)` | same pattern; `Compare(other) (int, error)` refuses cross-partition | **Run-time only.** |
 | `type` record (`inductive`) | a sealed interface with an unexported marker method, or a tagged struct | Go has no sum types. |
 | `type` record (`structure`) | a struct | |
+| `program` record | structs for `Declaration`, `Node`, `Edge`, `Hole`; an argref as a tagged struct or a sealed interface | §2.7. Read-only in the Go lane: parse, validate against §11's program checks, re-emit byte-identically. Leak 4 of this section applies to the argref union as it does to the act union. |
 
 Go's `encoding/json` deserves a specific warning: `json.Unmarshal` into
 `any` yields `float64` for every number, which fails `big-integer` on
@@ -1431,6 +1953,7 @@ rendering is mechanical:
 | encoding | A vector/encoding table. |
 | admission | A candidate/verdict/reason table — the door's behaviour as a specification a reader can check by eye. |
 | canon | A serialization appendix: the ten values and their bytes, which is also the copy-paste source for a new consumer's test table. |
+| program | One section per vector: the vector's intent, its node list read youngest-to-oldest, and its edges as a consumption list. The `bytes` go in a code block beside it. A renderer MUST carry the §2.7.5 non-claims verbatim beside the group — a reader who meets a program declaration without them will read it as a runnable thing. |
 
 Two rules keep the rendering honest. First, the law, repair, and
 docstring texts are reproduced **verbatim**; a renderer that paraphrases
@@ -1592,10 +2115,11 @@ decoder. Everything else is required of every consumer.
     their group.
 12. **The line count agrees with the header:**
     `lines == 1 + sum(header.counts)`. A cheap cross-check that a
-    partial read fails immediately. **State it as the sum, not as the
-    literal 117.** Today's corpus has 117 lines, but the add-only rule
-    of §6 lets a ninth group join without a format bump, and a pinned
-    integer breaks on that where the sum generalizes. A consumer that
+    partial read fails immediately. **State it as the sum, not as a
+    literal.** The corpus had 117 lines at format 2's minting, but the
+    add-only rule of §6 lets a further group join without a format
+    bump — and one has: `program`, §2.7. A pinned integer breaks on that
+    where the sum generalizes. A consumer that
     met an unrecognised group whose count the header omits should skip
     this check rather than fail it — the counts then no longer account
     for every line, and the check would be measuring the consumer's
@@ -1658,6 +2182,44 @@ decoder. Everything else is required of every consumer.
     strong check of §3.2. A consumer that only performs check 26 has not
     tested its member sort.
 
+### The program group
+
+*Numbered from 34 so that checks 1–33 keep the numbers other documents,
+comments, and consumers already cite; the section sits here because it
+reads in group order. A consumer that skips the group under §6's
+add-only rule skips 34–39 with it — but it may not read the group and
+run only some of them.*
+
+34. **Every `program` record has exactly the keys `bytes`,
+    `declaration`, `name`, `record`**, `name` values are unique within
+    the group, and the group is the last group in the file.
+35. **Every `declaration` has exactly the members `edges`, `holes`,
+    `lineage`, `nodes`** — all four present, each an array, empty arrays
+    written out rather than omitted (§2.7.1). No extra member.
+36. **Every `declaration`, canonicalized, equals its `bytes`.** The
+    program-level twin of check 26, and the half of the both-ways law
+    that reaches the nested value a consumer will actually be asked to
+    address.
+37. **The graph is well founded**: node names are unique, and every
+    `"local"` argref names a node at a **strictly later index** than the
+    node carrying it, nodes being newest-first. Those two conditions are
+    `Kernel.ProgramAdmission` read as a checklist, which is how a
+    consumer discharges the consistency law of §2.7.5 without a proof
+    assistant.
+38. **`edges` equals exactly the consumptions implied by the local
+    argrefs.** Every local argref contributes its (`from`, `to`) pair,
+    and no pair appears that no argref implies. This is §2.7.3's
+    consistency oracle and the cheapest builder-bug detector in the
+    corpus.
+39. **The parts are well formed**: every `generator` is one of the eight
+    names; every key of a node's `args` is a field name of that
+    constructor as the `type` group gives them — **a subset check, not
+    an equality check** (§2.7.1); every argref's `arg` is `digest`,
+    `local`, `literal`, or `hole`, carrying that tag's exact member set;
+    every `"digest"` argref's `kind` is one of the twelve `DeclKind`
+    names; every `"hole"` argref names a hole the declaration declares;
+    `holes` ascends by `name` with no duplicate.
+
 ### Cross-record invariants
 
 28. **Admission row *i* and refusal row *i* carry the same reason**, for
@@ -1697,6 +2259,12 @@ decoder. Everything else is required of every consumer.
     reflowed (fails 31), and a `doc` record with its trailing space
     stripped (fails 5, and would pass a consumer that trims on read —
     which is the point of committing it).
+    The `program` group adds three more: a **dropped edge** (fails 38
+    and nothing else, which is the whole argument for writing the edges
+    down twice), a **reversed edge** with `from` and `to` swapped (fails
+    38, and would otherwise be a plausible-looking DAG), and a **node
+    reordered oldest-first** (fails 37). Each is a single mutation and
+    each is the shape a real builder bug takes.
 
 ---
 
@@ -1715,6 +2283,14 @@ resolved it, and, where the resolution is a measurement, what measured
 it. Where the emission disagreed with this document's draft, the
 emission won and the draft is what changed.
 
+**R15 through R21 are the program group's items** (§2.7.6). They were
+drafted before that group's emission and most are closed by it, in
+exactly the way R10 and R11 were closed when format 2 was minted: the
+document named a detail the freeze left unpinned, the emitter chose, and
+the document was corrected. R16 and R21 are the two that changed this
+document's rules rather than just filling in a blank, and R21 is the one
+the draft did not see coming. R17, R19, R20 stay open, and say why.
+
 | # | Item | Resolution taken here | Status |
 |---|---|---|---|
 | R1 | Format 1 demanded a fixed non-alphabetical key order, which fought Lean's sorted `Json` map and forced a bespoke writer. | **Retired by format 2.** Canonical form sorts members, which is what the sorted map already does. The highest-risk emitter detail in format 1 no longer exists. | CLOSED |
@@ -1731,3 +2307,10 @@ emission won and the draft is what changed.
 | R12 | The freeze says the `doc` text is "raw"; Lean's `findDocString?` applies its own edge-whitespace handling. | **Measured:** `findDocString?` returns the text with leading whitespace trimmed and **one trailing space preserved**. The corpus carries that trailing space on all twenty-two records and it is part of the bytes the both-ways law binds. The TypeScript **prose** renderer trims trailing spaces at line ends and declares it in its banner — a deviation of the prose projection only; the generated schemas carry the untrimmed text. | **CLOSED** — measured from the corpus and the renderer's banner |
 | R13 | The freeze does not say whether `counts.doc` is fixed or derived. | **Stricter than the freeze:** the extractor **refuses** a closed-list type with no docstring rather than skipping it, so `counts.doc` is structurally equal to `counts.type` — 22 today, and one-per-type after any addition. Validation check 24 checks equality, not subsequence. | **CLOSED** — refuse-not-skip is the rule |
 | R14 | The freeze does not say whether the canon set is add-only. | **Not add-only.** Changing the ten is a format bump, because the ten *are* the cross-implementation reference. §6. A consumer wanting more coverage adds **native** gap vectors instead, which bind nobody else (§3.1). | OPEN — a ruling, not a measurement |
+| **R15** | `counts.program` — how many vectors the group carries. | **4**, measured from the corpus: `ground-two-node`, `holey`, `holey-filled`, `distill-shape`, in that order. Quoted as a count in §2.1 and never as a line total, per the counts-derived rule. | **CLOSED** — measured from the corpus |
+| **R16** | **The freeze listed three argref forms and none referenced a hole**, yet the model reads a program's requirement set out of node arguments (`Kernel.requiresOf` over `RawArg.hole`), not out of a declaration-level list. Under three forms alone, `holey` and `holey-filled` would erase to the same node arguments and the valuation correspondence would have nothing to demonstrate. | **A fourth form exists:** `{"arg":"hole","name":<nat>}`, §2.7.2. It carries the same member set as `"local"` and differs only by tag, so a consumer discriminates on `arg` and never on shape. It creates no edge. This document flagged the gap before the emission and the emission closed it by adding the form. | **CLOSED** — measured from the corpus |
+| **R17** | No argref form carries a bare `DeclKind`, but `Act.declare.kind` and `Act.resolve.kind` are `DeclKind`-typed fields. | **Untouched, not answered.** Every emitted node that has a `kind` field omits it under the subset rule of §2.7.1, so no vector exercises the question and no form was added. A later vector that needs one will have to settle it. | OPEN — nothing measures it |
+| **R18** | Whether a filled program still declares the hole it filled, and how the `holey` / `holey-filled` pair is named. | **`"holes":[]`.** Filling rewrites the `"hole"` argref to a `"literal"` and drops the declaration, so the bytes and therefore the identity change: a filled program is a different declaration, not an annotated one. The pair is named `holey` and `holey-filled` — the freeze's primary spelling. | **CLOSED** — measured from the corpus |
+| **R19** | `lineage` orientation, the order of the `edges` array, and whether `edges` deduplicates a doubled consumption. | **Edge order closed:** `distill-shape` emits `4 -> 3`, `3 -> 2`, `2 -> 1` against nodes 4, 3, 2, 1, so edges follow the nodes' own order. **Lineage orientation and deduplication stay open:** the only non-empty `lineage` is the single element `[9]`, and no vector consumes the same local through two arguments. §2.7.3 states set semantics as the reading, not as a measurement. | PARTLY CLOSED — edge order measured; two halves unmeasured |
+| **R20** | The freeze does not say whether the `program` vector set is add-only within the group. | **Unruled here.** The canon set is not add-only for a stated reason — the ten *are* the cross-implementation reference — and it is genuinely unclear whether program vectors carry that weight or are ordinary group members under §6. Left open rather than settled by analogy. | OPEN — a ruling, not a measurement |
+| **R21** | **The freeze's record shape implies one `args` entry per constructor field; the emission carries fewer.** `ground-two-node`'s `declare` node is `"args":{}`; `distill-shape`'s `decide` omits `token` and its `resolve` omits `kind`. | **Subset, not equality.** Every `args` key MUST be a field name of that node's generator; not every field name need appear. §2.7.1 states the rule and §11 check 39 checks membership. This is the correction the draft did not anticipate: a validator written from the freeze alone would demand equality and reject all four vectors. What an omitted field *means* at the model seam — supplied by the erasure, or left to the runtime — is not settled by the bytes. | **CLOSED on the rule** — measured from the corpus; the semantics of an omission stays OPEN |

@@ -10,5 +10,6 @@ await Bun.write(resolve(repository, PROSE_PATH), rendered)
 console.log(
   `KERNEL PROSE: wrote ${PROSE_PATH} from ${CORPUS_PATH}` +
     ` (${corpus.refusals.length} refusals, ${corpus.types.length} types,` +
-    ` ${corpus.docs.length} docstrings, ${corpus.canons.length} canon vectors)`,
+    ` ${corpus.docs.length} docstrings, ${corpus.canons.length} canon vectors,` +
+    ` ${corpus.programs.length} program vectors)`,
 )

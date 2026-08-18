@@ -2,16 +2,20 @@
 // `kernel-conformance.ndjson`, format 2, the file through which the Lean
 // kernel model hands its closed tables to everything that is not Lean.
 //
-// The package carries four things and nothing else:
+// The package carries five things and nothing else:
 //
 //   - estate canonical JSON (canonjson.go) — a strict parser and an emitter
 //     for the one serialization the corpus is written in;
-//   - the format-2 corpus grammar (corpus.go, validate.go) — a validator that
-//     refuses a malformed artifact rather than reading it best-effort, and a
-//     re-emitter that proves the reading was lossless;
+//   - the format-2 corpus grammar (corpus.go, validate.go, program.go) — a
+//     validator that refuses a malformed artifact rather than reading it
+//     best-effort, and a re-emitter that proves the reading was lossless;
 //   - the ten canon vectors (canonvectors.go) — constructed natively in Go
 //     from the schema, so that the member sort is tested by a value this
 //     package built rather than by one it read back already sorted;
+//   - the program vectors (programvectors.go) — the ninth group's committed
+//     declarations, likewise constructed natively, so the DAG's edge
+//     derivation and newest-first ordering are tested by a declaration this
+//     package assembled;
 //   - the generated tables (tables_generated.go) — kind, stage, and refusal
 //     constants with their taught texts, the per-kind brand types, the
 //     docstrings, and the model's conformance vectors, all emitted from the
@@ -20,10 +24,19 @@
 // # The both-ways law
 //
 // Parsing every line of the corpus and re-emitting it reproduces the file
-// byte for byte, and canonicalizing each canon record's value yields exactly
-// its bytes field. CheckBothWays runs both halves, and the package's own test
-// suite runs CheckBothWays over the committed artifact, so the law is in the
-// gate this module's build already executes rather than in a comment.
+// byte for byte; canonicalizing each canon record's value yields exactly its
+// bytes field; and canonicalizing each program record's declaration yields
+// exactly its bytes field. CheckBothWays runs every half, and the package's
+// own test suite runs CheckBothWays over the committed artifact, so the law
+// is in the gate this module's build already executes rather than in a
+// comment.
+//
+// # What a program record is not
+//
+// A program record is a DECLARATION and its identity. Nothing in this package
+// runs one, replays one, or reads an execution out of one; a declaration has
+// no clock, no schedule, and no closure, and the argument tags are a closed
+// set of four with no room for any of them.
 //
 // # What the vectors are, and are not
 //

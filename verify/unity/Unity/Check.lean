@@ -36,7 +36,13 @@ What is checked, in the order a failure is most usefully reported:
   * the admission rows against `Kernel.Planted`, so no verdict can be
     reported for a candidate that does not exist;
   * every canon vector's `bytes` against the canonicalization of its
-    own `value`, which is the corpus testing the writer that wrote it.
+    own `value`, which is the corpus testing the writer that wrote it;
+  * every program vector — that it reads back as a declaration, that
+    its edge list is exactly the consumptions its arguments imply,
+    that its `bytes` are that declaration's canonical form, that its
+    erasure is a program the kernel admits, and that every generator
+    it applies and every field name it binds is one the environment
+    declares on `Kernel.Act`.
 
 A checker that cannot fail proves nothing: `must-not-compile/` carries
 a planted wrong row that this module must refuse, beside its correct
@@ -230,6 +236,56 @@ def checkCanonRows (rows : List Row) : MetaM Unit := do
         unless canonical == bytes do
           throwError "conformance: canon vector {name} carries bytes that are not its value's canonical form\n  bytes:     {bytes}\n  canonical: {canonical}"
 
+/-- Every program vector: the committed names in the committed order,
+    the graph the arguments imply, the canonical bytes, the kernel's
+    admission verdict on the erasure, and the generator and field
+    spellings against the environment's own account of `Kernel.Act`.
+    The spelling tables are checked before the rows, so a renamed
+    constructor is reported as a renamed constructor rather than as a
+    vector that suddenly names nothing. -/
+def checkProgramRows (rows : List Row) : MetaM Unit := do
+  let names <- rows.mapM (fieldString · "name")
+  unless names == Program.vectorNames do
+    throwError "conformance: the program vectors do not name the committed set\n  corpus:    {names}\n  committed: {Program.vectorNames}"
+  let tagNames <- Reflect.ctorNames "GenTag"
+  unless tagNames == Program.generatorNames do
+    throwError "conformance: the generator spellings disagree with the environment\n  corpus:      {Program.generatorNames}\n  environment: {tagNames}"
+  let actNames <- Reflect.ctorNames "Act"
+  unless actNames == Program.generatorNames do
+    throwError "conformance: the generator spellings do not name the act constructors\n  corpus:      {Program.generatorNames}\n  environment: {actNames}"
+  let shape <- Reflect.shapeOf "Act"
+  let declared := shape.ctors.map fun constructor =>
+    (constructor.name, constructor.fields.map (·.name))
+  for row in rows do
+    let name <- fieldString row "name"
+    match Canon.member row.value "declaration" with
+    | none => throwError "conformance: program vector {name} binds no declaration"
+    | some value =>
+        match Program.readDeclaration value with
+        | none =>
+            throwError "conformance: program vector {name} is not a program declaration: {row.line}"
+        | some declaration =>
+            let implied := Program.consumptionEdges declaration
+            unless declaration.edges == implied do
+              throwError "conformance: program vector {name} carries edges that are not the consumptions its arguments imply\n  corpus:  {Canon.render (.arr (declaration.edges.map Program.edgeValue))}\n  implied: {Canon.render (.arr (implied.map Program.edgeValue))}"
+            let bytes <- fieldString row "bytes"
+            let canonical := Canon.render value
+            unless canonical == bytes do
+              throwError "conformance: program vector {name} carries bytes that are not its declaration's canonical form\n  bytes:     {bytes}\n  canonical: {canonical}"
+            unless Program.admissible (Program.erase declaration) do
+              throwError "conformance: program vector {name} erases to a program node admission refuses"
+            unless Program.holesAscend declaration.holes do
+              throwError "conformance: program vector {name} declares holes that do not ascend by name"
+            for node in declaration.nodes do
+              let spelling := Program.generatorName node.generator
+              match declared.find? (fun entry => entry.1 == spelling) with
+              | none =>
+                  throwError "conformance: program vector {name} applies {spelling}, which the environment does not declare"
+              | some entry =>
+                  for argument in node.args do
+                    unless entry.2.contains argument.name do
+                      throwError "conformance: program vector {name} binds the field {argument.name} on {spelling}, which the environment does not declare"
+
 /-- The whole committed corpus, checked against the environment. -/
 def checkCorpus (path : String) : MetaM Unit := do
   let rows <- readRows path
@@ -253,6 +309,9 @@ def checkCorpus (path : String) : MetaM Unit := do
   let canonRows := rowsTagged "canon" rows
   checkCanonRows canonRows
   logInfo s!"conformance: {canonRows.length} canon vectors re-canonicalize to their own bytes"
+  let programRows := rowsTagged "program" rows
+  checkProgramRows programRows
+  logInfo s!"conformance: {programRows.length} program vectors state their own graph, erase to admitted programs, and re-canonicalize to their own bytes"
 
 /-! ## The commands -/
 

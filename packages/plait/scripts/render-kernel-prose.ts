@@ -31,11 +31,13 @@
  * @module
  */
 import type {
+  KernelArgRef,
   KernelCanonRecord,
   KernelConstructorRecord,
+  KernelProgramRecord,
   KernelTypeRecord,
 } from "../src/KernelCorpusSchemas.js"
-import type { KernelCorpus } from "./kernel-corpus.js"
+import { generatorFields, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The command a reader runs to reproduce the page. */
 export const RENDER_PROSE_COMMAND = "bun run generate:kernel-prose"
@@ -109,6 +111,70 @@ const typeSection = (
 
 const canonRow = (canon: KernelCanonRecord): string =>
   `| ${canon.name} | ${code(canon.bytes)} |`
+
+/** One argument reference, in the four-form grammar's own words. */
+const argument = (reference: KernelArgRef): string => {
+  switch (reference.arg) {
+    case "digest":
+      return `digest ${reference.kind} ${reference.id}`
+    case "hole":
+      return `hole ${reference.name}`
+    case "local":
+      return `local ${reference.name}`
+    case "literal":
+      return `literal ${reference.value}`
+  }
+}
+
+/**
+ * One program vector: what its nodes wire, and the bytes that are its
+ * identity. Nodes are listed in the order the record carries them, which is
+ * newest first, because that order is the model's admission order and
+ * re-sorting it here would misreport what the value says.
+ */
+const programSection = (
+  vector: KernelProgramRecord,
+  fields: ReadonlyMap<string, ReadonlyArray<string>>,
+  out: Array<string>,
+): void => {
+  out.push(`### ${vector.name}`)
+  out.push("")
+  const declaration = vector.declaration
+  out.push(
+    `${declaration.nodes.length} nodes, ${declaration.edges.length} consumption` +
+      `${declaration.edges.length === 1 ? "" : "s"}, ${declaration.holes.length} declared` +
+      ` parameter${declaration.holes.length === 1 ? "" : "s"}, lineage` +
+      `${
+        declaration.lineage.length === 0
+          ? " empty"
+          : ` ${declaration.lineage.map((entry) => entry.toString()).join(", ")}`
+      }.`,
+  )
+  out.push("")
+  for (const node of declaration.nodes) {
+    const order = fields.get(node.generator) ?? Object.keys(node.args).sort()
+    const wired = order
+      .filter((field) => node.args[field] !== undefined)
+      .map((field) => `${field} = ${argument(node.args[field]!)}`)
+      .join(", ")
+    out.push(`- \`${node.name}\` \`${node.generator}\`${wired === "" ? "" : ` — ${wired}`}`)
+  }
+  out.push("")
+  if (declaration.holes.length > 0) {
+    out.push("Declared parameters, ascending by name:")
+    out.push("")
+    for (const hole of declaration.holes) {
+      out.push(`- \`${hole.name}\` — schema ${hole.schema}`)
+    }
+    out.push("")
+  }
+  out.push("Canonical bytes, which are this declaration's identity:")
+  out.push("")
+  out.push("```json")
+  out.push(vector.bytes)
+  out.push("```")
+  out.push("")
+}
 
 /**
  * Renders the page. Every heading, row, and paragraph below is corpus data or
@@ -270,6 +336,55 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
       " big-integer vector exists to catch.",
   )
   out.push("")
+
+  if (corpus.programs.length > 0) {
+    out.push("## Program declarations")
+    out.push("")
+    out.push(
+      "A program is a DAG of named generator applications, written as one canonical value" +
+        " whose bytes are its identity. The value has four members. `nodes` carries the" +
+        " applications, **newest first** - the same orientation the model's admission relation" +
+        " reads, so a node may consume only names standing after it. `edges` makes each" +
+        " consumption explicit, from the consuming node to the consumed one. `holes` carries" +
+        " the declared parameters, ascending by name. `lineage` carries the declarations this" +
+        " one descends from.",
+    )
+    out.push("")
+    out.push(
+      "A node's arguments are keyed by the model's own field names, never by position, and" +
+        " the map is partial: a slot a node leaves unwired is absent rather than filled, and" +
+        " a field the declaration form carries no reference for - a declaration kind, a token," +
+        " a lane partition, an anchor fact, a trigger predicate - is absent always.",
+    )
+    out.push("")
+    out.push(
+      "An argument is one of four references, and there is no fifth. A `digest` reaches" +
+        " outside the declaration and carries the kind it is branded to. A `local` names a" +
+        " prior node, which is a consumption and puts an edge in the list. A `hole` names one" +
+        " of this declaration's own parameters, which is a requirement and puts no edge" +
+        " anywhere. A `literal` carries an identity label. There is deliberately no closure" +
+        " form: a function value has no canonical bytes, so nothing can reference it.",
+    )
+    out.push("")
+    out.push(
+      "**A declaration is not a run.** These vectors record what a program *is*, never what" +
+        " happened when one was executed. Nothing on this page is an execution record, an" +
+        " ordering, or a claim that any of it has run.",
+    )
+    out.push("")
+    out.push("| Vector | Nodes | Edges | Holes | Lineage |")
+    out.push("| --- | --- | --- | --- | --- |")
+    for (const vector of corpus.programs) {
+      out.push(
+        `| ${vector.name} | ${vector.declaration.nodes.length} |` +
+          ` ${vector.declaration.edges.length} | ${vector.declaration.holes.length} |` +
+          ` ${vector.declaration.lineage.length} |`,
+      )
+    }
+    out.push("")
+    const fields = generatorFields(corpus.types)
+    for (const vector of corpus.programs) programSection(vector, fields, out)
+  }
 
   return `${out.join("\n")}`
 }

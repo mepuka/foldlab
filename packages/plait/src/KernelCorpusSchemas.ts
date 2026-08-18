@@ -46,6 +46,7 @@ export const KERNEL_RECORD_GROUPS = [
   "admission",
   "doc",
   "canon",
+  "program",
 ] as const
 
 /** One record group of the interchange, after the header. */
@@ -285,6 +286,124 @@ export const KernelCanonRecord = Schema.Struct({
 })
 
 /**
+ * One argument of a program node, as a tagged reference.
+ *
+ * Four forms and no fifth. A `digest` reaches outside the declaration and
+ * carries the kind it is branded to, so the reference cannot be read without
+ * its sort. A `local` names a prior node of this declaration, which makes the
+ * reference a consumption and puts an edge in the edge list. A `hole` names
+ * one of the declaration's own declared parameters, which makes the reference
+ * a requirement and puts no edge anywhere. A `literal` carries an identity
+ * label directly.
+ *
+ * There is deliberately no closure form. A computation is referenced by
+ * digest; a function value has no canonical bytes and therefore no identity,
+ * so it cannot be an argument here.
+ */
+export const KernelArgRef = Schema.Union([
+  Schema.Struct({
+    arg: Schema.Literal("digest"),
+    id: KernelNat,
+    kind: Schema.String,
+  }),
+  Schema.Struct({
+    arg: Schema.Literal("hole"),
+    name: KernelNat,
+  }),
+  Schema.Struct({
+    arg: Schema.Literal("local"),
+    name: KernelNat,
+  }),
+  Schema.Struct({
+    arg: Schema.Literal("literal"),
+    value: KernelNat,
+  }),
+]).annotate({
+  identifier: "KernelArgRef",
+  title: "Program argument reference",
+  description:
+    "A digest reference outside the declaration, a local name inside it, a declared parameter," +
+    " or a literal identity label. The inside/outside discipline is the whole of it: a local" +
+    " and a hole are meaningful only within the one canonical value.",
+})
+
+/** One declared parameter of a program: its local name and its schema. */
+export const KernelProgramHole = Schema.Struct({
+  name: KernelNat,
+  schema: KernelNat,
+}).annotate({
+  identifier: "KernelProgramHole",
+  title: "Program hole",
+  description:
+    "A declared parameter, not a wildcard: a local name and the identity of the schema its" +
+    " filling must satisfy. Holes ascend by name, so the list is a set with a canonical order.",
+})
+
+/** One consumption edge of a program: the younger node and the older one it reads. */
+export const KernelProgramEdge = Schema.Struct({
+  from: KernelNat,
+  to: KernelNat,
+}).annotate({
+  identifier: "KernelProgramEdge",
+  title: "Program edge",
+  description:
+    "One consumption, made explicit: `from` is the consuming node, `to` is the consumed one." +
+    " The edge list is redundant with the local argument references by construction, which is" +
+    " what makes a producer that drops one detectable.",
+})
+
+/** One node of a program declaration: a local name, a generator, and its arguments. */
+export const KernelProgramNode = Schema.Struct({
+  args: Schema.Record(Schema.String, KernelArgRef),
+  generator: Schema.String,
+  name: KernelNat,
+}).annotate({
+  identifier: "KernelProgramNode",
+  title: "Program node",
+  description:
+    "One generator application: the generator's name, the local name the node answers to, and" +
+    " its wired arguments, keyed by the model's own field names rather than by position. The" +
+    " map is partial - a field the declaration form carries no reference for, or one the node" +
+    " leaves unwired, is absent rather than filled with a placeholder.",
+})
+
+/**
+ * A program declaration: the canonical value whose bytes are its identity.
+ *
+ * Nodes are newest first, which is the house ledger orientation and the
+ * orientation the model's admission relation reads: a node may consume only
+ * names that appear after it, because those are the ones already admitted.
+ */
+export const KernelProgramDeclaration = Schema.Struct({
+  edges: Schema.Array(KernelProgramEdge),
+  holes: Schema.Array(KernelProgramHole),
+  lineage: Schema.Array(KernelNat),
+  nodes: Schema.Array(KernelProgramNode),
+}).annotate({
+  identifier: "KernelProgramDeclaration",
+  title: "Program declaration",
+  description:
+    "The DAG of generator applications a program declares, newest node first, with its" +
+    " consumption edges, its declared parameters, and its lineage. This value's canonical" +
+    " bytes are the program's identity; nothing here describes a run.",
+})
+
+/** One program vector: a declaration and the bytes it must serialize to. */
+export const KernelProgramRecord = Schema.Struct({
+  bytes: Schema.String,
+  declaration: KernelProgramDeclaration,
+  name: Schema.String,
+  record: Schema.Literal("program"),
+}).annotate({
+  identifier: "KernelProgramRecord",
+  title: "Program vector",
+  description:
+    "A named program declaration paired with its canonical serialization. As with a canonical" +
+    " form vector, the pairing self-tests every consumer: canonicalizing the declaration must" +
+    " reproduce the bytes exactly.",
+})
+
+/**
  * Any record of the interchange. Members are tried in file-group order, which
  * is also the order a reader meets them.
  */
@@ -299,6 +418,7 @@ export const KernelCorpusRecord = Schema.Union([
   KernelAdmissionAdmittedRecord,
   KernelDocRecord,
   KernelCanonRecord,
+  KernelProgramRecord,
 ]).annotate({
   identifier: "KernelCorpusRecord",
   title: "Corpus record",
@@ -329,6 +449,18 @@ export type KernelAdmissionRecord = typeof KernelAdmissionRecord.Type
 export type KernelDocRecord = typeof KernelDocRecord.Type
 /** One canonical-form vector, decoded. */
 export type KernelCanonRecord = typeof KernelCanonRecord.Type
+/** One program argument reference, decoded. */
+export type KernelArgRef = typeof KernelArgRef.Type
+/** One declared program parameter, decoded. */
+export type KernelProgramHole = typeof KernelProgramHole.Type
+/** One program consumption edge, decoded. */
+export type KernelProgramEdge = typeof KernelProgramEdge.Type
+/** One program node, decoded. */
+export type KernelProgramNode = typeof KernelProgramNode.Type
+/** One program declaration, decoded. */
+export type KernelProgramDeclaration = typeof KernelProgramDeclaration.Type
+/** One program vector line, decoded. */
+export type KernelProgramRecord = typeof KernelProgramRecord.Type
 /** Any line of the interchange, decoded. */
 export type KernelCorpusRecord = typeof KernelCorpusRecord.Type
 
@@ -342,4 +474,5 @@ export const KERNEL_RECORD_SCHEMA = {
   admission: KernelAdmissionRecord,
   doc: KernelDocRecord,
   canon: KernelCanonRecord,
+  program: KernelProgramRecord,
 } as const satisfies { readonly [Group in KernelRecordGroup]: Schema.Top }

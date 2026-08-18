@@ -17,7 +17,8 @@ fi
 for required in lean-toolchain lakefile.toml lake-manifest.json Unity.lean \
     ControlMain.lean EmitMain.lean ConformanceCheck.lean \
     Unity/Definitions.lean Unity/Laws.lean Unity/Proofs.lean \
-    Unity/Canon.lean Unity/Shape.lean Unity/Reflect.lean Unity/Emit.lean \
+    Unity/Canon.lean Unity/Program.lean Unity/Shape.lean \
+    Unity/Reflect.lean Unity/Emit.lean \
     Unity/Check.lean Unity/Dsl.lean citations.txt; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
@@ -28,8 +29,8 @@ done
 # Every module of the package is in the library's globs: a module that
 # builds only because something else happens to import it is a module
 # the gate does not really cover.
-for module in Unity Unity.Canon Unity.Shape Unity.Reflect Unity.Emit \
-    Unity.Check Unity.Dsl; do
+for module in Unity Unity.Canon Unity.Program Unity.Shape Unity.Reflect \
+    Unity.Emit Unity.Check Unity.Dsl; do
   if ! grep -q "\"$module\"," lakefile.toml; then
     echo "GATE: FAIL — $module is not in the library globs" >&2
     exit 1
@@ -113,6 +114,10 @@ expected_laws=(
   UInterpInflationaryAtCell UEvidenceStrictlyGrows
   UWellFencedByConstruction UGreatestReadIsArbitratedRead
   UGreatestReadsAgree UGreatestTieDiverges
+  UProgramEncodingRoundTrips UProgramEdgesAreErasedUses
+  UProgramAdmissibleSound UProgramVectorsAdmitted
+  UProgramVectorsEdgeConsistent UGroundLiftErasesToPlanted
+  UHoleyFillCorrespondence
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
@@ -240,6 +245,13 @@ roster=(
   dsl_holey_emit dsl_lawful_declare dsl_spells_every_generator
   dsl_spells_every_argument dsl_spells_every_predicate
   dsl_spells_every_kind
+  kind_name_round_trip generator_name_round_trip arg_round_trip
+  named_args_round_trip args_round_trip node_round_trip
+  nodes_round_trip edge_round_trip edges_round_trip hole_round_trip
+  holes_round_trip lineage_round_trip program_encoding_round_trips
+  program_edges_are_erased_uses admissible_sound
+  program_vectors_admitted program_vectors_edge_consistent
+  ground_lift_erases_to_planted holey_fill_correspondence
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
@@ -360,9 +372,9 @@ fi
 # The frozen interchange: the header at its canonical byte form (so the
 # key order is pinned along with the values), the record counts, and
 # printable ASCII on every line, which also refuses a carriage return.
-expected_header='{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
+expected_header='{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 117 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 121 ]] ||
     [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
     [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
@@ -371,6 +383,7 @@ if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
     [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 17 ]] ||
     [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 22 ]] ||
     [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
+    [[ "$(grep -c '"record":"program"' "$fixture")" -ne 4 ]] ||
     [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 16 ]] ||
     [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — corpus header or record counts moved" >&2
@@ -393,7 +406,7 @@ if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
-echo "GATE: PASS (117-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+echo "GATE: PASS (121-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
 
 # The conformance check: the both-ways law over every committed line,
 # the header and group sequence, and every record whose truth lives in
@@ -402,12 +415,13 @@ echo "GATE: PASS (117-record format-2 corpus regenerates byte-identically; heade
 # rebuilt from `getConstInfo` and `findDocString?` and compared with the
 # committed bytes.
 conformance_arms=(
-  "conformance: 117 lines survive read and rewrite byte-identically"
-  "conformance: the header declares 8 groups and every count matches the records present"
+  "conformance: 121 lines survive read and rewrite byte-identically"
+  "conformance: the header declares 9 groups and every count matches the records present"
   "conformance: the kind, stage, refusal and admission tables agree with the environment"
   "conformance: 22 mini-AST rows agree with the environment"
   "conformance: 22 docstring rows agree with the environment"
   "conformance: 10 canon vectors re-canonicalize to their own bytes"
+  "conformance: 4 program vectors state their own graph, erase to admitted programs, and re-canonicalize to their own bytes"
 )
 if conformance_output=$(lake env lean ConformanceCheck.lean 2>&1); then
   printf '%s\n' "$conformance_output"
@@ -471,6 +485,29 @@ check_falsification undercounted-header \
   's/"stage":5,/"stage":4,/' \
   'the header declares 4 stage records; the corpus carries 5'
 
+# The program group's own three arms, each aimed at a different way a
+# declaration can be wrong while still looking well formed. The first
+# drops one edge while leaving the argument that implies it, so the
+# redundant edge list stops agreeing with the graph its own arguments
+# describe -- which is the whole reason the edge list is checked
+# rather than trusted. The second moves a byte inside a `bytes` field
+# only, leaving the declaration untouched, so the record's self-test
+# is the only thing that can catch it. The third repoints a
+# consumption at a node that does not exist AND repairs the edge and
+# the bytes to match, so the graph is self-consistent and the bytes
+# are canonical: the only arm left standing is the kernel's own
+# admission verdict on the erasure, which is what makes this group a
+# claim about the model rather than about JSON.
+check_falsification dropped-program-edge \
+  's/{"from":3,"to":2},//' \
+  'carries edges that are not the consumptions its arguments imply'
+check_falsification stale-program-bytes \
+  's/\\"lineage\\":\[9\]/\\"lineage\\":[8]/' \
+  "carries bytes that are not its declaration's canonical form"
+check_falsification unresolvable-consumption \
+  's/\\"to\\":1}/\\"to\\":9}/; s/{\\"arg\\":\\"local\\",\\"name\\":1}}/{\\"arg\\":\\"local\\",\\"name\\":9}}/; s/"to":1}/"to":9}/; s/{"arg":"local","name":1}}/{"arg":"local","name":9}}/' \
+  'erases to a program node admission refuses'
+
 # The must-not-compile class: each control file must be REFUSED by the
 # elaborator with its pinned diagnosis, and its witness twin must
 # elaborate, so the refusal is attributable to the sort discipline and
@@ -518,4 +555,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 117-record format-2 kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 121-record format-2 kernel conformance corpus)"

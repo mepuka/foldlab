@@ -30,9 +30,10 @@ CORPUS = os.path.join(
     "..", "..", "packages", "plait", "fixtures", "kernel-conformance.ndjson",
 )
 
-# Format-2 group order. v1 carries the first six; doc and canon are new.
+# Format-2 group order. v1 carries the first six; doc and canon arrived
+# with the bump, program arrived after it under the add-only rule.
 V2_GROUPS = ["kind", "stage", "refusal", "type", "encoding", "admission",
-             "doc", "canon"]
+             "doc", "canon", "program"]
 
 
 def main() -> int:

@@ -296,4 +296,169 @@ theorem greatest_tie_diverges : Laws.UGreatestTieDiverges := by
 
 end GreatestWins
 
+/-! ## The program declaration carrier -/
+
+section ProgramCarrier
+
+/-- Kind spellings decode: the twelve wire names name the twelve
+    kinds and nothing else. -/
+theorem kind_name_round_trip (kind : Kernel.DeclKind) :
+    Program.kindOfName (Program.kindName kind) = some kind := by
+  cases kind <;> rfl
+
+/-- Generator spellings decode: the eight wire names name the eight
+    generators. -/
+theorem generator_name_round_trip (tag : Kernel.GenTag) :
+    Program.generatorOfName (Program.generatorName tag) = some tag := by
+  cases tag <;> rfl
+
+/-- One argument reference survives its encoding. -/
+theorem arg_round_trip (ref : Program.ArgRef) :
+    Program.readArg (Program.argValue ref) = some ref := by
+  cases ref with
+  | digest kind id => cases kind <;> rfl
+  | localRef name => rfl
+  | literal value => rfl
+  | hole name => rfl
+
+/-- An argument member list survives its encoding. -/
+theorem named_args_round_trip (args : List Program.NamedArg) :
+    Program.readNamedArgs
+      (args.map fun argument => (argument.name, Program.argValue argument.ref))
+      = some args := by
+  induction args with
+  | nil => rfl
+  | cons head rest ih =>
+      simp only [List.map_cons, Program.readNamedArgs, arg_round_trip, ih]
+
+/-- An arguments object survives its encoding. -/
+theorem args_round_trip (args : List Program.NamedArg) :
+    Program.readArgs (Program.argsValue args) = some args :=
+  named_args_round_trip args
+
+/-- One node survives its encoding. -/
+theorem node_round_trip (node : Program.Node) :
+    Program.readNode (Program.nodeValue node) = some node := by
+  show (match Program.readArgs (Program.argsValue node.args),
+      Program.generatorOfName (Program.generatorName node.generator) with
+    | some args, some generator =>
+        some ({ name := node.name, generator := generator, args := args } :
+          Program.Node)
+    | _, _ => none) = some node
+  rw [args_round_trip, generator_name_round_trip]
+
+/-- A node array survives its encoding. -/
+theorem nodes_round_trip (nodes : List Program.Node) :
+    Program.readNodes (nodes.map Program.nodeValue) = some nodes := by
+  induction nodes with
+  | nil => rfl
+  | cons head rest ih =>
+      simp only [List.map_cons, Program.readNodes, node_round_trip, ih]
+
+/-- One edge survives its encoding. -/
+theorem edge_round_trip (edge : Program.Edge) :
+    Program.readEdge (Program.edgeValue edge) = some edge := rfl
+
+/-- An edge array survives its encoding. -/
+theorem edges_round_trip (edges : List Program.Edge) :
+    Program.readEdges (edges.map Program.edgeValue) = some edges := by
+  induction edges with
+  | nil => rfl
+  | cons head rest ih =>
+      simp only [List.map_cons, Program.readEdges, edge_round_trip, ih]
+
+/-- One declared parameter survives its encoding. -/
+theorem hole_round_trip (hole : Program.Hole) :
+    Program.readHole (Program.holeValue hole) = some hole := rfl
+
+/-- A hole array survives its encoding. -/
+theorem holes_round_trip (holes : List Program.Hole) :
+    Program.readHoles (holes.map Program.holeValue) = some holes := by
+  induction holes with
+  | nil => rfl
+  | cons head rest ih =>
+      simp only [List.map_cons, Program.readHoles, hole_round_trip, ih]
+
+/-- A lineage array survives its encoding. -/
+theorem lineage_round_trip (lineage : List Nat) :
+    Program.readLineage (lineage.map Canon.Value.num) = some lineage := by
+  induction lineage with
+  | nil => rfl
+  | cons head rest ih =>
+      simp only [List.map_cons, Program.readLineage, Canon.asNat, ih]
+
+/-- The declaration encoding round-trips at the carrier: what the
+    encoder writes, the reader reads back unchanged. -/
+theorem program_encoding_round_trips : Laws.UProgramEncodingRoundTrips := by
+  intro declaration
+  show (match Program.readEdges (declaration.edges.map Program.edgeValue),
+      Program.readHoles (declaration.holes.map Program.holeValue),
+      Program.readLineage (declaration.lineage.map Canon.Value.num),
+      Program.readNodes (declaration.nodes.map Program.nodeValue) with
+    | some edges, some holes, some lineage, some nodes =>
+        some ({ nodes := nodes, edges := edges, holes := holes
+              , lineage := lineage } : Program.Declaration)
+    | _, _, _, _ => none) = some declaration
+  rw [edges_round_trip, holes_round_trip, lineage_round_trip,
+    nodes_round_trip]
+
+/-- The edges the arguments imply are the edges the erasure's uses
+    imply: the erasure keeps every local reference, in order, as a
+    use. -/
+theorem program_edges_are_erased_uses : Laws.UProgramEdgesAreErasedUses := by
+  intro declaration
+  simp only [Program.consumptionEdges, Program.erasedEdges, Program.erase,
+    List.flatMap_map, Program.eraseNode]
+  rfl
+
+/-- The emitter's admission verdict is sound for the kernel's
+    admission proposition. -/
+theorem admissible_sound : Laws.UProgramAdmissibleSound := by
+  intro nodes
+  induction nodes with
+  | nil => intro _; exact Kernel.ProgramAdmission.empty
+  | cons node rest ih =>
+      intro decided
+      simp only [Program.admissible, Bool.and_eq_true] at decided
+      obtain ⟨⟨tail, uses⟩, fresh⟩ := decided
+      refine Kernel.ProgramAdmission.admit rest node (ih tail) ?_ ?_
+      · intro use used
+        have hit := (List.all_eq_true.mp uses) use used
+        obtain ⟨prior, priorMem, priorName⟩ := List.any_eq_true.mp hit
+        exact ⟨prior, priorMem, by simpa using priorName⟩
+      · intro prior priorMem
+        have distinct := (List.all_eq_true.mp fresh) prior priorMem
+        simpa using distinct
+
+/-- Every committed vector erases to a program the kernel admits. -/
+theorem program_vectors_admitted : Laws.UProgramVectorsAdmitted := by
+  intro entry member
+  simp only [Program.vectors, List.mem_cons, List.not_mem_nil, or_false]
+    at member
+  rcases member with rfl | rfl | rfl | rfl <;>
+    exact admissible_sound _ rfl
+
+/-- Every committed vector's edge list is its own consumption set. -/
+theorem program_vectors_edge_consistent :
+    Laws.UProgramVectorsEdgeConsistent := by
+  intro entry member
+  simp only [Program.vectors, List.mem_cons, List.not_mem_nil, or_false]
+    at member
+  rcases member with rfl | rfl | rfl | rfl <;> rfl
+
+/-- The ground vector's erasure is the planted two-node program
+    itself, so the bridge's transport and inhabitation laws speak
+    about a committed corpus vector. -/
+theorem ground_lift_erases_to_planted : Laws.UGroundLiftErasesToPlanted :=
+  rfl
+
+/-- The parameter channel at the committed pair: the holey vector
+    filled at its valuation is the filled vector, the holey vector
+    requires its one parameter, and the filled vector requires
+    nothing. -/
+theorem holey_fill_correspondence : Laws.UHoleyFillCorrespondence :=
+  ⟨rfl, rfl, rfl⟩
+
+end ProgramCarrier
+
 end Unity

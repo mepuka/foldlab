@@ -3,7 +3,7 @@ package kmconform
 // The format-2 corpus grammar.
 //
 // Record group order is total: header, kind, stage, refusal, type, encoding,
-// admission, doc, canon. Every record is serialized in estate canonical form,
+// admission, doc, canon, program. Every record is serialized in estate canonical form,
 // so keys appear SORTED — which is the format-1 grammar's one visible break,
 // and the reason a format-1 file is refused here rather than read leniently.
 //
@@ -31,6 +31,11 @@ const (
 	RecordAdmission = "admission"
 	RecordDoc       = "doc"
 	RecordCanon     = "canon"
+	// RecordProgram is the ninth group, added under the format's add-only
+	// rule: record types are add-only WITHIN a format, so a new group appends
+	// itself after every existing one and brings a new counts key with it. No
+	// format bump, and a consumer that does not know it skips it.
+	RecordProgram = "program"
 )
 
 // groupOrder is the mandated file order of the record groups this consumer
@@ -45,17 +50,25 @@ var groupOrder = []string{
 	RecordAdmission,
 	RecordDoc,
 	RecordCanon,
+	RecordProgram,
 }
 
-// countedGroups are the counts keys the header must carry. Extra keys are
-// permitted (they belong to an unrecognised group and are skipped with it);
-// a missing one is a malformed header.
+// countedGroups are the counts keys the header must ALWAYS carry. Extra keys
+// are permitted (they belong to an unrecognised group and are skipped with
+// it); a missing one is a malformed header.
+//
+// The list is in the header's own member order, which is lexicographic
+// because the header is canonical. Note that this is NOT the file order:
+// "program" belongs between "kind" and "refusal" as a counts key while its
+// records stand last in the file, and the two orders are different facts
+// neither of which derives the other.
 var countedGroups = []string{
 	RecordAdmission,
 	RecordCanon,
 	RecordDoc,
 	RecordEncoding,
 	RecordKind,
+	RecordProgram,
 	RecordRefusal,
 	RecordStage,
 	RecordType,
@@ -201,6 +214,7 @@ type Corpus struct {
 	Admissions []AdmissionRow
 	Docs       []DocRow
 	Canons     []CanonRow
+	Programs   []ProgramRow
 	Unknown    []Skipped
 }
 
@@ -311,6 +325,10 @@ func ParseCorpus(data []byte) (*Corpus, error) {
 			var row CanonRow
 			row, err = decodeCanon(value)
 			corpus.Canons = append(corpus.Canons, row)
+		case RecordProgram:
+			var row ProgramRow
+			row, err = decodeProgram(value)
+			corpus.Programs = append(corpus.Programs, row)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("line %d: %w", lineNo, err)
@@ -427,6 +445,11 @@ func (c *Corpus) Emit() ([]byte, error) {
 			return nil, err
 		}
 	}
+	for _, row := range c.Programs {
+		if err := write(encodeProgram(row)); err != nil {
+			return nil, err
+		}
+	}
 	for _, skipped := range c.Unknown {
 		if err := write(skipped.Value, nil); err != nil {
 			return nil, err
@@ -439,11 +462,13 @@ func (c *Corpus) Emit() ([]byte, error) {
 //
 //  1. parse then re-emit is byte-identical to the input, and
 //  2. for every canon record, canonicalizing its value yields exactly its
-//     bytes field.
+//     bytes field, and for every program record, canonicalizing its
+//     declaration yields exactly its bytes field.
 //
 // Half 1 subsumes the key-order, whitespace, escaping, and minimal-number
 // checks, because a deviation in any of them changes a byte. Half 2 is the
-// serializer checking itself against the model's own answer.
+// serializer checking itself against the model's own answer, in both the
+// groups that carry their own bytes.
 func CheckBothWays(data []byte) (*Corpus, error) {
 	corpus, err := ParseCorpus(data)
 	if err != nil {
@@ -466,6 +491,17 @@ func CheckBothWays(data []byte) (*Corpus, error) {
 		if string(canonical) != row.Bytes {
 			return nil, fmt.Errorf(
 				"canon vector %q: canonicalizing the value yields %s, the record declares %s",
+				row.Name, string(canonical), row.Bytes)
+		}
+	}
+	for _, row := range corpus.Programs {
+		canonical, err := row.Declaration.Canonical()
+		if err != nil {
+			return nil, fmt.Errorf("program vector %q: %w", row.Name, err)
+		}
+		if string(canonical) != row.Bytes {
+			return nil, fmt.Errorf(
+				"program vector %q: canonicalizing the declaration yields %s, the record declares %s",
 				row.Name, string(canonical), row.Bytes)
 		}
 	}

@@ -330,3 +330,57 @@ projections only, bracket aliases gated behind a pre-registered
 one fork — A needs the verify/kernel freeze lifted by ruling; A-prime
 is corpus-plus-door-checks now, additively upgradable — is the
 operator's to rule with the KM-17/KM-18 grill rows.
+
+## Addendum: the dual-construction slice, landed
+
+Fourth wave. The program declaration — the meta DAG language's
+canonical value — is now the corpus's ninth group (121 records,
+25949 bytes), and one authoring act constructs both artifacts
+end to end: the generated `$` builder produces the declaration, its
+canonical bytes, its content address (sha256 over those bytes, named
+as trusted-base), an EXPLICIT publication candidate (never a side
+effect), and a typed Effect stub whose R channel names the CasDaemon
+service and the program's unfilled holes. Nothing executes; the
+replay fence held everywhere.
+
+Unity: Unity/Program.lean carrier, erasure to the kernel's program
+nodes, laws U14–U20 (roster 40 -> 59) — encoding round-trips, the
+edge list proved redundant WITH the erasure's uses, every vector's
+erasure admitted (U3–U7 transport it to fabric), and the holey/filled
+pair related by the kernel's own fill machinery with requirements
+[7] -> []. Three new falsification probes. The freeze was corrected
+by the build in three measured places (see the builder spec §8): the
+fourth `hole` argref form, args-as-subset, edge order as convention.
+The Go lane guessed the fourth form identically before the emission
+existed — the freeze discipline's convergence property, demonstrated
+twice in one slice.
+
+Builder walls (all coordinator-re-run): 4/4 vectors rebuilt through
+`$` byte-identically; four compile-time refusals (clock, closure,
+strategy, cross-sort handle) each with a compiling witness twin;
+degenerate-builder mutants killed; publication explicit; the effect
+stub executes nothing. Go: native construction of all four vectors
+byte-identical to the emission, a 17-row mutation control arm, and
+the literal line pin replaced by the counts rule. The normative
+document gained §2.7 and checks 34–39; check_doc.py validates the
+program group with a nine-way control arm.
+
+Rulings wanted (surfaced, not decided):
+- KB-23: declaration nodes carry no declaration kind, so no node is
+  act-level at the door ("a declaration is not a sentence"). If
+  declarations should be re-admittable sentence-by-sentence, the
+  value must carry the kind — a corpus change.
+- KB-24: hole schema digests are stated shape, not checked typing —
+  nothing verifies a fill against its hole's schema (design doc §7's
+  open question, now concrete).
+- KB-25: R17/R19/R20/R21 from the schema doc's new reconciliation
+  rows — bare-DeclKind argrefs unexercised, lineage orientation and
+  edge dedup unmeasured, vector-set add-only unruled, and what an
+  omitted args field MEANS at the model seam.
+- KB-26: the Go consumer now refuses a format-2 corpus without the
+  program group (deliberate producer-dropped-a-group reading);
+  confirm or relax.
+- KB-27: four `$` slots are deliberately unauthorable (fold's
+  partition and anchor, decide's token, trigger's predicate) because
+  the declaration form carries no reference for them — refuse-rather-
+  than-guess held; wiring them is a vector/value design decision.

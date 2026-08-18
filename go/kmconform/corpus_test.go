@@ -109,13 +109,24 @@ func TestHeaderAndGroupOrder(t *testing.T) {
 	if corpus.Header.Format != kmconform.SupportedFormat {
 		t.Fatalf("header format is %d, want %d", corpus.Header.Format, kmconform.SupportedFormat)
 	}
-	if corpus.Lines != 117 {
-		t.Fatalf("the corpus has %d lines; the frozen grammar's eight groups make 117", corpus.Lines)
+	// THE LINE COUNT IS DERIVED, NOT PINNED. Schema §2.1 says it outright: the
+	// 117 of today is a measurement of today's corpus and not a constant of the
+	// format, and the add-only rule lets a ninth group join without a format
+	// bump. A literal breaks on that where the sum does not — and the ninth
+	// group is now frozen, so this is not a hypothetical.
+	declared := 0
+	for _, count := range corpus.Header.Counts {
+		declared += count.Value
+	}
+	if corpus.Lines != declared+1 {
+		t.Fatalf("the corpus has %d lines; the header counts %d records, so a complete file has %d",
+			corpus.Lines, declared, declared+1)
 	}
 	if len(corpus.Unknown) != 0 {
 		t.Fatalf("the corpus carries %d unrecognised records: %s",
 			len(corpus.Unknown), strings.Join(corpus.SkipLog(), "; "))
 	}
+	t.Logf("line count: %d lines = 1 header + %d counted records", corpus.Lines, declared)
 }
 
 func TestUnknownFormatIsRefused(t *testing.T) {
@@ -171,6 +182,10 @@ func TestUnrecognisedRecordGroupsAreSkippedAndLogged(t *testing.T) {
 
 func TestHeaderCountsMatchTheRecordsRead(t *testing.T) {
 	corpus := loadCorpus(t)
+	// The eight structurally-fixed groups. Each of these counts is a fact
+	// about the model — twelve kinds, five stages, the closed twenty-two —
+	// so it is pinned as a literal and a change to one is a change to the
+	// model rather than to this file.
 	want := map[string]int{
 		"kind": 12, "stage": 5, "refusal": 16, "type": 22,
 		"encoding": 12, "admission": 17, "doc": 22, "canon": 10,
@@ -184,8 +199,23 @@ func TestHeaderCountsMatchTheRecordsRead(t *testing.T) {
 			t.Fatalf("counts.%s is %d, want %d", group, got[group], expected)
 		}
 	}
-	if len(got) != len(want) {
-		t.Fatalf("the header counts %d groups, want %d", len(got), len(want))
+	// The key SET is deliberately not pinned. Schema §6 states the rule as a
+	// MUST NOT: a consumer may not require the counts keys to be exactly the
+	// ones it knows, because an add-only group brings a new key and a consumer
+	// that demanded the old set would refuse a file it is supposed to skip
+	// past. Every key here must instead agree with the records actually read,
+	// which is what the parse already enforced for every key, known or not.
+	for group, value := range got {
+		if _, structural := want[group]; structural {
+			continue
+		}
+		t.Logf("the header carries the counts key %q = %d, beyond the eight structural groups",
+			group, value)
+	}
+	for group := range want {
+		if _, present := got[group]; !present {
+			t.Fatalf("the header counts omit %q", group)
+		}
 	}
 }
 

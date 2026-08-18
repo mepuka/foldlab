@@ -641,3 +641,52 @@ var AdmissionVectors = []AdmissionVector{
 	{Name: "holeyEmit", Reason: "unfilled-hole"},
 	{Name: "lawfulDeclare", Admitted: true, Encoded: []uint64{0, 0, 7000051000172, 4}},
 }
+
+// ---- Program vectors ----
+//
+// The ninth corpus group: the DAG builder's committed declarations, each with
+// the canonical bytes it serializes to.
+//
+// WHY BYTES AND NOT THE DECLARATION. The declaration already has a Go form —
+// kmconform.ProgramDeclaration, hand-written and conformance-walled — and
+// emitting a second Go spelling of the same grammar here would be two
+// spellings of one thing, which is the exact defect generation exists to
+// prevent. What a consumer actually needs from a table is the model's answer
+// to compare its own construction against, and that answer is a byte string.
+// It is the same reasoning that puts canonical examples on the TypeScript
+// surface as strings rather than as values.
+//
+// These are DECLARATIONS, never execution records. Nothing here runs.
+
+// ProgramVector is one committed program declaration, named, with the
+// canonical serialization the corpus carries for it.
+type ProgramVector struct {
+	Name  string
+	Bytes string
+}
+
+// ProgramVectorTable is the program group in corpus order.
+var ProgramVectorTable = []ProgramVector{
+	{Name: "ground-two-node", Bytes: "{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1}},\"generator\":\"emit\",\"name\":2},{\"args\":{},\"generator\":\"declare\",\"name\":1}]}"},
+	{Name: "holey", Bytes: "{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[{\"name\":7,\"schema\":88}],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":2},{\"args\":{\"value\":{\"arg\":\"hole\",\"name\":7},\"writ\":{\"arg\":\"digest\",\"id\":4,\"kind\":\"policy\"}},\"generator\":\"declare\",\"name\":1}]}"},
+	{Name: "holey-filled", Bytes: "{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":2},{\"args\":{\"value\":{\"arg\":\"literal\",\"value\":42},\"writ\":{\"arg\":\"digest\",\"id\":4,\"kind\":\"policy\"}},\"generator\":\"declare\",\"name\":1}]}"},
+	{Name: "distill-shape", Bytes: "{\"edges\":[{\"from\":4,\"to\":3},{\"from\":3,\"to\":2},{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[9],\"nodes\":[{\"args\":{\"cell\":{\"arg\":\"digest\",\"id\":6,\"kind\":\"resource\"},\"contribution\":{\"arg\":\"local\",\"name\":3}},\"generator\":\"join\",\"name\":4},{\"args\":{\"body\":{\"arg\":\"local\",\"name\":2},\"lane\":{\"arg\":\"digest\",\"id\":1,\"kind\":\"lane\"}},\"generator\":\"emit\",\"name\":3},{\"args\":{\"outcome\":{\"arg\":\"local\",\"name\":1},\"register\":{\"arg\":\"digest\",\"id\":5,\"kind\":\"program\"}},\"generator\":\"decide\",\"name\":2},{\"args\":{\"target\":{\"arg\":\"digest\",\"id\":8,\"kind\":\"index\"}},\"generator\":\"resolve\",\"name\":1}]}"},
+}
+
+// ProgramVectorNames is the committed vector names in corpus order.
+var ProgramVectorNames = []string{
+	"ground-two-node",
+	"holey",
+	"holey-filled",
+	"distill-shape",
+}
+
+// ProgramVectorByName resolves a vector. Unknown names are refused.
+func ProgramVectorByName(name string) (ProgramVector, bool) {
+	for _, vector := range ProgramVectorTable {
+		if vector.Name == name {
+			return vector, true
+		}
+	}
+	return ProgramVector{}, false
+}

@@ -77,7 +77,7 @@ export const KERNEL_CANONICAL_EXAMPLES_KEY = "canonicalExamples"
 /** The provenance line, with the counts it pins. Examples are real records from the corpus. */
 export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
   canonicalExamples: [
-    "{\"counts\":{\"admission\":17,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
+    "{\"counts\":{\"admission\":17,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
   ],
   examples: [
     {
@@ -87,6 +87,7 @@ export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
         doc: 22n,
         encoding: 12n,
         kind: 12n,
+        program: 4n,
         refusal: 16n,
         stage: 5n,
         type: 22n,
@@ -288,6 +289,32 @@ export const KernelCanonRecord = Grammar.KernelCanonRecord.annotate({
   ],
 })
 
+/**
+ * One program declaration and the bytes that are its identity. Examples are real records from
+ * the corpus.
+ */
+export const KernelProgramRecord = Grammar.KernelProgramRecord.annotate({
+  canonicalExamples: [
+    "{\"bytes\":\"{\\\"edges\\\":[{\\\"from\\\":2,\\\"to\\\":1}],\\\"holes\\\":[],\\\"lineage\\\":[],\\\"nodes\\\":[{\\\"args\\\":{\\\"body\\\":{\\\"arg\\\":\\\"local\\\",\\\"name\\\":1}},\\\"generator\\\":\\\"emit\\\",\\\"name\\\":2},{\\\"args\\\":{},\\\"generator\\\":\\\"declare\\\",\\\"name\\\":1}]}\",\"declaration\":{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1}},\"generator\":\"emit\",\"name\":2},{\"args\":{},\"generator\":\"declare\",\"name\":1}]},\"name\":\"ground-two-node\",\"record\":\"program\"}",
+  ],
+  examples: [
+    {
+      bytes: "{\"edges\":[{\"from\":2,\"to\":1}],\"holes\":[],\"lineage\":[],\"nodes\":[{\"args\":{\"body\":{\"arg\":\"local\",\"name\":1}},\"generator\":\"emit\",\"name\":2},{\"args\":{},\"generator\":\"declare\",\"name\":1}]}",
+      declaration: {
+        edges: [{ from: 2n, to: 1n }],
+        holes: [],
+        lineage: [],
+        nodes: [
+          { args: { body: { arg: "local", name: 1n } }, generator: "emit", name: 2n },
+          { args: {}, generator: "declare", name: 1n },
+        ],
+      },
+      name: "ground-two-node",
+      record: "program",
+    },
+  ],
+})
+
 /** One admission verdict, refused or admitted, with both shapes exemplified. */
 export const KernelAdmissionRecord = Schema.Union([
   KernelAdmissionRefusedRecord,
@@ -321,6 +348,7 @@ export const KERNEL_RECORD_SCHEMA = {
   admission: KernelAdmissionRecord,
   doc: KernelDocRecord,
   canon: KernelCanonRecord,
+  program: KernelProgramRecord,
 } as const
 
 // ---------------------------------------------------------------------------

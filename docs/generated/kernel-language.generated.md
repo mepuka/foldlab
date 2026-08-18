@@ -553,3 +553,78 @@ The interchange is written in one canonical form, and these vectors are the cros
 | control-char | `"\u0001"` |
 
 Members sort by key, no whitespace anywhere, and every number is an unbounded non-negative integer in minimal decimal - never a double, which is what the big-integer vector exists to catch.
+
+## Program declarations
+
+A program is a DAG of named generator applications, written as one canonical value whose bytes are its identity. The value has four members. `nodes` carries the applications, **newest first** - the same orientation the model's admission relation reads, so a node may consume only names standing after it. `edges` makes each consumption explicit, from the consuming node to the consumed one. `holes` carries the declared parameters, ascending by name. `lineage` carries the declarations this one descends from.
+
+A node's arguments are keyed by the model's own field names, never by position, and the map is partial: a slot a node leaves unwired is absent rather than filled, and a field the declaration form carries no reference for - a declaration kind, a token, a lane partition, an anchor fact, a trigger predicate - is absent always.
+
+An argument is one of four references, and there is no fifth. A `digest` reaches outside the declaration and carries the kind it is branded to. A `local` names a prior node, which is a consumption and puts an edge in the list. A `hole` names one of this declaration's own parameters, which is a requirement and puts no edge anywhere. A `literal` carries an identity label. There is deliberately no closure form: a function value has no canonical bytes, so nothing can reference it.
+
+**A declaration is not a run.** These vectors record what a program *is*, never what happened when one was executed. Nothing on this page is an execution record, an ordering, or a claim that any of it has run.
+
+| Vector | Nodes | Edges | Holes | Lineage |
+| --- | --- | --- | --- | --- |
+| ground-two-node | 2 | 1 | 0 | 0 |
+| holey | 2 | 1 | 1 | 0 |
+| holey-filled | 2 | 1 | 0 | 0 |
+| distill-shape | 4 | 3 | 0 | 1 |
+
+### ground-two-node
+
+2 nodes, 1 consumption, 0 declared parameters, lineage empty.
+
+- `2` `emit` — body = local 1
+- `1` `declare`
+
+Canonical bytes, which are this declaration's identity:
+
+```json
+{"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1}},"generator":"emit","name":2},{"args":{},"generator":"declare","name":1}]}
+```
+
+### holey
+
+2 nodes, 1 consumption, 1 declared parameter, lineage empty.
+
+- `2` `emit` — lane = digest lane 1, body = local 1
+- `1` `declare` — value = hole 7, writ = digest policy 4
+
+Declared parameters, ascending by name:
+
+- `7` — schema 88
+
+Canonical bytes, which are this declaration's identity:
+
+```json
+{"edges":[{"from":2,"to":1}],"holes":[{"name":7,"schema":88}],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":2},{"args":{"value":{"arg":"hole","name":7},"writ":{"arg":"digest","id":4,"kind":"policy"}},"generator":"declare","name":1}]}
+```
+
+### holey-filled
+
+2 nodes, 1 consumption, 0 declared parameters, lineage empty.
+
+- `2` `emit` — lane = digest lane 1, body = local 1
+- `1` `declare` — value = literal 42, writ = digest policy 4
+
+Canonical bytes, which are this declaration's identity:
+
+```json
+{"edges":[{"from":2,"to":1}],"holes":[],"lineage":[],"nodes":[{"args":{"body":{"arg":"local","name":1},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":2},{"args":{"value":{"arg":"literal","value":42},"writ":{"arg":"digest","id":4,"kind":"policy"}},"generator":"declare","name":1}]}
+```
+
+### distill-shape
+
+4 nodes, 3 consumptions, 0 declared parameters, lineage 9.
+
+- `4` `join` — cell = digest resource 6, contribution = local 3
+- `3` `emit` — lane = digest lane 1, body = local 2
+- `2` `decide` — register = digest program 5, outcome = local 1
+- `1` `resolve` — target = digest index 8
+
+Canonical bytes, which are this declaration's identity:
+
+```json
+{"edges":[{"from":4,"to":3},{"from":3,"to":2},{"from":2,"to":1}],"holes":[],"lineage":[9],"nodes":[{"args":{"cell":{"arg":"digest","id":6,"kind":"resource"},"contribution":{"arg":"local","name":3}},"generator":"join","name":4},{"args":{"body":{"arg":"local","name":2},"lane":{"arg":"digest","id":1,"kind":"lane"}},"generator":"emit","name":3},{"args":{"outcome":{"arg":"local","name":1},"register":{"arg":"digest","id":5,"kind":"program"}},"generator":"decide","name":2},{"args":{"target":{"arg":"digest","id":8,"kind":"index"}},"generator":"resolve","name":1}]}
+```

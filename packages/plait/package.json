@@ -26,7 +26,9 @@
     "./Wire": "./src/Wire.ts"
   },
   "scripts": {
+    "check:builder-control": "bun scripts/check-kernel-builder-negative.ts",
     "check:corpus": "bun scripts/check-corpus.ts",
+    "check:kernel-builder": "bun scripts/check-kernel-builder.ts",
     "check:kernel-prose": "bun scripts/check-kernel-prose.ts",
     "check:kernel-schemas": "bun scripts/check-kernel-schemas.ts",
     "check:kernel-tables": "bun scripts/check-kernel-tables.ts",
@@ -34,11 +36,12 @@
     "check:public-effects": "bun scripts/check-public-effects.ts",
     "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "generate:corpus": "bun scripts/generate-corpus.ts",
+    "generate:kernel-builder": "bun scripts/generate-kernel-builder.ts",
     "generate:kernel-prose": "bun scripts/generate-kernel-prose.ts",
     "generate:kernel-schemas": "bun scripts/generate-kernel-schemas.ts",
     "generate:kernel-tables": "bun scripts/generate-kernel-tables.ts",
     "generate:public-effects": "bun scripts/check-public-effects.ts --write",
-    "test": "bun test ./test && bun run check:corpus && bun run check:kernel-tables && bun run check:kernel-schemas && bun run check:kernel-prose && bun run check:public-effects && bun run check:type-control && bun run check:parity-control"
+    "test": "bun test ./test && bun run check:corpus && bun run check:kernel-tables && bun run check:kernel-schemas && bun run check:kernel-builder && bun run check:kernel-prose && bun run check:public-effects && bun run check:type-control && bun run check:builder-control && bun run check:parity-control"
   },
   "dependencies": {
     "@foldlab/core": "workspace:*",

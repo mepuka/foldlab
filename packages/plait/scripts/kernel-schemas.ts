@@ -216,6 +216,19 @@ const recordBindings = (corpus: KernelCorpus): ReadonlyArray<RecordBinding> => {
       gloss: "One canonical-form vector: a value and the bytes it must produce",
       examples: corpus.canons.map(asValue),
     },
+    // The ninth group arrived under the add-only rule, so a corpus emitted
+    // before it exists is still a corpus this generator can read. One example
+    // rather than all of them: a program declaration is large, and the whole
+    // set is not a closed reference the way the canon vectors are.
+    ...(corpus.programs.length === 0
+      ? []
+      : [
+        {
+          name: "KernelProgramRecord",
+          gloss: "One program declaration and the bytes that are its identity",
+          examples: first(corpus.programs, "program"),
+        },
+      ]),
   ]
 }
 
@@ -610,6 +623,7 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   line("  admission: KernelAdmissionRecord,")
   line("  doc: KernelDocRecord,")
   line("  canon: KernelCanonRecord,")
+  if (corpus.programs.length > 0) line("  program: KernelProgramRecord,")
   line("} as const")
   line()
 

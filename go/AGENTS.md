@@ -40,11 +40,20 @@ gauntlet lanes, and their commands live at tag
   numbers are binary64 by the spec it implements, so sharing one encoder
   would mean either rounding a kernel Nat or breaking a frozen digest wall.
   The BOTH-WAYS LAW binds it: parse then re-emit of the whole corpus is
-  byte-identical, and every `canon` record's value canonicalizes to its
-  `bytes`. `kmconform/tables_generated.go` is written only by
+  byte-identical, every `canon` record's value canonicalizes to its `bytes`,
+  and every `program` record's declaration canonicalizes to its `bytes`.
+  `kmconform/tables_generated.go` is written only by
   `go run ./cmd/kmgen`; its regeneration gate lives in `cmd/kmgen/`, and a
   drift there is a FINDING to report, not a file to overwrite
   (`docs/FREEZING.md`).
+- The `program` group is the ninth, added under the format's ADD-ONLY rule:
+  appended after every existing group, one new counts key, no format bump.
+  Its laws are in `kmconform/program.go` — nodes newest-first, the edge set
+  equal to exactly the consumptions the local argrefs imply, holes ascending,
+  and args keyed by the generator's own field names read out of the corpus's
+  `Act` record rather than retyped. Never pin the corpus line count as a
+  literal: validate it as `1 + sum(header.counts)`, which is what let the
+  ninth group land without touching an arithmetic constant.
 - `brandlint/` closes the two brand leaks Go leaves open: a conversion
   between distinct brand types, and a comparison against a non-zero untyped
   constant. Brands are DECLARED by the `//foldlab:brand` directive that

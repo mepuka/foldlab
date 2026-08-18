@@ -38,7 +38,9 @@ import {
   type KernelCanonRecord,
   type KernelDocRecord,
   type KernelEncodingRecord,
+  type KernelArgRef,
   type KernelKindRecord,
+  type KernelProgramRecord,
   type KernelRecordGroup,
   type KernelRefusalRecord,
   type KernelStageRecord,
@@ -69,6 +71,7 @@ export interface KernelCorpus {
   readonly admissions: ReadonlyArray<KernelAdmissionRecord>
   readonly docs: ReadonlyArray<KernelDocRecord>
   readonly canons: ReadonlyArray<KernelCanonRecord>
+  readonly programs: ReadonlyArray<KernelProgramRecord>
   /** The file's lines, without the trailing empty one. The bytes, for a re-emit check. */
   readonly lines: ReadonlyArray<string>
   /** Groups this reader does not know, skipped under the add-only rule. */
@@ -178,9 +181,25 @@ const checkCounts = (
       refuse(`the header pins ${pinned} ${group} records, the file carries ${actual}`)
     }
   }
+  // The program group is the add-only rule caught in the act: this reader knows
+  // it, and a corpus emitted before it landed carries neither its records nor
+  // its count. Absent on both sides is the older file and is read; present on
+  // either side must agree, so a group that half-lands still stops the build.
+  const pinnedPrograms = corpus.header.counts.program
+  if (pinnedPrograms !== undefined || corpus.programs.length > 0) {
+    if (pinnedPrograms === undefined) {
+      refuse(`the file carries ${corpus.programs.length} program records and pins no count`)
+    }
+    if (pinnedPrograms !== BigInt(corpus.programs.length)) {
+      refuse(
+        `the header pins ${pinnedPrograms} program records, the file carries` +
+          ` ${corpus.programs.length}`,
+      )
+    }
+  }
   // The add-only rule cuts both ways: a count for a group this reader skipped
   // is skipped with it, but a count for a group that never appeared is a lie.
-  const known = new Set<string>(counted.map(([group]) => group))
+  const known = new Set<string>([...counted.map(([group]) => group), "program"])
   for (const name of Object.keys(corpus.header.counts)) {
     if (!known.has(name) && !skipped.includes(name)) {
       refuse(`the header pins a ${name} count that names no record group in the file`)
@@ -288,6 +307,133 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
       )
     }
   })
+
+  checkPrograms(corpus)
+}
+
+/**
+ * The generator vocabulary and each generator's fields, read off the `Act`
+ * type record rather than restated here.
+ *
+ * This is the one-AST rule with teeth. A program node names a generator and
+ * keys its arguments by field name; both come from the same mini-AST record
+ * the schemas and the builder surface are generated from, so a generator this
+ * reader admits is one the grammar declares, and a field name it admits is one
+ * that constructor actually has.
+ */
+export const generatorFields = (
+  types: ReadonlyArray<KernelTypeRecord>,
+): ReadonlyMap<string, ReadonlyArray<string>> => {
+  const act = types.find((type) => type.name === "Act")
+  if (act === undefined) refuse("the corpus declares no Act type, so no generator vocabulary")
+  return new Map(
+    act.constructors.map((constructor) =>
+      [constructor.name, constructor.fields.map((field) => field.name)] as const
+    ),
+  )
+}
+
+/** One consumption, as the edge it must appear as. */
+const edgeKey = (from: bigint, to: bigint): string => `${from}->${to}`
+
+// Every program vector is checked against the freeze the same way a canon
+// vector is: the record carries both a value and the bytes it must serialize
+// to, so the corpus self-tests any consumer that reads it. On top of that
+// pairing come the shape laws - the local namespace, the newest-first
+// admission order, and the redundancy between edges and local arguments -
+// because those are the properties a degenerate producer would drop.
+const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
+  if (corpus.programs.length === 0) return
+  const fields = generatorFields(corpus.types)
+  const kindNames = new Set(corpus.kinds.map((kind) => kind.name))
+  const names = corpus.programs.map((program) => program.name)
+  if (new Set(names).size !== names.length) refuse("a program vector is named twice")
+
+  for (const program of corpus.programs) {
+    const where = `program vector ${program.name}`
+    const written = encodeCanonicalJson(program.declaration as unknown as CanonicalJson)
+    if (written !== program.bytes) {
+      refuse(`${where} pins bytes ${program.bytes}, the canonicalizer writes ${written}`)
+    }
+
+    const holes = program.declaration.holes
+    holes.forEach((hole, index) => {
+      const previous = holes[index - 1]
+      if (previous !== undefined && previous.name >= hole.name) {
+        refuse(`${where}: holes do not ascend by name (${previous.name} then ${hole.name})`)
+      }
+    })
+    const holeNames = new Set(holes.map((hole) => hole.name))
+
+    const nodes = program.declaration.nodes
+    const nodeNames = new Set(nodes.map((node) => node.name))
+    if (nodeNames.size !== nodes.length) refuse(`${where}: a node name is used twice`)
+
+    // Newest first, so a node may consume only names that stand after it: those
+    // are the ones already admitted when it was. The check is the reader's
+    // reading of the model's admission relation, at the one place a file can
+    // state a cycle.
+    //
+    // The argument map is a subset of the generator's fields, never a superset.
+    // Two reasons a field is absent, and the file cannot tell them apart: the
+    // declaration form carries no reference for that sort at all - a kind tag,
+    // a token, a partition, an anchor, a predicate - or the node simply leaves
+    // the slot unwired. What the reader can insist on is that every key present
+    // names a real field of that generator.
+    const consumptions: Array<string> = []
+    nodes.forEach((node, index) => {
+      const declared = fields.get(node.generator)
+      if (declared === undefined) {
+        refuse(`${where}: node ${node.name} names generator ${node.generator}, which Act has not`)
+      }
+      const known = new Set(declared)
+      for (const [field, value] of Object.entries(node.args)) {
+        const argument = value as KernelArgRef
+        if (!known.has(field)) {
+          refuse(
+            `${where}: node ${node.name} wires argument ${field}, which ${node.generator}` +
+              ` has not (it takes ${[...declared].join(", ")})`,
+          )
+        }
+        if (argument.arg === "digest" && !kindNames.has(argument.kind)) {
+          refuse(`${where}: node ${node.name} argument ${field} names unknown kind ${argument.kind}`)
+        }
+        if (argument.arg === "hole" && !holeNames.has(argument.name)) {
+          refuse(
+            `${where}: node ${node.name} argument ${field} reads hole ${argument.name},` +
+              " which this declaration never declared",
+          )
+        }
+        if (argument.arg !== "local") continue
+        const older = nodes.findIndex((prior) => prior.name === argument.name)
+        if (older < 0) {
+          refuse(
+            `${where}: node ${node.name} argument ${field} names local ${argument.name},` +
+              " which names no node of this declaration",
+          )
+        }
+        if (older <= index) {
+          refuse(
+            `${where}: node ${node.name} consumes ${argument.name}, which is not older;` +
+              " nodes are newest first, so a consumed name stands after its consumer",
+          )
+        }
+        consumptions.push(edgeKey(node.name, argument.name))
+      }
+    })
+
+    // The edge list is redundant with the local arguments on purpose, and the
+    // redundancy is only worth carrying if it is checked: a producer that
+    // flattens the DAG drops edges its own arguments still imply.
+    const declaredEdges = program.declaration.edges.map((edge) => edgeKey(edge.from, edge.to))
+    const sorted = (rows: ReadonlyArray<string>): string => [...rows].sort().join(" ")
+    if (sorted(declaredEdges) !== sorted(consumptions)) {
+      refuse(
+        `${where}: the edge list and the local arguments disagree\n` +
+          `  edges     ${sorted(declaredEdges)}\n  arguments ${sorted(consumptions)}`,
+      )
+    }
+  }
 }
 
 /** The leaf names a field type may use without a `type` record of its own. */
@@ -389,6 +535,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
   const admissions: Array<KernelAdmissionRecord> = []
   const docs: Array<KernelDocRecord> = []
   const canons: Array<KernelCanonRecord> = []
+  const programs: Array<KernelProgramRecord> = []
   const skipped: Array<string> = []
   const collect: { readonly [Group in KernelRecordGroup]: (row: never) => void } = {
     kind: (row: KernelKindRecord) => void kinds.push(row),
@@ -399,6 +546,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
     admission: (row: KernelAdmissionRecord) => void admissions.push(row),
     doc: (row: KernelDocRecord) => void docs.push(row),
     canon: (row: KernelCanonRecord) => void canons.push(row),
+    program: (row: KernelProgramRecord) => void programs.push(row),
   }
 
   // Group order is part of the grammar, so the reader walks a fixed ladder
@@ -432,6 +580,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
     admissions,
     docs,
     canons,
+    programs,
   }
   checkCounts(corpus, skipped)
   checkTables(corpus)

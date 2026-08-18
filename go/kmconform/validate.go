@@ -24,6 +24,7 @@ func (c *Corpus) validate(tally map[string]int) error {
 		c.validateAdmissions,
 		c.validateDocs,
 		c.validateCanons,
+		c.validatePrograms,
 		c.validateCrossRecord,
 	} {
 		if err := check(tally); err != nil {
@@ -432,6 +433,221 @@ func (c *Corpus) validateCanons(map[string]int) error {
 			return fmt.Errorf(
 				"canon vector %q: canonicalizing the value yields %s, the record declares %s",
 				row.Name, string(canonical), row.Bytes)
+		}
+	}
+	return nil
+}
+
+// freezeNamedProgramVectors are the vectors the program-group freeze names
+// outright. "At least these three" is the freeze's own wording, so a corpus
+// carrying the group without them is not the corpus the freeze describes. The
+// group itself is not optional either: it is part of the corpus now.
+//
+// The one-hole vector and its filled twin are NOT pinned by name here. The
+// freeze left their naming to the model-end lane — two records, or one paired
+// convention it fixes and documents — so this consumer requires a vector whose
+// name begins with the one syllable both conventions share, and no more than
+// that. The emission took the two-record convention; requiring the prefix
+// rather than the pair keeps that a choice the model end still owns.
+var freezeNamedProgramVectors = []string{"ground-two-node", "distill-shape"}
+
+// holeyVectorPrefix is that shared syllable.
+const holeyVectorPrefix = "holey"
+
+// actGeneratorFields reads the generator vocabulary out of the corpus's own
+// mini-AST record for Kernel.Act: the eight generator names, and each one's
+// field names in declaration order. Deriving it beats listing it, because a
+// list retyped here forks the model the moment a field is renamed — and the
+// program group's args objects are keyed by exactly these names.
+func (c *Corpus) actGeneratorFields() (map[string][]string, error) {
+	for _, row := range c.Types {
+		if row.Name != "Act" {
+			continue
+		}
+		generators := map[string][]string{}
+		for _, ctor := range row.Constructors {
+			names := make([]string, 0, len(ctor.Fields))
+			for _, field := range ctor.Fields {
+				names = append(names, field.Name)
+			}
+			generators[ctor.Name] = names
+		}
+		return generators, nil
+	}
+	return nil, fmt.Errorf(
+		"the corpus carries no type record for Act, so the program group's generator vocabulary " +
+			"has nothing to derive from")
+}
+
+// validatePrograms checks the ninth group.
+func (c *Corpus) validatePrograms(map[string]int) error {
+	if len(c.Programs) == 0 {
+		return fmt.Errorf(
+			"the corpus carries no %s records; the ninth group is part of the corpus and a header "+
+				"counting zero of them is a producer that dropped the group, not one that predates it",
+			RecordProgram)
+	}
+	generators, err := c.actGeneratorFields()
+	if err != nil {
+		return err
+	}
+	kindNames := map[string]bool{}
+	for _, kind := range c.Kinds {
+		kindNames[kind.Name] = true
+	}
+
+	seen := map[string]bool{}
+	holey := false
+	for _, row := range c.Programs {
+		if row.Name == "" {
+			return fmt.Errorf("a program record carries an empty vector name")
+		}
+		if seen[row.Name] {
+			return fmt.Errorf("two program records name the vector %q", row.Name)
+		}
+		seen[row.Name] = true
+		if strings.HasPrefix(row.Name, holeyVectorPrefix) {
+			holey = true
+		}
+		if err := validateDeclaration(row.Name, row.Declaration, generators, kindNames); err != nil {
+			return err
+		}
+		// The self-test the group exists for: the declared bytes ARE the
+		// canonical serialization of the declared value. CheckBothWays runs the
+		// same comparison over a file; this keeps it true of a Corpus obtained
+		// any other way, exactly as the canon group is treated.
+		canonical, err := row.Declaration.Canonical()
+		if err != nil {
+			return fmt.Errorf("program vector %q: %w", row.Name, err)
+		}
+		if string(canonical) != row.Bytes {
+			return fmt.Errorf(
+				"program vector %q: canonicalizing the declaration yields %s, the record declares %s",
+				row.Name, string(canonical), row.Bytes)
+		}
+	}
+	for _, name := range freezeNamedProgramVectors {
+		if !seen[name] {
+			return fmt.Errorf("the program group carries no vector named %q; the freeze names it outright", name)
+		}
+	}
+	if !holey {
+		return fmt.Errorf(
+			"the program group carries no vector whose name begins %q; the freeze requires the "+
+				"one-hole program and its filled twin under whichever naming the model-end lane fixed",
+			holeyVectorPrefix)
+	}
+	return nil
+}
+
+// validateDeclaration is the freeze's four laws over one declaration.
+func validateDeclaration(
+	vector string,
+	declaration ProgramDeclaration,
+	generators map[string][]string,
+	kindNames map[string]bool,
+) error {
+	// Holes first: a hole argref resolves against this set.
+	holes := map[string]bool{}
+	var previous *big.Int
+	for _, hole := range declaration.Holes {
+		if previous != nil && previous.Cmp(hole.Name) >= 0 {
+			return fmt.Errorf(
+				"program vector %q: hole %s follows hole %s; holes ascend by name",
+				vector, hole.Name, previous)
+		}
+		previous = hole.Name
+		holes[hole.Name.String()] = true
+	}
+
+	for _, node := range declaration.Nodes {
+		fields, known := generators[node.Generator]
+		if !known {
+			return fmt.Errorf(
+				"program vector %q: node %s applies the generator %q, which the model's Act record "+
+					"does not declare",
+				vector, node.Name, node.Generator)
+		}
+		declared := map[string]bool{}
+		for _, field := range fields {
+			declared[field] = true
+		}
+		for _, arg := range node.Args {
+			if !declared[arg.Field] {
+				return fmt.Errorf(
+					"program vector %q: node %s binds the argument %q, which the generator %q does not "+
+						"declare; its fields are [%s]",
+					vector, node.Name, arg.Field, node.Generator, strings.Join(fields, ", "))
+			}
+			switch arg.Ref.Arg {
+			case ArgDigest:
+				if !kindNames[arg.Ref.Kind] {
+					return fmt.Errorf(
+						"program vector %q: node %s argument %q references a digest of kind %q, which is "+
+							"not one of the model's twelve declaration kinds",
+						vector, node.Name, arg.Field, arg.Ref.Kind)
+				}
+			case ArgHole:
+				if !holes[arg.Ref.Name.String()] {
+					return fmt.Errorf(
+						"program vector %q: node %s argument %q stands in hole %s, which the declaration "+
+							"does not declare; a hole is a declared parameter, never a wildcard",
+						vector, node.Name, arg.Field, arg.Ref.Name)
+				}
+			}
+		}
+	}
+
+	// The erasure obligation: the node list must satisfy the model's own
+	// admission predicate, which is what carries the bridge's transport
+	// theorems over to a built program for free.
+	if err := declaration.CheckAdmission(); err != nil {
+		return fmt.Errorf("program vector %q: %w", vector, err)
+	}
+
+	return validateEdgeSet(vector, declaration)
+}
+
+// validateEdgeSet is the emitter/validator consistency rule: the edges are
+// exactly the consumptions the local argrefs imply, no more and no fewer. The
+// freeze does not pin the ORDER of the rows, so this compares sets and
+// refuses a duplicate row; pinning an order that the freeze left open would
+// refuse a conforming producer for a byte the freeze never spoke about.
+func validateEdgeSet(vector string, declaration ProgramDeclaration) error {
+	declared := map[string]bool{}
+	for _, edge := range declaration.Edges {
+		key := edgeKey(edge.From, edge.To)
+		if declared[key] {
+			return fmt.Errorf(
+				"program vector %q: the edge %s appears twice; an edge is a relation between two nodes, "+
+					"so a node consumed through two arguments is still one edge",
+				vector, key)
+		}
+		declared[key] = true
+	}
+	implied := declaration.DerivedEdges()
+	derived := map[string]bool{}
+	for _, edge := range implied {
+		derived[edgeKey(edge.From, edge.To)] = true
+	}
+	// Both loops walk an ordered slice rather than a map, so a corpus with two
+	// faults is refused for the same one on every run.
+	for _, edge := range implied {
+		key := edgeKey(edge.From, edge.To)
+		if !declared[key] {
+			return fmt.Errorf(
+				"program vector %q: the edge %s is implied by a local argument reference and is not "+
+					"declared; the edge set must equal exactly the consumptions the nodes imply",
+				vector, key)
+		}
+	}
+	for _, edge := range declaration.Edges {
+		key := edgeKey(edge.From, edge.To)
+		if !derived[key] {
+			return fmt.Errorf(
+				"program vector %q: the edge %s is declared and no local argument reference implies it; "+
+					"the edge set must equal exactly the consumptions the nodes imply",
+				vector, key)
 		}
 	}
 	return nil
