@@ -127,21 +127,6 @@ for themselves immediately:
   run's own pass lines is a report of nothing; "a report without the
   run is a failed run."
 
-### 6b. Ship the target, not the twin — wire to wire
-
-A conformance harness needs a target before the real artifact exists,
-so a reference implementation gets written test-side. That is
-scaffolding with an expiry date: the moment the artifact should ship,
-PROMOTE the reference into the shipping tree and re-point the harness
-at the shipped object — the vectors must gate the thing callers call,
-never a test-only twin beside it. A twin that stays test-side is the
-drift engine reborn: two implementations of the judgment, one
-checked, one shipped. The full chain reads wire to wire: model →
-emitted corpus → generated tables → shipped implementation →
-one public seam — every link with its own wall, and the seam's
-consumers taking the checked object through one service. (Worked
-example: scratch/dispatch/2026-08-18-wire-to-wire-door-brief.md.)
-
 ### 7. Keep the blast radius deletable
 
 Prefer a new package/directory that *reads* existing code over edits
