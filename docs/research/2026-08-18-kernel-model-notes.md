@@ -373,6 +373,34 @@ K-series stays the design record's and is not renumbered here.
   before one exists); one kind per fold family (refused by the test).
   Reversal: a rename is a one-line brand swap pre-consumer; a split
   adopted and then retired strands identities.
+- **KM-12 — type the per-kind declaration content; read the kind enum
+  as a language-version projection.** Raised by the operator in
+  review: the kind list is the language's one genuinely chosen
+  ontology (everything else is licensed by a theorem or forced by a
+  closure argument), so should it be modeled more concretely? Two
+  directions, one refused: making digests themselves concrete
+  (hashing, widths) buys nothing — the in-model reading of content
+  addressing is injectivity plus admission freshness, and the hash
+  stays in the trusted base, the standing precedent. Recommended
+  instead: a dependent content family `KindContent : DeclKind -> Type`
+  with `declare` taking `KindContent kind` — the program kind already
+  has its content type (the node/hole/lineage declaration), and the
+  algebra, policy, and schema kinds have natural ones. Payoff: the
+  kind list becomes self-justifying by construction — two kinds are
+  distinct exactly when their content types and door checks differ —
+  and the per-kind certifier checks (the gap KM-4 names) get their
+  carrier. Companion reading, resolving the static-versus-data
+  tension: the ratified language declaration carries the kind table
+  as cataloged data, and the model's fixed inductive is that table's
+  codegen projection at one language version — adding a kind is a
+  language successor declaration, never an enum edit. Alternatives:
+  keep all content opaque as `Value` (the current stated abstraction —
+  honest but leaves per-kind admission unstatable); model the kind
+  table as runtime data inside the model (loses the type-level brand
+  discipline the must-not-compile class rests on). Reversal: the
+  content family is additive over the existing kinds; retiring it
+  reverts to the opaque abstraction without touching sentence
+  identity.
 
 ## 12. Sources
 
