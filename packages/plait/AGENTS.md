@@ -6,6 +6,15 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   canonicalizer; never add or copy another.
 - Envelope identity is SHA-256 over canonical, uncompressed bytes. Compression,
   framing, storage, and chunking are transport only and never move identity.
+- The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
+  round number: `test/MaxPayloadSemantics.test.ts` measures the budget and the
+  emit path's header cost at the pin, and the threshold is a stated quarter of
+  it. Moving `INLINE_BODY_MAX_BYTES`, `MAX_PAYLOAD_BYTES`, or
+  `EMIT_HEADER_BYTES` without re-running that measurement is a finding. The emit
+  seam checks the live server against the pin and refuses
+  `payload-substrate-shape`; that check ships with the lowered-`max_payload`
+  server that makes it fail, and a shape check with no such control is not a
+  wall.
 - Subjects route and envelopes identify. No code derives or parses a digest from
   a fabric subject. Each declared `(lane, partition)` owns one exact stream;
   its dense stream sequence is the successor position.

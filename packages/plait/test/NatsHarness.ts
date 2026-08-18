@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { mkdir, mkdtemp, readdir, readFile, rename, rm } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 
@@ -25,6 +25,19 @@ export interface NatsHarness {
   readonly url: string
   readonly directory: string
   readonly stop: () => Promise<void>
+}
+
+export interface NatsServerOptions {
+  /**
+   * Server configuration lines this incarnation loads before its flags.
+   *
+   * The flags below still win — nats-server applies `-c` first and lets the
+   * command line override it — so a caller can lower a config-only setting
+   * without touching JetStream, the store, or the port. `max_payload` is exactly
+   * such a setting: it has no flag, and the payload-budget shape check needs a
+   * real server that advertises less than the pin, not a mocked INFO block.
+   */
+  readonly config?: string
 }
 
 const waitForPorts = async (directory: string): Promise<string> => {
@@ -112,11 +125,21 @@ export const buildServerBinary = (): Promise<NatsServerBinary> => {
  * lifecycle mutation resets the revision order, which is exactly the
  * fixed-incarnation edge the register's claims exclude (seam rule 7).
  */
-export const startNatsServer = async (prebuilt: string): Promise<NatsHarness> => {
+export const startNatsServer = async (
+  prebuilt: string,
+  options: NatsServerOptions = {},
+): Promise<NatsHarness> => {
   const directory = await mkdtemp(join(tmpdir(), "plait-nats-"))
+  let configArguments: ReadonlyArray<string> = []
+  if (options.config !== undefined) {
+    const path = join(directory, "server.conf")
+    await writeFile(path, options.config, "utf8")
+    configArguments = ["-c", path]
+  }
   const server = Bun.spawn({
     cmd: [
       prebuilt,
+      ...configArguments,
       "-js",
       "-sd",
       join(directory, "store"),
@@ -158,8 +181,10 @@ export const startNatsServer = async (prebuilt: string): Promise<NatsHarness> =>
 }
 
 /** Resolves the pinned binary and starts one fresh server on it. */
-export const startNatsHarness = async (): Promise<NatsHarness> =>
-  startNatsServer((await buildServerBinary()).binary)
+export const startNatsHarness = async (
+  options: NatsServerOptions = {},
+): Promise<NatsHarness> =>
+  startNatsServer((await buildServerBinary()).binary, options)
 
 export const waitForFile = async (path: string): Promise<void> => {
   for (let attempt = 0; attempt < 400; attempt++) {

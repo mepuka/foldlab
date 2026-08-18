@@ -39,6 +39,7 @@ export const StructuralRefusalKind = Schema.Literals([
   "invalid-partition-key",
   "lane-evidence-mismatch",
   "lane-substrate-shape",
+  "payload-substrate-shape",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",
