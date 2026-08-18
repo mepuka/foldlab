@@ -8,10 +8,20 @@ import {
 import type { ModelResponse } from "./Scoring.ts"
 import type { Variant } from "./Projection.ts"
 
+/**
+ * The reasoning-effort setting every generation runs at. Stated here as a
+ * named constant, carried on each run record, and declared in the
+ * preregistration's population: it changes the quantity being counted, so
+ * leaving it implicit in a spawn argument put it outside the stated population
+ * in round 1.
+ */
+export const REASONING_EFFORT = "low"
+
 export interface ModelRequest {
   readonly model_alias: string
   readonly variant: Variant
   readonly sample: number
+  readonly effort: string
   readonly prompt: string
 }
 
@@ -20,6 +30,7 @@ export interface ModelResult {
   readonly canonical_model: string
   readonly variant: Variant
   readonly sample: number
+  readonly effort: string
   readonly duration_api_ms: number
   readonly total_cost_usd: number
   readonly model_usage: ClaudeCliResponse["modelUsage"]
@@ -31,7 +42,7 @@ export class ModelInvocationError extends Schema.TaggedError<ModelInvocationErro
   {
     model_alias: Schema.String,
     variant: Schema.String,
-    sample: Schema.Number,
+    sample: Schema.Finite,
     cause: Schema.Defect(),
   },
 ) {}
@@ -121,7 +132,7 @@ export class ModelRunner extends Context.Service<
           "--model",
           request.model_alias,
           "--effort",
-          "low",
+          request.effort,
           "--output-format",
           "json",
           "--json-schema",
@@ -165,6 +176,7 @@ export class ModelRunner extends Context.Service<
           canonical_model: canonicalModel,
           variant: request.variant,
           sample: request.sample,
+          effort: request.effort,
           duration_api_ms: response.duration_api_ms,
           total_cost_usd: response.total_cost_usd,
           model_usage: response.modelUsage,

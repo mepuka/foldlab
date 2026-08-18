@@ -108,6 +108,37 @@ export const writeText = Effect.fn("writeText")(
   },
 )
 
+/**
+ * The file's bytes, or `null` when it is absent. The check arm needs absence
+ * to be an answer rather than a failure: "committed and no longer generated"
+ * and "generated and never committed" are two different reds, and a read that
+ * threw could report neither.
+ */
+export const readTextIfPresent = Effect.fn("readTextIfPresent")(
+  function*(path: string): Effect.fn.Return<
+    string | null,
+    EvalFileError,
+    FileSystem.FileSystem
+  > {
+    const fileSystem = yield* FileSystem.FileSystem
+    const present = yield* fileSystem.exists(path).pipe(
+      Effect.mapError((cause) => new EvalFileError({
+        operation: "readTextIfPresent",
+        path,
+        cause,
+      })),
+    )
+    if (!present) return null
+    return yield* fileSystem.readFileString(path).pipe(
+      Effect.mapError((cause) => new EvalFileError({
+        operation: "readTextIfPresent",
+        path,
+        cause,
+      })),
+    )
+  },
+)
+
 const decodeRunRecord = Schema.decodeUnknownEffect(
   Schema.fromJsonString(RunRecordSchema),
 )

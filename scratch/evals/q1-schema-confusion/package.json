@@ -7,7 +7,9 @@
     "generate": "bun src/main.ts generate",
     "report": "bun src/main.ts report",
     "run": "bun src/main.ts run",
-    "test": "bun test ./test",
+    "check:generated": "bun src/main.ts check",
+    "check:generated-control": "bun src/main.ts check-control",
+    "test": "bun test ./test && bun run check:generated && bun run check:generated-control",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

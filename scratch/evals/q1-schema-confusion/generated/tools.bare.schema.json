@@ -1,4 +1,11 @@
 {
+  "$provenance": {
+    "command": "bun run generate",
+    "base": "verify/kernel/projections/tools.schema.json",
+    "base_sha256": "8d9cb4b106c86f60f6e74ae60ff20ee57a3f0354e91227480f8562e6ea3bd7d4",
+    "corpus": "packages/plait/fixtures/kernel-conformance.ndjson",
+    "corpus_command": "bun run generate:kernel-builder"
+  },
   "$comment": "The kernel language projected as MCP tool input schemas. EXPLORATORY, hand-derived from the Lean model in verify/kernel at this commit; the design mandates projections be GENERATED from the one grammar and walled served-equals-derived — this file is the reference sketch that generation owes. Shapes follow the survey leans: eight flat tools, no oneOf, compound self-descriptive field names (a field is named for the value it carries), digests as prefixed opaque strings with pattern, integers only (I-JSON safe range; no floats exist in the canonical grammar). Constraints beyond type/enum may not be sampler-enforced by every provider; the admission door enforces them all, and a violation returns the taught refusal (see refusal_result).",
   "digest_format": {
     "$comment": "Model uses short identity labels (sha256:NN); the running system carries 64 lowercase hex chars. The pattern below is the model's.",

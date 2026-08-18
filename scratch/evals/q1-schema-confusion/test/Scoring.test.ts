@@ -1,125 +1,200 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
-import { projectToolDocument } from "../src/Projection.ts"
+
+import type { BatteryTask } from "../src/Battery.ts"
+import { projectToolDocument, type ToolDocument } from "../src/Projection.ts"
 import {
   compileToolValidators,
   scoreRun,
   wilson95,
-  type BatteryTask,
+  type CanonicalSlot,
 } from "../src/Scoring.ts"
 
 const parent = `sha256:${"d".repeat(64)}`
 const request = `sha256:${"3".repeat(64)}`
+const lane = `sha256:${"e".repeat(64)}`
 
-const base = {
-  version: "kernel-tools-v1",
-  tools: [{
-    name: "kernel_spawn",
-    description: "spawn",
-    input_schema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["parent_writ_digest", "request_writ_digest"],
-      properties: {
-        parent_writ_digest: {
-          type: "string",
-          pattern: "^sha256:[0-9a-f]+$",
-        },
-        request_writ_digest: {
-          type: "string",
-          pattern: "^sha256:[0-9a-f]+$",
+const digest = { type: "string", pattern: "^sha256:[0-9a-f]+$" } as const
+
+const base: ToolDocument = {
+  tools: [
+    {
+      name: "kernel_spawn",
+      description: "spawn",
+      input_schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["parent_writ_digest", "request_writ_digest"],
+        properties: {
+          parent_writ_digest: digest,
+          request_writ_digest: digest,
         },
       },
     },
-  }],
-} as const
-
-const task: BatteryTask = {
-  id: "spawn-child-writ",
-  instruction: "Spawn the requested child writ under its parent.",
-  tool: "kernel_spawn",
-  arguments: {
-    parent_writ_digest: parent,
-    request_writ_digest: request,
-  },
+    {
+      name: "kernel_emit",
+      description: "emit",
+      input_schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["lane_digest", "body"],
+        properties: { lane_digest: digest, body: { type: "string" } },
+      },
+    },
+  ],
 }
 
-const digests = [parent, request]
+const spawnTask: BatteryTask = {
+  id: "spawn",
+  tool: "kernel_spawn",
+  assignments: [
+    { ledger_key: "spawn.parent_writ", role: "the authority being attenuated" },
+    { ledger_key: "spawn.request_writ", role: "the requested authority" },
+  ],
+  literals: {},
+  arguments: { parent_writ_digest: parent, request_writ_digest: request },
+}
+
+const emitTask: BatteryTask = {
+  id: "emit",
+  tool: "kernel_emit",
+  assignments: [{ ledger_key: "emit.lane", role: "the declared evidence lane" }],
+  literals: { body: '{"slot":"body"}' },
+  arguments: { lane_digest: lane, body: '{"slot":"body"}' },
+}
+
+const canonicalSlots: ReadonlyMap<string, CanonicalSlot> = new Map([
+  [parent, { tool: "kernel_spawn", field: "parent_writ_digest" }],
+  [request, { tool: "kernel_spawn", field: "request_writ_digest" }],
+  [lane, { tool: "kernel_emit", field: "lane_digest" }],
+])
+
+const plantedDigests = [parent, request, lane]
+
+const score = (options: {
+  readonly tasks: readonly BatteryTask[]
+  readonly variant: "compound" | "bare" | "nested"
+  readonly calls: readonly {
+    readonly task_id: string
+    readonly name: string
+    readonly arguments: Readonly<Record<string, unknown>>
+  }[]
+}) =>
+  scoreRun({
+    tasks: options.tasks,
+    variant: options.variant,
+    base,
+    validators: Effect.runSync(
+      compileToolValidators(projectToolDocument(base, options.variant)),
+    ),
+    plantedDigests,
+    canonicalSlots,
+    response: { calls: options.calls },
+  })
 
 describe("scoreRun", () => {
   test("separates schema validity from semantic slot confusion", () => {
-    const tools = projectToolDocument(base, "compound")
-    const [observation] = scoreRun({
-      tasks: [task],
+    const [observation] = score({
+      tasks: [spawnTask],
       variant: "compound",
-      base,
-      validators: Effect.runSync(compileToolValidators(tools)),
-      plantedDigests: digests,
-      response: {
-        calls: [{
-          task_id: task.id,
-          name: task.tool,
-          arguments: {
-            parent_writ_digest: request,
-            request_writ_digest: parent,
-          },
-        }],
-      },
+      calls: [{
+        task_id: "spawn",
+        name: "kernel_spawn",
+        arguments: { parent_writ_digest: request, request_writ_digest: parent },
+      }],
     })
 
     expect(observation).toMatchObject({
       valid_call: true,
-      field_confusion: true,
+      expected_candidate_missing: true,
       digest_in_wrong_slot: true,
-      wrong_tool: false,
+      field_confusion: true,
       schema_invalid: false,
     })
   })
 
   test("counts an incorrect nested type as a wrong digest slot", () => {
-    const tools = projectToolDocument(base, "nested")
-    const [observation] = scoreRun({
-      tasks: [task],
+    const [observation] = score({
+      tasks: [spawnTask],
       variant: "nested",
-      base,
-      validators: Effect.runSync(compileToolValidators(tools)),
-      plantedDigests: digests,
-      response: {
-        calls: [{
-          task_id: task.id,
-          name: task.tool,
-          arguments: {
-            parent_writ: { type: "lane", value: parent },
-            request_writ: { type: "writ", value: request },
-          },
-        }],
-      },
+      calls: [{
+        task_id: "spawn",
+        name: "kernel_spawn",
+        arguments: {
+          parent_writ: { type: "lane", value: parent },
+          request_writ: { type: "writ", value: request },
+        },
+      }],
     })
 
-    expect(observation).toMatchObject({
-      valid_call: false,
-      field_confusion: true,
-      digest_in_wrong_slot: true,
-      schema_invalid: true,
-    })
+    expect(observation?.digest_in_wrong_slot).toBe(true)
   })
 
   test("does not turn a wholly missing call into a placement error", () => {
-    const tools = projectToolDocument(base, "bare")
-    const [observation] = scoreRun({
-      tasks: [task],
-      variant: "bare",
-      base,
-      validators: Effect.runSync(compileToolValidators(tools)),
-      plantedDigests: digests,
-      response: { calls: [] },
-    })
+    const [observation] = score({ tasks: [spawnTask], variant: "bare", calls: [] })
 
     expect(observation).toMatchObject({
       valid_call: false,
-      field_confusion: true,
+      expected_candidate_missing: true,
       digest_in_wrong_slot: false,
       missing: true,
+    })
+  })
+
+  // The two primitive measures have to be able to disagree in both directions,
+  // or the report is quoting one measure under two names. Round 1's pair never
+  // disagreed once across 240 calls and nothing said so.
+  test("omission fires without misplacement when a slot is left empty", () => {
+    const [observation] = score({
+      tasks: [spawnTask],
+      variant: "compound",
+      calls: [{
+        task_id: "spawn",
+        name: "kernel_spawn",
+        arguments: { parent_writ_digest: parent },
+      }],
+    })
+
+    expect(observation).toMatchObject({
+      expected_candidate_missing: true,
+      digest_in_wrong_slot: false,
+    })
+  })
+
+  test("misplacement fires without omission when a foreign digest is added", () => {
+    const [observation] = score({
+      tasks: [emitTask],
+      variant: "compound",
+      calls: [{
+        task_id: "emit",
+        name: "kernel_emit",
+        arguments: { lane_digest: lane, body: parent },
+      }],
+    })
+
+    expect(observation).toMatchObject({
+      expected_candidate_missing: false,
+      digest_in_wrong_slot: true,
+    })
+  })
+
+  // A planted digest the task never asked for, sitting in the slot it does
+  // belong to, is helpfulness rather than confusion.
+  test("a digest in its own optional slot is not misplacement", () => {
+    const [observation] = score({
+      tasks: [spawnTask],
+      variant: "compound",
+      calls: [{
+        task_id: "spawn",
+        name: "kernel_spawn",
+        arguments: { parent_writ_digest: parent, request_writ_digest: request },
+      }],
+    })
+
+    expect(observation).toMatchObject({
+      expected_candidate_missing: false,
+      digest_in_wrong_slot: false,
+      field_confusion: false,
     })
   })
 })

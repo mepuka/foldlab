@@ -1,18 +1,32 @@
+/**
+ * Mechanical scoring: Ajv compilation and exact scalar comparison. No judge
+ * and no rubric decides anything here.
+ *
+ * Round 1 reported three measures that never once disagreed across 240 calls,
+ * because `field_confusion` was defined over every expected scalar path — free
+ * text bodies included — while `digest_in_wrong_slot` was defined over planted
+ * digests, and on that population every omission happened to coincide with a
+ * misplacement. Two of the three were one measure wearing two names.
+ *
+ * The two primitive measures below are disjoint by construction: omission is
+ * an expected candidate absent from its own slot, misplacement is a planted
+ * digest present in a slot that is not its own. A call can do either without
+ * the other. `field_confusion` is retained as the preregistered union of the
+ * two and is documented as a union everywhere it is quoted, never as a third
+ * independent line of evidence.
+ *
+ * @module
+ */
 import Ajv, { type ValidateFunction } from "ajv"
 import { Effect, Predicate, Schema } from "effect"
 
+import type { BatteryTask } from "./Battery.ts"
 import {
+  bareDigestFieldName,
   projectArguments,
   type ToolDocument,
   type Variant,
 } from "./Projection.ts"
-
-export interface BatteryTask {
-  readonly id: string
-  readonly instruction: string
-  readonly tool: string
-  readonly arguments: Readonly<Record<string, unknown>>
-}
 
 export interface ModelCall {
   readonly task_id: string
@@ -24,15 +38,26 @@ export interface ModelResponse {
   readonly calls: readonly ModelCall[]
 }
 
+/** Where a planted digest legitimately sits, in base coordinates. */
+export interface CanonicalSlot {
+  readonly tool: string
+  readonly field: string
+}
+
 export interface Observation {
   readonly task_id: string
   readonly valid_call: boolean
-  readonly field_confusion: boolean
+  /** An expected planted candidate is absent from its own slot. */
+  readonly expected_candidate_missing: boolean
+  /** A planted digest sits in a slot that is not its own. */
   readonly digest_in_wrong_slot: boolean
+  /** The preregistered union of the two above. Not independent evidence. */
+  readonly field_confusion: boolean
   readonly missing: boolean
   readonly duplicate: boolean
   readonly wrong_tool: boolean
   readonly schema_invalid: boolean
+  /** Diagnostic only: every expected scalar absent, free-text slots included. */
   readonly omitted_expected_fields: number
 }
 
@@ -97,7 +122,7 @@ const flattenScalars = (
 const scalarMap = (value: unknown): ReadonlyMap<string, JsonScalar> =>
   new Map(flattenScalars(value).map(({ path, value }) => [path, value]))
 
-const expectedFieldsMissing = (
+const omittedScalars = (
   expected: ReadonlyMap<string, JsonScalar>,
   actual: ReadonlyMap<string, JsonScalar>,
 ): number => {
@@ -108,24 +133,56 @@ const expectedFieldsMissing = (
   return missing
 }
 
-const hasDigestInWrongSlot = (
+/**
+ * The path a planted digest occupies once its arm's transformation is applied.
+ * Compound keeps the property name; bare drops the terminal `_digest`; nested
+ * uses the bare name and puts the digest under `value`.
+ */
+const canonicalPath = (field: string, variant: Variant): string => {
+  if (variant === "compound") return field
+  const bare = bareDigestFieldName(field)
+  return variant === "nested" ? `${bare}.value` : bare
+}
+
+/**
+ * An expected candidate absent from its own slot. Restricted to planted
+ * digests, which is what the preregistered definition says and what the round-1
+ * implementation quietly widened to every expected scalar.
+ */
+const hasMissingCandidate = (
   expected: ReadonlyMap<string, JsonScalar>,
   actual: ReadonlyMap<string, JsonScalar>,
-  plantedDigests: readonly string[],
+  planted: ReadonlySet<string>,
 ): boolean => {
-  const planted = new Set(plantedDigests)
-  const expectedPaths = new Map<string, ReadonlyArray<string>>()
-
   for (const [path, value] of expected) {
     if (!Predicate.isString(value) || !planted.has(value)) continue
-    const paths = expectedPaths.get(value) ?? []
-    expectedPaths.set(value, [...paths, path])
+    if (!Object.is(actual.get(path), value)) return true
   }
+  return false
+}
 
+/**
+ * A planted digest in a slot that is not its own. A digest the task never asked
+ * for, placed in the slot it does belong to, is not misplacement — scoring that
+ * as confusion would measure helpfulness rather than slot discrimination.
+ */
+const hasDigestInWrongSlot = (
+  call: ModelCall,
+  actual: ReadonlyMap<string, JsonScalar>,
+  expected: ReadonlyMap<string, JsonScalar>,
+  canonicalSlots: ReadonlyMap<string, CanonicalSlot>,
+  variant: Variant,
+): boolean => {
   for (const [path, value] of actual) {
-    if (!Predicate.isString(value) || !planted.has(value)) continue
-    const paths = expectedPaths.get(value)
-    if (paths === undefined || !paths.includes(path)) return true
+    if (!Predicate.isString(value)) continue
+    const slot = canonicalSlots.get(value)
+    if (slot === undefined) continue
+
+    if (slot.tool !== call.name) return true
+    if (path !== canonicalPath(slot.field, variant)) return true
+
+    // A nested reference in the right slot still carries a sort label, and a
+    // wrong label there is the nested arm's own way of confusing the two.
     if (path.endsWith(".value")) {
       const typePath = `${path.slice(0, -".value".length)}.type`
       if (!Object.is(actual.get(typePath), expected.get(typePath))) return true
@@ -142,6 +199,7 @@ const scoreTask = (options: {
   readonly base: ToolDocument
   readonly validators: ToolValidators
   readonly plantedDigests: readonly string[]
+  readonly canonicalSlots: ReadonlyMap<string, CanonicalSlot>
 }): Observation => {
   const matches = options.calls.filter((call) => call.task_id === options.task.id)
   const call = matches[0]
@@ -154,27 +212,32 @@ const scoreTask = (options: {
     : projectArguments(baseTool, options.task.arguments, options.variant)
   const expected = scalarMap(expectedArguments)
   const actual = scalarMap(call?.arguments)
-  const omittedExpectedFields = expectedFieldsMissing(expected, actual)
+  const planted = new Set(options.plantedDigests)
   const validator = call === undefined ? undefined : options.validators.get(call.name)
   const schemaInvalid = call !== undefined &&
     (validator === undefined || !validator(call.arguments))
 
+  // A row the model never answered, answered twice, or answered with the wrong
+  // tool has not populated its slots; that is an omission, and it is counted as
+  // one rather than being left out of the denominator.
+  const unanswered = missing || duplicate || wrongTool
+  const expectedCandidateMissing = unanswered ||
+    hasMissingCandidate(expected, actual, planted)
+  const digestInWrongSlot = call === undefined
+    ? false
+    : hasDigestInWrongSlot(call, actual, expected, options.canonicalSlots, options.variant)
+
   return {
     task_id: options.task.id,
     valid_call: !missing && !duplicate && !wrongTool && !schemaInvalid,
-    field_confusion: missing || duplicate || wrongTool || omittedExpectedFields > 0,
-    digest_in_wrong_slot: call === undefined
-      ? false
-      : hasDigestInWrongSlot(
-        expected,
-        actual,
-        options.plantedDigests,
-      ),
+    expected_candidate_missing: expectedCandidateMissing,
+    digest_in_wrong_slot: digestInWrongSlot,
+    field_confusion: expectedCandidateMissing || digestInWrongSlot,
     missing,
     duplicate,
     wrong_tool: wrongTool,
     schema_invalid: schemaInvalid,
-    omitted_expected_fields: omittedExpectedFields,
+    omitted_expected_fields: omittedScalars(expected, actual),
   }
 }
 
@@ -184,6 +247,7 @@ export const scoreRun = (options: {
   readonly base: ToolDocument
   readonly validators: ToolValidators
   readonly plantedDigests: readonly string[]
+  readonly canonicalSlots: ReadonlyMap<string, CanonicalSlot>
   readonly response: ModelResponse
 }): ReadonlyArray<Observation> =>
   options.tasks.map((task) => scoreTask({ ...options, task, calls: options.response.calls }))

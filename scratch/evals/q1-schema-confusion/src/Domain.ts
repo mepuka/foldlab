@@ -11,8 +11,8 @@ const JsonSchemaNode: Schema.Codec<JsonSchema, JsonSchema, never, never> = Schem
     pattern: Schema.optionalKey(Schema.String),
     description: Schema.optionalKey(Schema.String),
     enum: Schema.optionalKey(Schema.Array(Schema.String)),
-    minimum: Schema.optionalKey(Schema.Number),
-    maximum: Schema.optionalKey(Schema.Number),
+    minimum: Schema.optionalKey(Schema.Finite),
+    maximum: Schema.optionalKey(Schema.Finite),
     additionalProperties: Schema.optionalKey(Schema.Boolean),
     required: Schema.optionalKey(Schema.Array(Schema.String)),
     properties: Schema.optionalKey(Schema.Record(Schema.String, JsonSchemaNode)),
@@ -61,17 +61,17 @@ export const ModelResponseSchema: Schema.Codec<
 
 export const ModelUsageSchema = Schema.Struct({
   canonicalModel: Schema.String,
-  inputTokens: Schema.Number,
-  outputTokens: Schema.Number,
-  cacheReadInputTokens: Schema.Number,
-  cacheCreationInputTokens: Schema.Number,
-  costUSD: Schema.Number,
+  inputTokens: Schema.Finite,
+  outputTokens: Schema.Finite,
+  cacheReadInputTokens: Schema.Finite,
+  cacheCreationInputTokens: Schema.Finite,
+  costUSD: Schema.Finite,
 })
 
 export const ClaudeCliResponseSchema = Schema.Struct({
   is_error: Schema.Boolean,
-  duration_api_ms: Schema.Number,
-  total_cost_usd: Schema.Number,
+  duration_api_ms: Schema.Finite,
+  total_cost_usd: Schema.Finite,
   result: Schema.String,
   structured_output: ModelResponseSchema,
   modelUsage: Schema.Record(Schema.String, ModelUsageSchema),
@@ -84,6 +84,13 @@ export interface RunRecord {
   readonly canonical_model: string
   readonly variant: Variant
   readonly sample: number
+  /**
+   * The provider's reasoning-effort setting for this generation. Round 1 ran
+   * the whole population at `low` and said so only in the source, which left a
+   * first-order determinant of the counted quantity outside the stated
+   * population. It is a record field now so a run cannot omit it.
+   */
+  readonly effort: string
   readonly base_sha256: string
   readonly prompt_sha256: string
   readonly duration_api_ms: number
@@ -101,11 +108,12 @@ export const RunRecordSchema: Schema.Codec<
   model_alias: Schema.String,
   canonical_model: Schema.String,
   variant: Schema.Literals(["compound", "bare", "nested"]),
-  sample: Schema.Number,
+  sample: Schema.Finite,
+  effort: Schema.String,
   base_sha256: Schema.String,
   prompt_sha256: Schema.String,
-  duration_api_ms: Schema.Number,
-  total_cost_usd: Schema.Number,
+  duration_api_ms: Schema.Finite,
+  total_cost_usd: Schema.Finite,
   model_usage: Schema.Record(Schema.String, ModelUsageSchema),
   response: ModelResponseSchema,
 })

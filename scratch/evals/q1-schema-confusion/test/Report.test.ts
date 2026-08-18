@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
 
+import type { BatteryTask, LedgerEntry } from "../src/Battery.ts"
 import type { RunRecord } from "../src/Domain.ts"
 import type { ToolDocument, Variant } from "../src/Projection.ts"
 import { analyzeRuns, renderFindings } from "../src/Report.ts"
+import type { CanonicalSlot } from "../src/Scoring.ts"
 
 const parent = `sha256:${"d".repeat(64)}`
 const request = `sha256:${"3".repeat(64)}`
+const digest = { type: "string", pattern: "^sha256:[0-9a-f]+$" } as const
 
 const base: ToolDocument = {
   tools: [{
@@ -17,41 +20,57 @@ const base: ToolDocument = {
       additionalProperties: false,
       required: ["parent_writ_digest", "request_writ_digest"],
       properties: {
-        parent_writ_digest: {
-          type: "string",
-          pattern: "^sha256:[0-9a-f]+$",
-        },
-        request_writ_digest: {
-          type: "string",
-          pattern: "^sha256:[0-9a-f]+$",
-        },
+        parent_writ_digest: { ...digest, description: "the authority being attenuated" },
+        request_writ_digest: { ...digest, description: "the requested authority" },
       },
     },
   }],
 }
 
-const task = {
-  id: "spawn-child-writ",
-  instruction: "spawn",
-  tool: "kernel_spawn",
-  arguments: {
-    parent_writ_digest: parent,
-    request_writ_digest: request,
+const ledger: readonly LedgerEntry[] = [
+  {
+    key: "spawn.parent_writ",
+    tool: "kernel_spawn",
+    field: "parent_writ_digest",
+    role: "the authority being attenuated",
+    digest: parent,
+    corpus_field: "parent",
+    corpus_kind: "policy",
+    cross_walk: "position",
   },
+  {
+    key: "spawn.request_writ",
+    tool: "kernel_spawn",
+    field: "request_writ_digest",
+    role: "the requested authority",
+    digest: request,
+    corpus_field: null,
+    corpus_kind: null,
+    cross_walk: "unresolved",
+  },
+]
+
+const task: BatteryTask = {
+  id: "spawn",
+  tool: "kernel_spawn",
+  assignments: [
+    { ledger_key: "spawn.parent_writ", role: "the authority being attenuated" },
+    { ledger_key: "spawn.request_writ", role: "the requested authority" },
+  ],
+  literals: {},
+  arguments: { parent_writ_digest: parent, request_writ_digest: request },
 }
 
+const canonicalSlots: ReadonlyMap<string, CanonicalSlot> = new Map(
+  ledger.map((entry) => [entry.digest, { tool: entry.tool, field: entry.field }]),
+)
+
 const argumentsByVariant: Record<Variant, Readonly<Record<string, unknown>>> = {
-  compound: {
-    parent_writ_digest: parent,
-    request_writ_digest: request,
-  },
-  bare: {
-    parent_writ: request,
-    request_writ: parent,
-  },
+  compound: { parent_writ_digest: parent, request_writ_digest: request },
+  bare: { parent_writ: request, request_writ: parent },
   nested: {
-    parent_writ: { type: "writ", value: parent },
-    request_writ: { type: "writ", value: request },
+    parent_writ: { type: "policy", value: parent },
+    request_writ: { type: "policy", value: request },
   },
 }
 
@@ -60,6 +79,7 @@ const run = (variant: Variant): RunRecord => ({
   canonical_model: "claude-haiku-test",
   variant,
   sample: 1,
+  effort: "low",
   base_sha256: "0".repeat(64),
   prompt_sha256: variant.padEnd(64, "0"),
   duration_api_ms: 10,
@@ -75,54 +95,74 @@ const run = (variant: Variant): RunRecord => ({
     },
   },
   response: {
-    calls: [{
-      task_id: task.id,
-      name: task.tool,
-      arguments: argumentsByVariant[variant],
-    }],
+    calls: [{ task_id: task.id, name: task.tool, arguments: argumentsByVariant[variant] }],
   },
 })
 
+const analyze = () =>
+  Effect.runPromise(analyzeRuns({
+    base,
+    tasks: [task],
+    ledger,
+    plantedDigests: [parent, request],
+    canonicalSlots,
+    runs: [run("compound"), run("bare"), run("nested")],
+  }))
+
 describe("result reporting", () => {
   test("summarizes validity and confusion independently", async () => {
-    const analysis = await Effect.runPromise(analyzeRuns({
-      base,
-      tasks: [task],
-      plantedDigests: [parent, request],
-      runs: [run("compound"), run("bare"), run("nested")],
-    }))
+    const analysis = await analyze()
+    const find = (variant: Variant) =>
+      analysis.summaries.find((row) => row.scope === "combined" && row.variant === variant)
 
-    const compound = analysis.summaries.find((row) =>
-      row.scope === "combined" && row.variant === "compound"
-    )!
-    const bare = analysis.summaries.find((row) =>
-      row.scope === "combined" && row.variant === "bare"
-    )!
-
-    expect(compound.valid_call.successes).toBe(1)
-    expect(compound.field_confusion.successes).toBe(0)
-    expect(bare.valid_call.successes).toBe(1)
-    expect(bare.field_confusion.successes).toBe(1)
-    expect(bare.digest_in_wrong_slot.successes).toBe(1)
+    expect(find("compound")?.valid_call.successes).toBe(1)
+    expect(find("compound")?.field_confusion.successes).toBe(0)
+    expect(find("bare")?.field_confusion.successes).toBe(1)
+    expect(find("bare")?.digest_in_wrong_slot.successes).toBe(1)
   })
 
-  test("renders an honest measured-tier finding for an underpowered sample", async () => {
-    const analysis = await Effect.runPromise(analyzeRuns({
-      base,
-      tasks: [task],
-      plantedDigests: [parent, request],
-      runs: [run("compound"), run("bare"), run("nested")],
-    }))
-    const report = renderFindings(analysis)
+  /**
+   * Round 1's rule stated when a comparison was "supported" and when it was
+   * "inconclusive" and named no consequence for either, so the decision was
+   * left to be made after the data. Every branch names its action now.
+   */
+  test("the inconclusive branch reports the action it fixes", async () => {
+    const report = renderFindings(await analyze())
 
     expect(report).toContain("Status: **MEASURED**")
     expect(report).toContain("The evaluation is inconclusive")
-    expect(report).toContain("1 independent generation per model/arm cell")
-    expect(report).toContain(
-      "1 returned call met the field-confusion definition (1 on `spawn-child-writ`); 1 of those remained syntactically valid",
-    )
-    expect(report).toContain(
-      "aggregate arm rates primarily measure behavior on one synthetic task",
-    )
+    expect(report).toContain("Preregistered action on this branch (`inconclusive`)")
+    expect(report).toContain("No naming change is made")
+    expect(report).toContain("Q1 stays open")
+  })
+
+  test("rates are reported against the discriminating denominator", async () => {
+    const analysis = await analyze()
+    const report = renderFindings(analysis)
+
+    expect(analysis.discriminating).toEqual(["spawn"])
+    expect(report).toContain("What the comparison actually rests on")
+    expect(report).toContain("1 of 1 battery rows produced any confused call")
+  })
+
+  test("states whether the two primitive measures ever disagree", async () => {
+    const report = renderFindings(await analyze())
+
+    expect(report).toContain("Are the measures independent?")
+    expect(report).toMatch(/one measure wearing two names|discriminate separately here/)
+  })
+
+  test("reports the reasoning effort the population ran at", async () => {
+    const report = renderFindings(await analyze())
+
+    expect(report).toContain("Reasoning effort: `low` on every generation.")
+  })
+
+  test("names the slots where the hand-derived base and the corpus diverge", async () => {
+    const report = renderFindings(await analyze())
+
+    expect(report).toContain("Base projection against the generated corpus")
+    expect(report).toContain("`spawn.request_writ`")
+    expect(report).toContain("EXPLORATORY, hand-derived")
   })
 })
