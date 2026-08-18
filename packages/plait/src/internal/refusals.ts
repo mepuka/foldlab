@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { Option, Schema, SchemaIssue } from "effect"
 
 import {
@@ -5,7 +10,7 @@ import {
   StructuralRefusal,
   structuralRefusal,
   type Refusal,
-} from "../Refusal.js"
+} from "../truth/Refusal.js"
 
 /**
  * The schema-issue bridge, quarantined exactly like the transport is.

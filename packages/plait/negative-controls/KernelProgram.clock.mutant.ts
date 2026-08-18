@@ -10,7 +10,7 @@
  * The lawful twin below compiles, so the failure is the clock and not the
  * spelling around it.
  */
-import { program } from "../src/KernelProgram.js"
+import { program } from "../src/kernel/KernelProgram.js"
 
 /** The witness: the same emission with nothing but its lane and its body. */
 export const lawful = program("clock-witness", {}, ($) =>

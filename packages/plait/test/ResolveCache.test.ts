@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Layer, Option } from "effect"
 
-import type { WireValue } from "../src/Canonical.js"
-import { Catalog, Payloads, type CatalogService } from "../src/Catalog.js"
-import { digestOf, type Digest } from "../src/Digest.js"
-import type { Refusal } from "../src/Refusal.js"
-import { ResolveCache, publish, type ResolveCacheService } from "../src/Resolved.js"
+import type { WireValue } from "../src/truth/Canonical.js"
+import { Catalog, Payloads, type CatalogService } from "../src/planes/Catalog.js"
+import { digestOf, type Digest } from "../src/truth/Digest.js"
+import type { Refusal } from "../src/truth/Refusal.js"
+import { ResolveCache, publish, type ResolveCacheService } from "../src/planes/Resolved.js"
 
 const terms = { alpha: "one", beta: "two" }
 const other = { alpha: "ONE", beta: "two" }

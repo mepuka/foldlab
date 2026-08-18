@@ -13,29 +13,30 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Fiber, Reducer, Schema } from "effect"
 
-import * as Algebra from "../src/Algebra.js"
-import { ANCHOR_BUCKET, advance, initial } from "../src/Anchor.js"
-import { canonicalBytes } from "../src/Canonical.js"
-import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/Cell.js"
-import { Digest } from "../src/Digest.js"
-import { FabricClient } from "../src/FabricClient.js"
-import * as Fold from "../src/Fold.js"
-import * as Lane from "../src/Lane.js"
+import * as Algebra from "../src/truth/Algebra.js"
+import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
+import { canonicalBytes } from "../src/truth/Canonical.js"
+import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/planes/Cell.js"
+import { Digest } from "../src/truth/Digest.js"
+import { FabricClient } from "../src/carriage/FabricClient.js"
+import * as Fold from "../src/planes/Fold.js"
+import * as Lane from "../src/planes/Lane.js"
 import {
   Next,
   StructuralRefusalKind,
   decodeRefusing,
   type Refusal,
   type StructuralRefusalKind as StructuralKind,
-} from "../src/Refusal.js"
-import { REGISTER_BUCKET, Registers } from "../src/Register.js"
-import { evidenceSubject } from "../src/Subjects.js"
+} from "../src/truth/Refusal.js"
+import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import * as Session from "../src/planes/Session.js"
+import { evidenceSubject } from "../src/kernel/Subjects.js"
 import {
   decodeEnvelope,
   encodeEnvelope,
   INLINE_BODY_MAX_BYTES,
   verifyEnvelopeDigest,
-} from "../src/Wire.js"
+} from "../src/kernel/Wire.js"
 import { makeAnchorStore } from "../src/internal/anchors.js"
 import { ensureLaneStreams, laneStreamName } from "../src/internal/lanes.js"
 import {
@@ -162,6 +163,26 @@ describe("structural refusal repairs", () => {
       { arbitrary: () => 0, equals: Object.is },
     ))))
 
+    // The consumer seam's two doors, both through public surfaces. The layer
+    // provided below dies if it is ever reached, so both refusals are evidence
+    // that the seam judges before any service does.
+    const unreachable = Session.Sessions.testLayer({
+      subscribe: () => Effect.die("the seam judges before any layer is reached"),
+      read: () => Effect.die("the seam judges before any layer is reached"),
+    })
+    refusals.push(await Effect.runPromise(Effect.flip(Session.writ({
+      holder: "reader",
+      views: ["not-a-digest" as unknown as typeof Digest.Type],
+    }))))
+    const emptyWrit = await Effect.runPromise(Session.writ({ holder: "reader", views: [] }))
+    refusals.push(await Effect.runPromise(Effect.flip(
+      Session.subscribe(probe.fold, {
+        writ: emptyWrit,
+        partition: 0,
+        policy: "resume",
+      }).pipe(Effect.provide(unreachable)),
+    )))
+
     const start = await Effect.runPromise(initial(0))
     refusals.push(await Effect.runPromise(Effect.flip(advance(
       start,
@@ -202,7 +223,7 @@ describe("structural refusal repairs", () => {
     )))
 
     const cli = Bun.spawn({
-      cmd: ["bun", "run", "./src/cli.ts", "not-chaos"],
+      cmd: ["bun", "run", "./src/surface/cli.ts", "not-chaos"],
       cwd: resolve(import.meta.dir, ".."),
       stdout: "ignore",
       stderr: "pipe",

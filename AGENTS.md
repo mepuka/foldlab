@@ -210,3 +210,58 @@ bash verify/moves/run.sh
 `verify/{catalog,ir,implication,pipeline}/run.sh` follow the same
 shape. `verify/fabric/run.sh` is the Plait R5 algebra gate and also regenerates
 its proof-witnessed vector corpus byte-for-byte.
+
+## Vendored reference repositories
+
+`repos/effect` is the Effect source vendored as a git subtree at the
+version this repo pins, so every fresh checkout can read the real
+implementation. Use vendored repositories as READ-ONLY reference
+material: prefer examples and patterns from the vendored source over
+generated guesses — when writing Stream/PubSub/Cache/Layer/Schema
+code, open the real implementation and its tests first. Never edit
+files under `repos/`; never import from `repos/` in shipped code
+(dependencies come from the package manager); other `repos/*` clones
+are local-only and gitignored. Update the subtree only when the
+package pin advances:
+`git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git <ref> --squash`.
+
+## Standing estate laws (policy — every seat, every coordinator, every PR)
+
+Each law names its mechanical wall. A law without a wall is listed
+with its debt. Violations are findings at the named severity, never
+style notes.
+
+1. **One type universe.** Every public type derives from the KM
+   corpus (kernel/KernelCorpusSchemas + generated tables) or wears an
+   explicit sketch waiver citing its unification ticket. Wall:
+   the type-universe walk (DEV-796, inventory → enforce). Severity: blocker.
+2. **One door.** All judgment routes through kernel admission; a
+   private validator is a second door. Wall: pending the shared
+   candidate form (DEV-763/796 stage 4). Severity: blocker.
+3. **Served equals derived.** Rendered surfaces (tool schemas, docs,
+   command trees) are generated from declared sources and
+   byte-compared; hand-authored twins are refused. Walls: corpus
+   regeneration checks, check-kernel-* scripts, T7 public-surface
+   walk. Severity: blocker.
+4. **Plane layering.** truth ← kernel ← planes ← carriage ← surface;
+   a layer imports only itself and deeper. Wall: layering lint
+   (DEV-767, pending; until it lands, review). Severity: blocker.
+5. **Effect first-class, idiomatic, deep.** Layers for services,
+   typed errors, Stream/PubSub/Cache/RequestResolver over hand-rolls,
+   @effect/cli for CLIs; core algebras as shared services. Wall:
+   effect-tsgo diagnostics in the typecheck chain (severity presets
+   to be tightened); review lens meanwhile. Severity: high.
+6. **Refusal parity.** Failed judgment returns reason · law · repair;
+   never bare errors or throws on the meaning path. Wall: kernel gate
+   refusal controls; RefusalNext tests. Severity: high.
+7. **Proof deliveries get coordinator personal review** — statements
+   before proofs, gate run first-hand, pre-registered attacks.
+   Wall: process (coordinator-enforced). Severity: blocker.
+8. **Claims follow runs.** Ticket statuses flip only after verified
+   merges; counts come from executing the counting; "landed" claims
+   follow a verified remote. Wall: process. Severity: high.
+
+Coordinators run the standing loop at every checkpoint (delivery,
+merge, block, or 30 idle minutes): review-queue depth → merge train;
+seat saturation (floor: three active); law-vs-wall audit for any new
+surface; escalations surfaced to the operator rather than parked.

@@ -15,8 +15,8 @@
     }
   },
   "scripts": {
-    "prepare": "bun scripts/prepare-effect-language-service.ts",
-    "typecheck": "bun scripts/prepare-effect-language-service.ts --require && tsgo -p packages/core/tsconfig.json --noEmit && tsgo -p packages/moves/tsconfig.json --noEmit && tsgo -p packages/plait/tsconfig.json --noEmit && tsgo --noEmit && effect-language-service diagnostics --project packages/plait/tsconfig.json --strict",
+    "prepare": "effect-tsgo patch --typescript --no-oxlint --typescript-package @typescript/native-preview --skip-missing",
+    "typecheck": "tsgo -p packages/core/tsconfig.json --noEmit && tsgo -p packages/moves/tsconfig.json --noEmit && tsgo -p packages/plait/tsconfig.json --noEmit && tsgo --noEmit && effect-tsgo diagnostics --project packages/plait/tsconfig.json",
     "test": "bun test",
     "test:packages": "bun run --filter './packages/*' test",
     "gates": "bun scripts/gates.ts"
@@ -26,9 +26,11 @@
   },
   "devDependencies": {
     "@effect/language-service": "0.87.2",
+    "@effect/tsgo": "0.36.5",
     "@types/bun": "1.3.14",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "bun-types": "1.3.14",
-    "typescript": "^5.9.2"
+    "typescript": "7.0.2",
+    "typescript-five": "npm:typescript@5.9.3"
   }
 }

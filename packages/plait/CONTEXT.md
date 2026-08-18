@@ -3,6 +3,21 @@
 Local terms hidden behind the seam. The public language is root
 [CONTEXT.md](../../CONTEXT.md); nothing here may leak into it.
 
+**Truth**:
+The vocabulary every sentence speaks.
+
+**Kernel**:
+The language: corpus, door, programs, and wire grammar.
+
+**Planes**:
+The state carriers, one seam per plane.
+
+**Carriage**:
+Hosts and transport clients.
+
+**Surface**:
+Entry points.
+
 **Envelope**:
 The closed version-zero wire value that carries one fabric fact. Its identity
 is the SHA-256 digest of its canonical, uncompressed bytes.
@@ -155,6 +170,30 @@ moved, joined like any other observation; the feed's silence, its ordering,
 and its `isUpdate` flag carry no information. Nothing advisory may answer
 "does this exist" or "has this stopped" — absence is read head-relative from
 the store, never inferred from a feed.
+
+**Writ**:
+The canonical declaration of a read scope: a holder name and the set of declared
+views that holder may image. The views are a set, so two writs naming the same
+views carry one digest; the empty writ is the least scope and names none. The
+holder is attribution, never authority, and a writ guards nothing outside the
+seam that reads it.
+
+**Session**:
+Read-plane state — one consumer's position in a declared fold's partition plus
+the writ scoping what it may image. A session names truth and never carries it:
+no revision, no substrate handle, and no authority is in the value. Opening one
+teaches the substrate nothing, and closing one is dropping it.
+
+**View**:
+The image of one anchored read under a declared, writ-scoped fold: the folded
+state, the anchor coordinate it was read at, the view digest whose image it is,
+and the writ digest that scoped it. The consumer position it started from rides
+with it, so the interval a view covers is positions, never a clock.
+
+**Consumer step**:
+The coalgebra half stated as a signature — a session yields one view and the
+session it becomes. The writ is judged on every step; admission is never cached
+on a session, and a fold the writ does not name refuses instead of being served.
 
 **Context program**:
 The cataloged declaration of an ordered list of (selector, renderer) pairs,

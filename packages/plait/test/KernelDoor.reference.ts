@@ -24,14 +24,14 @@ import type {
   KernelDoorContext,
   KernelRawArg,
   KernelVerdict,
-} from "../src/KernelDoor.js"
+} from "../src/kernel/KernelDoor.js"
 import {
   KERNEL_DECL_KINDS,
   KERNEL_HOLE_STAGES,
   type KernelDeclKind,
   type KernelHoleStage,
   type KernelRefusalReason,
-} from "../src/KernelTables.generated.js"
+} from "../src/kernel/KernelTables.generated.js"
 
 /** The closed trigger grammar: exactly the five monotone productions. */
 export type KernelTriggerPredicate =

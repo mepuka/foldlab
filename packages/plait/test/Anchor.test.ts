@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect } from "effect"
 
-import { advance, initial } from "../src/Anchor.js"
-import { Digest } from "../src/Digest.js"
+import { advance, initial } from "../src/planes/Anchor.js"
+import { Digest } from "../src/truth/Digest.js"
 
 const firstEvent = Digest.make("1".repeat(64))
 const secondEvent = Digest.make("2".repeat(64))

@@ -765,6 +765,53 @@ posture.
   the type level only (loses the data-level requirement set the wire
   and the door need). Reversal: the provision section is additive;
   retiring it strands no sentence identity.
+- **KM-22 — the data-processing strata: semirings sideways, sketches
+  for the ill-behaved, and the compression split.** Raised in
+  operator review of operations beyond search (NLP, compression,
+  duplication, shuffling); drafted in the walkthrough session and
+  pinned post-merge, the sheet having been frozen by the live unity
+  lane. Three strata, three verdicts: (1) transduction is algebraic
+  at the transition-monoid and semiring level — chunk-parallel
+  lexing is a fold in the transition monoid (states → states under
+  composition), and the NLP dynamic-programming canon is
+  semiring-parameterized (one algorithm shape; Boolean, counting,
+  tropical, probability semirings as declared parameters) — a
+  SIDEWAYS variety extension of the rung ladder that the HSP
+  discipline absorbs, riding KindContent .algebra as declared data
+  rather than new grammar; (2) aggregation classifies on the
+  existing ladder unchanged (counts, sums, maxima, and the sketch
+  canon at their proven rungs); (3) the ill-behaved core (ANN graph
+  construction, clustering) does not become lawful by renaming — it
+  enters as fenced or advisory computation whose OUTPUTS join as
+  attributed evidence, never as a pretended semilattice. The
+  compression split rides identity: digests are computed over
+  canonical uncompressed bytes, so compression is a carrier concern
+  that can never touch meaning; duplication is free by content
+  address; shuffling is exactly the commutativity license and
+  nothing else. Deliberately not minted here: chunk-manifest laws —
+  they belong to the blob affordances record. Alternatives: a new
+  generator family for transduction (refused — declared algebra
+  data suffices); clustering as a fold (refused — no lawful merge
+  exists). Reversal: sideways extension only; no code or law ships
+  on it yet.
+- **KM-23 — placement is a hint plane: the second coordinate of the
+  dot.** Raised in the architecture consult (the storage question;
+  the two-dimensional dot). Adopt the two-plane reading: a dot's
+  identity lives in the meaning plane (digest over canonical
+  bytes); WHERE its bytes sleep is a separate monotone fact plane —
+  placement observations join like evidence, reads treat placement
+  as an anchored hint, authoritative placement is a fenced rebind,
+  and identity-as-proof (verify-on-read, with the machine-applicable
+  unverified-read repair) is what lets the storage plane be sloppy
+  for free: carriers may be stale, partial, or wrong, and truth
+  never degrades. Consequences drawn in the architecture note: one
+  equality, many carriers — never a second CAS; replication is a
+  measured fold over placement facts; convergent encryption
+  commutes with the meaning plane. Alternatives: placement inside
+  the value (refused — changes the digest, breaks equality); a
+  placement oracle service (refused — an ambient input; placement
+  must be citable evidence). Reversal: additive fact plane;
+  retiring it strands no identity.
 
 ## 12. Sources
 

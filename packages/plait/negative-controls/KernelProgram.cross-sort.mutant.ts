@@ -11,7 +11,7 @@
  * The lawful twin below spends a handle of the right sort: a policy declared
  * earlier in the same program.
  */
-import { program } from "../src/KernelProgram.js"
+import { program } from "../src/kernel/KernelProgram.js"
 
 /** The witness: the writ is a policy this program declared. */
 export const lawful = program("cross-sort-witness", {}, ($) => {

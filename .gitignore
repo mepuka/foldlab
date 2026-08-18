@@ -15,3 +15,11 @@ verify/fabric/.regen/
 scratch/_archive/
 scratch/**/out/
 scratch/**/*.tsbuildinfo
+# exploratory clones live locally, never committed — EXCEPT repos/effect,
+# which is vendored as a git subtree so agents read real Effect source
+# in every fresh checkout (the subtree trick; update via
+# `git subtree pull --prefix=repos/effect ... --squash` at pin changes)
+repos/*
+!repos/effect
+# build artifact of the tracked .ts twin beside it
+packages/core/negative-controls/plait-public-surface-probe.d.ts

@@ -34,6 +34,51 @@ def KRefusalParity : Prop :=
   (forall reason : RefusalReason,
     (taught reason).law ≠ "" /\ (taught reason).repair ≠ "")
 
+/-- Admission is monotone under explicit door growth: adding catalog
+    or pinned-universe members cannot retract an admission or change
+    the intrinsic act it translated to. -/
+def KAdmitMonotone : Prop :=
+  forall (smaller larger : Door), Door.Le smaller larger ->
+    forall (candidate : CandidateAct) (act : Act),
+      admit smaller candidate = .admitted act ->
+      admit larger candidate = .admitted act
+
+/-- A candidate-intrinsic fault refuses at every door. The theorem is
+    deliberately about refused STATUS, not reason identity: another
+    door-relative fault may be reported first, and growth that clears
+    it can surface the intrinsic reason behind it. -/
+def KIntrinsicFaultRefusedEverywhere : Prop :=
+  forall (candidate : CandidateAct), IntrinsicFault candidate ->
+    forall door : Door,
+      exists refusal, admit door candidate = .refused refusal
+
+/-- A surfaced door-relative refusal is repairable by finite growth
+    when no candidate-intrinsic fault remains. The explicit premise is
+    load-bearing: without it, growth may clear the current reason only
+    to expose an intrinsic refusal, never an admission. -/
+def KRelativeRefusalRepairableByGrowth : Prop :=
+  forall (door : Door) (candidate : CandidateAct),
+    DoorRelativeRefusal door candidate ->
+    (¬ IntrinsicFault candidate) ->
+    exists (larger : Door) (act : Act),
+      Door.Le door larger /\ admit larger candidate = .admitted act
+
+/-- A successful machine repair clears the refusal reason it answers.
+    The repaired candidate may admit or may surface a different
+    remaining reason at any door; the law excludes only the named
+    fault. Fault-set construction, priority arbitration, composition,
+    and termination are separate KM-21 obligations and are not
+    claimed here. -/
+def KMachineRepairClearsReason : Prop :=
+  forall (sourceDoor : Door) (candidate : CandidateAct)
+      (refusal : Refusal),
+    admit sourceDoor candidate = .refused refusal ->
+    forall repaired : CandidateAct,
+      repair candidate refusal.reason = some repaired ->
+      forall (door : Door) (next : Refusal),
+        admit door repaired = .refused next ->
+        next.reason ≠ refusal.reason
+
 /-- The program pin order is well-founded: under node admission —
     every use names an already-admitted node, every name admits at
     most once — the consumption relation of an admitted program is

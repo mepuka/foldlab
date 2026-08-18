@@ -1754,3 +1754,132 @@ suite (`test/CellReplica.test.ts`) checks the two theorems A-8b cites by name
 rather than restating them. A watch feed is not licensed by the landed probe
 suite and is not built. **Load-bearing? yes** — the not-claimed list is what stops
 a caller reading "the replica does not contain X" as a fact about the fabric.
+
+## Task DEV-765 — the consumer seam over the pump
+
+### T0. The seam is a plane module with a service, and a read is one step, not a stream
+
+Decided: `src/planes/Session.ts` cuts the public consumer seam — `writ`,
+`subscribe`, `read`, and the `Sessions` service with a live layer and a fixture
+layer — and `read` returns one `Step` (a view plus the session it becomes)
+rather than a `Stream` of views. Alternatives: a `Stream` surface, which needs
+either a KV watch on the anchor bucket (this package ships no watch surface on a
+KV-backed module without its own ruled ticket) or polling (which would inherit
+the replica's advisory standing while presenting as a feed); a pure value module
+with no layer at all (a sketch with nothing behind it, and the gap the ticket
+names is precisely that subscription behaviour has no interface). Why: the
+pump's output is the anchor plane, so the consumer's read is an anchored read of
+that plane, and one step is exactly what the coalgebra sentence says a consumer
+is — state to observation and next state. A stream is sugar over repeated steps
+and can be added the day a watch is ruled; a step surface built on a stream
+cannot be un-built. **Load-bearing? yes** — it is the shape everything else in
+this task hangs on.
+
+### T1. A view carries the image, not the image's name, and the reader never writes
+
+Decided: `View.state` is the folded state itself, loaded from the anchor's
+content-addressed state key and re-derived against `anchor.stateDigest` by the
+adapter's existing verify-on-load; `AnchorStore` gains a read-only `load` for
+it. Alternatives: return the anchor alone and let the caller resolve
+`stateDigest` (a value that names an image is not the image, and the sentence
+this seam is shaped by is about images); reuse `initialize` (it CREATES the
+floor-zero anchor when none is present, which is a write, and a reader that
+writes the frontier it is reading is a second pump). Why: the honest reading of
+"the image of an anchored read" puts the image in the view and the coordinate
+beside it, so a caller can check the naming itself. The anchor revision `load`
+observes stays inside the adapter — a revision is write-side evidence and no
+read-plane value carries one. **Load-bearing? yes** — `load` versus `initialize`
+is the difference between a consumer and a second writer.
+
+### T2. Two structural kinds: one declaration door, one scope refusal
+
+Decided: `StructuralRefusalKind` gains `invalid-session-declaration` (holder,
+views, policy, and partition — the whole shape of a subscribe request) and
+`undeclared-view` (a fold the writ does not name, or a fold this session did not
+subscribe to). Each gains a demonstrated trigger through a public surface in the
+refusal-repair wall. Alternatives: reuse `invalid-partition-key` for the
+partition arm (that kind already carries two different law sentences; a third
+would make the catalogue's law column unreadable); mint a separate
+`invalid-writ-declaration` (the writ exists only to scope a session on this
+seam, so one declaration door is one kind); reuse `malformed-value` (that kind
+is the one parse-boundary classification, and minting it by hand outside
+`decodeRefusing` would make the single-seam claim false). Why: the enumeration's
+own contract is "every structural kind the package can mint", and its closure is
+only true at the full set. **Load-bearing? yes** — the set-equality wall is what
+keeps the closure claim honest.
+
+### T3. The writ is judged at the seam, and the fixture is what proves it
+
+Decided: `subscribe` and `read` judge the writ, the policy, and the partition in
+`Session.ts` itself, before the `Sessions` service is reached, and the shipped
+control is a fixture layer that images whatever it is handed. Alternatives: put
+the check in `internal/sessions.ts` (then the check is the adapter's, and any
+fixture layer drops it — the estate has already paid for scope enforcement that
+a substituted layer could skip); check once at subscribe and trust the session
+afterwards (a session is a plain value a caller can rebuild, so a cached
+admission is an admission that can be forged). Why: this is the local shape of
+the one-door discipline — judgment above every host, so refusal parity does not
+depend on which layer answered. The control is not decoration: the open-door
+fixture would have served the undeclared view, and the refusal still lands.
+**Load-bearing? yes** — it is the whole reason the writ means anything.
+
+### T4. The ninth transport-spine row is a pin, not an independent oracle
+
+Decided: `internal/sessions.ts` mints its own `session-transport-unavailable`
+absence and takes a row in `TransportSpine.test.ts`, whose membership check
+reads the source tree and would otherwise red. The row is labelled in place:
+the eight rows above it are transcribed from the pre-extraction commit that is
+their oracle, and this one has no such commit — it is the declaration of these
+terms and a pin against later homogenization, nothing more. Alternatives: reuse
+the fold or anchor adapter's absence (both teach `Folds.deploy` as the repair,
+which is the wrong repair for a reader and would be a lie in the taught next
+step); export no `transportRefusal` and stay out of the gate (the gate's
+membership rule exists exactly so a new classification site cannot hide).
+Why: saying which rows have an outside oracle and which do not is cheaper than
+letting a reader assume all nine do. The homogenized-spine mutant refutes the
+new row, so it is a row that can fail. **Load-bearing? yes** — an unlabelled row
+would quietly widen what the wall is understood to prove.
+
+### T5. The anchor policy is a closed two-value grammar that never enters identity
+
+Decided: `AnchorPolicy` is `"resume" | "replay"` — resume opens at the durable
+anchor the pump checkpointed, replay opens at floor zero — validated against the
+declared list and refused by name when it is neither. The session records the
+resulting position, so the policy itself is in no digest. Alternatives: an
+opening position as a raw number (an arbitrary coordinate is not a policy, and
+nothing licenses reading from a floor the anchor never held); a schema-encoded
+policy value (identity-bearing ceremony for something identity never sees).
+Why: two policies are the two questions a consumer actually asks — where the
+frontier is, or the whole interval — and a closed grammar refuses the third
+rather than defaulting silently. **Load-bearing? maybe** — a third policy would
+extend the list without moving anything else.
+
+### T6. The bounds this seam ships, stated
+
+Decided, and recorded because each is a claim NOT made: the seam materializes
+the shape of the egress-law candidate and enforces nothing beyond its own
+surface — `FabricClient.subscribe`, `Blob.get`, `Catalog.get`, and
+`FoldHandle.anchor` are untouched read paths, so no package-wide statement about
+outbound bytes follows from this ticket. The seam does not re-prove the anchor's
+monotonicity: it reports the floor it reads and no session refuses a floor that
+moved backwards, because the anchor's own law is the pump's. Its live layer
+ensures the ruled anchor bucket through the shared anchor adapter, which is the
+one substrate call it makes that is not a read, and it is the same shape gate a
+pump passes. The writ is a declaration and not a security boundary; a
+type-level scope is DX, and the action plane's policy work is where an
+enforceable one would come from. **Load-bearing? yes** — the not-claimed list is
+what stops the next reader promoting a shape into a proof.
+
+### T7. The new namespace rides the public-surface walk deliberately
+
+Decided: `Session` joins `src/index.ts` and the package's subpath exports as the
+seventeenth namespace, and the generated signature manifest grows by seven rows,
+each carrying only `Refusal` on its error channel. This is a surface decision
+taken on purpose, not a side effect of a move. Alternatives: keep the module
+unexported and reach it by deep import (a seam nobody can name is not a seam);
+defer the export to a later ticket (the ticket that cuts a public consumer seam
+is the ticket that decides it is public). Why: the walk is the wall — a
+namespace that could not be added without moving a signature would be evidence
+the surface is not lawful, and the regenerated manifest is the evidence that it
+is. **Load-bearing? yes** — the barrel is the package's interface, and what
+enters it is a decision with a record.

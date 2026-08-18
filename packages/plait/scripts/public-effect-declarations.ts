@@ -5,7 +5,7 @@ import {
   rmSync,
 } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
-import * as ts from "typescript"
+import * as ts from "typescript-five"
 
 /**
  * The emitted-declaration walk is the load-bearing public-surface authority.
@@ -177,7 +177,7 @@ export const inspectPublicDeclarations = (
   const entryPath = resolve(directory, entryRelative)
   const entry = program.getSourceFile(entryPath)
   if (entry === undefined) throw new Error(`emitted entry is absent: ${entryPath}`)
-  const refusalPath = resolve(directory, "src/Refusal.d.ts")
+  const refusalPath = resolve(directory, "src/truth/Refusal.d.ts")
   const refusalSource = program.getSourceFile(refusalPath)
   if (refusalSource === undefined) throw new Error(`emitted Refusal declaration is absent: ${refusalPath}`)
   const allowedError = refusalType(checker, refusalSource)

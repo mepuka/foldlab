@@ -28,7 +28,7 @@ import {
   encodeCanonicalJson,
   parseCanonicalJson,
   type CanonicalJson,
-} from "../src/CanonicalJson.js"
+} from "../src/truth/CanonicalJson.js"
 import {
   KERNEL_CORPUS_FORMAT,
   KERNEL_RECORD_GROUPS,
@@ -45,8 +45,8 @@ import {
   type KernelRefusalRecord,
   type KernelStageRecord,
   type KernelTypeRecord,
-} from "../src/KernelCorpusSchemas.js"
-import { canonicalWriter, decodeCanonicalText } from "../src/SchemaCanonical.js"
+} from "../src/kernel/KernelCorpusSchemas.js"
+import { canonicalWriter, decodeCanonicalText } from "../src/truth/SchemaCanonical.js"
 
 /**
  * The interchange file the runtime derives its tables from, relative to the

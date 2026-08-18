@@ -74,13 +74,25 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   `SchemaIssue`-typed signature diverges the public-surface type-level walk.
 - `ContextProgram` is declaration shapes only. Adding an assembly executor, a
   context value, or any F7 language belongs to the assembly slice, not here.
-- `src/KernelTables.generated.ts` is generated only, from
+- A session is read-plane state and writes nothing. `Session` reads anchors and
+  the states they name; it never commits an anchor, never emits, and never
+  carries a revision on its values. A write verb on that seam is a finding, and
+  so is a session field that reaches the substrate.
+- The writ is judged in `Session`'s own functions, before any layer is reached,
+  so a fixture service cannot drop it and a session cannot cache it. Moving that
+  judgment into the adapter is a finding.
+- The consumer seam refuses undeclared views on ITS surface and claims nothing
+  about the package's other read paths. Writing that every outbound byte is a
+  declared, writ-scoped image — in prose, a docstring, or a claim ledger — is an
+  overclaim until the law is proved; this seam ships its shape, not its
+  enforcement.
+- `src/kernel/KernelTables.generated.ts` is generated only, from
   `fixtures/kernel-conformance.ndjson`, and `bun run check:kernel-tables` must
   regenerate it byte-identically. Never hand-edit a kind, a rank, a taught law,
   or a repair: the model emits them, and a hand-typed table is drift with a
   green gate. `test/fixtures/kernel-conformance.sample.ndjson` is the
   independently transcribed control the wall compares against, never a source.
-- No admission door ships yet. `src/KernelDoor.ts` is the seam's type only; the
+- No admission door ships yet. `src/kernel/KernelDoor.ts` is the seam's type only; the
   reference door under `test/` exists so the conformance replay has a target
   and is not the thing to build on. A real door is checked by pointing
   `KernelConformance.test.ts` at it — the harness takes its target as a

@@ -57,6 +57,9 @@ if grep -nE ':= by' Kernel/Laws.lean; then
 fi
 expected_laws=(
   KSentenceEncodingInjective KAdmissionRefusesUnlawful KRefusalParity
+  KAdmitMonotone KIntrinsicFaultRefusedEverywhere
+  KRelativeRefusalRepairableByGrowth
+  KMachineRepairClearsReason
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KProvisionPositionedCorrespondence
@@ -103,9 +106,20 @@ fi
 roster=(
   rank_to_kind_rank rank_to_stage_rank act_decode_encode
   sentence_encoding_injective
-  ref_member_iff ref_member_eq_false_of_not_mem
+  ref_member_iff ref_member_eq_false_of_not_mem ref_member_monotone
+  door_le_repairing
   taught_reason taught_teaches
-  arg_sweep_none sweep_blocks sweep_refuses
+  arg_sweep_none arg_refusal_none_monotone arg_sweep_none_monotone
+  inside_universe_true_monotone sweep_blocks sweep_refuses
+  admit_monotone intrinsic_arg_refusal intrinsic_fault_no_admission
+  intrinsic_fault_refused_everywhere digest_mem_arg_refs
+  required_catalog_contains_arg_ref payload_intrinsic_free
+  arg_sweep_none_of_supported repairing_arg_sweep_none
+  inside_universe_true_of_supported repairing_inside_universe
+  translate_predicate_some_of_no_refusal
+  intrinsically_clean_admitted_by_growth
+  relative_refusal_repairable_by_growth
+  machine_repair_clears_reason
   admission_refuses_unlawful admit_refusals_taught refusal_parity
   closure_clock_read_refused closure_absence_trigger_refused
   closure_unfenced_decide_refused closure_last_writer_refused
@@ -211,6 +225,13 @@ check_control closure-function-value
 check_control anchored-resolve
 check_control unfilled-hole
 check_control door-admits-lawful
+check_control drop-admit-monotonicity
+check_control drop-intrinsic-refusal
+check_control drop-relative-repair-growth
+check_control machine-repair-anchored-resolve
+check_control machine-repair-unverified-read
+check_control machine-repair-past-mutation
+check_control machine-repair-last-writer-wins
 check_control drop-provision-disjointness
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
@@ -269,4 +290,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (18 door controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (25 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"

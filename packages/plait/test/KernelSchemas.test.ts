@@ -36,12 +36,12 @@ import {
   KernelActEncoding,
   KernelCanonRecord,
   KernelRefusalRecord,
-} from "../src/KernelSchemas.generated.js"
+} from "../src/kernel/KernelSchemas.generated.js"
 import {
   canonicalWriter,
   decodeCanonicalText,
   roundTripsCanonically,
-} from "../src/SchemaCanonical.js"
+} from "../src/truth/SchemaCanonical.js"
 
 const corpus = await loadKernelArtifact()
 

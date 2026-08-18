@@ -1,6 +1,11 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { Effect, type Reducer } from "effect"
 
-import type { Refusal } from "../Refusal.js"
+import type { Refusal } from "../truth/Refusal.js"
 
 /**
  * The lawful class-(a) write path: read, join, CAS at the observed revision,

@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Columnar projection spike — foldlab</title>
+<style>
+/* ── tokens (dataviz reference palette; light is the base, dark is selected) ── */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11,11,11,.10);
+  --accent: #2a78d6;
+  --slot2: #eb6834;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --accent-wash: rgba(42,120,214,.10);
+  --slot2-wash: rgba(235,104,52,.11);
+  --fam-storage-wash: rgba(42,120,214,.045);
+  --fam-security-wash: rgba(74,58,167,.055);
+  --redact-bg: rgba(11,11,11,.07);
+  --flash: rgba(235,104,52,.28);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,.10);
+    --accent: #3987e5;
+    --slot2: #d95926;
+    --good: #0ca30c;
+    --good-text: #0ca30c;
+    --serious: #ec835a;
+    --critical: #e66767;
+    --accent-wash: rgba(57,135,229,.16);
+    --slot2-wash: rgba(217,89,38,.17);
+    --fam-storage-wash: rgba(57,135,229,.07);
+    --fam-security-wash: rgba(144,133,233,.09);
+    --redact-bg: rgba(255,255,255,.09);
+    --flash: rgba(217,89,38,.38);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255,255,255,.10);
+  --accent: #3987e5;
+  --slot2: #d95926;
+  --good: #0ca30c;
+  --good-text: #0ca30c;
+  --serious: #ec835a;
+  --critical: #e66767;
+  --accent-wash: rgba(57,135,229,.16);
+  --slot2-wash: rgba(217,89,38,.17);
+  --fam-storage-wash: rgba(57,135,229,.07);
+  --fam-security-wash: rgba(144,133,233,.09);
+  --redact-bg: rgba(255,255,255,.09);
+  --flash: rgba(217,89,38,.38);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--page); }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 22px clamp(12px, 3.5vw, 44px) 60px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+h1 { font-size: 21px; font-weight: 650; letter-spacing: -.01em; }
+h2 { font-size: 16px; font-weight: 650; margin-bottom: 2px; }
+.page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+.page-head .sub { color: var(--ink-2); font-size: 13px; max-width: 78ch; margin-top: 3px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px 14px;
+  margin-bottom: 22px;
+}
+.viewdesc { color: var(--ink-2); font-size: 12.5px; max-width: 92ch; margin: 4px 0 10px; }
+.viewdesc em { font-style: normal; color: var(--ink); font-weight: 550; }
+
+/* anchor bar */
+.anchor-bar {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  background: var(--page);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline;
+}
+.anchor-bar .never { color: var(--muted); }
+.anchor-bar b { color: var(--ink); font-weight: 600; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-bottom: 4px; }
+.controls .lbl { font-size: 11.5px; color: var(--muted); }
+button, select, input[type="text"] {
+  font: 12px system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--baseline);
+  border-radius: 6px;
+  padding: 4px 9px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button[aria-pressed="true"] { background: var(--accent-wash); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.seg { display: inline-flex; border: 1px solid var(--baseline); border-radius: 6px; overflow: hidden; }
+.seg button { border: none; border-radius: 0; padding: 4px 10px; background: var(--surface); }
+.seg button + button { border-left: 1px solid var(--baseline); }
+.seg button[aria-pressed="true"] { background: var(--accent-wash); font-weight: 600; }
+.ctl-caption { font-size: 11px; color: var(--muted); margin: 2px 0 8px; font-family: ui-monospace, Consolas, monospace; }
+
+/* table */
+.tablewrap { overflow-x: auto; border: 1px solid var(--grid); border-radius: 8px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+th, td { padding: 5px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--grid); background: var(--surface); }
+tbody tr:last-child td { border-bottom: none; }
+thead th { font-size: 11px; font-weight: 600; color: var(--ink-2); white-space: nowrap; user-select: none; }
+thead .famband th {
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--baseline); padding: 4px 10px;
+}
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--accent); }
+.sortmark { color: var(--accent); font-weight: 700; }
+.colsrc { display: block; font-family: ui-monospace, Consolas, monospace; font-weight: 400; font-size: 10px; color: var(--muted); margin-top: 1px; }
+thead .filterrow th { padding: 3px 6px; }
+.filterrow input { width: 100%; min-width: 60px; font-size: 11px; padding: 2px 6px; border-radius: 4px; border-color: var(--grid); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.mono, .cellmono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 11.5px; }
+td.wrapcol { min-width: 26ch; max-width: 44ch; white-space: normal; }
+tr.grouphead td {
+  background: var(--page); color: var(--ink); font-weight: 600; font-size: 12px;
+  border-top: 1px solid var(--baseline); border-bottom: 1px solid var(--grid); padding: 5px 10px;
+}
+tr.statsrow td, tfoot td { background: var(--page); font-size: 10.5px; color: var(--muted); border-bottom: 1px solid var(--grid); padding: 3px 10px; }
+tfoot td { border-top: 1px solid var(--baseline); border-bottom: none; }
+td.rle { vertical-align: top; }
+.rlecount { color: var(--muted); font-size: 10.5px; margin-left: 6px; }
+td.rlespan { box-shadow: inset 2px 0 0 var(--baseline); }
+
+/* family separation: plane boundaries are load-bearing chrome in this demo */
+.fam-storage { background: var(--fam-storage-wash); }
+.fam-security { background: var(--fam-security-wash); }
+.famstart { border-left: 3px double var(--baseline); }
+tr.grouphead td.famstart, tr.statsrow td.famstart { border-left: 3px double var(--baseline); }
+
+/* chips and badges — identity always carried by glyph + label, never color alone */
+.chip {
+  display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: 10.5px;
+  border: 1px solid var(--grid); border-radius: 5px; padding: 0 6px; line-height: 1.7;
+  background: var(--page); color: var(--ink-2); white-space: nowrap;
+}
+.chip.rung-join { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); }
+.chip.rung-mono { background: var(--slot2-wash); border-color: var(--slot2); color: var(--ink); }
+.chip.viewdg { border-color: var(--accent); color: var(--ink); }
+.chip.flash { animation: flashbg 1.2s ease-out; }
+@keyframes flashbg { 0% { background: var(--flash); } 100% { background: var(--page); } }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; white-space: nowrap; }
+.badge .dot { font-weight: 700; }
+.badge.b-good .dot { color: var(--good-text); }
+.badge.b-good { color: var(--good-text); }
+.badge.b-neutral { color: var(--ink-2); }
+.badge.b-neutral .dot { color: var(--muted); }
+.badge.b-serious { color: var(--ink-2); }
+.badge.b-serious .dot { color: var(--critical); }
+.redact {
+  display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  background: var(--redact-bg); border: 1px solid var(--grid); border-radius: 4px;
+  padding: 0 7px; line-height: 1.8; color: var(--ink-2); letter-spacing: .02em;
+}
+.redact .blocks { color: var(--muted); }
+.absent { color: var(--ink-2); font-style: italic; font-size: 11.5px; }
+.absent .x { color: var(--critical); font-style: normal; font-weight: 700; }
+.subnote { display: block; font-size: 10px; color: var(--muted); font-style: normal; margin-top: 1px; }
+.dedup { color: var(--accent); font-weight: 600; font-size: 10.5px; margin-left: 5px; white-space: nowrap; }
+.winner { color: var(--accent); font-weight: 650; font-size: 11.5px; white-space: nowrap; }
+.shadowed { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.oo { color: var(--slot2); font-size: 10px; margin-left: 4px; }
+
+/* law strip */
+.lawstrip { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 8px; }
+.lawstrip summary { font-size: 11.5px; color: var(--ink-2); cursor: pointer; font-weight: 600; }
+.lawstrip table { font-size: 11.5px; margin-top: 6px; width: auto; }
+.lawstrip td { border-bottom: 1px solid var(--grid); background: transparent; padding: 4px 12px 4px 0; vertical-align: top; }
+.lawstrip td:first-child { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; color: var(--ink); font-weight: 600; }
+.lawstrip td:last-child { color: var(--ink-2); max-width: 88ch; }
+.lawname { font-family: ui-monospace, Consolas, monospace; font-size: 10.5px; color: var(--muted); }
+
+.derivation {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 11px;
+  color: var(--ink-2); margin-top: 8px; padding: 5px 10px;
+  background: var(--page); border: 1px solid var(--grid); border-radius: 6px;
+  overflow-x: auto; white-space: nowrap;
+}
+.derivation b { color: var(--ink); }
+
+/* glossary + intro */
+.intro details { margin-top: 8px; }
+.intro summary { cursor: pointer; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+dl.gloss { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin-top: 8px; font-size: 12px; }
+dl.gloss dt { font-weight: 650; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; }
+dl.gloss dd { color: var(--ink-2); max-width: 94ch; }
+
+footer { color: var(--muted); font-size: 11.5px; max-width: 100ch; border-top: 1px solid var(--grid); padding-top: 12px; }
+footer b { color: var(--ink-2); }
+.toast {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--page); font-size: 12px; padding: 7px 14px;
+  border-radius: 7px; opacity: 0; pointer-events: none; transition: opacity .25s; max-width: 80vw;
+}
+.toast.show { opacity: .93; }
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <div>
+    <h1>Columnar projection spike</h1>
+    <p class="sub">Three UI views of kernel-language data, each an <em>anchored fold state</em>: a checkpointed read, not a live dashboard.
+    Every control below is a lawful combinator with its law named. Security is a first-class column dimension: sealed column
+    families, two viewer authorities, and deterministic-vs-random encryption side by side.</p>
+  </div>
+  <button id="themeBtn" title="Cycle theme: system / light / dark">theme: system</button>
+</header>
+
+<section class="card intro">
+  <details>
+    <summary>Glossary — every house term, glossed for outsiders</summary>
+    <dl class="gloss">
+      <dt>digest</dt><dd>A value's name: the hash of its one canonical byte form. One value, one name, forever. Reads re-derive the digest of what they fetched (&ldquo;verify-on-read&rdquo;), so nothing is trusted.</dd>
+      <dt>anchor</dt><dd>A checkpoint coordinate — (floor, state, head) in one partition of one event lane. An answer pinned to an anchor is never wrong later, only earlier.</dd>
+      <dt>fold</dt><dd>The kernel's one read of changing state: reduce everything recorded on a lane, as of an anchor. Rosters, audits, and search are all folds with different declared reductions — and so is each view on this page.</dd>
+      <dt>writ</dt><dd>A capability document. Authority only narrows: a child's writ is the meet (greatest lower bound) of its parent's and its request. Here, a writ decides which column-family keys a viewer holds.</dd>
+      <dt>hole / provision</dt><dd>A declared parameter of a program, and the event that fills it. The environment is not a mutable map: it is the set of positioned provision events, read back as &ldquo;greatest position wins.&rdquo;</dd>
+      <dt>rung</dt><dd>Where an aggregation's algebra sits on the ladder (monoid, commutative monoid, semilattice). The rung fixes what delivery discipline the aggregate can survive.</dd>
+      <dt>dot</dt><dd>One journal coordinate: (lane, shard, position). The meaning plane and the storage plane meet only there — rows are joined by position, never by pointer.</dd>
+      <dt>redacted vs absent</dt><dd>Redacted: the data exists and its integrity is verified, but your writ holds no key — access is withheld, visibly. Absent: the fetch itself failed verification. Different states, rendered differently, never conflated.</dd>
+      <dt>convergent encryption</dt><dd>Deterministic sealing: the key is derived from the content plus a scope secret, so the same plaintext always yields the same ciphertext — naming and dedup survive encryption. Cost: within the scope, equal values are visibly equal (an equality leak). Tahoe-LAFS is the prior art.</dd>
+      <dt>AEAD associated data</dt><dd>Authenticated encryption can bind extra bytes (&ldquo;associated data&rdquo;) into its integrity check. Binding the dot coordinate means sealed bytes cannot be replayed at a different coordinate.</dd>
+    </dl>
+  </details>
+</section>
+
+<!-- ── VIEW A ─────────────────────────────────────────────────────── -->
+<section class="card" id="viewA">
+  <div class="anchor-bar" id="A-anchor"></div>
+  <h2>A. The taught-refusal table</h2>
+  <p class="viewdesc">The 16 refusal rows of the kernel language, verbatim from <span class="mono">verify/kernel/projections/kernel.ts</span>.
+  A refusal is a value carrying the law it defends and the legal next move. Grouped by <em>applicability</em>:
+  <em>machine-applicable</em> means the repair is a mechanical rewrite of the refused sentence alone; <em>advisory</em> means the repair
+  needs something the sentence does not carry. Each group carries per-column statistics wearing their rung badges.</p>
+  <div class="controls" id="A-controls"></div>
+  <div class="ctl-caption" id="A-caption"></div>
+  <div class="tablewrap"><table id="A-table"></table></div>
+  <div class="derivation" id="A-deriv"></div>
+  <details class="lawstrip" id="A-laws" open></details>
+</section>
+
+<!-- ── VIEW B ─────────────────────────────────────────────────────── -->
+<section class="card" id="viewB">
+  <div class="anchor-bar" id="B-anchor"></div>
+  <h2>B. The example-sentence roster</h2>
+  <p class="viewdesc">The nine walkthrough sentences of <span class="mono">kernel.ts</span> (s1–s8 plus the roster read), one row per
+  spoken act. <em>Encoded identity</em> is the digest of each sentence's canonical byte form — the sentence's own name
+  (simulated hash; see footer). The <em>digests referenced</em> aggregate is a set union: the semilattice aggregate in its purest form.</p>
+  <div class="controls" id="B-controls"></div>
+  <div class="ctl-caption" id="B-caption"></div>
+  <div class="tablewrap"><table id="B-table"></table></div>
+  <div class="derivation" id="B-deriv"></div>
+  <details class="lawstrip" id="B-laws"></details>
+</section>
+
+<!-- ── VIEW C ─────────────────────────────────────────────────────── -->
+<section class="card" id="viewC">
+  <div class="anchor-bar" id="C-anchor"></div>
+  <h2>C. Positioned-provision log — three column families, two planes, two writs</h2>
+  <p class="viewdesc">A synthetic 20-row provision log (minted for this spike; a real view derives these rows from declared lanes).
+  Each row fills a program hole at a journal position. The <em>meaning</em> family is the value plane; the <em>storage</em> family
+  is placement hints, joined to meaning only by row position (the dot); the <em>seal</em> family is security metadata for the sealed
+  columns. <em>greatest_read</em> is derived, not stored: per hole, the provision at the greatest position wins — the environment
+  as a fold. Toggle the viewer's writ to see honest redaction; toggle convergent vs random sealing to watch content-addressed
+  naming survive or fracture.</p>
+  <div class="controls" id="C-controls"></div>
+  <div class="ctl-caption" id="C-caption"></div>
+  <div class="tablewrap"><table id="C-table"></table></div>
+  <div class="derivation" id="C-deriv"></div>
+  <details class="lawstrip" id="C-laws" open></details>
+</section>
+
+<footer>
+  <p><b>Simulation notice.</b> No real cryptography runs on this page. Digests are FNV-1a toy hashes (not SHA-256); &ldquo;sealed,&rdquo;
+  &ldquo;verified,&rdquo; and &ldquo;redacted&rdquo; are rendered states; no key material exists anywhere in this file — key <i>references</i> are data,
+  key <i>material</i> is outside meaning by law. What is demonstrated is the algebra: which view operations commute with which security
+  choices. Scheme names (AES-SIV, AES-GCM) label the simulated states, nothing more.</p>
+  <p style="margin-top:6px"><b>Sources.</b> Data hand-carried from
+  <span class="mono">foldlab-kernel-model/verify/kernel/projections/kernel.ts</span> (TAUGHT table, sentences s1–s8, roster read, digest inventory)
+  and field-name conventions from <span class="mono">tools.schema.json</span>. A divergence between this page and the model is a defect in this page.
+  The provision log and all storage/security columns are synthetic. Spike memo: <span class="mono">spike-note.md</span> beside this file.
+  2026-08-18.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════════
+   Toy hashing — deterministic, content-derived, NOT cryptographic.
+   The property demonstrated (naming is a function of content) is real;
+   the hash strength is not. See footer.
+   ════════════════════════════════════════════════════════════════════ */
+function fnv1a(str, seed) {
+  let h = (seed >>> 0) || 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+function toy(s) { // 16 hex chars
+  return fnv1a('a|' + s).toString(16).padStart(8, '0') + fnv1a('b|' + s, 0x01234567).toString(16).padStart(8, '0');
+}
+function toy8(s) { return toy(s).slice(0, 8); }
+function canon(v) { // canonical JSON: sorted keys, no floats used anywhere
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+}
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+/* ════════════════════════════════════════════════════════════════════
+   DATA — carried from verify/kernel/projections/kernel.ts (views A, B)
+   and minted synthetically for the provision log (view C).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* View A: the TAUGHT refusal table, 16 rows verbatim. */
+const TAUGHT = [
+  { reason: 'clock-read', law: 'the fold carrier has no clock parameter (f11_query_deterministic)', repair: 'emit the claimed time as a tick fact on an evidence lane; schedule through a declared schedule value', applicability: 'advisory' },
+  { reason: 'absence-trigger', law: 'the trigger grammar is closed at five monotone productions (f10_stability)', repair: 'route acting-on-silence through the deadline seat: a fenced decide fed by tick facts', applicability: 'advisory' },
+  { reason: 'unfenced-decide', law: 'only a fenced token commits (at_most_one_landed_commit)', repair: 'hold the register token and commit with it; grant and renew are runtime liveness, not grammar', applicability: 'advisory' },
+  { reason: 'last-writer-wins', law: 'cells merge by join under a declared ACI algebra (f1_cell_merge_aci)', repair: 'declare the merge algebra; idempotent join leaves nothing for arrival order to choose', applicability: 'machine-applicable' },
+  { reason: 'unverified-read', law: 'a decode re-derives the digest of what it fetched (verify-on-read)', repair: 'resolve and let the door re-derive; absence is retryable, a mismatch is structural', applicability: 'machine-applicable' },
+  { reason: 'cross-sort-identifier', law: 'tokens are per-register and positions are per-partition; sorts never compare across spaces', repair: 'compare a token only within its register and a position only within its partition', applicability: 'advisory' },
+  { reason: 'minted-identifier', law: 'every identifier is a digest of a declaration or a derivation from one', repair: 'declare the value and use its digest; nothing mints a name', applicability: 'advisory' },
+  { reason: 'ambient-query-input', law: 'a derived read is a function of support and query alone (f11_topk_of_support)', repair: 'read state through a fold at an anchor, and put any seed inside the declared query value', applicability: 'advisory' },
+  { reason: 'forward-reference', law: 'pins name already-admitted digests (c7_pin_well_founded)', repair: 'declare the referent first; the reference graph is a DAG by admission order', applicability: 'advisory' },
+  { reason: 'secret-carrier', law: 'the wire grammar admits no secret position', repair: 'carry credentials in the environmental band as redacted configuration, outside meaning', applicability: 'advisory' },
+  { reason: 'absence-claim', law: 'a local view is a lattice lower bound (cell_absorb_inflationary)', repair: 'claim at-least from a replica, never not-present-anywhere', applicability: 'advisory' },
+  { reason: 'past-mutation', law: 'journals are append-only; anchored resumption survives compaction (compact_below_floor_preserves_resumption)', repair: 'declare a successor value pinning its predecessor; forgetting is fenced compaction above the horizon', applicability: 'machine-applicable' },
+  { reason: 'off-writ-referent', law: 'a declaration identifiers lie inside the universe its writ pins', repair: 'spawn under a writ that pins the referent, or request the referent into the pinned universe', applicability: 'advisory' },
+  { reason: 'closure-introspection', law: 'a program identity is its declaration, never its closure bytes', repair: 'reference computation by digest: declare the fold and pin its digest', applicability: 'advisory' },
+  { reason: 'anchored-resolve', law: 'a digest names one value forever, so no anchor can change a resolve', repair: 'drop the anchor; read head-relative state through a fold at an anchor', applicability: 'machine-applicable' },
+  { reason: 'unfilled-hole', law: 'only closed programs execute; a hole is a declared parameter, not a wildcard', repair: 'fill every declared hole; disjoint fills commute, so fill order is free', applicability: 'advisory' },
+].map((r, i) => ({ ...r, __id: i }));
+
+/* View B: the nine example sentences, as canonical objects. */
+const ACTS = [
+  { id: 's1', act: { act: 'declare', kind: 'schema', value: '90210', writ_digest: 'sha256:04' },
+    args: 'kind=schema · value=90210 · writ=policy:04', refs: [['policy', 'sha256:04']] },
+  { id: 's2', act: { act: 'resolve', kind: 'schema', digest: 'sha256:08' },
+    args: 'kind=schema · digest=schema:08', refs: [['schema', 'sha256:08']] },
+  { id: 's3', act: { act: 'emit', lane_digest: 'sha256:01', body: '1234' },
+    args: 'lane=lane:01 · body=1234', refs: [['lane', 'sha256:01']] },
+  { id: 's4', act: { act: 'join', cell_digest: 'sha256:06', contribution: '77' },
+    args: 'cell=resource:06 · contribution=77', refs: [['resource', 'sha256:06']] },
+  { id: 's5', act: { act: 'fold', reduction_digest: 'sha256:02', partition: { lane_digest: 'sha256:01', shard: 0 },
+      anchor: { reduction_digest: 'sha256:02', partition: { lane_digest: 'sha256:01', shard: 0 }, floor: 4, state_label: 'state:11', head: 6 }, query: '555' },
+    args: 'reduction=index:02 · partition=(lane:01, shard 0) · anchor=(floor 4, state:11, head 6) · query=555',
+    refs: [['index', 'sha256:02'], ['lane', 'sha256:01']] },
+  { id: 's6', act: { act: 'decide', register_digest: 'sha256:03', token: { register_digest: 'sha256:03', fence: 9 }, outcome: '42' },
+    args: 'register=program:03 · token=(program:03, fence 9) · outcome=42', refs: [['program', 'sha256:03']] },
+  { id: 's7', act: { act: 'trigger', predicate: { production: 'outcome-landed', register_digest: 'sha256:03' }, declaration_digest: 'sha256:03' },
+    args: 'predicate=outcome-landed(program:03) · declaration=program:03', refs: [['program', 'sha256:03']] },
+  { id: 's8', act: { act: 'spawn', parent_writ_digest: 'sha256:04', request_writ_digest: 'sha256:05' },
+    args: 'parent=policy:04 · request=policy:05', refs: [['policy', 'sha256:04'], ['policy', 'sha256:05']] },
+  { id: 'roster', act: { act: 'fold', reduction_digest: 'sha256:20', partition: { lane_digest: 'sha256:10', shard: 2 },
+      anchor: { reduction_digest: 'sha256:20', partition: { lane_digest: 'sha256:10', shard: 2 }, floor: 12, state_label: 'state:31', head: 15 }, query: '0' },
+    args: 'reduction=index:20 · partition=(lane:10, shard 2) · anchor=(floor 12, state:31, head 15) · query=0',
+    refs: [['index', 'sha256:20'], ['lane', 'sha256:10']] },
+].map((r, i) => {
+  const bytes = canon(r.act);
+  return { ...r, generator: r.act.act, bytes, nbytes: bytes.length, identity: toy(bytes), __id: i };
+});
+
+/* View C: the synthetic positioned-provision log. */
+const HOLES = {
+  h0: 'corpus_schema', h1: 'retry_budget', h2: 'region', h3: 'grant', h4: 'model', h5: 'api_access',
+};
+const LOG = [
+  { p: 1,  h: 'h0', v: 'corpus:sha256:08',       prov: 'writ:sha256:04', obs: '09:02:11' },
+  { p: 2,  h: 'h1', v: 'retry:3',                prov: 'writ:sha256:04', obs: '09:02:40' },
+  { p: 3,  h: 'h2', v: 'region:us-east',         prov: 'writ:sha256:04', obs: '09:03:05' },
+  { p: 4,  h: 'h3', v: 'grant:read',             prov: 'writ:sha256:04', obs: '09:03:31' },
+  { p: 5,  h: 'h4', v: 'model:distill-v2',       prov: 'prog:sha256:03', obs: '09:04:02' },
+  { p: 6,  h: 'h1', v: 'retry:3',                prov: 'prog:sha256:03', obs: '09:04:29' },
+  { p: 7,  h: 'h3', v: 'grant:read',             prov: 'prog:sha256:03', obs: '09:04:57' },
+  { p: 8,  h: 'h2', v: 'region:eu-west',         prov: 'writ:sha256:05', obs: '09:06:18' },
+  { p: 9,  h: 'h5', v: 'keyref:vault/ops-api@v9', prov: 'writ:sha256:04', obs: '09:05:44', outOfOrder: true },
+  { p: 10, h: 'h1', v: 'retry:5',                prov: 'writ:sha256:05', obs: '09:06:52' },
+  { p: 11, h: 'h3', v: 'grant:read+append',      prov: 'writ:sha256:05', obs: '09:07:20' },
+  { p: 12, h: 'h0', v: 'corpus:sha256:08',       prov: 'prog:sha256:99', obs: '09:07:48' },
+  { p: 13, h: 'h4', v: 'model:distill-v2',       prov: 'prog:sha256:99', obs: '09:08:15', lied: true },
+  { p: 14, h: 'h3', v: 'grant:read',             prov: 'writ:sha256:04', obs: '09:08:44' },
+  { p: 15, h: 'h2', v: 'region:us-east',         prov: 'prog:sha256:99', obs: '09:09:10' },
+  { p: 16, h: 'h1', v: 'retry:3',                prov: 'prog:sha256:03', obs: '09:09:38' },
+  { p: 17, h: 'h5', v: 'keyref:vault/ops-api@v9', prov: 'writ:sha256:05', obs: '09:10:06' },
+  { p: 18, h: 'h3', v: 'grant:read+append',      prov: 'prog:sha256:03', obs: '09:10:33' },
+  { p: 19, h: 'h0', v: 'corpus:sha256:08',       prov: 'writ:sha256:04', obs: '09:11:01' },
+  { p: 20, h: 'h4', v: 'model:distill-v2',       prov: 'writ:sha256:05', obs: '09:11:27' },
+].map((r, i) => ({ ...r, __id: i }));
+
+/* greatestAt: per hole, the strictly greatest position wins. Derived, never stored. */
+const GREATEST = {};
+for (const r of LOG) if (!GREATEST[r.h] || r.p > GREATEST[r.h].p) GREATEST[r.h] = r;
+
+/* ── seal simulation ────────────────────────────────────────────────
+   value column:    family fam-values   (key key:family-values@v3)   — operator writ holds it
+   provider column: family fam-attrib   (key key:family-attrib@v2)   — neither writ holds it (always convergent)
+   storage family:  independently sealable (key key:family-storage@v1) — left unsealed in this demo
+*/
+const SCOPE_SECRET_LABEL = 'scope:estate-demo'; // stands in for the convergence secret; no real secret exists
+let IVS = LOG.map(() => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0'));
+function resealIVs() { IVS = LOG.map(() => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0')); }
+
+function valueCt(row, mode) {
+  return mode === 'convergent' ? toy('conv|' + SCOPE_SECRET_LABEL + '|' + row.v)
+                               : toy('rand|' + row.v + '|' + IVS[row.__id]);
+}
+function provCt(row) { return toy('conv|' + SCOPE_SECRET_LABEL + '|attrib|' + row.prov); }
+function ptDigest(row) { return toy('pt|' + row.v); }
+function dotMac(row, mode) { return toy8('mac|lane:sha256:10|2|' + row.p + '|' + valueCt(row, mode)); }
+function storeOf(row, mode) {
+  if (row.lied) return 'store-c';
+  return parseInt(valueCt(row, mode)[0], 16) % 2 ? 'store-b' : 'store-a';
+}
+function ctGroup(mode) { // ciphertext digest -> rows (dedup classes)
+  const m = new Map();
+  for (const r of LOG) { const ct = valueCt(r, mode); if (!m.has(ct)) m.set(ct, []); m.get(ct).push(r); }
+  return m;
+}
+function provGroup() {
+  const m = new Map();
+  for (const r of LOG) { const ct = provCt(r); if (!m.has(ct)) m.set(ct, []); m.get(ct).push(r); }
+  return m;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Chips, badges, cell fragments
+   ════════════════════════════════════════════════════════════════════ */
+const RUNG = {
+  join: (label, title) => `<span class="chip rung-join" title="${esc(title || 'bounded join-semilattice: associative, commutative, idempotent — duplicated or reordered delivery cannot move it (sloppy-safe)')}">&#8744; ${esc(label)}</span>`,
+  mono: (label, title) => `<span class="chip rung-mono" title="${esc(title || 'commutative monoid: order-free but counts every delivery — correct only under exactly-once')}">&#8853; ${esc(label)}</span>`,
+};
+function chip(text, title, cls) { return `<span class="chip ${cls || ''}" title="${esc(title || '')}">${esc(text)}</span>`; }
+function badgeGood(text, title) { return `<span class="badge b-good" title="${esc(title || '')}"><span class="dot">&#10003;</span>${esc(text)}</span>`; }
+function badgeNeutral(text, title, dot) { return `<span class="badge b-neutral" title="${esc(title || '')}"><span class="dot">${dot || '&#9670;'}</span>${esc(text)}</span>`; }
+function badgeSerious(text, title) { return `<span class="badge b-serious" title="${esc(title || '')}"><span class="dot">&#10007;</span>${esc(text)}</span>`; }
+function redactChip(ct, extra, title) {
+  return `<span class="redact" title="${esc(title || '')}"><span class="blocks">&#9646;&#9646;</span> ct:${esc(ct.slice(0, 8))}${extra || ''}</span>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Generic view engine: filter -> sort (identity tie-break) -> group ->
+   per-group stats (rung-badged) -> RLE spans. Plus transpose.
+   ════════════════════════════════════════════════════════════════════ */
+const VIEWS = {};
+
+function colByKey(view, key) { return view.columns.find(c => c.key === key); }
+function visibleCols(view) { return view.columns.filter(c => !c.hidden || !c.hidden(view.state)); }
+
+function displayRows(view) {
+  const st = view.state;
+  let rows = view.rows.slice();
+  for (const [k, q] of Object.entries(st.filters)) {
+    if (!q) continue;
+    const col = colByKey(view, k);
+    if (!col) continue;
+    const needle = q.toLowerCase();
+    rows = rows.filter(r => String(col.filterText(r, st)).toLowerCase().includes(needle));
+  }
+  const sortCol = st.sortKey ? colByKey(view, st.sortKey) : null;
+  rows.sort((a, b) => {
+    let c = 0;
+    if (sortCol) {
+      const va = sortCol.sortVal(a, st), vb = sortCol.sortVal(b, st);
+      c = (typeof va === 'number' && typeof vb === 'number') ? va - vb : String(va).localeCompare(String(vb));
+      if (st.sortDir === 'desc') c = -c;
+    }
+    return c !== 0 ? c : a.__id - b.__id; // identity tie-break: admission order, never arrival
+  });
+  let segments;
+  if (st.groupBy) {
+    const gcol = colByKey(view, st.groupBy);
+    const map = new Map();
+    for (const r of rows) {
+      const k = gcol.groupKey ? gcol.groupKey(r, st) : gcol.filterText(r, st);
+      if (!map.has(k)) map.set(k, { key: k, labelHtml: gcol.groupLabel ? gcol.groupLabel(r, st) : esc(String(k)), rows: [] });
+      map.get(k).rows.push(r);
+    }
+    segments = [...map.values()].sort((a, b) => String(a.key).localeCompare(String(b.key)) || a.rows[0].__id - b.rows[0].__id);
+  } else {
+    segments = [{ key: null, labelHtml: null, rows }];
+  }
+  return segments;
+}
+
+function aggChips(col, rows, st) {
+  if (!col.aggs || !rows.length) return '&#183;';
+  const out = [];
+  for (const a of col.aggs) {
+    if (a === 'count') out.push(RUNG.mono(rows.length + ' count'));
+    else if (a === 'distinct') {
+      const s = new Set(rows.map(r => col.aggVal ? col.aggVal(r, st) : col.filterText(r, st)));
+      out.push(RUNG.join(s.size + ' distinct'));
+    } else if (a === 'max') {
+      const m = Math.max(...rows.map(r => col.sortVal(r, st)));
+      out.push(RUNG.join('max ' + m, 'max — a bounded join-semilattice (idempotent), so sloppy delivery cannot move it. Grouped by hole, this IS the greatest-position read.'));
+    } else if (a === 'cited') {
+      const s = new Set();
+      let unnamed = 0;
+      for (const r of rows) { const m = r.law.match(/\(([a-z0-9_-]+)\)/); if (m) s.add(m[1]); else unnamed++; }
+      out.push(RUNG.join(s.size + ' laws cited', 'distinct parenthesized law names — a set union (semilattice). Rows stating the law in prose only: ' + unnamed));
+    } else if (a === 'refunion') {
+      const s = new Set(); for (const r of rows) for (const [k, d] of r.refs) s.add(k + ':' + d);
+      out.push(RUNG.join(s.size + ' digests', 'union of referenced digests — set union, the semilattice aggregate par excellence'));
+    } else if (a === 'blobs') {
+      const s = new Set(rows.map(r => valueCt(r, st.encMode)));
+      const saved = rows.length - s.size;
+      out.push(RUNG.join(s.size + ' blobs / ' + rows.length + ' rows', st.encMode === 'convergent'
+        ? 'distinct ciphertext digests — with convergent sealing, equal plaintexts share one blob: ' + saved + ' duplicate references saved'
+        : 'random IVs: every row its own blob — dedup destroyed'));
+    }
+  }
+  return out.join(' ');
+}
+
+function render(view) {
+  const st = view.state;
+  const cols = visibleCols(view);
+  const segs = displayRows(view);
+  const table = document.getElementById(view.id + '-table');
+  const shown = segs.reduce((n, s) => n + s.rows.length, 0);
+
+  if (st.transposed) { renderTransposed(view, cols, segs, table); }
+  else { renderStraight(view, cols, segs, table, shown); }
+
+  // anchor bar + view digest: a view is citable = anchor + derivation + column digests
+  const deriv = derivation(view, shown);
+  const colDigests = cols.map(c => c.key + ':' + colSrcDigest(view, c)).join('|');
+  const vd = toy8(view.anchorText + '|' + deriv.plain + '|' + colDigests);
+  document.getElementById(view.id + '-anchor').innerHTML =
+    view.anchorHtml + `<span>${chip('view:' + vd, 'The view digest: toy-hash of (anchor, derivation, per-column source digests). Cite this and the view is reproducible — a fact, not a dashboard.', 'viewdg')}</span>`;
+  document.getElementById(view.id + '-deriv').innerHTML = '<b>derivation</b> = ' + deriv.html;
+  document.getElementById(view.id + '-caption').textContent = view.caption(st);
+}
+
+function colSrcDigest(view, col) {
+  const src = view.rows.map(r => col.srcVal ? col.srcVal(r, view.state) : col.filterText(r, view.state)).join('');
+  return toy8(view.id + '|' + col.key + '|' + src);
+}
+
+function headerCell(view, col) {
+  const st = view.state;
+  const sorted = st.sortKey === col.key;
+  const mark = sorted ? `<span class="sortmark">${st.sortDir === 'desc' ? ' ↓' : ' ↑'}</span>` : '';
+  const cls = [col.numeric ? 'num' : '', col.family ? 'fam-' + col.family : '', col.famStart ? 'famstart' : '', 'sortable'].join(' ');
+  const src = colSrcDigest(view, col);
+  return `<th class="${cls}" data-sort="${col.key}" aria-sort="${sorted ? (st.sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}"
+    title="Sort by ${esc(col.label)} (declared total order; ties break by admission order). Column source digest: ${src} — each column is a content-addressed vector; the view cites its inputs.">
+    ${esc(col.label)}${col.derived ? ' <span class="lawname">(derived)</span>' : ''}${mark}<span class="colsrc">col:${src}</span></th>`;
+}
+
+function renderStraight(view, cols, segs, table, shown) {
+  const st = view.state;
+  let html = '<thead>';
+  // family band row
+  if (view.families) {
+    html += '<tr class="famband">';
+    for (const fam of view.families) {
+      const n = cols.filter(c => c.family === fam.key).length;
+      if (n) html += `<th colspan="${n}" class="fam-${fam.key} ${fam.key !== view.families[0].key ? 'famstart' : ''}" title="${esc(fam.title || '')}">${fam.label}</th>`;
+    }
+    html += '</tr>';
+  }
+  html += '<tr>' + cols.map(c => headerCell(view, c)).join('') + '</tr>';
+  // filter row
+  html += '<tr class="filterrow">' + cols.map(c => {
+    const cls = [c.family ? 'fam-' + c.family : '', c.famStart ? 'famstart' : ''].join(' ');
+    if (!c.filterable) return `<th class="${cls}"></th>`;
+    const v = st.filters[c.key] || '';
+    return `<th class="${cls}"><input type="text" data-filter="${c.key}" value="${esc(v)}" placeholder="filter"
+      title="filter — a per-column predicate: a step transformer that preserves the column's rung (fusion law); the predicate is declared data, not ambient input"></th>`;
+  }).join('') + '</tr></thead><tbody>';
+
+  for (const seg of segs) {
+    if (st.groupBy) {
+      const gcol = colByKey(view, st.groupBy);
+      html += `<tr class="grouphead"><td colspan="${cols.length}">${esc(gcol.label)} = ${seg.labelHtml} &mdash; ${seg.rows.length} row${seg.rows.length === 1 ? '' : 's'}</td></tr>`;
+      html += '<tr class="statsrow">' + cols.map(c =>
+        `<td class="${c.family ? 'fam-' + c.family : ''} ${c.famStart ? 'famstart' : ''}">${aggChips(c, seg.rows, st)}</td>`).join('') + '</tr>';
+    }
+    // RLE spans: within this segment, for the sorted column and always-RLE columns
+    const spans = {};
+    for (const c of cols) {
+      if (!(c.alwaysRle || (st.sortKey === c.key && c.rleable !== false))) continue;
+      const sp = new Array(seg.rows.length).fill(0);
+      let i = 0;
+      while (i < seg.rows.length) {
+        let j = i + 1;
+        const vi = c.filterText(seg.rows[i], st);
+        while (j < seg.rows.length && c.filterText(seg.rows[j], st) === vi) j++;
+        sp[i] = j - i;
+        i = j;
+      }
+      spans[c.key] = sp;
+    }
+    seg.rows.forEach((r, ri) => {
+      html += '<tr>';
+      for (const c of cols) {
+        const sp = spans[c.key];
+        if (sp) {
+          if (sp[ri] === 0) continue; // covered by a span above
+          const n = sp[ri];
+          html += `<td class="${cellCls(c)}${n > 1 ? ' rlespan' : ''}" ${n > 1 ? `rowspan="${n}"` : ''}>${c.render(r, st)}${n > 1 ? `<span class="rlecount" title="run-length span: ${n} consecutive equal values render once — the encoding Parquet and Arrow apply; sorting is what buys it">&times;${n}</span>` : ''}</td>`;
+        } else {
+          html += `<td class="${cellCls(c)}">${c.render(r, st)}</td>`;
+        }
+      }
+      html += '</tr>';
+    });
+  }
+  html += '</tbody><tfoot><tr>' + cols.map(c =>
+    `<td class="${c.family ? 'fam-' + c.family : ''} ${c.famStart ? 'famstart' : ''}">${aggChips(c, segs.flatMap(s => s.rows), st)}</td>`).join('') + '</tr></tfoot>';
+  table.innerHTML = html;
+  wireTable(view, table);
+}
+
+function cellCls(c) {
+  return [c.numeric ? 'num' : '', c.mono ? 'mono' : '', c.wrap ? 'wrapcol' : '', c.family ? 'fam-' + c.family : '', c.famStart ? 'famstart' : ''].join(' ');
+}
+
+function renderTransposed(view, cols, segs, table) {
+  const st = view.state;
+  const rows = segs.flatMap(s => s.rows);
+  let html = '<thead><tr><th title="Transposed: fields down, rows across — the indexed product read along its other axis.">field \\ row</th>';
+  html += rows.map(r => `<th class="num">${esc(view.rowId(r))}</th>`).join('') + '</tr></thead><tbody>';
+  for (const c of cols) {
+    const sorted = st.sortKey === c.key;
+    html += `<tr><th class="sortable ${c.family ? 'fam-' + c.family : ''}" data-sort="${c.key}" title="Sort by ${esc(c.label)} (reorders the columns of this transposed matrix)">${esc(c.label)}${c.derived ? ' <span class="lawname">(derived)</span>' : ''}${sorted ? `<span class="sortmark">${st.sortDir === 'desc' ? ' ↓' : ' ↑'}</span>` : ''}<span class="colsrc">col:${colSrcDigest(view, c)}</span></th>`;
+    html += rows.map(r => `<td class="${cellCls(c)}">${c.render(r, st)}</td>`).join('');
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+  wireTable(view, table);
+}
+
+function wireTable(view, table) {
+  table.querySelectorAll('[data-sort]').forEach(th => th.addEventListener('click', () => {
+    const k = th.getAttribute('data-sort');
+    const st = view.state;
+    if (st.sortKey === k) { if (st.sortDir === 'asc') st.sortDir = 'desc'; else { st.sortKey = null; st.sortDir = 'asc'; } }
+    else { st.sortKey = k; st.sortDir = 'asc'; }
+    render(view);
+  }));
+  table.querySelectorAll('[data-filter]').forEach(inp => inp.addEventListener('input', () => {
+    view.state.filters[inp.getAttribute('data-filter')] = inp.value;
+    const restore = inp.getAttribute('data-filter');
+    render(view);
+    const again = table.querySelector(`[data-filter="${restore}"]`);
+    if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+  }));
+}
+
+function derivation(view, shown) {
+  const st = view.state;
+  const parts = [];
+  if (st.transposed) parts.push(['transpose', 'the indexed product, other axis']);
+  parts.push(['rle', 'runs render once']);
+  parts.push(['stats', 'rung-checked']);
+  parts.push([st.groupBy ? `group(${st.groupBy})` : 'group(∅)', 'indexed product by key']);
+  parts.push([st.sortKey ? `sort(${st.sortKey} ${st.sortDir === 'desc' ? '↓' : '↑'}, admission tie-break)` : 'sort(admission order)', '']);
+  const f = Object.entries(st.filters).filter(([, v]) => v).map(([k, v]) => `${k}~"${v}"`).join(' ∧ ');
+  parts.push([f ? `filter(${f})` : 'filter(∅)', 'rung-preserving step transformer']);
+  if (view.sealPart) parts.push([view.sealPart(st), '']);
+  const plain = parts.map(p => p[0]).join(' · ') + ' @ ' + view.anchorText + ` → ${shown} rows`;
+  const html = parts.map(p => `<b>${esc(p[0])}</b>`).join(' · ') + ' @ ' + esc(view.anchorText) + ` → ${shown} row${shown === 1 ? '' : 's'}`;
+  return { plain, html };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Controls
+   ════════════════════════════════════════════════════════════════════ */
+function buildControls(view, extraHtml) {
+  const el = document.getElementById(view.id + '-controls');
+  const st = view.state;
+  const groupOpts = ['', ...view.groupable].map(k =>
+    `<option value="${k}" ${st.groupBy === k ? 'selected' : ''}>${k ? colByKey(view, k).label : 'none'}</option>`).join('');
+  el.innerHTML = `
+    <button data-act="transpose" aria-pressed="${st.transposed}"
+      title="transpose — the indexed product made visible: a list of records IS a record of equal-length columns; only the presentation axis moves, no information does">transpose</button>
+    <span class="lbl">group by</span>
+    <select data-act="group" title="group-by — the indexed product by key; per-column statistics appear per group, each lawful only at its column's rung">${groupOpts}</select>
+    <button data-act="clearf" title="drop all per-column filter predicates">clear filters</button>
+    ${extraHtml || ''}`;
+  el.querySelector('[data-act="transpose"]').addEventListener('click', e => {
+    st.transposed = !st.transposed; e.currentTarget.setAttribute('aria-pressed', String(st.transposed)); render(view);
+  });
+  el.querySelector('[data-act="group"]').addEventListener('change', e => { st.groupBy = e.target.value || null; render(view); });
+  el.querySelector('[data-act="clearf"]').addEventListener('click', () => { st.filters = {}; render(view); });
+  return el;
+}
+
+function lawStrip(id, title, rows) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<summary>${esc(title)}</summary><table><tbody>` +
+    rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${b}</td></tr>`).join('') + '</tbody></table>';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => t.classList.remove('show'), 3400);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   VIEW A — the TAUGHT refusal table
+   ════════════════════════════════════════════════════════════════════ */
+const LANG_DIGEST = toy8(canon(TAUGHT.map(({ __id, ...r }) => r)));
+VIEWS.A = {
+  id: 'A',
+  rows: TAUGHT,
+  rowId: r => r.reason,
+  groupable: ['applicability'],
+  anchorText: `resolve('language', lang:${LANG_DIGEST})`,
+  anchorHtml: `<span><b>resolve</b>('language', lang:${LANG_DIGEST}) &mdash; <span class="never">anchor-free by law: a digest names one value forever (the anchored-resolve refusal fences the alternative)</span></span>`,
+  caption: st => `combinators active: ${st.transposed ? 'transpose · ' : ''}${st.groupBy ? 'group(' + st.groupBy + ') · ' : ''}sort(${st.sortKey || 'admission order'}) · filter — each captioned in the law strip below`,
+  state: { transposed: false, groupBy: 'applicability', sortKey: null, sortDir: 'asc', filters: {} },
+  columns: [
+    { key: 'reason', label: 'reason', mono: true, filterable: true, aggs: ['count'],
+      filterText: r => r.reason, sortVal: r => r.reason, render: r => chip(r.reason, 'the refusal reason — one of the closed 16') },
+    { key: 'law', label: 'law defended', wrap: true, filterable: true, aggs: ['cited'],
+      filterText: r => r.law, sortVal: r => r.law,
+      render: r => esc(r.law).replace(/\(([a-z0-9_-]+)\)/, '(<span class="lawname">$1</span>)') },
+    { key: 'repair', label: 'taught repair', wrap: true, filterable: true,
+      filterText: r => r.repair, sortVal: r => r.repair, render: r => esc(r.repair) },
+    { key: 'applicability', label: 'applicability', filterable: true, aggs: ['count', 'distinct'],
+      filterText: r => r.applicability, sortVal: r => r.applicability,
+      groupKey: r => r.applicability, groupLabel: r => esc(r.applicability),
+      render: r => r.applicability === 'machine-applicable'
+        ? badgeNeutral('machine-applicable', 'the lawful rewrite is a function of the refused sentence alone — a tool can apply it', '&#10227;')
+        : badgeNeutral('advisory', 'the repair needs information the sentence does not carry — a token to hold, a value to declare first', '&#9998;') },
+  ],
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   VIEW B — the example-sentence roster
+   ════════════════════════════════════════════════════════════════════ */
+VIEWS.B = {
+  id: 'B',
+  rows: ACTS,
+  rowId: r => r.id,
+  groupable: ['generator'],
+  anchorText: 'fold(index:20, lane:10/shard 2, floor 12, head 15)',
+  anchorHtml: `<span><b>fold</b>(reduction sha256:20 &middot; lane sha256:10 / shard 2) at anchor (<b>floor 12</b>, state:31, <b>head 15</b>) &mdash; <span class="never">never wrong later, only earlier</span></span>`,
+  caption: st => `try: group by generator (fold appears twice — same sentence form, two declared reductions) · sort by generator to see an RLE span`,
+  state: { transposed: false, groupBy: null, sortKey: null, sortDir: 'asc', filters: {} },
+  columns: [
+    { key: 'id', label: 'sentence', mono: true, filterable: true, aggs: ['count'],
+      filterText: r => r.id, sortVal: r => r.__id, render: r => chip(r.id, 'admission order ' + r.__id) },
+    { key: 'generator', label: 'generator', mono: true, filterable: true, aggs: ['distinct'],
+      filterText: r => r.generator, sortVal: r => r.generator,
+      groupKey: r => r.generator, groupLabel: r => `<span class="mono">${esc(r.generator)}</span>`,
+      render: r => `<span class="cellmono">${esc(r.generator)}</span>` },
+    { key: 'args', label: 'arguments', mono: true, wrap: true, filterable: true,
+      filterText: r => r.args, sortVal: r => r.args, render: r => esc(r.args) },
+    { key: 'refs', label: 'digests referenced', filterable: true, aggs: ['refunion'],
+      filterText: r => r.refs.map(([k, d]) => k + ':' + d).join(' '),
+      sortVal: r => r.refs.length, aggVal: r => r.refs.map(([k, d]) => k + ':' + d).join(','),
+      render: r => [...new Set(r.refs.map(([k, d]) => k + ':' + d.replace('sha256:', '')))].map(s =>
+        chip(s, 'a kind-branded digest: the brand rides the name, and cross-kind comparison has no spelling')).join(' ') },
+    { key: 'identity', label: 'encoded identity', mono: true, filterable: false, aggs: ['distinct'],
+      filterText: r => r.identity, sortVal: r => r.identity,
+      render: r => chip('act:' + r.identity.slice(0, 12), 'toy digest of the sentence’s canonical byte form (' + r.nbytes + ' bytes, sorted-key JSON): ' + r.identity + ' — the sentence’s own name; equal sentences would collide here, and that collision would be the dedup') + ` <span class="lawname">${r.nbytes} B</span>` },
+  ],
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   VIEW C — positioned-provision log, three families, two writs
+   ════════════════════════════════════════════════════════════════════ */
+function keyHeld(st) { return st.writ === 'operator'; } // operator holds fam-values only; nobody holds fam-attrib
+function valueShown(r, st) { return keyHeld(st) && !r.lied; }
+
+VIEWS.C = {
+  id: 'C',
+  rows: LOG,
+  rowId: r => 'p' + String(r.p).padStart(2, '0'),
+  groupable: ['h', 'v', 'prov'],
+  anchorText: 'fold(env_directory, lane:10/shard 2, floor 18, head 20)',
+  anchorHtml: `<span><b>fold</b>(env_directory &middot; lane sha256:10 / shard 2) at anchor (<b>floor 18</b>, state:44, <b>head 20</b>) &mdash; <span class="never">never wrong later, only earlier &middot; synthetic log, minted for this spike</span></span>`,
+  caption: st => st.writ === 'operator'
+    ? `operator writ: holds key:family-values@v3 — values decrypt and re-verify their plaintext digest; attribution stays sealed (fam-attrib not held). Sealing: ${st.encMode}.`
+    : `narrow writ: holds no keys — sealed columns render as redaction chips over verified ciphertext. The structure (positions, holes, greatest read, dedup classes) remains fully auditable. Sealing: ${st.encMode}.`,
+  state: { transposed: false, groupBy: null, sortKey: 'p', sortDir: 'asc', filters: {}, writ: 'operator', encMode: 'convergent', showStorage: true },
+  families: [
+    { key: 'meaning', label: 'meaning — the value plane', title: 'the band that IS the data: position, hole, value, provider, and the derived read' },
+    { key: 'storage', label: 'storage — placement hints', title: 'where bytes probably live; joined to meaning only by row position (the dot); independently sealable under key:family-storage@v1 (left unsealed in this demo)' },
+    { key: 'security', label: 'seal — security metadata', title: 'seal metadata for the value column family; key references are data, key material is outside meaning' },
+  ],
+  sealPart: st => `seal-view(writ=${st.writ}, ${st.encMode})`,
+  columns: [
+    { key: 'p', label: 'position', family: 'meaning', numeric: true, mono: true, filterable: true, aggs: ['count', 'max'],
+      filterText: r => 'p' + String(r.p).padStart(2, '0'), sortVal: r => r.p,
+      render: r => 'p' + String(r.p).padStart(2, '0') },
+    { key: 'h', label: 'hole', family: 'meaning', mono: true, filterable: true, aggs: ['distinct'],
+      filterText: r => r.h + ' ' + HOLES[r.h], sortVal: r => r.h,
+      groupKey: r => r.h, groupLabel: r => `<span class="mono">${esc(r.h)} &middot; ${esc(HOLES[r.h])}</span>`,
+      render: r => `${esc(r.h)} <span class="lawname">${esc(HOLES[r.h])}</span>` },
+    { key: 'v', label: 'value', family: 'meaning', mono: true, filterable: true, aggs: ['distinct'], rleable: true,
+      filterText: (r, st) => r.lied ? 'absent' : (valueShown(r, st) ? r.v : 'ct:' + valueCt(r, st.encMode).slice(0, 8)),
+      sortVal: (r, st) => valueShown(r, st) ? r.v : valueCt(r, st.encMode),
+      aggVal: (r, st) => keyHeld(st) ? r.v : valueCt(r, st.encMode),
+      srcVal: (r, st) => valueCt(r, st.encMode),
+      groupKey: (r, st) => keyHeld(st) ? r.v : valueCt(r, st.encMode),
+      groupLabel: (r, st) => keyHeld(st) ? `<span class="mono">${esc(r.v)}</span>` : redactChip(valueCt(r, st.encMode), '', 'grouped by ciphertext digest — the partition convergent sealing preserves'),
+      render: (r, st) => {
+        if (r.lied) {
+          const sisters = st.encMode === 'convergent'
+            ? LOG.filter(x => !x.lied && x.v === r.v).map(x => 'p' + String(x.p).padStart(2, '0')).join(', ')
+            : null;
+          return `<span class="absent"><span class="x">&#10007;</span> absent at read</span><span class="subnote">${sisters
+            ? 'placement lied; same digest also referenced at ' + sisters + ' — re-fetchable by name'
+            : 'placement lied; random IVs left no sister copy to re-fetch'}</span>`;
+        }
+        if (valueShown(r, st)) {
+          const isRef = r.v.startsWith('keyref:');
+          return `<span class="cellmono">${esc(r.v)}</span>${isRef ? ' ' + chip('ref only', 'a credential-band hole carries a key REFERENCE; the material lives outside meaning in the environmental band (secret-carrier is the refusal that fences the alternative)') : ''}`;
+        }
+        const ct = valueCt(r, st.encMode);
+        const dups = ctGroup(st.encMode).get(ct).filter(x => !x.lied).length;
+        return redactChip(ct, dups > 1 && st.encMode === 'convergent' ? ` <span class="dedup">≡×${dups}</span>` : '',
+          'redacted — key:family-values@v3 not held by this writ. The ciphertext digest is public and verified: absence of ACCESS, visibly different from absence of DATA.');
+      } },
+    { key: 'greatest', label: 'greatest_read', family: 'meaning', filterable: true, derived: true,
+      filterText: r => GREATEST[r.h].p === r.p ? 'greatest' : 'shadowed by p' + GREATEST[r.h].p,
+      sortVal: r => (GREATEST[r.h].p === r.p ? 0 : 1),
+      srcVal: r => (GREATEST[r.h].p === r.p ? 'win' : 'lose:' + GREATEST[r.h].p),
+      render: r => GREATEST[r.h].p === r.p
+        ? `<span class="winner">&#9679; greatest read</span>`
+        : `<span class="shadowed">&#8856; shadowed by p${String(GREATEST[r.h].p).padStart(2, '0')}</span>` },
+    { key: 'prov', label: 'provider', family: 'meaning', filterable: true, aggs: ['distinct'],
+      filterText: r => 'ct:' + provCt(r).slice(0, 8), sortVal: r => provCt(r), aggVal: r => provCt(r),
+      srcVal: r => provCt(r),
+      groupKey: r => provCt(r), groupLabel: r => redactChip(provCt(r), '', 'an equality class of sealed providers — countable, unnamed'),
+      render: r => {
+        const n = provGroup().get(provCt(r)).length;
+        return redactChip(provCt(r), ` <span class="dedup">≡×${n}</span>`,
+          'sealed under key:family-attrib@v2 — held by NEITHER demo writ (per-family keys: a different family, a different key). Convergent, so equal providers form visible equality classes: countable without being named.');
+      } },
+    { key: 'loc', label: 'location_uri', family: 'storage', famStart: true, mono: true, filterable: true,
+      hidden: st => !st.showStorage,
+      filterText: (r, st) => 'blob://' + storeOf(r, st.encMode) + '/' + valueCt(r, st.encMode).slice(0, 8),
+      sortVal: (r, st) => storeOf(r, st.encMode),
+      render: (r, st) => {
+        const ct = valueCt(r, st.encMode);
+        const uri = `blob://${storeOf(r, st.encMode)}/${ct.slice(0, 8)}…`;
+        if (r.lied) return `<span class="cellmono">${esc(uri)}</span><span class="subnote"><span class="badge b-serious"><span class="dot">&#10007;</span>bytes here fail verify-on-read</span></span>`;
+        return `<span class="cellmono">${esc(uri)}</span>`;
+      } },
+    { key: 'obs', label: 'observed_at', family: 'storage', mono: true, filterable: false,
+      hidden: st => !st.showStorage,
+      filterText: r => r.obs, sortVal: r => r.obs,
+      render: r => `${esc(r.obs)}Z${r.outOfOrder ? '<span class="oo" title="observed earlier than the previous position: wall-clock observation is a hint; position is the order (the implicit order made explicit data)">↦ before p08</span>' : ''}` },
+    { key: 'scheme', label: 'scheme', family: 'security', famStart: true, mono: true, alwaysRle: true, filterable: false,
+      filterText: (r, st) => st.encMode === 'convergent' ? 'AES-256-SIV convergent (simulated)' : 'AES-256-GCM random IV (simulated)',
+      sortVal: (r, st) => st.encMode,
+      render: (r, st) => st.encMode === 'convergent'
+        ? `<span class="cellmono" title="deterministic (convergent) sealing: key derived from (content, scope secret) — sealing is a FUNCTION of the value, so naming commutes. Simulated.">AES-256-SIV<br><span class="lawname">convergent, simulated</span></span>`
+        : `<span class="cellmono" title="random-IV sealing: not a function of the value — one value, many ciphertexts; naming fractures. Simulated.">AES-256-GCM<br><span class="lawname">random IV, simulated</span></span>` },
+    { key: 'keyref', label: 'key_ref', family: 'security', mono: true, alwaysRle: true, filterable: false,
+      filterText: (r, st) => 'key:family-values@v3 ' + (keyHeld(st) ? 'held' : 'not held'),
+      sortVal: () => 0,
+      render: (r, st) => `<span class="cellmono">key:family-values@v3<br><span class="lawname">${keyHeld(st) ? 'held by this writ' : 'not held by this writ'}</span></span>` },
+    { key: 'ct', label: 'ciphertext_digest', family: 'security', mono: true, filterable: true, aggs: ['blobs'],
+      filterText: (r, st) => 'ct:' + valueCt(r, st.encMode).slice(0, 8),
+      sortVal: (r, st) => valueCt(r, st.encMode), srcVal: (r, st) => valueCt(r, st.encMode),
+      render: (r, st) => {
+        const ct = valueCt(r, st.encMode);
+        const grp = ctGroup(st.encMode).get(ct);
+        const shared = grp.length > 1;
+        return `<span class="cellmono">ct:${ct.slice(0, 8)}</span>${shared
+          ? `<span class="dedup" title="convergent: equal plaintexts sealed to the SAME ciphertext — rows ${grp.map(x => 'p' + String(x.p).padStart(2, '0')).join(', ')} reference one blob. Naming commutes with sealing; dedup survives. Cost, stated honestly: within this scope, equality is visible (a confirmation/equality leak, bounded by the scope secret — Tahoe-LAFS is the prior art).">≡×${grp.length}→1 blob</span>`
+          : (st.encMode === 'random' ? `<span class="lawname" title="random IV: this row’s ciphertext names nothing shared — even though other rows carry the same plaintext. One value, many names: dedup destroyed.">unshared</span>` : '')}`;
+      } },
+    { key: 'mac', label: 'dot_mac', family: 'security', mono: true, filterable: false,
+      filterText: (r, st) => dotMac(r, st.encMode), sortVal: (r, st) => dotMac(r, st.encMode), srcVal: (r, st) => dotMac(r, st.encMode),
+      render: (r, st) => `<span class="cellmono" title="simulated MAC over (lane_digest, shard, position, ciphertext_digest): binds the blob’s NAME to this dot at the reference layer, so a sealed blob cannot be spliced or replayed at another coordinate. Deliberately outside the blob itself — AD inside the ciphertext would fracture convergent dedup exactly like a random IV (see law strip).">mac:${dotMac(r, st.encMode).slice(0, 8)}</span>` },
+    { key: 'seal', label: 'seal_state', family: 'security', filterable: true,
+      filterText: (r, st) => r.lied ? 'absent failed verify' : (keyHeld(st) ? 'plaintext verified' : 'ciphertext verified'),
+      sortVal: (r, st) => r.lied ? 2 : (keyHeld(st) ? 0 : 1),
+      render: (r, st) => {
+        if (r.lied) return badgeSerious('absent — failed verify', 'the bytes at the hinted location did not re-derive the declared digest; verify-on-read turns a lying placement into mere absence (retryable), never into wrong data');
+        if (keyHeld(st)) return badgeGood('plaintext verified', 'key held: decrypt, then re-derive the declared plaintext_digest pt:' + ptDigest(r).slice(0, 8) + ' — both integrity levels pass');
+        return badgeNeutral('ciphertext verified only', 'no key: the fetched bytes re-derive the declared ciphertext_digest — integrity holds without access; an honest state, distinct from verified plaintext');
+      } },
+  ],
+};
+
+/* ── view C extra controls ── */
+function buildC() {
+  const st = VIEWS.C.state;
+  const extra = `
+    <span class="lbl">viewer writ</span>
+    <span class="seg" role="group" aria-label="viewer writ">
+      <button data-writ="operator" aria-pressed="${st.writ === 'operator'}"
+        title="operator writ: pins key:family-values@v3 (one family) — authority is the meet of what was granted; keys ride the writ, not the viewer">operator</button>
+      <button data-writ="narrow" aria-pressed="${st.writ === 'narrow'}"
+        title="narrow writ: holds no keys — sealed columns render as redaction chips over verified ciphertext; structure stays auditable">narrow</button>
+    </span>
+    <span class="lbl">sealing</span>
+    <span class="seg" role="group" aria-label="sealing mode">
+      <button data-enc="convergent" aria-pressed="${st.encMode === 'convergent'}"
+        title="convergent: ciphertext is a function of (value, scope secret) — same value, same name; dedup survives sealing">convergent</button>
+      <button data-enc="random" aria-pressed="${st.encMode === 'random'}"
+        title="random IV: each seal draws fresh randomness — one value, many names; dedup destroyed">random IV</button>
+    </span>
+    <button data-act="reseal" title="seal every value again. Convergent: a no-op by construction. Random: 20 new names for the same 20 values.">re-seal</button>
+    <button data-act="storage" aria-pressed="${st.showStorage}"
+      title="hide/show the storage column family — the meaning plane is complete without it; placement is a hint, not a premise">storage family</button>`;
+  buildControls(VIEWS.C, extra);
+  const el = document.getElementById('C-controls');
+  el.querySelectorAll('[data-writ]').forEach(b => b.addEventListener('click', () => {
+    st.writ = b.getAttribute('data-writ');
+    el.querySelectorAll('[data-writ]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render(VIEWS.C);
+  }));
+  el.querySelectorAll('[data-enc]').forEach(b => b.addEventListener('click', () => {
+    st.encMode = b.getAttribute('data-enc');
+    el.querySelectorAll('[data-enc]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render(VIEWS.C);
+    toast(st.encMode === 'convergent'
+      ? 'Convergent: 20 rows seal to 9 blob names — equal values share a name; dedup and identity survive sealing.'
+      : 'Random IVs: 20 rows, 20 blob names — the same values no longer share anything. Naming fractured.');
+  }));
+  el.querySelector('[data-act="reseal"]').addEventListener('click', () => {
+    if (st.encMode === 'convergent') {
+      toast('Re-seal is a no-op: sealing is a function of (value, scope secret). The same 9 names came out again.');
+    } else {
+      resealIVs();
+      render(VIEWS.C);
+      toast('Re-sealed with fresh IVs: 20 NEW ciphertext names for the same 20 values. Every digest, location, and column source digest churned.');
+    }
+  });
+  el.querySelector('[data-act="storage"]').addEventListener('click', e => {
+    st.showStorage = !st.showStorage;
+    e.currentTarget.setAttribute('aria-pressed', String(st.showStorage));
+    render(VIEWS.C);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Law strips
+   ════════════════════════════════════════════════════════════════════ */
+lawStrip('A-laws', 'Laws — what each control is (view A)', [
+  ['transpose', 'a table of records and a record of equal-length columns are the same product, read along the other axis (the indexed-product combinator). The toggle moves presentation; no information moves.'],
+  ['group-by', 'the indexed product by key: one sub-table per key value. The per-group statistics rows are per-column stats <span class="lawname">(Parquet row-group column statistics)</span>, each shown only with its rung badge.'],
+  ['filter', 'a per-column predicate is a step transformer: filtering then folding equals folding a filtered step (the fusion law), and it preserves each column’s rung. The predicate is declared data — never an ambient input.'],
+  ['sort', 'a declared total order; ties break by admission order, never by arrival. Sorting is presentation — the underlying fold state is order-free by construction.'],
+  ['rle ×N', 'runs of equal values in a sorted column render once — the run-length encoding Parquet and Arrow apply. Sorting is what buys it.'],
+  ['∨ badge', 'bounded join-semilattice (associative + commutative + idempotent): duplicated or reordered delivery cannot move the answer — <b>sloppy-safe</b>. distinct-set and max live here.'],
+  ['⊕ badge', 'commutative monoid: order-free, but every delivery counts — correct only under <b>exactly-once</b>. count and sum live here. The badge is the delivery contract, worn in the open.'],
+]);
+lawStrip('B-laws', 'Laws — what each control is (view B)', [
+  ['encoded identity', 'each sentence’s canonical bytes (sorted-key JSON, one canonical form) toy-hashed to its own name. Two textually different spellings of one sentence would collide here — and that collision would be correct: identity is content, not spelling.'],
+  ['digests referenced', 'the aggregate is a set union over kind-branded digests — union is idempotent, commutative, associative: the semilattice aggregate in its purest form.'],
+  ['transpose / group / filter / sort / rle', 'as in view A — same combinators, same laws, different data. That sameness is the point: one view engine, many reductions.'],
+]);
+lawStrip('C-laws', 'Laws — planes and seals (view C)', [
+  ['greatest_read', 'derived, never stored: per hole, the provision at the strictly greatest position wins; no tie is decided in the function <span class="lawname">(greatestAt; provision_positioned_correspondence — the environment fold IS this read)</span>. Group by hole and check the position column’s ∨ max badge: the lawful aggregate and the derived column coincide.'],
+  ['two planes, one join', 'storage columns are hints about where bytes live, joined to meaning only by row position (the dot). Placement never becomes truth: verify-on-read re-derives every digest, so a lying location (p13) is mere absence, never wrong data. Authoritative REbinding of a name is the one priced act — a fenced decide, not shown here.'],
+  ['convergent sealing', 'ciphertext = function(value, scope secret) ⇒ sealing commutes with naming: equal values share one ciphertext digest, dedup survives, and group-by over ciphertext yields the SAME partition as group-by over plaintext — the indexed product commutes with the seal. Honest cost: within the scope, equality is visible (confirmation/equality leak), bounded by the scope secret. <span class="lawname">Prior art: Tahoe-LAFS convergent encryption.</span>'],
+  ['random IVs', 'sealing is no longer a function of the value: one value, many names. Dedup destroyed (20 blobs for 9 values), group-by fractures into singletons, re-seal churns every digest, and p13 loses its repair path. What random IVs buy — hiding equality — is exactly what they cost.'],
+  ['dot_mac', 'a MAC over (lane_digest, shard, position, ciphertext_digest): binds the blob’s name to its dot at the reference layer, so sealed bytes cannot be spliced or replayed across coordinates. Deliberately NOT associated data inside the ciphertext — AD-in-the-blob would fracture convergent dedup exactly like a random IV. Content stays convergent; binding rides the journal row. <span class="lawname">Prior art: Parquet modular encryption’s per-module AAD (which never dedups across files — the tension is real and this is the resolution).</span>'],
+  ['per-family keys', 'security is a property of column families: fam-values (held by the operator writ), fam-attrib (held by neither — providers stay countable equality classes, unnamed), fam-storage (sealable, left unsealed). Different families, different key references, independently sealed. <span class="lawname">Prior art: Parquet modular encryption — per-column keys, footer integrity over all.</span>'],
+  ['redacted ≠ absent ≠ empty', 'three honest states, three renderings: a redaction chip is access withheld over verified ciphertext; ✗ absent is a failed verify at fetch; an empty cell would be no provision at all. The UI never launders one into another.'],
+  ['keys outside meaning', 'key REFERENCES (key:family-values@v3, keyref:vault/…) are data in columns; key MATERIAL never appears in any column — the wire grammar admits no secret position <span class="lawname">(secret-carrier)</span>. Even fully decrypted, the credential hole h5 yields a reference.'],
+]);
+
+/* ════════════════════════════════════════════════════════════════════
+   Theme + init
+   ════════════════════════════════════════════════════════════════════ */
+(function initTheme() {
+  const btn = document.getElementById('themeBtn');
+  const states = ['system', 'light', 'dark'];
+  let idx = 0;
+  btn.addEventListener('click', () => {
+    idx = (idx + 1) % 3;
+    const s = states[idx];
+    if (s === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', s);
+    btn.textContent = 'theme: ' + s;
+  });
+})();
+
+buildControls(VIEWS.A);
+buildControls(VIEWS.B);
+buildC();
+render(VIEWS.A);
+render(VIEWS.B);
+render(VIEWS.C);
+</script>
+</body>
+</html>

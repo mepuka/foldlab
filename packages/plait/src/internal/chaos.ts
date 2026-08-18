@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import {
   AckPolicy,
   DeliverPolicy,
@@ -10,16 +15,16 @@ import {
 import type { NatsConnection } from "@nats-io/nats-core"
 import { Effect, Schema, Scope } from "effect"
 
-import { initial } from "../Anchor.js"
-import { type WireValue } from "../Canonical.js"
-import { digestOf, type Digest } from "../Digest.js"
-import type { DeclaredFold } from "../Fold.js"
+import { initial } from "../planes/Anchor.js"
+import { type WireValue } from "../truth/Canonical.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
+import type { DeclaredFold } from "../planes/Fold.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Refusal,
-} from "../Refusal.js"
-import { evidenceSubject } from "../Subjects.js"
+} from "../truth/Refusal.js"
+import { evidenceSubject } from "../kernel/Subjects.js"
 import { laneStreamName } from "./lanes.js"
 import { decodeDurableMessage } from "./pump.js"
 import {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Reducer, Result } from "effect"
 
-import { absenceRefusal, type Refusal } from "../src/Refusal.js"
+import { absenceRefusal, type Refusal } from "../src/truth/Refusal.js"
 import {
   CasWriteFailure,
   carries,

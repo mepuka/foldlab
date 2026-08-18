@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import {
   DeliverPolicy,
   JetStreamApiCodes,
@@ -18,9 +23,9 @@ import type {
   FabricClientOptions,
   FabricClientService,
   ReceivedEnvelope,
-} from "../FabricClient.js"
-import { structuralRefusal, type Refusal } from "../Refusal.js"
-import { encodeEnvelope, verifyEnvelopeDigest } from "../Wire.js"
+} from "../carriage/FabricClient.js"
+import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
+import { encodeEnvelope, verifyEnvelopeDigest } from "../kernel/Wire.js"
 import {
   acquireConnection,
   teachRetryOperation,

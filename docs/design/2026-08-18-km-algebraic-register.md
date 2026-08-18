@@ -205,7 +205,7 @@ source, that is said on the row.
 | --- | --- | --- |
 | `theorem` declarations across `verify/fabric/Fabric/*.lean` | **207** (BridgeProofs 46, ControlProofs 53, Mutants 1, Proofs 107) | counted this session; fabric is untouched by the fleet (`git status` clean under `verify/fabric`) |
 | `theorem` declarations in `verify/kernel/Kernel/Proofs.lean` | **60** | counted this session; `verify/kernel` is byte-frozen for the current slice |
-| Structural refusal kinds in `packages/plait/src/Refusal.ts` | **34** | enumerated `Refusal.ts:25-60` |
+| Structural refusal kinds in `packages/plait/src/truth/Refusal.ts` | **34** | enumerated `Refusal.ts:25-60` |
 | Refusal reasons in the kernel model | **16** (`RefusalReason`, `Definitions.lean:392-409`) | enumerated |
 | Declaration kinds | **12**, ranks 0–11, `algebra` at rank 5 | `Definitions.lean:25-38` |
 | Conformance corpus, format 2 | **117 lines**, header + 8 groups | the committed fixture, read this session; the fleet's format-2 slice has landed in the artifact |
@@ -1269,12 +1269,12 @@ is the direction of the asymmetry.
 
 **Commit B — the earned brand at the runtime.**
 
-*Territory.* `packages/plait/src/Algebra.ts` (one predicate per law
+*Territory.* `packages/plait/src/truth/Algebra.ts` (one predicate per law
 atom; `Algebra.earn(algebra, rung, suite)` generalizing
 `Algebra.commutative`; `earnedRungOf` generalizing
-`hasCommutativeWitness`); `packages/plait/src/Fold.ts` (the F4 constraint
+`hasCommutativeWitness`); `packages/plait/src/planes/Fold.ts` (the F4 constraint
 widened from `CommutativeAlgebra` to `Algebra<S, CommutativeMonoid>`);
-`packages/plait/src/Refusal.ts` (`unearned-rung`, kind 35); a new
+`packages/plait/src/truth/Refusal.ts` (`unearned-rung`, kind 35); a new
 generated `packages/plait/src/KernelRungs.generated.ts`; the generator
 script beside the existing table generator.
 
@@ -1684,12 +1684,12 @@ territory, read-only**);
 exemplar extends); `verify/kernel/projections/prose.md` (the eight
 speech-act sentences the second register joins).
 
-Shipped code, read in place: `packages/plait/src/Algebra.ts` (whole —
+Shipped code, read in place: `packages/plait/src/truth/Algebra.ts` (whole —
 the F4 brand discipline this record generalizes);
-`packages/plait/src/Fold.ts:1-150` (the partition constraint and its
-refusal); `packages/plait/src/Refusal.ts:1-100` (the 34-kind closed
-union, enumerated); `packages/plait/src/KernelTables.generated.ts` (the
-generated-surface idiom); `packages/plait/src/KernelDoor.ts:1-70` (the
+`packages/plait/src/planes/Fold.ts:1-150` (the partition constraint and its
+refusal); `packages/plait/src/truth/Refusal.ts:1-100` (the 34-kind closed
+union, enumerated); `packages/plait/src/kernel/KernelTables.generated.ts` (the
+generated-surface idiom); `packages/plait/src/kernel/KernelDoor.ts:1-70` (the
 candidate layer at the runtime);
 `packages/plait/scripts/render-kernel-prose.ts:1-60` (the prose pipeline
 commit E extends — **fleet territory, read-only**);

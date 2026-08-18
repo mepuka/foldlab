@@ -32,15 +32,15 @@
  */
 import { resolve } from "node:path"
 
-import { encodeCanonicalJson, type CanonicalJson } from "../src/CanonicalJson.js"
+import { encodeCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
   KernelProgramRecord,
-} from "../src/KernelCorpusSchemas.js"
-import type { KernelCandidateAct, KernelRawArg } from "../src/KernelDoor.js"
-import { program, type KernelProgram } from "../src/KernelProgram.js"
-import { KERNEL_DECL_KINDS, type KernelDeclKind } from "../src/KernelTables.generated.js"
+} from "../src/kernel/KernelCorpusSchemas.js"
+import type { KernelCandidateAct, KernelRawArg } from "../src/kernel/KernelDoor.js"
+import { program, type KernelProgram } from "../src/kernel/KernelProgram.js"
+import { KERNEL_DECL_KINDS, type KernelDeclKind } from "../src/kernel/KernelTables.generated.js"
 import { CORPUS_PATH, readKernelCorpus, type KernelCorpus } from "../scripts/kernel-corpus.js"
 
 const repository = resolve(import.meta.dir, "../../..")

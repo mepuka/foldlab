@@ -336,12 +336,14 @@ structure TokenClaim where
   value : Nat
 deriving Repr, DecidableEq
 
-/-- A candidate merge strategy. The lawful strategy names a declared
-    merge algebra; last-writer-wins is spellable here and refused at
-    the door, because no such carrier exists in the fabric. -/
+/-- A candidate merge strategy. Both spellings retain the intended
+    declared algebra. Last-writer-wins additionally asks arrival order
+    to override that algebra and is refused at the door. Retaining the
+    algebra makes dropping the unlawful override a candidate-only
+    repair: no catalog lookup or new choice is smuggled into it. -/
 inductive MergeStrategy where
   | declaredAlgebra (algebra : Nat)
-  | lastWriterWins
+  | lastWriterWins (algebra : Nat)
 deriving Repr, DecidableEq
 
 /-- The candidate trigger grammar: the five lawful productions plus the
@@ -378,7 +380,8 @@ inductive CandidateAct where
       (outcome : List RawArg)
   | trigger (predicate : CandidatePredicate) (declaration : Nat)
   | spawn (parent : Nat) (request : Nat)
-  | updateInPlace (target : Nat) (payload : List RawArg)
+  | updateInPlace (kind : DeclKind) (target : Nat)
+      (payload : List RawArg) (writ : Nat)
 deriving Repr, DecidableEq
 
 /-! ## Refusals
@@ -548,6 +551,24 @@ def Applicability.wire : Applicability -> String
   | .machineApplicable => "machine-applicable"
   | .advisory => "advisory"
 
+/-- Apply one of the four machine-applicable repairs. The function is
+    option-valued in both arguments: a reason repairs only the candidate
+    shape that carries that fault, and every advisory reason returns
+    none. Each successful rewrite uses only fields already carried by
+    the refused candidate. A repaired candidate may still carry a
+    different fault; arbitration among several faults is deliberately
+    not modeled here. -/
+def repair : CandidateAct -> RefusalReason -> Option CandidateAct
+  | .resolveDigest kind target (some _), .anchoredResolve =>
+      some (.resolveDigest kind target none)
+  | .trustBytes kind target _, .unverifiedRead =>
+      some (.resolveDigest kind target none)
+  | .updateInPlace kind target payload writ, .pastMutation =>
+      some (.declare kind (.digestRef kind target :: payload) writ)
+  | .join cell contribution (.lastWriterWins algebra), .lastWriterWins =>
+      some (.join cell contribution (.declaredAlgebra algebra))
+  | _, _ => none
+
 /-! ## The door -/
 
 /-- The admission context: the already-admitted catalog and the
@@ -556,6 +577,13 @@ structure Door where
   catalog : List Ref
   pinned : List Ref
 deriving Repr
+
+/-- Door growth is membership inclusion in both changing contexts:
+    the already-admitted catalog and the acting writ's pinned universe.
+    List order and duplicate entries carry no meaning at this seam. -/
+structure Door.Le (smaller larger : Door) : Prop where
+  catalog : forall ref, ref ∈ smaller.catalog -> ref ∈ larger.catalog
+  pinned : forall ref, ref ∈ smaller.pinned -> ref ∈ larger.pinned
 
 /-- The admission verdict: an intrinsic sentence, or a taught
     structural refusal. -/
@@ -686,7 +714,7 @@ def admit (door : Door) : CandidateAct -> AdmitResult
           else .refused (taught .forwardReference)
   | .join cell contribution strategy =>
       match strategy with
-      | .lastWriterWins => .refused (taught .lastWriterWins)
+      | .lastWriterWins _ => .refused (taught .lastWriterWins)
       | .declaredAlgebra algebra =>
           match argSweep door contribution with
           | some reason => .refused (taught reason)
@@ -741,7 +769,7 @@ def admit (door : Door) : CandidateAct -> AdmitResult
           .admitted (.spawn ⟨parent⟩ ⟨request⟩)
         else .refused (taught .forwardReference)
       else .refused (taught .forwardReference)
-  | .updateInPlace _ _ => .refused (taught .pastMutation)
+  | .updateInPlace _ _ _ _ => .refused (taught .pastMutation)
 
 /-! ## The unlawful shapes
 
@@ -759,8 +787,107 @@ def actArgs : CandidateAct -> List RawArg
   | .join _ contribution _ => contribution
   | .fold _ _ query => query
   | .decide _ _ outcome => outcome
-  | .updateInPlace _ payload => payload
+  | .updateInPlace _ _ payload _ => payload
   | _ => []
+
+/-- An atom-level fault whose presence is a function of candidate bytes
+    alone. Digest references and literals can become lawful as the door
+    grows; every other raw atom requires rewriting the candidate. -/
+def RawArg.Intrinsic : RawArg -> Prop
+  | .digestRef _ _ => False
+  | .literal _ => False
+  | _ => True
+
+/-- Candidate-intrinsic faults, independent of every door. Payload
+    atoms cover the six raw-argument rows; the remaining constructors
+    cover the candidate shapes whose signature or production is itself
+    unlawful. A candidate may also carry a door-relative fault before
+    one of these, so this predicate does not select a refusal reason. -/
+inductive IntrinsicFault : CandidateAct -> Prop where
+  | payload (candidate : CandidateAct) (arg : RawArg) :
+      arg ∈ actArgs candidate -> arg.Intrinsic -> IntrinsicFault candidate
+  | anchored (kind : DeclKind) (target anchor : Nat) :
+      IntrinsicFault (.resolveDigest kind target (some anchor))
+  | trusting (kind : DeclKind) (target asserted : Nat) :
+      IntrinsicFault (.trustBytes kind target asserted)
+  | lastWriter (cell : Nat) (contribution : List RawArg) (algebra : Nat) :
+      IntrinsicFault (.join cell contribution (.lastWriterWins algebra))
+  | latest (subject : Nat) : IntrinsicFault (.readLatest subject)
+  | anchorless (declared : Nat) (query : List RawArg) :
+      IntrinsicFault (.fold declared none query)
+  | crossAnchor (declared : Nat) (anchor : CandidateAnchor)
+      (query : List RawArg) :
+      anchor.foldId ≠ declared ->
+      IntrinsicFault (.fold declared (some anchor) query)
+  | unfenced (register : Nat) (outcome : List RawArg) :
+      IntrinsicFault (.decide register none outcome)
+  | crossToken (register : Nat) (claim : TokenClaim)
+      (outcome : List RawArg) :
+      claim.register ≠ register ->
+      IntrinsicFault (.decide register (some claim) outcome)
+  | refusedPredicate (predicate : CandidatePredicate)
+      (declaration : Nat) (reason : RefusalReason) :
+      predicateRefusal predicate = some reason ->
+      IntrinsicFault (.trigger predicate declaration)
+  | mutation (kind : DeclKind) (target : Nat) (payload : List RawArg)
+      (writ : Nat) :
+      IntrinsicFault (.updateInPlace kind target payload writ)
+
+/-- The digest references carried by a raw argument list. -/
+def argRefs : List RawArg -> List Ref
+  | [] => []
+  | .digestRef kind id :: rest => (kind, id) :: argRefs rest
+  | _ :: rest => argRefs rest
+
+/-- The finite catalog support a candidate needs after all intrinsic
+    faults are absent. Adding this support can repair every
+    forward-reference refusal without rewriting the candidate. -/
+def requiredCatalog : CandidateAct -> List Ref
+  | .declare _ payload writ =>
+      (DeclKind.policy, writ) :: argRefs payload
+  | .resolveDigest kind target _ => [(kind, target)]
+  | .trustBytes kind target _ => [(kind, target)]
+  | .emit lane body => (DeclKind.lane, lane) :: argRefs body
+  | .join cell contribution strategy =>
+      (DeclKind.resource, cell) ::
+        (match strategy with
+        | .declaredAlgebra algebra =>
+            (DeclKind.algebra, algebra) :: argRefs contribution
+        | .lastWriterWins _ => argRefs contribution)
+  | .readLatest _ => []
+  | .fold declared _ query =>
+      (DeclKind.index, declared) :: argRefs query
+  | .decide register _ outcome =>
+      (DeclKind.program, register) :: argRefs outcome
+  | .trigger _ declaration => [(DeclKind.program, declaration)]
+  | .spawn parent request =>
+      [(DeclKind.policy, parent), (DeclKind.policy, request)]
+  | .updateInPlace _ _ payload _ => argRefs payload
+
+/-- Only declarations inspect the acting writ's pinned universe. -/
+def requiredPinned : CandidateAct -> List Ref
+  | .declare _ payload _ => argRefs payload
+  | _ => []
+
+/-- The canonical finite repair door: preserve the old door and add
+    precisely the candidate's catalog and pinned-universe support. -/
+def repairingDoor (door : Door) (candidate : CandidateAct) : Door where
+  catalog := requiredCatalog candidate ++ door.catalog
+  pinned := requiredPinned candidate ++ door.pinned
+
+/-- The two refusal reasons whose truth is relative to a door rather
+    than fixed by candidate bytes. -/
+def RefusalReason.DoorRelative : RefusalReason -> Prop
+  | .forwardReference => True
+  | .offWritReferent => True
+  | _ => False
+
+/-- A currently surfaced door-relative refusal. This classifies the
+    returned reason only; a candidate may still carry a later intrinsic
+    fault, which is why repairability names that absence separately. -/
+def DoorRelativeRefusal (door : Door) (candidate : CandidateAct) : Prop :=
+  exists refusal, admit door candidate = .refused refusal /\
+    refusal.reason.DoorRelative
 
 /-- The unlawful candidate shapes, one constructor per closure row's
     spellable form (plus the two signature-discipline shapes: an
@@ -789,8 +916,8 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
       Unlawful door (.resolveDigest kind target (some anchor))
   | trusting (kind : DeclKind) (target asserted : Nat) :
       Unlawful door (.trustBytes kind target asserted)
-  | lastWriter (cell : Nat) (contribution : List RawArg) :
-      Unlawful door (.join cell contribution .lastWriterWins)
+  | lastWriter (cell : Nat) (contribution : List RawArg) (algebra : Nat) :
+      Unlawful door (.join cell contribution (.lastWriterWins algebra))
   | latest (subject : Nat) :
       Unlawful door (.readLatest subject)
   | anchorless (declared : Nat) (query : List RawArg) :
@@ -809,8 +936,9 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
       (declaration : Nat) (reason : RefusalReason) :
       predicateRefusal predicate = some reason ->
       Unlawful door (.trigger predicate declaration)
-  | mutation (target : Nat) (payload : List RawArg) :
-      Unlawful door (.updateInPlace target payload)
+  | mutation (kind : DeclKind) (target : Nat) (payload : List RawArg)
+      (writ : Nat) :
+      Unlawful door (.updateInPlace kind target payload writ)
 
 /-! ## Planted ground programs
 
@@ -861,7 +989,7 @@ def unfencedDecide : CandidateAct :=
 
 /-- Row: a last-writer-wins merge spelled at a cell. -/
 def lastWriterJoin : CandidateAct :=
-  .join 6 [.literal 42] .lastWriterWins
+  .join 6 [.literal 42] (.lastWriterWins 7)
 
 /-- Row: a read that trusts asserted bytes without re-derivation. -/
 def trustingRead : CandidateAct :=
@@ -895,7 +1023,7 @@ def absenceClaimTrigger : CandidateAct :=
 
 /-- Row: an in-place mutation of an admitted value. -/
 def pastMutation : CandidateAct :=
-  .updateInPlace 8 [.literal 43]
+  .updateInPlace .schema 8 [.literal 43] 4
 
 /-- Row: a referent that resolves in the catalog but lies outside the
     writ's pinned universe. -/

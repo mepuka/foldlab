@@ -3,8 +3,8 @@ import { join, resolve } from "node:path"
 
 import { Effect } from "effect"
 
-import { canonicalBytes } from "../src/Canonical.js"
-import * as Lane from "../src/Lane.js"
+import { canonicalBytes } from "../src/truth/Canonical.js"
+import * as Lane from "../src/planes/Lane.js"
 import { lane } from "./fixtures/chaos-fold.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
@@ -20,7 +20,7 @@ const runCli = async (
   url?: string,
 ): Promise<{ readonly exit: number; readonly stdout: string; readonly stderr: string }> => {
   const child = Bun.spawn({
-    cmd: ["bun", "run", "./src/cli.ts", ...args],
+    cmd: ["bun", "run", "./src/surface/cli.ts", ...args],
     cwd: resolve(import.meta.dir, ".."),
     env: { ...process.env, ...(url === undefined ? {} : { PLAIT_NATS_URL: url }) },
     stdout: "pipe",

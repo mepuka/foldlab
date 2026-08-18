@@ -10,7 +10,7 @@
  * The lawful twin below is the same join with nothing but its cell and its
  * contribution, which is all a join is.
  */
-import { program } from "../src/KernelProgram.js"
+import { program } from "../src/kernel/KernelProgram.js"
 
 /** The witness: a join through the cell's own declared algebra. */
 export const lawful = program("strategy-witness", {}, ($) =>

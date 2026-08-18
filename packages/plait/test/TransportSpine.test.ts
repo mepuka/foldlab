@@ -2,7 +2,7 @@ import { errors } from "@nats-io/nats-core"
 import { describe, expect, test } from "bun:test"
 import { readdir } from "node:fs/promises"
 
-import type { Next } from "../src/Refusal.js"
+import type { Next } from "../src/truth/Refusal.js"
 import { transportRefusal as anchorsRefusal } from "../src/internal/anchors.js"
 import { transportRefusal as cellsRefusal } from "../src/internal/cells.js"
 import { transportRefusal as chaosRefusal } from "../src/internal/chaos.js"
@@ -11,6 +11,7 @@ import { transportRefusal as lanesRefusal } from "../src/internal/lanes.js"
 import { transportRefusal as natsRefusal } from "../src/internal/nats.js"
 import { transportRefusal as pumpRefusal } from "../src/internal/pump.js"
 import { transportRefusal as registersRefusal } from "../src/internal/registers.js"
+import { transportRefusal as sessionsRefusal } from "../src/internal/sessions.js"
 import {
   teachRetryOperation,
   transportRefusalFor,
@@ -141,6 +142,22 @@ const rows: ReadonlyArray<SpineRow> = [
       note: "Restore the consumer protocol and re-run the measurement against the same pinned span.",
     }],
   },
+  {
+    // The ninth adapter, added with the consumer seam. Its terms have no
+    // pre-extraction commit to be transcribed from — this row IS their
+    // declaration, so it is a pin against later homogenization rather than an
+    // independent oracle, and it says so rather than borrowing the credibility
+    // of the eight rows above it. The mutant below is what keeps it honest.
+    adapter: "sessions",
+    refuse: sessionsRefusal,
+    kind: "session-transport-unavailable",
+    law: "Transport absence may be retried; writ and view refusals may not.",
+    expected: "the pinned local NATS KV operation to be available",
+    next: () => [{
+      subject: "Session.subscribe",
+      note: "Reconnect and subscribe again; a session is a value the substrate never learned, so re-opening under the same writ resumes the same read.",
+    }],
+  },
 ]
 
 /**
@@ -211,20 +228,21 @@ describe("the transport spine mints each adapter's own refusal", () => {
     }
   }
 
-  test("eight definitions carry seven distinct absence kinds", () => {
-    expect(rows.length).toBe(8)
+  test("nine definitions carry eight distinct absence kinds", () => {
+    expect(rows.length).toBe(9)
     // `fold-transport-unavailable` is shared by the pump and the fold service,
-    // which is why eight sites carry seven kinds. The affordances record's
-    // "six absence kinds" undercounts by one.
-    expect(new Set(rows.map((row) => row.kind)).size).toBe(7)
+    // which is why nine sites carry eight kinds. The affordances record's
+    // "six absence kinds" undercounts by two.
+    expect(new Set(rows.map((row) => row.kind)).size).toBe(8)
   })
 
   test("membership is derived: every adapter that mints one has a row here", async () => {
     // The row TERMS above are transcribed on purpose — the pre-extraction
-    // definitions are this file's oracle. WHICH adapters must appear is not
-    // transcribed: it is read off the source tree, so a ninth adapter cannot
-    // join the spine without joining this gate, and a row for an adapter that
-    // no longer mints one cannot linger.
+    // definitions are this file's oracle for the eight adapters that predate
+    // the spine. WHICH adapters must appear is not transcribed: it is read off
+    // the source tree, so a tenth adapter cannot join the spine without joining
+    // this gate, and a row for an adapter that no longer mints one cannot
+    // linger.
     expect(await spineAdapters()).toEqual([...rows.map((row) => row.adapter)].sort())
   })
 
@@ -252,7 +270,7 @@ describe("negative control — a homogenized spine is refuted", () => {
     next: teachRetryOperation,
   })
 
-  test("seven of the eight rows refute it, and the survivor is nats", () => {
+  test("eight of the nine rows refute it, and the survivor is nats", () => {
     const survivors = rows
       .filter((row) => mismatches(row, homogenized, "connection.acquire", plantedCause("boom")).length === 0)
       .map((row) => row.adapter)
@@ -269,7 +287,7 @@ describe("negative control — a homogenized spine is refuted", () => {
     }
   })
 
-  test("erasing only the taught repair still refutes the six fixed-subject rows", () => {
+  test("erasing only the taught repair still refutes the seven fixed-subject rows", () => {
     const refuted = rows
       .filter((row) => {
         const noteOnly = transportRefusalFor({
@@ -281,6 +299,14 @@ describe("negative control — a homogenized spine is refuted", () => {
         return mismatches(row, noteOnly, "connection.acquire", plantedCause("boom")).length > 0
       })
       .map((row) => row.adapter)
-    expect(refuted).toEqual(["registers", "anchors", "lanes", "pump", "folds", "chaos"])
+    expect(refuted).toEqual([
+      "registers",
+      "anchors",
+      "lanes",
+      "pump",
+      "folds",
+      "chaos",
+      "sessions",
+    ])
   })
 })

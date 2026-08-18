@@ -23,7 +23,7 @@
  *
  * @module
  */
-import type { KernelTypeRecord } from "../src/KernelCorpusSchemas.js"
+import type { KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { CORPUS_PATH, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The result of comparing committed bytes with a fresh rendering. */
@@ -41,7 +41,7 @@ export const GENERATE_COMMAND = "bun run generate:kernel-tables"
 export const ARTIFACT_PATH = CORPUS_PATH
 
 /** Where the generated module is committed, relative to the repository root. */
-export const GENERATED_PATH = "packages/plait/src/KernelTables.generated.ts"
+export const GENERATED_PATH = "packages/plait/src/kernel/KernelTables.generated.ts"
 
 // Annotated at the binding, not only at the arrow, so that TypeScript reads a
 // bare `refuse(...)` as control flow that does not return and narrows after it.
@@ -144,6 +144,8 @@ export const renderKernelTables = (
   const line = (value = ""): void => void out.push(value)
 
   line("/**")
+  line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
+  line(" *")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
   line(` * Artifact: ${corpusPath}`)

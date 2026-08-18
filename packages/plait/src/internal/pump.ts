@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import {
   AckPolicy,
   DeliverPolicy,
@@ -14,13 +19,13 @@ import {
 import type { NatsConnection } from "@nats-io/nats-core"
 import { Effect, Queue, Result, Schema, Stream } from "effect"
 
-import type { Anchor } from "../Anchor.js"
-import { digestOf } from "../Digest.js"
-import type { DeclaredFold } from "../Fold.js"
-import { partition } from "../Lane.js"
-import { structuralRefusal, type Refusal } from "../Refusal.js"
-import { evidenceSubject } from "../Subjects.js"
-import { verifyEnvelopeDigest, type Envelope } from "../Wire.js"
+import type { Anchor } from "../planes/Anchor.js"
+import { digestOf } from "../truth/Digest.js"
+import type { DeclaredFold } from "../planes/Fold.js"
+import { partition } from "../planes/Lane.js"
+import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
+import { evidenceSubject } from "../kernel/Subjects.js"
+import { verifyEnvelopeDigest, type Envelope } from "../kernel/Wire.js"
 import type { AnchorStore, LoadedAnchor } from "./anchors.js"
 import { laneStreamName } from "./lanes.js"
 import {
@@ -39,7 +44,7 @@ export interface PositionedDurableRecord<Event> {
   readonly position: number
   readonly envelope: Envelope
   readonly event: Event
-  readonly digest: import("../Digest.js").Digest
+  readonly digest: import("../truth/Digest.js").Digest
   readonly ack: () => void
 }
 

@@ -46,6 +46,13 @@ fenced register over one file-backed, single-replica JetStream server.
   over the ruled `flb-fab-cell` bucket, and nothing else.
 - `ContextProgram` owns the selector/renderer/volatility declaration shapes.
   There is no assembly executor and no F7 claim.
+- `Session` is the consumer half of the fold plane: a writ declares the views a
+  reader may image, `subscribe` opens a read-plane session at a declared fold's
+  anchor, and `read` takes one step — the image, the coordinate it was anchored
+  at, and the session that step leaves behind. It reads; it writes no anchor, no
+  state, and no stream. A fold the writ does not name refuses on this surface,
+  and that refusal is the seam's own — no claim about the package's other read
+  paths ships with it.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
 - `internal/cas` owns the class-(a) write path: the bounded
@@ -91,7 +98,7 @@ assumed. There is no exactly-once, liveness, federation, or clustering claim.
 Run a declared fold against a pinned span:
 
 ```bash
-PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/cli.ts chaos \
+PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/surface/cli.ts chaos \
   ./my-fold.ts --pin-head --axis kill --axis duplicate --axis reorder --output json
 ```
 

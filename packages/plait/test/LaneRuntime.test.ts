@@ -4,9 +4,9 @@ import { jetstreamManager, StorageType } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Schema } from "effect"
 
-import { Digest } from "../src/Digest.js"
-import { declare, emit, Lanes } from "../src/Lane.js"
-import { evidenceSubject } from "../src/Subjects.js"
+import { Digest } from "../src/truth/Digest.js"
+import { declare, emit, Lanes } from "../src/planes/Lane.js"
+import { evidenceSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })

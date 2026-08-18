@@ -6,7 +6,7 @@ import {
   encodeEnvelope,
   INLINE_BODY_MAX_BYTES,
   verifyEnvelopeDigest,
-} from "../src/Wire.js"
+} from "../src/kernel/Wire.js"
 
 const utf8 = new TextEncoder()
 const digest = "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"

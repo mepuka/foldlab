@@ -179,7 +179,7 @@ Two things happened that are worth slowing down for.
 digest as the message's `Nats-Msg-Id`; the subscriber re-derives the digest from
 the received bytes and compares. If they differ you get a refusal, not a
 message. That check is in the client, not in your code: the rule is
-`verifyEnvelopeDigest` in `src/Wire.ts`, and the receive path applies it to every
+`verifyEnvelopeDigest` in `src/kernel/Wire.ts`, and the receive path applies it to every
 message before you see it (`src/internal/nats.ts`, `FabricClient.verifyReceived`).
 
 **The second publish returned the same sequence number.** The commons stream
@@ -277,7 +277,7 @@ The refusal names the law it enforced and points at the field. `sort` matters:
 `structural` refusals are permanent — no retry policy shipped with Plait will
 retry one, because no amount of waiting makes an excess property legal.
 `absence` refusals mean *not here yet*, and those are the only class the shipped
-retry helper retries (`src/Refusal.ts`, `retryAbsence`).
+retry helper retries (`src/truth/Refusal.ts`, `retryAbsence`).
 
 **What you should believe now:** on this fabric, a name is a checkable claim
 about bytes, and the checking is not your job.
@@ -496,7 +496,7 @@ fenced:
   full distillation gauntlet (E10) is not pulled forward.
 
 ```bash
-PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/cli.ts chaos \
+PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/surface/cli.ts chaos \
   ./my-fold.ts --pin-head --axis kill --axis duplicate --axis reorder --output json
 ```
 

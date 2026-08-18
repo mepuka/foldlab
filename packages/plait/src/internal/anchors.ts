@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { decodeJson } from "@foldlab/core/jcs"
 import { StorageType } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
@@ -10,15 +15,15 @@ import {
   Anchor,
   initial,
   type Anchor as AnchorValue,
-} from "../Anchor.js"
-import { canonicalBytes, type WireValue } from "../Canonical.js"
-import { digestOf } from "../Digest.js"
-import type { DeclaredFold } from "../Fold.js"
+} from "../planes/Anchor.js"
+import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
+import { digestOf } from "../truth/Digest.js"
+import type { DeclaredFold } from "../planes/Fold.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Refusal,
-} from "../Refusal.js"
+} from "../truth/Refusal.js"
 import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
 
 export interface LoadedAnchor<State> {
@@ -29,6 +34,15 @@ export interface LoadedAnchor<State> {
 
 export interface AnchorStore {
   readonly initialize: <Event, State, Partitions extends number>(
+    fold: DeclaredFold<Event, State, Partitions>,
+    partition: number,
+  ) => Effect.Effect<LoadedAnchor<State>, Refusal>
+  /**
+   * `initialize` without the creation: a reader's load of the checkpoint and
+   * the state it names. An absent anchor is the absence `initialize` would
+   * have filled by writing, and a reader never writes it.
+   */
+  readonly load: <Event, State, Partitions extends number>(
     fold: DeclaredFold<Event, State, Partitions>,
     partition: number,
   ) => Effect.Effect<LoadedAnchor<State>, Refusal>
@@ -117,6 +131,16 @@ const readEntry = (
 ): Effect.Effect<KvEntry | null, Refusal> => Effect.tryPromise({
   try: () => bucket.get(key),
   catch: (cause) => transportRefusal(operation, cause),
+})
+
+/** The absence a key with no anchor carries, minted the same for every reader. */
+const anchorAbsent = (anchorKey: string): Refusal => absenceRefusal({
+  kind: "anchor-absent",
+  law: "A deployed partition publishes its floor-zero anchor before returning its handle.",
+  path: ["anchor", anchorKey],
+  got: "absent",
+  expected: "a deployed fold anchor",
+  next: [{ subject: "Folds.deploy", note: "Deploy the fold to create or resume its anchor." }],
 })
 
 const stateKey = (digest: string): string => `state.${digest}`
@@ -240,6 +264,20 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
     },
   )
 
+  const load: AnchorStore["load"] = Effect.fn("AnchorStore.load")(
+    function*<Event, State, Partitions extends number> (
+      fold: DeclaredFold<Event, State, Partitions>,
+      partition: number,
+    ): Effect.fn.Return<LoadedAnchor<State>, Refusal> {
+      const anchorKey = key(fold, partition)
+      const entry = yield* readEntry(bucket, anchorKey, "anchor.read")
+      if (entry === null) return yield* anchorAbsent(anchorKey)
+      const anchor = yield* parseAnchor(entry)
+      const state = yield* loadState<State>(bucket, anchor.stateDigest)
+      return { anchor, state, revision: entry.revision }
+    },
+  )
+
   const commit: AnchorStore["commit"] = Effect.fn("AnchorStore.commit")(
     function* (anchorKey, expectedRevision, anchor, rawState) {
       if (!Schema.is(Schema.Json)(rawState)) {
@@ -265,18 +303,9 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
 
   const read: AnchorStore["read"] = Effect.fn("AnchorStore.read")(function* (anchorKey) {
     const entry = yield* readEntry(bucket, anchorKey, "anchor.read")
-    if (entry === null) {
-      return yield* absenceRefusal({
-        kind: "anchor-absent",
-        law: "A deployed partition publishes its floor-zero anchor before returning its handle.",
-        path: ["anchor", anchorKey],
-        got: "absent",
-        expected: "a deployed fold anchor",
-        next: [{ subject: "Folds.deploy", note: "Deploy the fold to create or resume its anchor." }],
-      })
-    }
+    if (entry === null) return yield* anchorAbsent(anchorKey)
     return yield* parseAnchor(entry)
   })
 
-  return { initialize, commit, read, key }
+  return { initialize, load, commit, read, key }
 })

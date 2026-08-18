@@ -37,15 +37,15 @@
 import type {
   KernelConstructorRecord,
   KernelTypeRecord,
-} from "../src/KernelCorpusSchemas.js"
-import { encodeCanonicalJson, type CanonicalJson } from "../src/CanonicalJson.js"
+} from "../src/kernel/KernelCorpusSchemas.js"
+import { encodeCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
 import { parseTypeReference, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The command a reader runs to reproduce the generated module. */
 export const GENERATE_SCHEMAS_COMMAND = "bun run generate:kernel-schemas"
 
 /** Where the generated module is committed, relative to the repository root. */
-export const GENERATED_SCHEMAS_PATH = "packages/plait/src/KernelSchemas.generated.ts"
+export const GENERATED_SCHEMAS_PATH = "packages/plait/src/kernel/KernelSchemas.generated.ts"
 
 /** The result of comparing committed bytes with a fresh rendering. */
 export type KernelSchemaCheck =
@@ -503,6 +503,8 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   const docs = new Map(corpus.docs.map((doc) => [doc.name, doc.doc] as const))
 
   line("/**")
+  line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
+  line(" *")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
   line(` * Corpus:  ${corpusPath}`)

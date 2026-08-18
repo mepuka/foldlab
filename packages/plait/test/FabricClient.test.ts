@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Stream } from "effect"
 
-import { FabricClient } from "../src/FabricClient.js"
-import { evidenceSubject } from "../src/Subjects.js"
-import { decodeEnvelope } from "../src/Wire.js"
+import { FabricClient } from "../src/carriage/FabricClient.js"
+import { evidenceSubject } from "../src/kernel/Subjects.js"
+import { decodeEnvelope } from "../src/kernel/Wire.js"
 
 const utf8 = new TextEncoder()
 const lane = "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"

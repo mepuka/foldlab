@@ -9,7 +9,7 @@ import {
   retryAbsence,
   structuralRefusal,
   type Refusal,
-} from "../src/Refusal.js"
+} from "../src/truth/Refusal.js"
 import { transportRefusal as registersRefusal } from "../src/internal/registers.js"
 import {
   isCasRefusal,
