@@ -1,7 +1,15 @@
 # Q1 schema-confusion evaluation preregistration
 
-Status: **PREREGISTERED.** This contract is committed before any evaluation
-population is generated. Results do not amend it.
+Status: **PREREGISTERED (round 2).** This contract is committed before any
+round-2 evaluation population is generated. Results do not amend it.
+
+Round 1's population is void and its numbers are not carried forward. Its
+battery asked models to act on "the planted declaration" while its
+hand-authored candidate ledger carried no `declaration` key, and 16 of the 17
+confused calls in that entire population landed on that one row. Those rates
+measured how each arm's model guessed at an unresolvable referent, not digest
+naming. The ledger and the battery are derived from the surface under test in
+round 2, so that failure is unconstructible rather than merely unlikely.
 
 ## Question
 
@@ -13,8 +21,10 @@ battery. It does not claim a model-independent naming law.
 ## Fixed inputs
 
 `verify/kernel/projections/tools.schema.json` is the base projection. The
-harness refuses a base document that does not match the expected eight-tool
-manifest and records its SHA-256 digest with every run.
+harness records its SHA-256 digest with every run and inside every generated
+artifact. That file declares itself `EXPLORATORY, hand-derived` in its own
+`$comment`: this evaluation therefore measures naming behaviour on a surface
+the estate does not yet generate, and says so on every quoted result.
 
 Only properties whose base JSON Schema carries the digest pattern
 `^sha256:[0-9a-f]+$` change between arms:
@@ -27,76 +37,138 @@ Only properties whose base JSON Schema carries the digest pattern
 
 The `bare` arm removes a terminal `_digest`; a property already named `digest`
 stays `digest`. The `nested` arm uses those same bare property names and wraps
-the digest. Fixed-sort slots constrain `type` to the slot's sort. The
-kind-polymorphic `kernel_resolve.digest` slot constrains `type` to the base
-kind enum and is scored against the sibling `kind` value. Descriptions, tool
-names, non-digest fields, and all other constraints stay equal.
+the digest. Tool names, tool descriptions, **property descriptions**,
+non-digest fields, and all other constraints stay equal across arms.
 
-The candidate battery has eight rows, one per base tool:
+## Derivation, not authorship
 
-1. declare a schema under a writ;
-2. resolve a program;
-3. emit a canonical body to a lane;
-4. join a canonical contribution into a cell;
-5. fold a reduction over a lane at an anchor;
-6. decide a register at a fencing token;
-7. trigger a head-advanced-past production;
-8. spawn a child writ from parent and requested writs.
+Nothing in the ledger or the battery is hand-typed. Both are functions of the
+base projection, checked byte-identical by `bun run check:generated` and proved
+falsifiable by `bun run check:generated-control`.
 
-Every prompt carries the same candidate ledger. Candidate digests are distinct
-64-hex SHA-256-shaped strings, so their intended semantic slots are mechanically
-recoverable without a model judge. Each expected call is stated once in base
-coordinates and projected by the same arm transformation as its schema.
+- **The ledger** is one entry per digest-carrying slot of the base projection,
+  optional slots included, keyed `<generator>.<slot>`. Every referent a task
+  can name is therefore a ledger key by construction. Each planted digest is
+  `sha256(<key>)`, so entries are distinct and their intended slots are
+  mechanically recoverable without a model judge.
+- **The battery** is one task per base tool, filling exactly the fields that
+  tool's schema declares `required`. The task set is the tool list, so it
+  cannot be hand-picked.
+- **Each entry is cross-walked** to the generated kernel corpus
+  (`packages/plait/src/kernel/KernelBuilder.generated.ts`) for the declaration
+  kind its slot is branded with — by exact field name, else by position when
+  both sides declare the same number of digest fields, else left unresolved.
+  Unresolved slots are reported as divergence between the hand-derived sketch
+  and the grammar it owes; they are never guessed at.
+
+Each task states its tool, and for each required digest slot names the ledger
+entry to place there together with that slot's role **as the base schema's own
+description states it**. Descriptions are identical in all three arms, so the
+property name and shape are the only things that vary. Naming the tool is
+deliberate: tool selection is not what Q1 asks, and leaving it to inference is
+how round 1 let a comprehension failure land in a naming statistic.
 
 ## Population
 
-The locally authenticated Claude CLI supplies two available model aliases:
-`haiku` and `sonnet`. The harness records the canonical model version returned
-by the provider rather than treating either alias as a durable version.
+The locally authenticated Claude CLI supplies two model aliases: `haiku` and
+`sonnet`. The harness records the canonical model version the provider returns
+rather than treating either alias as a durable version.
 
-Each model/arm cell has five independent CLI generations. One generation
-answers all eight battery rows, yielding 40 scored calls per cell and 240 calls
-overall:
+Every generation runs at reasoning effort **`low`**, with tools disabled and a
+fixed system prompt. The effort setting is a first-order determinant of the
+quantity being counted; it is named here, carried on every run record, and
+reported in `RESULTS.md`.
+
+Each model/arm cell has ten independent CLI generations. One generation answers
+all eight battery rows:
 
 ```text
-8 tasks × 3 arms × 2 model aliases × 5 generations = 240 calls
+8 tasks × 3 arms × 2 model aliases × 10 generations = 480 calls, 60 generations
 ```
 
 The CLI exposes no seed or temperature control in this path. Runs are repeated
 fresh with no session persistence. Eight calls produced by one generation are
-not statistically independent; the report states both the 240-call count and
-the 30 independent-generation count.
+not statistically independent; the report states both the call count and the
+independent-generation count.
 
 ## Measures
 
-All measures are mechanical and use one battery row as the denominator.
+All measures are mechanical — Ajv compilation and exact scalar comparison. No
+judge and no rubric.
 
-- **Valid-call rate:** exactly one response row names the battery task, selects
-  its expected tool, and its arguments validate against that arm's projected
-  tool schema. Candidate correctness is not part of this syntactic measure.
-- **Field-confusion rate:** at least one planted candidate value occurs in an
-  argument slot other than the expected semantic slot, or an expected planted
-  candidate is absent from its slot. Missing, duplicate, or wrong-tool response
-  rows count as confused because the intended fields were not populated.
-- **Digest-in-wrong-slot rate:** at least one planted digest occurs outside its
-  expected digest slot, including another digest slot, a non-digest slot, or a
-  nested reference carrying the wrong `type`. Missing, duplicate, or wrong-tool
-  rows count only when a returned digest can be assigned to a wrong slot; this
-  measure does not turn total omission into a placement error.
+Two primitive measures, disjoint by construction:
 
-The harness also reports counts for missing rows, duplicate rows, wrong tools,
-schema-invalid arguments, and omitted expected candidates so the three rates
-remain auditable.
+- **Omission.** An expected planted candidate is absent from its own slot.
+  A row that is missing, duplicated, or answered with the wrong tool did not
+  populate its slots and counts as an omission.
+- **Misplacement.** A planted digest occurs in a slot that is not its own,
+  including another digest slot, a non-digest slot, or a nested reference
+  carrying the wrong `type`. A planted digest the task did not request, sitting
+  in the slot it does belong to, is **not** misplacement — that is helpfulness,
+  not slot confusion.
 
-Each binomial call-level rate carries a Wilson 95% interval. Intervals describe
-this finite population; they do not correct for the eight-within-generation
-correlation.
+One derived measure:
 
-## Decision rule
+- **Confusion** is the union of the two above. It is a union by definition and
+  is never reported as a third independent line of evidence. The report states
+  the count of calls on which the two primitives disagree, so a reader can see
+  whether they are two measures or one on this population.
 
-The compound convention is supported for this population only if its valid-call
-rate is no lower than both alternatives and neither confusion rate is higher.
-A digest-in-wrong-slot regression vetoes an arm even when its valid-call rate is
-higher. Exact ties and comparisons whose Wilson intervals overlap are reported
-as inconclusive. No result from this sample licenses a claim about production
-agents, long-horizon sessions, or later model versions.
+One integrity check, not a measure:
+
+- **Valid-call rate.** Exactly one response row names the battery task, selects
+  its expected tool, and validates against that arm's projected schema. Because
+  each task states its tool, this is a harness-integrity check rather than a
+  measured quantity.
+
+`omitted_expected_fields` — every expected scalar absent, free-text bodies
+included — is retained as a diagnostic column only. It is not a measure and no
+decision reads it.
+
+## Denominators
+
+Each binomial rate carries a Wilson 95% interval and is quoted against the full
+call denominator. The report **also** publishes the per-task table and the
+count of battery rows that produced any confused call in any arm. A row that
+scores zero in all three arms separates nothing, and carrying it in the
+denominator dilutes the quoted effect size — round 1 quoted 7/80 against 3/80
+when seventy of those eighty calls were constant across every arm, overstating
+the effect roughly eightfold. Intervals describe this finite population and do
+not correct for within-generation correlation.
+
+## Decision rule, with the action each branch fixes
+
+An arm **wins** if its valid-call rate is no lower than both others *and* its
+confusion rate is strictly lower than both others *and* its confusion interval
+overlaps neither. Every branch names what happens next, so no decision is left
+to be made after the data.
+
+1. **Compound wins.** Action: the compound naming in
+   `verify/kernel/projections/tools.schema.json` stands, and the survey's Q1
+   lean is recorded as measured rather than as convention.
+2. **`bare` or `nested` wins.** Action: the compound convention does not stand
+   on this evidence. The projection-naming change is filed as its own ticket,
+   with this population quoted as its sole support and its bounds carried with
+   it. This eval does not itself change the projection.
+3. **No arm wins (ties, or any overlapping interval) — inconclusive.** Action:
+   **no naming change is made.** Compound stands on the survey's
+   non-experimental grounds — the nearest-neighbour practice the survey cites —
+   and explicitly **not** on this evaluation. Q1 stays open, and any future
+   quote of these numbers carries that sentence.
+4. **A regression on misplacement vetoes an arm** even when its valid-call rate
+   is higher: a surface that gets more calls admitted while putting more
+   digests in the wrong slot is producing confidently wrong compositions.
+
+## Known confounds, stated before the run
+
+- **Ledger keys resemble the `bare` arm.** Keys are derived from the base
+  projection's own slot names, so the `bare` arm's property names resemble the
+  referent names in every prompt more closely than the other arms' do. Any
+  `bare` advantage must be read with this, and it is stated on the result
+  rather than engineered away.
+- **The base is a sketch.** It is hand-derived and diverges from the generated
+  builder table on some slots. The divergence table ships with the result.
+- **Eight rows is a small battery**, and one generation answers all eight.
+
+No result from this sample licenses a claim about production agents,
+long-horizon sessions, other prompts, or later model versions.
