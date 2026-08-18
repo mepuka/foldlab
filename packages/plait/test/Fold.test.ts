@@ -3,10 +3,10 @@ import { describe, expect, test } from "bun:test"
 import { Effect, Reducer, Schema } from "effect"
 import { resolve } from "node:path"
 
-import * as Algebra from "../src/Algebra.js"
-import { Digest } from "../src/Digest.js"
-import * as Fold from "../src/Fold.js"
-import * as Lane from "../src/Lane.js"
+import * as Algebra from "../src/truth/Algebra.js"
+import { Digest } from "../src/truth/Digest.js"
+import * as Fold from "../src/planes/Fold.js"
+import * as Lane from "../src/planes/Lane.js"
 
 const Event = Schema.Struct({ partition: Schema.String, delta: Schema.Number })
 const eventSchema = Digest.make("b".repeat(64))

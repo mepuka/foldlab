@@ -1,7 +1,7 @@
 import { Effect, Stream } from "effect"
 
-import { FabricClient } from "../../src/FabricClient.js"
-import { factSubject } from "../../src/Subjects.js"
+import { FabricClient } from "../../src/carriage/FabricClient.js"
+import { factSubject } from "../../src/kernel/Subjects.js"
 
 const [url, resultPath, countText] = process.argv.slice(2)
 if (url === undefined || resultPath === undefined || countText === undefined) {

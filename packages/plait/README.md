@@ -91,7 +91,7 @@ assumed. There is no exactly-once, liveness, federation, or clustering claim.
 Run a declared fold against a pinned span:
 
 ```bash
-PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/cli.ts chaos \
+PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/surface/cli.ts chaos \
   ./my-fold.ts --pin-head --axis kill --axis duplicate --axis reorder --output json
 ```
 

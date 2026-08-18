@@ -10,8 +10,8 @@ import type {
   FoldScoreboard,
   FoldService,
   FoldsOptions,
-} from "../Fold.js"
-import { structuralRefusal, type Refusal } from "../Refusal.js"
+} from "../planes/Fold.js"
+import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
 import { makeAnchorStore } from "./anchors.js"
 import { ensureLaneStreams } from "./lanes.js"
 import {

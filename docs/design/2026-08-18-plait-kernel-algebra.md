@@ -210,7 +210,7 @@ the proof claim is clean.
 | The G36 taxonomy: every structure is (a) a lattice join, (b) a checkpointed fold, (c) a register decision, a value, or outside meaning; one-carrier join-plus-decision structures split on the directory precedent | proposed at part 4 §15, pending its grill | the sort system's ground (§5.1); the alphabet's completeness argument (§4.4) |
 | G12 as amended — one catalog door for every declaration kind; "no YAML of semantics exists"; context programs are already cataloged | ratified | `declare`; the program-value generalization (§6.2) |
 | G20 (no unanchored resolve — governing derived reads: directory resolution, task views), G21 (retention cataloged, horizon derived), G23 (at-most-one landed outcome is not at-most-one external side effect), G26 (structured output binds to cataloged schema digests; the commit door checks conformance), G27 (ontology declarations, reading B), G32 (tick facts), G33 (no minted ids), G34 (the workflow-engine refusal), G9 (monotone-only triggers; the deadline seat is the one non-monotone door) | ratified / proposed at part 4 pending grill | cited in place throughout; G34 fences §6; G32 fences the clock rows of §5.3 and §8 |
-| The wire: canonical envelopes, closed struct, excess refused; refusals carry kind · sort · law · path · got/expected · next; the structural refusal union is closed at 34 kinds on main (`packages/plait/src/Refusal.ts:25-60`); the envelope has no timestamp field | shipped | the refusal half of the grammar (§5.4); the language declaration's refusal table (§7.1) |
+| The wire: canonical envelopes, closed struct, excess refused; refusals carry kind · sort · law · path · got/expected · next; the structural refusal union is closed at 34 kinds on main (`packages/plait/src/truth/Refusal.ts:25-60`); the envelope has no timestamp field | shipped | the refusal half of the grammar (§5.4); the language declaration's refusal table (§7.1) |
 | Sessions: fills idempotent per `(value, seat)`; close atomic at declared authority; session key = digest of the canonical open event `{protocol, bindings, predecessor}` (measured, E7); `final_state_digest` the pinnable terminal fact (E8) | shipped + measured | sessions as compositions (§4.3); the bootstrap pin (§7.2) |
 | Lease machinery is liveness, not meaning: heartbeats and lease expiry are "a liveness heuristic with no meaning-side effect" (part 1 §5.3); `Scope` bounds leases and lease loss interrupts the fiber | ratified + shipped discipline | the lease boundary stated on `decide` (§4.2) |
 | The template algebra investigation: render is defined as compile-then-assemble (no second assembler, ever); fill is a commutative monoid action on typed-hole signatures (T3), compilation coherence is the one new obligation (T7); the operad decoration refused (clone ≡ monad) | proposed (pre-grill record, binding on this seat by charter) | templates as one composition family (§5.5); §6.3's helper discipline |
@@ -1371,7 +1371,7 @@ invariant names). Noted for precision: `fence_deterministic` lives in
 `verify/moves`, not the fabric package, and is not cited as a fabric
 theorem anywhere above.
 
-Shipped code, read in place: `packages/plait/src/Refusal.ts:25-60`
+Shipped code, read in place: `packages/plait/src/truth/Refusal.ts:25-60`
 (the 34-kind structural union; the absence sort; `next` as data).
 
 Vendored Effect source, read in place at `effect@4.0.0-rc.108`:

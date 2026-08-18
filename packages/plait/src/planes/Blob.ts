@@ -35,14 +35,14 @@
  */
 import { Context, Effect, FileSystem, Layer, PlatformError } from "effect"
 
-import type { Digest } from "./Digest.js"
-import { digestOfStoredBytes } from "./internal/digests.js"
+import type { Digest } from "../truth/Digest.js"
+import { digestOfStoredBytes } from "../internal/digests.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Next,
   type Refusal,
-} from "./Refusal.js"
+} from "../truth/Refusal.js"
 
 /**
  * A content-addressed store of opaque byte payloads.

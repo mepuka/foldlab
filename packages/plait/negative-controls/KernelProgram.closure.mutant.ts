@@ -10,7 +10,7 @@
  * The lawful twin below passes the same computation the only way the estate
  * allows: by naming a declaration that already exists.
  */
-import { program } from "../src/KernelProgram.js"
+import { program } from "../src/kernel/KernelProgram.js"
 
 /** The witness: the computation referenced by digest, which is the lawful way. */
 export const lawful = program("closure-witness", {}, ($) =>

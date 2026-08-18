@@ -7,7 +7,7 @@ import {
   isRetryable,
   retryAbsence,
   structuralRefusal,
-} from "../src/Refusal.js"
+} from "../src/truth/Refusal.js"
 
 describe("refusal retry class", () => {
   test("retries absence and never structural evidence", () => {

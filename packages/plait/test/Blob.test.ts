@@ -7,9 +7,9 @@ import { join } from "node:path"
 
 import { Effect, Layer } from "effect"
 
-import { Blobs, type BlobsService } from "../src/Blob.js"
-import { Digest } from "../src/Digest.js"
-import { absenceRefusal, structuralRefusal, type Refusal } from "../src/Refusal.js"
+import { Blobs, type BlobsService } from "../src/planes/Blob.js"
+import { Digest } from "../src/truth/Digest.js"
+import { absenceRefusal, structuralRefusal, type Refusal } from "../src/truth/Refusal.js"
 import {
   BLOB_LAWS,
   blobsConformance,

@@ -39,16 +39,16 @@ import {
   SchemaGetter,
 } from "effect"
 
-import { canonicalBytes, type WireValue } from "./Canonical.js"
+import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
 import { Catalog, Payloads } from "./Catalog.js"
-import { Digest, digestOf } from "./Digest.js"
+import { Digest, digestOf } from "../truth/Digest.js"
 import {
   absenceRefusal,
   structuralRefusal,
   type Next,
   type Refusal,
-} from "./Refusal.js"
-import { refusalIssue } from "./internal/refusals.js"
+} from "../truth/Refusal.js"
+import { refusalIssue } from "../internal/refusals.js"
 
 /** The type-side digest schema: the hex check without the encoding path. */
 const DigestType = Schema.toType(Digest)

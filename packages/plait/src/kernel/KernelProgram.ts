@@ -57,12 +57,12 @@ import { createHash } from "node:crypto"
 
 import type { Effect } from "effect"
 
-import { encodeCanonicalJson, type CanonicalJson } from "./CanonicalJson.js"
+import { encodeCanonicalJson, type CanonicalJson } from "../truth/CanonicalJson.js"
 import type {
   CasDaemon,
   CasHoleRequirement,
   CasProgramOutcome,
-} from "./CasDaemon.js"
+} from "../carriage/CasDaemon.js"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,

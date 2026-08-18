@@ -1,6 +1,6 @@
 import { Effect, Result, Schema } from "effect"
 
-import { Registers } from "../../src/Register.js"
+import { Registers } from "../../src/planes/Register.js"
 
 const [url, work, tokenText, outputPath] = process.argv.slice(2)
 if (url === undefined || work === undefined || tokenText === undefined || outputPath === undefined) {

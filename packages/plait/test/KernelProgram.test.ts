@@ -40,11 +40,11 @@
  */
 import { describe, expect, test } from "bun:test"
 
-import { encodeCanonicalJson, parseCanonicalJson, type CanonicalJson } from "../src/CanonicalJson.js"
-import { KernelProgramRecord } from "../src/KernelCorpusSchemas.js"
-import { KERNEL_GENERATOR_FIELDS, KERNEL_GENERATORS } from "../src/KernelBuilder.generated.js"
-import { admissionFault, erase, fill, program } from "../src/KernelProgram.js"
-import { roundTripsCanonically } from "../src/SchemaCanonical.js"
+import { encodeCanonicalJson, parseCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
+import { KernelProgramRecord } from "../src/kernel/KernelCorpusSchemas.js"
+import { KERNEL_GENERATOR_FIELDS, KERNEL_GENERATORS } from "../src/kernel/KernelBuilder.generated.js"
+import { admissionFault, erase, fill, program } from "../src/kernel/KernelProgram.js"
+import { roundTripsCanonically } from "../src/truth/SchemaCanonical.js"
 import { readKernelCorpus } from "../scripts/kernel-corpus.js"
 import { PLANTED_CONTEXT, referenceDoor } from "./KernelDoor.reference.js"
 import {

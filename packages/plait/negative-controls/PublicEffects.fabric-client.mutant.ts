@@ -1,6 +1,6 @@
 import { Context, type Effect, type Layer, Schema } from "effect"
 
-import type { Refusal } from "../src/Refusal.js"
+import type { Refusal } from "../src/truth/Refusal.js"
 import type {
   AssertNever,
   PublicSurfaceViolations,

@@ -5,9 +5,9 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Option, Schema, Stream } from "effect"
 
-import { Digest } from "../src/Digest.js"
-import { FabricClient } from "../src/FabricClient.js"
-import { evidenceSubject, nodeSubject } from "../src/Subjects.js"
+import { Digest } from "../src/truth/Digest.js"
+import { FabricClient } from "../src/carriage/FabricClient.js"
+import { evidenceSubject, nodeSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
 
 const ResultFile = Schema.Struct({ digests: Schema.Array(Digest) })

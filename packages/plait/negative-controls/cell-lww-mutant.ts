@@ -1,6 +1,6 @@
 import { Layer } from "effect"
 
-import { Cells, type CellOptions } from "../src/Cell.js"
+import { Cells, type CellOptions } from "../src/planes/Cell.js"
 import { lastWriterWinsMerge, makeCellServiceWith } from "../src/internal/cells.js"
 
 /**

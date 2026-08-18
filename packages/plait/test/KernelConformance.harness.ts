@@ -22,7 +22,7 @@
 import { resolve } from "node:path"
 
 import { CORPUS_PATH, loadKernelCorpus, type KernelCorpus } from "../scripts/kernel-corpus.js"
-import type { KernelCandidateAct, KernelDoor } from "../src/KernelDoor.js"
+import type { KernelCandidateAct, KernelDoor } from "../src/kernel/KernelDoor.js"
 import { decodeAct, encodeAct } from "./KernelDoor.reference.js"
 
 const repository = resolve(import.meta.dir, "../../..")

@@ -14,8 +14,8 @@ import {
   hold,
   type RegisterService,
   type RegisterState,
-} from "../src/Register.js"
-import { structuralRefusal } from "../src/Refusal.js"
+} from "../src/planes/Register.js"
+import { structuralRefusal } from "../src/truth/Refusal.js"
 import {
   buildServerBinary,
   startNatsServer,
@@ -82,7 +82,7 @@ const invoke = (
   registers: RegisterService,
   work: string,
   action: Action,
-): Effect.Effect<RegisterState, import("../src/Refusal.js").Refusal> => {
+): Effect.Effect<RegisterState, import("../src/truth/Refusal.js").Refusal> => {
   switch (action.kind) {
     case "grant": return registers.grant(work, action.holder)
     case "renew": return registers.renew(work, action.token)

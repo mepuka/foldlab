@@ -36,9 +36,9 @@
  */
 import { Context, Effect, Layer, Option } from "effect"
 
-import type { WireValue } from "./Canonical.js"
-import { digestOf, type Digest } from "./Digest.js"
-import type { Refusal } from "./Refusal.js"
+import type { WireValue } from "../truth/Canonical.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
+import type { Refusal } from "../truth/Refusal.js"
 
 /**
  * Reads and admits content-addressed values.

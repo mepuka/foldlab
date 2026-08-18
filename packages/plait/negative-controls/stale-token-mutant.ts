@@ -1,7 +1,7 @@
 import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 
-import { REGISTER_BUCKET } from "../src/Register.js"
+import { REGISTER_BUCKET } from "../src/planes/Register.js"
 
 /**
  * NEGATIVE BUILD VARIANT — never import outside the named control test.

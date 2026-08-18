@@ -5,9 +5,9 @@
  */
 import { Effect, Schema } from "effect"
 
-import { advance, type Anchor } from "../Anchor.js"
-import { digestOf, type Digest } from "../Digest.js"
-import { structuralRefusal, type StructuralRefusal } from "../Refusal.js"
+import { advance, type Anchor } from "../planes/Anchor.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
+import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 
 /** One event at its dense partition-stream position. */
 export interface PositionedEvent<Event> {

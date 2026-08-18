@@ -13,13 +13,13 @@ import {
   type RegisterOptions,
   type RegisterService,
   type RegisterState,
-} from "../Register.js"
+} from "../planes/Register.js"
 import {
   structuralRefusal,
   type Next,
   type Refusal,
   type StructuralRefusalKind,
-} from "../Refusal.js"
+} from "../truth/Refusal.js"
 import {
   KvFailure,
   acquireConnection,

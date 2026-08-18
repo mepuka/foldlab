@@ -1133,7 +1133,7 @@ now the package's one outlier (R-5c confirmed this).
 
 **B-2. `Register.hold` is the one public effectful function without
 `Effect.fn`. — OPEN.**
-`packages/plait/src/Register.ts:78-99` — `hold` builds with
+`packages/plait/src/planes/Register.ts:78-99` — `hold` builds with
 `Effect.gen` directly; architecture §4 rules "`Effect.fn` names every
 exported effectful function (spans for free)," and every other export
 complies (Digest.ts:31, Canonical.ts:122, Wire.ts:226/252/269,
@@ -1144,7 +1144,7 @@ Pin form: Effect.ts:13563. **Recommendation:** wrap as
 
 **B-3. The heartbeat loop hand-rolls what Schedule and SynchronizedRef
 already carry. — OPEN.**
-`packages/plait/src/Register.ts:89-96` — `while (true) { sleep; get;
+`packages/plait/src/planes/Register.ts:89-96` — `while (true) { sleep; get;
 renew; set }` over a `SynchronizedRef`. Two pin idioms apply: the
 recurring effect is `Effect.repeat(renewOnce,
 Schedule.spaced(heartbeatEvery))` (Effect.ts:7561; Schedule.ts:1198 —
@@ -1183,7 +1183,7 @@ now, (b) as the recorded follow-up; ticket 3.
 
 **B-5. Every envelope decode canonicalizes twice; every publish, three
 times plus a JSON re-parse. — OPEN.**
-`packages/plait/src/Wire.ts:242-243` — `decodeEnvelope` computes
+`packages/plait/src/kernel/Wire.ts:242-243` — `decodeEnvelope` computes
 `canonicalBytes(decoded.success)` and then `digestOf(decoded.success)`,
 and `digestOf` (Digest.ts:31-36) re-runs `canonicalBytes` on the same
 value. `encodeEnvelope` (Wire.ts:252-257) canonicalizes, then
@@ -1257,7 +1257,7 @@ occurrences, explicit reads better). Ticket 1.
 **B-9. `Wire.firstIssue` is an audited, justified deviation from the
 pin's issue formatters — keep it, and say why. — OPEN (comment not yet
 placed).**
-`packages/plait/src/Wire.ts:78-100` hand-walks the issue tree. The pin
+`packages/plait/src/kernel/Wire.ts:78-100` hand-walks the issue tree. The pin
 ships formatter machinery doing the same walk (SchemaIssue.ts:1026
 `makeFormatterStandardSchemaV1` → :1055 `toDefaultIssues`) — but its
 output erases the leaf's `_tag` (the `UnexpectedKey` discrimination at
@@ -1272,7 +1272,7 @@ finding; ticket 1.
 
 **B-10. JSDoc examples are load-bearing surface at the pin; one of
 ours cannot run. — OPEN, deferred to its named lane.**
-`packages/plait/src/Wire.ts:262-267` — `verifyEnvelopeDigest`'s
+`packages/plait/src/kernel/Wire.ts:262-267` — `verifyEnvelopeDigest`'s
 example references undefined `bytes`/`messageId`. DEV-715 (quickstart
 samples doctest) is the named lane for making example rot mechanical.
 **Recommendation:** unchanged — fold into DEV-715's harness scope; not

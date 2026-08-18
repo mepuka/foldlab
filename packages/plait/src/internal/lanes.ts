@@ -14,16 +14,16 @@ import {
 import type { NatsConnection } from "@nats-io/nats-core"
 import { Effect, Scope } from "effect"
 
-import type { WireValue } from "../Canonical.js"
+import type { WireValue } from "../truth/Canonical.js"
 import type {
   DeclaredLane,
   LaneOptions,
   LaneService,
-} from "../Lane.js"
-import { partition } from "../Lane.js"
-import { structuralRefusal, type Refusal } from "../Refusal.js"
-import { evidenceSubject } from "../Subjects.js"
-import { encodeEnvelope, type Envelope } from "../Wire.js"
+} from "../planes/Lane.js"
+import { partition } from "../planes/Lane.js"
+import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
+import { evidenceSubject } from "../kernel/Subjects.js"
+import { encodeEnvelope, type Envelope } from "../kernel/Wire.js"
 import { acquireConnection, transportRefusalFor } from "./transport.js"
 
 const messageIdWindowNanos = 2 * 60 * 1_000_000_000

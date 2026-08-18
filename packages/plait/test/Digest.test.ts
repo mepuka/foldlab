@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
 
-import { digestOf } from "../src/Digest.js"
+import { digestOf } from "../src/truth/Digest.js"
 
 describe("digestOf", () => {
   test("is SHA-256 over canonical uncompressed bytes", async () => {

@@ -34,7 +34,7 @@ import {
   KERNEL_TABLE_PROVENANCE,
   type ProgramDigest,
   type SchemaDigest,
-} from "../src/KernelTables.generated.js"
+} from "../src/kernel/KernelTables.generated.js"
 import {
   divergences,
   loadKernelArtifact,

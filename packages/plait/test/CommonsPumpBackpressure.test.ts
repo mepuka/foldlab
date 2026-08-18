@@ -3,9 +3,9 @@ import { QueuedIteratorImpl } from "@nats-io/nats-core/internal"
 import type { ConsumerMessages, ConsumerNotification, JsMsg } from "@nats-io/jetstream"
 import { Deferred, Effect, Fiber, Queue, Stream } from "effect"
 
-import { Digest } from "../src/Digest.js"
+import { Digest } from "../src/truth/Digest.js"
 import { commonsPump } from "../src/internal/nats.js"
-import { encodeEnvelope, verifyEnvelopeDigest } from "../src/Wire.js"
+import { encodeEnvelope, verifyEnvelopeDigest } from "../src/kernel/Wire.js"
 
 /**
  * The counterexample suite behind DEV-736 (finding B-4), and the gate on the

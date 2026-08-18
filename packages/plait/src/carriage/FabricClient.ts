@@ -5,11 +5,11 @@
  */
 import { Context, Effect, Layer, Scope, Stream } from "effect"
 
-import type { Digest } from "./Digest.js"
-import type { Refusal } from "./Refusal.js"
-import type { FabricSubject } from "./Subjects.js"
-import type { Envelope } from "./Wire.js"
-import { makeNatsService } from "./internal/nats.js"
+import type { Digest } from "../truth/Digest.js"
+import type { Refusal } from "../truth/Refusal.js"
+import type { FabricSubject } from "../kernel/Subjects.js"
+import type { Envelope } from "../kernel/Wire.js"
+import { makeNatsService } from "../internal/nats.js"
 
 /** Connection bootstrap for the file-backed slice-0 fact/node commons gate. */
 export interface FabricClientOptions {

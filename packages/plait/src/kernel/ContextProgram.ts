@@ -21,8 +21,8 @@
  */
 import { Effect, Schema } from "effect"
 
-import { Digest, digestOf } from "./Digest.js"
-import { decodeRefusing, type Refusal } from "./Refusal.js"
+import { Digest, digestOf } from "../truth/Digest.js"
+import { decodeRefusing, type Refusal } from "../truth/Refusal.js"
 
 /**
  * How often a segment's rendered bytes are expected to move.

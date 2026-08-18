@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Option } from "effect"
 
-import { Catalog, Payloads, substrateLayer } from "../src/Catalog.js"
-import { digestOf } from "../src/Digest.js"
+import { Catalog, Payloads, substrateLayer } from "../src/planes/Catalog.js"
+import { digestOf } from "../src/truth/Digest.js"
 
 describe("the catalog and its internal payload seam", () => {
   test("admits a value under the digest of its canonical bytes", () => {

@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 
-import { decodeEnvelope, type Envelope } from "../src/Wire.js"
+import { decodeEnvelope, type Envelope } from "../src/kernel/Wire.js"
 
 /** One model-independent digest wall input and its TypeScript verdict. */
 export interface CorpusRow {

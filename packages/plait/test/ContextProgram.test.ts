@@ -8,7 +8,7 @@ import {
   orderedSegments,
   volatilityRank,
   type ContextProgram,
-} from "../src/ContextProgram.js"
+} from "../src/kernel/ContextProgram.js"
 
 const digestA = "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"
 const digestB = "bb4f3e5e257ca09b067986bbcb6fa72f9b868eea9d4dff92afd94e2876aa795a"

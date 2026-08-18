@@ -5,9 +5,9 @@
  */
 import { Effect, Schema } from "effect"
 
-import type { WireValue } from "./Canonical.js"
-import { Digest, digestOf, type Digest as DigestValue } from "./Digest.js"
-import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"
+import type { WireValue } from "../truth/Canonical.js"
+import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
+import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 
 /** The checkpoint fact stored for one deployed fold partition. */
 export const Anchor = Schema.Struct({

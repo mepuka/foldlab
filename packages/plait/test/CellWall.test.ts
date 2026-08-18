@@ -7,7 +7,7 @@ import { Effect, Fiber, Layer, Result, Schema } from "effect"
 
 import { byteEqualityLayer } from "../negative-controls/cell-byte-equality-mutant.js"
 import { lastWriterWinsLayer } from "../negative-controls/cell-lww-mutant.js"
-import { canonicalBytes } from "../src/Canonical.js"
+import { canonicalBytes } from "../src/truth/Canonical.js"
 import {
   CELL_BUCKET,
   CELL_HISTORY,
@@ -18,9 +18,9 @@ import {
   type CellService,
   type CellState,
   type Observation,
-} from "../src/Cell.js"
-import type { Digest } from "../src/Digest.js"
-import type { Refusal } from "../src/Refusal.js"
+} from "../src/planes/Cell.js"
+import type { Digest } from "../src/truth/Digest.js"
+import type { Refusal } from "../src/truth/Refusal.js"
 import {
   bucketPublishPrefixes,
   startHoldProxy,

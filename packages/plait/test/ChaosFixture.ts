@@ -1,9 +1,9 @@
 import { Effect, Reducer, Schema } from "effect"
 
-import * as Algebra from "../src/Algebra.js"
-import { Digest } from "../src/Digest.js"
-import * as Fold from "../src/Fold.js"
-import * as Lane from "../src/Lane.js"
+import * as Algebra from "../src/truth/Algebra.js"
+import { Digest } from "../src/truth/Digest.js"
+import * as Fold from "../src/planes/Fold.js"
+import * as Lane from "../src/planes/Lane.js"
 
 export const ChaosEvent = Schema.Struct({
   tenant: Schema.String,

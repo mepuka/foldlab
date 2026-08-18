@@ -34,8 +34,8 @@
  */
 import type { Effect } from "effect"
 
-import type { KernelProgramDeclaration } from "./KernelCorpusSchemas.js"
-import type { KernelRefusalRow } from "./KernelTables.generated.js"
+import type { KernelProgramDeclaration } from "../kernel/KernelCorpusSchemas.js"
+import type { KernelRefusalRow } from "../kernel/KernelTables.generated.js"
 
 /**
  * A content address as the runtime spells it: lowercase hexadecimal over the

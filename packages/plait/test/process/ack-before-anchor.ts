@@ -8,7 +8,7 @@ import {
 import { connect } from "@nats-io/transport-node"
 import { Effect } from "effect"
 
-import { evidenceSubject } from "../../src/Subjects.js"
+import { evidenceSubject } from "../../src/kernel/Subjects.js"
 import { laneStreamName } from "../../src/internal/lanes.js"
 import { PUMP_ACK_WAIT_NANOS, PUMP_BUFFER_BOUND } from "../../src/internal/pump.js"
 import { declareChaosCounter } from "../ChaosFixture.js"

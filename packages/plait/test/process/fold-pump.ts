@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 
-import * as Fold from "../../src/Fold.js"
+import * as Fold from "../../src/planes/Fold.js"
 import { declareChaosCounter } from "../ChaosFixture.js"
 
 const [url, handleName, targetsJson, resultPath, markerPath, markerFloorText] =

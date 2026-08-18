@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
 
-import { canonicalBytes } from "../src/Canonical.js"
+import { canonicalBytes } from "../src/truth/Canonical.js"
 
 describe("canonicalBytes", () => {
   test("uses the package/core RFC 8785 seam", async () => {

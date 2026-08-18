@@ -35,10 +35,10 @@
  */
 import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
 
-import { canonicalBytes } from "./Canonical.js"
-import { digestOf, type Digest } from "./Digest.js"
-import type { Refusal, StructuralRefusal } from "./Refusal.js"
-import { makeCellService } from "./internal/cells.js"
+import { canonicalBytes } from "../truth/Canonical.js"
+import { digestOf, type Digest } from "../truth/Digest.js"
+import type { Refusal, StructuralRefusal } from "../truth/Refusal.js"
+import { makeCellService } from "../internal/cells.js"
 
 /** The file-backed KV bucket that is authoritative for lattice cells. */
 export const CELL_BUCKET = "flb-fab-cell"

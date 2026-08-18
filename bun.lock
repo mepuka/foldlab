@@ -39,7 +39,7 @@
       "name": "@foldlab/plait",
       "version": "0.0.0",
       "bin": {
-        "plait": "./src/cli.ts",
+        "plait": "./src/surface/cli.ts",
       },
       "dependencies": {
         "@foldlab/core": "workspace:*",

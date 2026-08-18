@@ -5,7 +5,7 @@
  */
 import { createHash } from "node:crypto"
 
-import { Digest } from "../Digest.js"
+import { Digest } from "../truth/Digest.js"
 
 const sha256Hex = (bytes: Uint8Array): Digest =>
   Digest.make(createHash("sha256").update(bytes).digest("hex"))

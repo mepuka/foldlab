@@ -1,7 +1,7 @@
 import type { Effect, Layer, Stream } from "effect"
 import { Schema } from "effect"
 
-import type { Refusal } from "../src/Refusal.js"
+import type { Refusal } from "../src/truth/Refusal.js"
 
 class StreamSuccessError extends Schema.TaggedError<StreamSuccessError>()(
   "StreamSuccessError",
