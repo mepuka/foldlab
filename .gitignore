@@ -15,3 +15,7 @@ verify/fabric/.regen/
 scratch/_archive/
 scratch/**/out/
 scratch/**/*.tsbuildinfo
+# exploratory clones live locally, never committed
+repos/
+# build artifact of the tracked .ts twin beside it
+packages/core/negative-controls/plait-public-surface-probe.d.ts
