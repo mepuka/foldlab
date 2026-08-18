@@ -4,9 +4,10 @@
  * Reads the format-2 interchange file emitted from the Lean kernel model and
  * renders the runtime's derived type layer: the declaration-kind and hole-stage
  * registries with their ranks, the taught-refusal table, and the compile-time
- * brands of the sort system. Nothing here is hand-typed from the model; every
- * name, rank, and taught text is read out of the corpus, so a model that moves
- * reddens the regeneration check instead of drifting quietly.
+ * brands of the sort system. Every model name, rank, and taught text is read
+ * out of the corpus, so a model that moves reddens the regeneration check
+ * instead of drifting quietly. The runtime refusal projection is a separate
+ * reviewed input: rows absent from the model remain named staged debt.
  *
  * Reading and validating the corpus is not this module's job - `kernel-corpus`
  * owns that, schema decode and byte checks together, and hands over a value
@@ -25,6 +26,11 @@
  */
 import type { KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { CORPUS_PATH, type KernelCorpus } from "./kernel-corpus.js"
+import {
+  RUNTIME_REFUSAL_PROJECTION_PATH,
+  RUNTIME_REFUSAL_WAIVER_TICKET,
+  RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
+} from "./kernel-runtime-refusals.js"
 
 /** The result of comparing committed bytes with a fresh rendering. */
 export type KernelTableCheck =
@@ -129,6 +135,37 @@ const brandDomains: { readonly [param: string]: string } = {
 
 const brandConstraint = (param: string): string => brandDomains[param] ?? "string"
 
+interface RuntimeRefusalProjectionRow {
+  readonly kind: string
+  readonly source: "kernel-corpus" | "staged-debt"
+  readonly waiver?: typeof RUNTIME_REFUSAL_WAIVER_TICKET
+}
+
+const runtimeRefusalRows = (corpus: KernelCorpus): ReadonlyArray<RuntimeRefusalProjectionRow> => {
+  const projected = new Set<string>(RUNTIME_STRUCTURAL_REFUSAL_PROJECTION)
+  if (projected.size !== RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length) {
+    return refuse("the runtime structural-refusal projection names a kind twice")
+  }
+  const corpusReasons = new Set(corpus.refusals.map((row) => row.reason))
+  return RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map((kind) =>
+    corpusReasons.has(kind)
+      ? { kind, source: "kernel-corpus" }
+      : { kind, source: "staged-debt", waiver: RUNTIME_REFUSAL_WAIVER_TICKET })
+}
+
+const refusalVocabulary = (
+  corpus: KernelCorpus,
+  runtimeRows: ReadonlyArray<RuntimeRefusalProjectionRow>,
+): ReadonlyArray<string> => {
+  const vocabulary = corpus.refusals.map((row) => row.reason)
+  const seen = new Set(vocabulary)
+  for (const row of runtimeRows) {
+    if (!seen.has(row.kind)) vocabulary.push(row.kind)
+    seen.add(row.kind)
+  }
+  return vocabulary
+}
+
 /**
  * Renders the generated module. The rendering is a total function of the
  * corpus and its repository-relative path, so two runs over one corpus produce
@@ -140,6 +177,8 @@ export const renderKernelTables = (
 ): string => {
   const { branded, skipped } = brandedSorts(corpus.types)
   const digests = branded.find((sort) => sort.name === "Digest")
+  const runtimeRows = runtimeRefusalRows(corpus)
+  const allRefusalReasons = refusalVocabulary(corpus, runtimeRows)
   const out: Array<string> = []
   const line = (value = ""): void => void out.push(value)
 
@@ -156,7 +195,8 @@ export const renderKernelTables = (
   line(" * The kernel model's closed tables, projected into the runtime's type layer:")
   line(" * the declaration-kind and hole-stage registries with their ranks, the taught")
   line(" * refusals with the law each defends and the repair each teaches, and the")
-  line(" * compile-time brands of the sort system.")
+  line(" * compile-time brands of the sort system. The existing runtime refusal")
+  line(" * projection is also generated here; corpus gaps wear an owned waiver.")
   line(" *")
   line(" * These are safety-side names and texts, never runtime guarantees. A model")
   line(" * theorem stays in the model; what crosses the seam is the vocabulary the")
@@ -175,6 +215,8 @@ export const renderKernelTables = (
   line(`  command: ${quote(GENERATE_COMMAND)},`)
   line(`  format: ${corpus.header.format}n,`)
   line(`  generator: ${quote(corpus.header.generator)},`)
+  line(`  runtimeProjection: ${quote(RUNTIME_REFUSAL_PROJECTION_PATH)},`)
+  line(`  runtimeWaiverTicket: ${quote(RUNTIME_REFUSAL_WAIVER_TICKET)},`)
   line(`  source: ${quote(corpus.header.source)},`)
   line("} as const")
   line()
@@ -248,6 +290,43 @@ export const renderKernelTables = (
     line(`  ${quote(refusal.reason)}: KERNEL_REFUSALS[${index}],`)
   })
   line("} as const satisfies { readonly [Reason in KernelRefusalReason]: KernelRefusalRow }")
+  line()
+
+  line("/** The existing runtime structural-refusal spellings, generated from the projection manifest. */")
+  line("export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [")
+  for (const row of runtimeRows) line(`  ${quote(row.kind)},`)
+  line("] as const")
+  line()
+  line("/** One structural-refusal kind the runtime can mint. */")
+  line("export type KernelRuntimeStructuralRefusalKind =")
+  line("  (typeof KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS)[number]")
+  line()
+  line("/** How one runtime spelling traces to the generated kernel vocabulary. */")
+  line("export type KernelRuntimeStructuralRefusalRow =")
+  line("  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: \"kernel-corpus\" }")
+  line(`  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: "staged-debt"; readonly waiver: ${quote(RUNTIME_REFUSAL_WAIVER_TICKET)} }`)
+  line()
+  line("/**")
+  line(" * The runtime projection with derivation ancestry on every row. Missing corpus")
+  line(" * rows are explicit Law 1 staged debt owned by DEV-804, never silent twins.")
+  line(" */")
+  line("export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [")
+  for (const row of runtimeRows) {
+    line("  {")
+    line(`    kind: ${quote(row.kind)},`)
+    line(`    source: ${quote(row.source)},`)
+    if (row.waiver !== undefined) line(`    waiver: ${quote(row.waiver)},`)
+    line("  },")
+  }
+  line("] as const satisfies ReadonlyArray<KernelRuntimeStructuralRefusalRow>")
+  line()
+  line("/** Every structural refusal spelling known to the generated kernel table. */")
+  line("export const KERNEL_REFUSAL_VOCABULARY = [")
+  for (const reason of allRefusalReasons) line(`  ${quote(reason)},`)
+  line("] as const")
+  line()
+  line("/** One structural refusal spelling known to the generated kernel table. */")
+  line("export type KernelRefusalVocabulary = (typeof KERNEL_REFUSAL_VOCABULARY)[number]")
   line()
 
   line("/**")

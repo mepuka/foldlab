@@ -7,6 +7,7 @@ import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 
 import { refusalOf } from "../internal/refusals.js"
+import { KernelRuntimeStructuralRefusalKind } from "../kernel/KernelSchemas.generated.js"
 
 /** One legal repair or inspection step attached to a refusal. */
 export const Next = Schema.Struct({
@@ -26,48 +27,12 @@ const SharedRefusalFields = {
   next: Schema.Array(Next),
 } as const
 
-/** Every structural refusal kind the package can mint. */
-export const StructuralRefusalKind = Schema.Literals([
-  "non-canonical-value",
-  "invalid-subject-token",
-  "malformed-envelope",
-  "malformed-blob-reference",
-  "inline-body-too-large",
-  "digest-mismatch",
-  "substrate-shape",
-  "invalid-lane-declaration",
-  "invalid-partition-key",
-  "lane-evidence-mismatch",
-  "lane-substrate-shape",
-  "invalid-algebra-declaration",
-  "invalid-fold-declaration",
-  "unearned-commutative-algebra",
-  "invalid-anchor-advance",
-  "anchor-substrate-shape",
-  "malformed-anchor-state",
-  "lost-anchor-cas",
-  "consumer-substrate-shape",
-  "fold-buffer-overflow",
-  "invalid-session-declaration",
-  "undeclared-view",
-  "invalid-chaos-request",
-  "invalid-fold-state",
-  "invalid-register-key",
-  "malformed-register-state",
-  "register-absent",
-  "register-substrate-shape",
-  "duplicate-grant",
-  "outcome-already-landed",
-  "stale-register-token",
-  "concurrent-register-update",
-  "malformed-value",
-  "invalid-cell-key",
-  "malformed-cell-state",
-  "cell-substrate-shape",
-])
+/** Every structural refusal kind the package can mint, projected from the kernel. */
+export const StructuralRefusalKind: typeof KernelRuntimeStructuralRefusalKind =
+  KernelRuntimeStructuralRefusalKind
 
 /** Every structural refusal kind the package can mint. */
-export type StructuralRefusalKind = typeof StructuralRefusalKind.Type
+export type StructuralRefusalKind = typeof KernelRuntimeStructuralRefusalKind.Type
 
 /** A permanent statement that input violated a pinned structural law. */
 export class StructuralRefusal extends Schema.TaggedError<StructuralRefusal>()(
@@ -107,7 +72,7 @@ export interface RefusalFields {
 
 /** Fields accepted when constructing structural evidence. */
 export interface StructuralRefusalFields extends RefusalFields {
-  readonly kind: StructuralRefusalKind
+  readonly kind: typeof KernelRuntimeStructuralRefusalKind.Type
 }
 
 /** Constructs structural evidence; shipped retry policies never retry it. */

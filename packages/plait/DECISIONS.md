@@ -2060,3 +2060,45 @@ can close itself); leave it, since the runtime door still refuses on
 rule). Why: "the deepest quotient its algebra respects" has one reading for a
 union — the strictest arm any member reaches. **Load-bearing? yes** — it is the
 difference between a bound and a suggestion.
+
+## Task DEV-808 — one generated refusal vocabulary
+
+### T0. The runtime roster is a reviewed projection input, never a second public union
+
+Decided: the 36 existing structural-refusal spellings move unchanged into
+`scripts/kernel-runtime-refusals.ts`. The kernel-table generator resolves each
+one against the model-emitted refusal rows and emits both its ancestry and the
+closed runtime tuple; `truth/Refusal.ts` consumes the schema generated from
+that tuple. Alternatives: teach the generator the spellings inline (hides the
+reviewed datum inside mechanics); keep the schema's hand-written literal list
+(preserves the twin this task removes); rename minting sites to the model's 16
+taught reasons (changes persisted vocabulary and taught meaning). Why: one
+small input makes current runtime truth explicit while every public and
+internal consumer gets the generated value. **Load-bearing? yes** — the runtime
+schema has no independent literal left.
+
+### T1. A corpus miss is generated Law 1 debt owned by DEV-804
+
+Decided: a runtime spelling present in the kernel refusal table is marked
+`kernel-corpus`; every miss is emitted as `staged-debt` with waiver `DEV-804`.
+The generated vocabulary is the stable union of corpus order followed by new
+runtime rows. Alternatives: call all runtime rows corpus-derived (false for all
+36 at this revision); omit missing rows until DEV-804 (leaves the runtime union
+outside generated truth); copy the runtime's law and next text into the corpus
+table (hand-authors model output). Why: the waiver records the exact conversion
+debt without inventing model ancestry or changing a refusal payload.
+**Load-bearing? yes** — provenance is what distinguishes staged unification
+from a renamed hand-maintained twin.
+
+### T2. Containment has a runtime gate and a planted spelling
+
+Decided: `check:refusal-vocabulary` requires the runtime schema tuple to be the
+generated projection, requires every runtime kind to occur in the generated
+vocabulary, and checks every staged row's `DEV-804` owner. Its committed
+negative control appends `hand-minted-refusal` and must fail for the named
+missing-generated-row reason. Alternatives: rely on TypeScript assignment
+alone (does not prove the subset at runtime and cannot demonstrate the wall
+failing); compare only counts (equal cardinality admits a substituted kind).
+Why: member-wise containment is the stated invariant, and a planted outsider
+proves the gate watches that invariant. **Load-bearing? yes** — the generated
+table is only authoritative if a runtime spelling outside it is refused.

@@ -75,11 +75,12 @@ bun run test
 ```
 
 It is the concatenation of three groups, each runnable on its own while you
-work: `test:fast` (the pure test files, the corpus diff, the public-effect
-manifest, and the substrate-parity control), `test:walls` (every file that
-brings up a real `nats-server`), and `test:types` (the twenty tsc negative
-controls). The fast/wall partition is derived from whether a test file imports
-the NATS harness, so a file added later joins a group without being listed.
+work: `test:fast` (the pure test files, corpus and refusal-vocabulary diffs,
+the public-effect manifest, and their negative controls), `test:walls` (every
+file that brings up a real `nats-server`), and `test:types` (the twenty tsc
+negative controls). The fast/wall partition is derived from whether a test file
+imports the NATS harness, so a file added later joins a group without being
+listed.
 
 The package test runs unit and local-NATS walls, byte-diffs generated corpora,
 replays every E4 `verify/fabric` row, and derives the refusal-channel manifest

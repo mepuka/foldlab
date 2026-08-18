@@ -11,7 +11,8 @@
  * The kernel model's closed tables, projected into the runtime's type layer:
  * the declaration-kind and hole-stage registries with their ranks, the taught
  * refusals with the law each defends and the repair each teaches, and the
- * compile-time brands of the sort system.
+ * compile-time brands of the sort system. The existing runtime refusal
+ * projection is also generated here; corpus gaps wear an owned waiver.
  *
  * These are safety-side names and texts, never runtime guarantees. A model
  * theorem stays in the model; what crosses the seam is the vocabulary the
@@ -29,6 +30,8 @@ export const KERNEL_TABLE_PROVENANCE = {
   command: "bun run generate:kernel-tables",
   format: 2n,
   generator: "verify/unity emit",
+  runtimeProjection: "packages/plait/scripts/kernel-runtime-refusals.ts",
+  runtimeWaiverTicket: "DEV-804",
   source: "verify/kernel",
 } as const
 
@@ -245,6 +248,301 @@ export const KERNEL_REFUSAL_BY_REASON = {
   "anchored-resolve": KERNEL_REFUSALS[14],
   "unfilled-hole": KERNEL_REFUSALS[15],
 } as const satisfies { readonly [Reason in KernelRefusalReason]: KernelRefusalRow }
+
+/** The existing runtime structural-refusal spellings, generated from the projection manifest. */
+export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
+  "non-canonical-value",
+  "invalid-subject-token",
+  "malformed-envelope",
+  "malformed-blob-reference",
+  "inline-body-too-large",
+  "digest-mismatch",
+  "substrate-shape",
+  "invalid-lane-declaration",
+  "invalid-partition-key",
+  "lane-evidence-mismatch",
+  "lane-substrate-shape",
+  "invalid-algebra-declaration",
+  "invalid-fold-declaration",
+  "unearned-commutative-algebra",
+  "invalid-anchor-advance",
+  "anchor-substrate-shape",
+  "malformed-anchor-state",
+  "lost-anchor-cas",
+  "consumer-substrate-shape",
+  "fold-buffer-overflow",
+  "invalid-session-declaration",
+  "undeclared-view",
+  "invalid-chaos-request",
+  "invalid-fold-state",
+  "invalid-register-key",
+  "malformed-register-state",
+  "register-absent",
+  "register-substrate-shape",
+  "duplicate-grant",
+  "outcome-already-landed",
+  "stale-register-token",
+  "concurrent-register-update",
+  "malformed-value",
+  "invalid-cell-key",
+  "malformed-cell-state",
+  "cell-substrate-shape",
+] as const
+
+/** One structural-refusal kind the runtime can mint. */
+export type KernelRuntimeStructuralRefusalKind =
+  (typeof KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS)[number]
+
+/** How one runtime spelling traces to the generated kernel vocabulary. */
+export type KernelRuntimeStructuralRefusalRow =
+  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: "kernel-corpus" }
+  | { readonly kind: KernelRuntimeStructuralRefusalKind; readonly source: "staged-debt"; readonly waiver: "DEV-804" }
+
+/**
+ * The runtime projection with derivation ancestry on every row. Missing corpus
+ * rows are explicit Law 1 staged debt owned by DEV-804, never silent twins.
+ */
+export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
+  {
+    kind: "non-canonical-value",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-subject-token",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-envelope",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-blob-reference",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "inline-body-too-large",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "digest-mismatch",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-lane-declaration",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-partition-key",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "lane-evidence-mismatch",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "lane-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-algebra-declaration",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-fold-declaration",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "unearned-commutative-algebra",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-anchor-advance",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "anchor-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-anchor-state",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "lost-anchor-cas",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "consumer-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "fold-buffer-overflow",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-session-declaration",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "undeclared-view",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-chaos-request",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-fold-state",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-register-key",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-register-state",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "register-absent",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "register-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "duplicate-grant",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "outcome-already-landed",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "stale-register-token",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "concurrent-register-update",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-value",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "invalid-cell-key",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "malformed-cell-state",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "cell-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+] as const satisfies ReadonlyArray<KernelRuntimeStructuralRefusalRow>
+
+/** Every structural refusal spelling known to the generated kernel table. */
+export const KERNEL_REFUSAL_VOCABULARY = [
+  "clock-read",
+  "absence-trigger",
+  "unfenced-decide",
+  "last-writer-wins",
+  "unverified-read",
+  "cross-sort-identifier",
+  "minted-identifier",
+  "ambient-query-input",
+  "forward-reference",
+  "secret-carrier",
+  "absence-claim",
+  "past-mutation",
+  "off-writ-referent",
+  "closure-introspection",
+  "anchored-resolve",
+  "unfilled-hole",
+  "non-canonical-value",
+  "invalid-subject-token",
+  "malformed-envelope",
+  "malformed-blob-reference",
+  "inline-body-too-large",
+  "digest-mismatch",
+  "substrate-shape",
+  "invalid-lane-declaration",
+  "invalid-partition-key",
+  "lane-evidence-mismatch",
+  "lane-substrate-shape",
+  "invalid-algebra-declaration",
+  "invalid-fold-declaration",
+  "unearned-commutative-algebra",
+  "invalid-anchor-advance",
+  "anchor-substrate-shape",
+  "malformed-anchor-state",
+  "lost-anchor-cas",
+  "consumer-substrate-shape",
+  "fold-buffer-overflow",
+  "invalid-session-declaration",
+  "undeclared-view",
+  "invalid-chaos-request",
+  "invalid-fold-state",
+  "invalid-register-key",
+  "malformed-register-state",
+  "register-absent",
+  "register-substrate-shape",
+  "duplicate-grant",
+  "outcome-already-landed",
+  "stale-register-token",
+  "concurrent-register-update",
+  "malformed-value",
+  "invalid-cell-key",
+  "malformed-cell-state",
+  "cell-substrate-shape",
+] as const
+
+/** One structural refusal spelling known to the generated kernel table. */
+export type KernelRefusalVocabulary = (typeof KERNEL_REFUSAL_VOCABULARY)[number]
 
 /**
  * The compile-time brand carrier. The property never exists at runtime; it

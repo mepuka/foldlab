@@ -112,11 +112,16 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   overclaim until the law is proved; this seam ships its shape, not its
   enforcement.
 - `src/kernel/KernelTables.generated.ts` is generated only, from
-  `fixtures/kernel-conformance.ndjson`, and `bun run check:kernel-tables` must
-  regenerate it byte-identically. Never hand-edit a kind, a rank, a taught law,
-  or a repair: the model emits them, and a hand-typed table is drift with a
-  green gate. `test/fixtures/kernel-conformance.sample.ndjson` is the
-  independently transcribed control the wall compares against, never a source.
+  `fixtures/kernel-conformance.ndjson` plus the reviewed runtime-refusal
+  projection in `scripts/kernel-runtime-refusals.ts`, and
+  `bun run check:kernel-tables` must regenerate it byte-identically. Never
+  hand-edit a kind, a rank, a taught law, or a repair: the model emits its rows;
+  runtime spellings absent from that corpus carry an explicit `DEV-804`
+  staged-debt waiver in the generated projection. The containment gate and its
+  hand-minted control are `check:refusal-vocabulary` and
+  `check:refusal-control`. `test/fixtures/kernel-conformance.sample.ndjson` is
+  the independently transcribed control the corpus wall compares against,
+  never a source.
 - No admission door ships yet. `src/kernel/KernelDoor.ts` is the seam's type only; the
   reference door under `test/` exists so the conformance replay has a target
   and is not the thing to build on. A real door is checked by pointing
