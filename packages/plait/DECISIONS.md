@@ -1909,3 +1909,68 @@ than a diagnostic can no longer read as a control that failed for its committed
 reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
 six advisories it declines to gate on stay open findings for their modules'
 owners.
+
+## Task DEV-763 — the one admission door
+
+### T0. The model-generated language is the contract; a runtime digest is not an identity conversion
+
+Decided: `KernelDoor` derives candidate, context, and intrinsic-act types from
+`KernelSchemas.generated.ts` and preserves the model's `bigint` identity labels
+through admission and encoding. A runtime hex digest may ride beside a caller's
+value, but no function converts it into a model label and the door never consults
+it. Alternatives: hand-write a number-shaped candidate twin (a second type
+universe, already demonstrated to drift); derive labels from hex digests (two
+different identity scales made falsely interchangeable). Why: the formal model
+already emits the literal kernel-language shapes; the trusted-base statement
+that real identities are hashes of canonical bytes is evidence about the
+runtime, not a missing field in the model algebra. **Load-bearing? yes** — this
+is the ruling that unblocks both the door and the CLI projection.
+
+### T1. Context is explicit until the catalog owns its assembly
+
+Decided: the pure seam is `admit(context, candidate)`, with `make(context)` as a
+context-bound view. The catalog/pinned-universe value is generated too, but this
+ticket does not invent an ambient source for it; the durable catalog slice can
+assemble and pass that value when it lands. Alternatives: wait for the catalog
+ticket (leaves every host blocked despite a complete judgment contract); read a
+global catalog from the kernel (inverts the plane stack and hides an Effectful
+dependency inside a pure law function). Why: context assembly and candidate
+judgment are separate responsibilities, and an explicit parameter preserves
+that boundary without weakening either. **Load-bearing? yes** — it is how this
+slice proceeds without pretending the catalog already ships.
+
+### T2. Hosts alias the function; they do not wrap or inject it
+
+Decided: CLI, `FabricClient`, and `CasDaemon` expose the exact
+`KernelDoor.admit` function object. The control asserts reference identity for
+all three and kills an invented host function. Alternatives: thin wrappers
+(semantically innocent today, but a place for host-specific validation to grow);
+injectable service methods (fixtures could replace the judgment and erase the
+one-door guarantee). Why: carriage and surface contribute no semantics, so the
+strongest and simplest representation is literal identity. **Load-bearing?
+yes** — this is the executable no-bypass control.
+
+### T3. A verdict carries the intrinsic act or the complete taught refusal
+
+Decided: admission success returns the generated intrinsic act and its canonical
+model encoding; refusal flattens the generated table row beside
+`verdict: "refused"`, preserving reason, law, repair, and applicability at every
+host. Alternatives: return encoding only (throws away the very act the door
+constructs); return reason only and require host lookups (permits parity to
+depend on the host); nest a second refusal object (adds a vocabulary shape the
+model table does not need). Why: the door is the sole constructor of intrinsic
+acts and the refusal table is already the single taught vocabulary.
+**Load-bearing? yes** — both acceptance halves are observable in one value.
+
+### T4. The door is the eighteenth public namespace
+
+Decided: `KernelDoor` joins the root barrel and the `./KernelDoor` subpath in
+this ticket. It is pure, so the public Effect manifest remains byte-stable even
+though the namespace is new; the host-route suite asserts the barrel names the
+same function. Alternatives: leave the door reachable only by internal deep
+import (DEV-786 could not consume the ruled seam as package API); export the
+generated schema module wholesale (widens the surface from one concept to an
+emitter's file layout). Why: a public admission seam must be nameable, while the
+deep module should keep the generated family behind its candidate/act/context
+projections. **Load-bearing? yes** — it records that the surface change is the
+ticket's decision, not accidental barrel churn.

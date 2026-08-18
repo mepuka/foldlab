@@ -16,14 +16,13 @@
  * its own canonical form, and everything derived from it regenerates
  * byte-identically.
  *
- * The door under test is the reference transliteration, because no admission
- * door ships in this package yet; the harness takes its target as a parameter,
- * so a real door is checked by editing one line of this file. The mutant row
- * below is what makes the pass mean something: a replay that cannot fail is
- * not evidence.
+ * The door under test is the shipping admission seam. The mutant row below is
+ * what makes the pass mean something: a replay that cannot fail is not
+ * evidence.
  */
 import { describe, expect, test } from "bun:test"
 
+import { make } from "../src/kernel/KernelDoor.js"
 import {
   KERNEL_DECL_KINDS,
   KERNEL_DECL_KIND_RANK,
@@ -44,14 +43,13 @@ import {
 import {
   PLANTED_CANDIDATES,
   PLANTED_CONTEXT,
-  referenceDoor,
   refuseEverythingDoor,
-} from "./KernelDoor.reference.js"
+} from "./KernelDoor.fixtures.js"
 
 const corpus = await loadKernelArtifact()
 
-/** The door the wall replays. Swap this for a shipping door when one lands. */
-const doorUnderTest = referenceDoor(PLANTED_CONTEXT)
+/** The shipping door: the production seam must agree with every emitted vector. */
+const doorUnderTest = make(PLANTED_CONTEXT)
 
 describe("kernel conformance tables", () => {
   test("the committed tables carry the artifact's provenance", () => {
@@ -129,7 +127,7 @@ describe("kernel door conformance", () => {
     const admittedCount = corpus.admissions.length - refusedCount
     expect(admittedCount).toBe(1)
     console.info(
-      `KERNEL DOOR: PASS target=reference replayed=${replays.length}/${corpus.admissions.length}` +
+      `KERNEL DOOR: PASS target=shipping replayed=${replays.length}/${corpus.admissions.length}` +
         ` refused=${refusedCount} admitted=${admittedCount} skipped=0`,
     )
   })

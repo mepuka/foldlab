@@ -9,6 +9,12 @@ The vocabulary every sentence speaks.
 **Kernel**:
 The language: corpus, door, programs, and wire grammar.
 
+**Admission door**:
+`KernelDoor.admit`: the one pure projection from a model-generated candidate
+and catalog/pinned-universe context to an intrinsic act or the generated
+reason/law/repair refusal. Model identity labels remain `bigint`; runtime
+content digests are independent evidence, not a conversion source.
+
 **Planes**:
 The state carriers, one seam per plane.
 

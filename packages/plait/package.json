@@ -19,6 +19,7 @@
     "./Anchor": "./src/planes/Anchor.ts",
     "./FabricClient": "./src/carriage/FabricClient.ts",
     "./Fold": "./src/planes/Fold.ts",
+    "./KernelDoor": "./src/kernel/KernelDoor.ts",
     "./Lane": "./src/planes/Lane.ts",
     "./Refusal": "./src/truth/Refusal.ts",
     "./Register": "./src/planes/Register.ts",

@@ -1,16 +1,17 @@
 /**
  * Plane: carriage — hosts and transport clients.
  *
- * The content-addressed daemon, as a type and nothing else.
+ * The content-addressed daemon's operation shape and its inherited admission
+ * route.
  *
  * A built program names the services it would need before anything can be
  * wired, and naming them honestly is the point of this module: the builder's
  * requirements channel says `CasDaemon` because a program that publishes a
  * declaration, resolves a digest, reads at an anchor, or lands an outcome
  * needs a daemon that does those four things. What this module deliberately
- * does not ship is any of it.
+ * does not ship is an implementation of any daemon operation.
  *
- * **There is no tag, no layer, and no implementation here.** Not an
+ * **There is no tag, no layer, and no daemon implementation here.** Not an
  * unimplemented one, not a throwing one, not a stub that fails at runtime -
  * none, because there is nothing to run yet and a placeholder service is how a
  * "not wired" turns into a "wired wrong" three slices later. The wiring is its
@@ -35,7 +36,11 @@
 import type { Effect } from "effect"
 
 import type { KernelProgramDeclaration } from "../kernel/KernelCorpusSchemas.js"
+import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import type { KernelRefusalRow } from "../kernel/KernelTables.generated.js"
+
+/** The kernel's one candidate-judgment function; the daemon defines no side door. */
+export const admit = kernelAdmit
 
 /**
  * A content address as the runtime spells it: lowercase hexadecimal over the
@@ -66,6 +71,9 @@ export interface CasOutcome {
  * channel is the model's refusal table and not a second one invented here.
  */
 export interface CasDaemon {
+  /** Candidate judgment is the kernel function itself, never daemon-local logic. */
+  readonly admit: typeof kernelAdmit
+
   /**
    * Publishes a declaration and returns its content address. Publication is an
    * act the caller chooses; building a program never performs it.

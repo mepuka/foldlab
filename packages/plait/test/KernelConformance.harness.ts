@@ -2,18 +2,13 @@
  * The door-conformance harness: replay the model's emitted verdicts against a
  * runtime door, one vector at a time, and report each agreement or divergence.
  *
- * The harness is target-agnostic on purpose. It takes the door as a parameter
- * and the candidate table as a parameter, so the day a real admission door
- * ships in this package it is checked by the same replay that checks the
- * reference one, with nothing about the harness edited.
+ * The harness is target-agnostic on purpose. It takes the door and candidate
+ * table as parameters, so host routes and negative controls cross the same
+ * wall as the shipping door.
  *
- * One seam is worth naming. The corpus carries every integer at arbitrary
- * precision, because an encoded sentence multiplies by about a million per
- * argument and leaves the range a JavaScript number holds exactly. The door
- * under test speaks `number`. So the crossing is written out, and it refuses
- * rather than rounds: the day a vector exceeds the safe range, the replay says
- * so at that vector instead of quietly comparing two rounded values and
- * agreeing.
+ * The corpus and door both carry arbitrary-precision integers. There is no
+ * number conversion and therefore no precision-losing identity bridge hidden
+ * in the replay.
  *
  * Agreement is agreement, not proof. A green replay says the runtime returns
  * the model's verdict on the model's committed candidates; it promotes no
@@ -22,8 +17,13 @@
 import { resolve } from "node:path"
 
 import { CORPUS_PATH, loadKernelCorpus, type KernelCorpus } from "../scripts/kernel-corpus.js"
-import type { KernelCandidateAct, KernelDoor } from "../src/kernel/KernelDoor.js"
-import { decodeAct, encodeAct } from "./KernelDoor.reference.js"
+import {
+  decodeAct,
+  encodeAct,
+  type KernelCandidateAct,
+  type KernelDoor,
+  type KernelVerdict,
+} from "../src/kernel/KernelDoor.js"
 
 const repository = resolve(import.meta.dir, "../../..")
 
@@ -32,22 +32,6 @@ export const corpusPath = resolve(repository, CORPUS_PATH)
 
 /** Loads and validates the format-2 corpus the tables were generated from. */
 export const loadKernelArtifact = async (): Promise<KernelCorpus> => loadKernelCorpus(repository)
-
-/**
- * The corpus's unbounded integers, as the numbers the door speaks. Refuses
- * above the safe range rather than rounding: two rounded values that agree
- * agree about nothing.
- */
-export const toNumbers = (
-  values: ReadonlyArray<bigint>,
-  where: string,
-): ReadonlyArray<number> =>
-  values.map((value) => {
-    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error(`${where}: ${value} is past what a number holds exactly`)
-    }
-    return Number(value)
-  })
 
 /** One replayed admission: what the model emitted, what the door answered. */
 export interface AdmissionReplay {
@@ -65,14 +49,10 @@ export interface EncodingReplay {
   readonly agreed: boolean
 }
 
-const render = (verdict: {
-  readonly verdict: string
-  readonly reason?: string
-  readonly encoded?: ReadonlyArray<number>
-}): string =>
+const render = (verdict: KernelVerdict): string =>
   verdict.verdict === "admitted"
-    ? `admitted:[${(verdict.encoded ?? []).join(",")}]`
-    : `refused:${verdict.reason ?? ""}`
+    ? `admitted:[${verdict.encoded.join(",")}]`
+    : `refused:${verdict.reason}`
 
 /**
  * Replays every emitted admission verdict against one door. A candidate the
@@ -87,7 +67,7 @@ export const replayAdmissions = (
 ): ReadonlyArray<AdmissionReplay> =>
   corpus.admissions.map((admission) => {
     const expected = admission.verdict === "admitted"
-      ? `admitted:[${toNumbers(admission.encoded, admission.name).join(",")}]`
+      ? `admitted:[${admission.encoded.join(",")}]`
       : `refused:${admission.reason}`
     const candidate = candidates[admission.name]
     if (candidate === undefined) {
@@ -107,10 +87,9 @@ export const replayEncodings = (
   corpus: KernelCorpus,
 ): ReadonlyArray<EncodingReplay> =>
   corpus.encodings.map((encoding) => {
-    const act = toNumbers(encoding.act, encoding.name)
-    const vector = act.join(",")
-    const decoded = decodeAct(act)
-    const roundTrip = decoded === null ? "undecodable" : encodeAct(decoded).join(",")
+    const vector = encoding.act.join(",")
+    const decoded = decodeAct(encoding.act)
+    const roundTrip = decoded === undefined ? "undecodable" : encodeAct(decoded).join(",")
     return { name: encoding.name, vector, roundTrip, agreed: roundTrip === vector }
   })
 
