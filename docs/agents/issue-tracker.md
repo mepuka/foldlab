@@ -38,6 +38,11 @@ transport is unchanged.
 
 ## The issue template
 
+Cutting and dispatching are themselves gated: before a ticket is created
+or assigned it must pass the [dispatch gate](dispatch-gate.md) — the lane
+test, the three ratification questions, and the vertical-slice standard.
+A body that cannot answer the ratification questions is not dispatchable.
+
 A ticket body is:
 
 ```markdown
