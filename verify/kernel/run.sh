@@ -59,6 +59,7 @@ expected_laws=(
   KSentenceEncodingInjective KAdmissionRefusesUnlawful KRefusalParity
   KAdmitMonotone KIntrinsicFaultRefusedEverywhere
   KRelativeRefusalRepairableByGrowth
+  KMachineRepairClearsReason
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KProvisionPositionedCorrespondence
@@ -118,6 +119,7 @@ roster=(
   translate_predicate_some_of_no_refusal
   intrinsically_clean_admitted_by_growth
   relative_refusal_repairable_by_growth
+  machine_repair_clears_reason
   admission_refuses_unlawful admit_refusals_taught refusal_parity
   closure_clock_read_refused closure_absence_trigger_refused
   closure_unfenced_decide_refused closure_last_writer_refused
@@ -226,6 +228,10 @@ check_control door-admits-lawful
 check_control drop-admit-monotonicity
 check_control drop-intrinsic-refusal
 check_control drop-relative-repair-growth
+check_control machine-repair-anchored-resolve
+check_control machine-repair-unverified-read
+check_control machine-repair-past-mutation
+check_control machine-repair-last-writer-wins
 check_control drop-provision-disjointness
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
@@ -284,4 +290,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (21 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (25 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
