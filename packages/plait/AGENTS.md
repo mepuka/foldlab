@@ -28,8 +28,11 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   ordering parameter, and no conflict callback; a lost CAS race re-reads and
   re-merges. A cell surface that takes a rewrite function instead of a delta is
   a finding.
-- No watch surface ships on any KV-backed module until the watch probe suite
-  lands on the substrate gate, and no absence is ever inferred from a watch.
+- No watch surface ships on any KV-backed module without its own ruled ticket.
+  Probe evidence licenses advisory use and never grants the license to ship —
+  a landed suite discharges no fence by itself. Whatever ships is advisory:
+  `KvWatchEntry.isUpdate` is not an initial/live boundary, and no absence is
+  ever inferred from a watch.
 - Verify-on-read for a *resolved reference* happens at exactly one seam
   (`Resolved.resolve`), and the two stores under it — `Catalog` and the
   catalog-internal `Payloads` seam — stay unverified so a lying layer can be

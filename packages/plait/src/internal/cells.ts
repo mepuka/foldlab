@@ -40,8 +40,9 @@ import {
  * Incarnation bound: KV revisions are backing-stream sequences, so a bucket
  * delete+recreate resets the revision order and every claim here holds only
  * within a fixed backing-stream incarnation; administrative lifecycle mutation
- * is outside the credential guard. No watch surface exists: the KV watch
- * probe suite is not on the substrate gate.
+ * is outside the credential guard. No watch surface exists: the now-landed KV
+ * watch probe licenses only a future advisory feed, and its `isUpdate` flag is
+ * not an initial/live boundary.
  */
 
 /**

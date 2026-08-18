@@ -132,12 +132,14 @@ inflationary, not on the check.
 What the cell wall does NOT claim: the model-level F1 (already claimed by the
 fabric row); anything about assembly, context values, or F7; agreement between
 the TypeScript canonical-bytes comparator's ORDER and the Lean carrier's own
-comparator (the claim is set equality, which is comparator-independent);
-watch semantics of any kind — no watch surface ships, because the KV watch
-probe suite is not on the substrate gate. All cell claims hold within a fixed
-backing-stream incarnation. Neither `Catalog` nor `Payloads` ships a durable
-layer: the catalog layer is process-local, and the internal payload seam
-answers absence because no probed substrate stands behind it.
+comparator (the claim is set equality, which is comparator-independent). The
+ninth substrate suite now pins KV watch replay/coalescing, tombstones,
+resume-from-revision, and one same-server reconnect schedule, but no watch
+surface ships yet; any future feed is advisory, `isUpdate` is not an
+initial/live boundary, and silence never proves absence. All cell claims hold
+within a fixed backing-stream incarnation. Neither `Catalog` nor `Payloads`
+ships a durable layer: the catalog layer is process-local, and the internal
+payload seam answers absence because no probed substrate stands behind it.
 
 What the blob conformance suite claims: that a `BlobsService` layer round-trips
 its bytes under the digest it derived, observes absence as `blob-absent`,
