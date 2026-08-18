@@ -35,13 +35,17 @@ lane will ride and makes no design decision.
 | --- | --- | --- |
 | `slice.ts` | One real lane end to end: `Lane.declare` → `Algebra.declare` → `Fold.declare` → `Anchor`, `Model`/`Message`/`update`/`view`, and the read plane hosted on `Atom.runtime` + `Atom.family` over the plait services layer. Public plait surfaces only. | via `run.sh` |
 | `walls.ts` | The three walls plus the digest-keyed resolve leg. The oracle is plait's own `Anchor.initial`/`Anchor.advance` chain, which the MVU code never calls — both-sides-agree would prove only consensus. | `bun walls.ts` |
-| `render-check.ts` | Headless render, two arms: the view projects to a VNode **value** with no DOM, and foldkit's own `Scene` render path accepts the same view. | `bun render-check.ts` |
-| `run.sh` | Seven arms — pinned `tsgo`, `tsc` as referee, the walls, the render check, **two mutation arms**, and the untouched assertion. | `bash scratch/reactive-host/run.sh` |
+| `render-check.ts` | Headless render, three arms: the view projects to a VNode **value** with no DOM, foldkit's own `Scene` render path accepts the same view, and the committed `rendered.html` is diffed byte-for-byte against a fresh regeneration. | `bun render-check.ts` |
+| `rendered.html` | **The rendered surface**, four frames of one fold. Generated — `bun render-check.ts --write` is its whole provenance, and the check above refuses a stale one. | see below |
+| `rendered.png` | The same document photographed under a headless browser's own defaults. | `run.sh` arm 5 |
+| `run.sh` | Nine arms — pinned `tsgo`, `tsc` as referee, the walls, the render check, the photograph, **three mutation arms**, and the untouched assertion. | `bash scratch/reactive-host/run.sh` |
 
-Arms 5 and 6 are the teeth. Arm 5 replaces the successor discipline with
+Arms 6, 7 and 8 are the teeth. Arm 6 replaces the successor discipline with
 arrival-order replay — the same negative control `verify/fabric` uses — and
-requires wall 2 to go red. Arm 6 puts a wall clock in the Model and requires
-wall 3 to go red. Without them a green run could mean the walls assert nothing.
+requires wall 2 to go red. Arm 7 puts a wall clock in the Model and requires
+wall 3 to go red. Arm 8 perturbs one digit of one frame in `rendered.html` and
+requires the render check to refuse it, so the artifact is evidence rather than
+decoration. Without them a green run could mean nothing here asserts anything.
 
 ## The three walls
 
@@ -56,6 +60,47 @@ wall 3 to go red. Without them a green run could mean the walls assert nothing.
    stubbed wall clocks (both `Date.now` and the `Date` constructor), no
    clock-shaped datum survives a structural scan of either, and staleness is
    still expressible — as `head − anchor`, in positions.
+
+## The rendered surface
+
+`rendered.html`, in full — four frames of one fold. Read frames 3 and 4
+together: the tear moves the chatter tag and nothing else (`floor 3`, same
+roll), and recovery by read out of order and duplicated lands the frontier at
+6 with 3 redeliveries absorbed. That is walls 2 and 3 visible on the surface
+rather than only in a digest.
+
+```html
+<h2>1. anchor 0 — nothing resolved yet; behind 0 because the head is unknown</h2>
+<div id="slice"><p id="floor">floor 0</p><p id="head">head 0</p><p id="behind">behind 0</p><p id="chatter">chatter live</p><p id="absorbed">absorbed 0</p><ul id="roll"></ul></div>
+
+<h2>2. three arrivals applied, head at 6 — staleness is 3 positions, not a duration</h2>
+<div id="slice"><p id="floor">floor 3</p><p id="head">head 6</p><p id="behind">behind 3</p><p id="chatter">chatter live</p><p id="absorbed">absorbed 0</p><ul id="roll"><li>alpha</li><li>beta</li><li>gamma</li></ul></div>
+
+<h2>3. the subscription tore — the watch plane decided nothing, truth is unmoved</h2>
+<div id="slice"><p id="floor">floor 3</p><p id="head">head 6</p><p id="behind">behind 3</p><p id="chatter">chatter torn</p><p id="absorbed">absorbed 0</p><ul id="roll"><li>alpha</li><li>beta</li><li>gamma</li></ul></div>
+
+<h2>4. recovered by read, out of order and duplicated — frontier at 6, 3 absorbed</h2>
+<div id="slice"><p id="floor">floor 6</p><p id="head">head 6</p><p id="behind">behind 0</p><p id="chatter">chatter recovering</p><p id="absorbed">absorbed 3</p><ul id="roll"><li>alpha</li><li>beta</li><li>gamma</li><li>delta</li><li>epsilon</li><li>zeta</li></ul></div>
+```
+
+`rendered.png` is that document photographed at 920×1560 by headless Chrome.
+There is no stylesheet and no script in it, so what the browser shows is its
+own defaults over the Model's raw values — black text, default serif headings,
+a default bullet list. That is the intended look: the visual language is the
+design lane's, and nothing here anticipates it.
+
+**Which artifact is the wall.** `rendered.html` is byte-diffed against a fresh
+regeneration on every run (arm 4) and a stale one is refused (arm 8), so it is
+evidence. `rendered.png` is **not** diffed: glyph rasterization varies by
+machine and font stack, and a byte wall over a screenshot is a wall over the
+font stack, not over the render. Arm 5 asserts what can honestly be asserted —
+that the browser loaded *this* document (its `--dump-dom` carries `absorbed 3`,
+a value only frame 4 has) and that the PNG is a well-formed image of the whole
+page. That arm carries its own negative control: the same marker check run
+against a document that does not exist must fail, or it is proving nothing.
+It exists because the first version of this arm silently photographed
+`ERR_FILE_NOT_FOUND` — an MSYS path Chrome would not resolve — and the byte-size
+floor waved it straight through.
 
 ## Output
 
@@ -79,19 +124,28 @@ ALL WALLS PASS
 PASS  replay, chatter, and no-clock walls hold
 
 == arm 4: headless render check ==
-PASS  render check — 139 bytes of unstyled markup, values only
-      <div><p>floor 3</p><p>head 5</p><p>behind 2</p><p>chatter live</p><p>absorbed 0</p><ul><li>alpha</li><li>beta</li><li>gamma</li></ul></div>
+PASS  render check — 269 bytes of unstyled markup, values only
+      <div id="slice"><p id="floor">floor 6</p>…<ul id="roll"><li>alpha</li>…<li>zeta</li></ul></div>
+PASS  rendered.html matches a fresh regeneration (4 frames)
 PASS  the view projects to an unstyled value and foldkit renders it
 
-== arm 5: mutation — successor discipline replaced by arrival-order replay ==
+== arm 5: photograph the rendered surface ==
+PASS  browser loaded the document (DOM carries "absorbed 3"; a missing one does not)
+      rendered.png regenerated — 61856 bytes
+
+== arm 6: mutation — successor discipline replaced by arrival-order replay ==
 PASS  mutation caught — arrival-order replay leaves the anchor digest:
   FAIL  wall 2 (chatter): recovered a0a01907debcc917… != uninterrupted 0700aeea38850c7b…
 
-== arm 6: mutation — a wall clock put in the Model ==
+== arm 7: mutation — a wall clock put in the Model ==
 PASS  mutation caught — the no-clock wall goes red:
-  FAIL  wall 3 (no clock): Model carries a clock datum: model.observedAt = 1787083236681
+  FAIL  wall 3 (no clock): Model carries a clock datum: model.observedAt = 1787084475176
 
-== arm 7: bun run gates is untouched ==
+== arm 8: mutation — the committed rendered.html made stale ==
+PASS  mutation caught — a stale artifact reddens the render check:
+  FAIL  render check: rendered.html does not match a fresh regeneration; the artifact is stale
+
+== arm 9: bun run gates is untouched ==
 PASS  no gated path moved, and no *.test.ts here can join the battery
 
 ALL ARMS PASS

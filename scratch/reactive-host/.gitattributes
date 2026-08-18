@@ -1,0 +1,2 @@
+# The screenshot is a binary artifact: git must not touch its bytes.
+*.png binary
