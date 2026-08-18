@@ -20,15 +20,18 @@ import "foldlab/canonical"
 // law here is narrower and orthogonal: whatever formatting arrives, it is read
 // by the constrained decoder, and identity is derived from that reading alone.
 //
-// This file deliberately imports no `encoding/json`. The
-// `encoding_json_wall_test.go` grep-wall holds every meaning path to the same
-// rule so the second door cannot be reopened by a later edit.
+// This file deliberately imports no `encoding/json`. The static import law in
+// `encoding_json_import_law_test.go` holds every meaning path to the same rule
+// so the second door is not reopened by an ordinary edit; that check states its
+// own bounds, and the behavioural proof is the pair of identity controls
+// (`request_body_identity_test.go`, `ingress_body_identity_test.go`).
 //
-// Every "no" produced here is DATA (W8 / ADR-0003): a structural `malformed`
-// refusal naming the law it broke, with `got`/`expected` and a `next` hint.
-// These are MEANING refusals about submitted bytes. Transport shape — a
-// request with no reply inbox, an unrouted subject, a substrate failure —
-// stays carriage and is never dressed up as one of these.
+// Every "no" produced here is DATA (W8): a structural `malformed` refusal
+// naming the law it broke, with `got`/`expected` and a `next` hint. These are
+// MEANING refusals about submitted bytes. Transport shape — a request with no
+// reply inbox, an unrouted subject, a substrate failure — is never dressed up
+// as one of these; per W8 such failures still surface as refusal data, marked
+// local, rather than as a meaning refusal about the submission.
 
 // decodeConstrained admits request bytes into the constrained JSON domain that
 // bears identity. Every meaning path enters here and nowhere else.

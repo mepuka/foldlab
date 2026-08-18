@@ -1,6 +1,6 @@
 // The finding #36 control at the JOURNAL-identity boundary (DEV-806).
 //
-// `request_body_identity_test.go` walls the type-identity boundary: the three
+// `request_body_identity_test.go` controls the type-identity boundary: the three
 // discriminating vectors from finding #36 — duplicate member names, a lone
 // surrogate escape, raw invalid UTF-8 — must each return a typed `malformed`
 // refusal at `flb.req.type.create` and leave the catalog at genesis.
@@ -10,7 +10,7 @@
 // boundary had no such control, and until this ticket the path still re-read
 // the raw body with `encoding/json` after admission had already read it
 // (`ingress.go:95` on `origin/main`) and derived the appended bytes from that
-// second reading. This file gives the journal boundary the same wall the
+// second reading. This file gives the journal boundary the same control the
 // catalog boundary has had since `9207ab1`.
 package protod_test
 

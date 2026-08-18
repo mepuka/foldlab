@@ -3207,25 +3207,42 @@ reason it can be scoped down at all.
 
 ## DEV-806 — the second repairing decoder, and the law it was not (2026-08-18)
 
-### D??. The finding #36 class gets a wall, not a second one-line repair
+### D??. The finding #36 class gets a static import law, not a second one-line repair
 
 Decided: protod's meaning path admits submitter bytes through
-`canonical.Decode` and nowhere else, and a source-level wall
-(`proto/go/protod/encoding_json_wall_test.go`) holds the whole class rather
-than the two lines that had it. The wall parses every non-test source under
-`proto/go/protod` and `proto/go/cmd/protod`, refuses any `json.Unmarshal` /
-`json.NewDecoder` whose input expression names request bytes (`body`,
-`msg.Data`), and requires every surviving `encoding/json` import to carry an
-`// encoding/json carriage:` classification at its import site. Alternatives:
-fix `serveIngress` alone (the shape that let the class survive `9207ab1` —
-the type-identity boundary was closed and the journal-identity boundary was
-not); ban the import outright (it would refuse reply serialization, journal
-payload reads, and the typed projection over already-admitted bytes, so it
-would be waived immediately and mean nothing); a review lens (findings #36
-and CG1 are the evidence that this class outlives the review that catches an
-instance of it). Why: a one-line repair has no memory. **Load-bearing? yes**
-— the wall is what makes "identity is derived from the reading constrained
-admission made" a property of the daemon rather than of two edits.
+`canonical.Decode` and nowhere else, and a source-level import law
+(`proto/go/protod/encoding_json_import_law_test.go`) holds the whole class
+rather than the two lines that had it. It walks every non-test source under
+`proto/go/protod` and `proto/go/cmd/protod` and holds three laws: no dot
+import of `encoding/json`; every surviving import classified by an
+`// encoding/json carriage:` comment ON its import spec; and no decoder entry
+point called with an argument mentioning a tainted name, where taint is seeded
+at `msg.Data` and at parameters named `body`, propagates through assignment and
+through call arguments into the callee's parameter, and is cleared by the
+admission seam. Alternatives: fix `serveIngress` alone (the shape that let the
+class survive `9207ab1` — the type-identity boundary was closed and the
+journal-identity boundary was not); ban the import outright (it would refuse
+reply serialization, journal payload reads, and the typed projection over
+already-admitted bytes, so it would be waived immediately and mean nothing); a
+review lens (findings #36 and CG1 are the evidence that this class outlives the
+review that catches an instance of it). Why: a one-line repair has no memory.
+**Load-bearing? yes** — but sized to what it checks: it is a static gate against
+reopening the door by ordinary edit, NOT a proof the door is shut. It does not
+cover taint through return values, reflection, decoders reached through an
+interface, sources outside its roots, or `_test.go` files; the file states these
+bounds itself. What makes "identity is derived from the reading constrained
+admission made" true of the daemon is the pair of behavioural controls
+(`request_body_identity_test.go`, `ingress_body_identity_test.go`); this law is
+what keeps a later edit from quietly undoing it.
+
+(DEV-819 review: the first version of this check matched the printed text of a
+decode's first argument against the names `body`/`msg.Data`. Adversarial review
+found eight reopenings it admitted — aliased import, dot import, a parameter
+named `payload`, a parameter named `bytes` (`certify.go`'s own convention), a
+one-hop local alias, a hoisted `bytes.NewReader`, a decoder taken as a function
+value, and a slice expression. All eight now ship as negative controls, and the
+`certify.go` case is reproduced on-disk: a `json.Unmarshal(bytes, …)` planted in
+`certify.go` is caught through cross-file taint from `serveCreate`.)
 
 ### D??. `serveIngress` derives identity from the admitted reading, not a second one
 
