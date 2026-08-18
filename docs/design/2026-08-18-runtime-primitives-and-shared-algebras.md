@@ -13,19 +13,42 @@ primitive mappings take their types **from the generated corpus family**
 (`KernelCorpusSchemas` + the generated tables) and never define parallel
 shapes. The one-type-universe epic (**DEV-795**, parent of DEV-796) is
 the assumed substrate, and **T-door (DEV-763)** is its stage 4. §1.1 is
-the binding section; §6 is the host contract that targets the generated
-candidate form. Every proposal below was re-derived against that ruling,
-and where the ruling changed a proposal the change is marked rather than
-silently applied.
+the binding section. Every proposal below was re-derived against that
+ruling, and where the ruling changed a proposal the change is marked
+rather than silently applied. *(Round-2 note: §6 was the host contract
+this paragraph pointed at. DEV-763 has since shipped it in PR #131, so
+§6 now records that work instead of proposing beside it.)*
+
+**Round 2, 2026-08-18 — revised against the DEV-798 adversarial review
+(CHANGES REQUIRED) and the coordinator's amendment.** Six findings, all
+accepted; none argued down. Every change is marked in place with the
+finding it answers, so the delta is auditable rather than a fresh
+draft. In summary:
+
+| # | Finding | What changed |
+| --- | --- | --- |
+| 1 (blocker) | the shared algebra Layer was a second source of algebra identity | **§4 rebuilt** on the algebraic-register record's two-tier design: generated per-digest tags (compile time) + one `Algebras.resolve` (run time); the ambient tag is withdrawn; the operations record ships under an explicit law-1 waiver citing DEV-796 |
+| 2 (major) | F1/F2 do not license `dropping` | **§3.2 narrowed** — `sliding` retains the newest and is licensed; `dropping` discards the newest and is licensed by nothing here. §5's table and A-8 follow |
+| 3 (major) | H8 and H9 are outside memo permanence | **§3.3 withdrew both** — an AST object reference is not a digest; a carrier assertion is not a re-derivation (AE-2). The law's only cited instance is now `ResolveCache` |
+| 4 (major) | `getMany` on `CatalogService`/`PayloadService` **is** a public batch verb | **§3.4 corrected** — the multi-get seam moves to `internal/`; the exported plane interfaces and the signature wall do not move |
+| 5 (major) | rung⇒combinator over-claimed | **§5 gained a scope condition** — a brand constrains a combinator only where its operand is the declared algebra's own operation; arbitrary callbacks, failure selection, and transport loss are outside every brand |
+| 6 (minor) | entry 0031 bundled two separately-gated decisions | **split** into 0031 (the algebra service) and 0036 (the replay driver) |
+
+The coordinator's amendment — *consume PR #131's shipped door rather
+than propose a host contract beside it* — **rewrote §6**: the door and
+the `Admission` seam ship, entry 0035 is re-tiered from `proposed` to
+`shipped`, and ticket A-11 is withdrawn in favour of a smaller A-12.
+Rebased onto `3f20f80`. And **one of this record's own filings against
+the epic (§9 item 5) is withdrawn as wrong**, with the reading error
+that produced it recorded beside it.
 
 **Reading order.** §1 states the test and §1.1 the type-universe
 binding. §2 states the one reading that makes the rest mechanical. §3
 prices the four primitives. §4 is the structural proposal (shared
 algebra layers). §5 is the type discipline that ties §3 and §4 to the
-rung ladder. §6 is the host contract for the generated candidate form.
-§7 is the gap audit. §8 is the adoption ladder. §9 flags what is
-genuinely new, and files two blockers plus a reading question against
-the epic. §10 states what this record does not claim.
+rung ladder. §6 records the shipped door and what it settles. §7 is the
+gap audit. §8 is the adoption ladder. §9 flags what is genuinely new,
+and files against the epic. §10 states what this record does not claim.
 
 **Claim tiers**, as the estate defines them
 (`docs/design/2026-08-17-plait-coordination-fabric.md:21-31`, not
@@ -402,12 +425,58 @@ export const dropping = <A>(capacity: number | { capacity: number; replay?: numb
 export const bounded  = <A>(capacity: number | { capacity: number; replay?: number }): Effect.Effect<PubSub<A>>
 ```
 
-`sliding` and `dropping` **lose publications** under pressure. A
-lossy fan-out over a monotone lattice loses nothing that matters — the
-next publication carries the join and the subscriber catches up, which
-is what "monotone" buys. A lossy fan-out over a positional or counting
-payload silently corrupts it. So the strategy is not a tuning knob; it
-is a claim about the payload's rung, and §5 makes it a type.
+Both `sliding` and `dropping` **lose publications** under pressure —
+but they lose *different ends of the sequence*, and the pre-round-2
+draft of this record treated them as one case. They are not one case,
+and the difference decides which of them a law licenses.
+
+> **Revised in round 2 (DEV-798 finding 2).** The draft claimed F1/F2
+> license both. It does not. What follows narrows the claim to what the
+> cited laws prove; the original sentence is withdrawn rather than
+> softened.
+
+Read the pin, which states each strategy's victim in its own prose:
+
+- **`sliding`** — *"will add new messages and drop old messages if the
+  `PubSub` is at capacity"* (`PubSub.ts:393-394`). The **newest
+  publication always survives.**
+- **`dropping`** — *"will drop new messages if the `PubSub` is at
+  capacity"* (`PubSub.ts:346-347`); `publish` returns `false` and the
+  worked example in the same docstring shows `msg4` rejected while
+  `["msg1","msg2","msg3"]` are retained. The **newest publication is
+  the one discarded.**
+
+That asymmetry is the whole finding. A-8b's licence is *"the latest
+local join absorbs every skipped state"* — it is a statement about the
+**latest** state being retained, and it licenses **coalescing**, which
+is exactly `sliding`. Under `dropping`, the final cumulative join can
+be the message that is rejected, and there is no later publication to
+carry it: the subscriber sits on a stale join with no repair path
+inside the fan-out. **F2 does not cover this.** F2 says a terminal
+state is invariant under *permutation and duplication of the same
+support*; omission changes the support, and no rung — not even the top
+of the ladder — turns a missing contribution into a duplicate one.
+
+So the licensed set is narrower than the draft claimed:
+
+| Strategy | Loses | Licensed by | At which rung |
+| --- | --- | --- | --- |
+| `bounded` (backpressure) | nothing | needs no rung claim | any |
+| `sliding` | oldest | F1/F2 **+ A-8b's coalescing licence** — the retained newest join absorbs the skipped intermediates | monotone-lattice payloads only |
+| `dropping` | **newest** | **nothing in this record** | none — it needs a separate recovery or eventual-refresh law, and this seat does not mint one |
+
+`dropping` is therefore not on offer here. A watch feed that wants it
+owes a recovery law — the obvious candidate is the recovery-by-read
+that access pattern 7 already carries (*"chatter, recovery by read"*),
+which would make the lost join recoverable by a `Cells.read` the
+subscriber issues anyway. **That is a candidate, not a licence**, and
+it is filed in §9 rather than granted here.
+
+A lossy fan-out over a positional or counting payload silently corrupts
+it at either strategy. So the strategy is still not a tuning knob; it
+is a claim about the payload's rung — and now also a claim about which
+end of the sequence the deployment can afford to lose. §5 makes the
+first a type; the second stays prose until a recovery law exists.
 
 This is the same trap entry 0026 of the API log pre-registered against
 for CAS disciplines — three write paths that *look* alike and are
@@ -460,8 +529,10 @@ export const share: {
 }
 ```
 
-Note `strategy` reappears here, with `"suspend"` as the lossless
-option. Same rung question, same answer.
+Note `strategy` reappears here with the same three names, and
+`"suspend"` as the lossless option. Same rung question — and the same
+narrowed answer: `"suspend"` always, `"sliding"` at a monotone-lattice
+payload, `"dropping"` nowhere this record licenses.
 
 ### 3.3 Digest-keyed memoization ↔ `Cache` — **the forever-valid law**
 
@@ -606,14 +677,66 @@ timeToLive: (exit) => Exit.isSuccess(exit) ? Duration.infinity : Duration.zero,
 That one line is the law in executable form, and it should be read as
 the reference implementation every future digest memo copies.
 
-**Where the law licenses memos that do not exist yet.** §7 lists them;
-the two largest are `truth/SchemaCanonical.ts:341`, where
+**Where the law licenses memos that do not exist yet — and where the
+draft over-reached.**
+
+> **Revised in round 2 (DEV-798 finding 3).** The pre-round-2 draft put
+> both of §7's memo sites (H8 and H9) inside memo permanence. **Neither
+> satisfies this entry's own premise**, and the finding is correct. The
+> claim is withdrawn for both, and each is re-classified below. This
+> narrows the law's cited consumers from two to zero and leaves
+> `ResolveCache` — already ratified at G-3 — as its only current
+> instance. That is a smaller record than the draft, and the smaller
+> one is the true one.
+
+The premise is exact and it is the whole test: `k` is a **digest** and
+`f` returns only values it has **re-derived against `k`**. Both clauses
+have to hold.
+
+**H8 (`truth/SchemaCanonical.ts:341`) fails the key clause.**
 `canonicalWriter` builds a fresh `Map<SchemaAST.AST, Writer>` and
-re-walks the whole schema tree **on every call** — including once per
-record inside `roundTripsCanonically` (`:388`) — and
-`internal/anchors.ts:129-152`, where every checkpoint canonicalizes the
-state twice and re-writes a digest-keyed entry the store already holds.
-Both are keyed by something immutable. Both are inside the law.
+re-walks the whole schema tree on every call — once per record inside
+`roundTripsCanonically` (`:388`). The waste is real and it is still the
+largest such site found. But the natural key is a `SchemaAST.AST`
+**object reference**, and object identity is not a digest: two
+structurally identical ASTs are two keys, one AST mutated in place is
+one key with two meanings, and nothing in the entry's premise speaks to
+either. So H8 is an **ordinary bounded memo** — correct, worth
+building, and outside this law. It would *enter* the law only if keyed
+by a digest of the schema, which the package can compute
+(`digestOfCanonicalBytes`) but does not compute here; whether paying
+that derivation to buy permanence is worth it is a measurement A-2
+owes, not a claim this section makes.
+
+**H9 (`internal/anchors.ts:129-152`) fails the re-derivation clause,
+and more sharply.** The draft proposed memoizing `Digest → ensured` —
+that is, memoizing *"this carrier currently contains these bytes"*.
+That is not a value re-derived from the digest; it is an **assertion
+about a carrier's present state**, and AE-2 explicitly permits carriers
+to be stale, partial, or wrong. A bucket loss, a replacement, or a
+retention sweep makes the cached `ensured` **false while the digest
+still names the same bytes** — a wrong answer served forever, which is
+precisely the failure the word "forever-valid" would have promised
+could not happen. C3 licenses a verified `digest → value` memo. It does
+not license a `digest → the store has it` memo, and the difference is
+the one this whole subsection exists to police. **Refused, and refused
+by this record's own anti-clause** rather than by an outside objection:
+"whatever is current" is head-relative, and a carrier's contents are
+whatever is current.
+
+What survives at H9 is the *other* half of the finding, which needs no
+memo at all: the checkpoint canonicalizes the state **twice**, and the
+second canonicalization is pure recomputation of a value already in
+hand. Deleting a redundant pure computation is not a cache and claims
+nothing. The redundant store write stays, because eliding it is exactly
+the carrier assertion just refused.
+
+**The lesson this record keeps, since it cost two of its own
+examples.** A digest key is necessary and not sufficient. The value
+must be *re-derived from* the key, not *looked up beside* it — and an
+effect whose answer depends on a carrier is beside it, however
+digest-shaped its argument looks. §7's H8/H9 rows and §8's A-2 are
+re-scoped accordingly.
 
 **What it does not claim.** Not freshness (the word is meaningless on
 an immutable keyspace). Not absence reasoning (a failed resolve is
@@ -646,13 +769,55 @@ means it rides *"options in the environmental band, fenced out of the
 fluent surface"*.
 
 Concretely, and this is the design consequence: **no public Plait
-surface gains a `getMany`, a `resolveAll`, or a batch verb.** The
-service *interfaces* gain `getMany` because a resolver must sit on
-something (§8's A-5), but the fluent surface callers write does not
-change at all — `resolve(digest)` keeps its exact signature and simply
-coalesces underneath. A version of this proposal that exposed batching
-to callers would have smuggled carriage into meaning and should be
-refused.
+surface gains a `getMany`, a `resolveAll`, or a batch verb.**
+
+> **Revised in round 2 (DEV-798 finding 4).** The draft stated that
+> sentence and then broke it in the next clause, by putting `getMany`
+> on `CatalogService` and `PayloadService`. Those interfaces **are
+> public**: `packages/plait/src/index.ts:19` re-exports the whole
+> `planes/Catalog.js` namespace, so `CatalogService`, `PayloadService`,
+> `Catalog`, and `Payloads` all reach package consumers. A `getMany`
+> there is a public batch verb wearing an internal-sounding name, and
+> the finding is correct that the record contradicted itself. The
+> placement is corrected below; the *rule* is unchanged, because the
+> rule was never the problem.
+
+The rule §7 states is that carriage **never appears in the pattern's
+signature** and is confined to the environmental band (§7.4). A
+resolver does have to sit on something — but that something must sit
+**below the exported plane interfaces**, not on them. The corrected
+placement:
+
+- **The batch seam lives in `internal/`**, which the barrel does not
+  export (`src/internal/` has no re-export line in `index.ts`, and
+  `CasJoin` is already package-private by exactly this mechanism). It
+  is a store-level multi-get the *layer implementations* of `Catalog`
+  and `Payloads` consume.
+- **`CatalogService` and `PayloadService` are unchanged** — still
+  `get`/`put`, still single-digest, still the shape the public-effects
+  signature wall records. A-5's acceptance is that **the wall does not
+  move**, which is now a checkable statement rather than an intention.
+- **`Resolved.resolve` is unchanged** and coalesces underneath, which
+  was always the point.
+
+There is a second, weaker placement worth naming so the choice is on
+the record rather than assumed: `PayloadService`'s own doc already
+declares it *"package-internal plumbing, never an agent-facing
+surface"* (`planes/Catalog.ts:62-64`) — so one could argue a `getMany`
+there is internal by intent. **This record does not take that
+argument.** The type is exported; intent stated in a docstring is not a
+fence, and treating it as one is how a public surface grows by
+accident. If a batch verb on an exported interface is ever wanted, it
+needs a ruling that says so, not a comment that hopes so. (That
+mismatch — an interface documented as internal and exported anyway — is
+filed on its own in §9; it is a finding about the barrel, not about
+batching.)
+
+A version of this proposal that exposed batching to callers would have
+smuggled carriage into meaning and should be refused. The draft did
+that in one clause while forbidding it in the previous sentence, which
+is the more instructive failure: **the fence has to be checked against
+the barrel, not against the intent of the module.**
 
 **The same cold-entry fact as PubSub.** `RequestResolver` appears
 **nowhere** in `docs/`, `scratch/`, or `packages/`, and neither does
@@ -822,41 +987,120 @@ a bypassed proof still reads as a proof.
 
 **The proposal (`proposed`).**
 
-1. **The algebra becomes a service, typed from the corpus.** Each
-   DECLARED algebra's operations — `combine`, `initialValue`, `step`,
-   `identical` — are provided once through `Context.Service` + `Layer`,
-   in the estate's existing house style (nine tags already use it; the
-   pattern is `class X extends Context.Service<X, XService>()("tag")`
-   with a hand-written `static readonly layer`, since the pin
-   auto-generates no `.layer` and its options bag carries only `make`).
-   `CasJoin` collapses into it through `joinOf` so there is one algebra
-   vocabulary, and `cellJoin` earns its brand by construction instead
-   of forgoing it. The layering rule is the storage record's, not a new
-   one: **layer by plane, not by NATS construct** (§7.3), which is why
+1. **The algebra's implementation becomes a service. Its identity does
+   not.**
+
+   > **Revised in round 2 — this is the blocker DEV-798 raised, and the
+   > finding is correct.** The pre-round-2 draft proposed *one ambient
+   > `Context.Service` supplying "the algebra's operations"*. An
+   > ambient tag is a **second source of algebra identity**: whichever
+   > Layer the runtime happened to provide decides what `combine`
+   > means, so configuration chooses meaning and two runtimes reading
+   > the same declaration can fold it differently. That is the exact
+   > failure the algebraic-register record §4.5 rules against —
+   > *"Layers are not a second source of algebra identity"* — and the
+   > draft walked into it while quoting the fence three paragraphs
+   > later. Quoting a fence is not standing behind it. The design below
+   > is §4.5's, adopted rather than re-derived.
+
+   **The two tiers, which are the register record's and not this
+   seat's.** An algebra declaration's digest must resolve to an
+   implementation, and TypeScript can carry that at compile time for
+   the algebras known at generation time and not for the rest. §4.5
+   splits it honestly and this record inherits the split unchanged:
+
+   - **Tier 1 — cataloged algebras, compile time.** Each algebra the
+     corpus knows gets a **generated, digest-keyed service tag**. A
+     program that folds `count` names `CountAlgebra` in its
+     requirements channel; `Layer.provide` discharges exactly those
+     tags and Effect's own `RIn | Exclude<RIn2, ROut>` arithmetic does
+     the checking. A runtime that never provided the layer **fails to
+     typecheck**. The tags are *generated from the catalog*, so there
+     is one per digest and no hand-written tag names an algebra.
+   - **Tier 2 — agent-declared algebras, run time.** An algebra
+     declared during a session has a digest nobody knew at generation
+     time. It resolves through **one `Algebras` catalog service** —
+     `resolve(digest: AlgebraDigest<Digest>) → implementation` — and an
+     unprovided digest is a **taught refusal, never a type error**.
+
+   **What the Layer may and may not do, stated as the fence it is.** A
+   Layer **supplies an implementation for a digest**. It never names an
+   algebra, never mints or computes a digest, never brands one, and
+   **never overrides a rung**. Two Layers supplying the same digest
+   must be interchangeable; two supplying *different* implementations
+   for one digest is a conformance defect the corpus catches, not a
+   configuration choice. Concretely, and this is the part the draft
+   lacked: **the service interface has no operation that takes an
+   implementation without a digest**, because such an operation is the
+   ambient tag re-introduced under another name.
+
+   **Why configuration cannot reach meaning — KM-14/KM-15.**
+   Requirements are **holes** and provisions are **positioned facts**.
+   A fold's algebra is pinned by its *declaration*, which is cataloged
+   data with a digest; the environment fills a hole, and filling a hole
+   cannot change which hole was opened. So there is no knob anywhere in
+   this proposal that selects *which* algebra a fold uses — the
+   declaration already chose, and the Layer only answers the digest the
+   declaration named. A design in which `Layer.provide` changed a
+   fold's meaning would have inverted that, and would be refused.
+
+   **The door, which already does this and needed only to be cited.**
+   §4.5 says an unresolved algebra is caught *"at declaration admission
+   rather than at execution — one hop earlier than a runtime refusal,
+   and by machinery that already exists"*, naming the existing
+   forward-reference check. That machinery is real and this seat read
+   it: the reference door refuses a `join` whose
+   `strategy = { _tag: "declaredAlgebra", algebra }` names an id absent
+   from the catalog under kind `"algebra"`, with reason
+   **`forward-reference`** — law *"pins name already-admitted digests
+   (c7_pin_well_founded)"*, repair *"declare the referent first; the
+   reference graph is a DAG by admission order"*
+   (`test/KernelDoor.reference.ts:386-388`;
+   `KernelTables.generated.ts:180-184`). So the algebra service is not
+   a new judgment point. **It resolves only digests the door already
+   admitted**, and it raises no refusal of its own invention.
+
+   *A filing this produced, carried in the open because it cuts against
+   a record this seat is otherwise adopting:* §4.5's tier-2 sketch
+   names the refusal `unresolved-algebra`, and **`unresolved-algebra`
+   is not a corpus reason.** `KERNEL_REFUSAL_REASONS` is closed at
+   sixteen and does not contain it. Under law 1 a hand-named refusal
+   beside the generated table is a twin refusal enum — the very example
+   the law gives. The corpus-lawful spelling of that condition is
+   `forward-reference` at admission, which is what the door actually
+   emits. Filed in §9, not fixed here.
+
+   **What the types are, and the debt that is left honest.** Identity
+   comes from the corpus: the key is `AlgebraDigest<Digest>`, the
+   generated alias (`KernelTables.generated.ts:304-305`) instantiated
+   at the runtime carrier per §1.1. `algebra` is decl kind rank 5 of
+   the closed twelve, so nothing is minted. But the **operations
+   record** — `combine`, `initialValue`, `step`, `identical` — has **no
+   corpus shape**. `truth/Algebra.ts`'s `DeclaredAlgebra<State>` is
+   hand-written, and so is `internal/cas.ts`'s `CasJoin<A>`. Merging
+   the two through `joinOf` (so `cellJoin` earns its brand instead of
+   forgoing it) takes the tree from two hand-written twins to one — a
+   real improvement and **not a discharge of law 1**. The remaining one
+   is **staged debt wearing an explicit waiver that cites DEV-796**,
+   stated here so no reader mistakes a merge for a unification. This
+   record does not re-bless it as finished.
+
+   *A second filing from the same reading:* the generated brand exists
+   and the generated schema does not use it.
+   `KernelMergeStrategy`'s lawful arm is
+   `Schema.TaggedStruct("declaredAlgebra", { algebra: KernelNat })`
+   (`KernelSchemas.generated.ts:702-704`) — a bare nat where
+   `AlgebraDigest` is sitting in the same emitted file. That is the one
+   place a generated shape declines its own generated brand, and it is
+   the join point any algebra work will cross. §9.
+
+   **Placement is unchanged** and follows the storage record's rule,
+   not a new one: **layer by plane, not by NATS construct** (§7.3), so
    the algebra service belongs in `truth/` beside the ladder and not
-   beside any adapter.
-
-   **Revised for the type-kernel ruling.** The service's *sorts* come
-   from the generated tables, not from this record: the algebra it
-   supplies is keyed by `AlgebraDigest<Digest>` — the generated alias
-   at the runtime carrier (§1.1) — and any refusal it raises names a
-   `KernelRefusalReason`, with law and repair looked up from
-   `KERNEL_REFUSAL_BY_REASON`. `algebra` is one of the twelve
-   `KERNEL_DECL_KINDS`, so this key exists today and needs nothing
-   minted. The pre-ruling draft left the key as `truth/Digest`'s
-   unindexed brand, which is precisely the parallel shape the ruling
-   forbids: it cannot distinguish an algebra digest from a lane digest,
-   and the generated family can.
-
-   **The layer-identity fence still binds and is worth restating here**,
-   because a shared algebra service is exactly where it could be
-   breached: a Layer **supplies an implementation for a digest and
-   never names, brands, or overrides an algebra**. The service resolves
-   `AlgebraDigest<Digest> → operations`; it does not decide what an
-   algebra *is*, does not mint identity, and two Layers supplying the
-   same digest must be interchangeable. A Layer that computed or
-   assigned a digest would be the two-sources failure the register
-   record rules against.
+   beside any adapter. The house style is the tree's existing one —
+   `class X extends Context.Service<X, XService>()("tag")` with a
+   hand-written `static readonly layer`, since the pin auto-generates
+   no `.layer`.
 2. **One replay driver.** The five loops become one
    `Stream.mapAccumEffect`-based driver parameterised by the algebra
    service, which `pump`, `chaos`, `replaySuccessors` and
@@ -949,14 +1193,66 @@ which runtime combinators are sound.* A combinator's soundness
 side-condition **is** a law atom — that is the whole observation, and
 it is why the extension is mechanical rather than new physics:
 
-| Quotient | Laws (DEV-764) | Licensed at runtime | Refused at that rung |
-| --- | --- | --- | --- |
-| `positioned` | `Monoid` | `Stream.mapEffect` at concurrency 1; ordered pull; `PubSub.bounded`; `Stream.share({strategy:"suspend"})` | any `unordered`; `sliding`/`dropping`; `Stream.changes`; partition merge |
-| `multiset` | `+ Commutative` | `Stream.mapEffect({ concurrency: n, unordered: true })`; `Stream.broadcast`; per-partition folds merged (F4) | `Stream.changes`; lossy fan-out |
-| `set` | `+ Idempotent, Bounded` | `Stream.changes` / `changesWith` (dedup); `sliding`/`dropping` PubSub; `replay`; at-least-once redelivery absorbed (F2) | — (the top of the ladder for reads) |
+> **Revised in round 2 (DEV-798 finding 5), and narrowed twice.** The
+> draft's table read as though a rung licensed a combinator *whatever
+> the combinator was applied to*. It does not, and the finding names
+> the gap precisely. Commutativity of a fold's `combine` licenses
+> **merging that fold's results**; it says nothing about an arbitrary
+> effectful callback handed to `Stream.mapEffect`, whose *external
+> effects* and *failure selection* can be positional however
+> commutative the algebra is. Idempotence likewise licenses duplicate
+> **contributions**, not duplicate arbitrary effects. The scope
+> condition below is the repair, and it is a real narrowing: it removes
+> the general `mapEffect` claim from the table entirely.
 
-Read the pin's signatures against that table and the correspondence is
-exact, not analogical:
+**The scope condition, stated before the table because the table is
+false without it.** A law brand constrains a combinator **only when the
+combinator's callback IS the declared algebra's own operation** — its
+`step` or its `combine` — supplied by the shared service of §4 and not
+by the caller. When the callback is caller-supplied and arbitrary, the
+brand constrains nothing, because the brand is a claim about the
+algebra's equations and an arbitrary effect is not in their language.
+So the rung-gated surface is a **closed set of algebra-parameterised
+combinators** (`foldWith(algebra)`, `mergePartitions(algebra)`,
+`dedupeStates(algebra)`), **not** a rung-flavoured re-export of
+`Stream`. A surface that let a caller pass any `Effect` and then
+claimed a rung licensed reordering it would be the overstatement this
+paragraph exists to block.
+
+With that condition, and with `dropping` removed per §3.2:
+
+| Quotient | Laws (DEV-764) | Licensed **when the callback is the declared algebra's operation** | Refused at that rung |
+| --- | --- | --- | --- |
+| `positioned` | `Monoid` | ordered pull; sequential `step`; `PubSub.bounded`; `Stream.share({strategy:"suspend"})` | any unordered execution; `sliding`; `Stream.changes`; partition merge |
+| `multiset` | `+ Commutative` | per-partition folds merged (**F4 verbatim**); unordered *combination of fold results* | `Stream.changes`; any lossy fan-out |
+| `set` | `+ Idempotent, Bounded` | dedup of *states* via `Stream.changes`/`changesWith`; at-least-once redelivery of *contributions* absorbed (**F2 verbatim**); `sliding` fan-out; `replay` | `dropping` (§3.2 — omission is not duplication at any rung) |
+
+**What the brand cannot carry, stated plainly so the table is not read
+past its edge.** Three things stay outside it at every rung:
+
+1. **Arbitrary callback effects.** `Stream.mapEffect(f)` for a
+   caller's `f` is unconstrained by any algebra brand. If `f` writes a
+   log line, sends a message, or allocates an id, reordering it is a
+   change the fold's commutativity never licensed.
+2. **Failure selection.** Which error surfaces first from a
+   concurrently-executed batch is positional, and no rung makes it
+   otherwise. An algebra can be commutative while its consumer's
+   error-reporting is not.
+3. **Transport loss.** Already stated in the fence below and unchanged:
+   a dropped message is an absent contribution, not a duplicate one.
+
+**Consequence for the ticket, which is a demotion.** A-10 was already
+blocked behind KM-17's corpus groups; it is now *also* dependent on the
+shared algebra service of §4 existing, since the scope condition is
+what the brand rides. Until the combinator surface is specified to that
+depth, **the promised compile error does not follow from F2/F4** and
+this record does not claim it does. What §5 claims after the narrowing
+is smaller and defensible: *the license table's rows are real, and they
+become types exactly at the surfaces where the algebra's own operation
+is the thing being combined.*
+
+Read the pin's signatures against that table, under the scope
+condition, and the correspondence is exact rather than analogical:
 
 ```ts
 export const mapEffect: {
@@ -968,22 +1264,40 @@ export const changes = <A, E, R>(self: Stream<A, E, R>): Stream<A, E, R>  // dro
 ```
 
 `unordered: true` says *the consumer does not care about arrival
-order*, which is commutativity and nothing else. `Stream.changes`
-collapses repeats, which is sound exactly when repeating is a no-op —
-idempotence and nothing else. Neither is a new law; each is an existing
-law atom wearing a combinator's name. The multiset row is F4 verbatim
-(*for commutative-class algebras, merge of per-partition folds =
-sequential fold*); the set row is F2 verbatim (*terminal state
-invariant under permutation and duplication*).
+order*. **When the consumer is the algebra's own `combine`**, that is
+commutativity and nothing else, and F4 is the licence verbatim (*for
+commutative-class algebras, merge of per-partition folds = sequential
+fold*). When the consumer is a caller's arbitrary `f`, `unordered:
+true` is a claim about **`f`**, and the algebra's brand is silent about
+`f`. The draft elided that distinction; it is the finding, and the
+signature above is where it shows — `mapEffect` takes `f` as a
+parameter, so nothing in its *type* ties `f` to the declared algebra.
+That is why the rung-gated surface has to expose
+algebra-parameterised combinators rather than re-export `mapEffect`
+with a `Laws` type parameter bolted on: **the bolt would type-check and
+prove nothing.**
+
+`Stream.changes` collapses repeats, which is sound exactly when
+repeating is a no-op — idempotence and nothing else — and again only
+for the *declared state operation*, which is F2's actual subject
+(*terminal state invariant under permutation and duplication*). Neither
+is a new law. Each is an existing law atom wearing a combinator's name,
+**over the operand the law is about.**
 
 **Why this belongs in types and not in a review checklist.** The estate
 already ruled that carrier misuse should be a compile error, not a
-review catch (estate-api-development law 4). `unordered: true` on a
-positional payload is carrier misuse with a shorter name. Since the
-brands are already phantom and already ride `DeclaredFold`, a shared
-stream service can take the fold's `Laws` parameter and expose only the
-combinators that rung licenses — the same trick `LawsFor<LaneQuotient<P>>`
-already plays at the declaration door, one level down.
+review catch (estate-api-development law 4). Unordered *combination of
+a positional fold's results* is carrier misuse with a shorter name, and
+that is the case the types can catch. Since the brands are already
+phantom and already ride `DeclaredFold`, an algebra-parameterised
+combinator surface can take the fold's `Laws` parameter and expose only
+the combinators that rung licenses — the same trick
+`LawsFor<LaneQuotient<P>>` already plays at the declaration door, one
+level down. **What it cannot catch is a caller's own effect**, and the
+honest form of law 4 here is: *the combinator surface makes the
+algebra's misuse a compile error and leaves the caller's callback where
+it was, under review.* Claiming more would be claiming a type system
+that inspects arbitrary effects, which nothing at the pin does.
 
 **Revised for the type-kernel ruling: the ladder is a sketch until the
 corpus carries it.** DEV-764's brands are declared in
@@ -1024,19 +1338,72 @@ exactly the error this paragraph exists to block.
 
 ---
 
-## 6. The host contract: the generated candidate form
+## 6. The door: consumed, not proposed
 
-The ruling directs this record's host-contract section at the generated
-candidate form, which is epic stage 4 and the thing **T-door (DEV-763)**
-is blocked on. This section states what that form actually is at HEAD,
-what a host contract over it must carry, and two consequences that no
-prior record in this shelf states — both of which are constraints on §3
-rather than freedoms.
+> **Rewritten in round 2 on the coordinator's amendment.** The
+> pre-round-2 §6 proposed a *host contract* over the generated
+> candidate form, targeting T-door (DEV-763) as unbuilt work. **It is
+> built.** PR #131 ships the door and the seam, and a design record
+> that proposes a contract beside a shipped one is doing exactly what
+> this record accuses other surfaces of: minting a twin. §6 is
+> therefore no longer a proposal. It records what shipped, checks it
+> against what this record needed, and states the one thing it still
+> constrains in §3.
 
-**What ships today.** `kernel/KernelDoor.ts` is types only, and says so:
-*"**No door ships in this package.** What ships here is the type of one:
-a hand-written implementation is checked verdict-for-verdict against the
-model's emitted admission vectors."* The form is:
+**What ships (PR #131, `agent/eng-cx-pc/DEV-763`, open at time of
+writing).** Three artifacts, and none of them is this seat's to design:
+
+- `kernel/Door.ts` — the shipping door implementation, replayed
+  verdict-for-verdict against the model's admission vectors by the
+  conformance harness.
+- `kernel/Admission.ts` — **the one seam, as an Effect service**:
+  `class Admission extends Context.Service<Admission, AdmissionService>()("@foldlab/plait/Admission")`,
+  with `admit: (candidate: KernelCandidateAct) => Effect<KernelSentence, Refusal>`,
+  `Admission.layer(context)` over the shipped door and
+  `Admission.fromDoor(door)` for the conformance target.
+- A module-level `admit` accessor that **hosts re-export rather than
+  wrap** — its own doc says the service in the environment stays *"the
+  only replaceable boundary"*, so a fixture may supply a conformance
+  door but no CLI, carriage, or daemon fixture can replace judgment.
+
+`src/index.ts` gains `export * as Admission` — so the seam is public
+and the door contract (`KernelDoor`) is exported beside it.
+
+**What this record needed from a host contract, checked against what
+shipped.** Every clause the pre-round-2 §6.2 argued for is present in
+the shipped code, which is the strongest possible outcome for a
+proposal and the correct reason to delete it:
+
+| §6.2 wanted | `Admission.ts` ships |
+| --- | --- |
+| the door stays **total** so it stays comparable to the model's vectors | `KernelDoor.admit` is unchanged: synchronous, total, no error channel |
+| the host surface fails in the **error channel** (entry 0022) | `admit` returns `Effect<KernelSentence, Refusal>`; a refused verdict becomes `Effect.fail` |
+| law and repair **looked up**, never restated | `structuralRefusal({ kind: "kernel-admission", law: taught?.law … })` reading `KERNEL_REFUSALS` by reason |
+| **one** translation between the two | one private `taughtRefusal`, and a codec disagreement is `Effect.die` — a defect, not a refusal the language teaches |
+
+The one detail the proposal did not anticipate, and which is better
+than what it asked for: the refused **candidate itself rides `got`**,
+so a repair loop can pin what it is answering. That is refusal parity
+carrying its own subject, and this seat had not thought to ask for it.
+
+**So the tier flips.** What §6 states is no longer `proposed`. The
+totality-inward/error-channel-outward join is **shipped (PR #131,
+pending merge)**, and API log entry 0035 is re-tiered to match. The
+adoption ladder's A-11 — "the host contract" — is **withdrawn**, since
+its scope is now someone else's merged work; what replaces it is
+strictly smaller and named in §8.
+
+**What is left for this record, and it is one sentence.** The seam
+takes a `KernelCandidateAct` whose referents are catalog indices, and
+that fact — not the contract, which is settled — is what constrains
+§3.3 and §3.4. §6.1 below is therefore the only subsection of §6 that
+still does work, and §6.2 is kept as the check table above rather than
+as an argument.
+
+**The form the seam takes, for readers who need it in one place.**
+`kernel/KernelDoor.ts` remains types-only and is now accurately
+described as *the contract `Admission` implements* (its barrel comment
+in #131 says exactly that). The form:
 
 ```ts
 export interface KernelDoor {
@@ -1069,20 +1436,26 @@ is two arrays of those. So the candidate layer addresses **positions in
 an admitted catalog**, not content addresses.
 
 **The consequence for §3, stated plainly because it is a constraint the
-pre-ruling draft did not have.** A host contract over this form must
-carry the catalog and perform a *digest ⇄ index* translation at the
-seam, and that translation is itself a lookup that can fail — a
-referent may resolve in the catalog and *still* lie outside the pinned
-universe, which `KernelDoorContext`'s own doc calls out as its own
-refusal. Two things follow:
+pre-ruling draft did not have.** Any host over this form carries the
+catalog and performs a *digest ⇄ index* translation at the seam — which
+is what `Admission.layer(context)` does, taking the
+`KernelDoorContext`'s `catalog` and `pinned` arrays — and that
+translation is itself a lookup that can fail: a referent may resolve in
+the catalog and *still* lie outside the pinned universe, which
+`KernelDoorContext`'s own doc calls out as its own refusal. Two things
+follow, and neither is settled by #131 shipping the seam:
 
 1. **The translation is the natural batching site, and it is a better
    one than §3.4's.** Admitting a candidate whose payload names K
    referents needs K catalog lookups that are mutually independent —
    the exact `RequestResolver` shape, at a seam the one language
    already owns, keyed by `KernelRef` rather than by a fabric-era
-   digest. §3.4's proposal should be read as landing *here* once stage
-   4 exists, not beside it.
+   digest. §3.4's proposal should be read as landing *here*, not
+   beside it. **Round-2 note:** the seam now exists —
+   `Admission.layer(context)` takes the `KernelDoorContext` carrying
+   those two `KernelRef` arrays — so this is no longer "once stage 4
+   exists". It is a batching site behind a shipped service, which is
+   why §8's replacement ticket can be written against something real.
 2. **The digest memo of §3.3 does not automatically extend to the
    catalog.** A catalog index is a position in an admitted set, and an
    admitted set grows. Index → value is stable only within one
@@ -1093,47 +1466,69 @@ refusal. Two things follow:
    sharpest new fence the ruling produced, and it narrows this record
    rather than widening it.
 
-### 6.2 The door is total; the estate's surfaces are not
+### 6.2 Totality inward, error channel outward — shipped, not proposed
 
-`admit` returns a `KernelVerdict` **synchronously and totally** —
-candidate in, verdict out, no error channel, no `Effect`. API log entry
-**0022** rules that every fallible Plait surface returns
-`Effect<A, Refusal, R>` with refusals on the typed error channel. These
-are not in conflict, but the join between them has never been written
-down, and a host contract is exactly where it must be:
+The join between a total door and entry **0022**'s rule (*every fallible
+Plait surface returns `Effect<A, Refusal, R>` with refusals on the typed
+error channel*) had never been written down. This record proposed one
+arrangement. PR #131 shipped **that** arrangement, and the check table
+in §6's opening is the comparison.
 
-- **The door itself stays total.** That is what makes it comparable
+The sentence stands as the contract — **totality inward, error channel
+outward, one translation between them, and the translation is a table
+lookup rather than a mapping anybody writes** — with one change of
+tier: it is no longer this seat's proposal to make. It is a description
+of `kernel/Admission.ts`. Entry 0035 is re-tiered accordingly and
+carries the citation.
+
+Two details worth keeping because they are *why* the arrangement is
+right, and a future reader will need them if either side is ever
+questioned:
+
+- **The door stays total** because that is what makes it comparable
   verdict-for-verdict against the model's emitted admission vectors,
-  which is the whole reason to trust it. Wrapping `admit` in an
-  `Effect` error channel would make the conformance comparison
-  awkward and buys nothing — a total function is the stronger
-  artifact.
-- **The host surface above it fails in the error channel**, by mapping
-  `{ verdict: "refused", reason }` to a refusal value. The taught law
-  and repair are **looked up** from `KERNEL_REFUSAL_BY_REASON`, never
-  restated — `KernelDoor.ts` says this in its own words (*"The refusal
-  vocabulary is not restated here. It is read from the generated
-  tables, so a reason this package can name is a reason the model
-  emitted"*).
-
-So the contract is: **totality inward, error channel outward, one
-translation between them, and the translation is a table lookup rather
-than a mapping anybody writes.** That preserves 0022 and preserves
-conformance, and it is the only arrangement this seat can find that
-preserves both.
+  which is the entire reason to trust it. #131 preserves this exactly:
+  `KernelDoor.admit` is untouched, and the `Effect` lives only in the
+  service above it.
+- **A codec disagreement is not a refusal.** #131's seam calls
+  `Effect.die` when an admitted encoding fails to decode, with the
+  reasoning in its own comment: the door only emits encodings
+  `encodeAct` produced, so reaching that branch means door and codec
+  disagree — *"a defect, not a refusal the language teaches."* That
+  distinction is the taught-refusal discipline applied to its own
+  boundary, and this record endorses it without having asked for it.
 
 ### 6.3 What this section does not resolve
 
-The refusal *carrier* is still doubled. `KERNEL_REFUSAL_BY_REASON`
-returns a `KernelRefusalRow`; `truth/Refusal.ts` ships
+The refusal *carrier* was doubled: `KERNEL_REFUSAL_BY_REASON` returns a
+`KernelRefusalRow`; `truth/Refusal.ts` ships
 `StructuralRefusal | AbsenceRefusal` as `Schema.TaggedError`s, and all
-68 rows of the public signature wall are typed in the latter. The
-ruling settles the *direction* — the generated table is the language,
-so the fabric-era pair is the parallel shape — but the bridge is epic
-stage 3's work and not this record's to design. What §7 previously
-filed as "two refusal vocabularies, no bridge" is therefore no longer a
-neutral observation: it is a **debt with a known direction**, and it is
-re-tiered accordingly below.
+68 rows of the public signature wall are typed in the latter.
+
+**Round 2 — two other seats have closed most of this, and the record
+should say so rather than keep filing it.**
+
+- **The bridge exists.** #131's `Admission.ts` translates a
+  `KernelRefusalReason` into a `StructuralRefusal` of kind
+  `kernel-admission`, with `law`, `repair`, and applicability read from
+  `KERNEL_REFUSALS`. So kernel refusals now reach the fabric-era
+  carrier through one table lookup at one seam — which is exactly the
+  bridge this subsection said was missing, built by the seat that owned
+  it.
+- **The vocabulary is being generated.** PR #133 (DEV-808) moves
+  `truth/Refusal.ts`'s 36 hand-written `StructuralRefusalKind` literals
+  into a generator input and emits the table and schema projections,
+  with a containment gate and a committed hand-minted negative control.
+  That is law 1 applied to the *runtime* vocabulary, and it converts §7
+  K2 from a standing defect into work in flight with a ticket.
+
+What is left after both is narrow and this record does not attempt it:
+the two vocabularies remain **two rosters** — 16 kernel reasons and 36
+runtime kinds, with #133's own PR body recording the corpus misses as
+staged debt owned by DEV-804. Whether they should ever become one
+roster is that ticket's question. §7's K2 row is re-tiered below from
+"defect with a known direction" to "**in flight, PR #133**", which is a
+demotion this record makes against its own prior filing.
 
 ---
 
@@ -1173,7 +1568,8 @@ tables:
 | # | Site | Finding | Severity |
 | --- | --- | --- | --- |
 | K1 | `truth/Algebra.ts` (DEV-764) vs `KernelTables.generated.ts:253-255` | **two brand mechanisms** — seven `unique symbol` phantoms vs `KernelBrand<Tag extends string>`; and `rungLaws` is a hand-maintained twin of KM-17's not-yet-emitted `law`/`rung` corpus groups | high — it is the ruling's exact failure mode, in the module the ruling most concerns |
-| K2 | `carriage/CasDaemon.ts:75-86` vs `truth/Refusal.ts` | **two refusal carriers** — `KernelRefusalRow` (generated) vs `StructuralRefusal \| AbsenceRefusal` (fabric-era, and the type of all 68 signature-wall rows) | **re-tiered**: the ruling settles that the generated table is the language, so the fabric-era pair is the parallel shape. The bridge is epic stage 3's work, not this record's |
+| K2 | `carriage/CasDaemon.ts:75-86` vs `truth/Refusal.ts` | **two refusal carriers** — `KernelRefusalRow` (generated) vs `StructuralRefusal \| AbsenceRefusal` (fabric-era, and the type of all 68 signature-wall rows) | **re-tiered twice, and downward the second time**: the ruling settled the direction, and then two seats built it. PR #131 ships the bridge (kernel reason → `StructuralRefusal` of kind `kernel-admission`, taught content from `KERNEL_REFUSALS`); PR #133 (DEV-808) generates the runtime roster with a containment gate and a hand-minted negative control. **In flight, not a standing defect** — this record withdraws it as a finding (§6.3) |
+| K3 | `KernelSchemas.generated.ts:702-704` | `KernelMergeStrategy`'s lawful arm is `Schema.TaggedStruct("declaredAlgebra", { algebra: KernelNat })` — a **bare nat where `AlgebraDigest` sits in the same emitted file** (`KernelTables.generated.ts:304-305`) | high — this is the one place a *generated* shape declines its own *generated* brand, and it is the join point every algebra proposal in §4 has to cross. Filed against the epic (§9), not fixed here |
 
 **Re-tiering note, stated rather than quietly applied.** Before the
 ruling this record listed K2 as a neutral low-severity curiosity ("two
@@ -1188,13 +1584,13 @@ original wording for the reader's cross-check; this row supersedes it.
 | --- | --- | --- | --- | --- |
 | H1 ★ | `internal/pump.ts:157-173` | durable fold pump uses `Stream.callback` + `Queue.offerUnsafe`, which discards under pressure | `Stream.fromAsyncIterable` via the existing `commonsPump` shape (`internal/nats.ts:213-228`) | the package's own prose (`internal/nats.ts:193-212`) calls this adapter unsound for ordered reads; F2b lives on this path |
 | H2 | `surface/cli.ts` (whole file) | hand-rolled argv `switch` with cursor mutation (`:92-188`), 9 `async` fns, 7 `Effect.runPromise`, 20 `throw`, `Bun.spawn`/`Bun.sleep` poll loops, `process.env`/`argv`/`stdout`/`exitCode`, one bare `new Error` (`:333`), top-level `await` (`:600`) | `effect/unstable/cli` (`Command`, `Flag`, `Argument`, `HelpDoc`), `FileSystem`, `Path`, `Config`, `Console` | estate law 3 names `@effect/cli` for command-line surfaces; the pin already vendors it, so no dependency is added (G7 respected) |
-| H3 | `planes/Resolved.ts:134-144`, `:292-294` + `planes/Catalog.ts:51-54`, `:67-69` | K references decode as K sequential two-hop fetches; no `getMany` exists for a resolver to sit on | `RequestResolver.make` + `asCache`; `getMany` on both service interfaces | §3.4; the module's own header calls recursive references "the normal case" |
+| H3 | `planes/Resolved.ts:134-144`, `:292-294` + `planes/Catalog.ts:51-54`, `:67-69` | K references decode as K sequential two-hop fetches; no multi-get exists for a resolver to sit on | `RequestResolver.make` + `asCache`, on a store seam **in `internal/`** — **not** `getMany` on `CatalogService`/`PayloadService`, which `src/index.ts:19` exports (§3.4, corrected in round 2) | §3.4; the module's own header calls recursive references "the normal case" |
 | H4 | `truth/Algebra.ts` + `internal/cas.ts` + `internal/successors.ts` + `internal/pump.ts` + `internal/chaos.ts` | two algebra interfaces, five copies of the drive loop, no tag anywhere in the chain | algebra as `Context.Service`; one `Stream.mapAccumEffect` driver | §4 |
 | H5 ★ | `internal/anchors.ts:35-51`, `:177` | `AnchorStore` is a full four-method service with no tag and no Layer, built inline at `internal/folds.ts:52` from a raw `NatsConnection` | `Context.Service` + `.layer`/`.testLayer` | checkpoint logic cannot be tested without live NATS; the one place a NATS type crosses a module boundary as a positional argument |
 | H6 | `internal/transport.ts:170-185` | `acquireConnection` called independently by six adapters | one connection service + `Layer`, or `Pool` | a process running four adapters opens four NATS connections to one server |
 | H7 ★ | `internal/folds.ts:70-91`, `:109-112` | hand-rolled `Array<Fiber>` fan-out; one shared mutable scoreboard written by N fibers (`internal/pump.ts:271-307`, `:232-235`) | `FiberSet` or `Effect.forEach({concurrency})`; `Ref`/`SynchronizedRef` or `Metric` | a setup failure at partition 3 leaks fibers 0–2; the counters are unsynchronised read-modify-writes |
-| H8 ★ | `truth/SchemaCanonical.ts:341`, `:388` | `canonicalWriter` builds a fresh `Map<SchemaAST.AST, Writer>` and re-walks the schema tree per call — and `roundTripsCanonically` calls it once **per record** | `Cache`/`WeakMap` keyed on the AST, behind a Layer | §3.3; largest wasted-work site found |
-| H9 | `internal/anchors.ts:129-152`, `:253` | every checkpoint canonicalizes state **twice** and re-writes a digest-keyed entry the store already holds | `Cache` of `Digest → ensured`; `digestOfCanonicalBytes` (`internal/digests.ts:26`) | §3.3 |
+| H8 ★ | `truth/SchemaCanonical.ts:341`, `:388` | `canonicalWriter` builds a fresh `Map<SchemaAST.AST, Writer>` and re-walks the schema tree per call — and `roundTripsCanonically` calls it once **per record** | `Cache`/`WeakMap` keyed on the AST, behind a Layer — an **ordinary bounded memo**. **Re-scoped in round 2: this is outside memo permanence**, because an AST object reference is not a digest (§3.3) | largest wasted-work site found; the fix is unaffected, only the claim about it |
+| H9 | `internal/anchors.ts:129-152`, `:253` | every checkpoint canonicalizes state **twice** and re-writes a digest-keyed entry the store already holds | **only** the redundant second canonicalization — a pure recomputation, deleted rather than cached. **Re-scoped in round 2: the `Digest → ensured` memo is refused**, because it asserts a carrier's present state and AE-2 permits carriers to be stale, partial, or wrong (§3.3) | the store write stays; eliding it is the refused carrier assertion |
 | H10 | `internal/folds.ts:79-91` | per-partition setup is a sequential `for` of two network round trips each; at the declared max of 1024 partitions (`planes/Lane.ts:150`) that is 1024 serialised setups before the first message | `Effect.forEach({ concurrency })` | `internal/lanes.ts:130-134` already does the equivalent correctly — the fix pattern is in-tree |
 
 ### Medium
@@ -1255,7 +1651,9 @@ unrelated brand mechanisms coexist (`Schema.brand`; the `unique symbol`
 `Newtype.ts`. And `carriage/CasDaemon.ts:75-86` types its error channel
 as `KernelRefusalRow` — a **second refusal vocabulary** beside
 `truth/Refusal.ts`'s `StructuralRefusal | AbsenceRefusal`, with no
-bridge between them.
+bridge between them. *(Superseded twice over: see K2 above. The bridge
+now exists in PR #131 and the roster is being generated by PR #133. The
+original wording is kept only so the two re-tierings are auditable.)*
 
 **Not gaps** (recorded so a later sweep does not "fix" them):
 `truth/CanonicalJson.ts:198,293,323` `for(;;)` byte-parser loops —
@@ -1275,51 +1673,66 @@ independently abandonable; no stage depends on a later one. Stages 1
 and 2 do not touch any file the three live PRs touch. **Every ticket
 here is `proposed`; none is dispatched by this record.**
 
-**Coordination with what is in flight.** DEV-765 (PR #116,
-`planes/Session.ts`, `internal/sessions.ts`), DEV-764 (PR #118,
-`truth/Algebra.ts`, `planes/Fold.ts`), DEV-766 (PR #115,
-`planes/Address.ts`) are live on this surface. This record **consumes
-their PRs when they land and duplicates none of them**: §2's stream
-form is one combinator over DEV-765's `read`, §5 is a use of DEV-764's
-brands with no change to the ladder's content, and §3.4 lands strictly
-below DEV-766 in a module it declared it does not observe.
+**Coordination with what is in flight, re-read in round 2.** The board
+moved under this record between rounds, and three gates change as a
+result:
 
-**Re-gated for the type-kernel ruling.** Epic **DEV-795** now sits
-under most of this ladder, and the re-gating is not cosmetic — it
-**re-orders two tickets and demotes a third**:
+- **DEV-765 (PR #116) MERGED** (2026-08-18 19:53). §2's stream form is
+  now one combinator over a **shipped** `Session.read`, not a promised
+  one, and A-8 loses that blocker.
+- **DEV-763 (PR #131) ships the door and the `Admission` seam** — see
+  §6. A-11 is **withdrawn** and replaced (below).
+- **DEV-808 (PR #133) generates the runtime refusal roster** — §7 K2 is
+  withdrawn as a finding.
 
-- **A-5 (batched resolve) moves from stage 2 to stage 3** and behind
-  epic stage 3. Batching `planes/Resolved.ts` before its types are
-  re-typed would build a resolver over a shape scheduled to change
-  (§3.4). The N+1 is real; the fix is not urgent enough to pay for
-  twice.
-- **A-10 (rung⇒combinator in types) is demoted to blocked** behind
-  KM-17's corpus groups being emitted. Building it on DEV-764's
-  hand-written `rungLaws` would ship a second brand mechanism into the
-  surface the ruling most concerns (§7 K1).
-- **A-11 is new**: the host contract of §6, which is where the door
-  seam, the catalog translation, and the batching site with the best
-  pedigree all live.
+Still open and still consumed rather than duplicated: **DEV-764 (PR
+#118**, `truth/Algebra.ts`, `planes/Fold.ts`) and **DEV-766 (PR #115**,
+`planes/Address.ts`). §5 uses #118's brands with no change to the
+ladder's content, and §3.4 lands strictly below #115 in a module it
+declared it does not observe.
 
-Tickets whose types are already corpus-clean or corpus-free — A-1
-(transport adapter), A-2 (memo over an AST), A-3/A-4 (connection and
-store services), A-9 (CLI) — are **unaffected** by the ruling and keep
-their stages. That is most of stage 1, so the ladder still starts
-immediately.
+**Re-gated for the type-kernel ruling, and again for round 2.** Epic
+**DEV-795** sits under most of this ladder. The cumulative re-gating
+re-orders two tickets, demotes a third, withdraws a fourth, and
+narrows the scope of two more:
+
+- **A-5 (batched resolve) is at stage 3**, behind epic stage 3.
+  Batching `planes/Resolved.ts` before its types are re-typed would
+  build a resolver over a shape scheduled to change (§3.4). Its scope
+  is **narrowed in round 2**: the multi-get seam lands in `internal/`,
+  and the exported plane interfaces do not change.
+- **A-10 (rung⇒combinator in types) stays blocked** behind KM-17's
+  corpus groups, and **gains a second dependency in round 2**: the
+  §4 algebra service, since §5's scope condition is what the brand
+  rides. Without it the compile error does not follow.
+- **A-11 (the host contract) is WITHDRAWN.** PR #131 shipped it. What
+  replaces it is **A-12**, strictly smaller: batching the catalog
+  lookup *behind the shipped seam*.
+- **A-2 (the digest memo) is narrowed**, because §3.3 withdrew both of
+  its permanence claims. It is now an ordinary memo plus a deleted
+  redundant computation, and it may not cite memo permanence.
+- **A-6 (the algebra service) is re-scoped to the two-tier design** of
+  §4 — generated per-digest tags plus one `Algebras` resolver — rather
+  than the ambient tag the draft proposed.
+
+Tickets whose types are corpus-clean or corpus-free — A-1 (transport
+adapter), A-3/A-4 (connection and store services), A-9 (CLI) — are
+unaffected by either re-gating and keep their stages. That is most of
+stage 1, so the ladder still starts immediately.
 
 | Stage | Ticket (proposed) | Scope | Gate it owes | Blocked by |
 | --- | --- | --- | --- | --- |
 | 1 | **A-1 — the pump adapter asymmetry** | file the H1 finding; lift `commonsPump`'s pull adapter to a shared internal module; make the durable pump use it — i.e. finish B-4's repair (b) on the sibling it skipped | the existing backpressure wall extended to the fold pump, plus a negative control that the callback adapter fails | none — but a *finding first*, per the working precept: report and stop before repairing. B-4 is already ruled, so this is its follow-up, not a new grill |
-| 1 | **A-2 — the digest memo law, applied** | `Cache` behind a Layer for `canonicalWriter` (H8) and anchor state-ensure (H9) | a `measured` before/after on the corpus round-trip; no claim without it | none |
+| 1 | **A-2 — two wasted-work sites, fixed without a permanence claim** *(narrowed in round 2)* | `Cache`/`WeakMap` behind a Layer for `canonicalWriter` (H8), keyed on the AST — an **ordinary bounded memo**; and at H9, **delete the redundant second canonicalization only**. The `Digest → ensured` memo is refused (§3.3) | a `measured` before/after on the corpus round-trip; no claim without it. **And a stated non-claim: this ticket may not cite memo permanence**, since neither site is inside it | none |
 | 1 | **A-3 — `AnchorStore` becomes a service** | tag + `.layer`/`.testLayer`; connection as a Layer dependency (H5) | checkpoint tests that run without live NATS — the point of the ticket | none |
 | 2 | **A-4 — one connection, one policy** | connection service or `Pool` (H6); `transportRefusalFor`'s eight module-level closures become a policy service | the spine wall, unchanged, plus a test that N adapters open one connection | A-3 |
-| 3 | **A-5 — batched resolve** *(moved from stage 2)* | `getMany` on `CatalogService`/`PayloadService`; `RequestResolver.make` over `KernelRef`; `ResolveCache` re-expressed via `asCache` preserving its published surface, capacity contract and `Exit`-keyed TTL. **No public batch verb** — carriage stays fenced out of the fluent surface | round-trip count on a K-reference decode (`measured`); the public-effects signature wall unchanged for `ResolveCache.resolve` | **the §9 item-0 grill on `RequestResolver`**; **epic stage 3** (re-typing `Resolved`/`Catalog`), else it is built over a shape scheduled to change; and **PR #115 merged** so `Address` inherits it untouched |
-| 3 | **A-11 — the host contract over the generated candidate form** *(new)* | §6: the digest⇄index translation at the door seam, refusals looked up from `KERNEL_REFUSAL_BY_REASON`, totality inward and error channel outward | a control that no judgment path bypasses the seam (T-door's own acceptance); refusal parity across every host | **epic stage 4** / **DEV-763**, which is blocked on exactly this form existing |
-| 3 | **A-6 — the shared algebra service** | algebra ops behind a tag; `CasJoin` collapsed via `joinOf`; `cellJoin` earns its brand | the rung negative controls DEV-764 ships, re-pointed at the service | **PR #118 merged** |
+| 3 | **A-5 — batched resolve** *(scope narrowed in round 2)* | a multi-get **store seam in `internal/`**; `RequestResolver.make` over it; `ResolveCache` re-expressed via `asCache` preserving its published surface, capacity contract and `Exit`-keyed TTL. **`CatalogService` and `PayloadService` do not change** — they are barrel-exported (`src/index.ts:19`), so a `getMany` there is a public batch verb (§3.4) | round-trip count on a K-reference decode (`measured`); **the public-effects signature wall unchanged, which is now the acceptance test rather than an aspiration** | **the §9 item-0 grill on `RequestResolver`**; **epic stage 3** (re-typing `Resolved`/`Catalog`), else it is built over a shape scheduled to change; and **PR #115 merged** so `Address` inherits it untouched |
+| 3 | **A-12 — batch the catalog lookup behind the shipped `Admission` seam** *(replaces the withdrawn A-11)* | the K independent `KernelRef` lookups one candidate's payload needs, coalesced **inside** `Admission.layer`'s door construction. No signature moves: `admit` keeps `(candidate) => Effect<KernelSentence, Refusal>` | round-trip count on a K-referent candidate (`measured`); **verdict-for-verdict conformance unchanged** — the model's admission vectors are the wall, and a batching change that moved a verdict is wrong by construction | **PR #131 merged**; the §9 item-0 grill on `RequestResolver` |
+| 3 | **A-6 — the shared algebra service, two tiers** *(re-scoped in round 2)* | generated per-digest service tags for cataloged algebras; **one** `Algebras.resolve(AlgebraDigest<Digest>)` for runtime-declared ones; `CasJoin` merged via `joinOf` so `cellJoin` earns its brand. **No ambient algebra tag**, and no operation that supplies an implementation without a digest (§4) | the rung negative controls DEV-764 ships, re-pointed at the service; **plus a control that two Layers supplying one digest are interchangeable**, which is the identity fence made executable | **PR #118 merged**; and the `DeclaredAlgebra` operations record ships under an explicit law-1 waiver citing **DEV-796** — it has no corpus shape |
 | 3 | **A-7 — one replay driver** | five loops → one `Stream.mapAccumEffect` driver; `arrivalOrderReplay` stays a negative control by parameterisation | F2b's existing model gate, plus the committed control traces | A-6 |
-| 3 | **A-8 — `Session.views` as a Stream** | the §2 combinator; `Cells.changes`/`Registers.changes` when the watch feed lands | signature wall entry; rung-gated combinator surface per §5 | **PR #116 merged**; ships as *chatter* with no parity claim until AE-4 is ruled; the watch half additionally gated on the **§9 item-0 `PubSub` grill**, DEV-731's probe suite, and advisory-only with no absence reasoning |
+| 3 | **A-8 — `Session.views` as a Stream** | the §2 combinator; `Cells.changes`/`Registers.changes` when the watch feed lands | signature wall entry; rung-gated combinator surface per §5 | **PR #116 is MERGED — this blocker is discharged.** Still ships as *chatter* with no parity claim until AE-4 is ruled; the watch half remains gated on the **§9 item-0 `PubSub` grill**, DEV-731's probe suite, and advisory-only with no absence reasoning — and its strategy is `suspend` or `sliding`, never `dropping` (§3.2) |
 | 4 | **A-9 — the CLI on `effect/unstable/cli`** | H2, whole file | help text and command tree derived, not hand-written — a projection under estate law 1 | none technically; sequenced last as the largest single diff |
-| — | **A-10 — rung⇒combinator in types** *(demoted to blocked)* | §5's table as a type-level surface over the shared stream service, over **corpus-sourced** rung records | one negative control per refused row (`unordered` on positional; `changes` on multiset) | **KM-17's `law`/`rung` corpus groups being emitted** — building this on DEV-764's hand-written `rungLaws` would ship a second brand mechanism (§7 K1). Then A-6, A-8, PR #118 |
+| — | **A-10 — rung⇒combinator in types** *(blocked; second dependency added in round 2)* | §5's table as a type-level surface of **algebra-parameterised combinators** — `foldWith`, `mergePartitions`, `dedupeStates` — over **corpus-sourced** rung records. **Not** a rung-flavoured re-export of `Stream`: a caller's arbitrary callback is outside every brand (§5's scope condition) | one negative control per refused row (unordered merge on positional; `changes` on multiset) — **and one showing that an arbitrary callback is NOT constrained**, so the surface's limit is executable rather than asserted | **KM-17's `law`/`rung` corpus groups being emitted** (§7 K1); **and now A-6**, since the scope condition requires the algebra's operation to come from the shared service. Then A-8, PR #118 |
 
 **Deliberately excluded from the ladder**, so the exclusion is on the
 record rather than an omission: unifying the three CAS disciplines
@@ -1357,8 +1770,12 @@ this seat will act on.
    forever-valid statement with its **eviction clause** and its
    **anti-clause** — the two parts that are not already written down —
    lifted from a property of `ResolveCache` to a rule about digest
-   keys. *Consumer:* every digest-keyed memo — `ResolveCache` today
-   (ratified), H8/H9 tomorrow, any future one. *The ruling asked for:*
+   keys. *Consumer, corrected in round 2:* `ResolveCache` today
+   (ratified) and **nothing else in the tree** — §3.3 withdrew H8 and
+   H9, which the draft had offered as the law's two waiting consumers.
+   A law with one instance is a weaker case for minting a statement
+   than a law with three, and the grill should weigh it at that
+   strength. *The ruling asked for:*
    whether the generalization is a **corollary of C3** (this seat's
    reading, and the precedent exists — F8 was ruled a corollary, not a
    theorem), a widening of **G-3** whose scope was one memo, or merits
@@ -1381,6 +1798,13 @@ this seat will act on.
    that forbids rather than permits. *Dependency:* KM-17 itself is
    `proposed`, not ratified — the sheet's own status line says *"All
    items PROPOSED"* — so A-10 cannot precede its ruling.
+   **Narrowed in round 2:** the candidate now carries §5's scope
+   condition — a brand constrains a combinator only where the
+   combinator's callback is the declared algebra's own operation — so
+   what is offered for grilling is a closed set of
+   algebra-parameterised combinators, not a rung-typed `Stream`. The
+   grill question is unchanged; the thing being grilled is smaller,
+   and the draft's version would have over-claimed.
 3. **A durable digest memo over the estate's own KV** (*lead*, not a
    proposal). The pin's `RequestResolver.persisted` requires a
    `Persistence` service; the estate has NATS KV; memo permanence says
@@ -1396,38 +1820,82 @@ this seat will act on.
    than dropped. *Consumer:* anything that bridges kernel refusals to
    fabric refusals. **Updated by the ruling:** the *direction* is now
    settled — the generated table is the language — so this is a debt
-   with a known answer rather than an open choice. The bridge itself is
-   epic stage 3's work. *This seat still proposes nothing.*
+   with a known answer rather than an open choice.
+   **WITHDRAWN in round 2:** both halves are built. PR #131 ships the
+   bridge (one table lookup at the `Admission` seam) and PR #133
+   (DEV-808) generates the runtime roster with a containment gate and a
+   committed hand-minted negative control. Filing an item that two
+   seats have already closed would waste the grill's time, so this
+   record withdraws it rather than carrying it forward. What remains —
+   whether 16 kernel reasons and 36 runtime kinds should ever be one
+   roster — is DEV-804's, named in #133's own body.
 
-### Filed against the epic — two blockers and a reading question
+### Filed against the epic — one blocker, one reading, one withdrawal
 
-All three were found by reading `KernelTables.generated.ts` and
-`KernelDoor.ts` at HEAD while re-deriving this record against the
-ruling. Per the seat law, findings against a ratified record are
-**FILED, not fixed**, and a blocker is reported rather than improvised
-around. None is a criticism of the epic's direction, which this record
-adopts wholesale. Items 5 and 6 are blockers — places where stage 3
-cannot mechanically complete at the current corpus. Item 7 is a reading
-this seat states and does not rule.
+Per the seat law, findings against a ratified record are **FILED, not
+fixed**, and a blocker is reported rather than improvised around. None
+of these is a criticism of the epic's direction, which this record
+adopts wholesale.
 
-5. **The closed kind universe has no `fold`, `cell`, or `register`.**
-   `KERNEL_DECL_KINDS` is twelve kinds — `schema`, `program`, `policy`,
-   `capability`, `lane`, `algebra`, `index`, `resource`, `ontology`,
-   `schedule`, `template`, `language` — and `KernelDeclKind` is
-   `(typeof KERNEL_DECL_KINDS)[number]`, i.e. closed. Epic stage 3
-   directs Cell, Fold, and Register to *"consume corpus types (kinds
-   from KernelTables…)"*, but **`DeclaredFold.digest`, a cell's
-   identity, and a register's work digest have no kind to consume.**
-   The candidate form is consistent with this — `join` carries a bare
-   `cell: number` and `decide` a bare `register: number`, neither
-   kind-tagged as a `KernelRef` — which reads as *cells and registers
-   are subjects, not declarations*. If that reading is right, stage 3's
-   wording over-reaches for three of its seven modules and they need a
-   different unification target than "a kind". If it is wrong, the
-   corpus needs three more kinds, which is a model change gated by Lean
-   conformance and therefore not a stage-3-sized task either way.
-   *Consumer:* DEV-796's inventory, which will have to classify these
-   three as UNTRACED with no obvious ticket to point at.
+**Round-2 status of this subsection, stated first because one item
+turned out to be wrong.** The heading previously read *"two blockers
+and a reading question"*. It is now one blocker (item 6), one reading
+(item 7), and **one withdrawal (item 5), which was this seat's error
+and is corrected in place rather than deleted.** Items 8–11 are new
+this round. The cause of item 5's error and the reading discipline it
+cost are recorded with it, because a filing withdrawn silently teaches
+nothing.
+
+5. ~~**The closed kind universe has no `fold`, `cell`, or
+   `register`.**~~ **WITHDRAWN in round 2 — this filing was wrong, and
+   the correction belongs in the open rather than in a quiet delete.**
+
+   The premise was right and the conclusion was not.
+   `KERNEL_DECL_KINDS` is indeed closed at twelve and indeed contains
+   no `fold`, `cell`, or `register`. But I concluded that stage 3
+   therefore had no kind for those three modules to consume, and **the
+   corpus answers the question in a generated file I had not read.**
+   `KernelBuilder.generated.ts:165-179` states the mapping per
+   generator field:
+
+   ```ts
+   join:   { name: "cell",     model: "Digest(resource)", … }
+   fold:   { name: "declared", model: "Digest(index)",    … }
+   decide: { name: "register", model: "Digest(program)",  … }
+   ```
+
+   So **a cell is a `resource` digest, a fold is an `index` digest, and
+   a register is a `program` digest.** They are not missing kinds; they
+   are *uses* of existing kinds, and the mapping is emitted rather than
+   assumed. Stage 3 does not over-reach: `ResourceDigest`,
+   `IndexDigest`, and `ProgramDigest` are the unification targets, and
+   they are already generated. DEV-796's inventory has three fewer
+   UNTRACED types than I said it would.
+
+   **The door says the same thing independently**, which is what
+   settles it: `referenceDoor` checks a `join`'s `cell` referent against
+   the catalog **under kind `"resource"`**
+   (`test/KernelDoor.reference.ts:383-384`), three lines above the
+   `"algebra"` check §4 cites. So the mapping is not only emitted in the
+   builder — it is *enforced at admission*. A bare `cell: number` in the
+   candidate form is a `Digest(resource)` the type has not yet been
+   narrowed to, which is item 8's shape and not a gap in the kind
+   universe.
+
+   **What went wrong, since the method is the point.** I read
+   `KernelTables.generated.ts` and `KernelDoor.ts` and inferred a gap
+   from the absence of a kind, when the corpus emits **four** artifacts
+   and the answer was in the third. Inferring a corpus gap requires
+   reading every generated projection, not the one that carries the
+   sort names — and a filing against a ratified record earns a higher
+   bar of reading than a filing against a proposal. The bar was not
+   met. The remaining filings below were re-checked against all four
+   projections before this revision.
+
+   *One residue survives, and it is much smaller than the original
+   claim:* the bare `cell: number` in the candidate form is a
+   `Digest(resource)` that carries no brand at the type level, which is
+   the same shape as item 8 below rather than a missing kind.
 6. **`AnchorFact` is explicitly un-aliased.**
    `KERNEL_UNBRANDED_INDEXED_SORTS` carries exactly one entry —
    `{ name: "AnchorFact", params: ["declared", "partition"] }` — with
@@ -1451,6 +1919,64 @@ this seat states and does not rule.
    2. *This seat states the reading and does not rule it* — if the
    operator means something stricter, the runtime loses its pattern
    check and needs a generated replacement first.
+
+**Filed in round 2** — three more, each found while repairing a
+finding above, each read against all four generated projections before
+filing.
+
+8. **A generated shape declines its own generated brand.**
+   `KernelMergeStrategy`'s lawful arm is
+   `Schema.TaggedStruct("declaredAlgebra", { algebra: KernelNat })`
+   (`KernelSchemas.generated.ts:702-704`), and the hand-written twin
+   agrees (`KernelDoor.ts:64-70`, `algebra: number`). But
+   `AlgebraDigest<Carrier = number>` is emitted in the sibling file
+   (`KernelTables.generated.ts:304-305`) and the Go twin emits it too
+   (`go/kmconform/tables_generated.go:368-369`). So the corpus has a
+   brand for exactly this referent and the corpus's own schema does not
+   wear it. **This is not a fabric-era defect** — it is inside the
+   generated surface, which makes it the epic's rather than a plane's.
+   *Consumer:* every algebra proposal in §4 crosses this field; DEV-796
+   will meet it as a generated type that is nonetheless untraced.
+   *Bound:* this seat does not know whether the model's own
+   `MergeStrategy` carries the brand and the emitter drops it, or the
+   model carries a bare nat — that is a Lean-side reading and not one
+   to guess at.
+9. **`unresolved-algebra` is not a corpus refusal reason.** The
+   algebraic-register record §4.5's tier-2 sketch refuses an
+   unprovided algebra with `{ refusal: 'unresolved-algebra' }`.
+   `KERNEL_REFUSAL_REASONS` is closed at sixteen and does not contain
+   it; under law 1 a hand-named refusal beside the generated table is a
+   twin refusal enum, which is the law's own worked example. The
+   corpus-lawful spelling of that condition already exists and the
+   reference door already emits it: **`forward-reference`**, law *"pins
+   name already-admitted digests (c7_pin_well_founded)"*, raised when a
+   `declaredAlgebra` names an id absent from the catalog under kind
+   `"algebra"` (`test/KernelDoor.reference.ts:386-388`). §4.5's own
+   prose points the same way — it calls the mechanism *"the existing
+   forward-reference check, not a new one"* — so this reads as a naming
+   slip in a sketch rather than a design disagreement. *Consumer:* A-6,
+   which must not mint the name. *Filed, not fixed:* the register
+   record is another seat's.
+10. **An interface documented as internal is exported anyway.**
+    `PayloadService`'s docstring says it is *"package-internal
+    plumbing, never an agent-facing surface"* (`planes/Catalog.ts:62-64`),
+    and `src/index.ts:19` re-exports the whole namespace. Round 2's
+    §3.4 correction turned on exactly this: a fence stated in prose is
+    not a fence, and the record's own contradiction came from trusting
+    the docstring over the barrel. *Consumer:* DEV-796's inventory
+    (a public type that believes it is private) and any future
+    "internal" seam on an exported module. *This seat proposes no
+    change* — narrowing an exported type is a compatibility question,
+    not a design one.
+11. **`dropping` needs a recovery law or it needs no licence** (§3.2).
+    *Candidate:* an eventual-refresh or recovery-by-read statement that
+    would make a lost *newest* publication recoverable outside the
+    fan-out — the obvious source being access pattern 7's own
+    *"chatter, recovery by read"*. *Consumer:* any watch feed that
+    wants `dropping`'s backpressure behaviour. *This seat states the
+    candidate and mints nothing*; until it is ruled, `dropping` is
+    licensed by nothing in this record and the fan-out surface offers
+    `suspend` and `sliding` only.
 
 ---
 
@@ -1478,16 +2004,29 @@ this seat states and does not rule.
 - **No parity claim for any stream surface.** Access pattern 7 is
   chatter until AE-4 is ruled, and §2 inherits that fence rather than
   arguing with it.
-- **No door ships, and none is designed here.** §6 states a *contract*
-  over the generated candidate form — the translation, the totality
-  boundary, the lookup discipline. The door implementation and its
-  verdict-for-verdict conformance against the model's admission vectors
-  are T-door's (DEV-763), and this record does not pre-empt them.
-- **No claim that epic DEV-795 is complete or completable as worded.**
-  §9 items 5–7 file three places where its stage 3 does not
-  mechanically close at the current corpus. Those are filed for its
-  seat, not answered here, and this record adopts the epic's direction
-  regardless of how they are ruled.
+- **No door is designed here, and none needs to be.** The door and the
+  `Admission` seam ship in PR #131. §6 **describes** them and checks
+  them against what this record needed; it proposes nothing about
+  judgment. Verdict-for-verdict conformance against the model's
+  admission vectors is T-door's (DEV-763) and is not re-argued here.
+- **No claim that epic DEV-795 is complete or completable as worded**,
+  and no claim that this seat's filings against it are all sound —
+  **§9 item 5 was wrong and is withdrawn.** What stands is item 6 (the
+  un-aliased `AnchorFact`), item 7 (a reading, not a ruling), and items
+  8–11 filed this round. This record adopts the epic's direction
+  regardless of how any of them are ruled.
+- **No memo permanence claim for any site in the tree except
+  `ResolveCache`.** §3.3 withdrew both of the consumers the draft
+  offered: H8's key is an AST object reference, not a digest, and H9's
+  value is a carrier assertion, not a re-derivation. The law as a
+  candidate survives; its cited instances do not.
+- **No licence for `dropping` anywhere.** §3.2 narrowed the fan-out
+  claim to `sliding` and `suspend`. A recovery law that would license
+  `dropping` is named as a §9 candidate and is not minted here.
+- **No claim that a rung brand constrains an arbitrary callback.** §5's
+  scope condition is a real limit, not a caveat: the compile error
+  follows only where the combinator's operand is the declared algebra's
+  own operation. The draft claimed more and is corrected.
 - **No re-litigation of DEV-764.** §5's revision changes where the rung
   ladder's *types* come from, not its law atoms, its poset reading, or
   its negative controls, all of which stand.
@@ -1498,9 +2037,13 @@ this seat states and does not rule.
 - **No overlap with the three live PRs.** §8 states the dependency
   edges; nothing here re-designs `Session`, the rung ladder, or
   `Address`.
-- **Line numbers are read at HEAD** (merge `62c78d4`, post-PR #113).
-  Four rows in §7 were re-verified by hand; the rest come from a full
-  40-file sweep and will drift as the live PRs merge.
+- **Line numbers are read at HEAD** — round 1 at merge `62c78d4`
+  (post-PR #113), **rebased in round 2 onto `3f20f80`** (post-PR #129).
+  Four rows in §7 were re-verified by hand; the corpus citations added
+  in round 2 were read against all four generated projections
+  (`KernelTables`, `KernelSchemas`, `KernelBuilder`, and the Go twin),
+  which is the discipline §9 item 5's withdrawal bought. The rest come
+  from a full 40-file sweep and will drift as the live PRs merge.
 - **This record ships no code**, and nothing in §8 is dispatched by it.
 
 ---
