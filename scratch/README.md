@@ -19,6 +19,12 @@ exists. That goes in `docs/` or on the board.
   below and restates the semantics in full, so it stands alone.
 - `codex/49-protocol-v0.md` — the brief that produced `flb.protocol.v0`
   and the protod session runtime in `proto/`.
+- `reactive-host/` — DEV-791's pre-adoption evaluation of foldkit (beta) and
+  the Effect reactivity plane as read-plane machinery: one lane through
+  `(lane, declared fold, anchor) → Model → view`, with three walls and two
+  mutation arms. Its README carries the verdict and the findings DEV-765
+  inherits. Scratch-local dependencies; `bash scratch/reactive-host/run.sh`
+  asserts `bun run gates` is untouched rather than claiming it.
 - `meaning-scheduler/` — the E2 experiment the Lean model is the twin
   of. `journal.ts` `step` is the reference the model was built against;
   `PREREGISTRATION.md` and `RESULTS.md` are the record. Predecessor, not
