@@ -1,0 +1,7 @@
+door-form-drift: the door's candidate binding "Candidate" names "KernelHandWrittenCandidate", which the generated schema module does not emit
+private-verdict: src/planes/SecondDoor.verdict.ts:1 constructs verdict: "refused" — an admission verdict outside the one door is a second door
+wrapper-route: src/carriage/SecondDoor.wrapper.ts:2 routes admission through (context: never, candidate: never) => kernelAdmit(context, candidate) rather than the one door function, and no reviewed pin row owns it
+host-candidate-surface: src/carriage/SecondDoor.surface.ts:4 declares an admission surface typed (candidate: HostCandidate) => HostOutcome rather than the one door function, and no reviewed pin row owns it
+form-twin: src/carriage/SecondDoor.twin.ts:1 declares "KernelCandidateAct", a hand-written twin of the shared candidate form
+unbound-form-name: src/planes/SecondDoor.unbound.ts:1 names "KernelCandidateAct" without importing it from the one door or the generated schema module
+stale-pin: the route pin names "src/carriage/CasDaemon.ts", which declares no admission route outside the one door
