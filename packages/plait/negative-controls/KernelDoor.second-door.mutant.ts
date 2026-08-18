@@ -148,7 +148,7 @@ const reasons: Array<string> = []
 for (const arm of arms) {
   const checked = checkKernelDoorContainment(arm.evidence())
   if (checked.ok) {
-    console.error(`KERNEL DOOR MUTANT: the ${arm.name} plant was accepted`)
+    console.error(`ONE DOOR MUTANT: the ${arm.name} plant was accepted`)
     process.exit(0)
   }
   reasons.push(`${arm.name}: ${checked.reason}`)

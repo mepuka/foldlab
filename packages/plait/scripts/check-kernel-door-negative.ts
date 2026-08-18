@@ -29,7 +29,7 @@ const run = Bun.spawnSync({
 })
 
 if (run.exitCode === 0) {
-  console.error("KERNEL DOOR CONTROL: FAIL — a planted second door was accepted")
+  console.error("ONE DOOR CONTROL: FAIL — a planted second door was accepted")
   console.error(normalize(`${run.stdout.toString()}${run.stderr.toString()}`))
   process.exit(1)
 }
@@ -38,11 +38,11 @@ const actual = normalize(`${run.stdout.toString()}${run.stderr.toString()}`)
 
 if (write) {
   await Bun.write(resolve(packageRoot, trace), actual)
-  console.log(`KERNEL DOOR CONTROL: wrote ${trace}`)
+  console.log(`ONE DOOR CONTROL: wrote ${trace}`)
 } else {
   const expected = normalize(await Bun.file(resolve(packageRoot, trace)).text())
   if (actual !== expected) {
-    console.error("KERNEL DOOR CONTROL: FAIL — named refusal trace moved")
+    console.error("ONE DOOR CONTROL: FAIL — named refusal trace moved")
     console.error("--- expected ---")
     console.error(expected)
     console.error("--- actual ---")
@@ -51,7 +51,7 @@ if (write) {
   }
   const clauses = expected.split("\n").filter((line) => line !== "").length
   console.log(
-    `KERNEL DOOR CONTROL: PASS (${clauses} planted second-door spellings refused,`
+    `ONE DOOR CONTROL: PASS (${clauses} planted second-door spellings refused,`
       + " each for its committed reason)",
   )
 }

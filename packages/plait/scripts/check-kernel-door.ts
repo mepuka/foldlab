@@ -98,11 +98,11 @@ const check = Effect.fn("KernelDoor.check")(function* () {
 
   const checked = checkKernelDoorContainment(evidence)
   if (!checked.ok) {
-    return yield* new CheckFailure({ message: `KERNEL DOOR: FAIL — ${checked.reason}` })
+    return yield* new CheckFailure({ message: `ONE DOOR: FAIL — ${checked.reason}` })
   }
 
   yield* Console.log(
-    `KERNEL DOOR: PASS (${evidence.form.form.length} generated form roles;`
+    `ONE DOOR: PASS (${evidence.form.form.length} generated form roles;`
       + ` ${checked.routes} admission routes over ${checked.modules} swept modules,`
       + ` ${checked.pinned} pinned outside the door)`,
   )
