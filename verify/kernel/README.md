@@ -26,10 +26,20 @@ claiming reason identity on multi-fault candidates; and
 `relative_refusal_repairable_by_growth` constructs a finite admitting
 extension under the load-bearing premise that no intrinsic fault remains.
 
+The KM-21 machine-repair slice models the four candidate-only rewrites
+as the partial function `repair` and proves
+`machine_repair_clears_reason`: at any destination door the repaired
+candidate cannot surface the reason it answers, while admission or a
+different remaining refusal is lawful. The last-writer control exercises
+that caveat directly by surfacing `clock-read` after clearing
+`last-writer-wins`. Fault-set construction, declared priority arbitration,
+repair composition, and termination remain outside this slice.
+
 `./run.sh` is the gate: source hygiene, partition checks, the pinned
-law list, `lake build`, the 79-theorem roster with the trusted-base
-footprint sweep, twenty-one executable controls diffed against committed
+law list, `lake build`, the 80-theorem roster with the trusted-base
+footprint sweep, twenty-five executable controls diffed against committed
 traces (the closure and signature rows, the lawful twin, the provision
-control, and three KM-20 mutants), and the four-file must-not-compile
-class — sort-discipline violations the elaborator itself must refuse,
-each with a pinned diagnosis and a compiling witness twin.
+control, three KM-20 mutants, and four machine-repair mutants), and the
+four-file must-not-compile class — sort-discipline violations the
+elaborator itself must refuse, each with a pinned diagnosis and a
+compiling witness twin.

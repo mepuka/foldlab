@@ -336,12 +336,14 @@ structure TokenClaim where
   value : Nat
 deriving Repr, DecidableEq
 
-/-- A candidate merge strategy. The lawful strategy names a declared
-    merge algebra; last-writer-wins is spellable here and refused at
-    the door, because no such carrier exists in the fabric. -/
+/-- A candidate merge strategy. Both spellings retain the intended
+    declared algebra. Last-writer-wins additionally asks arrival order
+    to override that algebra and is refused at the door. Retaining the
+    algebra makes dropping the unlawful override a candidate-only
+    repair: no catalog lookup or new choice is smuggled into it. -/
 inductive MergeStrategy where
   | declaredAlgebra (algebra : Nat)
-  | lastWriterWins
+  | lastWriterWins (algebra : Nat)
 deriving Repr, DecidableEq
 
 /-- The candidate trigger grammar: the five lawful productions plus the
@@ -378,7 +380,8 @@ inductive CandidateAct where
       (outcome : List RawArg)
   | trigger (predicate : CandidatePredicate) (declaration : Nat)
   | spawn (parent : Nat) (request : Nat)
-  | updateInPlace (target : Nat) (payload : List RawArg)
+  | updateInPlace (kind : DeclKind) (target : Nat)
+      (payload : List RawArg) (writ : Nat)
 deriving Repr, DecidableEq
 
 /-! ## Refusals
@@ -548,6 +551,24 @@ def Applicability.wire : Applicability -> String
   | .machineApplicable => "machine-applicable"
   | .advisory => "advisory"
 
+/-- Apply one of the four machine-applicable repairs. The function is
+    option-valued in both arguments: a reason repairs only the candidate
+    shape that carries that fault, and every advisory reason returns
+    none. Each successful rewrite uses only fields already carried by
+    the refused candidate. A repaired candidate may still carry a
+    different fault; arbitration among several faults is deliberately
+    not modeled here. -/
+def repair : CandidateAct -> RefusalReason -> Option CandidateAct
+  | .resolveDigest kind target (some _), .anchoredResolve =>
+      some (.resolveDigest kind target none)
+  | .trustBytes kind target _, .unverifiedRead =>
+      some (.resolveDigest kind target none)
+  | .updateInPlace kind target payload writ, .pastMutation =>
+      some (.declare kind (.digestRef kind target :: payload) writ)
+  | .join cell contribution (.lastWriterWins algebra), .lastWriterWins =>
+      some (.join cell contribution (.declaredAlgebra algebra))
+  | _, _ => none
+
 /-! ## The door -/
 
 /-- The admission context: the already-admitted catalog and the
@@ -693,7 +714,7 @@ def admit (door : Door) : CandidateAct -> AdmitResult
           else .refused (taught .forwardReference)
   | .join cell contribution strategy =>
       match strategy with
-      | .lastWriterWins => .refused (taught .lastWriterWins)
+      | .lastWriterWins _ => .refused (taught .lastWriterWins)
       | .declaredAlgebra algebra =>
           match argSweep door contribution with
           | some reason => .refused (taught reason)
@@ -748,7 +769,7 @@ def admit (door : Door) : CandidateAct -> AdmitResult
           .admitted (.spawn ⟨parent⟩ ⟨request⟩)
         else .refused (taught .forwardReference)
       else .refused (taught .forwardReference)
-  | .updateInPlace _ _ => .refused (taught .pastMutation)
+  | .updateInPlace _ _ _ _ => .refused (taught .pastMutation)
 
 /-! ## The unlawful shapes
 
@@ -766,7 +787,7 @@ def actArgs : CandidateAct -> List RawArg
   | .join _ contribution _ => contribution
   | .fold _ _ query => query
   | .decide _ _ outcome => outcome
-  | .updateInPlace _ payload => payload
+  | .updateInPlace _ _ payload _ => payload
   | _ => []
 
 /-- An atom-level fault whose presence is a function of candidate bytes
@@ -789,8 +810,8 @@ inductive IntrinsicFault : CandidateAct -> Prop where
       IntrinsicFault (.resolveDigest kind target (some anchor))
   | trusting (kind : DeclKind) (target asserted : Nat) :
       IntrinsicFault (.trustBytes kind target asserted)
-  | lastWriter (cell : Nat) (contribution : List RawArg) :
-      IntrinsicFault (.join cell contribution .lastWriterWins)
+  | lastWriter (cell : Nat) (contribution : List RawArg) (algebra : Nat) :
+      IntrinsicFault (.join cell contribution (.lastWriterWins algebra))
   | latest (subject : Nat) : IntrinsicFault (.readLatest subject)
   | anchorless (declared : Nat) (query : List RawArg) :
       IntrinsicFault (.fold declared none query)
@@ -808,8 +829,9 @@ inductive IntrinsicFault : CandidateAct -> Prop where
       (declaration : Nat) (reason : RefusalReason) :
       predicateRefusal predicate = some reason ->
       IntrinsicFault (.trigger predicate declaration)
-  | mutation (target : Nat) (payload : List RawArg) :
-      IntrinsicFault (.updateInPlace target payload)
+  | mutation (kind : DeclKind) (target : Nat) (payload : List RawArg)
+      (writ : Nat) :
+      IntrinsicFault (.updateInPlace kind target payload writ)
 
 /-- The digest references carried by a raw argument list. -/
 def argRefs : List RawArg -> List Ref
@@ -831,7 +853,7 @@ def requiredCatalog : CandidateAct -> List Ref
         (match strategy with
         | .declaredAlgebra algebra =>
             (DeclKind.algebra, algebra) :: argRefs contribution
-        | .lastWriterWins => argRefs contribution)
+        | .lastWriterWins _ => argRefs contribution)
   | .readLatest _ => []
   | .fold declared _ query =>
       (DeclKind.index, declared) :: argRefs query
@@ -840,7 +862,7 @@ def requiredCatalog : CandidateAct -> List Ref
   | .trigger _ declaration => [(DeclKind.program, declaration)]
   | .spawn parent request =>
       [(DeclKind.policy, parent), (DeclKind.policy, request)]
-  | .updateInPlace _ payload => argRefs payload
+  | .updateInPlace _ _ payload _ => argRefs payload
 
 /-- Only declarations inspect the acting writ's pinned universe. -/
 def requiredPinned : CandidateAct -> List Ref
@@ -894,8 +916,8 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
       Unlawful door (.resolveDigest kind target (some anchor))
   | trusting (kind : DeclKind) (target asserted : Nat) :
       Unlawful door (.trustBytes kind target asserted)
-  | lastWriter (cell : Nat) (contribution : List RawArg) :
-      Unlawful door (.join cell contribution .lastWriterWins)
+  | lastWriter (cell : Nat) (contribution : List RawArg) (algebra : Nat) :
+      Unlawful door (.join cell contribution (.lastWriterWins algebra))
   | latest (subject : Nat) :
       Unlawful door (.readLatest subject)
   | anchorless (declared : Nat) (query : List RawArg) :
@@ -914,8 +936,9 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
       (declaration : Nat) (reason : RefusalReason) :
       predicateRefusal predicate = some reason ->
       Unlawful door (.trigger predicate declaration)
-  | mutation (target : Nat) (payload : List RawArg) :
-      Unlawful door (.updateInPlace target payload)
+  | mutation (kind : DeclKind) (target : Nat) (payload : List RawArg)
+      (writ : Nat) :
+      Unlawful door (.updateInPlace kind target payload writ)
 
 /-! ## Planted ground programs
 
@@ -966,7 +989,7 @@ def unfencedDecide : CandidateAct :=
 
 /-- Row: a last-writer-wins merge spelled at a cell. -/
 def lastWriterJoin : CandidateAct :=
-  .join 6 [.literal 42] .lastWriterWins
+  .join 6 [.literal 42] (.lastWriterWins 7)
 
 /-- Row: a read that trusts asserted bytes without re-derivation. -/
 def trustingRead : CandidateAct :=
@@ -1000,7 +1023,7 @@ def absenceClaimTrigger : CandidateAct :=
 
 /-- Row: an in-place mutation of an admitted value. -/
 def pastMutation : CandidateAct :=
-  .updateInPlace 8 [.literal 43]
+  .updateInPlace .schema 8 [.literal 43] 4
 
 /-- Row: a referent that resolves in the catalog but lies outside the
     writ's pinned universe. -/

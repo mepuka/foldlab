@@ -63,6 +63,22 @@ def KRelativeRefusalRepairableByGrowth : Prop :=
     exists (larger : Door) (act : Act),
       Door.Le door larger /\ admit larger candidate = .admitted act
 
+/-- A successful machine repair clears the refusal reason it answers.
+    The repaired candidate may admit or may surface a different
+    remaining reason at any door; the law excludes only the named
+    fault. Fault-set construction, priority arbitration, composition,
+    and termination are separate KM-21 obligations and are not
+    claimed here. -/
+def KMachineRepairClearsReason : Prop :=
+  forall (sourceDoor : Door) (candidate : CandidateAct)
+      (refusal : Refusal),
+    admit sourceDoor candidate = .refused refusal ->
+    forall repaired : CandidateAct,
+      repair candidate refusal.reason = some repaired ->
+      forall (door : Door) (next : Refusal),
+        admit door repaired = .refused next ->
+        next.reason ≠ refusal.reason
+
 /-- The program pin order is well-founded: under node admission —
     every use names an already-admitted node, every name admits at
     most once — the consumption relation of an admitted program is

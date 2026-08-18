@@ -249,7 +249,7 @@ theorem sweep_refuses {door : Door} {candidate : CandidateAct}
   | join cell contribution strategy =>
       simp only [actArgs] at mem
       cases strategy with
-      | lastWriterWins => simp [admit] at h
+      | lastWriterWins algebra => simp [admit] at h
       | declaredAlgebra algebra =>
           cases swept : argSweep door contribution with
           | some found => simp [admit, swept] at h
@@ -283,7 +283,7 @@ theorem sweep_refuses {door : Door} {candidate : CandidateAct}
   | spawn parent request =>
       simp only [actArgs] at mem
       simp at mem
-  | updateInPlace target payload => simp [admit] at h
+  | updateInPlace kind target payload writ => simp [admit] at h
 
 /-- A larger door preserves every admission and its translated act. -/
 theorem admit_monotone : Laws.KAdmitMonotone := by
@@ -337,7 +337,7 @@ theorem admit_monotone : Laws.KAdmitMonotone := by
               simpa [present] using admitted
   | join cell contribution strategy =>
       cases strategy with
-      | lastWriterWins => simp [admit] at admitted
+      | lastWriterWins algebra => simp [admit] at admitted
       | declaredAlgebra algebra =>
           simp only [admit] at admitted ⊢
           cases swept : argSweep smaller contribution with
@@ -440,7 +440,7 @@ theorem admit_monotone : Laws.KAdmitMonotone := by
                 ref_member_monotone growth.catalog requestPresent
               rw [grownRequest]
               simpa [parentPresent, requestPresent] using admitted
-  | updateInPlace target payload => simp [admit] at admitted
+  | updateInPlace kind target payload writ => simp [admit] at admitted
 
 /-- Every intrinsic raw atom earns a refusal independently of door
     membership. -/
@@ -464,7 +464,7 @@ theorem intrinsic_fault_no_admission {candidate : CandidateAct}
   | trusting kind target asserted =>
       intro act h
       simp [admit] at h
-  | lastWriter cell contribution =>
+  | lastWriter cell contribution algebra =>
       intro act h
       simp [admit] at h
   | latest subject =>
@@ -485,7 +485,7 @@ theorem intrinsic_fault_no_admission {candidate : CandidateAct}
   | refusedPredicate predicate declaration reason refused =>
       intro act h
       simp [admit, refused] at h
-  | mutation target payload =>
+  | mutation kind target payload writ =>
       intro act h
       simp [admit] at h
 
@@ -526,7 +526,7 @@ theorem required_catalog_contains_arg_ref {candidate : CandidateAct}
   | emit lane body => exact List.mem_cons_of_mem _ refMem
   | join cell contribution strategy =>
       cases strategy with
-      | lastWriterWins => exact List.mem_cons_of_mem _ refMem
+      | lastWriterWins algebra => exact List.mem_cons_of_mem _ refMem
       | declaredAlgebra algebra =>
           exact List.mem_cons_of_mem _ (List.mem_cons_of_mem _ refMem)
   | readLatest subject => simp [actArgs] at mem
@@ -534,7 +534,7 @@ theorem required_catalog_contains_arg_ref {candidate : CandidateAct}
   | decide register token outcome => exact List.mem_cons_of_mem _ refMem
   | trigger predicate declaration => simp [actArgs] at mem
   | spawn parent request => simp [actArgs] at mem
-  | updateInPlace target payload => exact refMem
+  | updateInPlace kind target payload writ => exact refMem
 
 /-- Absence of an intrinsic candidate fault means every payload atom
     is intrinsically clean. -/
@@ -700,7 +700,8 @@ theorem intrinsically_clean_admitted_by_growth (door : Door)
       simp [admit, sweep, present]
   | join cell contribution strategy =>
       cases strategy with
-      | lastWriterWins => exact (clean (.lastWriter cell contribution)).elim
+      | lastWriterWins algebra =>
+          exact (clean (.lastWriter cell contribution algebra)).elim
       | declaredAlgebra algebra =>
           have sweep :
               argSweep
@@ -802,7 +803,8 @@ theorem intrinsically_clean_admitted_by_growth (door : Door)
         simp [repairingDoor, requiredCatalog]
       refine ⟨.spawn ⟨parent⟩ ⟨request⟩, ?_⟩
       simp [admit, parentPresent, requestPresent]
-  | updateInPlace target payload => exact (clean (.mutation target payload)).elim
+  | updateInPlace kind target payload writ =>
+      exact (clean (.mutation kind target payload writ)).elim
 
 /-- Every genuinely door-relative refusal is repairable by the
     canonical finite extension when no intrinsic fault remains. -/
@@ -813,6 +815,150 @@ theorem relative_refusal_repairable_by_growth :
     intrinsically_clean_admitted_by_growth door candidate clean
   exact ⟨repairingDoor door candidate, act,
     door_le_repairing door candidate, admitted⟩
+
+/-- Every successful candidate-only repair clears the surfaced reason
+    it answers. The destination door is arbitrary, and a different
+    refusal remains an allowed result. -/
+theorem machine_repair_clears_reason :
+    Laws.KMachineRepairClearsReason := by
+  intro sourceDoor candidate refusal sourceRefused repaired repairedEq
+    door next repairedRefused
+  have sweep_ne_last_writer (atDoor : Door) :
+      forall args : List RawArg,
+        argSweep atDoor args ≠ some .lastWriterWins := by
+    intro args
+    induction args with
+    | nil => simp [argSweep]
+    | cons arg rest inductionHypothesis =>
+        cases arg with
+        | digestRef kind id =>
+            by_cases present : refMember kind id atDoor.catalog = true
+            · simp [argSweep, argRefusal, present, inductionHypothesis]
+            · simp [argSweep, argRefusal, present]
+        | _ => simp [argSweep, argRefusal, inductionHypothesis]
+  have sweep_ne_past_mutation (atDoor : Door) :
+      forall args : List RawArg,
+        argSweep atDoor args ≠ some .pastMutation := by
+    intro args
+    induction args with
+    | nil => simp [argSweep]
+    | cons arg rest inductionHypothesis =>
+        cases arg with
+        | digestRef kind id =>
+            by_cases present : refMember kind id atDoor.catalog = true
+            · simp [argSweep, argRefusal, present, inductionHypothesis]
+            · simp [argSweep, argRefusal, present]
+        | _ => simp [argSweep, argRefusal, inductionHypothesis]
+  cases candidate with
+  | declare kind payload writ => simp [repair] at repairedEq
+  | resolveDigest kind target anchor =>
+      cases anchor with
+      | none => simp [repair] at repairedEq
+      | some anchor =>
+          simp only [admit] at sourceRefused
+          injection sourceRefused with refusalEq
+          subst refusal
+          simp only [repair] at repairedEq
+          injection repairedEq with repairedEq
+          subst repaired
+          simp only [admit] at repairedRefused
+          cases present : refMember kind target door.catalog with
+          | false =>
+              simp [present] at repairedRefused
+              subst next
+              simp [taught_reason]
+          | true => simp [present] at repairedRefused
+  | trustBytes kind target asserted =>
+      simp only [admit] at sourceRefused
+      injection sourceRefused with refusalEq
+      subst refusal
+      simp only [repair] at repairedEq
+      injection repairedEq with repairedEq
+      subst repaired
+      simp only [admit] at repairedRefused
+      cases present : refMember kind target door.catalog with
+      | false =>
+          simp [present] at repairedRefused
+          subst next
+          simp [taught_reason]
+      | true => simp [present] at repairedRefused
+  | emit lane body => simp [repair] at repairedEq
+  | join cell contribution strategy =>
+      cases strategy with
+      | declaredAlgebra algebra => simp [repair] at repairedEq
+      | lastWriterWins algebra =>
+          simp only [admit] at sourceRefused
+          injection sourceRefused with refusalEq
+          subst refusal
+          simp only [repair] at repairedEq
+          injection repairedEq with repairedEq
+          subst repaired
+          simp only [admit] at repairedRefused
+          cases swept : argSweep door contribution with
+          | some reason =>
+              simp [swept] at repairedRefused
+              subst next
+              simp only [taught_reason]
+              intro sameReason
+              apply sweep_ne_last_writer door contribution
+              rw [swept, sameReason]
+          | none =>
+              rw [swept] at repairedRefused
+              cases cellPresent :
+                  refMember DeclKind.resource cell door.catalog with
+              | false =>
+                  simp [cellPresent] at repairedRefused
+                  subst next
+                  simp [taught_reason]
+              | true =>
+                  rw [cellPresent] at repairedRefused
+                  cases algebraPresent :
+                      refMember DeclKind.algebra algebra door.catalog with
+                  | false =>
+                      simp [algebraPresent] at repairedRefused
+                      subst next
+                      simp [taught_reason]
+                  | true => simp [algebraPresent] at repairedRefused
+  | readLatest subject => simp [repair] at repairedEq
+  | fold declared anchor query => simp [repair] at repairedEq
+  | decide register token outcome => simp [repair] at repairedEq
+  | trigger predicate declaration => simp [repair] at repairedEq
+  | spawn parent request => simp [repair] at repairedEq
+  | updateInPlace kind target payload writ =>
+      simp only [admit] at sourceRefused
+      injection sourceRefused with refusalEq
+      subst refusal
+      simp only [repair] at repairedEq
+      injection repairedEq with repairedEq
+      subst repaired
+      simp only [admit] at repairedRefused
+      cases swept :
+          argSweep door (.digestRef kind target :: payload) with
+      | some reason =>
+          simp [swept] at repairedRefused
+          subst next
+          simp only [taught_reason]
+          intro sameReason
+          apply sweep_ne_past_mutation door
+            (.digestRef kind target :: payload)
+          rw [swept, sameReason]
+      | none =>
+          rw [swept] at repairedRefused
+          cases inside :
+              insideUniverse door (.digestRef kind target :: payload) with
+          | false =>
+              simp [inside] at repairedRefused
+              subst next
+              simp [taught_reason]
+          | true =>
+              rw [inside] at repairedRefused
+              cases writPresent :
+                  refMember DeclKind.policy writ door.catalog with
+              | false =>
+                  simp [writPresent] at repairedRefused
+                  subst next
+                  simp [taught_reason]
+              | true => simp [writPresent] at repairedRefused
 
 /-- The admission half of the estate-of-safety candidate: whatever
     spells a closure-row shape, the door refuses — no unlawful
@@ -838,7 +984,7 @@ theorem admission_refuses_unlawful : Laws.KAdmissionRefusesUnlawful := by
   | trusting kind target asserted =>
       intro act h
       simp [admit] at h
-  | lastWriter cell contribution =>
+  | lastWriter cell contribution algebra =>
       intro act h
       simp [admit] at h
   | latest subject =>
@@ -859,7 +1005,7 @@ theorem admission_refuses_unlawful : Laws.KAdmissionRefusesUnlawful := by
   | absenceProduction predicate declaration reason refusedProduction =>
       intro act h
       simp [admit, refusedProduction] at h
-  | mutation target payload =>
+  | mutation kind target payload writ =>
       intro act h
       simp [admit] at h
 
