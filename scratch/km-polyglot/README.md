@@ -1,5 +1,7 @@
 # km-polyglot — EXEMPLAR ONLY
 
+> **DEPRECATED by the production package.** The Go consumer now lives at `go/kmconform` (with its generator `go/cmd/kmgen` and its brand lint `go/brandlint`), reads the real format-2 artifact, and is wired into the module's gate; everything below is the schema-v1 demonstration that preceded it and is kept only as a reference.
+
 **Nothing in this directory is wired into any build, gate, module, test
 suite, or package.** It is not imported by `go/`, `packages/`, `proto/`,
 or `verify/`. It carries its own isolated Go module

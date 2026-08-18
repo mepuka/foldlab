@@ -11,7 +11,15 @@ path = "../kernel"
 
 [[lean_lib]]
 name = "Unity"
-globs = ["Unity", "Unity.Emit", "Unity.Shapes"]
+globs = [
+  "Unity",
+  "Unity.Canon",
+  "Unity.Shape",
+  "Unity.Reflect",
+  "Unity.Emit",
+  "Unity.Check",
+  "Unity.Dsl",
+]
 
 [[lean_exe]]
 name = "control"

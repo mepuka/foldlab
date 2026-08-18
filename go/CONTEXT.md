@@ -34,3 +34,27 @@ fact is trusted because it was stored.
 **Chain head**:
 The running digest over a journal's canonical facts. Equal heads mean
 equal histories; the head is the journal's identity at a moment.
+
+**Estate canonical JSON**:
+The conformance corpus's one serialization: RFC 8785 for member order and
+string escaping, with a number domain of unbounded non-negative integers
+written as minimal decimal. Distinct from the substrate's RFC 8785 seam,
+whose numbers are binary64 by the spec it implements.
+
+**Both-ways law**:
+Parsing every record of the corpus and re-emitting it reproduces the file
+byte for byte. It subsumes the member-order, whitespace, escaping and
+number-form checks at once, because a deviation in any of them changes a
+byte.
+
+**Brand**:
+A declaration kind carried in a digest's TYPE. In the model a cross-brand
+comparison has no type; in Go it is one defined type per kind, marked with
+the `//foldlab:brand` directive so the lint can find it. A value-level
+brand — the register that issued a token — has no type to become, and
+survives only as a run-time check.
+
+**Taught table**:
+The refusal rows: reason, the law defended, the repair, and whether the
+repair is a function of the refused candidate alone. The door never
+refuses without teaching the legal next move, so no field is optional.

@@ -1,86 +1,53 @@
 /-
-The kernel conformance emitter: schema v1 of `kernel-conformance.ndjson`.
+The kernel conformance emitter: format 2 of `kernel-conformance.ndjson`.
 
-Every row is COMPUTED by running the kernel model's own definitions —
-`DeclKind.rank` and `rankToKind` for the kind table, `HoleStage.rank`
-and `rankToStage` for the stage table, `RefusalReason.wire`,
-`Kernel.taught` and `RefusalReason.applicability` for the taught
-refusals, `encodeAct` for the sentence vectors, and `Kernel.admit` at
-`Kernel.Planted.door` for the admission verdicts. No law text, no
-repair text, and no verdict is retyped here; a hand-copied table would
-drift the moment the model moved, which is the failure this file
-exists to make impossible.
+Every row is COMPUTED. Three sources answer, and none of them is a
+person retyping a table:
 
-Two families of row cannot be computed from a Lean value at runtime,
-because a compiled executable carries no environment: the constructor
-NAMES of the kind and stage tables, and the mini-AST of the sort
-system. Those are written once below and checked against the real
-environment by `Unity/Shapes.lean`, which reads the emitted artifact
-back and compares it to what `getConstInfo` says the declarations
-actually are. The table lives in exactly one place; the checker never
-gets a second copy to disagree with.
+  * running the kernel model's own definitions — `DeclKind.rank` and
+    `rankToKind` for the kind table, `HoleStage.rank` and `rankToStage`
+    for the stage table, `RefusalReason.wire`, `Kernel.taught` and
+    `RefusalReason.applicability` for the taught refusals, `encodeAct`
+    for the sentence vectors, and `Kernel.admit` at
+    `Kernel.Planted.door` for the admission verdicts;
+  * reading the Lean environment at elaboration time — the mini-AST of
+    the sort system and each type's docstring, minted by
+    `kernel_manifest` from `getConstInfo` and `findDocString?` against
+    the committed closed list of names below;
+  * running this package's own canonicalizer over the ten canon
+    vectors, so the corpus carries a self-test of the byte form it is
+    written in.
+
+What stays hand-written is exactly one thing: WHICH types the
+interchange carries. That is a decision, so it is a committed list.
+Everything the corpus says ABOUT those types is read, never retyped —
+a renamed field, a reordered constructor or a reworded docstring moves
+these bytes on the next build.
+
+Format 2 differs from format 1 in the byte form (estate canonical
+JSON, so keys appear sorted) and in two new record groups (`doc` and
+`canon`). The record fields of the older groups are unchanged.
 
 This module lives beside the bridge and reads only the kernel model.
 It changes neither upstream tree, and it promotes nothing: the rows
 report what the model decides, and a conformance vector is a check on
 an implementation, never a guarantee about one.
 -/
-import Kernel.Definitions
+import Unity.Reflect
 
 namespace Unity.Emit
-
-/-! ## Canonical JSON, at the frozen key order
-
-The interchange freeze fixes the key order per record, so this writer
-preserves the order it is given rather than sorting. The grammar is
-deliberately narrow: ASCII strings, non-negative integers, arrays, and
-objects. There is no floating-point path because no row carries one.
--/
-
-/-- One hexadecimal digit, lowercase. -/
-def hexDigit (digit : Nat) : Char :=
-  if digit < 10 then Char.ofNat ('0'.toNat + digit)
-  else Char.ofNat ('a'.toNat + digit - 10)
-
-/-- JSON escaping for one character. The emitted corpus is ASCII by
-    check, but the escaper cannot produce invalid JSON if a taught text
-    later grows a quote or a control character. -/
-def escapeChar (character : Char) : String :=
-  if character == '"' then "\\\""
-  else if character == '\\' then "\\\\"
-  else if character == '\n' then "\\n"
-  else if character == '\r' then "\\r"
-  else if character == '\t' then "\\t"
-  else if character.toNat < 0x20 then
-    "\\u00" ++ String.singleton (hexDigit (character.toNat / 16)) ++
-      String.singleton (hexDigit (character.toNat % 16))
-  else String.singleton character
-
-/-- A JSON string literal. -/
-def jsonString (value : String) : String :=
-  "\"" ++ String.join (value.toList.map escapeChar) ++ "\""
-
-/-- A JSON integer. The corpus has no negative and no fractional
-    numbers, so decimal rendering is canonical. -/
-def jsonNat (value : Nat) : String := toString value
-
-/-- A JSON array, compact. -/
-def jsonArray (values : List String) : String :=
-  "[" ++ String.intercalate "," values ++ "]"
-
-/-- A JSON object at the given key order, compact. -/
-def jsonObject (fields : List (String × String)) : String :=
-  "{" ++ String.intercalate ","
-    (fields.map fun field => jsonString field.1 ++ ":" ++ field.2) ++ "}"
 
 /-! ## The kind and stage tables
 
 Ranks come from the model's own rank functions, and the row set is
 enumerated through the model's decode functions, so a kind or stage
-added without a rank cannot appear as a row. -/
+added without a rank cannot appear as a row. The constructor SPELLINGS
+below are the one thing a compiled emitter cannot ask about, because an
+executable carries no environment; `Unity/Check.lean` asks the
+environment on the gate's behalf and refuses a spelling that drifted.
+-/
 
-/-- The name of a declaration kind. The spelling is checked against the
-    constructor names in the environment by the shape checker. -/
+/-- The name of a declaration kind. -/
 def kindName : Kernel.DeclKind -> String
   | .schema => "schema"
   | .program => "program"
@@ -103,20 +70,28 @@ def stageName : Kernel.HoleStage -> String
   | .decided => "decided"
   | .sealed => "sealed"
 
-/-- One kind row. Shared with the shape checker so the artifact and the
-    check cannot render differently. -/
-def kindRow (name : String) (rank : Nat) : String :=
-  jsonObject
-    [ ("record", jsonString "kind")
-    , ("name", jsonString name)
-    , ("rank", jsonNat rank) ]
+/-- One kind record as a canonical value. -/
+def kindValue (name : String) (rank : Nat) : Canon.Value :=
+  .obj
+    [ ("record", .str "kind")
+    , ("name", .str name)
+    , ("rank", .num rank) ]
 
-/-- One stage row. -/
+/-- One stage record as a canonical value. -/
+def stageValue (name : String) (rank : Nat) : Canon.Value :=
+  .obj
+    [ ("record", .str "stage")
+    , ("name", .str name)
+    , ("rank", .num rank) ]
+
+/-- One kind record at the canonical byte form. Shared with the checker
+    so the artifact and the check can never differ by formatting. -/
+def kindRow (name : String) (rank : Nat) : String :=
+  Canon.render (kindValue name rank)
+
+/-- One stage record at the canonical byte form. -/
 def stageRow (name : String) (rank : Nat) : String :=
-  jsonObject
-    [ ("record", jsonString "stage")
-    , ("name", jsonString name)
-    , ("rank", jsonNat rank) ]
+  Canon.render (stageValue name rank)
 
 /-- The ranks of the closed kind universe, enumerated through the
     model's decode function: each rank names the kind whose own rank
@@ -136,7 +111,7 @@ def stageRows : List String :=
 
 Reason, law, repair, and applicability all come from the model's
 tables. The declaration order below is the one the freeze names; the
-shape checker pins it against the environment's constructor order. -/
+checker pins it against the environment's constructor order. -/
 
 /-- The refusal reasons in declaration order. -/
 def reasons : List Kernel.RefusalReason :=
@@ -146,259 +121,35 @@ def reasons : List Kernel.RefusalReason :=
   , .absenceClaim, .pastMutation, .offWritReferent
   , .closureIntrospection, .anchoredResolve, .unfilledHole ]
 
-/-- One refusal row, every field read out of the model's tables. -/
+/-- One refusal record, every field read out of the model's tables. -/
 def refusalRow (reason : Kernel.RefusalReason) : String :=
   let refusal := Kernel.taught reason
-  jsonObject
-    [ ("record", jsonString "refusal")
-    , ("reason", jsonString reason.wire)
-    , ("law", jsonString refusal.law)
-    , ("repair", jsonString refusal.repair)
-    , ("applicability", jsonString reason.applicability.wire) ]
+  Canon.render (.obj
+    [ ("record", .str "refusal")
+    , ("reason", .str reason.wire)
+    , ("law", .str refusal.law)
+    , ("repair", .str refusal.repair)
+    , ("applicability", .str reason.applicability.wire) ])
 
 /-- The sixteen taught refusals. -/
 def refusalRows : List String := reasons.map refusalRow
 
-/-! ## The mini-AST
+/-! ## The closed list of carried types
 
-The sort system's shape as data: the closed list of kernel types in
-`Kernel/Definitions.lean` declaration order, each with its parameters
-and its constructors' fields. A parameter is a BRAND when it is a
-value the type is indexed by — the register of a token, the partition
-of a position, the kind of a digest — which is the discipline that
-makes a cross-space comparison fail to elaborate rather than fail at
-runtime.
+The manifest, and the only hand-written table left in the emitter: the
+names of the kernel types the interchange carries, in
+`Kernel/Definitions.lean` declaration order. `kernel_manifest` reads
+each one out of the environment and mints three lists — the names, the
+mini-AST rows, and the docstring rows. It refuses a repeated name and a
+manifest whose declaration lines do not ascend, so a shuffled list
+cannot emit a shuffled corpus that still passes every per-row check.
+-/
 
-Field types are written in a small reference grammar: a bare name for
-an unapplied type, `Head(arg,...)` for an applied one, where each
-argument is its own short name (`Digest(program)` for a digest branded
-by the program kind, `Position(partition)` for a position in the
-partition a neighbouring field names). The checker renders the real
-declarations into the same grammar and demands byte equality, so this
-table is a transcription that cannot survive being wrong. -/
-
-/-- Whether a type parameter is a brand or a type argument. -/
-inductive ShapeRole where
-  | brand
-  | typeArgument
-deriving Repr, DecidableEq
-
-/-- The wire spelling of a parameter role. -/
-def ShapeRole.wire : ShapeRole -> String
-  | .brand => "brand"
-  | .typeArgument => "type"
-
-/-- Whether a declaration is an inductive or a structure. -/
-inductive ShapeForm where
-  | inductiveForm
-  | structureForm
-deriving Repr, DecidableEq
-
-/-- The wire spelling of a declaration form. -/
-def ShapeForm.wire : ShapeForm -> String
-  | .inductiveForm => "inductive"
-  | .structureForm => "structure"
-
-/-- One constructor field: its name and its type in the reference
-    grammar. -/
-structure ShapeField where
-  name : String
-  ref : String
-deriving Repr, DecidableEq
-
-/-- One constructor: its short name and its fields in order. -/
-structure ShapeCtor where
-  name : String
-  fields : List ShapeField
-deriving Repr, DecidableEq
-
-/-- One type parameter: its binder name and its role. -/
-structure ShapeParam where
-  name : String
-  role : ShapeRole
-deriving Repr, DecidableEq
-
-/-- The shape of one kernel type. -/
-structure TypeShape where
-  name : String
-  form : ShapeForm
-  params : List ShapeParam
-  ctors : List ShapeCtor
-deriving Repr, DecidableEq
-
-/-- A brand parameter. -/
-def brand (name : String) : ShapeParam := { name := name, role := .brand }
-
-/-- A constructor field. -/
-def field (name ref : String) : ShapeField := { name := name, ref := ref }
-
-/-- A constructor with fields. -/
-def ctor (name : String) (fields : List ShapeField) : ShapeCtor :=
-  { name := name, fields := fields }
-
-/-- A closed enumeration's constructors, all of them field-free. -/
-def enumeration (names : List String) : List ShapeCtor :=
-  names.map fun name => ctor name []
-
-/-- An inductive type shape. -/
-def inductiveShape (name : String) (params : List ShapeParam)
-    (ctors : List ShapeCtor) : TypeShape :=
-  { name := name, form := .inductiveForm, params := params, ctors := ctors }
-
-/-- A structure shape: one constructor, `mk`, carrying the fields. -/
-def structureShape (name : String) (params : List ShapeParam)
-    (fields : List ShapeField) : TypeShape :=
-  { name := name, form := .structureForm, params := params
-    ctors := [ctor "mk" fields] }
-
-/-- The closed mini-AST: every kernel type the interchange carries, in
-    `Kernel/Definitions.lean` declaration order. -/
-def typeShapes : List TypeShape :=
-  [ inductiveShape "DeclKind" []
-      (enumeration
-        [ "schema", "program", "policy", "capability", "lane", "algebra"
-        , "index", "resource", "ontology", "schedule", "template"
-        , "language" ])
-  , structureShape "Digest" [brand "kind"] [field "id" "Nat"]
-  , structureShape "Value" [] [field "bytes" "Nat"]
-  , structureShape "StateLabel" [] [field "value" "Nat"]
-  , structureShape "Petname" [] [field "text" "String"]
-  , structureShape "Token" [brand "register"] [field "value" "Nat"]
-  , structureShape "LanePartition" []
-      [field "lane" "Digest(lane)", field "shard" "Nat"]
-  , structureShape "Position" [brand "partition"] [field "value" "Nat"]
-  , structureShape "AnchorFact" [brand "declared", brand "partition"]
-      [ field "floor" "Position(partition)"
-      , field "state" "StateLabel"
-      , field "head" "Position(partition)" ]
-  , inductiveShape "HoleStage" []
-      (enumeration ["opened", "filled", "disputed", "decided", "sealed"])
-  , inductiveShape "KTriggerPredicate" []
-      [ ctor "evidenceAppears"
-          [field "lane" "Digest(lane)", field "pattern" "Value"]
-      , ctor "cellReaches"
-          [field "cell" "Digest(resource)", field "threshold" "Value"]
-      , ctor "holeReaches"
-          [field "hole" "Nat", field "target" "HoleStage"]
-      , ctor "outcomeLanded" [field "register" "Digest(program)"]
-      , ctor "headAdvancedPast"
-          [ field "partition" "LanePartition"
-          , field "position" "Position(partition)" ] ]
-  , inductiveShape "Act" []
-      [ ctor "declare"
-          [ field "kind" "DeclKind", field "value" "Value"
-          , field "writ" "Digest(policy)" ]
-      , ctor "resolve"
-          [field "kind" "DeclKind", field "target" "Digest(kind)"]
-      , ctor "emit" [field "lane" "Digest(lane)", field "body" "Value"]
-      , ctor "join"
-          [field "cell" "Digest(resource)", field "contribution" "Value"]
-      , ctor "fold"
-          [ field "declared" "Digest(index)"
-          , field "partition" "LanePartition"
-          , field "anchor" "AnchorFact(declared,partition)"
-          , field "query" "Value" ]
-      , ctor "decide"
-          [ field "register" "Digest(program)"
-          , field "token" "Token(register)"
-          , field "outcome" "Value" ]
-      , ctor "trigger"
-          [ field "predicate" "KTriggerPredicate"
-          , field "declaration" "Digest(program)" ]
-      , ctor "spawn"
-          [field "parent" "Digest(policy)", field "request" "Digest(policy)"] ]
-  , inductiveShape "RawArg" []
-      [ ctor "digestRef" [field "kind" "DeclKind", field "id" "Nat"]
-      , ctor "literal" [field "value" "Nat"]
-      , ctor "hole" [field "name" "Nat"]
-      , ctor "clockNow" []
-      , ctor "randomSeed" []
-      , ctor "secretBytes" [field "bytes" "Nat"]
-      , ctor "mintedId" [field "token" "Nat"]
-      , ctor "functionValue" [field "code" "Nat"] ]
-  , structureShape "CandidateAnchor" []
-      [ field "foldId" "Nat", field "lane" "Nat", field "shard" "Nat"
-      , field "floor" "Nat", field "state" "Nat", field "head" "Nat" ]
-  , structureShape "TokenClaim" []
-      [field "register" "Nat", field "value" "Nat"]
-  , inductiveShape "MergeStrategy" []
-      [ ctor "declaredAlgebra" [field "algebra" "Nat"]
-      , ctor "lastWriterWins" [] ]
-  , inductiveShape "CandidatePredicate" []
-      [ ctor "evidenceAppears" [field "lane" "Nat", field "pattern" "Nat"]
-      , ctor "cellReaches" [field "cell" "Nat", field "threshold" "Nat"]
-      , ctor "holeReaches" [field "hole" "Nat", field "stage" "Nat"]
-      , ctor "outcomeLanded" [field "register" "Nat"]
-      , ctor "headAdvancedPast"
-          [field "lane" "Nat", field "shard" "Nat", field "position" "Nat"]
-      , ctor "onAbsence" [field "subject" "Nat"]
-      , ctor "negation" [field "inner" "CandidatePredicate"]
-      , ctor "deadline" [field "tick" "Nat"]
-      , ctor "absentEverywhere" [field "cell" "Nat"] ]
-  , inductiveShape "CandidateAct" []
-      [ ctor "declare"
-          [ field "kind" "DeclKind", field "payload" "List(RawArg)"
-          , field "writ" "Nat" ]
-      , ctor "resolveDigest"
-          [ field "kind" "DeclKind", field "target" "Nat"
-          , field "anchor" "Option(Nat)" ]
-      , ctor "trustBytes"
-          [ field "kind" "DeclKind", field "target" "Nat"
-          , field "asserted" "Nat" ]
-      , ctor "emit" [field "lane" "Nat", field "body" "List(RawArg)"]
-      , ctor "join"
-          [ field "cell" "Nat", field "contribution" "List(RawArg)"
-          , field "strategy" "MergeStrategy" ]
-      , ctor "readLatest" [field "subject" "Nat"]
-      , ctor "fold"
-          [ field "declared" "Nat", field "anchor" "Option(CandidateAnchor)"
-          , field "query" "List(RawArg)" ]
-      , ctor "decide"
-          [ field "register" "Nat", field "token" "Option(TokenClaim)"
-          , field "outcome" "List(RawArg)" ]
-      , ctor "trigger"
-          [field "predicate" "CandidatePredicate", field "declaration" "Nat"]
-      , ctor "spawn" [field "parent" "Nat", field "request" "Nat"]
-      , ctor "updateInPlace"
-          [field "target" "Nat", field "payload" "List(RawArg)"] ]
-  , inductiveShape "RefusalReason" []
-      (enumeration
-        [ "clockRead", "absenceTrigger", "unfencedDecide", "lastWriterWins"
-        , "unverifiedRead", "crossSortIdentifier", "mintedIdentifier"
-        , "ambientQueryInput", "forwardReference", "secretCarrier"
-        , "absenceClaim", "pastMutation", "offWritReferent"
-        , "closureIntrospection", "anchoredResolve", "unfilledHole" ])
-  , structureShape "Refusal" []
-      [ field "reason" "RefusalReason", field "law" "String"
-      , field "repair" "String" ]
-  , inductiveShape "Applicability" []
-      (enumeration ["machineApplicable", "advisory"])
-  , structureShape "Door" []
-      [field "catalog" "List(Ref)", field "pinned" "List(Ref)"]
-  ]
-
-/-- One type row. The checker renders environment-derived shapes
-    through this same function, so a difference in the artifact is a
-    difference in the declarations, never in the formatting. -/
-def typeRow (shape : TypeShape) : String :=
-  jsonObject
-    [ ("record", jsonString "type")
-    , ("name", jsonString shape.name)
-    , ("form", jsonString shape.form.wire)
-    , ("params", jsonArray (shape.params.map fun param =>
-        jsonObject
-          [ ("name", jsonString param.name)
-          , ("role", jsonString param.role.wire) ]))
-    , ("constructors", jsonArray (shape.ctors.map fun constructor =>
-        jsonObject
-          [ ("name", jsonString constructor.name)
-          , ("fields", jsonArray (constructor.fields.map fun field =>
-              jsonObject
-                [ ("name", jsonString field.name)
-                , ("type", jsonString field.ref) ])) ])) ]
-
-/-- The mini-AST rows. -/
-def typeRows : List String := typeShapes.map typeRow
+kernel_manifest kernelTypes typeRows docRows from
+  DeclKind Digest Value StateLabel Petname Token LanePartition Position
+  AnchorFact HoleStage KTriggerPredicate Act RawArg CandidateAnchor
+  TokenClaim MergeStrategy CandidatePredicate CandidateAct RefusalReason
+  Refusal Applicability Door
 
 /-! ## Sentence encoding vectors
 
@@ -429,12 +180,12 @@ def vectors : List (String × Kernel.Act) :=
   , ("spawn-under-writ", .spawn ⟨4⟩ ⟨5⟩)
   ]
 
-/-- One encoding row: the vector's name and the model's framing of it. -/
+/-- One encoding record: the vector's name and the model's framing. -/
 def encodingRow (entry : String × Kernel.Act) : String :=
-  jsonObject
-    [ ("record", jsonString "encoding")
-    , ("name", jsonString entry.1)
-    , ("act", jsonArray ((Kernel.encodeAct entry.2).map jsonNat)) ]
+  Canon.render (.obj
+    [ ("record", .str "encoding")
+    , ("name", .str entry.1)
+    , ("act", .arr ((Kernel.encodeAct entry.2).map Canon.Value.num)) ])
 
 /-- The encoding rows. -/
 def encodingRows : List String := vectors.map encodingRow
@@ -478,21 +229,21 @@ def planted : List (String × Kernel.CandidateAct) :=
   , ("lawfulDeclare", Kernel.Planted.lawfulDeclare)
   ]
 
-/-- One admission row: the door's verdict on the named candidate. -/
+/-- One admission record: the door's verdict on the named candidate. -/
 def admissionRow (entry : String × Kernel.CandidateAct) : String :=
   match Kernel.admit Kernel.Planted.door entry.2 with
   | .refused refusal =>
-      jsonObject
-        [ ("record", jsonString "admission")
-        , ("name", jsonString entry.1)
-        , ("verdict", jsonString "refused")
-        , ("reason", jsonString refusal.reason.wire) ]
+      Canon.render (.obj
+        [ ("record", .str "admission")
+        , ("name", .str entry.1)
+        , ("verdict", .str "refused")
+        , ("reason", .str refusal.reason.wire) ])
   | .admitted act =>
-      jsonObject
-        [ ("record", jsonString "admission")
-        , ("name", jsonString entry.1)
-        , ("verdict", jsonString "admitted")
-        , ("encoded", jsonArray ((Kernel.encodeAct act).map jsonNat)) ]
+      Canon.render (.obj
+        [ ("record", .str "admission")
+        , ("name", .str entry.1)
+        , ("verdict", .str "admitted")
+        , ("encoded", .arr ((Kernel.encodeAct act).map Canon.Value.num)) ])
 
 /-- The admission rows. -/
 def admissionRows : List String := planted.map admissionRow
@@ -503,35 +254,91 @@ def wasRefused (entry : String × Kernel.CandidateAct) : Bool :=
   | .refused _ => true
   | .admitted _ => false
 
+/-! ## The canon vectors
+
+The corpus self-tests the byte form it is written in. Each vector
+carries a value and that value's canonical serialization as a string,
+so a consumer that canonicalizes the `value` field and does not get the
+`bytes` field has a defect in its writer, located by name.
+
+The vectors are chosen at the places a writer goes wrong: the two empty
+containers, the empty string, zero, an integer past the double-safe
+range, an object whose members are written out of order (the `bytes`
+show `a` before `b`, which is the whole point), nesting on both sides,
+the four two-character escapes, and a control character that has no
+two-character escape. -/
+
+/-- A string carrying a double quote, a backslash, a newline and a tab
+    — the escapes a writer most often gets wrong. -/
+def escapeSample : String := "a\"b\\c\nd\te"
+
+/-- A string carrying the control character U+0001, which has no
+    two-character escape and must render as a lowercase four-digit
+    unicode escape. -/
+def controlSample : String := String.singleton (Char.ofNat 0x01)
+
+/-- The ten canon vectors, in emission order. The `key-order` vector is
+    written here with its members out of order on purpose: what reaches
+    the file is the canonicalization of what is written, so the record
+    demonstrates the sort rather than describing it. -/
+def canonVectors : List (String × Canon.Value) :=
+  [ ("empty-object", .obj [])
+  , ("empty-array", .arr [])
+  , ("empty-string", .str "")
+  , ("zero", .num 0)
+  , ("big-integer", .num 9007199254740993)
+  , ("key-order", .obj [("b", .num 1), ("a", .num 2)])
+  , ("nested-object", .obj [("z", .obj [("y", .arr [.num 3, .num 4])])])
+  , ("nested-array", .arr [.arr [], .arr [.obj []]])
+  , ("string-escapes", .str escapeSample)
+  , ("control-char", .str controlSample)
+  ]
+
+/-- One canon record: the value, and the value's own canonical bytes
+    carried as a string. -/
+def canonRow (entry : String × Canon.Value) : String :=
+  Canon.render (.obj
+    [ ("record", .str "canon")
+    , ("name", .str entry.1)
+    , ("value", entry.2)
+    , ("bytes", .str (Canon.render entry.2)) ])
+
+/-- The canon rows. -/
+def canonRows : List String := canonVectors.map canonRow
+
 /-! ## The document -/
 
-/-- The counts the header declares, in header key order. The emitter
-    re-derives every one of them from the rendered document before
-    printing: a declared count is a claim about the file, so it is
-    checked against the file rather than against the list it was
-    written from. -/
+/-- The record groups, in the order the freeze fixes them. -/
+def groupOrder : List String :=
+  ["kind", "stage", "refusal", "type", "encoding", "admission", "doc", "canon"]
+
+/-- The counts the header declares. The emitter re-derives every one of
+    them from the RENDERED document before printing: a declared count is
+    a claim about the file, so it is checked against the file rather
+    than against the list it was written from. -/
 def counts : List (String × Nat) :=
   [ ("kind", kindRows.length)
   , ("stage", stageRows.length)
   , ("refusal", refusalRows.length)
   , ("type", typeRows.length)
   , ("encoding", encodingRows.length)
-  , ("admission", admissionRows.length) ]
+  , ("admission", admissionRows.length)
+  , ("doc", docRows.length)
+  , ("canon", canonRows.length) ]
 
 /-- The header. -/
 def header : String :=
-  jsonObject
-    [ ("record", jsonString "header")
-    , ("format", jsonNat 1)
-    , ("generator", jsonString "verify/unity emit")
-    , ("source", jsonString "verify/kernel")
-    , ("counts", jsonObject
-        (counts.map fun entry => (entry.1, jsonNat entry.2))) ]
+  Canon.render (.obj
+    [ ("record", .str "header")
+    , ("format", .num 2)
+    , ("generator", .str "verify/unity emit")
+    , ("source", .str "verify/kernel")
+    , ("counts", .obj (counts.map fun entry => (entry.1, Canon.Value.num entry.2))) ])
 
 /-- The whole artifact, one line per record, in the frozen order. -/
 def document : List String :=
   header :: kindRows ++ stageRows ++ refusalRows ++ typeRows ++
-    encodingRows ++ admissionRows
+    encodingRows ++ admissionRows ++ docRows ++ canonRows
 
 /-! ## Emit-time checks
 
@@ -539,10 +346,23 @@ The emitter refuses to print a corpus that fails its own checks. Each
 check answers a way the document could be wrong while still looking
 well formed. -/
 
-/-- How many lines of the document carry a given record tag. -/
-def taggedCount (tag : String) : Nat :=
-  (document.filter fun line =>
-    line.startsWith ("{" ++ jsonString "record" ++ ":" ++ jsonString tag ++ ",")).length
+/-- The record tag of a line, read back out of the rendered bytes. Every
+    tag in this module is obtained this way rather than from the list a
+    row came from, so a row that rendered under the wrong tag is
+    counted where it actually landed. -/
+def tagOf (line : String) : Option String :=
+  match Canon.parse line with
+  | .ok value => Canon.stringAt value "record"
+  | .error _ => none
+
+/-- The tags of the rendered document, in file order. -/
+def tags : List String := document.filterMap tagOf
+
+/-- Lines the emitter's own reader cannot parse into a tagged record. -/
+def parseFailures : List String :=
+  document.filterMap fun line =>
+    if (tagOf line).isSome then none
+    else some s!"emit: a rendered line is not a tagged canonical record: {line}"
 
 /-- Header counts that do not match the rendered document, and a
     document whose length the header does not account for — a record
@@ -551,11 +371,23 @@ def taggedCount (tag : String) : Nat :=
 def countFailures : List String :=
   let declared := counts.foldl (fun total entry => total + entry.2) 0
   counts.filterMap (fun entry =>
-    let rendered := taggedCount entry.1
+    let rendered := (tags.filter fun tag => tag == entry.1).length
     if entry.2 == rendered then none
     else some s!"emit: the header declares {entry.2} {entry.1} rows but the document carries {rendered}") ++
   (if document.length == declared + 1 then [] else
     [s!"emit: the header accounts for {declared} rows beside its own, but the document has {document.length} lines"])
+
+/-- The tag sequence the freeze demands: the header, then each group
+    whole and in order. -/
+def expectedTags : List String :=
+  "header" :: List.foldr (· ++ ·) []
+    (groupOrder.map fun group =>
+      List.replicate (tags.filter fun tag => tag == group).length group)
+
+/-- A document whose groups interleave or appear out of order. -/
+def orderFailures : List String :=
+  if tags == expectedTags then []
+  else [s!"emit: the record groups are out of order or interleaved: {tags}"]
 
 /-- Vectors whose framing does not decode back to itself. -/
 def roundTripFailures : List String :=
@@ -583,8 +415,29 @@ def asciiFailures : List String :=
       character.toNat >= 0x20 && character.toNat <= 0x7e).map fun line =>
     s!"emit: a record carries a character outside printable ASCII: {line}"
 
+/-- Every canon vector's `bytes` field must be its `value` field's own
+    canonical serialization, read back out of the rendered record rather
+    than trusted from the term that produced it. -/
+def canonFailures : List String :=
+  canonRows.filterMap fun line =>
+    match Canon.parse line with
+    | .error reason => some s!"emit: a canon record does not parse: {reason}"
+    | .ok record =>
+        match Canon.member record "value", Canon.stringAt record "bytes",
+            Canon.stringAt record "name" with
+        | some value, some bytes, some name =>
+            if Canon.render value == bytes then none
+            else some s!"emit: canon vector {name} carries bytes that are not its value's canonical form"
+        | _, _, _ => some s!"emit: a canon record is missing a field: {line}"
+
+/-- The both-ways law at emit time: every rendered line must read back
+    and write out to the same bytes. -/
+def bothWaysFailures : List String :=
+  Canon.bothWaysFailures document
+
 /-- Every reason the emitter would refuse to print. -/
 def emitFailures : List String :=
-  countFailures ++ roundTripFailures ++ verdictFailures ++ asciiFailures
+  parseFailures ++ bothWaysFailures ++ countFailures ++ orderFailures ++
+    roundTripFailures ++ verdictFailures ++ asciiFailures ++ canonFailures
 
 end Unity.Emit

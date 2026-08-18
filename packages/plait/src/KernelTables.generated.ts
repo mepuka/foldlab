@@ -4,7 +4,7 @@
  * Artifact: packages/plait/fixtures/kernel-conformance.ndjson
  * Command:  bun run generate:kernel-tables
  * Source:   verify/kernel, emitted by "verify/unity emit"
- *           at interchange format 1.
+ *           at interchange format 2.
  *
  * The kernel model's closed tables, projected into the runtime's type layer:
  * the declaration-kind and hole-stage registries with their ranks, the taught
@@ -25,7 +25,7 @@
 export const KERNEL_TABLE_PROVENANCE = {
   artifact: "packages/plait/fixtures/kernel-conformance.ndjson",
   command: "bun run generate:kernel-tables",
-  format: 1,
+  format: 2n,
   generator: "verify/unity emit",
   source: "verify/kernel",
 } as const

@@ -264,3 +264,69 @@ New KB rows:
   wired to nothing; promoting Go requires the two brand-leak
   analyzer checks the schema document names, which have no standard
   implementation.
+
+## Addendum: the format-2 canonical slice, landed
+
+Third wave, same day. One kill survived: the original four-lane dispatch
+died to an interrupt mid-flight; a continuation fleet finished the
+partial work, with one lane lost again to an API server error and
+re-run solo. Every claim below was re-verified by the coordinator after
+integration.
+
+What landed: the corpus moved to format 2 — estate canonical JSON
+(RFC 8785 member ordering and escaping inherited verbatim; ONE
+deviation: unbounded non-negative integers in minimal decimal, because
+encoding vectors exceed 2^53) — 117 records, 22632 bytes, with two new
+add-only groups: doc (22 docstrings read from the Lean environment,
+em-dash transliterated by a named table, refuse-not-skip) and canon
+(ten self-test vectors including the past-2^53 witness). The Lean
+emitter now derives its type and doc rows from the environment by
+metaprogramming; Unity/Dsl.lean adds a `candidate%` macro surface over
+the whole candidate grammar with all seventeen planted rows respelled
+and proved equal by rfl (roster 19 -> 40, empty footprints).
+TypeScript grew generated Effect Schemas with first-class annotations
+(descriptions from doc records; a canonicalExamples byte-string
+annotation working around Effect's JSON Schema export dropping
+examples containing bigint, measured at rc.108), a SchemaAST-derived
+generic canonical writer, and the prose projection
+(docs/generated/kernel-language.generated.md). Go promoted to the live
+module: strict both-ways codec, generated tables via cmd/kmgen with
+regeneration checks, and brandlint — a stdlib-only vet-shaped analyzer
+refusing cross-brand conversions and brand-adopting untyped constants,
+with clean and leaky control arms. The normative document was swept to
+measured truth end to end and is machine-checked against the corpus by
+scratch/km-canon/check_doc.py.
+
+THE HEADLINE, coordinator-verified: one corpus, three languages,
+byte-identical both ways — Lean, TypeScript, and Go each parse and
+re-emit the same 22632 bytes and construct all ten canon vectors
+natively.
+
+KB updates: KB-13 is RESOLVED — the hand-transcribed corroboration
+sample was retired by the TS lane per the generated-vectors ruling,
+its role replaced by canon vectors and the both-ways law. New rows:
+
+- KB-18 (R14): whether \b and \f (and other unexercised escapes) gain
+  corpus vectors is a format-bump ruling no measurement settles.
+- KB-19 (act decoder in Go): schema check 19 is consumer-optional
+  until Go grows an act decoder; currently only the arity table.
+- KB-20 (brandlint scope): 2 of 4 lint checks ship; discarded-error
+  and sealed-interface exhaustiveness need machinery that does not
+  exist; consumers of kmconform are not yet linted.
+- KB-21 (door carrier): the reference door still speaks number with a
+  checked bigint crossing that throws past 2^53 rather than rounding;
+  moving the door itself to bigint is a named, separate change.
+- KB-22 (DSL surface): Unity/Dsl.lean reserves only percent-suffixed
+  entry tokens; a later term syntax reusing those spellings clashes.
+
+The algebraic-register design (KM-17/KM-18) also landed:
+docs/design/2026-08-18-km-algebraic-register.md — seven law atoms, six
+rungs as a PROVED poset (group genuinely beside: inverses and
+idempotence cannot coexist non-trivially), two-tier brand evidence
+(donor-backed / suite-backed), a discriminating measurement catalog
+(count, sum, histogram REFUSED at cells — not idempotent), notation in
+projections only, bracket aliases gated behind a pre-registered
+900-run eval, and an extension-commit plan A/A-prime/B/C/D/E/F/G whose
+one fork — A needs the verify/kernel freeze lifted by ruling; A-prime
+is corpus-plus-door-checks now, additively upgradable — is the
+operator's to rule with the KM-17/KM-18 grill rows.

@@ -1,85 +1,117 @@
-{"record":"header","format":1,"generator":"verify/unity emit","source":"verify/kernel","counts":{"kind":12,"stage":5,"refusal":16,"type":22,"encoding":12,"admission":17}}
-{"record":"kind","name":"schema","rank":0}
-{"record":"kind","name":"program","rank":1}
-{"record":"kind","name":"policy","rank":2}
-{"record":"kind","name":"capability","rank":3}
-{"record":"kind","name":"lane","rank":4}
-{"record":"kind","name":"algebra","rank":5}
-{"record":"kind","name":"index","rank":6}
-{"record":"kind","name":"resource","rank":7}
-{"record":"kind","name":"ontology","rank":8}
-{"record":"kind","name":"schedule","rank":9}
-{"record":"kind","name":"template","rank":10}
-{"record":"kind","name":"language","rank":11}
-{"record":"stage","name":"opened","rank":0}
-{"record":"stage","name":"filled","rank":1}
-{"record":"stage","name":"disputed","rank":2}
-{"record":"stage","name":"decided","rank":3}
-{"record":"stage","name":"sealed","rank":4}
-{"record":"refusal","reason":"clock-read","law":"the fold carrier has no clock parameter (f11_query_deterministic)","repair":"emit the claimed time as a tick fact on an evidence lane; schedule through a declared schedule value","applicability":"advisory"}
-{"record":"refusal","reason":"absence-trigger","law":"the trigger grammar is closed at five monotone productions (f10_stability)","repair":"route acting-on-silence through the deadline seat: a fenced decide fed by tick facts","applicability":"advisory"}
-{"record":"refusal","reason":"unfenced-decide","law":"only a fenced token commits (at_most_one_landed_commit)","repair":"hold the register's token and commit with it; grant and renew are runtime liveness, not grammar","applicability":"advisory"}
-{"record":"refusal","reason":"last-writer-wins","law":"cells merge by join under a declared ACI algebra (f1_cell_merge_aci)","repair":"declare the merge algebra; idempotent join leaves nothing for arrival order to choose","applicability":"machine-applicable"}
-{"record":"refusal","reason":"unverified-read","law":"a decode re-derives the digest of what it fetched (verify-on-read)","repair":"resolve and let the door re-derive; absence is retryable, a mismatch is structural","applicability":"machine-applicable"}
-{"record":"refusal","reason":"cross-sort-identifier","law":"tokens are per-register and positions are per-partition; sorts never compare across spaces","repair":"compare a token only within its register and a position only within its partition","applicability":"advisory"}
-{"record":"refusal","reason":"minted-identifier","law":"every identifier is a digest of a declaration or a derivation from one","repair":"declare the value and use its digest; nothing mints a name","applicability":"advisory"}
-{"record":"refusal","reason":"ambient-query-input","law":"a derived read is a function of support and query alone (f11_topk_of_support)","repair":"read state through a fold at an anchor, and put any seed inside the declared query value","applicability":"advisory"}
-{"record":"refusal","reason":"forward-reference","law":"pins name already-admitted digests (c7_pin_well_founded)","repair":"declare the referent first; the reference graph is a DAG by admission order","applicability":"advisory"}
-{"record":"refusal","reason":"secret-carrier","law":"the wire grammar admits no secret position","repair":"carry credentials in the environmental band as redacted configuration, outside meaning","applicability":"advisory"}
-{"record":"refusal","reason":"absence-claim","law":"a local view is a lattice lower bound (cell_absorb_inflationary)","repair":"claim at-least from a replica, never not-present-anywhere","applicability":"advisory"}
-{"record":"refusal","reason":"past-mutation","law":"journals are append-only; anchored resumption survives compaction (compact_below_floor_preserves_resumption)","repair":"declare a successor value pinning its predecessor; forgetting is fenced compaction above the horizon","applicability":"machine-applicable"}
-{"record":"refusal","reason":"off-writ-referent","law":"a declaration's identifiers lie inside the universe its writ pins","repair":"spawn under a writ that pins the referent, or request the referent into the pinned universe","applicability":"advisory"}
-{"record":"refusal","reason":"closure-introspection","law":"a program's identity is its declaration, never its closure bytes","repair":"reference computation by digest: declare the fold and pin its digest","applicability":"advisory"}
-{"record":"refusal","reason":"anchored-resolve","law":"a digest names one value forever, so no anchor can change a resolve","repair":"drop the anchor; read head-relative state through a fold at an anchor","applicability":"machine-applicable"}
-{"record":"refusal","reason":"unfilled-hole","law":"only closed programs execute; a hole is a declared parameter, not a wildcard","repair":"fill every declared hole; disjoint fills commute, so fill order is free","applicability":"advisory"}
-{"record":"type","name":"DeclKind","form":"inductive","params":[],"constructors":[{"name":"schema","fields":[]},{"name":"program","fields":[]},{"name":"policy","fields":[]},{"name":"capability","fields":[]},{"name":"lane","fields":[]},{"name":"algebra","fields":[]},{"name":"index","fields":[]},{"name":"resource","fields":[]},{"name":"ontology","fields":[]},{"name":"schedule","fields":[]},{"name":"template","fields":[]},{"name":"language","fields":[]}]}
-{"record":"type","name":"Digest","form":"structure","params":[{"name":"kind","role":"brand"}],"constructors":[{"name":"mk","fields":[{"name":"id","type":"Nat"}]}]}
-{"record":"type","name":"Value","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"bytes","type":"Nat"}]}]}
-{"record":"type","name":"StateLabel","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"value","type":"Nat"}]}]}
-{"record":"type","name":"Petname","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"text","type":"String"}]}]}
-{"record":"type","name":"Token","form":"structure","params":[{"name":"register","role":"brand"}],"constructors":[{"name":"mk","fields":[{"name":"value","type":"Nat"}]}]}
-{"record":"type","name":"LanePartition","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"lane","type":"Digest(lane)"},{"name":"shard","type":"Nat"}]}]}
-{"record":"type","name":"Position","form":"structure","params":[{"name":"partition","role":"brand"}],"constructors":[{"name":"mk","fields":[{"name":"value","type":"Nat"}]}]}
-{"record":"type","name":"AnchorFact","form":"structure","params":[{"name":"declared","role":"brand"},{"name":"partition","role":"brand"}],"constructors":[{"name":"mk","fields":[{"name":"floor","type":"Position(partition)"},{"name":"state","type":"StateLabel"},{"name":"head","type":"Position(partition)"}]}]}
-{"record":"type","name":"HoleStage","form":"inductive","params":[],"constructors":[{"name":"opened","fields":[]},{"name":"filled","fields":[]},{"name":"disputed","fields":[]},{"name":"decided","fields":[]},{"name":"sealed","fields":[]}]}
-{"record":"type","name":"KTriggerPredicate","form":"inductive","params":[],"constructors":[{"name":"evidenceAppears","fields":[{"name":"lane","type":"Digest(lane)"},{"name":"pattern","type":"Value"}]},{"name":"cellReaches","fields":[{"name":"cell","type":"Digest(resource)"},{"name":"threshold","type":"Value"}]},{"name":"holeReaches","fields":[{"name":"hole","type":"Nat"},{"name":"target","type":"HoleStage"}]},{"name":"outcomeLanded","fields":[{"name":"register","type":"Digest(program)"}]},{"name":"headAdvancedPast","fields":[{"name":"partition","type":"LanePartition"},{"name":"position","type":"Position(partition)"}]}]}
-{"record":"type","name":"Act","form":"inductive","params":[],"constructors":[{"name":"declare","fields":[{"name":"kind","type":"DeclKind"},{"name":"value","type":"Value"},{"name":"writ","type":"Digest(policy)"}]},{"name":"resolve","fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Digest(kind)"}]},{"name":"emit","fields":[{"name":"lane","type":"Digest(lane)"},{"name":"body","type":"Value"}]},{"name":"join","fields":[{"name":"cell","type":"Digest(resource)"},{"name":"contribution","type":"Value"}]},{"name":"fold","fields":[{"name":"declared","type":"Digest(index)"},{"name":"partition","type":"LanePartition"},{"name":"anchor","type":"AnchorFact(declared,partition)"},{"name":"query","type":"Value"}]},{"name":"decide","fields":[{"name":"register","type":"Digest(program)"},{"name":"token","type":"Token(register)"},{"name":"outcome","type":"Value"}]},{"name":"trigger","fields":[{"name":"predicate","type":"KTriggerPredicate"},{"name":"declaration","type":"Digest(program)"}]},{"name":"spawn","fields":[{"name":"parent","type":"Digest(policy)"},{"name":"request","type":"Digest(policy)"}]}]}
-{"record":"type","name":"RawArg","form":"inductive","params":[],"constructors":[{"name":"digestRef","fields":[{"name":"kind","type":"DeclKind"},{"name":"id","type":"Nat"}]},{"name":"literal","fields":[{"name":"value","type":"Nat"}]},{"name":"hole","fields":[{"name":"name","type":"Nat"}]},{"name":"clockNow","fields":[]},{"name":"randomSeed","fields":[]},{"name":"secretBytes","fields":[{"name":"bytes","type":"Nat"}]},{"name":"mintedId","fields":[{"name":"token","type":"Nat"}]},{"name":"functionValue","fields":[{"name":"code","type":"Nat"}]}]}
-{"record":"type","name":"CandidateAnchor","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"foldId","type":"Nat"},{"name":"lane","type":"Nat"},{"name":"shard","type":"Nat"},{"name":"floor","type":"Nat"},{"name":"state","type":"Nat"},{"name":"head","type":"Nat"}]}]}
-{"record":"type","name":"TokenClaim","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"register","type":"Nat"},{"name":"value","type":"Nat"}]}]}
-{"record":"type","name":"MergeStrategy","form":"inductive","params":[],"constructors":[{"name":"declaredAlgebra","fields":[{"name":"algebra","type":"Nat"}]},{"name":"lastWriterWins","fields":[]}]}
-{"record":"type","name":"CandidatePredicate","form":"inductive","params":[],"constructors":[{"name":"evidenceAppears","fields":[{"name":"lane","type":"Nat"},{"name":"pattern","type":"Nat"}]},{"name":"cellReaches","fields":[{"name":"cell","type":"Nat"},{"name":"threshold","type":"Nat"}]},{"name":"holeReaches","fields":[{"name":"hole","type":"Nat"},{"name":"stage","type":"Nat"}]},{"name":"outcomeLanded","fields":[{"name":"register","type":"Nat"}]},{"name":"headAdvancedPast","fields":[{"name":"lane","type":"Nat"},{"name":"shard","type":"Nat"},{"name":"position","type":"Nat"}]},{"name":"onAbsence","fields":[{"name":"subject","type":"Nat"}]},{"name":"negation","fields":[{"name":"inner","type":"CandidatePredicate"}]},{"name":"deadline","fields":[{"name":"tick","type":"Nat"}]},{"name":"absentEverywhere","fields":[{"name":"cell","type":"Nat"}]}]}
-{"record":"type","name":"CandidateAct","form":"inductive","params":[],"constructors":[{"name":"declare","fields":[{"name":"kind","type":"DeclKind"},{"name":"payload","type":"List(RawArg)"},{"name":"writ","type":"Nat"}]},{"name":"resolveDigest","fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Nat"},{"name":"anchor","type":"Option(Nat)"}]},{"name":"trustBytes","fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Nat"},{"name":"asserted","type":"Nat"}]},{"name":"emit","fields":[{"name":"lane","type":"Nat"},{"name":"body","type":"List(RawArg)"}]},{"name":"join","fields":[{"name":"cell","type":"Nat"},{"name":"contribution","type":"List(RawArg)"},{"name":"strategy","type":"MergeStrategy"}]},{"name":"readLatest","fields":[{"name":"subject","type":"Nat"}]},{"name":"fold","fields":[{"name":"declared","type":"Nat"},{"name":"anchor","type":"Option(CandidateAnchor)"},{"name":"query","type":"List(RawArg)"}]},{"name":"decide","fields":[{"name":"register","type":"Nat"},{"name":"token","type":"Option(TokenClaim)"},{"name":"outcome","type":"List(RawArg)"}]},{"name":"trigger","fields":[{"name":"predicate","type":"CandidatePredicate"},{"name":"declaration","type":"Nat"}]},{"name":"spawn","fields":[{"name":"parent","type":"Nat"},{"name":"request","type":"Nat"}]},{"name":"updateInPlace","fields":[{"name":"target","type":"Nat"},{"name":"payload","type":"List(RawArg)"}]}]}
-{"record":"type","name":"RefusalReason","form":"inductive","params":[],"constructors":[{"name":"clockRead","fields":[]},{"name":"absenceTrigger","fields":[]},{"name":"unfencedDecide","fields":[]},{"name":"lastWriterWins","fields":[]},{"name":"unverifiedRead","fields":[]},{"name":"crossSortIdentifier","fields":[]},{"name":"mintedIdentifier","fields":[]},{"name":"ambientQueryInput","fields":[]},{"name":"forwardReference","fields":[]},{"name":"secretCarrier","fields":[]},{"name":"absenceClaim","fields":[]},{"name":"pastMutation","fields":[]},{"name":"offWritReferent","fields":[]},{"name":"closureIntrospection","fields":[]},{"name":"anchoredResolve","fields":[]},{"name":"unfilledHole","fields":[]}]}
-{"record":"type","name":"Refusal","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"reason","type":"RefusalReason"},{"name":"law","type":"String"},{"name":"repair","type":"String"}]}]}
-{"record":"type","name":"Applicability","form":"inductive","params":[],"constructors":[{"name":"machineApplicable","fields":[]},{"name":"advisory","fields":[]}]}
-{"record":"type","name":"Door","form":"structure","params":[],"constructors":[{"name":"mk","fields":[{"name":"catalog","type":"List(Ref)"},{"name":"pinned","type":"List(Ref)"}]}]}
-{"record":"encoding","name":"lawful-declare","act":[0,0,7000051000172,4]}
-{"record":"encoding","name":"resolve-schema","act":[1,0,8]}
-{"record":"encoding","name":"emit-lane","act":[2,1,42]}
-{"record":"encoding","name":"join-cell","act":[3,6,42]}
-{"record":"encoding","name":"fold-at-anchor","act":[4,2,1,0,4,11,6,13]}
-{"record":"encoding","name":"decide-fenced","act":[5,3,7,42]}
-{"record":"encoding","name":"trigger-evidence-appears","act":[6,0,1,17,0,3]}
-{"record":"encoding","name":"trigger-cell-reaches","act":[6,1,6,23,0,3]}
-{"record":"encoding","name":"trigger-hole-reaches","act":[6,2,0,3,0,3]}
-{"record":"encoding","name":"trigger-outcome-landed","act":[6,3,3,0,0,3]}
-{"record":"encoding","name":"trigger-head-advanced-past","act":[6,4,1,0,6,3]}
-{"record":"encoding","name":"spawn-under-writ","act":[7,4,5]}
-{"record":"admission","name":"clockFold","verdict":"refused","reason":"clock-read"}
-{"record":"admission","name":"absenceTrigger","verdict":"refused","reason":"absence-trigger"}
-{"record":"admission","name":"unfencedDecide","verdict":"refused","reason":"unfenced-decide"}
-{"record":"admission","name":"lastWriterJoin","verdict":"refused","reason":"last-writer-wins"}
-{"record":"admission","name":"trustingRead","verdict":"refused","reason":"unverified-read"}
-{"record":"admission","name":"crossRegisterDecide","verdict":"refused","reason":"cross-sort-identifier"}
-{"record":"admission","name":"mintedDeclare","verdict":"refused","reason":"minted-identifier"}
-{"record":"admission","name":"latestRead","verdict":"refused","reason":"ambient-query-input"}
-{"record":"admission","name":"forwardDeclare","verdict":"refused","reason":"forward-reference"}
-{"record":"admission","name":"secretEmit","verdict":"refused","reason":"secret-carrier"}
-{"record":"admission","name":"absenceClaimTrigger","verdict":"refused","reason":"absence-claim"}
-{"record":"admission","name":"pastMutation","verdict":"refused","reason":"past-mutation"}
-{"record":"admission","name":"offWritDeclare","verdict":"refused","reason":"off-writ-referent"}
-{"record":"admission","name":"functionDeclare","verdict":"refused","reason":"closure-introspection"}
-{"record":"admission","name":"anchoredResolve","verdict":"refused","reason":"anchored-resolve"}
-{"record":"admission","name":"holeyEmit","verdict":"refused","reason":"unfilled-hole"}
-{"record":"admission","name":"lawfulDeclare","verdict":"admitted","encoded":[0,0,7000051000172,4]}
+{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
+{"name":"schema","rank":0,"record":"kind"}
+{"name":"program","rank":1,"record":"kind"}
+{"name":"policy","rank":2,"record":"kind"}
+{"name":"capability","rank":3,"record":"kind"}
+{"name":"lane","rank":4,"record":"kind"}
+{"name":"algebra","rank":5,"record":"kind"}
+{"name":"index","rank":6,"record":"kind"}
+{"name":"resource","rank":7,"record":"kind"}
+{"name":"ontology","rank":8,"record":"kind"}
+{"name":"schedule","rank":9,"record":"kind"}
+{"name":"template","rank":10,"record":"kind"}
+{"name":"language","rank":11,"record":"kind"}
+{"name":"opened","rank":0,"record":"stage"}
+{"name":"filled","rank":1,"record":"stage"}
+{"name":"disputed","rank":2,"record":"stage"}
+{"name":"decided","rank":3,"record":"stage"}
+{"name":"sealed","rank":4,"record":"stage"}
+{"applicability":"advisory","law":"the fold carrier has no clock parameter (f11_query_deterministic)","reason":"clock-read","record":"refusal","repair":"emit the claimed time as a tick fact on an evidence lane; schedule through a declared schedule value"}
+{"applicability":"advisory","law":"the trigger grammar is closed at five monotone productions (f10_stability)","reason":"absence-trigger","record":"refusal","repair":"route acting-on-silence through the deadline seat: a fenced decide fed by tick facts"}
+{"applicability":"advisory","law":"only a fenced token commits (at_most_one_landed_commit)","reason":"unfenced-decide","record":"refusal","repair":"hold the register's token and commit with it; grant and renew are runtime liveness, not grammar"}
+{"applicability":"machine-applicable","law":"cells merge by join under a declared ACI algebra (f1_cell_merge_aci)","reason":"last-writer-wins","record":"refusal","repair":"declare the merge algebra; idempotent join leaves nothing for arrival order to choose"}
+{"applicability":"machine-applicable","law":"a decode re-derives the digest of what it fetched (verify-on-read)","reason":"unverified-read","record":"refusal","repair":"resolve and let the door re-derive; absence is retryable, a mismatch is structural"}
+{"applicability":"advisory","law":"tokens are per-register and positions are per-partition; sorts never compare across spaces","reason":"cross-sort-identifier","record":"refusal","repair":"compare a token only within its register and a position only within its partition"}
+{"applicability":"advisory","law":"every identifier is a digest of a declaration or a derivation from one","reason":"minted-identifier","record":"refusal","repair":"declare the value and use its digest; nothing mints a name"}
+{"applicability":"advisory","law":"a derived read is a function of support and query alone (f11_topk_of_support)","reason":"ambient-query-input","record":"refusal","repair":"read state through a fold at an anchor, and put any seed inside the declared query value"}
+{"applicability":"advisory","law":"pins name already-admitted digests (c7_pin_well_founded)","reason":"forward-reference","record":"refusal","repair":"declare the referent first; the reference graph is a DAG by admission order"}
+{"applicability":"advisory","law":"the wire grammar admits no secret position","reason":"secret-carrier","record":"refusal","repair":"carry credentials in the environmental band as redacted configuration, outside meaning"}
+{"applicability":"advisory","law":"a local view is a lattice lower bound (cell_absorb_inflationary)","reason":"absence-claim","record":"refusal","repair":"claim at-least from a replica, never not-present-anywhere"}
+{"applicability":"machine-applicable","law":"journals are append-only; anchored resumption survives compaction (compact_below_floor_preserves_resumption)","reason":"past-mutation","record":"refusal","repair":"declare a successor value pinning its predecessor; forgetting is fenced compaction above the horizon"}
+{"applicability":"advisory","law":"a declaration's identifiers lie inside the universe its writ pins","reason":"off-writ-referent","record":"refusal","repair":"spawn under a writ that pins the referent, or request the referent into the pinned universe"}
+{"applicability":"advisory","law":"a program's identity is its declaration, never its closure bytes","reason":"closure-introspection","record":"refusal","repair":"reference computation by digest: declare the fold and pin its digest"}
+{"applicability":"machine-applicable","law":"a digest names one value forever, so no anchor can change a resolve","reason":"anchored-resolve","record":"refusal","repair":"drop the anchor; read head-relative state through a fold at an anchor"}
+{"applicability":"advisory","law":"only closed programs execute; a hole is a declared parameter, not a wildcard","reason":"unfilled-hole","record":"refusal","repair":"fill every declared hole; disjoint fills commute, so fill order is free"}
+{"constructors":[{"fields":[],"name":"schema"},{"fields":[],"name":"program"},{"fields":[],"name":"policy"},{"fields":[],"name":"capability"},{"fields":[],"name":"lane"},{"fields":[],"name":"algebra"},{"fields":[],"name":"index"},{"fields":[],"name":"resource"},{"fields":[],"name":"ontology"},{"fields":[],"name":"schedule"},{"fields":[],"name":"template"},{"fields":[],"name":"language"}],"form":"inductive","name":"DeclKind","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"id","type":"Nat"}],"name":"mk"}],"form":"structure","name":"Digest","params":[{"name":"kind","role":"brand"}],"record":"type"}
+{"constructors":[{"fields":[{"name":"bytes","type":"Nat"}],"name":"mk"}],"form":"structure","name":"Value","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"value","type":"Nat"}],"name":"mk"}],"form":"structure","name":"StateLabel","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"text","type":"String"}],"name":"mk"}],"form":"structure","name":"Petname","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"value","type":"Nat"}],"name":"mk"}],"form":"structure","name":"Token","params":[{"name":"register","role":"brand"}],"record":"type"}
+{"constructors":[{"fields":[{"name":"lane","type":"Digest(lane)"},{"name":"shard","type":"Nat"}],"name":"mk"}],"form":"structure","name":"LanePartition","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"value","type":"Nat"}],"name":"mk"}],"form":"structure","name":"Position","params":[{"name":"partition","role":"brand"}],"record":"type"}
+{"constructors":[{"fields":[{"name":"floor","type":"Position(partition)"},{"name":"state","type":"StateLabel"},{"name":"head","type":"Position(partition)"}],"name":"mk"}],"form":"structure","name":"AnchorFact","params":[{"name":"declared","role":"brand"},{"name":"partition","role":"brand"}],"record":"type"}
+{"constructors":[{"fields":[],"name":"opened"},{"fields":[],"name":"filled"},{"fields":[],"name":"disputed"},{"fields":[],"name":"decided"},{"fields":[],"name":"sealed"}],"form":"inductive","name":"HoleStage","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"lane","type":"Digest(lane)"},{"name":"pattern","type":"Value"}],"name":"evidenceAppears"},{"fields":[{"name":"cell","type":"Digest(resource)"},{"name":"threshold","type":"Value"}],"name":"cellReaches"},{"fields":[{"name":"hole","type":"Nat"},{"name":"target","type":"HoleStage"}],"name":"holeReaches"},{"fields":[{"name":"register","type":"Digest(program)"}],"name":"outcomeLanded"},{"fields":[{"name":"partition","type":"LanePartition"},{"name":"position","type":"Position(partition)"}],"name":"headAdvancedPast"}],"form":"inductive","name":"KTriggerPredicate","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"kind","type":"DeclKind"},{"name":"value","type":"Value"},{"name":"writ","type":"Digest(policy)"}],"name":"declare"},{"fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Digest(kind)"}],"name":"resolve"},{"fields":[{"name":"lane","type":"Digest(lane)"},{"name":"body","type":"Value"}],"name":"emit"},{"fields":[{"name":"cell","type":"Digest(resource)"},{"name":"contribution","type":"Value"}],"name":"join"},{"fields":[{"name":"declared","type":"Digest(index)"},{"name":"partition","type":"LanePartition"},{"name":"anchor","type":"AnchorFact(declared,partition)"},{"name":"query","type":"Value"}],"name":"fold"},{"fields":[{"name":"register","type":"Digest(program)"},{"name":"token","type":"Token(register)"},{"name":"outcome","type":"Value"}],"name":"decide"},{"fields":[{"name":"predicate","type":"KTriggerPredicate"},{"name":"declaration","type":"Digest(program)"}],"name":"trigger"},{"fields":[{"name":"parent","type":"Digest(policy)"},{"name":"request","type":"Digest(policy)"}],"name":"spawn"}],"form":"inductive","name":"Act","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"kind","type":"DeclKind"},{"name":"id","type":"Nat"}],"name":"digestRef"},{"fields":[{"name":"value","type":"Nat"}],"name":"literal"},{"fields":[{"name":"name","type":"Nat"}],"name":"hole"},{"fields":[],"name":"clockNow"},{"fields":[],"name":"randomSeed"},{"fields":[{"name":"bytes","type":"Nat"}],"name":"secretBytes"},{"fields":[{"name":"token","type":"Nat"}],"name":"mintedId"},{"fields":[{"name":"code","type":"Nat"}],"name":"functionValue"}],"form":"inductive","name":"RawArg","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"foldId","type":"Nat"},{"name":"lane","type":"Nat"},{"name":"shard","type":"Nat"},{"name":"floor","type":"Nat"},{"name":"state","type":"Nat"},{"name":"head","type":"Nat"}],"name":"mk"}],"form":"structure","name":"CandidateAnchor","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"register","type":"Nat"},{"name":"value","type":"Nat"}],"name":"mk"}],"form":"structure","name":"TokenClaim","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"algebra","type":"Nat"}],"name":"declaredAlgebra"},{"fields":[],"name":"lastWriterWins"}],"form":"inductive","name":"MergeStrategy","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"lane","type":"Nat"},{"name":"pattern","type":"Nat"}],"name":"evidenceAppears"},{"fields":[{"name":"cell","type":"Nat"},{"name":"threshold","type":"Nat"}],"name":"cellReaches"},{"fields":[{"name":"hole","type":"Nat"},{"name":"stage","type":"Nat"}],"name":"holeReaches"},{"fields":[{"name":"register","type":"Nat"}],"name":"outcomeLanded"},{"fields":[{"name":"lane","type":"Nat"},{"name":"shard","type":"Nat"},{"name":"position","type":"Nat"}],"name":"headAdvancedPast"},{"fields":[{"name":"subject","type":"Nat"}],"name":"onAbsence"},{"fields":[{"name":"inner","type":"CandidatePredicate"}],"name":"negation"},{"fields":[{"name":"tick","type":"Nat"}],"name":"deadline"},{"fields":[{"name":"cell","type":"Nat"}],"name":"absentEverywhere"}],"form":"inductive","name":"CandidatePredicate","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"kind","type":"DeclKind"},{"name":"payload","type":"List(RawArg)"},{"name":"writ","type":"Nat"}],"name":"declare"},{"fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Nat"},{"name":"anchor","type":"Option(Nat)"}],"name":"resolveDigest"},{"fields":[{"name":"kind","type":"DeclKind"},{"name":"target","type":"Nat"},{"name":"asserted","type":"Nat"}],"name":"trustBytes"},{"fields":[{"name":"lane","type":"Nat"},{"name":"body","type":"List(RawArg)"}],"name":"emit"},{"fields":[{"name":"cell","type":"Nat"},{"name":"contribution","type":"List(RawArg)"},{"name":"strategy","type":"MergeStrategy"}],"name":"join"},{"fields":[{"name":"subject","type":"Nat"}],"name":"readLatest"},{"fields":[{"name":"declared","type":"Nat"},{"name":"anchor","type":"Option(CandidateAnchor)"},{"name":"query","type":"List(RawArg)"}],"name":"fold"},{"fields":[{"name":"register","type":"Nat"},{"name":"token","type":"Option(TokenClaim)"},{"name":"outcome","type":"List(RawArg)"}],"name":"decide"},{"fields":[{"name":"predicate","type":"CandidatePredicate"},{"name":"declaration","type":"Nat"}],"name":"trigger"},{"fields":[{"name":"parent","type":"Nat"},{"name":"request","type":"Nat"}],"name":"spawn"},{"fields":[{"name":"target","type":"Nat"},{"name":"payload","type":"List(RawArg)"}],"name":"updateInPlace"}],"form":"inductive","name":"CandidateAct","params":[],"record":"type"}
+{"constructors":[{"fields":[],"name":"clockRead"},{"fields":[],"name":"absenceTrigger"},{"fields":[],"name":"unfencedDecide"},{"fields":[],"name":"lastWriterWins"},{"fields":[],"name":"unverifiedRead"},{"fields":[],"name":"crossSortIdentifier"},{"fields":[],"name":"mintedIdentifier"},{"fields":[],"name":"ambientQueryInput"},{"fields":[],"name":"forwardReference"},{"fields":[],"name":"secretCarrier"},{"fields":[],"name":"absenceClaim"},{"fields":[],"name":"pastMutation"},{"fields":[],"name":"offWritReferent"},{"fields":[],"name":"closureIntrospection"},{"fields":[],"name":"anchoredResolve"},{"fields":[],"name":"unfilledHole"}],"form":"inductive","name":"RefusalReason","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"reason","type":"RefusalReason"},{"name":"law","type":"String"},{"name":"repair","type":"String"}],"name":"mk"}],"form":"structure","name":"Refusal","params":[],"record":"type"}
+{"constructors":[{"fields":[],"name":"machineApplicable"},{"fields":[],"name":"advisory"}],"form":"inductive","name":"Applicability","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"catalog","type":"List(Ref)"},{"name":"pinned","type":"List(Ref)"}],"name":"mk"}],"form":"structure","name":"Door","params":[],"record":"type"}
+{"act":[0,0,7000051000172,4],"name":"lawful-declare","record":"encoding"}
+{"act":[1,0,8],"name":"resolve-schema","record":"encoding"}
+{"act":[2,1,42],"name":"emit-lane","record":"encoding"}
+{"act":[3,6,42],"name":"join-cell","record":"encoding"}
+{"act":[4,2,1,0,4,11,6,13],"name":"fold-at-anchor","record":"encoding"}
+{"act":[5,3,7,42],"name":"decide-fenced","record":"encoding"}
+{"act":[6,0,1,17,0,3],"name":"trigger-evidence-appears","record":"encoding"}
+{"act":[6,1,6,23,0,3],"name":"trigger-cell-reaches","record":"encoding"}
+{"act":[6,2,0,3,0,3],"name":"trigger-hole-reaches","record":"encoding"}
+{"act":[6,3,3,0,0,3],"name":"trigger-outcome-landed","record":"encoding"}
+{"act":[6,4,1,0,6,3],"name":"trigger-head-advanced-past","record":"encoding"}
+{"act":[7,4,5],"name":"spawn-under-writ","record":"encoding"}
+{"name":"clockFold","reason":"clock-read","record":"admission","verdict":"refused"}
+{"name":"absenceTrigger","reason":"absence-trigger","record":"admission","verdict":"refused"}
+{"name":"unfencedDecide","reason":"unfenced-decide","record":"admission","verdict":"refused"}
+{"name":"lastWriterJoin","reason":"last-writer-wins","record":"admission","verdict":"refused"}
+{"name":"trustingRead","reason":"unverified-read","record":"admission","verdict":"refused"}
+{"name":"crossRegisterDecide","reason":"cross-sort-identifier","record":"admission","verdict":"refused"}
+{"name":"mintedDeclare","reason":"minted-identifier","record":"admission","verdict":"refused"}
+{"name":"latestRead","reason":"ambient-query-input","record":"admission","verdict":"refused"}
+{"name":"forwardDeclare","reason":"forward-reference","record":"admission","verdict":"refused"}
+{"name":"secretEmit","reason":"secret-carrier","record":"admission","verdict":"refused"}
+{"name":"absenceClaimTrigger","reason":"absence-claim","record":"admission","verdict":"refused"}
+{"name":"pastMutation","reason":"past-mutation","record":"admission","verdict":"refused"}
+{"name":"offWritDeclare","reason":"off-writ-referent","record":"admission","verdict":"refused"}
+{"name":"functionDeclare","reason":"closure-introspection","record":"admission","verdict":"refused"}
+{"name":"anchoredResolve","reason":"anchored-resolve","record":"admission","verdict":"refused"}
+{"name":"holeyEmit","reason":"unfilled-hole","record":"admission","verdict":"refused"}
+{"encoded":[0,0,7000051000172,4],"name":"lawfulDeclare","record":"admission","verdict":"admitted"}
+{"doc":"The closed universe of declaration kinds. One brand per kind: a\ndigest is always the digest of a declaration of a known kind. ","name":"DeclKind","record":"doc","target":"type"}
+{"doc":"A content address branded by the declaration kind it names. Digests\nare modeled as identity labels; that a real digest is a hash over\none canonical byte form stays in the trusted base. A digest of one\nkind never compares with a digest of another: the comparison has no\ntype, which is the referent-pinning discipline carried by the sort\nsystem itself. ","name":"Digest","record":"doc","target":"type"}
+{"doc":"An immutable value at its canonical byte form, modeled as an opaque\nidentity label. Canonical-byte identity (one value, one byte form)\nis the certifier's own wall and is not restated here. ","name":"Value","record":"doc","target":"type"}
+{"doc":"The digest of a fold state: a value identity, never a declaration\nidentity. Its own sort keeps it out of every declaration-digest\nposition. ","name":"StateLabel","record":"doc","target":"type"}
+{"doc":"A human-facing petname. Naming, never identity: no operation in this\npackage derives a digest from a petname, because resolution is a\nhead-relative read served by a fold, outside the identity plane. ","name":"Petname","record":"doc","target":"type"}
+{"doc":"A fencing token, meaningful only within the register that issued\nit. The register is part of the token's type: a cross-register\ncomparison fails to elaborate, so the proven-but-vacuous-bound\nfailure (two sides of a comparison denominated in different spaces)\nhas no syntax. ","name":"Token","record":"doc","target":"type"}
+{"doc":"A lane partition: the venue-local shard of an evidence stream. ","name":"LanePartition","record":"doc","target":"type"}
+{"doc":"A journal position, meaningful only within its partition. As with\ntokens, the space rides the type. ","name":"Position","record":"doc","target":"type"}
+{"doc":"An anchor fact: `(fold digest, partition) -> (floor, state, head)`.\nA fact, not a cache -- the resume coordinate every head-relative\nread carries. The fold digest and partition are part of the type:\nan anchor replays nowhere but at its own fold and partition. ","name":"AnchorFact","record":"doc","target":"type"}
+{"doc":"The epistemic stages of a hole, in rising rank order. `opened` is\nthe protocol stage named open; the language keyword forces the\nspelling. ","name":"HoleStage","record":"doc","target":"type"}
+{"doc":"The closed trigger grammar at kernel sorts: exactly the five\nmonotone productions. Every production reads its component upward\n(presence, reached-at-least, landed, advanced-past), so stability\nunder growth is a property of the grammar's shape. ","name":"KTriggerPredicate","record":"doc","target":"type"}
+{"doc":"One lawful kernel sentence: the eight generators, each constructor\ndemanding exactly the sorts its licensing law names.\n`resolve` is anchor-free because a digest names one value forever;\nevery head-relative read is `fold` at an anchor -- the\nimmutable/head-relative split carried by the constructors\nthemselves. `decide` is commit-with-token: the token's type pins\nthe register, so an unfenced or cross-register commit has no\nderivation. ","name":"Act","record":"doc","target":"type"}
+{"doc":"A raw argument atom. The lawful atoms are digest references and\nliterals; holes are lawful in program declarations and refused in a\nsingle sentence; every other atom is an unlawful shape kept\nspellable so the door's refusal of it is demonstrable. ","name":"RawArg","record":"doc","target":"type"}
+{"doc":"A candidate anchor: the raw spelling of a resume coordinate, its\nfold carried as data rather than as a type index -- which is exactly\nwhat lets a cross-fold anchor be spelled and refused. ","name":"CandidateAnchor","record":"doc","target":"type"}
+{"doc":"A raw token claim: the register the claimant believes the token\nbelongs to, carried as data so a cross-register claim is spellable\nand refused. ","name":"TokenClaim","record":"doc","target":"type"}
+{"doc":"A candidate merge strategy. The lawful strategy names a declared\nmerge algebra; last-writer-wins is spellable here and refused at\nthe door, because no such carrier exists in the fabric. ","name":"MergeStrategy","record":"doc","target":"type"}
+{"doc":"The candidate trigger grammar: the five lawful productions plus the\nshapes the closed grammar deliberately cannot carry -- absence,\nnegation, deadline, and the not-present-anywhere claim a local\nreplica can never ground. ","name":"CandidatePredicate","record":"doc","target":"type"}
+{"doc":"The raw candidate grammar. Every generator is spellable, and so is\nevery unlawful shape: an anchored resolve, a trusted read, an\nunfenced or cross-register decide, a last-writer-wins join, an\nunanchored latest read, and an in-place mutation of the past. ","name":"CandidateAct","record":"doc","target":"type"}
+{"doc":"The closed refusal reasons of the kernel door. ","name":"RefusalReason","record":"doc","target":"type"}
+{"doc":"A structural refusal: the reason, the law it defends, and the\ntaught repair. Refusal parity as data: the door never refuses\nwithout teaching the legal next move. ","name":"Refusal","record":"doc","target":"type"}
+{"doc":"How a taught repair may be applied. A repair is machine-applicable\nexactly when the lawful rewrite is a function of the refused\ncandidate alone -- an agent may apply it mechanically, with no new\ninformation; it is advisory when the repair needs something the\ncandidate does not carry (a token to hold, a value to declare, an\nauthority to request). The Rust diagnostic discipline, adopted by\nthe operator's ruling. ","name":"Applicability","record":"doc","target":"type"}
+{"doc":"The admission context: the already-admitted catalog and the\nuniverse of referents the acting writ pins. ","name":"Door","record":"doc","target":"type"}
+{"bytes":"{}","name":"empty-object","record":"canon","value":{}}
+{"bytes":"[]","name":"empty-array","record":"canon","value":[]}
+{"bytes":"\"\"","name":"empty-string","record":"canon","value":""}
+{"bytes":"0","name":"zero","record":"canon","value":0}
+{"bytes":"9007199254740993","name":"big-integer","record":"canon","value":9007199254740993}
+{"bytes":"{\"a\":2,\"b\":1}","name":"key-order","record":"canon","value":{"a":2,"b":1}}
+{"bytes":"{\"z\":{\"y\":[3,4]}}","name":"nested-object","record":"canon","value":{"z":{"y":[3,4]}}}
+{"bytes":"[[],[{}]]","name":"nested-array","record":"canon","value":[[],[{}]]}
+{"bytes":"\"a\\\"b\\\\c\\nd\\te\"","name":"string-escapes","record":"canon","value":"a\"b\\c\nd\te"}
+{"bytes":"\"\\u0001\"","name":"control-char","record":"canon","value":"\u0001"}

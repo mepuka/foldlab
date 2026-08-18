@@ -15,11 +15,23 @@ if ! command -v lake >/dev/null 2>&1; then
 fi
 
 for required in lean-toolchain lakefile.toml lake-manifest.json Unity.lean \
-    ControlMain.lean EmitMain.lean ShapeCheck.lean Unity/Definitions.lean \
-    Unity/Laws.lean Unity/Proofs.lean Unity/Emit.lean Unity/Shapes.lean \
-    citations.txt; do
+    ControlMain.lean EmitMain.lean ConformanceCheck.lean \
+    Unity/Definitions.lean Unity/Laws.lean Unity/Proofs.lean \
+    Unity/Canon.lean Unity/Shape.lean Unity/Reflect.lean Unity/Emit.lean \
+    Unity/Check.lean Unity/Dsl.lean citations.txt; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
+    exit 1
+  fi
+done
+
+# Every module of the package is in the library's globs: a module that
+# builds only because something else happens to import it is a module
+# the gate does not really cover.
+for module in Unity Unity.Canon Unity.Shape Unity.Reflect Unity.Emit \
+    Unity.Check Unity.Dsl; do
+  if ! grep -q "\"$module\"," lakefile.toml; then
+    echo "GATE: FAIL — $module is not in the library globs" >&2
     exit 1
   fi
 done
@@ -71,7 +83,7 @@ fi
 echo "GATE: PASS (topology: two read-only path requires, both models untouched)"
 
 mapfile -t lean_sources < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
-lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ShapeCheck.lean)
+lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ConformanceCheck.lean)
 
 # Kernel-bound source hygiene, at the kernel's own word list.
 if grep -nE "(^|[^A-Za-z0-9_'])(sorry|partial|panic|implemented_by|extern|native_decide|unsafe|axiom|seal)($|[^A-Za-z0-9_'])|panic!" \
@@ -79,7 +91,7 @@ if grep -nE "(^|[^A-Za-z0-9_'])(sorry|partial|panic|implemented_by|extern|native
   echo "GATE: FAIL — forbidden kernel escape in Lean source" >&2
   exit 1
 fi
-echo "GATE: PASS (bridge source hygiene)"
+echo "GATE: PASS (bridge source hygiene over ${#lean_sources[@]} files)"
 
 # Partition gate: object files never carry theorem declarations; law
 # statements never carry proofs; proof files never mint definitions.
@@ -141,6 +153,18 @@ if grep -n 'Nat\.max' "${lean_sources[@]}"; then
   exit 1
 fi
 echo "GATE: PASS (replay fence; independent derivation; ground carrier pinned)"
+
+# The corpus's prose is read out of the kernel's docstrings, never
+# retyped: no docstring row may be spelled in this package's source.
+if grep -n 'A lane partition: the venue-local shard' "${lean_sources[@]}"; then
+  echo "GATE: FAIL — a kernel docstring was transcribed into the bridge" >&2
+  exit 1
+fi
+if ! grep -q 'findDocString?' Unity/Reflect.lean; then
+  echo "GATE: FAIL — the docstring rows stopped being read from the environment" >&2
+  exit 1
+fi
+echo "GATE: PASS (docstrings read from the environment, not transcribed)"
 
 # Citation ledger: the kernel's taught table cites law rows by name.
 # The committed ledger pins that set; every fabric row must resolve in
@@ -208,14 +232,24 @@ roster=(
   positioned_token_le positioned_token_determines records_token_le
   well_fenced_by_construction greatest_read_is_arbitrated
   greatest_reads_agree greatest_tie_diverges
+  dsl_clock_fold dsl_absence_trigger dsl_unfenced_decide
+  dsl_last_writer_join dsl_trusting_read dsl_cross_register_decide
+  dsl_minted_declare dsl_latest_read dsl_forward_declare
+  dsl_secret_emit dsl_absence_claim_trigger dsl_past_mutation
+  dsl_off_writ_declare dsl_function_declare dsl_anchored_resolve
+  dsl_holey_emit dsl_lawful_declare dsl_spells_every_generator
+  dsl_spells_every_argument dsl_spells_every_predicate
+  dsl_spells_every_kind
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
 discovered_tmp=$(mktemp "./.discovered.XXXXXX")
 footprint_check=$(mktemp "./.footprint.XXXXXX.lean")
+probe_check=$(mktemp "./.footprint.XXXXXX.lean")
 corpus_first=$(mktemp "./.corpus.XXXXXX.ndjson")
 corpus_second=$(mktemp "./.corpus.XXXXXX.ndjson")
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$corpus_first" "$corpus_second"' EXIT
+corpus_mutant=$(mktemp "./.corpus.XXXXXX.ndjson")
+trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$probe_check" "$corpus_first" "$corpus_second" "$corpus_mutant"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -289,13 +323,16 @@ if [[ "${committed_controls[*]}" != "${exercised_sorted[*]}" ]]; then
   exit 1
 fi
 
-# The kernel conformance corpus. Every row is computed by running the
-# kernel model's own definitions, so a moved rank, a reworded taught
-# repair, a changed door verdict or a different sentence framing moves
-# these bytes. The emitter refuses its own document if a vector fails
-# to decode back to its framing, if the header's counts disagree with
-# the records rendered, or if the planted set stops refusing sixteen
-# and admitting one.
+# The kernel conformance corpus, format 2. Every row is computed: by
+# running the kernel model's own definitions, by reading the Lean
+# environment at elaboration time, or by running this package's own
+# canonicalizer. A moved rank, a reworded taught repair, a changed door
+# verdict, a renamed field, a reworded docstring or a changed byte form
+# moves these bytes. The emitter refuses its own document if a vector
+# fails to decode back to its framing, if a line fails the both-ways
+# law, if the header's counts disagree with the records rendered, if
+# the record groups interleave, or if the planted set stops refusing
+# sixteen and admitting one.
 fixture="../../packages/plait/fixtures/kernel-conformance.ndjson"
 if [[ ! -f "$fixture" ]]; then
   echo "GATE: FAIL — the committed kernel conformance corpus is missing" >&2
@@ -320,18 +357,20 @@ if ! diff -u "$fixture" "$corpus_first"; then
   exit 1
 fi
 
-# The frozen interchange: header, record counts, printable ASCII on
-# every line (which also refuses a carriage return), and the
-# non-negative safe-integer domain the runtime consumer reads.
-expected_header='{"record":"header","format":1,"generator":"verify/unity emit","source":"verify/kernel","counts":{"kind":12,"stage":5,"refusal":16,"type":22,"encoding":12,"admission":17}}'
+# The frozen interchange: the header at its canonical byte form (so the
+# key order is pinned along with the values), the record counts, and
+# printable ASCII on every line, which also refuses a carriage return.
+expected_header='{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 85 ]] ||
-    [[ "$(grep -c '^{"record":"kind",' "$fixture")" -ne 12 ]] ||
-    [[ "$(grep -c '^{"record":"stage",' "$fixture")" -ne 5 ]] ||
-    [[ "$(grep -c '^{"record":"refusal",' "$fixture")" -ne 16 ]] ||
-    [[ "$(grep -c '^{"record":"type",' "$fixture")" -ne 22 ]] ||
-    [[ "$(grep -c '^{"record":"encoding",' "$fixture")" -ne 12 ]] ||
-    [[ "$(grep -c '^{"record":"admission",' "$fixture")" -ne 17 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 117 ]] ||
+    [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
+    [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
+    [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
+    [[ "$(grep -c '"record":"type"' "$fixture")" -ne 22 ]] ||
+    [[ "$(grep -c '"record":"encoding"' "$fixture")" -ne 12 ]] ||
+    [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 22 ]] ||
+    [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
     [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 16 ]] ||
     [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — corpus header or record counts moved" >&2
@@ -341,26 +380,96 @@ if LC_ALL=C grep -n '[^ -~]' "$fixture"; then
   echo "GATE: FAIL — corpus left printable ASCII (a carriage return counts)" >&2
   exit 1
 fi
-if grep -oE '[0-9]+' "$fixture" | awk '$1 > 9007199254740991 { exit 1 }'; then
-  :
-else
-  echo "GATE: FAIL — corpus escaped the non-negative safe-integer domain" >&2
-  exit 1
-fi
-echo "GATE: PASS (85-record corpus regenerates byte-identically; header, counts, ASCII and numeral domain pinned)"
 
-# The shape check: every record whose truth lives in the Lean
-# environment — the mini-AST of the sort system, the kind and stage
-# tables, the refusal order, the admission names — rebuilt from
-# `getConstInfo` and compared with the emitted bytes.
-if shape_output=$(lake env lean ShapeCheck.lean 2>&1); then
-  printf '%s\n' "$shape_output"
-  echo "GATE: PASS (corpus agrees with the environment)"
-else
-  printf '%s\n' "$shape_output" >&2
-  echo "GATE: FAIL — the emitted corpus disagrees with the Lean environment" >&2
+# Format 2 deliberately leaves the double-safe integer range: the
+# freeze's one deviation from RFC 8785 is that numbers are unbounded
+# non-negative integers, so the corpus carries a witness past two to the
+# fifty-third and every consumer must read it exactly. Format 1's
+# safe-integer ceiling is retired here on purpose; the numeral grammar
+# — no minus, no fraction, no exponent, no leading zero — is enforced by
+# the reader over every line in the conformance check below, which is a
+# stronger statement than a shell regexp over quoted text could make.
+if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
+  echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
+echo "GATE: PASS (117-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+
+# The conformance check: the both-ways law over every committed line,
+# the header and group sequence, and every record whose truth lives in
+# the Lean environment — the mini-AST of the sort system, the kind and
+# stage tables, the refusal order, the docstrings, the admission names —
+# rebuilt from `getConstInfo` and `findDocString?` and compared with the
+# committed bytes.
+conformance_arms=(
+  "conformance: 117 lines survive read and rewrite byte-identically"
+  "conformance: the header declares 8 groups and every count matches the records present"
+  "conformance: the kind, stage, refusal and admission tables agree with the environment"
+  "conformance: 22 mini-AST rows agree with the environment"
+  "conformance: 22 docstring rows agree with the environment"
+  "conformance: 10 canon vectors re-canonicalize to their own bytes"
+)
+if conformance_output=$(lake env lean ConformanceCheck.lean 2>&1); then
+  printf '%s\n' "$conformance_output"
+else
+  printf '%s\n' "$conformance_output" >&2
+  echo "GATE: FAIL — the committed corpus disagrees with the Lean environment" >&2
+  exit 1
+fi
+for arm in "${conformance_arms[@]}"; do
+  if ! grep -qF "$arm" <<< "$conformance_output"; then
+    echo "GATE: FAIL — the conformance check did not report: $arm" >&2
+    exit 1
+  fi
+done
+echo "GATE: PASS (${#conformance_arms[@]} conformance arms reported; corpus agrees with the environment)"
+
+# Falsification: a checker that cannot fail proves nothing. Each probe
+# mutates a copy of the committed corpus at one byte range and demands
+# the checker refuse it FOR ITS OWN NAMED REASON — an arm that started
+# passing vacuously would show up as a probe refused for the wrong
+# reason rather than as silence.
+declare -a exercised_probes=()
+check_falsification() {
+  local name="$1"
+  local expression="$2"
+  local reason="$3"
+  local probe_output
+  sed "$expression" "$fixture" > "$corpus_mutant"
+  if cmp -s "$fixture" "$corpus_mutant"; then
+    echo "GATE: FAIL — falsification probe $name did not change the corpus" >&2
+    exit 1
+  fi
+  {
+    echo 'import Unity.Check'
+    printf '#kernelConformance "%s"\n' "$corpus_mutant"
+  } > "$probe_check"
+  if probe_output=$(lake env lean "$probe_check" 2>&1); then
+    printf '%s\n' "$probe_output" >&2
+    echo "GATE: FAIL — falsification probe $name was accepted by the checker" >&2
+    exit 1
+  fi
+  if ! grep -qF "$reason" <<< "$probe_output"; then
+    printf '%s\n' "$probe_output" >&2
+    echo "GATE: FAIL — falsification probe $name failed for the wrong reason" >&2
+    exit 1
+  fi
+  exercised_probes+=("$name")
+  echo "GATE: PASS ($name refused: $reason)"
+}
+
+check_falsification non-canonical-member-order \
+  's/{"name":"schema","rank":0,"record":"kind"}/{"rank":0,"name":"schema","record":"kind"}/' \
+  'does not survive read and write'
+check_falsification rounded-canon-bytes \
+  's/"bytes":"9007199254740993"/"bytes":"9007199254740992"/' \
+  "canon vector big-integer carries bytes that are not its value's canonical form"
+check_falsification stale-docstring \
+  's/A lane partition: the venue-local shard/A lane partition: the venue-wide shard/' \
+  'docstring row disagrees with the environment'
+check_falsification undercounted-header \
+  's/"stage":5,/"stage":4,/' \
+  'the header declares 4 stage records; the corpus carries 5'
 
 # The must-not-compile class: each control file must be REFUSED by the
 # elaborator with its pinned diagnosis, and its witness twin must
@@ -409,4 +518,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; 2 must-not-compile refusals; roster ${#roster[@]}; 85-record kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 117-record format-2 kernel conformance corpus)"

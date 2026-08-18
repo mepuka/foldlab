@@ -7,32 +7,47 @@
  * ships in this package it is checked by the same replay that checks the
  * reference one, with nothing about the harness edited.
  *
+ * One seam is worth naming. The corpus carries every integer at arbitrary
+ * precision, because an encoded sentence multiplies by about a million per
+ * argument and leaves the range a JavaScript number holds exactly. The door
+ * under test speaks `number`. So the crossing is written out, and it refuses
+ * rather than rounds: the day a vector exceeds the safe range, the replay says
+ * so at that vector instead of quietly comparing two rounded values and
+ * agreeing.
+ *
  * Agreement is agreement, not proof. A green replay says the runtime returns
  * the model's verdict on the model's committed candidates; it promotes no
  * model theorem into a runtime guarantee.
  */
 import { resolve } from "node:path"
 
-import {
-  ARTIFACT_PATH,
-  SAMPLE_ARTIFACT_PATH,
-  parseKernelArtifact,
-  type KernelArtifact,
-} from "../scripts/kernel-tables.js"
+import { CORPUS_PATH, loadKernelCorpus, type KernelCorpus } from "../scripts/kernel-corpus.js"
 import type { KernelCandidateAct, KernelDoor } from "../src/KernelDoor.js"
 import { decodeAct, encodeAct } from "./KernelDoor.reference.js"
 
 const repository = resolve(import.meta.dir, "../../..")
 
-/** The artifact path the committed tables and this harness both read. */
-export const artifactPath = resolve(repository, ARTIFACT_PATH)
+/** The corpus path the committed tables and this harness both read. */
+export const corpusPath = resolve(repository, CORPUS_PATH)
 
-/** The independently transcribed control artifact. */
-export const sampleArtifactPath = resolve(repository, SAMPLE_ARTIFACT_PATH)
+/** Loads and validates the format-2 corpus the tables were generated from. */
+export const loadKernelArtifact = async (): Promise<KernelCorpus> => loadKernelCorpus(repository)
 
-/** Loads and validates the schema-v1 artifact the tables were generated from. */
-export const loadKernelArtifact = async (): Promise<KernelArtifact> =>
-  parseKernelArtifact(await Bun.file(artifactPath).text())
+/**
+ * The corpus's unbounded integers, as the numbers the door speaks. Refuses
+ * above the safe range rather than rounding: two rounded values that agree
+ * agree about nothing.
+ */
+export const toNumbers = (
+  values: ReadonlyArray<bigint>,
+  where: string,
+): ReadonlyArray<number> =>
+  values.map((value) => {
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error(`${where}: ${value} is past what a number holds exactly`)
+    }
+    return Number(value)
+  })
 
 /** One replayed admission: what the model emitted, what the door answered. */
 export interface AdmissionReplay {
@@ -67,12 +82,12 @@ const render = (verdict: {
  */
 export const replayAdmissions = (
   door: KernelDoor,
-  artifact: KernelArtifact,
+  corpus: KernelCorpus,
   candidates: { readonly [name: string]: KernelCandidateAct },
 ): ReadonlyArray<AdmissionReplay> =>
-  artifact.admissions.map((admission) => {
+  corpus.admissions.map((admission) => {
     const expected = admission.verdict === "admitted"
-      ? `admitted:[${admission.encoded.join(",")}]`
+      ? `admitted:[${toNumbers(admission.encoded, admission.name).join(",")}]`
       : `refused:${admission.reason}`
     const candidate = candidates[admission.name]
     if (candidate === undefined) {
@@ -89,11 +104,12 @@ export const replayAdmissions = (
  * coincidences.
  */
 export const replayEncodings = (
-  artifact: KernelArtifact,
+  corpus: KernelCorpus,
 ): ReadonlyArray<EncodingReplay> =>
-  artifact.encodings.map((encoding) => {
-    const vector = encoding.act.join(",")
-    const decoded = decodeAct(encoding.act)
+  corpus.encodings.map((encoding) => {
+    const act = toNumbers(encoding.act, encoding.name)
+    const vector = act.join(",")
+    const decoded = decodeAct(act)
     const roundTrip = decoded === null ? "undecodable" : encodeAct(decoded).join(",")
     return { name: encoding.name, vector, roundTrip, agreed: roundTrip === vector }
   })

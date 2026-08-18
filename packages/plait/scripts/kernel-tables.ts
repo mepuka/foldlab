@@ -1,12 +1,21 @@
 /**
  * The kernel-conformance table generator.
  *
- * Reads a schema-v1 `kernel-conformance.ndjson` emitted from the Lean kernel
- * model and renders the runtime's derived type layer: the declaration-kind and
- * hole-stage registries with their ranks, the taught-refusal table, and the
- * compile-time brands of the sort system. Nothing here is hand-typed from the
- * model; every name, rank, and taught text is read out of the artifact, so a
- * model that moves reddens the regeneration check instead of drifting quietly.
+ * Reads the format-2 interchange file emitted from the Lean kernel model and
+ * renders the runtime's derived type layer: the declaration-kind and hole-stage
+ * registries with their ranks, the taught-refusal table, and the compile-time
+ * brands of the sort system. Nothing here is hand-typed from the model; every
+ * name, rank, and taught text is read out of the corpus, so a model that moves
+ * reddens the regeneration check instead of drifting quietly.
+ *
+ * Reading and validating the corpus is not this module's job - `kernel-corpus`
+ * owns that, schema decode and byte checks together, and hands over a value
+ * whose integers are `bigint`. What is left here is the projection, and the
+ * projection is where the two carriers part company: a rank is a small dense
+ * index into a closed twelve-name table, so it lands as a TypeScript `number`,
+ * while anything that rides the wire keeps its unbounded carrier. That split is
+ * a decision, not an accident, and it is why the rank conversion below is
+ * written out rather than implicit.
  *
  * The generator makes no runtime claim. It projects the model's names and
  * texts into constants a hand-written runtime consumes; conformance to the
@@ -14,98 +23,8 @@
  *
  * @module
  */
-
-/** The provenance line every schema-v1 artifact opens with. */
-export interface KernelHeader {
-  readonly record: "header"
-  readonly format: number
-  readonly generator: string
-  readonly source: string
-  readonly counts: { readonly [record: string]: number }
-}
-
-/** One declaration kind of the closed universe, with its rank. */
-export interface KernelKindRecord {
-  readonly record: "kind"
-  readonly name: string
-  readonly rank: number
-}
-
-/** One epistemic hole stage, with its rank. */
-export interface KernelStageRecord {
-  readonly record: "stage"
-  readonly name: string
-  readonly rank: number
-}
-
-/** One taught refusal: the wire reason, the law it defends, the repair. */
-export interface KernelRefusalRecord {
-  readonly record: "refusal"
-  readonly reason: string
-  readonly law: string
-  readonly repair: string
-  readonly applicability: "machine-applicable" | "advisory"
-}
-
-/** One field of a constructor in the emitted mini-AST. */
-export interface KernelFieldRecord {
-  readonly name: string
-  readonly type: string
-}
-
-/** One constructor of a type in the emitted mini-AST. */
-export interface KernelConstructorRecord {
-  readonly name: string
-  readonly fields: ReadonlyArray<KernelFieldRecord>
-}
-
-/** One type parameter, marked brand when it indexes the sort. */
-export interface KernelParamRecord {
-  readonly name: string
-  readonly role: "brand" | "type"
-}
-
-/** One type of the emitted mini-AST. */
-export interface KernelTypeRecord {
-  readonly record: "type"
-  readonly name: string
-  readonly form: "inductive" | "structure"
-  readonly params: ReadonlyArray<KernelParamRecord>
-  readonly constructors: ReadonlyArray<KernelConstructorRecord>
-}
-
-/** One sentence-encoding vector, checked for round-trip at emit time. */
-export interface KernelEncodingRecord {
-  readonly record: "encoding"
-  readonly name: string
-  readonly act: ReadonlyArray<number>
-}
-
-/** One admission verdict for a planted candidate. */
-export type KernelAdmissionRecord =
-  | {
-    readonly record: "admission"
-    readonly name: string
-    readonly verdict: "refused"
-    readonly reason: string
-  }
-  | {
-    readonly record: "admission"
-    readonly name: string
-    readonly verdict: "admitted"
-    readonly encoded: ReadonlyArray<number>
-  }
-
-/** A parsed schema-v1 artifact, in file order per record class. */
-export interface KernelArtifact {
-  readonly header: KernelHeader
-  readonly kinds: ReadonlyArray<KernelKindRecord>
-  readonly stages: ReadonlyArray<KernelStageRecord>
-  readonly refusals: ReadonlyArray<KernelRefusalRecord>
-  readonly types: ReadonlyArray<KernelTypeRecord>
-  readonly encodings: ReadonlyArray<KernelEncodingRecord>
-  readonly admissions: ReadonlyArray<KernelAdmissionRecord>
-}
+import type { KernelTypeRecord } from "../src/KernelCorpusSchemas.js"
+import { CORPUS_PATH, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The result of comparing committed bytes with a fresh rendering. */
 export type KernelTableCheck =
@@ -116,273 +35,31 @@ export type KernelTableCheck =
 export const GENERATE_COMMAND = "bun run generate:kernel-tables"
 
 /**
- * The artifact the committed tables are generated from, relative to the
+ * The corpus the committed tables are generated from, relative to the
  * repository root: the model-executed emission, never a hand-typed table.
  */
-export const ARTIFACT_PATH = "packages/plait/fixtures/kernel-conformance.ndjson"
-
-/**
- * A second artifact of the same schema, transcribed by hand from the model's
- * Lean sources rather than emitted by executing them. It is a control, never a
- * source: the wall asserts the two agree on every closed-vocabulary record, so
- * a transcription error on either side shows up as a divergence instead of as
- * confidence. Nothing is generated from it.
- */
-export const SAMPLE_ARTIFACT_PATH =
-  "packages/plait/test/fixtures/kernel-conformance.sample.ndjson"
+export const ARTIFACT_PATH = CORPUS_PATH
 
 /** Where the generated module is committed, relative to the repository root. */
 export const GENERATED_PATH = "packages/plait/src/KernelTables.generated.ts"
 
-const refuse = (reason: string): never => {
-  throw new Error(`kernel-conformance artifact: ${reason}`)
-}
-
-const object = (value: unknown, where: string): { readonly [key: string]: unknown } => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return refuse(`${where} is not a JSON object`)
-  }
-  return value as { readonly [key: string]: unknown }
-}
-
-const text = (value: unknown, where: string): string =>
-  typeof value === "string" ? value : refuse(`${where} is not a string`)
-
-const nat = (value: unknown, where: string): number =>
-  typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-    ? value
-    : refuse(`${where} is not a safe non-negative integer`)
-
-const natList = (value: unknown, where: string): ReadonlyArray<number> =>
-  Array.isArray(value)
-    ? value.map((entry, index) => nat(entry, `${where}[${index}]`))
-    : refuse(`${where} is not an array`)
-
-const keysInOrder = (
-  row: { readonly [key: string]: unknown },
-  expected: ReadonlyArray<string>,
-  where: string,
-): void => {
-  const actual = Object.keys(row)
-  if (actual.join(",") !== expected.join(",")) {
-    refuse(`${where} keys are ${actual.join(",")}, want ${expected.join(",")}`)
-  }
-}
-
-const oneOf = <A extends string>(
-  value: unknown,
-  admitted: ReadonlyArray<A>,
-  where: string,
-): A => {
-  const spelling = text(value, where)
-  return admitted.includes(spelling as A)
-    ? spelling as A
-    : refuse(`${where} is ${spelling}, want one of ${admitted.join("|")}`)
-}
-
-const parseHeader = (row: { readonly [key: string]: unknown }): KernelHeader => {
-  keysInOrder(row, ["record", "format", "generator", "source", "counts"], "header")
-  const counts = object(row.counts, "header.counts")
-  const parsed: { [record: string]: number } = {}
-  for (const [name, value] of Object.entries(counts)) {
-    parsed[name] = nat(value, `header.counts.${name}`)
-  }
-  return {
-    record: "header",
-    format: nat(row.format, "header.format"),
-    generator: text(row.generator, "header.generator"),
-    source: text(row.source, "header.source"),
-    counts: parsed,
-  }
-}
-
-const parseField = (
-  value: unknown,
-  where: string,
-): KernelFieldRecord => {
-  const row = object(value, where)
-  keysInOrder(row, ["name", "type"], where)
-  return { name: text(row.name, `${where}.name`), type: text(row.type, `${where}.type`) }
-}
-
-const parseConstructor = (
-  value: unknown,
-  where: string,
-): KernelConstructorRecord => {
-  const row = object(value, where)
-  keysInOrder(row, ["name", "fields"], where)
-  const fields = row.fields
-  if (!Array.isArray(fields)) return refuse(`${where}.fields is not an array`)
-  return {
-    name: text(row.name, `${where}.name`),
-    fields: fields.map((field, index) => parseField(field, `${where}.fields[${index}]`)),
-  }
-}
-
-const parseParam = (value: unknown, where: string): KernelParamRecord => {
-  const row = object(value, where)
-  keysInOrder(row, ["name", "role"], where)
-  return {
-    name: text(row.name, `${where}.name`),
-    role: oneOf(row.role, ["brand", "type"] as const, `${where}.role`),
-  }
+// Annotated at the binding, not only at the arrow, so that TypeScript reads a
+// bare `refuse(...)` as control flow that does not return and narrows after it.
+const refuse: (reason: string) => never = (reason) => {
+  throw new Error(`kernel-conformance tables: ${reason}`)
 }
 
 /**
- * Parses and validates one schema-v1 artifact. Every violation refuses with
- * the reason: an artifact that half-parses is worse than one that refuses,
- * because the generated module would carry the half.
+ * A rank as a TypeScript number. The corpus carries every integer at arbitrary
+ * precision because an encoded sentence needs it; a rank does not, being a
+ * dense index into a closed table the reader has already checked. The
+ * conversion refuses rather than rounds, so if a rank ever grows past what a
+ * number holds exactly the build stops here instead of shipping a wrong table.
  */
-export const parseKernelArtifact = (source: string): KernelArtifact => {
-  const lines = source.split("\n")
-  if (lines.at(-1) !== "") refuse("the file does not end with a newline")
-  const rows = lines.slice(0, -1)
-  if (rows.length === 0) refuse("the file is empty")
-  if (source.includes("\r")) refuse("the file carries a carriage return")
-  for (const [index, line] of rows.entries()) {
-    if (/[^ -~]/.test(line)) refuse(`line ${index + 1} is not printable ASCII`)
-  }
-
-  const header = parseHeader(object(JSON.parse(rows[0]!), "header"))
-  if (header.format !== 1) refuse(`format is ${header.format}, want 1`)
-
-  const kinds: Array<KernelKindRecord> = []
-  const stages: Array<KernelStageRecord> = []
-  const refusals: Array<KernelRefusalRecord> = []
-  const types: Array<KernelTypeRecord> = []
-  const encodings: Array<KernelEncodingRecord> = []
-  const admissions: Array<KernelAdmissionRecord> = []
-
-  // Record order is part of the schema, so the parser walks a fixed ladder
-  // rather than sorting: a reordered artifact is a moved artifact.
-  const ladder = ["kind", "stage", "refusal", "type", "encoding", "admission"] as const
-  let rung = 0
-  for (const [offset, line] of rows.slice(1).entries()) {
-    const where = `line ${offset + 2}`
-    const row = object(JSON.parse(line), where)
-    const record = text(row.record, `${where}.record`)
-    const at = ladder.indexOf(record as (typeof ladder)[number])
-    if (at < 0) refuse(`${where} carries unknown record ${record}`)
-    if (at < rung) refuse(`${where} is a ${record} record after a ${ladder[rung]!} record`)
-    rung = at
-    switch (record) {
-      case "kind": {
-        keysInOrder(row, ["record", "name", "rank"], where)
-        kinds.push({ record: "kind", name: text(row.name, where), rank: nat(row.rank, where) })
-        break
-      }
-      case "stage": {
-        keysInOrder(row, ["record", "name", "rank"], where)
-        stages.push({ record: "stage", name: text(row.name, where), rank: nat(row.rank, where) })
-        break
-      }
-      case "refusal": {
-        keysInOrder(row, ["record", "reason", "law", "repair", "applicability"], where)
-        refusals.push({
-          record: "refusal",
-          reason: text(row.reason, `${where}.reason`),
-          law: text(row.law, `${where}.law`),
-          repair: text(row.repair, `${where}.repair`),
-          applicability: oneOf(
-            row.applicability,
-            ["machine-applicable", "advisory"] as const,
-            `${where}.applicability`,
-          ),
-        })
-        break
-      }
-      case "type": {
-        keysInOrder(row, ["record", "name", "form", "params", "constructors"], where)
-        const params = row.params
-        const constructors = row.constructors
-        if (!Array.isArray(params)) refuse(`${where}.params is not an array`)
-        if (!Array.isArray(constructors)) refuse(`${where}.constructors is not an array`)
-        types.push({
-          record: "type",
-          name: text(row.name, `${where}.name`),
-          form: oneOf(row.form, ["inductive", "structure"] as const, `${where}.form`),
-          params: (params as ReadonlyArray<unknown>)
-            .map((param, index) => parseParam(param, `${where}.params[${index}]`)),
-          constructors: (constructors as ReadonlyArray<unknown>)
-            .map((entry, index) => parseConstructor(entry, `${where}.constructors[${index}]`)),
-        })
-        break
-      }
-      case "encoding": {
-        keysInOrder(row, ["record", "name", "act"], where)
-        encodings.push({
-          record: "encoding",
-          name: text(row.name, `${where}.name`),
-          act: natList(row.act, `${where}.act`),
-        })
-        break
-      }
-      default: {
-        const verdict = oneOf(row.verdict, ["refused", "admitted"] as const, `${where}.verdict`)
-        if (verdict === "refused") {
-          keysInOrder(row, ["record", "name", "verdict", "reason"], where)
-          admissions.push({
-            record: "admission",
-            name: text(row.name, `${where}.name`),
-            verdict: "refused",
-            reason: text(row.reason, `${where}.reason`),
-          })
-        } else {
-          keysInOrder(row, ["record", "name", "verdict", "encoded"], where)
-          admissions.push({
-            record: "admission",
-            name: text(row.name, `${where}.name`),
-            verdict: "admitted",
-            encoded: natList(row.encoded, `${where}.encoded`),
-          })
-        }
-        break
-      }
-    }
-  }
-
-  const counted: ReadonlyArray<readonly [string, number]> = [
-    ["kind", kinds.length],
-    ["stage", stages.length],
-    ["refusal", refusals.length],
-    ["type", types.length],
-    ["encoding", encodings.length],
-    ["admission", admissions.length],
-  ]
-  for (const [name, actual] of counted) {
-    const pinned = header.counts[name]
-    if (pinned === undefined) refuse(`header pins no ${name} count`)
-    if (pinned !== actual) refuse(`header pins ${pinned} ${name} records, file carries ${actual}`)
-  }
-  for (const [name, pinned] of Object.entries(header.counts)) {
-    if (!counted.some(([record]) => record === name)) {
-      refuse(`header pins a ${name} count (${pinned}) that names no record class`)
-    }
-  }
-
-  kinds.forEach((kind, rank) => {
-    if (kind.rank !== rank) refuse(`kind ${kind.name} has rank ${kind.rank} at position ${rank}`)
-  })
-  stages.forEach((stage, rank) => {
-    if (stage.rank !== rank) refuse(`stage ${stage.name} has rank ${stage.rank} at position ${rank}`)
-  })
-
-  const reasons = new Set(refusals.map((refusal) => refusal.reason))
-  if (reasons.size !== refusals.length) refuse("a refusal reason is spelled twice")
-  admissions.forEach((admission, index) => {
-    if (admission.verdict === "refused" && !reasons.has(admission.reason)) {
-      refuse(`admission ${admission.name} names unknown reason ${admission.reason}`)
-    }
-    if (admission.verdict === "admitted" && index !== admissions.length - 1) {
-      refuse(`admitted verdict ${admission.name} is not the last admission record`)
-    }
-  })
-  if (admissions.at(-1)?.verdict !== "admitted") {
-    refuse("the admission block does not end with an admitted verdict")
-  }
-
-  return { header, kinds, stages, refusals, types, encodings, admissions }
-}
+const rankOf = (rank: bigint, where: string): number =>
+  rank <= BigInt(Number.MAX_SAFE_INTEGER)
+    ? Number(rank)
+    : refuse(`${where} has rank ${rank}, past what a number holds exactly`)
 
 const quote = (value: string): string => JSON.stringify(value)
 
@@ -441,7 +118,7 @@ const carrierOf = (sort: BrandedSort): string => {
 const brandTag = (sort: BrandedSort): string =>
   `\`~foldlab/plait/kernel/${sort.name}/\${${sort.params.map(capitalize).join("}/${")}}\``
 
-// A brand parameter named after a record class the artifact enumerates is
+// A brand parameter named after a record class the corpus enumerates is
 // constrained to that closed union, so a misspelled kind stops compiling. Every
 // other brand domain is open (a register is a digest, a partition is a lane and
 // a shard), and an open domain gets the widest honest constraint.
@@ -454,14 +131,14 @@ const brandConstraint = (param: string): string => brandDomains[param] ?? "strin
 
 /**
  * Renders the generated module. The rendering is a total function of the
- * artifact and its repository-relative path, so two runs over one artifact
- * produce identical bytes.
+ * corpus and its repository-relative path, so two runs over one corpus produce
+ * identical bytes.
  */
 export const renderKernelTables = (
-  artifact: KernelArtifact,
-  artifactPath: string,
+  corpus: KernelCorpus,
+  corpusPath: string,
 ): string => {
-  const { branded, skipped } = brandedSorts(artifact.types)
+  const { branded, skipped } = brandedSorts(corpus.types)
   const digests = branded.find((sort) => sort.name === "Digest")
   const out: Array<string> = []
   const line = (value = ""): void => void out.push(value)
@@ -469,10 +146,10 @@ export const renderKernelTables = (
   line("/**")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
-  line(` * Artifact: ${artifactPath}`)
+  line(` * Artifact: ${corpusPath}`)
   line(` * Command:  ${GENERATE_COMMAND}`)
-  line(` * Source:   ${artifact.header.source}, emitted by ${quote(artifact.header.generator)}`)
-  line(` *           at interchange format ${artifact.header.format}.`)
+  line(` * Source:   ${corpus.header.source}, emitted by ${quote(corpus.header.generator)}`)
+  line(` *           at interchange format ${corpus.header.format}.`)
   line(" *")
   line(" * The kernel model's closed tables, projected into the runtime's type layer:")
   line(" * the declaration-kind and hole-stage registries with their ranks, the taught")
@@ -492,17 +169,17 @@ export const renderKernelTables = (
 
   line("/** Where these tables came from, carried as data for a consumer to assert. */")
   line("export const KERNEL_TABLE_PROVENANCE = {")
-  line(`  artifact: ${quote(artifactPath)},`)
+  line(`  artifact: ${quote(corpusPath)},`)
   line(`  command: ${quote(GENERATE_COMMAND)},`)
-  line(`  format: ${artifact.header.format},`)
-  line(`  generator: ${quote(artifact.header.generator)},`)
-  line(`  source: ${quote(artifact.header.source)},`)
+  line(`  format: ${corpus.header.format}n,`)
+  line(`  generator: ${quote(corpus.header.generator)},`)
+  line(`  source: ${quote(corpus.header.source)},`)
   line("} as const")
   line()
 
   line("/** The closed universe of declaration kinds, in rank order. */")
   line("export const KERNEL_DECL_KINDS = [")
-  for (const kind of artifact.kinds) line(`  ${quote(kind.name)},`)
+  for (const kind of corpus.kinds) line(`  ${quote(kind.name)},`)
   line("] as const")
   line()
   line("/** One declaration kind of the closed universe. */")
@@ -510,13 +187,13 @@ export const renderKernelTables = (
   line()
   line("/** The numeric rank of each declaration kind. */")
   line("export const KERNEL_DECL_KIND_RANK = {")
-  for (const kind of artifact.kinds) line(`  ${kind.name}: ${kind.rank},`)
+  for (const kind of corpus.kinds) line(`  ${kind.name}: ${rankOf(kind.rank, kind.name)},`)
   line("} as const satisfies { readonly [Kind in KernelDeclKind]: number }")
   line()
 
   line("/** The epistemic stages of a hole, in rising rank order. */")
   line("export const KERNEL_HOLE_STAGES = [")
-  for (const stage of artifact.stages) line(`  ${quote(stage.name)},`)
+  for (const stage of corpus.stages) line(`  ${quote(stage.name)},`)
   line("] as const")
   line()
   line("/** One epistemic stage of a hole. */")
@@ -524,7 +201,7 @@ export const renderKernelTables = (
   line()
   line("/** The numeric rank of each hole stage. */")
   line("export const KERNEL_HOLE_STAGE_RANK = {")
-  for (const stage of artifact.stages) line(`  ${stage.name}: ${stage.rank},`)
+  for (const stage of corpus.stages) line(`  ${stage.name}: ${rankOf(stage.rank, stage.name)},`)
   line("} as const satisfies { readonly [Stage in KernelHoleStage]: number }")
   line()
 
@@ -537,7 +214,7 @@ export const renderKernelTables = (
   line()
   line("/** The wire spelling of every refusal reason, in the model's order. */")
   line("export const KERNEL_REFUSAL_REASONS = [")
-  for (const refusal of artifact.refusals) line(`  ${quote(refusal.reason)},`)
+  for (const refusal of corpus.refusals) line(`  ${quote(refusal.reason)},`)
   line("] as const")
   line()
   line("/** One refusal reason the kernel door can carry. */")
@@ -553,7 +230,7 @@ export const renderKernelTables = (
   line()
   line("/** The taught-refusal table. A reason without its law and repair cannot exist. */")
   line("export const KERNEL_REFUSALS = [")
-  for (const refusal of artifact.refusals) {
+  for (const refusal of corpus.refusals) {
     line("  {")
     line(`    reason: ${quote(refusal.reason)},`)
     line(`    law: ${quote(refusal.law)},`)
@@ -565,7 +242,7 @@ export const renderKernelTables = (
   line()
   line("/** The taught refusal each reason carries, keyed by its wire spelling. */")
   line("export const KERNEL_REFUSAL_BY_REASON = {")
-  artifact.refusals.forEach((refusal, index) => {
+  corpus.refusals.forEach((refusal, index) => {
     line(`  ${quote(refusal.reason)}: KERNEL_REFUSALS[${index}],`)
   })
   line("} as const satisfies { readonly [Reason in KernelRefusalReason]: KernelRefusalRow }")
@@ -619,7 +296,7 @@ export const renderKernelTables = (
     line(" * domain the model closes, so they enumerate; a register and a partition")
     line(" * are open, so their brands stay parameters.")
     line(" */")
-    for (const kind of artifact.kinds) {
+    for (const kind of corpus.kinds) {
       line(`/** A content address branded to the ${kind.name} declaration kind. */`)
       line(
         `export type ${capitalize(kind.name)}Digest<Carrier = ${carrierOf(digests)}> =` +
@@ -632,30 +309,13 @@ export const renderKernelTables = (
   return out.join("\n")
 }
 
-/**
- * The closed-vocabulary lines of an artifact: every record whose content is
- * the model's own closed table. The header is dropped because it counts the
- * encoding block, and encoding vectors are dropped because the schema fixes
- * only their floor (one per generator) and leaves the choice to the emitter.
- * Comparison is by raw line, which the compact-JSON-with-frozen-key-order
- * schema makes exact.
- */
-export const closedTableLines = (source: string): ReadonlyArray<string> =>
-  source
-    .trimEnd()
-    .split("\n")
-    .filter((line) =>
-      !line.startsWith("{\"record\":\"header\"") &&
-      !line.startsWith("{\"record\":\"encoding\"")
-    )
-
 /** Checks that committed generated bytes equal a fresh rendering. */
 export const checkKernelTables = (
   committed: string,
-  artifact: KernelArtifact,
-  artifactPath: string,
+  corpus: KernelCorpus,
+  corpusPath: string,
 ): KernelTableCheck =>
-  committed === renderKernelTables(artifact, artifactPath)
+  committed === renderKernelTables(corpus, corpusPath)
     ? { ok: true }
     : {
       ok: false,
