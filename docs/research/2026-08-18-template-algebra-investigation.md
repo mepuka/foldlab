@@ -1,11 +1,18 @@
 # A template algebra for the estate — investigation record
 
-Status: **PROPOSED, pre-grill.** Commissioned 2026-08-17 as an
-exploratory design lane — separate though not distinct from the Plait
-program: every estate construct cited below is consumed at its recorded
-status, and every conclusion is this record's own proposal, awaiting the
-operator's grill. No implementation is proposed here and no tickets are
-cut. Working notes: `scratch/dispatch/36-template-algebra-working-notes.md`.
+Status: **LANE REFUSED 2026-08-18 by operator ruling ("we're not doing
+the template algebra"). The GT-1..GT-7 grill sheet is moot and was
+never ruled; no template language will be built.** What survives, by
+disposition: the typed-hole/fill algebra (§3, T1–T8) was absorbed into
+the ratified kernel-algebra record as program-composition laws
+(`docs/design/2026-08-18-plait-kernel-algebra.md` — templates were
+demoted to a kernel consumer before the lane closed, and then the lane
+closed); the prior-art hunts stand as reference — hunt A's
+field-is-empty finding and hunt B's grite discovery
+(arXiv:2606.19616), which reshaped the estate's publication claim.
+Nothing else in this record licenses anything. Originally commissioned
+2026-08-17 as an exploratory design lane; working notes:
+`scratch/dispatch/36-template-algebra-working-notes.md`.
 
 The question, in one outsider sentence: *should the estate have a
 Handlebars-like template language — text with typed blanks that programs

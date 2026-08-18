@@ -109,3 +109,9 @@ standing surface.
   refusals remain the only vocabulary the domain speaks; a defect dies
   as a defect and never wears the absence sort. The sentence enters
   DECISIONS with the landing ticket.
+- **Addendum, same day: the template-algebra lane is REFUSED** ("we're
+  not doing the template algebra"). GT-1..GT-7 are moot, never ruled.
+  The investigation record stays as history with its status amended;
+  its typed-hole algebra was already absorbed by the ratified kernel
+  record as program-composition laws, and its prior-art hunts (the
+  empty formal-template field; grite) stand as reference.
