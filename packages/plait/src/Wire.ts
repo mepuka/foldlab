@@ -1,3 +1,8 @@
+/**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
+ * @module
+ */
 import { Effect, Predicate, Result, Schema, SchemaIssue } from "effect"
 
 import { decodeJson, type JsonValue } from "@foldlab/core/jcs"

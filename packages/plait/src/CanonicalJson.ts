@@ -1,4 +1,6 @@
 /**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
  * Estate canonical JSON: one byte string per value, and the parser that reads
  * it back without losing anything.
  *

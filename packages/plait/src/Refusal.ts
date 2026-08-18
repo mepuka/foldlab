@@ -1,3 +1,8 @@
+/**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
+ * @module
+ */
 import { Effect, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 

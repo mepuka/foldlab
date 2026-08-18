@@ -3,6 +3,21 @@
 Local terms hidden behind the seam. The public language is root
 [CONTEXT.md](../../CONTEXT.md); nothing here may leak into it.
 
+**Truth**:
+The vocabulary every sentence speaks.
+
+**Kernel**:
+The language: corpus, door, programs, and wire grammar.
+
+**Planes**:
+The state carriers, one seam per plane.
+
+**Carriage**:
+Hosts and transport clients.
+
+**Surface**:
+Entry points.
+
 **Envelope**:
 The closed version-zero wire value that carries one fabric fact. Its identity
 is the SHA-256 digest of its canonical, uncompressed bytes.

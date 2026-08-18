@@ -1,3 +1,8 @@
+/**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
+ * @module
+ */
 import { createHash } from "node:crypto"
 
 import { Effect, Schema } from "effect"

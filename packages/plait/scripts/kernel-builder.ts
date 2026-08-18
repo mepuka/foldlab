@@ -260,6 +260,8 @@ export const renderKernelBuilder = (corpus: KernelCorpus, corpusPath: string): s
   }
 
   line("/**")
+  line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
+  line(" *")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
   line(` * Corpus:  ${corpusPath}`)

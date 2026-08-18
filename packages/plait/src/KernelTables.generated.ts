@@ -1,4 +1,6 @@
 /**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
  * GENERATED FILE - DO NOT EDIT.
  *
  * Artifact: packages/plait/fixtures/kernel-conformance.ndjson

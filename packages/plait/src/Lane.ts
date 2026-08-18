@@ -1,3 +1,8 @@
+/**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
+ * @module
+ */
 import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
 
 import type { WireValue } from "./Canonical.js"

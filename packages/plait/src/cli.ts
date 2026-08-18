@@ -1,5 +1,10 @@
 #!/usr/bin/env bun
 
+/**
+ * Plane: surface — entry points.
+ *
+ * @module
+ */
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, isAbsolute, join, resolve } from "node:path"

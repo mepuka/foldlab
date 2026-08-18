@@ -1,4 +1,6 @@
 /**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
  * The admission door seam: candidate in, verdict out.
  *
  * The kernel model splits its sentences in two. The intrinsic layer has no

@@ -144,6 +144,8 @@ export const renderKernelTables = (
   const line = (value = ""): void => void out.push(value)
 
   line("/**")
+  line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
+  line(" *")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
   line(` * Artifact: ${corpusPath}`)

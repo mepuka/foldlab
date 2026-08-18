@@ -1,4 +1,6 @@
 /**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
  * Canonical JSON derived from a schema's own tree.
  *
  * An Effect schema is not only a validator; it carries a runtime tree

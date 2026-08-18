@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { Effect, Schema } from "effect"
 
 import { advance, type Anchor } from "../Anchor.js"

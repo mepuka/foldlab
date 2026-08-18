@@ -1,4 +1,6 @@
 /**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
  * The kernel-conformance interchange, as schemas.
  *
  * The interchange is a newline-delimited file the Lean kernel model emits so
