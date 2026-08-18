@@ -9,6 +9,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./Blob": "./src/Blob.ts",
     "./Canonical": "./src/Canonical.ts",
     "./Catalog": "./src/Catalog.ts",
     "./Cell": "./src/Cell.ts",
