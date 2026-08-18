@@ -48,6 +48,8 @@ export const StructuralRefusalKind = Schema.Literals([
   "lost-anchor-cas",
   "consumer-substrate-shape",
   "fold-buffer-overflow",
+  "invalid-session-declaration",
+  "undeclared-view",
   "invalid-chaos-request",
   "invalid-fold-state",
   "invalid-register-key",

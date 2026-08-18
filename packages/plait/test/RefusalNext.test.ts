@@ -29,6 +29,7 @@ import {
   type StructuralRefusalKind as StructuralKind,
 } from "../src/truth/Refusal.js"
 import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import * as Session from "../src/planes/Session.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import {
   decodeEnvelope,
@@ -161,6 +162,26 @@ describe("structural refusal repairs", () => {
       probe.algebra,
       { arbitrary: () => 0, equals: Object.is },
     ))))
+
+    // The consumer seam's two doors, both through public surfaces. The layer
+    // provided below dies if it is ever reached, so both refusals are evidence
+    // that the seam judges before any service does.
+    const unreachable = Session.Sessions.testLayer({
+      subscribe: () => Effect.die("the seam judges before any layer is reached"),
+      read: () => Effect.die("the seam judges before any layer is reached"),
+    })
+    refusals.push(await Effect.runPromise(Effect.flip(Session.writ({
+      holder: "reader",
+      views: ["not-a-digest" as unknown as typeof Digest.Type],
+    }))))
+    const emptyWrit = await Effect.runPromise(Session.writ({ holder: "reader", views: [] }))
+    refusals.push(await Effect.runPromise(Effect.flip(
+      Session.subscribe(probe.fold, {
+        writ: emptyWrit,
+        partition: 0,
+        policy: "resume",
+      }).pipe(Effect.provide(unreachable)),
+    )))
 
     const start = await Effect.runPromise(initial(0))
     refusals.push(await Effect.runPromise(Effect.flip(advance(
