@@ -1070,6 +1070,31 @@ def argRequires : RawArg -> List Nat
 def requiresOf (nodes : List ProgramNode) : List Nat :=
   nodes.flatMap (fun node => node.args.flatMap argRequires)
 
+/-- A provision chain with its order made explicit data: each event
+    becomes a positioned fact (position, hole, value), newest events
+    at the greatest positions. Positioned, the facts are a set — union
+    ACI, arrival-order-free — and the environment is a derived read,
+    the directory's greatest-token shape at the valuation carrier. -/
+def positionedOf : List (Nat × Nat) -> List (Nat × Nat × Nat)
+  | [] => []
+  | event :: rest => (rest.length + 1, event.1, event.2) :: positionedOf rest
+
+/-- The greatest-position binding at a hole: replacement only on a
+    strictly greater position, so no tie is decided here — with
+    journal-assigned positions no tie exists to decide. -/
+def greatestAt (facts : List (Nat × Nat × Nat)) (hole : Nat) :
+    Option (Nat × Nat) :=
+  facts.foldr
+    (fun fact best =>
+      if hole == fact.2.1 then
+        match best with
+        | none => some (fact.1, fact.2.2)
+        | some prior =>
+            if prior.1 < fact.1 then some (fact.1, fact.2.2)
+            else some prior
+      else best)
+    none
+
 namespace Provision
 
 /-- Two arrival orders of one disjoint provision pair. -/

@@ -532,6 +532,48 @@ Three law statements joined the sheet (`KProvisionNewestWins`,
 `KProvisionAppendUnion`, `KRequiresExclude`), seven theorems the
 roster (57 total), one drift control the battery (18 door controls).
 
+**The CALM decomposition of provision (operator follow-up, proven).**
+The operator asked whether `provision_override_idem` can be modeled
+cleanly in the CALM approach. It can, by the estate's standing move:
+make the implicit order explicit data. Tag each provision event with
+a position (`positionedOf` — the overlay chain's depth, surfaced);
+then the fact set is class (a) — union, ACI, arrival-order-free, and
+override-idempotence becomes an instance of set idempotence — while
+the environment is a derived read in the directory's greatest-token
+shape (`greatestAt`: replacement only on strictly greater position,
+no tie decided in the function). The collapse theorem is proven:
+`provision_positioned_correspondence` — the order-carrying fold IS
+the positioned derived read (`provisionFold events hole =
+(greatestAt (positionedOf events) hole).map (·.2)`), so nothing was
+lost in either direction. The CALM ledger closes honestly:
+accumulation is monotone and free; the greatest-position read is a
+function of support with the order inside the data; the one priced
+residue is authoritative rebinding across writers — which is the
+directory's fenced rebind, a `decide`, exactly where the estate
+already put it. Effect never meets the fence because its provisions
+ride one call stack (a single-writer journal); shared environments
+would meet it immediately. Dynamic scoping needs no deletion in this
+reading: nothing pops — a node's environment is the greatest-position
+read over provisions pinned at or above it in the DAG, the stack made
+structure. The support-invariance half (permutation/duplication of
+the positioned fact set cannot move the read, under a
+positions-unique premise) is deliberately not re-proven here: it is
+the fabric's `f12_greatest_seal_wins` / `greatest_seal_of_support`
+shape verbatim, cited as the instantiation obligation in the KM-3
+posture.
+
+- **KM-15 — adopt the positioned reading as the environments story.**
+  Recommended: yes — environments are directory-shaped: positioned
+  provision facts accumulating as a join, the valuation a
+  greatest-position derived read, the fold form retained as the
+  proven collapse at implicit stack positions (the correspondence
+  theorem). Multi-writer authoritative binding routes to the fenced
+  rebind. Alternatives: keep only the fold form (honest but leaves
+  the idempotence fact class-(b)-local and the multi-writer story
+  untold); an LWW-register CRDT per hole (the classical treatment —
+  isomorphic to the positioned reading but smuggles "timestamp"
+  vocabulary where the estate has positions and tokens). Reversal:
+  additive; the fold form and its laws stand unchanged either way.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the

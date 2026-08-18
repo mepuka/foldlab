@@ -59,6 +59,7 @@ expected_laws=(
   KSentenceEncodingInjective KAdmissionRefusesUnlawful KRefusalParity
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
+  KProvisionPositionedCorrespondence
   KInterpInflationary CandidateF13BoundExecutionReplay
 )
 mapfile -t actual_laws < <(
@@ -123,7 +124,8 @@ roster=(
   ground_max_assoc ground_max_idem ground_interp_inflationary
   provision_newest_wins provision_append_union provision_disjoint_comm
   provision_override_idem requires_arg_fill requires_list_fill
-  requires_of_fill
+  requires_of_fill greatest_at_cons greatest_at_le_length
+  provision_positioned_correspondence
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")

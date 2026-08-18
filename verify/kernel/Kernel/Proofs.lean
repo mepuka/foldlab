@@ -773,6 +773,87 @@ theorem requires_of_fill : Laws.KRequiresExclude := by
       rw [fillNode, requires_list_fill]
       exact congrArg _ ih
 
+/-- One step of the greatest-position read: the head fact either
+    misses the hole, opens the binding, or contests it on strict
+    position order. Definitional — the foldr's cons equation named. -/
+theorem greatest_at_cons (fact : Nat × Nat × Nat)
+    (facts : List (Nat × Nat × Nat)) (hole : Nat) :
+    greatestAt (fact :: facts) hole =
+      if hole == fact.2.1 then
+        match greatestAt facts hole with
+        | none => some (fact.1, fact.2.2)
+        | some prior =>
+            if prior.1 < fact.1 then some (fact.1, fact.2.2)
+            else some prior
+      else greatestAt facts hole := rfl
+
+/-- Positions assigned by `positionedOf` are bounded by the chain
+    length, so a fresh head fact at length-plus-one strictly beats
+    every binding the tail can produce. -/
+theorem greatest_at_le_length (events : List (Nat × Nat)) (hole : Nat) :
+    forall best, greatestAt (positionedOf events) hole = some best ->
+      best.1 <= events.length := by
+  induction events with
+  | nil => intro best found; simp [positionedOf, greatestAt] at found
+  | cons event rest ih =>
+      intro best found
+      simp only [positionedOf] at found
+      rw [greatest_at_cons] at found
+      dsimp only [] at found
+      by_cases hit : hole == event.1
+      · rw [if_pos hit] at found
+        cases prior : greatestAt (positionedOf rest) hole with
+        | none =>
+            rw [prior] at found
+            dsimp only [] at found
+            cases found
+            simp
+        | some priorBest =>
+            rw [prior] at found
+            dsimp only [] at found
+            have priorLe := ih priorBest prior
+            by_cases newer : priorBest.1 < rest.length + 1
+            · rw [if_pos newer] at found
+              cases found
+              simp
+            · rw [if_neg newer] at found
+              cases found
+              simp only [List.length_cons]
+              omega
+      · rw [if_neg hit] at found
+        have priorLe := ih best found
+        simp only [List.length_cons]
+        omega
+
+/-- The correspondence: the order-carrying fold IS the positioned
+    derived read. The overlay chain is the greatest-position rule at
+    implicit positions; making positions explicit turns provision
+    into a set of facts plus an order-free read, and this theorem is
+    the collapse that says nothing was lost. -/
+theorem provision_positioned_correspondence :
+    Laws.KProvisionPositionedCorrespondence := by
+  intro events hole
+  induction events with
+  | nil => rfl
+  | cons event rest ih =>
+      simp only [positionedOf]
+      rw [greatest_at_cons]
+      dsimp only []
+      by_cases hit : hole == event.1
+      · rw [if_pos hit]
+        cases prior : greatestAt (positionedOf rest) hole with
+        | none =>
+            dsimp only []
+            simp [provisionFold, Valuation.override, hit]
+        | some priorBest =>
+            dsimp only []
+            have priorLe := greatest_at_le_length rest hole priorBest prior
+            have newer : priorBest.1 < rest.length + 1 := by omega
+            rw [if_pos newer]
+            simp [provisionFold, Valuation.override, hit]
+      · rw [if_neg hit]
+        simpa [provisionFold, Valuation.override, hit] using ih
+
 end Provision
 
 end Kernel

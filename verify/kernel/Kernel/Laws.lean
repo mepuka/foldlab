@@ -94,6 +94,19 @@ def KRequiresExclude : Prop :=
       (requiresOf nodes).filter
         (fun hole => (valuation hole).isNone)
 
+/-- The order-carrying provision fold is the positioned derived read,
+    collapsed: folding a chain equals reading the greatest-position
+    binding over its positioned fact set. This is the CALM
+    decomposition of environments — facts accumulate as a set (union,
+    arrival-order-free), the environment is a function of the facts
+    (the directory's greatest-token shape at the valuation carrier),
+    and the shadowing order lives inside the data as positions, never
+    in the schedule. -/
+def KProvisionPositionedCorrespondence : Prop :=
+  forall (events : List (Nat × Nat)) (hole : Nat),
+    provisionFold events hole =
+      (greatestAt (positionedOf events) hole).map (fun best => best.2)
+
 /-- Every kernel sentence's meaning grows the world: under an
     associative, idempotent evidence merge, no interpretation shrinks
     any component — the kernel has no forgetting act. Instantiation
