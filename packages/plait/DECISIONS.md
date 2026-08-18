@@ -646,6 +646,15 @@ keeps the control writable and keeps one place where identity is checked.
 **Load-bearing? yes** — moving the check inside the service would silently
 delete the control's meaning while leaving it green.
 
+Amended 2026-08-18 (DEV-738, the A-9/G-5 split): this decision is preserved
+verbatim for the seam it was made about — the catalog and the catalog-internal
+payload seam, now named `Payloads`, both still unverified with
+`Resolved.resolve` as their one verify door. It does not extend to the public
+blob store minted in `Blob.ts`, where verification is inside the service: there
+the control does not need the service's cooperation, because it flips bytes on
+the substrate behind the API. The argument was always about who can be made to
+lie, not about where a hash is computed.
+
 ### T19. Neither store ships a durable layer, and both say so in their type's documentation
 
 Decided: `Catalog.layer` is a process-local map and `Blobs.layer` answers every
@@ -660,6 +669,13 @@ hole). Why: the durable catalog authority is a venue's, reached through the
 request plane that `Venues.ts` will own; until that module exists the honest
 layer is the one whose bound is stated. **Load-bearing? yes** — every claim in
 this slice is scoped by "process-local catalog, absent payload store".
+
+Amended 2026-08-18 (DEV-738): the always-absent service this entry calls
+`Blobs` is now `Payloads`, and the bound is unchanged — the catalog layer is
+still process-local and the internal payload seam still answers absence. The
+name `Blobs` moved to the public store in `Blob.ts`, which DOES ship a working
+backend over the pin's `FileSystem`; the object-store sentence above still
+binds that backend and only that one.
 
 ### T20. The schema-issue bridge is internal; `decodeRefusing` is its only public door
 
@@ -879,6 +895,353 @@ edit at this call site and nothing red. Pinning it by construction costs one
 object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
 charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
 pin.
+
+## Task DEV-738 — the blob split: internal payload seam vs public `BlobsService`
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` A-9 whole (refereed G-5
+ADOPT-AMENDED, G-6 ADOPT), friction card FH-3, Part C ticket 5.
+
+### T0. The internal seam is `Payloads`, and the name `Blobs` moves to the public store
+
+Decided: `Catalog.ts`'s `BlobService`/`Blobs` become `PayloadService`/`Payloads`
+under the tag `@foldlab/plait/Payloads`, and `Blob.ts` mints the public
+`BlobsService`/`Blobs` under the tag the old one vacated,
+`@foldlab/plait/Blobs`. Alternatives: keep `Blobs` on the internal seam and name
+the public store something else (`BlobStore`, `Payloads`); move the internal
+seam into `internal/` entirely. Why: the ticket delegates the internal name and
+the record proposes the payload-store vocabulary, which `CONTEXT.md` and
+`Resolved.ts` already spoke ("the catalog and payload services", "a payload
+store lookup follows") — so the rename adopts language the package had rather
+than inventing more. The public store keeps `Blobs` because that is the name the
+architecture map reserves for `Blob.ts` and the name application code reaches
+for. `internal/` was refused because the seam appears in the public type of
+`ResolvedOf` (`Catalog | Payloads | RD`): a service a public codec type-requires
+cannot hide behind a module consumers may not import.
+**Load-bearing? yes** — the tag string is the service identity, and reusing the
+vacated one means a stale `@foldlab/plait/Blobs` provider now satisfies a
+different interface. Nothing outside this package provides either tag today,
+which is why the reuse is free; the day one does, this is the line to read.
+
+### T1. Public absence is a refusal; the internal seam keeps `Option`
+
+Decided: `BlobsService.get` refuses `blob-absent` (an `AbsenceRefusal`) and
+`PayloadService.get` keeps `Option`. Alternatives: `Option` on both (uniform);
+refusal on both (uniform the other way). Why: the two seams owe different
+things. A public store owes callers head-relative vocabulary and a refusal
+`retryAbsence` can see — `Option.none` is invisible to it and says nothing about
+whether waiting could help. The internal seam owes `Resolved.resolve` a
+three-way answer (catalogued / payload / neither) with no refusal minted at a
+leg that is not the end of the search, and `Option` is exactly that. Uniformity
+here would be a shape imposed on two different obligations.
+**Load-bearing? yes** — the retry classification of every public blob read
+depends on it.
+
+### T2. Two names over one hashing implementation in `internal/digests.ts`
+
+Decided: `digestOfStoredBytes` joins `digestOfCanonicalBytes`, both bound to one
+private `sha256Hex`. Alternatives: call `digestOfCanonicalBytes` from `Blob.ts`;
+write a third `createHash` body in `Blob.ts` (the precedent this package set at
+DEV-734 T2 by accepting two duplicated lines); export a byte door from
+`Digest.ts`. Why: the name is the precondition, and the preconditions differ —
+`digestOfCanonicalBytes` claims its input is one canonical wire value's bytes,
+while a blob store claims only that the digest addresses exactly the bytes it
+was handed. Reusing the first name inside `Blob.ts` would put one name over two
+contracts, which is the FH-3 sin this ticket exists to repair. Sharing the
+implementation keeps the duplication DEV-734 T2 accepted from growing a third
+copy. `Digest.ts` stays untouched because it is an export path and a byte door
+there is a public-surface addition nobody asked for. **Load-bearing? no.**
+
+### T3. Paths join with `/`; the pin's `Path` service is not required
+
+Decided: `Blob.ts` joins `<root>/<first two hex>/<digest>` with a private
+`joinPath` over `/`. Alternatives: require `Path` (the pin ships it,
+`Path.ts:255`, with a requirement-free posix layer at `:867`); import
+`node:path`. Why: `layerFileSystem`'s substrate is the file system and nothing
+else, and a second service in its requirement set would be paid by every
+application that provides the layer, for string concatenation. The pin's default
+`Path` layer is posix anyway, so requiring it buys no Windows behaviour that `/`
+does not already have — node and bun resolve `/` inside an absolute root on both
+platforms, which the wall exercises on the host it runs on. `node:path` was
+refused because it would make a portable-`FileSystem` module reach past the
+abstraction it was given. **Load-bearing? no** — a backend that needed real path
+algebra would take `Path` and say so.
+
+### T4. Only not-found is a refusal at the platform seam; every other `PlatformError` dies
+
+Decided: `readFile`'s not-found becomes the `blob-absent` absence, a re-derived
+digest disagreement becomes structural `digest-mismatch`, and every other
+`PlatformError` — permission, busy, out of space — is `Effect.orDie`'d.
+Alternatives: mint a retryable substrate absence for the transport-shaped ones
+(busy, timed out) as the NATS adapters do; mint a structural `substrate-shape`
+for the rest. Why: the operator's B-7 disposition is that defects are defects
+and are not part of the estate domain language, and the ticket maps this seam in
+exactly two directions. A store root the deployment cannot write is a
+misconfiguration, not a coordination fact, and dressing it as a refusal would
+put it on a retry schedule that can never repeal it. The cost is stated rather
+than hidden: an application that wants those failures as values wraps the layer
+and classifies them itself. **Load-bearing? yes** — it decides what a caller can
+catch, and the transport-shaped arm is the one a later probe might argue back.
+
+### T5. The wall's `FileSystem` is a node-backed `makeNoop` adapter, not a platform package
+
+Decided: `test/TestFileSystem.ts` builds the layer from the pin's own
+`FileSystem.layerNoop` over `node:fs/promises`, implementing only the six
+operations the store reaches for. Alternatives: add `@effect/platform-bun` as a
+devDependency and use `BunFileSystem`; run the suite against an in-memory file
+system. Why: the ticket's bound is zero new plait dependencies, and A-9 names
+`makeNoop`/`layerNoop` as the pin's own test seams for exactly this. The bound
+that buys is stated in the module and the README rather than left implicit: the
+wall exercises the store against the OS file system, and the behaviour of
+`BunFileSystem` or `NodeFileSystem` specifically is the application's to verify.
+An in-memory file system was refused because it would delete the only part of
+this backend that is not this package's own code — rename semantics, ENOENT, and
+the fan-out directory. **Load-bearing? yes** — it is the scope line on every
+claim the suite makes.
+
+### T6. The conformance suite throws plain errors and ships one planted control per law
+
+Decided: `test/BlobsConformance.ts` states six laws whose checks throw `Error`s
+rather than calling a test framework's assertions; `blobsConformance` registers
+them against a backend, and `refutedLaws` runs them and returns the laws that
+refused. `Blob.test.ts` plants one backend per law, each dropping exactly that law,
+plus an unplanted base that must pass every law. Alternatives: write the checks
+with `expect` directly (shorter); assert only that a planted backend fails
+somewhere. Why: a prover that cannot fail proves nothing, and "fails somewhere"
+is the version of that gate which passes when the mutation broke a different law
+than the one claimed — so each control is refuted on exactly its own law and on
+no other, and the unplanted base pins that the refutations come from the
+mutation and not from being memory-backed. Plain errors are what let
+`refutedLaws` catch a violation as a value, and they keep the suite runnable by
+a backend that lives outside this package. The identity law's oracle is FIPS
+180-4's published SHA-256 vector for `"abc"`, which is outside both the store
+and this package: a store self-consistent under some other address function
+agrees with itself forever and disagrees with that line immediately.
+**Load-bearing? yes** — it is the whole wall.
+
+### T7. The resolve seam's refusal data is untouched, including its `blob` path
+
+Decided: `Resolved.ts` changes names only. `malformedPayload` keeps its
+`["blob", digest]` path and the `cataloged-value-absent` / `digest-mismatch`
+kinds are unchanged, so the Resolved and Catalog suites observe exactly what
+they observed before. Alternatives: rename the path segment to `payload` for
+consistency with the renamed seam. Why: refusal data is observed by walls, and a
+rename that reads better in a diff is a wall change wearing a cosmetic hat. The
+segment is honest either way — both sides of it name payload bytes. Deliberately
+untouched, not overlooked. **Load-bearing? no.**
+
+### T8. `put` writes and renames unconditionally rather than skipping a digest it already holds
+
+Decided: every `put` stages a temp file, writes, and renames into place, even
+when the digest is already stored. Alternatives: check `has` first and return
+early. Why: content addressing makes the rewrite harmless — the bytes are the
+same bytes — and the early return would add a check-then-act window for a saving
+nobody has measured. The rename also makes `put` quietly self-repairing over a
+store corrupted behind its back, which is a property worth having and not one
+worth claiming: nothing in the suite tests it, so nothing here promises it.
+**Load-bearing? no.**
+
+### T9. The T18 control is written at the verify door, not argued at the seam
+
+Decided: `Resolved.test.ts` gains "a lying payload layer is refused at the one
+verify door" — a `Payloads` layer answering `termsDigest` with the canonical
+bytes of a different wire value, and `resolve` refusing `structural/digest-
+mismatch` with `got` the other value's digest. The row that asserted the seam
+hands back what it holds stays, relabelled as characterization, because it
+records why a lie is writable there and pointing at the control that spends it.
+Alternatives: leave the argument in prose; move the whole thing into the
+Catalog suite. Why: `Layer.succeed` handing back the function it was given is a
+tautology over the fixture — it cannot fail, so it proves nothing, and the
+payload leg had no row that could. The Catalog leg already had a tampered-store
+row; this is its twin. Raised as a DEV-751 round-1 major charge.
+**Load-bearing? yes** — FH-3's locality clause and T18's amendment both rest on
+the control staying writable at the payload seam, and now something proves it.
+
+### T10. The conformance suite puts two payloads into one store
+
+Decided: a sixth law, `distinctness` — two payloads in, each `get` returns its
+own bytes, each `has` is true — with a planted control that keys on the
+two-character fan-out prefix instead of the whole digest. The second payload is
+chosen so its digest agrees with the FIPS vector's on the first byte, which is
+what makes the law discriminating; both digests are still learned at run time
+from the store's own `put`. Alternatives: leave the five laws; add a
+whole-digest-addressing law stated over a backend's mechanics. Why: every other
+law exercises one payload in a fresh store plus a never-stored digest, so a
+store that is not content-addressed at lookup ships green through all five —
+the prefix-keyed backend was built and passed them. What it actually does is
+lose whichever prefix-sharing payload arrived first, while `has` still answers
+true for bytes it no longer holds. A law stated over backend mechanics would
+not survive the object-store and remote backends, which is the whole point of a
+backend-agnostic suite. Raised as a DEV-751 round-1 major charge.
+**Load-bearing? yes** — this suite is the only wall the later backends meet.
+
+### T11. `FileSystemBlobOptions.root` stays a bare string, recorded rather than omitted
+
+Decided: the store root is deployment configuration and keeps its `string`
+type; it is recorded here so the DEV-740 identifier sweep has a disposition to
+apply rather than a gap to discover. Alternatives: brand it now; leave it
+unrecorded. Why: the affordances record's own band puts a store root beside
+connection names — it addresses a machine, carries no meaning inside the
+estate, and is never compared against an estate identifier. Branding it would
+buy nothing and would put a foldlab type on a path a deployment supplies.
+Raised as a DEV-751 round-1 minor charge. **Load-bearing? no** — nothing
+behaves differently; this is the row DEV-740 will read.
+
+## Task DEV-735 — defect classification on the transport spine
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-7), landing the
+operator's disposition of 2026-08-18.
+
+### T0. The error channel's discipline is two-sided: defects never wear the absence sort
+
+Decided: the house rule was recorded one-sided — "transport causes are preserved
+and never wear fencing laws" (T0 of the DEV-711 task) — and its symmetric half
+is now law: *defects never wear the absence sort*. Operator's ruling, verbatim:
+"defects are defects and are not part of the estate domain language." Refusals
+are that language in full; a `TypeError` inside the pinned client, a mis-shaped
+call, a rejection that is not an error at all — none of them is a statement this
+fabric makes, so none of them is minted as one. Alternatives: leave the channel
+one-sided and document the hazard; classify defects into a third refusal sort.
+Why: `Refusal.retryAbsence` retries the absence sort and only the absence sort
+(Refusal.ts:129-150), so the pre-disposition classification did not merely
+mislabel a bug, it guaranteed a retry loop over one — the gate measures exactly
+that, four attempts before and one after. (Gate, not wall: this suite compares
+one implementation against a stated rule; the glossary reserves "wall" for
+equal-input/equal-digest comparisons between implementations.) A third sort was refused on the
+ruling's own terms: a defect is not in the vocabulary, so it gets no word in it.
+Classification remains a client-side convention layered on an undistinguishing
+wire, unchanged from T13 of the DEV-711 task; nothing here is derived from the
+substrate. **Load-bearing? yes** — it is the error channel's shape.
+
+### T1. The transport vocabulary is read from the client's registries, and includes the transport's unwrapped system error
+
+**Superseded by T3 and T4** (DEV-752 round-2). The second admission ground below
+was removed and the caller-validation carve-out this entry declined was ruled
+in. The entry is kept whole because the reasoning it records — including the
+probe evidence — is what T3 disposes of.
+
+Decided: `isTransportCause` (internal/transport.ts) admits a cause on two
+grounds. First, `instanceof` against the pinned client's own registries —
+`Object.values(errors)` from `@nats-io/nats-core@3.4.0` (its thirteen classes,
+enumerated by the client, not transcribed by us) plus the two
+`@nats-io/jetstream@3.4.0` roots `JetStreamApiError` and `JetStreamError`, which
+every jetstream class this package can observe descends from. Second, the Node
+system-error shape: an `Error` carrying string `code` AND string `syscall`.
+Alternatives: the class list alone, as the disposition's implementation reading
+sketched it; additionally carve the client's four caller-validation classes
+(`InvalidArgumentError`, `InvalidSubjectError`, `InvalidOperationError`,
+`InvalidNameError`) out as defects. Why the second ground: measured, not
+assumed. `@nats-io/transport-node@3.4.0` wraps exactly one dial failure —
+`ECONNREFUSED` becomes `ConnectionError` — and rethrows every other socket error
+unwrapped, so a probe against the pin returns `ConnectionError` for a closed
+port and a bare `Error { code: "ENOTFOUND", syscall: "getaddrinfo" }` for an
+unresolvable host. The class list alone would therefore file "the host does not
+resolve" — the most ordinary retryable absence this package has — as a defect,
+which inverts the ruling instead of landing it. Requiring both fields keeps the
+admission a shape rather than a loophole: Node's `ERR_*` programming errors
+carry `code` alone and stay defects. Why not the carve-out: those four classes
+are the client's lawful report of a caller error and reclassifying them is a
+second behavioural change the disposition did not rule; the ticket's named
+control is a `TypeError`, and this seat does not widen a ruling it was handed.
+Recorded as observed, not fixed. Known and deliberate consequences: the pinned
+clients also raise bare `Error` for a handful of substrate conditions
+(`@nats-io/kv` "kv is only supported on servers … or better",
+`@nats-io/jetstream` "… requires server …", the transport's "unexpected response
+from server"), and those now die as defects — each is a permanent deployment or
+protocol mismatch that no retry repairs, so the absence sort was never honest
+about them. `InvalidNameError` and `JetStreamNotEnabled` are declared in
+`@nats-io/jetstream`'s `jserrors` but absent from its entrypoint, so no
+`instanceof` names them without reaching past the published surface; both fall
+to the defect side by that omission. **Load-bearing? yes** — the enumeration is
+what the classification means, and it is pinned to `@nats-io/*@3.4.0`.
+
+### T2. The narrowing lives at the mint and a defect leaves by throwing
+
+Decided: `transportRefusalFor` rethrows a non-transport cause unchanged, so the
+classification is one edit inside the spine and not one at each of the
+thirty-one sites that observe a transport cause. No signature moves (audit
+B-12): every call site keeps the shape it had, and `TransportRefusal` still
+reads `(operation, cause) => Refusal`. Alternatives: a spine-level
+`tryTransport` wrapper each adapter calls instead of `Effect.tryPromise`;
+returning a discriminated result the call sites branch on. Why: the pin states
+the semantics this rests on — inside `Effect.tryPromise`'s `catch`, "if `catch`
+throws while mapping the error, that thrown value is treated as a defect"
+(Effect.ts, the `tryPromise` gotcha) — and it was measured to hold identically
+at the other two seams the adapters classify at, an `Effect.catch` handler and
+an `Effect.gen` body, all three dying rather than failing. The alternatives
+rewrite thirty-one call sites to change a classification that is not theirs to
+make; B-8 extracted this spine so that this narrowing would be one edit, and
+spending the leverage on a wider diff would waste it. The cost is a function
+that can throw where its type says it returns, which is why the throw is
+documented at the mint and gated at all three seams by
+`test/TransportDefects.test.ts`. **Load-bearing? yes** — it is how a defect
+crosses the classification boundary at all.
+
+### T3. The structural admission is removed; the ENOTFOUND expansion is refused pending disposition
+
+Decided: `isTransportCause` admits by class membership and nothing else. The
+shape rule — an `Error` carrying string `code` and string `syscall` — is gone,
+and with it the unwrapped `ENOTFOUND` absence T1 bought with it. That expansion
+is REFUSED pending an operator disposition, not preserved. Alternatives: keep
+the shape rule; keep it and add an allowlist of Node `code` values; keep it and
+require the cause to arrive from a connect path. Why: the rule was a
+counterexample to the ruling it was implementing. Any foreign `Error` wearing
+those two fields became a retryable absence, and the reviewer planted the proof
+— a `TypeError` with invented `code` and `syscall` classified as transport
+evidence. A fence that a two-line forgery walks through is not a fence, and the
+whole point of the narrowing is that a defect cannot buy its way into the one
+retryable sort. The allowlist variants only move the forgery one step: the
+fields are still read off an object whose provenance nothing established.
+
+What this costs, stated plainly: `@nats-io/transport-node@3.4.0` really does
+rethrow an unresolvable-host error unwrapped, so "the host does not resolve" now
+dies as a defect. That is a genuine transport condition on the wrong side of the
+line, and it is the operator's to dispose of — either by ruling the client's
+rethrow a transport class this package may recognize by some evidence a
+counterfeit cannot manufacture, or by ruling an unresolvable host a deployment
+defect. The counterfeit and the real `ENOTFOUND` are both in the negative
+controls, side by side, so the cost is visible rather than argued. Raised as the
+DEV-752 round-2 blocker. **Load-bearing? yes** — it is what the classification
+now means.
+
+### T4. Caller-validation classes die as defects
+
+Decided: `InvalidArgumentError`, `InvalidOperationError`, and
+`InvalidSubjectError` are filtered out of the admitted registry and die as
+defects, with a negative-control row each. Alternatives: keep the
+whole-registry rule; keep them as absences and document the hazard. Why: T1
+declined this carve-out on the ground that this seat does not widen a ruling it
+was handed — but the ruling was already handed. The three classes mean the
+caller called the client wrong: an argument the API cannot use, a subject that
+is not one, an operation the object does not support (the pin's own example is
+iterating an object configured with a callback). That is the same thing a
+`TypeError` means, and T0's own text names "a mis-shaped call" on the defect
+side. Admitting them made the change's rule contradict the change's own
+decision, and made a bug retryable four times over. The three are the whole
+caller-validation family reachable here: the fourth, `@nats-io/jetstream`'s
+`InvalidNameError`, is absent from that package's entrypoint, so nothing admits
+it in the first place. Every other class in the registry — connection,
+authorization, protocol, timeout, permission, request — reports a condition of
+the substrate or the deployment, not of the call, and keeps its absence. Raised
+as the DEV-752 round-2 blocker. **Load-bearing? yes** — it is the boundary the
+whole-registry rule did not draw.
+
+### T5. Spine membership is derived from the source tree; the terms stay transcribed
+
+Decided: `TransportSpine.test.ts` reads which adapters mint a transport refusal
+off `src/internal/*.ts` and asserts that set equals its own rows. The row terms
+stay transcribed from the pre-extraction definitions. Alternatives: derive the
+terms too, by reading them from the adapters; leave membership hand-listed.
+Why: the two halves want opposite things. The terms are the oracle — reading
+them from the implementation would make the gate a mirror, green by
+construction, which is the failure the transcription exists to avoid. Membership
+is not an oracle, it is coverage, and hand-listed coverage silently omits: a
+ninth adapter could join the spine with no row and nothing would go red. Raised
+as a DEV-752 round-2 major charge. **Load-bearing? yes** — coverage that cannot
+notice an omission is not coverage.
 
 ## Task DEV-736 — the commons pump's bound, and the T4/T5 supersessions
 

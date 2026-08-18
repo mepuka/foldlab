@@ -1,7 +1,7 @@
 /**
  * References that decode by resolving — the R-channel move.
  *
- * Decoding a `ResolvedOf` requires `Catalog` (and `Blobs` for payloads stored
+ * Decoding a `ResolvedOf` requires `Catalog` (and `Payloads` for bodies stored
  * outside the inline threshold) from the environment; decode re-derives the
  * digest of whatever it fetched and refuses on mismatch. There is no decode
  * path that trusts an asserted digest: the schema *is* the verify-on-read law,
@@ -23,7 +23,7 @@
 import { Effect, Option, Schema, SchemaGetter } from "effect"
 
 import { canonicalBytes, type WireValue } from "./Canonical.js"
-import { Blobs, Catalog } from "./Catalog.js"
+import { Catalog, Payloads } from "./Catalog.js"
 import { Digest, digestOf } from "./Digest.js"
 import {
   absenceRefusal,
@@ -116,12 +116,12 @@ const decodePayload = (
  */
 export const resolve = Effect.fn("Resolved.resolve")(function* (
   digest: Digest,
-): Effect.fn.Return<WireValue, Refusal, Catalog | Blobs> {
+): Effect.fn.Return<WireValue, Refusal, Catalog | Payloads> {
   const catalog = yield* Catalog
   const cataloged = yield* catalog.get(digest)
   if (Option.isSome(cataloged)) return yield* verified(digest, cataloged.value)
-  const blobs = yield* Blobs
-  const payload = yield* blobs.get(digest)
+  const payloads = yield* Payloads
+  const payload = yield* payloads.get(digest)
   if (Option.isNone(payload)) return yield* absent(digest)
   return yield* verified(digest, yield* decodePayload(digest, payload.value))
 })
@@ -160,7 +160,7 @@ const publishGetter = SchemaGetter.transformOrFail((wire: WireValue) =>
  * schema's own channels so a resolved body may itself hold references.
  */
 export interface ResolvedOf<A, RD = never, RE = never>
-  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, RE> {}
+  extends Schema.Codec<A, Digest, Catalog | Payloads | RD, RE> {}
 
 /**
  * Builds a resolving reference over a wire schema.
@@ -191,7 +191,7 @@ export type Resolved<A> = ResolvedOf<A>
  * memo-key computation, which must stay runnable with no environment.
  */
 export interface PublishingOf<A, RD = never, RE = never>
-  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, Catalog | RE> {}
+  extends Schema.Codec<A, Digest, Catalog | Payloads | RD, Catalog | RE> {}
 
 /** Builds a write-through reference for the explicit emit path. */
 export const PublishingOf = <A, RD = never, RE = never>(
