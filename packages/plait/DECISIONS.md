@@ -1066,3 +1066,158 @@ estate, and is never compared against an estate identifier. Branding it would
 buy nothing and would put a foldlab type on a path a deployment supplies.
 Raised as a DEV-751 round-1 minor charge. **Load-bearing? no** — nothing
 behaves differently; this is the row DEV-740 will read.
+
+## Task DEV-735 — defect classification on the transport spine
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-7), landing the
+operator's disposition of 2026-08-18.
+
+### T0. The error channel's discipline is two-sided: defects never wear the absence sort
+
+Decided: the house rule was recorded one-sided — "transport causes are preserved
+and never wear fencing laws" (T0 of the DEV-711 task) — and its symmetric half
+is now law: *defects never wear the absence sort*. Operator's ruling, verbatim:
+"defects are defects and are not part of the estate domain language." Refusals
+are that language in full; a `TypeError` inside the pinned client, a mis-shaped
+call, a rejection that is not an error at all — none of them is a statement this
+fabric makes, so none of them is minted as one. Alternatives: leave the channel
+one-sided and document the hazard; classify defects into a third refusal sort.
+Why: `Refusal.retryAbsence` retries the absence sort and only the absence sort
+(Refusal.ts:129-150), so the pre-disposition classification did not merely
+mislabel a bug, it guaranteed a retry loop over one — the gate measures exactly
+that, four attempts before and one after. (Gate, not wall: this suite compares
+one implementation against a stated rule; the glossary reserves "wall" for
+equal-input/equal-digest comparisons between implementations.) A third sort was refused on the
+ruling's own terms: a defect is not in the vocabulary, so it gets no word in it.
+Classification remains a client-side convention layered on an undistinguishing
+wire, unchanged from T13 of the DEV-711 task; nothing here is derived from the
+substrate. **Load-bearing? yes** — it is the error channel's shape.
+
+### T1. The transport vocabulary is read from the client's registries, and includes the transport's unwrapped system error
+
+**Superseded by T3 and T4** (DEV-752 round-2). The second admission ground below
+was removed and the caller-validation carve-out this entry declined was ruled
+in. The entry is kept whole because the reasoning it records — including the
+probe evidence — is what T3 disposes of.
+
+Decided: `isTransportCause` (internal/transport.ts) admits a cause on two
+grounds. First, `instanceof` against the pinned client's own registries —
+`Object.values(errors)` from `@nats-io/nats-core@3.4.0` (its thirteen classes,
+enumerated by the client, not transcribed by us) plus the two
+`@nats-io/jetstream@3.4.0` roots `JetStreamApiError` and `JetStreamError`, which
+every jetstream class this package can observe descends from. Second, the Node
+system-error shape: an `Error` carrying string `code` AND string `syscall`.
+Alternatives: the class list alone, as the disposition's implementation reading
+sketched it; additionally carve the client's four caller-validation classes
+(`InvalidArgumentError`, `InvalidSubjectError`, `InvalidOperationError`,
+`InvalidNameError`) out as defects. Why the second ground: measured, not
+assumed. `@nats-io/transport-node@3.4.0` wraps exactly one dial failure —
+`ECONNREFUSED` becomes `ConnectionError` — and rethrows every other socket error
+unwrapped, so a probe against the pin returns `ConnectionError` for a closed
+port and a bare `Error { code: "ENOTFOUND", syscall: "getaddrinfo" }` for an
+unresolvable host. The class list alone would therefore file "the host does not
+resolve" — the most ordinary retryable absence this package has — as a defect,
+which inverts the ruling instead of landing it. Requiring both fields keeps the
+admission a shape rather than a loophole: Node's `ERR_*` programming errors
+carry `code` alone and stay defects. Why not the carve-out: those four classes
+are the client's lawful report of a caller error and reclassifying them is a
+second behavioural change the disposition did not rule; the ticket's named
+control is a `TypeError`, and this seat does not widen a ruling it was handed.
+Recorded as observed, not fixed. Known and deliberate consequences: the pinned
+clients also raise bare `Error` for a handful of substrate conditions
+(`@nats-io/kv` "kv is only supported on servers … or better",
+`@nats-io/jetstream` "… requires server …", the transport's "unexpected response
+from server"), and those now die as defects — each is a permanent deployment or
+protocol mismatch that no retry repairs, so the absence sort was never honest
+about them. `InvalidNameError` and `JetStreamNotEnabled` are declared in
+`@nats-io/jetstream`'s `jserrors` but absent from its entrypoint, so no
+`instanceof` names them without reaching past the published surface; both fall
+to the defect side by that omission. **Load-bearing? yes** — the enumeration is
+what the classification means, and it is pinned to `@nats-io/*@3.4.0`.
+
+### T2. The narrowing lives at the mint and a defect leaves by throwing
+
+Decided: `transportRefusalFor` rethrows a non-transport cause unchanged, so the
+classification is one edit inside the spine and not one at each of the
+thirty-one sites that observe a transport cause. No signature moves (audit
+B-12): every call site keeps the shape it had, and `TransportRefusal` still
+reads `(operation, cause) => Refusal`. Alternatives: a spine-level
+`tryTransport` wrapper each adapter calls instead of `Effect.tryPromise`;
+returning a discriminated result the call sites branch on. Why: the pin states
+the semantics this rests on — inside `Effect.tryPromise`'s `catch`, "if `catch`
+throws while mapping the error, that thrown value is treated as a defect"
+(Effect.ts, the `tryPromise` gotcha) — and it was measured to hold identically
+at the other two seams the adapters classify at, an `Effect.catch` handler and
+an `Effect.gen` body, all three dying rather than failing. The alternatives
+rewrite thirty-one call sites to change a classification that is not theirs to
+make; B-8 extracted this spine so that this narrowing would be one edit, and
+spending the leverage on a wider diff would waste it. The cost is a function
+that can throw where its type says it returns, which is why the throw is
+documented at the mint and gated at all three seams by
+`test/TransportDefects.test.ts`. **Load-bearing? yes** — it is how a defect
+crosses the classification boundary at all.
+
+### T3. The structural admission is removed; the ENOTFOUND expansion is refused pending disposition
+
+Decided: `isTransportCause` admits by class membership and nothing else. The
+shape rule — an `Error` carrying string `code` and string `syscall` — is gone,
+and with it the unwrapped `ENOTFOUND` absence T1 bought with it. That expansion
+is REFUSED pending an operator disposition, not preserved. Alternatives: keep
+the shape rule; keep it and add an allowlist of Node `code` values; keep it and
+require the cause to arrive from a connect path. Why: the rule was a
+counterexample to the ruling it was implementing. Any foreign `Error` wearing
+those two fields became a retryable absence, and the reviewer planted the proof
+— a `TypeError` with invented `code` and `syscall` classified as transport
+evidence. A fence that a two-line forgery walks through is not a fence, and the
+whole point of the narrowing is that a defect cannot buy its way into the one
+retryable sort. The allowlist variants only move the forgery one step: the
+fields are still read off an object whose provenance nothing established.
+
+What this costs, stated plainly: `@nats-io/transport-node@3.4.0` really does
+rethrow an unresolvable-host error unwrapped, so "the host does not resolve" now
+dies as a defect. That is a genuine transport condition on the wrong side of the
+line, and it is the operator's to dispose of — either by ruling the client's
+rethrow a transport class this package may recognize by some evidence a
+counterfeit cannot manufacture, or by ruling an unresolvable host a deployment
+defect. The counterfeit and the real `ENOTFOUND` are both in the negative
+controls, side by side, so the cost is visible rather than argued. Raised as the
+DEV-752 round-2 blocker. **Load-bearing? yes** — it is what the classification
+now means.
+
+### T4. Caller-validation classes die as defects
+
+Decided: `InvalidArgumentError`, `InvalidOperationError`, and
+`InvalidSubjectError` are filtered out of the admitted registry and die as
+defects, with a negative-control row each. Alternatives: keep the
+whole-registry rule; keep them as absences and document the hazard. Why: T1
+declined this carve-out on the ground that this seat does not widen a ruling it
+was handed — but the ruling was already handed. The three classes mean the
+caller called the client wrong: an argument the API cannot use, a subject that
+is not one, an operation the object does not support (the pin's own example is
+iterating an object configured with a callback). That is the same thing a
+`TypeError` means, and T0's own text names "a mis-shaped call" on the defect
+side. Admitting them made the change's rule contradict the change's own
+decision, and made a bug retryable four times over. The three are the whole
+caller-validation family reachable here: the fourth, `@nats-io/jetstream`'s
+`InvalidNameError`, is absent from that package's entrypoint, so nothing admits
+it in the first place. Every other class in the registry — connection,
+authorization, protocol, timeout, permission, request — reports a condition of
+the substrate or the deployment, not of the call, and keeps its absence. Raised
+as the DEV-752 round-2 blocker. **Load-bearing? yes** — it is the boundary the
+whole-registry rule did not draw.
+
+### T5. Spine membership is derived from the source tree; the terms stay transcribed
+
+Decided: `TransportSpine.test.ts` reads which adapters mint a transport refusal
+off `src/internal/*.ts` and asserts that set equals its own rows. The row terms
+stay transcribed from the pre-extraction definitions. Alternatives: derive the
+terms too, by reading them from the adapters; leave membership hand-listed.
+Why: the two halves want opposite things. The terms are the oracle — reading
+them from the implementation would make the gate a mirror, green by
+construction, which is the failure the transcription exists to avoid. Membership
+is not an oracle, it is coverage, and hand-listed coverage silently omits: a
+ninth adapter could join the spine with no row and nothing would go red. Raised
+as a DEV-752 round-2 major charge. **Load-bearing? yes** — coverage that cannot
+notice an omission is not coverage.
