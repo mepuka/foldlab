@@ -858,3 +858,55 @@ edit at this call site and nothing red. Pinning it by construction costs one
 object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
 charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
 pin.
+
+## Task DEV-730 — tenth substrate probe suite
+
+Task-local placeholders restart for this task. Spec authority:
+`docs/design/2026-08-17-plait-next-phase-plan.md` item 10 and
+`docs/design/2026-08-17-plait-effect-affordances.md` A-9 backend (b).
+
+### T0. Probe the TypeScript object-store client at the consuming seam
+
+Decided: the tenth suite is `test/ObjectStoreSemantics.test.ts`, beside the
+ninth, and builds the server from `go/go.mod` through `NatsHarness`.
+Alternatives: probe `nats.go`'s object store under `go/substrate`; land a
+`Blob.ts` slot while probing it. Why: the gated consumer is
+`@nats-io/obj@3.4.0`, whose chunking, digest, and metadata behaviour is client
+code — the Go client would test the wrong seam, and the ticket mints evidence
+only. **Load-bearing? yes** — a different client would not discharge the gate
+named by the plan.
+
+### T1. Record the missing ranged read as an enumerated absence
+
+Decided: the ranged-read arm enumerates the client's reachable surface, pins
+`get`/`getBlob` at one argument and `ObjectResult` at `{info, error, data}`,
+and asserts that no member names a range, offset, seek, partial, or slice.
+Alternatives: skip the arm with a note that the API looks absent; build a
+ranged read out of raw chunk-subject reads and probe that. Why: an enumerated
+surface is evidence that fails when the pin moves, where a skipped test is
+silence; and hand-rolling a read the client does not offer would probe our own
+invention, not the substrate. **Load-bearing? yes** — G-6's deferred
+chunk-manifest law rests on this absence being a fact about the pin.
+
+### T2. Pair the digest claim with a tamper control
+
+Decided: the round-trip arm injects one extra chunk message behind the client's
+back and pins three consequences — metadata unchanged, whole-object `getBlob`
+refused, and every byte delivered to the reader before the refusal arrives.
+Alternatives: assert only that the reported digest equals an independent
+SHA-256; corrupt bytes in the file store directly. Why: a digest that agrees
+with itself proves only self-consistency, so the control is what makes the
+verify-on-read claim mean anything, and it is the same control that exposes the
+unverified prefix; corrupting the file store beneath JetStream would probe
+storage, not the client's read path. **Load-bearing? yes** — the delivery order
+is the finding a future blob reader must design around.
+
+### T3. Capture refusal messages instead of asserting through `.rejects`
+
+Decided: refusals are captured with a small helper that returns the first line
+of the error and compared as values. Alternatives: `expect(promise).rejects.toThrow(...)`.
+Why: at the harness pin that matcher reported `timeout` for refusals the same
+operations produce immediately under a plain `try`/`catch`, which would have
+recorded a false observation and cost five seconds per arm. **Load-bearing?
+no** — the observed refusals are identical either way; this keeps the recorded
+value the one the client actually produced.

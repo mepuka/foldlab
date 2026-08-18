@@ -132,4 +132,9 @@ watch semantics of any kind — no watch surface ships, because the KV watch
 probe suite is not on the substrate gate. All cell claims hold within a fixed
 backing-stream incarnation. Neither `Catalog` nor `Blobs` ships a durable
 layer: the catalog layer is process-local, and the payload layer answers
-absence until the object-store probe lands.
+absence. The tenth substrate suite now pins the object store's put/get
+integrity, chunk boundaries, delete semantics, and metadata stability, but no
+blob surface ships on it: the pinned client has no ranged read, its whole-object
+digest is checked only when the last chunk arrives, and object metadata is
+written by the client rather than derived by the server — so a reader that
+trusts metadata has verified nothing.
