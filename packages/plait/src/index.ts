@@ -3,6 +3,9 @@
  *
  * @module
  */
+/** The one admission seam: candidate in, sentence or taught refusal out. */
+export * as Admission from "./kernel/Admission.js"
+
 /** Canonical JSON values and their unique RFC 8785 byte form. */
 export * as Canonical from "./truth/Canonical.js"
 

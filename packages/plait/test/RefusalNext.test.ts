@@ -13,6 +13,8 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Fiber, Reducer, Schema } from "effect"
 
+import { Admission } from "../src/kernel/Admission.js"
+import { PLANTED_CONTEXT } from "./KernelDoor.reference.js"
 import * as Algebra from "../src/truth/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
 import { canonicalBytes } from "../src/truth/Canonical.js"
@@ -580,6 +582,15 @@ describe("structural refusal repairs", () => {
     } finally {
       await foldConnection.close()
     }
+
+    refusals.push(
+      await Effect.runPromise(
+        Effect.gen(function*() {
+          const door = yield* Admission
+          return yield* Effect.flip(door.admit({ _tag: "readLatest", subject: 6 }))
+        }).pipe(Effect.provide(Admission.layer(PLANTED_CONTEXT))),
+      ),
+    )
 
     const exemptions = new Set<StructuralKind>(["fold-buffer-overflow"])
     expect([
