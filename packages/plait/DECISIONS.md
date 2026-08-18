@@ -858,3 +858,42 @@ edit at this call site and nothing red. Pinning it by construction costs one
 object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
 charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
 pin.
+
+## Task DEV-731 — ninth substrate probe suite
+
+Task-local placeholders restart for this task. Spec authority:
+`docs/design/2026-08-17-plait-next-phase-plan.md` item 9 and
+`docs/design/2026-08-17-plait-effect-affordances.md` A-8b.
+
+### T0. Probe the TypeScript KV client at the consuming seam
+
+Decided: the ninth suite is `test/KVWatchSemantics.test.ts`, beside the existing
+TypeScript substrate parity wall, and builds the server from `go/go.mod` through
+`NatsHarness`. Alternatives: probe `nats.go`'s KV watcher under `go/substrate`;
+add a production `Cell.watch` while probing it. Why: the gated consumer uses
+`@nats-io/kv@3.4.0`, whose replay flags and resume options are client behavior;
+the Go watcher would test the wrong seam, and the ticket mints evidence only.
+**Load-bearing? yes** — substituting a different client would not discharge the
+gate named by the plan.
+
+### T1. Pin the observed replay flag instead of repairing or abstracting it
+
+Decided: the suite asserts the pin's exact `isUpdate` sequence and records the
+mixed initial/live flag as FINDING-DEV731-WATCH-INITIAL-001. No helper repairs
+the flag and no consumer surface lands. Alternatives: ignore `isUpdate`; wrap
+the iterator and synthesize an initial/live boundary. Why: ignoring a public
+field lets client drift pass unseen, while synthesizing a boundary would invent
+production semantics the ticket neither licenses nor can derive reliably from
+the pin. **Load-bearing? yes** — the finding is the most consequential result
+for the future consumer.
+
+### T2. Bound reconnect evidence to one forced same-server reconnect
+
+Decided: the reconnect arm forces the watch connection away for 750 ms while a
+second connection publishes, then pins delivery of the in-gap entry followed
+by the post-reconnect entry. Alternatives: kill and restart the server; claim
+reconnect losslessness from the one arm. Why: this isolates client reconnect
+behavior from the already-separate SIGKILL recovery suite; server restart would
+mix consumer recovery and storage recovery, and one schedule cannot license a
+losslessness theorem. **Load-bearing? yes** — the bound prevents a ran trace
+from becoming a general availability claim.

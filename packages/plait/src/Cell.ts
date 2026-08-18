@@ -14,11 +14,11 @@
  * agreement with the Lean carrier's own comparator order is NOT claimed, and
  * no cross-language byte wall over cell state exists.
  *
- * **No watch surface ships.** Watch is admitted advisory-only behind a ninth
- * probe suite on the substrate gate (KV watch semantics at the pin: initial
- * replay, coalescing, delete markers, resume-from-revision). That suite is not
- * merged — the substrate gate carries eight suites — so this module ships
- * read and merge only, and no absence may ever be inferred from either.
+ * **No watch surface ships.** The ninth substrate suite now probes initial
+ * replay, coalescing, delete markers, resume-from-revision, and one bounded
+ * reconnect schedule at the pin. It licenses a future feed only as advisory:
+ * this module still ships read and merge, `KvWatchEntry.isUpdate` is not an
+ * initial/live boundary, and no absence may ever be inferred from a watch.
  *
  * Incarnation bound: KV revisions are backing-stream sequences, so every claim
  * this module's walls make holds within a fixed backing-stream incarnation;
