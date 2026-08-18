@@ -231,10 +231,19 @@ Each law names its mechanical wall. A law without a wall is listed
 with its debt. Violations are findings at the named severity, never
 style notes.
 
-1. **One type universe.** Every public type derives from the KM
-   corpus (kernel/KernelCorpusSchemas + generated tables) or wears an
-   explicit sketch waiver citing its unification ticket. Wall:
-   the type-universe walk (DEV-796, inventory → enforce). Severity: blocker.
+1. **The machine-generated type kernel IS the core.** Operator
+   ruling, verbatim intent: the kernel language — machine validated
+   (Lean conformance), machine generated (the corpus and its
+   generated projections), machine centralized — is the ONLY
+   language and the unified algebraic core of the estate. Every
+   public type derives from kernel/KernelCorpusSchemas and the
+   generated tables. A hand-written definition of a corpus concept
+   (a second Digest, a private candidate shape, a twin refusal enum)
+   is a DEFECT, not a style choice; existing hand-written types are
+   staged debt wearing explicit waivers that cite their unification
+   ticket, and the truth/ primitives themselves converge under the
+   generated core. Wall: the type-universe walk (DEV-796,
+   inventory → enforce). Severity: blocker.
 2. **One door.** All judgment routes through kernel admission; a
    private validator is a second door. Wall: pending the shared
    candidate form (DEV-763/796 stage 4). Severity: blocker.
