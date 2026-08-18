@@ -126,8 +126,11 @@ jobs:
         working-directory: proto/ts
         run: bun ../../node_modules/@typescript/native-preview/bin/tsgo --noEmit 2>&1 | tee ../../ci-logs/proto-ts-typecheck.log
 
+      # The Effect diagnostics CLI moved with the TypeScript 7 cutover:
+      # @effect/language-service refuses TS 7 by design and names its
+      # successor, so the rules run through @effect/tsgo's diagnostics.
       - name: proto/ts — Effect rules
-        run: bun node_modules/@effect/language-service/cli.js diagnostics --project proto/ts/tsconfig.json --strict 2>&1 | tee ci-logs/proto-ts-effect-rules.log
+        run: bun node_modules/.bin/effect-tsgo diagnostics --project proto/ts/tsconfig.json 2>&1 | tee ci-logs/proto-ts-effect-rules.log
 
       # Builds and spawns protod against temp JetStream stores.
       - name: proto/ts — bun test .
