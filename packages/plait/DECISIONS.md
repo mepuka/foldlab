@@ -1884,6 +1884,127 @@ the surface is not lawful, and the regenerated manifest is the evidence that it
 is. **Load-bearing? yes** — the barrel is the package's interface, and what
 enters it is a decision with a record.
 
+## Task DEV-774 — `max_payload` measured at the pin; the inline/blob threshold pinned against it
+
+Task-local placeholders (rule 1): T-numbers restart per task. Spec authority:
+`docs/research/2026-08-13-nats-vendor-corpus-scorecard.md` item 4 — the one
+pre-registered item the vendor corpus left UNANSWERED ("term appears once,
+bare"). Before this ticket `INLINE_BODY_MAX_BYTES` was `256 * 1024` with nothing
+under it: a round number chosen against a budget nobody in this estate had
+measured. The measurement is `test/MaxPayloadSemantics.test.ts`; the numbers
+below are its output, not a document's.
+
+**The measured record at the pin** (nats-server `v2.14.4`, single node, default
+configuration, JetStream on a file store):
+
+- Advertised `max_payload`: **1,048,576** bytes, read off the server's own INFO
+  block.
+- The server's own enforcement, past the client, over a raw socket: a `PUB`
+  declaring 1,048,576 bytes is answered `+OK`; one declaring 1,048,577 is
+  answered `-ERR 'Maximum Payload Violation'` and the connection is closed. The
+  effective limit is the advertised limit — the boundary is exact and inclusive.
+- The pinned client enforces the same boundary locally, refusing at
+  advertised + 1 without sending, and the class it raises is
+  `InvalidArgumentError`.
+- The emit path's header block costs **91** bytes of that same budget: the
+  largest body the server accepts on a JetStream publish carrying a 64-character
+  `Nats-Msg-Id` is 1,048,485, found by bracketed bisection.
+
+### T0. The header cost is measured AND derived, and the two are compared
+
+Decided: `EMIT_HEADER_BYTES` is bisected against the live server, and the same
+suite independently counts the header block the wire grammar requires —
+`NATS/1.0\r\nNats-Msg-Id: <64 hex>\r\n\r\n` — and asserts the two agree at 91.
+Alternatives: bisect only (a number with no explanation, and a silent re-measure
+if a later slice adds a header); derive only (an arithmetic claim about a server
+nobody asked). Why: walls need an oracle outside both sides, and here the two
+routes are genuinely independent — one is the substrate's behaviour, the other is
+the protocol's grammar, and neither is computed from the other. A future slice
+that adds a second header moves the measurement and the derivation together, or
+the disagreement is a finding. **Load-bearing? yes** — every margin below is
+stated against `MAX_PAYLOAD_BYTES - EMIT_HEADER_BYTES`, so an unexplained 91
+would make the margin unexplained too.
+
+### T1. The margin is a quarter, and the quarter is the doubling margin
+
+Decided: `INLINE_BODY_MAX_BYTES = MAX_PAYLOAD_BYTES / INLINE_BODY_MARGIN` with
+`INLINE_BODY_MARGIN = 4`, which keeps the shipped value at 262,144 — no refusal,
+document, or fixture moves. The margin's justification is a worst case, not a
+round number: a lane declared with an empty partition-key path keys by the whole
+event, so `key` and `body` are the same value and ONE emit at the threshold
+publishes the body TWICE. Measured on the wire, that frame is 524,430 bytes
+against a 1,048,485-byte emit budget. Alternatives: a half-budget threshold
+(524,288 — the doubled worst case then sits 200 bytes inside the budget, with the
+envelope's framing already spending 142 of them, so a slightly longer holder
+string breaks it); an eighth (headroom nobody asked for, and a smaller inline
+class pushes ordinary bodies into the blob store for no measured reason); leave
+256 KiB unexplained. Why: the doubling is an admitted shape of this package's own
+lane grammar, not a hypothetical, so the margin has to absorb it with room left
+rather than exactly. **Load-bearing? yes** — the quarter is what makes the
+threshold a consequence of the measurement instead of a coincidence that agrees
+with it.
+
+**Stated residual, and it is real.** The threshold bounds the BODY, not the
+FRAME. `holder`, `pins`, and `cert` are caller-supplied and unbounded, so a
+caller attaching tens of thousands of pins can still exceed the budget with a
+lawful body. That case is not refused by the threshold; it reaches the substrate
+and dies there (T2's second paragraph). Bounding the frame is a different law and
+needs its own ruled ticket — it is named here and deliberately not minted, the
+same fence KM-22 holds around the chunk-manifest laws.
+
+### T2. The threshold's substrate half is a FLOOR, checked at the emit seam
+
+Decided: `Wire.hasPayloadBudget` asks whether a live server's advertised
+`max_payload` is at least `MAX_PAYLOAD_BYTES`, and `internal/lanes.ts` runs it
+once at service construction, refusing `payload-substrate-shape` — a new
+structural kind — when it is not. A floor, not a pin: a server advertising MORE
+carries every emit this threshold admits and is not a violation. The arithmetic
+half of the check (that the pinned budget really does carry a doubled body at the
+threshold plus the header block) is asserted over the constants alone and needs
+no server.
+
+The hazard it closes is specific and was measured, not imagined. `max_payload` is
+operator-set server configuration with no command-line flag, so a lowered value
+is an ordinary deployment, not a corruption. Against such a server the threshold
+is folklore again and an emit at it fails past this package's entire error
+channel: the pinned client raises the over-budget publish as
+`InvalidArgumentError`, which `internal/transport.ts` names a caller-defect class
+and RETHROWS rather than minting a retryable absence (the B-7 disposition). The
+refusal vocabulary would simply not be reached.
+
+Alternatives: reuse `lane-substrate-shape` (its law sentence is about the
+partition stream's config; two laws under one kind is exactly the taxonomy blur
+`kind` exists to prevent, and a caller branching on kind would get the wrong
+repair); check at every emit rather than at acquisition (the same open-time
+assertion the stream and bucket gates make — scorecard hazard 3 records that
+these gates never re-check, and standing re-assertion is one ruled ticket for all
+of them, not a thing this ticket invents for one gate); check nothing and
+document the threshold (the definition of folklore).
+
+**Deliberately untouched, and stated rather than quietly fixed.**
+`FabricClient.publish` (`internal/nats.ts`) encodes envelopes through the same
+`Wire` door and publishes them on the commons control subjects; it does not carry
+this budget check. That seam is the commons publish path, not the emit seam this
+ticket names, and widening the gate to it is a scope call for whoever rules it.
+The residual is exactly T2's hazard on that one path. **Load-bearing? yes** — the
+check is the difference between a pinned constant and a comment.
+
+### T3. The negative control is a real under-budget server, not a mocked INFO block
+
+Decided: `test/NatsHarness.ts` gains an optional `config` string, written to a
+file the server loads before its flags, and the control starts the SAME pinned
+binary with `max_payload` lowered. `max_payload` has no command-line flag, and
+nats-server applies `-c` first and lets the flags override, so JetStream, the
+store, and the ephemeral port are untouched. Alternatives: stub `connection.info`
+behind the client (the check would then be tested against this test's idea of a
+server, which is the both-sides-agree failure the estate refuses); assert the
+predicate in isolation and ship the seam untested (a shape check that has never
+refused a substrate is not evidence that it can). Why: a prover that cannot fail
+proves nothing, and the only honest way to make this one fail is a substrate that
+really does advertise less. The control also asserts what did NOT happen — no
+lane stream is ensured on the refused substrate — because refusing at acquisition
+is the behaviour, not merely refusing. **Load-bearing? yes** — this row is the
+whole reason the shape check counts as a wall.
 ## Task DEV-797 — the negative trace's diagnostic class
 
 ### T0. A committed negative trace commits to error-class diagnostics only

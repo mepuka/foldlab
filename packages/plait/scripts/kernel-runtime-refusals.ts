@@ -34,6 +34,8 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
   "invalid-partition-key",
   "lane-evidence-mismatch",
   "lane-substrate-shape",
+  // Payload threshold (DEV-774).
+  "payload-substrate-shape",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",

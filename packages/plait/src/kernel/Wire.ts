@@ -39,8 +39,83 @@ export const BlobReference = Schema.Struct({ blob: Digest })
 /** A digest reference used when a canonical body exceeds the inline threshold. */
 export type BlobReference = typeof BlobReference.Type
 
+/**
+ * The `max_payload` the pinned server advertises, MEASURED and not assumed.
+ *
+ * `test/MaxPayloadSemantics.test.ts` reads it off the pinned `v2.14.4` server's
+ * own INFO block and then measures the boundary against it on both sides: over a
+ * raw socket the server answers a publish of exactly this many bytes `+OK` and
+ * one byte more `-ERR 'Maximum Payload Violation'`, and the pinned client
+ * enforces the same boundary locally without sending. Until that probe landed
+ * this number was folklore — the vendor scorecard's one UNANSWERED item
+ * (`docs/research/2026-08-13-nats-vendor-corpus-scorecard.md`, item 4) — and the
+ * inline threshold below was a round number with nothing under it.
+ *
+ * It is the DEFAULT at the pin, so it is a property of the substrate this
+ * package is walled against and not of NATS: an operator sets `max_payload` in
+ * server config, which is why the emit seam checks the live value against this
+ * pin rather than trusting it (`hasPayloadBudget`).
+ */
+export const MAX_PAYLOAD_BYTES = 1024 * 1024
+
+/**
+ * What the emit path's header block costs inside that same budget.
+ *
+ * `max_payload` bounds the whole published frame, headers included, and the emit
+ * seam always sets `Nats-Msg-Id` to the 64-character envelope digest. That one
+ * header costs 91 bytes: the largest body the pinned server accepts on a
+ * JetStream publish carrying it is `MAX_PAYLOAD_BYTES - 91`.
+ *
+ * Two independent routes reach that number and the wall compares them — a
+ * bracketed bisection against the live server, and a count of the header block
+ * the wire grammar requires (`NATS/1.0\r\nNats-Msg-Id: <64 hex>\r\n\r\n`).
+ * Neither is computed from the other, so a later slice that adds a header moves
+ * the measurement and the derivation together or the disagreement is a finding.
+ */
+export const EMIT_HEADER_BYTES = 91
+
+/** The measured budget one emitted envelope's canonical bytes may occupy. */
+export const EMIT_PAYLOAD_BUDGET_BYTES = MAX_PAYLOAD_BYTES - EMIT_HEADER_BYTES
+
+/**
+ * The stated margin between the measured budget and the inline threshold.
+ *
+ * A quarter, and the quarter is load-bearing rather than decorative. An
+ * envelope carries its body TWICE in the worst admitted case: a lane declared
+ * with an empty partition-key path keys by the whole event, so `key` and `body`
+ * are the same value, and an emit at the threshold publishes roughly twice the
+ * threshold. A half-budget threshold would put that case exactly on the limit;
+ * a quarter puts it at half, measured at 524,430 bytes against a 1,048,485-byte
+ * emit budget.
+ *
+ * Stated residual, because the margin is a bound on the body and not on the
+ * frame: `holder`, `pins`, and `cert` are caller-supplied and unbounded, so a
+ * caller who attaches tens of thousands of pins can still exceed the budget with
+ * a lawful body. That case refuses at the substrate, not here, and bounding the
+ * frame needs its own ruled ticket.
+ */
+export const INLINE_BODY_MARGIN = 4
+
 /** The maximum canonical byte length of an inline body. */
-export const INLINE_BODY_MAX_BYTES = 256 * 1024
+export const INLINE_BODY_MAX_BYTES = MAX_PAYLOAD_BYTES / INLINE_BODY_MARGIN
+
+/**
+ * The threshold's substrate half: whether a live server's advertised
+ * `max_payload` is at least the budget the threshold was pinned against.
+ *
+ * A floor, not a pin. A server advertising MORE carries every emit this
+ * threshold admits and is not a violation; a server advertising less makes the
+ * threshold folklore again, and an emit at it would fail past this package's
+ * error channel — the pinned client raises an over-budget publish as
+ * `InvalidArgumentError`, which `internal/transport.ts` classifies as a caller
+ * defect and rethrows rather than dressing as a retryable absence.
+ *
+ * The arithmetic half — that the pinned budget really does carry a doubled body
+ * at the threshold plus the header block — is checked over the constants alone
+ * and needs no server (`test/MaxPayloadSemantics.test.ts`).
+ */
+export const hasPayloadBudget = (advertised: number | undefined): boolean =>
+  advertised !== undefined && advertised >= MAX_PAYLOAD_BYTES
 
 /** The closed envelope-v0 boundary shape. */
 export const Envelope = Schema.Struct({

@@ -114,6 +114,13 @@ packages/plait/src/internal/lanes.ts#1
   expected <expression>
   next[0].subject "Lane.emit"
   next[0].note "Restore the declared partition stream shape before admitting evidence."
+packages/plait/src/internal/lanes.ts#2
+  kind "payload-substrate-shape"
+  law "The inline-body threshold of ${} bytes is pinned against a measured max_payload of ${}; a substrate advertising less cannot carry an emit at that threshold."
+  expected <expression>
+  next[0].subject "Lane.emit"
+  next[0].note "Raise the server's max_payload to the pinned budget, or emit against a substrate that already advertises it; the threshold is not renegotiable per connection."
+  next[0].body <expression>
 packages/plait/src/internal/nats.ts#0
   kind "transport-unavailable"
   law "Transport absence may be retried; structural envelope evidence may not."

@@ -23,7 +23,13 @@ import type {
 import { partition } from "../planes/Lane.js"
 import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
 import { evidenceSubject } from "../kernel/Subjects.js"
-import { encodeEnvelope, type Envelope } from "../kernel/Wire.js"
+import {
+  encodeEnvelope,
+  hasPayloadBudget,
+  INLINE_BODY_MAX_BYTES,
+  MAX_PAYLOAD_BYTES,
+  type Envelope,
+} from "../kernel/Wire.js"
 import { acquireConnection, transportRefusalFor } from "./transport.js"
 
 const messageIdWindowNanos = 2 * 60 * 1_000_000_000
@@ -69,6 +75,31 @@ const shapeRefusal = (
     note: "Restore the declared partition stream shape before admitting evidence.",
   }],
 })
+
+/**
+ * The threshold's substrate half, refused at the seam that publishes.
+ *
+ * The stream shape gate above asks whether the declared partition stream has the
+ * ruled config; this one asks whether the server can carry an emit at the inline
+ * threshold at all. Both are open-time assertions over a live substrate, and
+ * both are here rather than in `Wire.ts` because `Wire.ts` owns the arithmetic
+ * and this module owns the connection it is checked against.
+ */
+const payloadBudgetRefusal = (advertised: number | undefined): Refusal =>
+  structuralRefusal({
+    kind: "payload-substrate-shape",
+    law:
+      `The inline-body threshold of ${INLINE_BODY_MAX_BYTES} bytes is pinned against a measured max_payload of ${MAX_PAYLOAD_BYTES}; a substrate advertising less cannot carry an emit at that threshold.`,
+    path: ["connection", "info", "max_payload"],
+    got: advertised ?? "absent",
+    expected: MAX_PAYLOAD_BYTES,
+    next: [{
+      subject: "Lane.emit",
+      note:
+        "Raise the server's max_payload to the pinned budget, or emit against a substrate that already advertises it; the threshold is not renegotiable per connection.",
+      body: MAX_PAYLOAD_BYTES,
+    }],
+  })
 
 const hasExpectedShape = (info: StreamInfo, subject: string): boolean => {
   const { config } = info
@@ -143,6 +174,8 @@ export const makeLaneService = Effect.fn("Lanes.make")(function* (
     "lane.connection.acquire",
     transportRefusal,
   )
+  const advertised = connection.info?.max_payload
+  if (!hasPayloadBudget(advertised)) return yield* payloadBudgetRefusal(advertised)
   const js = jetstream(connection)
   const ensured = new Set<string>()
 

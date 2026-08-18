@@ -43,6 +43,7 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "invalid-partition-key",
   "lane-evidence-mismatch",
   "lane-substrate-shape",
+  "payload-substrate-shape",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",

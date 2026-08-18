@@ -38,7 +38,17 @@ families. Constructors accept routing tokens, never digests.
 
 **Inline body**:
 An envelope body whose canonical bytes fit within 256 KiB. Larger bodies must
-cross the seam as a blob reference.
+cross the seam as a blob reference. The threshold is a quarter of the
+`max_payload` measured at the pinned server, and the quarter is the margin that
+absorbs the worst emit it admits: a lane keyed by the whole event carries the
+body twice in one frame.
+
+**Payload budget**:
+What one published frame may occupy on the substrate — the server's advertised
+`max_payload`, less the emit path's `Nats-Msg-Id` header block, both measured
+rather than assumed. It is a floor the emit seam checks against the pin at
+acquisition, because `max_payload` is operator-set and a substrate advertising
+less makes the inline threshold unenforceable.
 
 **Blob reference**:
 The exact closed body form `{ "blob": Digest }`, naming content stored outside

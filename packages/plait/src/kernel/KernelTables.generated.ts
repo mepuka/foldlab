@@ -262,6 +262,7 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
   "invalid-partition-key",
   "lane-evidence-mismatch",
   "lane-substrate-shape",
+  "payload-substrate-shape",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",
@@ -359,6 +360,11 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
   },
   {
     kind: "lane-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "payload-substrate-shape",
     source: "staged-debt",
     waiver: "DEV-804",
   },
