@@ -36,6 +36,7 @@
     "check:kernel-tables": "bun scripts/check-kernel-tables.ts",
     "check:parity-control": "bun scripts/check-substrate-parity-negative.ts",
     "check:public-effects": "bun scripts/check-public-effects.ts",
+    "check:rung-control": "bun scripts/check-rung-controls.ts",
     "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "generate:corpus": "bun scripts/generate-corpus.ts",
     "generate:kernel-builder": "bun scripts/generate-kernel-builder.ts",
@@ -43,9 +44,10 @@
     "generate:kernel-schemas": "bun scripts/generate-kernel-schemas.ts",
     "generate:kernel-tables": "bun scripts/generate-kernel-tables.ts",
     "generate:public-effects": "bun scripts/check-public-effects.ts --write",
+    "generate:rung-controls": "bun scripts/check-rung-controls.ts --write",
     "test": "bun run test:fast && bun run test:walls && bun run test:types",
     "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:public-effects && bun run check:parity-control",
-    "test:types": "bun run check:type-control",
+    "test:types": "bun run check:type-control && bun run check:rung-control",
     "test:walls": "bun scripts/run-test-group.ts walls"
   },
   "dependencies": {
