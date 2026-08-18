@@ -858,3 +858,88 @@ edit at this call site and nothing red. Pinning it by construction costs one
 object literal and removes the trapdoor. Raised as a DEV-748 round-2 minor
 charge. **Load-bearing? no** — no behaviour differs today; this keeps a pin a
 pin.
+
+## Task DEV-735 — defect classification on the transport spine
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. Spec authority:
+`docs/design/2026-08-17-plait-effect-affordances.md` (B-7), landing the
+operator's disposition of 2026-08-18.
+
+### T0. The error channel's discipline is two-sided: defects never wear the absence sort
+
+Decided: the house rule was recorded one-sided — "transport causes are preserved
+and never wear fencing laws" (T0 of the DEV-711 task) — and its symmetric half
+is now law: *defects never wear the absence sort*. Operator's ruling, verbatim:
+"defects are defects and are not part of the estate domain language." Refusals
+are that language in full; a `TypeError` inside the pinned client, a mis-shaped
+call, a rejection that is not an error at all — none of them is a statement this
+fabric makes, so none of them is minted as one. Alternatives: leave the channel
+one-sided and document the hazard; classify defects into a third refusal sort.
+Why: `Refusal.retryAbsence` retries the absence sort and only the absence sort
+(Refusal.ts:129-150), so the pre-disposition classification did not merely
+mislabel a bug, it guaranteed a retry loop over one — the wall measures exactly
+that, four attempts before and one after. A third sort was refused on the
+ruling's own terms: a defect is not in the vocabulary, so it gets no word in it.
+Classification remains a client-side convention layered on an undistinguishing
+wire, unchanged from T13 of the DEV-711 task; nothing here is derived from the
+substrate. **Load-bearing? yes** — it is the error channel's shape.
+
+### T1. The transport vocabulary is read from the client's registries, and includes the transport's unwrapped system error
+
+Decided: `isTransportCause` (internal/transport.ts) admits a cause on two
+grounds. First, `instanceof` against the pinned client's own registries —
+`Object.values(errors)` from `@nats-io/nats-core@3.4.0` (its thirteen classes,
+enumerated by the client, not transcribed by us) plus the two
+`@nats-io/jetstream@3.4.0` roots `JetStreamApiError` and `JetStreamError`, which
+every jetstream class this package can observe descends from. Second, the Node
+system-error shape: an `Error` carrying string `code` AND string `syscall`.
+Alternatives: the class list alone, as the disposition's implementation reading
+sketched it; additionally carve the client's four caller-validation classes
+(`InvalidArgumentError`, `InvalidSubjectError`, `InvalidOperationError`,
+`InvalidNameError`) out as defects. Why the second ground: measured, not
+assumed. `@nats-io/transport-node@3.4.0` wraps exactly one dial failure —
+`ECONNREFUSED` becomes `ConnectionError` — and rethrows every other socket error
+unwrapped, so a probe against the pin returns `ConnectionError` for a closed
+port and a bare `Error { code: "ENOTFOUND", syscall: "getaddrinfo" }` for an
+unresolvable host. The class list alone would therefore file "the host does not
+resolve" — the most ordinary retryable absence this package has — as a defect,
+which inverts the ruling instead of landing it. Requiring both fields keeps the
+admission a shape rather than a loophole: Node's `ERR_*` programming errors
+carry `code` alone and stay defects. Why not the carve-out: those four classes
+are the client's lawful report of a caller error and reclassifying them is a
+second behavioural change the disposition did not rule; the ticket's named
+control is a `TypeError`, and this seat does not widen a ruling it was handed.
+Recorded as observed, not fixed. Known and deliberate consequences: the pinned
+clients also raise bare `Error` for a handful of substrate conditions
+(`@nats-io/kv` "kv is only supported on servers … or better",
+`@nats-io/jetstream` "… requires server …", the transport's "unexpected response
+from server"), and those now die as defects — each is a permanent deployment or
+protocol mismatch that no retry repairs, so the absence sort was never honest
+about them. `InvalidNameError` and `JetStreamNotEnabled` are declared in
+`@nats-io/jetstream`'s `jserrors` but absent from its entrypoint, so no
+`instanceof` names them without reaching past the published surface; both fall
+to the defect side by that omission. **Load-bearing? yes** — the enumeration is
+what the classification means, and it is pinned to `@nats-io/*@3.4.0`.
+
+### T2. The narrowing lives at the mint and a defect leaves by throwing
+
+Decided: `transportRefusalFor` rethrows a non-transport cause unchanged, so the
+classification is one edit inside the spine and not one at each of the
+thirty-one sites that observe a transport cause. No signature moves (audit
+B-12): every call site keeps the shape it had, and `TransportRefusal` still
+reads `(operation, cause) => Refusal`. Alternatives: a spine-level
+`tryTransport` wrapper each adapter calls instead of `Effect.tryPromise`;
+returning a discriminated result the call sites branch on. Why: the pin states
+the semantics this rests on — inside `Effect.tryPromise`'s `catch`, "if `catch`
+throws while mapping the error, that thrown value is treated as a defect"
+(Effect.ts, the `tryPromise` gotcha) — and it was measured to hold identically
+at the other two seams the adapters classify at, an `Effect.catch` handler and
+an `Effect.gen` body, all three dying rather than failing. The alternatives
+rewrite thirty-one call sites to change a classification that is not theirs to
+make; B-8 extracted this spine so that this narrowing would be one edit, and
+spending the leverage on a wider diff would waste it. The cost is a function
+that can throw where its type says it returns, which is why the throw is
+documented at the mint and gated at all three seams by
+`test/TransportDefects.test.ts`. **Load-bearing? yes** — it is how a defect
+crosses the classification boundary at all.

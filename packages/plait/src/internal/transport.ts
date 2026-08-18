@@ -1,5 +1,5 @@
-import { JetStreamApiCodes, JetStreamApiError } from "@nats-io/jetstream"
-import type { NatsConnection } from "@nats-io/nats-core"
+import { JetStreamApiCodes, JetStreamApiError, JetStreamError } from "@nats-io/jetstream"
+import { errors, type NatsConnection } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Scope } from "effect"
 
@@ -15,8 +15,16 @@ import { absenceRefusal, type Next, type Refusal } from "../Refusal.js"
  * owns its absence kind, its law sentence, its expectation, and its taught
  * repair, and passes them to `transportRefusalFor` once.
  *
- * Internal by construction — no NATS type and no unclassified cause crosses a
- * package seam, so no lawful-surface question arises here.
+ * It is also where the error channel's two-sided discipline is executed. The
+ * house rule was stated one-sided — transport causes are preserved and never
+ * wear fencing laws (DECISIONS T0) — and its symmetric half is ruled here:
+ * defects never wear the absence sort. Refusals are the whole domain language;
+ * a defect is not in it.
+ *
+ * Internal by construction — no NATS type crosses a package seam, so no
+ * lawful-surface question arises here. An unclassified cause does now leave as
+ * a defect, which is the point: it rides the fiber's cause, never the error
+ * channel, and the channel stays `Refusal` exactly as before.
  */
 
 /** The connection bootstrap fields every adapter's options carry. */
@@ -49,10 +57,74 @@ export const teachRetryOperation = (operation: string): ReadonlyArray<Next> => [
   note: "Retry this absence with retryAbsence and a temporal Schedule.",
 }]
 
-/** Binds one adapter's terms into the refusal it mints on every transport cause. */
+/**
+ * The pinned client's own error classes, read from the client's registries
+ * rather than transcribed from them. `errors` is `@nats-io/nats-core@3.4.0`'s
+ * own map of its thirteen classes, so a hand-listed copy cannot drift from it;
+ * `JetStreamApiError` and `JetStreamError` are the two roots every
+ * `@nats-io/jetstream@3.4.0` class this package can observe descends from
+ * (`ConsumerNotFoundError` and `StreamNotFoundError` extend the first,
+ * `JetStreamStatusError` the second).
+ *
+ * Not reachable, and named so nobody reads the omission as an oversight:
+ * `InvalidNameError` and `JetStreamNotEnabled` are declared in that package's
+ * `jserrors` but are absent from its entrypoint, so no `instanceof` can name
+ * them without reaching past the published surface. `@nats-io/kv@3.4.0` and
+ * `@nats-io/obj@3.4.0` declare no error class at all; they raise these.
+ */
+const clientErrorClasses: ReadonlyArray<new (...args: Array<never>) => Error> = [
+  ...Object.values(errors),
+  JetStreamApiError,
+  JetStreamError,
+]
+
+/**
+ * The transport's own unwrapped causes.
+ *
+ * `@nats-io/transport-node@3.4.0` wraps exactly one dial failure — a Node
+ * `ECONNREFUSED` becomes `ConnectionError` — and rethrows every other socket
+ * error as it stands, so an unresolvable host reaches this seam as a plain
+ * `Error` carrying `code` and `syscall`. Measured, not assumed (DEV-735 probe):
+ * connecting to a closed port yields `ConnectionError`, connecting to an
+ * unresolvable host yields `Error { code: "ENOTFOUND", syscall: "getaddrinfo" }`.
+ * The client emits that shape as its transport vocabulary, so enumerating the
+ * vocabulary honestly includes it; dropping it would file "the host does not
+ * resolve" — the most ordinary retryable absence there is — as a defect.
+ *
+ * The shape is what admits it, not the class: both fields must be strings.
+ * Node's `ERR_*` programming errors carry `code` alone and stay defects.
+ */
+const isNodeSystemError = (cause: unknown): boolean =>
+  cause instanceof Error &&
+  typeof (cause as { readonly code?: unknown }).code === "string" &&
+  typeof (cause as { readonly syscall?: unknown }).syscall === "string"
+
+/** Whether the pinned client raised this cause as substrate evidence. */
+export const isTransportCause = (cause: unknown): boolean =>
+  clientErrorClasses.some((klass) => cause instanceof klass) || isNodeSystemError(cause)
+
+/**
+ * Binds one adapter's terms into the refusal it mints on every transport cause
+ * — and only on a transport cause (audit B-7, ruled 2026-08-18: "defects are
+ * defects and are not part of the estate domain language").
+ *
+ * A cause the pinned client did not raise is a defect of this package's own
+ * making — a `TypeError` inside the client, a mis-shaped call — and it is
+ * rethrown unchanged rather than dressed as an absence. The rethrow is how a
+ * defect stays a defect through every seam an adapter classifies at: inside
+ * `Effect.tryPromise`'s `catch` the pin states that a thrown value is treated
+ * as a defect, and a throw in an `Effect.catch` handler or an `Effect.gen` body
+ * dies the same way. `Refusal.retryAbsence` retries the absence sort, so the
+ * one thing the old classification guaranteed was a retry loop over a bug.
+ *
+ * Placing the narrowing at the mint keeps the classification one edit: the
+ * thirty-one sites that observe a transport cause all reach it through here,
+ * and none of their signatures move (audit B-12).
+ */
 export const transportRefusalFor = (terms: TransportTerms): TransportRefusal =>
-  (operation, cause) =>
-    absenceRefusal({
+  (operation, cause) => {
+    if (!isTransportCause(cause)) throw cause
+    return absenceRefusal({
       kind: terms.kind,
       law: terms.law,
       path: [operation],
@@ -60,6 +132,7 @@ export const transportRefusalFor = (terms: TransportTerms): TransportRefusal =>
       expected: terms.expected,
       next: terms.next(operation),
     })
+  }
 
 /** Releases a connection without ever failing the scope that owns it. */
 export const closeConnection = (connection: NatsConnection): Effect.Effect<void> =>
