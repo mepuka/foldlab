@@ -6,6 +6,29 @@ F11, and F12, plus the join-semilattice package the F1/F12 carriers share, then
 executes the same definitions to author the runtime conformance corpus at
 `packages/plait/fixtures/fabric-conformance.ndjson`.
 
+## Agent direction
+
+Read `../AGENTS.md` first for the model-gate laws this package works under.
+What leaves this directory is the corpus named above, and what consumes it is
+`packages/plait/src/planes/`, which replays every row against the shipped
+services. What is machine-generated *inside* this directory is
+`negative-controls/*.cex.txt` — each control's executed refutation. Neither is
+hand-authored: the corpus carries its generation command on its own first
+line, the traces come out of `lake exe control`, and an edited row or trace is
+refused on sight.
+
+Wall here: `./run.sh` — the theorem roster, the axiom-footprint sweep, every
+control re-executed and diffed against its committed trace, and byte-identical
+re-emission of the corpus; `--self-test` checks the diff machinery still fails
+when it should, and CI runs both per push
+(`.github/workflows/lean-gates.yml`). Wall there: `bun run test:walls` in
+`packages/plait`.
+
+One level deeper: `Fabric/Definitions.lean` for the objects and executable
+functions, `Fabric/Laws.lean` for statements only, `Fabric/Proofs.lean` for
+the proofs, `Fabric/Emit.lean` for the emitter, and `DECISIONS.md` for every
+decision the spec did not fix. The guided tour below walks the same files.
+
 ## Guided tour
 
 - `Fabric/Definitions.lean` owns the objects and executable functions. A
