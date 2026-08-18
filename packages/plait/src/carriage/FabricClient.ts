@@ -11,13 +11,14 @@ import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import type { FabricSubject } from "../kernel/Subjects.js"
 import type { Envelope } from "../kernel/Wire.js"
 import { makeNatsService } from "../internal/nats.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
+
+export type { ConnectionBootstrap, ConnectionCredential } from "../internal/transport.js"
 
 /** Connection bootstrap for the file-backed slice-0 fact/node commons gate. */
-export interface FabricClientOptions {
-  readonly servers: string | ReadonlyArray<string>
+export interface FabricClientOptions extends ConnectionBootstrap {
   /** Names only the fact/node commons stream ensured at construction; subscriptions discover their subject's owner. */
   readonly stream: string
-  readonly connectionName?: string
 }
 
 /** The acknowledgement returned after JetStream stores an envelope. */

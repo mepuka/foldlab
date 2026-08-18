@@ -14,6 +14,7 @@ import type {
 import { hasRung } from "../truth/Algebra.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { DeclaredLane } from "./Lane.js"
 import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 import type { Refusal } from "../truth/Refusal.js"
@@ -93,10 +94,7 @@ export interface DeclareOptions<
 }
 
 /** Connection bootstrap for deployed fold pumps. */
-export interface FoldsOptions {
-  readonly servers: string | ReadonlyArray<string>
-  readonly connectionName?: string
-}
+export interface FoldsOptions extends ConnectionBootstrap {}
 
 /** Flow-control policy for one deployment; correctness does not depend on it. */
 export interface DeployOptions {

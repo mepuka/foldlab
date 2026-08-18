@@ -170,7 +170,13 @@ const debtTarget = (
       unificationTarget: "stage 3: re-type plane declarations against generated core types",
     }
   }
-  if (owner.startsWith("src/carriage/") || owner.startsWith("src/surface/")) {
+  // `internal/` types that reach the barrel do so only through carriage
+  // re-exports (FabricClient's connection bootstrap), so they carry the
+  // carriage unification target: the seam they are public through.
+  if (
+    owner.startsWith("src/carriage/") || owner.startsWith("src/surface/")
+    || owner.startsWith("src/internal/")
+  ) {
     return {
       ticket: "DEV-763",
       unificationTarget: "stage 4: consume the shared generated-core candidate form through KernelDoor",
