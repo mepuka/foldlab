@@ -1,0 +1,14 @@
+{
+  "control": "runtime-cell-byte-equality-mutant",
+  "decision": "T16",
+  "schedule": "transport-class write failure whose read-back carries the delta (rival join subsumed it)",
+  "lawfulVerdict": "converged",
+  "lawfulStateDigest": "9843c590deb9fd3fc4352912a0e88605c5698d733b514910dbdf9e585535dc1d",
+  "mutantVerdict": "refused",
+  "mutantRefusal": {
+    "sort": "absence",
+    "kind": "cell-transport-unavailable"
+  },
+  "cellStateAfterMutantRefusal": "9843c590deb9fd3fc4352912a0e88605c5698d733b514910dbdf9e585535dc1d",
+  "violatedLaw": "a read-back that already carries the delta is success, whether this append landed or a rival join subsumed it"
+}

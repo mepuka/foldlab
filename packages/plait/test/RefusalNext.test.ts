@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { createServer, connect as netConnect, type Socket } from "node:net"
 import { resolve } from "node:path"
 
 import {
@@ -17,6 +16,7 @@ import { Effect, Fiber, Reducer, Schema } from "effect"
 import * as Algebra from "../src/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/Anchor.js"
 import { canonicalBytes } from "../src/Canonical.js"
+import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/Cell.js"
 import { Digest } from "../src/Digest.js"
 import { FabricClient } from "../src/FabricClient.js"
 import * as Fold from "../src/Fold.js"
@@ -24,6 +24,7 @@ import * as Lane from "../src/Lane.js"
 import {
   Next,
   StructuralRefusalKind,
+  decodeRefusing,
   type Refusal,
   type StructuralRefusalKind as StructuralKind,
 } from "../src/Refusal.js"
@@ -43,6 +44,11 @@ import {
   preparePartitionPump,
 } from "../src/internal/pump.js"
 import { replaySuccessors } from "../src/internal/successors.js"
+import {
+  bucketPublishPrefixes,
+  startHoldProxy,
+  type HoldProxy,
+} from "./HoldProxy.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
 const utf8 = new TextEncoder()
@@ -92,140 +98,16 @@ const declareProbeFold = (handle: string) => Effect.gen(function* () {
   return { lane, algebra, fold }
 })
 
-interface HoldProxy {
-  readonly url: string
-  /** Arms the tap: the next register-bucket publish is withheld. */
-  readonly arm: () => void
-  /** The barrier that resolves once one register-bucket publish is withheld. */
-  readonly captured: () => Promise<void>
-  /** Forwards the withheld publish, and everything queued behind it, in order. */
-  readonly release: () => void
-  readonly stop: () => Promise<void>
-}
-
-const registerPublishPrefixes = [
-  `PUB $KV.${REGISTER_BUCKET}.`,
-  `HPUB $KV.${REGISTER_BUCKET}.`,
-]
-
-/**
- * A frame-aligned TCP tap between one NATS client and the live server.
- *
- * The client-to-server stream is parsed into complete protocol commands —
- * line commands, and PUB/HPUB with their declared byte counts — so the tap
- * can withhold exactly one in-flight register write. After `arm()`, the
- * first publish command addressed into the register bucket's subject space
- * is held at the proxy instead of forwarded. Matching is on the command
- * line prefix only, never on payload bytes: the direct-get API embeds the
- * same bucket subject inside its own request. The hold is a deterministic
- * barrier — the test lands a conflicting revision over a second connection,
- * awaits its acknowledgement, and only then releases the held CAS append.
- * Server-to-client bytes always pass through untouched.
- */
-const startHoldProxy = async (upstreamUrl: string): Promise<HoldProxy> => {
-  const target = new URL(upstreamUrl)
-  const sockets = new Set<Socket>()
-  let armed = false
-  let holding = false
-  let released = false
-  let onCapture: (() => void) | undefined
-  let captureBarrier: Promise<void> | undefined
-  let heldUpstream: Socket | undefined
-  let held: Array<Buffer> = []
-
-  const server = createServer((client) => {
-    const upstream = netConnect(Number(target.port), target.hostname)
-    sockets.add(client)
-    sockets.add(upstream)
-    let pending = Buffer.alloc(0)
-
-    upstream.on("data", (chunk) => {
-      client.write(chunk)
-    })
-    client.on("data", (chunk: Buffer) => {
-      if (released) {
-        upstream.write(chunk)
-        return
-      }
-      if (holding) {
-        held.push(Buffer.from(chunk))
-        return
-      }
-      pending = Buffer.concat([pending, chunk])
-      while (true) {
-        const eol = pending.indexOf("\r\n")
-        if (eol === -1) return
-        const line = pending.subarray(0, eol).toString("latin1")
-        let frameEnd = eol + 2
-        if (line.startsWith("PUB ") || line.startsWith("HPUB ")) {
-          const bytes = Number(line.slice(line.lastIndexOf(" ") + 1))
-          if (!Number.isSafeInteger(bytes)) throw new Error(`unparseable publish frame: ${line}`)
-          frameEnd = eol + 2 + bytes + 2
-          if (pending.length < frameEnd) return
-        }
-        const frame = Buffer.from(pending.subarray(0, frameEnd))
-        pending = pending.subarray(frameEnd)
-        if (armed && registerPublishPrefixes.some((prefix) => line.startsWith(prefix))) {
-          holding = true
-          heldUpstream = upstream
-          held = pending.length > 0 ? [frame, Buffer.from(pending)] : [frame]
-          pending = Buffer.alloc(0)
-          onCapture?.()
-          return
-        }
-        upstream.write(frame)
-      }
-    })
-
-    const drop = (): void => {
-      client.destroy()
-      upstream.destroy()
-    }
-    client.on("close", drop)
-    client.on("error", drop)
-    upstream.on("close", drop)
-    upstream.on("error", drop)
-  })
-
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
-  const address = server.address()
-  if (address === null || typeof address === "string") {
-    throw new Error("hold proxy did not bind a TCP port")
-  }
-  return {
-    url: `nats://127.0.0.1:${address.port}`,
-    arm: () => {
-      captureBarrier = new Promise((resolve) => {
-        onCapture = resolve
-      })
-      armed = true
-    },
-    captured: () => {
-      if (captureBarrier === undefined) throw new Error("captured() before arm()")
-      return captureBarrier
-    },
-    release: () => {
-      const upstream = heldUpstream
-      if (upstream === undefined) throw new Error("release before a register publish was captured")
-      released = true
-      holding = false
-      for (const part of held) upstream.write(part)
-      held = []
-    },
-    stop: () => new Promise((resolve) => {
-      for (const socket of sockets) socket.destroy()
-      server.close(() => resolve())
-    }),
-  }
-}
-
 let harness: NatsHarness | undefined
 let registerHarness: NatsHarness | undefined
+let cellHarness: NatsHarness | undefined
 let proxy: HoldProxy | undefined
 
 afterEach(async () => {
   if (proxy !== undefined) await proxy.stop()
   proxy = undefined
+  if (cellHarness !== undefined) await cellHarness.stop()
+  cellHarness = undefined
   if (registerHarness !== undefined) await registerHarness.stop()
   registerHarness = undefined
   if (harness !== undefined) await harness.stop()
@@ -243,6 +125,9 @@ describe("structural refusal repairs", () => {
         "x".repeat(INLINE_BODY_MAX_BYTES - 1),
       )))),
       Effect.runPromise(Effect.flip(verifyEnvelopeDigest(envelope(1), "0".repeat(64)))),
+      // malformed-value: the one parse-boundary classification, minted where a
+      // value the declared schema does not admit crosses decodeRefusing.
+      Effect.runPromise(Effect.flip(decodeRefusing(Digest)("not-a-digest"))),
     ])
 
     const invalidLane = await Effect.runPromise(Effect.flip(Lane.declare({
@@ -357,6 +242,14 @@ describe("structural refusal repairs", () => {
         ttl: 0,
         max_bytes: -1,
       })
+      // The cell bucket on this server retains more than the ruled single
+      // revision, so cell acquisition below refuses on its own shape law.
+      await new Kvm(connection).create(CELL_BUCKET, {
+        history: CELL_HISTORY + 1,
+        replicas: 1,
+        ttl: 0,
+        max_bytes: -1,
+      })
     } finally {
       await connection.close()
     }
@@ -400,6 +293,20 @@ describe("structural refusal repairs", () => {
       throw new Error(`expected anchor-substrate-shape structural refusal, got ${wrongAnchor.kind}`)
     }
     refusals.push(wrongAnchor)
+
+    // cell-substrate-shape: acquisition against the wrong-shaped cell bucket
+    // refuses on the shape law, not as retryable transport absence.
+    const wrongCellShape = await Effect.runPromise(
+      Cells.pipe(
+        Effect.provide(Cells.layer({ servers: harness.url })),
+        Effect.scoped,
+        Effect.flip,
+      ),
+    )
+    if (wrongCellShape.sort !== "structural") {
+      throw new Error(`expected cell-substrate-shape structural refusal, got ${wrongCellShape.kind}`)
+    }
+    refusals.push(wrongCellShape)
 
     const laneShapeConnection = await connect({ servers: harness.url })
     try {
@@ -510,12 +417,54 @@ describe("structural refusal repairs", () => {
     }
     refusals.push(malformed)
 
+    // The cell kinds run against a healthy cell server, every trigger through
+    // the public Cells surface.
+    cellHarness = await startNatsHarness()
+    const cellUrl = cellHarness.url
+    const cellRefusals = await Effect.runPromise(
+      Effect.gen(function* () {
+        const cells = yield* Cells
+        const list: Array<Refusal> = []
+        // invalid-cell-key: the key law refuses before any KV call.
+        list.push(yield* Effect.flip(cells.read("not.a.cell")))
+        return list
+      }).pipe(Effect.provide(Cells.layer({ servers: cellUrl })), Effect.scoped),
+    )
+    for (const refusal of cellRefusals) {
+      if (refusal.sort !== "structural") {
+        throw new Error(`expected a structural cell refusal, got ${refusal.kind}`)
+      }
+      refusals.push(refusal)
+    }
+
+    // malformed-cell-state: bytes written past the cell surface do not decode
+    // as the canonical observation array.
+    {
+      const raw = await connect({ servers: cellUrl })
+      try {
+        const bucket = await new Kvm(raw).open(CELL_BUCKET)
+        await bucket.put("cellgamma", "not the canonical observation array")
+      } finally {
+        await raw.close()
+      }
+    }
+    const malformedCell = await Effect.runPromise(
+      Effect.gen(function* () {
+        const cells = yield* Cells
+        return yield* Effect.flip(cells.read("cellgamma"))
+      }).pipe(Effect.provide(Cells.layer({ servers: cellUrl })), Effect.scoped),
+    )
+    if (malformedCell.sort !== "structural") {
+      throw new Error(`expected malformed-cell-state structural refusal, got ${malformedCell.kind}`)
+    }
+    refusals.push(malformedCell)
+
     // concurrent-register-update: the hold proxy freezes the expire-steal's
     // CAS append in flight; a rival revision lands over a second connection
     // and is acknowledged; the released append then loses its CAS and the
     // read-back reconciliation mints the conflict kind. Every step is
     // barrier-awaited — no sleeps, no racing writers.
-    proxy = await startHoldProxy(registerUrl)
+    proxy = await startHoldProxy(registerUrl, bucketPublishPrefixes(REGISTER_BUCKET))
     const tap = proxy
     const conflicted = await Effect.runPromise(
       Effect.gen(function* () {

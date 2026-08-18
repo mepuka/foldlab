@@ -7,6 +7,15 @@ export * as Algebra from "./Algebra.js"
 /** Durable fold checkpoint facts and their contiguous-frontier transition. */
 export * as Anchor from "./Anchor.js"
 
+/** The content-addressed value store and the payload store, as services. */
+export * as Catalog from "./Catalog.js"
+
+/** Lattice cells: the join, the merge-write loop, and the cell service. */
+export * as Cell from "./Cell.js"
+
+/** Context programs as cataloged declarations; no assembly executor. */
+export * as ContextProgram from "./ContextProgram.js"
+
 /** SHA-256 identity over canonical uncompressed bytes. */
 export * as Digest from "./Digest.js"
 
@@ -24,6 +33,9 @@ export * as Refusal from "./Refusal.js"
 
 /** Fenced five-action commitment registers over NATS KV revision CAS. */
 export * as Register from "./Register.js"
+
+/** References that decode by resolving, with verify-on-read unskippable. */
+export * as Resolved from "./Resolved.js"
 
 /** Typed constructors for the `flb.fab.*` routing grammar. */
 export * as Subjects from "./Subjects.js"

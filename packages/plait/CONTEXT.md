@@ -84,3 +84,34 @@ outside the credential guard.
 **Zombie**:
 A dispossessed holder that completes after a steal. Its stale token is evidence
 for refusal, regardless of holder identity.
+
+**Observation**:
+One holder-attributed pair `{holder, value}` — the only delta a cell admits.
+Both components are wire values; the holder is attribution, never authority.
+
+**Cell**:
+The canonical, duplicate-free observation set stored at one key of the
+`flb-fab-cell` bucket, merged by set union. Its identity is the digest of the
+canonical set. Order is the declared canonical-bytes order, so every
+TypeScript replica that verified the same set holds byte-identical state; the
+Lean carrier's own comparator order is a different order and is never compared.
+
+**Merge-write loop**:
+Read the cell, join the delta locally, CAS at the observed revision, and on a
+lost race re-read and re-merge. A read-back that already carries the delta is
+success, whether this append landed or a rival's join subsumed it. Termination
+is liveness and is never claimed; convergence of the value is F1.
+
+**Resolved reference**:
+A digest whose decode fetches the value and re-derives its identity before
+returning it. Decoding requires the catalog and payload services from the
+environment; encoding requires nothing and publishes nothing.
+
+**Publication**:
+The explicit act of admitting a value to the catalog. No encode path performs
+it; the write-through codec exists only for the emit path.
+
+**Context program**:
+The cataloged declaration of an ordered list of (selector, renderer) pairs,
+each tagged with a volatility class. A declaration only — no assembly executor
+exists, and nothing in this package assembles a context value.

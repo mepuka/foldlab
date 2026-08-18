@@ -235,6 +235,11 @@ itself pinned by a guard whose committed field-drop mutant
 if the guard weakens. **Load-bearing? yes** — the ledger row's "context
 classification" claim is scoped by this pin.
 
+## Task DEV-725 — orchestration mapping, walk guard, register teaching
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge.
+
 ### T14. DEV-725 orchestration mapping — home, scope of runnable claims, and the untouched list
 
 Decided: the mapping document lands at `packages/plait/FOR-WORKING-AGENTS.md`,
@@ -484,3 +489,257 @@ Why: subjects route while stream ownership may be partition-local, and discovery
 preserves the advisory surface without smuggling topology into it.
 **Load-bearing? yes** — without discovery, a valid evidence subscription reads
 the wrong stream or waits forever.
+
+
+## Task DEV-724 — E6 contexts, runtime half
+
+Task-local placeholders (rule 1), independent of the DEV-725 block above: this
+task's T14-T23 are NOT that task's T14-T17. Numbers are kept as written because
+outside references already cite them — the DEV-727 review verdict (F-2 to T16,
+F-3 to T20), the round-2 charge (R2-4 to T23), the module comments, and the
+byte-compared control trace whose payload carries "decision": "T16".
+
+### T14. The cell carrier is the model's carrier, not a parametric lattice
+
+Decided: `Cell.ts` ships exactly one carrier — the canonical, duplicate-free
+set of holder-attributed observations `{holder, value}` merged by union — the
+carrier F1 is stated over. `merge` takes a DELTA, never a rewrite function, so
+a non-join update is unrepresentable rather than discouraged; the
+declared-rights table's "no ordering, locking, or conflict-resolution parameter
+anywhere on the monotone plane" becomes a type, not a convention.
+Alternatives: a parametric join-semilattice `Cells<A>` taking a join function
+(one abstraction for every future carrier); `Cells.update(key, f)` matching
+part 1 §8.3's sketch literally. Why: grill item 2 ruled the F12 directory a
+SEPARATE carrier with its own ACI package rather than a `Cell`
+generalization, precisely to avoid reopening landed F1 statements — shipping
+the generalization here would front-run that ruling from the runtime side; and
+an arbitrary `f` admits last-writer-wins, the merge semantics §6.3 refuses by
+name. **Load-bearing? yes** — the F1 replay is evidence for THIS carrier, and
+a generalization would need its own model statement before it could claim
+anything.
+
+### T15. Canonical order is declared canonical-bytes order; the claim is set equality
+
+Decided: observations sort by their RFC 8785 canonical bytes and deduplicate on
+the same key, so every TypeScript replica that verified the same set holds
+byte-identical state. The wall compares the TS cell's state digest against the
+digest of the model verdict's observation set canonicalized by the SAME rule —
+i.e. it asserts set equality, which is what F1 states and which no comparator
+choice can move. Agreement between this order and the Lean carrier's
+`compareLex (compareOn ·.1) (compareOn ·.2)` is NOT claimed and NOT tested (the
+two disagree on `(2,·)` vs `(10,·)`, since one compares numbers and the other
+their canonical text). Alternatives: restate the Lean comparator in TypeScript
+and claim byte-level cross-language agreement (a second canonicalizer in all
+but name, and a claim with no consumer); compare unordered arrays with a set
+helper (loses the byte-identity property the fabric's coherence clause is
+about). **Load-bearing? yes** — it is the exact scope of the wall's convergence
+claim, and a cross-language cell byte wall would need this decision reopened.
+
+### T16. A cell read-back that carries the delta is success, whether or not this append landed
+
+Decided: the cell adapter reconciles a failed CAS by read-back (seam rule 1),
+but its test is SUBSUMPTION — `join(readBack, delta) = readBack` — not the
+register's byte-equality against one intended record. If the read-back does not
+carry the delta, the loop re-reads and re-merges; after
+`CELL_MERGE_ATTEMPTS` (8) it reports `cell-update-contended` as ABSENCE, the
+only retryable sort, since a repeated delta is idempotent and adds nothing
+twice. Alternatives: byte-compare the intended merged record (a rival's larger
+state would be misread as a genuine conflict and re-merged pointlessly, or
+worse, refused); retry forever (an unbounded loop is a liveness promise this
+package never makes). Why: for a lattice, "my delta landed" and "someone
+else's join subsumed my delta" are indistinguishable AND equally correct — that
+indistinguishability is what F1 buys, so the reconciliation should read it
+rather than fight it.
+
+Walled 2026-08-17 (DEV-727 finding F-2, round-2 charge R2-1) by TWO rows, and
+the ruling that produced them survived one wrong turn of mine that is recorded
+here because the reasoning matters more than the conclusion.
+
+**Retracted:** round 2 of this branch claimed that contention cannot
+discriminate the two reconciliations and that no schedule exists in which
+byte-equality exhausts `CELL_MERGE_ATTEMPTS` while subsumption lands. That is
+false, and the durable audit
+(`docs/research/2026-08-17-dev724-cell-subsump-reconciliation-audit.md`,
+`agent/research/DEV-724` at `8118d99`) refuted it. The argument I gave —
+the pre-CAS guard `subsumes(current, delta)` re-reads and rescues byte-equality
+on the next pass — holds for attempts 1 through 7 and fails at the boundary,
+because the guard runs at the TOP of an attempt and attempt 8 has no successor.
+Generalizing from the interior of the loop to its last iteration was the error.
+
+**Row 1 — the ruled discriminator, at the retry boundary.** Attempts 1..7 each
+lose their CAS to a lawful rival join whose read-back still lacks this delta, so
+both disciplines retry identically. Attempt 8 loses to a rival join carrying
+this delta plus one fresh observation, so the read-back is a STRICT superstate
+of the stale intended record. Subsumption sees the merge postcondition already
+established and returns success inside attempt 8; byte-equality rejects the
+superstate, finds no ninth guard, and reports `cell-update-contended` over a
+cell that already carries the delta. Executed on the live bucket:
+8/8 CAS attempts under both disciplines, success versus exhaustion, identical
+final cell digest (`negative-controls/cell-retry-boundary.trace.json`).
+
+**Row 2 — the ambiguity case, at attempt 1.** A transport-class write failure
+whose read-back carries the delta because a rival's join subsumed it:
+subsumption converges, byte-equality falls past the CAS branch to
+`transportRefusal`. A distinct result class — an absence refusal on the first
+attempt, not exhaustion — and it does not stand in for row 1
+(`negative-controls/cell-byte-equality-mutant.trace.json`).
+
+Both rows share one control, `negative-controls/cell-byte-equality-mutant.ts`,
+the shipped service with only `reconciled` replaced; un-mutating it reds both
+and only those.
+
+**Load-bearing? yes, narrowly.** The audit's scoping is adopted verbatim as the
+claim's ceiling: this licenses bounded RESULT CLASSIFICATION under an
+adversarial but finite monotone schedule. It does **not** make subsumption
+safer than byte-equality, and it is not convergence safety, fairness, progress,
+or any liveness statement — convergence safety is carried by the exact-digest
+comparison against the model verdict, not by this entry. Two further bounds the
+audit names and this entry inherits: the shipped predicate tests only
+`delta ≤ readBack`, not `current ⊔ delta ≤ readBack`, so preservation of the
+read state comes from the monotone-writer premise rather than from the check;
+and the whole rule is sound only given faithful semilattice bytes, an authentic
+committed read, one fixed backing-stream incarnation, and writers that are all
+inflationary. It proves neither CAS authorship nor integrity.
+
+### T17. Cell row isolation is a distinct key on one server, not a fresh incarnation per row
+
+Decided: the F1/F2 replay runs every row on one `nats-server` under distinct
+cell keys. Alternatives: the register wall's shape — one fresh server per row.
+Why: the register wall needs a fresh backing-stream incarnation per row because
+it asserts token NUMERICS against the model's counter, an artifact of that
+envelope (T0); this wall asserts only cell state bytes, which no revision order
+can move, so a shared incarnation neither helps nor harms the claim and costs
+seconds instead of minutes. Bucket destroy+recreate remains banned as an
+isolation primitive either way (seam rule 7). **Load-bearing? no** — the
+isolation mechanism; the claim is the state comparison.
+
+### T18. Verify-on-read lives in `Resolved.resolve`, not inside the store services
+
+Decided: `Catalog.get` returns what it holds, unverified; the single
+re-derivation seam is `Resolved.resolve`, which every `ResolvedOf` decode runs
+through. Alternatives: verify inside the live catalog implementation (defence
+in depth). Why: a service that polices its own answers cannot be made to lie,
+and the tampered-store control — the one that proves re-derivation is
+unskippable — is exactly a layer that lies. Verification outside the service
+keeps the control writable and keeps one place where identity is checked.
+**Load-bearing? yes** — moving the check inside the service would silently
+delete the control's meaning while leaving it green.
+
+### T19. Neither store ships a durable layer, and both say so in their type's documentation
+
+Decided: `Catalog.layer` is a process-local map and `Blobs.layer` answers every
+lookup with absence; both carry the bound in module and member JSDoc, in
+`CONTEXT.md`, and in the README. Alternatives: a KV-backed catalog over a new
+bucket (`flb-fab-cat` is not in the ruled subject grammar — inventing one is
+new physics, which is a finding, not an improvisation); an object-store-backed
+`Blobs` (grill item 10 requires a probe suite at
+`@nats-io/obj@3.4.0` + server 2.14.4 before any object-store surface ships, and
+a chunked read path that trusted store-side digests would be a verify-on-read
+hole). Why: the durable catalog authority is a venue's, reached through the
+request plane that `Venues.ts` will own; until that module exists the honest
+layer is the one whose bound is stated. **Load-bearing? yes** — every claim in
+this slice is scoped by "process-local catalog, absent payload store".
+
+### T20. The schema-issue bridge is internal; `decodeRefusing` is its only public door
+
+Decided: `refusalIssue`, `refuse`, `refusalOfIssue`, and the classification
+`refusalOf` live in `src/internal/refusals.ts`; `Refusal.ts` exports only
+`decodeRefusing`, whose signature speaks `Refusal` on both sides. Measured
+reason, not preference: exporting any `SchemaIssue.Issue`-typed signature from
+the barrel makes the supplemental type-level walk (T8) diverge with `TS2589`
+at `test/PublicEffects.typecheck.ts` — `SchemaIssue.Issue` is a deep recursive
+union of classes whose members re-enter the walk faster than its eight-step
+cutoff bounds it. Verified by removing the four `export` keywords: the two
+`TS2589` errors disappear and nothing else moves. Alternatives: raise the
+walk's cutoff (it exists to prevent exactly this divergence); add
+`SchemaIssue` to the vendor-owned subtraction list (a blanket suppression of a
+type the package genuinely uses at a seam). Why: the architecture record homes
+`decodeRefusing` in `Refusal.ts` and calls it the single lifting seam — that is
+satisfied exactly, and quarantining the issue plumbing is the same discipline
+that quarantines NATS. **Load-bearing? yes** — the public-surface claim's
+mechanism reds if the bridge is re-exported, and the reason must be recorded so
+a later seat does not "fix" the walk instead.
+
+Amended 2026-08-17 (DEV-727 finding F-3, ruled at round-2 charge R2-2): the
+seam's codec parameter is `Schema.Codec<T, E, RD, RE>`, not
+`Schema.Codec<T, E, RD, never>`. Pinning encoding services to `never` was an
+accident of the first draft, not a constraint of the pin — the pinned
+`SchemaParser.decodeUnknownEffect<S extends Schema.Constraint>` reads only
+`S["Type"]` and `S["DecodingServices"]` — and it closed the seam against the
+package's own emit path, since `PublishingOf` carries `Catalog` on encode. The
+practical effect was that a caller decoding an emitted frame had to reach past
+the seam to `Schema.decodeUnknownEffect` and take `SchemaIssue.Issue` on the
+error channel, which is precisely what the single-seam claim forbids; the
+package's own test did exactly that, which is why nothing redded. Two rows now
+fence it: the emit-path round trip decodes through `decodeRefusing`, and an
+absent emitted reference refuses as a `Refusal` rather than an issue. The
+coordinator amends the architecture record's sentence to match.
+
+Re-verified 2026-08-17 after merging `main` at `450ffa1`, which carries this
+package's other in-flight task (DEV-725 T15, the type-level walk's quantifier
+guard) over the same file this entry's finding is about. The quarantine still
+binds: re-exporting the bridge onto the barrel produces exactly the same two
+`TS2589` errors, now at `test/PublicEffects.typecheck.ts:140` and `:141` rather
+than `:107` and `:108`. The guard narrowed the walk's quantifier; it did not
+make `SchemaIssue.Issue` traversable.
+
+### T21. The closed refusal-kind enumeration grows with this slice's mint sites
+
+Decided: `StructuralRefusalKind` gains four literals —
+`malformed-value` (the one parse-boundary classification),
+`invalid-cell-key`, `malformed-cell-state`, and `cell-substrate-shape` — and
+the refusal-repair wall gains one demonstrated trigger per kind, all through
+public surfaces. Two absence kinds ride the open absence namespace and need no
+enumeration change: `cataloged-value-absent` and `cell-update-contended`. The
+resolve incoherence reuses the shipped `digest-mismatch` rather than minting a
+synonym. This is the only edit to a shipped spine surface in the slice, and it
+is reported as such. Alternatives: reuse register kinds for cell laws (a cell
+is not a register, and the generated error catalogue would inherit the lie);
+leave the enumeration short and let the set-equality wall red (the enumeration's
+own contract is "every structural kind the package can mint"). Why: T10 already
+ruled this the enumeration's growth path when the register slice landed eight
+kinds at once, and the architecture record homes `decodeRefusing` — and hence
+its classification kind — in this module. **Load-bearing? yes** — the closure
+claim is only true at the full set, and the trigger wall enforces it.
+
+### T22. `ContextProgram` ships shapes and an order, and no executor
+
+Decided: the module exports the volatility classes with their declared rank,
+the CLOSED selector union, the renderer reference, the segment, the program,
+`declare` (constrained decode plus digest), and `orderedSegments` (volatility
+rank, then declaration order as the stated within-class tie-break). It exports
+no assembly, no context value, and no memo, and no refusal in it cites F7.
+Alternatives: ship a provisional assembler behind a flag (an un-walled
+derivation is exactly what the byte-identical reassembly wall exists to
+forbid); leave the module out entirely until M2 (the shapes are what E9 and
+E11 queue behind, and the split ruling dispatched them now). Why: the closed
+selector union already buys the safety property worth having today — an
+ambient or clock-reading selector is unrepresentable — while the
+declaration-time refusal that CITES F7 belongs to the slice that can name the
+theorem. **Load-bearing? yes** — the boundary between what this slice claims
+and what the assembly slice will claim is drawn here.
+
+### T23. Cell negative controls derive from the shipped service through one named seam
+
+Decided: `internal/cells.ts` exposes a package-internal `MergeDiscipline` — the
+merge loop's two swappable steps, `next` (lawfully the join) and `reconciled`
+(lawfully subsumption) — plus `makeCellServiceWith`. `makeCellService` is
+`makeCellServiceWith(options, lawfulMergeDiscipline)`, and each negative control
+is the same builder with exactly ONE member replaced:
+`lastWriterWinsMerge` deletes the join, `byteEqualityReconciliation` swaps the
+reconciliation. Alternatives: keep both controls as standalone
+re-implementations of the read-then-CAS sequence (the shape the first round
+shipped, and the shape `stale-token-mutant.ts` still has). Why: a
+re-implementation shares the bucket name and the canonicalizer but not the
+attempt loop, the shape check, the key law, or the reconciliation, so
+"the shipped path minus one step" is a claim the code does not support — DEV-727
+finding F-6 — and it made the control test-order dependent, because it opened a
+bucket some earlier test had to have created. Deriving through the seam makes
+the sharing a fact of the call graph rather than a promise in a comment, and
+each control ensures its own bucket through the shipped setup, so both run
+standalone. The seam is not a production hook: it lives in `internal/`, the
+public `Cells.layer` takes connection options and nothing else, and the
+public-effect gate walks the barrel, so no discipline is selectable by any
+consumer. **Load-bearing? yes** — the refutations are only attributable to the
+deleted step if everything else is provably the same code, and un-mutating
+either member reds its own row (verified both ways).
