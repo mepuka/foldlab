@@ -5,31 +5,135 @@
     "note": "IEEE-754 bit patterns and JSON representations copied from RFC 8785 Appendix B; null means canonicalization must refuse."
   },
   "numbers": [
-    { "ieee754": "0000000000000000", "encoded": "0", "comment": "Zero" },
-    { "ieee754": "8000000000000000", "encoded": "0", "comment": "Minus zero" },
-    { "ieee754": "0000000000000001", "encoded": "5e-324", "comment": "Min positive number" },
-    { "ieee754": "8000000000000001", "encoded": "-5e-324", "comment": "Min negative number" },
-    { "ieee754": "7fefffffffffffff", "encoded": "1.7976931348623157e+308", "comment": "Max positive number" },
-    { "ieee754": "ffefffffffffffff", "encoded": "-1.7976931348623157e+308", "comment": "Max negative number" },
-    { "ieee754": "4340000000000000", "encoded": "9007199254740992", "comment": "Max positive integer represented by this binary64 value" },
-    { "ieee754": "c340000000000000", "encoded": "-9007199254740992", "comment": "Max negative integer represented by this binary64 value" },
-    { "ieee754": "4430000000000000", "encoded": "295147905179352830000", "comment": "Approximately 2^68" },
-    { "ieee754": "7fffffffffffffff", "encoded": null, "comment": "NaN" },
-    { "ieee754": "7ff0000000000000", "encoded": null, "comment": "Infinity" },
-    { "ieee754": "44b52d02c7e14af5", "encoded": "9.999999999999997e+22", "comment": "Exponent boundary neighbor" },
-    { "ieee754": "44b52d02c7e14af6", "encoded": "1e+23", "comment": "Exponent boundary" },
-    { "ieee754": "44b52d02c7e14af7", "encoded": "1.0000000000000001e+23", "comment": "Exponent boundary neighbor" },
-    { "ieee754": "444b1ae4d6e2ef4e", "encoded": "999999999999999700000", "comment": "Plain/exponent boundary neighbor" },
-    { "ieee754": "444b1ae4d6e2ef4f", "encoded": "999999999999999900000", "comment": "Plain/exponent boundary neighbor" },
-    { "ieee754": "444b1ae4d6e2ef50", "encoded": "1e+21", "comment": "Plain/exponent boundary" },
-    { "ieee754": "3eb0c6f7a0b5ed8c", "encoded": "9.999999999999997e-7", "comment": "Small-number boundary neighbor" },
-    { "ieee754": "3eb0c6f7a0b5ed8d", "encoded": "0.000001", "comment": "Small-number boundary" },
-    { "ieee754": "41b3de4355555553", "encoded": "333333333.3333332", "comment": "Long mantissa" },
-    { "ieee754": "41b3de4355555554", "encoded": "333333333.33333325", "comment": "Long mantissa" },
-    { "ieee754": "41b3de4355555555", "encoded": "333333333.3333333", "comment": "Long mantissa" },
-    { "ieee754": "41b3de4355555556", "encoded": "333333333.3333334", "comment": "Long mantissa" },
-    { "ieee754": "41b3de4355555557", "encoded": "333333333.33333343", "comment": "Long mantissa" },
-    { "ieee754": "becbf647612f3696", "encoded": "-0.0000033333333333333333", "comment": "Long mantissa" },
-    { "ieee754": "43143ff3c1cb0959", "encoded": "1424953923781206.2", "comment": "Round to even" }
+    {
+      "ieee754": "0000000000000000",
+      "encoded": "0",
+      "comment": "Zero"
+    },
+    {
+      "ieee754": "8000000000000000",
+      "encoded": "0",
+      "comment": "Minus zero"
+    },
+    {
+      "ieee754": "0000000000000001",
+      "encoded": "5e-324",
+      "comment": "Min positive number"
+    },
+    {
+      "ieee754": "8000000000000001",
+      "encoded": "-5e-324",
+      "comment": "Min negative number"
+    },
+    {
+      "ieee754": "7fefffffffffffff",
+      "encoded": "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368",
+      "comment": "Max positive number \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "ffefffffffffffff",
+      "encoded": "-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368",
+      "comment": "Max negative number \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "4340000000000000",
+      "encoded": "9007199254740992",
+      "comment": "Max positive integer represented by this binary64 value"
+    },
+    {
+      "ieee754": "c340000000000000",
+      "encoded": "-9007199254740992",
+      "comment": "Max negative integer represented by this binary64 value"
+    },
+    {
+      "ieee754": "4430000000000000",
+      "encoded": "295147905179352825856",
+      "comment": "Approximately 2^68 \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "7fffffffffffffff",
+      "encoded": null,
+      "comment": "NaN"
+    },
+    {
+      "ieee754": "7ff0000000000000",
+      "encoded": null,
+      "comment": "Infinity"
+    },
+    {
+      "ieee754": "44b52d02c7e14af5",
+      "encoded": "99999999999999974834176",
+      "comment": "Exponent boundary neighbor \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "44b52d02c7e14af6",
+      "encoded": "99999999999999991611392",
+      "comment": "Exponent boundary \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "44b52d02c7e14af7",
+      "encoded": "100000000000000008388608",
+      "comment": "Exponent boundary neighbor \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef4e",
+      "encoded": "999999999999999737856",
+      "comment": "Plain/exponent boundary neighbor \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef4f",
+      "encoded": "999999999999999868928",
+      "comment": "Plain/exponent boundary neighbor \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "444b1ae4d6e2ef50",
+      "encoded": "1000000000000000000000",
+      "comment": "Plain/exponent boundary \u2014 estate canon (DEV-807): exact integer digits"
+    },
+    {
+      "ieee754": "3eb0c6f7a0b5ed8c",
+      "encoded": "9.999999999999997e-7",
+      "comment": "Small-number boundary neighbor"
+    },
+    {
+      "ieee754": "3eb0c6f7a0b5ed8d",
+      "encoded": "0.000001",
+      "comment": "Small-number boundary"
+    },
+    {
+      "ieee754": "41b3de4355555553",
+      "encoded": "333333333.3333332",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "41b3de4355555554",
+      "encoded": "333333333.33333325",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "41b3de4355555555",
+      "encoded": "333333333.3333333",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "41b3de4355555556",
+      "encoded": "333333333.3333334",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "41b3de4355555557",
+      "encoded": "333333333.33333343",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "becbf647612f3696",
+      "encoded": "-0.0000033333333333333333",
+      "comment": "Long mantissa"
+    },
+    {
+      "ieee754": "43143ff3c1cb0959",
+      "encoded": "1424953923781206.2",
+      "comment": "Round to even"
+    }
   ]
 }

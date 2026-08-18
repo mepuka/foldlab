@@ -23,6 +23,7 @@ import {
   absenceRefusal,
   structuralRefusal,
   type Refusal,
+  WireValueSchema,
 } from "../truth/Refusal.js"
 import { evidenceSubject } from "../kernel/Subjects.js"
 import { laneStreamName } from "./lanes.js"
@@ -120,7 +121,7 @@ const measureSchedule = Effect.fn("Chaos.measureSchedule")(function*<Event, Stat
   schedule: ReadonlyArray<PositionedEvent<Event>>,
 ): Effect.fn.Return<PartitionMeasurement, Refusal> {
   const initialState = fold.algebra.reducer.initialValue
-  if (!Schema.is(Schema.Json)(initialState)) {
+  if (!Schema.is(WireValueSchema)(initialState)) {
     return yield* structuralRefusal({
       kind: "invalid-fold-state",
       law: "Chaos measurements admit only the fold runtime's wire-grammar states.",

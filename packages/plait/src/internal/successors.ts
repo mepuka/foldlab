@@ -7,7 +7,7 @@ import { Effect, Schema } from "effect"
 
 import { advance, type Anchor } from "../planes/Anchor.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
-import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
+import { structuralRefusal, type StructuralRefusal, WireValueSchema } from "../truth/Refusal.js"
 
 /** One event at its dense partition-stream position. */
 export interface PositionedEvent<Event> {
@@ -81,7 +81,7 @@ export const ingestSuccessor = Effect.fn("Fold.ingestSuccessor")(function*<Event
     const successor = buffer.get(anchor.floor + 1)
     if (successor === undefined) break
     const next = step(state, successor.event)
-    if (!Schema.is(Schema.Json)(next)) return yield* invalidState(next)
+    if (!Schema.is(WireValueSchema)(next)) return yield* invalidState(next)
     anchor = yield* advance(anchor, next, successor.digest, successor.position)
     state = next
     buffer.delete(successor.position)
@@ -130,7 +130,7 @@ export const arrivalOrderReplay = Effect.fn("Fold.arrivalOrderReplay")(function*
   let state = options.state
   for (const delivery of options.deliveries) {
     const next = options.step(state, delivery.event)
-    if (!Schema.is(Schema.Json)(next)) return yield* invalidState(next)
+    if (!Schema.is(WireValueSchema)(next)) return yield* invalidState(next)
     const [stateDigest, head] = yield* Effect.all([
       digestOf(next),
       digestOf({

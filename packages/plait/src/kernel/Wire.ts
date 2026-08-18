@@ -9,7 +9,9 @@ import { decodeJson, type JsonValue } from "@foldlab/core/jcs"
 import { canonicalBytes } from "../truth/Canonical.js"
 import { Digest, type Digest as DigestValue } from "../truth/Digest.js"
 import { digestOfCanonicalBytes } from "../internal/digests.js"
-import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
+import { structuralRefusal, type StructuralRefusal,
+  WireValueSchema,
+} from "../truth/Refusal.js"
 
 /** The four monotone observation kinds admitted by envelope v0. */
 export const EnvelopeKind = Schema.Literals([
@@ -122,9 +124,9 @@ export const Envelope = Schema.Struct({
   v: Schema.Literal(0),
   kind: EnvelopeKind,
   lane: Digest,
-  key: Schema.Json,
+  key: WireValueSchema,
   holder: Schema.String,
-  body: Schema.Json,
+  body: WireValueSchema,
   cert: Schema.optionalKey(Certificate),
   pins: Schema.Array(Digest),
 })
@@ -209,7 +211,7 @@ const envelopeExpectedAt = (path: ReadonlyArray<string>): JsonValue => {
 }
 
 const observed = (issue: SchemaIssue.Issue): JsonValue =>
-  SchemaIssue.hasInput(issue) && Schema.is(Schema.Json)(issue.input)
+  SchemaIssue.hasInput(issue) && Schema.is(WireValueSchema)(issue.input)
     ? issue.input
     : "missing"
 

@@ -3294,3 +3294,30 @@ identity laws is worse than either). Why: "an executor never edits the spec it
 builds against" — repealing W2 is an operator ruling, not a ticket's side
 effect. **Load-bearing? yes** — W2 decides whether formatting is part of
 identity, which every client's encoder depends on.
+
+### The estate number domain: RFC 8785 except integers, which are exact (DEV-807, operator ruling 2026-08-18)
+
+Decided: estate canonical JSON is RFC 8785 in every law but the number line.
+An integer's canonical bytes are its exact decimal digits — however it
+arrived: as digits (any magnitude), as a bigint/big.Int carrier, or as an
+integral double that RFC 8785 alone would spell in exponent notation. The
+constrained decoders return an exact carrier (`bigint` in TS, `*big.Int` in
+Go) for every pure-integer literal whose magnitude reaches 2^53, and both
+encoders print exact digits for any integer at or past that boundary.
+Non-integral numbers keep RFC 8785 shortest-round-trip unchanged. Why: the
+kernel corpus rules identity labels as unbounded integers, with the canon
+vector 9007199254740993 (2^53 + 1) byte-identical across Lean, Go, and TS;
+RFC 8785's double canon rounds it, and a rounded identity is a different
+identity. W2 holds: the byte domain does not shrink — `1e21` is still
+admitted and canonicalizes to the integer's one byte form. Alternatives:
+adopt RFC 8785 doubles and re-rule the corpus (caps the identity domain at
+2^53 forever, moves committed corpus bytes in three languages); refuse
+integral doubles beyond 2^53 (breaks W2 — a formatting variant would refuse
+while its digit spelling is admitted). Both refused. The moved vectors are
+committed: nine `fixtures/jcs-rfc8785.json` rows and four
+`fixtures/golden-conformance.json` rows now pin exact digits, and the
+`estate number domain` test group in `packages/core/test/jcs.test.ts` pins
+the corpus vector round-trip, the safe-integer boundary from both sides,
+and the refused RFC rounding. **Load-bearing? yes** — the TS ≡ Go
+differential wall byte-compares both implementations over the seeded and
+fuzzed number lanes, and reverting either side's number rule reds it.

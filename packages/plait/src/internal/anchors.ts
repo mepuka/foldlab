@@ -23,6 +23,7 @@ import {
   absenceRefusal,
   structuralRefusal,
   type Refusal,
+  WireValueSchema,
 } from "../truth/Refusal.js"
 import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
 
@@ -179,7 +180,7 @@ const loadState = Effect.fn("AnchorStore.loadState")(function*<State> (
     return yield* malformed(["state", digest], "absent", "the canonical state bytes")
   }
   const decoded = decodeJson(entry.value)
-  if (!decoded.ok || !Schema.is(Schema.Json)(decoded.value)) {
+  if (!decoded.ok || !Schema.is(WireValueSchema)(decoded.value)) {
     return yield* malformed(
       ["state", digest],
       decoded.ok ? "non-wire state" : decoded.refusal.reason,
@@ -248,7 +249,7 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
       }
 
       const state = fold.algebra.reducer.initialValue
-      if (!Schema.is(Schema.Json)(state)) {
+      if (!Schema.is(WireValueSchema)(state)) {
         return yield* malformed(["state", "initial"], String(state), "one wire-grammar state")
       }
       const anchor = yield* initial(state)
@@ -280,7 +281,7 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
 
   const commit: AnchorStore["commit"] = Effect.fn("AnchorStore.commit")(
     function* (anchorKey, expectedRevision, anchor, rawState) {
-      if (!Schema.is(Schema.Json)(rawState)) {
+      if (!Schema.is(WireValueSchema)(rawState)) {
         return yield* malformed(["state"], String(rawState), "one wire-grammar state")
       }
       const stored = yield* ensureState(bucket, rawState)
