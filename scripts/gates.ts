@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -60,6 +61,46 @@ const effectRulesCommand = (
   "--strict",
 ]
 
+// Top-level trees the root test stage never owns. `packages/` and `proto/`
+// have stages of their own below, and `repos/` is vendored reference source no
+// gate may discover (root AGENTS.md, "Effect v4").
+const stagedElsewhere = new Set([".git", "node_modules", "packages", "proto", "repos"])
+
+/**
+ * The test files the repository root itself owns, named rather than
+ * discovered.
+ *
+ * `bunfig.toml` scopes bare `bun test` to `packages/` so the vendored tree
+ * stays out of discovery — which quietly made the root stage a second full run
+ * of `test:packages`, because the two stages resolved to the identical file
+ * set and the plait battery paid for itself twice per gates invocation. Naming
+ * the root's own files removes the duplicate without narrowing what runs: the
+ * walk is over the working tree, so a test file added tomorrow outside those
+ * staged trees joins this stage by construction rather than by someone
+ * remembering to list it.
+ */
+const rootOwnedTests = (root: string): ReadonlyArray<string> => {
+  const found: Array<string> = []
+  const visit = (directory: string, prefix: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = prefix === "" ? entry.name : `${prefix}/${entry.name}`
+      if (entry.isDirectory()) {
+        if (entry.name === ".git" || entry.name === "node_modules") continue
+        if (prefix === "" && stagedElsewhere.has(entry.name)) continue
+        visit(resolve(directory, entry.name), path)
+      } else if (entry.isFile() && entry.name.endsWith(".test.ts")) {
+        found.push(`./${path}`)
+      }
+    }
+  }
+  visit(root, "")
+  // An empty argument list would send `bun test` back to bunfig discovery and
+  // silently restore the duplicate this stage exists to remove, so an empty
+  // walk is a refusal rather than a skip.
+  if (found.length === 0) throw new Error("root test discovery found no test file")
+  return found.sort()
+}
+
 const installTargets: ReadonlyArray<InstallTarget> = [
   {
     label: "root dependencies",
@@ -80,7 +121,7 @@ const stages: ReadonlyArray<Stage> = [
     command: ["bun", "test", "./scripts/prepare-effect-language-service.test.ts"],
   },
   { label: "root — typecheck", cwd: repo, command: ["bun", "run", "typecheck"] },
-  { label: "root — tests", cwd: repo, command: ["bun", "test"] },
+  { label: "root — tests", cwd: repo, command: ["bun", "test", ...rootOwnedTests(repo)] },
   { label: "workspace packages — test scripts", cwd: repo, command: ["bun", "run", "test:packages"] },
   { label: "go — formatting", cwd: resolve(repo, "go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "go — vet", cwd: resolve(repo, "go"), command: ["go", "vet", "./..."] },
@@ -339,6 +380,55 @@ const selfTestInstallPreflight = (): void => {
   }
 }
 
+const selfTestRootTestDiscovery = (): void => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "foldlab-gates-root-tests-"))
+  const resolvedTemp = resolve(tmpdir())
+  try {
+    // Two plants the root stage must claim, and four it must leave to the
+    // stage that owns them. A discovery that stopped walking would pass a
+    // stage that runs nothing; a discovery that stopped excluding would
+    // restore the duplicate run this stage exists to remove.
+    const planted = [
+      "scripts",
+      "verify/unit",
+      "packages/plait/test",
+      "proto/ts",
+      "repos/effect",
+      "docs/node_modules",
+    ] as const
+    for (const directory of planted) {
+      mkdirSync(resolve(temporaryRoot, directory), { recursive: true })
+      writeFileSync(resolve(temporaryRoot, directory, "planted.test.ts"), "")
+    }
+    const found = rootOwnedTests(temporaryRoot).join(",")
+    const wanted = "./scripts/planted.test.ts,./verify/unit/planted.test.ts"
+    if (found !== wanted) {
+      throw new Error(`root test discovery moved: got ${found}, want ${wanted}`)
+    }
+
+    const emptyRoot = resolve(temporaryRoot, "no-tests")
+    mkdirSync(emptyRoot)
+    let refusal = ""
+    try {
+      rootOwnedTests(emptyRoot)
+    } catch (error) {
+      refusal = error instanceof Error ? error.message : String(error)
+    }
+    if (refusal !== "root test discovery found no test file") {
+      throw new Error(`root test discovery accepted an empty tree: ${refusal}`)
+    }
+    console.log(
+      "\nroot test discovery self-test: PASS (scripts and verify plants claimed; packages, proto, vendored, and node_modules plants left to their stages; empty tree refused)",
+    )
+  } finally {
+    if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&
+      !temporaryRoot.startsWith(`${resolvedTemp}/`)) {
+      throw new Error(`refusing to remove non-temporary root test directory: ${temporaryRoot}`)
+    }
+    rmSync(temporaryRoot, { recursive: true, force: true })
+  }
+}
+
 const selfTestTypecheckPlant = (): void => {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "foldlab-gates-typecheck-"))
   const resolvedTemp = resolve(tmpdir())
@@ -453,9 +543,10 @@ const selfTest = (): void => {
     throw new Error(`gate runner accepted planted formatting output: got ${noisy}, want 1`)
   }
   selfTestInstallPreflight()
+  selfTestRootTestDiscovery()
   selfTestTypecheckPlant()
   console.log(
-    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, five install preflight controls, and the typecheck plant refused)",
+    "\ngate runner self-test: PASS (known pass accepted; planted exit 23, formatting drift, five install preflight controls, root test discovery, and the typecheck plant refused)",
   )
 }
 

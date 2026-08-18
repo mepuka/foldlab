@@ -1589,3 +1589,79 @@ glossary reserves that word for frozen digest pins minted by the side that owns
 a model, and nothing here pins a model's answer — these are ordinary runtime
 inputs to a characterization probe. Raised as a DEV-753 round-1 minor charge.
 **Load-bearing? no** — vocabulary.
+
+## Task DEV-756 — battery speedups, Tier A
+
+### T0. The pinned server binary is cached at a pin-keyed path, and `-v` gates reuse
+
+Decided: `buildServerBinary` builds `nats-server` into
+`node_modules/.cache/plait-nats-server/<pin>/`, publishes it by rename inside
+that same root, and memoizes the promise per process; the `-v` check now runs
+before reuse as well as after a build, so a file at the cached path that is not
+the pin is rebuilt rather than trusted. `NatsServerBinary.cleanup` is gone — no
+caller may delete a binary its neighbours are executing. Alternatives: a
+temp-directory build memoized per process, which still pays a full build in
+each of the four wall workers and on every re-run; a checked-in binary, which
+puts a platform artifact in the tree and unpins it from the Go module lock;
+`go build -o` straight onto the cached path, which lets a reader exec a
+half-linked file. Why: seventeen call sites each rebuilt the same pinned
+executable, 19 of the 33 seconds `bun test ./test` cost. Seam rule 7 binds row
+isolation to a fresh server on a fresh store on a fresh port, and
+`startNatsServer` still mints all three per call — the binary is content, and
+sharing content buys back the build without touching the incarnation the walls
+actually depend on. The pin-keyed directory is what makes moving the pin safe:
+a new pin is a new path, and the old binary is never a candidate. **Load-bearing?
+yes** — the check that refuses a wrong binary is the only thing standing between
+a cache and a wall certifying against a server nobody pinned.
+
+### T1. The battery splits fast / walls / types, and the partition is derived
+
+Decided: `test` becomes `test:fast && test:walls && test:types`, where
+`test:fast` is the pure test files plus the corpus, public-effects, and
+substrate-parity checks (3.6s), `test:walls` is the harness-backed files
+(10.5s), and `test:types` is the twenty tsc negative controls (15.1s).
+`scripts/run-test-group.ts` computes the partition by reading each
+`test/*.test.ts` and asking whether it imports the NATS harness, and refuses an
+empty group. Alternatives: list the two groups in `package.json`, where a test
+file added tomorrow silently belongs to neither; split by a filename
+convention, which renames twelve wall files to encode what an import already
+says. Why: a working agent changing a canonicalization had to spend the wall
+budget to learn whether it survived, and the three groups are the three
+questions the battery actually answers. Deriving the partition is what keeps
+the split from weakening the battery: both groups run under `test`, the groups
+are a partition of everything `bun test ./test` used to discover, and a
+misclassification therefore costs wall-clock and nothing else — no reading of
+the predicate can drop a file. **Load-bearing? no** — 210 tests before, 176 + 34
+after, and every wall line byte-identical.
+
+### T2. The chaos-fold fixture exports promises rather than top-level-awaited values
+
+Decided: `test/fixtures/chaos-fold.ts` runs `declareChaosCounter` once and
+exports `fold` and `lane` as promises over that single declaration;
+`ChaosCli.test.ts` and the state mutant await them. Alternatives: keep the
+top-level await and carve `ChaosCli.test.ts` out of the worker pool, which
+leaves the fixture broken under isolation for whoever imports it next.
+Why: a top-level await leaves a module's exported bindings in the temporal dead
+zone until evaluation settles, and bun's isolated workers start running the
+importing file before that happens — under `--parallel` both CLI rows failed
+with "cannot access 'lane' before initialization", which reads like a chaos
+finding and is not one. The CLI's own loader already awaits whatever `fold` a
+chaos module exports, so a promise is the same contract from the side that
+consumes it. **Load-bearing? no** — the rows and their committed traces are
+unchanged.
+
+### T3. The wall group runs four workers over ALL of its files — `ChaosCli` is not carved out
+
+Decided: `test:walls` passes `--parallel=4` over every wall file, `ChaosCli`
+included. The dispatch asked for the carve-out; measured, it costs 1.3s and
+buys nothing. `CellWall.test.ts` alone runs 10.3s and is the group's critical
+path, so the whole 1.27s `ChaosCli` file finishes inside its shadow: twelve
+files at four workers is 10.4s, the other eleven without `ChaosCli` is 10.4s,
+and adding `ChaosCli` back as a serial pass makes it 11.7s. Green on three
+consecutive runs. Alternatives: the carve-out as dispatched. Why: the carve-out
+was there to route around the top-level await T2 removes, and once the fixture
+is sound the only thing it still does is add a second `bun test` invocation.
+Four workers is a bound rather than a target — the chaos rows SIGKILL child
+processes and measure what resumes, and a machine oversubscribed with servers
+starts reporting its scheduler. **Load-bearing? no** — reinstating the carve-out
+is one line in `run-test-group.ts` if an operator wants the isolation back.

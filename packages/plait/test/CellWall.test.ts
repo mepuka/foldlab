@@ -173,7 +173,6 @@ const serverUrl = async (): Promise<string> => (await server()).url
 afterAll(async () => {
   if (proxy !== undefined) await proxy.stop()
   if (harness !== undefined) await harness.stop()
-  if (built !== undefined) await built.cleanup()
 })
 
 describe("F1 cell wall — the fabric model's cell families replayed on the live KV bucket", () => {
