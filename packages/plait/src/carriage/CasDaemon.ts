@@ -36,11 +36,11 @@
 import type { Effect } from "effect"
 
 import type { KernelProgramDeclaration } from "../kernel/KernelCorpusSchemas.js"
-import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
+import { admit as admissionAdmit } from "../kernel/Admission.js"
 import type { KernelRefusalRow } from "../kernel/KernelTables.generated.js"
 
-/** The kernel's one candidate-judgment function; the daemon defines no side door. */
-export const admit = kernelAdmit
+/** The one candidate-judgment route; the daemon defines no side door. */
+export const admit = admissionAdmit
 
 /**
  * A content address as the runtime spells it: lowercase hexadecimal over the
@@ -64,15 +64,16 @@ export interface CasOutcome {
 }
 
 /**
- * The four operations a built program's requirements channel names.
+ * The admission route plus the four daemon operations a built program's
+ * requirements channel names.
  *
- * Every one of them is fallible in the taught vocabulary: a refusal carries
- * the law it defends and the repair it teaches, because the runtime's error
- * channel is the model's refusal table and not a second one invented here.
+ * Admission returns the runtime's one `Refusal` family through the shared
+ * service accessor. The four unimplemented daemon operations retain their
+ * generated refusal-row contract until their wiring slice lands.
  */
 export interface CasDaemon {
-  /** Candidate judgment is the kernel function itself, never daemon-local logic. */
-  readonly admit: typeof kernelAdmit
+  /** Candidate judgment is the Admission accessor, never daemon-local logic. */
+  readonly admit: typeof admissionAdmit
 
   /**
    * Publishes a declaration and returns its content address. Publication is an

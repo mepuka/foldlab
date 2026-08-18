@@ -9,6 +9,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./Admission": "./src/kernel/Admission.ts",
     "./Blob": "./src/planes/Blob.ts",
     "./Canonical": "./src/truth/Canonical.ts",
     "./Catalog": "./src/planes/Catalog.ts",

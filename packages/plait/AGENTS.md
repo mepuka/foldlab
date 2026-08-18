@@ -92,13 +92,15 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   or a repair: the model emits them, and a hand-typed table is drift with a
   green gate. `test/fixtures/kernel-conformance.sample.ndjson` is the
   independently transcribed control the wall compares against, never a source.
-- `src/kernel/KernelDoor.ts` is the one shipping admission door. Its candidate,
-  context, and intrinsic-act types derive from `KernelSchemas.generated.ts` and
-  retain the model's `bigint` identity labels; runtime hex digests do not map
-  them. CLI, `FabricClient`, and `CasDaemon` export that exact `admit` function,
-  never a wrapper or private candidate validator. `KernelConformance.test.ts`
-  replays the emitted verdicts against it; its refuse-everything mutant and
-  host-identity control make the pass evidence. Conformance is agreement with the
-  model's verdicts, never a runtime guarantee promoted out of a model theorem.
+- `src/kernel/Door.ts` is the shipping admission implementation and
+  `src/kernel/Admission.ts` is its one Effect service. The conformance harness
+  replays the model-emitted verdicts against that shipping implementation;
+  `Admission.admit` is the single service accessor CLI, `FabricClient`, and
+  `CasDaemon` re-export by identity. Carriage and surface never import
+  `Door.ts`, build a context, translate a runtime digest into a model identity,
+  or accept a fixture-owned judgment function. A harness may replace the door
+  only at `Admission.fromDoor`; the refuse-everything control proves every host
+  reaches that boundary. Conformance is agreement with the model's verdicts,
+  never a runtime guarantee promoted out of a model theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.

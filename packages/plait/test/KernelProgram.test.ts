@@ -46,8 +46,7 @@ import { KERNEL_GENERATOR_FIELDS, KERNEL_GENERATORS } from "../src/kernel/Kernel
 import { admissionFault, erase, fill, program } from "../src/kernel/KernelProgram.js"
 import { roundTripsCanonically } from "../src/truth/SchemaCanonical.js"
 import { readKernelCorpus } from "../scripts/kernel-corpus.js"
-import { make } from "../src/kernel/KernelDoor.js"
-import { PLANTED_CONTEXT } from "./KernelDoor.fixtures.js"
+import { PLANTED_CONTEXT, referenceDoor } from "./KernelDoor.reference.js"
 import {
   PROGRAM_RECIPES,
   asProgramRecord,
@@ -63,7 +62,7 @@ import {
 
 const reading = await readPrograms()
 const programs = reading.corpus.programs
-const door = make(PLANTED_CONTEXT)
+const door = referenceDoor(PLANTED_CONTEXT)
 
 describe("the program group", () => {
   test("the ninth group is present and counted", () => {
@@ -222,7 +221,7 @@ describe("the door, where a node is a sentence", () => {
     expect(refusal.verdict === "refused" ? refusal.reason : "").toBe("forward-reference")
     console.log(
       "PROGRAM DOOR: PASS witness=admitted off-catalog-twin=refused:forward-reference" +
-        " door=shipping",
+        " door=reference-transliteration",
     )
   })
 })

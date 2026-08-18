@@ -14,7 +14,7 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Predicate } from "effect"
 
-import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
+import { admit as admissionAdmit } from "../kernel/Admission.js"
 import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
@@ -41,8 +41,8 @@ import { laneStreamName } from "../internal/lanes.js"
 type ChaosFold = DeclaredFold<WireValue, WireValue, number>
 type Axis = "kill" | "duplicate" | "reorder"
 
-/** The kernel's one candidate-judgment function; the CLI defines no side door. */
-export const admit = kernelAdmit
+/** The one candidate-judgment route; the CLI defines no side door. */
+export const admit = admissionAdmit
 
 interface CliOptions {
   readonly modulePath?: string

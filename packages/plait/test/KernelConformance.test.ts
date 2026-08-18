@@ -16,13 +16,13 @@
  * its own canonical form, and everything derived from it regenerates
  * byte-identically.
  *
- * The door under test is the shipping admission seam. The mutant row below is
- * what makes the pass mean something: a replay that cannot fail is not
- * evidence.
+ * The door under test is the shipping implementation. The harness still takes
+ * its target as a parameter so the mutant below crosses the identical replay;
+ * a replay that cannot fail is not evidence.
  */
 import { describe, expect, test } from "bun:test"
 
-import { make } from "../src/kernel/KernelDoor.js"
+import { makeKernelDoor } from "../src/kernel/Door.js"
 import {
   KERNEL_DECL_KINDS,
   KERNEL_DECL_KIND_RANK,
@@ -44,12 +44,12 @@ import {
   PLANTED_CANDIDATES,
   PLANTED_CONTEXT,
   refuseEverythingDoor,
-} from "./KernelDoor.fixtures.js"
+} from "./KernelDoor.reference.js"
 
 const corpus = await loadKernelArtifact()
 
-/** The shipping door: the production seam must agree with every emitted vector. */
-const doorUnderTest = make(PLANTED_CONTEXT)
+/** The shipping door is the conformance target, never a test-side twin. */
+const doorUnderTest = makeKernelDoor(PLANTED_CONTEXT)
 
 describe("kernel conformance tables", () => {
   test("the committed tables carry the artifact's provenance", () => {

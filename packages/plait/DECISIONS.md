@@ -1886,65 +1886,112 @@ enters it is a decision with a record.
 
 ## Task DEV-763 — the one admission door
 
-### T0. The model-generated language is the contract; a runtime digest is not an identity conversion
+### T0. Hosts carry the service accessor, never a candidate projection
 
-Decided: `KernelDoor` derives candidate, context, and intrinsic-act types from
-`KernelSchemas.generated.ts` and preserves the model's `bigint` identity labels
-through admission and encoding. A runtime hex digest may ride beside a caller's
-value, but no function converts it into a model label and the door never consults
-it. Alternatives: hand-write a number-shaped candidate twin (a second type
-universe, already demonstrated to drift); derive labels from hex digests (two
-different identity scales made falsely interchangeable). Why: the formal model
-already emits the literal kernel-language shapes; the trusted-base statement
-that real identities are hashes of canonical bytes is evidence about the
-runtime, not a missing field in the model algebra. **Load-bearing? yes** — this
-is the ruling that unblocks both the door and the CLI projection.
+Decided: `Admission.admit` is the one module-level candidate-judgment route.
+CLI and `CasDaemon` re-export that function object, and `FabricClient` installs
+the same object on both its live and fixture services. A host accepts the
+kernel's `KernelCandidateAct` directly and performs no hex-digest conversion,
+context assembly, or candidate validation of its own. Alternatives: wrap the
+accessor per host (creates three future validator sites); project each host's
+runtime values into a candidate (mints the pre-unification mapping this epic is
+removing); call `Door.makeKernelDoor` from a host (makes the host a context
+owner). Why: the model language moves beneath one stable seam; hosts contribute
+no semantics and therefore need no mapping. **Load-bearing? yes** — it is the
+code shape of the no-side-door rule.
 
-### T1. Context is explicit until the catalog owns its assembly
+### T1. Admission remains a call-site service requirement
 
-Decided: the pure seam is `admit(context, candidate)`, with `make(context)` as a
-context-bound view. The catalog/pinned-universe value is generated too, but this
-ticket does not invent an ambient source for it; the durable catalog slice can
-assemble and pass that value when it lands. Alternatives: wait for the catalog
-ticket (leaves every host blocked despite a complete judgment contract); read a
-global catalog from the kernel (inverts the plane stack and hides an Effectful
-dependency inside a pure law function). Why: context assembly and candidate
-judgment are separate responsibilities, and an explicit parameter preserves
-that boundary without weakening either. **Load-bearing? yes** — it is how this
-slice proceeds without pretending the catalog already ships.
+Decided: the shared accessor takes `Admission` from the Effect environment when
+it is called. `FabricClient.layer` does not assemble or capture an admission
+context merely to publish and subscribe, and the chaos CLI does not invent one
+for a command that accepts no kernel candidate. The caller provides
+`Admission.layer(context)` when it judges a candidate; conformance harnesses may
+provide `Admission.fromDoor`. Alternatives: make every transport layer require
+an admission context (couples unrelated envelope carriage to an unowned catalog
+snapshot); hide a process-global context (ambient authority); pass context as a
+second host argument (reopens per-host wiring). Why: dependency injection is
+the context source already established by the shipping seam, and leaving the
+requirement on the one operation keeps it explicit. **Load-bearing? yes** — it
+prevents this ticket from deciding the catalog's durable context assembly.
 
-### T2. Hosts alias the function; they do not wrap or inject it
+### T2. Fixture transport cannot replace judgment
 
-Decided: CLI, `FabricClient`, and `CasDaemon` expose the exact
-`KernelDoor.admit` function object. The control asserts reference identity for
-all three and kills an invented host function. Alternatives: thin wrappers
-(semantically innocent today, but a place for host-specific validation to grow);
-injectable service methods (fixtures could replace the judgment and erase the
-one-door guarantee). Why: carriage and surface contribute no semantics, so the
-strongest and simplest representation is literal identity. **Load-bearing?
-yes** — this is the executable no-bypass control.
+Decided: `FabricClient.testLayer` accepts `Omit<FabricClientService, "admit">`
+and writes `Admission.admit` after spreading the fixture. The control passes a
+structurally compatible object carrying a poisoned extra `admit`; the service
+still returns the production accessor. The only sanctioned replacement is
+`Admission.fromDoor`, where every host sees the same door. Alternatives: accept
+a complete `FabricClientService` fixture (lets a transport test become a second
+door); rely on excess-property checking (variables and JavaScript callers can
+carry extras). Why: a no-bypass claim must survive the fixture surface, not only
+the live layer. **Load-bearing? yes** — the poison is the executable control for
+the common bypass path.
 
-### T3. A verdict carries the intrinsic act or the complete taught refusal
+### T3. The host wall proves both routing and refusal parity
 
-Decided: admission success returns the generated intrinsic act and its canonical
-model encoding; refusal flattens the generated table row beside
-`verdict: "refused"`, preserving reason, law, repair, and applicability at every
-host. Alternatives: return encoding only (throws away the very act the door
-constructs); return reason only and require host lookups (permits parity to
-depend on the host); nest a second refusal object (adds a vocabulary shape the
-model table does not need). Why: the door is the sole constructor of intrinsic
-acts and the refusal table is already the single taught vocabulary.
-**Load-bearing? yes** — both acceptance halves are observable in one value.
+Decided: `KernelDoor.routes.test.ts` carries three independent observations:
+every exposed route is reference-identical to `Admission.admit`; a lawful
+candidate passed under the test-side refuse-everything door is refused through
+every host (so a private shipping-door call would be caught); and a real
+`clock-read` refusal has byte-for-value-identical reason, law, repair, and
+applicability at every route. Alternatives: identity alone (cannot prove the
+Effect environment is consulted); one real refusal alone (a private copy of the
+shipping door could agree); snapshot only the reason (drops the taught repair
+contract). Why: the identity, planted divergence, and parity assertions cover
+different failure modes and none substitutes for another. **Load-bearing? yes**
+— this is the ticket's acceptance wall.
 
-### T4. The door is the eighteenth public namespace
+### T4. Expose the seam and its candidate contract, not the door implementation
 
-Decided: `KernelDoor` joins the root barrel and the `./KernelDoor` subpath in
-this ticket. It is pure, so the public Effect manifest remains byte-stable even
-though the namespace is new; the host-route suite asserts the barrel names the
-same function. Alternatives: leave the door reachable only by internal deep
-import (DEV-786 could not consume the ruled seam as package API); export the
-generated schema module wholesale (widens the surface from one concept to an
-emitter's file layout). Why: a public admission seam must be nameable, while the
-deep module should keep the generated family behind its candidate/act/context
-projections. **Load-bearing? yes** — it records that the surface change is the
-ticket's decision, not accidental barrel churn.
+Decided: `Admission` remains a root namespace and gains the documented
+`./Admission` subpath; `KernelDoor` joins the root barrel and gains a
+`./KernelDoor` subpath so callers can name the candidate and door contract.
+`Door.ts` remains unexported. Alternatives: expose `makeKernelDoor` (invites
+host-local contexts and bypass); require consumers to infer the candidate type
+through `Parameters` (hides the language they must construct); leave the
+already-documented Admission subpath absent. Why: the public callable surface
+is one service accessor, while the type contract is nameable and the shipping
+implementation remains behind it. **Load-bearing? yes** — the exports map is
+part of the no-bypass boundary.
+
+### T5. The legacy chaos-module guard is not kernel candidate judgment
+
+Decided: the CLI retains its structural guard and rebuild of an untyped
+JavaScript fold export, renamed `isChaosFoldExport` and
+`rebuildChaosFoldExport` and documented at the boundary. They accept no
+`KernelCandidateAct`, construct no intrinsic sentence, and teach no kernel
+refusal; the actual candidate route is the exported `Admission.admit` alias.
+Alternatives: delete the guard (lets arbitrary imports reach the chaos harness);
+pretend a fold export can be converted into a kernel candidate (the missing
+type-universe projection by another name). Why: "one candidate door" does not
+mean an executable stops parsing flags or guarding JavaScript module shape; it
+means those checks cannot mint kernel meaning. **Load-bearing? yes** — it states
+the boundary that keeps the acceptance claim honest rather than absolute over
+unrelated input validation.
+
+## Task DEV-797 — the negative trace's diagnostic class
+
+### T0. A committed negative trace commits to error-class diagnostics only
+
+Decided: `check:type-control` compares the error diagnostics in a control's
+compiler output — the header line and the indented message chain under it — and
+drops `suggestion`, `message`, and `warning` alike, on the fresh compile and on
+the committed file both. The rule lives in `scripts/negative-trace.ts` with the
+reason it is drawn there, and `test/NegativeTrace.test.ts` is its wall.
+Alternatives: re-record the twenty traces with the Effect language service's
+advisories in them (cheap, and it makes every control a second lint gate that
+reds on `src/` edits it does not watch — the advisories move whenever a rule
+ships or a module is touched, so the gate would need re-recording forever);
+repair the six advisories on `src/` (real quality work, and useless as the
+unblocking step, since the seventh advisory reds the gate again). Why: a
+negative control asks one question — does the mutant compile, and does it fail
+for its committed reason — and only an error answers it. An advisory is a
+property of the package's own source, never of the mutant, so a trace that
+committed one would be answering a question nobody asked it. The arm does not
+weaken: a mutant that compiles still exits zero, and a filtered trace that comes
+back empty is now its own refusal, so a compile that failed for anything other
+than a diagnostic can no longer read as a control that failed for its committed
+reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
+six advisories it declines to gate on stay open findings for their modules'
+owners.

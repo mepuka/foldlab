@@ -159,8 +159,10 @@ const stages: ReadonlyArray<Stage> = [
   // vacuously.
   {
     label: "proto/ts — Effect rules",
-    cwd: repo,
-    command: effectRulesCommand("proto/ts/tsconfig.json"),
+    // Resolve `typescript` from this install island: proto pins 5.9 for the
+    // language-service CLI while the root intentionally runs tsgo on 7.x.
+    cwd: resolve(repo, "proto/ts"),
+    command: effectRulesCommand("tsconfig.json"),
   },
   { label: "proto/ts — tests", cwd: resolve(repo, "proto/ts"), command: ["bun", "test", "."] },
 ]

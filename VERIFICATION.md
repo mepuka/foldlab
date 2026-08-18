@@ -39,6 +39,7 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
+| Plait kernel admission door (model-emitted vectors → shipping door → one Effect accessor → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below | [packages/plait/src/kernel/](packages/plait/src/kernel/), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -548,6 +549,51 @@ binary64 values, and share a 256-container nesting bound.
 [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts),
 [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go),
 and [go/canonical/probes/](go/canonical/probes/).
+
+## Plait kernel admission door — R0 differential + executable no-bypass control
+
+### Claim
+
+For every model-emitted admission vector in the committed kernel corpus, the
+shipping `Door.makeKernelDoor` returns the emitted verdict. CLI,
+`FabricClient`, and `CasDaemon` carry one reference-identical
+`Admission.admit` accessor; when the supplied service refuses a candidate,
+each route surfaces the same runtime refusal value, including the model's
+reason, law, repair, and repair applicability.
+
+### Evidence
+
+- `KernelConformance.test.ts` replays the emitted admission vectors against
+  `src/kernel/Door.ts`, not a test-side implementation. Its refuse-everything
+  door remains a killed control.
+- `KernelDoor.routes.test.ts` asserts every host route is the same
+  `Admission.admit` function. A poisoned extra `admit` on a
+  `FabricClient.testLayer` fixture is overwritten by that accessor.
+- The same suite supplies the refuse-everything door through
+  `Admission.fromDoor` and offers a candidate the shipping door admits; every
+  host instead returns the planted `clock-read` refusal. A host that called a
+  private door would diverge and fail this control.
+- A second replay through the shipping layer compares the complete taught
+  `clock-read` refusal through every host, including law, repair, and
+  applicability.
+
+### Bounds and residuals
+
+The conformance result is agreement on the finite committed corpus, not a
+proof over all candidates. `Admission.layer` still receives an explicit
+catalog/pinned-universe context from its caller: no durable context assembly
+or runtime-digest-to-model-identity projection is claimed or invented here.
+`CasDaemon` remains a type and route with no tag, layer, or daemon
+implementation; the current chaos CLI accepts no kernel candidate. The claim
+is that the judgment routes those hosts expose cannot bypass the service when
+called, not that this slice adds a daemon runtime or a new CLI command.
+
+### Checkable at
+
+[packages/plait/src/kernel/Door.ts](packages/plait/src/kernel/Door.ts),
+[packages/plait/src/kernel/Admission.ts](packages/plait/src/kernel/Admission.ts),
+and
+[packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts).
 
 ## Plait spine — R0 differential + executable integration
 

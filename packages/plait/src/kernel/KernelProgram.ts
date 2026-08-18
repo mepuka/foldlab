@@ -23,13 +23,12 @@
  *
  * ## Encode is total; publication is a separate act
  *
- * Building always produces a declaration and its runtime identity, and building
- * never publishes. {@link toDeclareCandidate} is the catalog-publication
- * request, a method the caller has to reach for, and it demands the writ under
- * whose authority the declaration would be made. Despite its retained name,
- * that request is not a `KernelCandidateAct`: its hex digest and canonical JSON
- * are runtime evidence, while the admission door consumes the model-generated
- * language directly. This module invokes no door and admits nothing.
+ * Building always produces a declaration and its identity, and building never
+ * publishes. {@link toDeclareCandidate} is the publication act, it is a method
+ * the caller has to reach for, and it demands the writ under whose authority
+ * the declaration would be made. What it returns is a *candidate*: a sentence
+ * as an agent spells it, which a door then admits or refuses. This module
+ * contains no door and admits nothing.
  *
  * ## Nothing here runs
  *
@@ -144,10 +143,10 @@ export type KernelProgramRequirements<HoleName extends bigint> =
 /**
  * A declaration offered for publication under a writ.
  *
- * This is a catalog-publication request, not a `KernelCandidateAct`. It carries
- * the declaration value, the bytes that are its runtime identity, and the
- * authority the caller chose to publish under. The catalog slice owns its
- * eventual carriage; `KernelDoor` neither converts nor consults its hex digest.
+ * This is a candidate, not an act. It carries the declaration value, the bytes
+ * that are its identity, and the authority the caller chose to declare it
+ * under. A door turns it into a sentence or refuses it with the law it
+ * defends; nothing in this package is that door.
  */
 export interface KernelDeclareCandidate {
   readonly _tag: "declare"
@@ -180,9 +179,9 @@ export interface KernelProgram<HoleName extends bigint> {
   /** The unfilled holes, ascending. Empty exactly when the program is closed. */
   readonly requirements: ReadonlyArray<bigint>
   /**
-   * The publication request, and the only one. Building never declares; a
-   * caller who wants the declaration published hands this runtime material to
-   * the catalog path under a named writ.
+   * The publication act, and the only one. Building never declares; a caller
+   * who wants a declaration published asks for the candidate and hands it to a
+   * door under a named writ.
    */
   readonly toDeclareCandidate: (writ: bigint) => KernelDeclareCandidate
   /** The typed stub. Nothing runs; see {@link KernelEffectStub}. */

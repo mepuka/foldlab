@@ -10,10 +10,12 @@ The vocabulary every sentence speaks.
 The language: corpus, door, programs, and wire grammar.
 
 **Admission door**:
-`KernelDoor.admit`: the one pure projection from a model-generated candidate
-and catalog/pinned-universe context to an intrinsic act or the generated
-reason/law/repair refusal. Model identity labels remain `bigint`; runtime
-content digests are independent evidence, not a conversion source.
+`Door.makeKernelDoor` is the vector-gated projection from a kernel candidate
+and explicit catalog/pinned-universe context to an intrinsic sentence or
+model-emitted reason. `Admission` is the one Effect service that translates
+that verdict into the runtime `Refusal` family; `Admission.admit` is the exact
+accessor every host carries. Hosts supply the service, never assemble its
+context or derive a model identity from a runtime digest.
 
 **Planes**:
 The state carriers, one seam per plane.
