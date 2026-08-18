@@ -1,6 +1,9 @@
 package protod
 
 import (
+	// encoding/json carriage: cloneJSON's in-memory deep copy of an already
+	// admitted value (marshal then unmarshal of the daemon's own structure).
+	// Request-field presence is asked of the admitted value — see admittedFields.
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -402,14 +405,17 @@ func cloneJSON(value any) any {
 	return clone
 }
 
+// requireRequestFields asks the ADMITTED value which members arrived — never
+// the raw bytes. Presence read by a second, repairing decoder could answer for
+// a body constrained admission refuses (finding #36).
 func requireRequestFields(body []byte, fields ...string) *Refusal {
-	var decoded map[string]json.RawMessage
-	if err := json.Unmarshal(body, &decoded); err != nil {
+	decoded := admittedFields(body)
+	if decoded == nil {
 		return nil
 	}
 	for _, field := range fields {
 		raw, present := decoded[field]
-		if !present || string(raw) == "null" && field == "path" {
+		if !present || raw == nil && field == "path" {
 			return malformedConciergeField(field, nil, "a required request field", nil)
 		}
 	}

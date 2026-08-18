@@ -2,6 +2,8 @@ package protod
 
 import (
 	"context"
+	// encoding/json carriage: reading back protocol-session journal payloads
+	// the daemon appended itself. Submitted bytes enter through admission.go.
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -592,9 +594,12 @@ func protocolSessionNext(session string) []NextHint {
 	return []NextHint{{Subject: SubjectProtocolSessionState, Note: "read the verified current protocol-session fold", Body: map[string]any{"session": session}}}
 }
 
+// requireProtocolValue asks the ADMITTED value which members arrived — never
+// the raw bytes. Presence read by a second, repairing decoder could answer for
+// a body constrained admission refuses (finding #36).
 func requireProtocolValue(body []byte) *Refusal {
-	var decoded map[string]json.RawMessage
-	if err := json.Unmarshal(body, &decoded); err != nil {
+	decoded := admittedFields(body)
+	if decoded == nil {
 		return nil
 	}
 	if _, present := decoded["value"]; !present {
