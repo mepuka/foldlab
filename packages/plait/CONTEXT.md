@@ -120,6 +120,14 @@ A digest whose decode fetches the value and re-derives its identity before
 returning it. Decoding requires the catalog and payload services from the
 environment; encoding requires nothing and publishes nothing.
 
+**Resolve memo**:
+The digest-keyed cache over the one verified resolution seam. A hit is licensed
+by content addressing, not by freshness: the value it returns was re-derived
+against that digest when it was resolved, and a digest names one canonical byte
+string forever. Successes never expire, failures are never recorded, keys are
+digests and never anchors, and capacity is a memory budget — nothing it holds
+or drops is identity-bearing.
+
 **Publication**:
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
