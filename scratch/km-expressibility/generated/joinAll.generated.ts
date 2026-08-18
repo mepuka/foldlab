@@ -3,7 +3,7 @@
  *
  * Artifact: scratch/km-expressibility/term.ts
  * Command:  bun scratch/km-expressibility/emit.ts
- * Term:     2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e
+ * Term:     92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038
  *
  * EXEMPLAR ONLY — wired into nothing, imported by nothing, gated by nothing.
  *
@@ -88,7 +88,10 @@ type Cell<State, Laws extends LawSet> = CellCore<State> & Laws
  * contention refused as `cell-update-contended`.
  *
  * Bound: convergence on success is F1's, never the loop's; completion is not
- * claimed, and an exhausted attempt bound refuses cell-update-contended.
+ * claimed, and an exhausted attempt bound refuses cell-update-contended;
+ * also, every claim holds only within a fixed backing-stream incarnation —
+ * KV revisions are backing-stream sequences, so a bucket delete/recreate
+ * resets the revision order beneath all of it.
  *
  * Licensed by f1_cell_merge_aci, f1_history_convergence (verify/fabric),
  * instantiated at the observation cell by f1_cell_join_semilattice. rung:

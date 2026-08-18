@@ -79,16 +79,107 @@ export interface OperatorRow {
   readonly reading: string
 }
 
-/** The runtime composition the term denotes, named rather than described. */
+/**
+ * The runtime composition the term denotes, named rather than described.
+ *
+ * Every field here is a claim about shipped source, and check 4 of the wall
+ * binds each one to the `casJoinLoop` call that the declared entry actually
+ * makes — not merely to the file that contains it. Before round 2 the anchor
+ * asked only whether each string occurred somewhere in the named module, which
+ * a module that had stopped calling the loop would still have satisfied: it
+ * could certify a false denotation (PR #101 review, Spec blocker).
+ */
 export interface RuntimeAnchor {
   readonly entry: string
   readonly entry_module: string
+  /** How the entry is spelled where it is defined, so the anchor finds THE fn. */
+  readonly entry_binding: string
   readonly loop: string
   readonly loop_module: string
   readonly carrier: string
   readonly discipline: string
+  /** Where the discipline the entry passes is bound to the shipped service. */
+  readonly discipline_binding: string
   readonly attempts: number
+  /** The public constant the call passes, and the module that exports it. */
+  readonly attempts_symbol: string
+  readonly attempts_module: string
   readonly contended: string
+}
+
+// ── The projected surfaces, declared here so the digest reaches them ──────────
+
+/**
+ * The JSON Schema shape one served parameter takes at the MCP door.
+ *
+ * A closed union rather than a free-form schema object on purpose: the served
+ * schema is DERIVED from this by `project.ts` and RE-DERIVED independently by
+ * `wall.ts`, so both need a shape small enough to render two ways without a
+ * shared helper. Before round 2 the served schema was hand-built in
+ * `project.ts` and absent from the wall entirely, so changing `required` or
+ * `items.type` left every arm green (PR #101 review, Standards blocker) — the
+ * served-equals-derived class, standing estate law 3.
+ */
+export type ServedShape =
+  | { readonly kind: "digest-string"; readonly pattern: string }
+  | { readonly kind: "string-array" }
+
+/** One parameter of the affordance, in BOTH surfaces it is projected into. */
+export interface ParameterDecl {
+  /** The TypeScript parameter name. */
+  readonly name: string
+  /** The TypeScript type, with `{State}` and `{Rung}` holes the emitter fills. */
+  readonly ts_type: string
+  /** The property name at the MCP door, which need not equal `name`. */
+  readonly served_name: string
+  readonly served: ServedShape
+  readonly required: boolean
+  /** The served description, with `{rung}` and `{inherited}` holes. */
+  readonly served_description: string
+}
+
+/**
+ * The carrier and result the fluent surface elaborates at.
+ *
+ * Round 2 moves this INTO the term. Before, `emit.ts` authored the signature and
+ * the carrier's evidence types directly, so the fluent surface was not wholly a
+ * projection of one declared term and its digest did not reach the thing a
+ * caller actually types against (PR #101 review, Spec major).
+ */
+export interface SignatureDecl {
+  readonly type_parameter: string
+  /** The carrier type, `{State}`/`{Rung}` holes filled by the emitter. */
+  readonly carrier_type: string
+  /** The result wrapper the affordance returns. */
+  readonly returns: string
+  /** The typed absence the carrier answers with; never a throw across a seam. */
+  readonly refusal: string
+  readonly parameters: readonly ParameterDecl[]
+}
+
+export const SIGNATURE: SignatureDecl = {
+  type_parameter: "State",
+  carrier_type: "Cell<{State}, {Rung}>",
+  returns: "Effect<Cell<{State}, {Rung}>, Refusal>",
+  refusal: "Refusal",
+  parameters: [
+    {
+      name: "cell",
+      ts_type: "Cell<{State}, {Rung}>",
+      served_name: "cell_digest",
+      served: { kind: "digest-string", pattern: "^sha256:[0-9a-f]+$" },
+      required: true,
+      served_description: "Digest of the declared cell resource whose {rung} algebra governs the merge.",
+    },
+    {
+      name: "contributions",
+      ts_type: "ReadonlyArray<{State}>",
+      served_name: "contributions",
+      served: { kind: "string-array" },
+      required: true,
+      served_description: "The batch, canonical bytes per element — {inherited}.",
+    },
+  ],
 }
 
 /**
@@ -176,7 +267,7 @@ export type Term =
 /** The declared term. Its canonical bytes are `TERM_DIGEST`'s preimage. */
 export interface DeclaredTerm {
   readonly affordance: string
-  readonly parameters: readonly string[]
+  readonly signature: SignatureDecl
   readonly operator: OperatorRow
   readonly rung: RungRow
   readonly laws: readonly LawRow[]
@@ -186,12 +277,19 @@ export interface DeclaredTerm {
   readonly inherited: string
   readonly denotation: Term
   readonly runtime: RuntimeAnchor
-  readonly bound: string
+  /**
+   * Every bound the quoted surfaces must carry. A LIST rather than one string
+   * because round 2 added the shipped loop's second one: the review found the
+   * quoted bound omitted the fixed-backing-stream-incarnation limit, under which
+   * a bucket delete/recreate resets the revision order beneath the claim
+   * (PR #101 review, Spec major; `cas.ts` module header, DEV-704 seam rule 7).
+   */
+  readonly bounds: readonly string[]
 }
 
 export const TERM: DeclaredTerm = {
   affordance: "joinAll",
-  parameters: ["cell", "contributions"],
+  signature: SIGNATURE,
   operator: JOIN,
   rung: BOUNDED_SEMILATTICE,
   // The three the batch claim rests on. The rung bundles five; ACI is what
@@ -211,16 +309,26 @@ export const TERM: DeclaredTerm = {
   runtime: {
     entry: "Cells.merge",
     entry_module: "packages/plait/src/internal/cells.ts",
+    entry_binding: 'Effect.fn("Cells.merge")',
     loop: "casJoinLoop",
     loop_module: "packages/plait/src/internal/cas.ts",
     carrier: "cellJoin",
     discipline: "lawfulMergeDiscipline",
+    discipline_binding: "makeCellServiceWith(options, lawfulMergeDiscipline)",
     attempts: 8,
+    attempts_symbol: "CELL_MERGE_ATTEMPTS",
+    // DEV-762 moved this out of `src/Cell.ts` when it aligned the source with
+    // its conceptual planes. The path is inside the digest because the term
+    // names where its runtime lives; a move is a change to that claim.
+    attempts_module: "packages/plait/src/planes/Cell.ts",
     contended: "cell-update-contended",
   },
-  // `cas.ts`'s own module header, compressed to one line and not softened.
-  bound:
+  // `cas.ts`'s own module header, compressed and not softened. Both bounds are
+  // the loop's own; neither is this exemplar's editorial.
+  bounds: [
     "convergence on success is F1's, never the loop's; completion is not claimed, and an exhausted attempt bound refuses cell-update-contended",
+    "every claim holds only within a fixed backing-stream incarnation — KV revisions are backing-stream sequences, so a bucket delete/recreate resets the revision order beneath all of it",
+  ],
 }
 
 // ── Canonical bytes and the digest ───────────────────────────────────────────
@@ -231,11 +339,15 @@ export const TERM: DeclaredTerm = {
  *
  * BOUND, stated because a digest invites over-reading: this is a LOCAL
  * canonicalizer over a small closed domain, not the estate's RFC 8785 door
- * (`packages/plait/src/Canonical.ts`). The exemplar cannot import that door —
- * `effect` does not resolve from `scratch/` — and a generator inside the estate
- * would use it rather than this. What the two agree on is the shape of the
+ * (`packages/plait/src/truth/Canonical.ts`). A generator inside the estate would
+ * use that door rather than this. What the two agree on is the shape of the
  * claim, not the byte rule for floats, `-0`, or non-BMP escapes, none of which
  * this domain admits.
+ *
+ * Round 2 note: `wall.ts` now reaches the pinned Effect through `./effect.ts`,
+ * so "cannot import" is no longer why this exists — deliberate scope is. The
+ * estate's door is a `packages/plait` seam whose import would drag the plane
+ * graph into a scratch directory that is meant to stand alone.
  *
  * The refusal on a function is load-bearing, not defensive: it is what makes
  * E-1 structural instead of a note.
@@ -384,8 +496,14 @@ export interface Shared {
   readonly term: string
 }
 
+/** The TypeScript parameter names, derived so the spelling exists once. */
+export const PARAMETER_NAMES: readonly string[] = SIGNATURE.parameters.map((p) => p.name)
+
+/** Every declared bound as one sentence, for the media that carry a line. */
+export const BOUND_TEXT: string = TERM.bounds.join("; also, ")
+
 export const SHARED: Shared = {
-  affordance: `${TERM.affordance}(${TERM.parameters.join(", ")})`,
+  affordance: `${TERM.affordance}(${PARAMETER_NAMES.join(", ")})`,
   rung: TERM.rung.name,
   algebraic: `${algebraic(REWRITE)} — ${algebraic(LAWS_OF)}`,
   plain: plainWords(REWRITE),

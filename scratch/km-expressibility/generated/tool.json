@@ -2,11 +2,11 @@
   "$comment": "EXEMPLAR ONLY — wired into nothing, served by nothing, gated by nothing. GENERATED from scratch/km-expressibility/term.ts by `bun scratch/km-expressibility/project.ts`; nothing here is hand-written. Record shape follows verify/kernel/projections/tools.schema.json: flat tools, no oneOf, compound self-descriptive field names, digests as prefixed opaque strings with pattern. There is no ordering parameter and no conflict strategy because the term declares none; an unlawful call has no spelling here rather than a refusal at the door.",
   "artifact": "scratch/km-expressibility/term.ts",
   "command": "bun scratch/km-expressibility/project.ts",
-  "term_digest": "2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e",
+  "term_digest": "92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038",
   "tools": [
     {
       "name": "kernel_join_all",
-      "description": "joinAll(cell, contributions). Algebraic: s ↦ s ∨ (⋁ contributions) — ∨: (a ∨ b) ∨ c = a ∨ (b ∨ c); a ∨ b = b ∨ a; a ∨ a = a. Plain: what is known here comes to include at least the join of the contributions in the batch. Inherited: any grouping, any order, any duplication of the batch gives one result — so batching is free and needs no ordering discipline. License: f1_cell_merge_aci, f1_history_convergence; rung bounded-semilattice; evidence donor. Bound: convergence on success is F1's, never the loop's; completion is not claimed, and an exhausted attempt bound refuses cell-update-contended. Term: 2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e.",
+      "description": "joinAll(cell, contributions). Algebraic: s ↦ s ∨ (⋁ contributions) — ∨: (a ∨ b) ∨ c = a ∨ (b ∨ c); a ∨ b = b ∨ a; a ∨ a = a. Plain: what is known here comes to include at least the join of the contributions in the batch. Inherited: any grouping, any order, any duplication of the batch gives one result — so batching is free and needs no ordering discipline. License: f1_cell_merge_aci, f1_history_convergence; rung bounded-semilattice; evidence donor. Bound: convergence on success is F1's, never the loop's; completion is not claimed, and an exhausted attempt bound refuses cell-update-contended; also, every claim holds only within a fixed backing-stream incarnation — KV revisions are backing-stream sequences, so a bucket delete/recreate resets the revision order beneath all of it. Term: 92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038.",
       "input_schema": {
         "type": "object",
         "additionalProperties": false,

@@ -17,12 +17,17 @@ for the two registers, §7.1 for the affordance row).
 | `term.ts` | **The one declared term**, and the only file here where a sentence about `joinAll` is written by a person: the corpus `law` / `rung` / `operator` rows, the denotation as a term, the runtime anchor, the canonicalizer, the digest, and the two total renderings of one abstract statement type. | imported by the three below |
 | `emit.ts` | Artifacts 1 and 2 — `generated/denotation.json` (the digest's canonical preimage) and `generated/joinAll.generated.ts` (the fluent TS surface: rung brands, signature, JSDoc, and three controls). | `bun scratch/km-expressibility/emit.ts` |
 | `project.ts` | Artifact 3 — the sibling projections: `generated/tool.json` (the MCP tool entry, in `verify/kernel/projections/tools.schema.json`'s record shape) and `generated/registers.md` (the §7.1 row in both registers, plus the four statements paired). | `bun scratch/km-expressibility/project.ts` |
-| `wall.ts` | Artifact 4 — the parity wall: preimage, parity, the §6.3 oracle, the runtime anchor. Takes a directory so a mutant can be walled. | `bun scratch/km-expressibility/wall.ts [dir]` |
-| `run.sh` | Seven arms: emit, project, wall, the emitted surface under `tsgo` with `tsc` as referee, the exemplar's own sources, and **two mutation arms** — without those a green run could mean the wall compares nothing and the rung brand does nothing. | `bash scratch/km-expressibility/run.sh` |
+| `wall.ts` | Artifact 4 — the parity wall: preimage, parity, the §6.3 oracle, the runtime anchor, the served schema re-derived, and served-equals-derived by re-executing the emitters. Reads cross a service boundary and every external byte is Schema-decoded into a tagged refusal. Takes a directory so a mutant can be walled. | `bun scratch/km-expressibility/wall.ts [dir]` |
+| `effect.ts` | The one seam that reaches the estate's pinned `effect@4.0.0-rc.108`, and the only file carrying the path. | imported by `wall.ts` |
+| `run.sh` | Eleven arms: the Effect pin, emit, project, wall, the emitted surface under `tsgo` with `tsc` as referee, the exemplar's own sources, **four mutation arms**, and the README evidence compare. Without the mutation arms a green run could mean the wall compares nothing, the rung brand does nothing, and the served schema is unread. | `bash scratch/km-expressibility/run.sh [--write]` |
 
-Same posture as `scratch/km-algebra`: zero imports beyond `node:crypto`, so the
-exemplar stands alone. In the shipped design every row in `term.ts` comes out of
-the conformance corpus instead, and no part of it is typed by a person either.
+Same posture as `scratch/km-algebra` for the term and its emitters: zero imports
+beyond `node:crypto`, so the declaration and both projections stand alone. The
+WALL is the one exception, and deliberately so — it decodes external bytes, and
+the estate's rule is that validation goes through `effect/Schema` with refusals
+on the error channel, so a wall that hand-cast its inputs would be modelling the
+wrong pattern. In the shipped design every row in `term.ts` comes out of the
+conformance corpus instead, and no part of it is typed by a person either.
 
 ## The four artifacts, and what each one is evidence for
 
@@ -31,7 +36,10 @@ the conformance corpus instead, and no part of it is typed by a person either.
    observation cell, join `cellJoin`, discipline `lawfulMergeDiscipline`,
    attempt bound 8, contention refused as `cell-update-contended`. Its canonical
    bytes are `generated/denotation.json`; its digest is
-   `2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e`.
+   `92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038`. Round 2
+   moved the round-1 digest: the term now also carries the callable signature,
+   the served parameter shapes, and the loop's second bound, because each was a
+   thing the projections showed that the digest could not reach.
 2. **The generated fluent surface.** `generated/joinAll.generated.ts` — the law
    atoms and rung bundles emitted from the `law` and `rung` rows, the signature
    at `Cell<State, BoundedSemilattice>`, and the docstring in §7.3's fixed
@@ -45,30 +53,43 @@ the conformance corpus instead, and no part of it is typed by a person either.
    JSON would make the wall a copy check.
 4. **The parity wall.** Eight shared fields pulled back OUT of each projection's
    own bytes by a parser written for that medium, then byte-compared across the
-   three and against what the term derives, under one digest all three name.
+   three and against what the term derives, under one digest all three name —
+   plus the served callable schema re-derived from the declaration by a second
+   rendering written inside the wall, and a final check that re-executes both
+   emitters and byte-compares all four artifacts. The served schema and the
+   re-execution are round 2: without them the MCP callable was hand-authored
+   outside the term and nothing compared it, which is the served-equals-derived
+   class (standing estate law 3).
 
 ## The run, verbatim
 
-```
+The block below is **not pasted**. `run.sh --write` writes it, and every
+ordinary run byte-compares the committed block against a fresh run and fails
+on any difference (arm 10). Round 1 hand-pasted this evidence and nothing
+checked it, so the quoted output could drift from the artifact it claimed to
+describe while every arm stayed green — PR #101 review, Standards major.
+
+<!-- EVIDENCE:BEGIN -->
+
+```text
+
 == arm 1: emit ==
-EMIT: term   2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e
-EMIT: wrote  generated/denotation.json (1698 canonical bytes)
-EMIT: wrote  generated/joinAll.generated.ts (119 lines)
-PASS  denotation and surface emitted
+EMIT: term   92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038
+EMIT: wrote  generated/denotation.json (2700 canonical bytes)
+EMIT: wrote  generated/joinAll.generated.ts (122 lines)
 
 == arm 2: project ==
-PROJECT: term   2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e
+PROJECT: term   92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038
 PROJECT: wrote  generated/tool.json (1 tool entry)
 PROJECT: wrote  generated/registers.md (2 register rows, 4 paired statements)
-PASS  sibling projections emitted
 
 == arm 3: wall ==
 == parity wall: joinAll(cell, contributions) ==
-   term      2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e
+   term      92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038
    projections in scratch/km-expressibility/generated
 
 -- 1. preimage: the digest names bytes anyone can rehash --
-  PASS  denotation.json is the canonical preimage (1698 bytes)
+  PASS  denotation.json is the canonical preimage (2700 bytes)
   PASS  rehashing the committed bytes reproduces the term digest
 
 -- 2. parity: shared fields, extracted from each projection's own bytes --
@@ -79,7 +100,7 @@ PASS  sibling projections emitted
   PASS  inherited   IDENTICAL in 3/3  any grouping, any order, any duplication of the batch gives...
   PASS  donors      IDENTICAL in 3/3  f1_cell_merge_aci, f1_history_convergence
   PASS  evidence    IDENTICAL in 3/3  donor
-  PASS  term        IDENTICAL in 3/3  2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d...
+  PASS  term        IDENTICAL in 3/3  92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5ef...
 
 -- 3. oracle: the operator's statements against the committed design record --
   NOTE  rewrite differs by design — §6.3 states one contribution, this term a batch
@@ -91,43 +112,48 @@ PASS  sibling projections emitted
   PASS  derived order both registers byte-identical to §6.3
   PASS  requires      both registers byte-identical to §6.3
 
--- 4. anchor: every runtime fact the term declares, against shipped source --
-  PASS  the loop the term denotes — `export const casJoinLoop = ` in packages/plait/src/internal/cas.ts
-  PASS  the donors the loop's header names — `f1_cell_merge_aci`, `f1_history_convergence` in packages/plait/src/internal/cas.ts
-  PASS  the one call site of that loop — `casJoinLoop({` in packages/plait/src/internal/cells.ts
-  PASS  the join bound into it — `const cellJoin: CasJoin` in packages/plait/src/internal/cells.ts
-  PASS  the discipline slot the entry passes — `discipline,` in packages/plait/src/internal/cells.ts
-  PASS  the refusal an exhausted bound gives — `"cell-update-contended"` in packages/plait/src/internal/cells.ts
-  PASS  the attempt bound — `CELL_MERGE_ATTEMPTS = 8` in packages/plait/src/Cell.ts
-  PASS  the donor, as a proved theorem — `theorem f1_history_convergence` in verify/fabric/Fabric/Proofs.lean
-  PASS  the rung at this carrier — `theorem f1_cell_join_semilattice` in verify/fabric/Fabric/Proofs.lean
+-- 4. anchor: the declared facts, bound to the call the entry makes --
+  PASS  the declared entry — `Effect.fn("Cells.merge")` in packages/plait/src/internal/cells.ts
+  PASS  `Cells.merge` calls `casJoinLoop` (16 argument lines)
+  PASS  the join bound into the call — `join: cellJoin`
+  PASS  the discipline slot the call passes — `discipline,`
+  PASS  the attempt bound the call passes — `attempts: CELL_MERGE_ATTEMPTS`
+  PASS  the refusal an exhausted bound gives — `"cell-update-contended"`
+  PASS  the loop the term denotes, in packages/plait/src/internal/cas.ts — `export const casJoinLoop = `
+  PASS  the donors the loop's header names, in packages/plait/src/internal/cas.ts — `f1_cell_merge_aci`, `f1_history_convergence`
+  PASS  the attempt bound's value, in packages/plait/src/planes/Cell.ts — `CELL_MERGE_ATTEMPTS = 8`
+  PASS  the discipline bound to the shipped service — `makeCellServiceWith(options, lawfulMergeDiscipline)`
+  PASS  the donor, as a proved theorem — `theorem f1_history_convergence`
+  PASS  the rung at this carrier — `theorem f1_cell_join_semilattice`
+
+-- 5. served schema: re-derived from the declaration, byte-compared --
+  PASS  input_schema IDENTICAL to the term's derivation (cell_digest, contributions)
+          required   ["cell_digest","contributions"]
+          shapes     cell_digest:digest-string, contributions:string-array
+
+-- 6. served equals derived: the emitters re-run, all four artifacts compared --
+  PASS  all 4 artifacts byte-identical to a fresh derivation
 
 WALL GREEN — one term, four artifacts, no second text.
-
-== arm 4: the emitted surface, tsgo Version 7.0.0-dev.20260707.2 then tsc as referee ==
-PASS  emitted surface type-checks; every must-not-compile control failed to compile
-
-== arm 5: the exemplar's own sources under the estate's base config ==
-PASS  term/emit/project/wall type-check
-
-== arm 6: mutation — one donor mangled in the tool projection alone ==
-PASS  mutation caught on exactly the mutated field:
-    FAIL  donors      DIFFERS in 1/3
-            derived : f1_cell_merge_aci, f1_history_convergence
-            tool(.json)    : f1_cell_merge_aci, f1_history_convergenc
-
-== arm 7: mutation — join weakened to the commutative-monoid rung ==
-PASS  mutation caught — the weakened rung leaves a control unused:
-  .mutant-surface.ts(112,1): error TS2578: Unused '@ts-expect-error' directive.
-
-ALL ARMS PASS
 ```
 
-`bun run gates` is green at the same commit, which is the assertion that no
-estate gate changed: the root `tsconfig.json` includes only `packages/*/src`,
-`packages/*/test`, and `scripts`, so nothing in this directory is type-checked
-by a gate, and the gates' root test walk discovers `*.test.ts` only, of which
-this directory has none. `tsconfig.json` here exists so arm 5 can check the
+<!-- EVIDENCE:END -->
+
+
+**On `bun run gates`, stated precisely rather than claimed.** At the round-1
+base it was green. It is **red on `main` itself** as of `265f7b0`:
+`packages/plait`'s `check:type-control` exits 1 on effect-language-service
+diagnostics in `src/truth/Refusal.ts` and `src/planes/Lane.ts`, which the
+`typescript@7` / `@effect/tsgo@0.36.5` bump turned into failures. That failure
+reproduces on a pristine `origin/main` worktree with none of this branch's
+changes applied, so it is the estate's, not this slice's.
+
+What this directory can still assert, and does, is CONTAINMENT — which is
+structural and does not depend on a gate run: the root `tsconfig.json` includes
+only `packages/*/src`, `packages/*/test`, and `scripts`, so nothing here is
+type-checked by a gate; the gates' root test walk discovers `*.test.ts` only, of
+which this directory has none; and the whole diff lands inside
+`scratch/km-expressibility/`. `tsconfig.json` here exists so arm 5 can check the
 exemplar's own sources against the estate's base config; no gate references it.
 
 ## What the wall claims, and what it does not
@@ -143,19 +169,31 @@ oracles outside both sides:
   to the block committed there. The `rewrite` statement is the one line that
   legitimately differs (§6.3 states the single-contribution join, this term the
   batched one), so the wall REPORTS it rather than comparing it.
-- **The shipped source** — every runtime fact `term.ts` declares is matched
-  against the file it names, so the denotation is anchored to code rather than
-  to a story about code.
+- **The shipped source** — every runtime fact `term.ts` declares is bound to the
+  `casJoinLoop` call that the declared entry actually makes, so the denotation is
+  anchored to code rather than to a story about code. Round 2 tightened this: the
+  round-1 anchor asked only whether each string occurred *somewhere* in the named
+  module, which a module that had stopped calling the loop would still have
+  satisfied — it could certify a false denotation.
+
+A third check is not an oracle but is the one the review's worst finding turned
+on: the **served callable schema** is re-derived from the declaration by a second
+rendering written inside the wall and byte-compared against the served bytes, and
+both emitters are re-executed so all four artifacts are compared against a fresh
+derivation. Two renderings of one declaration is served-equals-derived; one
+rendering compared against itself would be green by construction.
 
 Stated bounds, because a digest and a green wall both invite over-reading:
 
 - The canonicalizer in `term.ts` is a **local** one over a small closed domain
   (sorted keys, safe integers, strings, booleans, arrays, objects; everything
   else refused). It is **not** the estate's RFC 8785 door,
-  `packages/plait/src/Canonical.ts`, which the exemplar cannot import because
-  `effect` does not resolve from `scratch/`. A generator inside the estate would
-  use that door. The two agree on the shape of the claim, not on the byte rule
-  for floats, `-0`, or non-BMP escapes — none of which this domain admits.
+  `packages/plait/src/truth/Canonical.ts`. Round 2 makes this a scope choice
+  rather than an inability — `wall.ts` now reaches the pinned Effect through
+  `effect.ts` — but that door is a `packages/plait` seam whose import would drag
+  the plane graph into a directory meant to stand alone. A generator inside the
+  estate would use it. The two agree on the shape of the claim, not on the byte
+  rule for floats, `-0`, or non-BMP escapes — none of which this domain admits.
 - The oracle arm compares **text**, not meaning. It catches drift between the
   record and the term; it cannot catch a sentence that is wrong in both.
 - The emitted surface is a **type-level** probe. `Effect<A, E>` there is a
@@ -192,12 +230,14 @@ reading is not one — same posture as N-1's "no generic fallback".
 | E-D2 | The tool description uses a **labelled** segment grammar (`Algebraic: … Plain: … License: …`). | Free prose in the shape `kernel_join`'s hand-derived description uses. | A parser over free prose is a guess; the generated grammar is what makes the tool entry walled rather than trusted. Cost: the description reads more mechanically than the hand-written one it is modelled on. | yes |
 | E-D3 | The wall's outside oracles are §6.3 of the design record and the shipped source. | Parity across the three projections alone. | AGENTS.md: both-sides-agree is not verification. Without an oracle the wall proves consensus among three renderings of one possibly-wrong term. | yes |
 | E-D4 | The plain register's rung **adjective** is a rendering, not a shared field, and is excluded from the byte-compare. | Compare a normalized rung across both registers. | The two registers legitimately spell the rung differently (§6.3: `bounded semilattice` vs `duplicate-safe`); normalizing to compare it would have the wall assert something the registers do not claim. The canonical rung key appears in all three and IS compared. | no |
+| E-D5 (round 2) | The served schema is rendered TWICE from one declaration — once in `project.ts`, once inside `wall.ts` — with no shared helper. | One exported builder both sides call, compared to the served file. | A single builder compared against its own output is self-comparison: it passes by construction and cannot see a wrong derivation, only a corrupted file. Two independent renderings of one declaration is the served-equals-derived shape the estate's law names. Cost: the rendering exists twice, and a change to the shape must be made in both — which arms 8 and 9 turn into a red run rather than a silent divergence. | yes — arms 8 and 9 |
+| E-D6 (round 2) | `wall.ts` imports the pinned Effect and decodes external bytes through `Schema` into refusals carrying reason · law · repair. | Keep the wall dependency-free with `JSON.parse` and an unchecked cast, as round 1 had it. | An exemplar offered as the pattern for generated walls cannot model the thing the estate refuses on its meaning path (standing laws 5 and 6). The cost is real and is fenced to one file: `effect.ts` carries the path, because `scratch/` is outside the workspace globs and the bare specifier does not resolve. | yes — a missing projection now REFUSES with a repair instead of dying in an ENOENT stack trace |
 
 ## Deliberately untouched
 
 The shipped `Cell` surface, the conformance corpus, `packages/plait/scripts/`'s
 generators, `verify/`, and every gate. `joinAll` does not exist in
-`packages/plait/src/Cell.ts` and this slice does not add it — the shipped join
+`packages/plait/src/planes/Cell.ts` and this slice does not add it — the shipped join
 surface is `Cell.join` plus `CellService.merge`, and §7.1's `joinAll` row is
 still an unbuilt affordance. Nothing here is imported by anything, and the four
 generated files under `generated/` are committed so that the wall and this

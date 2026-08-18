@@ -18,6 +18,7 @@ import { resolve } from "node:path"
 
 import {
   algebraic,
+  BOUND_TEXT,
   BOUNDED_SEMILATTICE,
   canonicalBytes,
   COMMUTATIVE_MONOID,
@@ -25,6 +26,7 @@ import {
   LAWS,
   type RungRow,
   SHARED,
+  SIGNATURE,
   TERM,
   TERM_DIGEST,
 } from "./term.ts"
@@ -72,7 +74,26 @@ const bundle = (rung: RungRow): string =>
 
 const rung = rungType(TERM.rung)
 const controlRung = rungType(COMMUTATIVE_MONOID)
-const [cellParameter, batchParameter] = [TERM.parameters[0]!, TERM.parameters[1]!]
+
+/**
+ * Fills a declared type template's holes. Round 2: the signature's types are
+ * the TERM's, not this file's — `{State}` and `{Rung}` are the only two holes,
+ * and a template carrying any other is a refusal rather than a silent literal.
+ */
+const fillType = (template: string, rungName: string = rung): string => {
+  const filled = template
+    .replaceAll("{State}", SIGNATURE.type_parameter)
+    .replaceAll("{Rung}", rungName)
+  const stray = /\{(\w+)\}/.exec(filled)
+  if (stray !== null) {
+    throw new Error(`the declared type \`${template}\` carries an unfilled hole {${stray[1]}}`)
+  }
+  return filled
+}
+
+const parameterList = SIGNATURE.parameters
+  .map((parameter) => `  ${parameter.name}: ${fillType(parameter.ts_type)},`)
+  .join("\n")
 
 const header = [
   "/**",
@@ -101,7 +122,7 @@ const docstring = jsdoc([
   ` \`${TERM.runtime.loop}\` (${TERM.runtime.loop_module}) at ${TERM.carrier}, join` +
   ` \`${TERM.runtime.carrier}\`, discipline \`${TERM.runtime.discipline}\`, attempt` +
   ` bound ${TERM.runtime.attempts}, contention refused as \`${TERM.runtime.contended}\`.`,
-  `Bound: ${TERM.bound}.`,
+  `Bound: ${BOUND_TEXT}.`,
   `Licensed by ${SHARED.donors} (${BOUNDED_SEMILATTICE.donor_source}), instantiated at` +
   ` ${TERM.carrier} by f1_cell_join_semilattice. rung: ${SHARED.rung}; evidence:` +
   ` ${SHARED.evidence}.`,
@@ -126,7 +147,7 @@ type LawSet = Partial<${LAWS.map((law) => typeName(law.name)).join(" & ")}>
 declare const REFUSAL: unique symbol
 
 /** The typed absence a carrier answers with; never a throw across the seam. */
-interface Refusal {
+interface ${SIGNATURE.refusal} {
   readonly [REFUSAL]: true
 }
 
@@ -147,10 +168,9 @@ type Cell<State, Laws extends LawSet> = CellCore<State> & Laws
 // -- The affordance ---------------------------------------------------------
 
 ${docstring}
-declare function ${TERM.affordance}<State>(
-  ${cellParameter}: Cell<State, ${rung}>,
-  ${batchParameter}: ReadonlyArray<State>,
-): Effect<Cell<State, ${rung}>, Refusal>
+declare function ${TERM.affordance}<${SIGNATURE.type_parameter}>(
+${parameterList}
+): ${fillType(SIGNATURE.returns)}
 
 // -- Controls ---------------------------------------------------------------
 
@@ -172,7 +192,10 @@ export const crossSort = ${TERM.affordance}(observationCell, counts)
 `
 
 const denotation = canonicalBytes(TERM)
-const generated = resolve(import.meta.dir, "generated")
+// The output directory is an argument so `wall.ts` can re-run this emitter into
+// a scratch directory and byte-compare, rather than trusting that `generated/`
+// was regenerated after the last edit (check 6, served equals derived).
+const generated = resolve(import.meta.dir, Bun.argv[2] ?? "generated")
 
 await Bun.write(resolve(generated, "denotation.json"), denotation)
 await Bun.write(resolve(generated, "joinAll.generated.ts"), surface)

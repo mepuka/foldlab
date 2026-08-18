@@ -19,12 +19,15 @@ import { resolve } from "node:path"
 
 import {
   algebraic,
+  BOUND_TEXT,
   DERIVED_ORDER,
   LAWS_OF,
+  type ParameterDecl,
   plainWords,
   REQUIRES,
   REWRITE,
   SHARED,
+  SIGNATURE,
   TERM,
   TERM_DIGEST,
 } from "./term.ts"
@@ -46,9 +49,44 @@ const description = [
   `Plain: ${SHARED.plain}.`,
   `Inherited: ${SHARED.inherited}.`,
   `License: ${SHARED.donors}; rung ${SHARED.rung}; evidence ${SHARED.evidence}.`,
-  `Bound: ${TERM.bound}.`,
+  `Bound: ${BOUND_TEXT}.`,
   `Term: ${SHARED.term}.`,
 ].join(" ")
+
+// -- The callable schema, DERIVED from the declared signature -----------------
+
+/**
+ * Round 2. Before, this object's `required`, `pattern`, and `items.type` were
+ * typed here by hand and the wall never looked at them, so the served callable
+ * could drift from the term with every arm green — standing estate law 3, and
+ * the review's worst finding.
+ *
+ * Now every byte of it comes from `TERM.signature`, and `wall.ts` re-derives the
+ * same object through its OWN rendering of the same declaration and byte-
+ * compares. The two renderings are deliberately not a shared helper: a helper
+ * imported by both sides would make the comparison self-referential and green by
+ * construction, which is the thing "no self-comparison" refuses.
+ */
+const servedProperty = (parameter: ParameterDecl): Record<string, unknown> => {
+  const description = parameter.served_description
+    .replaceAll("{rung}", SHARED.rung)
+    .replaceAll("{inherited}", SHARED.inherited)
+  switch (parameter.served.kind) {
+    case "digest-string":
+      return { type: "string", pattern: parameter.served.pattern, description }
+    case "string-array":
+      return { type: "array", items: { type: "string" }, description }
+  }
+}
+
+const inputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: SIGNATURE.parameters.filter((p) => p.required).map((p) => p.served_name),
+  properties: Object.fromEntries(
+    SIGNATURE.parameters.map((parameter) => [parameter.served_name, servedProperty(parameter)]),
+  ),
+}
 
 const toolEntry = {
   $comment: "EXEMPLAR ONLY — wired into nothing, served by nothing, gated by nothing." +
@@ -64,24 +102,7 @@ const toolEntry = {
     {
       name: `kernel_${TERM.affordance.replace(/([A-Z])/g, "_$1").toLowerCase()}`,
       description,
-      input_schema: {
-        type: "object",
-        additionalProperties: false,
-        required: [`${TERM.parameters[0]!}_digest`, TERM.parameters[1]!],
-        properties: {
-          [`${TERM.parameters[0]!}_digest`]: {
-            type: "string",
-            pattern: "^sha256:[0-9a-f]+$",
-            description: `Digest of the declared cell resource whose ${SHARED.rung}` +
-              " algebra governs the merge.",
-          },
-          [TERM.parameters[1]!]: {
-            type: "array",
-            items: { type: "string" },
-            description: `The batch, canonical bytes per element — ${SHARED.inherited}.`,
-          },
-        },
-      },
+      input_schema: inputSchema,
     },
   ],
 }
@@ -145,7 +166,9 @@ single-contribution ${TERM.operator.name}, this term states the batched one.
 ${paired.map(([label, stmt]) => `| ${label} | ${plainWords(stmt)} | ${algebraic(stmt)} |`).join("\n")}
 `
 
-const generated = resolve(import.meta.dir, "generated")
+// The output directory is an argument for the same reason `emit.ts` takes one:
+// `wall.ts` re-runs both emitters into a scratch directory and byte-compares.
+const generated = resolve(import.meta.dir, Bun.argv[2] ?? "generated")
 const tool = `${JSON.stringify(toolEntry, null, 2)}\n`
 
 await Bun.write(resolve(generated, "tool.json"), tool)

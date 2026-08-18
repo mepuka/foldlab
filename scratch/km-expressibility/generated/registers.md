@@ -1,4 +1,4 @@
-<!-- GENERATED FILE - DO NOT EDIT. Artifact: scratch/km-expressibility/term.ts | Command: bun scratch/km-expressibility/project.ts | Term: 2dda26cb2435a3aed5e055f4169b05345bdb6c1ddeee6187779428e792d5b28e -->
+<!-- GENERATED FILE - DO NOT EDIT. Artifact: scratch/km-expressibility/term.ts | Command: bun scratch/km-expressibility/project.ts | Term: 92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038 -->
 
 # joinAll — the affordance row, in both registers
 
