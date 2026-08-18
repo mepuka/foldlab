@@ -288,7 +288,10 @@ const runEvaluation = Effect.fn("runEvaluation")(function*() {
         `completed model=${result.canonical_model} arm=${variant} sample=${sample}`,
       )),
     )
-  }, { concurrency: 2 })
+    // Generations are independent provider processes with no session
+    // persistence, so concurrency changes wall-clock and nothing that is
+    // measured. It is not a preregistered quantity.
+  }, { concurrency: 4 })
 
   yield* writeRunRecords(generated.paths.runs, runs)
   const analysis = yield* reportFrom(

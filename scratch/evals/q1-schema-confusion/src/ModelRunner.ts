@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Layer, Schema, Stream } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 
 import {
@@ -122,6 +122,11 @@ export class ModelRunner extends Context.Service<
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
 
       const run = Effect.fn("ModelRunner.run")(function*(request: ModelRequest) {
+        // The prompt goes to stdin, not argv. It is ~12 KB, and Windows caps a
+        // command line near 32 KB: passed as an argument there the provider
+        // returns empty stdout and the run dies on "expected a valid JSON
+        // string" with nothing naming the real cause. Round 1 ran on a Mac seat
+        // and never met it. stdin has no such ceiling on either platform.
         const command = ChildProcess.make("claude", [
           "-p",
           "--no-session-persistence",
@@ -137,8 +142,9 @@ export class ModelRunner extends Context.Service<
           "json",
           "--json-schema",
           StructuredOutputSchema,
-          request.prompt,
-        ])
+        ], {
+          stdin: Stream.make(new TextEncoder().encode(request.prompt)),
+        })
 
         const raw = yield* spawner.string(command).pipe(
           Effect.mapError((cause) => new ModelInvocationError({

@@ -145,6 +145,43 @@ describe("result reporting", () => {
     expect(report).toContain("1 of 1 battery rows produced any confused call")
   })
 
+  /**
+   * The independent unit is the generation, not the call. A run whose whole
+   * battery is answered by one empty response must read as one event, not as
+   * one per battery row — which is exactly the shape the round-2 population
+   * turned out to have.
+   */
+  test("names generation-level concentration and empty generations", async () => {
+    const second: BatteryTask = { ...task, id: "spawn-again" }
+    const clean = (sample: number): RunRecord => ({
+      ...run("compound"),
+      sample,
+      response: {
+        calls: [task, second].map((row) => ({
+          task_id: row.id,
+          name: row.tool,
+          arguments: argumentsByVariant.compound,
+        })),
+      },
+    })
+    const empty: RunRecord = { ...run("compound"), sample: 9, response: { calls: [] } }
+
+    const analysis = await Effect.runPromise(analyzeRuns({
+      base,
+      tasks: [task, second],
+      ledger,
+      plantedDigests: [parent, request],
+      canonicalSlots,
+      runs: [clean(1), clean(2), empty],
+    }))
+    const report = renderFindings(analysis)
+
+    expect(report).toContain("drawn from 1 of 3 independent generations")
+    expect(report).toContain("come from the single generation")
+    expect(report).toContain("this is one event and not 2")
+    expect(report).toContain("returned an empty call list")
+  })
+
   test("states whether the two primitive measures ever disagree", async () => {
     const report = renderFindings(await analyze())
 
