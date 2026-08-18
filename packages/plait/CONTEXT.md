@@ -111,6 +111,13 @@ environment; encoding requires nothing and publishes nothing.
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
 
+**Advisory**:
+The standing of a KV watch feed. An arriving entry is a hint that state has
+moved, joined like any other observation; the feed's silence, its ordering,
+and its `isUpdate` flag carry no information. Nothing advisory may answer
+"does this exist" or "has this stopped" — absence is read head-relative from
+the store, never inferred from a feed.
+
 **Context program**:
 The cataloged declaration of an ordered list of (selector, renderer) pairs,
 each tagged with a volatility class. A declaration only — no assembly executor

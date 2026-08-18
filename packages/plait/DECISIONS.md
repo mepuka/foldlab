@@ -897,3 +897,45 @@ behavior from the already-separate SIGKILL recovery suite; server restart would
 mix consumer recovery and storage recovery, and one schedule cannot license a
 losslessness theorem. **Load-bearing? yes** — the bound prevents a ran trace
 from becoming a general availability claim.
+
+### T3. The watch fence states a standing bound, not a spent gate
+
+Decided: the scoped law in `AGENTS.md` no longer reads "until the watch probe
+suite lands." It now requires a ruled ticket before any watch surface ships and
+states outright that probe evidence licenses advisory use only. Alternatives:
+leave the law as written, now discharged; delete the law because the suite
+landed. Why: a law whose condition this very ticket satisfies flips open the
+moment the evidence lands, and evidence is exactly what must never grant a
+license to ship. `AGENTS.md` is the file an executor reads before editing
+inside the package, so it was also the one place the `isUpdate` constraint was
+missing. Raised as the DEV-750 round-2 major charge. **Load-bearing? yes** —
+without it the package's enforceable contract permits the unsound consumer
+FINDING-DEV731-WATCH-INITIAL-001 exists to prevent.
+
+### T4. Strengthen three arms rather than soften the words that oversold them
+
+Decided: the burst arm now issues all 32 puts in flight together and derives
+its revision-to-value expectation from the revisions the server assigned; the
+replay arm carries a third key so the delivered order rules out alphabetical
+and first-write order both; the reconnect arm writes three times inside the
+gap. Alternatives: reword the ledger to "32 sequential writes," leave the
+two-entry ordering vector, leave the one in-gap write. Why: each arm was
+claiming a property its schedule could not exhibit — an awaited write loop
+cannot show coalescing, a two-entry replay is the thinnest vector that
+discriminates at all, and one in-gap write cannot separate replay-every-missed
+-revision from coalesce-to-latest. Strengthening costs one schedule change per
+arm and answers the question the prose was already asking. Raised as three
+DEV-750 round-2 minor charges. **Load-bearing? yes** — the reconnect arm now
+carries a result the previous arm could not state.
+
+### T5. "Advisory" is module vocabulary and belongs in the module glossary
+
+Decided: `CONTEXT.md` defines **Advisory** — an arriving entry is a hint,
+silence and ordering and `isUpdate` carry no information, and nothing advisory
+answers an existence question. Alternatives: leave the word defined only inside
+the next-phase plan; define it in the root `CONTEXT.md`. Why: the word now
+carries the bound across five documents and two JSDoc blocks, and the root
+contract puts module vocabulary in the module glossary; the root file is the
+public language and watch is behind the seam. Raised as a DEV-750 round-2 minor
+charge. **Load-bearing? no** — the fence is enforced by `AGENTS.md` and the
+tests; this makes the fence word readable to someone who has not read the plan.

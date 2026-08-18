@@ -104,26 +104,31 @@ describe("ninth substrate suite: @nats-io/kv 3.4.0 watch semantics", () => {
       expect(await kv.put("alpha", encode("alpha-1"))).toBe(1)
       expect(await kv.put("beta", encode("beta-1"))).toBe(2)
       expect(await kv.put("alpha", encode("alpha-2"))).toBe(3)
+      expect(await kv.put("gamma", encode("gamma-1"))).toBe(4)
 
       const watcher = await kv.watch()
-      expect(await kv.put("beta", encode("beta-2"))).toBe(4)
-      expect(await kv.put("alpha", encode("alpha-3"))).toBe(5)
+      expect(await kv.put("beta", encode("beta-2"))).toBe(5)
+      expect(await kv.put("alpha", encode("alpha-3"))).toBe(6)
 
-      const entries = await collect(watcher, 4, "coalesced replay and live updates")
+      // Three retained keys, so the replay order discriminates: bucket-global
+      // revision order is beta, alpha, gamma, while both alphabetical order and
+      // first-write order would be alpha, beta, gamma.
+      const entries = await collect(watcher, 5, "coalesced replay and live updates")
       expect(entries).toEqual([
         { key: "beta", value: "beta-1", revision: 2, operation: "PUT", isUpdate: false },
-        { key: "alpha", value: "alpha-2", revision: 3, operation: "PUT", isUpdate: true },
-        { key: "beta", value: "beta-2", revision: 4, operation: "PUT", isUpdate: true },
-        { key: "alpha", value: "alpha-3", revision: 5, operation: "PUT", isUpdate: true },
+        { key: "alpha", value: "alpha-2", revision: 3, operation: "PUT", isUpdate: false },
+        { key: "gamma", value: "gamma-1", revision: 4, operation: "PUT", isUpdate: true },
+        { key: "beta", value: "beta-2", revision: 5, operation: "PUT", isUpdate: true },
+        { key: "alpha", value: "alpha-3", revision: 6, operation: "PUT", isUpdate: true },
       ])
 
       const oneKeyReplay = await kv.watch({ key: "alpha" })
       expect(await collect(oneKeyReplay, 1, "one-key initial replay")).toEqual([
-        { key: "alpha", value: "alpha-3", revision: 5, operation: "PUT", isUpdate: true },
+        { key: "alpha", value: "alpha-3", revision: 6, operation: "PUT", isUpdate: true },
       ])
 
       console.info(
-        "SUBSTRATE KV WATCH TRACE default-replay=[beta@2,alpha@3] pre-watch-alpha@1=coalesced live=[beta@4,alpha@5] order=bucket-global initial-isUpdate=two-key:[false,true],one-key:[true]",
+        "SUBSTRATE KV WATCH TRACE default-replay=[beta@2,alpha@3,gamma@4] pre-watch-alpha@1=coalesced live=[beta@5,alpha@6] order=bucket-global initial-isUpdate=three-key:[false,false,true],one-key:[true]",
       )
     } finally {
       await connection.close()
@@ -144,21 +149,30 @@ describe("ninth substrate suite: @nats-io/kv 3.4.0 watch semantics", () => {
       })
       const entriesPromise = collect(watcher, 32, "32 live watch entries")
 
-      for (let revision = 1; revision <= 32; revision++) {
-        expect(await kv.put("burst", encode(`value-${revision}`))).toBe(revision)
-      }
+      // All 32 puts are in flight together and none waits on the consumer, so
+      // the writer can run ahead of the watcher. That is the schedule under
+      // which coalescing could show; 32 awaited round trips cannot exhibit it.
+      const assigned = await Promise.all(
+        Array.from({ length: 32 }, (_, index) => kv.put("burst", encode(`value-${index + 1}`))),
+      )
+      // The server assigns the revisions; the expectation is derived from what
+      // it assigned, never transcribed.
+      const expected = assigned
+        .map((revision, index) => ({ revision, value: `value-${index + 1}` }))
+        .sort((left, right) => left.revision - right.revision)
+      expect(expected.map((entry) => entry.revision)).toEqual(
+        Array.from({ length: 32 }, (_, index) => index + 1),
+      )
 
       const entries = await entriesPromise
       expect(entries.map((entry) => entry.revision)).toEqual(
-        Array.from({ length: 32 }, (_, index) => index + 1),
+        expected.map((entry) => entry.revision),
       )
-      expect(entries.map((entry) => entry.value)).toEqual(
-        Array.from({ length: 32 }, (_, index) => `value-${index + 1}`),
-      )
+      expect(entries.map((entry) => entry.value)).toEqual(expected.map((entry) => entry.value))
       expect(entries.every((entry) => entry.isUpdate)).toBe(true)
 
       console.info(
-        "SUBSTRATE KV WATCH TRACE connected-live-burst=32/32 order=1..32 coalesced=0 bound=single-node-R1-one-connected-client",
+        "SUBSTRATE KV WATCH TRACE concurrent-live-burst=32/32 in-flight-together order=1..32 coalesced=0 bound=single-node-R1-one-connected-client",
       )
     } finally {
       await connection.close()
@@ -257,30 +271,48 @@ describe("ninth substrate suite: @nats-io/kv 3.4.0 watch semantics", () => {
 
       await watcherConnection.reconnect()
       await waitForStatus(statuses, "disconnect")
-      expect(await writer.put("reconnect", encode("during-disconnect"))).toBe(1)
+      // Three writes to the same key inside the gap. One would not separate
+      // "every missed revision replays" from "the gap coalesces to the latest".
+      expect(await writer.put("reconnect", encode("during-disconnect-1"))).toBe(1)
+      expect(await writer.put("reconnect", encode("during-disconnect-2"))).toBe(2)
+      expect(await writer.put("reconnect", encode("during-disconnect-3"))).toBe(3)
       await waitForStatus(statuses, "reconnect")
-      expect(await writer.put("reconnect", encode("after-reconnect"))).toBe(2)
+      expect(await writer.put("reconnect", encode("after-reconnect"))).toBe(4)
 
-      const entries = await collect(watcher, 2, "entries spanning reconnect")
+      const entries = await collect(watcher, 4, "entries spanning reconnect")
       expect(entries).toEqual([
         {
           key: "reconnect",
-          value: "during-disconnect",
+          value: "during-disconnect-1",
           revision: 1,
           operation: "PUT",
           isUpdate: true,
         },
         {
           key: "reconnect",
-          value: "after-reconnect",
+          value: "during-disconnect-2",
           revision: 2,
+          operation: "PUT",
+          isUpdate: true,
+        },
+        {
+          key: "reconnect",
+          value: "during-disconnect-3",
+          revision: 3,
+          operation: "PUT",
+          isUpdate: true,
+        },
+        {
+          key: "reconnect",
+          value: "after-reconnect",
+          revision: 4,
           operation: "PUT",
           isUpdate: true,
         },
       ])
 
       console.info(
-        "SUBSTRATE KV WATCH TRACE reconnect=forced-750ms during-disconnect=[revision-1] after-reconnect=[revision-2] delivered=[1,2] bound=same-server-same-consumer-no-process-restart",
+        "SUBSTRATE KV WATCH TRACE reconnect=forced-750ms during-disconnect=[revision-1,2,3] after-reconnect=[revision-4] delivered=[1,2,3,4] coalesced=0 bound=same-server-same-consumer-no-process-restart",
       )
     } finally {
       await watcherConnection.close()

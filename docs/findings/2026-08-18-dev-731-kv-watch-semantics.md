@@ -13,22 +13,29 @@ times on Windows/NTFS at the authoring revision without a failure.
 The probe records:
 
 - default replay coalesces pre-watch history to the latest value per key; the
-  retained entries arrive in bucket-global revision order;
-- a bounded 32-write live burst on one connected client delivered all 32 PUTs
-  in revision order, with no observed live coalescing;
+  retained entries arrive in bucket-global revision order — the three-key
+  replay delivers `beta@2, alpha@3, gamma@4`, which is neither alphabetical
+  order nor first-write order, so the claim has a discriminating vector;
+- a bounded 32-write live burst on one connected client, every put in flight
+  together so the writer runs ahead of the watcher, delivered all 32 PUTs in
+  revision order with no observed live coalescing; the expected
+  revision-to-value pairing is read off the revisions the server assigned,
+  never transcribed;
 - DEL and PURGE markers arrive with empty payloads;
 - `resumeFromRevision` is inclusive and names a bucket-global stream revision,
   so a restarted filtered watcher resumes after its last seen entry with
   `lastSeen + 1` and can legitimately observe gaps owned by other keys;
-- a forced 750 ms client reconnect to the same live server delivered the write
-  published during the disconnect before the write published after reconnect.
+- a forced 750 ms client reconnect to the same live server delivered all three
+  writes published to one key during the disconnect, in revision order, before
+  the write published after reconnect — so this reconnect replayed every missed
+  revision rather than coalescing the gap to its latest value.
 
 ## Finding
 
 `KvWatchEntry.isUpdate` does not partition initial replay from live delivery at
-this pin. With two initial entries the flags were `[false, true]`; with one
-initial entry the only flag was `true`. The same last-entry behavior appears on
-resume replay. A consumer that treats `isUpdate === true` as proof that an
+this pin. With three initial entries the flags were `[false, false, true]`;
+with one initial entry the only flag was `true`. The same last-entry behavior
+appears on resume replay. A consumer that treats `isUpdate === true` as proof that an
 entry happened after watch creation is therefore unsound.
 
 The future `CellReplica` feed must classify every delivered entry as advisory
@@ -39,7 +46,9 @@ silence or from having crossed an apparent initial/live boundary.
 ## Bounds
 
 The reconnect arm is one forced client reconnect, same server process, same
-ephemeral consumer, and no server restart. The live-burst arm is a finite
+ephemeral consumer, no server restart, and a three-write gap inside one
+retention window — it shows this schedule replayed the gap and says nothing
+about a gap longer than the bucket's history. The live-burst arm is a finite
 32-write observation, not a losslessness or liveness theorem. Nothing here
 licenses use as a log, proves clustering behavior, spans bucket incarnations,
 or permits absence reasoning.
