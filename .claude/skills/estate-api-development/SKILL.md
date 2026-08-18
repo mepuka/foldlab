@@ -41,6 +41,18 @@ stops being maintained and starts being inherited.
    truth / kernel / planes / carriage / surface — importing only
    itself and deeper layers. If a function's layer is unclear, its
    design is unclear.
+6. **Deep primitives, shared services.** If Effect ships the
+   primitive, the estate does not hand-roll it: lanes and consumers
+   are Stream, watch fan-out is PubSub, digest-keyed memoization is
+   Cache (digest keys never invalidate, so the cache is forever-
+   valid by construction), resolve traffic batches through
+   RequestResolver. And each declared algebra's operations are a
+   SHARED service provided once by a Layer — incremental base
+   algebra operations every consumer inherits — so lawfulness is
+   implemented once and composed everywhere, never re-implemented
+   per call site. A hand-rolled loop where a Stream belongs, or a
+   per-consumer reimplementation of a fold's step, is the same
+   defect as a hand-written tool list: a twin that will drift.
 
 ## The admission test
 
