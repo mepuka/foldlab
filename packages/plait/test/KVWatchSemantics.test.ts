@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 
 import { StorageType } from "@nats-io/jetstream"
 import { Kvm, KvWatchInclude, type KvWatchEntry } from "@nats-io/kv"
@@ -77,10 +77,6 @@ let harness: NatsHarness | undefined
 
 beforeAll(async () => {
   built = await buildServerBinary()
-})
-
-afterAll(async () => {
-  await built.cleanup()
 })
 
 beforeEach(async () => {

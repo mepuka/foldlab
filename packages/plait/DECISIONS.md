@@ -1590,113 +1590,78 @@ a model, and nothing here pins a model's answer — these are ordinary runtime
 inputs to a characterization probe. Raised as a DEV-753 round-1 minor charge.
 **Load-bearing? no** — vocabulary.
 
-## Task DEV-739 — the resolve cache on the verified resolve path
+## Task DEV-756 — battery speedups, Tier A
 
-Task-local placeholders (rule 1): T-numbers restart per task and collide across
-tasks by design; repository D-numbers are assigned at merge. Spec authority:
-`docs/design/2026-08-17-plait-effect-affordances.md` A-8a (refereed G-3
-ADOPT-AMENDED), Part C ticket 6.
+### T0. The pinned server binary is cached at a pin-keyed path, and `-v` gates reuse
 
-### T0. The surface is `ResolveCache`, and it lives in `Resolved.ts`
+Decided: `buildServerBinary` builds `nats-server` into
+`node_modules/.cache/plait-nats-server/<pin>/`, publishes it by rename inside
+that same root, and memoizes the promise per process; the `-v` check now runs
+before reuse as well as after a build, so a file at the cached path that is not
+the pin is rebuilt rather than trusted. `NatsServerBinary.cleanup` is gone — no
+caller may delete a binary its neighbours are executing. Alternatives: a
+temp-directory build memoized per process, which still pays a full build in
+each of the four wall workers and on every re-run; a checked-in binary, which
+puts a platform artifact in the tree and unpins it from the Go module lock;
+`go build -o` straight onto the cached path, which lets a reader exec a
+half-linked file. Why: seventeen call sites each rebuilt the same pinned
+executable, 19 of the 33 seconds `bun test ./test` cost. Seam rule 7 binds row
+isolation to a fresh server on a fresh store on a fresh port, and
+`startNatsServer` still mints all three per call — the binary is content, and
+sharing content buys back the build without touching the incarnation the walls
+actually depend on. The pin-keyed directory is what makes moving the pin safe:
+a new pin is a new path, and the old binary is never a candidate. **Load-bearing?
+yes** — the check that refuses a wrong binary is the only thing standing between
+a cache and a wall certifying against a server nobody pinned.
 
-Decided: the memo ships as `ResolveCache` — a `Context.Service` under the tag
-`@foldlab/plait/ResolveCache` — inside `Resolved.ts`, beside the seam it
-memoizes. Alternatives: a `Cache.ts` module of its own; a `Replica.ts` module
-paired with A-8b's future `CellReplica`; the ticket-map's original
-`Catalog.cached`. Why: **API log 0018** rules module names against the pin's
-barrel, and the barrel exports `Cache` (`repos/effect/packages/effect/src/index.ts:62`),
-so a `Cache.ts` here is the collision that entry exists to refuse; the same rule
-sends every surface to a concept-module home, and the concept this one belongs
-to is resolution, not storage. `Catalog.cached` died with the amendment that
-moved the seam — a name on `Catalog` would advertise the memo as the store's,
-which is the reading G-3 refused. The bare export name also stays clear of the
-barrel: a file importing `ResolveCache` from this package and `Cache` from the
-pin has no collision to alias around. `Replica.ts` was refused as a home for a
-surface whose only sibling is unbuilt. **Load-bearing? no** — the name binds no
-behaviour, but the tag string is the service identity and moving it later is a
-breaking change for anything providing it.
+### T1. The battery splits fast / walls / types, and the partition is derived
 
-### T1. A service and a layer; the codec path stays uncached
+Decided: `test` becomes `test:fast && test:walls && test:types`, where
+`test:fast` is the pure test files plus the corpus, public-effects, and
+substrate-parity checks (3.6s), `test:walls` is the harness-backed files
+(10.5s), and `test:types` is the twenty tsc negative controls (15.1s).
+`scripts/run-test-group.ts` computes the partition by reading each
+`test/*.test.ts` and asking whether it imports the NATS harness, and refuses an
+empty group. Alternatives: list the two groups in `package.json`, where a test
+file added tomorrow silently belongs to neither; split by a filename
+convention, which renames twelve wall files to encode what an import already
+says. Why: a working agent changing a canonicalization had to spend the wall
+budget to learn whether it survived, and the three groups are the three
+questions the battery actually answers. Deriving the partition is what keeps
+the split from weakening the battery: both groups run under `test`, the groups
+are a partition of everything `bun test ./test` used to discover, and a
+misclassification therefore costs wall-clock and nothing else — no reading of
+the predicate can drop a file. **Load-bearing? no** — 210 tests before, 176 + 34
+after, and every wall line byte-identical.
 
-Decided: the memo is reached explicitly — `yield* ResolveCache` then
-`cache.resolve(digest)` — and `ResolvedOf`/`PublishingOf` decode continues to
-call `resolve` directly. Alternatives: give `resolve` an optional `ResolveCache`
-in its service channel so every codec decode consults the memo when one is
-provided; wrap the substrate services so the memo is invisible. Why: putting the
-memo in `resolve`'s channel changes the public type of every resolving codec
-(`Catalog | Payloads | RD` gains a member), which is precisely the "change to a
-service shape" G-3 pre-registered against, and it would make an optional
-performance choice a compile-time requirement of every schema that references a
-cataloged value. Wrapping the substrate services is the `Catalog.get` cache T18
-forbids. What the decision costs is stated rather than hidden: a caller that
-wants memoized resolution inside a codec decode does not get it today, and the
-surface that could give it — a resolving codec parameterised by its resolution
-seam — is a separate decision nobody has made. **Load-bearing? yes** — it fixes
-who can be memoized, and reversing it moves a public type.
+### T2. The chaos-fold fixture exports promises rather than top-level-awaited values
 
-### T2. The zero-TTL fence holds by expiry stamping, not by the record's cited branch
+Decided: `test/fixtures/chaos-fold.ts` runs `declareChaosCounter` once and
+exports `fold` and `lane` as promises over that single declaration;
+`ChaosCli.test.ts` and the state mutant await them. Alternatives: keep the
+top-level await and carve `ChaosCli.test.ts` out of the worker pool, which
+leaves the fixture broken under isolation for whoever imports it next.
+Why: a top-level await leaves a module's exported bindings in the temporal dead
+zone until evaluation settles, and bun's isolated workers start running the
+importing file before that happens — under `--parallel` both CLI rows failed
+with "cannot access 'lane' before initialization", which reads like a chaos
+finding and is not one. The CLI's own loader already awaits whatever `fold` a
+chaos module exports, so a promise is the same contract from the side that
+consumes it. **Load-bearing? no** — the rows and their committed traces are
+unchanged.
 
-Decided: `timeToLive` is the record's `(exit) => success ? Duration.infinity :
-Duration.zero` verbatim, and nothing else enforces the never-cache-failure
-fence — no explicit `Cache.invalidate` on the failure path. Alternatives: add
-`Cache.invalidate` after a failed lookup so the map is left clean; carry a
-private map instead of the pinned cache. Why: the record cites "zero TTL removes
-the entry — `Cache.ts:445-448`", and at the pin that removal branch is
-unreachable: `Duration.isFinite(Duration.zero)` is `true` (`Duration.ts:454`,
-zero is `Millis 0`), so a zero-lived exit takes the *finite* arm at `Cache.ts:443-445`
-and is stamped `expiresAt = now`. `hasExpired` compares with `>=` (:484-489), so
-that entry is expired on every subsequent read, including one in the same
-millisecond. The fence therefore holds — a failed resolve is never served, and
-the suite's retry-after-publication row goes red the moment the TTL is mutated
-to always-infinite — but it holds by a different mechanism than the sentence
-that licensed it, and this entry is where that is recorded rather than quietly
-inherited. The residue is real and bounded: a failed lookup leaves a dead,
-unreadable entry occupying a capacity slot until eviction reclaims it, so a
-workload dominated by absences gets less effective capacity than it configured.
-`Cache.invalidate` was refused because it buys a cleaner map at the cost of
-machinery beyond the pinned shape, and because it races — a failure's
-invalidation can evict a concurrent success, which content addressing makes
-harmless and therefore also pointless. **Load-bearing? yes** — it is the
-argument that F8's never-cache-absence rule survives contact with the pin.
+### T3. The wall group runs four workers over ALL of its files — `ChaosCli` is not carved out
 
-### T3. Capacity is required and has no default
-
-Decided: `ResolveCache.layer` takes `{ capacity: number }` with no default.
-Alternatives: default to some round number; take `Cache.make`'s options
-wholesale; make capacity optional and unbounded when omitted. Why: capacity is a
-memory budget, and a number this package picked would be a claim about a
-deployment it has never seen — the kind of invented constant the estate treats
-as an unearned claim. Unbounded-when-omitted was refused for a sharper reason:
-the in-memory catalog layer's boundlessness is already an open question owned by
-the durable-layer act (R-4), and an unbounded memo would add a second copy of
-that problem while looking like a convenience. **Load-bearing? no** — the value
-is never identity-bearing; two processes at different capacities resolve the
-same digests to the same values.
-
-### T4. No `testLayer`, and no free reaching function
-
-Decided: the class ships `layer` only. Alternatives: add `testLayer` as every
-other service in this package has; add a free `resolveCached(digest)` reaching
-the service, as `Lane.emit`, `Fold.deploy`, and `Register.hold` do. Why: the
-public surface is lawful (ADR-0010) and neither addition has a law. A fixture
-`ResolveCache` supplied through the production tag would be a memo that does not
-memoize — a test double whose only observable difference from the real one is
-the thing under test — and `Blob.ts`, the surface this wave landed most recently,
-already ships a service with no free function. Both are one line if a consumer
-turns up needing them. **Load-bearing? no.**
-
-### T5. Cached values are shared by reference, and the memo is scoped to digests
-
-Decided: a hit returns the same `WireValue` object the resolve produced, and the
-memo is keyed by digest alone — not by which store answered. Both bounds are
-stated in the JSDoc rather than defended in code. Alternatives: deep-copy on hit;
-key entries by `(store identity, digest)`. Why: copying would pay a
-proportional cost on every hit to defend against a mutation this package already
-treats as forbidden — the shipped in-memory catalog hands out its stored object
-directly, so the aliasing predates the memo — and the honest move is to say so.
-Keying by store was refused because it contradicts the license: a digest names
-one canonical byte string, the value was re-derived against that digest before it
-entered, so which store produced it carries no information. The consequence is
-deliberate: an entry resolved through one catalog answers a later caller reading
-through another. **Load-bearing? yes** — the second half is the fence's positive
-form, and a store-scoped key would be a different surface.
+Decided: `test:walls` passes `--parallel=4` over every wall file, `ChaosCli`
+included. The dispatch asked for the carve-out; measured, it costs 1.3s and
+buys nothing. `CellWall.test.ts` alone runs 10.3s and is the group's critical
+path, so the whole 1.27s `ChaosCli` file finishes inside its shadow: twelve
+files at four workers is 10.4s, the other eleven without `ChaosCli` is 10.4s,
+and adding `ChaosCli` back as a serial pass makes it 11.7s. Green on three
+consecutive runs. Alternatives: the carve-out as dispatched. Why: the carve-out
+was there to route around the top-level await T2 removes, and once the fixture
+is sound the only thing it still does is add a second `bun test` invocation.
+Four workers is a bound rather than a target — the chaos rows SIGKILL child
+processes and measure what resumes, and a machine oversubscribed with servers
+starts reporting its scheduler. **Load-bearing? no** — reinstating the carve-out
+is one line in `run-test-group.ts` if an operator wants the isolation back.

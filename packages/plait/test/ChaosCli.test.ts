@@ -35,10 +35,11 @@ const runCli = async (
 }
 
 const emitSpan = async (url: string, perPartition: number): Promise<void> => {
+  const declared = await lane
   const tenants: Array<string | undefined> = [undefined, undefined]
   for (let index = 0; tenants.some((tenant) => tenant === undefined); index++) {
     const tenant = `cli-tenant-${index}`
-    const coordinate = await Effect.runPromise(Lane.partition(lane, {
+    const coordinate = await Effect.runPromise(Lane.partition(declared, {
       tenant,
       ordinal: index,
       delta: 1,
@@ -48,7 +49,7 @@ const emitSpan = async (url: string, perPartition: number): Promise<void> => {
   await Effect.runPromise(Effect.gen(function* () {
     for (let index = 0; index < perPartition; index++) {
       for (let partition = 0; partition < 2; partition++) {
-        yield* Lane.emit(lane, {
+        yield* Lane.emit(declared, {
           tenant: tenants[partition]!,
           ordinal: index * 2 + partition,
           delta: 1,
