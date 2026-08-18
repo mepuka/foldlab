@@ -1,4 +1,6 @@
 /**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
  * The content-addressed value store and the catalog's internal payload seam.
  *
  * These are the two substrate seams a resolved reference decodes through

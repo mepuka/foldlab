@@ -1,4 +1,6 @@
 /**
+ * Plane: carriage — hosts and transport clients.
+ *
  * The content-addressed daemon, as a type and nothing else.
  *
  * A built program names the services it would need before anything can be

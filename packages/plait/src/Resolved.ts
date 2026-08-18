@@ -1,4 +1,6 @@
 /**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
  * References that decode by resolving — the R-channel move.
  *
  * Decoding a `ResolvedOf` requires `Catalog` (and `Payloads` for bodies stored

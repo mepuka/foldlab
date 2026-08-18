@@ -1,4 +1,6 @@
 /**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
  * The public content-addressed blob store: durable put, verified get, presence.
  *
  * This is the application-facing store. It is not the catalog-internal payload

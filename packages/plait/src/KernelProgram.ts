@@ -1,4 +1,6 @@
 /**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
  * The program builder: one authoring act, two artifacts.
  *
  * `program(name, spec, build)` runs the body once, accumulating a DAG of typed

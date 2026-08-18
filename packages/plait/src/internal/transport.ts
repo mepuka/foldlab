@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { JetStreamApiCodes, JetStreamApiError, JetStreamError } from "@nats-io/jetstream"
 import { errors, type NatsConnection } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"

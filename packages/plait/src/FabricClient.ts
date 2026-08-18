@@ -1,3 +1,8 @@
+/**
+ * Plane: carriage — hosts and transport clients.
+ *
+ * @module
+ */
 import { Context, Effect, Layer, Scope, Stream } from "effect"
 
 import type { Digest } from "./Digest.js"

@@ -1,3 +1,8 @@
+/**
+ * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ *
+ * @module
+ */
 import { createHash } from "node:crypto"
 
 import { Digest } from "../Digest.js"

@@ -503,6 +503,8 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   const docs = new Map(corpus.docs.map((doc) => [doc.name, doc.doc] as const))
 
   line("/**")
+  line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
+  line(" *")
   line(" * GENERATED FILE - DO NOT EDIT.")
   line(" *")
   line(` * Corpus:  ${corpusPath}`)

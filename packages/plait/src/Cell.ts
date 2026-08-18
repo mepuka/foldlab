@@ -1,4 +1,6 @@
 /**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
  * Lattice cells: the join, the cell service over the ruled `flb-fab-cell` KV
  * bucket, and the local replica that mirrors one into a process.
  *

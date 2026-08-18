@@ -1,3 +1,8 @@
+/**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
+ * @module
+ */
 import { Effect, Schema } from "effect"
 
 import { structuralRefusal, type StructuralRefusal } from "./Refusal.js"

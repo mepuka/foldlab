@@ -1,4 +1,6 @@
 /**
+ * Plane: kernel — the language: corpus, door, programs, and wire grammar.
+ *
  * Context programs as cataloged declarations: selectors, renderers, and the
  * volatility classes that order a program's segments.
  *

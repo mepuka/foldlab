@@ -1,3 +1,8 @@
+/**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
+ * @module
+ */
 import { Effect, Schema, type Reducer } from "effect"
 
 import type { WireValue } from "./Canonical.js"

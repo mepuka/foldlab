@@ -1,3 +1,8 @@
+/**
+ * Plane: planes — the state carriers, one seam per plane.
+ *
+ * @module
+ */
 import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
 
 import type { Refusal } from "./Refusal.js"

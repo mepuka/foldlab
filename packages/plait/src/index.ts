@@ -1,3 +1,8 @@
+/**
+ * Plane: surface — entry points.
+ *
+ * @module
+ */
 /** Canonical JSON values and their unique RFC 8785 byte form. */
 export * as Canonical from "./Canonical.js"
 

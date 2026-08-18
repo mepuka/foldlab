@@ -1,4 +1,6 @@
 /**
+ * Plane: truth — the vocabulary every sentence speaks.
+ *
  * Canonical JSON values and their unique RFC 8785 byte form.
  *
  * Core reports refusal locations as unescaped slash-joined strings. On failure
