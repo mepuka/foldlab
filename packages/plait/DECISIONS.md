@@ -1883,3 +1883,29 @@ namespace that could not be added without moving a signature would be evidence
 the surface is not lawful, and the regenerated manifest is the evidence that it
 is. **Load-bearing? yes** — the barrel is the package's interface, and what
 enters it is a decision with a record.
+
+## Task DEV-797 — the negative trace's diagnostic class
+
+### T0. A committed negative trace commits to error-class diagnostics only
+
+Decided: `check:type-control` compares the error diagnostics in a control's
+compiler output — the header line and the indented message chain under it — and
+drops `suggestion`, `message`, and `warning` alike, on the fresh compile and on
+the committed file both. The rule lives in `scripts/negative-trace.ts` with the
+reason it is drawn there, and `test/NegativeTrace.test.ts` is its wall.
+Alternatives: re-record the twenty traces with the Effect language service's
+advisories in them (cheap, and it makes every control a second lint gate that
+reds on `src/` edits it does not watch — the advisories move whenever a rule
+ships or a module is touched, so the gate would need re-recording forever);
+repair the six advisories on `src/` (real quality work, and useless as the
+unblocking step, since the seventh advisory reds the gate again). Why: a
+negative control asks one question — does the mutant compile, and does it fail
+for its committed reason — and only an error answers it. An advisory is a
+property of the package's own source, never of the mutant, so a trace that
+committed one would be answering a question nobody asked it. The arm does not
+weaken: a mutant that compiles still exits zero, and a filtered trace that comes
+back empty is now its own refusal, so a compile that failed for anything other
+than a diagnostic can no longer read as a control that failed for its committed
+reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
+six advisories it declines to gate on stay open findings for their modules'
+owners.

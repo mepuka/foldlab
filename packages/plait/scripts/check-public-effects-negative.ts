@@ -1,5 +1,28 @@
+/**
+ * The public-surface control arm: twenty planted regressions, each of which
+ * must be refused, each committed with the exact diagnostic that refuses it. A
+ * control that merely fails is weak — almost any edit makes a file fail — so
+ * the trace is compared too, and a diagnostic that moves is reported as a moved
+ * trace rather than absorbed.
+ *
+ * WHAT THE TRACE COMMITS TO: error-class diagnostics, and nothing else. The
+ * compiler also prints the Effect language service's ADVISORY suggestions here,
+ * and they are a property of `src/` rather than of any mutant, so the filter in
+ * `./negative-trace.js` takes them off both sides of every comparison. That
+ * module states the rule and why it is drawn there (DEV-797).
+ *
+ * Dropping the advisories does not weaken the arm. A mutant that compiles is
+ * still refused twice over: `tsc` exits zero, since advisories alone never move
+ * the exit code, and the filtered trace comes back empty — itself a refusal, so
+ * a compiler that failed for any reason other than an error diagnostic can
+ * never be read as a control that failed for its committed reason.
+ *
+ * The advisories are real findings that belong to their modules' owners. This
+ * file neither silences nor repairs them; it only declines to gate on them.
+ */
 import { resolve } from "node:path"
 
+import { errorDiagnostics } from "./negative-trace.js"
 import {
   emitDeclarations,
   inspectPublicDeclarations,
@@ -170,8 +193,18 @@ const checkCompilerControl = async (
     return [`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`]
   }
 
-  const actual = normalize(`${stdout}${stderr}`)
-  const expected = normalize(await Bun.file(resolve(packageRoot, control.trace)).text())
+  const actual = errorDiagnostics(normalize(`${stdout}${stderr}`))
+  if (actual === "") {
+    return [
+      `PUBLIC EFFECT CONTROL: FAIL — ${control.name} refused with no error-class diagnostic`,
+      "--- compiler output ---",
+      normalize(`${stdout}${stderr}`),
+    ]
+  }
+
+  const expected = errorDiagnostics(
+    normalize(await Bun.file(resolve(packageRoot, control.trace)).text()),
+  )
   return actual === expected
     ? passed
     : traceRefusal(`${control.name} compiler trace moved`, expected, actual)
