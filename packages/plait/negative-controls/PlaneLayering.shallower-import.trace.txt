@@ -1,0 +1,4 @@
+PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:1 imports "../carriage/FabricClient.js": plane truth imports plane carriage, which is shallower
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:2 imports "../surface/cli.js" (type-only; the layering law carves out no exception): plane truth imports plane surface, which is shallower
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper

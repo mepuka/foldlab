@@ -2698,3 +2698,97 @@ kinds, and pins what a run produced rather than what the source teaches). Why:
 one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
+
+## Task DEV-767 — the plane layering lint
+
+### T0. The ladder is held against law 4's bytes; the printed law is a transcription
+
+Decided: `scripts/plane-layering.ts` encodes the five planes in order and, as a
+separate arm, reads the ladder back out of the root `AGENTS.md` — the file law 4
+is written down in — and refuses when the two disagree. The law text a violation
+quotes is the transcribed constant, not the text just read. Alternatives: encode
+the ladder and never look at the law (a wall whose authority is one agent's
+memory of a sentence); render every refusal from the freshly read law (an
+editorial pass over the standing laws would then move every committed control
+trace, so a wording change would red the battery as if code had moved); read the
+ladder and skip the comparison (the read would decorate nothing). Why: two
+artifacts, and the one that drifts names itself — a reordered ladder fails on
+"the transcription is stale" rather than as a pile of code findings.
+**Load-bearing? yes** — it is the only thing tying this wall to the law it
+claims to enforce.
+
+### T1. `internal/` is excluded by citation, and the wall states what it therefore does not claim
+
+Decided: the walk places modules in the five planes law 4 names and excludes
+`src/internal/` on a stated ruling —
+`scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §2, RATIFIED 2026-08-18:
+"`internal/` is exempt: it is private adapters and helpers, importable from any
+layer, never itself importing a public module except its own seam's siblings."
+The wall reads that ruling no wider than its first half. Edges *into*
+`internal/` are lawful from every plane and are counted separately in the PASS
+line; edges *out of* `internal/` are neither judged nor cleared, because "its own
+seam's siblings" has no mechanical reading until someone rules what a seam
+sibling is. Alternatives: give `internal/` a rung on the ladder (inventing the
+placement the spec deliberately withheld); enforce the second half by guessing
+the mapping from an adapter's file name to its public seam (`chaos.ts` alone
+reaches three of them, so the guess would manufacture findings); count
+`internal/`'s outbound edges as clean (the honest gap becomes a green tick).
+Why: an unstated placement silently guessed is the machinery this estate
+deletes, and a wall that overstates its coverage is worse than an absent arm.
+**Load-bearing? yes** — the one open finding `src/carriage/README.md` names that
+this wall does NOT catch, `internal/nats.ts` importing `carriage/FabricClient`,
+sits exactly in the half left unread.
+
+### T2. Placement is evidenced twice: the directory and the module's own `Plane:` tag
+
+Decided: every module's plane is read from the directory it sits in (the reorg
+spec's "Directory = plane") *and* from the `Plane:` tag its header declares, and
+a disagreement is a violation. `src/index.ts` is the one module at the root of
+`src/`, placed on the surface plane by `src/surface/README.md` ("Two files wear
+this plane — `cli.ts` ... and `../index.ts`, the curated barrel that *is* the
+public surface"). Any other root-level module, and any directory that is neither
+a plane nor a stated exclusion, is refused rather than skipped. Alternatives:
+trust the directory alone (a file dragged between planes leaves a header
+asserting the old one, and the header is what a reader believes); trust the tag
+alone (then placement is whatever a module claims for itself); skip files the
+roster does not recognise (a sixth plane could enter the tree by going
+unmentioned). Why: two readings that must agree, and a roster with no silent
+skip. **Load-bearing? yes** — it is what makes the walk's placements evidence
+rather than assumption.
+
+### T3. Delivered wired but ungated, because the tree is red today
+
+Decided: `check:layering` and `check:layering-control` are declared in
+`package.json`; only the control joins `test:types`. The positive arm stays out
+of the battery until the operator disposes of the two violations it reports on
+this tip (`src/kernel/KernelProgram.ts:62` importing `../carriage/CasDaemon.js`,
+and `src/internal/permissions.ts` carrying no `Plane:` tag). Alternatives: gate
+the battery now (every unrelated seat inherits a red `bun run gates` for a
+finding none of them made, and the pressure to soften the lint arrives with it);
+ship nothing until the findings are repaired (the seat that repairs them would
+be repairing before reporting, which destroys the finding); add a waiver for the
+two edges (a wall that ships with its first two exceptions already carved is not
+a wall). Why: findings before fixes — the lint is the evidence, and gating is
+one line of `package.json` on the day the disposition lands. **Load-bearing?
+yes** — this is the difference between a reported finding and a repaired one.
+
+### T4. The control plants both edge forms into a shipped module's bytes, at fixed lines
+
+Decided: `negative-controls/PlaneLayering.shallower-import.mutant.ts` reads the
+shipped bytes of `src/truth/Canonical.ts`, checks them clean under the
+production law first, then prepends two planted imports — one value, one
+`import type` — and runs the same production readers and the same production law
+over the planted source. The plants lead the file so the lines the refusal names
+are 1 and 2 whatever the victim's own body does; the declared-plane read is
+taken from the unplanted bytes, which the plants do not touch. The trace is
+recorded by executing the mutant (`bun run generate:layering-control`).
+Alternatives: hand a helper a constructed import graph (proves a comparison
+function can return false, and nothing about what the wall parses); plant into a
+synthetic module (the reader would no longer be reading a shipped artifact);
+plant only the value import (the type-only branch carries the real finding on
+this tip and would ship unproved); insert after the header so the plant reads
+naturally (pins a line number that moves whenever the victim's prose does). Why:
+the only difference between this run and a clean one is the two planted lines,
+and both forms of the edge the law refuses are exercised. **Load-bearing? yes** —
+a lint nobody has watched fail proves nothing, and `src/carriage/README.md`
+records that the edges this wall exists for are type-only.
