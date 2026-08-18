@@ -700,6 +700,54 @@ posture.
   combinator set (loses the novelty trigger). Reversal: the
   combinator library is catalog content; retiring it strands no
   identity.
+- **KM-20 — the refusal stability law family (CALM applied to the
+  door).** Raised in operator review: treat refusals first-class.
+  The sixteen reasons split by monotonicity under door growth:
+  candidate-intrinsic reasons (a function of the candidate's bytes
+  alone — permanent, only rewriting repairs) versus door-relative
+  reasons (forward-reference, off-writ-referent — anti-monotone:
+  catalog or universe growth repairs the unchanged candidate). The
+  record's structural/absence split becomes a provable family with
+  named statements for the proof lane: `admit_monotone` (a larger
+  door admits everything a smaller one did, to the same act),
+  `intrinsic_fault_refused_everywhere` (any intrinsic fault refuses
+  at every door), `relative_refusal_repairable_by_growth` (every
+  door-relative refusal has an admitting door extension). Honest
+  caveat, stated: on multi-fault candidates the refused STATUS is
+  stable under growth, not the reason string — a clearing relative
+  fault can surface an intrinsic one behind it. Payoff: the
+  retry-versus-rewrite decision becomes theorem-backed. Recommended:
+  prove in the model as the next increment after the unity bridge;
+  the proofs are membership-monotonicity inductions over the door
+  checks. Reversal: additive laws; nothing ships on them yet.
+- **KM-21 — refusal identity, arbitration, repair functions, and
+  re-entry.** Four adoptions making the refusal a full citizen: (1)
+  refusals are declared values with digests, and a repaired
+  candidate PINS the refusal it answers — the repair loop becomes
+  catalog lineage, and the self-containment gate's refusal leg
+  becomes checkable data rather than assessment; (2) KM-5 dissolves
+  into the arbitration-by-declared-order pattern: the fault set
+  R(candidate) is a finite-set semilattice, the priority is a
+  declared total order on reasons cataloged in the language
+  declaration, the door returns the minimum with the full fault
+  listing beside it (the F12 ambiguity-listing precedent at the
+  door — never hide the support behind the arbitration); (3) the
+  four machine-applicable repairs become a partial function
+  repair : Candidate × Reason ⇀ Candidate with the soundness family
+  `machine_repair_clears_reason` (clearing one reason may surface
+  another — composition follows the priority order and terminates
+  because the fault-set minimum strictly clears); (4) refusals
+  re-enter the monotone plane as certifier-attributed evidence on a
+  refusal lane, so the measurement canon applies to refusals
+  (counts per reason, distinct candidates, latest-per-work) and
+  triggers lawfully react to refusal patterns through the existing
+  evidence-appears production — refuse, journal, trigger, hint
+  repair, decide, all inside the current grammar. Alternatives:
+  refusals as transient returns only (loses provenance, automation,
+  and the checkable repair leg); a new refusal-reaction generator
+  (refused — the existing production already carries it).
+  Reversal: each adoption is additive; the lane and priority order
+  are declared values, retirable pre-consumer.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the
