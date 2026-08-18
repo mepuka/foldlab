@@ -1,0 +1,21 @@
+name = "projections"
+defaultTargets = ["Projections", "projections"]
+
+[[require]]
+name = "kernel"
+path = "../kernel"
+
+[[lean_lib]]
+name = "Projections"
+globs = [
+  "Projections",
+  "Projections.Ast",
+  "Projections.Walk",
+  "Projections.Prose",
+  "Projections.Probe",
+]
+
+[[lean_exe]]
+name = "projections"
+root = "Main"
+supportInterpreter = true
