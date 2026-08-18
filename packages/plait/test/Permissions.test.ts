@@ -11,13 +11,14 @@ import {
   type NatsConnection,
 } from "@nats-io/nats-core"
 import { connect } from "@nats-io/transport-node"
-import { Effect, Redacted, Schema } from "effect"
+import { Effect, Redacted, Result, Schema } from "effect"
 
 import { ANCHOR_BUCKET } from "../src/planes/Anchor.js"
 import { CELL_BUCKET } from "../src/planes/Cell.js"
 import { REGISTER_BUCKET } from "../src/planes/Register.js"
 import {
   CarrierPermissionMap,
+  CarrierPermissionScope,
   CarrierRole,
   declareCarrierPermissionMap,
   type CarrierPermissionMap as CarrierPermissionMapValue,
@@ -305,13 +306,38 @@ describe("least-privilege carrier permissions", () => {
       ]),
     ).not.toContain("_INBOX.>")
 
-    expect(() => Schema.decodeUnknownSync(CarrierPermissionMap)({
+    expect(() => Schema.decodeSync(CarrierPermissionMap)({
       ...permissionMap,
       requester: {
         ...permissionMap.requester,
         subscribe: ["_INBOX.>"],
       },
     }, { onExcessProperty: "error" })).toThrow()
+
+    const unsafePrefixPairs = [
+      ["_INBOX.plait", "_INBOX.plait.fact"],
+      ["_INBOX.plait.fact", "_INBOX.plait"],
+      ["_INBOX.plait", "_INBOX.plait"],
+    ] as const
+    for (const [evidencePrefix, factPrefix] of unsafePrefixPairs) {
+      const nestedScope = {
+        ...scope,
+        inboxPrefixes: {
+          ...scope.inboxPrefixes,
+          "evidence-publisher": evidencePrefix,
+          "fact-publisher": factPrefix,
+        },
+      } as const
+      const nested = Schema.decodeResult(CarrierPermissionScope)(nestedScope, {
+        onExcessProperty: "error",
+      })
+      expect(Result.isFailure(nested)).toBe(true)
+      if (Result.isFailure(nested)) {
+        expect(Schema.isSchemaError(nested.failure)).toBe(true)
+        expect(nested.failure.message).toContain("token-prefix-disjoint")
+      }
+      expect(() => declareCarrierPermissionMap(nestedScope)).toThrow()
+    }
   })
 
   test("every publish and KV role can use only its declared carrier", async () => {
@@ -371,7 +397,7 @@ describe("least-privilege carrier permissions", () => {
     })
   }, 30_000)
 
-  test("cross-lane publish, foreign bucket API, and global inbox subscribe refuse loudly", async () => {
+  test("cross-lane publish, foreign bucket API, and global and foreign inbox subscribe refuse loudly", async () => {
     await withRole("evidence-publisher", async (connection) => {
       await expectPermissionRefusal(connection, "publish", "flb.fab.ev.beta.0", () =>
         jetstream(connection).publish("flb.fab.ev.beta.0", encode("cross-lane")))
@@ -390,6 +416,14 @@ describe("least-privilege carrier permissions", () => {
     await withRole("requester", async (connection) => {
       await expectPermissionRefusal(connection, "subscription", "_INBOX.>", async () => {
         connection.subscribe("_INBOX.>")
+        await connection.flush()
+      })
+    })
+
+    await withRole("evidence-publisher", async (connection) => {
+      const foreignInbox = `${scope.inboxPrefixes["fact-publisher"]}.>`
+      await expectPermissionRefusal(connection, "subscription", foreignInbox, async () => {
+        connection.subscribe(foreignInbox)
         await connection.flush()
       })
     })

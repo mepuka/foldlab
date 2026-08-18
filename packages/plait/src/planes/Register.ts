@@ -5,7 +5,7 @@
  */
 import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
 
-import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { Refusal } from "../truth/Refusal.js"
 import { makeRegisterService } from "../internal/registers.js"
 

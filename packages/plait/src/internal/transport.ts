@@ -12,7 +12,6 @@ import {
 import { connect } from "@nats-io/transport-node"
 import { Effect, Redacted, Scope } from "effect"
 
-import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
 import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
 
 /**
@@ -36,6 +35,20 @@ import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
  * a defect, which is the point: it rides the fiber's cause, never the error
  * channel, and the channel stays `Refusal` exactly as before.
  */
+
+/** One environmental credential selected for a carrier connection. */
+export interface ConnectionCredential {
+  readonly user: string
+  readonly password: Redacted.Redacted<string>
+  readonly inboxPrefix: string
+}
+
+/** Neutral connection bootstrap shared below the plane and carriage layers. */
+export interface ConnectionBootstrap {
+  readonly servers: string | ReadonlyArray<string>
+  readonly credential?: ConnectionCredential
+  readonly connectionName?: string
+}
 
 /** The connection bootstrap fields every adapter's options carry. */
 export interface ConnectionOptions extends ConnectionBootstrap {}

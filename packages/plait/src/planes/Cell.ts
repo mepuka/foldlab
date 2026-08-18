@@ -35,7 +35,7 @@
  */
 import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
 
-import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import { canonicalBytes } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { Refusal, StructuralRefusal } from "../truth/Refusal.js"

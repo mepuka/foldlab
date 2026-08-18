@@ -74,7 +74,27 @@ export const CarrierPermissionMap = Schema.Record(CarrierRole, CarrierPermission
 /** The complete set of application roles the current carriers require. */
 export type CarrierPermissionMap = typeof CarrierPermissionMap.Type
 
-const InboxPrefixes = Schema.Record(ReplyingCarrierRole, InboxPrefix)
+const tokenPrefixesOverlap = (left: string, right: string): boolean =>
+  left === right || left.startsWith(`${right}.`) || right.startsWith(`${left}.`)
+
+const InboxPrefixes = Schema.Record(ReplyingCarrierRole, InboxPrefix).check(
+  Schema.makeFilter((prefixes) => {
+    const issues: Array<Schema.FilterIssue> = []
+    for (const [index, role] of ReplyingCarrierRole.literals.entries()) {
+      const prefix = prefixes[role]
+      for (const otherRole of ReplyingCarrierRole.literals.slice(index + 1)) {
+        const otherPrefix = prefixes[otherRole]
+        if (tokenPrefixesOverlap(prefix, otherPrefix)) {
+          issues.push({
+            path: [otherRole],
+            issue: `inbox prefix must be token-prefix-disjoint from ${role} (${prefix})`,
+          })
+        }
+      }
+    }
+    return issues
+  }),
+)
 
 export const CarrierPermissionScope = Schema.Struct({
   evidenceLane: LiteralSubjectToken,
@@ -120,15 +140,11 @@ const kv = (
 export const declareCarrierPermissionMap = (
   input: CarrierPermissionScope,
 ): CarrierPermissionMap => {
-  const scope = Schema.decodeUnknownSync(CarrierPermissionScope)(input, {
+  const scope = Schema.decodeSync(CarrierPermissionScope)(input, {
     onExcessProperty: "error",
   })
-  const inboxes = Object.values(scope.inboxPrefixes)
-  if (new Set(inboxes).size !== inboxes.length) {
-    throw new Error("carrier permission inbox prefixes must be unique per credential role")
-  }
 
-  return Schema.decodeUnknownSync(CarrierPermissionMap)({
+  return Schema.decodeSync(CarrierPermissionMap)({
     "evidence-publisher": withInbox([
       jetStreamManagerInfo,
       ...streamInfo(scope.evidenceStreams),

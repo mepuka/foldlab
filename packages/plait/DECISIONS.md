@@ -1927,16 +1927,23 @@ pinned client refuse before the exact stream check.
 
 ### T2. Reply authority is credential-owned subscription plus tracked response
 
-Decided: every request-bearing client selects a unique custom inbox prefix and
-subscribes only to `<prefix>.>`; responder roles publish no inbox subject at
-all and instead carry `allow_responses: { max: 1, expires: "2s" }`. Connection
-passwords enter as `Redacted<string>` and are revealed only to the pinned
-authenticator. Alternatives: `_INBOX.>` subscription; `_INBOX.>` publish for
-responders; embed passwords in the permission declaration. Why: GitHub finding
-#56's live probe showed the global subscribe grant reads other clients' replies
-and JetStream control bodies; the pinned server's tracked-response permission
-allows only the reply subject a request actually delivered. Secrets are
-environmental and credential issuance remains DEV-745's daemon work.
-**Load-bearing? yes** — the wall proves a normal reply lands, an untracked reply
-publish refuses, and `_INBOX.>` subscription refuses as a named permission
-violation.
+Decided: every request-bearing client selects a custom inbox prefix that is
+pairwise token-prefix-disjoint from every other credential's prefix and
+subscribes only to `<prefix>.>`; the whole-record Schema rejects equality or
+ancestry in either direction. Responder roles publish no inbox subject at all
+and instead carry `allow_responses: { max: 1, expires: "2s" }`. The neutral
+credential/bootstrap shape lives in the internal transport spine below both
+planes and carriage. Connection passwords enter as `Redacted<string>` and are
+revealed only to the pinned authenticator. Alternatives: exact uniqueness only
+(two distinct prefixes can still be ancestor and descendant); `_INBOX.>`
+subscription; `_INBOX.>` publish for responders; define the shared bootstrap in
+carriage (reverses the binding plane direction); embed passwords in the
+permission declaration. Why: GitHub finding #56's live probe showed the global
+subscribe grant reads other clients' replies and JetStream control bodies, and
+the Round 2 review exhibited the same leak for `_INBOX.plait` versus
+`_INBOX.plait.fact`; the pinned server's tracked-response permission allows
+only the reply subject a request actually delivered. Secrets are environmental
+and credential issuance remains DEV-745's daemon work. **Load-bearing? yes** —
+the wall proves a normal reply lands, an untracked reply publish refuses, and
+both `_INBOX.>` and a foreign credential's nested inbox subscription refuse as
+named permission violations; the Schema control rejects token-prefix ancestry.

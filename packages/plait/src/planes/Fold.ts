@@ -12,7 +12,7 @@ import type {
 import { hasCommutativeWitness } from "../truth/Algebra.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
-import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { DeclaredLane } from "./Lane.js"
 import { structuralRefusal, type StructuralRefusal } from "../truth/Refusal.js"
 import type { Refusal } from "../truth/Refusal.js"

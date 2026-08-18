@@ -3,33 +3,16 @@
  *
  * @module
  */
-import { Context, Effect, Layer, Scope, Stream, type Redacted } from "effect"
+import { Context, Effect, Layer, Scope, Stream } from "effect"
 
 import type { Digest } from "../truth/Digest.js"
 import type { Refusal } from "../truth/Refusal.js"
 import type { FabricSubject } from "../kernel/Subjects.js"
 import type { Envelope } from "../kernel/Wire.js"
 import { makeNatsService } from "../internal/nats.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 
-/**
- * One environmental credential selected for a carrier connection.
- *
- * The password stays redacted until the transport handshake. The inbox prefix
- * is credential-owned: server permissions subscribe this credential to that
- * prefix only, never to the global `_INBOX.>` family.
- */
-export interface ConnectionCredential {
-  readonly user: string
-  readonly password: Redacted.Redacted<string>
-  readonly inboxPrefix: string
-}
-
-/** Environmental connection bootstrap shared by every live carrier. */
-export interface ConnectionBootstrap {
-  readonly servers: string | ReadonlyArray<string>
-  readonly credential?: ConnectionCredential
-  readonly connectionName?: string
-}
+export type { ConnectionBootstrap, ConnectionCredential } from "../internal/transport.js"
 
 /** Connection bootstrap for the file-backed slice-0 fact/node commons gate. */
 export interface FabricClientOptions extends ConnectionBootstrap {

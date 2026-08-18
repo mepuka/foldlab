@@ -5,7 +5,7 @@
  */
 import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
 
-import type { ConnectionBootstrap } from "../carriage/FabricClient.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
 import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
