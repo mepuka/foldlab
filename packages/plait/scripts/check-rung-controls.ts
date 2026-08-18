@@ -22,6 +22,8 @@
  */
 import { resolve } from "node:path"
 
+import { errorDiagnostics } from "./negative-trace.js"
+
 const packageRoot = resolve(import.meta.dir, "..")
 
 const controls = [
@@ -29,6 +31,11 @@ const controls = [
     name: "a partitioned fold at an algebra that earned no law",
     project: "tsconfig.negative-fold-shards.json",
     trace: "negative-controls/Fold.positional-shards.trace.txt",
+  },
+  {
+    name: "a fold over a lane that might shard, at an algebra that earned no law",
+    project: "tsconfig.negative-union-partitions.json",
+    trace: "negative-controls/Fold.union-partitions.trace.txt",
   },
   {
     name: "a positional algebra reading the set plane",
@@ -51,31 +58,14 @@ const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
 /**
- * Keeps the error diagnostics and drops every other severity.
- *
- * The pinned compiler is the Effect language service's patched `tsc`, so the
- * stream also carries `suggestion` rows for whatever `src` files the control's
- * project happens to pull in. Those rows are advisory, they say nothing about
- * whether the planted spelling compiles, and they move whenever an unrelated
- * module is edited — a trace that pinned them would turn a control on one law
- * into a tripwire on the whole package. The severity is on the first line of a
- * diagnostic and its continuation lines are indented, so the filter carries the
- * severity down the continuations rather than matching each line.
+ * What a committed trace here commits to is the estate's one rule, imported
+ * rather than restated: `scripts/negative-trace.ts`. These controls are read by
+ * the same patched compiler that carries the language service's advisories on
+ * the diagnostic stream, and they answer the same one question every other
+ * control answers — does the mutant compile, and does it fail for its committed
+ * reason. A second copy of that rule would be a second answer waiting to
+ * disagree.
  */
-const errorsOnly = (output: string): string => {
-  const kept: Array<string> = []
-  let inError = false
-  for (const line of output.split("\n")) {
-    if (line.startsWith(" ") || line.startsWith("\t")) {
-      if (inError) kept.push(line)
-      continue
-    }
-    inError = /^[^(]*\(\d+,\d+\): error /.test(line)
-    if (inError) kept.push(line)
-  }
-  return kept.length === 0 ? "" : `${kept.join("\n")}\n`
-}
-
 const typecheck = (project: string): { readonly code: number; readonly output: string } => {
   const run = Bun.spawnSync({
     cmd: ["bunx", "tsc", "-p", project, "--noEmit", "--pretty", "false"],
@@ -85,7 +75,7 @@ const typecheck = (project: string): { readonly code: number; readonly output: s
   })
   return {
     code: run.exitCode,
-    output: errorsOnly(normalize(`${run.stdout.toString()}${run.stderr.toString()}`)),
+    output: errorDiagnostics(normalize(`${run.stdout.toString()}${run.stderr.toString()}`)),
   }
 }
 
@@ -98,13 +88,24 @@ for (const control of controls) {
     console.error(`RUNG CONTROL: FAIL - ${control.name} typechecked`)
     process.exit(1)
   }
+  // A compile that failed with no error diagnostic failed for something other
+  // than the planted spelling — a missing project, an unreadable file — and an
+  // empty trace must never read as a control that refused for its own reason.
+  if (output === "") {
+    console.error(`RUNG CONTROL: FAIL - ${control.name} failed with no error diagnostic`)
+    process.exit(1)
+  }
 
   if (write) {
     await Bun.write(resolve(packageRoot, control.trace), output)
     console.log(`RUNG CONTROL: wrote ${control.trace}`)
     continue
   }
-  const expected = normalize(await Bun.file(resolve(packageRoot, control.trace)).text())
+  // The rule reads the committed file too, so a trace recorded before it
+  // existed cannot smuggle an advisory into the contract.
+  const expected = errorDiagnostics(
+    normalize(await Bun.file(resolve(packageRoot, control.trace)).text()),
+  )
   if (output !== expected) {
     console.error(`RUNG CONTROL: FAIL - ${control.name} compiler trace moved`)
     console.error("--- expected ---")
@@ -125,7 +126,7 @@ if (arm.code !== 0) {
 if (!write) {
   console.log(
     `RUNG CONTROL: PASS (${controls.length} unlawful spellings refused at compile time:` +
-      " partitioned shards, positional set-plane read, counting set-plane read;" +
-      " mutation arm compiled, so the rung is load-bearing)",
+      " partitioned shards, union partitions, positional set-plane read," +
+      " counting set-plane read; mutation arm compiled, so the rung is load-bearing)",
   )
 }

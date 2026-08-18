@@ -75,32 +75,100 @@ export interface Inverse {
   readonly [InverseTypeId]: true
 }
 
+/** The brand each law atom contributes; the atom names are this map's keys. */
+interface LawBrands {
+  readonly total: Total
+  readonly associative: Associative
+  readonly identity: Identity
+  readonly commutative: Commutative
+  readonly idempotent: Idempotent
+  readonly bounded: Bounded
+  readonly inverse: Inverse
+}
+
 /**
  * Any set of earned laws. A brand carries laws rather than a rung name because
  * the ladder is a poset, not a chain: "at least this rung" is set inclusion,
  * which intersection assignability already decides without a lookup table.
  */
-export type LawSet = Partial<
-  Total & Associative & Identity & Commutative & Idempotent & Bounded & Inverse
->
+export type LawSet = Partial<Intersect<LawBrands[keyof LawBrands]>>
+
+/** One law atom, named as the runtime witness and the refusal both carry it. */
+export type LawName = keyof LawBrands
+
+/**
+ * The law atoms each rung obligates.
+ *
+ * This table is where the ladder is stated, and it is the only place: the rung
+ * names, the bundles below, and every runtime check read it. `satisfies` is
+ * load-bearing rather than decorative — an atom name that is not a key of
+ * `LawBrands` fails to compile here, so the data and the brands cannot drift
+ * into agreeing only by eye.
+ *
+ * The ladder still owes its generator: the record that specifies it puts the
+ * `Law` and `Rung` inductives in the model and projects them through the corpus
+ * as two record groups, and neither exists yet. Until they do, this table is
+ * hand-written debt under the type-universe walk's unification ticket
+ * (DEV-796), and it is stated once so that the sweep has one row to take.
+ */
+export const rungLaws = {
+  "magma": ["total"],
+  "monoid": ["total", "associative", "identity"],
+  "commutative-monoid": ["total", "associative", "identity", "commutative"],
+  "bounded-semilattice": [
+    "total",
+    "associative",
+    "identity",
+    "commutative",
+    "idempotent",
+    "bounded",
+  ],
+  "group": ["total", "associative", "identity", "inverse"],
+  "abelian-group": ["total", "associative", "identity", "commutative", "inverse"],
+} as const satisfies { readonly [rung: string]: ReadonlyArray<LawName> }
+
+/** One rung of the ladder, looked up by name; a rung is never inside an encoding. */
+export type RungName = keyof typeof rungLaws
+
+type Intersect<Union> = (Union extends unknown ? (seen: Union) => void : never) extends
+  (seen: infer Intersection) => void ? Intersection
+  : never
+
+/**
+ * The type-level bundle a rung name denotes, computed from the one table above.
+ *
+ * The `& LawSet` tail is what lets a generic `Rung` satisfy the `LawSet` bound
+ * before the intersection reduces; every atom brand is already a member of
+ * `LawSet`, so it widens nothing at a concrete rung.
+ */
+export type RungLaws<Rung extends RungName> = Intersect<
+  LawBrands[(typeof rungLaws)[Rung][number]]
+> & LawSet
+
+/*
+ * The six rungs are named with interfaces rather than aliases so a refusal
+ * prints the rung's name instead of the expanded intersection behind it. Each
+ * one is a NAME for a row of the table above and never a second statement of
+ * it: change a row and the interface follows, because it has no body.
+ */
 
 /** Closure alone: `combine` lands in the carrier and nothing else is claimed. */
-export type Magma = Total
+export interface Magma extends RungLaws<"magma"> {}
 
 /** Closure, grouping, and a unit — the rung a sequential fold needs. */
-export type Monoid = Total & Associative & Identity
+export interface Monoid extends RungLaws<"monoid"> {}
 
 /** A monoid whose order of arrival does not matter — the rung partition merge needs. */
-export type CommutativeMonoid = Monoid & Commutative
+export interface CommutativeMonoid extends RungLaws<"commutative-monoid"> {}
 
 /** A commutative monoid where duplicates are free — the rung a set-plane read needs. */
-export type BoundedSemilattice = CommutativeMonoid & Idempotent & Bounded
+export interface BoundedSemilattice extends RungLaws<"bounded-semilattice"> {}
 
 /** A monoid where every folded state can be subtracted; beside the chain, never above it. */
-export type Group = Monoid & Inverse
+export interface Group extends RungLaws<"group"> {}
 
 /** A commutative monoid where every folded state can be subtracted. */
-export type AbelianGroup = CommutativeMonoid & Inverse
+export interface AbelianGroup extends RungLaws<"abelian-group"> {}
 
 /**
  * A declared algebra carrying exactly the laws its suite earned.
@@ -115,52 +183,6 @@ export type Algebra<State, Laws extends LawSet> = DeclaredAlgebra<State> & Laws
 /** A declared algebra carrying the runtime witness that its CI law suite earned. */
 export type CommutativeAlgebra<State> = Algebra<State, CommutativeMonoid>
 
-/** One law atom, named as the runtime witness and the refusal both carry it. */
-export type LawName =
-  | "total"
-  | "associative"
-  | "identity"
-  | "commutative"
-  | "idempotent"
-  | "bounded"
-  | "inverse"
-
-/** One rung of the ladder, looked up by name; a rung is never inside an encoding. */
-export type RungName =
-  | "magma"
-  | "monoid"
-  | "commutative-monoid"
-  | "bounded-semilattice"
-  | "group"
-  | "abelian-group"
-
-/** The law set one rung obligates, as data beside the type-level bundle above. */
-export const rungLaws: {
-  readonly [Rung in RungName]: ReadonlyArray<LawName>
-} = {
-  "magma": ["total"],
-  "monoid": ["total", "associative", "identity"],
-  "commutative-monoid": ["total", "associative", "identity", "commutative"],
-  "bounded-semilattice": [
-    "total",
-    "associative",
-    "identity",
-    "commutative",
-    "idempotent",
-    "bounded",
-  ],
-  "group": ["total", "associative", "identity", "inverse"],
-  "abelian-group": ["total", "associative", "identity", "commutative", "inverse"],
-}
-
-/** The type-level bundle a rung name denotes. */
-export type RungLaws<Rung extends RungName> = Rung extends "abelian-group" ? AbelianGroup
-  : Rung extends "group" ? Group
-  : Rung extends "bounded-semilattice" ? BoundedSemilattice
-  : Rung extends "commutative-monoid" ? CommutativeMonoid
-  : Rung extends "monoid" ? Monoid
-  : Magma
-
 /**
  * One stage of the free-object chain, deepest last: sequences forget nothing,
  * multisets forget order, finite sets forget multiplicity too.
@@ -174,18 +196,34 @@ export type Quotient = "positioned" | "multiset" | "set"
  * reordering are then both free. Commutative alone reaches the multiset
  * presentation. Anything weaker stays positional.
  */
-export type DeepestQuotient<Laws extends LawSet> = Laws extends BoundedSemilattice ? "set"
-  : Laws extends CommutativeMonoid ? "multiset"
+export type DeepestQuotient<Laws extends LawSet> = [Laws] extends [BoundedSemilattice] ? "set"
+  : [Laws] extends [CommutativeMonoid] ? "multiset"
   : "positioned"
 
 /** Every quotient a fold at these laws may read — its deepest, and every shallower one. */
-export type Reads<Laws extends LawSet> = DeepestQuotient<Laws> extends "set" ? Quotient
-  : DeepestQuotient<Laws> extends "multiset" ? "positioned" | "multiset"
+export type Reads<Laws extends LawSet> = [DeepestQuotient<Laws>] extends ["set"] ? Quotient
+  : [DeepestQuotient<Laws>] extends ["multiset"] ? "positioned" | "multiset"
   : "positioned"
 
-/** The laws a read at one quotient demands — the rung⇒carrier rule, as a type. */
-export type LawsFor<Q extends Quotient> = Q extends "set" ? BoundedSemilattice
-  : Q extends "multiset" ? CommutativeMonoid
+/**
+ * The laws a read at one quotient demands — the rung⇒carrier rule, as a type.
+ *
+ * Every conditional on this rule is written with its check in a tuple, so none
+ * of them distributes. A naked parameter would let a union of quotients pick
+ * the weakest arm and satisfy the bound on it — a lane typed at `1 | 4`
+ * partitions asking for `LawSet | CommutativeMonoid` and being served by an
+ * algebra that earned nothing. The tuple makes such a lane demand the strictest
+ * arm its union reaches, which is the reading the rule has in prose.
+ *
+ * The positioned row asks for no law and the record routes it at `magma`. That
+ * departure is deliberate and is the one row of the ladder that ships with its
+ * rung removed rather than instantiated: `Magma` is `Total`, no algebra earns
+ * `total` except through the one branding door, and every single-partition fold
+ * in this package declares an unbranded algebra. Tightening the row is a
+ * breaking change to a shipped surface, which this additive slice may not make.
+ */
+export type LawsFor<Q extends Quotient> = [Q] extends ["set"] ? BoundedSemilattice
+  : [Q] extends ["multiset"] ? CommutativeMonoid
   : LawSet
 
 /** Inputs for declaring a content-addressed algebra. */
@@ -418,38 +456,76 @@ export const commutative = Effect.fn("Algebra.commutative")(function*<State>(
       `at least ${MINIMUM_COMMUTATIVE_CASES} distinct generated triples`,
     )
   }
-  const laws = commutativeLaws(algebra, suite.equals)
-  const failed = yield* Effect.try({
-    try: () => cases.findIndex(({ left, middle, right }) =>
-      !laws.leftIdentity(left) ||
-      !laws.rightIdentity(left) ||
-      !laws.leftIdentity(middle) ||
-      !laws.rightIdentity(middle) ||
-      !laws.leftIdentity(right) ||
-      !laws.rightIdentity(right) ||
-      !laws.associative(left, middle, right) ||
-      !laws.commutative(left, middle) ||
-      !laws.commutative(middle, right) ||
-      !laws.commutative(left, right)),
+  const earned = rungLaws["commutative-monoid"]
+  const failure = yield* Effect.try({
+    try: () => firstUnearned(lawSuite(algebra, suite.equals), earned, cases),
     catch: (cause) => unearnedCommutativity(
       ["suite", "evaluation"],
       String(cause),
       "total law predicates over every generated case",
     ),
   })
-  if (failed !== -1) {
+  if (failure !== undefined) {
     return yield* unearnedCommutativity(
-      ["suite", "generated", String(failed)],
-      "law returned false",
-      "left identity, right identity, associativity, and commutativity",
+      ["suite", "generated", String(failure.index), failure.law],
+      `the ${failure.law} law returned false`,
+      earned.join(", "),
     )
   }
-  return brand(algebra, rungLaws["commutative-monoid"])
+  return brand(algebra, earned)
 })
 
 /**
- * Attaches an earned law set non-enumerably, so the brand survives a structural
- * copy of the algebra and never reaches the wire.
+ * Returns the first case that fails one of the rung's atoms, and which atom.
+ *
+ * The atom list this walks is the SAME array the brand is attached from, so the
+ * checked set and the earned set cannot drift: adding an atom to a rung's row
+ * adds its obligation here by construction. That is what makes "a brand is
+ * earned by a suite, never asserted" a property of the code rather than a rule
+ * a reader has to enforce.
+ */
+const firstUnearned = <State>(
+  atoms: LawPredicates<State>,
+  earned: ReadonlyArray<LawName>,
+  cases: ReadonlyArray<CommutativeCase<State>>,
+): { readonly index: number; readonly law: LawName } | undefined => {
+  for (let index = 0; index < cases.length; index++) {
+    const { left, middle, right } = cases[index]!
+    for (const law of earned) {
+      const held = law === "total"
+        ? atoms.total(left, right) && atoms.total(middle, right)
+        : law === "associative"
+        ? atoms.associative(left, middle, right)
+        : law === "identity"
+        ? atoms.identity(left) && atoms.identity(middle) && atoms.identity(right)
+        : law === "commutative"
+        ? atoms.commutative(left, middle) &&
+          atoms.commutative(middle, right) &&
+          atoms.commutative(left, right)
+        : law === "idempotent"
+        ? atoms.idempotent(left) && atoms.idempotent(middle) && atoms.idempotent(right)
+        : law === "bounded"
+        ? atoms.bounded(left) && atoms.bounded(middle) && atoms.bounded(right)
+        // `inverse` has no predicate: a declared algebra carries a reducer and
+        // no inversion, so no rung carrying it can be earned at this door.
+        : false
+      if (!held) return { index, law }
+    }
+  }
+  return undefined
+}
+
+/**
+ * Attaches an earned law set as a non-enumerable own property, so it never
+ * reaches canonical bytes.
+ *
+ * The witness does NOT survive a structural copy — spread and `Object.assign`
+ * skip non-enumerable properties, which is the same reason it stays off the
+ * wire. A spread of a branded algebra therefore keeps the phantom type and
+ * loses the runtime witness, and `Fold.declare` refuses it on a value the
+ * compiler still calls a `CommutativeAlgebra`. That is the pre-existing shape
+ * of this witness and this slice does not change it; it is written down here
+ * because a reader checking the brand's durability checks this docstring.
  */
 const brand = <State, Laws extends LawSet>(
   algebra: DeclaredAlgebra<State>,

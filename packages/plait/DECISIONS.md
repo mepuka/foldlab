@@ -1978,3 +1978,85 @@ Why: the brand rides the handle type and erases at encoding, so the rule can
 grow a consumer later without touching one identity. **Load-bearing? yes** — it
 is why the set-plane control is honest about proving the rule and not the
 enforcement.
+
+### T4. The door walks the atom list it attaches, so `total` is earned
+
+Decided: `Algebra.commutative` walks `rungLaws["commutative-monoid"]` atom by
+atom over its derived cases through `lawSuite`, and brands from the **same
+array** it walked. Before this the door checked identity, associativity, and
+commutativity and attached a four-atom set including `total`, so the one atom
+the fold door discriminates on was granted rather than earned — against the
+rule this package's own glossary states. The refusal now names the atom that
+failed and its case index. Alternatives: drop `total` from the
+commutative-monoid row (the rung is wrong then, and `Magma` would name nothing
+a suite can check); check the atoms from a second hand-listed bundle beside the
+table (which is the drift the one-array construction exists to prevent). Why:
+"a brand is the earned atom set" has to be a property of the code, not a rule a
+reader enforces — a row that grows an atom grows the obligation by
+construction. The isolating control is an absorbing monoid whose identity,
+associativity, and commutativity all hold and whose `combine` leaves the wire
+grammar. **Load-bearing? yes** — it is the difference between a brand and an
+assertion.
+
+### T5. The ladder is stated once, in the data, and the bundles are names for its rows
+
+Decided: `rungLaws` is the single statement — `as const satisfies` over
+`LawName`, so an atom the brand map does not carry fails to compile in the
+table. `RungName` is `keyof typeof rungLaws`, `RungLaws<Rung>` computes the
+intersection from the row, and the six rung types are **interfaces extending
+`RungLaws<"...">`** with empty bodies. Alternatives: keep the three statements
+and add a test comparing them (a wall over a duplication is still a
+duplication, and it was the reviewer's minor); keep type aliases instead of
+interfaces (correct, and a refusal then prints the expanded intersection rather
+than the rung's name — the controls' committed traces read `CommutativeMonoid`
+because of this choice). Why: `RungLaws` as a hand-written name-to-bundle
+lookup was precisely the table the laws-not-names encoding exists to avoid, and
+it was sitting in the file that argues against it. **Load-bearing? yes** — the
+generator this ladder owes now has one row to replace instead of three.
+
+### T6. The ladder is Law 1 debt with an explicit waiver, not a twin
+
+Decided: the ladder stays hand-written for this slice and carries its waiver in
+the source — `rungLaws`' docstring names the missing `Law` and `Rung`
+inductives, the two absent corpus groups, and DEV-796 as the unification
+ticket. Verified rather than assumed: `KernelCorpusSchemas` enumerates nine
+record groups and none is `law` or `rung`, and `verify/kernel` declares no such
+inductive, so there is nothing generated for this to twin. Alternatives: block
+the slice until the generator lands (the seam the reorg spec ratified would
+wait on a model increment nobody has scheduled, and the ladder's TypeScript
+half is what stage 3 was cut for); ship without the citation (which is the one
+thing the hardened law's waiver sentence names). Why: the law's defect is a
+hand-written definition of a corpus concept, and the honest response to a
+concept whose generator does not exist yet is a single statement wearing a
+citation, not a quiet one. Whether a waiver may cover NEW surface or only the
+existing inventory is the operator's reading to give; this records the
+citation either way. **Load-bearing? yes** — it is the row DEV-796's sweep
+takes.
+
+### T7. The mutation arm relaxes the door's bound instead of restating the door
+
+Decided: the arm derives its weakened options from the shipped type —
+`Omit<DeclareOptions<...>, "algebra"> & { algebra: DeclaredAlgebra<State> }` —
+so the only difference from the real door is the rung, and a field added to
+`DeclareOptions` arrives in the arm too. Alternatives: hand-copy the three
+fields (what shipped in round 1; faithful the day it was written, and silently
+stops mirroring the door the first time the door grows); drop the arm for that
+row and rely on the lawful twin (the twin proves the shape is well-formed, not
+that the rung is what refused). Why: an arm whose job is isolating one
+difference must not be able to acquire a second one. **Load-bearing? yes** —
+without it the arm's claim decays without any test going red.
+
+### T8. Every conditional on the rung⇒carrier rule is undistributed
+
+Decided: `LaneQuotient`, `DeepestQuotient`, `Reads`, and `LawsFor` all check
+through a tuple. A distributive conditional over a naked parameter maps a union
+of partition counts to a union of bounds, and a union of bounds is satisfied by
+its weakest arm — a lane typed `DeclaredLane<E, 1 | 4>` took an algebra that
+earned nothing while a `DeclaredLane<E, 4>` was refused. Its committed control
+is `Fold.union-partitions.mutant.ts`. Alternatives: constrain lanes to literal
+partition counts (a real narrowing of a shipped surface, for a hole the rule
+can close itself); leave it, since the runtime door still refuses on
+`partitions > 1` (true, and the slice exists to make the type half carry the
+rule). Why: "the deepest quotient its algebra respects" has one reading for a
+union — the strictest arm any member reaches. **Load-bearing? yes** — it is the
+difference between a bound and a suggestion.

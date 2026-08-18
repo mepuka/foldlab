@@ -13,6 +13,7 @@ import {
   hasRung,
   lawSuite,
   rungLaws,
+  type LawName,
   type LawPredicates,
   type RungName,
 } from "../src/truth/Algebra.js"
@@ -92,16 +93,16 @@ const climbs: ReadonlyArray<readonly [RungName, RungName]> = [
 describe("the rung ladder", () => {
   test("climbing a rung adds laws and drops none", () => {
     for (const [higher, lower] of climbs) {
-      const above = rungLaws[higher]
-      const below = rungLaws[lower]
+      const above: ReadonlyArray<LawName> = rungLaws[higher]
+      const below: ReadonlyArray<LawName> = rungLaws[lower]
       expect(below.every((law) => above.includes(law)), `${higher} ⊇ ${lower}`).toBe(true)
       expect(above.length).toBeGreaterThan(below.length)
     }
   })
 
   test("the two tops are incomparable, so the ladder is a poset and not a chain", () => {
-    const lattice = rungLaws["bounded-semilattice"]
-    const abelian = rungLaws["abelian-group"]
+    const lattice: ReadonlyArray<LawName> = rungLaws["bounded-semilattice"]
+    const abelian: ReadonlyArray<LawName> = rungLaws["abelian-group"]
     expect(abelian.every((law) => lattice.includes(law))).toBe(false)
     expect(lattice.every((law) => abelian.includes(law))).toBe(false)
   })
@@ -166,6 +167,52 @@ describe("the rung ladder", () => {
     // Both are commutative monoids; only one may read the set plane.
     expect(count.idempotent(3)).toBe(false)
     expect(max.idempotent(3)).toBe(true)
+  })
+
+  test("a reducer that leaves the wire grammar cannot buy the brand's total atom", async () => {
+    // Zero is a two-sided unit and every other pair absorbs to infinity, so
+    // identity, associativity, and commutativity all HOLD — this is a lawful
+    // commutative monoid on the three equations the old door checked. What it
+    // is not is total into the carrier: infinity is not an RFC 8785 wire value.
+    // Before the atom was walked, this algebra bought a four-atom brand with
+    // three atoms of evidence, and it is the atom the fold door discriminates
+    // on. The isolation is the point — nothing here fails except totality.
+    const absorbing = await Effect.runPromise(declare({
+      declaration: { name: "absorbing-sum", version: 0 },
+      reducer: Reducer.make<number>(
+        (left, right) => left === 0 ? right : right === 0 ? left : Number.POSITIVE_INFINITY,
+        0,
+      ),
+    }))
+    const laws = lawSuite(absorbing, Object.is)
+    expect(laws.identity(7)).toBe(true)
+    expect(laws.associative(3, 5, 7)).toBe(true)
+    expect(laws.commutative(3, 5)).toBe(true)
+    expect(laws.total(3, 5)).toBe(false)
+
+    const refusal = await Effect.runPromise(Effect.flip(commutative(absorbing, {
+      arbitrary: arbitraryInteger,
+      equals: Object.is,
+    })))
+
+    expect(refusal.kind).toBe("unearned-commutative-algebra")
+    expect(refusal.path).toContain("total")
+    expect(refusal.law).toContain("F4")
+  })
+
+  test("the branded atom set is the set the door checked, by construction", async () => {
+    const algebra = await Effect.runPromise(declare({
+      declaration: { name: "integer-sum", version: 0 },
+      reducer: Reducer.make<number>((left, right) => left + right, 0),
+    }))
+    const earned = await Effect.runPromise(commutative(algebra, {
+      arbitrary: arbitraryInteger,
+      equals: Object.is,
+    }))
+
+    // Not "these four names" — the same array the door walked. A rung row that
+    // grows an atom grows the obligation, and this assertion follows it.
+    expect(earnedLawsOf(earned)).toEqual(rungLaws["commutative-monoid"])
   })
 
   test("totality is the atom the model cannot carry for a TypeScript reducer", async () => {

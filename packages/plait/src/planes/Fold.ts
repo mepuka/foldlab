@@ -41,8 +41,15 @@ export interface FoldDeclaration {
  * One partition keeps arrival order, so the fold reads the positioned plane.
  * More than one erases the order across partitions, so the fold reads the
  * multiset presentation and its algebra must respect that erasure.
+ *
+ * The check sits in a tuple so the conditional does not distribute. A lane
+ * whose partition count is only known as a union — `1 | 4` — would otherwise
+ * yield a union of quotients, and a union of bounds is satisfied by its
+ * weakest arm: an algebra that earned nothing would serve a lane that might
+ * have four partitions. Undistributed, such a lane reads the multiset
+ * presentation, which is the only answer that is true for every member.
  */
-export type LaneQuotient<Partitions extends number> = Partitions extends 1 ? "positioned"
+export type LaneQuotient<Partitions extends number> = [Partitions] extends [1] ? "positioned"
   : "multiset"
 
 /**

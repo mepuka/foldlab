@@ -63,9 +63,23 @@ named bundle of atoms; climbing adds atoms, so "at least this rung" is set
 inclusion and the ladder is a poset, not a chain (an idempotent group is
 trivial, so the two tops are incomparable). A brand is the earned atom set,
 carried in the type and non-enumerably at runtime. A brand is earned by a
-suite, never asserted: an asserted cast erases at the door, which reads the
-runtime witness regardless of what the type said. Brands never reach canonical
-bytes, so nothing on this ladder changes a digest.
+suite, never asserted: the door walks the same atom list it then attaches, so
+the checked set and the earned set are one array, and an asserted cast erases
+at the door, which reads the runtime witness regardless of what the type said.
+Brands never reach canonical bytes, so nothing on this ladder changes a digest.
+
+Two bounds ride the atoms. `bounded` is entailed by `identity` — `e ∘ a = a` is
+`e ≤ a` under the derived order — so it is a named consequence rather than an
+independent obligation, and a bounded semilattice discriminates on `idempotent`
+alone. `inverse` has no predicate at all: a declared algebra carries a reducer
+and no inversion, so the two group rungs are type-level names with no door.
+
+**Brand durability**:
+The runtime witness is a non-enumerable own property, which is exactly why it
+never reaches the wire — and exactly why a spread or `Object.assign` copy drops
+it. A copied algebra keeps the phantom type and loses the witness, so the fold
+door refuses it on a value the compiler still calls commutative. Re-earn the
+brand after copying; do not re-assert it.
 
 **Quotient, and the rung⇒carrier rule**:
 Three stages, deepest last: the positioned plane keeps order and duplicates,

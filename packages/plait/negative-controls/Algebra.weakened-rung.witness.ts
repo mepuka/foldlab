@@ -14,7 +14,7 @@
  * the planted spellings typecheck, which the runner reports by name rather than
  * absorbing. That was measured against both rules when the arm landed.
  */
-import { declare, type Contribution } from "../src/planes/Fold.js"
+import { declare, type Contribution, type DeclareOptions } from "../src/planes/Fold.js"
 import type { DeclaredLane } from "../src/planes/Lane.js"
 import type {
   Algebra,
@@ -35,16 +35,24 @@ declare function readFromWeakened<State, Laws extends LawSet, Q extends Quotient
   quotient: Q,
 ): State
 
-/** The weakened door: a fold declaration that asks its algebra for no law. */
+/**
+ * The weakened door: the REAL options type with one field's bound relaxed.
+ *
+ * Derived from `DeclareOptions` by `Omit` rather than hand-copied, so a field
+ * added to the door arrives here too and the arm cannot drift into mirroring a
+ * door that no longer exists. The single difference from the shipped door is
+ * the algebra's rung, which is what this arm exists to isolate.
+ */
+type UnboundedOptions<Event, State, Partitions extends number> =
+  & Omit<DeclareOptions<Event, State, Partitions>, "algebra">
+  & { readonly algebra: DeclaredAlgebra<State> }
+
 declare function declareWeakened<Event, State, const Partitions extends number>(
-  options: {
-    readonly lane: DeclaredLane<Event, Partitions>
-    readonly algebra: DeclaredAlgebra<State>
-    readonly contribution: Contribution<Event, State>
-  },
+  options: UnboundedOptions<Event, State, Partitions>,
 ): ReturnType<typeof declare>
 
 declare const shardedLane: DeclaredLane<Reading, 4>
+declare const maybeShardedLane: DeclaredLane<Reading, 1 | 4>
 declare const counting: Algebra<number, CommutativeMonoid>
 declare const positional: DeclaredAlgebra<number>
 declare const contribution: Contribution<Reading, number>
@@ -52,6 +60,13 @@ declare const contribution: Contribution<Reading, number>
 /** Fold.positional-shards, un-refused: four partitions at an algebra with no law. */
 export const shards = declareWeakened({
   lane: shardedLane,
+  algebra: positional,
+  contribution,
+})
+
+/** Fold.union-partitions, un-refused: a lane that might shard, at no law. */
+export const unionShards = declareWeakened({
+  lane: maybeShardedLane,
   algebra: positional,
   contribution,
 })
