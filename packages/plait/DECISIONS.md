@@ -1910,98 +1910,153 @@ reason. **Load-bearing? yes** — twenty controls compare on this rule, and the
 six advisories it declines to gate on stay open findings for their modules'
 owners.
 
-## Task DEV-763 — the one admission door
+## Task DEV-764 — the rung ladder as brands
 
-### T0. The model-generated language is the contract; a runtime digest is not an identity conversion
+### T0. The rung brand carries law atoms, never a rung name
 
-Decided: `KernelDoor` derives candidate, context, and intrinsic-act types from
-`KernelSchemas.generated.ts` and preserves the model's `bigint` identity labels
-through admission and encoding. A runtime hex digest may ride beside a caller's
-value, but no function converts it into a model label and the door never consults
-it. Alternatives: hand-write a number-shaped candidate twin (a second type
-universe, already demonstrated to drift); derive labels from hex digests (two
-different identity scales made falsely interchangeable). Why: the formal model
-already emits the literal kernel-language shapes; the trusted-base statement
-that real identities are hashes of canonical bytes is evidence about the
-runtime, not a missing field in the model algebra. **Load-bearing? yes** — this
-is the ruling that unblocks both the door and the CLI projection.
+Decided: `Algebra.ts` brands a declared algebra with a set of phantom law atoms
+(`Total`, `Associative`, `Identity`, `Commutative`, `Idempotent`, `Bounded`,
+`Inverse`) and names rungs as intersections of those atoms. "At least this rung"
+is then plain structural assignability, and the ladder's poset shape — the two
+tops are incomparable, because an idempotent group is trivial — falls out of
+intersection subtyping rather than a table. Alternatives: brand with the rung
+name and compare names (needs a lookup table the moment a right asks for "at
+least commutative", and cannot express the intersection a product algebra
+inherits); a conditional-type comparison over a rank (invents a total order the
+mathematics does not have). Why: the encoding that needs no machinery is the one
+that matches the mathematics. **Load-bearing? yes** — every routing decision
+below rests on it, and a rung-name brand would have to be rewritten to admit the
+product combinator.
 
-### T1. Context is explicit until the catalog owns its assembly
+### T1. `CommutativeAlgebra` becomes an alias and the runtime witness becomes a law set
 
-Decided: the pure seam is `admit(context, candidate)`, with `make(context)` as a
-context-bound view. The catalog/pinned-universe value is generated too, but this
-ticket does not invent an ambient source for it; the durable catalog slice can
-assemble and pass that value when it lands. Alternatives: wait for the catalog
-ticket (leaves every host blocked despite a complete judgment contract); read a
-global catalog from the kernel (inverts the plane stack and hides an Effectful
-dependency inside a pure law function). Why: context assembly and candidate
-judgment are separate responsibilities, and an explicit parameter preserves
-that boundary without weakening either. **Load-bearing? yes** — it is how this
-slice proceeds without pretending the catalog already ships.
+Decided: `CommutativeAlgebra<State>` is now `Algebra<State, CommutativeMonoid>`,
+and the single non-enumerable `commutative` witness becomes one non-enumerable
+`earnedLaws` array read by `earnedLawsOf`, `hasRung`, and — derived, not
+duplicated — `hasCommutativeWitness`. No call site moved, no refusal changed, no
+digest changed: the brand is phantom and the witness is non-enumerable, so
+neither reaches canonical bytes. Alternatives: keep the one boolean witness and
+add a second per rung (the witness set stops being readable as one fact, and the
+door has to consult n symbols); brand at declaration time from a rung argument
+(a brand that is asserted rather than earned, which is the thing the door
+exists to prevent). Why: one witness, one reader, and the shipped commutative
+door keeps minting exactly the refusal its committed trace records.
+**Load-bearing? yes** — it is what makes "every existing test passes unchanged"
+true rather than hoped.
 
-### T2. Hosts alias the function; they do not wrap or inject it
+### T2. No refusal kind ships with the ladder, and that is a reported blocker
 
-Decided: CLI, `FabricClient`, and `CasDaemon` expose the exact
-`KernelDoor.admit` function object. The control asserts reference identity for
-all three and kills an invented host function. Alternatives: thin wrappers
-(semantically innocent today, but a place for host-specific validation to grow);
-injectable service methods (fixtures could replace the judgment and erase the
-one-door guarantee). Why: carriage and surface contribute no semantics, so the
-strongest and simplest representation is literal identity. **Load-bearing?
-yes** — this is the executable no-bypass control.
+Decided: the compile-time half of the ladder ships; the runtime branding door
+for rungs above commutative-monoid does NOT, because it would need a refusal
+kind (`unearned-rung`) and two decisions nobody has made — whether a
+seventeenth model refusal reason is add-only, and how the shipped
+`unearned-commutative-algebra` kind is deprecated rather than doubled. Adding a
+kind also costs the totality wall: `test/RefusalNext.test.ts` requires every
+`StructuralRefusalKind` literal to be produced by a live refusal, so a kind with
+no minting path either fails the wall or weakens it with an exemption.
+Alternatives: mint the new kind and add an exemption row (a wall that exempts
+the row it was just given proves less than it did yesterday); reuse
+`unearned-commutative-algebra` for every rung (two meanings, one name — the
+incoherence the naming rule exists to prevent). Why: an executor never decides
+the spec it builds against. **Load-bearing? yes** — it is the boundary between
+what this slice claims and what it defers.
 
-### T3. A verdict carries the intrinsic act or the complete taught refusal
+### T3. The rung⇒carrier rule bites at the fold door for one row, and the record says which
 
-Decided: admission success returns the generated intrinsic act and its canonical
-model encoding; refusal flattens the generated table row beside
-`verdict: "refused"`, preserving reason, law, repair, and applicability at every
-host. Alternatives: return encoding only (throws away the very act the door
-constructs); return reason only and require host lookups (permits parity to
-depend on the host); nest a second refusal object (adds a vocabulary shape the
-model table does not need). Why: the door is the sole constructor of intrinsic
-acts and the refusal table is already the single taught vocabulary.
-**Load-bearing? yes** — both acceptance halves are observable in one value.
+Decided: `Fold.DeclareOptions` states its algebra bound as
+`LawsFor<LaneQuotient<Partitions>>`, so the shipped partition constraint stops
+being a special case and becomes the rung⇒carrier rule instantiated at the one
+carrier a fold declares — one partition reads the positioned plane, more than
+one reads the multiset presentation. The set-plane row of the rule is exported
+as vocabulary (`Quotient`, `DeepestQuotient`, `Reads`) and controlled at a read
+site the control file declares, because no shipped function takes a quotient
+yet. Alternatives: put a `carrier` field on `FoldDeclaration` (it is inside the
+fold digest, so every existing fold would be renamed — not additive, and the
+ticket's own fence forbids it); ship a `readFrom`/`publish` seam to give the
+rule a consumer (a function with no law and no caller, which ADR-0010 refuses).
+Why: the brand rides the handle type and erases at encoding, so the rule can
+grow a consumer later without touching one identity. **Load-bearing? yes** — it
+is why the set-plane control is honest about proving the rule and not the
+enforcement.
 
-### T4. The door is the eighteenth public namespace
+### T4. The door walks the atom list it attaches, so `total` is earned
 
-Decided: `KernelDoor` joins the root barrel and the `./KernelDoor` subpath in
-this ticket. It is pure, so the public Effect manifest remains byte-stable even
-though the namespace is new; the host-route suite asserts the barrel names the
-same function. Alternatives: leave the door reachable only by internal deep
-import (DEV-786 could not consume the ruled seam as package API); export the
-generated schema module wholesale (widens the surface from one concept to an
-emitter's file layout). Why: a public admission seam must be nameable, while the
-deep module should keep the generated family behind its candidate/act/context
-projections. **Load-bearing? yes** — it records that the surface change is the
-ticket's decision, not accidental barrel churn.
+Decided: `Algebra.commutative` walks `rungLaws["commutative-monoid"]` atom by
+atom over its derived cases through `lawSuite`, and brands from the **same
+array** it walked. Before this the door checked identity, associativity, and
+commutativity and attached a four-atom set including `total`, so the one atom
+the fold door discriminates on was granted rather than earned — against the
+rule this package's own glossary states. The refusal now names the atom that
+failed and its case index. Alternatives: drop `total` from the
+commutative-monoid row (the rung is wrong then, and `Magma` would name nothing
+a suite can check); check the atoms from a second hand-listed bundle beside the
+table (which is the drift the one-array construction exists to prevent). Why:
+"a brand is the earned atom set" has to be a property of the code, not a rule a
+reader enforces — a row that grows an atom grows the obligation by
+construction. The isolating control is an absorbing monoid whose identity,
+associativity, and commutativity all hold and whose `combine` leaves the wire
+grammar. **Load-bearing? yes** — it is the difference between a brand and an
+assertion.
 
-### T5. The corpus is not the whole wall: absence gets its own control
+### T5. The ladder is stated once, in the data, and the bundles are names for its rows
 
-Decided: one control decodes a lawful `resolveDigest` whose anchor is absent
-through the generated codec, admits it at the shipping door, and pins the
-resulting sentence against the corpus's own `resolve-schema` vector.
-Alternatives: trust the seventeen replayed vectors (they carry the anchored
-resolve that must be refused and no bare one that must be admitted, so a door
-reading absence as `null` passes all seventeen while refusing a lawful
-sentence — measured, not hypothesised: planting `!== null` leaves the replay
-green and kills only this row); add a vector to the corpus (the corpus is
-emitted by executing the model, so a runtime gap is not a reason to hand-write
-into it). Why: the emitted vectors are the model's claims about the language,
-and this control is the runtime's claim about the *spelling* the generated
-schema hands it — `Schema.UndefinedOr` is the model's `none`, so absence
-compares against `undefined` and nothing else. **Load-bearing? yes** — it is
-the only row that fails when a door and its generated schema disagree about
-how absence is written.
+Decided: `rungLaws` is the single statement — `as const satisfies` over
+`LawName`, so an atom the brand map does not carry fails to compile in the
+table. `RungName` is `keyof typeof rungLaws`, `RungLaws<Rung>` computes the
+intersection from the row, and the six rung types are **interfaces extending
+`RungLaws<"...">`** with empty bodies. Alternatives: keep the three statements
+and add a test comparing them (a wall over a duplication is still a
+duplication, and it was the reviewer's minor); keep type aliases instead of
+interfaces (correct, and a refusal then prints the expanded intersection rather
+than the rung's name — the controls' committed traces read `CommutativeMonoid`
+because of this choice). Why: `RungLaws` as a hand-written name-to-bundle
+lookup was precisely the table the laws-not-names encoding exists to avoid, and
+it was sitting in the file that argues against it. **Load-bearing? yes** — the
+generator this ladder owes now has one row to replace instead of three.
 
-### T6. No service wraps the door in this slice
+### T6. The ladder is Law 1 debt with an explicit waiver, not a twin
 
-Decided: hosts hold the `admit` function object itself; no Effect service, tag,
-or layer stands between a caller and judgment. Alternatives: an `Admission`
-service with a layer per context (it makes the door injectable, which is a
-bypass surface the identity control can no longer close, and it was tried and
-reverted on this ticket); a per-host wrapper (a place for host-specific
-validation to grow). Why: `admit` is pure and total — it needs no environment,
-so a service would buy substitutability the no-bypass law exists to deny. A
-Layer seam, if a later slice wants one, wraps this generated door.
-**Load-bearing? yes** — it records that the missing service is a decision, and
-what a future one may and may not wrap.
+Decided: the ladder stays hand-written for this slice and carries its waiver in
+the source — `rungLaws`' docstring names the missing `Law` and `Rung`
+inductives, the two absent corpus groups, and DEV-796 as the unification
+ticket. Verified rather than assumed: `KernelCorpusSchemas` enumerates nine
+record groups and none is `law` or `rung`, and `verify/kernel` declares no such
+inductive, so there is nothing generated for this to twin. Alternatives: block
+the slice until the generator lands (the seam the reorg spec ratified would
+wait on a model increment nobody has scheduled, and the ladder's TypeScript
+half is what stage 3 was cut for); ship without the citation (which is the one
+thing the hardened law's waiver sentence names). Why: the law's defect is a
+hand-written definition of a corpus concept, and the honest response to a
+concept whose generator does not exist yet is a single statement wearing a
+citation, not a quiet one. Whether a waiver may cover NEW surface or only the
+existing inventory is the operator's reading to give; this records the
+citation either way. **Load-bearing? yes** — it is the row DEV-796's sweep
+takes.
+
+### T7. The mutation arm relaxes the door's bound instead of restating the door
+
+Decided: the arm derives its weakened options from the shipped type —
+`Omit<DeclareOptions<...>, "algebra"> & { algebra: DeclaredAlgebra<State> }` —
+so the only difference from the real door is the rung, and a field added to
+`DeclareOptions` arrives in the arm too. Alternatives: hand-copy the three
+fields (what shipped in round 1; faithful the day it was written, and silently
+stops mirroring the door the first time the door grows); drop the arm for that
+row and rely on the lawful twin (the twin proves the shape is well-formed, not
+that the rung is what refused). Why: an arm whose job is isolating one
+difference must not be able to acquire a second one. **Load-bearing? yes** —
+without it the arm's claim decays without any test going red.
+
+### T8. Every conditional on the rung⇒carrier rule is undistributed
+
+Decided: `LaneQuotient`, `DeepestQuotient`, `Reads`, and `LawsFor` all check
+through a tuple. A distributive conditional over a naked parameter maps a union
+of partition counts to a union of bounds, and a union of bounds is satisfied by
+its weakest arm — a lane typed `DeclaredLane<E, 1 | 4>` took an algebra that
+earned nothing while a `DeclaredLane<E, 4>` was refused. Its committed control
+is `Fold.union-partitions.mutant.ts`. Alternatives: constrain lanes to literal
+partition counts (a real narrowing of a shipped surface, for a hole the rule
+can close itself); leave it, since the runtime door still refuses on
+`partitions > 1` (true, and the slice exists to make the type half carry the
+rule). Why: "the deepest quotient its algebra respects" has one reading for a
+union — the strictest arm any member reaches. **Load-bearing? yes** — it is the
+difference between a bound and a suggestion.

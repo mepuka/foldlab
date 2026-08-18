@@ -1,0 +1,3 @@
+negative-controls/Fold.union-partitions.mutant.ts(32,58): error TS2322: Type 'DeclaredAlgebra<number>' is not assignable to type 'DeclaredAlgebra<number> & CommutativeMonoid'.
+  Type 'DeclaredAlgebra<number>' is not assignable to type 'CommutativeMonoid'.
+    Property '[AssociativeTypeId]' is missing in type 'DeclaredAlgebra<number>' but required in type 'Associative'.

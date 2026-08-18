@@ -1,6 +1,31 @@
 # packages/plait — agent contract
 
-The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
+The slice-0 coordination-fabric spine. Read root `AGENTS.md` first.
+
+## Where to look next
+
+One hop per level. Root `AGENTS.md` carries the standing estate laws, this file
+carries the package's, and each plane directory under `src/` carries a README
+saying what that layer is, what is machine-generated in it, how to regenerate
+that, and which wall proves it — then points one level deeper, down the plane
+order, so that any descent lands on `src/kernel/` within three hops.
+
+- [`src/truth/`](src/truth/README.md) — the vocabulary every sentence speaks
+- [`src/kernel/`](src/kernel/README.md) — the language: corpus, door, programs,
+  and wire grammar. Start here for the generated core and the model behind it
+- [`src/planes/`](src/planes/README.md) — the state carriers, one seam per
+  plane
+- [`src/carriage/`](src/carriage/README.md) — hosts and transport clients
+- [`src/surface/`](src/surface/README.md) — entry points
+- [`src/internal/`](src/internal/README.md) — private adapters
+
+Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
+[`README.md`](README.md) states each claim with its bounds,
+[`DECISIONS.md`](DECISIONS.md) logs every decision the spec did not fix, and
+[`QUICKSTART.md`](QUICKSTART.md) with
+[`FOR-WORKING-AGENTS.md`](FOR-WORKING-AGENTS.md) are the outsider-facing pages.
+
+## Scoped laws
 
 - `Canonical.ts` delegates to `@foldlab/core/jcs`. There is one RFC 8785
   canonicalizer; never add or copy another.
