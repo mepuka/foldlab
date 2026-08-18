@@ -5,12 +5,27 @@ Compatibility files such as `CLAUDE.md` only point here.
 
 ## The current lane
 
-One lane is active: **make the Lean ground-truth model the executable
-referee for `flb.type.v0`** — the first rung of "the Lean models power
-type generation." Ratified 2026-08-15
-([grill record](docs/design/2026-08-15-estate-focus-grill-record.md)),
-audited adversarially the same day
-([findings](docs/research/2026-08-15-model-audit-findings.md)).
+One lane is active: **the machine-generated type kernel is the core
+of the estate** (operator ruling 2026-08-18; law 1 in "Standing
+estate laws" below — read that section before writing any code). The
+kernel language lives in `verify/kernel/` (the Lean model and gate)
+and `packages/plait/src/kernel/` (the corpus and its generated
+projections, conformance-gated against the model's vectors). All
+work flows through the Multica board **project `plait`**: the
+one-type-universe epic (type unification behind the corpus), the
+plane-aligned layout (`truth/ kernel/ planes/ carriage/ surface/`),
+and the deep-Effect integration design. Progressive discovery: this
+file → the standing laws → `packages/plait/AGENTS.md` →
+`src/kernel/` — each level points one deeper.
+
+### The prior lane (standing evidence, superseded 2026-08-18)
+
+The previous active lane — **the Lean ground-truth model as
+executable referee for `flb.type.v0`** — ratified 2026-08-15
+([grill record](docs/design/2026-08-15-estate-focus-grill-record.md),
+[audit](docs/research/2026-08-15-model-audit-findings.md)) — stands
+as evidence and its gates stay green; its remaining work items are
+board-scheduled, not this file's steering.
 
 - `verify/ir/` carries it — TyX, the grammar stated once with a
   denotational semantics, eight laws machine-checked in Lean 4.33.0.
