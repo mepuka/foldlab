@@ -353,6 +353,7 @@ describe("least-privilege carrier permissions", () => {
             expect(message.respond(encode("ok"))).toBe(true)
           }
         })()
+        await responder.flush()
         const response = await requester.request(
           "flb.req.permission-probe",
           encode("request"),
