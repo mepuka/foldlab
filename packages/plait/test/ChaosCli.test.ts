@@ -215,5 +215,8 @@ describe("plait chaos CLI", () => {
       "../negative-controls/Fold.cli-refusal.trace.txt",
     )).text())
     console.info(trace)
-  })
+    // Three CLI child processes, and the wall group runs four files at once:
+    // the default five-second budget is a scheduler measurement, not a claim
+    // about the refusals. Its siblings above carry the same explicit bound.
+  }, 120_000)
 })
