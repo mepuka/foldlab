@@ -1969,6 +1969,11 @@ widening (an interface extension, intersection, alias, and mapped type are the
 other shapes a hand-written twin takes, and each had to be measured, not
 assumed). Why: a negative control asks one question, and an arm that can go red
 two ways answers neither.
+Enforce mode is therefore deliberately not a superset of report mode: it never
+byte-compares the ledger. The consequence binds the stage-3 flip (DEV-805) —
+report mode keeps running alongside enforce, because a `test:fast` that swapped
+one for the other would leave the committed inventory gated by nothing exactly
+when its debt table goes empty and the count line becomes the whole artifact.
 **Load-bearing? yes** — four mutation arms were run against this pair, and the
 two that drop enforcement now both report the accepted mutant rather than a
 ledger diff.
@@ -1999,6 +2004,30 @@ true, so an undeclared symbol would otherwise pass as generated core.
 **Load-bearing? yes** — restoring the existential rule re-admits the
 augmentation, and the control's committed trace goes red naming the shape that
 went missing.
+
+### T4. An anchor is a machine-generated file or it is not an anchor
+
+Decided: `generatedCoreAnchors` lists exactly the machine-generated declaration
+files, and the list's element type is the template literal
+`` `src/kernel/${string}.generated.d.ts` `` — a hand-written path is
+unrepresentable, so the walk cannot be granted authority over a file nothing
+byte-gates. DEV-800 round 2 measured the cost of the alternative:
+`KernelCorpusSchemas.d.ts` sat in the list, is hand-written by the package's
+own admission (`scripts/kernel-schemas.ts` — the grammar of that file cannot be
+generated from the file it reads), and a type appended to it classified
+`derives-from-the-generated-core` with no ledger row and, under `--enforce`, no
+output at all. That is laundering in the false-positive direction law 1
+forbids, wearing the label the wall exists to police. Its types are
+`src/kernel/` staged debt now, like every other hand-written declaration, at no
+cost on the clean surface: no public type resolves to that file today, so the
+package ledger's 93 rows and 0-derived count are unchanged. Alternatives: keep
+the anchor and byte-gate the file (there is nothing independent to gate it
+against — that is what hand-written means); an operator waiver row (a waiver
+names debt, never authority). **Load-bearing? yes** — restoring the entry is a
+type error in the walk itself, and the round-2 plant (a type appended to
+`KernelCorpusSchemas.ts`, re-exported through `Wire`) classifies as ticketed
+debt under the current rule.
+
 ## Task DEV-764 — the rung ladder as brands
 
 ### T0. The rung brand carries law atoms, never a rung name

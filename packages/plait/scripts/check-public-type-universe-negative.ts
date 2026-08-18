@@ -55,6 +55,19 @@ const control = Effect.fn("PublicTypeUniverse.control")(function* () {
           "PUBLIC TYPE UNIVERSE CONTROL: FAIL — enforce mode accepted the laundering mutant",
       })),
   )
+  // `Effect.flip` succeeds on ANY failure of the enforce run — an emission
+  // error or a thrown walk would reach the trace comparison and be reported as
+  // a moved trace. The refusal contract separates the two: enforcement speaks
+  // in violation lines, so a failure that opens with anything else means the
+  // walk died before enforcement refused.
+  if (!refusal.message.startsWith("PUBLIC TYPE UNIVERSE VIOLATION:")) {
+    return yield* new ControlFailure({
+      message: [
+        "PUBLIC TYPE UNIVERSE CONTROL: FAIL — the walk died before enforcement refused",
+        refusal.message,
+      ].join("\n"),
+    })
+  }
   const expected = yield* Effect.tryPromise({
     try: () => Bun.file(tracePath).text(),
     catch: (cause) => new ControlFailure({ message: messageOf(cause) }),
@@ -105,6 +118,16 @@ const regenerate = Effect.fn("PublicTypeUniverse.control.write")(function* () {
           "PUBLIC TYPE UNIVERSE CONTROL: FAIL — enforce mode accepted the laundering mutant, so there is no trace to record",
       })),
   )
+  // The same refusal contract as the check arm: a walk that died must never be
+  // recorded as the committed enforcement trace.
+  if (!refusal.message.startsWith("PUBLIC TYPE UNIVERSE VIOLATION:")) {
+    return yield* new ControlFailure({
+      message: [
+        "PUBLIC TYPE UNIVERSE CONTROL: FAIL — the walk died before enforcement refused, so there is no trace to record",
+        refusal.message,
+      ].join("\n"),
+    })
+  }
   yield* Effect.tryPromise({
     try: () => Bun.write(tracePath, normalize(`${refusal.message}\n`)),
     catch: (cause) => new ControlFailure({ message: messageOf(cause) }),
