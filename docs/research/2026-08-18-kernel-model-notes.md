@@ -1,0 +1,387 @@
+# Kernel-model notes — the algebra's first machine-checked realization
+
+Status: **EXPLORATORY, pre-grill.** Written by the kernel-model lane on
+branch `agent/kernel-model` beside `verify/kernel/` (landed at
+`f74c2ca6e`, gate green). The authority is the ratified kernel-algebra
+record (`docs/design/2026-08-18-plait-kernel-algebra.md`, K-1..K-10 all
+ruled, K-6 the protocol pin); this record argues the modeling decisions
+the design left to the model's discretion, states honest bounds, and
+carries the KM grill list. It claims no verification rung, adds no
+VERIFICATION.md row, wires no CI, and is imported by nothing — the
+lane's blast radius is `verify/kernel/` plus this file. Un-grilled
+machinery gets rolled back; everything here is priced for that.
+
+For an outsider, one paragraph. The estate's agent-facing API is
+designed as a tiny algebra: eight primitive acts over content-addressed
+state, a closed set of composition rules, and a list of things that
+deliberately have no syntax at all (clock reads, unfenced decisions,
+last-writer-wins merges, reference cycles, and ten more). This package
+is that design rebuilt inside a proof assistant, so the claims stop
+being prose: the lawful acts are a datatype whose constructors demand
+the right sorts, the unlawful spellings are a second datatype that a
+single admission function must refuse — with the defended law and a
+taught repair attached to every refusal — and the refusals, the
+type-level impossibilities, and the algebra's laws are all checked by
+machine behind one gate script.
+
+## 1. Result first — proven, stated, refused
+
+Counts verified by the gate this session, not estimated:
+
+- **50 theorems** rostered, every one swept for its trusted-base
+  footprint (nothing beyond `propext`, `Classical.choice`,
+  `Quot.sound`).
+- **8 law statements** in `Kernel/Laws.lean`: seven carried by rostered
+  proofs (`KSentenceEncodingInjective`, `KAdmissionRefusesUnlawful`,
+  `KRefusalParity`, `KProgramPinWellFounded`, `KFillCommutative`,
+  `KFillMonoidAction`, `KInterpInflationary`); one —
+  `CandidateF13BoundExecutionReplay` — **stated and deliberately
+  unproven**, with the gate mechanically refusing any proof or consumer
+  that appears without a ruling (§8).
+- **17 door controls** with committed traces: fourteen closure rows,
+  each a planted unlawful program refused with its named law; two
+  signature-discipline refusals (the anchored resolve, the unfilled
+  hole); and the lawful twin the door must admit — the control that
+  refutes a door refusing everything.
+- **4 must-not-compile controls**: sort-discipline violations the
+  elaborator itself refuses, each with a pinned diagnosis and a
+  compiling witness twin.
+
+The estate-of-safety candidate stays a candidate. What is proven is its
+admission half, and that theorem is the one this lane most wants
+adversarially reviewed (§10).
+
+## 2. The two-layer decision, argued
+
+The record's grammar ruling fixes the shape: unrepresentability where
+the type system can carry it, admission refusal where it cannot. The
+model realizes both layers and the seam between them.
+
+**The intrinsic layer** (`Act`) is a typed inductive of kernel
+sentences over the eight generators where the unlawful acts have no
+constructor. Three disciplines ride the constructor signatures rather
+than any check: `resolve` has no anchor slot (a digest names one value
+forever — the signature is the law showing); `decide` demands a
+`Token register` whose *type* is indexed by the register digest, so an
+unfenced or cross-register commit has no derivation; `fold` demands an
+`AnchorFact declared partition` indexed by its fold and partition, so
+an anchor replays nowhere but at its own coordinates. The trigger slot
+takes the closed five-production predicate grammar, so absence,
+negation, and deadline have no carrier — the proven trigger-closure
+pattern reused at kernel sorts.
+
+**The candidate layer** (`CandidateAct`) can spell everything the
+closure list names: anchored resolves, trusted reads, tokenless and
+cross-register commits, last-writer-wins strategies, unanchored latest
+reads, in-place mutations, and payload atoms for clocks, seeds,
+secrets, minted identifiers, function values, and unadmitted
+references. One admission function (`admit`) maps each candidate to an
+intrinsic sentence or a structural refusal; every refusal is a row of a
+total taught table carrying the defended law and the legal next move,
+which makes refusal parity a construction fact rather than a
+documentation promise (`refusal_parity`).
+
+Alternatives priced. A single intrinsic layer with no candidate grammar
+would leave nothing refusable — a grammar that cannot refuse proves
+nothing, and the parity law would be unstatable. A single raw grammar
+with runtime checks would surrender unrepresentability — checks can be
+skipped; missing constructors cannot. The two-layer split costs one
+translation function and buys both halves.
+
+## 3. Sort depth — one step past the record's table
+
+The record brands digests by declaration kind and space-indexes tokens
+and positions. The model takes one further step the record's table does
+not spell: **anchors are type-indexed by their fold digest and
+partition**. This fell out of the same argument (an anchor is
+meaningful only at its own coordinates) but it is a modeling extension,
+so it is flagged here rather than silently absorbed — KM-2 prices it.
+
+The must-not-compile class has a shape worth keeping: each control file
+is one forbidden comparison, and beside it sits a **witness twin** that
+differs only in the one repaired coordinate and must still compile. The
+twin is what makes the refusal attributable — without it, a control
+could "pass" because the file rotted (a renamed constructor, a moved
+import), not because the sort discipline held. The gate also pins a
+diagnosis substring per control (`Type mismatch` naming both branded
+types; `Function expected` for the anchored resolve), so the failure
+mode is the ruled one, not an accident.
+
+## 4. Where the fourteen rows landed
+
+Each closure row is carried by the intrinsic layer's shape, the door,
+or both. Rows that are signature-level are double-carried: the
+intrinsic constructor cannot spell them *and* the door refuses the
+candidate spelling. Rows that are payload- or reference-level are
+door-carried only, because a payload atom is data the type system
+should not inspect.
+
+| Row | Mechanism | Control |
+| --- | --- | --- |
+| clock reads | no time sort in any signature + payload sweep | `closure-clock-read` |
+| absence/negation/deadline | no predicate constructor + candidate productions refused | `closure-absence-trigger` |
+| unfenced decisions | token demanded by type + tokenless candidate refused | `closure-unfenced-decide` |
+| last-writer-wins | no strategy slot in intrinsic join + LWW strategy refused | `closure-last-writer-wins` |
+| unverified reads | door refusal (trusting read) | `closure-unverified-read` |
+| cross-sort identifiers | type indices + must-not-compile class + cross-register claim refused | `closure-cross-sort-token` + 3 elaborator controls |
+| minted identifiers | payload sweep | `closure-minted-identifier` |
+| ambient query inputs | seed sweep + unanchored reads refused | `closure-ambient-query` |
+| cycles / recursion | references must be already admitted; a self-reference is the first admission's forward reference | `closure-forward-reference` |
+| secret carriers | payload sweep | `closure-secret-carrier` |
+| absence claims from replicas | candidate production refused | `closure-absence-claim` |
+| mutation of the past | no update constructor + candidate refused | `closure-past-mutation` |
+| off-writ referents | pinned-universe check after the sweep | `closure-off-writ-referent` |
+| closure introspection | function-value atom refused | `closure-function-value` |
+
+The general law over all of it is `admission_refuses_unlawful`: the
+`Unlawful` predicate closes the spellable shapes — eighteen
+constructors covering the fourteen rows (a row with several spellable
+forms gets one constructor per form: the ambient row splits into seed,
+latest-read, and anchorless-fold; the cross-sort row into token and
+anchor; one production constructor carries both trigger rows) plus the
+anchored resolve and the unfilled hole — and the theorem says no
+candidate satisfying it has an admitted translation, whatever else the
+candidate looks like and at any door. The planted programs are then
+single-fault instances, one per row.
+
+## 5. Program DAGs — the admission-rank embedding, reused
+
+Program declarations are node lists (name, generator tag, raw
+arguments, uses) admitted newest-first: every use names an
+already-admitted node, every name admits at most once. Well-foundedness
+of the consumption relation (`program_pin_well_founded`) is the
+catalog admission proof transliterated to node scale — pins descend
+strictly in admission rank (`node_pin_rank_lt`), and the numeral
+order pulls back along the rank embedding. Nothing new was invented;
+that is the point. The freshness half remains the in-model reading of
+content addressing, and the hash-preimage half stays in the trusted
+base, as it does at the catalog.
+
+What is *not* composed yet: node admission checks the DAG discipline
+but does not run the single-act door per node. The certifier the
+record designs runs the whole grammar at program admission; the model
+currently has the two doors side by side. KM-4 prices the composition.
+
+## 6. Filling — the typed-hole algebra, lifted, and slightly stronger
+
+Valuations are functions from hole names to optional values; filling
+is simultaneous substitution across every node's arguments. Two laws
+land:
+
+- **The action law, premise-free.** `fillProgram right ∘ fillProgram
+  left = fillProgram (left ∪ right)` under left-biased union, with the
+  empty valuation as unit (`fill_monoid_action`). The template
+  investigation states its version under disjoint domains; the
+  left-biased formulation holds without the premise, which is the
+  stronger and more honest form — fewer premises where premises add
+  nothing.
+- **Disjoint commutation** (`fill_commutative`): with no hole in
+  common, fill order is free — only the fill set matters, the
+  sloppy-safe shape in miniature.
+
+Program *composition* needed no graft operation: a child program is
+referenced by digest like any declaration, so composition is
+referencing, and the only substitution in the system is hole filling.
+If a future slice wants textual splicing, that is a new decision, not
+a latent one here.
+
+## 7. Semantics — abstract carriers, obligations named, imports refused
+
+The interpretation maps intrinsic sentences over an abstract world:
+one evidence carrier for the monotone plane under a hypothesis-
+parameterized merge, the admitted catalog and landed set as
+membership-ordered lists, the head as a count. The headline theorem is
+`interp_inflationary`: **under an associative idempotent merge, no
+kernel sentence's meaning shrinks any world component** — the kernel
+has no forgetting act, the CALM split visible in the model. Only
+associativity and idempotence are demanded; commutativity is not
+load-bearing for inflation, and the premise list says so.
+
+The correspondence to the estate's concrete constructs is a set of
+**named instantiation obligations, not imports**: the fabric cell's
+ACI package discharges the merge hypotheses at the real evidence
+carrier; the register invariants own the landed-set dedup the
+interpretation only shapes; the policy meet owns spawn's attenuation,
+which this world deliberately does not model (writs are per-connection
+facts, not world state). A ground instantiation at the numeral maximum
+(`ground_interp_inflationary`) demonstrates the hypotheses are
+inhabitable without leaving the package.
+
+The alternative — a lake dependency on `verify/fabric` so the
+obligations become theorems here — is priced for the grill (KM-3):
+it would buy real discharge and cost the package's self-containment,
+couple two toolchain pins, and put fabric's whole roster inside this
+gate's trusted surface. The register precedent (a pinned-toolchain
+split with citation instead of import) is the house shape this lane
+followed.
+
+## 8. Candidate F13 — stated, and the gate holds the posture
+
+The replay obligation is stated over abstract hop relations: for an
+admitted program, two execution records reached through deterministic
+assembly, resumption, and landing hops agree at every node
+(`CandidateF13BoundExecutionReplay`). It is deliberately unproven
+here, twice over. First, the record marks it NEEDS-A-LAW with the
+F-number minting at ratification. Second — the sharper reason — the
+abstract skeleton *looks* provable in a few lines, and proving it
+would invite exactly the claim the record forbids: that replay of
+bound programs holds before the law exists at the estate's real
+carriers. The composition's value is at the concrete hops (the real
+assembly, the real register, the real anchors), not at this skeleton.
+The gate makes the posture mechanical: any mention of `CandidateF13`
+in the proof file or the control executable fails the run, so the law
+cannot quietly grow a proof or a consumer without a ruling.
+
+## 9. Honest bounds
+
+1. **The `Unlawful` predicate's coverage of the closure list is an
+   argued mapping, not a theorem.** The model proves "whatever spells
+   these shapes is refused"; that the seventeen shapes exhaust the
+   fourteen rows' spellable forms is §4's table plus judgment. A
+   coverage gap would be a new spellable shape, and the repair is a new
+   constructor plus its control — the grill should read the table
+   adversarially.
+2. **Two doors, not yet one.** Single-act admission and program-node
+   admission are side by side (§5); the composed certifier is KM-4.
+3. **Predicate leaves are unchecked references.** A lawful trigger
+   production's lane or cell reference is not swept against the
+   catalog; the wall here is the production closure, not leaf
+   resolution. Same repair class as KM-4.
+4. **The world conflates evidence and cells into one carrier.** A
+   stated abstraction: one join carrier stands for the whole monotone
+   plane. Splitting per-cell carriers is mechanical when a consumer
+   needs it.
+5. **Trigger and spawn interpret as identity.** Hint emission is a
+   derived read and writs are not world state, so their world effect
+   is nil in this model; both facts are documented at the
+   interpretation and priced in KM-6/KM-7.
+6. **The byte canonicalizer is a stand-in.** Sentence-identity
+   injectivity is proven over the framing with value bytes carried as
+   given identities; the byte-level canonicalizer's own injectivity
+   belongs to the wall where that machinery lives and is not claimed
+   here (§10's theorem statement is scoped accordingly).
+7. **The door's refusal priority is a convention.** On a candidate
+   spelling several unlawful shapes at once, which refusal fires is
+   the fixed check order, not a ruling (KM-5). The planted programs
+   are single-fault, so the controls do not see the ordering.
+
+## 10. The first theorem for adversarial review
+
+> **`admission_refuses_unlawful`** (proving `Laws.KAdmissionRefusesUnlawful`):
+> for every door and every candidate act, if the candidate spells any
+> unlawful shape — a clock, seed, secret, minted identifier, function
+> value, or unfilled hole in any payload position; a reference to any
+> digest the door has not admitted; an admitted reference outside the
+> writ's pinned universe; an anchored resolve; a trusted read; a
+> last-writer-wins join; an unanchored latest read; an anchorless or
+> cross-fold fold; a tokenless or cross-register decide; an absence,
+> negation, deadline, or not-present-anywhere production; or an
+> in-place mutation — then there is no intrinsic sentence the door
+> admits it to.
+
+The review this lane wants: attack the `Unlawful` predicate's
+constructor list against §4's mapping (bound 1 above), and attack the
+door's check order for a branch where a refusal could shadow an
+admission wrongly.
+
+## 11. The KM grill sheet
+
+House style: one decision per item, recommended option first,
+alternatives priced, reversal cost stated. All items PROPOSED; the
+K-series stays the design record's and is not renumbered here.
+
+- **KM-1 — adopt the two-layer realization as the model's standing
+  shape.** Recommended: yes — intrinsic constructors for what types
+  can refuse, one door for what they cannot, refusal parity by table
+  totality (§2). Alternative: collapse to one layer (priced in §2,
+  both directions lose a proven half). Reversal: dropping the
+  candidate layer deletes theorems but no estate surface, cheap
+  pre-consumer.
+- **KM-2 — keep the anchor's type indices (fold digest, partition).**
+  Recommended: yes — it is the record's own "an anchor replays nowhere
+  else" sentence made structural, and it powered a must-not-compile
+  control for free. Alternative: anchor as plain data with a door
+  check (weaker; the cross-fold spelling then lives only at the
+  door). Reversal: erasing an index is deleting a parameter — cheap;
+  adding one later re-types every consumer — dear. Flagged because it
+  extends the record's sort table rather than transcribing it.
+- **KM-3 — abstract carriers with named instantiation obligations,
+  never a fabric import.** Recommended: keep — self-containment, one
+  toolchain pin, the register precedent (§7). Alternative: lake
+  dependency on `verify/fabric` discharging the obligations as
+  theorems (real discharge; couples pins and widens this gate's
+  trusted surface). Reversal: adding the dependency later is additive;
+  removing one after statements cite fabric names verbatim is surgery.
+- **KM-4 — compose the two doors: program admission runs the
+  single-act door per node.** Recommended: yes, next slice — the
+  certifier the record designs is one door, and bound 2 is the gap.
+  Alternative: keep them separate and let the runtime compose
+  (drift channel between the model and the certifier it models).
+  Reversal: composition is additive over the existing inductive.
+- **KM-5 — rule the refusal priority, or declare it free.**
+  Recommended: declare the fixed check order (signature shape, then
+  reference sweep, then universe) as the door's contract and write it
+  into the language declaration's refusal table when that slice
+  lands. Alternative: leave it an implementation detail (two
+  conforming doors could then teach different repairs for one
+  multi-fault candidate — a wire-visible divergence).
+- **KM-6 — should trigger acts move the world?** The model interprets
+  a trigger as identity; hint emission is a derived read. Recommended:
+  keep until the reaction slice models hint sets, then reuse the
+  proven enabled-set machinery rather than restating it. Alternative:
+  model hints now (restates a fabric surface without a consumer).
+- **KM-7 — spawn's meet.** Writs are not world state, so attenuation
+  is absent from the interpretation. Recommended: model the meet only
+  when writs become model objects with their own carrier, citing the
+  policy semilattice as the instantiation obligation. Alternative:
+  fold writs into `World` (conflates per-connection authority with
+  shared state — the exact confusion the record's fences exist to
+  prevent).
+- **KM-8 — the F13 posture.** Recommended: keep stated-only with the
+  gate check (§8) until the estate rules where the composition is
+  proven and against which concrete hops. Alternative: prove the
+  abstract skeleton now (cheap, and priced in §8 as an overclaim
+  channel).
+- **KM-9 — which declaration kind names a cell.** The model brands
+  cells as `resource` declarations at the join constructor.
+  Recommended: confirm or correct against the affordances lane's
+  carrier inventory when its amendment lands; a one-line brand swap
+  either way. Flagged because the record's kind list does not name a
+  cell kind explicitly.
+- **KM-10 — the two extra refusal reasons.** The anchored resolve and
+  the unfilled hole refuse under reasons outside the fourteen rows
+  (signature discipline and render totality). Recommended: keep them
+  as door-completeness reasons, distinct from the closure list, and
+  say so wherever the fourteen are counted. Alternative: widen the
+  closure list (renumbers a ratified inventory — not this lane's
+  call).
+
+## 12. Sources
+
+Estate records, read in place this session:
+`docs/design/2026-08-18-plait-kernel-algebra.md` (whole — the
+authority; §4 alphabet, §5 grammar and closure list, §6 Effect binding
+and candidate F13, §7 bootstrap, §11 K-1..K-10);
+`docs/design/2026-08-18-plait-agent-plane.md` §15 (the free-construct
+inventory and taxonomy);
+`docs/research/2026-08-18-template-algebra-investigation.md` (§3 the
+typed-hole algebra this lane's fill laws lift);
+`docs/research/2026-08-18-agentic-lean-lit-notes.md` (the pressure
+items: refusal parity, referent pinning, unit spaces — each answered
+by construction above);
+`docs/research/2026-08-18-plait-design-grill-review.md` (posture);
+`docs/design/2026-08-17-plait-effect-affordances.md` (carrier
+grounding; read, not edited — its amendment rides a parallel lane).
+
+Proof surfaces, read in place: `verify/fabric/Fabric/*.lean`,
+`verify/fabric/run.sh`, `verify/fabric/DECISIONS.md` (the partition,
+gate, control, and admission-rank precedents this package
+transliterates); `verify/AGENTS.md`, `verify/CONTEXT.md` (gate law).
+
+Built and measured this session: `verify/kernel/` at `f74c2ca6e` —
+`./run.sh` green; 50 rostered theorems, footprint confined to
+`propext`/`Classical.choice`/`Quot.sound`; 17 committed control
+traces; 4 must-not-compile refusals with pinned diagnoses. Toolchain
+textures taken as given from the estate's measurement wave (reserved
+words, kernel-opaque core sort, the named-function congruence
+discipline) and respected throughout.
