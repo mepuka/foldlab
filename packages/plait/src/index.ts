@@ -45,6 +45,9 @@ export * as Register from "./planes/Register.js"
 /** References that decode by resolving, with verify-on-read unskippable. */
 export * as Resolved from "./planes/Resolved.js"
 
+/** Read-plane sessions and the declared views their writ scopes. */
+export * as Session from "./planes/Session.js"
+
 /** Typed constructors for the `flb.fab.*` routing grammar. */
 export * as Subjects from "./kernel/Subjects.js"
 

@@ -23,6 +23,7 @@
     "./Refusal": "./src/truth/Refusal.ts",
     "./Register": "./src/planes/Register.ts",
     "./Resolved": "./src/planes/Resolved.ts",
+    "./Session": "./src/planes/Session.ts",
     "./Subjects": "./src/kernel/Subjects.ts",
     "./Wire": "./src/kernel/Wire.ts"
   },
