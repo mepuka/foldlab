@@ -11,6 +11,10 @@ fenced register over one file-backed, single-replica JetStream server.
   bytes only.
 - `Refusal` owns the structural/absence tagged errors and the absence-only retry
   policy.
+- `KernelDoor` is the one admission door. Its candidate, context, and
+  intrinsic-act types are projections of the model-generated schemas, its
+  `admit` is the model-vector-gated judgment over them, and CLI, `FabricClient`,
+  and `CasDaemon` export that exact function rather than a wrapper.
 - `Wire` constrained-decodes the closed Envelope v0 shape, enforces the inline
   body threshold, and verifies `Nats-Msg-Id` by re-derivation.
 - `Subjects` constructs the three ruled `flb.fab.*` routing families without

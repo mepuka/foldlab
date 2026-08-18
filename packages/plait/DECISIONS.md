@@ -1974,3 +1974,34 @@ emitter's file layout). Why: a public admission seam must be nameable, while the
 deep module should keep the generated family behind its candidate/act/context
 projections. **Load-bearing? yes** — it records that the surface change is the
 ticket's decision, not accidental barrel churn.
+
+### T5. The corpus is not the whole wall: absence gets its own control
+
+Decided: one control decodes a lawful `resolveDigest` whose anchor is absent
+through the generated codec, admits it at the shipping door, and pins the
+resulting sentence against the corpus's own `resolve-schema` vector.
+Alternatives: trust the seventeen replayed vectors (they carry the anchored
+resolve that must be refused and no bare one that must be admitted, so a door
+reading absence as `null` passes all seventeen while refusing a lawful
+sentence — measured, not hypothesised: planting `!== null` leaves the replay
+green and kills only this row); add a vector to the corpus (the corpus is
+emitted by executing the model, so a runtime gap is not a reason to hand-write
+into it). Why: the emitted vectors are the model's claims about the language,
+and this control is the runtime's claim about the *spelling* the generated
+schema hands it — `Schema.UndefinedOr` is the model's `none`, so absence
+compares against `undefined` and nothing else. **Load-bearing? yes** — it is
+the only row that fails when a door and its generated schema disagree about
+how absence is written.
+
+### T6. No service wraps the door in this slice
+
+Decided: hosts hold the `admit` function object itself; no Effect service, tag,
+or layer stands between a caller and judgment. Alternatives: an `Admission`
+service with a layer per context (it makes the door injectable, which is a
+bypass surface the identity control can no longer close, and it was tried and
+reverted on this ticket); a per-host wrapper (a place for host-specific
+validation to grow). Why: `admit` is pure and total — it needs no environment,
+so a service would buy substitutability the no-bypass law exists to deny. A
+Layer seam, if a later slice wants one, wraps this generated door.
+**Load-bearing? yes** — it records that the missing service is a decision, and
+what a future one may and may not wrap.
