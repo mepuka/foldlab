@@ -124,34 +124,63 @@ const declarationControls = [
 const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
-for (const control of controls) {
-  const run = Bun.spawnSync({
+/**
+ * Twenty controls, each a whole `tsc` invocation, ran end to end because the
+ * runner spawned them synchronously. They share nothing — every compiler
+ * control reads its own project and trace, and every declaration control emits
+ * into its own `--outDir` — so the only thing serializing them was the spawn.
+ * The pool is bounded rather than unbounded because twenty concurrent
+ * compilers thrash a machine that has to keep the rest of the battery running.
+ */
+const poolSize = 8
+
+/** A control's verdict: the lines to print before refusing, or nothing. */
+type Refusal = ReadonlyArray<string>
+
+const passed: Refusal = []
+
+const traceRefusal = (
+  label: string,
+  expected: string,
+  actual: string,
+): Refusal => [
+  `PUBLIC EFFECT CONTROL: FAIL — ${label}`,
+  "--- expected ---",
+  expected,
+  "--- actual ---",
+  actual,
+]
+
+const checkCompilerControl = async (
+  control: (typeof controls)[number],
+): Promise<Refusal> => {
+  const child = Bun.spawn({
     cmd: ["bunx", "tsc", "-p", control.project, "--noEmit", "--pretty", "false"],
     cwd: packageRoot,
     stdout: "pipe",
     stderr: "pipe",
   })
+  const [exitCode, stdout, stderr] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ])
 
-  if (run.exitCode === 0) {
-    console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`)
-    process.exit(1)
+  if (exitCode === 0) {
+    return [`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`]
   }
 
-  const actual = normalize(`${run.stdout.toString()}${run.stderr.toString()}`)
+  const actual = normalize(`${stdout}${stderr}`)
   const expected = normalize(await Bun.file(resolve(packageRoot, control.trace)).text())
-  if (actual !== expected) {
-    console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} compiler trace moved`)
-    console.error("--- expected ---")
-    console.error(expected)
-    console.error("--- actual ---")
-    console.error(actual)
-    process.exit(1)
-  }
+  return actual === expected
+    ? passed
+    : traceRefusal(`${control.name} compiler trace moved`, expected, actual)
 }
 
-for (const control of declarationControls) {
-  const emitted = emitDeclarations(control.project)
-  let failed = false
+const checkDeclarationControl = async (
+  control: (typeof declarationControls)[number],
+): Promise<Refusal> => {
+  const emitted = await emitDeclarations(control.project)
   try {
     const actual = inspectPublicDeclarations(
       emitted.directory,
@@ -159,24 +188,48 @@ for (const control of declarationControls) {
       "plantedPublicApi",
     ).violations
     if (actual === "") {
-      console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`)
-      failed = true
-    } else {
-      const traceFile = Bun.file(resolve(packageRoot, control.trace))
-      const expected = await traceFile.exists() ? normalize(await traceFile.text()) : ""
-      if (normalize(actual) !== expected) {
-        console.error(`PUBLIC EFFECT CONTROL: FAIL — ${control.name} declaration trace moved`)
-        console.error("--- expected ---")
-        console.error(expected)
-        console.error("--- actual ---")
-        console.error(actual)
-        failed = true
-      }
+      return [`PUBLIC EFFECT CONTROL: FAIL — ${control.name} typechecked`]
     }
+    const traceFile = Bun.file(resolve(packageRoot, control.trace))
+    const expected = await traceFile.exists() ? normalize(await traceFile.text()) : ""
+    return normalize(actual) === expected
+      ? passed
+      : traceRefusal(`${control.name} declaration trace moved`, expected, actual)
   } finally {
     emitted.dispose()
   }
-  if (failed) process.exit(1)
+}
+
+/**
+ * Runs the checks at most `poolSize` at a time and returns their verdicts in
+ * the order the controls were declared, never the order they finished: a
+ * refusal names the same control on every run, and a red is reproducible.
+ */
+const pooled = async <A>(
+  checks: ReadonlyArray<() => Promise<A>>,
+): Promise<ReadonlyArray<A>> => {
+  const verdicts = new Array<A>(checks.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    for (let index = next++; index < checks.length; index = next++) {
+      verdicts[index] = await checks[index]!()
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(poolSize, checks.length) }, worker),
+  )
+  return verdicts
+}
+
+const verdicts = await pooled([
+  ...controls.map((control) => () => checkCompilerControl(control)),
+  ...declarationControls.map((control) => () => checkDeclarationControl(control)),
+])
+
+const refused = verdicts.find((verdict) => verdict.length > 0)
+if (refused !== undefined) {
+  for (const line of refused) console.error(line)
+  process.exit(1)
 }
 
 console.log("PUBLIC EFFECT CONTROL: PASS (twenty public-surface regressions refused)")

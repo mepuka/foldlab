@@ -1,0 +1,1 @@
+control=unfilled-hole;candidate=hole-in-single-sentence;reason:unfilled-hole|law:only closed programs execute; a hole is a declared parameter, not a wildcard|repair:fill every declared hole; disjoint fills commute, so fill order is free;verdict=refuted

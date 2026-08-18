@@ -1,0 +1,1 @@
+control=closure-cross-sort-token;candidate=token-from-another-register;reason:cross-sort-identifier|law:tokens are per-register and positions are per-partition; sorts never compare across spaces|repair:compare a token only within its register and a position only within its partition;verdict=refuted

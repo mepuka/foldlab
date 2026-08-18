@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import { createHash } from "node:crypto"
 
 import { jetstream, StorageType } from "@nats-io/jetstream"
@@ -98,10 +98,6 @@ let harness: NatsHarness | undefined
 
 beforeAll(async () => {
   built = await buildServerBinary()
-})
-
-afterAll(async () => {
-  await built.cleanup()
 })
 
 beforeEach(async () => {

@@ -1,0 +1,1 @@
+control=closure-absence-claim;candidate=not-present-anywhere-claim;reason:absence-claim|law:a local view is a lattice lower bound (cell_absorb_inflationary)|repair:claim at-least from a replica, never not-present-anywhere;verdict=refuted

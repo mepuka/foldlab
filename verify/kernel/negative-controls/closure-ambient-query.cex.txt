@@ -1,0 +1,1 @@
+control=closure-ambient-query;candidate=unanchored-latest-read;reason:ambient-query-input|law:a derived read is a function of support and query alone (f11_topk_of_support)|repair:read state through a fold at an anchor, and put any seed inside the declared query value;verdict=refuted

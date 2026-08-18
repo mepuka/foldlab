@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { beforeAll, describe, expect, test } from "bun:test"
 import { join, resolve } from "node:path"
 
 import { JetStreamApiCodes, JetStreamApiError } from "@nats-io/jetstream"
@@ -162,10 +162,6 @@ const withServer = async <A>(use: (harness: NatsHarness) => Promise<A>): Promise
 
 beforeAll(async () => {
   built = await buildServerBinary()
-})
-
-afterAll(async () => {
-  await built.cleanup()
 })
 
 describe("Veil register replay wall", () => {

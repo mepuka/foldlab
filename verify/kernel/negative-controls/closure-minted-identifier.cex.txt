@@ -1,0 +1,1 @@
+control=closure-minted-identifier;candidate=uuid-shaped-referent;reason:minted-identifier|law:every identifier is a digest of a declaration or a derivation from one|repair:declare the value and use its digest; nothing mints a name;verdict=refuted
