@@ -1,0 +1,1 @@
+control=broken-erasure-pins;vector=two-node-ground-program;lawful-pin=true;mutant-pin=false;verdict=refuted

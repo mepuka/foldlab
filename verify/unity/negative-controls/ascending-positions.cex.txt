@@ -1,0 +1,1 @@
+control=ascending-positions;vector=one-hole-bound-twice;lawful-read=10;mutant-read=20;verdict=refuted

@@ -1,0 +1,17 @@
+name = "unity"
+defaultTargets = ["Unity", "control"]
+
+[[require]]
+name = "fabric"
+path = "../fabric"
+
+[[require]]
+name = "kernel"
+path = "../kernel"
+
+[[lean_lib]]
+name = "Unity"
+
+[[lean_exe]]
+name = "control"
+root = "ControlMain"
