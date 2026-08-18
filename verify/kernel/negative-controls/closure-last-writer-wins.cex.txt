@@ -1,0 +1,1 @@
+control=closure-last-writer-wins;candidate=lww-join-strategy;reason:last-writer-wins|law:cells merge by join under a declared ACI algebra (f1_cell_merge_aci)|repair:declare the merge algebra; idempotent join leaves nothing for arrival order to choose;verdict=refuted

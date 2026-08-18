@@ -1,0 +1,2 @@
+Function expected
+Act.resolve DeclKind.schema someTarget
