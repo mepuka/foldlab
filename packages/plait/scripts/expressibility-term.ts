@@ -1,28 +1,53 @@
 /**
- * EXEMPLAR ONLY — wired into nothing, imported by nothing, gated by nothing.
+ * The declared term of the expressibility slice, and the only place in this
+ * package where a sentence about `joinAll` is written by a person.
  *
- * The ONE declared term of the expressibility slice, and the only file in this
- * directory where a sentence about `joinAll` is written by a person. `emit.ts`
- * and `project.ts` format what `SHARED` derives here; `wall.ts` reads the
- * results back out of their own bytes and compares. Nothing downstream is
- * hand-written, and no sentence exists twice.
+ * One affordance — the batched cell join — carried through the whole
+ * meta-language pipeline: this declaration, the four artifacts
+ * `expressibility.ts` renders from it, and the wall `check-expressibility.ts`
+ * runs over them. Nothing downstream is hand-written and no sentence exists
+ * twice; a second spelling of any field below reddens the regeneration check
+ * instead of drifting quietly.
  *
- * Written from `docs/design/2026-08-18-km-algebraic-register.md` — §3.2 for the
- * `law` and `rung` row groups, §6.2–§6.3 for the two registers, §7.1 for the
- * affordance row and its inherited sentence — and from the shipped composition
- * the term denotes: `packages/plait/src/internal/cas.ts` `casJoinLoop` as bound
- * at the observation cell by `packages/plait/src/internal/cells.ts` `merge`.
+ * **Law 1 SKETCH WAIVER — unification ticket DEV-796.** Standing estate law 1
+ * requires every public type to derive from the KM corpus
+ * (`kernel/KernelCorpusSchemas` + generated tables) or to wear an explicit
+ * waiver citing its unification ticket. This module wears the waiver, and the
+ * reason is checkable rather than rhetorical: the corpus's nine record groups
+ * are `kind`, `stage`, `refusal`, `type`, `encoding`, `admission`, `doc`,
+ * `canon`, and `program`. It carries no `law`, `rung`, or `operator` group, and
+ * none of the algebraic-register vocabulary appears in it — `grep` for
+ * `semilattice`, `associative`, `commutative`, or `rung` over
+ * `fixtures/kernel-conformance.ndjson` returns nothing. The rows below are
+ * therefore transcribed from `docs/design/2026-08-18-km-algebraic-register.md`
+ * (§3.2 for `law`/`rung`, §6.2–§6.3 for the two registers, §7.1 for the
+ * affordance row), which is a design record and not a model emission.
  *
- * Zero imports beyond `node:crypto`, in the posture `scratch/km-algebra` set:
- * the exemplar stands alone. In the shipped design every row below comes out of
- * the conformance corpus and none of it is typed by a person either.
+ * Hand-authoring rows INTO the corpus is banned (AGENTS.md: hand-authored model
+ * verdicts are refused), so the lawful sequence is that the Lean model grows the
+ * `law` / `rung` / `operator` groups first and this module is then re-derived
+ * from them. Until that lands, these rows are a **sketch**: they are pinned
+ * data reviewed as data, and the wall treats the design record as the outside
+ * oracle that keeps them honest. What is NOT waived: the runtime anchor is
+ * checked against shipped source, and the served schema is checked against the
+ * declaration — neither is transcription.
  *
- * Run: `bash scratch/km-expressibility/run.sh`
+ * The identity door is the estate's, not a local one: canonical bytes and the
+ * digest come from `truth/Canonical` and `truth/Digest` (RFC 8785), so the
+ * digest this term names is the same identity the rest of the estate computes.
+ *
+ * @module
  */
+import { Effect } from "effect"
 
-import { createHash } from "node:crypto"
+import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
+import { digestOf } from "../src/truth/Digest.js"
 
-// ── The row groups, carried inline so the exemplar stands alone ──────────────
+/** The unification ticket this module's sketch waiver cites. */
+export const SKETCH_WAIVER_TICKET = "DEV-796"
+
+/** The design record the sketch rows are transcribed from and walled against. */
+export const DESIGN_RECORD = "docs/design/2026-08-18-km-algebraic-register.md"
 
 /** The six rungs of KM-17's ladder; only two are needed here. */
 export type RungName =
@@ -33,11 +58,7 @@ export type RungName =
   | "group"
   | "abelian-group"
 
-/**
- * The corpus `law` group (§3.2): `{ name, equation, reading, donor,
- * donor_source }`. `equation` is the algebraic-register text written at the
- * generic operator `∘`; `reading` is the plain-word one.
- */
+/** The corpus `law` group's shape (§3.2), pending DEV-796. */
 export interface LawRow {
   readonly name: string
   readonly equation: string
@@ -46,7 +67,7 @@ export interface LawRow {
   readonly donor_source: string
 }
 
-/** The corpus `rung` group (§3.2), joined on `name`; there is no rank field. */
+/** The corpus `rung` group's shape (§3.2), joined on `name`. */
 export interface RungRow {
   readonly name: RungName
   readonly adjective: string
@@ -57,7 +78,7 @@ export interface RungRow {
 }
 
 /**
- * The corpus `operator` group (§6.2): symbol, required rung, and the
+ * The corpus `operator` group's shape (§6.2): symbol, required rung, and the
  * per-operator plain-word phrasing N-1 forced.
  */
 export interface OperatorRow {
@@ -65,30 +86,23 @@ export interface OperatorRow {
   readonly symbol: string
   readonly rung: RungName
   /**
-   * The plain-word reading of one application, as a TEMPLATE STRING with
-   * `{state}` and `{contribution}` holes.
+   * The plain reading of one application, as a TEMPLATE STRING with `{state}`
+   * and `{contribution}` holes.
    *
-   * Finding **E-1**, surfaced by writing this file: `scratch/km-algebra/
-   * two-registers.ts` carries the same datum as a closure. A closure has no
-   * canonical bytes — `canonicalBytes` below refuses it — so under a closure
-   * the phrasing sits OUTSIDE the term digest, and the plain register could be
-   * reworded without moving the digest the parity wall compares. N-1 made the
-   * phrasing a per-operator datum; E-1 is the follow-on that a datum a digest
-   * cannot reach is not yet inside the term.
+   * Finding **E-1**: `scratch/km-algebra/two-registers.ts` carries this same
+   * datum as a closure, and a closure has no canonical bytes — so under a
+   * closure the phrasing sits OUTSIDE the term digest and the plain register
+   * could be reworded without moving the digest the wall compares. Here it is a
+   * template string, and the estate's canonicalizer refuses a function at the
+   * type level: `WireValue` has no function case, so the constraint is enforced
+   * by the compiler rather than by a runtime check. N-1 made the phrasing a
+   * per-operator datum; E-1 is the follow-on that a datum the digest cannot
+   * reach is not yet inside the term.
    */
   readonly reading: string
 }
 
-/**
- * The runtime composition the term denotes, named rather than described.
- *
- * Every field here is a claim about shipped source, and check 4 of the wall
- * binds each one to the `casJoinLoop` call that the declared entry actually
- * makes — not merely to the file that contains it. Before round 2 the anchor
- * asked only whether each string occurred somewhere in the named module, which
- * a module that had stopped calling the loop would still have satisfied: it
- * could certify a false denotation (PR #101 review, Spec blocker).
- */
+/** The runtime composition the term denotes, named rather than described. */
 export interface RuntimeAnchor {
   readonly entry: string
   readonly entry_module: string
@@ -107,26 +121,13 @@ export interface RuntimeAnchor {
   readonly contended: string
 }
 
-// ── The projected surfaces, declared here so the digest reaches them ──────────
-
-/**
- * The JSON Schema shape one served parameter takes at the MCP door.
- *
- * A closed union rather than a free-form schema object on purpose: the served
- * schema is DERIVED from this by `project.ts` and RE-DERIVED independently by
- * `wall.ts`, so both need a shape small enough to render two ways without a
- * shared helper. Before round 2 the served schema was hand-built in
- * `project.ts` and absent from the wall entirely, so changing `required` or
- * `items.type` left every arm green (PR #101 review, Standards blocker) — the
- * served-equals-derived class, standing estate law 3.
- */
+/** The JSON Schema shape one served parameter takes at the MCP door. */
 export type ServedShape =
   | { readonly kind: "digest-string"; readonly pattern: string }
   | { readonly kind: "string-array" }
 
 /** One parameter of the affordance, in BOTH surfaces it is projected into. */
 export interface ParameterDecl {
-  /** The TypeScript parameter name. */
   readonly name: string
   /** The TypeScript type, with `{State}` and `{Rung}` holes the emitter fills. */
   readonly ts_type: string
@@ -138,56 +139,45 @@ export interface ParameterDecl {
   readonly served_description: string
 }
 
-/**
- * The carrier and result the fluent surface elaborates at.
- *
- * Round 2 moves this INTO the term. Before, `emit.ts` authored the signature and
- * the carrier's evidence types directly, so the fluent surface was not wholly a
- * projection of one declared term and its digest did not reach the thing a
- * caller actually types against (PR #101 review, Spec major).
- */
+/** The carrier and result the fluent surface elaborates at. */
 export interface SignatureDecl {
   readonly type_parameter: string
-  /** The carrier type, `{State}`/`{Rung}` holes filled by the emitter. */
   readonly carrier_type: string
-  /** The result wrapper the affordance returns. */
   readonly returns: string
-  /** The typed absence the carrier answers with; never a throw across a seam. */
   readonly refusal: string
   readonly parameters: readonly ParameterDecl[]
 }
 
-export const SIGNATURE: SignatureDecl = {
-  type_parameter: "State",
-  carrier_type: "Cell<{State}, {Rung}>",
-  returns: "Effect<Cell<{State}, {Rung}>, Refusal>",
-  refusal: "Refusal",
-  parameters: [
-    {
-      name: "cell",
-      ts_type: "Cell<{State}, {Rung}>",
-      served_name: "cell_digest",
-      served: { kind: "digest-string", pattern: "^sha256:[0-9a-f]+$" },
-      required: true,
-      served_description: "Digest of the declared cell resource whose {rung} algebra governs the merge.",
-    },
-    {
-      name: "contributions",
-      ts_type: "ReadonlyArray<{State}>",
-      served_name: "contributions",
-      served: { kind: "string-array" },
-      required: true,
-      served_description: "The batch, canonical bytes per element — {inherited}.",
-    },
-  ],
+/** The term language: four constructors, which is all one affordance needs. */
+export type Term =
+  | { readonly t: "state" }
+  | { readonly t: "batch"; readonly of: string }
+  | { readonly t: "fold"; readonly op: string; readonly over: Term }
+  | { readonly t: "apply"; readonly op: string; readonly args: readonly Term[] }
+
+/** The declared term. Its canonical bytes are the digest's preimage. */
+export interface DeclaredTerm {
+  readonly affordance: string
+  readonly signature: SignatureDecl
+  readonly operator: OperatorRow
+  readonly rung: RungRow
+  readonly laws: readonly LawRow[]
+  readonly carrier: string
+  readonly donors: readonly string[]
+  readonly evidence: string
+  readonly inherited: string
+  readonly denotation: Term
+  readonly runtime: RuntimeAnchor
+  /** Every bound the quoted surfaces must carry; both are the loop's own. */
+  readonly bounds: readonly string[]
 }
 
 /**
  * The five law rows the join's rung bundles.
  *
- * Equations and readings are the estate's, not invented here: the ACI three
- * are quoted in §6.3's committed output block, `identity` and `bounded` come
- * from `scratch/km-algebra/two-registers.ts`'s `LAW_WORDS` and `LAW_SYMBOLS`.
+ * Equations and readings are the estate's, not invented here: the ACI three are
+ * quoted in §6.3's committed output block; `identity` and `bounded` come from
+ * `scratch/km-algebra/two-registers.ts`'s `LAW_WORDS` and `LAW_SYMBOLS`.
  */
 export const LAWS: readonly LawRow[] = [
   {
@@ -247,7 +237,7 @@ export const COMMUTATIVE_MONOID: RungRow = {
   donor_source: "",
 }
 
-/** The join operator row. `word` is the only spelling that appears in a name. */
+/** The join operator row. */
 export const JOIN: OperatorRow = {
   name: "join",
   symbol: "∨",
@@ -255,36 +245,31 @@ export const JOIN: OperatorRow = {
   reading: "{state} comes to include at least {contribution}",
 }
 
-// ── The denotation ───────────────────────────────────────────────────────────
-
-/** The term language: four constructors, which is all one affordance needs. */
-export type Term =
-  | { readonly t: "state" }
-  | { readonly t: "batch"; readonly of: string }
-  | { readonly t: "fold"; readonly op: string; readonly over: Term }
-  | { readonly t: "apply"; readonly op: string; readonly args: readonly Term[] }
-
-/** The declared term. Its canonical bytes are `TERM_DIGEST`'s preimage. */
-export interface DeclaredTerm {
-  readonly affordance: string
-  readonly signature: SignatureDecl
-  readonly operator: OperatorRow
-  readonly rung: RungRow
-  readonly laws: readonly LawRow[]
-  readonly carrier: string
-  readonly donors: readonly string[]
-  readonly evidence: string
-  readonly inherited: string
-  readonly denotation: Term
-  readonly runtime: RuntimeAnchor
-  /**
-   * Every bound the quoted surfaces must carry. A LIST rather than one string
-   * because round 2 added the shipped loop's second one: the review found the
-   * quoted bound omitted the fixed-backing-stream-incarnation limit, under which
-   * a bucket delete/recreate resets the revision order beneath the claim
-   * (PR #101 review, Spec major; `cas.ts` module header, DEV-704 seam rule 7).
-   */
-  readonly bounds: readonly string[]
+/** The declared signature, from which BOTH projected surfaces derive. */
+export const SIGNATURE: SignatureDecl = {
+  type_parameter: "State",
+  carrier_type: "Cell<{State}, {Rung}>",
+  returns: "Effect<Cell<{State}, {Rung}>, Refusal>",
+  refusal: "Refusal",
+  parameters: [
+    {
+      name: "cell",
+      ts_type: "Cell<{State}, {Rung}>",
+      served_name: "cell_digest",
+      served: { kind: "digest-string", pattern: "^sha256:[0-9a-f]+$" },
+      required: true,
+      served_description:
+        "Digest of the declared cell resource whose {rung} algebra governs the merge.",
+    },
+    {
+      name: "contributions",
+      ts_type: "ReadonlyArray<{State}>",
+      served_name: "contributions",
+      served: { kind: "string-array" },
+      required: true,
+      served_description: "The batch, canonical bytes per element — {inherited}.",
+    },
+  ],
 }
 
 export const TERM: DeclaredTerm = {
@@ -317,77 +302,47 @@ export const TERM: DeclaredTerm = {
     discipline_binding: "makeCellServiceWith(options, lawfulMergeDiscipline)",
     attempts: 8,
     attempts_symbol: "CELL_MERGE_ATTEMPTS",
-    // DEV-762 moved this out of `src/Cell.ts` when it aligned the source with
-    // its conceptual planes. The path is inside the digest because the term
-    // names where its runtime lives; a move is a change to that claim.
     attempts_module: "packages/plait/src/planes/Cell.ts",
     contended: "cell-update-contended",
   },
-  // `cas.ts`'s own module header, compressed and not softened. Both bounds are
-  // the loop's own; neither is this exemplar's editorial.
+  // `cas.ts`'s own module header, compressed and not softened.
   bounds: [
     "convergence on success is F1's, never the loop's; completion is not claimed, and an exhausted attempt bound refuses cell-update-contended",
     "every claim holds only within a fixed backing-stream incarnation — KV revisions are backing-stream sequences, so a bucket delete/recreate resets the revision order beneath all of it",
   ],
 }
 
-// ── Canonical bytes and the digest ───────────────────────────────────────────
+/** The TypeScript parameter names, derived so the spelling exists once. */
+export const PARAMETER_NAMES: readonly string[] = SIGNATURE.parameters.map((p) => p.name)
+
+/** Every declared bound as one sentence, for the media that carry a line. */
+export const BOUND_TEXT: string = TERM.bounds.join("; also, ")
 
 /**
- * Canonical bytes for the term preimage: keys sorted, arrays in order, safe
- * integers only, and a hard refusal for everything else.
+ * The term's canonical bytes, through the estate's RFC 8785 door.
  *
- * BOUND, stated because a digest invites over-reading: this is a LOCAL
- * canonicalizer over a small closed domain, not the estate's RFC 8785 door
- * (`packages/plait/src/truth/Canonical.ts`). A generator inside the estate would
- * use that door rather than this. What the two agree on is the shape of the
- * claim, not the byte rule for floats, `-0`, or non-BMP escapes, none of which
- * this domain admits.
- *
- * Round 2 note: `wall.ts` now reaches the pinned Effect through `./effect.ts`,
- * so "cannot import" is no longer why this exists — deliberate scope is. The
- * estate's door is a `packages/plait` seam whose import would drag the plane
- * graph into a scratch directory that is meant to stand alone.
- *
- * The refusal on a function is load-bearing, not defensive: it is what makes
- * E-1 structural instead of a note.
+ * The scratch spike carried a local canonicalizer because `effect` did not
+ * resolve from `scratch/`. In its package home that reason is gone, so the
+ * identity this term names is the estate's identity and not a lookalike.
  */
-export const canonicalBytes = (value: unknown): string => {
-  switch (typeof value) {
-    case "string":
-      return JSON.stringify(value)
-    case "boolean":
-      return value ? "true" : "false"
-    case "number":
-      if (!Number.isSafeInteger(value)) {
-        throw new Error(`the term preimage carries the non-integer ${String(value)}`)
-      }
-      return String(value)
-    case "object":
-      break
-    default:
-      throw new Error(
-        `the term preimage carries a ${typeof value}, which has no canonical bytes` +
-          " — a datum a digest cannot reach is not inside the term (E-1)",
-      )
-  }
-  if (value === null) throw new Error("the term preimage carries null; absence is not a value here")
-  if (Array.isArray(value)) return `[${value.map(canonicalBytes).join(",")}]`
-  const record = value as Record<string, unknown>
-  return `{${
-    Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonicalBytes(record[key])}`)
-      .join(",")
-  }}`
-}
+export const termBytes = (): Promise<Uint8Array> =>
+  Effect.runPromise(canonicalBytes(TERM as unknown as WireValue))
 
-/** SHA-256 over canonical bytes, in the estate's digest shape (64 lowercase hex). */
-export const digestOf = (value: unknown): string =>
-  createHash("sha256").update(canonicalBytes(value), "utf8").digest("hex")
+/**
+ * The canonical preimage as text: the same bytes, decoded once.
+ *
+ * The door's canonical form is BYTES (`Uint8Array`, UTF-8) — the digest is taken
+ * over those, not over a JavaScript string, and the committed artifact is that
+ * byte sequence. This decoding exists only so the generator and the wall can
+ * hold the artifact in the same representation they hold the other three in; the
+ * round trip is exact because the bytes are valid UTF-8 by construction.
+ */
+export const termPreimage = async (): Promise<string> =>
+  new TextDecoder().decode(await termBytes())
 
-/** The one digest every projection names. */
-export const TERM_DIGEST: string = digestOf(TERM)
+/** The one digest every projection names, from the estate's identity door. */
+export const termDigest = (): Promise<string> =>
+  Effect.runPromise(digestOf(TERM as unknown as WireValue))
 
 // ── One abstract statement type, two concretizations (§6.3) ─────────────────
 
@@ -478,8 +433,8 @@ export const algebraic = (statement: Statement): string => {
 // ── The shared fields: derived once, formatted three ways ────────────────────
 
 /**
- * Every field that appears in more than one projection. The parity wall pulls
- * each of these back out of each projection's own bytes and byte-compares.
+ * Every field that appears in more than one projection. The wall pulls each of
+ * these back out of each projection's own bytes and byte-compares.
  *
  * The rung's plain-word adjective is deliberately NOT here: it appears in the
  * plain register alone, so it is a register rendering rather than a shared
@@ -496,13 +451,8 @@ export interface Shared {
   readonly term: string
 }
 
-/** The TypeScript parameter names, derived so the spelling exists once. */
-export const PARAMETER_NAMES: readonly string[] = SIGNATURE.parameters.map((p) => p.name)
-
-/** Every declared bound as one sentence, for the media that carry a line. */
-export const BOUND_TEXT: string = TERM.bounds.join("; also, ")
-
-export const SHARED: Shared = {
+/** The shared fields, given the digest the identity door computed. */
+export const sharedOf = (digest: string): Shared => ({
   affordance: `${TERM.affordance}(${PARAMETER_NAMES.join(", ")})`,
   rung: TERM.rung.name,
   algebraic: `${algebraic(REWRITE)} — ${algebraic(LAWS_OF)}`,
@@ -510,8 +460,8 @@ export const SHARED: Shared = {
   inherited: TERM.inherited,
   donors: TERM.donors.join(", "),
   evidence: TERM.evidence,
-  term: TERM_DIGEST,
-}
+  term: digest,
+})
 
 /** The field order the wall reports in, so two runs read the same. */
 export const SHARED_FIELDS: readonly (keyof Shared)[] = [

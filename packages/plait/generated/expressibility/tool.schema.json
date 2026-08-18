@@ -1,7 +1,7 @@
 {
-  "$comment": "EXEMPLAR ONLY — wired into nothing, served by nothing, gated by nothing. GENERATED from scratch/km-expressibility/term.ts by `bun scratch/km-expressibility/project.ts`; nothing here is hand-written. Record shape follows verify/kernel/projections/tools.schema.json: flat tools, no oneOf, compound self-descriptive field names, digests as prefixed opaque strings with pattern. There is no ordering parameter and no conflict strategy because the term declares none; an unlawful call has no spelling here rather than a refusal at the door.",
-  "artifact": "scratch/km-expressibility/term.ts",
-  "command": "bun scratch/km-expressibility/project.ts",
+  "$comment": "GENERATED FILE - DO NOT EDIT. Generated from packages/plait/scripts/expressibility-term.ts by `bun run generate:expressibility`; nothing here is hand-written. Record shape follows verify/kernel/projections/tools.schema.json: flat tools, no oneOf, compound self-descriptive field names, digests as prefixed opaque strings with pattern. There is no ordering parameter and no conflict strategy because the term declares none; an unlawful call has no spelling here rather than a refusal at the door. NOT SERVED: no MCP surface reads this file; it is the projection under wall.",
+  "artifact": "packages/plait/scripts/expressibility-term.ts",
+  "command": "bun run generate:expressibility",
   "term_digest": "92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038",
   "tools": [
     {

@@ -1,13 +1,12 @@
-<!-- GENERATED FILE - DO NOT EDIT. Artifact: scratch/km-expressibility/term.ts | Command: bun scratch/km-expressibility/project.ts | Term: 92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038 -->
+<!-- GENERATED FILE - DO NOT EDIT. Artifact: packages/plait/scripts/expressibility-term.ts | Command: bun run generate:expressibility | Term: 92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038 -->
 
 # joinAll — the affordance row, in both registers
 
-**EXEMPLAR ONLY** — wired into nothing, published nowhere, gated by nothing.
-Both rows below are projections of one declared term; neither is a second
-text, and neither was written by a person. The rung is one datum rendered
-twice: the algebraic register spells the rung name, the plain register leads
-with its adjective. That adjective is a rendering, not a shared field, so the
-parity wall does not pretend to compare it.
+Both rows below are projections of one declared term; neither is a second text,
+and neither was written by a person. The rung is one datum rendered twice: the
+algebraic register spells the rung name, the plain register leads with its
+adjective. That adjective is a rendering, not a shared field, so the parity wall
+does not pretend to compare it.
 
 What the caller no longer has to know:
 
@@ -27,11 +26,11 @@ What the caller no longer has to know:
 
 ## The four statements, paired
 
-One abstract statement type, two total renderings. The laws, derived-order,
-and requires rows are the join operator's own and must come out
+One abstract statement type, two total renderings. The laws, derived-order, and
+requires rows are the join operator's own and must come out
 byte-identical to the ones committed in
 `docs/design/2026-08-18-km-algebraic-register.md` §6.3 — that record is the
-wall's outside oracle, written before this exemplar and by another hand. The
+wall's outside oracle, written before this slice and by another hand. The
 rewrite row is the one line that legitimately differs: §6.3 states the
 single-contribution join, this term states the batched one.
 

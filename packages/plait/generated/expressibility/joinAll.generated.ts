@@ -1,16 +1,15 @@
 /**
  * GENERATED FILE - DO NOT EDIT.
  *
- * Artifact: scratch/km-expressibility/term.ts
- * Command:  bun scratch/km-expressibility/emit.ts
+ * Artifact: packages/plait/scripts/expressibility-term.ts
+ * Command:  bun run generate:expressibility
  * Term:     92c56ebd9c89ac51d4b0f46b80976e33f419f9f28c921c4ce1a688ae5efb9038
- *
- * EXEMPLAR ONLY — wired into nothing, imported by nothing, gated by nothing.
  *
  * The fluent surface one declared term projects into TypeScript. Zero imports
  * on purpose: it type-checks alone under `--strict` with no config, so the
  * must-not-compile controls at the foot are load-bearing rather than
- * decorative.
+ * decorative. It is a TYPE-LEVEL PROBE and not a shipped surface — `Effect`
+ * below is a structural stand-in, and nothing imports this file.
  *
  * @module
  */

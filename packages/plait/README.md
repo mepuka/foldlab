@@ -76,10 +76,22 @@ bun run test
 
 It is the concatenation of three groups, each runnable on its own while you
 work: `test:fast` (the pure test files, the corpus diff, the public-effect
-manifest, and the substrate-parity control), `test:walls` (every file that
-brings up a real `nats-server`), and `test:types` (the twenty tsc negative
-controls). The fast/wall partition is derived from whether a test file imports
-the NATS harness, so a file added later joins a group without being listed.
+manifest, the substrate-parity control, and the expressibility wall with its
+control), `test:walls` (every file that brings up a real `nats-server`), and
+`test:types` (the twenty tsc negative controls). The fast/wall partition is
+derived from whether a test file imports the NATS harness, so a file added
+later joins a group without being listed.
+
+## Generated artifacts
+
+`generated/expressibility/` holds one affordance projected into four surfaces
+from a single declaration — the canonical preimage, the fluent TypeScript
+surface, the MCP tool entry, and the affordance row in both registers. The
+declaration is `scripts/expressibility-term.ts`; regenerate with `bun run
+generate:expressibility`; the walls that prove it are `check:expressibility`
+and `check:expressibility-control`, both in `test:fast`. Read
+`generated/expressibility/README.md` next — it carries the arm-by-arm account
+and the law-1 sketch waiver.
 
 The package test runs unit and local-NATS walls, byte-diffs generated corpora,
 replays every E4 `verify/fabric` row, and derives the refusal-channel manifest
