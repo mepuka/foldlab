@@ -910,3 +910,50 @@ operations produce immediately under a plain `try`/`catch`, which would have
 recorded a false observation and cost five seconds per arm. **Load-bearing?
 no** — the observed refusals are identical either way; this keeps the recorded
 value the one the client actually produced.
+
+### T4. The record carries transcripts and pinned citations, not narration
+
+Decided: the findings record gains a replay command, the suite's verbatim trace
+lines, and a per-mechanism section pairing the observation with the pinned
+`@nats-io/obj@3.4.0` line that implements it — client-side digest derivation,
+the last-chunk check, the metadata write/check boundary, and revision-as-meta
+-stream-sequence. Alternatives: leave the prose narration; cite upstream GitHub
+rather than the shipped pin. Why: the ticket asked for ran-it transcripts plus
+pinned-source citations in the DEV-704 idiom, and the tamper arm alone proves
+only that injected bytes leave metadata unchanged — it does not establish the
+four mechanisms the record attributes. A reader could not check any of them.
+Citing the checkout's own `node_modules/@nats-io/obj/lib/` keeps every line
+number verifiable at the pin this suite actually runs against; an upstream link
+resolves to a different tree. Raised as a DEV-753 round-1 major charge.
+**Load-bearing? yes** — a record that cannot be checked is narration.
+
+### T5. The `mtime` claim is weakened to what the client actually does
+
+Decided: every record now says `mtime` is recomputed on every put and observed
+nondecreasing, and says outright that it is not a freshness oracle. The suite
+asserts nondecrease across the exercised puts and that the value round-trips
+as an ISO string. Alternatives: assert strict freshness across puts. Why: it
+would flake, and the pin says why — `info.mtime = new Date().toISOString()`
+(`objectstore.js:405`) is a client clock at millisecond resolution, so two puts
+inside one millisecond carry the same string. "Every put mints a fresh `mtime`"
+was a claim no gate enforced and no gate could. Raised as a DEV-753 round-1
+major charge. **Load-bearing? yes** — a consumer ordering puts by `mtime` would
+have been building on a tie it was told could not happen.
+
+### T6. One scoped probe helper owns the lifecycle; each arm owns its observation
+
+Decided: `probe(bucket, observe)` opens the connection, creates a fresh
+file-backed R=1 bucket, and closes however the arm ends. Alternatives: leave
+five copies of the connect/create/`try`/`finally` block. Why: the repetition
+was the only thing standing between a reader and each arm's actual claim, and
+one copy of a `finally` is one place for a leaked connection to be fixed rather
+than five. Raised as a DEV-753 round-1 minor charge. **Load-bearing? no** — the
+observations are unchanged.
+
+### T7. The LCG produces probe inputs, not fixtures
+
+Decided: the generator's comment no longer calls its output a fixture. The root
+glossary reserves that word for frozen digest pins minted by the side that owns
+a model, and nothing here pins a model's answer — these are ordinary runtime
+inputs to a characterization probe. Raised as a DEV-753 round-1 minor charge.
+**Load-bearing? no** — vocabulary.

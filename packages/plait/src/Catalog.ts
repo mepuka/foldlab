@@ -99,9 +99,14 @@ export class Blobs extends Context.Service<Blobs, BlobService>()(
   "@foldlab/plait/Blobs",
 ) {
   /**
-   * Every lookup is head-relative absence. This is the standing layer until
-   * the object-store probe suite lands on the substrate gate; a layer that
-   * trusted store-side digests would be a verify-on-read hole, so none ships.
+   * Every lookup is head-relative absence. This is the standing layer: no
+   * backing store is ruled for it, and the tenth substrate suite's evidence
+   * does not rule one — it says what the pinned object store does, which is
+   * advisory. A layer that trusted store-side digests would be a
+   * verify-on-read hole, so none ships. Two things that evidence made
+   * concrete: the object store's metadata is written by the client and never
+   * checked by the server, and its digest is verified only when the last
+   * chunk arrives, so a streamed prefix is unverified bytes.
    */
   static readonly layer: Layer.Layer<Blobs> = Layer.succeed(
     Blobs,
