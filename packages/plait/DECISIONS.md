@@ -320,6 +320,120 @@ the operation's outcome ambiguous, and this adapter reconciles ambiguity by
 read-back, never by a retried write on faith). **Load-bearing? no** — the
 teaching states the repair the adapter already implements; no law moves with it.
 
+### T17. Make each declared lane partition its own dense successor domain
+
+Decided: one exact file-backed R=1 stream is created for every declared
+`(lane, partition)`, with no count, byte, or age eviction and a pinned two-minute
+message-id window. The stream name carries the full lane-declaration digest;
+the subject carries only the ruled short handle and partition. The former
+commons stream is re-scoped to fact/node control traffic, and advisory
+`FabricClient.subscribe` discovers whichever stream owns its exact subject.
+Alternatives: retain one wildcard evidence stream and use its sparse global
+sequence; invent an application ordinal; change the successor model. Why: the
+ratified DEV712-POS-1 disposition makes the partition stream's dense sequence
+identical to F2b's position, so no filtered consumer can wait forever on a
+sequence belonging to another lane. **Load-bearing? yes** — this topology makes
+the transport coordinate satisfy the successor premise.
+
+### T18. Derive fold steps and derive ACI cases before branding
+
+Decided: `Fold.declare` accepts only a per-event contribution and derives
+`step(state,event) = algebra.combine(state, contribution.apply(event))`.
+`Algebra.commutative` accepts a seeded arbitrary and equality, draws its seed
+from the algebra digest, derives at least 32 distinct triples itself, and runs
+left identity, right identity, associativity, and commutativity before attaching
+its private runtime witness. A generator that cannot yield 32 distinct triples
+is refused; callers cannot enumerate a degenerate passing suite. `fast-check`
+remains a test-only dependency. `Fold.declare` requires the witness at the type
+door and checks it again at runtime when partitions exceed one. Alternatives:
+accept caller-enumerated cases; accept an independent step and property-test
+compatibility; expose an assertion-style brand; rely on TypeScript alone. Why:
+derivation makes both the sample and the step/algebra bridge the declaration
+door's work, while the runtime witness refuses casts and failed law suites.
+**Load-bearing? yes** — this is the F4 license and its compatibility bridge.
+
+### T19. Store content-addressed state before plain anchor revision CAS
+
+Decided: `flb-fab-anchor` is file-backed R=1, history 64, TTL 0, max bytes -1.
+Each fold-partition key stores the closed `(floor,stateDigest,head)` fact;
+canonical state bytes live at a content-addressed state key in the same bucket
+and are written before the anchor update. A lost `update(expectedRevision)` is
+`lost-anchor-cas`, a structural fatal detach; the pump never re-reads and
+continues. Alternatives: inline state in the anchor; merge concurrent anchors;
+reread a winning anchor and keep consuming. Why: anchor identity remains the
+ruled triple, state resumes by digest, and a revision conflict is evidence that
+the one-live-pump operational assumption has failed. **Load-bearing? yes** —
+ack may follow only a landed covering CAS.
+
+CAS adoption has three distinct disciplines: joins retry through the join loop
+(F1 idempotence discharges ambiguity); registers reconcile by read-back (I2
+once-only); anchors never retry — a lost anchor CAS is a fatal detach under the
+single-live-pump discipline, and routing an anchor through either loop is
+refused.
+
+### T20. Bound flow control at 256 and redeliver unacked work after one second
+
+Decided: each durable explicit-ack pull consumer has
+`max_ack_pending = 256`; the in-memory position map refuses if it exceeds that
+same bound. Pull batch size is capped by `checkpointEvery`, and the live pump
+persists every non-empty contiguous drain before acknowledging its covered
+messages. `ack_wait` is one second so a crashed local pump is promptly
+redelivered in the mandatory wall. Alternatives: 30-second server-style wait;
+an unbounded map; checkpoint-only tail state. Why: these are observable flow
+control choices with no correctness stake, and the shorter wait keeps the real
+hard-kill gate bounded without manufacturing a retry. **Load-bearing? no** —
+the successor discipline and anchor-before-ack order carry correctness; these
+numbers carry resource and test latency bounds.
+
+The Effect-side queue stays unbounded because every bounded `Stream.callback`
+strategy drops under a synchronous unsafe offer, and occupancy is bounded by
+`max_ack_pending` through the ack-after-anchor discipline. The
+`fold-buffer-overflow` refusal is retained as a loud invariant guard but is
+untriggerable inside the pinned consumer shape: at most 256 unacknowledged
+deliveries can enter the position map, applied and stale positions leave before
+the next server delivery, and a 257-entry buffer would first require the server
+to violate `max_ack_pending = 256`. **Load-bearing? no** — the consumer-shape
+gate and server bound carry the resource invariant.
+
+### T21. Use TerminateProcess/SIGKILL and consumer NAK for the two chaos arms
+
+Decided: the kill wall runs the production pump in a child, waits for a partial
+anchor marker, invokes signal 9 (Bun maps it to hard process termination on
+Windows), restarts, and compares every partition state digest with an
+uninterrupted arm. The duplication wall collects a pinned tranche on a
+harness-owned durable consumer, NAKs each real message twice in a seeded
+reordered sequence, and feeds only those received records to the successor
+discipline; no republish occurs. `plait chaos` reuses those implementations,
+re-admits the exported lane/algebra/fold through their declaration doors,
+emits canonical measured facts and citations, and marks partition reorder
+`n/a` because v0 defers it. Alternatives: graceful fiber interruption; publish
+copies; trust a shallow module shape; a canned fold; claim the scoreboard proves
+the runtime. Why: only hard termination tests crash-indifference, a republish
+creates a new position, and the CLI is a measurement over the developer's
+certified declaration rather than a proof.
+
+The severable chaos-CLI rider is accepted and absorbed by this slice: the
+mandatory gates already built every mechanism it re-dresses, so extraction
+would add churn without narrowing the implementation. No separate rider ticket
+remains.
+
+**Load-bearing? yes** — these are the mandatory substrate-level F3/F2b walls.
+
+### T22. Consume every row in the declared E4 families
+
+Decided: the runtime wall consumes every row whose header family is one of F2,
+F2b, F3, F3-F2b, or F4, and derives its checked count from the corpus header.
+Every name inside those families must route through the runtime successor
+machine; an unknown name there is fatal and zero skips are permitted. Four exact
+exclusion names retain their ruled homes: F1/Cell, alphabet admission/slice 0,
+and both F9/action-plane rows. Other families are reported as unfamiliar and do
+not fail this slice merely because the model grew. Alternatives: pin whole-file
+row totals; silently consume whatever rows exist; copy the model into
+TypeScript. Why: family coverage makes a new in-scope row red without making an
+unrelated model wave manufacture a failure, while missing exclusions remain
+fatal sequencing drift. **Load-bearing? yes** — this is the R0/R1 wall between
+the proved model and the unproved runtime.
+
 ### T17. DEV-725 round 2 — the quickstart repair's blast radius
 
 Decided: the coordinator's dispatch named two stale surfaces (the frontier
@@ -359,6 +473,22 @@ the coordinator's own hand at `fe7fb3ac6`; its wrap runs long at the splice, whi
 is cosmetic and is reported rather than silently reflowed); Example 2 and the
 `plait chaos` section, both still honestly E4; the three sample scripts, which
 stay uncommitted for DEV-715's doctest lane per T14.
+
+### T23. Subscribe discovers the stream that owns its subject
+
+Decided: `FabricClient.subscribe` resolves the owning stream through
+`streams.find` at subscribe time. `FabricClientOptions.stream` names only the
+fact/node commons stream whose shape the constructor ensures. An advisory
+subscription on an unowned subject refuses as transport absence instead of
+idling. Supersessions: T4's “the exact file-backed R=1 stream” now reads “the
+exact stream owning the subject”; T5's deduplication window is per partition
+stream for evidence and per commons stream for fact/node, never stream-wide
+across lanes. Alternatives: keep the constructor's commons-stream name as the
+subscription target; make callers name a stream; idle on an unowned subject.
+Why: subjects route while stream ownership may be partition-local, and discovery
+preserves the advisory surface without smuggling topology into it.
+**Load-bearing? yes** — without discovery, a valid evidence subscription reads
+the wrong stream or waits forever.
 
 
 ## Task DEV-724 — E6 contexts, runtime half

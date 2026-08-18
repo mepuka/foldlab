@@ -1,0 +1,1 @@
+FOLD CHAOS: PASS protocol=NAK redeliveries=8 buffered=2 drained=2 successor-equal=true arrival-order-mutant-diverged=true

@@ -659,7 +659,7 @@ correctness claim in the same breath — the awkwardness shows up as an absent
 brand rather than as a caveat in prose.
 
 Brands, generally, are earned and never asserted: `Algebra.commutative`'s only
-constructor runs the generated law suite, and `partitions > 1` type-requires the
+constructor derives a digest-seeded, distinct law suite, and `partitions > 1` type-requires the
 brand. Rights follow proofs, in the type system.
 
 ### 6d. What retrieval never claims

@@ -24,15 +24,14 @@ minutes run today.
 | --- | --- | --- |
 | 0–2 | Boot a local commons | **Runs today** — E2, the spine |
 | 2–5 | Example 1 — two processes, one digest | **Runs today** — E2 |
-| 5–8 | Example 2 — kill it and get the same answer | **E4**, the durable fold — design only |
+| 5–8 | Example 2 — kill it and get the same answer | **Runs today** — E4, the durable fold |
 | 8–10 | Example 3 — two workers, one outcome | **Runs today** — E5, the register. One further line makes the worker an LLM action (**E9**) |
 
-Sections marked with an epic (E4, E9) describe work that is designed and
-ratified in shape but not built. Their code blocks are sketches from the design
-record — copying them will not compile. Everything *not* marked with an epic was
-executed against `packages/plait` as merged on `main` (the spine, E2, merged at
-`b51d1d8c4`; the register, E5, merged at `591aeec`), and the console output shown
-is real output from that run.
+E2, E4, and E5 are runnable from this workspace package: lanes own partition
+streams, durable folds resume from anchors, `plait chaos` measures hard-kill and
+protocol-redelivery schedules, and registers fence one landed outcome. The E5
+console output shown below is real output executed against the merged register;
+the E9 sketch remains design-only and does not compile against the merged API.
 
 The journey shape here is the ratified one (DEV-697 §3, ratified in the
 2026-08-17 grill sheet). The epic labels are what keeps it honest while the
@@ -54,8 +53,9 @@ lower slices are still being built.
 
 ## 0–2 · Boot the commons
 
-There is no published package and no `plait` command yet. Today Plait is a
-workspace package inside the `foldlab` repo, and you run it from source.
+There is no published package yet. Plait is a workspace package inside the
+`foldlab` repo; its `plait chaos` bin runs from source. `plait dev` is a separate
+future surface and is not part of this slice.
 
 ```bash
 git clone https://github.com/mepuka/foldlab
@@ -77,10 +77,10 @@ mkdir -p .plait
 
 On Windows the binary is `.plait\nats-server.exe`.
 
-You do not create a stream. The first client to connect creates it — file
-storage, one replica, and exactly the three `flb.fab.*` subject families — and
-if it finds a stream of a different shape it refuses to start rather than
-adapting to it (`packages/plait/src/internal/nats.ts`, `ensureStream`).
+You do not create streams manually. The control client creates one file-backed
+R=1 fact/node stream. `Lane.emit` creates one exact file-backed R=1 stream per
+declared partition; that stream's dense sequence is the fold position. A client
+that finds the wrong shape refuses rather than adapting it.
 
 > A single `plait dev` command that boots this for you is a proposal on the
 > board (DEV-697 R4). It has not been ruled, so it is not promised here.
@@ -94,36 +94,36 @@ on mismatch.
 Create `packages/plait/quickstart/emit.ts`:
 
 ```ts
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 
 import { digestOf } from "@foldlab/plait/Digest"
-import { FabricClient } from "@foldlab/plait/FabricClient"
-import { evidenceSubject } from "@foldlab/plait/Subjects"
-import type { Envelope } from "@foldlab/plait/Wire"
+import { Lanes, declare, emit } from "@foldlab/plait/Lane"
 
 const url = process.argv[2] ?? "nats://127.0.0.1:4222"
+const DocEvent = Schema.Struct({
+  doc: Schema.String,
+  terms: Schema.Record(Schema.String, Schema.Number),
+})
 
 const program = Effect.gen(function* () {
-  const lane = yield* digestOf({ lane: "quickstart" })
-  const envelope: Envelope = {
-    v: 0,
-    kind: "emit",
-    lane,
-    key: "doc-1",
-    holder: "writer-a",
-    body: { terms: { fabric: 2, plait: 1 } },
-    pins: [],
-  }
+  const eventSchema = yield* digestOf({ v: 0, kind: "schema", name: "quickstart/DocEvent" })
+  const lane = yield* declare({
+    handle: "quickstart",
+    event: DocEvent,
+    eventSchema,
+    partitions: 1 as const,
+    partitionKey: { path: ["doc"] },
+  })
+  const event = { doc: "doc-1", terms: { fabric: 2, plait: 1 } }
+  const first = yield* emit(lane, event, { holder: "writer-a" })
+  console.log(`emitted    ${first.digest}  seq=${first.position}  duplicate=${first.duplicate}`)
 
-  const fabric = yield* FabricClient
-  const subject = yield* evidenceSubject("quickstart", 0)
-
-  const first = yield* fabric.publish(subject, envelope)
-  console.log(`emitted    ${first.digest}  seq=${first.sequence}  duplicate=${first.duplicate}`)
-
-  const again = yield* fabric.publish(subject, envelope)
-  console.log(`re-emitted ${again.digest}  seq=${again.sequence}  duplicate=${again.duplicate}`)
-}).pipe(Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })))
+  const again = yield* emit(lane, event, { holder: "writer-a" })
+  console.log(`re-emitted ${again.digest}  seq=${again.position}  duplicate=${again.duplicate}`)
+}).pipe(
+  Effect.provide(Lanes.layer({ servers: url })),
+  Effect.scoped,
+)
 
 await Effect.runPromise(program)
 ```
@@ -285,10 +285,9 @@ about bytes, and the checking is not your job.
 ### Two things about Example 1 that are the spine's limits, not the design's
 
 - The `lane` field on an envelope is meant to hold the digest of a *lane
-  declaration* — its schema, partitions, and key derivation (`Lane.declare`,
-  design part 1 §8.3). That declaration machinery is not on the spine, so here
-  you pass any digest you like. The subject's `quickstart` token is separate: it
-  is routing, and routing never carries identity.
+  declaration* — its schema, partitions, and key derivation. `Lane.declare`
+  builds that identity above. The subject's `quickstart` token remains routing
+  sugar: routing never carries identity.
 - `key`, `holder`, `body`, `pins`, and the optional `cert` are the closed
   envelope-v0 shape. `cert` is a recomputable derivation claim (which schema,
   which program, which input anchor); the spine carries it, and the machinery
@@ -296,14 +295,15 @@ about bytes, and the checking is not your job.
 
 ## 5–8 · Example 2 — "kill it and get the same answer" — **E4**
 
-**Not runnable yet. This section describes E4, the durable fold.**
+**Runs today.** `Lane`, `Algebra`, `Fold`, and `Anchor` are public modules; the
+real-NATS gate hard-kills a two-partition counter and resumes to the same state
+digests as its uninterrupted arm.
 
 The shape: a word-count fold over a folder of documents. You deploy it, `kill -9`
 the process mid-stream, restart it, and diff the result against a
 single-process reference run. The digests match.
 
-The sketch from the design record (part 1 §8.3) — illustrative, not an API you
-can call today:
+The deployment API has one verb:
 
 ```ts
 const run = Effect.fn("distill.run")(function* () {
@@ -313,7 +313,7 @@ const run = Effect.fn("distill.run")(function* () {
 ```
 
 Look at what is *absent*. There is no `durability` setting, no `reset`, no
-`rebuild`, no `invalidate`, and no offset management. `Folds.deploy` is intended
+`rebuild`, no `invalidate`, and no offset management. `Folds.deploy` is
 to be the only verb: it resumes from the anchor if one exists and starts fresh
 if it does not, because the anchor is a fact keyed by `(fold digest, partition)`
 rather than a piece of mutable bookkeeping.
@@ -338,21 +338,17 @@ against a scenario the model proves cannot arise.
 
 **Status, stated plainly:** F3 and F2b are machine-checked *at the model level*.
 The Lean package that carries them — `verify/fabric`, epic E3 — is merged on
-`main`, and `bash verify/fabric/run.sh` is green: 70 rostered theorems with their
-axiom footprints checked, four law-dropping negative controls each refuted on the
-law it dropped, and an 11-row model-emitted vector corpus that regenerates
-byte-for-byte.
+`main`, and `bash verify/fabric/run.sh` is green: every rostered theorem has its
+axiom footprint checked, every law-dropping control is refuted on the law it
+dropped, and the 15-row model-emitted corpus regenerates byte-for-byte.
 
 Read the scope of that exactly, because the distinction is the whole product. It
 is a proof about the *model* — schedules, positions, and a merge algebra as Lean
-objects. It is not a proof about the TypeScript you ran in Example 1. What does
-not exist yet is the bridge: **nothing in the running code consumes that model's
-corpus today**, so there is no proof that `Folds.deploy` implements what the Lean
-says. That correspondence wall, and the required-battery tripwire behind it, are
-E4's and the CI slice's work. Until then the honest sentence is "the mathematics
-is checked; the wiring to the code is not" — and the Lean lane that guards it is
-not yet a required CI check. `VERIFICATION.md` records the same gap in its own
-words.
+objects. The runtime wall consumes the eleven E4 rows by exact name with zero
+skips inside a consumed family and names the four rows owned elsewhere. That is
+an R0/R1 correspondence wall, not a proof of the TypeScript: **the runtime is
+walled against the model that is proven; the runtime itself is never called
+proven.**
 
 ## 8–10 · Example 3 — "two workers, one outcome", then **E9**
 
@@ -480,25 +476,29 @@ in one diff: **an agent is a fenced action.** A model call is not a special kind
 of participant with its own coordination story — it is an action that happens to
 be non-deterministic, holding the same lease as anything else.
 
-## The closing move — `plait chaos` (**E4** ticket)
+## The closing move — `plait chaos`
 
 This quickstart is designed to end one step past "it worked" — at "it worked
 under a kill schedule, and here is the law that says it had to."
 
-`plait chaos` is a ratified E4 ticket (grill sheet item 13, dispatch 31). Its
-scope is fenced deliberately, and the fence matters more than the feature:
+`plait chaos` ships as E4's thin harness entry. Its scope is deliberately
+fenced:
 
 - It drives *your declared fold* — not an arbitrary program — through the
-  kill/restart/drain and duplicate-redelivery harnesses that E4 must build
+  kill/restart/drain and duplicate-redelivery harnesses E4 uses in its gates
   anyway. Redeliveries are manufactured through the consumer protocol, not faked.
 - Its output is a measured scoreboard plus the digest-equality verdict.
 - **It does not prove anything at runtime.** The machine-checked half arrives by
   citation — the law names and the corpus digest — not by re-deriving a proof
   while your fold runs. A green run is a measurement that agrees with a proved
   model, which is a different and weaker thing than a proof about your program.
-- The ticket is severable. If the entry point turns out to need chaos machinery
-  E4's gates do not already build, it is dropped rather than grown, and the full
-  distillation gauntlet (E10) is not pulled forward to rescue it.
+- Arrival reorder ships; partition reorder prints `n/a` and is deferred. The
+  full distillation gauntlet (E10) is not pulled forward.
+
+```bash
+PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/cli.ts chaos \
+  ./my-fold.ts --pin-head --axis kill --axis duplicate --axis reorder --output json
+```
 
 ## What this page does not claim
 
@@ -515,10 +515,9 @@ Read this section as part of the quickstart, not as fine print.
 - **Proved about a model is not proved about the code.** F1, F2, F2b, F3, F4 and
   F9 are proved in `verify/fabric` (E3, merged, gate green), at the model level,
   and F2b carries an in-window contiguity premise that is part of the statement
-  rather than a caveat on it. Nothing running consumes that model's corpus yet,
-  so no claim on this page says the shipped code implements the proved model;
-  that bridge lands with E4 and the CI slice, and the Lean lane guarding it is
-  not yet a required check. **F5 is the exception, and only F5**: it is proved in
+  rather than a caveat on it. The E4 wall consumes the named corpus vectors,
+  which checks correspondence at those rows but does not prove the TypeScript.
+  **F5 is a separate claim**: it is proved in
   the Veil-pinned `verify/fabric-veil` (E5, merged) *and* carried onto the real
   substrate by a 15-row replay wall across two independent runtimes — rung R3
   plus that wall, with R4 reserved at the 15,378-schedule bar, and every runtime

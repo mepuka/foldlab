@@ -1,7 +1,7 @@
 # @foldlab/plait
 
-The first Plait slice: a narrow public spine for canonical envelope identity
-and verified delivery over one file-backed, single-replica JetStream server.
+Plait's canonical envelope spine, durable evidence lanes, fold runtime, and
+fenced register over one file-backed, single-replica JetStream server.
 
 ## Modules
 
@@ -16,7 +16,17 @@ and verified delivery over one file-backed, single-replica JetStream server.
 - `Subjects` constructs the three ruled `flb.fab.*` routing families without
   mixing routing with identity.
 - `FabricClient` is the public Effect service. Its live layer publishes to and
-  reads from the ruled JetStream stream; its fixture layer uses the same tag.
+  reads from the fact/node control stream or discovers a declared evidence
+  partition stream; its fixture layer uses the same tag.
+- `Lane` declares content-addressed partition routing and emits canonical
+  events. Every `(lane, partition)` receives one exact stream whose dense
+  sequence is the durable fold position.
+- `Algebra` declares reducers. `commutative` derives digest-seeded distinct ACI cases before
+  attaching the F4 witness that licenses partitioned folds.
+- `Fold` derives each step from a per-event contribution and exposes
+  `Folds.deploy`, the only deployment/resumption verb.
+- `Anchor` constructs the `(floor, stateDigest, head)` checkpoint fact. The
+  floor records the frontier; the successor discipline protects it.
 - `Registers` is the five-action fenced commitment service. Its authoritative
   token is the KV revision-CAS order; holder strings are descriptive only.
 - `Catalog` owns the `Catalog` and `Blobs` services — the two content-addressed
@@ -33,6 +43,12 @@ and verified delivery over one file-backed, single-replica JetStream server.
 - `internal/cells` owns the cell bucket's shape check, CAS reconciliation, and
   re-merge loop; `internal/refusals` owns the schema-issue bridge that
   `Refusal.decodeRefusing` is the single public door to.
+- `internal/pump` owns positioned durable records, explicit ack ordering, the
+  bounded successor buffer, and durable pull consumers. `internal/anchors`
+  owns the anchor KV adapter and fatal lost-CAS detach.
+- `internal/chaos` drives real NAK redelivery and reordered-arrival schedules.
+  The `plait chaos` bin adds the hard-kill arm and prints its canonical measured
+  scoreboard; partition reorder is explicitly deferred in v0.
 
 ## Run
 
@@ -40,16 +56,29 @@ and verified delivery over one file-backed, single-replica JetStream server.
 bun run test
 ```
 
-The package test runs the unit and local-NATS suite, regenerates and byte-diffs
-the four-row corpus, and derives a compile-time refusal-channel check from the
-public barrel. Three planted controls prove it refuses a public `{ok}` union, a
-new Effect export with a non-Refusal error, and a Context service Layer with a
-non-Refusal error.
+The package test runs unit and local-NATS walls, byte-diffs generated corpora,
+replays every E4 `verify/fabric` row, and derives the refusal-channel manifest
+from the public barrel. Committed controls drop the successor discipline,
+attempt an unearned commutative brand, inject an incompatible step, and ack
+before its anchor; the CLI control mutates declared contribution behavior
+between arms. Every mutant is killed on its recorded trace.
 
-The recorded claim is deliberately bounded: four generated envelopes and one
-local `nats-server v2.14.4`, file storage, `num_replicas: 1`. There is no claim
-of crash recovery, durable-consumer resumption, federation, clustering,
-exactly-once behavior, attribution, or liveness.
+The durable-fold evidence is bounded to local `nats-server v2.14.4`, one
+non-clustered node, file storage, and `num_replicas: 1`. The hard-kill and real
+NAK-redelivery walls produce byte-equal per-partition state digests for a
+non-idempotent counter. The runtime is walled against the model that is proven;
+the runtime itself is never called proven. One live pump per fold partition is
+assumed. There is no exactly-once, liveness, federation, or clustering claim.
+
+Run a declared fold against a pinned span:
+
+```bash
+PLAIT_NATS_URL=nats://127.0.0.1:4222 bun run ./src/cli.ts chaos \
+  ./my-fold.ts --pin-head --axis kill --axis duplicate --axis reorder --output json
+```
+
+The module must export the value returned by `Fold.declare` as `fold` or its
+default export. `--fold <digest>` is refused until the catalog slice exists.
 
 The register slice adds a separately bounded safety wall: 15 generated Veil
 rows on local NATS v2.14.4, a file-backed `flb-fab-reg` bucket with R=1,

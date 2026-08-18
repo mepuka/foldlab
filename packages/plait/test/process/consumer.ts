@@ -1,7 +1,7 @@
 import { Effect, Stream } from "effect"
 
 import { FabricClient } from "../../src/FabricClient.js"
-import { evidenceSubject } from "../../src/Subjects.js"
+import { factSubject } from "../../src/Subjects.js"
 
 const [url, resultPath, countText] = process.argv.slice(2)
 if (url === undefined || resultPath === undefined || countText === undefined) {
@@ -10,7 +10,7 @@ if (url === undefined || resultPath === undefined || countText === undefined) {
 const count = Number(countText)
 
 const program = Effect.gen(function* () {
-  const subject = yield* evidenceSubject("roundtrip", 0)
+  const subject = yield* factSubject("roundtrip")
   const client = yield* FabricClient
   const messages = yield* client.subscribe(subject)
   const received = yield* messages.pipe(

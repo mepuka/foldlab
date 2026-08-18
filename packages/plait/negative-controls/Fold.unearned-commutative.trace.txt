@@ -1,0 +1,1 @@
+FOLD CONTROL: PASS component=earned-commutative-brand mutant=ordered-subtract refusal=structural/unearned-commutative-algebra law=F4

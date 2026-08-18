@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect"
 
 import { Digest } from "../../src/Digest.js"
 import { FabricClient, type PublishedEnvelope } from "../../src/FabricClient.js"
-import { evidenceSubject } from "../../src/Subjects.js"
+import { factSubject } from "../../src/Subjects.js"
 import { Envelope } from "../../src/Wire.js"
 
 const CorpusRow = Schema.Struct({
@@ -22,7 +22,7 @@ const rows = lines.map((line) => Schema.decodeUnknownSync(CorpusRow)(JSON.parse(
 }))
 
 const program = Effect.gen(function* () {
-  const subject = yield* evidenceSubject("roundtrip", 0)
+  const subject = yield* factSubject("roundtrip")
   const client = yield* FabricClient
   const published: Array<PublishedEnvelope> = []
   for (const row of rows) {
