@@ -1,7 +1,7 @@
 /**
  * References that decode by resolving — the R-channel move.
  *
- * Decoding a `ResolvedOf` requires `Catalog` (and `Blobs` for payloads stored
+ * Decoding a `ResolvedOf` requires `Catalog` (and `Payloads` for bodies stored
  * outside the inline threshold) from the environment; decode re-derives the
  * digest of whatever it fetched and refuses on mismatch. There is no decode
  * path that trusts an asserted digest: the schema *is* the verify-on-read law,
@@ -18,12 +18,27 @@
  * references, which is the normal case for a frame that references cataloged
  * values, not the exotic one.
  *
+ * `ResolveCache` memoizes that one verified seam and is the only cache this
+ * path admits. It lives here rather than in a module of its own because the
+ * pin's barrel already exports `Cache` (API log 0018), and because a memo whose
+ * whole correctness is inherited from `resolve` belongs beside `resolve`.
+ *
  * @module
  */
-import { Effect, Option, Schema, SchemaGetter } from "effect"
+import {
+  Cache,
+  Context,
+  Duration,
+  Effect,
+  Exit,
+  Layer,
+  Option,
+  Schema,
+  SchemaGetter,
+} from "effect"
 
 import { canonicalBytes, type WireValue } from "./Canonical.js"
-import { Blobs, Catalog } from "./Catalog.js"
+import { Catalog, Payloads } from "./Catalog.js"
 import { Digest, digestOf } from "./Digest.js"
 import {
   absenceRefusal,
@@ -116,15 +131,147 @@ const decodePayload = (
  */
 export const resolve = Effect.fn("Resolved.resolve")(function* (
   digest: Digest,
-): Effect.fn.Return<WireValue, Refusal, Catalog | Blobs> {
+): Effect.fn.Return<WireValue, Refusal, Catalog | Payloads> {
   const catalog = yield* Catalog
   const cataloged = yield* catalog.get(digest)
   if (Option.isSome(cataloged)) return yield* verified(digest, cataloged.value)
-  const blobs = yield* Blobs
-  const payload = yield* blobs.get(digest)
+  const payloads = yield* Payloads
+  const payload = yield* payloads.get(digest)
   if (Option.isNone(payload)) return yield* absent(digest)
   return yield* verified(digest, yield* decodePayload(digest, payload.value))
 })
+
+/** How large the memo may grow. Deployment configuration, never identity. */
+export interface ResolveCacheOptions {
+  /**
+   * The most entries the memo holds before the oldest are evicted. There is no
+   * default: a capacity is a memory budget somebody measured, and a number this
+   * package invented would be a claim about a deployment it has never seen.
+   */
+  readonly capacity: number
+}
+
+/**
+ * A memoizing view of `resolve`, with the same seam and the same answers.
+ *
+ * The signature is `resolve`'s, minus the services — the layer captures those
+ * at construction — so a caller substituting one for the other changes nothing
+ * it can observe except how long the second lookup takes.
+ */
+export interface ResolveCacheService {
+  /**
+   * Resolves one digest, answering from the memo when it already holds that
+   * digest's value. A hit does not re-derive and does not need to: the value it
+   * returns was re-derived against this exact digest when it was resolved, and
+   * a digest names one canonical byte string forever.
+   */
+  readonly resolve: (digest: Digest) => Effect.Effect<WireValue, Refusal>
+}
+
+const makeResolveCache = Effect.fn("ResolveCache.make")(function* (
+  options: ResolveCacheOptions,
+): Effect.fn.Return<ResolveCacheService, never, Catalog | Payloads> {
+  const cache = yield* Cache.makeWith(resolve, {
+    capacity: options.capacity,
+    /**
+     * Successes never expire; failures are never served. The pin reaches the
+     * second half by stamping a zero-lived entry as already expired
+     * (`Cache.ts:443-445`, `hasExpired` :484-489) rather than through the
+     * removal branch at :446-448, which a zero `Duration` never reaches because
+     * `Duration.isFinite(Duration.zero)` is true. The entry a failed lookup
+     * leaves behind is therefore dead weight — never readable, reclaimed by
+     * capacity eviction — and the fence holds either way (DEV-739 T2).
+     */
+    timeToLive: (exit) => Exit.isSuccess(exit) ? Duration.infinity : Duration.zero,
+  })
+  return {
+    resolve: Effect.fn("ResolveCache.resolve")(function* (
+      digest: Digest,
+    ): Effect.fn.Return<WireValue, Refusal> {
+      return yield* Cache.get(cache, digest)
+    }),
+  }
+})
+
+/**
+ * The memo over the one verified resolution seam.
+ *
+ * **What licenses it.** A digest names exactly one canonical byte string, and
+ * `resolve` re-derives the digest of whatever it fetched before returning it.
+ * So a memoized *success* can never be stale — there is nothing an invalidation
+ * could learn. Eviction exists only to bound memory.
+ *
+ * **Why it sits here and not on the store.** `Catalog.get` and the `Payloads`
+ * seam are deliberately unverified so a lying layer can be supplied under them
+ * and refused at one door (DECISIONS T18). A memo on either would hold
+ * unverified bytes. This one decorates the door itself, so every entry in it
+ * has already passed re-derivation and a tampered store is still refused —
+ * refusals, being failures, are never memoized.
+ *
+ * **Keys are digests only.** Nothing anchor-shaped is cacheable here: a surface
+ * keyed by `(directory, petname, anchor)` names whatever is current, which is a
+ * head-relative reading and never a truth, and it does not enter this cache.
+ * The corollary is that the memo is scoped to digests rather than to a store —
+ * an entry resolved through one catalog answers a later caller reading through
+ * another, which is exactly what content addressing licenses.
+ *
+ * **What it does NOT claim.**
+ * - *No freshness.* Nothing here is fresh or stale; the keyspace is immutable,
+ *   so neither word means anything about it.
+ * - *No absence reasoning.* A failed resolve is head-relative absence. It is
+ *   not recorded, not counted, and not consulted: it flows to the caller's
+ *   `Refusal.retryAbsence` policy exactly as an uncached one would.
+ * - *No cross-process coherence.* This memo is one process's, and two processes
+ *   holding different subsets of the same immutable truths disagree about
+ *   nothing.
+ * - *No durability role.* It caches over whatever durability the substrate
+ *   already has; losing every entry loses time and nothing else. The in-memory
+ *   catalog layer's own boundlessness is the store's question, and the durable
+ *   layer act owns it — this cache neither fixes it nor hides it.
+ * - *Capacity is deployment configuration*, never identity-bearing: two
+ *   processes at different capacities resolve the same digests to the same
+ *   values.
+ *
+ * The cached value is shared by reference. Wire values are immutable across
+ * this package, and a caller that mutates one poisons every later resolve of
+ * that digest in this process.
+ *
+ * @example
+ * ```ts
+ * import { ResolveCache } from "@foldlab/plait/Resolved"
+ * import { substrateLayer } from "@foldlab/plait/Catalog"
+ * import { Effect, Layer } from "effect"
+ *
+ * const layer = ResolveCache.layer({ capacity: 4096 }).pipe(
+ *   Layer.provide(substrateLayer),
+ * )
+ *
+ * Effect.gen(function* () {
+ *   const cache = yield* ResolveCache
+ *   return yield* cache.resolve(digest)
+ * }).pipe(Effect.provide(layer))
+ * ```
+ */
+export class ResolveCache extends Context.Service<ResolveCache, ResolveCacheService>()(
+  "@foldlab/plait/ResolveCache",
+) {
+  /**
+   * Builds the memo over the substrate services this layer is given, which is
+   * why they are its requirement and not the memoized seam's: the pinned
+   * constructor captures its lookup's context at construction, so the surface
+   * callers hold has a clean channel.
+   *
+   * Concurrent lookups of one digest deduplicate onto a single in-flight
+   * resolve, an interrupted lookup leaves no entry behind, and eviction is
+   * oldest-first with a hit re-inserting its entry — least-recently-used in
+   * effect. All three are the pinned cache's behaviour, not this module's
+   * (`Cache.ts:424-431`, :436-441, `checkCapacity` :491-500).
+   */
+  static readonly layer = (
+    options: ResolveCacheOptions,
+  ): Layer.Layer<ResolveCache, never, Catalog | Payloads> =>
+    Layer.effect(ResolveCache, makeResolveCache(options))
+}
 
 /**
  * Admits a value into the catalog and returns its identity with its bytes.
@@ -160,7 +307,7 @@ const publishGetter = SchemaGetter.transformOrFail((wire: WireValue) =>
  * schema's own channels so a resolved body may itself hold references.
  */
 export interface ResolvedOf<A, RD = never, RE = never>
-  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, RE> {}
+  extends Schema.Codec<A, Digest, Catalog | Payloads | RD, RE> {}
 
 /**
  * Builds a resolving reference over a wire schema.
@@ -191,7 +338,7 @@ export type Resolved<A> = ResolvedOf<A>
  * memo-key computation, which must stay runnable with no environment.
  */
 export interface PublishingOf<A, RD = never, RE = never>
-  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, Catalog | RE> {}
+  extends Schema.Codec<A, Digest, Catalog | Payloads | RD, Catalog | RE> {}
 
 /** Builds a write-through reference for the explicit emit path. */
 export const PublishingOf = <A, RD = never, RE = never>(

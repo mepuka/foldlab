@@ -28,11 +28,47 @@ The slice-0 coordination-fabric spine. Read root `AGENTS.md` first; scoped laws:
   ordering parameter, and no conflict callback; a lost CAS race re-reads and
   re-merges. A cell surface that takes a rewrite function instead of a delta is
   a finding.
-- No watch surface ships on any KV-backed module until the watch probe suite
-  lands on the substrate gate, and no absence is ever inferred from a watch.
-- Verify-on-read happens at exactly one seam (`Resolved.resolve`). A store
-  service that verifies its own answers cannot be tampered with by a control,
-  so none does.
+- One lattice write path exists: `internal/cas.ts`'s `casJoinLoop`. A second
+  bounded re-merge loop written into an adapter is a finding, and so is a
+  carrier that reaches around it. The three CAS disciplines are never unified —
+  joins retry because idempotence discharges the ambiguity, registers reconcile
+  by read-back against the one intended record because outcomes land at most
+  once, and anchors never retry at all. Routing an anchor through either loop
+  would smuggle its exclusivity assumption into a combinator a different law
+  licenses.
+- A local replica is a lower bound, never an oracle. Nothing derives absence,
+  freshness, or durability from `CellReplica`; it is fed by polling, and a watch
+  feed needs its own ruled ticket before it may feed anything.
+- No watch surface ships on any KV-backed module without its own ruled ticket.
+  Probe evidence licenses advisory use and never grants the license to ship —
+  a landed suite discharges no fence by itself. Whatever ships is advisory:
+  `KvWatchEntry.isUpdate` is not an initial/live boundary, and no absence is
+  ever inferred from a watch.
+- Verify-on-read for a *resolved reference* happens at exactly one seam
+  (`Resolved.resolve`), and the two stores under it — `Catalog` and the
+  catalog-internal `Payloads` seam — stay unverified so a lying layer can be
+  supplied under them (T18). The *public* blob store (`Blob.ts`) is the one
+  place verification lives inside the service: its control flips bytes on the
+  substrate behind the API, so verified-get is testable without any unverified
+  public read path. Adding a second verify door to `Catalog`/`Payloads`, or an
+  unverified read to `Blob`, is a finding either way.
+- The resolve memo decorates the verify door and only it. A cache on
+  `Catalog.get` or the `Payloads` seam holds unverified bytes and is a finding;
+  so is a cache key that carries an anchor, a petname, or anything else naming
+  whatever is current — this keyspace is digests, which are immutable, which is
+  the entire licence for never expiring a hit. A recorded failure is a finding
+  twice over: absence is head-relative, and remembering it makes a retryable
+  observation permanent.
+- Public absence is an `AbsenceRefusal`, never `Option`. `Option.none` is
+  invisible to `retryAbsence` and carries no head-relative vocabulary; the
+  `Option` on the internal payload seam is plumbing and stays there.
+- No ranged or partial blob read ships until the chunk-manifest identity law
+  exists: a byte range cannot re-derive the whole-value digest, so a partial
+  read cannot verify on read. `get` is whole-value on every backend.
+- A blob backend ships only with the backend-agnostic conformance suite green,
+  and with a planted control per law. The probe gate binds the object-store
+  backend only — the filesystem backend's substrate is the OS filesystem and
+  its wall is that suite; the NATS object store waits on its probe.
 - Schema issues never cross a package seam. `internal/refusals` is the whole
   bridge and `Refusal.decodeRefusing` is its only public door; exporting a
   `SchemaIssue`-typed signature diverges the public-surface type-level walk.

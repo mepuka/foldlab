@@ -12,7 +12,7 @@ const authority = "# Authority: emitted declarations own public values, members 
 const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
 
-const emitted = emitDeclarations("tsconfig.public-declarations.json")
+const emitted = await emitDeclarations("tsconfig.public-declarations.json")
 let failed = false
 try {
   const inspected = inspectPublicDeclarations(emitted.directory, "src/index.d.ts")

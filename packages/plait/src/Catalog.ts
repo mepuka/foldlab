@@ -1,19 +1,34 @@
 /**
- * The content-addressed value store and the payload store, as services.
+ * The content-addressed value store and the catalog's internal payload seam.
  *
  * These are the two substrate seams a resolved reference decodes through
  * (`Resolved.ts`). Both are read surfaces over content-addressed storage; the
  * digest is the only address, and no metadata this module carries has any
  * identity role.
  *
- * **Bound, stated once.** Neither service ships a durable layer yet.
+ * **The payload seam is not the blob store, and the two no longer share a
+ * name.** `Payloads` is catalog-internal plumbing — get-only,
+ * `Option`-returning, unverified by design — because verify-on-read for this
+ * path lives at exactly one door, `Resolved.resolve`, which is what keeps the
+ * tampered-store control writable (DECISIONS T18, preserved verbatim). The
+ * public application blob store is `Blob.ts`: put, verified get, presence,
+ * absence as an `AbsenceRefusal`, and verification hidden inside the service.
+ * Two concepts, two names (affordances record A-9, grill G-5).
+ *
+ * **Bound, stated once.** Neither service here ships a durable layer yet.
  * `Catalog.layer` is process-local: the durable catalog authority is a
  * venue's, reached through the request plane (`Venues.ts` in the binding
- * module map, not built). `Blobs.layer` answers every lookup with absence
- * because the object-store semantics at `@nats-io/obj@3.4.0` are unprobed —
- * grill item 9/10 of the ratified next-phase plan requires a probe suite on
- * the substrate gate before any object-store surface ships. Nothing here
- * claims durability, federation, or a `Blob.ts` inline threshold.
+ * module map, not built). `Payloads.layer` answers every lookup with absence
+ * because no probed payload substrate stands behind this seam; a layer that
+ * trusted store-side digests would be a verify-on-read hole, so none ships.
+ * Nothing here claims durability or federation.
+ *
+ * **The probe gate binds the object-store backend only**, and both halves of
+ * that sentence travel together wherever either appears: the filesystem
+ * backend's substrate is the OS filesystem and its wall is `Blob.ts`'s
+ * backend-agnostic conformance suite, while the NATS object-store backend is
+ * an interface slot with no build — the object-store semantics at
+ * `@nats-io/obj@3.4.0` are unprobed and DEV-730 is the probe that gates them.
  *
  * @module
  */
@@ -36,8 +51,18 @@ export interface CatalogService {
   readonly put: (value: WireValue) => Effect.Effect<Digest, Refusal>
 }
 
-/** Reads content-addressed payloads stored outside the inline threshold. */
-export interface BlobService {
+/**
+ * Reads the payload bytes of a cataloged value the catalog does not itself
+ * hold — the catalog-internal seam under `Resolved.resolve`, not a blob store.
+ *
+ * Unverified by design, for the same reason `CatalogService.get` is: this leg
+ * exists so a lying layer can be supplied under it and refused at the one
+ * verify door. It keeps `Option` deliberately — it is package-internal
+ * plumbing, never an agent-facing surface, and the surface that owes callers
+ * head-relative vocabulary is `Blob.BlobsService`, whose absence is an
+ * `AbsenceRefusal` that `Refusal.retryAbsence` can see.
+ */
+export interface PayloadService {
   readonly get: (digest: Digest) => Effect.Effect<Option.Option<Uint8Array>, Refusal>
 }
 
@@ -82,39 +107,51 @@ export class Catalog extends Context.Service<Catalog, CatalogService>()(
 }
 
 /**
- * The payload store named by digest for bodies above the inline threshold.
+ * The catalog-internal payload seam, named by digest, read through
+ * `Resolved.resolve` and verified there.
+ *
+ * Application code that wants a blob store wants `Blob.Blobs` instead: this
+ * tag exists so the resolve seam has a second, deliberately unverified leg to
+ * read through and a control can lie under it.
  *
  * @example
  * ```ts
- * import { Blobs } from "@foldlab/plait/Catalog"
+ * import { Payloads } from "@foldlab/plait/Catalog"
  * import { Effect } from "effect"
  *
  * Effect.gen(function* () {
- *   const blobs = yield* Blobs
- *   return yield* blobs.get(digest)
- * }).pipe(Effect.provide(Blobs.layer))
+ *   const payloads = yield* Payloads
+ *   return yield* payloads.get(digest)
+ * }).pipe(Effect.provide(Payloads.layer))
  * ```
  */
-export class Blobs extends Context.Service<Blobs, BlobService>()(
-  "@foldlab/plait/Blobs",
+export class Payloads extends Context.Service<Payloads, PayloadService>()(
+  "@foldlab/plait/Payloads",
 ) {
   /**
-   * Every lookup is head-relative absence. This is the standing layer until
-   * the object-store probe suite lands on the substrate gate; a layer that
+   * Every lookup is head-relative absence. This is the standing layer: the
+   * probe gate binds the object-store backend only — the filesystem backend's
+   * substrate is the OS filesystem and its wall is `Blob.ts`'s conformance
+   * suite — and the tenth substrate suite's evidence rules no backend: it
+   * says what the pinned object store does, which is advisory. A layer that
    * trusted store-side digests would be a verify-on-read hole, so none ships.
+   * Two things that evidence made concrete: the object store's metadata is
+   * written by the client and never checked by the server, and its digest is
+   * verified only when the last chunk arrives, so a streamed prefix is
+   * unverified bytes.
    */
-  static readonly layer: Layer.Layer<Blobs> = Layer.succeed(
-    Blobs,
-    Blobs.of({ get: () => Effect.succeed(Option.none()) }),
+  static readonly layer: Layer.Layer<Payloads> = Layer.succeed(
+    Payloads,
+    Payloads.of({ get: () => Effect.succeed(Option.none()) }),
   )
 
   /** Supplies a complete fixture implementation through the production tag. */
-  static readonly testLayer = (service: BlobService): Layer.Layer<Blobs> =>
-    Layer.succeed(Blobs, Blobs.of(service))
+  static readonly testLayer = (service: PayloadService): Layer.Layer<Payloads> =>
+    Layer.succeed(Payloads, Payloads.of(service))
 }
 
 /** The two substrate services every resolved reference decodes through. */
-export const substrateLayer: Layer.Layer<Catalog | Blobs> = Layer.mergeAll(
+export const substrateLayer: Layer.Layer<Catalog | Payloads> = Layer.mergeAll(
   Catalog.layer,
-  Blobs.layer,
+  Payloads.layer,
 )

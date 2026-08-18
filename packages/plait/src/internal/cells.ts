@@ -20,7 +20,14 @@ import {
   type Refusal,
 } from "../Refusal.js"
 import {
-  KvFailure,
+  CasWriteFailure,
+  carries,
+  casJoinLoop,
+  type CasJoin,
+  type MergeDiscipline as CasMergeDiscipline,
+  type Revisioned,
+} from "./cas.js"
+import {
   acquireConnection,
   isCasRefusal,
   teachRetryOperation,
@@ -37,11 +44,18 @@ import {
  * PubAck, and are classified by operation context plus code 10071 rather than
  * by an error name (DEV-704 seam rules 1-2).
  *
+ * That loop is no longer written here: it is `internal/cas.ts`'s `casJoinLoop`,
+ * the class-(a) write path extracted behaviour-preserving under the G-2
+ * contract, and this adapter is its first consumer. What stays here is what is
+ * the cell's own — the bucket's ruled shape, the key law, the observation
+ * codec, the carrier's join and identity, and the two committed disciplines.
+ *
  * Incarnation bound: KV revisions are backing-stream sequences, so a bucket
  * delete+recreate resets the revision order and every claim here holds only
  * within a fixed backing-stream incarnation; administrative lifecycle mutation
- * is outside the credential guard. No watch surface exists: the KV watch
- * probe suite is not on the substrate gate.
+ * is outside the credential guard. No watch surface exists: the now-landed KV
+ * watch probe licenses only a future advisory feed, and its `isUpdate` flag is
+ * not an initial/live boundary.
  */
 
 /**
@@ -131,6 +145,17 @@ const sameBytes = Effect.fn("Cells.sameBytes")(function* (
 })
 
 /**
+ * The cell carrier bound into the extracted loop: set union as the join, the
+ * empty observation set as the state of a cell no replica has written, and
+ * canonical bytes as identity.
+ */
+const cellJoin: CasJoin<ReadonlyArray<Observation>> = {
+  combine: (left, right) => join(left, right),
+  initialValue: [],
+  identical: (left, right) => sameBytes(left, right),
+}
+
+/**
  * Whether a read-back already holds the delta. For a lattice this is the
  * honest post-condition of a merge: the intended append may have landed, or a
  * rival's join may have subsumed it, and F1 makes the two indistinguishable and
@@ -138,34 +163,20 @@ const sameBytes = Effect.fn("Cells.sameBytes")(function* (
  * reconciliation — would be too strict here, because a concurrent writer's
  * larger state is still a state that carries this delta.
  */
-const subsumes = Effect.fn("Cells.subsumes")(function* (
+const subsumes = (
   current: ReadonlyArray<Observation>,
   delta: ReadonlyArray<Observation>,
-): Effect.fn.Return<boolean, Refusal> {
-  return yield* sameBytes(yield* join(current, delta), current)
-})
+): Effect.Effect<boolean, Refusal> => carries(cellJoin, current, delta)
 
 /**
- * The two steps of the merge loop a negative control may replace, named so a
- * control deletes exactly one behaviour and provably shares everything else —
- * connection, bucket shape check, key law, attempt loop, CAS mechanics,
- * canonical encoding, and the step it does not touch. Package-internal: the
- * public `Cells.layer` takes connection options and nothing else, so no
- * discipline is selectable from outside this package.
+ * The two steps of the merge loop a negative control may replace, at the cell
+ * carrier. The seam itself is `internal/cas.ts`'s, shared by every class-(a)
+ * write path; this alias is the cell instance of it, and the two committed
+ * controls below name it. Package-internal: the public `Cells.layer` takes
+ * connection options and nothing else, so no discipline is selectable from
+ * outside this package.
  */
-export interface MergeDiscipline {
-  /** The state a delta writes over the current state. The lawful step is the join (⊔). */
-  readonly next: (
-    current: ReadonlyArray<Observation>,
-    delta: ReadonlyArray<Observation>,
-  ) => Effect.Effect<ReadonlyArray<Observation>, Refusal>
-  /** Whether a read-back after a failed CAS already carries the delta. */
-  readonly reconciled: (
-    readBack: ReadonlyArray<Observation>,
-    delta: ReadonlyArray<Observation>,
-    intended: ReadonlyArray<Observation>,
-  ) => Effect.Effect<boolean, Refusal>
-}
+export type MergeDiscipline = CasMergeDiscipline<ReadonlyArray<Observation>>
 
 /** Cells merge by join and reconcile by subsumption. */
 export const lawfulMergeDiscipline: MergeDiscipline = {
@@ -255,44 +266,60 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
     },
   )
 
+  /** The cell's state with the revision it was observed at; `null` where none is written. */
+  const readState = Effect.fn("Cells.readState")(function* (
+    cell: string,
+  ): Effect.fn.Return<Revisioned<ReadonlyArray<Observation>> | null, Refusal> {
+    const entry = yield* read(bucket, cell)
+    return entry === null
+      ? null
+      : { value: yield* decodeCell(entry), revision: entry.revision }
+  })
+
+  /**
+   * One canonical CAS append. The cause is carried unclassified past the loop's
+   * read-back: `isCasRefusal` decides retry (operation context plus code 10071,
+   * seam rule 2), and the transport mint is a thunk the loop calls only on the
+   * branch that needs it.
+   */
+  const write = Effect.fn("Cells.write")(function* (
+    cell: string,
+    value: ReadonlyArray<Observation>,
+    expectedRevision: number | null,
+  ): Effect.fn.Return<number, CasWriteFailure | Refusal> {
+    const bytes = yield* canonicalBytes(value)
+    return yield* Effect.tryPromise({
+      try: () => expectedRevision === null
+        ? bucket.create(cell, bytes)
+        : bucket.update(cell, bytes, expectedRevision),
+      catch: (cause) => new CasWriteFailure(
+        isCasRefusal(cause),
+        () => transportRefusal("cell.merge", cause),
+      ),
+    })
+  })
+
   const merge: CellService["merge"] = Effect.fn("Cells.merge")(
     function* (rawCell, rawDelta) {
       const cell = yield* validCell(rawCell)
       const delta = yield* join([], rawDelta)
-      for (let attempt = 0; attempt < CELL_MERGE_ATTEMPTS; attempt++) {
-        const entry = yield* read(bucket, cell)
-        const current = yield* currentOf(entry)
-        // The join is idempotent: a delta already carried is not re-written,
-        // so a settled cell costs one read and no CAS traffic at all.
-        if (yield* subsumes(current, delta)) return yield* stateOf(current)
-        const merged = yield* discipline.next(current, delta)
-        const bytes = yield* canonicalBytes(merged)
-        const landed = yield* Effect.tryPromise({
-          try: () => entry === null
-            ? bucket.create(cell, bytes)
-            : bucket.update(cell, bytes, entry.revision),
-          catch: (cause) => new KvFailure(cause),
-        }).pipe(
-          Effect.map(() => true),
-          // Reconcile the ambiguous CAS outcome by read-back (seam rule 1),
-          // never by expecting a duplicate PubAck.
-          Effect.catch(({ cause }) => Effect.gen(function* () {
-            const readBack = yield* currentOf(yield* read(bucket, cell))
-            if (yield* discipline.reconciled(readBack, delta, merged)) return true
-            if (isCasRefusal(cause)) return false
-            return yield* transportRefusal("cell.merge", cause)
-          })),
-        )
-        if (landed) return yield* stateOf(yield* currentOf(yield* read(bucket, cell)))
-      }
-      return yield* absenceRefusal({
-        kind: "cell-update-contended",
-        law: "A merge lands its delta or reports contention; a cell is never written by anything but a join.",
-        path: ["cell", cell],
-        got: CELL_MERGE_ATTEMPTS,
-        expected: "one uncontended revision within the attempt bound",
-        next: teachContention,
-      })
+      return yield* stateOf(yield* casJoinLoop({
+        join: cellJoin,
+        discipline,
+        attempts: CELL_MERGE_ATTEMPTS,
+        read: readState(cell),
+        create: (value) => write(cell, value, null),
+        update: (value, expectedRevision) => write(cell, value, expectedRevision),
+        contribution: delta,
+        contended: (attempts) => absenceRefusal({
+          kind: "cell-update-contended",
+          law: "A merge lands its delta or reports contention; a cell is never written by anything but a join.",
+          path: ["cell", cell],
+          got: attempts,
+          expected: "one uncontended revision within the attempt bound",
+          next: teachContention,
+        }),
+      }))
     },
   )
 

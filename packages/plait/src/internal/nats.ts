@@ -12,7 +12,7 @@ import {
   type JsMsg,
 } from "@nats-io/jetstream"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { Effect, Queue, Result, Schema, Scope, Stream } from "effect"
+import { Effect, Result, Schema, Scope, Stream } from "effect"
 
 import type {
   FabricClientOptions,
@@ -137,8 +137,90 @@ const deleteConsumer = (consumer: Consumer): Effect.Effect<void> =>
     Effect.asVoid,
   )
 
-const closeConsumerMessages = (messages: ConsumerMessages): Effect.Effect<void> =>
-  Effect.promise(() => messages.close()).pipe(Effect.asVoid)
+interface PulledMessages {
+  readonly iterable: AsyncIterable<JsMsg>
+  readonly close: Effect.Effect<void>
+}
+
+/**
+ * The pinned client's messages, pulled, with the one end an interrupted pump
+ * can actually reach.
+ *
+ * `ConsumerMessages` is an async generator, and a generator parked on an
+ * `await` cannot be preempted by `return()` — the return queues behind the
+ * pending pull and never runs. An idle subscription is parked exactly there,
+ * so this iterator withholds `return`: handed one, `Stream.fromAsyncIterable`
+ * registers it as a scope finalizer and an interrupted idle pump would hang
+ * closing its scope (`repos/effect/packages/effect/src/Channel.ts:1867-1883`).
+ *
+ * `close()` is the end that does reach it. It unsubscribes the inbox, cancels
+ * the timers and stops the status iterator synchronously, then queues the
+ * iterator's stop behind the pending pull, which that pull delivers
+ * (`@nats-io/jetstream@3.4.0` `lib/consumer.js:581-607`). Waiting on the
+ * close is therefore sound while a pull is outstanding and only there: parked
+ * between pulls nothing is left to carry the queued stop, and the client's own
+ * teardown has already happened by the time `close()` returns.
+ */
+const pullMessages = (messages: ConsumerMessages): PulledMessages => {
+  const iterator = messages[Symbol.asyncIterator]()
+  let pulling = false
+  return {
+    iterable: {
+      [Symbol.asyncIterator]: () => ({
+        next: () => {
+          pulling = true
+          return iterator.next().finally(() => {
+            pulling = false
+          })
+        },
+      }),
+    },
+    close: Effect.suspend(() => {
+      const closed = messages.close()
+      if (pulling) return Effect.promise(() => closed).pipe(Effect.asVoid)
+      return Effect.sync(() => {
+        void closed.catch(() => undefined)
+      })
+    }),
+  }
+}
+
+/**
+ * The commons read pump: the pinned client's own message iterator, pulled one
+ * message at a time under the returned stream's own scope.
+ *
+ * The bound is the client's, not this package's. An iterator is pulled, so
+ * this pump owns no queue to size and discards nothing — every stored frame
+ * reaches the verifier, in stream order. That is the property the callback
+ * adapter this replaces could not reach at any setting: a synchronous callback
+ * can only `Queue.offerUnsafe`, which discards instead of suspending, so every
+ * bound it admits punches holes in the middle of an ordered read (DECISIONS
+ * DEV-736 T0/T1). What is still buffered is the client's own `consume()` pull
+ * window (`max_messages`, 100 at the pin), which is one answer in one place
+ * rather than a second queue this package would have to size.
+ *
+ * Interruption still ends the pump: the release closes the client's iterator,
+ * which is the single property T4 chose the callback adapter for.
+ *
+ * Exported for `test/CommonsPumpBackpressure.test.ts`; no other `src` module
+ * imports it.
+ */
+export const commonsPump = (
+  open: Effect.Effect<ConsumerMessages, Refusal>,
+): Stream.Stream<JsMsg, Refusal> =>
+  Stream.unwrap(
+    Effect.acquireRelease(
+      Effect.map(open, pullMessages),
+      (pulled) => pulled.close,
+    ).pipe(
+      Effect.map((pulled) =>
+        Stream.fromAsyncIterable(
+          pulled.iterable,
+          (cause) => transportRefusal("subscribe.read", cause),
+        )
+      ),
+    ),
+  )
 
 export const makeNatsService = Effect.fn("FabricClient.make")(function* (
   options: FabricClientOptions,
@@ -180,18 +262,11 @@ export const makeNatsService = Effect.fn("FabricClient.make")(function* (
         acquireConsumer(js, subscribedStream, subject),
         deleteConsumer,
       )
-      return Stream.callback<JsMsg, Refusal>((queue) =>
-        Effect.acquireRelease(
-          Effect.tryPromise({
-            try: () => consumer.consume({
-              callback: (message) => {
-                Queue.offerUnsafe(queue, message)
-              },
-            }),
-            catch: (cause) => transportRefusal("subscribe.read", cause),
-          }),
-          closeConsumerMessages,
-        )
+      return commonsPump(
+        Effect.tryPromise({
+          try: () => consumer.consume(),
+          catch: (cause) => transportRefusal("subscribe.read", cause),
+        }),
       ).pipe(
         Stream.mapEffect(Effect.fn("FabricClient.verifyReceived")(function* (
           message,

@@ -41,13 +41,15 @@ const collectDeclarations = (directory: string): ReadonlyArray<string> => {
   return declarations
 }
 
-const commandText = (bytes: Uint8Array | undefined): string =>
-  bytes === undefined ? "" : new TextDecoder().decode(bytes)
-
-export const emitDeclarations = (project: string): EmittedDeclarations => {
+/**
+ * Emission is async so callers can run several projects at once: each call
+ * already owns a private `--outDir` under the cache, so concurrent compilers
+ * share nothing but the directory they were minted from.
+ */
+export const emitDeclarations = async (project: string): Promise<EmittedDeclarations> => {
   mkdirSync(declarationCache, { recursive: true })
   const directory = mkdtempSync(resolve(declarationCache, "plait-public-effects-"))
-  const result = Bun.spawnSync({
+  const child = Bun.spawn({
     cmd: [
       "bunx",
       "tsc",
@@ -68,9 +70,13 @@ export const emitDeclarations = (project: string): EmittedDeclarations => {
     stdout: "pipe",
     stderr: "pipe",
   })
-  if (result.exitCode !== 0) {
-    const output = `${commandText(result.stdout)}${commandText(result.stderr)}`
-    throw new Error(`public declaration emission failed\n${output}`)
+  const [exitCode, stdout, stderr] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ])
+  if (exitCode !== 0) {
+    throw new Error(`public declaration emission failed\n${stdout}${stderr}`)
   }
 
   return {

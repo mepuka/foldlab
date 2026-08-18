@@ -3174,3 +3174,33 @@ JetStream stores live in temp dirs, and no persisted catalog depends on a pre-la
 fact. **Load-bearing? yes** — it is the license under which the closure law lands
 as a hard cut rather than owing a catalog migration, the catalog-side twin of the
 session-digest hard cut.
+
+## DEV-756 — battery speedups, Tier A (2026-08-18; task-local D138)
+
+### D138. The root test stage names the root's own test files, and the walk is the naming
+
+Decided: `scripts/gates.ts` derives the `root — tests` stage's argument list by
+walking the working tree for `*.test.ts` outside the trees that have stages of
+their own — `packages/` (each package's `test` script), `proto/` (its four
+stages), `repos/` (vendored), and `node_modules/` anywhere — and refuses an
+empty walk rather than passing an argument-free `bun test`. The stage was
+running the plait battery a second time on every gate run: `bunfig.toml` scopes
+bare `bun test` to `packages/` so the vendored Effect tree stays out of
+discovery, which left `root — tests` and `workspace packages — test scripts`
+resolving to the identical file set. Alternatives: delete the stage, which
+leaves a root-level test file added tomorrow with no stage at all; list the
+root's files by hand, which is the same gap one edit later; move the bunfig
+root, which puts `repos/` back inside discovery and breaks the rule that
+nothing in a gate may reach into vendored source. Why: the duplicate was 36 of
+the 143 seconds a gate run cost here, and it was invisible — two differently
+labelled stages doing identical work read as two kinds of coverage. Deriving
+the list is what keeps removing the duplicate from also narrowing what runs:
+the stage's claim is "every test file the root itself owns", and a walk can
+honour that claim while a list can only have honoured it on the day it was
+written. The empty-walk refusal is the paired control — an empty argument list
+would send `bun test` back to bunfig discovery and silently restore exactly the
+duplicate this removes — and `--self-test` plants six test files across
+`scripts/`, `verify/`, `packages/`, `proto/`, `repos/`, and a nested
+`node_modules/` to prove the walk claims the first two and leaves the rest.
+**Load-bearing? yes** — the stage's honesty about what it covers is the whole
+reason it can be scoped down at all.

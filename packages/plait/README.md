@@ -29,20 +29,31 @@ fenced register over one file-backed, single-replica JetStream server.
   floor records the frontier; the successor discipline protects it.
 - `Registers` is the five-action fenced commitment service. Its authoritative
   token is the KV revision-CAS order; holder strings are descriptive only.
-- `Catalog` owns the `Catalog` and `Blobs` services — the two content-addressed
-  stores a resolved reference decodes through.
+- `Catalog` owns the `Catalog` service and the catalog-internal `Payloads`
+  seam — the two content-addressed reads a resolved reference decodes through.
+  Both are unverified by design; `Resolved.resolve` is their one verify door.
+- `Blob` owns the public `Blobs` store — put, verified get, presence — with
+  verification inside the service and absence as a `blob-absent` refusal. Its
+  first backend rides the pin's portable `FileSystem`; the object-store backend
+  waits on DEV-730.
 - `Resolved` owns the `ResolvedOf` combinator: a reference whose decode
   resolves it and re-derives its digest. Encode is total and publishes nothing;
-  `PublishingOf` is the explicit emit path.
+  `PublishingOf` is the explicit emit path. `ResolveCache` memoizes the verified
+  seam and nothing else — successes never expire because the keyspace is
+  immutable, failures are never recorded because absence is head-relative, and
+  capacity is a memory budget the layer is given.
 - `Cell` owns lattice cells: the join, the merge-then-`update(rev)` write loop
   over the ruled `flb-fab-cell` bucket, and nothing else.
 - `ContextProgram` owns the selector/renderer/volatility declaration shapes.
   There is no assembly executor and no F7 claim.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
-- `internal/cells` owns the cell bucket's shape check, CAS reconciliation, and
-  re-merge loop; `internal/refusals` owns the schema-issue bridge that
-  `Refusal.decodeRefusing` is the single public door to.
+- `internal/cas` owns the class-(a) write path: the bounded
+  merge-then-`update(rev)` loop, its reconcile-before-classify order, and the
+  discipline seam a negative control swaps exactly one step of. `internal/cells`
+  owns the cell bucket's shape check, key law, observation codec, and the
+  carrier it binds into that loop; `internal/refusals` owns the schema-issue
+  bridge that `Refusal.decodeRefusing` is the single public door to.
 - `internal/pump` owns positioned durable records, explicit ack ordering, the
   bounded successor buffer, and durable pull consumers. `internal/anchors`
   owns the anchor KV adapter and fatal lost-CAS detach.
@@ -55,6 +66,13 @@ fenced register over one file-backed, single-replica JetStream server.
 ```bash
 bun run test
 ```
+
+It is the concatenation of three groups, each runnable on its own while you
+work: `test:fast` (the pure test files, the corpus diff, the public-effect
+manifest, and the substrate-parity control), `test:walls` (every file that
+brings up a real `nats-server`), and `test:types` (the twenty tsc negative
+controls). The fast/wall partition is derived from whether a test file imports
+the NATS harness, so a file added later joins a group without being listed.
 
 The package test runs unit and local-NATS walls, byte-diffs generated corpora,
 replays every E4 `verify/fabric` row, and derives the refusal-channel manifest
@@ -116,6 +134,15 @@ reconciliation rows. All three traces are executed and byte-compared
 `negative-controls/cell-byte-equality-mutant.trace.json`); un-mutating either
 control reds its own rows.
 
+Beneath that wall, two ordinary suites: the extracted loop's mechanics over an
+in-memory substrate (`test/Cas.test.ts` — the pre-CAS guard, the
+reconcile-before-classify order, the bound as a parameter), and the local
+replica's own (`test/CellReplica.test.ts` — absorbing never shrinks the local
+join, and the derived order is observation-set inclusion, the shapes
+`cell_absorb_inflationary` and `cell_le_iff_subset` describe). Both are tests of
+contract prose and claim nothing about the model; the live wall above is what
+holds the write path's behaviour still.
+
 What the reconciliation rows do NOT claim: they classify a bounded RESULT under
 an adversarial but finite monotone schedule. They do not make subsumption safer
 than byte-equality, and they are not convergence safety, fairness, or progress
@@ -127,9 +154,31 @@ inflationary, not on the check.
 What the cell wall does NOT claim: the model-level F1 (already claimed by the
 fabric row); anything about assembly, context values, or F7; agreement between
 the TypeScript canonical-bytes comparator's ORDER and the Lean carrier's own
-comparator (the claim is set equality, which is comparator-independent);
-watch semantics of any kind — no watch surface ships, because the KV watch
-probe suite is not on the substrate gate. All cell claims hold within a fixed
-backing-stream incarnation. Neither `Catalog` nor `Blobs` ships a durable
-layer: the catalog layer is process-local, and the payload layer answers
-absence until the object-store probe lands.
+comparator (the claim is set equality, which is comparator-independent). The
+ninth substrate suite now pins KV watch replay/coalescing, tombstones,
+resume-from-revision, and one same-server reconnect schedule, but no watch
+surface ships yet; any future feed is advisory, `isUpdate` is not an
+initial/live boundary, and silence never proves absence. The tenth substrate
+suite now pins the object store's put/get integrity, chunk boundaries, delete
+semantics, and metadata stability, but no blob surface ships on it: the pinned
+client has no ranged read, its whole-object digest is checked only when the
+last chunk arrives, and object metadata is written by the client rather than
+derived by the server — so a reader that trusts metadata has verified nothing.
+All cell claims hold within a fixed backing-stream incarnation. Neither
+`Catalog` nor `Payloads` ships a durable layer: the catalog layer is
+process-local, and the internal payload seam answers absence — the probed
+object store remains advisory evidence, never a backing store.
+
+What the blob conformance suite claims: that a `BlobsService` layer round-trips
+its bytes under the digest it derived, observes absence as `blob-absent`,
+refuses `digest-mismatch` on a store corrupted behind its back, is idempotent
+by content addressing, answers presence head-relative, and holds two distinct
+payloads at once — the last law is what a store addressed by a truncation of
+the digest rather than the whole of it fails, and every other law lets such a
+store through. It runs against the filesystem backend over the OS filesystem.
+The planted control per law is memory-backed, deliberately: a control has to
+drop one law and keep the rest, which is written directly rather than by
+deforming a real backend. It does NOT claim power-durability — the pin's `writeFile` does not fsync, so the
+backend is crash-durable only — and it exercises no platform layer: the
+application chooses `BunFileSystem` or `NodeFileSystem`, and that choice is the
+application's to verify.

@@ -38,6 +38,9 @@
     "packages/plait": {
       "name": "@foldlab/plait",
       "version": "0.0.0",
+      "bin": {
+        "plait": "./src/cli.ts",
+      },
       "dependencies": {
         "@foldlab/core": "workspace:*",
         "@nats-io/jetstream": "3.4.0",
@@ -46,6 +49,9 @@
         "@nats-io/obj": "3.4.0",
         "@nats-io/transport-node": "3.4.0",
         "effect": "catalog:",
+      },
+      "devDependencies": {
+        "fast-check": "4.9.0",
       },
     },
   },

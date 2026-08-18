@@ -100,16 +100,61 @@ Lean carrier's own comparator order is a different order and is never compared.
 Read the cell, join the delta locally, CAS at the observed revision, and on a
 lost race re-read and re-merge. A read-back that already carries the delta is
 success, whether this append landed or a rival's join subsumed it. Termination
-is liveness and is never claimed; convergence of the value is F1.
+is liveness and is never claimed; convergence of the value is F1. The loop is
+one module — `casJoinLoop` — shared by every lattice carrier; what a carrier
+supplies is its join, its empty state, its identity, its reads and writes, and
+the absence it refuses when the attempt bound runs out.
+
+**Merge discipline**:
+The two steps of that loop a negative control may replace: `next`, the state a
+delta writes over the current state, and `reconciled`, whether a read-back after
+a failed CAS carries the delta. The pre-CAS guard is deliberately outside the
+seam, so a control swaps exactly one behaviour and shares the rest by
+construction.
+
+**Local replica**:
+One process's join of everything it has observed, mirrored from a cell by
+polling. It is a lattice LOWER BOUND — "at least this", never "exactly this",
+and never "not present anywhere" — so it answers no absence question, carries no
+durability role, and a subscriber that misses intermediate values loses nothing
+because the latest join absorbs every state it skipped.
+
+**Payload seam**:
+The catalog-internal read of a cataloged value's bytes, under
+`Resolved.resolve` and verified there. Get-only, `Option`-returning, and
+unverified by design: it exists so a control can lie beneath the one verify
+door. It is not a blob store and application code never reaches for it.
+
+**Blob store**:
+The public content-addressed store of opaque byte payloads: put derives the
+digest over the exact bytes handed in, get re-derives it over the bytes fetched
+and refuses on disagreement, and presence is head-relative. Verification is
+inside the service, absence is a `blob-absent` refusal, and a backend is a
+`Layer` written against capabilities — never against a vendor's vocabulary.
 
 **Resolved reference**:
 A digest whose decode fetches the value and re-derives its identity before
 returning it. Decoding requires the catalog and payload services from the
 environment; encoding requires nothing and publishes nothing.
 
+**Resolve memo**:
+The digest-keyed cache over the one verified resolution seam. A hit is licensed
+by content addressing, not by freshness: the value it returns was re-derived
+against that digest when it was resolved, and a digest names one canonical byte
+string forever. Successes never expire, failures are never recorded, keys are
+digests and never anchors, and capacity is a memory budget — nothing it holds
+or drops is identity-bearing.
+
 **Publication**:
 The explicit act of admitting a value to the catalog. No encode path performs
 it; the write-through codec exists only for the emit path.
+
+**Advisory**:
+The standing of a KV watch feed. An arriving entry is a hint that state has
+moved, joined like any other observation; the feed's silence, its ordering,
+and its `isUpdate` flag carry no information. Nothing advisory may answer
+"does this exist" or "has this stopped" — absence is read head-relative from
+the store, never inferred from a feed.
 
 **Context program**:
 The cataloged declaration of an ordered list of (selector, renderer) pairs,

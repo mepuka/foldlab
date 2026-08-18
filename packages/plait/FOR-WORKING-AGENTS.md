@@ -273,18 +273,18 @@ a field it did not expect.
 The architecture record's Schema-R move. Sketch; **does not compile today.**
 
 ```ts
-// Decoding requires the Catalog (and Blobs for large payloads) from the
+// Decoding requires the Catalog (and Payloads for large bodies) from the
 // environment; decode re-derives the digest of what it fetched and refuses on
 // mismatch. Service channels propagate, so resolved values may themselves hold
 // resolved references.
 export interface ResolvedOf<A, RD = never, RE = never>
-  extends Schema.Codec<A, Digest, Catalog | Blobs | RD, RE> {}
+  extends Schema.Codec<A, Digest, Catalog | Payloads | RD, RE> {}
 ```
 
 Three consequences worth the ink, each a deliberate DX property:
 
 - **The type documents its substrate dependencies.** An envelope whose body
-  embeds `Resolved(TermMap)` type-requires `Catalog | Blobs`. A handler that
+  embeds `Resolved(TermMap)` type-requires `Catalog | Payloads`. A handler that
   decodes it cannot compile without those services. What a message needs from
   the fabric is visible in its type, not in prose.
 - **Re-derivation is unskippable.** There is no decode path that trusts an
