@@ -18,11 +18,18 @@ gate-checked. File partition follows `verify/fabric`: objects in
 (one law is stated and deliberately unproven, and the gate enforces
 that posture), proofs in `Kernel/Proofs.lean`.
 
+The KM-20 refusal-stability family makes door growth explicit as
+membership inclusion in both the admitted catalog and the writ's pinned
+universe. `admit_monotone` preserves the exact admitted act;
+`intrinsic_fault_refused_everywhere` preserves refused status without
+claiming reason identity on multi-fault candidates; and
+`relative_refusal_repairable_by_growth` constructs a finite admitting
+extension under the load-bearing premise that no intrinsic fault remains.
+
 `./run.sh` is the gate: source hygiene, partition checks, the pinned
-law list, `lake build`, the full theorem roster with the trusted-base
-footprint sweep, seventeen door controls diffed against committed
-traces (fourteen closure rows, two signature-discipline refusals, and
-the lawful twin that refutes a door refusing everything), and the
-four-file must-not-compile class — sort-discipline violations the
-elaborator itself must refuse, each with a pinned diagnosis and a
-compiling witness twin.
+law list, `lake build`, the 79-theorem roster with the trusted-base
+footprint sweep, twenty-one executable controls diffed against committed
+traces (the closure and signature rows, the lawful twin, the provision
+control, and three KM-20 mutants), and the four-file must-not-compile
+class — sort-discipline violations the elaborator itself must refuse,
+each with a pinned diagnosis and a compiling witness twin.
