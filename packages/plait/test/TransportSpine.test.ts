@@ -1,4 +1,6 @@
+import { errors } from "@nats-io/nats-core"
 import { describe, expect, test } from "bun:test"
+import { readdir } from "node:fs/promises"
 
 import type { Next } from "../src/Refusal.js"
 import { transportRefusal as anchorsRefusal } from "../src/internal/anchors.js"
@@ -171,11 +173,40 @@ const mismatches = (
 /** Two operations per row: the adapter's own, and a foreign one it never uses. */
 const operations = ["connection.acquire", "some.other.operation"] as const
 
+/**
+ * The planted cause, a client transport class rather than the bare `Error` this
+ * file planted before DEV-735.
+ *
+ * The mint now classifies before it terms: a cause the pinned client never
+ * raised is rethrown as a defect and never reaches the terms measured here
+ * (`internal/transport.ts`, and `TransportDefects.test.ts` for that half). The
+ * substitution narrows nothing this gate claims — the rows are still exercised
+ * on the cause they are actually minted on, since `ConnectionError` is what
+ * `@nats-io/transport-node@3.4.0` raises for a refused dial.
+ */
+const plantedCause = (message: string): Error => new errors.ConnectionError(message)
+
+/**
+ * The adapters that actually mint a transport refusal, read from the source
+ * tree rather than listed here: every `src/internal/*.ts` module exporting a
+ * `transportRefusal` is a classification site the spine owns.
+ */
+const spineAdapters = async (): Promise<ReadonlyArray<string>> => {
+  const directory = new URL("../src/internal/", import.meta.url)
+  const found: Array<string> = []
+  for (const entry of (await readdir(directory)).sort()) {
+    if (!entry.endsWith(".ts")) continue
+    const module = (await import(new URL(entry, directory).href)) as Record<string, unknown>
+    if (typeof module["transportRefusal"] === "function") found.push(entry.slice(0, -3))
+  }
+  return found
+}
+
 describe("the transport spine mints each adapter's own refusal", () => {
   for (const row of rows) {
     for (const operation of operations) {
       test(`${row.adapter} on ${operation}`, () => {
-        expect(mismatches(row, row.refuse, operation, new Error("boom"))).toEqual([])
+        expect(mismatches(row, row.refuse, operation, plantedCause("boom"))).toEqual([])
       })
     }
   }
@@ -188,8 +219,17 @@ describe("the transport spine mints each adapter's own refusal", () => {
     expect(new Set(rows.map((row) => row.kind)).size).toBe(7)
   })
 
+  test("membership is derived: every adapter that mints one has a row here", async () => {
+    // The row TERMS above are transcribed on purpose — the pre-extraction
+    // definitions are this file's oracle. WHICH adapters must appear is not
+    // transcribed: it is read off the source tree, so a ninth adapter cannot
+    // join the spine without joining this gate, and a row for an adapter that
+    // no longer mints one cannot linger.
+    expect(await spineAdapters()).toEqual([...rows.map((row) => row.adapter)].sort())
+  })
+
   test("the refusal path names the operation and the cause survives verbatim", () => {
-    const cause = new Error("the pinned server refused the connection")
+    const cause = plantedCause("the pinned server refused the connection")
     for (const row of rows) {
       const minted = row.refuse("bucket.status", cause)
       expect(minted.path).toEqual(["bucket.status"])
@@ -214,14 +254,14 @@ describe("negative control — a homogenized spine is refuted", () => {
 
   test("seven of the eight rows refute it, and the survivor is nats", () => {
     const survivors = rows
-      .filter((row) => mismatches(row, homogenized, "connection.acquire", new Error("boom")).length === 0)
+      .filter((row) => mismatches(row, homogenized, "connection.acquire", plantedCause("boom")).length === 0)
       .map((row) => row.adapter)
     expect(survivors).toEqual(["nats"])
   })
 
   test("each refuted row names the field the homogenization erased", () => {
     for (const row of rows.filter((candidate) => candidate.adapter !== "nats")) {
-      const problems = mismatches(row, homogenized, "connection.acquire", new Error("boom"))
+      const problems = mismatches(row, homogenized, "connection.acquire", plantedCause("boom"))
       expect(problems.length).toBeGreaterThan(0)
       // Every adapter but `cells` differs in its kind; `cells` shares the
       // generic teach note, so its refutation must come from kind and law.
@@ -238,7 +278,7 @@ describe("negative control — a homogenized spine is refuted", () => {
           expected: row.expected,
           next: teachRetryOperation,
         })
-        return mismatches(row, noteOnly, "connection.acquire", new Error("boom")).length > 0
+        return mismatches(row, noteOnly, "connection.acquire", plantedCause("boom")).length > 0
       })
       .map((row) => row.adapter)
     expect(refuted).toEqual(["registers", "anchors", "lanes", "pump", "folds", "chaos"])
