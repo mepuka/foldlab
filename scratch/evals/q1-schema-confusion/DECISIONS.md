@@ -45,3 +45,15 @@
   per model/arm cell. The local OpenAI client returned HTTP 401 and is not an
   available population source.
 - **Load-bearing:** Yes. It fixes the population and its dependence bound.
+
+## D5 — Attribute each run to the primary billed model
+
+- **Decided:** Preserve the provider's complete `modelUsage` map and identify
+  the run's canonical model as the entry with the greatest reported USD cost.
+- **Alternatives:** Trust the requested alias; take the first map entry; discard
+  auxiliary-model usage.
+- **Why:** Claude Code may report an auxiliary model beside the requested
+  generation model. The primary generation dominates billed cost, while the
+  full map keeps that inference auditable and avoids presenting a mutable alias
+  as a version.
+- **Load-bearing:** Yes. It determines the version label on result rows.

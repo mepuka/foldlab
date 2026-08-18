@@ -1,0 +1,22 @@
+{
+  "name": "@foldlab/q1-schema-confusion-eval",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "bun src/main.ts generate",
+    "report": "bun src/main.ts report",
+    "run": "bun src/main.ts run",
+    "test": "bun test ./test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.108",
+    "ajv": "8.17.1",
+    "effect": "4.0.0-rc.108"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.2"
+  }
+}
