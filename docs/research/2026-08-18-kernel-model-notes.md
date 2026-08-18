@@ -631,6 +631,41 @@ posture.
   law distinguishes a path from a petname list plus a root); ambient
   roots for ergonomics (refused on the closure discipline).
   Reversal: additive; nothing ships until a consumer names it.
+- **KM-17 — the algebra ladder as the brand hierarchy.** Raised in
+  operator review of the algebraic canon: the rung classification
+  (magma ⊂ monoid ⊂ commutative monoid ⊂ bounded semilattice; group
+  beside) becomes the earned-brand lattice on algebra declarations,
+  carried by KindContent .algebra (KM-12) and checked by generated
+  law suites (the F4 Commutative-brand discipline widened to the
+  whole ladder). Rights follow rungs mechanically: join elaborates
+  only at semilattice-branded carriers, partition merge demands
+  commutative-or-better, and the unearned-brand refusal generalizes
+  from one row to the ladder. The named measurement catalog (count,
+  sum, max, distinct-set, sketches, histograms) lands as cataloged
+  algebra declarations with rungs — a standard library in the
+  catalog, never in the language declaration. Alternatives: rungs as
+  documentation only (loses the compile-time routing and the taught
+  refusals); a full typeclass tower (more structure than any current
+  law consumes). Reversal: brands are additive metadata on declared
+  values; retiring a rung strands no identity.
+- **KM-18 — algebraic notation as a projection register, evaled not
+  assumed.** Notation lives in three lawful places and no fourth:
+  the type/doc layer (every generator's JSDoc opens with its
+  algebraic sentence — the Dvořák rule extended), the prose
+  projection's second register (plain-word and algebraic
+  concretizations generated from one rule datum, the GF shape the
+  survey verified; refusals teach in both registers), and — as an
+  experiment only — generated bracket-property aliases
+  (`cell["∨"](x)`; bare math-symbol identifiers are impossible in
+  JS and refused by the plain-words ruling regardless). Whether
+  symbol surfaces help or hurt LLM population is unknown; the Q1
+  eval harness gains a notation arm (same tasks, three surfaces,
+  lawfulness and wrong-slot rates) before any alias ships.
+  Alternatives: notation in identifiers (refused twice — JS
+  identifier grammar and the naming ruling); a parsed math DSL
+  string surface (refused — a second assembler). Reversal: doc-layer
+  notation is inert; aliases are generated and retire by
+  regeneration.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the
