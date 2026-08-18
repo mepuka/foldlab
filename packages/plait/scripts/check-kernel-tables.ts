@@ -5,7 +5,9 @@ import {
   ARTIFACT_PATH,
   GENERATE_COMMAND,
   GENERATED_PATH,
+  REFUSAL_KINDS_PATH,
   checkKernelTables,
+  checkRefusalKinds,
 } from "./kernel-tables.js"
 
 const repository = resolve(import.meta.dir, "../../..")
@@ -17,4 +19,14 @@ if (!checked.ok) {
   console.error(`  regenerate with: ${GENERATE_COMMAND}`)
   process.exit(1)
 }
-console.log(`KERNEL TABLES: PASS (byte-identical regeneration from ${ARTIFACT_PATH})`)
+const committedKinds = await Bun.file(resolve(repository, REFUSAL_KINDS_PATH)).text()
+const checkedKinds = checkRefusalKinds(committedKinds, corpus, ARTIFACT_PATH)
+if (!checkedKinds.ok) {
+  console.error(`KERNEL TABLES: FAIL - ${checkedKinds.reason}`)
+  console.error(`  regenerate with: ${GENERATE_COMMAND}`)
+  process.exit(1)
+}
+console.log(
+  `KERNEL TABLES: PASS (byte-identical regeneration of ${GENERATED_PATH}` +
+    ` and ${REFUSAL_KINDS_PATH} from ${ARTIFACT_PATH})`,
+)

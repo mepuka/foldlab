@@ -111,12 +111,36 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   declared, writ-scoped image — in prose, a docstring, or a claim ledger — is an
   overclaim until the law is proved; this seam ships its shape, not its
   enforcement.
-- `src/kernel/KernelTables.generated.ts` is generated only, from
-  `fixtures/kernel-conformance.ndjson`, and `bun run check:kernel-tables` must
-  regenerate it byte-identically. Never hand-edit a kind, a rank, a taught law,
-  or a repair: the model emits them, and a hand-typed table is drift with a
-  green gate. `test/fixtures/kernel-conformance.sample.ndjson` is the
-  independently transcribed control the wall compares against, never a source.
+- `src/kernel/KernelTables.generated.ts` and
+  `src/truth/RefusalKinds.generated.ts` are generated only, from
+  `fixtures/kernel-conformance.ndjson` plus the reviewed runtime-refusal
+  projection in `scripts/kernel-runtime-refusals.ts`, and
+  `bun run check:kernel-tables` must regenerate both byte-identically. Never
+  hand-edit a kind, a rank, a taught law, or a repair: the model emits its rows;
+  runtime spellings absent from that corpus carry an explicit `DEV-804`
+  staged-debt waiver in the generated ancestry.
+  `test/fixtures/kernel-conformance.sample.ndjson` is the independently
+  transcribed control the corpus wall compares against, never a source.
+- The refusal vocabulary is emitted INTO `truth/`, never imported up from
+  `kernel/`. `truth/` is the deepest plane and imports only itself; a generated
+  artifact carries no import-direction debt because its ancestry is the
+  generator, not an edge in the module graph. A truth module that reaches into
+  `kernel/` for the vocabulary is a Law 4 finding, and so is a hand-written
+  literal union standing beside the generated one.
+- `check:refusal-vocabulary` compares three artifacts and never two views of
+  one value: the runtime union read from the truth-plane module's source bytes,
+  the refusal reasons read from the interchange fixture's bytes, and the
+  reviewed staged-debt pin at `test/fixtures/refusal-staged-debt.pin.txt`. The
+  pin is nothing's input — adding a spelling to the projection manifest and
+  regenerating does not satisfy the wall, because the debt must also be written
+  into the pin by hand. `check:refusal-control` plants a hand-minted kind into
+  the union source and must fail for its committed reason.
+- A refusal's taught payload is persisted evidence. `check:refusal-payloads`
+  pins every `law`, `expected`, and `next` text under `src/` in
+  `test/RefusalPayloads.taught.txt` and byte-compares it, so editing one
+  minting site's teaching reddens the wall and shows the edit. Regenerate with
+  `bun run generate:refusal-payloads`, and treat a moved text as a wire change
+  wanting its own ruled ticket, never a rendering detail.
 - No admission door ships yet. `src/kernel/KernelDoor.ts` is the seam's type only; the
   reference door under `test/` exists so the conformance replay has a target
   and is not the thing to build on. A real door is checked by pointing
