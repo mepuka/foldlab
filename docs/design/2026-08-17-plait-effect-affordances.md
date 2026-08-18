@@ -1,7 +1,14 @@
 # Plait — Effect-native affordances for the CAS surfaces: catalog, audit, routing
 
 Status: **REVISED 2026-08-18 — the adaptation pass; supersedes the
-2026-08-17 overlap snapshot throughout.** Amended in place by the Fable
+2026-08-17 overlap snapshot throughout. G-SHEET RATIFIED 2026-08-18:
+the operator ruled G-1..G-7 as stamped (the refereed verdicts and
+amendment wording binding); the gated tickets of the refactor wave
+(DEV-737/738/739/741) are released to their stages. The same ruling
+disposed B-7/DEV-735 in the operator's own words: "defects are defects
+and are not part of the estate domain language" — refusals are the
+domain language, and a defect is never dressed in it.** Amended in
+place by the Fable
 Effect-architecture seat under the operator's recommissioning charge:
 re-ground every entry against the code on main at `6234483a1` (the tree
 that now carries BOTH merged implementation waves), fold in the

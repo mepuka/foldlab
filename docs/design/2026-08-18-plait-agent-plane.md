@@ -1,6 +1,12 @@
 # Plait, part 4 — the agent plane (design commission, continued)
 
-Status: **commissioned continuation**, dispatched by the coordinator
+Status: **commissioned continuation — G25..G36 RATIFIED 2026-08-18 on
+the refereed verdicts** (docs/research/2026-08-18-plait-design-grill-review.md;
+its amendment wording binding: G26 carries the G23 rider, G27 gains the
+nesting sentence, G29 ships phased, G31 charters now with S1 held and
+the planted no-orchestration control, G32 lands via a new API-log entry
+beside 0017, G36's DECISIONS structural fix is a blocking precondition).
+Dispatched by the coordinator
 2026-08-18 from the operator's question cluster, asked in two waves.
 Wave one: structured input and output, the concierge, the task
 abstraction, provisioning and the Effect configuration question, the

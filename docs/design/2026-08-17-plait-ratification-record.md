@@ -94,3 +94,18 @@ standing surface.
   envelope (corrected 2026-08-17: the executable gate itself is archived
   at `archive/pre-estate-focus`, purged 2026-08-15; re-landing rides E5);
   VERIFICATION.md rows land with their slices, never before.
+
+## The 2026-08-18 ruling: both design G-sheets ratified as stamped
+
+- **The affordances sheet (G-1..G-7)** and **the agent-plane sheet
+  (G25..G36)** are RATIFIED on the refereed verdicts (the grill review's
+  amendment wording binding; the affordances record's per-item stamps
+  are the ruling's carrier). The gated refactor tickets
+  (DEV-737/738/739/741 under epic DEV-743) are released to their
+  stages; T-J and the agent-plane mints ride this ceremony.
+- **Execution disposition, the operator's words:** "defects are defects
+  and are not part of the estate domain language." B-7/DEV-735 is ruled:
+  transport catches narrow to the pinned client's error classes;
+  refusals remain the only vocabulary the domain speaks; a defect dies
+  as a defect and never wears the absence sort. The sentence enters
+  DECISIONS with the landing ticket.
