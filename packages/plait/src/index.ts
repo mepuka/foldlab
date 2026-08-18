@@ -36,6 +36,9 @@ export * as Fold from "./planes/Fold.js"
 /** Declared partitioned evidence lanes and durable emission. */
 export * as Lane from "./planes/Lane.js"
 
+/** The generated candidate language and its one admission function. */
+export * as KernelDoor from "./kernel/KernelDoor.js"
+
 /** Structural and absence refusals plus the absence-only retry policy. */
 export * as Refusal from "./truth/Refusal.js"
 

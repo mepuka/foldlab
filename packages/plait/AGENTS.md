@@ -141,12 +141,13 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   minting site's teaching reddens the wall and shows the edit. Regenerate with
   `bun run generate:refusal-payloads`, and treat a moved text as a wire change
   wanting its own ruled ticket, never a rendering detail.
-- No admission door ships yet. `src/kernel/KernelDoor.ts` is the seam's type only; the
-  reference door under `test/` exists so the conformance replay has a target
-  and is not the thing to build on. A real door is checked by pointing
-  `KernelConformance.test.ts` at it — the harness takes its target as a
-  parameter, and its refuse-everything mutant is what makes the pass evidence.
-  Conformance is agreement with the model's verdicts, never a runtime guarantee
-  promoted out of a model theorem.
+- `src/kernel/KernelDoor.ts` is the one shipping admission door. Its candidate,
+  context, and intrinsic-act types derive from `KernelSchemas.generated.ts` and
+  retain the model's `bigint` identity labels; runtime hex digests do not map
+  them. CLI, `FabricClient`, and `CasDaemon` export that exact `admit` function,
+  never a wrapper or private candidate validator. `KernelConformance.test.ts`
+  replays the emitted verdicts against it; its refuse-everything mutant and
+  host-identity control make the pass evidence. Conformance is agreement with the
+  model's verdicts, never a runtime guarantee promoted out of a model theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.
