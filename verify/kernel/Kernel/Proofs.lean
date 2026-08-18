@@ -678,4 +678,101 @@ theorem ground_interp_inflationary (act : Act) (world : World Nat) :
 
 end Semantics
 
+section Provision
+
+/-- The provision environment reads newest-first: each fold step
+    shadows everything older, so the built valuation at a hole is the
+    chain's first match — the overlay-chain lookup as a theorem. -/
+theorem provision_newest_wins : Laws.KProvisionNewestWins := by
+  intro events hole
+  induction events with
+  | nil => rfl
+  | cons event rest ih =>
+      by_cases hit : hole == event.1
+      · simp [provisionFold, Valuation.override, firstProvision,
+          List.find?, hit]
+      · simpa [provisionFold, Valuation.override, firstProvision,
+          List.find?, hit] using ih
+
+/-- Folding an appended provision chain is the left-biased union of
+    the folds: the newer half wins exactly where both bind. -/
+theorem provision_append_union : Laws.KProvisionAppendUnion := by
+  intro left right
+  induction left with
+  | nil =>
+      funext hole
+      simp only [List.nil_append, provisionFold, Valuation.union,
+        Valuation.empty]
+  | cons event rest ih =>
+      simp only [List.cons_append, provisionFold, ih]
+      funext hole
+      by_cases hit : hole == event.1
+      · simp only [Valuation.override, Valuation.union, if_pos hit]
+      · simp only [Valuation.override, Valuation.union, if_neg hit]
+
+/-- Disjoint provision chains commute: when neither side binds a hole
+    the other binds, arrival order cannot move the environment. The
+    committed control shows the premise is load-bearing — outside it,
+    two orders of an overlapping chain visibly disagree. -/
+theorem provision_disjoint_comm (left right : List (Nat × Nat))
+    (disjoint : Valuation.Disjoint (provisionFold left)
+      (provisionFold right)) :
+    provisionFold (left ++ right) = provisionFold (right ++ left) := by
+  rw [provision_append_union left right, provision_append_union right left]
+  funext hole
+  rcases disjoint hole with noneLeft | noneRight
+  · cases h : provisionFold right hole <;>
+      simp [Valuation.union, noneLeft, h]
+  · cases h : provisionFold left hole <;>
+      simp [Valuation.union, noneRight, h]
+
+/-- Re-providing the same binding is inert: the semantic half of
+    content-keyed memoization — one digest, one build, and a rebuild
+    changes nothing. -/
+theorem provision_override_idem (valuation : Valuation)
+    (hole value : Nat) :
+    ((valuation.override hole value).override hole value) =
+      valuation.override hole value := by
+  funext name
+  by_cases hit : name == hole <;> simp [Valuation.override, hit]
+
+/-- Filling one argument removes exactly its covered requirement. -/
+theorem requires_arg_fill (valuation : Valuation) (arg : RawArg) :
+    argRequires (fillArg valuation arg) =
+      (argRequires arg).filter
+        (fun hole => (valuation hole).isNone) := by
+  cases arg
+  case hole name =>
+    cases h : valuation name <;>
+      simp [fillArg, argRequires, h, List.filter, Option.isNone]
+  all_goals rfl
+
+/-- Filling an argument list removes exactly the covered
+    requirements. -/
+theorem requires_list_fill (valuation : Valuation)
+    (args : List RawArg) :
+    (args.map (fillArg valuation)).flatMap argRequires =
+      (args.flatMap argRequires).filter
+        (fun hole => (valuation hole).isNone) := by
+  induction args with
+  | nil => rfl
+  | cons arg rest ih =>
+      simp only [List.map_cons, List.flatMap_cons, List.filter_append]
+      rw [requires_arg_fill, ih]
+
+/-- The requirement set of a filled program is the unfilled
+    remainder: providing shrinks requirements by exactly the covered
+    set, and a fully provided program is closed — R equals never. -/
+theorem requires_of_fill : Laws.KRequiresExclude := by
+  intro valuation nodes
+  induction nodes with
+  | nil => rfl
+  | cons node rest ih =>
+      simp only [fillProgram, List.map_cons, requiresOf,
+        List.flatMap_cons, List.filter_append] at ih ⊢
+      rw [fillNode, requires_list_fill]
+      exact congrArg _ ih
+
+end Provision
+
 end Kernel

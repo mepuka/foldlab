@@ -63,6 +63,37 @@ def KFillMonoidAction : Prop :=
   (forall nodes : List ProgramNode,
     fillProgram Valuation.empty nodes = nodes)
 
+/-- The provision environment reads newest-first: the value a
+    provision chain builds at a hole is its newest event at that hole
+    — the Effect pin's overlay-chain lookup (Context.ts:483-546 at
+    effect@4.0.0-rc.108), folded. -/
+def KProvisionNewestWins : Prop :=
+  forall (events : List (Nat × Nat)) (hole : Nat),
+    provisionFold events hole = firstProvision events hole
+
+/-- Provision chains compose by valuation union: folding an appended
+    chain is the left-biased union of the two folds, the newer half
+    winning where they overlap — Effect's later-side-wins
+    Context.merge (Context.ts:1123-1181) in the newest-first
+    orientation. -/
+def KProvisionAppendUnion : Prop :=
+  forall (left right : List (Nat × Nat)),
+    provisionFold (left ++ right) =
+      Valuation.union (provisionFold left) (provisionFold right)
+
+/-- Filling removes exactly the covered requirements: a filled
+    program's requirement set is the unfilled remainder — the R
+    channel's provide law (`RIn` joined with the consumer's
+    requirements minus what the dependency provides, Layer.ts
+    provide) read at data level. Requirements union across
+    composition and shrink under provision; a program with no
+    requirements is closed, the R-equals-never correspondence. -/
+def KRequiresExclude : Prop :=
+  forall (valuation : Valuation) (nodes : List ProgramNode),
+    requiresOf (fillProgram valuation nodes) =
+      (requiresOf nodes).filter
+        (fun hole => (valuation hole).isNone)
+
 /-- Every kernel sentence's meaning grows the world: under an
     associative, idempotent evidence merge, no interpretation shrinks
     any component — the kernel has no forgetting act. Instantiation

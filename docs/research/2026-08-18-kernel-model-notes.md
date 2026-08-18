@@ -480,6 +480,76 @@ same day:
   grep counts now (cheap, shallow — catches cardinality drift, not
   wording). Reversal: none needed — the wall is additive.
 
+## 11b. The Effect dependency correspondence (2026-08-18, operator-commissioned)
+
+The operator asked what in the language most naturally translates to
+Effect's model of dependencies, whether there is a clean modeling
+approach, and whether "dependencies as maps bound to nodes that
+merge" are "some prior fold before the DAG." The vendored pin was
+re-read at `effect@4.0.0-rc.108` before modeling; four source facts
+decide the shape:
+
+1. **A service key is a string** — `Key.key : string`
+   (`Context.ts:64-68`), with the collision semantics documented in
+   place: reusing a key string makes unrelated services occupy one
+   slot (`Context.ts:166-169`).
+2. **The environment is a base map plus an ordered overlay chain.**
+   `Overlay { key, value, parent }` (`Context.ts:483-487`);
+   `add` pushes newest-first (`Context.ts:790-795`); lookup walks the
+   chain newest-first (`Context.ts:531-535`); `flatten` folds
+   oldest-to-newest with overwrite (`Context.ts:508-519`), triggered
+   at depth 8 or 8 base hits. The environment IS a fold of provision
+   events — the operator's "prior fold" is Effect's own
+   implementation.
+3. **Merge keeps the later side's binding** (`Context.ts:1126-1130`;
+   mergeAll doc: "the service from the last context with that key is
+   kept"). Associative and idempotent, deliberately not commutative —
+   provision is class (b), not class (a): an ordered reduction, never
+   a lattice join.
+4. **Layer memoization is keyed by object reference** —
+   `MemoMapImpl.map : Map<Layer, MemoMapEntry>` (`Layer.ts:432`),
+   refcounted finalizers (`Layer.ts:396-419`); and `provide`'s type
+   states the requirements algebra outright:
+   `RIn | Exclude<RIn2, ROut>` — union of the dependency's needs with
+   the consumer's needs minus what the dependency provides.
+
+The correspondence, modeled (roster additions in parentheses):
+
+| Effect construct | Kernel construct | Status |
+| --- | --- | --- |
+| service key (string) | `Digest .capability` — content-addressed; a collision needs a hash preimage. The string key is a minted identifier in kernel terms; the digest key is the G33 upgrade | mapping, stated |
+| R channel (type-level requirement set) | `requiresOf` — a program's unfilled holes; requirements union across composition | modeled |
+| environment / Context | a `Valuation` built by `provisionFold` over a newest-first event chain | modeled (`provision_newest_wins` — the overlay lookup law) |
+| Context.merge (later wins) | `Valuation.union` with the newer chain on the left: `provisionFold (l ++ r) = union (pF l) (pF r)` | proven (`provision_append_union`) |
+| provideService | `fill` at a hole; one provision event | already modeled (fill laws) |
+| provide's Exclude | `requiresOf (fillProgram v p) = requiresOf p \ dom v` | proven (`requires_of_fill`, via `requires_arg_fill`, `requires_list_fill`) |
+| R = never | closed program: `requiresOf = []` | definitional corollary |
+| disjoint provision order-freedom | `provision_disjoint_comm`; the committed `drop-provision-disjointness` drift control shows the premise load-bearing (overlapping orders visibly disagree) | proven + walled |
+| memoization (reference-keyed) | content-keyed: same digest, same build; re-provision of the same binding is inert | `provision_override_idem` carries the semantic half; the full memo claim is F13-adjacent, stated only |
+| Scope / finalizers / observers | outside meaning — the lease boundary | refused into the runtime |
+
+Three law statements joined the sheet (`KProvisionNewestWins`,
+`KProvisionAppendUnion`, `KRequiresExclude`), seven theorems the
+roster (57 total), one drift control the battery (18 door controls).
+
+- **KM-14 — adopt holes-as-requirements and provision-as-fold as the
+  Effect binding's dependency story.** Recommended: yes — the
+  correspondence above, with the two upgrade claims stated on the
+  outward surface when the binding ships: service identity by digest
+  rather than string (collision becomes a preimage, and the
+  identifier-universe door check covers referents), and memoization
+  by content rather than reference (structurally equal layers share a
+  build for free). Left open, deliberately: modeling a Layer itself
+  as a constructor program (a declared program whose output is a
+  provision) — that is the K-4 builder's territory and should land
+  with the dual-construction slice, not ahead of it. Alternatives:
+  model the environment as a lattice join (refused — merge is not
+  commutative, and pretending it is would hide the shadowing
+  semantics the overlay chain actually has); model requirements at
+  the type level only (loses the data-level requirement set the wire
+  and the door need). Reversal: the provision section is additive;
+  retiring it strands no sentence identity.
+
 ## 12. Sources
 
 Estate records, read in place this session:

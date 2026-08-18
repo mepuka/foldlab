@@ -41,6 +41,25 @@ def showAdmitControl (name vector : String)
     s!"control={name};candidate={vector};{renderResult result};verdict={if refuted then "refuted" else "survived"}"
   return if refuted then 0 else 1
 
+/-- Render a built provision environment at the sample holes. -/
+def renderValuation (valuation : Valuation) : String :=
+  String.intercalate "|" ([1, 2].map fun hole =>
+    match valuation hole with
+    | some value => s!"{hole}:{value}"
+    | none => s!"{hole}:_")
+
+/-- Drift control line: refuted when the premise-violating side moves
+    across two arrival orders while the lawful side holds. A lawful
+    drift would mean the rows fail to isolate the premise, so the
+    verdict then reads survived. -/
+def showDriftControl (name vector : String)
+    (lawfulLeft lawfulRight mutantLeft mutantRight : String) :
+    IO UInt32 := do
+  let refuted := lawfulLeft == lawfulRight && mutantLeft != mutantRight
+  IO.println
+    s!"control={name};vector={vector};lawful-left={lawfulLeft};lawful-right={lawfulRight};mutant-left={mutantLeft};mutant-right={mutantRight};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["closure-clock-read"] =>
@@ -94,7 +113,13 @@ def main (args : List String) : IO UInt32 := do
   | ["door-admits-lawful"] =>
       showAdmitControl "door-admits-lawful" "declare-pinned-references"
         Planted.lawfulDeclare Planted.lawfulDeclareAct
+  | ["drop-provision-disjointness"] =>
+      showDriftControl "drop-provision-disjointness" "two-arrival-orders"
+        (renderValuation (provisionFold Provision.disjointOrderOne))
+        (renderValuation (provisionFold Provision.disjointOrderTwo))
+        (renderValuation (provisionFold Provision.overlapOrderOne))
+        (renderValuation (provisionFold Provision.overlapOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful)"
+        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-provision-disjointness)"
       return 2

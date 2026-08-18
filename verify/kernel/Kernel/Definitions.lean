@@ -1027,6 +1027,67 @@ def fillProgram (valuation : Valuation)
     (nodes : List ProgramNode) : List ProgramNode :=
   nodes.map (fillNode valuation)
 
+/-! ## Requirements and provision — the Effect dependency correspondence
+
+The pin fact (effect@4.0.0-rc.108, read in place): a service key is a
+string (Context.ts:64-68); the environment is a base map plus an
+ordered overlay chain of provisions, looked up newest-first and
+flattened by folding oldest-to-newest with overwrite
+(Context.ts:478-546); merge keeps the later side's binding
+(Context.ts:1123-1181); layer construction is memoized by object
+reference (Layer.ts:432). The model carries that dependency algebra
+at kernel sorts: requirements are a program's unfilled holes (the R
+channel read at data level), provision events are a newest-first
+chain folded into a valuation, and providing is filling. What the
+kernel upgrades: keys are digests, not strings, and memo identity is
+content, not reference. -/
+
+/-- Bind one provision over a valuation: the new binding shadows. -/
+def Valuation.override (valuation : Valuation) (hole value : Nat) :
+    Valuation :=
+  fun name => if name == hole then some value else valuation name
+
+/-- The environment a provision chain builds. Events are newest first
+    (the house ledger orientation, and the overlay chain's); each
+    event shadows everything older beneath it. -/
+def provisionFold : List (Nat × Nat) -> Valuation
+  | [] => Valuation.empty
+  | event :: rest => (provisionFold rest).override event.1 event.2
+
+/-- The newest event at a hole: the overlay chain's first match. -/
+def firstProvision (events : List (Nat × Nat)) (hole : Nat) :
+    Option Nat :=
+  (events.find? (fun event => hole == event.1)).map (fun event => event.2)
+
+/-- The holes one argument still requires. -/
+def argRequires : RawArg -> List Nat
+  | .hole name => [name]
+  | _ => []
+
+/-- The requirement set of a program: every hole its nodes still
+    carry. A closed program requires nothing — the R = never
+    correspondence. -/
+def requiresOf (nodes : List ProgramNode) : List Nat :=
+  nodes.flatMap (fun node => node.args.flatMap argRequires)
+
+namespace Provision
+
+/-- Two arrival orders of one disjoint provision pair. -/
+def disjointOrderOne : List (Nat × Nat) := [(1, 10), (2, 20)]
+
+/-- The same disjoint pair, other order. -/
+def disjointOrderTwo : List (Nat × Nat) := [(2, 20), (1, 10)]
+
+/-- Two arrival orders of an overlapping pair: both events bind
+    hole 1, so order decides — outside the disjointness premise the
+    environment is schedule-dependent. -/
+def overlapOrderOne : List (Nat × Nat) := [(1, 10), (1, 99)]
+
+/-- The overlapping pair, other order. -/
+def overlapOrderTwo : List (Nat × Nat) := [(1, 99), (1, 10)]
+
+end Provision
+
 /-! ## The abstract world
 
 Semantics against abstract carriers: any ACI merge for the monotone

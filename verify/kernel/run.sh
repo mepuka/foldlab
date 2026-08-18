@@ -58,6 +58,7 @@ fi
 expected_laws=(
   KSentenceEncodingInjective KAdmissionRefusesUnlawful KRefusalParity
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
+  KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KInterpInflationary CandidateF13BoundExecutionReplay
 )
 mapfile -t actual_laws < <(
@@ -120,6 +121,9 @@ roster=(
   fill_monoid_action fill_commutative
   world_le_refl_of_idem evidence_absorb interp_inflationary
   ground_max_assoc ground_max_idem ground_interp_inflationary
+  provision_newest_wins provision_append_union provision_disjoint_comm
+  provision_override_idem requires_arg_fill requires_list_fill
+  requires_of_fill
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
@@ -205,6 +209,7 @@ check_control closure-function-value
 check_control anchored-resolve
 check_control unfilled-hole
 check_control door-admits-lawful
+check_control drop-provision-disjointness
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
 mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
@@ -262,4 +267,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (17 door controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (18 door controls; 4 must-not-compile refusals; roster ${#roster[@]})"
