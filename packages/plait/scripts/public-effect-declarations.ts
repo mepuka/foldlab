@@ -5,7 +5,7 @@ import {
   rmSync,
 } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
-import * as ts from "typescript"
+import * as ts from "typescript-five"
 
 /**
  * The emitted-declaration walk is the load-bearing public-surface authority.
