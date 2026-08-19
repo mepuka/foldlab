@@ -1,17 +1,18 @@
 /**
  * The transcription gate for the connection status vocabulary.
  *
- * Runs the five clauses next door against the bytes this package holds: the
+ * Runs the six clauses next door against the bytes this package holds: the
  * pinned client's own declaration, the transcribed table, the machine built
  * over it, and the one consumer that walks it. Bare, with the exit code the
  * battery reads.
  *
- * `--self-test` is the gate's own negative control and it plants five
+ * `--self-test` is the gate's own negative control and it plants six
  * mutations, one per clause: a row renamed away from the vendor's name, a
  * reading promoted to a state, an event left unplaced, a hand-written state
- * standing beside the table, and a consumer that branches on the lame-duck row
- * instead of merely emitting it. Each must refuse, and each must refuse on ITS
- * clause — a control that reddens for the wrong reason proves the wrong thing.
+ * standing beside the table, a consumer that branches on the lame-duck row
+ * instead of merely emitting it, and a second row emitting the terminal fact.
+ * Each must refuse, and each must refuse on ITS clause — a control that reddens
+ * for the wrong reason proves the wrong thing.
  *
  * @module
  */
@@ -50,6 +51,14 @@ if (process.argv.includes("--self-test")) {
   }
   const reading = firstOf("observation")
   const moving = firstOf("transition")
+
+  /**
+   * The machine row the emission control mutates, found by its own absorbing
+   * column so the plant is a genuine SECOND emitter rather than a rewrite of the
+   * row that already ends.
+   */
+  const leaves = machine.find((row) => !row.absorbing)
+  if (leaves === undefined) fail("self-test found no non-absorbing machine row to mutate")
 
   const plants: ReadonlyArray<{
     readonly plant: string
@@ -108,6 +117,18 @@ if (process.argv.includes("--self-test")) {
       evidence: {
         ...evidence,
         pumpSource: `${evidence.pumpSource}\nconst react = (t: string) => t === "ldm"\n`,
+      },
+    },
+    {
+      plant: "a second row emitting the terminal fact",
+      expect: "exactly one row carries the lane's path to the terminal state",
+      evidence: {
+        ...evidence,
+        // The mutation is one row's emission column and nothing else, so the
+        // earlier clauses see the shipped table and this one refuses alone.
+        machine: machine.map((row): TransitionRow =>
+          row === leaves ? { ...row, emits: "ended" } : row
+        ),
       },
     },
   ]

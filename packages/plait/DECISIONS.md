@@ -8786,6 +8786,198 @@ artifact. No lockstep model oracle, and no refinement map between this fold and
 the substrate model's run function — the model gate proves the machine, this
 suite executes a walk over it, and neither is claimed to be the other.
 
+## Task: three findings from the connection-fold landing — the presence fold, the emission singleton, and the lame-duck twin (2026-08-19)
+
+Three small findings raised by the connection-fold landing (DEV-890, DEV-891,
+DEV-892), worked as one batch. All three preserve behaviour: no refusal kind
+moved, no law text moved, and no served byte moved. That the presence fold and
+the ternary chain it replaced agree was MEASURED rather than argued — run side
+by side over one fact of every variant the lane declares, the two produce
+identical values in all fifteen cases.
+
+Exactly two gate lines moved across the two pure batteries, and both are named
+below: the status-vocabulary control count in the type battery, which the one
+new planted control raises from five to six, and the layering edge count in the
+fast battery, which the one new import raises from 320 to 321. Every other gate
+line in both, the four presence controls included, is byte-identical before and
+after, and the fast suite reports the same 575 tests passing — the only other
+tally that moved is its assertion count, by the two the promoted arm no longer
+writes out by hand.
+
+The wall battery is not byte-comparable and was not treated as if it were. Its
+measurement lines carry counts a wall clock decides and digests a freshly named
+server feeds: two runs of the presence wall over one unchanged tree report two
+different state digests, and the chaos and shutdown rows move their counts every
+run. What is compared there is the verdict — ninety-two passing, with the two
+kill-and-reconnect arms of the status-pump wall failing on this platform before
+and after, the same two.
+
+### T0. The presence contribution folds through the pin's discriminator matcher
+
+Decided: `internal/presence.ts`'s `presenceContribution.apply` is
+`Match.type<SessionFact>()` piped through `Match.withReturnType<PresenceState>()`
+and `Match.discriminatorsExhaustive("kind")`, one arm per declared variant, with
+no default and no fallthrough. Alternatives: leave the ternary chain; use a
+mapped arm record keyed by the kind literal.
+
+Why the discriminator matcher and not the arm record: the scoped law splits the
+two by the shape of the union. `SessionFact` is a union of tagged OBJECT types,
+which is where the pin's matcher belongs and where the sibling connection fold
+already uses it; the arm record is for one type whose field carries many
+literals, and the matcher would narrow every arm of such a union to the empty
+type. Same discipline, two shapes, two spellings.
+
+`withReturnType` is what makes the arms load-bearing rather than merely present.
+Without it the arms infer `v: number` and `kind: string` and the shape is caught
+only at the assignment to `Contribution<SessionFact, PresenceState>`, which names
+the record and not the arm; with it, each arm is contextually typed by the state
+and a wrong shape is reported where it was written.
+
+**Load-bearing? no** for behaviour — the ternary and the fold agree on every
+variant, and the four presence controls print the same four lines before and
+after. **Yes** for what it exposed: the ternary's trailing branch was silently
+absorbing the fifth variant, and the module's own prose still said "two of the
+four session facts" over a five-variant union. The fold turns the fifth into an
+arm, and the prose now says five.
+
+### T1. No compile-time control is owed for this fold, and the absence was executed rather than argued
+
+Decided: `check:matcher-control` gains no arm for the presence contribution.
+
+The scoped law owes a compile-time control only where a union can GROW WITHOUT
+ANYONE TOUCHING THE FOLD — the corpus-projected vocabularies — because only
+there can a variant arrive in a regeneration that edits no call site.
+`SessionFact` is a hand-written union declared one module away, so a variant
+appended to it is a missing arm the compiler reports at this call site in the
+same edit that grew it. The claim was measured rather than asserted: deleting
+the drain-disposition arm and running the package typecheck refuses with the
+missing key named, and the arm was restored from a byte copy rather than
+retyped. **Load-bearing? no** — it records why the absence of a control is
+lawful here and would not be lawful over a generated vocabulary.
+
+### T2. The emission singleton becomes gate clause 6, appended rather than inserted
+
+Decided: `checkTerminalEmission` is the status-vocabulary gate's sixth clause
+and runs sixth, after the pump clause, rather than being inserted beside clause
+4 where it belongs by subject. Alternative: insert it as clause 5 and renumber
+the pump clause to 6.
+
+Why appended: the clause numbers are CITED — by the gate's own prose, by the
+ticket that raised this, and by this log — and renumbering a clause that did not
+change would rot every one of those references to buy an ordering that is a
+matter of taste. The run order follows the numbering, so "runs every clause in
+order and reports the first that refuses" stays literally true of the code.
+
+What the clause holds: exactly one machine row emits the ended fact, and that
+row is the one the machine declares absorbing. Clause 4 already pins the
+absorbing row's uniqueness; this clause pins that the row which ENDS is that
+row. Both halves are one law — the read side's only path from the lane to the
+terminal state. Teardown lands as the session-ended form rather than as a
+transition fact, because the record already had a form for "this connection is
+over", so a fold walking the lane reaches the terminal only by reading that fact
+back through the word of the row whose emission column names it.
+
+**Load-bearing? yes** — the connection fold takes its terminal word out of this
+column and refuses when the column does not name exactly one row. Before this
+clause, a table edit could have taken the lane's only path to the terminal away
+with every gate still green.
+
+### T3. The control plants the singleton half; the other two mutations were measured, not shipped
+
+Decided: the self-test plants one arm — a second row emitting the terminal fact
+— which moves the gate's control line from five refuted to six. That line moving
+is the whole of this gate's output change; the transcription PASS line is
+unmoved, because no count it reports changed.
+
+Two further mutations were executed against the clause before the plant was
+chosen, so what the clause refuses is measured rather than argued: zero emitting
+rows refuse on the same reason with the count reading zero, and an emission
+moved off the absorbing row onto a row that is not absorbing refuses on the
+clause's second reason, naming that row. Only the singleton arm is committed,
+because the gate's anatomy is one plant per clause and a clause carrying two
+plants would read as two clauses. **Load-bearing? no** — it records which half
+of the clause the committed control exercises, and that the other half's refusal
+was executed rather than assumed.
+
+### T4. The suite arm executes the clause instead of restating it
+
+Decided: the connection-fold suite keeps its arm and its name, and the arm now
+runs `checkTerminalEmission` over the shipped table and over a planted one
+instead of writing the four assertions out by hand.
+
+That is the shape the same file's no-spelling arm already has: it runs the
+gate's consumer clause over the fold's source and over a planted source. A suite
+that wrote the property out a second time beside the gate would be the twin the
+vocabulary discipline refuses, and the second statement would agree perfectly
+with the first on the day the first was wrong. The arm keeps its red-on-plant
+half, so the pass is evidence rather than a call to a function that might always
+answer yes. The suite's test count does not move and its expect count falls by
+two. **Load-bearing? no** individually; **yes** as a rule — one statement,
+consumed where it is depended on.
+
+### T5. The lame-duck fact's declaration is the schema, and the interface beside it retires
+
+Decided: `IncarnationLameDuck` is declared once, as the `Schema.Struct` in
+`internal/sessionfacts.ts`; the structurally identical interface in
+`internal/incarnations.ts` is deleted and `lameDuckFact` is typed by the
+schema's own `.Type`. Alternative: keep the interface and delete the schema
+variant; alternative: keep both and wall them against each other.
+
+Why the schema wins: it is the DECODER, and a decoder is the declaration a
+reader is actually held to. It is also the session lane's declared event-form
+variant, so the union a fold walks already carries this shape — an interface
+beside it could only ever be a second spelling of a shape something else
+enforces. Walling the two against each other was the worse of the three: two
+statements that agree are still two statements, and the day one is wrong they
+agree perfectly.
+
+Nothing about the minted value moved. The function body is untouched, key
+insertion order included, so no path — canonical or otherwise — sees different
+bytes; the Go-side parity wall mints the same fourteen declared values and
+reports every one byte-equal across the language boundary.
+
+One narrowing was given up and is recorded rather than smuggled: the retired
+interface typed `event` as the pinned vendor's own literal, and the schema types
+it as a string. Narrowing the schema to that literal was refused because it
+would move a REFUSAL — a lane fact carrying any other word would start failing
+to decode — and this task moves no refusal. The literal still reaches the value
+through `LAME_DUCK_EVENT`, which is where the vendor's word travels out of the
+transcribed table, and the suite still measures the minted fact's own event
+field. **Load-bearing? yes** — one shape, one declaration, one owner is the rule
+the vocabulary discipline is made of; the narrowing note is what keeps the
+retirement from being reported as free.
+
+### T6. The staged-debt waiver stays; one sentence of it was discharged and says so
+
+Decided: the module's staged-debt note keeps its standing waiver — these
+lifecycle declarations are hand-carried and owe the corpus's
+substrate-vocabulary group, which the emitter does not yet mint — and loses the
+clause that said the lame-duck fact "is not yet a variant of the session lane's
+declared event form, so a reader decoding that lane under that form refuses it."
+
+That clause was true when it was written and is not true now: the variant landed
+when the session event form learned the fact, and the union the folds walk
+carries it. A note describing owed work that is done is worse than no note,
+because it sends the next reader to do it again. What replaces it says where the
+shape is declared and that this module mints rather than restates it.
+**Load-bearing? no** — but a stale waiver is how a discharged debt gets paid
+twice.
+
+### T7. The layering edge count moves by one, and that is the change being made
+
+Decided: `internal/incarnations.ts` now imports the fact type from
+`internal/sessionfacts.ts`, which the layering gate counts — its pass line reads
+321 edges where it read 320.
+
+The edge is lawful in the direction the ladder requires: incarnations carries the
+`planes` seam tag and session facts the `truth` tag, so the import points deeper,
+and the same edge already exists from the connection fold. Nothing else in either
+battery moved: refusal payloads stay at 85 pinned texts, the public effect gate
+at 109 emitted signatures, and the type universe at 191 classified types with its
+four ratchet pins unchanged — internal modules are not public surface, so
+retiring one of their exported types costs the manifest nothing. **Load-bearing?
+no** — it records the one count that moved and why, so a reader does not go
+looking for a regression.
 ## Task: first contact — one command mints the opening coordination (estate-daemon stage 2, 2026-08-19)
 
 ### T0. The set is content-addressed, and exactly one file carries an ambient name

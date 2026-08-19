@@ -246,8 +246,11 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   the lame-duck fact is emitted here and honoured elsewhere. Wall:
   `check:status-vocabulary` byte-compares the table against the installed
   client's own declaration and holds totality, the reading/state split, the
-  reachable absorbing state, and the no-per-event-branch scan over the pump's
-  source; `check:status-vocabulary-control` plants one mutation per clause.
+  reachable absorbing state, the no-per-event-branch scan over the pump's
+  source, and the singleton terminal emission — exactly one row emits the ended
+  fact and it is the absorbing one, which is the read side's only path from the
+  lane to that state; `check:status-vocabulary-control` plants one mutation per
+  clause.
   Adding a hand-written state union, a per-event branch in the pump, a second
   consumer of a status source, or a landing path beside `sessionlanes.ts`'s one
   emit is a finding.

@@ -26,7 +26,11 @@ import {
   transitionFact,
 } from "../src/internal/sessionfacts.js"
 import { statusFacts, type StatusPumpTerms } from "../src/internal/statuspump.js"
-import type { MachinePosition, StatusEventRow } from "../src/internal/statusvocabulary.js"
+import type {
+  MachinePosition,
+  StatusEventRow,
+  TransitionRow,
+} from "../src/internal/statusvocabulary.js"
 import {
   CONNECTION_TRANSITIONS,
   OBSERVATION_EVENTS,
@@ -46,7 +50,7 @@ import {
 } from "../src/internal/substrate.js"
 import { declareSubstrateWrit } from "../src/internal/writs.js"
 import type { PositionedEvent } from "../src/internal/successors.js"
-import { checkNoEventBranch } from "../scripts/status-vocabulary.js"
+import { checkNoEventBranch, checkTerminalEmission } from "../scripts/status-vocabulary.js"
 
 /**
  * The connection machine as a read, exercised over facts the pump itself
@@ -266,15 +270,19 @@ const traced = async (name: string, line: string): Promise<void> => {
 
 describe("the machine the fold walks, as the table carries it", () => {
   test("the fold's two derivations of the terminal agree: one absorbing row, and it is the one that ends", () => {
-    const absorbing = CONNECTION_TRANSITIONS.filter((row) => row.absorbing)
-    const ending = CONNECTION_TRANSITIONS.filter((row) => row.emits === "ended")
-    // Both are singletons and both are the same row. The fold depends on this
-    // twice: it reads the teardown fact back through the ending row's word, and
-    // it holds the state at the absorbing one.
-    expect(absorbing.length).toBe(1)
-    expect(ending.length).toBe(1)
-    expect(ending[0]!.event).toBe(absorbing[0]!.event)
-    expect(ending[0]!.state).toBe(absorbing[0]!.state)
+    // The property is stated once, in the gate clause that walls it, and
+    // executed here rather than restated — the same shape the no-spelling arm
+    // below already has. A suite that wrote the property out a second time would
+    // be the twin the vocabulary discipline refuses, and the two statements
+    // would agree perfectly on the day one of them was wrong.
+    expect(checkTerminalEmission(CONNECTION_TRANSITIONS)).toEqual({ ok: true })
+    // Red on plant, so the pass is evidence: a second emitting row leaves the
+    // fold choosing between words, and the clause refuses.
+    const leaves = CONNECTION_TRANSITIONS.find((row) => !row.absorbing)!
+    const planted = CONNECTION_TRANSITIONS.map((row): TransitionRow =>
+      row === leaves ? { ...row, emits: "ended" } : row
+    )
+    expect(checkTerminalEmission(planted).ok).toBe(false)
   })
 
   test("the terminal absorbs every transcribed symbol, from itself", () => {
