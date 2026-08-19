@@ -22,3 +22,6 @@ Kernel.RefusalReason
 Kernel.Refusal
 Kernel.Applicability
 Kernel.Door
+Kernel.AdmitResult
+Kernel.GenTag
+Kernel.ProgramNode

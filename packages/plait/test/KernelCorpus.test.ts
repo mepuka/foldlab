@@ -341,10 +341,10 @@ describe("the corpus reader", () => {
       kinds: 12,
       stages: 5,
       refusals: 16,
-      types: 22,
+      types: 25,
       encodings: 12,
       admissions: 19,
-      docs: 22,
+      docs: 25,
       canons: 10,
       programs: 4,
     })

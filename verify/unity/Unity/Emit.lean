@@ -140,7 +140,7 @@ kernel_manifest kernelTypes typeRows docRows from
   DeclKind Digest Value StateLabel Petname Token LanePartition Position
   AnchorFact HoleStage KTriggerPredicate Act RawArg CandidateAnchor
   TokenClaim MergeStrategy CandidatePredicate CandidateAct RefusalReason
-  Refusal Applicability Door
+  Refusal Applicability Door AdmitResult GenTag ProgramNode
 
 /-! ## Sentence encoding vectors
 

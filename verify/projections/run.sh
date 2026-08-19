@@ -197,7 +197,7 @@ if ! diff -u artifacts/prose.md "$first"; then
 fi
 manifest_count=$(grep -c '^[A-Za-z]' names.txt)
 artifact_count=$(grep -c '^## `.*`$' artifacts/prose.md)
-if [[ "$manifest_count" -ne 22 || "$artifact_count" -ne "$manifest_count" ]]; then
+if [[ "$manifest_count" -ne 25 || "$artifact_count" -ne "$manifest_count" ]]; then
   echo "GATE: FAIL — pinned manifest/artifact declaration counts moved" >&2
   exit 1
 fi
@@ -220,11 +220,11 @@ if ! diff <(printf '%s\n' "$manifest_types") <(printf '%s\n' "$corpus_types") >/
   echo "GATE: FAIL — the projection manifest and the corpus type roster diverged" >&2
   exit 1
 fi
-if [[ "$(printf '%s\n' "$corpus_types" | grep -c .)" -ne 22 ]]; then
+if [[ "$(printf '%s\n' "$corpus_types" | grep -c .)" -ne 25 ]]; then
   echo "GATE: FAIL — corpus type roster count moved" >&2
   exit 1
 fi
-echo "GATE: PASS (manifest mirrors the corpus's 22-type roster, file to file)"
+echo "GATE: PASS (manifest mirrors the corpus's 25-type roster, file to file)"
 
 # Refusal arm for item 5: a manifest that names a type the corpus roster does
 # not hold must be refused by this wall.
@@ -242,8 +242,10 @@ echo "GATE: PASS (manifest-vs-corpus divergence refused)"
 # Item 4 — the environment side of names.txt. The orphan scan asks the compiled
 # environment which eligible (Type-sorted, doc'd) declarations its namespace
 # holds and lists any the manifest omits. The committed register is a gate
-# artifact: it must be a fresh, byte-identical regeneration, and the known
-# orphan Kernel.AdmitResult must be visible in it for the coordinator.
+# artifact: it must be a fresh, byte-identical regeneration, and the one
+# remaining orphan Kernel.World must be visible in it for the coordinator: its
+# type argument has no projection on the TypeScript side, so it is declared and
+# unprojected rather than silently absent.
 if ! lake exe projections --target=orphans --names=names.txt > "$orphans_tmp"; then
   echo "GATE: FAIL — orphan scan emission" >&2
   exit 1
@@ -253,8 +255,8 @@ if ! diff -u artifacts/orphans.md "$orphans_tmp"; then
   echo "GATE: FAIL — committed orphan register is not a fresh regeneration" >&2
   exit 1
 fi
-if ! grep -q '^Kernel.AdmitResult$' artifacts/orphans.md; then
-  echo "GATE: FAIL — the known orphan Kernel.AdmitResult is invisible in the register" >&2
+if ! grep -q '^Kernel.World$' artifacts/orphans.md; then
+  echo "GATE: FAIL — the known orphan Kernel.World is invisible in the register" >&2
   exit 1
 fi
 echo "GATE: PASS (orphan register fresh; environment-declared names made visible)"
