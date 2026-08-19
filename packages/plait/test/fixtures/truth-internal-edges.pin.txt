@@ -1,0 +1,20 @@
+# The tolerated truth → internal roster.
+#
+# Every edge from a module on the truth plane into seam-tagged internal
+# material, with the reason the material has not been folded into truth/
+# proper. Truth is the deepest plane and imports only itself; a seam-tagged
+# internal edge is TOLERATED WHERE NECESSARY, never encouraged, and folding
+# the material into truth/ is preferred wherever a way exists.
+#
+# This file is a reviewed control, never a source. Nothing generates it and no
+# generator reads it. `check:layering` reads the import graph out of every
+# module's source bytes and the seams out of their header tags, then requires
+# every truth → internal edge to be pinned here — even when the two seam ranks
+# make the edge lawful. A lawful rank is the floor, not the licence: a new edge
+# has to be written down here as well, by hand, in a diff a reviewer reads.
+# That reviewed diff is what "not encouraged" means mechanically.
+#
+# Format: <src-relative importer> <src-relative imported> <why it stays>
+# Comment and blank lines are ignored.
+
+truth/Refusal.ts internal/refusals.ts schema-issue-bridge-owns-effect-schema-types

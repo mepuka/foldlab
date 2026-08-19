@@ -36,6 +36,15 @@ const (
 	// itself after every existing one and brings a new counts key with it. No
 	// format bump, and a consumer that does not know it skips it.
 	RecordProgram = "program"
+	// RecordModelAdmission is the tenth group. Its rows are admitted
+	// sentences the model publishes to document ITSELF, each marked
+	// scope="model-internal" by the emitter, and no host reproduces them:
+	// they state a quotient of the model's payload fold that is ruled
+	// intended and model-internal (operator grill ruling A8, DEV-772), while
+	// real byte-level injectivity is walled elsewhere. This consumer KNOWS
+	// the group — so it is not "skipped" and a generator reading the corpus
+	// is not left guessing — and deliberately projects nothing from it.
+	RecordModelAdmission = "model-admission"
 )
 
 // groupOrder is the mandated file order of the record groups this consumer
@@ -51,6 +60,7 @@ var groupOrder = []string{
 	RecordDoc,
 	RecordCanon,
 	RecordProgram,
+	RecordModelAdmission,
 }
 
 // countedGroups are the counts keys the header must ALWAYS carry. Extra keys
@@ -68,6 +78,7 @@ var countedGroups = []string{
 	RecordDoc,
 	RecordEncoding,
 	RecordKind,
+	RecordModelAdmission,
 	RecordProgram,
 	RecordRefusal,
 	RecordStage,
@@ -199,6 +210,20 @@ type Skipped struct {
 	Value  JSONValue
 }
 
+// ModelInternalRow is one model-admission record, retained verbatim.
+//
+// The group is RECOGNISED — so it never lands in the skip log and no
+// generator reading this corpus is left guessing whether it is missing
+// something — and deliberately NOT projected: nothing here becomes a Go
+// table, and no host reproduces these verdicts. What is kept is the record's
+// own value, which is what the both-ways law needs to re-emit the line and
+// nothing a consumer could mistake for an admission verdict it owes.
+type ModelInternalRow struct {
+	Line  int
+	Name  string
+	Value JSONValue
+}
+
 // Corpus is one parsed, validated format-2 artifact.
 type Corpus struct {
 	// Lines is the record count of the file this corpus was parsed from,
@@ -215,7 +240,10 @@ type Corpus struct {
 	Docs       []DocRow
 	Canons     []CanonRow
 	Programs   []ProgramRow
-	Unknown    []Skipped
+	// ModelInternal carries the model-admission group: recognised, retained
+	// for the both-ways law, projected nowhere.
+	ModelInternal []ModelInternalRow
+	Unknown       []Skipped
 }
 
 // FormatError names both the format found and the format understood. A
@@ -329,6 +357,26 @@ func ParseCorpus(data []byte) (*Corpus, error) {
 			var row ProgramRow
 			row, err = decodeProgram(value)
 			corpus.Programs = append(corpus.Programs, row)
+		case RecordModelAdmission:
+			// Recognised and deliberately not projected. The scope marking is
+			// checked because it is the whole reason the row is exempt: a
+			// model-internal row that lost its marking would be an ordinary
+			// admission verdict wearing a group name, and a consumer that
+			// dropped it silently would be dropping a claim it owed.
+			var scope, rowName string
+			scope, err = stringMember(value, "scope")
+			if err == nil && scope != "model-internal" {
+				err = fmt.Errorf(
+					"model-admission record has scope %q, want \"model-internal\"", scope)
+			}
+			if err == nil {
+				rowName, err = stringMember(value, "name")
+			}
+			if err == nil {
+				corpus.ModelInternal = append(corpus.ModelInternal, ModelInternalRow{
+					Line: lineNo, Name: rowName, Value: value,
+				})
+			}
 		}
 		if err != nil {
 			return nil, fmt.Errorf("line %d: %w", lineNo, err)
@@ -447,6 +495,11 @@ func (c *Corpus) Emit() ([]byte, error) {
 	}
 	for _, row := range c.Programs {
 		if err := write(encodeProgram(row)); err != nil {
+			return nil, err
+		}
+	}
+	for _, row := range c.ModelInternal {
+		if err := write(row.Value, nil); err != nil {
 			return nil, err
 		}
 	}

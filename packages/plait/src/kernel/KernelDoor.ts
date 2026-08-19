@@ -13,6 +13,19 @@
  * @module
  */
 import * as Generated from "./KernelSchemas.generated.js"
+// The public spellings below are the generated declarations themselves, bound
+// under this door's names. Nothing here restates a shape: the alias arrives
+// with the generator's own declaration, so the type-universe walk resolves
+// every one of them back to `KernelSchemas.generated.d.ts`.
+import type {
+  KernelActValue as KernelAct,
+  KernelCandidateActValue as KernelCandidateAct,
+  KernelCandidatePredicateValue as KernelCandidatePredicate,
+  KernelDoorValue as KernelDoorContext,
+  KernelKTriggerPredicateValue as KernelTriggerPredicate,
+  KernelRawArgValue as KernelRawArg,
+  KernelRefValue as KernelRef,
+} from "./KernelSchemas.generated.js"
 import {
   KERNEL_DECL_KINDS,
   KERNEL_HOLE_STAGES,
@@ -32,26 +45,27 @@ export const Act = Generated.KernelAct
 /** The generated schema for the catalog and writ-pinned admission context. */
 export const DoorContext = Generated.KernelDoor
 
-/** A raw argument atom, derived from the model-emitted schema. */
-export type KernelRawArg = typeof Generated.KernelRawArg.Type
-
-/** A raw trigger predicate, derived from the model-emitted schema. */
-export type KernelCandidatePredicate = typeof Generated.KernelCandidatePredicate.Type
-
-/** A candidate sentence, derived from the model-emitted schema. */
-export type KernelCandidateAct = typeof Generated.KernelCandidateAct.Type
-
-/** A kind-tagged model identity, derived from the model-emitted schema. */
-export type KernelRef = typeof Generated.KernelRef.Type
-
-/** The catalog and pinned universe consulted by admission. */
-export type KernelDoorContext = typeof Generated.KernelDoor.Type
-
-/** One lawful intrinsic sentence, derived from the model-emitted schema. */
-export type KernelAct = typeof Generated.KernelAct.Type
-
-/** The model's closed, monotone trigger grammar. */
-export type KernelTriggerPredicate = typeof Generated.KernelKTriggerPredicate.Type
+/**
+ * The candidate language itself, re-exported from the module the generator
+ * writes. Each name is the generated declaration under this door's public
+ * spelling — the raw argument atom, the raw trigger predicate, the candidate
+ * sentence, the kind-tagged model identity, the admission context, the lawful
+ * intrinsic sentence, and the model's closed monotone trigger grammar.
+ *
+ * A re-export is the only shape that derives. `typeof Generated.X.Type` reads
+ * as derivation and is not: it is a fresh declaration in this file, and the
+ * type-universe walk resolves it here rather than to the generator's bytes.
+ * These seven were spelled that way until DEV-804 and scored zero derived.
+ */
+export type {
+  KernelActValue as KernelAct,
+  KernelCandidateActValue as KernelCandidateAct,
+  KernelCandidatePredicateValue as KernelCandidatePredicate,
+  KernelDoorValue as KernelDoorContext,
+  KernelKTriggerPredicateValue as KernelTriggerPredicate,
+  KernelRawArgValue as KernelRawArg,
+  KernelRefValue as KernelRef,
+} from "./KernelSchemas.generated.js"
 
 /**
  * The result of admission. Success carries both the intrinsic sentence and its

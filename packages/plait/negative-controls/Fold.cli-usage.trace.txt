@@ -1,0 +1,1 @@
+FOLD CLI CONTROL: PASS component=library-usage-error cases=unrecognized-flag,unknown-subcommand,malformed-digest exit=2

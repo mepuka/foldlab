@@ -10,6 +10,10 @@ editing the executable. `run.sh` proves fresh byte-identical regeneration,
 two-run determinism, the one-environment-walk claim (Main.lean's one loader
 call is a named allowance), manifest-vs-corpus agreement, an environment-side
 orphan register, and the read-only dependency on `verify/kernel`.
+environment. `run.sh` proves fresh byte-identical regeneration, two-run
+determinism, a field-rename mutation, the read-only dependency on
+`verify/kernel`, and one mutation control per slice-A amendment (binder role,
+ASCII transliteration, verbatim docstrings, name erasure — DECISIONS P4–P7).
 
 Regenerate and check everything:
 
@@ -34,6 +38,14 @@ scan, and finally `Projections/Prose.lean` for the pure target printer. The
 committed output lives in `artifacts/`: `prose.md` is the manifest's page,
 `probe.md` is the refusal-probe baseline, and `orphans.md` is the environment-
 side register of declarations the namespace holds that the manifest omits.
+Progressive discovery: start in `Projections/Ast.lean` for the interchange —
+which also states, once, the three rules a target printer must not re-invent
+(the binder role, the name-erasure rule of the reference grammar, and the ASCII
+alphabet a docstring is carried in) — then `Projections/Walk.lean` for the only
+environment walk, and finally `Projections/Prose.lean` for the pure target
+printer. The committed output is
+`artifacts/prose.md`; `artifacts/probe.md` is the mutation control's pinned
+baseline.
 
 ## Admission test
 
@@ -70,7 +82,12 @@ side register of declarations the namespace holds that the manifest omits.
 ## Honest bounds
 
 This slice emits prose only. It emits no TypeScript or JSON Schema, changes no
-kernel source, and makes no runtime or VERIFICATION.md claim. The generic AST
+kernel source, and makes no runtime or VERIFICATION.md claim. The slice-A
+amendments state four rules the existing generators already apply, and the gate
+proves each one spells the committed bytes; it does NOT prove agreement with
+those generators, because the topology arm forbids this package from reading
+the corpus they agree on. That comparison was run once by hand and is recorded
+in `DECISIONS.md` as evidence, not as a wall. The generic AST
 contains `RefusalRow`; populating model-specific law/repair values is a later
 producer's responsibility rather than something the declaration walker may
 invent — the probe lane is a producer in that sense (P6). Two findings

@@ -29,12 +29,29 @@
  * into the runtime-union source and requires this same law to refuse it for
  * the reason committed in the control's trace.
  *
+ * ## The second law: every kind carries its meaning
+ *
+ * Ancestry says where a kind came from. It says nothing about what the kind
+ * MEANS, and a vocabulary whose words are traceable but unexplained is still
+ * not a language. So `checkRefusalMeanings` holds a second law over the same
+ * artifacts: every runtime structural kind and every reason the model emits
+ * carries one to two sentences of standing meaning, rendered behind the draft
+ * marker until the operator's taste pass rules, and rendered identically by
+ * the two projections that carry it — the generated modules and the prose
+ * page, which are written by different renderers and are read here as bytes.
+ *
+ * The mutation arm is `check:refusal-meaning-control`, which plants a kind
+ * with no meaning into the same runtime-union source.
+ *
  * @module
  */
 import * as ts from "typescript-five"
 
 import { CORPUS_PATH } from "./kernel-corpus.js"
-import { RUNTIME_REFUSAL_WAIVER_TICKET } from "./kernel-runtime-refusals.js"
+import {
+  DRAFT_MEANING_MARKER,
+  RUNTIME_REFUSAL_WAIVER_TICKET,
+} from "./kernel-runtime-refusals.js"
 
 /** The result of checking one refusal vocabulary against its ancestry. */
 export type RefusalVocabularyCheck =
@@ -47,7 +64,7 @@ export interface StagedDebtWaiver {
   readonly ticket: string
 }
 
-/** The three artifacts the wall reads, relative to the repository root. */
+/** The artifacts the wall reads, relative to the repository root. */
 export const REFUSAL_VOCABULARY_PATHS = {
   /** The shipped truth-plane union, read as source bytes. */
   runtimeUnion: "packages/plait/src/truth/RefusalKinds.generated.ts",
@@ -57,10 +74,17 @@ export const REFUSAL_VOCABULARY_PATHS = {
   corpusFixture: CORPUS_PATH,
   /** The reviewed staged-debt pin, never a generator input. */
   stagedDebtPin: "packages/plait/test/fixtures/refusal-staged-debt.pin.txt",
+  /** The kernel-plane table, read as source bytes for the emitted reasons' meanings. */
+  kernelTables: "packages/plait/src/kernel/KernelTables.generated.ts",
+  /** The rendered prose page, read as page bytes for the third derivation. */
+  prosePage: "docs/generated/kernel-language.generated.md",
 } as const
 
 /** The name the truth-plane module gives its literal roster. */
 export const RUNTIME_UNION_BINDING = "STRUCTURAL_REFUSAL_KINDS"
+
+/** The name the kernel table gives its taught-refusal table. */
+export const KERNEL_REFUSALS_BINDING = "KERNEL_REFUSALS"
 
 /** The name both the generated module and the public module give the schema. */
 export const RUNTIME_UNION_SCHEMA_BINDING = "StructuralRefusalKind"
@@ -95,8 +119,13 @@ const exportedInitializer = (
   return undefined
 }
 
+// `satisfies` is unwrapped beside the two assertion forms because the kernel
+// table's rosters carry `as const satisfies ...`: the annotation constrains the
+// literal and never replaces it, so a reader after the literal must see past
+// all three or it would report a shape the file does not have.
 const unwrapAssertions = (node: ts.Expression): ts.Expression =>
-  ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)
+  ts.isAsExpression(node) || ts.isTypeAssertionExpression(node) ||
+    ts.isSatisfiesExpression(node)
     ? unwrapAssertions(node.expression)
     : node
 
@@ -136,6 +165,17 @@ export const readRuntimeRefusalKinds = (
  * Checks that the module the minting sites import takes its union from the
  * generated roster and mints no second one. Without this the wall would guard
  * a roster nothing speaks.
+ *
+ * The admitted shape is a value re-export straight from the generated module.
+ * DEV-804 replaced the older `export const X: typeof Generated = Generated`
+ * spelling with it, and the replacement was forced rather than chosen:
+ * `StructuralRefusalKind` is a merged value-and-type name, TypeScript admits
+ * one export declaration per exported name across both meanings, and only a
+ * re-export gives the TYPE half a declaration the public-type census can trace
+ * back to the generator. The clause is stronger for the move — an
+ * `export ... from` cannot be a second roster wearing the name, so nothing here
+ * has to chase an initializer back to an import alias and hope no later
+ * statement rebound it.
  */
 export const checkRuntimeUnionWiring = (
   source: string,
@@ -143,38 +183,42 @@ export const checkRuntimeUnionWiring = (
   generatedSpecifier: string,
 ): RefusalVocabularyCheck => {
   const file = parse(source, path)
-  let alias: string | undefined
   for (const statement of file.statements) {
-    if (!ts.isImportDeclaration(statement)) continue
-    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue
-    if (statement.moduleSpecifier.text !== generatedSpecifier) continue
-    const bindings = statement.importClause?.namedBindings
-    if (bindings === undefined || !ts.isNamedImports(bindings)) continue
-    for (const element of bindings.elements) {
-      const imported = element.propertyName?.text ?? element.name.text
-      if (imported === RUNTIME_UNION_SCHEMA_BINDING) alias = element.name.text
+    if (!ts.isExportDeclaration(statement) || statement.isTypeOnly) continue
+    const specifier = statement.moduleSpecifier
+    if (specifier === undefined || !ts.isStringLiteral(specifier)) continue
+    if (specifier.text !== generatedSpecifier) continue
+    const clause = statement.exportClause
+    if (clause === undefined || !ts.isNamedExports(clause)) continue
+    for (const element of clause.elements) {
+      if (element.isTypeOnly) continue
+      if (element.name.text !== RUNTIME_UNION_SCHEMA_BINDING) continue
+      const exported = element.propertyName?.text ?? element.name.text
+      if (exported !== RUNTIME_UNION_SCHEMA_BINDING) {
+        return {
+          ok: false,
+          reason:
+            `${path} exports ${RUNTIME_UNION_SCHEMA_BINDING} as ${quote(exported)},`
+            + " which is not the generated roster's schema",
+        }
+      }
+      return { ok: true, corpusBacked: 0, stagedDebt: 0 }
     }
   }
-  if (alias === undefined) {
+  if (exportedInitializer(file, RUNTIME_UNION_SCHEMA_BINDING) !== undefined) {
     return {
       ok: false,
       reason:
-        `${path} does not import ${RUNTIME_UNION_SCHEMA_BINDING} from ${quote(generatedSpecifier)}`,
+        `${path} declares ${RUNTIME_UNION_SCHEMA_BINDING} of its own rather than re-exporting`
+        + ` it from ${quote(generatedSpecifier)}`,
     }
   }
-  const initializer = exportedInitializer(file, RUNTIME_UNION_SCHEMA_BINDING)
-  if (initializer === undefined) {
-    return { ok: false, reason: `${path} exports no ${RUNTIME_UNION_SCHEMA_BINDING} value` }
+  return {
+    ok: false,
+    reason:
+      `${path} does not re-export ${RUNTIME_UNION_SCHEMA_BINDING} from`
+      + ` ${quote(generatedSpecifier)}`,
   }
-  const value = unwrapAssertions(initializer)
-  if (!ts.isIdentifier(value) || value.text !== alias) {
-    return {
-      ok: false,
-      reason:
-        `${path}'s ${RUNTIME_UNION_SCHEMA_BINDING} is not the generated roster's schema`,
-    }
-  }
-  return { ok: true, corpusBacked: 0, stagedDebt: 0 }
 }
 
 /**
@@ -323,7 +367,7 @@ export const checkRefusalVocabulary = (
  * same projection; this is what keeps the two emissions from parting company.
  */
 export const checkProjectionAncestry = (
-  rows: ReadonlyArray<{ readonly kind: string; readonly source: string; readonly waiver?: string }>,
+  rows: ReadonlyArray<{ readonly kind: string; readonly source: string }>,
   evidence: RefusalVocabularyEvidence,
 ): RefusalVocabularyCheck => {
   const corpus = new Set(evidence.corpusReasons)
@@ -355,17 +399,431 @@ export const checkProjectionAncestry = (
           + ` corpus fixture says ${quote(expected)}`,
       }
     }
-    if (expected === "staged-debt" && row.waiver !== evidence.waiverTicket) {
-      return {
-        ok: false,
-        reason:
-          `the kernel table's staged-debt row ${quote(kind)} does not cite`
-          + ` ${evidence.waiverTicket}`,
-      }
-    }
+    // Which ticket owns a staged-debt row is deliberately NOT checked here, and
+    // is deliberately not on the row: root law 10 keeps ticket citations off
+    // every rendered surface. The citation still has to exist and still has to
+    // be right — `checkRefusalVocabulary` holds it against the reviewed pin,
+    // which is a tracking-native record and the correct home for it.
   }
   return { ok: true, corpusBacked: 0, stagedDebt: 0 }
 }
 
-/** The ticket a staged-debt waiver must cite, re-exported for the control. */
-export { RUNTIME_REFUSAL_WAIVER_TICKET }
+/** One kind's standing meaning, read out of a generated artifact's bytes. */
+export interface ReadMeaning {
+  /** The refusal kind or emitted reason the meaning belongs to. */
+  readonly name: string
+  /** The first line of the rendering, which the draft marker law is about. */
+  readonly marker: string
+  /** The meaning itself, line breaks rejoined as single spaces. */
+  readonly meaning: string
+}
+
+const leadingDocBlock = (file: ts.SourceFile, node: ts.Node): string | undefined => {
+  const text = file.getFullText()
+  const ranges = ts.getLeadingCommentRanges(text, node.getFullStart()) ?? []
+  const last = ranges.at(-1)
+  if (last === undefined) return undefined
+  const raw = text.slice(last.pos, last.end)
+  return raw.startsWith("/**") && raw.endsWith("*/") ? raw : undefined
+}
+
+/**
+ * One doc block as its content lines: the comment syntax removed, each line
+ * trimmed, and the blank ends dropped. The rendering wraps a meaning at a
+ * fixed column, so the sentence is rebuilt by rejoining the lines that follow
+ * the marker with single spaces — the same text, read back out of the bytes.
+ */
+const docBlockLines = (raw: string): ReadonlyArray<string> => {
+  const body = raw.slice("/**".length, raw.length - "*/".length)
+  const lines = body.split("\n").map((line) => {
+    const trimmed = line.trim()
+    return (trimmed.startsWith("*") ? trimmed.slice(1) : trimmed).trim()
+  })
+  while (lines.length > 0 && lines[0] === "") lines.shift()
+  while (lines.length > 0 && lines.at(-1) === "") lines.pop()
+  return lines
+}
+
+const meaningOfDoc = (raw: string | undefined, name: string): ReadMeaning => {
+  if (raw === undefined) return { name, marker: "", meaning: "" }
+  const lines = docBlockLines(raw)
+  return {
+    name,
+    marker: lines.at(0) ?? "",
+    meaning: lines.slice(1).join(" ").trim(),
+  }
+}
+
+/**
+ * Reads each runtime kind's standing meaning out of the truth-plane module's
+ * source bytes. The read is the same one the union roster gets: the committed
+ * bytes through the TypeScript AST, with the doc comment taken from the
+ * leading trivia of the literal it stands over. Nothing here consults the
+ * reviewed roster the generator read, so a meaning that never reached the
+ * shipped artifact reads as absent rather than as present-in-the-manifest.
+ */
+export const readRuntimeRefusalMeanings = (
+  source: string,
+  path: string,
+): ReadonlyArray<ReadMeaning> => {
+  const file = parse(source, path)
+  const initializer = exportedInitializer(file, RUNTIME_UNION_BINDING)
+  if (initializer === undefined) {
+    return refuse(`${path} exports no ${RUNTIME_UNION_BINDING} roster`)
+  }
+  const literal = unwrapAssertions(initializer)
+  if (!ts.isArrayLiteralExpression(literal)) {
+    return refuse(`${path}'s ${RUNTIME_UNION_BINDING} is not an array literal`)
+  }
+  return literal.elements.map((element) => {
+    if (!ts.isStringLiteral(element)) {
+      return refuse(
+        `${path}'s ${RUNTIME_UNION_BINDING} carries an element that is not a string literal`,
+      )
+    }
+    return meaningOfDoc(leadingDocBlock(file, element), element.text)
+  })
+}
+
+/**
+ * Reads each emitted reason's standing meaning out of the kernel table's
+ * source bytes. This is the second generated artifact and a second parse: the
+ * reasons themselves come back from the corpus fixture's bytes, so the two
+ * sides of the coverage law are never one value read twice.
+ */
+export const readKernelReasonMeanings = (
+  source: string,
+  path: string,
+): ReadonlyArray<ReadMeaning> => {
+  const file = parse(source, path)
+  const initializer = exportedInitializer(file, KERNEL_REFUSALS_BINDING)
+  if (initializer === undefined) {
+    return refuse(`${path} exports no ${KERNEL_REFUSALS_BINDING} table`)
+  }
+  const literal = unwrapAssertions(initializer)
+  if (!ts.isArrayLiteralExpression(literal)) {
+    return refuse(`${path}'s ${KERNEL_REFUSALS_BINDING} is not an array literal`)
+  }
+  return literal.elements.map((element) => {
+    if (!ts.isObjectLiteralExpression(element)) {
+      return refuse(`${path}'s ${KERNEL_REFUSALS_BINDING} carries a row that is not an object`)
+    }
+    let reason: string | undefined
+    for (const property of element.properties) {
+      if (!ts.isPropertyAssignment(property)) continue
+      const key = property.name
+      if (!ts.isIdentifier(key) || key.text !== "reason") continue
+      if (!ts.isStringLiteral(property.initializer)) {
+        return refuse(`${path}'s ${KERNEL_REFUSALS_BINDING} carries a non-literal reason`)
+      }
+      reason = property.initializer.text
+    }
+    if (reason === undefined) {
+      return refuse(`${path}'s ${KERNEL_REFUSALS_BINDING} carries a row with no reason`)
+    }
+    return meaningOfDoc(leadingDocBlock(file, element), reason)
+  })
+}
+
+/**
+ * Reads the meanings out of the rendered prose page's bytes. A level-three
+ * heading names the kind; a line equal to the draft marker opens its meaning,
+ * and the next non-empty line is the sentence. Headings carrying no marker —
+ * every type and program vector on the page — are not meanings and are not
+ * read as empty ones.
+ */
+export const readProseMeanings = (
+  page: string,
+  path: string,
+): ReadonlyArray<ReadMeaning> => {
+  const lines = page.split("\n").map((line) => line.replace(/\r$/, ""))
+  const found: Array<ReadMeaning> = []
+  let heading: string | undefined
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!
+    if (line.startsWith("### ")) {
+      heading = line.slice("### ".length).trim()
+      continue
+    }
+    if (line.trim() !== DRAFT_MEANING_MARKER) continue
+    if (heading === undefined) {
+      return refuse(`${path} line ${index + 1} carries a draft marker under no heading`)
+    }
+    let cursor = index + 1
+    while (cursor < lines.length && lines[cursor]!.trim() === "") cursor++
+    if (cursor >= lines.length) {
+      return refuse(`${path} line ${index + 1} carries a draft marker with nothing after it`)
+    }
+    found.push({ name: heading, marker: line.trim(), meaning: lines[cursor]!.trim() })
+  }
+  return found
+}
+
+/** The meaning law's inputs: three reads of three artifacts' bytes. */
+export interface RefusalMeaningEvidence {
+  /** Read from the shipped truth-plane source bytes. */
+  readonly runtimeMeanings: ReadonlyArray<ReadMeaning>
+  /** Read from the kernel table's source bytes. */
+  readonly reasonMeanings: ReadonlyArray<ReadMeaning>
+  /** Read from the rendered page's bytes. */
+  readonly proseMeanings: ReadonlyArray<ReadMeaning>
+  /** Read from the model interchange fixture's bytes. */
+  readonly corpusReasons: ReadonlyArray<string>
+  /** The marker every unratified meaning must still carry. */
+  readonly draftMarker: string
+}
+
+/** The result of checking the standing meanings. */
+export type RefusalMeaningCheck =
+  | { readonly ok: true; readonly kinds: number; readonly reasons: number }
+  | { readonly ok: false; readonly reason: string }
+
+/**
+ * The meaning law.
+ *
+ * Every kind in the estate's refusal vocabulary carries a standing meaning:
+ * one to two sentences saying what the kind means and what it implies, which
+ * is a different act from the law and repair a refusal teaches when it fires.
+ * Four clauses, separate so a red wall names which one moved.
+ *
+ * 1. **Presence.** Every runtime structural kind, and every reason the model
+ *    emits, has a non-empty meaning in the generated artifact that ships it. A
+ *    kind with no meaning refuses here — silently shipping an unexplained kind
+ *    is exactly the drift the operator's requirement exists to stop.
+ * 2. **The draft marker stands.** Every meaning is rendered behind the marker,
+ *    verbatim, until the taste pass rules. An unmarked meaning reads as prose
+ *    the operator has ratified, and nothing but that sitting may make it read
+ *    that way — so the marker's PRESENCE is pinned exactly like the sentences'
+ *    bytes are.
+ * 3. **One kind, one meaning.** A name carried by both registers carries the
+ *    same sentence in both.
+ * 4. **The projections agree.** The prose page carries a meaning for exactly
+ *    the names the generated modules do, with the same bytes. The page is
+ *    rendered by a different module than the tables are, so this is what stops
+ *    one projection from dropping, truncating, or paraphrasing a meaning the
+ *    other renders in full.
+ */
+export const checkRefusalMeanings = (
+  evidence: RefusalMeaningEvidence,
+): RefusalMeaningCheck => {
+  const expected = new Map<string, string>()
+  const register = (
+    read: ReadonlyArray<ReadMeaning>,
+    what: string,
+  ): RefusalMeaningCheck | undefined => {
+    for (const row of read) {
+      if (row.meaning === "") {
+        return {
+          ok: false,
+          reason:
+            `${what} ${quote(row.name)} carries no standing meaning; every refusal kind`
+            + ` states what it means and what that implies`,
+        }
+      }
+      if (row.marker !== evidence.draftMarker) {
+        return {
+          ok: false,
+          reason:
+            `${what} ${quote(row.name)} renders its meaning behind ${quote(row.marker)}`
+            + ` rather than ${quote(evidence.draftMarker)}; only the operator's taste pass`
+            + ` retires that marker`,
+        }
+      }
+      const already = expected.get(row.name)
+      if (already !== undefined && already !== row.meaning) {
+        return {
+          ok: false,
+          reason: `${quote(row.name)} carries two different standing meanings`,
+        }
+      }
+      expected.set(row.name, row.meaning)
+    }
+    return undefined
+  }
+
+  const runtimeFailure = register(evidence.runtimeMeanings, "runtime structural refusal kind")
+  if (runtimeFailure !== undefined) return runtimeFailure
+  const reasonFailure = register(evidence.reasonMeanings, "emitted refusal reason")
+  if (reasonFailure !== undefined) return reasonFailure
+
+  const covered = new Set(evidence.reasonMeanings.map((row) => row.name))
+  for (const reason of evidence.corpusReasons) {
+    if (covered.has(reason)) continue
+    return {
+      ok: false,
+      reason:
+        `the model emits refusal reason ${quote(reason)}, which the kernel table renders`
+        + ` no standing meaning for`,
+    }
+  }
+
+  const rendered = new Set<string>()
+  for (const row of evidence.proseMeanings) {
+    const wanted = expected.get(row.name)
+    if (wanted === undefined) {
+      return {
+        ok: false,
+        reason:
+          `the prose page renders a standing meaning for ${quote(row.name)}, which is`
+          + ` neither a runtime structural kind nor an emitted refusal reason`,
+      }
+    }
+    if (row.marker !== evidence.draftMarker) {
+      return {
+        ok: false,
+        reason:
+          `the prose page renders ${quote(row.name)}'s meaning behind ${quote(row.marker)}`
+          + ` rather than ${quote(evidence.draftMarker)}`,
+      }
+    }
+    if (row.meaning !== wanted) {
+      return {
+        ok: false,
+        reason:
+          `the prose page's standing meaning for ${quote(row.name)} is not the one the`
+          + ` generated modules carry`,
+      }
+    }
+    rendered.add(row.name)
+  }
+  for (const name of expected.keys()) {
+    if (rendered.has(name)) continue
+    return {
+      ok: false,
+      reason: `the prose page renders no standing meaning for ${quote(name)}`,
+    }
+  }
+
+  return {
+    ok: true,
+    kinds: evidence.runtimeMeanings.length,
+    reasons: evidence.reasonMeanings.length,
+  }
+}
+
+/**
+ * The three surfaces the estate renders as the language itself. Everything on
+ * them is read here as bytes, and each is named rather than pathed, because a
+ * refusal about a document that carries no paths should not itself have to
+ * print one.
+ */
+export const OFFICIAL_SURFACES = {
+  runtimeUnion: "the truth-plane refusal vocabulary",
+  kernelTables: "the kernel conformance tables",
+  prosePage: "the kernel language page",
+} as const
+
+/** One official surface's committed bytes, under the name a refusal prints. */
+export interface OfficialSurface {
+  readonly surface: string
+  readonly bytes: string
+}
+
+/** One class of tracking artifact, with the reason it may not be rendered. */
+export interface TrackingArtifactClass {
+  readonly clause: string
+  readonly pattern: RegExp
+  readonly why: string
+}
+
+/**
+ * The classes root law 10 refuses on an official surface.
+ *
+ * Each pattern is deliberately narrow enough to name what it caught, and the
+ * set is deliberately not "anything with a slash": the model's own prose says
+ * things like `immutable/head-relative`, which is a pair of words and not a
+ * reference to a file. What is refused is a REFERENCE — something a reader
+ * could follow to a location — and the three shapes one takes here are an
+ * extension-bearing name, a path rooted at a directory of this repository, and
+ * any deeper multi-segment path form. Brand tags and package specifiers are
+ * excluded by their leading `~` and `@`: those are identities, not locations,
+ * which is the whole distinction the law is about.
+ */
+export const TRACKING_ARTIFACT_CLASSES: ReadonlyArray<TrackingArtifactClass> = [
+  {
+    clause: "tracking id",
+    pattern: /\bDEV-[0-9]+\b/,
+    why: "a ticket number is where tracking lives, and tracking is not the language",
+  },
+  {
+    clause: "filesystem path",
+    pattern:
+      /(?:^|[^A-Za-z0-9_~@/-])(?:[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:ts|tsx|js|mjs|cjs|jsx|json|ndjson|md|sh|ps1|txt|lean|go|yaml|yml|toml|lock)(?![A-Za-z0-9_])|(?:packages|scripts|src|test|tests|fixtures|docs|verify|proto|node_modules|negative-controls)\/|[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+)/,
+    why: "a plait item refers to a digest or a derived digest; a path is an ambient reference",
+  },
+  {
+    clause: "generation command",
+    // `node` is deliberately absent from the runner list: the model's own prose
+    // about program declarations calls a graph vertex a node, and a wall that
+    // cannot tell a vertex from a runtime would be refusing the language to
+    // protect it. The runners left here name nothing but themselves.
+    pattern: /(?:\b(?:bun|npm|pnpm|yarn|deno)\s)|(?:\b(?:check|generate|build):[a-z][a-z0-9-]*)/,
+    why: "how an artifact is rebuilt belongs in the README beside it, not inside it",
+  },
+] as const
+
+/** The result of sweeping the official surfaces for tracking artifacts. */
+export type TrackingArtifactCheck =
+  | { readonly ok: true; readonly surfaces: number; readonly lines: number }
+  | { readonly ok: false; readonly reason: string }
+
+/**
+ * Root law 10's mechanical clause: an official document carries no tracking
+ * artifact, and a draft marker on one is the exact ratified form.
+ *
+ * The sweep is over the COMMITTED bytes of the three rendered surfaces, one
+ * line at a time, so a refusal can say which surface, which line, which class,
+ * and what it matched. Two things make it a wall rather than a lint. It reads
+ * what shipped, not what a generator intended, so removing a path from a
+ * template and forgetting to regenerate still reddens. And the marker arm
+ * pins the EXACT string: a line that opens like a draft marker and is not the
+ * ratified one is refused rather than tolerated, which is what stops the marker
+ * from quietly acquiring a parenthetical again.
+ */
+export const checkNoTrackingArtifacts = (
+  surfaces: ReadonlyArray<OfficialSurface>,
+  marker: string,
+): TrackingArtifactCheck => {
+  if (surfaces.length === 0) return { ok: false, reason: "no official surface was swept" }
+  let swept = 0
+  for (const surface of surfaces) {
+    const lines = surface.bytes.split("\n")
+    if (lines.length <= 1) {
+      return { ok: false, reason: `${surface.surface} read as no lines at all` }
+    }
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index]!.replace(/\r$/, "")
+      swept++
+      for (const artifact of TRACKING_ARTIFACT_CLASSES) {
+        const found = artifact.pattern.exec(line)
+        if (found === null) continue
+        return {
+          ok: false,
+          reason:
+            `${surface.surface} line ${index + 1} renders a ${artifact.clause}`
+            + ` (${quote(found[0].trim())}): ${artifact.why}`,
+        }
+      }
+      const trimmed = line.trim()
+      if (!trimmed.startsWith("Draft meaning")) continue
+      const stated = trimmed.startsWith("* ") ? trimmed.slice(2) : trimmed
+      if (stated === marker) continue
+      return {
+        ok: false,
+        reason:
+          `${surface.surface} line ${index + 1} renders ${quote(stated)} rather than the`
+          + ` ratified draft marker ${quote(marker)}`,
+      }
+    }
+  }
+  return { ok: true, surfaces: surfaces.length, lines: swept }
+}
+
+/**
+ * The reviewed constants the laws are evaluated against, re-exported so the
+ * checks and their controls reach them through the wall rather than through the
+ * generator's own manifest: the ticket a staged-debt waiver must cite (which
+ * lives in the roster and is never rendered), and the marker an unratified
+ * meaning renders behind.
+ */
+export { DRAFT_MEANING_MARKER, RUNTIME_REFUSAL_WAIVER_TICKET }

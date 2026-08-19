@@ -79,16 +79,17 @@ export const KERNEL_CANONICAL_EXAMPLES_KEY = "canonicalExamples"
 /** The provenance line, with the counts it pins. Examples are real records from the corpus. */
 export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
   canonicalExamples: [
-    "{\"counts\":{\"admission\":17,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
+    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
   ],
   examples: [
     {
       counts: {
-        admission: 17n,
+        admission: 19n,
         canon: 10n,
         doc: 22n,
         encoding: 12n,
         kind: 12n,
+        "model-admission": 2n,
         program: 4n,
         refusal: 16n,
         stage: 5n,
@@ -404,6 +405,12 @@ export const KernelDeclKind = Schema.Literals([
 })
 
 /**
+ * The value DeclKind carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelDeclKindValue = typeof KernelDeclKind.Type
+
+/**
  * A kind-tagged reference: the one lawful way a heterogeneous collection of
  * digests is carried. The model spells it as an abbreviation rather than a
  * declaration, so it has no type record of its own and is expanded here.
@@ -419,6 +426,12 @@ export const KernelRef = Schema.Struct({
     + "digests of several kinds at once, so that the kind travels with the identifier instead of "
     + "being inferred from context.",
 })
+
+/**
+ * The value KernelRef carries, named here so a consumer re-exports this
+ * declaration instead of restating the type as one of its own.
+ */
+export type KernelRefValue = typeof KernelRef.Type
 
 /**
  * A content address branded by the declaration kind it names. Digests
@@ -441,6 +454,12 @@ export const KernelDigest = Schema.Struct({ id: KernelNat }).annotate({
 })
 
 /**
+ * The value Digest carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelDigestValue = typeof KernelDigest.Type
+
+/**
  * An immutable value at its canonical byte form, modeled as an opaque
  * identity label. Canonical-byte identity (one value, one byte form)
  * is the certifier's own wall and is not restated here.
@@ -453,6 +472,12 @@ export const KernelValue = Schema.Struct({ bytes: KernelNat }).annotate({
     + "Canonical-byte identity (one value, one byte form)\nis the certifier's own wall and is not "
     + "restated here. ",
 })
+
+/**
+ * The value Value carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelValueValue = typeof KernelValue.Type
 
 /**
  * The digest of a fold state: a value identity, never a declaration
@@ -468,6 +493,12 @@ export const KernelStateLabel = Schema.Struct({ value: KernelNat }).annotate({
 })
 
 /**
+ * The value StateLabel carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelStateLabelValue = typeof KernelStateLabel.Type
+
+/**
  * A human-facing petname. Naming, never identity: no operation in this
  * package derives a digest from a petname, because resolution is a
  * head-relative read served by a fold, outside the identity plane.
@@ -480,6 +511,12 @@ export const KernelPetname = Schema.Struct({ text: Schema.String }).annotate({
     + "digest from a petname, because resolution is a\nhead-relative read served by a fold, "
     + "outside the identity plane. ",
 })
+
+/**
+ * The value Petname carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelPetnameValue = typeof KernelPetname.Type
 
 /**
  * A fencing token, meaningful only within the register that issued
@@ -499,6 +536,12 @@ export const KernelToken = Schema.Struct({ value: KernelNat }).annotate({
     + "carried by the generated aliases instead.",
 })
 
+/**
+ * The value Token carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelTokenValue = typeof KernelToken.Type
+
 /** A lane partition: the venue-local shard of an evidence stream.  */
 export const KernelLanePartition = Schema.Struct({
   lane: KernelDigest,
@@ -509,6 +552,12 @@ export const KernelLanePartition = Schema.Struct({
   description:
     "A lane partition: the venue-local shard of an evidence stream. ",
 })
+
+/**
+ * The value LanePartition carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelLanePartitionValue = typeof KernelLanePartition.Type
 
 /**
  * A journal position, meaningful only within its partition. As with
@@ -522,6 +571,12 @@ export const KernelPosition = Schema.Struct({ value: KernelNat }).annotate({
     + "the type. Branded in the model by partition; the brand is erased here and carried by the "
     + "generated aliases instead.",
 })
+
+/**
+ * The value Position carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelPositionValue = typeof KernelPosition.Type
 
 /**
  * An anchor fact: `(fold digest, partition) -> (floor, state, head)`.
@@ -545,6 +600,12 @@ export const KernelAnchorFact = Schema.Struct({
 })
 
 /**
+ * The value AnchorFact carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelAnchorFactValue = typeof KernelAnchorFact.Type
+
+/**
  * The epistemic stages of a hole, in rising rank order. `opened` is
  * the protocol stage named open; the language keyword forces the
  * spelling.
@@ -562,6 +623,12 @@ export const KernelHoleStage = Schema.Literals([
     "The epistemic stages of a hole, in rising rank order. `opened` is\nthe protocol stage "
     + "named open; the language keyword forces the\nspelling. ",
 })
+
+/**
+ * The value HoleStage carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelHoleStageValue = typeof KernelHoleStage.Type
 
 /**
  * The closed trigger grammar at kernel sorts: exactly the five
@@ -586,6 +653,12 @@ export const KernelKTriggerPredicate = Schema.Union([
     + "production reads its component upward\n(presence, reached-at-least, landed, "
     + "advanced-past), so stability\nunder growth is a property of the grammar's shape. ",
 })
+
+/**
+ * The value KTriggerPredicate carries, named here so a consumer re-exports this declaration
+ * instead of restating the type as one of its own.
+ */
+export type KernelKTriggerPredicateValue = typeof KernelKTriggerPredicate.Type
 
 /**
  * One lawful kernel sentence: the eight generators, each constructor
@@ -634,6 +707,12 @@ export const KernelAct = Schema.Union([
 })
 
 /**
+ * The value Act carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelActValue = typeof KernelAct.Type
+
+/**
  * A raw argument atom. The lawful atoms are digest references and
  * literals; holes are lawful in program declarations and refused in a
  * single sentence; every other atom is an unlawful shape kept
@@ -658,6 +737,12 @@ export const KernelRawArg = Schema.Union([
 })
 
 /**
+ * The value RawArg carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelRawArgValue = typeof KernelRawArg.Type
+
+/**
  * A candidate anchor: the raw spelling of a resume coordinate, its
  * fold carried as data rather than as a type index -- which is exactly
  * what lets a cross-fold anchor be spelled and refused.
@@ -679,6 +764,12 @@ export const KernelCandidateAnchor = Schema.Struct({
 })
 
 /**
+ * The value CandidateAnchor carries, named here so a consumer re-exports this declaration
+ * instead of restating the type as one of its own.
+ */
+export type KernelCandidateAnchorValue = typeof KernelCandidateAnchor.Type
+
+/**
  * A raw token claim: the register the claimant believes the token
  * belongs to, carried as data so a cross-register claim is spellable
  * and refused.
@@ -695,21 +786,36 @@ export const KernelTokenClaim = Schema.Struct({
 })
 
 /**
- * A candidate merge strategy. The lawful strategy names a declared
- * merge algebra; last-writer-wins is spellable here and refused at
- * the door, because no such carrier exists in the fabric.
+ * The value TokenClaim carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelTokenClaimValue = typeof KernelTokenClaim.Type
+
+/**
+ * A candidate merge strategy. Both spellings retain the intended
+ * declared algebra. Last-writer-wins additionally asks arrival order
+ * to override that algebra and is refused at the door. Retaining the
+ * algebra makes dropping the unlawful override a candidate-only
+ * repair: no catalog lookup or new choice is smuggled into it.
  */
 export const KernelMergeStrategy = Schema.Union([
   Schema.TaggedStruct("declaredAlgebra", { algebra: KernelNat }),
-  Schema.TaggedStruct("lastWriterWins", {}),
+  Schema.TaggedStruct("lastWriterWins", { algebra: KernelNat }),
 ]).annotate({
   identifier: "KernelMergeStrategy",
   title: "A candidate merge strategy.",
   description:
-    "A candidate merge strategy. The lawful strategy names a declared\nmerge algebra; "
-    + "last-writer-wins is spellable here and refused at\nthe door, because no such carrier "
-    + "exists in the fabric. ",
+    "A candidate merge strategy. Both spellings retain the intended\ndeclared algebra. "
+    + "Last-writer-wins additionally asks arrival order\nto override that algebra and is refused "
+    + "at the door. Retaining the\nalgebra makes dropping the unlawful override a "
+    + "candidate-only\nrepair: no catalog lookup or new choice is smuggled into it. ",
 })
+
+/**
+ * The value MergeStrategy carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelMergeStrategyValue = typeof KernelMergeStrategy.Type
 
 /**
  * The candidate trigger grammar: the five lawful productions plus the
@@ -787,8 +893,10 @@ export const KernelCandidateAct = Schema.Union([
   }),
   Schema.TaggedStruct("spawn", { parent: KernelNat, request: KernelNat }),
   Schema.TaggedStruct("updateInPlace", {
+    kind: KernelDeclKind,
     target: KernelNat,
     payload: Schema.Array(KernelRawArg),
+    writ: KernelNat,
   }),
 ]).annotate({
   identifier: "KernelCandidateAct",
@@ -798,6 +906,12 @@ export const KernelCandidateAct = Schema.Union([
     + "an anchored resolve, a trusted read, an\nunfenced or cross-register decide, a "
     + "last-writer-wins join, an\nunanchored latest read, and an in-place mutation of the past. ",
 })
+
+/**
+ * The value CandidateAct carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelCandidateActValue = typeof KernelCandidateAct.Type
 
 /** The closed refusal reasons of the kernel door.  */
 export const KernelRefusalReason = Schema.Literals([
@@ -825,6 +939,12 @@ export const KernelRefusalReason = Schema.Literals([
 })
 
 /**
+ * The value RefusalReason carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelRefusalReasonValue = typeof KernelRefusalReason.Type
+
+/**
  * A structural refusal: the reason, the law it defends, and the
  * taught repair. Refusal parity as data: the door never refuses
  * without teaching the legal next move.
@@ -840,6 +960,12 @@ export const KernelRefusal = Schema.Struct({
     "A structural refusal: the reason, the law it defends, and the\ntaught repair. Refusal "
     + "parity as data: the door never refuses\nwithout teaching the legal next move. ",
 })
+
+/**
+ * The value Refusal carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelRefusalValue = typeof KernelRefusal.Type
 
 /**
  * How a taught repair may be applied. A repair is machine-applicable
@@ -862,6 +988,12 @@ export const KernelApplicability = Schema.Literals(["machineApplicable", "adviso
 })
 
 /**
+ * The value Applicability carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelApplicabilityValue = typeof KernelApplicability.Type
+
+/**
  * The admission context: the already-admitted catalog and the
  * universe of referents the acting writ pins.
  */
@@ -875,6 +1007,12 @@ export const KernelDoor = Schema.Struct({
     "The admission context: the already-admitted catalog and the\nuniverse of referents the "
     + "acting writ pins. ",
 })
+
+/**
+ * The value Door carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelDoorValue = typeof KernelDoor.Type
 
 /** Every mini-AST schema, keyed by the model's short name for the type. */
 export const KERNEL_TYPE_SCHEMA = {

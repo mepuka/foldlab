@@ -1,0 +1,2 @@
+PUBLIC TYPE UNIVERSE UNWAIVERED: LaunderedAlias owner=negative-controls/PublicTypeUniverse.debt.mutant.ts classification=debt-with-a-ticket ticket=DEV-796 target=stage 1 control: derive the planted type from the generated core
+PUBLIC TYPE UNIVERSE: FAIL — enforce mode refuses public type debt no committed waiver covers

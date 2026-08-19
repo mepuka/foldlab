@@ -1,0 +1,4 @@
+the kernel language page line 2 renders a tracking id ("DEV-804"): a ticket number is where tracking lives, and tracking is not the language
+the kernel conformance tables line 2 renders a filesystem path ("packages/"): a plait item refers to a digest or a derived digest; a path is an ambient reference
+the truth-plane refusal vocabulary line 2 renders a generation command ("bun"): how an artifact is rebuilt belongs in the README beside it, not inside it
+the kernel language page line 58 renders "Draft meaning (pending ratification):" rather than the ratified draft marker "Draft meaning, awaiting ratification."

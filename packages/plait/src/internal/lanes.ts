@@ -1,5 +1,6 @@
 /**
- * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ * Plane: internal — private adapters, housed flat.
+ * Seam: planes — the state carriers, one seam per plane.
  *
  * @module
  */
@@ -7,6 +8,7 @@ import {
   JetStreamApiCodes,
   JetStreamApiError,
   StorageType,
+  StoreCompression,
   jetstream,
   jetstreamManager,
   type StreamInfo,
@@ -30,6 +32,15 @@ import {
   MAX_PAYLOAD_BYTES,
   type Envelope,
 } from "../kernel/Wire.js"
+import {
+  LANE_ALLOW_DIRECT,
+  expiresFacts,
+  expiringAuthorityCarrier,
+  hasPinnedAdminSurface,
+  importsFacts,
+  mirroredAuthorityCarrier,
+  type CarrierSite,
+} from "./carriers.js"
 import { acquireConnection, transportRefusalFor } from "./transport.js"
 
 const messageIdWindowNanos = 2 * 60 * 1_000_000_000
@@ -55,7 +66,7 @@ const shapeRefusal = (
   info: StreamInfo,
 ): Refusal => structuralRefusal({
   kind: "lane-substrate-shape",
-  law: "Each declared (lane, partition) has one exact, file-backed R=1 stream with no count, byte, or age eviction.",
+  law: "Each declared (lane, partition) has one exact, file-backed R=1 stream with no count, byte, or age eviction, and no admin surface beyond it.",
   path: ["lane", lane.digest, "partition", String(part), "stream", "config"],
   got: JSON.stringify(info.config),
   expected: {
@@ -69,11 +80,25 @@ const shapeRefusal = (
     duplicate_window: messageIdWindowNanos,
     deny_delete: true,
     deny_purge: true,
+    republish: null,
+    subject_transform: null,
+    allow_direct: LANE_ALLOW_DIRECT,
+    mirror_direct: false,
+    allow_atomic: false,
+    allow_msg_counter: false,
+    compression: StoreCompression.None,
+    max_msg_size: -1,
   },
   next: [{
     subject: "Lane.emit",
     note: "Restore the declared partition stream shape before admitting evidence.",
   }],
+})
+
+/** Where a lane partition's carrier is opened, for a named law to address. */
+const laneSite = (lane: DeclaredLane<unknown>, part: number): CarrierSite => ({
+  path: ["lane", lane.digest, "partition", String(part)],
+  subject: "Lane.emit",
 })
 
 /**
@@ -113,7 +138,8 @@ const hasExpectedShape = (info: StreamInfo, subject: string): boolean => {
     config.max_msgs_per_subject === -1 &&
     config.duplicate_window === messageIdWindowNanos &&
     config.deny_delete === true &&
-    config.deny_purge === true
+    config.deny_purge === true &&
+    hasPinnedAdminSurface(config, LANE_ALLOW_DIRECT)
 }
 
 const ensurePartitionStream = Effect.fn("Lanes.ensurePartitionStream")(function* (
@@ -142,6 +168,16 @@ const ensurePartitionStream = Effect.fn("Lanes.ensurePartitionStream")(function*
             duplicate_window: messageIdWindowNanos,
             deny_delete: true,
             deny_purge: true,
+            // Declared, not inherited: every field the gate below pins is
+            // stated at creation, so a server whose default moves is refused
+            // by this carrier rather than silently admitted by it.
+            allow_direct: LANE_ALLOW_DIRECT,
+            mirror_direct: false,
+            allow_atomic: false,
+            allow_msg_counter: false,
+            compression: StoreCompression.None,
+            max_msg_size: -1,
+            allow_msg_ttl: false,
           })
         }
         throw error
@@ -149,6 +185,15 @@ const ensurePartitionStream = Effect.fn("Lanes.ensurePartitionStream")(function*
     },
     catch: (cause) => transportRefusal("lane.stream.ensure", cause),
   })
+  // The two named laws are asked BEFORE shape: a mirror carries no subjects
+  // and a TTL stream carries no shape defect at all, so a shape-first order
+  // would refuse the first incidentally and miss the second entirely.
+  if (importsFacts(info.config)) {
+    return yield* mirroredAuthorityCarrier(laneSite(lane, part), info.config)
+  }
+  if (expiresFacts(info.config)) {
+    return yield* expiringAuthorityCarrier(laneSite(lane, part), info.config)
+  }
   if (!hasExpectedShape(info, subject)) {
     return yield* shapeRefusal(lane, part, subject, info)
   }

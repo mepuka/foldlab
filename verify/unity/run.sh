@@ -83,7 +83,12 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 echo "GATE: PASS (topology: two read-only path requires, both models untouched)"
 
-mapfile -t lean_sources < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
+# Portable array read: macOS ships bash 3.2, which has no mapfile, and a
+# gate only one host can run is not a gate.
+lean_sources=()
+while IFS= read -r lean_file; do
+  lean_sources+=("$lean_file")
+done < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
 lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ConformanceCheck.lean)
 
 # Kernel-bound source hygiene, at the kernel's own word list.
@@ -119,7 +124,10 @@ expected_laws=(
   UProgramVectorsEdgeConsistent UGroundLiftErasesToPlanted
   UHoleyFillCorrespondence
 )
-mapfile -t actual_laws < <(
+actual_laws=()
+while IFS= read -r _line; do
+  actual_laws+=("$_line")
+done < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
     Unity/Laws.lean | sed -E 's/.*def[[:space:]]+//'
 )
@@ -174,11 +182,17 @@ echo "GATE: PASS (docstrings read from the environment, not transcribed)"
 # Citation ledger: the kernel's taught table cites law rows by name.
 # The committed ledger pins that set; every fabric row must resolve in
 # fabric's roster and every veil-walled row must stay out of it.
-mapfile -t cited < <(
+cited=()
+while IFS= read -r _line; do
+  cited+=("$_line")
+done < <(
   grep -oE '\(([a-z][a-z0-9]*(_[a-z0-9]+)+)\)' ../kernel/Kernel/Definitions.lean |
     tr -d '()' | LC_ALL=C sort -u
 )
-mapfile -t ledgered < <(cut -f1 citations.txt | LC_ALL=C sort -u)
+ledgered=()
+while IFS= read -r _line; do
+  ledgered+=("$_line")
+done < <(cut -f1 citations.txt | LC_ALL=C sort -u)
 if [[ "${cited[*]}" != "${ledgered[*]}" ]]; then
   echo "GATE: FAIL — the kernel's citation set drifted from the committed ledger" >&2
   echo "cited:    ${cited[*]}" >&2
@@ -210,7 +224,10 @@ while IFS=$'\t' read -r name venue; do
 done < citations.txt
 echo "GATE: PASS (citation ledger: ${#cited[@]} names reconciled, venues checked)"
 
-mapfile -t actual_private < <(
+actual_private=()
+while IFS= read -r _line; do
+  actual_private+=("$_line")
+done < <(
   grep -rhoE '^[[:space:]]*(private|protected)[[:space:]]+(theorem|lemma)[[:space:]]+[A-Za-z0-9_]+' Unity/ \
     | sed -E 's/.*(theorem|lemma)[[:space:]]+//' | sort
 )
@@ -256,11 +273,13 @@ roster=(
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
 discovered_tmp=$(mktemp "./.discovered.XXXXXX")
-footprint_check=$(mktemp "./.footprint.XXXXXX.lean")
-probe_check=$(mktemp "./.footprint.XXXXXX.lean")
-corpus_first=$(mktemp "./.corpus.XXXXXX.ndjson")
-corpus_second=$(mktemp "./.corpus.XXXXXX.ndjson")
-corpus_mutant=$(mktemp "./.corpus.XXXXXX.ndjson")
+# BSD mktemp substitutes only trailing Xs, so the .lean suffix is added by
+# rename: the same gate must run on every host that carries the model.
+footprint_check=$(mktemp "./.footprint.XXXXXX") && mv "$footprint_check" "$footprint_check.lean" && footprint_check="$footprint_check.lean"
+probe_check=$(mktemp "./.footprint.XXXXXX") && mv "$probe_check" "$probe_check.lean" && probe_check="$probe_check.lean"
+corpus_first=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_first" "$corpus_first.ndjson" && corpus_first="$corpus_first.ndjson"
+corpus_second=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_second" "$corpus_second.ndjson" && corpus_second="$corpus_second.ndjson"
+corpus_mutant=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_mutant" "$corpus_mutant.ndjson" && corpus_mutant="$corpus_mutant.ndjson"
 trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$probe_check" "$corpus_first" "$corpus_second" "$corpus_mutant"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
@@ -328,8 +347,14 @@ check_control tie-orientation
 check_control ascending-positions
 check_control broken-erasure-pins
 
-mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
-mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
+committed_controls=()
+while IFS= read -r _line; do
+  committed_controls+=("$_line")
+done < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
+exercised_sorted=()
+while IFS= read -r _line; do
+  exercised_sorted+=("$_line")
+done < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
 if [[ "${committed_controls[*]}" != "${exercised_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed control trace is orphaned" >&2
   exit 1
@@ -344,7 +369,9 @@ fi
 # fails to decode back to its framing, if a line fails the both-ways
 # law, if the header's counts disagree with the records rendered, if
 # the record groups interleave, or if the planted set stops refusing
-# sixteen and admitting one.
+# seventeen, stops admitting exactly its two-name roster, stops writing
+# the refused rows as a prefix, or if the model-internal group stops
+# stating the one ruled fact it exists to state.
 fixture="../../packages/plait/fixtures/kernel-conformance.ndjson"
 if [[ ! -f "$fixture" ]]; then
   echo "GATE: FAIL — the committed kernel conformance corpus is missing" >&2
@@ -372,20 +399,22 @@ fi
 # The frozen interchange: the header at its canonical byte form (so the
 # key order is pinned along with the values), the record counts, and
 # printable ASCII on every line, which also refuses a carriage return.
-expected_header='{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
+expected_header='{"counts":{"admission":19,"canon":10,"doc":22,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 121 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 125 ]] ||
     [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
     [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
     [[ "$(grep -c '"record":"type"' "$fixture")" -ne 22 ]] ||
     [[ "$(grep -c '"record":"encoding"' "$fixture")" -ne 12 ]] ||
-    [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 19 ]] ||
+    [[ "$(grep -c '"record":"model-admission"' "$fixture")" -ne 2 ]] ||
+    [[ "$(grep -c '"scope":"model-internal"' "$fixture")" -ne 2 ]] ||
     [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 22 ]] ||
     [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
     [[ "$(grep -c '"record":"program"' "$fixture")" -ne 4 ]] ||
-    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 16 ]] ||
-    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 1 ]]; then
+    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 4 ]]; then
   echo "GATE: FAIL — corpus header or record counts moved" >&2
   exit 1
 fi
@@ -406,7 +435,7 @@ if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
-echo "GATE: PASS (121-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+echo "GATE: PASS (125-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
 
 # The conformance check: the both-ways law over every committed line,
 # the header and group sequence, and every record whose truth lives in
@@ -415,8 +444,9 @@ echo "GATE: PASS (121-record format-2 corpus regenerates byte-identically; heade
 # rebuilt from `getConstInfo` and `findDocString?` and compared with the
 # committed bytes.
 conformance_arms=(
-  "conformance: 121 lines survive read and rewrite byte-identically"
-  "conformance: the header declares 9 groups and every count matches the records present"
+  "conformance: 125 lines survive read and rewrite byte-identically"
+  "conformance: the header declares 10 groups and every count matches the records present"
+  "conformance: 2 model-internal rows name real candidates and carry their scope marking"
   "conformance: the kind, stage, refusal and admission tables agree with the environment"
   "conformance: 22 mini-AST rows agree with the environment"
   "conformance: 22 docstring rows agree with the environment"
@@ -548,11 +578,17 @@ check_must_not_compile() {
 check_must_not_compile cross-model-stage
 check_must_not_compile wrong-shape
 
-mapfile -t committed_refusals < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
-mapfile -t exercised_refusals_sorted < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
+committed_refusals=()
+while IFS= read -r _line; do
+  committed_refusals+=("$_line")
+done < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
+exercised_refusals_sorted=()
+while IFS= read -r _line; do
+  exercised_refusals_sorted+=("$_line")
+done < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
 if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed must-not-compile control is orphaned" >&2
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 121-record format-2 kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 125-record format-2 kernel conformance corpus)"

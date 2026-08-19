@@ -27,8 +27,28 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
 
 ## Scoped laws
 
+- **No tracking artifacts on any rendered surface; references are digests.**
+  (Root law 10, operator-ruled 2026-08-19.) Nothing this package renders
+  outward — generated doc comments, the prose page, tool schemas, refusal
+  payloads, CLI output — carries a ticket id, a dev-tracking parenthetical, a
+  script invocation, or a filesystem path. A plait item refers to another
+  value by digest or derived digest, never by path; provenance on a rendered
+  surface is the digest of its source. Ticket citations and waiver lines stay
+  in the reviewed roster sources, pins, and DECISIONS — the generators do not
+  project them.
 - `Canonical.ts` delegates to `@foldlab/core/jcs`. There is one RFC 8785
-  canonicalizer; never add or copy another.
+  canonicalizer; never add or copy another. That is a wall now, not an
+  exhortation: `check:one-canonicalizer` scans every module under `src/` for a
+  retired twin's path, a retired twin's name, or the canonicalizer signature (a
+  member sort beside a JSON serializer), and `check:one-canonicalizer-control`
+  plants the committed twin at
+  `negative-controls/OneCanonicalizer.private-twin.mutant.ts` into `src/truth/`,
+  requires the scan to go red on both arms, and restores the tree. The private
+  twins this package carried until DEV-804 slice C
+  (`truth/CanonicalJson.ts`, `truth/SchemaCanonical.ts`) existed because the
+  seam's number domain and the kernel corpus's disagreed; the operator ruling
+  of 2026-08-18 (DEV-807) moved the estate number domain into the seam and
+  removed the excuse.
 - Envelope identity is SHA-256 over canonical, uncompressed bytes. Compression,
   framing, storage, and chunking are transport only and never move identity.
 - The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
@@ -161,11 +181,14 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   `test/fixtures/kernel-conformance.sample.ndjson` is the independently
   transcribed control the corpus wall compares against, never a source.
 - The refusal vocabulary is emitted INTO `truth/`, never imported up from
-  `kernel/`. `truth/` is the deepest plane and imports only itself; a generated
-  artifact carries no import-direction debt because its ancestry is the
-  generator, not an edge in the module graph. A truth module that reaches into
-  `kernel/` for the vocabulary is a Law 4 finding, and so is a hand-written
-  literal union standing beside the generated one.
+  `kernel/`. `truth/` is the deepest plane and imports only itself; a
+  seam-tagged internal edge is tolerated where necessary, each edge pinned in
+  `test/fixtures/truth-internal-edges.pin.txt`, and folding the material into
+  `truth/` proper is preferred when a way exists. A generated artifact carries
+  no import-direction debt because its ancestry is the generator, not an edge in
+  the module graph. A truth module that reaches into `kernel/` for the
+  vocabulary is a Law 4 finding, and so is a hand-written literal union standing
+  beside the generated one.
 - `check:refusal-vocabulary` compares three artifacts and never two views of
   one value: the runtime union read from the truth-plane module's source bytes,
   the refusal reasons read from the interchange fixture's bytes, and the
@@ -174,6 +197,23 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   regenerating does not satisfy the wall, because the debt must also be written
   into the pin by hand. `check:refusal-control` plants a hand-minted kind into
   the union source and must fail for its committed reason.
+- Every refusal kind carries its standing MEANING: one to two sentences saying
+  what fact the kind names and what that implies, reviewed data in
+  `scripts/kernel-runtime-refusals.ts` — the runtime spellings' meanings beside
+  their roster rows, the model-emitted reasons' in the ledger below them,
+  because the corpus has no field a meaning could ride in. A meaning is not a
+  refusal's teaching: `law`, `expected`, and `next` speak at the moment of
+  refusal about one presentation, and a meaning speaks about the kind, standing.
+  The generators project every meaning into `KernelTables.generated.ts`,
+  `RefusalKinds.generated.ts`, and the prose page, each behind the verbatim
+  draft marker, and `check:refusal-vocabulary` holds four clauses over those
+  bytes: a kind with no meaning refuses, a meaning that lost the marker refuses,
+  one name carries one meaning, and the page and the modules render the same
+  sentence. Only the DEV-825 operator taste pass retires the marker — until it
+  rules, adding a kind means adding its drafted meaning, and moving a sentence
+  reddens `check:kernel-tables` and `check:kernel-prose` until both are
+  regenerated. `check:refusal-meaning-control` plants a meaningless kind, an
+  unmarked meaning, and a paraphrased page, and must fail on all three.
 - A refusal's taught payload is persisted evidence. `check:refusal-payloads`
   pins every `law`, `expected`, and `next` text under `src/` in
   `test/RefusalPayloads.taught.txt` and byte-compares it, so editing one
@@ -188,5 +228,47 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   replays the emitted verdicts against it; its refuse-everything mutant and
   host-identity control make the pass evidence. Conformance is agreement with the
   model's verdicts, never a runtime guarantee promoted out of a model theorem.
+- `check:kernel-door` is standing law 2's mechanical wall (DEV-763/796 stage 4).
+  It reads source bytes, never values: the door's candidate, intrinsic-act, and
+  admission-context bindings must name symbols the generated schema module
+  emits, and no other module under `src/` may construct or declare an admission
+  verdict, route `admit` through anything but the door's own imported function,
+  declare a hand-written twin of a name the door's form owns, or reach one of
+  those names without importing it from the door or the generator. The
+  `*.generated.ts` projections are exempt — their bytes are the model's and are
+  byte-gated elsewhere — and `test/` is outside the sweep so a control can spell
+  a second door. A module that names a judgment route the door does not own is
+  written into `test/fixtures/kernel-door-routes.pin.txt` with its ticket, by
+  hand; the pin is nothing's input, and a row naming no live route reds the
+  wall. `check:kernel-door-control` plants one second-door spelling per clause
+  and must fail for its committed reasons. The wall states what can be SPELLED:
+  runtime route identity is `KernelDoor.routes.test.ts`'s, and a route reached
+  only through an object spread is that test's to hold, not this one's.
+- `src/kernel/KernelIdentity.ts` is the ONE guarded trusted-base seam between a
+  runtime content address and a model identity label (operator ruling A1,
+  2026-08-19, board DEV-772). Its guard is `truth/Digest.ts`'s own schema run
+  through `Refusal.decodeRefusing`: the width and alphabet are never restated
+  here, because the corpus states no hex width at all — the generated
+  `KernelDigest` says a real digest "stays in the trusted base" — so the runtime
+  domain has exactly one statement and this seam inherits it. The refusal rides
+  the error channel carrying its law and repair; a `throw` on this path is a
+  finding, and so is a second reading of digest bytes as an unbounded natural
+  anywhere under `src/`. `check:kernel-door` enforces all four: every
+  conversion in the seam sits behind the guard, the seam never throws, every
+  hex-prefixed `BigInt` site under `src/` is named in
+  `test/fixtures/kernel-identity-sites.pin.txt`, and a pin row naming no live
+  site reds the wall. `Lane.partition` is pinned there as routing, never
+  identity — it reduces an already-branded `Digest` to a shard index that
+  reaches no candidate. The map is injective on the guarded domain and is the
+  trusted base's, never a theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
-  Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.
+  Effect release, `@effect/platform-bun` at that same catalog pin, and the five
+  NATS packages pinned at 3.4.0. Add nothing else. The platform package joined
+  the list on 2026-08-19 (DEV-786) for exactly one reason, recorded in
+  `DECISIONS.md` T0: the CLI surface is built on the official Effect CLI, which
+  on the v4 line ships IN-TREE at `effect/unstable/cli` and so cost the list
+  nothing — but its `Command.Environment` needs real `FileSystem`, `Path`,
+  `Terminal`, `Stdio`, and `ChildProcessSpawner` services, and `effect` core
+  ships only `layerNoop`/`layerTest` fakes of them. `BunServices.layer` is that
+  provision. Do not add `@effect/cli`: on this release line it is a v3 package,
+  and pulling it would be a second, older CLI beside the one already present.

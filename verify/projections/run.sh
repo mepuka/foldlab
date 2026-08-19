@@ -372,3 +372,148 @@ fi
 echo "GATE: PASS (applicability fallback is live; mutation moved the probe and restored byte-identically)"
 
 echo "GATE: PASS (projections toolkit; kernel tree untouched)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APPENDED BLOCK — DEV-812 slice-A amendment arms (agent/opus-cc-pc).
+# Four amendments, four mutation controls. Each temporarily mutates ONE line of
+# this package's own source, rebuilds, re-emits the REAL manifest, requires the
+# committed bytes to move, then restores and requires byte-identical recovery.
+# The block appends its own EXIT handler in front of the roster's `cleanup` so
+# a failed arm still restores the source it mutated.
+# ─────────────────────────────────────────────────────────────────────────────
+
+amend_backup=$(mktemp "./.amend-source.XXXXXX.lean")
+amend_out=$(mktemp "./.amend-out.XXXXXX.md")
+amend_err=$(mktemp "./.amend-err.XXXXXX.txt")
+amend_target=""
+
+amend_cleanup() {
+  if [[ -n "$amend_target" && -f "$amend_backup" ]]; then
+    cp -- "$amend_backup" "$amend_target"
+  fi
+  rm -f "$amend_backup" "$amend_out" "$amend_err"
+  cleanup
+}
+trap amend_cleanup EXIT
+
+amend_begin() {
+  amend_target="$1"
+  cp -- "$1" "$amend_backup"
+}
+
+# Apply one sed script to the PRISTINE backup, so two mutations of one file in
+# a row are both taken from the original rather than compounding.
+amend_apply() {
+  sed "$1" "$amend_backup" > "$amend_target"
+  if cmp -s "$amend_backup" "$amend_target"; then
+    echo "GATE: FAIL — amendment mutation did not change $amend_target" >&2
+    exit 1
+  fi
+  lake build projections >/dev/null
+  assert_kernel_unchanged
+}
+
+amend_end() {
+  cp -- "$amend_backup" "$amend_target"
+  lake build projections >/dev/null
+  assert_kernel_unchanged
+  lake exe projections --target=prose --names=names.txt > "$amend_out"
+  assert_kernel_unchanged
+  if ! cmp -s artifacts/prose.md "$amend_out" ||
+      ! cmp -s "$amend_backup" "$amend_target"; then
+    echo "GATE: FAIL — amendment mutation of $amend_target did not restore byte-identically" >&2
+    exit 1
+  fi
+  amend_target=""
+}
+
+# Arm 1 — the binder role is derived, per binder, from the environment.
+# Swapping the sort test for a constant test re-roles exactly the parameters
+# whose type is an unapplied constant, so the mutant carries BOTH spellings:
+# a role that were a constant, or read off an annotation, could not do that.
+amend_begin Projections/Walk.lean
+amend_apply 's/isSort/isConst/'
+lake exe projections --target=prose --names=names.txt > "$amend_out"
+assert_kernel_unchanged
+if cmp -s artifacts/prose.md "$amend_out"; then
+  echo "GATE: FAIL — re-deriving the binder role did not move the emitted prose" >&2
+  exit 1
+fi
+if ! grep -q '(brand ' "$amend_out" || ! grep -q '(type ' "$amend_out"; then
+  echo "GATE: FAIL — the mutated role predicate did not discriminate between binders" >&2
+  exit 1
+fi
+if grep -q '(type ' artifacts/prose.md; then
+  echo "GATE: FAIL — the committed prose already carries a type-argument parameter" >&2
+  exit 1
+fi
+amend_end
+echo "GATE: PASS (amendment 1: the brand/type role is derived per binder from the environment)"
+
+# Arm 2 — the em-dash transliteration is a named table, and an unnamed code
+# point is refused rather than mangled. Two mutations: retarget the entry, then
+# empty the table and require the walk to name the code point it cannot carry.
+amend_begin Projections/Ast.lean
+amend_apply 's/(0x2014, "--")/(0x2014, "~~")/'
+lake exe projections --target=prose --names=names.txt > "$amend_out"
+assert_kernel_unchanged
+if cmp -s artifacts/prose.md "$amend_out" || ! grep -q '~~' "$amend_out"; then
+  echo "GATE: FAIL — retargeting the em-dash transliteration did not move the emitted prose" >&2
+  exit 1
+fi
+if grep -q '—' artifacts/prose.md; then
+  echo "GATE: FAIL — the committed prose still carries an untransliterated em dash" >&2
+  exit 1
+fi
+amend_apply 's/(0x2014, "--")//'
+if lake exe projections --target=prose --names=names.txt > "$amend_out" 2> "$amend_err"; then
+  echo "GATE: FAIL — an unnamed code point was carried instead of refused" >&2
+  exit 1
+fi
+if ! grep -q 'code point 8212' "$amend_err"; then
+  echo "GATE: FAIL — the refusal did not name the code point it could not transliterate" >&2
+  exit 1
+fi
+amend_end
+echo "GATE: PASS (amendment 2: the transliteration table is load-bearing and refuses what it cannot name)"
+
+# Arm 3 — the docstring travels verbatim. Re-introducing a trim strictly
+# reduces the emitted trailing-space lines, which is exactly the edge
+# whitespace the schema target branches on.
+amend_begin Projections/Walk.lean
+committed_edge=$(grep -c ' $' artifacts/prose.md || true)
+amend_apply 's/plain := plain$/plain := plain.trimAscii.toString/'
+lake exe projections --target=prose --names=names.txt > "$amend_out"
+assert_kernel_unchanged
+mutant_edge=$(grep -c ' $' "$amend_out" || true)
+if cmp -s artifacts/prose.md "$amend_out"; then
+  echo "GATE: FAIL — trimming the docstring did not move the emitted prose" >&2
+  exit 1
+fi
+if [[ "$committed_edge" -lt 1 || "$mutant_edge" -ge "$committed_edge" ]]; then
+  echo "GATE: FAIL — the verbatim docstring policy is not observable in the emitted prose" >&2
+  exit 1
+fi
+amend_end
+echo "GATE: PASS (amendment 3: docstrings verbatim; $committed_edge edge-space lines survive, $mutant_edge under a trim)"
+
+# Arm 4 — the name-erasure rule of the reference grammar. Turning the rule into
+# the identity restores fully qualified heads inside every field type.
+amend_begin Projections/Ast.lean
+amend_apply 's/(name.splitOn ".").getLastD name/name/'
+lake exe projections --target=prose --names=names.txt > "$amend_out"
+assert_kernel_unchanged
+if cmp -s artifacts/prose.md "$amend_out"; then
+  echo "GATE: FAIL — dropping the name-erasure rule did not move the emitted prose" >&2
+  exit 1
+fi
+if ! grep -q 'Digest(Kernel.DeclKind.policy)' "$amend_out" ||
+    ! grep -q 'Digest(policy)' artifacts/prose.md ||
+    grep -q 'Digest(Kernel.DeclKind.policy)' artifacts/prose.md; then
+  echo "GATE: FAIL — the name-erasure rule is not what spells the committed reference grammar" >&2
+  exit 1
+fi
+amend_end
+echo "GATE: PASS (amendment 4: the name-erasure rule spells every field type in the reference grammar)"
+
+echo "GATE: PASS (slice-A amendments; four mutations moved prose and restored byte-identically)"

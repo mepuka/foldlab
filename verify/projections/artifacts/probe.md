@@ -7,7 +7,7 @@ The manifest selects declarations; Lean's environment supplies every shape and d
 
 Plain register:
 
-The gate renames this field temporarily and requires the projection to move.
+The gate renames this field temporarily and requires the projection to move. 
 
 Algebraic register:
 

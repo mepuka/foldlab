@@ -263,6 +263,20 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "scratch/evals/q1-schema-confusion"),
     command: ["bun", "run", "check:generated-control"],
   },
+  // The skills steering wall and its control, in the same shape as the q1
+  // pair above: a roster check wired into the battery and a control that
+  // replays mutated input and refuses (scripts/check-skills.ts --self-test),
+  // or the AGENTS.md skills section is prose only and cannot fail.
+  {
+    label: "skills — roster agreement",
+    cwd: repo,
+    command: ["bun", resolve(repo, "scripts/check-skills.ts")],
+  },
+  {
+    label: "skills — roster-agreement control",
+    cwd: repo,
+    command: ["bun", resolve(repo, "scripts/check-skills.ts"), "--self-test"],
+  },
 ]
 
 const text = (bytes: Uint8Array | undefined): string =>

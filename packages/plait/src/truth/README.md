@@ -20,6 +20,17 @@ not an edge in the module graph. Regenerate with
 one render, and it carries each spelling's ancestry, with a corpus miss named
 as `DEV-804` staged debt.
 
+"Exactly one canonicalizer" is enforced, not asserted. `bun run
+check:one-canonicalizer` reads every module under `src/` and refuses a retired
+twin's path, a retired twin's name, or the canonicalizer signature — a member
+sort beside a JSON serializer — anywhere but `Canonical.ts`, and `bun run
+check:one-canonicalizer-control` plants the committed twin
+(`../../negative-controls/OneCanonicalizer.private-twin.mutant.ts`) at the
+retired path, requires both arms to go red, and restores the tree. The twins
+this plane carried until DEV-804 slice C — `CanonicalJson.ts` and
+`SchemaCanonical.ts` — were justified only by a number-domain divergence the
+operator closed on 2026-08-18 (DEV-807).
+
 Walls: `bun run check:kernel-tables` regenerates both halves and byte-compares
 them. `bun run check:refusal-vocabulary` reads the union out of this module's
 source bytes, the model's refusal reasons out of the fixture's bytes, and the
@@ -27,7 +38,13 @@ staged-debt roster out of the reviewed pin at
 `../../test/fixtures/refusal-staged-debt.pin.txt` — three artifacts, no two of
 them views of one value — and `bun run check:refusal-control` plants a
 hand-minted kind into the union source and must be refused for its committed
-reason. `bun run check:refusal-payloads` pins every `law`, `expected`, and
+reason. The same wall holds the meaning law: each kind in this module's roster
+carries its standing meaning as a doc comment, one to two sentences behind the
+draft marker the DEV-825 taste pass will retire, and the check reads that
+meaning back out of these bytes, out of the kernel table's, and out of the
+prose page's, refusing a kind with none, a meaning that lost its marker, and a
+page that renders a different sentence than the modules do. `bun run
+check:refusal-meaning-control` plants one mutation per clause. `bun run check:refusal-payloads` pins every `law`, `expected`, and
 `next` text under `src/` byte for byte. `bun run test:fast` runs the pure
 suites beside each module, and `bun run check:public-effects` re-emits the
 package's public declarations and refuses any public Effect whose error

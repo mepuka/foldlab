@@ -106,7 +106,12 @@ const waitForPumpFile = async (
   child: ReturnType<typeof Bun.spawn>,
   path: string,
 ): Promise<void> => {
-  for (let attempt = 0; attempt < 400; attempt++) {
+  // Same load-stretch as the shared waitForFile: the child pump writes its
+  // result only as a saturated machine schedules it, and the old 400x25ms =
+  // 10s nominal bound was sized for an idle host (this is the hard-kill
+  // resume arm's own wait, DEV-820). 2400x25 = 60s nominal while a pump that
+  // genuinely died still fails fast on exitCode.
+  for (let attempt = 0; attempt < 2400; attempt++) {
     if (await Bun.file(path).exists()) return
     if (child.exitCode !== null) {
       throw new Error(`fold pump exited ${child.exitCode}: ${await stderr(child)}`)

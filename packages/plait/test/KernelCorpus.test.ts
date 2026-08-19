@@ -35,18 +35,19 @@
 import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 
+import type { JsonValue } from "@foldlab/core/jcs"
+
 import {
   CANON_VECTOR_NAMES,
   CORPUS_PATH,
+  isCanonicalText,
+  readCanonicalValue,
   readKernelCorpus,
+  writeCanonicalValue,
 } from "../scripts/kernel-corpus.js"
-import {
-  canonicalizeJsonText,
-  encodeCanonicalJson,
-  isCanonicalJsonText,
-  parseCanonicalJson,
-  type CanonicalJson,
-} from "../src/truth/CanonicalJson.js"
+
+/** The canonical form of text that is merely well-formed. */
+const canonicalize = (text: string): string => writeCanonicalValue(readCanonicalValue(text))
 
 const repository = resolve(import.meta.dir, "../../..")
 const source = await Bun.file(resolve(repository, CORPUS_PATH)).text()
@@ -57,7 +58,7 @@ const corpus = readKernelCorpus(source)
  * `key-order` is written `b` first on purpose: that is the only way the member
  * sort is exercised at all, since anything already in the corpus is sorted.
  */
-const nativeVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
+const nativeVectors: ReadonlyArray<readonly [string, JsonValue, string]> = [
   ["empty-object", {}, "{}"],
   ["empty-array", [], "[]"],
   ["empty-string", "", "\"\""],
@@ -79,7 +80,7 @@ const nativeVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
  * three literals, appear nowhere in the corpus at all. Every one of them is
  * cheap to cover directly, against the specification rather than the file.
  */
-const gapVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
+const gapVectors: ReadonlyArray<readonly [string, JsonValue, string]> = [
   ["control-char-surrounded", "control\u0001char", "\"control\\u0001char\""],
   ["hex-letter", "\u000b", "\"\\u000b\""],
   ["every-two-char-escape", "\b\f\n\r\t", "\"\\b\\f\\n\\r\\t\""],
@@ -96,7 +97,7 @@ const mutate = (find: string, replace: string): string => {
 describe("the both-ways law", () => {
   test("the whole corpus survives parse and re-emit, byte for byte", () => {
     const rewritten = corpus.lines
-      .map((line) => `${encodeCanonicalJson(parseCanonicalJson(line))}\n`)
+      .map((line) => `${writeCanonicalValue(readCanonicalValue(line))}\n`)
       .join("")
     expect(rewritten).toBe(source)
     console.info(
@@ -108,7 +109,7 @@ describe("the both-ways law", () => {
   test("every line is already in canonical form", () => {
     const moved = corpus.lines
       .map((line, index) => ({ line, index }))
-      .filter((row) => !isCanonicalJsonText(row.line))
+      .filter((row) => !isCanonicalText(row.line))
     expect(moved.map((row) => row.index + 1)).toEqual([])
   })
 
@@ -127,13 +128,13 @@ describe("the canon vectors", () => {
 
   test("weak: every vector's value canonicalizes to the bytes it carries", () => {
     for (const canon of corpus.canons) {
-      expect(encodeCanonicalJson(canon.value as CanonicalJson)).toBe(canon.bytes)
+      expect(writeCanonicalValue(canon.value as JsonValue)).toBe(canon.bytes)
     }
   })
 
   test("strong: values built here canonicalize to the bytes the schema pins", () => {
     for (const [name, value, bytes] of nativeVectors) {
-      expect({ name, bytes: encodeCanonicalJson(value) }).toEqual({ name, bytes })
+      expect({ name, bytes: writeCanonicalValue(value) }).toEqual({ name, bytes })
     }
     console.info(
       `CANON STRONG: PASS constructed=${nativeVectors.length}/${CANON_VECTOR_NAMES.length}` +
@@ -150,7 +151,7 @@ describe("the canon vectors", () => {
 
   test("the cases the emitted ten leave uncovered are covered here", () => {
     for (const [name, value, bytes] of gapVectors) {
-      expect({ name, bytes: encodeCanonicalJson(value) }).toEqual({ name, bytes })
+      expect({ name, bytes: writeCanonicalValue(value) }).toEqual({ name, bytes })
     }
     console.info(
       `CANON GAPS: PASS covered=${gapVectors.map(([name]) => name).join(",")}` +
@@ -163,26 +164,59 @@ describe("the canon vectors", () => {
     expect(canon?.value).toBe(9007199254740993n)
     // The one-line proof that JSON.parse is not a conforming parser here.
     expect(JSON.parse("9007199254740993")).toBe(9007199254740992)
-    expect(parseCanonicalJson("9007199254740993")).toBe(9007199254740993n)
+    expect(readCanonicalValue("9007199254740993")).toBe(9007199254740993n)
   })
 })
 
-describe("the number rule, tighter than JSON's", () => {
-  test("a fraction, an exponent, a minus, and a leading zero are refused", () => {
-    for (const text of ["1.0", "1e3", "1E3", "-1", "01"]) {
-      expect(() => parseCanonicalJson(text)).toThrow()
+/**
+ * The number rule, after the estate ruled on it (DEV-807, 2026-08-18).
+ *
+ * The private canonicalizer this corpus used to read through refused a
+ * fraction, an exponent, and a minus sign at the parser. The estate's one
+ * canonicalizer admits all three - RFC 8785 for non-integral numbers, exact
+ * decimal digits for every integer - and the ruling says the estate's
+ * canonicalizer wins. So the corpus's tighter grammar is enforced where it
+ * belongs and where it was always enforceable: a spelling that is not the one
+ * canonical spelling of its value is refused by the canonical-form check, and
+ * a number outside `KernelNat` is refused by the schema that names the field.
+ * No line this reader refused before is admitted now; what moved is which
+ * layer says no, and what it says.
+ */
+describe("the number rule, and the layer that now enforces it", () => {
+  test("a fraction and an exponent are not canonical spellings", () => {
+    for (const [text, canon] of [["1.0", "1"], ["1e3", "1000"], ["1E3", "1000"]] as const) {
+      expect([text, isCanonicalText(text)]).toEqual([text, false])
+      expect([text, canonicalize(text)]).toEqual([text, canon])
     }
+  })
+
+  test("a leading zero is still refused at the reader", () => {
+    expect(() => readCanonicalValue("01")).toThrow(/leading zero/)
+  })
+
+  test("a minus sign is canonical text, and the schema is what refuses it", () => {
+    // The estate's number line is signed, so `-1` is the one canonical
+    // spelling of the integer minus one and the byte check has nothing to say
+    // about it. This corpus admits only naturals, and `KernelNat` says so.
+    expect(isCanonicalText("-1")).toBe(true)
+    expect(canonicalize("-1")).toBe("-1")
+    expect(() => readKernelCorpus(mutate("\"rank\":0", "\"rank\":-1")))
+      .toThrow(/non-negative/)
+    console.info(
+      "NUMBER RULE: PASS fraction=non-canonical exponent=non-canonical leading-zero=refused" +
+        " minus=canonical-text-refused-by-KernelNat seam=@foldlab/core/jcs",
+    )
   })
 
   test("integers parse at arbitrary precision, and re-emit minimally", () => {
     const wide = "170141183460469231731687303715884105727"
-    expect(canonicalizeJsonText(wide)).toBe(wide)
-    expect(parseCanonicalJson(wide)).toBe(BigInt(wide))
+    expect(canonicalize(wide)).toBe(wide)
+    expect(readCanonicalValue(wide)).toBe(BigInt(wide))
   })
 
   test("a duplicate member and an unescaped control character are refused", () => {
-    expect(() => parseCanonicalJson("{\"a\":1,\"a\":2}")).toThrow(/written twice/)
-    expect(() => parseCanonicalJson("\"a\u0001b\"")).toThrow(/unescaped control character/)
+    expect(() => readCanonicalValue("{\"a\":1,\"a\":2}")).toThrow(/duplicate object member/)
+    expect(() => readCanonicalValue("\"a\u0001b\"")).toThrow(/unescaped control character/)
   })
 })
 
@@ -205,9 +239,9 @@ describe("the control arm", () => {
     // the lowercase rule goes unexercised by the corpus. The gap is named in
     // the schema rather than papered over, so it is closed here directly,
     // against the canonicalizer, with U+000B - which does print one.
-    expect(isCanonicalJsonText("\"\\u000B\"")).toBe(false)
-    expect(isCanonicalJsonText("\"\\u000b\"")).toBe(true)
-    expect(canonicalizeJsonText("\"\\u000B\"")).toBe("\"\\u000b\"")
+    expect(isCanonicalText("\"\\u000B\"")).toBe(false)
+    expect(isCanonicalText("\"\\u000b\"")).toBe(true)
+    expect(canonicalize("\"\\u000B\"")).toBe("\"\\u000b\"")
     // And in the corpus itself: a newline written the long way is the same
     // value and a different line, which is exactly what the per-line canonical
     // check exists to catch.
@@ -239,13 +273,53 @@ describe("the control arm", () => {
     expect(() => readKernelCorpus(mutate("\"schema\"", "\"sch\u00e9ma\""))).toThrow(/not ASCII/)
   })
 
+  test("an admitted row before a refused one is refused: the prefix rule has teeth", () => {
+    // The refused block is read against the taught refusal table position for
+    // position, so the split between refused rows and admitted rows is what
+    // keeps that alignment meaningful. Swap the last refusal past the first
+    // admission and the reader must say so - otherwise the rule is a comment.
+    const stale = "{\"name\":\"staleStageTrigger\",\"reason\":\"absence-trigger\"," +
+      "\"record\":\"admission\",\"verdict\":\"refused\"}"
+    const lawful = "{\"encoded\":[0,0,7000051000172,4],\"name\":\"lawfulDeclare\"," +
+      "\"record\":\"admission\",\"verdict\":\"admitted\"}"
+    expect(source).toContain(`${stale}\n${lawful}`)
+    const swapped = mutate(`${stale}\n${lawful}`, `${lawful}\n${stale}`)
+    expect(() => readKernelCorpus(swapped)).toThrow(/are not a prefix of the admission block/)
+  })
+
+  test("an admission block with no refusal, and one with no admission, are refused", () => {
+    // The two degenerate ends of the same rule. A corpus whose door admitted
+    // everything, or refused everything, would carry no evidence at all - and
+    // the all-refusing door is exactly the mutant the conformance wall kills.
+    const admissions = source.split("\n").filter((line) => line.includes("\"record\":\"admission\""))
+    const refusedOnly = admissions.filter((line) => line.includes("\"verdict\":\"refused\""))
+    const admittedOnly = admissions.filter((line) => line.includes("\"verdict\":\"admitted\""))
+    expect(refusedOnly).toHaveLength(17)
+    expect(admittedOnly).toHaveLength(2)
+
+    // The header count moves with the records, so the mutant reaches the rule
+    // under test instead of tripping the count check on the way in.
+    const recount = (text: string, to: number): string =>
+      text.replace("\"admission\":19", `"admission":${to}`)
+    const withoutAdmitted = recount(mutate(`${admittedOnly.join("\n")}\n`, ""), 17)
+    expect(() => readKernelCorpus(withoutAdmitted)).toThrow(/carries no admitted verdict/)
+    const withoutRefused = recount(mutate(`${refusedOnly.join("\n")}\n`, ""), 2)
+    expect(() => readKernelCorpus(withoutRefused)).toThrow(/pins no refusal/)
+  })
+
   test("an unknown record group is skipped, not fatal", () => {
     const extended = `${source}{"record":"future","what":"a group this reader does not know"}\n`
     const read = readKernelCorpus(extended)
-    expect(read.skipped).toEqual(["future"])
+    // `model-admission` rides the same rule on purpose: the emitter marks those
+    // rows model-internal and this reader must not collect them, so the group
+    // the corpus already carries and an invented one are skipped alike
+    // (operator grill ruling A8, DEV-772).
+    expect(read.skipped).toEqual(["model-admission", "future"])
+    expect(readKernelCorpus(source).skipped).toEqual(["model-admission"])
     console.info(
       "CORPUS CONTROLS: PASS refused=member-swap,double-rounded-integer,long-form-escape," +
-        "canon-bytes-drift,unknown-format,miscount,carriage-return,missing-final-lf,non-ascii" +
+        "canon-bytes-drift,unknown-format,miscount,carriage-return,missing-final-lf,non-ascii," +
+        "admitted-before-refused,no-admitted-verdict,no-refused-verdict" +
         ` skipped-group=${read.skipped.join(",")}`,
     )
   })
@@ -269,7 +343,7 @@ describe("the corpus reader", () => {
       refusals: 16,
       types: 22,
       encodings: 12,
-      admissions: 17,
+      admissions: 19,
       docs: 22,
       canons: 10,
       programs: 4,
@@ -292,10 +366,24 @@ describe("the corpus reader", () => {
   })
 
   test("admission row i and refusal row i name the same reason", () => {
+    // The refused block may run longer than the refusal table: one reason can
+    // be earned by more than one candidate shape, and the stage-rank edge earns
+    // absence-trigger a second time. The alignment claim is about the prefix the
+    // table reaches, so the rows past it are checked for a KNOWN reason instead
+    // of against a row that does not exist.
+    const reasons = new Set(corpus.refusals.map((refusal) => refusal.reason))
+    let aligned = 0
     corpus.admissions.forEach((admission, index) => {
       if (admission.verdict !== "refused") return
-      expect(admission.reason).toBe(corpus.refusals[index]!.reason)
+      const row = corpus.refusals[index]
+      if (row === undefined) {
+        expect(reasons.has(admission.reason)).toBe(true)
+        return
+      }
+      expect(admission.reason).toBe(row.reason)
+      aligned += 1
     })
+    expect(aligned).toBe(corpus.refusals.length)
   })
 
   test("the corpus read is the model's own emission, not a stand-in", () => {

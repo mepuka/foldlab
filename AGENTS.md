@@ -69,25 +69,41 @@ archived all off-path work at tag `archive/pre-estate-focus`
 ## Skills — read as documents, every harness
 
 Three estate skills carry the teaching material behind the standing
-laws. They live at `.claude/skills/<name>/SKILL.md` with references
-beside them — a path only the Claude harness auto-discovers, so every
-other seat (codex, pi, cursor, antigravity, opencode) MUST read them as
-ordinary files when the trigger below matches. Not optional: reviews
+laws. They are dual-homed so every harness that can discovers them
+natively: `.claude/skills/<name>/SKILL.md` (with references beside it)
+is Claude's native source, and `.agents/skills/<name>/SKILL.md` is the
+cross-agent convention the vendored `repos/effect` already uses, so
+codex, pi, and opencode discover it natively; antigravity and cursor
+reach the skills through this section, which the wall below keeps
+honest. The two homes are the same skill shipped twice — byte-identical
+by wall, because one teaching material at liberty to drift would be two
+teachings. Every seat, harness native or not, reads a skill as an
+ordinary file when the trigger below matches. Not optional: reviews
 already judge against the laws these teach, and misadherence to the API
 discipline is a high-severity finding.
 
-- `.claude/skills/architecture-to-algebra/` — mapping any system or
+The absorption is mechanical, not prose-held. `bun run gates` runs
+`scripts/check-skills.ts`, which pins this section's roster against BOTH
+on-disk homes and the per-tool `agents/openai.yaml` manifests in EACH
+direction AND holds `.claude/skills/` byte-identical to
+`.agents/skills/`: a skill added on disk without a row here, a row
+pointing at a missing or incomplete skill, or a drift between the two
+homes, reddens the battery. The check's own `--self-test` arm replays a
+mutated section, disk set, and mirror and refuses, so the wall cannot
+quietly stop failing.
+
+- `.agents/skills/architecture-to-algebra/` — mapping any system or
   feature onto the algebra: truth plane, directory plane, fences, the
   fold table with rungs and carriers, coalgebras. Read before designing
   or re-deriving any service, capability, or data flow; its
   `references/` carry the generators, the planes ladder, and worked
   examples.
-- `.claude/skills/estate-api-development/` — the API discipline: every
+- `.agents/skills/estate-api-development/` — the API discipline: every
   public surface is a projection of the one algebra core, generated not
   hand-written, judged by the one door, idiomatic Effect throughout.
   Read before designing, building, or reviewing ANY public surface,
   tool schema, CLI command, or wire format.
-- `.claude/skills/verified-codegen/` — generation that cannot silently
+- `.agents/skills/verified-codegen/` — generation that cannot silently
   lie: emitters, generated types/schemas, conformance corpora,
   canonical formats, gates. Read before building any generator,
   checker, fixture, or cross-language projection; its `references/`
@@ -95,10 +111,7 @@ discipline is a high-severity finding.
 
 Board acts have their own gate: `docs/agents/dispatch-gate.md` binds
 cutting and dispatch; `docs/agents/issue-tracker.md` is the tracker
-contract. Relocation of the skills to the cross-agent `.agents/skills/`
-convention (as the vendored `repos/effect` already does, with per-tool
-manifests) is board-tracked; until it lands, this section is the
-absorption path.
+contract.
 
 ## Read first
 
@@ -291,19 +304,27 @@ style notes.
    is a DEFECT, not a style choice; existing hand-written types are
    staged debt wearing explicit waivers that cite their unification
    ticket, and the truth/ primitives themselves converge under the
-   generated core. Wall: the type-universe walk (DEV-796,
-   inventory → enforce). Severity: blocker.
+   generated core. Wall: the type-universe walk — inventory
+   (DEV-796), then enforce over a waiver ledger with per-prefix
+   ratchet pins (DEV-805): an untraced public type with no committed
+   waiver fails the gate, a waiver citing a ticket off the reviewed
+   liveness list fails it, and a prefix whose debt count rises above
+   its pin fails it. Severity: blocker.
 2. **One door.** All judgment routes through kernel admission; a
-   private validator is a second door. Wall: pending the shared
-   candidate form (DEV-763/796 stage 4). Severity: blocker.
+   private validator is a second door. One guarded trusted-base seam
+   is lawful: kernelIdentity, width-and-alphabet-guarded, refusing in
+   the error channel (ruling A1). Wall: check:kernel-door and its
+   executed control, battery-gated. Severity: blocker.
 3. **Served equals derived.** Rendered surfaces (tool schemas, docs,
    command trees) are generated from declared sources and
    byte-compared; hand-authored twins are refused. Walls: corpus
    regeneration checks, check-kernel-* scripts, T7 public-surface
    walk. Severity: blocker.
 4. **Plane layering.** truth ← kernel ← planes ← carriage ← surface;
-   a layer imports only itself and deeper. Wall: layering lint
-   (DEV-767, pending; until it lands, review). Severity: blocker.
+   a layer imports only itself and deeper; internal modules rank by
+   their Seam: tag, and truth's internal edges ride a reviewed pin.
+   Wall: check:layering and its executed control, battery-gated (red
+   set emptied by the ruled F1 inversion, PR #146). Severity: blocker.
 5. **Effect first-class, idiomatic, deep.** Layers for services,
    typed errors, Stream/PubSub/Cache/RequestResolver over hand-rolls,
    @effect/cli for CLIs; core algebras as shared services. Wall:
@@ -336,3 +357,17 @@ surface; escalations surfaced to the operator rather than parked.
    direction pointing one level deeper — what this is, how to
    regenerate it, which wall proves it. Wall: the battery's check
    scripts + review. Severity: blocker.
+10. **Official documents carry no tracking artifacts; plait refers by
+   digest.** Operator ruling 2026-08-19, verbatim intent: repo-local
+   ids, ticket numbers, dev-tracking parentheticals, script
+   invocations, and filesystem paths NEVER appear in official
+   documents — the kernel language's projections and every rendered
+   surface above all. Plait items refer only to digests or derived
+   digests; a filesystem path is an ambient reference the algebra
+   itself refuses, and provenance on an official surface is a digest
+   of the source, never a path or a command. Tracking artifacts live
+   where tracking lives — tickets, DECISIONS logs, dispatch records,
+   reviewed roster sources and pins — and are never rendered outward.
+   Wall: the vocabulary wall's tracking-artifact clause over the
+   committed bytes of the generated tables and prose page (landing;
+   until it lands, review). Severity: blocker.

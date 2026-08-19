@@ -81,8 +81,8 @@ bun run test
 It is the concatenation of three groups, each runnable on its own while you
 work: `test:fast` (the pure test files, the corpus diff, the kernel table and
 schema diffs, the refusal-vocabulary and taught-payload diffs, the
-public-effect manifest, the public-type debt ledger, and the substrate-parity
-control), `test:walls` (every file that brings up a real `nats-server`), and
+public-effect manifest, the public-type waiver ledger in both report and
+enforce mode, and the substrate-parity control), `test:walls` (every file that brings up a real `nats-server`), and
 `test:types` (the twenty public-effect negative controls plus the
 type-universe, refusal, and rung enforcement controls). The fast/wall
 partition is derived from whether a test file imports the NATS harness, so a
@@ -116,10 +116,14 @@ The register slice adds a separately bounded safety wall: 15 generated Veil
 rows on local NATS v2.14.4, a file-backed `flb-fab-reg` bucket with R=1,
 history 64, TTL 0, and no byte-size eviction; every row is verified against
 the Veil module's generated transition relation at export time. All register
-claims hold within a fixed backing-stream incarnation; administrative
-lifecycle mutation is outside the credential guard (the incarnation pin at
-open is a recorded deferral; the DEV-716 ACL suite is the other half of the
-guard). `hold` is a Scope-bound heartbeat surface whose renewal loss
+claims hold within one backing-stream incarnation, and the adapter now
+enforces that rather than assuming it: the backing stream's creation time is
+pinned at open and re-asserted ahead of every action, so a fence minted under
+a destroyed bucket refuses `incarnation-mismatch` — ahead of any staleness
+comparison — instead of landing on its reborn successor. The pin is a
+precondition, not a two-phase commit: a rebirth between the assertion and the
+CAS is a residual one-round-trip window, and the DEV-716 ACL suite is the
+other half of the guard. `hold` is a Scope-bound heartbeat surface whose renewal loss
 interrupts its holder fiber; heartbeats carry no theorem or liveness claim.
 The hard-kill wall runs TS holder → Go steal → TS zombie refusal → Go winner
 commit.
@@ -178,7 +182,10 @@ semantics, and metadata stability, but no blob surface ships on it: the pinned
 client has no ranged read, its whole-object digest is checked only when the
 last chunk arrives, and object metadata is written by the client rather than
 derived by the server — so a reader that trusts metadata has verified nothing.
-All cell claims hold within a fixed backing-stream incarnation. Neither
+All cell claims hold within a fixed backing-stream incarnation; the cell store
+is argued exempt from the register's incarnation pin — no cell revision crosses
+a call boundary, so there is no fence a reborn bucket could honor — and the
+argument is recorded in `DECISIONS.md`, Task DEV-779. Neither
 `Catalog` nor `Payloads` ships a durable layer: the catalog layer is
 process-local, and the internal payload seam answers absence — the probed
 object store remains advisory evidence, never a backing store.

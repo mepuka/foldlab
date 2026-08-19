@@ -143,9 +143,16 @@ holder name is descriptive and never decides authority.
 
 **Landed outcome**:
 The unique terminal value stored with the fencing token that was current when
-it committed. Once present, no later commit or steal is admitted within a
-fixed backing-stream incarnation; administrative lifecycle mutation is
-outside the credential guard.
+it committed. Once present, no later commit or steal is admitted. The claim is
+bounded to one backing-stream incarnation, and the register enforces that bound:
+the backing stream's creation time is pinned at open and re-asserted ahead of
+every action, so a token minted under a destroyed bucket refuses
+`incarnation-mismatch` rather than being honored by the reborn one.
+
+**Incarnation**:
+One life of a bucket's backing stream, named by the creation time the server
+stamps on it. A delete-and-recreate mints a new incarnation and restarts the
+revision order, which is why a fence never crosses one.
 
 **Zombie**:
 A dispossessed holder that completes after a steal. Its stale token is evidence

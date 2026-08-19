@@ -1,5 +1,6 @@
 /**
- * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ * Plane: internal — private adapters, housed flat.
+ * Seam: truth — the vocabulary every sentence speaks.
  *
  * @module
  */
@@ -36,9 +37,16 @@ import type { Refusal } from "../truth/Refusal.js"
  * adapter's own typed absence, which a caller composes with
  * `Refusal.retryAbsence` — an unbounded loop would hide contention inside an
  * invisible hang instead. The conflict classification lives in the adapter's
- * `create`/`update`, never here. Every claim is bounded to a fixed
- * backing-stream incarnation (DEV-704 seam rule 7): revisions are backing-stream
- * sequences, so a bucket delete+recreate resets the order underneath all of it.
+ * `create`/`update`, never here.
+ *
+ * **Incarnation: EXEMPT from the register's pin** — argued and recorded, not
+ * assumed, in packages/plait/DECISIONS.md, Task DEV-779. Revisions are
+ * backing-stream sequences (DEV-704 seam rule 7), so a bucket delete+recreate
+ * resets the order underneath all of it; what this loop never does is present a
+ * fence across that reset. The revision it CASes at is the one `read` returned
+ * in the same attempt, never a token a caller holds between calls, and its
+ * carrier converges by join rather than by revision order. A carrier that hands
+ * a revision back to a caller is a different case and is the register's.
  */
 
 /**

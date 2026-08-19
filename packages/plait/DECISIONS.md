@@ -105,6 +105,15 @@ bounded interval over which a repeated envelope is one stored frame.
 
 ### T6. The incarnation pin at register-open is deferred, recorded
 
+**DISCHARGED by Task DEV-779** (this file, "Task DEV-779 — the register
+incarnation pin"). The pin is built: the register records the backing
+stream's creation time at open and re-asserts it ahead of every action; the
+alternative this entry priced — a per-operation stream-info comparison, one
+extra round trip per action — is the one that landed, at a measured 0.109ms
+p50 against the pinned local server. The bound sentences this entry planted
+are replaced there: enforced at the register, argued exempt at the cell and
+anchor stores. The entry below is the record as it stood, kept unedited.
+
 Decided: the register does NOT yet record the backing stream's creation time
 at open or refuse on its mismatch. Every register claim therefore carries the
 bound "within a fixed backing-stream incarnation; administrative lifecycle
@@ -2698,3 +2707,1944 @@ kinds, and pins what a run produced rather than what the source teaches). Why:
 one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
+
+### T4. The admission corpus grows past its closure roster, and the reader's "one admitted, last" rule becomes a prefix rule
+
+Decided: the emitted admission group carries nineteen rows — the sixteen
+closure refusals, the stage-rank edge, then two admitted sentences — and
+`scripts/kernel-corpus.ts` now requires the refused rows to form a PREFIX and
+the admitted rows the suffix, instead of requiring exactly one admitted row in
+final position. A refusal roster states which spellings the door rejects and
+never which it accepts, so a door that refused everything satisfied every
+closure row; the admitted rows are what closes that gap, and one of them carries
+a claim the closure list cannot state (the fully catalogued trigger).
+Alternatives: keep one admitted row and
+assert the new facts in hand-written runtime tests (refused — a hand-written
+expectation standing in for a model verdict is the artifact the 2026-08-15
+ruling bans, and these verdicts are the model's); place the admitted rows first
+(refused — the refused prefix is what aligns position for position with the
+taught refusal table, and an admitted row in the middle shifts every later
+refusal off its reason); emit the new rows into a tenth record group (refused —
+a new group is a format decision needing a ruling, and these rows are admission
+verdicts by every property except their count). The alignment rule is kept but
+bounded: it is checked only as far as the refusal table reaches, because one
+reason can be earned by more than one candidate shape and the stage-rank edge
+earns `absence-trigger` a second time. **Load-bearing? yes** — the reader's own
+control arm plants an admitted row before a refused one, a corpus with no
+admitted verdict, and a corpus with no refused verdict, and each must be refused
+for its own reason.
+
+### T4a. The off-writ admitted vector is DROPPED: the behaviour it would have pinned is ruled a defect
+
+Decided: no vector is emitted for a catalogue-resident, non-pinned referent
+carried by a non-declaration, and none should be. The brief asked for one as a
+pin-as-chosen; grill round 2 (record on DEV-772) ruled the behaviour A DEFECT
+rather than a chosen asymmetry. DEV-754 repairs the model — catalogue checks on
+predicate leaves — and the REFUSAL vectors that replace it emit only after the
+model moves, which is DEV-754's work and not this seat's. Emitting the admitted
+vector first would have pinned a defect into the corpus as a replayed fact and
+then required a retraction plus a regeneration of every downstream artifact.
+Distinguish the two lines the sitting separated: (a) pinned-universe inspection
+being declare-only, DOCUMENTED as chosen in `requiredPinned`'s docstring;
+(b) the trigger arm's catalogue support naming only the declaration, because
+predicate leaves are bare naturals rather than raw arguments — UNDOCUMENTED,
+verified admitting an uncatalogued lane first-hand, and now the defect DEV-754
+repairs. **Load-bearing? no** — it records a deliberate absence so a later
+reader does not read the gap as an oversight.
+
+### T4b. One record group carries model-internal rows, and the host reader skips it by not knowing it
+
+Decided: a tenth group, `model-admission`, carries admitted sentences that
+document the MODEL and claim nothing about a host; each row is emitted with
+`scope: "model-internal"`, and the marking originates in emission rather than
+being annotated afterwards, so a row cannot reach a consumer without it. The
+host reader excludes them by leaving `model-admission` out of
+`KERNEL_RECORD_GROUPS`: the add-only rule then reports the group in `skipped`
+and collects it nowhere, so it never enters the conformance roster the door is
+replayed against. Cited: operator grill ruling A8, sitting record DEV-772,
+2026-08-19, which authorised the smallest loader change that respects the
+marking. Alternatives: a `scope` field on every admission row (refused — it
+changes the shape of nineteen rows that have no scope question, and every
+consumer's schema with them); a filter in the replay harness (refused — the
+roster would still contain the rows, so a second consumer would replay what the
+first was told to skip); relying on the group being unknown without saying so
+(refused — an incidental skip is one edit away from an accidental promotion).
+**Load-bearing? yes** — the skip is asserted by test rather than left to habit:
+adding the name to `KERNEL_RECORD_GROUPS` would promote the rows into the
+roster and turn a model convenience into a host conformance claim.
+
+### T5. The aliasing pair documents a RULED quotient, and the canonicalizer is not touched
+
+Decided: two rows, `aliasRefDeclare` and `aliasLiteralDeclare`, are emitted into
+the model-internal group carrying byte-identical `encoded` sentences.
+`canonicalBytes` folds a payload into one identity, weighing a digest reference
+`1 + kind.rank * 4096 + id` against a literal's `2 + value * 16`, so
+`[ref lane 1]` and `[literal 1024]` both weigh 16386 and the two DISTINCT lawful
+declarations become one sentence. Operator grill ruling A8 (sitting record
+DEV-772, 2026-08-19) rules that collision an INTENDED QUOTIENT and
+model-internal: a payload denotes its canonical value, so inside the model two
+spellings of one value are one sentence. Real injectivity remains the byte-level
+canonicalizer's obligation and is walled separately under DEV-807 — which is
+precisely why the pair is excluded from the host roster (T4b): a host
+reproducing this collision would be reproducing a model convenience, not the
+estate's byte identity. The canonicalizer is untouched. Alternatives considered
+before the ruling and now moot: changing the fold so the two separate; refusing
+duplicate encodings in the reader. What the host test asserts is the EXCLUSION —
+that neither name reaches `corpus.admissions` or the replay table — not the
+collision. The emitter, which is model-side, does pin the collision, so a fold
+that silently stopped quotienting is caught where the ruling applies.
+**Load-bearing? yes** — the emitter refuses to print a model-internal group
+whose two rows are not both admitted to one encoded sentence, so the group
+cannot become a stale illustration. Grill note: KM-24 in
+`docs/research/2026-08-18-kernel-model-notes.md`.
+
+### T6. One lawful trigger is emitted so the trigger arm's referent check is reached by an admission
+
+Decided: `catalogedTrigger` — `trigger (evidenceAppears lane 1 pattern 17)
+declaring 3` — is planted and admitted, its declaration `(program, 3)` and its
+predicate's lane leaf `(lane, 1)` both in the catalogue. The roster's two other
+triggers refuse on their PREDICATE production, so no passing admission had ever
+reached the trigger arm's referent check; the arm was live code with no green
+vector through it. Its encoded sentence `[6,0,1,17,0,3]` is the one the
+`trigger-evidence-appears` encoding vector already states, so the admission
+group and the encoding group now meet on a trigger as well as on a declaration.
+Alternatives: a `cellReaches` or `outcomeLanded` production instead (equivalent;
+`evidenceAppears` was taken because its sentence already exists in the encoding
+group, which buys the cross-group tie for free); no such vector (refused — the
+gap is real and cheap to close). Scope is stated in the definition, the fixture,
+and the test: every leaf here is catalogued deliberately, and the row claims
+NOTHING about an uncatalogued predicate leaf, which is the held question in T4a.
+**Load-bearing? yes** — it is the only admitted trigger in the corpus, so the
+refuse-everything mutant is now killed on a trigger as well as on a declaration.
+## Task DEV-804 (slice C) — one canonicalizer: the plait twins retire
+
+### T0. The private twins retire onto the jcs seam, and the seam's number line wins
+
+Decided: `src/truth/CanonicalJson.ts` and `src/truth/SchemaCanonical.ts` are
+deleted, and every importer moves onto `@foldlab/core/jcs`. Where the twins and
+the seam disagreed — the number line — the seam wins, per the operator ruling
+of 2026-08-18 (DEV-807, PR #138). The twins had one honest justification and it
+was in their own module header: RFC 8785 serializes numbers through IEEE-754
+doubles, this interchange carries identity labels past 2^53, so the twins wrote
+unbounded integers as minimal decimal and refused a fraction, an exponent, and
+a minus sign at the parser. DEV-807 moved that exact rule into
+`packages/core/src/jcs.ts` — bigint carriers, exact integer digits, the decoder
+returning `bigint` for any pure-integer literal at or past 2^53 — and into Go.
+With the divergence gone the twins were a second identity with no remaining
+reason, which is Law 1 debt and a standing invitation to drift. Alternatives:
+keep the twins and add a differential wall between them and the seam (two
+canonicalizers plus a wall is strictly worse than one canonicalizer, and
+both-sides-agree is not verification); re-export the seam under the twins'
+names (leaves the retired vocabulary alive and the wall with nothing to refuse);
+retire only `CanonicalJson.ts` and leave the schema walk (the walk is built on
+the twin's value domain and cannot outlive it). Why: identity is bytes, and two
+things that write bytes are two identities. **Load-bearing? yes** — program
+content addresses are SHA-256 over these bytes, and the daemon and carriage
+paths compare them.
+
+Measured, before committing anything: over all 121 lines of
+`fixtures/kernel-conformance.ndjson`, the twin's encoder and the seam's encoder
+produce identical bytes for every parsed value (0 moved); all four committed
+program vectors' declarations encode to the bytes the vectors pin under both
+encoders (0 moved); every line survives seam-decode-then-seam-encode byte for
+byte (0 moved); and every line survives schema-decode-then-seam-encode byte for
+byte (0 moved). No committed digest, canon vector, program byte string, or
+generated artifact moved: `check:corpus`, `check:kernel-tables`, and
+`check:kernel-schemas` all report byte-identical regeneration, and
+`test/PublicTypeUniverse.inventory.md` is unchanged at 132 classified types.
+The canon vector the ruling turns on round-trips through the surviving seam
+unchanged: `{"bytes":"9007199254740993","name":"big-integer","record":"canon","value":9007199254740993}`
+reads back with `value === 9007199254740993n` and re-emits to those same bytes,
+while `JSON.parse("9007199254740993")` is still `9007199254740992`.
+
+### T1. The corpus's Nat rule is a stated narrowing of the estate's domain, not a second parser
+
+Decided: `scripts/kernel-corpus.ts` decodes through the seam's `decodeJson` and
+then lifts every integral literal onto `bigint` (`asNat`), because the seam
+returns `number` below 2^53 and `bigint` at or past it while every record schema
+declares `KernelNat`. A non-integral literal is left as the seam decoded it, so
+the schema refuses it by name rather than the lift swallowing it into an
+integer. Alternatives: widen the record schemas to accept `number | bigint`
+(two carriers for one wire shape, and the widening reaches the generated
+schemas and every consumer); make the seam's decoder corpus-shaped (a
+package-wide domain change to serve one file, and it would move `packages/core`
+under a ticket that does not own it); parse the corpus with a second reader
+(the twin, under a new name). Why: the corpus's grammar genuinely is narrower
+than the estate's, and the honest place to say so is the reader of that file,
+in one walk that adds no serialization. **Load-bearing? no** — the lift is a
+carrier choice on the decode path; the bytes are the seam's either way, and the
+canonical-form check compares bytes, not carriers.
+
+### T2. Two type-level refusals are traded for three value-level controls, and the trade is named
+
+Decided: retiring `SchemaCanonical.ts` gives up two refusals it made at
+derivation time, before any data existed — a schema node of JavaScript
+`number`, and a schema carrying an encode/decode transformation — and the
+replacement catches both at the first record that exercises them, through
+`roundTripsCanonically` in `scripts/kernel-corpus.ts`. The `number` refusal is
+not relocated, it is **repealed**: the estate's number domain now carries
+JavaScript numbers, so there is no longer a type to refuse. The codec refusal
+survives as a value-level one, because a codec decodes to a value whose
+canonical form is not the text it came from. A third property the AST walk gave
+for free — an object member the schema does not declare — is now caught because
+`Schema.Struct` drops it and a dropped member is a shorter re-emission.
+`test/KernelSchemas.test.ts` carries a control for each of the three, and
+`test/KernelCorpus.test.ts` restates the number rule as what it now is: a
+fraction and an exponent are non-canonical *spellings* (refused by the
+canonical-form check, which is where a spelling was always refutable), a
+leading zero is still refused at the reader, and `-1` is canonical text that
+`KernelNat` refuses at the schema. Alternatives: keep the AST walk on top of
+the seam (the walk's whole value domain was the twin's, so keeping it keeps a
+twin); assert the loss in prose and move on (a claim without a gate).
+**Load-bearing? yes** — a control that only fires on values needs a value that
+fires it, and all three are committed.
+
+### T3. The wall is a source scan with a planted twin, because the failure it prevents compiles
+
+Decided: `check:one-canonicalizer` (wired into `test:fast`) reads every module
+under `src/` and refuses three things: a retired twin's file path existing
+again, a retired twin's name (`CanonicalJson`, `SchemaCanonical`) spelled
+anywhere but `src/truth/Canonical.ts`, and the canonicalizer signature —
+`JSON.stringify` beside `.sort(` beside `Object.keys(` — in any module but that
+one. `check:one-canonicalizer-control` (wired into `test:types`) copies the
+committed mutant at `negative-controls/OneCanonicalizer.private-twin.mutant.ts`
+to the retired path, requires the scan to fail naming both arms, and restores
+the tree in a `finally`. Alternatives: a lint rule on imports of
+`@foldlab/core/jcs` (the seam is meant to be imported; the offence is
+re-implementing it); a type-level check (a second canonicalizer typechecks
+perfectly — that is the whole problem); a test that greps in `bun test` (a wall
+that lives beside the code it guards is a wall the same edit can delete, and
+the package's other structural laws are check scripts). Why: the arms are
+properties of source bytes, and the third arm catches the twin coming back
+under a name nobody has thought of yet. **Load-bearing? yes** — the wall is
+what makes "there is one RFC 8785 canonicalizer" in `AGENTS.md` a law rather
+than an exhortation, and its control is what makes the wall refutable.
+## Task DEV-804 — the generator emits named types
+
+### T0. The alias sits beside its schema, and only the suspended entry's moves
+
+Decided: every mini-AST type in `KernelSchemas.generated.ts` is emitted with a
+named value type. A non-suspended entry's is
+`export type KernelXValue = typeof KernelX.Type`, written immediately after the
+const it names; the one suspended entry keeps the structural alias it already
+had, emitted ahead of the schemas because the annotated const is what refers to
+it. What varies between entries is where the alias sits, never whether it
+exists. Alternatives: emit all twenty-two structurally in the pre-schema block
+(twenty-one restatements of shapes the schemas already carry, each a second
+place one shape can be wrong); emit the suspended entry's alias a second time as
+`typeof KernelCandidatePredicate.Type` (its const is annotated
+`Schema.Codec<KernelCandidatePredicateValue>`, so the alias would be defined
+through itself and the module would not compile). Why: DEV-796's wall,
+`isDeclaredByGeneratedCore`, credits the file a symbol's declarations resolve
+to, so a consumer-side `typeof Generated.X.Type` is the consumer's own
+declaration and traces back to nothing — `KernelDoor.ts` spells seven types
+exactly that way and scores 0 derived. A named type is the only thing a
+consumer can re-export. **Load-bearing? yes** — restoring the suspended-only
+gate regenerates main's file exactly (1 `export type`, not 23) and
+`check:kernel-schemas` reds on the committed bytes.
+
+### T0a. `KernelRef` gets an alias although it has no type record
+
+Decided: the expanded `Ref` abbreviation is emitted with
+`export type KernelRefValue = typeof KernelRef.Type` like every declared type.
+The model spells `Ref` as an abbreviation rather than a declaration, so it
+carries no type record and is not a mini-AST entry; it is nonetheless one of the
+seven types `KernelDoor.ts` restates, so leaving it unnamed would leave that
+family one alias short of derivable for a reason no reader could see.
+Alternatives: emit no alias and let the consumer keep restating it (leaves the
+hole in exactly the family this ticket converts); promote `Ref` to a corpus type
+record (hand-authors model structure). Why: the alias is a projection of a
+schema this generator already emits, so it claims nothing the corpus does not
+already license. **Load-bearing? no** — nothing but that seventh consumer type
+depends on it.
+
+### T1. The anchor element type widens by union, not by dropping the template
+
+Decided: `generatedCoreAnchors` takes the element type
+`` `src/kernel/${string}.generated.d.ts` | `src/truth/${string}.generated.d.ts` ``,
+and `src/truth/RefusalKinds.generated.d.ts` joins the list. DEV-796's T4 fixed
+the template deliberately: an anchor must spell `.generated.d.ts`, so the walk
+cannot be granted authority over a file nothing byte-gates, and
+`KernelCorpusSchemas.d.ts` was struck from the list on exactly that ground. The
+widening preserves that law in full — both arms of the union still end
+`.generated.d.ts`, so a hand-written path stays unrepresentable in either plane.
+What moves is the directory, and the directory moved for a reason the record
+already carries: DEV-808's T0a emits the refusal vocabulary into `truth/` rather
+than importing it up from `kernel/`, because root Law 4 makes `truth/` the
+deepest plane. One generator, two emissions, both byte-gated by
+`check:kernel-tables`; refusing the second emission an anchor would make Law 4's
+compliance cost Law 1's credit. Alternatives: relax the element type to
+`` `${string}.generated.d.ts` `` (admits a generated file in any plane, gated or
+not); move `RefusalKinds.generated.ts` into `kernel/` (undoes DEV-808 T0a and
+re-crosses Law 4); leave the list alone and let the truth-plane vocabulary stay
+debt permanently (the union it names is generated, so the ledger would record a
+falsehood about it). Why: the law T4 states is about what byte-gates a file, not
+about which directory the file sits in. **Load-bearing? yes** — measured:
+appending `"src/truth/Refusal.d.ts"` and `"src/kernel/KernelCorpusSchemas.d.ts"`
+to the list reds `tsgo -p packages/plait/tsconfig.json --noEmit` with two TS2322
+diagnostics naming both spellings, so the unrepresentability T4 bought survives
+the widening intact.
+
+### T2. The ledger's authority prose is left to the lane that owns the ledger
+
+Decided: `renderInventory`'s authority line still reads
+`` (`src/kernel/*.generated.d.ts`) `` and is deliberately not updated in this
+branch. That line is generated into `test/PublicTypeUniverse.inventory.md`,
+which the concurrent DEV-805 lane is rewriting; editing it here would move the
+committed ledger's bytes under another lane for prose alone. Reported as
+untouched rather than quietly fixed, and owed to whichever lane lands second.
+**Load-bearing? no** — this branch does not move the census (132 total, 0
+derived, 132 debt before and after), so the ledger is byte-identical either way
+and only the sentence describing the rule is stale.
+## Task DEV-804 (slices A+B) — the first public types credit as corpus-derived
+
+### T0. A re-export of a NAMED generated type is the one crediting shape
+
+Decided: the conversion is `export type { KernelXValue as KernelX } from
+"./KernelSchemas.generated.js"`, and nothing else counts. Seven of
+`KernelDoor.ts`'s types and `truth/Refusal.ts`'s `StructuralRefusalKind`
+convert; the census moves 0 → 8 derived, and the kernel and truth pins fall
+27 → 20 and 37 → 36. What does NOT convert stays hand-written and waivered:
+`KernelVerdict` (a host projection that flattens a generated refusal row into a
+tagged union the corpus does not carry), the `KernelDoor` context interface, and
+`KernelAdmit` — no generated counterpart exists for any of them, and inventing
+one would put a shape in the generator that the model never declared.
+Alternatives: `typeof Generated.X.Type` at the consumer, which is what the seven
+door types said before this branch and which reads as derivation while being a
+fresh local declaration — DEV-800 round 2 measured it at 0 derived across the
+whole barrel, and T0 of the generator slice records the same finding from the
+emitter's side; a structural restatement of the shape (a second place one shape
+can be wrong); crediting by import-graph proximity rather than by declaration
+owner (the false-positive direction `isDeclaredByGeneratedCore` exists to
+refuse). Why: the walk credits the file a symbol's declarations resolve to, and
+a re-export is the only spelling that leaves a public name with no declaration
+of its own. **Load-bearing? yes** — measured on this branch: reverting
+`KernelRawArg` alone to `export type KernelRawArg = typeof
+Generated.KernelRawArg.Type` reds enforce at exit 1 with `PUBLIC TYPE UNIVERSE
+UNWAIVERED: KernelDoor.KernelRawArg owner=src/kernel/KernelDoor.ts
+classification=debt-with-a-ticket ticket=DEV-795`, because the conversion
+removed that row's waiver from the ledger; and `--write` cannot launder it back,
+reding at `PUBLIC TYPE UNIVERSE RATCHET: owning prefix=kernel walked=21
+pinned=20 — raising a pin is the operator's act`. Restored, both green.
+
+### T0a. The door binds the generated names locally by importing them under its own spelling
+
+Decided: `KernelDoor.ts` carries the seven names twice — once as
+`import type { KernelRawArgValue as KernelRawArg } from ...` for its own body,
+once as the `export type { ... } from` re-export that is the public surface. A
+re-export creates no local binding, so the door's twenty-odd internal uses need
+something to refer to, and the import alias is that something without declaring
+anything: it is the generated declaration under the door's name. Alternatives:
+spell every internal use `Generated.KernelRawArgValue` through the namespace
+import the door already has (correct, and it churns every signature in the file
+for no change in what anything means); declare local non-exported aliases
+(`type KernelRawArg = Generated.KernelRawArgValue`), which reintroduces the
+local declaration this task is removing and would credit only by the accident
+that the census walks exports. Why: the diff should be the conversion and
+nothing else, so a reviewer can see the seven names move in one block.
+**Load-bearing? no** — the census reads the export, not the import.
+
+### T1. The refusal kind converts as ONE value-and-type re-export, because it must
+
+Decided: `truth/Refusal.ts`'s `export const StructuralRefusalKind: typeof
+GeneratedStructuralRefusalKind = GeneratedStructuralRefusalKind` beside
+`export type StructuralRefusalKind = typeof GeneratedStructuralRefusalKind.Type`
+becomes the single `export { StructuralRefusalKind } from
+"./RefusalKinds.generated.js"`, and the `StructuralRefusal` class takes its
+`kind` field from the import alias instead of from the retired const. This was
+forced, not chosen: `StructuralRefusalKind` is one name in both declaration
+spaces, and TypeScript admits ONE export declaration per exported name across
+both — keeping the const and adding `export type { StructuralRefusalKind } from`
+reds with TS2323 and TS2484, and renaming the type in the generated module does
+not help because the collision is on the EXPORTED name, not on the source name
+(probed both ways). Alternatives: keep the const and leave the type as a local
+`typeof` alias (leaves the one truth-plane type the generator actually emits
+uncredited, which is the row this slice exists to move); drop the type export
+and keep only the const (`Refusal.StructuralRefusalKind` in type position is
+public surface two call sites already use, so this deletes surface); emit the
+generated type under a second name and re-export that (same collision). Why: the
+re-export carries the schema and the type it admits, and both resolve to
+`RefusalKinds.generated.d.ts`. **Load-bearing? yes** — it is the whole of slice
+B: without it truth stays pinned at 37 and the derived count stops at 7.
+
+### T2. Two wall readers learn the export-declaration form, in the direction that keeps them strict
+
+Decided: `scripts/kernel-door-containment.ts`'s `readDoorForm` collects `Kernel*`
+names from export declarations as well as from type-alias and interface
+declarations, and `scripts/refusal-vocabulary.ts`'s `checkRuntimeUnionWiring`
+now asks for a value re-export from the generated module rather than for an
+exported const whose initializer traces back to an import alias. Both changes
+are caused by the conversion and both are checked, not assumed. The door reader
+matters because the form vocabulary is what the twin and unbound-use clauses
+quantify over: an export declaration is not a type-alias declaration, so reading
+only declarations would have silently dropped the seven converted names and
+turned two arms of `check:kernel-door-control` — `form-twin` and
+`unbound-form-name`, both planted as `KernelCandidateAct`, one of the seven —
+green on an accepted mutant. The vocabulary reader gets STRICTER for the move: an
+`export ... from` cannot be a second roster wearing the name, so the clause no
+longer has to chase an initializer and hope no later statement rebound it, and a
+module that declares a roster of its own is now refused by name rather than by a
+mismatched-identifier message. Alternatives: leave `readDoorForm` alone and let
+the vocabulary shrink (a wall weakened as a side effect of a conversion, which
+is the failure this record exists to make impossible); admit both the const and
+the re-export shape in the vocabulary clause (two admissible spellings for one
+law, and the older one is the one that cannot credit); move
+`StructuralRefusalKind` out of the wall's reach (it IS the union the minting
+sites speak). Why: a wall whose subject changed shape has to be re-read against
+the new shape or it is measuring nothing. **Load-bearing? yes** — the door
+control still refuses all eleven planted spellings on its committed trace
+(`ONE DOOR CONTROL: PASS (11 planted second-door spellings refused, each for its
+committed reason)`), which is only true because the vocabulary still carries the
+converted names.
+## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
+
+### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
+
+Decided: every `debt-with-a-ticket` row in
+`test/PublicTypeUniverse.inventory.md` is a Law 1 waiver, and `--enforce`
+admits a walked debt row exactly when its `(public type, owning module,
+unification ticket)` triple appears there. A walked row with no such triple is
+UNWAIVERED and named. That replaces DEV-796's all-or-nothing branch, which
+refused the whole run whenever any debt existed and therefore could not be
+turned on until stage 2 had emptied the table — the flip would have arrived
+last, when every conversion had already been reviewed by hand. It arrives
+first instead, at 132 waivers, and the conversions ratchet it down. Alternatives:
+a second committed waiver file beside the inventory (two artifacts that must
+agree about the same 132 rows, and nothing but review keeping them in step);
+waivers as a reviewed constant in the walk (the rows are generated data, so
+the constant would be a hand-retyped copy of the table it authorises); keep
+all-or-nothing and wait for stage 2 (the flip lands after the work it was
+supposed to gate). Why: one artifact, generated from the walk, read back by
+the same module that writes it, and the enforcement question is coverage of
+one side by the other rather than emptiness of one side.
+**Load-bearing? yes** — deleting the coverage stage leaves the control's
+unwaivered arm green, and it fails naming the accepted mutant: `PUBLIC TYPE
+UNIVERSE CONTROL: FAIL — enforce mode accepted a public type the ledger grants
+no waiver for`.
+
+### T1. A waiver cites a ticket off a reviewed liveness list, checked on both sides
+
+Decided: `liveUnificationTickets` is a small reviewed constant — `DEV-795`,
+`DEV-804`, `DEV-817`, and `DEV-796` scoped to `negative-controls/` — and a
+citation outside it is a violation of the gate's own precondition, refused
+before any coverage question is asked. Both sides are checked, because a
+citation can rot from either: the walk's route table is audited on every run
+of every mode including `--write`, and every waiver on the committed ledger is
+audited in enforce mode. The rule is not hypothetical. `debtTarget` routed the
+seven carriage and internal rows to `DEV-763`, which had closed, and the rows
+kept reading as lawful debt for as long as nobody cross-checked a table of 132
+rows against the board; this task repoints them to `DEV-817` and makes the
+next such drift a red gate instead of an audit. Closing a listed ticket
+therefore requires draining its rows first — closing it while rows remain
+turns the whole ledger red, which is the intended direction and still a worse
+day than draining. The `DEV-796` entry is scoped rather than plain because
+that ticket IS closed: the rows citing it are the negative control's own
+plant, they are not estate surface, and they drain when the control retires.
+No `src/` row may cite it. Alternatives: query the board at gate time (a wall
+that needs the network is a wall that goes yellow on a bad afternoon, and the
+board is not a build input); check nothing and trust the routes (the DEV-763
+state, restated); admit any `DEV-` shaped string (spelling is not liveness).
+Why: liveness is a small reviewed datum, the environment is the routes and the
+ledger, and the checker compares them. **Load-bearing? yes** — repointing the
+carriage route back to `DEV-763` fails every mode before the walk runs, with
+`debt route for src/carriage/ is unlawful: ticket=DEV-763 is not on the
+reviewed liveness list`, and deleting the ledger-side stage moves the control's
+liveness arm to a different refusal, which its committed trace catches as
+`the liveness arm's trace moved`.
+
+### T2. The ratchet pins debt per owning prefix, and `--write` refuses to raise a pin
+
+Decided: the ledger carries a `## Ratchet pins` table — one count per owning
+prefix (`truth`, `kernel`, `planes`, `carriage` covering carriage/surface/
+internal, `negative-controls`) — enforce mode re-derives each count from the
+declaration walk and refuses any prefix whose walked count EXCEEDS its pin, and
+`--write` lowers a pin that fell while refusing to raise one. Pins bootstrap
+only when there is no committed ledger at all. Without the write half the
+ratchet would be worthless: report mode already forces regeneration after any
+surface change, so a `--write` that re-pinned upward would make every increase
+green in the same act that recorded it. The prefix, ticket, and unification
+target are one row of one table (`debtRoutes`), so a pin cannot end up pinned
+against a family whose ticket column was re-cut underneath it. Alternatives:
+one global count (a conversion in `truth/` would pay for growth in `planes/`,
+which is the netting the per-prefix split exists to refuse); pins as a
+constant in the script (raising one becomes a code edit, but lowering one
+becomes a hand-typed count — the thing this estate bans); pins derived from
+the committed ledger's own row counts (measured: coverage then implies
+domination, the ratchet can never fire on its own, and a stage that cannot
+fail proves nothing); no ratchet at all, coverage only (a new type plus a
+`--write` is a green gate and a silently larger universe). Why: the pin is
+policy, the walk is truth, and they must be able to disagree.
+**Load-bearing? yes** — with `Address.RatchetPlant` planted and its waiver row
+hand-added while the pin stayed at 61, enforce refused with `PUBLIC TYPE
+UNIVERSE RATCHET: owning prefix=planes walked=62 pinned=61`; `--write` over the
+same plant refused with `--write refuses to raise a ratchet pin` and left the
+ledger's bytes untouched; and deleting the ratchet stage leaves the control's
+ratchet arm green, failing as `enforce mode accepted a prefix whose walked debt
+count rose above its pin`.
+
+**What this does NOT cover.** Raising a pin is a hand edit of a committed file,
+and so is deleting the ledger to re-bootstrap. The ratchet makes debt growth
+NAMED, reviewable, and impossible to acquire as a side effect of regeneration;
+it does not make it impossible. The waiver grant stays what A5 says it is —
+the operator's act — and the gate's job is to ensure the act leaves a diff
+that says which prefix grew and by how much.
+
+### T3. Enforcement is three ordered stages, each with its own refusal vocabulary
+
+Decided: enforce runs PRECONDITION (the ledger parses, pins every prefix the
+walk found, and cites only live tickets), then UNWAIVERED (coverage), then
+RATCHET (counts), returning at the first stage that has anything to say. The
+order is measured, not aesthetic: an unwaivered new type also lifts its
+prefix's count, so a ratchet-first order would answer a question about
+`Address.RatchetPlant` by naming `planes`. Each stage owns a distinct line
+prefix, which is what lets the control's three arms fail apart — an arm whose
+mutation produced the right colour for the wrong reason is caught by its
+committed trace, not by its exit code. Alternatives: one violation list in
+walk order (the three failures interleave and no arm can name its own law);
+collect every stage and report all of them (a dropped stage stays invisible
+because the other two still speak); a single "enforce failed" message (the
+2026-08-18 shape, which cannot distinguish a stale gate from new debt). Why: a
+gate with three laws needs three vocabularies or its control has one arm.
+**Load-bearing? yes** — each of the three arms goes green under deletion of its
+own stage and only its own stage, measured one at a time.
+
+### T4. Report mode keeps running beside enforce, in the same `test:fast` step
+
+Decided: `check:type-universe` invokes the script twice — once bare, once with
+`--enforce` — and enforce still never byte-compares the ledger. DEV-796's T2
+already bound this: a `test:fast` that swapped report for enforce would leave
+the committed ledger gated by nothing exactly when its debt table empties and
+the count line becomes the whole artifact. It binds harder now, because the
+ledger has stopped being a report and become the gate's own authority: enforce
+reads its waivers and its pins, so an enforce run over a stale ledger is a run
+over stale authority, and report mode is what proves the authority is fresh.
+Alternatives: one invocation doing both (re-entangles the control's arms —
+T2's refused shape); enforce byte-compares as a fourth stage (same
+entanglement, one mutation away); run enforce only in `test:types` beside the
+control (the production surface would be enforced on a different cadence from
+the ledger that authorises it). Why: two questions, two runs, and the second
+costs 1.9 seconds. **Load-bearing? yes** — dropping the report invocation makes
+a hand-edited ledger authoritative with nothing regenerating it.
+
+### T5. The control plants by taking a waiver away, and A5's condition rides the header
+
+Decided: the negative control runs five arms over its one planted pair — enforce
+must ADMIT the planted ledger's own six waivers, three ledger mutations must
+each be refused for their own reason against their own committed trace, and
+report mode must still reproduce the ledger byte for byte. The mutations are
+applied to the control's committed ledger, not to a second mutant declaration
+file: the gate compares a walk against a ledger, so a planted new public type
+and a ledger that stopped naming an existing one are the same edge approached
+from opposite sides, and only the ledger side can be mutated without
+invalidating the admission arm's artifact, which report mode regenerates from
+the walk. A mutation that changes no bytes fails as a control in its own right.
+A5's ruling (DEV-772 sitting record, round 1) rides the ledger's Authority
+header rather than the walk: a waiver MAY cover NEW surface, on condition that
+it names the provably-absent generator/corpus group and its unification ticket
+— the DEV-764 shape — and the ratchet then counts that conditioned waiver as
+ticketed debt like any other row, so the new surface still costs a pin.
+Alternatives: a second mutant `.d.ts` with an eighth type (a second declaration
+project and tsconfig to keep in step, for an edge the ledger mutation already
+reaches); assert the enforcement result in a unit test over the pure function
+(it would stop proving that the CLI wires the stages, which is the failure
+DEV-796's T2 was built against); encode A5's condition as a machine check (the
+"provably absent generator group" is a judgement about the corpus, not a
+predicate over the emitted barrel — claiming to check it would be the false
+green this wall exists to refuse). Why: the control exercises the production
+`--enforce` branch for every law it now carries, and the one condition the
+machine cannot judge is written where the operator granting a waiver reads it.
+**Load-bearing? yes** — the three arms and their traces are what caught each
+stage deletion above; the A5 header is stated evidence, and this DECISIONS
+entry is its record.
+## Task DEV-767 — the plane layering lint
+
+### T0. The ladder is held against law 4's bytes; the printed law is a transcription
+
+Decided: `scripts/plane-layering.ts` encodes the five planes in order and, as a
+separate arm, reads the ladder back out of the root `AGENTS.md` — the file law 4
+is written down in — and refuses when the two disagree. The law text a violation
+quotes is the transcribed constant, not the text just read. Alternatives: encode
+the ladder and never look at the law (a wall whose authority is one agent's
+memory of a sentence); render every refusal from the freshly read law (an
+editorial pass over the standing laws would then move every committed control
+trace, so a wording change would red the battery as if code had moved); read the
+ladder and skip the comparison (the read would decorate nothing). Why: two
+artifacts, and the one that drifts names itself — a reordered ladder fails on
+"the transcription is stale" rather than as a pile of code findings.
+**Load-bearing? yes** — it is the only thing tying this wall to the law it
+claims to enforce.
+
+### T1. `internal/` is excluded by citation, and the wall states what it therefore does not claim
+
+SUPERSEDED BY T5 — the coordinator ruled the escalation this entry raised, and
+`internal/` is no longer excluded from the ladder. The entry stands as the
+record of the gap and of what the round-one wall did not claim.
+
+Decided: the walk places modules in the five planes law 4 names and excludes
+`src/internal/` on a stated ruling —
+`scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §2, RATIFIED 2026-08-18:
+"`internal/` is exempt: it is private adapters and helpers, importable from any
+layer, never itself importing a public module except its own seam's siblings."
+The wall reads that ruling no wider than its first half. Edges *into*
+`internal/` are lawful from every plane and are counted separately in the PASS
+line; edges *out of* `internal/` are neither judged nor cleared, because "its own
+seam's siblings" has no mechanical reading until someone rules what a seam
+sibling is. Alternatives: give `internal/` a rung on the ladder (inventing the
+placement the spec deliberately withheld); enforce the second half by guessing
+the mapping from an adapter's file name to its public seam (`chaos.ts` alone
+reaches three of them, so the guess would manufacture findings); count
+`internal/`'s outbound edges as clean (the honest gap becomes a green tick).
+Why: an unstated placement silently guessed is the machinery this estate
+deletes, and a wall that overstates its coverage is worse than an absent arm.
+**Load-bearing? yes** — the one open finding `src/carriage/README.md` names that
+this wall does NOT catch, `internal/nats.ts` importing `carriage/FabricClient`,
+sits exactly in the half left unread.
+
+### T2. Placement is evidenced twice: the directory and the module's own `Plane:` tag
+
+Decided: every module's plane is read from the directory it sits in (the reorg
+spec's "Directory = plane") *and* from the `Plane:` tag its header declares, and
+a disagreement is a violation. `src/index.ts` is the one module at the root of
+`src/`, placed on the surface plane by `src/surface/README.md` ("Two files wear
+this plane — `cli.ts` ... and `../index.ts`, the curated barrel that *is* the
+public surface"). Any other root-level module, and any directory that is neither
+a plane nor a stated exclusion, is refused rather than skipped. Alternatives:
+trust the directory alone (a file dragged between planes leaves a header
+asserting the old one, and the header is what a reader believes); trust the tag
+alone (then placement is whatever a module claims for itself); skip files the
+roster does not recognise (a sixth plane could enter the tree by going
+unmentioned). Why: two readings that must agree, and a roster with no silent
+skip. **Load-bearing? yes** — it is what makes the walk's placements evidence
+rather than assumption.
+
+### T3. Delivered wired but ungated, because the tree is red today
+
+Decided: `check:layering` and `check:layering-control` are declared in
+`package.json`; only the control joins `test:types`. The positive arm stays out
+of the battery until the operator disposes of the two violations it reports on
+this tip (`src/kernel/KernelProgram.ts:62` importing `../carriage/CasDaemon.js`,
+and `src/internal/permissions.ts` carrying no `Plane:` tag). Alternatives: gate
+the battery now (every unrelated seat inherits a red `bun run gates` for a
+finding none of them made, and the pressure to soften the lint arrives with it);
+ship nothing until the findings are repaired (the seat that repairs them would
+be repairing before reporting, which destroys the finding); add a waiver for the
+two edges (a wall that ships with its first two exceptions already carved is not
+a wall). Why: findings before fixes — the lint is the evidence, and gating is
+one line of `package.json` on the day the disposition lands. **Load-bearing?
+yes** — this is the difference between a reported finding and a repaired one.
+
+### T4. The control plants both edge forms into a shipped module's bytes, at fixed lines
+
+Decided: `negative-controls/PlaneLayering.shallower-import.mutant.ts` reads the
+shipped bytes of `src/truth/Canonical.ts`, checks them clean under the
+production law first, then prepends two planted imports — one value, one
+`import type` — and runs the same production readers and the same production law
+over the planted source. The plants lead the file so the lines the refusal names
+are 1 and 2 whatever the victim's own body does; the declared-plane read is
+taken from the unplanted bytes, which the plants do not touch. The trace is
+recorded by executing the mutant (`bun run generate:layering-control`).
+Alternatives: hand a helper a constructed import graph (proves a comparison
+function can return false, and nothing about what the wall parses); plant into a
+synthetic module (the reader would no longer be reading a shipped artifact);
+plant only the value import (the type-only branch carries the real finding on
+this tip and would ship unproved); insert after the header so the plant reads
+naturally (pins a line number that moves whenever the victim's prose does). Why:
+the only difference between this run and a clean one is the two planted lines,
+and both forms of the edge the law refuses are exercised. **Load-bearing? yes** —
+a lint nobody has watched fail proves nothing, and `src/carriage/README.md`
+records that the edges this wall exists for are type-only.
+
+AMENDED BY T7 — the control now carries seven arms, and each arm declares
+whether it plants imports or a header so the tag readers and the import reader
+are each pointed at the bytes that arm actually moved.
+
+### T5. Internal modules are plane members housed in a flat directory
+
+Decided (coordinator ruling, 2026-08-18, on the G1 escalation T1 raised;
+operator delegated the decision in session): `src/internal/` stays flat, and
+every module in it declares a `Seam: <plane>` tag in its header, exactly
+parallel to the `Plane:` tag the plane modules carry. For the layering law that
+tag IS the module's plane — outbound, an internal module may import public
+modules only of its seam plane or deeper; inbound, anything may import it only
+from that seam's rank or shallower; internal-to-internal edges compare the two
+seams. The reorg spec's "importable from any layer" clause is superseded, and
+its "its own seam's siblings" phrase now has the mechanical reading it lacked:
+the public modules of its seam plane.
+
+In the lint this collapses to one inequality — for every edge, the target's
+plane must be at or deeper than the source's, with a seamed module ranked by its
+tag. Alternatives: keep the exemption (it is a laundering channel — a kernel
+module importing an internal adapter that itself reaches carriage arrives at
+carriage through the private bag, and no arm sees it); mirror the plane
+directories inside `internal/` (moves fifteen files and re-opens every import
+path for a fact a header line already carries); leave the second half of the
+clause unenforced (the honest gap T1 reported, now closed). Why: the flat layout
+the reorg ratified is a housing decision, and membership is a law — writing the
+membership down per module lets both be true at once. **Load-bearing? yes** — it
+is what lets one rule judge both directions, and it turns the round-one gap into
+a wall.
+
+### T6. Each seam is the deepest one its imports allow, unless the module's purpose is shallower
+
+Decided: an internal module's seam is the deepest plane consistent with its
+outbound imports — the tightest bound its own edges force — except where the
+module's documented purpose names a shallower home. Fifteen assignments, each
+justified by what the module already imports:
+
+| Module | Seam | Why |
+| --- | --- | --- |
+| `cas.ts` | truth | the one lattice write loop; reaches `truth/Refusal` only |
+| `digests.ts` | truth | SHA-256 over canonical bytes; reaches `truth/Digest` only |
+| `refusals.ts` | truth | the schema-issue bridge; reaches `truth/Refusal` only |
+| `transport.ts` | truth | the NATS error classifier; reaches `truth/Refusal` only |
+| `anchors.ts` | planes | the anchor KV adapter; reaches `planes/Anchor`, `planes/Fold` |
+| `cells.ts` | planes | the cell KV adapter; reaches `planes/Cell` |
+| `chaos.ts` | planes | chaos arms over declared folds; reaches `planes/Anchor`, `planes/Fold` |
+| `folds.ts` | planes | durable fold deployment; reaches `planes/Fold` |
+| `lanes.ts` | planes | lane streams and emission; reaches `planes/Lane` |
+| `pump.ts` | planes | the positioned pump; reaches `planes/{Anchor,Fold,Lane}` |
+| `registers.ts` | planes | the register KV adapter; reaches `planes/Register` |
+| `sessions.ts` | planes | read-plane session reads; reaches `planes/Session` |
+| `successors.ts` | planes | the successor discipline; reaches `planes/Anchor` |
+| `nats.ts` | carriage | connection and message-pump types; reaches `carriage/FabricClient` |
+| `permissions.ts` | carriage | THE EXCEPTION — its imports reach only `planes/*`, but what it declares is a connection's authority at the broker; the bucket names it reads are the subjects it grants, not state it carries |
+
+`permissions.ts` additionally gained the module header it never had: it arrived
+after the reorg's tagging pass, which is why the round-one wall reported it as
+half its placement evidence missing. Alternatives: seam every adapter to the
+plane it is named after (`chaos.ts` is named after no plane and reaches three);
+seam everything to `planes` (four adapters that never touch a carrier would
+carry a rank they do not need, and the inbound rule would loosen for all of
+them); let `permissions.ts` take `planes` from its imports (a permissions map is
+a carriage concern wearing a planes rank, and the next carriage-only import
+would silently look lawful). Why: the tightest rank each module's own edges
+force is the one that keeps the inbound rule sharpest, and a documented purpose
+outranks an incidental import list. **Load-bearing? yes** — these fifteen tags
+are what the inbound and outbound rules are evaluated against.
+
+### T7. Truth's internal edges are pinned, and the pin is a reviewed file
+
+Decided (operator amendment to the T5 ruling): a truth-plane edge into
+`internal/` is tolerated where necessary and NOT encouraged, and the
+discouragement is mechanical —
+`test/fixtures/truth-internal-edges.pin.txt` lists every such edge with the
+reason the material has not been folded into `truth/` proper, and an edge absent
+from the pin is refused even when both seam ranks are lawful. Nothing generates
+the pin and no generator reads it, so the only way to add an edge is a diff a
+reviewer reads. A row that outlives its edge is refused too: a pin nobody is
+reading any more is a standing licence. One row stands today —
+`truth/Refusal.ts → internal/refusals.ts`, the schema-issue bridge that owns the
+Effect Schema types the seam exists to keep off the public surface.
+
+The control grew to seven arms accordingly: the two round-one plane edges, an
+internal module reaching above its seam, a deep module reaching a
+shallow-seamed internal (the laundering channel), a truth edge whose ranks are
+lawful but which the pin does not carry, a missing seam tag, a seam tag on a
+plane module, and a pinned row whose edge is gone. Each arm declares whether it
+plants imports or a header, so the tag readers and the import reader are each
+pointed at the bytes that arm moved — which is also what keeps the planted line
+numbers at 1 and 2 whatever the victims' prose does. Alternatives: let the seam
+ranks alone license truth's edges (correct by rank, but "tolerated" and
+"encouraged" would then look identical to the wall); forbid truth → internal
+outright (the schema-issue bridge has no other home today, so the wall would
+ship red on a law nobody has a repair for); keep the roster in a comment
+(a comment is not an artifact a check can read). Why: the reviewed diff is what
+"not encouraged" means when a machine has to enforce it. **Load-bearing? yes** —
+without the pin the deepest plane's exception is invisible the moment it grows.
+## Task DEV-763 — the one admission door
+
+### T0. The model-generated language is the contract; a runtime digest is not an identity conversion
+
+**SUPERSEDED in part by ruling A1** (2026-08-19, board DEV-772), recorded under
+`Task DEV-763/796 stage 4` below: one guarded seam, `kernel/KernelIdentity.ts`,
+does read a runtime content address as a model identity label. The clause that
+fell is "no function converts it into a model label"; the clause that stands is
+that the door never consults a digest and nothing derives a model label from one
+on the judgment path. Restored here because A1 supersedes it, and a supersession
+whose antecedent is missing from the record is not a record.
+
+Decided: `KernelDoor` derives candidate, context, and intrinsic-act types from
+`KernelSchemas.generated.ts` and preserves the model's `bigint` identity labels
+through admission and encoding. A runtime hex digest may ride beside a caller's
+value, but no function converts it into a model label and the door never consults
+it. Alternatives: hand-write a number-shaped candidate twin (a second type
+universe, already demonstrated to drift); derive labels from hex digests (two
+different identity scales made falsely interchangeable). Why: the formal model
+already emits the literal kernel-language shapes; the trusted-base statement
+that real identities are hashes of canonical bytes is evidence about the
+runtime, not a missing field in the model algebra. **Load-bearing? yes** — this
+is the ruling that unblocks both the door and the CLI projection.
+
+### T1. Context is explicit until the catalog owns its assembly
+
+Decided: the pure seam is `admit(context, candidate)`, with `make(context)` as a
+context-bound view. The catalog/pinned-universe value is generated too, but this
+ticket does not invent an ambient source for it; the durable catalog slice can
+assemble and pass that value when it lands. Alternatives: wait for the catalog
+ticket (leaves every host blocked despite a complete judgment contract); read a
+global catalog from the kernel (inverts the plane stack and hides an Effectful
+dependency inside a pure law function). Why: context assembly and candidate
+judgment are separate responsibilities, and an explicit parameter preserves
+that boundary without weakening either. **Load-bearing? yes** — it is how this
+slice proceeds without pretending the catalog already ships.
+
+### T2. Hosts alias the function; they do not wrap or inject it
+
+Decided: CLI, `FabricClient`, and `CasDaemon` expose the exact
+`KernelDoor.admit` function object. The control asserts reference identity for
+all three and kills an invented host function. Alternatives: thin wrappers
+(semantically innocent today, but a place for host-specific validation to grow);
+injectable service methods (fixtures could replace the judgment and erase the
+one-door guarantee). Why: carriage and surface contribute no semantics, so the
+strongest and simplest representation is literal identity. **Load-bearing?
+yes** — this is the executable no-bypass control.
+
+### T3. A verdict carries the intrinsic act or the complete taught refusal
+
+Decided: admission success returns the generated intrinsic act and its canonical
+model encoding; refusal flattens the generated table row beside
+`verdict: "refused"`, preserving reason, law, repair, and applicability at every
+host. Alternatives: return encoding only (throws away the very act the door
+constructs); return reason only and require host lookups (permits parity to
+depend on the host); nest a second refusal object (adds a vocabulary shape the
+model table does not need). Why: the door is the sole constructor of intrinsic
+acts and the refusal table is already the single taught vocabulary.
+**Load-bearing? yes** — both acceptance halves are observable in one value.
+
+### T4. The door is a named public namespace, barrel and subpath both
+
+Decided: `KernelDoor` joins the root barrel and the `./KernelDoor` subpath in
+this ticket. (It was the eighteenth namespace when this was written; the count has
+moved since and the ordinal is not the decision.) It is pure, so the public Effect manifest remains byte-stable even
+though the namespace is new; the host-route suite asserts the barrel names the
+same function. Alternatives: leave the door reachable only by internal deep
+import (DEV-786 could not consume the ruled seam as package API); export the
+generated schema module wholesale (widens the surface from one concept to an
+emitter's file layout). Why: a public admission seam must be nameable, while the
+deep module should keep the generated family behind its candidate/act/context
+projections. **Load-bearing? yes** — it records that the surface change is the
+ticket's decision, not accidental barrel churn.
+
+### T5. The corpus is not the whole wall: absence gets its own control
+
+Decided: one control decodes a lawful `resolveDigest` whose anchor is absent
+through the generated codec, admits it at the shipping door, and pins the
+resulting sentence against the corpus's own `resolve-schema` vector.
+Alternatives: trust the seventeen replayed vectors (they carry the anchored
+resolve that must be refused and no bare one that must be admitted, so a door
+reading absence as `null` passes all seventeen while refusing a lawful
+sentence — measured, not hypothesised: planting `!== null` leaves the replay
+green and kills only this row); add a vector to the corpus (the corpus is
+emitted by executing the model, so a runtime gap is not a reason to hand-write
+into it). Why: the emitted vectors are the model's claims about the language,
+and this control is the runtime's claim about the *spelling* the generated
+schema hands it — `Schema.UndefinedOr` is the model's `none`, so absence
+compares against `undefined` and nothing else. **Load-bearing? yes** — it is
+the only row that fails when a door and its generated schema disagree about
+how absence is written.
+
+### T6. No service wraps the door in this slice
+
+Decided: hosts hold the `admit` function object itself; no Effect service, tag,
+or layer stands between a caller and judgment. Alternatives: an `Admission`
+service with a layer per context (it makes the door injectable, which is a
+bypass surface the identity control can no longer close, and it was tried and
+reverted on this ticket); a per-host wrapper (a place for host-specific
+validation to grow). Why: `admit` is pure and total — it needs no environment,
+so a service would buy substitutability the no-bypass law exists to deny. A
+Layer seam, if a later slice wants one, wraps this generated door.
+**Load-bearing? yes** — it records that the missing service is a decision, and
+what a future one may and may not wrap.
+
+## Task DEV-763/796 stage 4 — the one-door containment wall
+
+### T0. The shared candidate form is read out of the door's bytes, and its ancestry is checked first
+
+Decided: `check:kernel-door` reads the door module's *source bytes* through the
+TypeScript AST for the form it claims — which generated symbol each of the
+candidate, intrinsic-act, and admission-context bindings names, and which
+`Kernel*` type names it exports — and requires every one of those symbols to be
+a name the generated schema module's own bytes emit. That clause runs before
+any other module is swept. Alternatives: import `KernelDoor` and read the
+schemas off the values (the generated value would only be asked to agree with
+itself, verified-codegen's self-comparison failure); hard-code the three
+generated symbol names in the checker (a hand-maintained twin of the thing the
+wall exists to keep generated); sweep the hosts and never check the door (a
+sweep held against a drifted door guards nothing — a door whose `Candidate`
+stopped naming a generated symbol would leave every host lawfully consuming a
+hand-written form). Why: the ratified stage-4 target is "consume the shared
+generated-core candidate form through KernelDoor", so the wall has to establish
+that the door's form IS the generated one before it can hold anything to it.
+**Load-bearing? yes** — the `door-form-drift` control arm plants exactly this
+and is refused before the module clauses are reached.
+
+### T1. The sweep quantifies over every `admit` route, exported or not, and the exception rides a reviewed pin
+
+Decided: the route clause reads every binding, class member, object property,
+property signature, method, and function under `src/` named `admit` — not only
+the exported ones — and requires each to BE the door's imported function: a
+bare identifier bound by `import { admit } from ".../KernelDoor.js"`, or
+`<namespace>.admit`, or a signature typed `typeof <that binding>`. A module
+that names a route the door does not own is written into
+`test/fixtures/kernel-door-routes.pin.txt` by hand with the ticket that owns
+its convergence, and a pin row that stops naming a real route reds the wall.
+Measured: the tree carries exactly one such route, `src/planes/Address.ts`'s
+petname name law, which accepts no candidate, constructs no verdict, and mints
+`invalid-petname` — a spelling that module's own header already stages as
+DEV-796 debt beside `Binding` and `Directory`. Alternatives: quantify over
+exported routes only (a private validator called by an exported function is the
+exact shape standing law 2 names, and it would pass); refuse `Address.ts`
+outright and ship the wall red (an overclaim — law 2 is about kernel candidate
+admission, and this function judges a name against a regular expression);
+special-case `Address.ts` inside the checker (a waiver nobody reviews, buried
+in mechanics). Why: the pin is nothing's input, so an exception costs a diff a
+reviewer reads, and the liveness clause stops the roster outliving what it
+waives. **Load-bearing? yes** — narrowing the quantifier to exported bindings
+was measured to admit the wrapper the control plants.
+
+### T2. Four spellings of a second door, and two exemptions stated rather than assumed
+
+Decided: the module sweep refuses four shapes — an admission verdict
+constructed or declared outside the door (an object property `verdict` whose
+initializer is a string literal, or a type member `verdict` whose type is a
+string literal); an `admit` route that is not the door's own function; a
+hand-written declaration of a name in the door's `Kernel*` form vocabulary; and
+a use of one of those names that no import from the door or the generated
+schema module bound. Two exemptions: the `*.generated.ts` projections, whose
+bytes are the model's and carry the corpus's own admission examples, and whose
+regeneration is byte-gated by `check:kernel-schemas` and `check:kernel-tables`;
+and `test/` with `negative-controls/`, because a control that plants a second
+door has to be able to spell one. Alternatives: refuse any `verdict` field
+whatever its initializer (`KernelCorpusSchemas.ts` describes the field with
+`Schema.Literal("refused")` — a grammar that describes a verdict is not a door
+that mints one, and refusing it would red the wall on the corpus schema);
+structurally compare each declared type against the generated candidate union
+(fragile, and it answers a question the type-universe walk already owns);
+sweep `test/` too (it would refuse `KernelDoor.routes.test.ts`'s own identity
+control). Why: the four shapes are the four ways a second door can be written
+down in source, and each is refused by its own clause so a red wall names which
+one moved. **Load-bearing? yes** — each clause has a planted arm, and dropping
+the route clause was measured to leave the other six green.
+
+### T3. The control plants one spelling per clause, at synthetic module paths
+
+Decided: `negative-controls/KernelDoor.second-door.mutant.ts` builds seven
+evidence sets from the shipped bytes — the real generated roster, the real door
+form, real swept modules — and plants exactly one thing in each, then runs the
+production readers and the production law over them. The planted modules carry
+paths this file owns rather than the package's, and each avoids every clause
+but its own, since the clauses are ordered and an arm that tripped two would
+answer with whichever came first. The trace is recorded by executing the mutant
+(`bun run generate:kernel-door-control`), never transcribed. Alternatives:
+splice the plant into a shipped module's real bytes (the committed trace would
+then carry that module's line numbers and "move" on every unrelated edit above
+the site — a control reporting a moved law when a comment was added); plant one
+mutant that trips several clauses (it answers with the first clause and can no
+longer name the law it drops — the shape DEV-796's control was refused for);
+assert the refusal strings in a test (a deleted assertion is invisible). Why: a
+negative control asks one question, and seven single-clause arms answer seven.
+**Load-bearing? yes** — dropping the route clause was measured to make the
+control report `the wrapper-route plant was accepted` rather than a trace diff.
+
+### T4. The wall states what can be SPELLED, and says what it does not cover
+
+Decided: this wall reads source bytes, so its claim is about `src/` as written
+and never about a running program. Runtime identity of the three host routes
+stays `test/KernelDoor.routes.test.ts`, agreement with the model's verdicts
+stays `test/KernelConformance.test.ts`, and a route reached only through an
+object spread is invisible to the sweep and is the runtime test's to hold.
+Alternatives: import the modules and compare function identity in the check
+(that is the routes test, already shipped, and a second copy would be the twin
+this estate refuses); claim the wall proves no second door exists anywhere
+(false — a spread, a dynamic import, or a `test/` fixture is outside it). Why:
+a claim is sized to its evidence, and the bound belongs in the module header
+where the next reader meets it rather than in a ticket nobody re-reads.
+**Load-bearing? yes** — the pair of walls is what makes standing law 2's wall
+mechanical; either alone leaves a hole the other closes.
+
+### T5. The guard's domain is the runtime's, because the corpus deliberately has none
+
+Decided (ruling A1, 2026-08-19, board DEV-772): `kernel/KernelIdentity.ts`
+holds `kernelIdentity`, and its width-and-alphabet guard is `truth/Digest.ts`'s
+own schema run through `Refusal.decodeRefusing` — not a `/^[0-9a-f]{64}$/`
+restated in the kernel plane. The ruling asked for the width to be read from
+the generated schema rather than assumed. **Measured: there is none to read.**
+The generated `KernelDigest` is `Schema.Struct({ id: KernelNat })`, and its own
+emitted description says a real digest "is a hash over one canonical byte form"
+that "stays in the trusted base" — the model models identity labels and says
+nothing about hexadecimal, deliberately. So the only statement of the runtime
+digest domain in this package is `truth/Digest.ts:14-15`, and the guard
+inherits it rather than twinning it. Alternatives: hard-code 64 lowercase hex
+in the kernel plane (a second statement of a domain that already has one, and
+the exact hand-written twin Law 1 refuses — it would also silently disagree the
+day the domain moves); derive a width from `KernelNat` (the model's naturals
+are unbounded, so there is no width there to derive); assume the ruling's "64"
+literally and stop reading (it would have been right today and unfounded
+tomorrow). Why: the ruling's intent is that the guard not invent its domain,
+and the honest way to satisfy that here is to inherit the one domain statement
+that exists and to write down that the generated one does not. **Load-bearing?
+yes** — this is the difference between a guard that tracks the digest domain
+and one that agrees with it by coincidence.
+
+### T6. The guard reuses `malformed-value` and mints no vocabulary at all
+
+Decided: the guard refuses through the existing schema-issue bridge, so its
+refusal is `malformed-value` — kind, law, and repair already taught and already
+pinned in `test/RefusalPayloads.taught.txt`. Nothing is added to
+`scripts/kernel-runtime-refusals.ts`, nothing is regenerated, and no model
+refusal reason is minted. The ruling licensed the staged runtime-refusal
+mechanism as a fallback "if no emitted reason fits"; measured, the fallback is
+not needed, because the bridge that mechanism feeds already carries this exact
+meaning: `decodeRefusing(Digest)("")` refuses `malformed-value` teaching "A
+decoded value satisfies its declared schema", which is precisely the law a
+malformed content address fails. Alternatives: mint `malformed-digest` as a new
+DEV-804 staged row (grows the roster, the taught-payload pin, and both
+generated files, to say what an existing spelling already says — and every
+runtime spelling added is persisted wire vocabulary that DEV-804 must later
+converge); reach for a model reason (forbidden by the ruling, and none of the
+sixteen means "this text is not an address"). Why: the cheapest lawful refusal
+is an existing one that is already true, and the ruling's constraint was about
+not minting MODEL vocabulary — honoring it by minting no vocabulary at all
+honors it strictly. **Load-bearing? yes** — a reviewer overruling this pays one
+line in the seam plus a manifest row, and the wall does not change either way.
+*Note for the coordinator: this is the one place I read the ruling's fallback
+as permission rather than instruction.*
+
+### T7. Ruling A1's clauses are four, and the second site is pinned rather than refused
+
+Decided: the wall gains four clauses — the seam's conversions all sit behind the
+domain guard; the seam contains no `throw`; no unpinned module under `src/`
+reads digest bytes as an unbounded natural; and the identity pin names only live
+sites. An identity translation is defined as a `BigInt(...)` call over a
+hex-prefixed argument. Measured, the tree already carries a SECOND such site:
+`Lane.partition` computes `Number(BigInt(\`0x${keyDigest}\`) % BigInt(lane.partitions))`.
+It is not refused, and it is not silently exempted either — it gets a pin row
+saying what it is. It reduces an ALREADY-BRANDED `Digest` to a shard index; the
+result is a routing coordinate that reaches no candidate and names no
+declaration, and the package's own law already governs it ("subjects route and
+envelopes identify"). Alternatives: refuse it and ship the wall red (an
+overclaim — the ruling refuses a second translation into IDENTITY LABELS, and a
+partition index is not one); exempt it inside the checker (a waiver nobody
+reviews, buried in mechanics — the shape T1 already rejected for `Address.ts`);
+widen the rule to `Number.parseInt(_, 16)` as well (it would catch the JSON
+`\uXXXX` unescape in `truth/Canonical.ts`, which cannot carry a 256-bit address
+because it yields a `number` — the bound is stated in the pin instead of
+discovered as noise). Why: a wall that cannot see a site cannot be trusted about
+it, and the pin is where "seen and lawful" is written down separately from
+"seen and refused". **Load-bearing? yes** — the pin's liveness clause means the
+day `Lane.partition` stops converting, the row reds rather than rotting.
+
+### T8. The seam is a subpath export and stays out of the barrel
+
+Decided: `package.json` gains `"./KernelIdentity"` so the module's own example
+is truthful, and `src/index.ts` is NOT touched. The plane-reorg spec's open
+placement 4 rules that "Exporting Kernel* namespaces from index.ts: a real
+surface decision with T7 consequences; stage 3+, its own ticket, not assumed",
+and this ticket has no licence to make it. Measured: the public type quantifier
+is the emitted barrel, so the subpath export moves neither walk — 132 public
+types and 79 emitted signatures before and after. Alternatives: add
+`export * as KernelIdentity` to the barrel (assumes the placement decision the
+spec reserves, and grows the DEV-795 debt ledger with rows nobody ratified);
+ship no export at all (the module docstring's `@example` would name an import
+path that does not resolve, which is a doc that lies). Why: hosts inside the
+package reach the seam directly, which is what "hosts become judgable" needs,
+and the barrel decision stays where the spec put it. **Load-bearing? no** — it
+is reversible in one line, and it is recorded so the reviewer sees it was a
+choice.
+## Task DEV-820 — wall isolation under parallel real-NATS load
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. The board ticket's
+body is the whole scope: diagnose why the 4x parallel wall group flaked under
+load (OrderedConsumerSemantics, FoldChaos, ChaosCli, a different one each run)
+and fix the HARNESS, not test semantics.
+
+### T0. Load-scale the wall-group fetch bounds to a loaded machine, not an idle one
+
+Decided: waitForPorts (200x25ms = 5s nominal) and waitForFile (400x25ms =
+10s nominal) in 	est/NatsHarness.ts, plus FoldChaos' own waitForPumpFile
+(400x25ms), are raised to 2400x25 = 60s nominal. The mechanism is named and
+measured, not assumed: under deliberate CPU load on this 16-logical-core host an
+idle nats-server starts in 76-130ms (p50 97ms), but with 8 burners one server
+sampled {1236, 2318, 2540, 3559, **20479**} ms — a worst case over 150x the idle
+ceiling and past the old 5s bound, which threw 
+ats-server did not write its
+ports file within 5 seconds and reddened whichever wall file was starting its
+server at that moment (reproduced directly under load). Each Bun.sleep(25) in
+the poll loop also overruns under saturation (it measures 25ms of timer, not
+25ms of wall), stretching the nominal bound further. 60s is a bounded ceiling
+that still fails loudly on a genuinely broken launcher or an absent child
+result file. Alternatives: leave the idle-sized bounds (the flake); bound by
+heartbeat rather than by file (does not cover child-process results). Why: the
+startup-and-result-file latency is the one harness-owned resource the walls
+rely on, and the old numbers were sized against an unloaded reviewer machine.
+**Load-bearing? yes** — a genuinely stuck launcher must still redden the wall,
+which the 60s ceiling keeps true.
+
+### T1. ChaosCli's six-field wall gets an explicit bound instead of bun's 5s default
+
+Decided: the "refuses an unpinned head and a module without a fold in six
+fields" test, which spawns three bun CLI processes sequentially and asserts
+only exit=2 plus the six refusal fields (it makes no timing claim), is given
+the sibling chaos walls' 120000ms bound instead of inheriting bun's default
+5000ms per-test timeout. Under the wall group's parallel real-NATS load the
+three sequential CLI spawns exceeded 5s and the loader reddened the test as
+	his test timed out after 5000ms with no assertion false (observed directly).
+Alternatives: split the three CLI runs across separate faster tests (changes
+the wall's shape); shrink the CLI's cold-start (production change, outside
+scope). Why: the flake is a loader-default false trip over a test that never
+timed anything, and it is a wall-group robustness fix, not a semantic one.
+**Load-bearing? no** — the assertion set is unchanged; only the loader bound
+that was silently 5s is made explicit and sized.
+
+### T2. The no-responders wall is re-scoped off a schedule-dependent client transient
+
+Decided: the "direct consumer deletion enters a no-responders repull loop
+before heartbeat recovery" test no longer REQUIRES a consumer_deleted
+notification; it asserts the load-bearing properties — exactly three
+
+o_responders (the repull loop), zero heartbeats_missed (ahead of heartbeat
+recovery), zero ordered_consumer_recreated — and records
+consumer-deleted=<n> in its trace. Mechanism, evidenced: consumer_deleted
+is a bimodal transient of the pinned @nats-io/jetstream@3.4.0 client. It is
+only emitted when a pull races the consumer delete's teardown and returns the
+409; a repull that lands after teardown gets a 503 
+o_responders and the
+client emits consumer_deleted NEVER (it keeps repulling — the 503s are
+responses, so the heartbeat monitor with maxOut:2 never fires, so
+
+esetPending/info-refresh and its 409 never run). Reproduced ~50% in the 4x
+wall group before the change; a trace with consumer-deleted=0 still passed
+after, documenting the repull the test is named for. The obsolete assertion
+made the wall flake with nothing false — exactly the "a wall nobody trusts"
+outcome DEV-820 is about — and the Windows one-flake observation (~line 421)
+is the same transient landing the other way on the next run. Alternatives:
+wait longer for the 409 (regime-B schedules never emit it, so any window still
+fails or hangs); raise idle_heartbeat (does not create a 409; only widens the
+heartbeat window); gate on both it and no_responders (makes the assertion
+vacuous then hangs). Why: the wall's own finding is consume-repulls-deleted-name;
+the transient was never the claim. The no-responder CASE is still exercised
+unchanged (delete the consumer, observe the repull loop ahead of heartbeat
+recovery) — this re-scopes to the stable, documented behavior. **Load-bearing?
+yes** — the wall's claim is the repull loop ahead of heartbeat recovery, and
+that is what is asserted; a future client that heartbeat-recovers instead
+(emitting heartbeats_missed) or stops repulling still reddens it.
+## Task DEV-786 — the CLI is @effect/cli
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. The board ticket's
+scope: rewrite `surface/cli.ts` on the official Effect CLI with Effect-4
+semantics throughout, retire the hand-rolled parser, and render refusals from
+the taught vocabulary instead of the six-field rival the CLI hand-assembled.
+
+### T0. The dependency law grows by ONE package, and it is not `@effect/cli`
+
+Decided: `packages/plait/package.json` gains `@effect/platform-bun` at
+`catalog:` — and nothing else. The ticket commissioned adding `@effect/cli`
+plus its `@effect/printer` and `@effect/printer-ansi` dependencies, and that
+addition was not made, because the premise does not hold on this release line:
+the published `@effect/cli` tops out at `0.77.0`, whose peers are
+`effect@^3.22.1` and `@effect/platform@^0.97.1` — the Effect **v3** line. The
+workspace catalog pins `effect@4.0.0-rc.108`, and on v4 the CLI is **in-tree**:
+`effect/unstable/cli` ships `Command`, `Flag`, `Argument`, `Param`, `Primitive`,
+`Prompt`, `CliConfig`, `CliError`, `CliOutput`, `HelpDoc`, `GlobalFlag`, and
+`Completions` inside the catalog-pinned release the package already depends on.
+So the official CLI package arrives at zero cost to the closed list. What the
+tree genuinely lacked is the CLI's `Environment` — `FileSystem`, `Path`,
+`Terminal`, `Stdio`, `ChildProcessSpawner` — for which `effect` core ships only
+`layerNoop`/`layerTest` fakes; `BunServices.layer` provides all five (plus
+`Crypto`) for the real process. Alternatives: hand-write the five service layers
+from core primitives (the exact hand-rolling of a shipped primitive that law 6
+and this whole ticket refuse); pull `@effect/cli@0.77.0` and downgrade the
+workspace to Effect v3 (a catalog rollback nobody ruled, to get a worse
+version of a module already present); ship the CLI against `layerTest` fakes (a
+CLI that cannot read its own argv). Why: the estate's dependency law names a
+closed list, and the cheapest lawful growth is the growth that is actually
+needed. `@effect/platform-bun` is the same Effect release at the same catalog
+pin, so the list grows by one sibling of a member rather than by a family.
+**Load-bearing? yes** — `AGENTS.md`'s runtime-dependency clause is amended to
+name it, so a reviewer sees the addition as a diff rather than inferring it.
+
+### T1. Effect's abstractions carry the algebra, rather than the algebra being rebuilt in Effect
+
+Decided: of the two lawful framings the operator named, this file takes
+"Effect abstractions as the algebra's carrier". A `Command` tree is already a
+declarative structure a parser interprets; `Schema` is already a decode algebra;
+`Layer` is already the wiring algebra; the `Refusal` union is already a sum with
+one total interpretation. So the estate's algebra is expressed by CHOOSING those
+carriers rather than by re-deriving them: the command tree is data, decoded by
+`Flag.withSchema(Digest)` — truth's own schema, so the CLI states no width and
+no alphabet — and refusals are rendered by encoding the value through its own
+schema. The file is laid out in the three movements that follow from this
+(vocabulary, declaration, interpretation) and says so in its header.
+Alternatives: express the estate's algebra with Effect semantics but a bespoke
+parameter model (a second grammar beside the library's — the hand-rolled twin
+the ticket exists to kill); the middle course of a thin library wrapper with
+estate-shaped helpers around it (neither algebra legible, which the operator
+named as the failure mode to avoid). Why: the surface's job is to be a
+projection, and the library's own combinators are the projection's carrier.
+**Load-bearing? yes** — it is why a future generator verb is a `Command` value
+added to `withSubcommands` and nothing else moves.
+
+### T2. The six-field rival rendering dies onto the schema-encoded taught value
+
+Decided: `printRefusal`'s hand-assembled
+`{kind, sort, law, path, got, expected, next}` object is deleted. `renderRefusal`
+encodes the refusal through the `Refusal` schema union and then through the
+package's one RFC 8785 canonicalizer, so what reaches stderr is the taught value
+itself, in the estate's canonical bytes, key order and all. Measured
+consequence: the rendered payload gains `_tag` — eight keys, not seven — because
+a `Schema.TaggedError` carries its tag and the hand-written field list could not.
+That is the DEV-804 staged rival retiring, and it is what moved
+`negative-controls/Fold.cli-refusal.trace.txt` from `component=six-field-refusal`
+to `component=taught-refusal-rendering`. `test/RefusalPayloads.taught.txt` moved
+by exactly two lines: `surface/cli.ts#0`, the `chaosRefusal` minting site, is
+byte-identical — no taught text moved — and `#1` changed from the rival's
+`expected <expression> / next <expression>` to the new total function's
+`expected <absent> / next <absent>`, which is the fallback literal that keeps
+rendering total when a payload will not canonicalize. `test/RefusalNext.test.ts`
+stopped decoding the CLI's stderr through a hand-written `CliStructuralRefusal`
+struct and now decodes through the shipped `StructuralRefusal` schema, because a
+twin on the reading side is the same defect as a twin on the writing side.
+Alternatives: keep the seven-key shape by hand-listing fields after encoding
+(the rival, restated); render with `JSON.stringify` and skip canonicalization
+(two byte forms for one value, and the package has a law against the second).
+Why: "errors reach the terminal AS the taught vocabulary" is satisfiable only by
+rendering the value, and a rendering that names its own fields is a second
+schema. **Load-bearing? yes** — adding a field to `StructuralRefusal` now
+reaches the terminal without editing the CLI.
+
+### T3. The parser owns syntax; the taught vocabulary owns law
+
+Decided: a malformed invocation — unknown flag, unknown subcommand, bad choice,
+malformed digest — is refused by the library's parser and rendered with the
+command's own help, and the CLI adds no word to it. A well-formed invocation
+that violates the estate's law — no fold selector, two fold selectors, an
+unpinned span, two head selectors, `--repeat > 1` with the kill arm, a lane that
+disagrees with the fold — is a `StructuralRefusal` carrying `invalid-chaos-request`.
+`negative-controls/Fold.cli-usage.trace.txt` is the new control arm pinning the
+first half, including the assertion that `StructuralRefusal` is ABSENT from a
+usage error's stderr — the shape that reddens if a hand-rolled parser grows back.
+Two consequences recorded rather than discovered: (1) `plait not-chaos` is no
+longer this package's refusal, so `RefusalNext`'s collection of the
+`invalid-chaos-request` kind moved to `plait chaos` with no arguments; (2)
+judgment order changed — `--fold <digest>` is now refused as uncataloged before
+the span is examined, where the old parser checked the span first. Both orders
+refuse, with the same kind, and the tested paths (`["fold"]`, `["head"]`,
+`["module","fold"]`) are unchanged; the new order answers the more fundamental
+question first. `judgeRequest` RETURNS the admitted run rather than nodding at
+the request, which is why nothing downstream carries a cast. Alternatives: map
+`CliError` into a `StructuralRefusal` so every failure speaks one vocabulary
+(it would re-implement the library's usage rendering — the ticket's central
+refusal — and would mint estate vocabulary for syntax the model never taught);
+keep an `argv[2] === "__pump"` sniff ahead of the parser (the pump is now a
+`Command.unlisted` subcommand, parsed by the same tree, hidden from help and
+completions). Why: the division is what makes the surface a projection — the
+library projects the parameter grammar, the corpus projects the refusal
+vocabulary, and neither is asked to speak for the other. **Load-bearing? yes** —
+the new control fails if either side starts answering for the other.
+
+## Task DEV-780 — the admin surface pinned; two authority-carrier laws named
+
+Task-local placeholders (rule 1): T-numbers restart per task. Spec authority:
+`docs/research/2026-08-13-nats-vendor-corpus-scorecard.md` item 6 — the admin
+surface graded CONFIRMED-and-larger-than-gate — plus the DEV-780 charter
+refresh, which absorbed DEV-783's mirror half into this ticket. ADR-0009 rules
+the roles the two named laws defend. The values below are measurements against
+the pinned nats-server (`v2.14.4`, `test/NatsHarness.ts`), not documentation.
+
+**The measured surface at the pin.** A stream created with only the fields the
+three carriers used to pin comes back carrying nine more: `republish` and
+`subject_transform` absent, `allow_direct` false, `mirror_direct` false,
+`compression` `"none"`, `max_msg_size` -1, `allow_msg_ttl` false, and
+`allow_atomic` / `allow_msg_counter` omitted from the serialization entirely
+when off. A KV bucket's backing stream comes back the same except
+`allow_direct`, which `@nats-io/kv` turns ON at creation and reads through.
+Every one of the nine was settable on a stream these carriers would then open
+and trust.
+
+### T0. Two of the nine fields get their own named laws; the other seven stay shape
+
+Decided: `mirror`/`sources` mint `mirrored-authority-carrier` and
+`allow_msg_ttl` mints `expiring-authority-carrier`; `republish`,
+`subject_transform`, `allow_direct`, `mirror_direct`, `allow_atomic`,
+`allow_msg_counter`, `compression`, and `max_msg_size` widen the three existing
+substrate-shape kinds. The split is by REPAIR, not by field count. A mirrored
+carrier's repair is a different carrier — ADR-0009's replica read plane — and a
+TTL carrier's repair is a fresh stream, because the server refuses to clear
+`allow_msg_ttl` once it is set. Neither repair is "restore the shape", which is
+what every shape kind teaches. Alternatives: one new kind for the mirror only
+and per-message TTL folded into shape (the ticket body rules TTL refused "by
+its law", and the charter refresh names both kinds as this widening's mints);
+a new kind per field (nine kinds whose repair sentence is one sentence, which
+is a vocabulary that has stopped classifying anything). Why: DEV-783's absorbed
+finding is precisely that a real law refused INCIDENTALLY teaches the wrong
+repair — a mirror carries no `subjects`, so the old gates refused it on the
+subjects clause and told the operator to restore subjects a mirror must not
+have. **Load-bearing? yes** — the mirror arm in
+`test/CarrierAdminSurface.test.ts` asserts the KIND, so a regression to the
+incidental refusal reddens rather than passing as "still refused".
+
+### T1. Both new laws are minted once, in one internal module, not once per carrier
+
+Decided: `src/internal/carriers.ts` holds the admin-surface reading and both
+named-law mints; `lanes.ts`, `cells.ts`, and `anchors.ts` call them with a
+`CarrierSite` naming their refusal path and repair subject. The consequence is
+deliberate and visible in the wall: `RefusalPayloads.taught.txt` renders
+`next[0].subject <expression>` for both payloads, because the subject is the
+one parameterized field. Alternatives: mint at each carrier (three copies of
+one law sentence, and the taught-payload wall would then pin three texts that
+must be edited together — the drift the wall exists to catch, installed by
+hand); make the subject a literal shared by all three carriers (pins the fifth
+facet at the cost of telling an operator which seam refused). Why: the role
+rule is ADR-0009's and not any one plane's, so one law has one text; the wall
+still pins kind, law, expected, the repair note, and the repair body, which is
+four of five facets and every sentence an operator reads. **Load-bearing? no** —
+it is a placement decision; the laws would hold either way.
+
+### T2. `allow_direct` is pinned per carrier, and declared at creation rather than inherited
+
+Decided: the lane's evidence stream pins `allow_direct: false` and the two KV
+carriers pin `true`, and each carrier now STATES the value when it creates its
+stream or bucket instead of accepting the client's feature detection. Pinning
+one value for both would refuse a carrier this package itself created: the lane
+reads through consumers, while `@nats-io/kv` turns direct-get on at creation and
+reads through it. Declaring it means a substrate that cannot serve direct reads
+fails loudly at `bucket.ensure` — the client rejects the option by name — rather
+than creating a bucket the very next line refuses as misshaped. At the R=1 this
+package already pins there is no second replica for a direct read to be stale
+against, which is the only hazard the vendor names for the flag. Alternatives:
+pin `false` everywhere (refuses our own buckets); leave it unpinned (the field
+stays in the unchecked set item 6 names). **Load-bearing? yes** — it is the one
+field whose lawful value differs by carrier, so a gate that pinned it uniformly
+would be wrong at two carriers out of three.
+
+### T3. Two pinned fields have no mutation arm, and the reason is pinned instead
+
+Decided: `mirror_direct` at every carrier, and `allow_msg_counter` at the two KV
+carriers, are asserted by the gates but carry no mutated-config control, because
+the pinned server refuses to create either configuration —
+`mirror_direct` without a mirror is answered "stream has no mirror but does have
+mirror direct", and a counter stream over the KV bucket's `discard: new` is
+answered "counter stream cannot use discard new". Rather than drop the
+assertions or fake the arms, the test file pins those two server refusals by
+their exact messages. Alternatives: drop the two assertions (the fields return
+to the unchecked set, and a substrate that later admits them is unwatched);
+weaken the KV base to `discard: old` so a counter arm plants (mutates two fields
+at once, which is exactly what the mutation-arm discipline forbids); assert
+`mirror_direct` only on mirrored streams (the mirror law fires first, so the
+arm would prove nothing about this field). Why: an assertion with no reachable
+control is honest defence in depth as long as its unreachability is itself
+walled — the day either configuration becomes creatable, that test reddens and
+the field owes an arm like every other. **Load-bearing? yes** — without the
+pinned refusal messages the two assertions would be unfalsifiable and
+undocumented, which is the shape of a gate that has quietly stopped checking.
+
+### T4. The KV gates read the backing stream's config, not the KV status projection
+
+Decided: both KV carriers now assert over `status.streamInfo.config`. `KvStatus`
+projects five of the fields this ticket pins and none of the other four — it has
+no reading of `subject_transform`, `allow_direct`, `allow_atomic`, or
+`allow_msg_counter` at all, and its `compression` getter collapses the store
+level to a boolean. Alternatives: assert what `KvStatus` exposes and leave the
+rest unchecked (four of nine fields stay in item 6's unchecked set); read the
+stream through `jetstreamManager` separately (a second round trip for a value
+the status already carries). The five-field checks keep reading the projection,
+so the existing refusal's `got` is unchanged in shape and only gains the admin
+surface. **Load-bearing? yes** — half the widening is unreachable through the
+projection.
+
+### T5. The lawful arm is the control that makes every mutation arm attributable
+
+Decided: `test/CarrierAdminSurface.test.ts` builds the three carriers' backing
+streams by hand — the lane partition stream as `lanes.ts` creates it, the two KV
+backing streams as `@nats-io/kv` 3.4.0 creates them for the options the carriers
+pass — and its first arm requires all three carriers to OPEN on them, with no
+`flip`. Every other arm moves exactly one field off that same base. Alternatives:
+let each carrier create its own stream and mutate afterwards (a config update is
+refused for several of these fields, and for the rest it is a second code path);
+skip the lawful arm (a base unlawful in some second field would make all ten
+mutation arms refuse for a reason no assertion names, and a gate that stopped
+reading a field would still look green). Why: the hand-built base is a second
+statement of the admitted shape, so the wall is not the gate agreeing with
+itself. **Load-bearing? yes** — it is the only thing that makes a mutation arm's
+refusal attributable to its own field.
+
+### T6. The two kinds are ordinary add-only mints, and the census does not move
+
+Decided: both kinds enter through the DEV-808 machinery — the roster line in
+`scripts/kernel-runtime-refusals.ts`, the hand pin citing DEV-804 in
+`test/fixtures/refusal-staged-debt.pin.txt`, the taught payloads regenerated
+into `test/RefusalPayloads.taught.txt` — and both land as staged debt, since the
+kernel corpus carries neither reason. Cited: the operator's A7 ruling that a
+refusal mint is add-only and ordinary. No public type name is added: the union
+gains two literals, `Refusal.StructuralRefusalKind` stays one row, and
+`check:type-universe` reports the same 132 classified types with the same
+ratchet pins before and after. **Load-bearing? no** — it records that the
+vocabulary door was walked and that the public-surface census was checked
+against it rather than assumed.
+
+**Stated residual.** Three things this ticket does NOT do. (a) The Go journal's
+shape-gate twin is untouched, so `go/` still pins the narrower surface and the
+parity gap is real — the ticket's own Limits section rules its widening a
+separate ticket. (b) `internal/registers.ts` and the commons control stream in
+`internal/nats.ts` keep their un-widened gates: the dispatch scoped this slice to
+the lane stream and the two KV bucket gates, and the register bucket is named in
+the ticket body's seam list, so it is owed a follow-up rather than absorbed here
+without a ruling. (c) Every check is still open-time. A config mutated after the
+carrier opened is invisible to all three gates, exactly as scorecard item 1's
+residue says; the standing-invariant ticket owns that and this one does not
+claim it.
+
+## Task DEV-779 — the register incarnation pin
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. This task
+discharges the T6 deferral above and carries the three-bucket condition the
+DEV-744 hand-off rode on: which buckets are pinned, which are exempt, and on
+what grounds. Measurements below were taken on this Mac against the pinned
+nats-server v2.14.4 and `@nats-io/{jetstream,kv,nats-core,transport-node}@3.4.0`.
+
+### T0. The incarnation identity is the backing stream's creation timestamp
+
+Decided: the register pins `KvStatus.streamInfo.created` — the ISO timestamp
+the server stamps on a stream when it is created — read from the `bucket.status()`
+the substrate-shape check already performs, so the capture itself costs no extra
+round trip at open. Alternatives, all rejected on evidence rather than taste:
+`config.name` (identical across incarnations by construction — it is the
+bucket's name); `config.metadata` (observed identical across three consecutive
+incarnations on one server: `{"_nats.level":"4","_nats.req.level":"0",
+"_nats.ver":"2.14.4"}` — it describes the server, not the stream);
+`state.first_ts`/`first_seq`/`last_seq` (every one of them moves under ordinary
+writes); a server-minted stream UID (**does not exist in the pin**: the
+client's `StreamInfo` is exactly `{config, created, state, cluster, mirror,
+sources, alternates, ts, ...ApiPaged}`, and no field of it is a stream
+identity). Why: `created` is the only field that is fixed for a stream's whole
+life and re-minted by its rebirth, which is precisely the predicate the pin
+needs. Measured resolution: the server emits microseconds
+(`2026-08-19T01:09:02.373135Z`); twenty consecutive destroy-then-create rounds
+produced twenty distinct values with zero collisions and a minimum separation of
+1ms at millisecond parse resolution — about three orders of magnitude above the
+field's own resolution. Stated bound: two incarnations created inside one
+microsecond would collide, and nothing in the pinned client can distinguish
+them. **Load-bearing? yes** — the whole guard is this comparison, and a
+weaker field would make it vacuous.
+
+### T1. The assertion runs at the head of every action, ahead of every staleness comparison
+
+Decided: `assertIncarnation` runs first in `grant`, `renew`, `commit`,
+`expireSteal`, and `observe`, before those actions read the key or compare
+tokens. Alternatives: assert immediately before each `bucket.update`, which is
+one round trip tighter. Why the tighter placement is WRONG here: a reborn
+bucket's revisions restart at one, so the token comparison `token !==
+entry.revision` reaches a verdict on the reborn bucket's numbers and refuses
+`stale-register-token` naming a "current" fence no holder of this register was
+ever granted. Ordering the pin first makes the classification honest — the
+refusal says the bucket was reborn, not that someone else holds the lease — and
+the wall asserts exactly that (`expect(refusal.kind).not.toBe(
+"stale-register-token")`). Measured cost: one stream-info round trip per action,
+0.109ms p50 / 0.173ms p95 / 0.866ms max over 50 samples, against 0.093ms p50 for
+the `get` each action already performs. **Load-bearing? yes** — measured
+mutation: with all six assertions deleted, the reborn-bucket commit refuses
+`stale-register-token`, which is the wrong law, the wrong expectation, and a
+green-looking answer.
+
+### T2. `observe` is pinned, and the read-back path revalidates
+
+Decided: `observe` carries the assertion even though it presents no fence, and
+`reconcileUpdate` asserts the pin on the branch where the key vanished
+mid-flight before minting a transport absence. Alternatives: pin only the three
+fenced writes. Why: `observe` is the taught repair of nearly every register
+refusal ("Observe the register for the current token and holder"), so an
+unpinned `observe` would answer the repair with a different bucket's holder and
+token — the exact silent answer the pin exists to refuse. And a key that
+vanished under an in-flight write is either lifecycle mutation (the pin's law)
+or a genuinely ambiguous outcome (a transport absence); asking the pin is what
+tells the two apart. **Load-bearing? yes** — measured mutation: with the
+assertions deleted, `observe` on the reborn bucket returns
+`{token: 3, holder: "holder-c"}` as this register's state, and `renew`
+successfully renews holder-b's lease at token 2.
+
+### T3. A destroyed bucket refuses on the pin's law, not as a retryable absence
+
+Decided: a stream-info request that answers 404 on the incarnation read refuses
+`incarnation-mismatch` with `got: "a destroyed backing stream"`, rather than
+minting the adapter's transport absence. The classification is
+`cause instanceof JetStreamApiError && cause.status === 404` — operation context
+plus the published API status, the same shape as `isCasRefusal`, and
+deliberately not the unpublished `10059` code constant: `@nats-io/jetstream@3.4.0`
+exports `JetStreamApiCodes` without a stream-not-found row, and the concrete
+`StreamNotFoundError` class is absent from the package entrypoint, so naming
+either would reach past the published surface. Alternatives: leave it a
+transport absence (the behaviour before this task). Why: `Refusal.retryAbsence`
+retries the absence sort, and no retry can bring the pinned incarnation back —
+the absence classification promises a repair that does not exist.
+**Load-bearing? yes** — measured mutation: with the assertions deleted the same
+scenario refuses with `sort: "absence"`, i.e. a retry loop over a destroyed
+bucket.
+
+### T4. The pin is a precondition, not a two-phase commit — the window is stated, not hidden
+
+Decided: the module documentation and this record both say that a rebirth
+landing between the assertion and the CAS is a residual window of one round
+trip. Alternatives: claim the pin closes the hazard. Why: it does not, and no
+client-side check can — the pinned server publishes no expected-stream-identity
+precondition to attach to a KV write, so the assertion and the write cannot be
+made one operation. What the pin does change is the shape of the exposure: an
+unbounded window in which any stale fence lands becomes a one-round-trip window,
+and the DEV-716 ACL suite (application credentials cannot delete or recreate
+streams and buckets) remains the other half of the guard, exactly as T6 said.
+**Load-bearing? no** — it is a bound on the claim, and it moves the day the
+substrate offers the precondition.
+
+### T5. The new kind is minted as an object literal so the taught-payload wall pins it
+
+Decided: `incarnation-mismatch` is constructed by calling `structuralRefusal`
+with an inline object literal rather than through this module's positional
+`lawRefusal` helper. Alternatives: reuse `lawRefusal` like the register's other
+seven structural refusals. Why: `check:refusal-payloads` walks object literals
+carrying a `law` field and reads the field through `ts.isPropertyAssignment`;
+`lawRefusal` builds its record from shorthand properties, which the walk does
+not see, so every refusal minted through it is absent from
+`test/RefusalPayloads.taught.txt`. Minting the pin's payload as a literal is what
+puts its law and its repair under the byte-compared wall — the manifest went
+from 62 to 64 pinned payloads, and both new rows carry the full law and repair
+text. The seven existing sites are left alone: retro-fitting them is a separate
+diff over unchanged behaviour. **Load-bearing? yes** — without it the pin's
+teaching would be editable without reddening anything.
+
+### T6. The cell store is EXEMPT from the pin, and here is the argument
+
+Decided: `flb-fab-cell` is NOT pinned. The argument, read off the seams rather
+than assumed: (1) **no fence crosses a call boundary.** `CellService` is
+`{read, merge}` — no revision is ever returned to a caller, and there is no
+caller-supplied revision parameter anywhere on the surface. (2) **The revision
+the CAS presents is read in the same attempt.** `internal/cas.ts`'s
+`casJoinLoop` re-reads at the top of every iteration and passes
+`observed.revision` to `update` inside that same iteration; nothing carries a
+revision between calls, so there is no stale token for a reborn bucket to
+honor. (3) **The carrier converges by join, not by revision order.** The cell
+join is set union over holder-attributed observations with canonical-byte
+identity (F1's `f1_cell_merge_aci`), the loop's pre-CAS `carries` guard makes a
+re-contributed delta cost one read and no write, and the bucket is `history=1`
+— only the current state has meaning and no audit claim rides cells.
+Alternatives: pin all three buckets uniformly, which was DEV-744's original
+three-bucket order. Why not: the pin's law is about a FENCE being honored across
+a reset, and this store presents none; adding a round trip per merge to defend a
+law the carrier does not rely on would be cost without a claim. **What the
+exemption does NOT say:** a deleted cell bucket destroys data, and the
+observations of writers that never re-contribute are gone. That is the deletion,
+not the revision order, and no pin recovers it. **Load-bearing? yes** — it is
+the recorded half of the DEV-744 hand-off condition, and it is falsifiable: the
+day `CellService` hands a revision back to a caller, the argument fails and the
+cell store needs the pin.
+
+### T7. The anchor store is EXEMPT from the pin, and its argument is different from the cell's
+
+Decided: `flb-fab-anchor` is NOT pinned. Stated honestly first: unlike the
+cell, the anchor store DOES carry a revision across calls —
+`AnchorStore.commit(key, expectedRevision, …)` takes one, and the pump holds
+`revision` between arrivals. So the cell's argument does not transfer, and the
+exemption rests on three different properties that are in the code: (1) **a
+reborn bucket detaches the stale pump loudly.** On an empty reborn bucket
+`update(anchorKey, bytes, R)` refuses wrong-last-sequence for every R, and the
+adapter classifies that as `lost-anchor-cas`, whose law is "One live pump owns
+each fold partition; losing its anchor revision CAS is a fatal detach". (2)
+**Mutual exclusion of pumps is not the anchor's job.** It is the durable
+JetStream consumer `FLB_FOLD_<foldDigest>` on the LANE stream — explicit ack,
+`max_ack_pending` at the buffer bound — and an anchor-bucket rebirth does not
+touch the lane stream. (3) **What the anchor holds is derived and
+re-derivable.** It is `{floor, stateDigest, head}`: the floor is a resume
+coordinate into the journal (`opt_start_seq: anchor.floor + 1`), `Anchor.advance`
+admits only a contiguous `floor + 1` successor, `head` is a hash chain over the
+applied events, and the state is stored content-addressed under `state.<digest>`
+with `loadState` re-deriving the digest on every read and refusing on mismatch.
+A rewound anchor is a rewind of a deterministic fold over a durable journal,
+recoverable by replay; a register's landed outcome is a terminal commitment that
+"once set, never changes" and is recoverable by nothing. **That is the actual
+line between pinned and exempt in this package: the register's fence guards an
+irreversible decision, the cell's and the anchor's revisions guard a value their
+own algebra can re-derive.** Residual, stated rather than waved: if a reborn
+anchor bucket climbs back to exactly the stale revision at that key, the stale
+pump's CAS lands and rewinds the partition's checkpoint — the write is still a
+verifiable, content-addressed checkpoint, and the recovery is replay.
+Alternatives: pin the anchor bucket too (one stream-info round trip per applied
+event — the hottest path in the package, and the pump commits on every applied
+arrival). Why not: paying that on the fold's inner loop to convert a
+loud-detach-or-replayable-rewind into a refusal is the wrong trade at this
+rung, and DEV-744's `Registers.audit` arm plus the DEV-716 ACL posture are where
+that case belongs if it is ever taken. **Load-bearing? yes** — same reason as
+T6, and the residual named here is the thing a future ticket would close.
+
+### T8. The wall is a new file, and bucket destroy+recreate is its SUBJECT, not its isolation
+
+Decided: the chaos wall lands as `test/RegisterIncarnation.test.ts`, four rows,
+and it performs the destroy+recreate on a second connection the register service
+does not own. Row isolation stays one fresh nats-server per row (seam rule 7,
+DECISIONS T0), which is what makes the deliberate lifecycle mutation legible as
+the subject rather than as a leaked isolation trick — the round-1 register wall
+was made nondeterministic by using destroy+recreate for isolation, and that
+prohibition is unchanged. The load-bearing row drives the reborn bucket to the
+exact revision the stale token names (a fresh grant on a reborn stream sits at
+revision 1, numerically the fence the stale holder still carries), so the
+scenario is silent success rather than an incidental miss, and it then presents
+the same stale token to the RAW substrate and asserts it lands — the wall
+proves the pin refused something the substrate would have accepted, not
+something the substrate was going to reject anyway. Alternatives: extend
+`Register.test.ts` (a 386-line file three lanes were touching this week).
+**Load-bearing? yes** — measured mutation, all six `assertIncarnation` calls
+deleted: 3 of 4 rows red and the positive control stays green. Row 1 reds on
+`Result.isFailure(replayed)` being false — the stale commit lands silently. Row
+2 reds with `{grant: "duplicate-grant", renew: ACCEPTED token 2 holder-b,
+commit: "stale-register-token", expireSteal: ACCEPTED token 3 holder-c,
+observe: ACCEPTED token 3 holder-c}`. Row 3 reds with `sort: "absence"`. Row 4,
+the untouched-incarnation control, stays green under the mutation, which is what
+makes the other three attributable to the deleted assertions and not to the
+chaos.
+
+### T9. The kind's estate-terms MEANING is authored at the mint, beside its roster line
+
+Decided: `incarnation-mismatch` carries a meaning — what the kind means in the
+estate's language, as distinct from what its refusal teaches a caller at the
+moment it fires. **Meaning authored at mint, pending the DEV-825 mechanism
+pickup and taste pass.** That ticket pinned the contract as a roster field named
+`meaning`, a plain string of one to two sentences; the field does not exist in
+`scripts/kernel-runtime-refusals.ts` yet, so the sentence is authored as a
+comment beside the roster line, shaped as the exact string that moves into the
+field, in the pinned voice — declarative present, estate terms, fact then
+implication:
+
+> An incarnation is one life of a store — the store a name resolved to at the
+> moment a fence was taken against it. A store reborn under that name is a
+> different store answering to it and owes nothing to its predecessor's fences,
+> so a fence from the dead incarnation names a store that no longer exists
+> rather than a round that has merely moved on.
+
+Alternatives: wait for the mechanism and author the sentence then. Why not: the
+meaning is a fact about the kind that only the minting author holds, and
+recovering it later is archaeology over a diff. Three texts are deliberately
+distinct here and none substitutes for another — the `law` is what the carrier
+promises ("A fencing token is honored only by the backing-stream incarnation
+that minted it"), the taught `next` is the repair, and the meaning is what the
+term denotes in the language. The second sentence is the one that earns its
+place: it is why this kind exists rather than reusing `stale-register-token`,
+and it is the same property T1's ordering enforces and the wall's
+`expect(refusal.kind).not.toBe("stale-register-token")` asserts.
+**Load-bearing? no** — it is authored vocabulary; the wall that would catch it
+going wrong is DEV-825's, not this ticket's.
+
+### T10. The DEV-780 admin-surface widening completes at the register seam, on the shared laws
+
+Decided: the register bucket's gate reads the same nine admin-surface fields the
+lane, cell, and anchor carriers pin, through `internal/carriers.ts` —
+`importsFacts`/`mirroredAuthorityCarrier` and `expiresFacts`/
+`expiringAuthorityCarrier` ahead of the shape clause, `hasPinnedAdminSurface`
+inside it, `adminSurface(config)` spread into the `got`, and `allow_direct:
+KV_ALLOW_DIRECT` declared at bucket creation. The read is
+`status.streamInfo.config`, because the `KvStatus` projection carries only five
+of the nine. This is DEV-780's own stated residual (b) — that ticket scoped
+itself to the lane stream and the two KV buckets and named the register gate as
+an owed follow-up rather than absorbing it without a ruling — discharged here
+because this lane holds `internal/registers.ts`. Alternatives: a separate
+ticket, which is what DEV-780 proposed; re-minting the two named laws at this
+carrier. Why not the second: a law minted twice is two texts that drift, and the
+whole point of `carriers.ts` is that the mirror and per-message-TTL laws are
+ADR-0009's role rule rather than any one plane's — the carrier appears in `path`
+and in the repair's subject, and nowhere else. **Load-bearing? yes** — measured
+mutation, the mirrored arm below.
+
+### T11. The register's admin-surface arm plants a MIRROR, and the lawful base is its control
+
+Decided: the wall arm is a mirrored backing stream for `KV_flb-fab-reg`, planted
+by hand on a fresh server, paired with a lawful-base arm that requires the
+carrier to OPEN on the hand-built shape. One field moves; the control is what
+makes the refusal attributable to it. Alternatives: extend
+`CarrierAdminSurface.test.ts`'s ten-row mutation table to a fourth carrier.
+Why not tonight: the table is parameterized over three carriers with two arms
+already carrying carrier-specific plantability exceptions, and widening it is a
+larger change than the seam completion asked for — the arm here proves the
+register gate reads the shared laws, and folding the register into that table is
+a clean follow-up for whoever owns it next. Why the mirror rather than any other
+of the nine: a register is the authority carrier par excellence, and a mirror is
+the failure that a shape gate refuses INCIDENTALLY and for the wrong reason — a
+mirror carries no `subjects`, so before the named law existed the gate refused
+on the subject clause and taught "restore the bucket shape" to an operator whose
+actual repair is a replica read-plane carrier. The arm asserts the named kind
+and `not.toBe("register-substrate-shape")` for exactly that reason.
+**Load-bearing? yes** — measured mutation: with `hasPinnedAdminSurface` and the
+two named-law guards removed from the register gate, the mirrored arm reds
+because `Effect.flip` finds a SUCCESS — the carrier hands back its five-action
+service (`{grant, renew, commit, expireSteal, observe}`) over a mirror, admitting
+a read-only copy of another stream's facts as its authority — while the
+lawful-base control and all four incarnation rows stay green. Note what the
+mutation shows about the old gate: the register's shape clause reads only
+`storage`/`replicas`/`history`/`ttl`/`max_bytes` off `KvStatus`, none of which a
+mirror moves, so before this widening a mirrored register bucket was admitted
+outright rather than refused incidentally.
+
+## Task DEV-825 — the kind-meaning mechanism
+
+Placeholders `T0`–`T7` are task-local; repository D-numbers are assigned at
+merge.
+
+### T0. The drafting voice: declarative present, two sentences, fact then implication
+
+Decided: every one of the 59 drafted meanings is written in one register —
+declarative present tense, estate vocabulary, at most two sentences, the first
+naming what fact the kind names and the second what that implies or protects.
+No sentence addresses a reader, none carries a repair, and none paraphrases the
+`law` text the same kind teaches at refusal time. Alternatives: mirror the
+refusal-time teaching's imperative voice (would make the two registers
+indistinguishable, which is the one thing the operator's requirement is
+against); a single sentence throughout (loses the implication half, which is
+where the estate lesson lives); free length (unreviewable as a set — the
+operator's sitting reads 59 of these in a row, and an uneven register turns a
+taste pass into a copy-edit). The register was recommended by the dispatch and
+is not overridden by the requirement comment, which is silent on voice.
+**Load-bearing? yes** — the sentences are what the taste pass rules on, and a
+mixed register would be ruled on as prose rather than as vocabulary.
+
+### T1. A meaning is a doc comment, not a data field
+
+Decided: the roster row carries `meaning: string` (the coordinator-pinned
+shape), and every projection renders it as a DOC COMMENT — over each literal in
+`STRUCTURAL_REFUSAL_KINDS`, over each row of `KERNEL_REFUSALS` and
+`KERNEL_RUNTIME_STRUCTURAL_REFUSALS`, and as a paragraph on the prose page.
+Nothing gains a runtime field. Alternatives: add `meaning` to
+`KernelRefusalRow` and to the runtime ancestry row (would put unratified prose
+into a shipped data shape, so a consumer could read it, depend on it, and be
+broken by the taste pass); a separate generated meanings module (a fourth
+artifact for one string per kind). Why: a doc comment is where a reader and an
+agent both meet the kind, it costs no public type — `check:type-universe`
+reports the same 132 classified types and the same ratchet pins before and
+after — and it can be rewritten wholesale at the taste pass without a wire
+change. The roster's own shape did move, from a string array to
+`{ kind, meaning }` rows; nothing but `kernel-tables.ts` consumed it.
+**Load-bearing? yes** — it is what keeps drafts out of the shipped data shape.
+
+### T2. The emitted reasons get meanings too, in the same reviewed file
+
+Decided: the 16 refusal reasons the kernel model emits get meanings on the same
+terms as the 43 runtime kinds, in a second reviewed ledger
+(`KERNEL_REFUSAL_REASON_MEANINGS`) beside the roster in
+`scripts/kernel-runtime-refusals.ts`. The dispatch rules this the default when
+the operator's requirement comment is silent on emitted reasons, and it is —
+the comment says "every minted refusal kind" and names only runtime spellings
+in its retroactive list. Alternatives: cover the runtime kinds only (leaves the
+model's own vocabulary, which is the half a reader of the prose page meets
+FIRST, unexplained); put the meanings in the corpus (impossible and forbidden —
+the corpus is the model's emission, this package cannot edit it, and it carries
+no field a meaning could ride in); a separate `scripts/refusal-meanings.ts`
+(two files for one reviewed ledger, and the cross-seat merge surface doubles).
+The generator resolves the ledger against the corpus in both directions and
+refuses either gap. **Load-bearing? yes** — it decides the mechanism's domain,
+and a later ruling to narrow it would have to delete rows rather than add them.
+
+### T3. The prose page gains a runtime-kinds section, and says which of its text is not the model's
+
+Decided: `docs/generated/kernel-language.generated.md` renders each emitted
+reason's meaning inside that reason's existing section, beside its law and
+repair, and gains a new `## Runtime structural refusal kinds` section carrying
+all 43 runtime spellings with their ancestry and their meanings. The page's
+header gains a paragraph saying, in as many words, that the meanings are the
+one thing on the page that is NOT the model's text. Alternatives: render
+meanings for the emitted reasons only (the runtime kinds would have no prose
+home at all, and the operator's requirement names them first); a second page
+for the runtime vocabulary (a second artifact and a second wall for one
+section). Why: the page opened by promising every word on it is the model's
+own, reproduced verbatim; adding house prose without retracting that promise
+would make the page lie about itself, which is worse than the gap it fills.
+**Load-bearing? yes** — the retraction is what keeps the page honest now that
+it has two sources.
+
+### T4. The meaning law reads three artifacts' bytes, and the ancestry law is left alone
+
+Decided: `checkRefusalMeanings` is a second law beside `checkRefusalVocabulary`
+in the same wall, reading the meanings back out of three sets of committed
+bytes — the truth-plane union's source, the kernel table's source, and the
+rendered page's — with the emitted reasons themselves still read from the
+corpus fixture's bytes. It never consults the reviewed roster the generators
+read. Alternatives: check the roster module's values (self-comparison: the
+generator's input agreeing with the generator's input); fold the clauses into
+`checkRefusalVocabulary` (a red wall would stop naming which of ancestry and
+meaning moved). Why the page is the third read and not a convenience: the page
+is rendered by `render-kernel-prose.ts` and the modules by `kernel-tables.ts`,
+two renderers, so requiring them to agree byte for byte is what catches one
+projection dropping, truncating, or reflowing a meaning the other renders in
+full. **Load-bearing? yes** — without the independent reads the law would be a
+tautology over one value.
+
+### T5. `check:kernel-prose` joins the battery, because a projection outside it is unwalled
+
+Decided: `check:kernel-prose` is added to `test:fast`, which is what `bun run
+gates` reaches through `test:packages`. It existed as a script and sat in no
+chain, so the committed page's byte-identical regeneration was proven by
+nothing before this ticket. Alternatives: leave it out and let the meaning law
+alone hold the page (that law compares meanings, not the whole page, so every
+other rendered word would stay unwalled); wire it into `test:walls` (that group
+is the real-NATS suite, and a pure byte check does not belong behind a
+substrate). Cited: root law 9 — a generated artifact needs a check wired into
+the battery. **Load-bearing? yes** — it converts a claim about the page into a
+gate arm, and it is what makes the page usable as the meaning law's third
+artifact.
+
+### T6. One plant per clause, and the fourth clause's absence is stated rather than hidden
+
+Decided: `negative-controls/RefusalMeaning.meaningless-kind.mutant.ts` plants
+three mutations into the bytes of the artifacts the wall parses — a kind with
+no meaning, a shipped meaning whose marker line was rewritten, and a page
+meaning rewritten to a paraphrase — and each is refused on its own clause, with
+all three reasons committed in one trace. The fourth clause, one name and one
+meaning across both registers, has NO plant, and the mutant's header says so:
+no name is carried by both registers at this pin — all 43 runtime kinds are
+staged debt and none of the 16 emitted reasons spells one of them — so making
+the two disagree would mean inventing a roster row. Alternatives: plant only
+the meaningless kind (the dispatch's floor, but it leaves the marker law, which
+is the clause the taste-pass ruling will flip, with no evidence it can fail);
+synthesise a shared name for clause 3 (a control planting a kind the estate
+does not have proves a law over a vocabulary that does not exist).
+**Load-bearing? yes** — the marker arm is the only evidence that the draft pin
+is a wall and not a comment.
+
+### T7. `unwrapAssertions` learns `satisfies`
+
+Decided: the wall's expression unwrapper now sees past `satisfies` as well as
+`as` and the older type-assertion form, because `KERNEL_REFUSALS` is written
+`[...] as const satisfies ReadonlyArray<KernelRefusalRow>` and a reader that
+stopped at the annotation reported "not an array literal" over a file that
+plainly carries one. Alternatives: a second unwrapper for the new readers (two
+spellings of one operation, and the next reader picks the wrong one); drop
+`satisfies` from the generated table (the annotation is what makes the
+generated rows type-check against the row interface, and dropping it to please
+a parser inverts which side is the authority). The widening cannot make the
+ancestry law pass where it failed: it only lets the reader reach a literal it
+previously refused to look at, and every element check still runs.
+**Load-bearing? no** — mechanical, but recorded because it moves a shared
+reader every clause of the wall depends on.
+
+**Stated residual.** Four things this ticket does NOT do. (a) The sentences are
+DRAFTS. Nothing here pins them: the marker is on every one, the wall requires
+it, and only the DEV-825 operator taste pass may retire it — reading a green
+wall as ratified prose is exactly the misread the marker exists to prevent.
+(b) `incarnation-mismatch` is absent from the roster at this pin, so no meaning
+was drafted for it; the DEV-779 lane authors it inline when the kind lands, in
+the shape this ticket pinned. (c) The meaning law does not prove FRESHNESS. A
+sentence edited in the roster and not regenerated is caught by
+`check:kernel-tables` and `check:kernel-prose`, both of which were run red
+against exactly that mutation and green again after regeneration; the meaning
+law reads only what shipped, and that division of labour is on purpose.
+(d) The refusal-time teachings are untouched: `RefusalPayloads.taught.txt`
+still pins 64 payloads byte for byte and no `law`, `expected`, or `next` moved.
+Adding a meaning is add-only beside the teaching, never a rewrite of it.
+
+## Task DEV-825 round 2 — the official surfaces lose their tracking artifacts
+
+Placeholders `T8`–`T13` continue the task above; repository D-numbers are
+assigned at merge. Everything here follows one ruling: **operator ruling
+2026-08-19, tracking artifacts out of official documents**, sharpened the same
+sitting to **all plait items refer only to digests or derived digests**. The
+round-1 marker was the ruling's first casualty and its own violation — it
+carried a ticket number into three rendered surfaces.
+
+### T8. The marker states the fact and names nothing
+
+Decided: the marker is exactly `Draft meaning, awaiting ratification.` — one
+line, a full sentence, no parenthetical, no id. Alternatives: keep a ticket
+reference so a reader can find the sitting (that is precisely the artifact the
+ruling removes, and the reader who needs the ticket is a maintainer reading the
+README, not a reader of the language); drop the marker's period to match a
+label style (it is a sentence about the sentence below it, and reads as one).
+The wall pins the exact string and refuses any other line opening `Draft
+meaning`, so the retired form cannot come back by habit. **Load-bearing? yes** —
+the marker is rendered 60 times per surface and is the single most-repeated
+string in the projections.
+
+### T9. Provenance becomes the corpus digest, and the renderers stop taking a path at all
+
+Decided: `KernelCorpus` gains a `digest` — SHA-256 over the bytes the reader has
+just proved canonical, the same derivation `truth/Digest.ts` applies — and every
+rendered surface names its source by that digest. `KERNEL_TABLE_PROVENANCE` and
+`REFUSAL_KIND_PROVENANCE` become `{ corpus, format }`; the artifact path,
+generation command, generator name, source directory, roster path, and waiver
+ticket all leave the generated bytes. Alternatives: keep a path beside the
+digest "for convenience" (the ruling is that a path is an ambient reference, and
+a convenience copy of one is still one); leave provenance out entirely (a
+surface that cannot say what it came from cannot be checked against it, and the
+digest is what makes that check mechanical rather than a hope). The stronger
+half of the decision is that `renderKernelTables`, `renderRefusalKinds`, and
+`renderKernelProse` no longer TAKE a corpus path: rendering one is now a
+compile-time impossibility rather than a rule someone has to remember.
+**Load-bearing? yes** — it is the ruling's positive half, and it converts an
+unverifiable string into a claim a reader can hash and compare.
+
+### T10. Regeneration instructions move to a README beside the artifact
+
+Decided: `docs/generated/README.md` is new and carries what the page may no
+longer say — what the artifact is, what it was rendered from, how to regenerate
+it, and which wall proves it. Alternatives: put the instructions in the package
+README (a reader who finds the page does not necessarily find the package); drop
+them (root law 9 requires every generated artifact to document its
+regeneration, and the ruling moves that documentation rather than repealing it).
+The README is explicitly the sanctioned home for this material, so it is the one
+file in that directory where a command or a path appears, and it says so.
+**Load-bearing? yes** — without it the ruling and law 9 would read as a
+contradiction.
+
+### T11. The rendered waiver goes; the ancestry law keeps its teeth
+
+Decided: `KERNEL_RUNTIME_STRUCTURAL_REFUSALS` rows lose their `waiver` field and
+the row type collapses from a two-arm union to one interface with a `source` of
+`"kernel-corpus" | "staged-debt"`. `checkProjectionAncestry` drops its
+waiver-citation clause. Alternatives: keep the field and exempt it from the
+sweep (an exemption is how a law stops being one); render the ticket as a digest
+(a ticket number is not a value with canonical bytes, and pretending otherwise
+would be worse than a path). Nothing is lost: which ticket owns a staged-debt
+row is still required, still hand-written, and still checked — by
+`checkRefusalVocabulary` against the reviewed pin, which is a tracking-native
+record and the correct home for it. The classification word `staged-debt`
+stays, because it is a fact about the vocabulary rather than about a tracker.
+**Load-bearing? yes** — it draws the line the ruling asks for in the one place
+the two laws met.
+
+### T12. What counts as a path is defined narrowly, and the wall says why
+
+Decided: the sweep refuses three shapes — an extension-bearing name, a path
+rooted at one of this repository's directories, and any three-or-more-segment
+slash form — with leading `~` and `@` excluded. It deliberately does NOT refuse
+every slash: the model's own prose says `immutable/head-relative`, which is a
+pair of words, and brand tags are `~foldlab/plait/kernel/...` while package
+specifiers are `@foldlab/core/jcs`. Alternatives: refuse every slash (would
+refuse the language in order to protect it, and would force the brand tags —
+which are identities, exactly what the ruling is FOR — to be spelled around);
+refuse only the repo-dir roots (a path under an unknown root is still a path).
+`node` is likewise absent from the command-runner list, because the model calls
+a graph vertex a node and the first run of the wall caught exactly that.
+**Load-bearing? yes** — a wall that cannot tell an identity from a location
+would be enforcing the opposite of the law.
+
+### T13. One plant per class, and the retired marker is planted without an id
+
+Decided: `negative-controls/TrackingArtifacts.rendered.mutant.ts` plants four
+mutations into the bytes of the three official surfaces — a ticket citation, an
+artifact path, a generation command, and a retired-shaped draft marker — each
+refused on its own clause with all four reasons in one committed trace. The
+marker plant deliberately carries no id, no path, and no command: the literal
+retired string contained a ticket number and would have been refused by the
+tracking-id clause, so planting it verbatim would have proved the marker clause
+nothing at all. Alternatives: plant the literal old marker (refused twice over,
+and the arm could not tell which clause fired); fold these arms into the
+existing meaning control (a red control should name which law moved, and these
+are a different law). **Load-bearing? yes** — the marker arm is the only
+evidence that the exact-form pin is a wall.
+
+**Stated residual.** Three things this round does NOT do. (a) The sweep binds
+the three surfaces the ruling named — the two generated tables and the prose
+page. Other generated artifacts in this package were measured and left:
+`KernelSchemas.generated.ts` and the builder projection still carry header
+paths and commands, and the CLI's rendered output was not swept. Each is a real
+instance of the same law and each wants its own slice; none was quietly fixed.
+(b) The sentences are still DRAFTS, on a new marker. The ruling changed what
+the marker may say, not whether the meanings are ratified. (c) The
+`incarnation-mismatch` meaning landed from its own lane while this branch was
+out and is kept VERBATIM — this round did not re-word another lane's sentence,
+only re-marked it along with every other.

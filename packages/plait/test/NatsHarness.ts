@@ -40,13 +40,26 @@ export interface NatsServerOptions {
   readonly config?: string
 }
 
+/**
+ * Startup bound, sized to a LOADED machine, not an idle one. Under the panic
+ * load this harness is exercised with, the nats-server child's spawn-and-ports-
+ * file latency is stretched: measured on this class of host (tepid 2026-08-18,
+ * DEV-820), idle startup is 76-130ms (p50 97ms), while with 8 deliberate CPU
+ * burners on a 16-logical-core box it sampled {1236, 2318, 2540, 3559, 20479}
+ * ms over five servers — a worst case over 150x the idle ceiling and well past
+ * the old 200x25ms = 5s nominal bound, which threw and reddened whichever wall
+ * file happened to be starting its server at that moment (the DEV-820 flakes).
+ * Each sleep itself overruns under load (the loop measures 25ms of timer, not
+ * 25ms of wall), so 2400x25 = 60s nominal is a generous but bounded ceiling: a
+ * genuinely broken launcher still fails loudly, in under a minute of timer.
+ */
 const waitForPorts = async (directory: string): Promise<string> => {
-  for (let attempt = 0; attempt < 200; attempt++) {
+  for (let attempt = 0; attempt < 2400; attempt++) {
     const file = (await readdir(directory)).find((name) => name.endsWith(".ports"))
     if (file !== undefined) return join(directory, file)
     await Bun.sleep(25)
   }
-  throw new Error("nats-server did not write its ports file within 5 seconds")
+  throw new Error("nats-server did not write its ports file within 60 seconds")
 }
 
 /** Reports whether a built server answers `-v` with the pin this harness binds. */
@@ -186,8 +199,16 @@ export const startNatsHarness = async (
 ): Promise<NatsHarness> =>
   startNatsServer((await buildServerBinary()).binary, options)
 
+/**
+ * File-appearance bound for child-process results (fold-pump, register-holder,
+ * chaos markers). Same load-stretch as waitForPorts: the child bun processes
+ * write these files only as the saturated machine schedules them, and the old
+ * 400x25ms = 10s nominal bound was sized for an idle host. 2400x25 = 60s
+ * nominal absorbs the same measured stretch while a genuinely absent file
+ * still reddens the wall, not the scheduler.
+ */
 export const waitForFile = async (path: string): Promise<void> => {
-  for (let attempt = 0; attempt < 400; attempt++) {
+  for (let attempt = 0; attempt < 2400; attempt++) {
     if (await Bun.file(path).exists()) return
     await Bun.sleep(25)
   }

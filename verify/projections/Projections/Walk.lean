@@ -35,11 +35,21 @@ private def typeExprOf : Nat -> Expr -> MetaM TypeExpr
       | other =>
           throwError "projections walk: unsupported type expression: {other}"
 
+/--
+Read one binder, role included. The role is the environment's answer, never an
+annotation: a binder whose type reduces to a sort stands for a type, and every
+other binder stands for a value — which in parameter position is the brand the
+declaration is indexed by.
+-/
 private def fieldOf (binder : Expr) : MetaM Field := do
   let declaration <- binder.fvarId!.getDecl
+  let binderType <- inferType binder
+  let role :=
+    if (<- whnf binderType).isSort then FieldRole.typeArgument else FieldRole.brand
   return {
     name := toString declaration.userName
-    typeExpr := <- typeExprOf 32 (<- inferType binder)
+    role := role
+    typeExpr := <- typeExprOf 32 binderType
   }
 
 private def constructorOf (numParams : Nat) (name : Name) : MetaM Constructor := do
@@ -65,15 +75,26 @@ private def declarationOf (name : Name) : MetaM Decl := do
   else
     return .inductiveDecl name.toString parameters constructors
 
+/--
+Read one docstring. The text is transliterated into the interchange's ASCII
+and is otherwise VERBATIM: never reflowed, retrimmed, or retyped. The edge
+whitespace the environment hands over is meaning to a target printer — the
+generated schema layer joins a derived sentence onto the docstring and
+branches on whether the docstring already ended in a space — so a walk that
+trims here would make that branch unreachable and the target's bytes wrong.
+-/
 private def docOf (decl : Decl) (name : Name) : MetaM DocSentence := do
   match <- findDocString? (<- getEnv) name with
   | none => throwError "projections walk: {name} has no docstring"
-  | some plain =>
-      return {
-        target := name.toString
-        plain := plain.trimAscii.toString
-        algebraic := decl.algebraic
-      }
+  | some raw =>
+      match asciiDoc raw with
+      | .error reason => throwError "projections walk: {name}: {reason}"
+      | .ok plain =>
+          return {
+            target := name.toString
+            plain := plain
+            algebraic := decl.algebraic
+          }
 
 /-- Walk a closed declaration list into the reusable projection AST. -/
 def walk (names : List Name) : MetaM ProjectionAst := do

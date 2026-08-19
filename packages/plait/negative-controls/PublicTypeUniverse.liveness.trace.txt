@@ -1,0 +1,2 @@
+PUBLIC TYPE UNIVERSE PRECONDITION: waiver LaunderedAugmentation owner=src/kernel/KernelTables.generated.ts ticket=DEV-763 is not on the reviewed liveness list (DEV-795, DEV-804, DEV-817, DEV-796)
+PUBLIC TYPE UNIVERSE: FAIL — a committed waiver cites a ticket the liveness list does not carry

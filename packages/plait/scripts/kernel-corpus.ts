@@ -6,11 +6,13 @@
  *
  * 1. **Bytes.** LF endings, ASCII only, no empty line, a final newline. These
  *    are properties of the file, not of any record.
- * 2. **Canonical form.** Every line is parsed into the canonical domain and
- *    written back; if the bytes differ, the line was not canonical. One
- *    comparison covers member order, absence of whitespace, string escaping,
- *    and the minimal-decimal number rule - all things a schema cannot see,
- *    because a schema sees a value and these are properties of its spelling.
+ * 2. **Canonical form.** Every line is read through the estate's one
+ *    canonicalizer - `@foldlab/core/jcs`, the same seam Go is byte-compared
+ *    against - and written back; if the bytes differ, the line was not
+ *    canonical. One comparison covers member order, absence of whitespace,
+ *    string escaping, and the minimal-decimal number rule - all things a
+ *    schema cannot see, because a schema sees a value and these are properties
+ *    of its spelling.
  * 3. **Meaning.** Each record decodes through the schema for its group, so a
  *    malformed record reports the annotated path a schema knows how to give,
  *    and the decoded value carries `bigint` integers rather than lossy
@@ -22,13 +24,24 @@
  * worse than one that refuses, because whatever is generated from it would
  * carry the half.
  *
+ * One group is deliberately absent from `KERNEL_RECORD_GROUPS`:
+ * `model-admission`. Those rows are marked `scope: "model-internal"` by the
+ * emitter and document the MODEL rather than claiming anything about a host,
+ * so this reader leaves them where the add-only rule puts them - reported in
+ * `skipped`, collected nowhere, and therefore absent from the conformance
+ * roster a door is replayed against. That is the whole of the exclusion:
+ * nothing here has to know what the group contains, only that it is not
+ * addressed to a host. Adding the name to `KERNEL_RECORD_GROUPS` would silently
+ * promote those rows into the roster, so the skip is checked by a test rather
+ * than left to habit (operator grill ruling A8, sitting record DEV-772).
+ *
  * @module
  */
-import {
-  encodeCanonicalJson,
-  parseCanonicalJson,
-  type CanonicalJson,
-} from "../src/truth/CanonicalJson.js"
+import { createHash } from "node:crypto"
+
+import { decodeJson, encodeJsonValue, type JsonValue } from "@foldlab/core/jcs"
+import { Schema, SchemaIssue } from "effect"
+
 import {
   KERNEL_CORPUS_FORMAT,
   KERNEL_RECORD_GROUPS,
@@ -46,7 +59,6 @@ import {
   type KernelStageRecord,
   type KernelTypeRecord,
 } from "../src/kernel/KernelCorpusSchemas.js"
-import { canonicalWriter, decodeCanonicalText } from "../src/truth/SchemaCanonical.js"
 
 /**
  * The interchange file the runtime derives its tables from, relative to the
@@ -76,12 +88,150 @@ export interface KernelCorpus {
   readonly lines: ReadonlyArray<string>
   /** Groups this reader does not know, skipped under the add-only rule. */
   readonly skipped: ReadonlyArray<string>
+  /**
+   * This corpus's identity: SHA-256 over its canonical bytes, lowercase hex,
+   * the estate's one derivation of an identity from bytes.
+   *
+   * It is computed here rather than by a consumer because the bytes it is over
+   * are the bytes this reader has just proved canonical - LF endings, ASCII
+   * only, every line a canonical value, a final newline - so the digest names
+   * a reading that was checked and not a file that happened to be present.
+   *
+   * A rendered surface that has to say where it came from says this, never a
+   * path. A path is an ambient reference: it names wherever the reader happens
+   * to be standing, which is exactly the input the algebra refuses. A digest
+   * names one byte sequence forever.
+   */
+  readonly digest: string
 }
 
 // Annotated at the binding, not only at the arrow, so that TypeScript reads a
 // bare `refuse(...)` as control flow that does not return and narrows after it.
 const refuse: (reason: string) => never = (reason) => {
   throw new Error(`kernel-conformance corpus: ${reason}`)
+}
+
+const utf8 = new TextEncoder()
+
+/**
+ * A corpus's identity from its bytes: SHA-256, lowercase hex, exactly the
+ * derivation `truth/Digest.ts` applies to canonical bytes. The encode is the
+ * same one the byte check reads through, and the corpus is ASCII by that
+ * check, so what is hashed here is the file's bytes and not a re-encoding of
+ * them.
+ */
+const corpusDigest = (source: string): string =>
+  createHash("sha256").update(utf8.encode(source)).digest("hex")
+
+/**
+ * The interchange's number rule, applied to a decoded document.
+ *
+ * The estate has one canonicalizer and its number domain is the estate's
+ * (DEV-807): `decodeJson` returns a `number` for a literal below 2^53 and a
+ * `bigint` at or past it, because that is the boundary where a double stops
+ * being exact. This file's grammar is narrower than the estate's - every
+ * number in it is an unbounded non-negative integer, and every record schema
+ * declares `bigint` as its carrier - so the reader states that narrowing once,
+ * here, by lifting every integral literal onto the carrier the schemas expect.
+ *
+ * A non-integral literal is left exactly as it decoded, so the schema refuses
+ * it by name rather than this walk swallowing it into an integer.
+ */
+const asNat = (value: JsonValue): JsonValue => {
+  if (typeof value === "number") return Number.isInteger(value) ? BigInt(value) : value
+  if (value === null || typeof value !== "object") return value
+  if (Array.isArray(value)) return value.map(asNat)
+  const lifted = Object.create(null) as { [key: string]: JsonValue }
+  for (const [key, member] of Object.entries(value as { readonly [key: string]: JsonValue })) {
+    lifted[key] = asNat(member)
+  }
+  return lifted
+}
+
+/**
+ * Reads one line of the interchange into the corpus's value domain: the
+ * estate's constrained decoder, then this file's number rule. Refuses whatever
+ * the seam refuses, naming the byte offset the seam names.
+ */
+export const readCanonicalValue = (text: string, where = "the value"): JsonValue => {
+  const decoded = decodeJson(utf8.encode(text))
+  return decoded.ok
+    ? asNat(decoded.value)
+    : refuse(`${where} is not JSON: ${decoded.refusal.reason} (at offset ${decoded.refusal.offset})`)
+}
+
+/**
+ * Writes one value as its canonical bytes through the estate's one
+ * canonicalizer. A value outside the canonical domain refuses with the path
+ * the seam names rather than acquiring a byte form by coercion.
+ */
+export const writeCanonicalValue = (value: JsonValue, where = "the value"): string => {
+  const encoded = encodeJsonValue(value)
+  return encoded.ok
+    ? encoded.bytes
+    : refuse(`${where} has no canonical form: ${encoded.refusal.reason} (at ${encoded.refusal.path})`)
+}
+
+/** Whether text is already the one canonical spelling of the value it denotes. */
+export const isCanonicalText = (text: string): boolean => {
+  try {
+    return writeCanonicalValue(readCanonicalValue(text)) === text
+  } catch {
+    return false
+  }
+}
+
+/** The result of reading one canonical record through a schema. */
+export type CanonicalRead<A> =
+  | { readonly ok: true; readonly value: A }
+  | { readonly ok: false; readonly reason: string }
+
+/**
+ * Reads canonical text through a schema: decode to the corpus's value domain,
+ * then decode through the schema. A schema failure is reported with the
+ * annotated message the schema itself carries, so an identifier or a
+ * description written on a field is what a reader sees when that field is
+ * wrong.
+ */
+export const decodeCanonicalText = <S extends Schema.ConstraintDecoder<unknown>>(
+  schema: S,
+  text: string,
+): CanonicalRead<S["Type"]> => {
+  let parsed: JsonValue
+  try {
+    parsed = readCanonicalValue(text)
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  }
+  const decoded = Schema.decodeUnknownResult(schema)(parsed)
+  return decoded._tag === "Success"
+    ? { ok: true, value: decoded.success }
+    : { ok: false, reason: SchemaIssue.makeFormatterDefault()(decoded.failure.issue) }
+}
+
+/**
+ * The both-ways law for one record and one schema: the text decodes through
+ * the schema, and the decoded value writes back to the same bytes. A `false`
+ * here means the text was not canonical, the schema does not describe it, or
+ * the schema widened or narrowed what the bytes carry - a member the schema
+ * does not declare is dropped by the decode and shows up as a shorter
+ * re-emission. All of those are the same defect from the wire's point of view.
+ */
+export const roundTripsCanonically = <S extends Schema.Top & Schema.ConstraintDecoder<unknown>>(
+  schema: S,
+  text: string,
+): CanonicalRead<string> => {
+  const read = decodeCanonicalText(schema, text)
+  if (!read.ok) return read
+  let written: string
+  try {
+    written = writeCanonicalValue(read.value as JsonValue)
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  }
+  return written === text
+    ? { ok: true, value: written }
+    : { ok: false, reason: `re-emission moved:\n  read  ${text}\n  wrote ${written}` }
 }
 
 /** The arity each generator tag requires of an encoded sentence. */
@@ -106,11 +256,11 @@ export const CANON_VECTOR_NAMES = [
 ] as const
 
 const groupOf = (line: string, where: string): string => {
-  const parsed = parseCanonicalJson(line)
+  const parsed = readCanonicalValue(line, where)
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return refuse(`${where} is not a JSON object`)
   }
-  const record = (parsed as { readonly [key: string]: CanonicalJson }).record
+  const record = (parsed as { readonly [key: string]: JsonValue }).record
   return typeof record === "string" ? record : refuse(`${where} carries no record group`)
 }
 
@@ -124,7 +274,7 @@ const readGroupRecord = <Group extends KernelRecordGroup>(
   if (!read.ok) return refuse(`${where} is not a ${group} record: ${read.reason}`)
   // The both-ways law, per record: what the schema decoded writes back to the
   // bytes it came from. A schema that quietly widened a field would show here.
-  const written = canonicalWriter(schema).toText(read.value)
+  const written = writeCanonicalValue(read.value as JsonValue, where)
   if (written !== line) {
     return refuse(`${where} does not survive its own schema: wrote ${written}`)
   }
@@ -151,7 +301,8 @@ const checkBytes = (source: string): ReadonlyArray<string> => {
 
 const checkCanonical = (rows: ReadonlyArray<string>): void => {
   for (const [index, line] of rows.entries()) {
-    const rewritten = encodeCanonicalJson(parseCanonicalJson(line))
+    const where = `line ${index + 1}`
+    const rewritten = writeCanonicalValue(readCanonicalValue(line, where), where)
     if (rewritten !== line) {
       refuse(
         `line ${index + 1} is not in canonical form\n  read  ${line}\n  canon ${rewritten}`,
@@ -161,7 +312,7 @@ const checkCanonical = (rows: ReadonlyArray<string>): void => {
 }
 
 const checkCounts = (
-  corpus: Omit<KernelCorpus, "lines" | "skipped">,
+  corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">,
   skipped: ReadonlyArray<string>,
 ): void => {
   const counted: ReadonlyArray<readonly [KernelRecordGroup, number]> = [
@@ -207,7 +358,7 @@ const checkCounts = (
   }
 }
 
-const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
+const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">): void => {
   corpus.kinds.forEach((kind, rank) => {
     if (kind.rank !== BigInt(rank)) {
       refuse(`kind ${kind.name} has rank ${kind.rank} at position ${rank}`)
@@ -254,31 +405,70 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
     if (!tags.has(tag)) refuse(`no encoding vector represents generator tag ${tag}`)
   }
 
+  // The admission block is refused rows and then admitted rows, and the split
+  // is load-bearing: the refused prefix is what gets read against the taught
+  // refusal table position for position, so a single admitted row in the middle
+  // would shift every later refusal off its reason. More refused rows than the
+  // table has reasons is lawful - one reason can be earned by more than one
+  // candidate shape, and the stage-rank edge earns absence-trigger a second
+  // time - so the alignment is checked only as far as the table reaches.
+  const firstAdmitted = corpus.admissions.findIndex((row) => row.verdict === "admitted")
+  if (firstAdmitted < 0) refuse("the admission block carries no admitted verdict")
+  if (firstAdmitted === 0) refuse("the admission block opens admitted, so it pins no refusal")
+  const admitted: Array<{
+    readonly name: string
+    readonly encoded: ReadonlyArray<bigint>
+  }> = []
   corpus.admissions.forEach((admission, index) => {
-    if (admission.verdict === "refused") {
-      if (!reasons.has(admission.reason)) {
-        refuse(`admission ${admission.name} names unknown reason ${admission.reason}`)
-      }
-      const aligned = corpus.refusals[index]
-      if (aligned !== undefined && aligned.reason !== admission.reason) {
-        refuse(
-          `admission ${index} names ${admission.reason} where refusal ${index} names` +
-            ` ${aligned.reason}; the gate order and the declaration order have diverged`,
-        )
-      }
-    } else if (index !== corpus.admissions.length - 1) {
-      refuse(`admitted verdict ${admission.name} is not the last admission record`)
+    if (admission.verdict !== "refused") {
+      admitted.push({ name: admission.name, encoded: admission.encoded })
+      return
+    }
+    if (index > firstAdmitted) {
+      refuse(
+        `refused verdict ${admission.name} stands after an admitted one;` +
+          " the refused rows are not a prefix of the admission block",
+      )
+    }
+    if (!reasons.has(admission.reason)) {
+      refuse(`admission ${admission.name} names unknown reason ${admission.reason}`)
+    }
+    const aligned = corpus.refusals[index]
+    if (aligned !== undefined && aligned.reason !== admission.reason) {
+      refuse(
+        `admission ${index} names ${admission.reason} where refusal ${index} names` +
+          ` ${aligned.reason}; the gate order and the declaration order have diverged`,
+      )
     }
   })
-  const last = corpus.admissions.at(-1)
-  if (last === undefined || last.verdict !== "admitted") {
-    refuse("the admission block does not end with an admitted verdict")
-  } else {
-    const twin = corpus.encodings
-      .find((encoding) => encoding.act.join(",") === last.encoded.join(","))
-    if (twin === undefined) {
-      refuse(`the admitted encoding ${last.encoded.join(",")} matches no encoding vector`)
+
+  // Every admitted row is a sentence at its own generator's arity, and at least
+  // one of them is a sentence the encoding group states as well. The second
+  // half is the tie between the two groups: an admission block that drifted
+  // clear of the encoding vectors would still satisfy the arity check alone.
+  //
+  // Two admitted rows MAY carry the same sentence. The model's payload
+  // canonicalizer is a fold into one identity, and distinct lawful payloads
+  // reach the same value; the corpus plants such a pair on purpose. Whether
+  // that quotient is intended is an open question for the model, so this reader
+  // records the collision rather than refusing it.
+  for (const row of admitted) {
+    const tag = row.encoded[0]
+    if (tag === undefined) refuse(`admission ${row.name} carries an empty sentence`)
+    const arity = GENERATOR_ARITY[Number(tag)]
+    if (arity === undefined) refuse(`admission ${row.name} carries unknown generator tag ${tag}`)
+    if (row.encoded.length !== arity) {
+      refuse(
+        `admission ${row.name} has ${row.encoded.length} entries, tag ${tag} requires ${arity}`,
+      )
     }
+  }
+  if (
+    !admitted.some((row) =>
+      corpus.encodings.some((encoding) => encoding.act.join(",") === row.encoded.join(","))
+    )
+  ) {
+    refuse("no admitted sentence matches an encoding vector; the two groups have come apart")
   }
 
   const documented = corpus.docs.map((doc) => doc.name)
@@ -300,7 +490,7 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
   corpus.canons.forEach((canon, index) => {
     const wanted = CANON_VECTOR_NAMES[index]
     if (canon.name !== wanted) refuse(`canon vector ${index} is ${canon.name}, want ${wanted}`)
-    const written = encodeCanonicalJson(canon.value as CanonicalJson)
+    const written = writeCanonicalValue(canon.value as JsonValue, `canon vector ${canon.name}`)
     if (written !== canon.bytes) {
       refuse(
         `canon vector ${canon.name} pins bytes ${canon.bytes}, the canonicalizer writes ${written}`,
@@ -342,7 +532,7 @@ const edgeKey = (from: bigint, to: bigint): string => `${from}->${to}`
 // pairing come the shape laws - the local namespace, the newest-first
 // admission order, and the redundancy between edges and local arguments -
 // because those are the properties a degenerate producer would drop.
-const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
+const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">): void => {
   if (corpus.programs.length === 0) return
   const fields = generatorFields(corpus.types)
   const kindNames = new Set(corpus.kinds.map((kind) => kind.name))
@@ -351,7 +541,7 @@ const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void =>
 
   for (const program of corpus.programs) {
     const where = `program vector ${program.name}`
-    const written = encodeCanonicalJson(program.declaration as unknown as CanonicalJson)
+    const written = writeCanonicalValue(program.declaration as unknown as JsonValue, where)
     if (written !== program.bytes) {
       refuse(`${where} pins bytes ${program.bytes}, the canonicalizer writes ${written}`)
     }
@@ -584,7 +774,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
   }
   checkCounts(corpus, skipped)
   checkTables(corpus)
-  return { ...corpus, lines: rows, skipped }
+  return { ...corpus, lines: rows, skipped, digest: corpusDigest(source) }
 }
 
 /**

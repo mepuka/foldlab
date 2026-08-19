@@ -4,14 +4,24 @@
  * Three claims. The generated tables are the corpus's tables and not a stale
  * copy. Every emitted encoding vector decodes and re-encodes to itself. Every
  * emitted admission verdict is the verdict a runtime door returns, for all
- * seventeen planted candidates.
+ * nineteen planted candidates in the HOST roster - seventeen refused, two
+ * admitted.
  *
- * Two controls stand beside them for the things seventeen vectors cannot say.
- * The corpus's identity labels are unbounded, so one row drives a value past
- * what a double holds exactly and pins the encoding it must keep. And the
- * corpus carries the anchored resolve that must be REFUSED but not the bare
- * one that must be ADMITTED, so one row spells absence the way the generated
- * schema spells it and holds the door to admitting it.
+ * The admitted two are what a closure list cannot state. A refusal roster says
+ * which spellings the door rejects and never which it ACCEPTS, so a door that
+ * refused everything would satisfy every closure row and still be wrong. One of
+ * them carries a claim of its own, replayed below: the first admission ever to
+ * reach the trigger arm's referent check.
+ *
+ * A tenth record group, `model-admission`, is emitted marked model-internal and
+ * is deliberately NOT part of this roster; the wall below is that it stays out.
+ *
+ * Two controls stand beside them for the things the vectors cannot say. The
+ * corpus's identity labels are unbounded, so one row drives a value past what a
+ * double holds exactly and pins the encoding it must keep. And the corpus
+ * carries the anchored resolve that must be REFUSED but not the bare one that
+ * must be ADMITTED, so one row spells absence the way the generated schema
+ * spells it and holds the door to admitting it.
  *
  * A fourth claim used to stand here: a second reading of the model, transcribed
  * from its Lean sources by hand, agreed with the emission line for line. It is
@@ -61,14 +71,19 @@ const corpus = await loadKernelArtifact()
 const doorUnderTest = make(PLANTED_CONTEXT)
 
 describe("kernel conformance tables", () => {
-  test("the committed tables carry the artifact's provenance", () => {
+  test("the committed tables name the artifact by its digest", () => {
     // The generated constants are literal-typed, so every comparison reads
     // artifact-first: the wide value is the subject, the pinned literal is the
     // expectation.
+    //
+    // Provenance is a digest and not a location (root law 10): the corpus these
+    // tables were rendered from is named by SHA-256 over its canonical bytes, so
+    // this assertion re-derives that identity from the corpus the harness just
+    // read and compares. A path would have made the same claim uncheckable —
+    // there is nothing to verify about a string naming where a file sat.
     expect(corpus.header.format).toBe(KERNEL_TABLE_PROVENANCE.format)
-    expect(corpus.header.generator).toBe(KERNEL_TABLE_PROVENANCE.generator)
-    expect(corpus.header.source).toBe(KERNEL_TABLE_PROVENANCE.source)
-    expect(KERNEL_TABLE_PROVENANCE.command).toBe("bun run generate:kernel-tables")
+    expect(corpus.digest).toBe(KERNEL_TABLE_PROVENANCE.corpus)
+    expect(corpus.digest).toMatch(/^[0-9a-f]{64}$/)
   })
 
   test("the kind and stage registries are the artifact's, ranks included", () => {
@@ -134,10 +149,76 @@ describe("kernel door conformance", () => {
     const refusedCount = corpus.admissions
       .filter((admission) => admission.verdict === "refused").length
     const admittedCount = corpus.admissions.length - refusedCount
-    expect(admittedCount).toBe(1)
+    expect(refusedCount).toBe(17)
+    expect(admittedCount).toBe(2)
     console.info(
       `KERNEL DOOR: PASS target=shipping replayed=${replays.length}/${corpus.admissions.length}` +
         ` refused=${refusedCount} admitted=${admittedCount} skipped=0`,
+    )
+  })
+
+  test("a fully catalogued trigger is admitted: the trigger arm's referent check runs", () => {
+    // Both other planted triggers refuse on their PREDICATE, so before this row
+    // no passing admission ever reached the trigger arm's referent check at all.
+    // This one names (program, 3) as its declaration and (lane, 1) in its
+    // predicate, both catalogued, and is admitted.
+    //
+    // Scope, stated because the omission is deliberate: this claims NOTHING
+    // about a predicate naming an uncatalogued lane, cell, or register.
+    // Predicate leaves are bare naturals rather than raw arguments, so the
+    // model's `requiredCatalog` trigger arm names only the declaration; whether
+    // that is intended is an open question, and no vector here answers it.
+    const emitted = corpus.admissions.find((row) => row.name === "catalogedTrigger")
+    expect(emitted?.verdict).toBe("admitted")
+    expect(emitted?.verdict === "admitted" && emitted.encoded).toEqual([6n, 0n, 1n, 17n, 0n, 3n])
+
+    const verdict = doorUnderTest.admit(PLANTED_CANDIDATES["catalogedTrigger"]!)
+    expect(verdict).toEqual({
+      verdict: "admitted",
+      act: {
+        _tag: "trigger",
+        predicate: {
+          _tag: "evidenceAppears",
+          lane: { id: 1n },
+          pattern: { bytes: 17n },
+        },
+        declaration: { id: 3n },
+      },
+      encoded: [6n, 0n, 1n, 17n, 0n, 3n],
+    })
+
+    // The same sentence the encoding group already states, reached this time
+    // through the door rather than through the encoder.
+    const committed = corpus.encodings.find((row) => row.name === "trigger-evidence-appears")
+    expect(committed?.act).toEqual([6n, 0n, 1n, 17n, 0n, 3n])
+    console.info(
+      "KERNEL TRIGGER: PASS declaration=program/3 predicate-leaf=lane/1 catalogued=both" +
+        " verdict=admitted encoded=[6,0,1,17,0,3] vector=trigger-evidence-appears" +
+        " uncatalogued-leaves=NOT-CLAIMED",
+    )
+  })
+
+  test("the model-internal aliasing rows never reach the conformance roster", () => {
+    // The model's payload canonicalizer folds distinct lawful payloads to one
+    // identity - a digest reference weighs 1 + kind.rank * 4096 + id, a literal
+    // 2 + value * 16, so [ref lane 1] and [literal 1024] both weigh 16386. That
+    // quotient is RULED INTENDED and model-internal (operator grill ruling A8,
+    // sitting record DEV-772, 2026-08-19): a payload denotes its canonical
+    // value, so inside the model two spellings of one value are one sentence.
+    //
+    // Real injectivity is the byte-level canonicalizer's obligation, walled
+    // separately under DEV-807. So the claim this wall makes is the EXCLUSION,
+    // not the collision: the emitter marks those rows model-internal, and the
+    // door is never replayed against them. A host that reproduced the collision
+    // would be reproducing a model convenience, not the estate's byte identity.
+    expect(corpus.admissions.map((row) => row.name)).not.toContain("aliasRefDeclare")
+    expect(corpus.admissions.map((row) => row.name)).not.toContain("aliasLiteralDeclare")
+    expect(corpus.skipped).toContain("model-admission")
+    expect(PLANTED_CANDIDATES["aliasRefDeclare"]).toBeUndefined()
+    expect(PLANTED_CANDIDATES["aliasLiteralDeclare"]).toBeUndefined()
+    console.info(
+      "KERNEL MODEL-INTERNAL: PASS group=model-admission skipped=yes" +
+        " in-conformance-roster=no ruling=A8/DEV-772 injectivity-owner=DEV-807",
     )
   })
 
