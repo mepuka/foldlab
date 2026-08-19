@@ -1,0 +1,65 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed 5213770534915362124 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 10132] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-afd056dccdb30f16f\verify\journal\JournalBroken.tla
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-afd056dccdb30f16f\verify\journal\Journal.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-11208748104573277909\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Integers
+Semantic processing of module Journal
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module JournalBroken
+Linting of module Journal
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module JournalBroken
+Starting... (2026-08-19 05:47:42)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-19 05:47:43.
+Error: Invariant ReadIsTamperEvident is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ tampers = 0
+/\ cur = <<[seq |-> -1, head |-> <<>>]>>
+/\ store = <<>>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ res = <<"none">>
+/\ crashes = 0
+
+State 2: <Begin(1,1) line 293, col 3 to line 298, col 47 of module Journal>
+/\ tampers = 0
+/\ cur = <<[seq |-> -1, head |-> <<>>]>>
+/\ store = <<>>
+/\ pend = <<[pay |-> 1, prev |-> <<>>, busy |-> TRUE, exp |-> 0]>>
+/\ res = <<"none">>
+/\ crashes = 0
+
+State 3: <Finish(1) line 311, col 3 to line 347, col 53 of module Journal>
+/\ tampers = 0
+/\ cur = <<[seq |-> 0, head |-> <<<<1, 0>>>>]>>
+/\ store = <<[pay |-> 1, prev |-> <<>>, seq |-> 0]>>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ res = <<"stored">>
+/\ crashes = 0
+
+State 4: <TamperPrev(1) line 423, col 3 to line 428, col 42 of module Journal>
+/\ tampers = 1
+/\ cur = <<[seq |-> 0, head |-> <<<<1, 0>>>>]>>
+/\ store = <<[pay |-> 1, prev |-> <<<<1, 0>>>>, seq |-> 0]>>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ res = <<"stored">>
+/\ crashes = 0
+
+10 states generated, 10 distinct states found, 5 states left on queue.
+The depth of the complete state graph search is 4.
+Finished in 00s at (2026-08-19 05:47:43)
+Trace exploration spec path: .\JournalBroken_TTrace_1787136462.tla

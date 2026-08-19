@@ -1,0 +1,5 @@
+tools/
+states/
+_apalache-out/
+*.st
+*_TTrace_*

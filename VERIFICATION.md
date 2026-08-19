@@ -34,7 +34,7 @@ The table points; the entries below carry the bounds.
 | --- | --- | --- | --- |
 | Effector (commitment register) | R3 + R4 | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed with proof artifacts unshipped (ticket 013) | the tag; section below kept as record |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
-| Journal (CAS-append, verify-on-read) | R0/R1 | **Claimed**; no model gate yet (ticket 012). The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
+| Journal (CAS-append, verify-on-read) | R0/R1 + R2 | **Claimed** at R0/R1 for the runtime and at R2 for the model, including the refinement into the catalog model; R3 and R4 owed. The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [verify/journal/](verify/journal/), [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
@@ -218,7 +218,9 @@ ticket 013 lands the proof artifacts.
   `Cardinality(Vals)`, the domain actually explored.
 
 - **R4 against the coarsened wire refinement (CreateAtomic); the
-  split-CAS branch's conformance is ticket 012's obligation.** TLC
+  split-CAS branch's conformance is discharged AT MODEL LEVEL by the
+  journal gate** (`verify/journal/JournalCatalog.tla`, entry below) and
+  is still owed at R4 against the running journal API. TLC
   checked that every coarse atomic create is a legal uninterrupted
   split Begin;Finish trace (or the resolving Begin's stutter) at the R2
   domains: 281,269 distinct wire states to closure, depth 17. The
@@ -289,7 +291,7 @@ ticket 013 lands the proof artifacts.
 traces, run record) and [proto/go/catalogr4/](proto/go/catalogr4/)
 (executable oracle and driver).
 
-## Journal and chain walls — R0/R1, model pending
+## Journal and chain walls — R0/R1 (runtime); the model gate is the entry below
 
 > **PARTIALLY ARCHIVED 2026-08-15.** The journal half (CAS-append,
 > verify-on-read, `go/journal/` and its black-box tests) remains in
@@ -347,9 +349,10 @@ order; it does not enable the direct-get surface.
   payload bytes `ef bb bf` and empty bytes have distinct Go heads but
   decode to the same `WireEvent`. The opt-in red witness and choices
   are in `packages/core/FINDING-SCHEMA-BOM-001.md`.
-- No dedicated model of CAS-append + crash recovery yet; the catalog
-  model embeds an abstract CAS. Ticket 012 gives the journal its own
-  model gate.
+- The journal now has a dedicated model of CAS-append, verify-on-read,
+  head adoption, and crash recovery — see the entry below. It is a
+  bounded model check with no proved correspondence to this code: the
+  claims here and the claims there do not transfer to each other.
 - The new read controls cover one embedded, file-backed daemon and two exact
   attribution corruptions; they do not claim remote-silence diagnosis or
   multi-daemon journal ownership.
@@ -383,6 +386,115 @@ order; it does not enable the direct-get surface.
 [proto/go/protod/hardening_test.go](proto/go/protod/hardening_test.go),
 [the Task 19 benchmark record](docs/bench/2026-08-13-task-19-nats-hardening.md),
 and [docs/gauntlet/](docs/gauntlet/).
+
+## Journal model gate — R2 (TLC), with the refinement into the catalog model
+
+### Claim
+
+At the bounds stated below and nowhere else, the hash-chained journal's
+five laws hold to closure: the chain never forks at a sequence number
+(given no appender holds a snapshot storage has since rewritten under
+it); an append linearizes exactly once at its expected position or
+conflicts and appends nothing, and the verdict it reports is what
+storage actually did; a verify-on-read fold over any prefix reproduces
+that prefix's stored head or reports tamper at the first bad position;
+every head a handle adopts was licensed by the one stored-entry
+verifier that open, verified read, and post-conflict resync all share
+(the D60 one-verifier law); and reopening after a crash re-derives the
+head from durable storage rather than remembering it.
+
+Composed into the catalog model as a **refinement**: over the restricted
+create path — resolve-check, then the journal's expected-position
+snapshot, then the CAS — every step is the catalog step it claims to be,
+converging creates really do stutter, and the catalog's eight ratified
+laws hold over the abstraction. The **split-CAS conformance obligation**
+received from `verify/catalog/R4-FINDING-001.md` is discharged at model
+level by the negative control that drops the expected-position guard and
+kills the refinement on exactly the schedule that finding recorded.
+
+### Evidence
+
+`bash verify/journal/run.sh` — fourteen verdicts, all required together.
+
+- Four clean closures. Race config (2 appenders, 2 payloads, positions
+  0–2, no adversary, no crash): 2,845 states generated / 1,077 distinct
+  / depth 10, asserted exactly by the gate as its cross-version canary.
+  Adversary config (one single-field corruption of one stored record per
+  behaviour): 86,729 / 32,225 / depth 14. Crash config (positions 0–1,
+  one crash event per behaviour — a lost acknowledgement at the commit
+  point, or a reopen): 3,559 / 1,146 / depth 9. Refinement config
+  (2 creators, 2 values, positions 0–2): 249 / 91 / depth 9, driving all
+  three CAS outcomes (40 stored, 16 duplicate, 12 conflict).
+- Three bound guards, each rejected on its own `ASSUME` before any state
+  is generated, so no config can silently check a truncated domain.
+- Seven negative controls, each refuted on exactly the law it dropped,
+  traces committed beside their configs: no-CAS against the chain law
+  (depth 5), optimistic outcome against the append law (5), trusting
+  read against tamper evidence (4), unverified adoption against the
+  one-verifier law (6), amnesic restart against recovery (4), no-CAS
+  against the catalog refinement (5), and dropped resolve-check against
+  the catalog's convergence law over the abstraction (5).
+- One FINDING, recorded rather than repaired away
+  (`verify/journal/FINDING-001.md`): the expected-position CAS guards the
+  position, not the predecessor's bytes. Corruption between an
+  appender's head snapshot and its publish is detected on READ, never at
+  append time. The chain law now carries that hypothesis explicitly, and
+  the two laws are visibly independent as a result.
+- Toolchain recorded, not asserted: TLC 2026.08.11.125311 (rev 0894c34),
+  jar sha256
+  `ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f`,
+  OpenJDK 21.0.2 provisioned by `mise x java@21`, flags
+  `-workers 1 -fp 1 -deadlock`, whole gate 23 s.
+
+### Bounds and residuals
+
+- **A bounded check certifies only its bounds.** At most 2 appenders,
+  2 payload values, 3 journal positions, ONE storage corruption per
+  behaviour, ONE crash event per behaviour. A defect needing a third
+  appender, a fourth position, two corruptions, or two crashes is
+  outside everything checked.
+- **No code/model correspondence.** No refinement map exists between
+  this model and `go/journal`. R4 — driving these schedules against the
+  running journal API, which is the other half of the received split-CAS
+  obligation — is owed and is not claimed. R3 (an inductive invariant,
+  lifting the laws off the cap) is owed.
+- **Crash recovery specifics are out of scope.** The model treats an
+  append as atomic at the broker. Torn writes, partial fsync, the pinned
+  server's failsafe sync window, and JetStream internal-queue overflow
+  are not modelled; they remain the `crash-durable` residuals recorded
+  in the section above.
+- **Byte canonicality collapses.** Records are canonical values in the
+  model, so the runtime's wire-byte canonicality check is inexpressible
+  and is not claimed; what is modelled is position agreement and the
+  prev link. Collision resistance is assumed — nothing here is a claim
+  about SHA-256.
+- **The stream shape gate is not modelled.** `badShapeReason` and the
+  standing stream-update advisory are an admission check on the stream's
+  configuration, not a step of the append/read machine; a conformant
+  stream is assumed throughout.
+- **Reproduced non-claim.** Only the tail record can be corrupted
+  without breaking chain well-formedness, because nothing links to it —
+  so a canonical-but-forged tail passes `tailCursor` in the model
+  exactly as it does in `go/journal`. Detecting it needs an external
+  head witness.
+- **Adoption is licensed at adoption time and no further.** A handle may
+  hold a head that storage no longer carries if storage is corrupted in
+  place afterwards; the read path refuses such a cursor, which is where
+  that guarantee lives.
+- The Effect runtime, the TypeScript reader, the MCP surface, ADR-0009's
+  replica role, and liveness are all outside this gate. Every property
+  checked is safety; no fairness is assumed.
+- The refinement is claimed against the RESTRICTED create path, not
+  against the journal's whole alphabet: the journal is content-blind and
+  convergence is the daemon's law, enforced above it. The journal's extra
+  generality — content-blind appends, stale-snapshot appends, corruption,
+  crash recovery — is outside the catalog's alphabet by construction.
+
+### Checkable at
+
+[verify/journal/](verify/journal/) — spec, configs, committed
+counterexample traces, the finding, the decisions log, and the run
+record in `README.md`.
 
 ## KV meaning fold — combine and join — R0/R1 (TypeScript), R0 (Go)
 
@@ -1106,8 +1218,8 @@ controls with committed traces, one independence control).
 Two concurrent creates, certification always succeeds, no
 convergence/duplicate path, head abstracted to journal position. The
 spec is the ratification artifact for Task 32's `catalog_head`
-provenance; the journal gate (ticket 012) and replay soundness are the
-named next increments.
+provenance; the journal gate has since landed (`verify/journal/`), and
+replay soundness is the named next increment.
 
 ### Checkable at
 

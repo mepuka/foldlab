@@ -32,6 +32,20 @@ the two proofs compose instead of overlapping.
 Gate: rungs claimed per ticket 009's rules, run records and
 counterexample traces committed under verify/journal/.
 
+## Status (2026-08-19)
+
+The R2 half LANDED with its gate at `verify/journal/`: the model of
+CAS-append, verify-on-read, the one-verifier law (D60), and crash
+recovery; five negative controls each refuted on its own law; and the
+refinement into the catalog model, whose no-CAS control discharges the
+split-CAS conformance obligation at model level. One finding was
+recorded rather than repaired away (`verify/journal/FINDING-001.md`).
+Outcomes against the four predictions below are written up in
+`verify/journal/README.md`. Still open: **R3** (an inductive invariant,
+lifting the laws off the configured cap) and **R4** (lockstep against
+the running journal API, which is the other half of the received
+split-CAS obligation).
+
 ## Pre-registered predictions (2026-08-13 — write outcomes against
 these, whatever they are; evidence:
 docs/research/2026-08-13-literature-resonances.md §D/§E)

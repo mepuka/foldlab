@@ -1,0 +1,21 @@
+------------------------- MODULE JournalCatalogBroken -------------------------
+(***************************************************************************)
+(* The refinement's negative controls.  The bridge lives in                 *)
+(* JournalCatalog.tla (stated once; each config flips exactly one law off), *)
+(* so the ratified and faithless bridges cannot drift apart.  TLC must      *)
+(* REFUTE every configuration of this module:                               *)
+(*                                                                          *)
+(*   JournalCatalogBroken.cas.cfg       NoCAS               -> Catalog...   *)
+(*     the expected-position guard is dropped, so a stale-position append   *)
+(*     lands where the catalog model conflicts — the refinement dies.  This *)
+(*     is the mechanical discharge of the split-CAS conformance obligation. *)
+(*   JournalCatalogBroken.converge.cfg  BrokenCatalogBridge -> Catalog...   *)
+(*     the daemon's resolve-check is dropped, so the journal's image        *)
+(*     carries two facts for one value and the catalog's W1/W3 convergence  *)
+(*     law fails over the abstraction.                                      *)
+(*                                                                          *)
+(* Each counterexample trace is committed beside its config as              *)
+(* JournalCatalogBroken.*.cex.txt.                                          *)
+(***************************************************************************)
+EXTENDS JournalCatalog
+================================================================================

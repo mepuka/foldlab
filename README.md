@@ -335,7 +335,7 @@ deterministic replay works at all.
 | [packages/moves/](packages/moves/) | The move-calculus kernel that replays the Lean model's corpus |
 | [go/](go/) | The Go substrate: `canonical`, `journal`, `register`, `substrate` (the assumptions gate), and `cmd/` (the walls: `plaitwall`, `registerwall`, `jcsprobe`) |
 | [proto/](proto/) | The tracer bullet — daemon, wire contract, MCP derivation, and its own gates |
-| [verify/](verify/) | Model gates: `fabric` and `fabric-veil` (Plait), `moves`, `ir`, `catalog`, `implication`, `pipeline` |
+| [verify/](verify/) | Model gates: `fabric` and `fabric-veil` (Plait), `moves`, `ir`, `catalog`, `journal`, `implication`, `pipeline` |
 | [fixtures/](fixtures/) | Frozen corpora. `golden-conformance.json` and `jcs-rfc8785.json` do not move without an explicit, reasoned regeneration |
 | [docs/](docs/) | [design/](docs/design/) records, [adr/](docs/adr/) decisions, [research/](docs/research/), [map/](docs/map/) tickets, [gauntlet/](docs/gauntlet/) frozen specs |
 | [scripts/](scripts/) | The gate runners (`gates.ts`, `gates.sh`, `gates.ps1`) |
@@ -377,7 +377,7 @@ bash verify/fabric-veil/run.sh   # Plait F5 — the register's inductive invaria
 bash verify/moves/run.sh         # the move calculus
 ```
 
-`verify/{catalog,ir,implication,pipeline}/run.sh` follow the same
+`verify/{catalog,journal,ir,implication,pipeline}/run.sh` follow the same
 shape.
 
 Long JCS differential fuzzing runs the real TypeScript and Go

@@ -1,0 +1,44 @@
+TLC jar: ../catalog/tools/tla2tools.jar
+  sha256: ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f
+  Version 2026.08.11.125311  (recorded results used TLC 2026.08.11.125311; the race canary
+   below is what makes a different jar comparable)
+
+-- ratified model (Journal.tla): the race, the adversary, the crash --
+== Journal.cfg (ratified: must be clean to closure)
+   clean: 2845 states generated, 1077 distinct states found, 0 states left on queue.
+   canary exact: generated=2845 distinct=1077 depth=10
+== Journal.tamper.cfg (ratified: must be clean to closure)
+   clean: 86729 states generated, 32225 distinct states found, 0 states left on queue.
+== Journal.crash.cfg (ratified: must be clean to closure)
+   clean: 3559 states generated, 1146 distinct states found, 0 states left on queue.
+
+-- bound guards (each capped dimension must reject independently) --
+== Journal.overrun-writers.cfg (out of range: TLC must reject the NumWriters guard)
+   rejected as required
+== Journal.overrun-payloads.cfg (out of range: TLC must reject the NumPayloads guard)
+   rejected as required
+== Journal.overrun-cap.cfg (out of range: TLC must reject the Cap guard)
+   rejected as required
+
+-- negative controls (JournalBroken.tla) --
+== JournalBroken.cas.cfg (faithless: TLC must report: Action property WritersNeverForkTheChain is violated)
+   refuted as required: 48 states generated, 36 distinct states found, 21 states left on queue.
+== JournalBroken.outcome.cfg (faithless: TLC must report: Action property AppendIsExactlyOnceOrConflict is violated)
+   refuted as required: 56 states generated, 44 distinct states found, 27 states left on queue.
+== JournalBroken.read.cfg (faithless: TLC must report: Invariant ReadIsTamperEvident is violated)
+   refuted as required: 10 states generated, 10 distinct states found, 5 states left on queue.
+== JournalBroken.adopt.cfg (faithless: TLC must report: Action property OnlyVerifiedHeadsAreAdopted is violated)
+   refuted as required: 369 states generated, 242 distinct states found, 182 states left on queue.
+== JournalBroken.restart.cfg (faithless: TLC must report: Action property RecoveryIsPureStorage is violated)
+   refuted as required: 54 states generated, 34 distinct states found, 24 states left on queue.
+
+-- the refinement into the catalog model (JournalCatalog.tla) --
+== JournalCatalog.cfg (ratified: must be clean to closure)
+   clean: 249 states generated, 91 distinct states found, 0 states left on queue.
+== JournalCatalogBroken.cas.cfg (faithless: TLC must report: Action property CatalogRefinement is violated)
+   refuted as required: 36 states generated, 27 distinct states found, 12 states left on queue.
+== JournalCatalogBroken.converge.cfg (faithless: TLC must report: Invariant CatalogConvergence is violated)
+   refuted as required: 46 states generated, 42 distinct states found, 23 states left on queue.
+
+R2 GATE: PASS (4 clean closures, 3 bound rejections, 7 required refutations; caps as configured)
+Raw TLC output kept in /tmp/journal-tlc.Ttdp8z
