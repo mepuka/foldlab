@@ -2699,6 +2699,109 @@ one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
 
+## Task DEV-804 (slice C) — one canonicalizer: the plait twins retire
+
+### T0. The private twins retire onto the jcs seam, and the seam's number line wins
+
+Decided: `src/truth/CanonicalJson.ts` and `src/truth/SchemaCanonical.ts` are
+deleted, and every importer moves onto `@foldlab/core/jcs`. Where the twins and
+the seam disagreed — the number line — the seam wins, per the operator ruling
+of 2026-08-18 (DEV-807, PR #138). The twins had one honest justification and it
+was in their own module header: RFC 8785 serializes numbers through IEEE-754
+doubles, this interchange carries identity labels past 2^53, so the twins wrote
+unbounded integers as minimal decimal and refused a fraction, an exponent, and
+a minus sign at the parser. DEV-807 moved that exact rule into
+`packages/core/src/jcs.ts` — bigint carriers, exact integer digits, the decoder
+returning `bigint` for any pure-integer literal at or past 2^53 — and into Go.
+With the divergence gone the twins were a second identity with no remaining
+reason, which is Law 1 debt and a standing invitation to drift. Alternatives:
+keep the twins and add a differential wall between them and the seam (two
+canonicalizers plus a wall is strictly worse than one canonicalizer, and
+both-sides-agree is not verification); re-export the seam under the twins'
+names (leaves the retired vocabulary alive and the wall with nothing to refuse);
+retire only `CanonicalJson.ts` and leave the schema walk (the walk is built on
+the twin's value domain and cannot outlive it). Why: identity is bytes, and two
+things that write bytes are two identities. **Load-bearing? yes** — program
+content addresses are SHA-256 over these bytes, and the daemon and carriage
+paths compare them.
+
+Measured, before committing anything: over all 121 lines of
+`fixtures/kernel-conformance.ndjson`, the twin's encoder and the seam's encoder
+produce identical bytes for every parsed value (0 moved); all four committed
+program vectors' declarations encode to the bytes the vectors pin under both
+encoders (0 moved); every line survives seam-decode-then-seam-encode byte for
+byte (0 moved); and every line survives schema-decode-then-seam-encode byte for
+byte (0 moved). No committed digest, canon vector, program byte string, or
+generated artifact moved: `check:corpus`, `check:kernel-tables`, and
+`check:kernel-schemas` all report byte-identical regeneration, and
+`test/PublicTypeUniverse.inventory.md` is unchanged at 132 classified types.
+The canon vector the ruling turns on round-trips through the surviving seam
+unchanged: `{"bytes":"9007199254740993","name":"big-integer","record":"canon","value":9007199254740993}`
+reads back with `value === 9007199254740993n` and re-emits to those same bytes,
+while `JSON.parse("9007199254740993")` is still `9007199254740992`.
+
+### T1. The corpus's Nat rule is a stated narrowing of the estate's domain, not a second parser
+
+Decided: `scripts/kernel-corpus.ts` decodes through the seam's `decodeJson` and
+then lifts every integral literal onto `bigint` (`asNat`), because the seam
+returns `number` below 2^53 and `bigint` at or past it while every record schema
+declares `KernelNat`. A non-integral literal is left as the seam decoded it, so
+the schema refuses it by name rather than the lift swallowing it into an
+integer. Alternatives: widen the record schemas to accept `number | bigint`
+(two carriers for one wire shape, and the widening reaches the generated
+schemas and every consumer); make the seam's decoder corpus-shaped (a
+package-wide domain change to serve one file, and it would move `packages/core`
+under a ticket that does not own it); parse the corpus with a second reader
+(the twin, under a new name). Why: the corpus's grammar genuinely is narrower
+than the estate's, and the honest place to say so is the reader of that file,
+in one walk that adds no serialization. **Load-bearing? no** — the lift is a
+carrier choice on the decode path; the bytes are the seam's either way, and the
+canonical-form check compares bytes, not carriers.
+
+### T2. Two type-level refusals are traded for three value-level controls, and the trade is named
+
+Decided: retiring `SchemaCanonical.ts` gives up two refusals it made at
+derivation time, before any data existed — a schema node of JavaScript
+`number`, and a schema carrying an encode/decode transformation — and the
+replacement catches both at the first record that exercises them, through
+`roundTripsCanonically` in `scripts/kernel-corpus.ts`. The `number` refusal is
+not relocated, it is **repealed**: the estate's number domain now carries
+JavaScript numbers, so there is no longer a type to refuse. The codec refusal
+survives as a value-level one, because a codec decodes to a value whose
+canonical form is not the text it came from. A third property the AST walk gave
+for free — an object member the schema does not declare — is now caught because
+`Schema.Struct` drops it and a dropped member is a shorter re-emission.
+`test/KernelSchemas.test.ts` carries a control for each of the three, and
+`test/KernelCorpus.test.ts` restates the number rule as what it now is: a
+fraction and an exponent are non-canonical *spellings* (refused by the
+canonical-form check, which is where a spelling was always refutable), a
+leading zero is still refused at the reader, and `-1` is canonical text that
+`KernelNat` refuses at the schema. Alternatives: keep the AST walk on top of
+the seam (the walk's whole value domain was the twin's, so keeping it keeps a
+twin); assert the loss in prose and move on (a claim without a gate).
+**Load-bearing? yes** — a control that only fires on values needs a value that
+fires it, and all three are committed.
+
+### T3. The wall is a source scan with a planted twin, because the failure it prevents compiles
+
+Decided: `check:one-canonicalizer` (wired into `test:fast`) reads every module
+under `src/` and refuses three things: a retired twin's file path existing
+again, a retired twin's name (`CanonicalJson`, `SchemaCanonical`) spelled
+anywhere but `src/truth/Canonical.ts`, and the canonicalizer signature —
+`JSON.stringify` beside `.sort(` beside `Object.keys(` — in any module but that
+one. `check:one-canonicalizer-control` (wired into `test:types`) copies the
+committed mutant at `negative-controls/OneCanonicalizer.private-twin.mutant.ts`
+to the retired path, requires the scan to fail naming both arms, and restores
+the tree in a `finally`. Alternatives: a lint rule on imports of
+`@foldlab/core/jcs` (the seam is meant to be imported; the offence is
+re-implementing it); a type-level check (a second canonicalizer typechecks
+perfectly — that is the whole problem); a test that greps in `bun test` (a wall
+that lives beside the code it guards is a wall the same edit can delete, and
+the package's other structural laws are check scripts). Why: the arms are
+properties of source bytes, and the third arm catches the twin coming back
+under a name nobody has thought of yet. **Load-bearing? yes** — the wall is
+what makes "there is one RFC 8785 canonicalizer" in `AGENTS.md` a law rather
+than an exhortation, and its control is what makes the wall refutable.
 ## Task DEV-804 — the generator emits named types
 
 ### T0. The alias sits beside its schema, and only the suspended entry's moves

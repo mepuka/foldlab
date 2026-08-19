@@ -11,8 +11,9 @@
  *    generated `$` surface, and compared byte for byte with the bytes the
  *    vector pins. No recipe reads its vector.
  * 2. **Both ways over the group.** Every program line parses and re-emits to
- *    itself through the schema's own derived writer, and each record's
- *    declaration canonicalizes to the record's own `bytes`.
+ *    itself through the estate's one canonicalizer, and each record's
+ *    declaration canonicalizes to the record's own `bytes` - the same bytes
+ *    the builder's digest is taken over.
  * 3. **Through the door, where a node is a sentence.** Every node of the
  *    committed group is offered to the model's reference door, and the reason
  *    each one is not a sentence is printed rather than skipped. Because none
@@ -40,12 +41,17 @@
  */
 import { describe, expect, test } from "bun:test"
 
-import { encodeCanonicalJson, parseCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
+import type { JsonValue } from "@foldlab/core/jcs"
+
 import { KernelProgramRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { KERNEL_GENERATOR_FIELDS, KERNEL_GENERATORS } from "../src/kernel/KernelBuilder.generated.js"
 import { admissionFault, erase, fill, program } from "../src/kernel/KernelProgram.js"
-import { roundTripsCanonically } from "../src/truth/SchemaCanonical.js"
-import { readKernelCorpus } from "../scripts/kernel-corpus.js"
+import {
+  readCanonicalValue,
+  readKernelCorpus,
+  roundTripsCanonically,
+  writeCanonicalValue,
+} from "../scripts/kernel-corpus.js"
 import { make } from "../src/kernel/KernelDoor.js"
 import { PLANTED_CONTEXT } from "./KernelDoor.fixtures.js"
 import {
@@ -82,19 +88,19 @@ describe("the program group", () => {
       .filter((line) => line.includes("\"record\":\"program\""))
     expect(lines.length).toBe(programs.length)
     for (const line of lines) {
-      expect(encodeCanonicalJson(parseCanonicalJson(line))).toBe(line)
+      expect(writeCanonicalValue(readCanonicalValue(line))).toBe(line)
       const round = roundTripsCanonically(KernelProgramRecord, line)
       expect(round.ok ? "" : round.reason).toBe("")
     }
     console.log(
-      `PROGRAM BOTH-WAYS: PASS lines=${lines.length} writer=derived-from-ast` +
+      `PROGRAM BOTH-WAYS: PASS lines=${lines.length} writer=@foldlab/core/jcs` +
         " parse-then-reemit=byte-identical",
     )
   })
 
   test("each record's declaration canonicalizes to its own bytes", () => {
     for (const record of programs) {
-      expect(encodeCanonicalJson(record.declaration as unknown as CanonicalJson))
+      expect(writeCanonicalValue(record.declaration as unknown as JsonValue))
         .toBe(record.bytes)
     }
     console.log(`PROGRAM SELF-TEST: PASS vectors=${programs.length} pairing=value-and-bytes`)
@@ -252,7 +258,7 @@ describe("the mutant arm", () => {
   test("a builder that drops the edges diverges and is refused", () => {
     const withEdges = programs.find((record) => record.declaration.edges.length > 0)!
     const mutant = withoutEdges(withEdges.declaration)
-    expect(encodeCanonicalJson(mutant as unknown as CanonicalJson)).not.toBe(withEdges.bytes)
+    expect(writeCanonicalValue(mutant as unknown as JsonValue)).not.toBe(withEdges.bytes)
     const spliced = reading.source.replace(
       asProgramRecord(withEdges.name, withEdges.declaration),
       asProgramRecord(withEdges.name, mutant),
@@ -269,7 +275,7 @@ describe("the mutant arm", () => {
   test("a builder that flattens the holes diverges and is refused", () => {
     const holey = programs.find((record) => record.declaration.holes.length > 0)!
     const mutant = withoutHoles(holey.declaration)
-    expect(encodeCanonicalJson(mutant as unknown as CanonicalJson)).not.toBe(holey.bytes)
+    expect(writeCanonicalValue(mutant as unknown as JsonValue)).not.toBe(holey.bytes)
     const spliced = reading.source.replace(
       asProgramRecord(holey.name, holey.declaration),
       asProgramRecord(holey.name, mutant),
