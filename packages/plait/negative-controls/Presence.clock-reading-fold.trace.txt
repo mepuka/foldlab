@@ -1,0 +1,1 @@
+PRESENCE CONTROL: PASS component=staleness-read mutant=claimed-time-minus-now vector=two-firings-one-session law=no-clock-in-meaning

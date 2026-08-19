@@ -1,0 +1,1 @@
+PRESENCE CONTROL: PASS component=presence-membership mutant=heartbeat-implies-member vector=tick-without-establishment law=established-and-not-ended

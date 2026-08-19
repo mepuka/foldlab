@@ -6288,3 +6288,133 @@ Alternatives: drop the steps from the model's account (destroys the evidence
 that node 1 landed before node 2 could not be spoken); make the engine return
 the prefix (an engine semantic change, forbidden). **Load-bearing? yes** — the
 wall's coverage is uneven across the three arms and a reader has to know where.
+
+### T39. The reconnect pins become estate-set rows, and the transcribed defaults leave
+
+Decided: `maxReconnectAttempts` and `reconnect` move from `client-default` to
+`estate-set` in the connect-option table, take their values from one declared
+pin (`-1` and `true`), are projected back out by `estateConnectArguments`, and
+are handed to the pinned client on every connect. Both rows leave
+`CONNECT_OPTION_DEFAULTS`, because a row the estate passes has no transcribed
+default to carry, and two readings of one option is exactly the drift the
+transcription discipline exists to refuse.
+
+The declaration digest moves with them, so every session folded after this is a
+different session — visibly, and with the option table resolvable from the fact
+that pins it. That is the intended consequence rather than a cost: "we changed
+the reconnect bound" is now a difference in the truth plane.
+
+Alternatives: thread the two values through the connect-declaration input so a
+caller supplies them (a per-call-site reconnect policy, which is the shape the
+ruling was made to remove); leave them `client-default` and pass them anyway (a
+transcribed default silently becoming a runtime value, refused in place by the
+table's own docstring). **Load-bearing? yes** — it moves what every connection
+in the estate runs under, and it moves every session digest with it.
+
+### T40. The kill-the-server wall becomes a bounded observation window
+
+Decided: the arm that used to claim "a drop, one fact per attempt, then a
+permanent teardown" now claims "a drop, then retry evidence for a fixed window,
+and no teardown", asserts the connection is still open at the end of the window,
+and reads the budget it reasons about off the declaration the connection ran
+under rather than restating it.
+
+The old arm's terminating sequence existed only because the estate had never
+chosen a reconnect budget and inherited the client's, at which an absent
+substrate permanently closes the connection after a measured span. With the
+budget ruled to never give up, that teardown is unreachable, and an arm waiting
+for it would be waiting for the property the ruling deleted — it would fail by
+timing out, which reports nothing. The window is sized well past the span the
+old default closed at, so "no teardown appeared" is a statement about the
+declared value and not about a window too short to have seen one.
+
+Alternatives: keep the old arm and move the pin back for the test (a declared
+value moved to make a test convenient, which the wall's own header forbids);
+delete the arm (loses the only executed evidence that the pump emits retry
+facts at all). **Load-bearing? yes** — it is the wall that proves the ruled
+value is the value the runtime runs under.
+
+### T41. The heartbeat's claimed time is schedule arithmetic, not a clock read
+
+Decided: the schedule declaration carries an origin and a period, and the
+claimed time of firing n is the origin advanced n periods. The seat consults a
+clock only to pace itself between firings, and nothing it reads there reaches a
+field, a digest, or a fold.
+
+This is what makes the whole tick body a function of its declared inputs, which
+is in turn what makes two emitters of one occurrence produce byte-identical
+bodies. Had `claimed` been "what time is it now", the occurrence key would have
+named the occurrence while the body still disagreed, and the duplicate-safety
+claim would have been about a triple nobody compares rather than about the bytes
+the lane absorbs.
+
+The bound is stated where it bites and is not smoothed over: `health` IS a
+genuine observation, so two emitters that observed different health mint
+different bytes. That is the right answer — two parties claiming different
+health of one connection are not making one claim twice — and it means the
+occurrence key makes a second emitter safe without making two disagreeing
+observers agree.
+
+Alternatives: carry the wall-clock reading (breaks byte-identity and puts a
+clock one field away from meaning); drop the claimed field entirely (the spec's
+shape carries it, and an executor does not edit the spec it builds against).
+**Load-bearing? yes** — it is the premise the duplicate-absorption and
+replay-determinism arms both rest on.
+
+### T42. The set-plane rung is earned by executing the ladder's own suite
+
+Decided: the presence module declares the rung its reduction stands at, and the
+wall earns it by walking the bounded-semilattice row of the ladder's own rung
+table through the ladder's own law-atom suite, over the presence join. The fold
+itself is declared through the fold door against the commutative brand its
+eight-partition lane demands, which the ladder's one branding door hands out.
+
+The reason it is not a type-level brand: the ladder ships exactly one branding
+door and it brands the rung below this one, so the brand this rung would carry
+does not exist to be attached. Attaching it would need a second branding door,
+and this slice may not add public surface. Asserting the rung without executing
+anything was the other option and is the one the estate's own rule forbids — a
+brand is earned by a suite, never asserted.
+
+Reported as a finding rather than repaired here: the ladder owes a
+bounded-semilattice branding door, and until it exists a set-plane read's rung
+is a declared claim with an executed suite behind it instead of a compile-time
+one. **Load-bearing? yes** — it is the difference between the rung typing the
+carrier and the rung being written down beside it.
+
+### T43. The absent-by-silence pin is one declaration, and both readings are built
+
+Decided: one declared constant names which reading the estate's readers take,
+both readings are constructed by the presence read, and the non-negotiable half
+is a computation rather than a comment. Ruling the pin is an edit to that one
+declaration.
+
+No third state was invented. Under either reading a member is a member and the
+silence is a separate number beside it, so the reduction stays what the fold
+table declares — established and not ended — and nothing in the reduction learns
+to say "probably gone".
+
+Alternatives: pick one reading and build only it (resolves a pin the ticket
+reserves for the operator); return a three-valued membership (invents the third
+state the ticket forbids). **Load-bearing? yes** — the pin is open and the shape
+of the resolution is what this decision fixes.
+
+### T44. The staleness read breaks firing ties toward the later landing
+
+Decided: when two positions carry the same greatest firing for a session, the
+read takes the later position.
+
+Both choices are deterministic and replay-stable. This one makes the read
+duplicate-free: a re-landed tick at the head leaves the distance from the head
+where it was, while taking the earlier landing would make a repeated tick look
+one position staler than the tick it repeats — a duplicate moving a read that
+duplicates are supposed to be free in.
+
+The measured reason this matters rather than being hypothetical: the lane's
+message id is the ENVELOPE digest and the envelope carries the holder, so two
+DIFFERENT holders emitting one occurrence land two messages carrying one body.
+The substrate absorbs a holder racing itself; it does not absorb two holders,
+and the tie rule is where that second case becomes free. Reported as a finding
+for the emitter-plurality question rather than repaired here — narrowing the
+message id to the body would be a change to the lane's own identity and belongs
+to a ruling, not to this slice. **Load-bearing? yes**
