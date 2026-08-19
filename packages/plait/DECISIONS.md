@@ -2719,6 +2719,10 @@ claims to enforce.
 
 ### T1. `internal/` is excluded by citation, and the wall states what it therefore does not claim
 
+SUPERSEDED BY T5 — the coordinator ruled the escalation this entry raised, and
+`internal/` is no longer excluded from the ladder. The entry stands as the
+record of the gap and of what the round-one wall did not claim.
+
 Decided: the walk places modules in the five planes law 4 names and excludes
 `src/internal/` on a stated ruling —
 `scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §2, RATIFIED 2026-08-18:
@@ -2792,3 +2796,101 @@ the only difference between this run and a clean one is the two planted lines,
 and both forms of the edge the law refuses are exercised. **Load-bearing? yes** —
 a lint nobody has watched fail proves nothing, and `src/carriage/README.md`
 records that the edges this wall exists for are type-only.
+
+AMENDED BY T7 — the control now carries seven arms, and each arm declares
+whether it plants imports or a header so the tag readers and the import reader
+are each pointed at the bytes that arm actually moved.
+
+### T5. Internal modules are plane members housed in a flat directory
+
+Decided (coordinator ruling, 2026-08-18, on the G1 escalation T1 raised;
+operator delegated the decision in session): `src/internal/` stays flat, and
+every module in it declares a `Seam: <plane>` tag in its header, exactly
+parallel to the `Plane:` tag the plane modules carry. For the layering law that
+tag IS the module's plane — outbound, an internal module may import public
+modules only of its seam plane or deeper; inbound, anything may import it only
+from that seam's rank or shallower; internal-to-internal edges compare the two
+seams. The reorg spec's "importable from any layer" clause is superseded, and
+its "its own seam's siblings" phrase now has the mechanical reading it lacked:
+the public modules of its seam plane.
+
+In the lint this collapses to one inequality — for every edge, the target's
+plane must be at or deeper than the source's, with a seamed module ranked by its
+tag. Alternatives: keep the exemption (it is a laundering channel — a kernel
+module importing an internal adapter that itself reaches carriage arrives at
+carriage through the private bag, and no arm sees it); mirror the plane
+directories inside `internal/` (moves fifteen files and re-opens every import
+path for a fact a header line already carries); leave the second half of the
+clause unenforced (the honest gap T1 reported, now closed). Why: the flat layout
+the reorg ratified is a housing decision, and membership is a law — writing the
+membership down per module lets both be true at once. **Load-bearing? yes** — it
+is what lets one rule judge both directions, and it turns the round-one gap into
+a wall.
+
+### T6. Each seam is the deepest one its imports allow, unless the module's purpose is shallower
+
+Decided: an internal module's seam is the deepest plane consistent with its
+outbound imports — the tightest bound its own edges force — except where the
+module's documented purpose names a shallower home. Fifteen assignments, each
+justified by what the module already imports:
+
+| Module | Seam | Why |
+| --- | --- | --- |
+| `cas.ts` | truth | the one lattice write loop; reaches `truth/Refusal` only |
+| `digests.ts` | truth | SHA-256 over canonical bytes; reaches `truth/Digest` only |
+| `refusals.ts` | truth | the schema-issue bridge; reaches `truth/Refusal` only |
+| `transport.ts` | truth | the NATS error classifier; reaches `truth/Refusal` only |
+| `anchors.ts` | planes | the anchor KV adapter; reaches `planes/Anchor`, `planes/Fold` |
+| `cells.ts` | planes | the cell KV adapter; reaches `planes/Cell` |
+| `chaos.ts` | planes | chaos arms over declared folds; reaches `planes/Anchor`, `planes/Fold` |
+| `folds.ts` | planes | durable fold deployment; reaches `planes/Fold` |
+| `lanes.ts` | planes | lane streams and emission; reaches `planes/Lane` |
+| `pump.ts` | planes | the positioned pump; reaches `planes/{Anchor,Fold,Lane}` |
+| `registers.ts` | planes | the register KV adapter; reaches `planes/Register` |
+| `sessions.ts` | planes | read-plane session reads; reaches `planes/Session` |
+| `successors.ts` | planes | the successor discipline; reaches `planes/Anchor` |
+| `nats.ts` | carriage | connection and message-pump types; reaches `carriage/FabricClient` |
+| `permissions.ts` | carriage | THE EXCEPTION — its imports reach only `planes/*`, but what it declares is a connection's authority at the broker; the bucket names it reads are the subjects it grants, not state it carries |
+
+`permissions.ts` additionally gained the module header it never had: it arrived
+after the reorg's tagging pass, which is why the round-one wall reported it as
+half its placement evidence missing. Alternatives: seam every adapter to the
+plane it is named after (`chaos.ts` is named after no plane and reaches three);
+seam everything to `planes` (four adapters that never touch a carrier would
+carry a rank they do not need, and the inbound rule would loosen for all of
+them); let `permissions.ts` take `planes` from its imports (a permissions map is
+a carriage concern wearing a planes rank, and the next carriage-only import
+would silently look lawful). Why: the tightest rank each module's own edges
+force is the one that keeps the inbound rule sharpest, and a documented purpose
+outranks an incidental import list. **Load-bearing? yes** — these fifteen tags
+are what the inbound and outbound rules are evaluated against.
+
+### T7. Truth's internal edges are pinned, and the pin is a reviewed file
+
+Decided (operator amendment to the T5 ruling): a truth-plane edge into
+`internal/` is tolerated where necessary and NOT encouraged, and the
+discouragement is mechanical —
+`test/fixtures/truth-internal-edges.pin.txt` lists every such edge with the
+reason the material has not been folded into `truth/` proper, and an edge absent
+from the pin is refused even when both seam ranks are lawful. Nothing generates
+the pin and no generator reads it, so the only way to add an edge is a diff a
+reviewer reads. A row that outlives its edge is refused too: a pin nobody is
+reading any more is a standing licence. One row stands today —
+`truth/Refusal.ts → internal/refusals.ts`, the schema-issue bridge that owns the
+Effect Schema types the seam exists to keep off the public surface.
+
+The control grew to seven arms accordingly: the two round-one plane edges, an
+internal module reaching above its seam, a deep module reaching a
+shallow-seamed internal (the laundering channel), a truth edge whose ranks are
+lawful but which the pin does not carry, a missing seam tag, a seam tag on a
+plane module, and a pinned row whose edge is gone. Each arm declares whether it
+plants imports or a header, so the tag readers and the import reader are each
+pointed at the bytes that arm moved — which is also what keeps the planted line
+numbers at 1 and 2 whatever the victims' prose does. Alternatives: let the seam
+ranks alone license truth's edges (correct by rank, but "tolerated" and
+"encouraged" would then look identical to the wall); forbid truth → internal
+outright (the schema-issue bridge has no other home today, so the wall would
+ship red on a law nobody has a repair for); keep the roster in a comment
+(a comment is not an artifact a check can read). Why: the reviewed diff is what
+"not encouraged" means when a machine has to enforce it. **Load-bearing? yes** —
+without the pin the deepest plane's exception is invisible the moment it grows.

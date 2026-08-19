@@ -14,6 +14,7 @@ import { resolve } from "node:path"
 const packageRoot = resolve(import.meta.dir, "..")
 const mutant = "negative-controls/PlaneLayering.shallower-import.mutant.ts"
 const trace = "negative-controls/PlaneLayering.shallower-import.trace.txt"
+const marker = "PLANE LAYERING MUTANT ARM: "
 
 const normalize = (text: string): string =>
   text.replaceAll("\\", "/").replaceAll("\r\n", "\n")
@@ -49,7 +50,16 @@ if (actual !== expected) {
   process.exit(1)
 }
 
+// The arm count is counted out of the run that just happened, never asserted:
+// a mutant that quietly lost an arm would otherwise still match a trace
+// re-recorded beside it, and the PASS line would keep claiming the old breadth.
+const arms = actual.split("\n").filter((line) => line.startsWith(marker))
+if (arms.length === 0) {
+  console.error("PLANE LAYERING CONTROL: FAIL — the mutant named no arm")
+  process.exit(1)
+}
+
 console.log(
-  "PLANE LAYERING CONTROL: PASS (planted value and type-only shallower imports"
-    + " refused for the committed reason)",
+  `PLANE LAYERING CONTROL: PASS (${arms.length} planted arms refused for the committed`
+    + ` reasons: ${arms.map((line) => line.slice(marker.length)).join(", ")})`,
 )

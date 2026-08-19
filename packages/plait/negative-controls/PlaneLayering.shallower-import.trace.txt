@@ -1,4 +1,23 @@
+PLANE LAYERING MUTANT ARM: shallower-plane-import
 PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:1 imports "../carriage/FabricClient.js": plane truth imports plane carriage, which is shallower
   law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
 PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:2 imports "../surface/cli.js" (type-only; the layering law carves out no exception): plane truth imports plane surface, which is shallower
   law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: internal-outbound-above-seam
+PLANE LAYERING VIOLATION: packages/plait/src/internal/transport.ts:1 imports "../carriage/FabricClient.js": seam truth imports plane carriage, which is shallower
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: inbound-below-seam
+PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:1 imports "../internal/nats.js": plane truth imports seam carriage, which is shallower
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: truth-edge-unpinned
+PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts:1 imports "../internal/digests.js": a truth-plane edge into internal/ is tolerated only where pinned, and packages/plait/test/fixtures/truth-internal-edges.pin.txt does not carry this row
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: seam-tag-absent
+PLANE LAYERING VIOLATION: packages/plait/src/internal/transport.ts declares no `Seam:` tag in its header comment; an internal module is a member of the plane its seam names
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: seam-tag-on-plane-module
+PLANE LAYERING VIOLATION: packages/plait/src/truth/Canonical.ts declares `Seam: carriage` while sitting on the truth plane; only internal/ modules carry a seam
+  law 4 — plane layering: truth ← kernel ← planes ← carriage ← surface; a layer imports only itself and deeper
+PLANE LAYERING MUTANT ARM: pin-row-outlives-edge
+PLANE LAYERING VIOLATION: packages/plait/test/fixtures/truth-internal-edges.pin.txt pins "truth/Digest.ts → internal/digests.ts", which the tree no longer carries; a pin that outlives its edge is an unreviewed licence
+  packages/plait/test/fixtures/truth-internal-edges.pin.txt

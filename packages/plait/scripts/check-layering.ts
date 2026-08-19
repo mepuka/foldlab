@@ -3,24 +3,31 @@
  *
  * Walks every module under `packages/plait/src/`, reads its imports out of its
  * source bytes through the TypeScript AST, and refuses any edge that points
- * from a deeper plane to a shallower one. The law, the placements it encodes,
- * and the reason each exclusion exists are all in `./plane-layering.ts`.
+ * from a deeper plane to a shallower one. `internal/` modules are plane members
+ * by their `Seam:` tag, so one rule covers the tree in both directions. The
+ * law, the placements it encodes, and the rulings behind them are all in
+ * `./plane-layering.ts`.
  *
- * Three arms, each with its own failure line:
+ * Five arms, each with its own failure line:
  *
  * 1. **The standing law.** The ladder this wall encodes is compared against
  *    law 4's own bytes in the root `AGENTS.md`.
  * 2. **The roster.** The directories under `src/` must be exactly the five
- *    planes plus the stated exclusions — an unplaced directory is refused, not
- *    skipped.
- * 3. **The graph.** Every module's directory placement and its declared
- *    `Plane:` tag must agree, and every ladder edge must point deeper or level.
+ *    planes plus the seam-tagged flat one — an unplaced directory is refused,
+ *    not skipped.
+ * 3. **The tags.** Every module's directory placement and its declared `Plane:`
+ *    tag must agree; every `internal/` module declares a `Seam:` naming a
+ *    plane, and no plane module declares one.
+ * 4. **The graph.** Every edge must point to a plane at or deeper than the
+ *    importer's own, seams counted as planes.
+ * 5. **The truth-edge pin.** Every truth-plane edge into `internal/` must be a
+ *    reviewed row of `test/fixtures/truth-internal-edges.pin.txt`, and no row
+ *    may outlive its edge.
  *
  * The mutation arm is `bun run check:layering-control`.
  *
  * @module
  */
-import { readdirSync } from "node:fs"
 import { resolve } from "node:path"
 
 import { Console, Effect, Predicate, Schema } from "effect"
@@ -29,15 +36,16 @@ import {
   checkDirectoryRoster,
   checkModuleLayering,
   checkStandingLaw,
+  checkTruthEdgePin,
   PLANE_LADDER,
-  readDeclaredPlane,
-  readModuleImports,
+  readPlaneModules,
   readStandingLaw,
+  readTruthEdgePin,
+  SEAM_DIRECTORY,
+  seamIndexOf,
   SOURCE_ROOT,
-  sourcePath,
   STANDING_LAW_PATH,
-  STATED_EXCLUSIONS,
-  placeModule,
+  TRUTH_EDGE_PIN_PATH,
   type PlaneModule,
 } from "./plane-layering.js"
 
@@ -52,24 +60,13 @@ export class CheckFailure extends Schema.TaggedError<CheckFailure>()(
 const messageOf = (cause: unknown): string =>
   Predicate.isError(cause) ? cause.message : String(cause)
 
-/**
- * The modules the wall walks, `src/`-relative with forward slashes and sorted,
- * so a failure list reads the same on every host.
- */
-const walk = (): ReadonlyArray<string> =>
-  readdirSync(resolve(repository, SOURCE_ROOT), { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
-    .map((entry) =>
-      `${entry.parentPath}/${entry.name}`
-        .replaceAll("\\", "/")
-        .slice(`${resolve(repository, SOURCE_ROOT).replaceAll("\\", "/")}/`.length)
-    )
-    .sort()
+const failure = (cause: unknown): CheckFailure =>
+  new CheckFailure({ message: `PLANE LAYERING: FAIL — ${messageOf(cause)}` })
 
-const directoriesOf = (paths: ReadonlyArray<string>): ReadonlyArray<string> => {
+const directoriesOf = (modules: ReadonlyArray<PlaneModule>): ReadonlyArray<string> => {
   const found = new Set<string>()
-  for (const path of paths) {
-    const segments = path.split("/")
+  for (const module of modules) {
+    const segments = module.path.split("/")
     if (segments.length > 1) found.add(segments[0]!)
   }
   return [...found].sort()
@@ -78,8 +75,7 @@ const directoriesOf = (paths: ReadonlyArray<string>): ReadonlyArray<string> => {
 const check = Effect.fn("PlaneLayering.check")(function* () {
   const law = yield* Effect.tryPromise({
     try: async () => readStandingLaw(await read(STANDING_LAW_PATH), STANDING_LAW_PATH),
-    catch: (cause) =>
-      new CheckFailure({ message: `PLANE LAYERING: FAIL — ${messageOf(cause)}` }),
+    catch: failure,
   })
   const transcription = checkStandingLaw(law)
   if (!transcription.ok) {
@@ -88,59 +84,37 @@ const check = Effect.fn("PlaneLayering.check")(function* () {
     })
   }
 
-  const paths = yield* Effect.try({
-    try: walk,
-    catch: (cause) =>
-      new CheckFailure({ message: `PLANE LAYERING: FAIL — ${messageOf(cause)}` }),
+  const modules = yield* Effect.tryPromise({
+    try: () => readPlaneModules(repository),
+    catch: failure,
   })
-  if (paths.length === 0) {
+  if (modules.length === 0) {
     return yield* new CheckFailure({
       message: `PLANE LAYERING: FAIL — ${SOURCE_ROOT} carries no modules`,
     })
   }
 
-  const roster = checkDirectoryRoster(directoriesOf(paths))
+  const roster = checkDirectoryRoster(directoriesOf(modules))
   if (!roster.ok) {
     return yield* new CheckFailure({ message: `PLANE LAYERING: FAIL — ${roster.reason}` })
   }
 
-  const modules: Array<PlaneModule> = []
-  for (const path of paths) {
-    const source = yield* Effect.tryPromise({
-      try: () => read(sourcePath(path)),
-      catch: (cause) =>
-        new CheckFailure({ message: `PLANE LAYERING: FAIL — ${messageOf(cause)}` }),
-    })
-    // Only the AST read can throw; a module whose header carries no plane tag
-    // returns its refusal, so one untagged module costs one report line rather
-    // than the rest of the walk.
-    const module = yield* Effect.try({
-      try: (): PlaneModule => ({
-        path,
-        placement: placeModule(path),
-        declaredPlane: readDeclaredPlane(source, sourcePath(path)),
-        imports: readModuleImports(source, sourcePath(path)),
-      }),
-      catch: (cause) =>
-        new CheckFailure({ message: `PLANE LAYERING: FAIL — ${messageOf(cause)}` }),
-    })
-    modules.push(module)
-  }
+  const pin = yield* Effect.tryPromise({
+    try: async () => readTruthEdgePin(await read(TRUTH_EDGE_PIN_PATH), TRUTH_EDGE_PIN_PATH),
+    catch: failure,
+  })
+  const seams = seamIndexOf(modules)
 
   const reasons: Array<string> = []
-  let ladderEdges = 0
-  let exemptEdges = 0
-  let walked = 0
+  let edges = 0
   for (const module of modules) {
-    const checked = checkModuleLayering(module)
-    if (checked.ok) {
-      ladderEdges += checked.ladderEdges
-      exemptEdges += checked.exemptEdges
-      if (module.placement.sort === "plane") walked += 1
-      continue
-    }
-    reasons.push(...checked.reasons)
+    const checked = checkModuleLayering(module, seams, pin)
+    if (checked.ok) edges += checked.edges
+    else reasons.push(...checked.reasons)
   }
+
+  const stale = checkTruthEdgePin(modules, pin)
+  if (!stale.ok) reasons.push(`${stale.reason}\n  ${TRUTH_EDGE_PIN_PATH}`)
 
   if (reasons.length !== 0) {
     return yield* new CheckFailure({
@@ -152,20 +126,19 @@ const check = Effect.fn("PlaneLayering.check")(function* () {
     })
   }
 
-  const exempt = STATED_EXCLUSIONS.map((entry) => entry.directory).join(", ")
   yield* Console.log(
-    `PLANE LAYERING: PASS (${walked} modules on the ${PLANE_LADDER.length}-plane ladder,`
-      + ` ${ladderEdges} ladder edges all pointing deeper or level;`
-      + ` ${modules.length - walked} modules and ${exemptEdges} edges under the stated`
-      + ` ${exempt} exclusion, which this wall does not judge)`,
+    `PLANE LAYERING: PASS (${modules.length} modules on the ${PLANE_LADDER.length}-plane`
+      + ` ladder, ${seams.size} of them ${SEAM_DIRECTORY}/ members by seam tag;`
+      + ` ${edges} edges all pointing deeper or level,`
+      + ` ${pin.length} truth edge${pin.length === 1 ? "" : "s"} pinned)`,
   )
 })
 
 if (import.meta.main) {
   await Effect.runPromise(
     check().pipe(
-      Effect.catch((failure) =>
-        Console.error(failure.message).pipe(
+      Effect.catch((caught) =>
+        Console.error(caught.message).pipe(
           Effect.andThen(Effect.sync(() => {
             process.exitCode = 1
           })),
