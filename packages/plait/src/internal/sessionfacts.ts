@@ -78,6 +78,10 @@ export const SESSION_EVENT_FORM = {
       kind: "substrate-session-observation",
       fields: ["session", "event", "state", "payload"],
     },
+    {
+      kind: "substrate-incarnation-lame-duck",
+      fields: ["session", "incarnation", "event", "server"],
+    },
   ],
 } as const
 
@@ -179,12 +183,35 @@ export const SessionObservation = Schema.Struct({
 /** One reading taken within a state, never a state itself. */
 export type SessionObservation = typeof SessionObservation.Type
 
+/**
+ * The substrate asked its clients to move.
+ *
+ * The daemon emits this when its server enters lame duck (the Go side's
+ * LameDuckFact mints the identical shape), citing the session whose server
+ * asked and the incarnation that is draining. It is the fact the lame-duck
+ * consumer reacts to — a lane fact any anchor can read and any replay can
+ * reproduce, never a callback. `event` carries the vendor's own event name;
+ * `server` is the server the vendor named in it.
+ */
+export const IncarnationLameDuck = Schema.Struct({
+  v: Schema.Literal(0),
+  kind: Schema.Literal("substrate-incarnation-lame-duck"),
+  session: Schema.String,
+  incarnation: Schema.String,
+  event: Schema.String,
+  server: Schema.String,
+})
+
+/** The substrate asked its clients to move. */
+export type IncarnationLameDuck = typeof IncarnationLameDuck.Type
+
 /** Every fact the substrate-session lane carries. */
 export const SessionFact = Schema.Union([
   SessionEstablished,
   SessionEnded,
   SessionTransition,
   SessionObservation,
+  IncarnationLameDuck,
 ])
 
 /** Every fact the substrate-session lane carries. */
