@@ -19,6 +19,8 @@ import {
 } from "../src/planes/Register.js"
 import type { Refusal } from "../src/truth/Refusal.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { OutcomeValue, WorkKey } from "../src/planes/Register.js"
 
 /**
  * The register carrier's authority walls: which bucket, and whose facts.
@@ -41,7 +43,7 @@ import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
  * locally read-only, so a fence taken against one is a fence against a copy.
  */
 
-const work = "0123456789abcdef"
+const work = WorkKey.make("0123456789abcdef")
 
 /** The ruled register bucket shape, restated for the out-of-band chaos hand. */
 const registerBucketShape = {
@@ -143,7 +145,7 @@ describe("register incarnation pin", () => {
     // it opened and never re-opens, which is the state a live holder is in.
     const verdict = await Effect.runPromise(Effect.result(Effect.gen(function* () {
       const registers = yield* Registers
-      const granted = yield* registers.grant(work, "holder-a")
+      const granted = yield* registers.grant(work, Holder.make("holder-a"))
       expect(granted.token).toBe(1)
 
       const kvm = yield* Effect.promise(() => chaosHand(url))
@@ -159,7 +161,7 @@ describe("register incarnation pin", () => {
       expect(rebornRevision).toBe(granted.token)
 
       // The stale fenced operation, replayed through the pinned service.
-      const replayed = yield* Effect.result(registers.commit(work, granted.token, "zombie"))
+      const replayed = yield* Effect.result(registers.commit(work, granted.token, OutcomeValue.make("zombie")))
 
       // Nothing landed: the reborn bucket still carries holder-b's open round.
       const after = yield* Effect.promise(() => reborn.get(work))
@@ -216,7 +218,7 @@ describe("register incarnation pin", () => {
 
     const kinds = await Effect.runPromise(Effect.gen(function* () {
       const registers = yield* Registers
-      const granted = yield* registers.grant(work, "holder-a")
+      const granted = yield* registers.grant(work, Holder.make("holder-a"))
       const kvm = yield* Effect.promise(() => chaosHand(url))
       const reborn = yield* Effect.promise(() => rebornBucket(kvm))
       yield* Effect.promise(() => reborn.create(work, encode({ holder: "holder-b", outcome: null })))
@@ -226,10 +228,10 @@ describe("register incarnation pin", () => {
           Result.isFailure(result) ? result.failure.kind : `ACCEPTED:${JSON.stringify(result)}`)
 
       return {
-        grant: yield* refusalOf(registers.grant(work, "holder-a")),
+        grant: yield* refusalOf(registers.grant(work, Holder.make("holder-a"))),
         renew: yield* refusalOf(registers.renew(work, granted.token)),
-        commit: yield* refusalOf(registers.commit(work, granted.token, "zombie")),
-        expireSteal: yield* refusalOf(registers.expireSteal(work, "holder-c")),
+        commit: yield* refusalOf(registers.commit(work, granted.token, OutcomeValue.make("zombie"))),
+        expireSteal: yield* refusalOf(registers.expireSteal(work, Holder.make("holder-c"))),
         observe: yield* refusalOf(registers.observe(work)),
       }
     }).pipe(
@@ -252,12 +254,12 @@ describe("register incarnation pin", () => {
 
     const refusal = await Effect.runPromise(Effect.gen(function* () {
       const registers = yield* Registers
-      const granted = yield* registers.grant(work, "holder-a")
+      const granted = yield* registers.grant(work, Holder.make("holder-a"))
       const kvm = yield* Effect.promise(() => chaosHand(url))
       yield* Effect.promise(async () => {
         await (await kvm.open(REGISTER_BUCKET)).destroy()
       })
-      return yield* Effect.flip(registers.commit(work, granted.token, "zombie"))
+      return yield* Effect.flip(registers.commit(work, granted.token, OutcomeValue.make("zombie")))
     }).pipe(
       Effect.provide(Registers.layer({ servers: url })),
       Effect.scoped,
@@ -273,10 +275,10 @@ describe("register incarnation pin", () => {
   test("an untouched incarnation leaves the five actions exactly as they were", async () => {
     harness = await startNatsHarness()
     const result = await withRegisters(harness.url, (registers) => Effect.gen(function* () {
-      const granted = yield* registers.grant(work, "holder-a")
+      const granted = yield* registers.grant(work, Holder.make("holder-a"))
       const renewed = yield* registers.renew(work, granted.token)
-      const stolen = yield* registers.expireSteal(work, "holder-b")
-      const committed = yield* registers.commit(work, stolen.token, "done")
+      const stolen = yield* registers.expireSteal(work, Holder.make("holder-b"))
+      const committed = yield* registers.commit(work, stolen.token, OutcomeValue.make("done"))
       const observed = yield* registers.observe(work)
       return { granted, renewed, stolen, committed, observed }
     }))
@@ -284,11 +286,11 @@ describe("register incarnation pin", () => {
     expect(Result.isSuccess(result)).toBe(true)
     if (!Result.isSuccess(result)) return
     const { granted, renewed, stolen, committed, observed } = result.success
-    expect(granted.holder).toBe("holder-a")
+    expect(String(granted.holder)).toBe("holder-a")
     expect(renewed.token).toBeGreaterThan(granted.token)
-    expect(stolen.holder).toBe("holder-b")
-    expect(committed.outcome).toEqual({ token: stolen.token, value: "done" })
-    expect(observed.outcome).toEqual({ token: stolen.token, value: "done" })
+    expect(String(stolen.holder)).toBe("holder-b")
+    expect(committed.outcome).toEqual({ token: stolen.token, value: OutcomeValue.make("done") })
+    expect(observed.outcome).toEqual({ token: stolen.token, value: OutcomeValue.make("done") })
   }, 120_000)
 })
 

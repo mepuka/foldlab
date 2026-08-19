@@ -10,6 +10,7 @@ import { transportRefusal } from "../../src/internal/lanes.js"
 import { landFact, sessionLane } from "../../src/internal/sessionlanes.js"
 import { establishConnection } from "../../src/internal/transport.js"
 import { Lanes } from "../../src/planes/Lane.js"
+import { Holder } from "../../src/kernel/Wire.js"
 
 /**
  * One holder: a session established against a real substrate, its establishment
@@ -40,7 +41,7 @@ await Effect.runPromise(Effect.gen(function* () {
   const heartbeats = yield* heartbeatLane()
   const schedule = yield* declareSchedule({ origin, period: Number.parseInt(period, 10) })
 
-  yield* landFact(sessions, established.minted.established, name)
+  yield* landFact(sessions, established.minted.established, Holder.make(name))
 
   const seat = yield* attachHeartbeatSeat({
     schedule,
@@ -48,7 +49,7 @@ await Effect.runPromise(Effect.gen(function* () {
     // tick cites rather than the session this seat was built with.
     session: established.pump.session,
     health: Effect.sync(() => clientHealth(established.connection)),
-    land: (tick) => Effect.asVoid(landTick(heartbeats, tick, name)),
+    land: (tick) => Effect.asVoid(landTick(heartbeats, tick, Holder.make(name))),
   })
   // One firing before the ready file, so the parent knows a tick has landed
   // rather than merely that a process started.

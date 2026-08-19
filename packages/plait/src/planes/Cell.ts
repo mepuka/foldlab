@@ -36,13 +36,29 @@
  *
  * @module
  */
-import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
+import { Context, Effect, Equivalence, Layer, Schema, Stream, SubscriptionRef } from "effect"
 
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import { canonicalBytes } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
-import { WireValueSchema, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
+import {
+  structuralRefusal,
+  WireValueSchema,
+  type Next,
+  type Refusal,
+  type StructuralRefusal,
+} from "../truth/Refusal.js"
+import { CellName } from "../kernel/Subjects.js"
 import { makeCellService } from "../internal/cells.js"
+
+/**
+ * The name of one lattice cell, re-exported at the concept it names.
+ *
+ * The sort is declared once in the fabric's token grammar because the context
+ * program's cell selector spells it too, and one grammar stated twice is two
+ * grammars. Callers of this seam reach it here.
+ */
+export { CellName } from "../kernel/Subjects.js"
 
 /** The file-backed KV bucket that is authoritative for lattice cells. */
 export const CELL_BUCKET = "flb-fab-cell"
@@ -75,8 +91,69 @@ export interface CellState {
   readonly digest: Digest
 }
 
+/**
+ * Two cell states are the same lattice point when their digests agree.
+ *
+ * One string compare stands in for set equality, and the door is what licenses
+ * it: `canonicalize` erases arrival order and multiplicity before any byte is
+ * compared, and `stateOf` derives the digest from that canonical form. So two
+ * states are the same set exactly when they are the same bytes exactly when
+ * they carry the same digest — the gap the general case would have to walk is
+ * closed at this seam by construction rather than by this function.
+ *
+ * The bound rides in from the declared canonical order: the claim is set
+ * equality among TypeScript replicas, and agreement with the model carrier's own
+ * comparator order is not claimed.
+ *
+ * Extensional equivalence over raw, un-canonicalized observation arrays is
+ * deliberately absent. `canonicalize` is the door, and a predicate that compared
+ * arrays as they arrived would be the door rebuilt beside itself.
+ */
+export const byDigest: Equivalence.Equivalence<CellState> = Equivalence.mapInput(
+  Equivalence.String,
+  (state: CellState) => state.digest,
+)
+
 /** Connection bootstrap for the cell bucket. */
 export interface CellOptions extends ConnectionBootstrap {}
+
+/** One taught repair per structural law; every refusal names its legal next step. */
+const teachCellKey: ReadonlyArray<Next> = [{
+  subject: "cell.read",
+  note: "Present the cell name as one literal KV token without dots, whitespace, or wildcards.",
+}]
+
+/**
+ * Admits one cell name, refusing anything the KV keyspace cannot carry.
+ *
+ * This is the sort's one minting site: the adapter under this seam calls it
+ * rather than re-testing the grammar, so a name that reached the substrate was
+ * admitted exactly once and the teaching has one home.
+ *
+ * @example
+ * ```ts
+ * import { cellName } from "@foldlab/plait/Cell"
+ * import { Effect } from "effect"
+ *
+ * Effect.runSync(cellName("membership"))
+ * // "membership"
+ * ```
+ */
+export const cellName = Effect.fn("Cell.cellName")(function* (
+  name: string,
+): Effect.fn.Return<CellName, StructuralRefusal> {
+  if (!Schema.is(CellName)(name)) {
+    return yield* structuralRefusal({
+      kind: "invalid-cell-key",
+      law: "A cell name maps to one literal NATS KV key.",
+      path: ["cell"],
+      got: name,
+      expected: "one non-empty token without dots, whitespace, or wildcards",
+      next: teachCellKey,
+    })
+  }
+  return name
+})
 
 /**
  * Reads a cell and joins a delta into it.
@@ -85,9 +162,9 @@ export interface CellOptions extends ConnectionBootstrap {}
  * convergent by F1. There is no last-writer-wins path and no conflict callback.
  */
 export interface CellService {
-  readonly read: (cell: string) => Effect.Effect<CellState, Refusal>
+  readonly read: (cell: CellName) => Effect.Effect<CellState, Refusal>
   readonly merge: (
-    cell: string,
+    cell: CellName,
     delta: ReadonlyArray<Observation>,
   ) => Effect.Effect<CellState, Refusal>
 }
@@ -242,12 +319,13 @@ export const replica = Effect.fn("Cell.replica")(function* (
  *
  * @example
  * ```ts
- * import { Cells } from "@foldlab/plait/Cell"
+ * import { Cells, cellName } from "@foldlab/plait/Cell"
  * import { Effect } from "effect"
  *
  * Effect.gen(function* () {
  *   const cells = yield* Cells
- *   return yield* cells.merge("membership", [{ holder: "seat-a", value: 1 }])
+ *   const cell = yield* cellName("membership")
+ *   return yield* cells.merge(cell, [{ holder: "seat-a", value: 1 }])
  * })
  * ```
  */

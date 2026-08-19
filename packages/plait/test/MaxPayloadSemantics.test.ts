@@ -19,7 +19,7 @@ import {
   MAX_PAYLOAD_BYTES,
 } from "../src/kernel/Wire.js"
 import { Blobs } from "../src/planes/Blob.js"
-import { declare, emit, Lanes } from "../src/planes/Lane.js"
+import { declare, emit, Lanes, LaneHandle } from "../src/planes/Lane.js"
 import { canonicalBytes } from "../src/truth/Canonical.js"
 import { Digest } from "../src/truth/Digest.js"
 import { laneStreamName } from "../src/internal/lanes.js"
@@ -30,6 +30,7 @@ import {
   type NatsServerBinary,
 } from "./NatsHarness.js"
 import { testFileSystemLayer } from "./TestFileSystem.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 /**
  * The scorecard's one UNANSWERED item, measured
@@ -71,7 +72,7 @@ const eventSchema = Digest.make("c".repeat(64))
  */
 const Event = Schema.Union([Schema.String, BlobReference])
 
-const declareDoublingLane = (handle: string) =>
+const declareDoublingLane = (handle: LaneHandle) =>
   declare({
     handle,
     event: Event,
@@ -278,11 +279,11 @@ describe("the inline threshold pinned against the measured budget", () => {
   })
 
   test("the worst emit the threshold admits lands inside the measured budget", async () => {
-    const lane = await Effect.runPromise(declareDoublingLane("payload-doubling"))
+    const lane = await Effect.runPromise(declareDoublingLane(LaneHandle.make("payload-doubling")))
     const body = bodyOfCanonicalSize(INLINE_BODY_MAX_BYTES)
 
     const emitted = await Effect.runPromise(
-      emit(lane, body, { holder: "seat-alpha" }).pipe(
+      emit(lane, body, { holder: Holder.make("seat-alpha") }).pipe(
         Effect.provide(Lanes.layer({ servers: harness!.url })),
         Effect.scoped,
       ),
@@ -308,12 +309,12 @@ describe("the inline threshold pinned against the measured budget", () => {
   }, 120_000)
 
   test("an emit past the threshold refuses structurally and never reaches the wire", async () => {
-    const lane = await Effect.runPromise(declareDoublingLane("payload-over-threshold"))
+    const lane = await Effect.runPromise(declareDoublingLane(LaneHandle.make("payload-over-threshold")))
     const oversized = bodyOfCanonicalSize(INLINE_BODY_MAX_BYTES + 1)
 
     const refusal = await Effect.runPromise(
       Effect.flip(
-        emit(lane, oversized, { holder: "seat-alpha" }).pipe(
+        emit(lane, oversized, { holder: Holder.make("seat-alpha") }).pipe(
           Effect.provide(Lanes.layer({ servers: harness!.url })),
           Effect.scoped,
         ),
@@ -341,13 +342,13 @@ describe("the inline threshold pinned against the measured budget", () => {
   }, 120_000)
 
   test("the taught repair routes the payload through the blob store and cites it by digest", async () => {
-    const lane = await Effect.runPromise(declareDoublingLane("payload-taught-repair"))
+    const lane = await Effect.runPromise(declareDoublingLane(LaneHandle.make("payload-taught-repair")))
     const oversized = bodyOfCanonicalSize(INLINE_BODY_MAX_BYTES + 1)
     const lanesLayer = Lanes.layer({ servers: harness!.url })
 
     const refusal = await Effect.runPromise(
       Effect.flip(
-        emit(lane, oversized, { holder: "seat-alpha" }).pipe(
+        emit(lane, oversized, { holder: Holder.make("seat-alpha") }).pipe(
           Effect.provide(lanesLayer),
           Effect.scoped,
         ),
@@ -369,7 +370,7 @@ describe("the inline threshold pinned against the measured budget", () => {
         const blobs = yield* Blobs
         const payload = yield* canonicalBytes(oversized)
         const digest = yield* blobs.put(payload)
-        const emitted = yield* emit(lane, { blob: digest }, { holder: "seat-alpha" })
+        const emitted = yield* emit(lane, { blob: digest }, { holder: Holder.make("seat-alpha") })
         // Verified get: the store re-derives over what it fetched, so the cited
         // digest is evidence about the bytes and not about the store.
         const fetched = yield* blobs.get(digest)
@@ -416,10 +417,10 @@ describe("the inline threshold pinned against the measured budget", () => {
         await connection.close()
       }
 
-      const lane = await Effect.runPromise(declareDoublingLane("payload-under-pin"))
+      const lane = await Effect.runPromise(declareDoublingLane(LaneHandle.make("payload-under-pin")))
       const refusal = await Effect.runPromise(
         Effect.flip(
-          emit(lane, "a body well under the threshold", { holder: "seat-alpha" }).pipe(
+          emit(lane, "a body well under the threshold", { holder: Holder.make("seat-alpha") }).pipe(
             Effect.provide(Lanes.layer({ servers: lowered.url })),
             Effect.scoped,
           ),

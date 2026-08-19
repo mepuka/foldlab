@@ -54,7 +54,8 @@ import type {
   KernelCandidatePredicate,
 } from "../kernel/KernelDoor.js"
 import { HOLE_STAGE_RANK, type DeclKind, type HoleStage } from "../kernel/KernelSdk.generated.js"
-import { Engine } from "../carriage/Engine.js"
+import type { Holder } from "../kernel/Wire.js"
+import { Engine, matchOutcome } from "../carriage/Engine.js"
 
 /** One served tool, exactly as the committed artifact spells it. */
 export interface ServedTool {
@@ -253,9 +254,11 @@ const declareHandler = (payload: Record<string, unknown>) =>
     const outcome = yield* Engine.pipe(
       Effect.flatMap((engine) => engine.declare({ kind, value, writ })),
     )
-    return outcome._tag === "refused"
-      ? rowRefused(outcome.refusal)
-      : admitted(outcome.encoded, { digest: wireOf(outcome.landed.digest) })
+    return matchOutcome(outcome, {
+      refused: (refused): ToolResult => rowRefused(refused.refusal),
+      carried: (carried): ToolResult =>
+        admitted(carried.encoded, { digest: wireOf(carried.landed.digest) }),
+    })
   }))
 
 const resolveHandler = (payload: Record<string, unknown>) =>
@@ -265,29 +268,35 @@ const resolveHandler = (payload: Record<string, unknown>) =>
     const outcome = yield* Engine.pipe(
       Effect.flatMap((engine) => engine.resolve({ kind, target })),
     )
-    if (outcome._tag === "refused") return rowRefused(outcome.refusal)
-    const rendered = encodeJsonValue(outcome.landed as JsonValue)
-    return admitted(outcome.encoded, {
-      value: rendered.ok ? rendered.bytes : undefined,
+    return matchOutcome(outcome, {
+      refused: (refused): ToolResult => rowRefused(refused.refusal),
+      carried: (carried): ToolResult => {
+        const rendered = encodeJsonValue(carried.landed as JsonValue)
+        return admitted(carried.encoded, {
+          value: rendered.ok ? rendered.bytes : undefined,
+        })
+      },
     })
   }))
 
-const emitHandler = (holder: string) => (payload: Record<string, unknown>) =>
+const emitHandler = (holder: Holder) => (payload: Record<string, unknown>) =>
   renderSeam(Effect.gen(function* () {
     const lane = yield* wireDigest("lane_digest", string(payload, "lane_digest"))
     const body = yield* readCanonical("body", string(payload, "body"))
     const outcome = yield* Engine.pipe(
       Effect.flatMap((engine) => engine.emit({ lane, event: body, holder })),
     )
-    return outcome._tag === "refused"
-      ? rowRefused(outcome.refusal)
-      : admitted(outcome.encoded, {
-        digest: wireOf(outcome.landed.digest),
-        position: exact(outcome.landed.position),
-      })
+    return matchOutcome(outcome, {
+      refused: (refused): ToolResult => rowRefused(refused.refusal),
+      carried: (carried): ToolResult =>
+        admitted(carried.encoded, {
+          digest: wireOf(carried.landed.digest),
+          position: exact(carried.landed.position),
+        }),
+    })
   }))
 
-const joinHandler = (holder: string) => (payload: Record<string, unknown>) =>
+const joinHandler = (holder: Holder) => (payload: Record<string, unknown>) =>
   renderSeam(Effect.gen(function* () {
     const cell = yield* wireDigest("cell_digest", string(payload, "cell_digest"))
     const contribution = yield* readCanonical("contribution", string(payload, "contribution"))
@@ -296,9 +305,11 @@ const joinHandler = (holder: string) => (payload: Record<string, unknown>) =>
         engine.join({ cell, delta: [{ holder, value: contribution }] })
       ),
     )
-    return outcome._tag === "refused"
-      ? rowRefused(outcome.refusal)
-      : admitted(outcome.encoded, { state_digest: wireOf(outcome.landed.digest) })
+    return matchOutcome(outcome, {
+      refused: (refused): ToolResult => rowRefused(refused.refusal),
+      carried: (carried): ToolResult =>
+        admitted(carried.encoded, { state_digest: wireOf(carried.landed.digest) }),
+    })
   }))
 
 const decideHandler = (payload: Record<string, unknown>) =>
@@ -315,9 +326,11 @@ const decideHandler = (payload: Record<string, unknown>) =>
         ))
       ),
     )
-    return outcome._tag === "refused"
-      ? rowRefused(outcome.refusal)
-      : admitted(outcome.encoded, { landed_token: exact(outcome.landed.token) })
+    return matchOutcome(outcome, {
+      refused: (refused): ToolResult => rowRefused(refused.refusal),
+      carried: (carried): ToolResult =>
+        admitted(carried.encoded, { landed_token: exact(carried.landed.token) }),
+    })
   }))
 
 const labelOfCanonical = Effect.fn("mcp.labelOfCanonical")(function* (
@@ -455,7 +468,7 @@ const spawnHandler = (payload: Record<string, unknown>) =>
 
 /** Options for the served face; the holder attributes what the tools land. */
 export interface McpOptions {
-  readonly holder: string
+  readonly holder: Holder
 }
 
 /**

@@ -4,8 +4,9 @@ import { Kvm } from "@nats-io/kv"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Result } from "effect"
 
-import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import { REGISTER_BUCKET, Registers, OutcomeValue, WorkKey } from "../src/planes/Register.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 /**
  * What the register's pre-CAS reads decide, measured against a real server.
@@ -31,7 +32,7 @@ afterEach(async () => {
   harness = undefined
 })
 
-const work = "0123456789abcdef"
+const work = WorkKey.make("0123456789abcdef")
 
 interface StoredRegister {
   readonly holder: string
@@ -45,7 +46,7 @@ describe("register pre-CAS reads", () => {
     await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
-        yield* registers.grant(work, "holder")
+        yield* registers.grant(work, Holder.make("holder"))
       }).pipe(Effect.provide(Registers.layer({ servers: url })), Effect.scoped, Effect.orDie),
     )
 
@@ -72,12 +73,12 @@ describe("register pre-CAS reads", () => {
     const landed = await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
-        const granted = yield* registers.grant(work, "holder")
-        yield* registers.commit(work, granted.token, "first")
+        const granted = yield* registers.grant(work, Holder.make("holder"))
+        yield* registers.commit(work, granted.token, OutcomeValue.make("first"))
         // The shipped door refuses a second commit, and the reason it gives is
         // the outcome — not the token. That refusal is a PRE-check: it is
         // decided from a read, before any compare-and-set is attempted.
-        const second = yield* Effect.result(registers.commit(work, granted.token, "second"))
+        const second = yield* Effect.result(registers.commit(work, granted.token, OutcomeValue.make("second")))
         return { granted: granted.token, second }
       }).pipe(Effect.provide(Registers.layer({ servers: url })), Effect.scoped, Effect.orDie),
     )

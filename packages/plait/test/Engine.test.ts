@@ -36,13 +36,14 @@ import {
   type RunOutcome,
 } from "../src/carriage/Engine.js"
 import { Catalog, Payloads } from "../src/planes/Catalog.js"
-import { stateOf, Cells, type CellState, type Observation } from "../src/planes/Cell.js"
-import { Lanes, declare as declareLaneValue, type EmittedEvent } from "../src/planes/Lane.js"
-import { Registers, type RegisterState } from "../src/planes/Register.js"
+import { stateOf, Cells, type CellState, type Observation, CellName } from "../src/planes/Cell.js"
+import { Lanes, declare as declareLaneValue, type EmittedEvent, LaneHandle } from "../src/planes/Lane.js"
+import { Registers, type RegisterState, WorkKey } from "../src/planes/Register.js"
 import { Schema } from "effect"
 
 import { loadKernelArtifact } from "./KernelConformance.harness.js"
 import { PLANTED_CANDIDATES } from "./KernelDoor.fixtures.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 /* ------------------------------------------------------------- fixtures */
 
@@ -79,10 +80,7 @@ const makeCarriers = (): {
   const merges: Array<{ readonly cell: string; readonly delta: ReadonlyArray<Observation> }> = []
   const commits: Array<RecordedCommit> = []
   const cells = new Map<string, ReadonlyArray<Observation>>()
-  const registers = new Map<
-    string,
-    { token: number; holder: string | null; outcome: { token: number; value: string } | null }
-  >()
+  const registers = new Map<string, RegisterState>()
   let position = 0
 
   const lanesLayer = Lanes.testLayer({
@@ -110,7 +108,7 @@ const makeCarriers = (): {
       }),
   })
 
-  const stateFor = (work: string) =>
+  const stateFor = (work: string): RegisterState =>
     registers.get(work) ?? { token: 0, holder: null, outcome: null }
 
   const registersLayer = Registers.testLayer({
@@ -162,9 +160,9 @@ const makeCarriers = (): {
       commits,
       grant: (work) =>
         Effect.flatMap(Effect.sync(() => stateFor(work)), (current) => {
-          const next = { token: current.token + 1, holder: "test", outcome: current.outcome }
+          const next = { token: current.token + 1, holder: Holder.make("test"), outcome: current.outcome }
           registers.set(work, next)
-          return Effect.succeed({ token: next.token, holder: "test", outcome: next.outcome })
+          return Effect.succeed({ token: next.token, holder: Holder.make("test"), outcome: next.outcome })
         }),
       cellState: (cell) => stateOf(cells.get(cell) ?? []),
     },
@@ -205,7 +203,7 @@ const render = (verdict: KernelVerdict): string =>
 /** A permissive event decoder for fixture lanes. */
 const AnyEvent = Schema.Unknown as Schema.ConstraintDecoder<unknown>
 
-const fixtureLane = (handle: string) =>
+const fixtureLane = (handle: LaneHandle) =>
   Effect.runSync(declareLaneValue({
     handle,
     event: AnyEvent,
@@ -260,7 +258,7 @@ describe("the engine speaks through the one door", () => {
         const outcome = yield* engine.emit({
           lane: someLane,
           event: { n: 1 },
-          holder: "wall",
+          holder: Holder.make("wall"),
         })
         return { outcome, emitted: recorders.emits.length }
       })
@@ -281,7 +279,7 @@ describe("the engine speaks through the one door", () => {
     const emitted = await withEngine(({ engine, recorders }) =>
       Effect.gen(function* () {
         const mutantEmit = Effect.gen(function* () {
-          const lane = fixtureLane("mutant")
+          const lane = fixtureLane(LaneHandle.make("mutant"))
           const lanes = yield* Effect.succeed(recorders)
           void lanes
           // Carriage first — the crime the engine's order makes impossible.
@@ -365,14 +363,14 @@ describe("the engine speaks through the one door", () => {
   test("configuration is declared sentences: lane, cell, register", async () => {
     await withEngine(({ engine, recorders }) =>
       Effect.gen(function* () {
-        const lane = fixtureLane("walls")
+        const lane = fixtureLane(LaneHandle.make("walls"))
         const declaredLane = yield* engine.declareLane({ lane, writ: rootWritDigest })
         expect(declaredLane._tag).toBe("carried")
 
         const emitted = yield* engine.emit({
           lane: lane.digest,
           event: { fact: "observed" },
-          holder: "wall",
+          holder: Holder.make("wall"),
         })
         expect(emitted._tag).toBe("carried")
         expect(recorders.emits).toEqual([
@@ -389,7 +387,7 @@ describe("the engine speaks through the one door", () => {
         const algebraDigest = yield* digestOf(algebraValue)
 
         const cell = yield* engine.declareCell({
-          cell: "ledger",
+          cell: CellName.make("ledger"),
           algebra: algebraDigest,
           writ: rootWritDigest,
         })
@@ -404,7 +402,7 @@ describe("the engine speaks through the one door", () => {
         expect(recorders.merges.length).toBe(1)
 
         const register = yield* engine.declareRegister({
-          work: "job-1",
+          work: WorkKey.make("job-1"),
           writ: rootWritDigest,
         })
         expect(register._tag).toBe("carried")
@@ -460,7 +458,7 @@ describe("the program runtime", () => {
     const outcome = await withEngine(({ engine }) =>
       engine.run(programNamed("holey"), {
         writ: rootWritDigest,
-        holder: "wall",
+        holder: Holder.make("wall"),
         supplies: { kinds: new Map([[1n, "resource"]]) },
       })
     )
@@ -481,7 +479,7 @@ describe("the program runtime", () => {
     const outcome = await withEngine(({ engine }) =>
       engine.run(programNamed("holey-filled"), {
         writ: rootWritDigest,
-        holder: "wall",
+        holder: Holder.make("wall"),
         supplies: { kinds: new Map([[1n, "resource"]]) },
       })
     )
@@ -494,7 +492,7 @@ describe("the program runtime", () => {
   test("the filled twin, label-mapped onto declared referents, lands", async () => {
     const { outcome, emits } = await withEngine(({ engine, recorders }) =>
       Effect.gen(function* () {
-        const lane = fixtureLane("program-lane")
+        const lane = fixtureLane(LaneHandle.make("program-lane"))
         const declaredLane = yield* engine.declareLane({ lane, writ: rootWritDigest })
         if (declaredLane._tag !== "carried") throw new Error("lane declaration refused")
         const writLabel = yield* Effect.map(
@@ -510,7 +508,7 @@ describe("the program runtime", () => {
         })
         const outcome = yield* engine.run(mapped, {
           writ: rootWritDigest,
-          holder: "wall",
+          holder: Holder.make("wall"),
           supplies: { kinds: new Map([[1n, "resource"]]) },
         })
         return { outcome, emits: recorders.emits.length }
@@ -527,7 +525,7 @@ describe("the program runtime", () => {
   test("the distill shape executes end-to-end: resolve, decide, emit, join", async () => {
     const result = await withEngine(({ engine, recorders }) =>
       Effect.gen(function* () {
-        const lane = fixtureLane("distill-lane")
+        const lane = fixtureLane(LaneHandle.make("distill-lane"))
         const declaredLane = yield* engine.declareLane({ lane, writ: rootWritDigest })
         if (declaredLane._tag !== "carried") throw new Error("lane refused")
 
@@ -535,14 +533,14 @@ describe("the program runtime", () => {
         yield* engine.declare({ kind: "algebra", value: algebraValue, writ: rootWritDigest })
         const algebraDigest = yield* digestOf(algebraValue)
         const cell = yield* engine.declareCell({
-          cell: "distill-cell",
+          cell: CellName.make("distill-cell"),
           algebra: algebraDigest,
           writ: rootWritDigest,
         })
         if (cell._tag !== "carried") throw new Error("cell refused")
 
         const register = yield* engine.declareRegister({
-          work: "distill-work",
+          work: WorkKey.make("distill-work"),
           writ: rootWritDigest,
         })
         if (register._tag !== "carried") throw new Error("register refused")
@@ -566,7 +564,7 @@ describe("the program runtime", () => {
         })
         const outcome = yield* engine.run(mapped, {
           writ: rootWritDigest,
-          holder: "wall",
+          holder: Holder.make("wall"),
           supplies: {
             tokens: new Map([[2n, { register: register.landed.label, value: BigInt(granted.token) }]]),
           },
@@ -593,19 +591,19 @@ describe("the program runtime", () => {
   test("a run stops at its first refusal and the tail never carries", async () => {
     const result = await withEngine(({ engine, recorders }) =>
       Effect.gen(function* () {
-        const lane = fixtureLane("stopped-lane")
+        const lane = fixtureLane(LaneHandle.make("stopped-lane"))
         const declaredLane = yield* engine.declareLane({ lane, writ: rootWritDigest })
         if (declaredLane._tag !== "carried") throw new Error("lane refused")
         const algebraValue: WireValue = { v: 0, kind: "algebra", definition: "set-union" }
         yield* engine.declare({ kind: "algebra", value: algebraValue, writ: rootWritDigest })
         const cell = yield* engine.declareCell({
-          cell: "stopped-cell",
+          cell: CellName.make("stopped-cell"),
           algebra: yield* digestOf(algebraValue),
           writ: rootWritDigest,
         })
         if (cell._tag !== "carried") throw new Error("cell refused")
         const register = yield* engine.declareRegister({
-          work: "stopped-work",
+          work: WorkKey.make("stopped-work"),
           writ: rootWritDigest,
         })
         if (register._tag !== "carried") throw new Error("register refused")
@@ -625,7 +623,7 @@ describe("the program runtime", () => {
           return id
         })
         // No token supplied: the door's own teaching stops the run.
-        const outcome = yield* engine.run(mapped, { writ: rootWritDigest, holder: "wall" })
+        const outcome = yield* engine.run(mapped, { writ: rootWritDigest, holder: Holder.make("wall") })
         return {
           outcome,
           emits: recorders.emits.length,
@@ -655,7 +653,7 @@ describe("the program runtime", () => {
     const unsupplied = await withEngine(({ engine }) =>
       engine.run(programNamed("ground-two-node"), {
         writ: rootWritDigest,
-        holder: "wall",
+        holder: Holder.make("wall"),
       })
     )
     expect(unsupplied._tag).toBe("unspeakable")
@@ -669,7 +667,7 @@ describe("the program runtime", () => {
     const supplied = await withEngine(({ engine }) =>
       engine.run(programNamed("ground-two-node"), {
         writ: rootWritDigest,
-        holder: "wall",
+        holder: Holder.make("wall"),
         supplies: { kinds: new Map([[1n, "resource"]]) },
       })
     )
@@ -694,7 +692,7 @@ describe("the program runtime", () => {
       ],
     }
     const outcome = await withEngine(({ engine }) =>
-      Effect.result(engine.run(forward, { writ: rootWritDigest, holder: "wall" }))
+      Effect.result(engine.run(forward, { writ: rootWritDigest, holder: Holder.make("wall") }))
     )
     expect(Result.isFailure(outcome)).toBe(true)
     if (Result.isFailure(outcome)) {

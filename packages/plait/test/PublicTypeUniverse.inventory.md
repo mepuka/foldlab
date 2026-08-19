@@ -6,15 +6,15 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a-ticket.
+Classified 190 public types: 43 derives-from-the-generated-core, 147 debt-with-a-ticket.
 
 ## Ratchet pins
 
 | Owning prefix | Pinned debt |
 | --- | --- |
-| `carriage` | 29 |
-| `kernel` | 9 |
-| `planes` | 65 |
+| `carriage` | 30 |
+| `kernel` | 13 |
+| `planes` | 68 |
 | `truth` | 36 |
 
 ## Classified public types
@@ -61,6 +61,7 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `Catalog.CatalogService` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Catalog.PayloadService` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Catalog.Payloads` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Cell.CellName` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Cell.CellOptions` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Cell.CellReplica` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Cell.CellService` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
@@ -97,6 +98,7 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `FabricClient.FabricClientService` | `src/carriage/FabricClient.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `FabricClient.PublishedEnvelope` | `src/carriage/FabricClient.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `FabricClient.ReceivedEnvelope` | `src/carriage/FabricClient.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `FabricClient.StreamName` | `src/carriage/FabricClient.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Fold.Contribution` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.DeclareOptions` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.DeclaredFold` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
@@ -157,6 +159,7 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `Lane.EmitOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.EmittedEvent` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneDeclaration` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.LaneHandle` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LanePartition` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneService` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
@@ -171,11 +174,14 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `Refusal.StructuralRefusal` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Refusal.StructuralRefusalFields` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Refusal.StructuralRefusalKind` | `src/truth/RefusalKinds.generated.ts` | derives-from-the-generated-core | — | — |
+| `Register.Holder` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `Register.OutcomeValue` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Register.RegisterOptions` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Register.RegisterOutcome` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Register.RegisterService` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Register.RegisterState` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Register.Registers` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Register.WorkKey` | `src/planes/Register.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Resolved.Publishing` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Resolved.PublishingOf` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Resolved.ResolveCache` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
@@ -194,6 +200,7 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `Session.View` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Session.WritDeclaration` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Session.WritOptions` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Subjects.CellName` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Subjects.EvidenceSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Subjects.FabricSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Subjects.FactSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
@@ -203,3 +210,4 @@ Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a
 | `Wire.DecodedEnvelope` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.Envelope` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.EnvelopeKind` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `Wire.Holder` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |

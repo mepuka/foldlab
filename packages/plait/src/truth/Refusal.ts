@@ -3,7 +3,7 @@
  *
  * @module
  */
-import { Effect, Schedule, Schema, SchemaParser } from "effect"
+import { Effect, Match, Schedule, Schema, SchemaParser } from "effect"
 import { dual } from "effect/Function"
 
 import type { JsonValue } from "@foldlab/core/jcs"
@@ -126,6 +126,75 @@ export const absenceRefusal = (fields: RefusalFields): AbsenceRefusal =>
 /** Returns whether new evidence could repeal the refusal. */
 export const isRetryable = (refusal: Refusal): refusal is AbsenceRefusal =>
   refusal.sort === "absence"
+
+/**
+ * Folds a refusal over its two sorts.
+ *
+ * The sort is the persisted discriminant and the tag carries it: a structural
+ * refusal is a permanent statement about presented input, an absence
+ * observation is head-relative and may be repealed by later evidence. A caller
+ * that has to answer differently for the two — a surface that offers a retry on
+ * one and a repair on the other — folds here instead of reading `sort` and
+ * hoping the reading stays total.
+ *
+ * A third sort would be a third arm the compiler demands, which is the whole
+ * reason this is a fold and not a conditional.
+ *
+ * @example
+ * ```ts
+ * import { match } from "@foldlab/plait/Refusal"
+ *
+ * const advice = match({
+ *   StructuralRefusal: (refusal) => refusal.law,
+ *   AbsenceRefusal: (refusal) => refusal.next[0]?.note ?? "wait and read again",
+ * })
+ * ```
+ */
+export const match: <Out>(cases: {
+  readonly StructuralRefusal: (refusal: StructuralRefusal) => Out
+  readonly AbsenceRefusal: (refusal: AbsenceRefusal) => Out
+}) => (refusal: Refusal) => Out = <Out>(cases: {
+  readonly StructuralRefusal: (refusal: StructuralRefusal) => Out
+  readonly AbsenceRefusal: (refusal: AbsenceRefusal) => Out
+}): ((refusal: Refusal) => Out) =>
+  // The pin's matcher answers `Unify<Out>`, and `Unify` cannot reduce over a
+  // type parameter no call site has resolved yet — it reduces to `Out` at every
+  // real application and stays unreduced only here, inside the one function
+  // that is generic in it. The declared signature above is the contract, the
+  // exhaustiveness is the matcher's, and this narrowing is the seam between
+  // them rather than a claim about any value.
+  Match.type<Refusal>().pipe(Match.tagsExhaustive(cases)) as (refusal: Refusal) => Out
+
+/**
+ * Folds a structural refusal over every kind the vocabulary carries.
+ *
+ * The arm record's keys are the generated union's, so the closure contract is a
+ * compile error rather than a convention: a kind emitted into the vocabulary
+ * tomorrow is a key every caller is missing today, and no caller can spell an
+ * arm for a kind the vocabulary does not carry. Nothing here enumerates the
+ * kinds — enumerations that are listed drift, and this one is read off the
+ * declaration the emitter owns.
+ *
+ * A plain record dispatch rather than a pattern matcher, deliberately. The kind
+ * is a field of ONE class and not a discriminant between class types, so the
+ * pin's discriminator matchers would narrow every arm's argument to the empty
+ * type; the mapped record states the same totality and keeps the argument the
+ * refusal itself.
+ *
+ * @example
+ * ```ts
+ * import { matchKind } from "@foldlab/plait/Refusal"
+ *
+ * const isIdentityFault = matchKind({ ...arms, "digest-mismatch": () => true })
+ * ```
+ */
+export const matchKind: <Out>(cases: {
+  readonly [K in GeneratedStructuralRefusalKind]: (refusal: StructuralRefusal) => Out
+}) => (refusal: StructuralRefusal) => Out =
+  <Out>(cases: {
+    readonly [K in GeneratedStructuralRefusalKind]: (refusal: StructuralRefusal) => Out
+  }) =>
+  (refusal: StructuralRefusal): Out => cases[refusal.kind](refusal)
 
 /**
  * Retries only absence observations using either a count or temporal schedule.

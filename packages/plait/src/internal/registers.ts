@@ -11,6 +11,9 @@ import { Effect, Equal, Result, Schema, Scope } from "effect"
 import {
   REGISTER_BUCKET,
   REGISTER_HISTORY,
+  Holder,
+  OutcomeValue,
+  workKey,
   type RegisterOptions,
   type RegisterService,
   type RegisterState,
@@ -60,16 +63,24 @@ import {
  * packages/plait/DECISIONS.md, Task DEV-779.
  */
 
-const StoredOutcome = Schema.Struct({ token: Schema.Finite, value: Schema.String })
+/**
+ * The sorts are suspended because `Register.ts` imports this adapter: the cycle
+ * is the shipped public/internal split, and a direct reference here would read
+ * the bindings before the public module has initialized them — the same reason
+ * the cell adapter suspends its observation schema.
+ */
+const StoredOutcome = Schema.Struct({
+  token: Schema.Finite,
+  value: Schema.suspend(() => OutcomeValue),
+})
 const StoredRegister = Schema.Struct({
-  holder: Schema.String,
+  holder: Schema.suspend(() => Holder),
   outcome: Schema.NullOr(StoredOutcome),
 })
 
 type StoredRegister = typeof StoredRegister.Type
 
 const encoder = new TextEncoder()
-const workPattern = /^[^.*>\s]+$/u
 
 const encode = (value: StoredRegister): Uint8Array =>
   encoder.encode(JSON.stringify(value))
@@ -102,10 +113,6 @@ const lawRefusal = (
 ): Refusal => structuralRefusal({ kind, law, path, got, expected, next })
 
 /** One taught repair per structural law; every refusal names its legal next step. */
-const teachRegisterKey: ReadonlyArray<Next> = [{
-  subject: "register.key",
-  note: "Present the work digest as one literal KV token without dots, whitespace, or wildcards.",
-}]
 const teachStoredState: ReadonlyArray<Next> = [{
   subject: "register.observe",
   note: "Restore the closed {holder, outcome} record at this key; only register operations write this bucket.",
@@ -185,18 +192,6 @@ const isMissingStream = (cause: unknown): boolean =>
 
 /** Where the register carrier is opened, for a named law to address. */
 const registerSite: CarrierSite = { path: ["bucket"], subject: "bucket.ensure" }
-
-const validWork = (work: string): Effect.Effect<string, Refusal> =>
-  workPattern.test(work)
-    ? Effect.succeed(work)
-    : Effect.fail(lawRefusal(
-      "invalid-register-key",
-      "A work digest maps to one literal NATS KV key.",
-      ["work"],
-      work,
-      "one non-empty token without dots, whitespace, or wildcards",
-      teachRegisterKey,
-    ))
 
 const decode = (entry: KvEntry): Effect.Effect<StoredRegister, Refusal> => {
   const parsed = Effect.try({
@@ -450,7 +445,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
 
   const grant: RegisterService["grant"] = Effect.fn("Registers.grant")(
     function* (rawWork, holder) {
-      const work = yield* validWork(rawWork)
+      const work = yield* workKey(rawWork)
       yield* assertIncarnation("register.grant")
       const existing = yield* read(bucket, work)
       if (existing !== null) return yield* lawRefusal(
@@ -504,7 +499,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
 
   const renew: RegisterService["renew"] = Effect.fn("Registers.renew")(
     function* (rawWork, token) {
-      const work = yield* validWork(rawWork)
+      const work = yield* workKey(rawWork)
       yield* assertIncarnation("register.renew")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
@@ -548,7 +543,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
 
   const commit: RegisterService["commit"] = Effect.fn("Registers.commit")(
     function* (rawWork, token, outcome) {
-      const work = yield* validWork(rawWork)
+      const work = yield* workKey(rawWork)
       yield* assertIncarnation("register.commit")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
@@ -586,7 +581,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
 
   const expireSteal: RegisterService["expireSteal"] = Effect.fn("Registers.expireSteal")(
     function* (rawWork, holder) {
-      const work = yield* validWork(rawWork)
+      const work = yield* workKey(rawWork)
       yield* assertIncarnation("register.expireSteal")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
@@ -620,7 +615,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
 
   const observe: RegisterService["observe"] = Effect.fn("Registers.observe")(
     function* (rawWork) {
-      const work = yield* validWork(rawWork)
+      const work = yield* workKey(rawWork)
       // `observe` is the taught repair of nearly every register refusal, so it
       // is pinned too: handing back a reborn bucket's holder and token as this
       // register's state is the silent answer the pin exists to refuse.

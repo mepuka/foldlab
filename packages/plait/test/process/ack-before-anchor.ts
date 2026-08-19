@@ -12,13 +12,14 @@ import { evidenceSubject } from "../../src/kernel/Subjects.js"
 import { laneStreamName } from "../../src/internal/lanes.js"
 import { PUMP_ACK_WAIT_NANOS, PUMP_BUFFER_BOUND } from "../../src/internal/pump.js"
 import { declareChaosCounter } from "../ChaosFixture.js"
+import { LaneHandle } from "../../src/planes/Lane.js"
 
 const [url, handleName, partitionText, markerPath] = process.argv.slice(2)
 if (url === undefined || handleName === undefined || partitionText === undefined || markerPath === undefined) {
   throw new Error("ack-before-anchor arguments are incomplete")
 }
 const partition = Number(partitionText)
-const { fold } = await Effect.runPromise(declareChaosCounter(handleName))
+const { fold } = await Effect.runPromise(declareChaosCounter(LaneHandle.make(handleName)))
 const connection = await connect({ servers: url, name: "foldlab-ack-before-anchor-mutant" })
 const stream = laneStreamName(fold.lane, partition)
 const subject = await Effect.runPromise(evidenceSubject(fold.lane.handle, partition))

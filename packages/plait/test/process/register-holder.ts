@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
-import { Registers } from "../../src/planes/Register.js"
+import { Registers, WorkKey } from "../../src/planes/Register.js"
+import { Holder } from "../../src/kernel/Wire.js"
 
 const [url, work, readyPath] = process.argv.slice(2)
 if (url === undefined || work === undefined || readyPath === undefined) {
@@ -9,7 +10,7 @@ if (url === undefined || work === undefined || readyPath === undefined) {
 
 await Effect.runPromise(Effect.gen(function* () {
   const registers = yield* Registers
-  const state = yield* registers.grant(work, "ts-holder")
+  const state = yield* registers.grant(WorkKey.make(work), Holder.make("ts-holder"))
   yield* Effect.promise(() => Bun.write(readyPath, JSON.stringify({ token: state.token })))
   return yield* Effect.never
 }).pipe(

@@ -71,14 +71,15 @@ import {
   type RunSupplies,
 } from "../src/carriage/Engine.js"
 import { Catalog, Payloads } from "../src/planes/Catalog.js"
-import { stateOf, Cells, type Observation } from "../src/planes/Cell.js"
-import { Lanes, declare as declareLaneValue, type EmittedEvent } from "../src/planes/Lane.js"
-import { Registers, type RegisterState } from "../src/planes/Register.js"
+import { stateOf, Cells, type Observation, CellName } from "../src/planes/Cell.js"
+import { Lanes, declare as declareLaneValue, type EmittedEvent, LaneHandle } from "../src/planes/Lane.js"
+import { Registers, type RegisterState, WorkKey } from "../src/planes/Register.js"
 
 import type { JsonValue } from "@foldlab/core/jcs"
 
 import { writeCanonicalValue } from "../scripts/kernel-corpus.js"
 import { loadKernelArtifact } from "./KernelConformance.harness.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 /* ------------------------------------------------------------- carriers */
 
@@ -88,10 +89,7 @@ const makeCarriers = (): {
   readonly grant: (work: string) => Effect.Effect<RegisterState, Refusal>
 } => {
   const cells = new Map<string, ReadonlyArray<Observation>>()
-  const registers = new Map<
-    string,
-    { token: number; holder: string | null; outcome: { token: number; value: string } | null }
-  >()
+  const registers = new Map<string, RegisterState>()
   let position = 0
 
   const lanesLayer = Lanes.testLayer({
@@ -117,7 +115,7 @@ const makeCarriers = (): {
       }),
   })
 
-  const stateFor = (work: string) =>
+  const stateFor = (work: string): RegisterState =>
     registers.get(work) ?? { token: 0, holder: null, outcome: null }
 
   const registersLayer = Registers.testLayer({
@@ -165,9 +163,9 @@ const makeCarriers = (): {
     grant: (work) =>
       Effect.sync(() => {
         const current = stateFor(work)
-        const next = { token: current.token + 1, holder: "replay", outcome: current.outcome }
+        const next = { token: current.token + 1, holder: Holder.make("replay"), outcome: current.outcome }
         registers.set(work, next)
-        return { token: next.token, holder: "replay", outcome: next.outcome }
+        return { token: next.token, holder: Holder.make("replay"), outcome: next.outcome }
       }),
   }
 }
@@ -177,7 +175,7 @@ const rootWritDigest: Digest = Effect.runSync(digestOf(rootWrit))
 
 const AnyEvent = Schema.Unknown as Schema.ConstraintDecoder<unknown>
 
-const fixtureLane = (handle: string) =>
+const fixtureLane = (handle: LaneHandle) =>
   Effect.runSync(declareLaneValue({
     handle,
     event: AnyEvent,
@@ -315,7 +313,7 @@ const stage = (
           cellRefs.push({ kind: reference.kind, id })
           break
         case "lane": {
-          const lane = fixtureLane(`replay-lane-${id}`)
+          const lane = fixtureLane(LaneHandle.make(`replay-lane-${id}`))
           const outcome = yield* harness.engine.declareLane({ lane, writ: rootWritDigest })
           if (outcome._tag !== "carried") {
             throw new Error(`staging lane ${id} was refused: ${outcome.refusal.reason}`)
@@ -328,7 +326,7 @@ const stage = (
         }
         case "program": {
           const outcome = yield* harness.engine.declareRegister({
-            work: `replay-work-${id}`,
+            work: WorkKey.make(`replay-work-${id}`),
             writ: rootWritDigest,
           })
           if (outcome._tag !== "carried") {
@@ -363,7 +361,7 @@ const stage = (
         throw new Error(`the vector's strategy names algebra ${algebraId}, which its door has not`)
       }
       const outcome = yield* harness.engine.declareCell({
-        cell: `replay-cell-${reference.id}`,
+        cell: CellName.make(`replay-cell-${reference.id}`),
         algebra: algebra.digest,
         writ: rootWritDigest,
       })
@@ -469,7 +467,7 @@ const replay = (vector: KernelRunRecord): Promise<Replay> =>
 
       const mapped = relabel(declaration, label)
       const outcome = yield* Effect.result(
-        engine.run(mapped, { writ: writ.digest, holder: "replay", supplies }),
+        engine.run(mapped, { writ: writ.digest, holder: Holder.make("replay"), supplies }),
       )
 
       yield* Effect.yieldNow

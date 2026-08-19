@@ -30,6 +30,7 @@ import { Catalog, Payloads } from "../src/planes/Catalog.js"
 import { stateOf, Cells } from "../src/planes/Cell.js"
 import { Lanes } from "../src/planes/Lane.js"
 import { Registers } from "../src/planes/Register.js"
+import { Holder } from "../src/kernel/Wire.js"
 import {
   artifactBytes,
   kernelHandlers,
@@ -73,7 +74,7 @@ const runHandler = (
 ): Promise<Record<string, unknown>> =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const handler = kernelHandlers({ holder: "mcp-wall" })[name]
+      const handler = kernelHandlers({ holder: Holder.make("mcp-wall") })[name]
       if (handler === undefined) throw new Error(`no handler for ${name}`)
       return yield* handler(payload)
     }).pipe(Effect.provide(engineLayer)) as Effect.Effect<Record<string, unknown>, never>,
@@ -108,7 +109,7 @@ describe("served equals derived", () => {
 
   test("the handler record names exactly the served tools", () => {
     const served = servedTools().map((row) => row.name).sort()
-    const handled = Object.keys(kernelHandlers({ holder: "mcp-wall" })).sort()
+    const handled = Object.keys(kernelHandlers({ holder: Holder.make("mcp-wall") })).sort()
     expect(handled).toEqual(served)
   })
 })
@@ -165,7 +166,7 @@ describe("handlers route through the door", () => {
     const digest = Effect.runSync(digestOf(value))
     const { declared, resolved } = await Effect.runPromise(
       Effect.gen(function* () {
-        const handlers = kernelHandlers({ holder: "mcp-wall" })
+        const handlers = kernelHandlers({ holder: Holder.make("mcp-wall") })
         const declared = yield* handlers["kernel_declare"]!({
           kind: "resource",
           value: text,

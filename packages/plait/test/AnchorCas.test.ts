@@ -10,6 +10,7 @@ import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import { makeAnchorStore } from "../src/internal/anchors.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 let harness: NatsHarness | undefined
 
@@ -23,7 +24,7 @@ describe("anchor revision ownership", () => {
     harness = await startNatsHarness()
     const Event = Schema.Struct({ value: Schema.Finite })
     const lane = await Effect.runPromise(Lane.declare({
-      handle: "anchor-cas",
+      handle: LaneHandle.make("anchor-cas"),
       event: Event,
       eventSchema: Digest.make("f".repeat(64)),
       partitions: 1 as const,

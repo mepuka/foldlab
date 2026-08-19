@@ -8,11 +8,13 @@ import { Digest, digestOf } from "../src/truth/Digest.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import * as Session from "../src/planes/Session.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("e".repeat(64))
 
-const declareFold = (handle: string) => Effect.gen(function* () {
+const declareFold = (handle: LaneHandle) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
     handle,
     event: Event,
@@ -82,14 +84,14 @@ const layerOf = (floor: number, state: number) =>
 describe("declared writs", () => {
   test("the views are a set, so order and duplicates do not move the digest", async () => {
     const [left, right] = await Effect.runPromise(Effect.all([
-      declareFold("writ-set-a"),
-      declareFold("writ-set-b"),
+      declareFold(LaneHandle.make("writ-set-a")),
+      declareFold(LaneHandle.make("writ-set-b")),
     ]))
 
     const [written, rewritten] = await Effect.runPromise(Effect.all([
-      Session.writ({ holder: "reader", views: [left.digest, right.digest] }),
+      Session.writ({ holder: Holder.make("reader"), views: [left.digest, right.digest] }),
       Session.writ({
-        holder: "reader",
+        holder: Holder.make("reader"),
         views: [right.digest, left.digest, right.digest],
       }),
     ]))
@@ -101,8 +103,8 @@ describe("declared writs", () => {
   })
 
   test("the empty writ is lawful, names no view, and refuses every one", async () => {
-    const fold = await Effect.runPromise(declareFold("writ-empty"))
-    const empty = await Effect.runPromise(Session.writ({ holder: "reader", views: [] }))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("writ-empty")))
+    const empty = await Effect.runPromise(Session.writ({ holder: Holder.make("reader"), views: [] }))
     expect(empty.views).toEqual([])
 
     const refusal = await Effect.runPromise(Effect.flip(
@@ -117,7 +119,7 @@ describe("declared writs", () => {
 
   test("a view that is not a digest refuses the declaration", async () => {
     const refusal = await Effect.runPromise(Effect.flip(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: ["not-a-digest" as unknown as Digest],
     })))
 
@@ -127,7 +129,10 @@ describe("declared writs", () => {
 
   test("a holder with no name refuses the declaration", async () => {
     const refusal = await Effect.runPromise(Effect.flip(
-      Session.writ({ holder: "", views: [] }),
+      // Cast, deliberately: the holder brand makes an unnamed holder
+      // unspellable, and the seam's own runtime check is what this asserts —
+      // the same shape the view arm above uses to present a non-digest.
+      Session.writ({ holder: "" as unknown as Holder, views: [] }),
     ))
 
     expect(refusal.kind).toBe("invalid-session-declaration")
@@ -138,11 +143,11 @@ describe("declared writs", () => {
 describe("the consumer seam", () => {
   test("the writ is judged at the seam, not by the layer under it", async () => {
     const [declared, undeclared] = await Effect.runPromise(Effect.all([
-      declareFold("seam-declared"),
-      declareFold("seam-undeclared"),
+      declareFold(LaneHandle.make("seam-declared")),
+      declareFold(LaneHandle.make("seam-undeclared")),
     ]))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [declared.digest],
     }))
     const layer = layerOf(3, 6)
@@ -168,9 +173,9 @@ describe("the consumer seam", () => {
   })
 
   test("an anchor policy this seam does not know refuses", async () => {
-    const fold = await Effect.runPromise(declareFold("policy-unknown"))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("policy-unknown")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [fold.digest],
     }))
 
@@ -187,9 +192,9 @@ describe("the consumer seam", () => {
   })
 
   test("a partition the lane never declared refuses", async () => {
-    const fold = await Effect.runPromise(declareFold("partition-outside"))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("partition-outside")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [fold.digest],
     }))
 
@@ -204,9 +209,9 @@ describe("the consumer seam", () => {
   })
 
   test("replay opens at floor zero and resume opens at the checkpointed floor", async () => {
-    const fold = await Effect.runPromise(declareFold("policy-positions"))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("policy-positions")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [fold.digest],
     }))
     const layer = layerOf(7, 12)
@@ -221,9 +226,9 @@ describe("the consumer seam", () => {
   })
 
   test("a step emits the image and the session the read leaves behind", async () => {
-    const fold = await Effect.runPromise(declareFold("step-image"))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("step-image")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [fold.digest],
     }))
 
@@ -247,10 +252,10 @@ describe("the consumer seam", () => {
   })
 
   test("admission is never cached: a writ that stopped naming the view refuses", async () => {
-    const fold = await Effect.runPromise(declareFold("writ-narrowed"))
+    const fold = await Effect.runPromise(declareFold(LaneHandle.make("writ-narrowed")))
     const [scope, narrowed] = await Effect.runPromise(Effect.all([
-      Session.writ({ holder: "reader", views: [fold.digest] }),
-      Session.writ({ holder: "reader", views: [] }),
+      Session.writ({ holder: Holder.make("reader"), views: [fold.digest] }),
+      Session.writ({ holder: Holder.make("reader"), views: [] }),
     ]))
 
     const opened = await Effect.runPromise(
@@ -271,11 +276,11 @@ describe("the consumer seam", () => {
 
   test("reading a fold this session did not subscribe to refuses", async () => {
     const [subscribed, other] = await Effect.runPromise(Effect.all([
-      declareFold("session-view"),
-      declareFold("session-other"),
+      declareFold(LaneHandle.make("session-view")),
+      declareFold(LaneHandle.make("session-other")),
     ]))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: [subscribed.digest, other.digest],
     }))
 
@@ -335,10 +340,10 @@ const advancingDoor = (): Session.SessionService => {
 
 describe("the changes stream face", () => {
   test("take(n) is exactly n sequential reads", async () => {
-    const fold = Effect.runSync(declareFold("stream-face"))
+    const fold = Effect.runSync(declareFold(LaneHandle.make("stream-face")))
     const collected = await Effect.runPromise(
       Effect.gen(function* () {
-        const writ = yield* Session.writ({ holder: "reader", views: [fold.digest] })
+        const writ = yield* Session.writ({ holder: Holder.make("reader"), views: [fold.digest] })
         const session = yield* Session.subscribe(fold, {
           writ,
           partition: 0,
@@ -356,10 +361,10 @@ describe("the changes stream face", () => {
   })
 
   test("the writ is judged on every element: an unnamed view refuses on the stream", async () => {
-    const fold = Effect.runSync(declareFold("stream-face-unnamed"))
+    const fold = Effect.runSync(declareFold(LaneHandle.make("stream-face-unnamed")))
     const outcome = await Effect.runPromise(
       Effect.gen(function* () {
-        const writ = yield* Session.writ({ holder: "reader", views: [] })
+        const writ = yield* Session.writ({ holder: Holder.make("reader"), views: [] })
         const session: Session.Session = {
           writ,
           view: fold.digest,

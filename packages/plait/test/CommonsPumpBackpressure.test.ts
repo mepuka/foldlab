@@ -5,7 +5,7 @@ import { Deferred, Effect, Fiber, Queue, Stream } from "effect"
 
 import { Digest } from "../src/truth/Digest.js"
 import { commonsPump } from "../src/internal/nats.js"
-import { encodeEnvelope, verifyEnvelopeDigest } from "../src/kernel/Wire.js"
+import { encodeEnvelope, verifyEnvelopeDigest, Holder } from "../src/kernel/Wire.js"
 
 /**
  * The counterexample suite behind DEV-736 (finding B-4), and the gate on the
@@ -132,7 +132,7 @@ const load = await Effect.runPromise(
         kind: "emit",
         lane,
         key: index,
-        holder: "seat-alpha",
+        holder: Holder.make("seat-alpha"),
         body: null,
         pins: [],
       }).pipe(

@@ -9,9 +9,25 @@ import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
 import { structuralRefusal, type Refusal, type StructuralRefusal, WireValueSchema } from "../truth/Refusal.js"
-import { evidenceSubject } from "../kernel/Subjects.js"
-import type { Certificate } from "../kernel/Wire.js"
+import { evidenceSubject, TOKEN_PATTERN } from "../kernel/Subjects.js"
+import type { Certificate, Holder } from "../kernel/Wire.js"
 import { makeLaneService } from "../internal/lanes.js"
+
+/**
+ * The route name one evidence lane is declared under.
+ *
+ * A handle becomes a routing token verbatim, so its grammar is the fabric's
+ * literal-token alphabet and nothing wider. The brand is demanded at
+ * `declare`'s door: a lane cannot be declared under a name nobody minted, and
+ * a handle cannot be spent where a cell name or a work key is wanted.
+ */
+export const LaneHandle = Schema.String
+  .check(Schema.isPattern(TOKEN_PATTERN))
+  .pipe(Schema.brand("@foldlab/plait/LaneHandle"))
+  .annotate({ identifier: "PlaitLaneHandle" })
+
+/** The route name one evidence lane is declared under. */
+export type LaneHandle = typeof LaneHandle.Type
 
 /** The closed, identity-bearing grammar for deriving a partition key. */
 export const PartitionKey = Schema.Struct({
@@ -25,7 +41,7 @@ export type PartitionKey = typeof PartitionKey.Type
 export interface LaneDeclaration {
   readonly v: 0
   readonly kind: "lane"
-  readonly handle: string
+  readonly handle: LaneHandle
   readonly eventSchema: DigestValue
   readonly partitions: number
   readonly partitionKey: PartitionKey
@@ -36,14 +52,14 @@ export interface DeclaredLane<Event, Partitions extends number = number> {
   readonly declaration: LaneDeclaration
   readonly digest: DigestValue
   readonly event: Schema.ConstraintDecoder<Event>
-  readonly handle: string
+  readonly handle: LaneHandle
   readonly partitions: Partitions
   readonly partitionKey: PartitionKey
 }
 
 /** Inputs for declaring one evidence lane. */
 export interface DeclareOptions<Event, Partitions extends number> {
-  readonly handle: string
+  readonly handle: LaneHandle
   readonly event: Schema.ConstraintDecoder<Event>
   readonly eventSchema: DigestValue
   readonly partitions: Partitions
@@ -61,7 +77,7 @@ export interface LaneOptions extends ConnectionBootstrap {}
 
 /** Provenance fields carried by one emitted event envelope. */
 export interface EmitOptions {
-  readonly holder: string
+  readonly holder: Holder
   readonly pins?: ReadonlyArray<DigestValue>
   readonly cert?: Certificate
 }
@@ -73,6 +89,41 @@ export interface EmittedEvent {
   readonly position: number
   readonly duplicate: boolean
 }
+
+/**
+ * Folds an emission acknowledgement over the two answers a partition gives.
+ *
+ * **What `duplicate` means here, exactly.** A declared `(lane, partition)` owns
+ * one exact stream, and that stream suppresses a re-emission of the same message
+ * id within its own pinned two-minute window. So `duplicate` says "this
+ * partition's stream already stored this event, recently" — a statement about
+ * one partition's window and about nothing else. It is not durability, not
+ * absence, and not a claim about any other partition of the same lane.
+ *
+ * The sibling fold over a commons publish acknowledgement lives on the client
+ * seam and is deliberately not shared with this one: the two acknowledgements
+ * answer different subscriptions, and their windows are different streams'.
+ *
+ * @example
+ * ```ts
+ * import { matchEmitted } from "@foldlab/plait/Lane"
+ *
+ * const positioned = matchEmitted({
+ *   fresh: (emitted) => emitted.position,
+ *   duplicate: (emitted) => emitted.position,
+ * })
+ * ```
+ */
+export const matchEmitted: <Out>(cases: {
+  readonly fresh: (emitted: EmittedEvent) => Out
+  readonly duplicate: (emitted: EmittedEvent) => Out
+}) => (emitted: EmittedEvent) => Out =
+  <Out>(cases: {
+    readonly fresh: (emitted: EmittedEvent) => Out
+    readonly duplicate: (emitted: EmittedEvent) => Out
+  }) =>
+  (emitted: EmittedEvent): Out =>
+    emitted.duplicate ? cases.duplicate(emitted) : cases.fresh(emitted)
 
 /** Transport-free live lane operations. */
 export interface LaneService {
@@ -110,6 +161,35 @@ const declarationRefusal = (
     subject: "Lane.declare",
     note: "Declare a literal lane handle, 1..1024 partitions, an admitted event-schema digest, and a key path.",
   }],
+})
+
+/**
+ * Admits one lane handle, refusing anything the routing grammar cannot carry.
+ *
+ * The grammar is checked by constructing the subject the handle would route
+ * under, so the handle's law and the subject's are the same law read once —
+ * `declare` calls this rather than testing the token itself.
+ *
+ * @example
+ * ```ts
+ * import { laneHandle } from "@foldlab/plait/Lane"
+ * import { Effect } from "effect"
+ *
+ * Effect.runSync(laneHandle("orders"))
+ * // "orders"
+ * ```
+ */
+export const laneHandle = Effect.fn("Lane.laneHandle")(function* (
+  handle: string,
+): Effect.fn.Return<LaneHandle, StructuralRefusal> {
+  yield* evidenceSubject(handle, 0).pipe(
+    Effect.mapError((refusal) => declarationRefusal(
+      ["handle"],
+      handle,
+      refusal.expected,
+    )),
+  )
+  return LaneHandle.make(handle)
 })
 
 const partitionRefusal = (
@@ -152,13 +232,7 @@ export const declare = Effect.fn("Lane.declare")(function*<Event, const Partitio
       "an integer from 1 through 1024",
     )
   }
-  yield* evidenceSubject(options.handle, 0).pipe(
-    Effect.mapError((refusal) => declarationRefusal(
-      ["handle"],
-      options.handle,
-      refusal.expected,
-    )),
-  )
+  yield* laneHandle(options.handle)
   const parsedKey = Schema.decodeResult(PartitionKey, {
     onExcessProperty: "error",
     errors: "first",

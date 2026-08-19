@@ -15,12 +15,19 @@
  */
 import { Schema } from "effect"
 
+import { TOKEN_PATTERN } from "../kernel/Subjects.js"
 import { ANCHOR_BUCKET } from "../planes/Anchor.js"
 import { CELL_BUCKET } from "../planes/Cell.js"
 import { REGISTER_BUCKET } from "../planes/Register.js"
 
+/**
+ * One free coordinate of a subject family: the fabric's own literal-token
+ * grammar, imported rather than restated. The families below compose tokens
+ * with fixed prefixes and wildcards and stay their own anchored patterns; the
+ * alphabet a single coordinate is drawn from has one statement.
+ */
 const LiteralSubjectToken = Schema.String.check(
-  Schema.isPattern(/^[^.*>\s]+$/u),
+  Schema.isPattern(TOKEN_PATTERN),
 )
 
 const InboxPrefix = Schema.String.check(

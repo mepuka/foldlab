@@ -59,7 +59,7 @@ describe("context program declarations", () => {
 
   test("segments order by volatility class, then by declaration order", () => {
     const declared = Effect.runSync(declare(program))
-    expect(orderedSegments(declared.program).map((each) => each.name)).toEqual([
+    expect(orderedSegments(declared.program).map((each): string => each.name)).toEqual([
       "frame",
       "protocol",
       "siblings",

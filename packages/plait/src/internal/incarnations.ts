@@ -6,7 +6,8 @@
  */
 import { Effect } from "effect"
 
-import { Registers } from "../planes/Register.js"
+import { OutcomeValue, Registers, WorkKey } from "../planes/Register.js"
+import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import { structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
@@ -114,16 +115,19 @@ export const incarnationName = (
 export const roundKey = (
   store: Digest,
   predecessor: Digest | null,
-): Effect.Effect<Digest, Refusal> =>
-  digestOf(
-    { v: 0, kind: "substrate-incarnation-round", store, predecessor } satisfies
-      IncarnationRound as unknown as WireValue,
+): Effect.Effect<WorkKey, Refusal> =>
+  Effect.map(
+    digestOf(
+      { v: 0, kind: "substrate-incarnation-round", store, predecessor } satisfies
+        IncarnationRound as unknown as WireValue,
+    ),
+    WorkKey.make,
   )
 
 /** One incarnation landed by right of a token. */
 export interface LandedIncarnation {
   /** The register key the decide was taken at. */
-  readonly round: Digest
+  readonly round: WorkKey
   /** The fencing token the landing was made under. */
   readonly token: number
   /** The incarnation value that landed. */
@@ -146,14 +150,14 @@ export const decideIncarnation = Effect.fn("Incarnation.decide")(function* (inpu
   readonly store: Digest
   readonly options: Digest
   readonly predecessor: Digest | null
-  readonly holder: string
+  readonly holder: Holder
 }): Effect.fn.Return<LandedIncarnation, Refusal, Registers> {
   const registers = yield* Registers
   const round = yield* roundKey(input.store, input.predecessor)
   const value = incarnation(input)
   const digest = yield* incarnationName(value)
   const granted = yield* registers.grant(round, input.holder)
-  const landed = yield* registers.commit(round, granted.token, digest)
+  const landed = yield* registers.commit(round, granted.token, OutcomeValue.make(digest))
   return { round, token: landed.token, value, digest }
 })
 

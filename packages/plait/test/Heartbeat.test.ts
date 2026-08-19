@@ -615,6 +615,6 @@ describe("the open pin, and the half that is not open", () => {
   test("the heartbeat lane is declared positioned, which is what the staleness rung licenses", async () => {
     const lane = await Effect.runPromise(heartbeatLane().pipe(Effect.orDie))
     expect(lane.partitions).toBe(1)
-    expect(lane.handle).toBe(lane.declaration.eventSchema)
+    expect(String(lane.handle)).toBe(String(lane.declaration.eventSchema))
   })
 })

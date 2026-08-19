@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect"
 
 import { Digest } from "../../src/truth/Digest.js"
-import { FabricClient, type PublishedEnvelope } from "../../src/carriage/FabricClient.js"
+import { FabricClient, type PublishedEnvelope, StreamName } from "../../src/carriage/FabricClient.js"
 import { factSubject } from "../../src/kernel/Subjects.js"
 import { Envelope } from "../../src/kernel/Wire.js"
 
@@ -36,7 +36,7 @@ const program = Effect.gen(function* () {
     duplicate,
   })))
 }).pipe(
-  Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),
+  Effect.provide(FabricClient.layer({ servers: url, stream: StreamName.make("PLAIT_SPINE") })),
 )
 
 await Effect.runPromise(program)

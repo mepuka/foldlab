@@ -54,6 +54,17 @@ channel is not a `Refusal`, with planted controls at
 `../../negative-controls/PublicEffects.*`, each refuted on a committed
 compiler trace.
 
+`Refusal.ts` carries the two folds over the vocabulary: one over the two sorts,
+and one over every structural kind, whose arm record derives from the generated
+union so the closure is a compile error rather than a convention. The runtime
+half of that closure is `../../test/MatchClosure.test.ts`, which builds its arm
+records from the union artifact and so cannot cover fewer kinds than the
+vocabulary carries; the compile-time half is `bun run check:matcher-control` in
+`test:types`, an arm-short fold that must fail to typecheck against a committed
+trace. That trace names the whole record, so growing the vocabulary moves it —
+re-record with `bun run generate:matcher-control`, which is the deliberate cost
+of a fence saying every caller must now handle the new kind.
+
 One level deeper: every module here opens with an `@module` header stating its
 own law; `../../CONTEXT.md` glosses the terms behind the seam; the refusal
 table the model emits is described in `../kernel/README.md`.

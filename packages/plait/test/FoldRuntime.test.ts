@@ -8,6 +8,8 @@ import { digestOf, Digest } from "../src/truth/Digest.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("d".repeat(64))
@@ -39,7 +41,7 @@ describe("durable fold deployment", () => {
   test("restart resumes from the anchor and reaches the suffix digest", async () => {
     harness = await startNatsHarness()
     const lane = await Effect.runPromise(Lane.declare({
-      handle: "durable-counter",
+      handle: LaneHandle.make("durable-counter"),
       event: CounterEvent,
       eventSchema,
       partitions: 1 as const,
@@ -62,7 +64,7 @@ describe("durable fold deployment", () => {
     await Effect.runPromise(Lane.emit(
       lane,
       { tenant: "north", delta: 2 },
-      { holder: "test" },
+      { holder: Holder.make("test") },
     ).pipe(Effect.provide(live), Effect.scoped))
 
     const first = await Effect.runPromise(Effect.gen(function* () {
@@ -77,7 +79,7 @@ describe("durable fold deployment", () => {
     await Effect.runPromise(Lane.emit(
       lane,
       { tenant: "north", delta: 3 },
-      { holder: "test" },
+      { holder: Holder.make("test") },
     ).pipe(Effect.provide(live), Effect.scoped))
 
     const resumed = await Effect.runPromise(Effect.gen(function* () {

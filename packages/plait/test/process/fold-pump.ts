@@ -2,6 +2,7 @@ import { Effect } from "effect"
 
 import * as Fold from "../../src/planes/Fold.js"
 import { declareChaosCounter } from "../ChaosFixture.js"
+import { LaneHandle } from "../../src/planes/Lane.js"
 
 const [url, handleName, targetsJson, resultPath, markerPath, markerFloorText] =
   process.argv.slice(2)
@@ -12,7 +13,7 @@ const targets = JSON.parse(targetsJson) as ReadonlyArray<number>
 const markerFloor = markerFloorText === undefined ? Number.POSITIVE_INFINITY : Number(markerFloorText)
 
 const program = Effect.gen(function* () {
-  const { fold } = yield* declareChaosCounter(handleName)
+  const { fold } = yield* declareChaosCounter(LaneHandle.make(handleName))
   const deployed = yield* Fold.deploy(fold, { checkpointEvery: 16 })
   let markerWritten = false
   while (true) {
