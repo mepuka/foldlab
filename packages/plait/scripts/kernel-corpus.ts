@@ -37,6 +37,8 @@
  *
  * @module
  */
+import { createHash } from "node:crypto"
+
 import { decodeJson, encodeJsonValue, type JsonValue } from "@foldlab/core/jcs"
 import { Schema, SchemaIssue } from "effect"
 
@@ -86,6 +88,21 @@ export interface KernelCorpus {
   readonly lines: ReadonlyArray<string>
   /** Groups this reader does not know, skipped under the add-only rule. */
   readonly skipped: ReadonlyArray<string>
+  /**
+   * This corpus's identity: SHA-256 over its canonical bytes, lowercase hex,
+   * the estate's one derivation of an identity from bytes.
+   *
+   * It is computed here rather than by a consumer because the bytes it is over
+   * are the bytes this reader has just proved canonical - LF endings, ASCII
+   * only, every line a canonical value, a final newline - so the digest names
+   * a reading that was checked and not a file that happened to be present.
+   *
+   * A rendered surface that has to say where it came from says this, never a
+   * path. A path is an ambient reference: it names wherever the reader happens
+   * to be standing, which is exactly the input the algebra refuses. A digest
+   * names one byte sequence forever.
+   */
+  readonly digest: string
 }
 
 // Annotated at the binding, not only at the arrow, so that TypeScript reads a
@@ -95,6 +112,16 @@ const refuse: (reason: string) => never = (reason) => {
 }
 
 const utf8 = new TextEncoder()
+
+/**
+ * A corpus's identity from its bytes: SHA-256, lowercase hex, exactly the
+ * derivation `truth/Digest.ts` applies to canonical bytes. The encode is the
+ * same one the byte check reads through, and the corpus is ASCII by that
+ * check, so what is hashed here is the file's bytes and not a re-encoding of
+ * them.
+ */
+const corpusDigest = (source: string): string =>
+  createHash("sha256").update(utf8.encode(source)).digest("hex")
 
 /**
  * The interchange's number rule, applied to a decoded document.
@@ -285,7 +312,7 @@ const checkCanonical = (rows: ReadonlyArray<string>): void => {
 }
 
 const checkCounts = (
-  corpus: Omit<KernelCorpus, "lines" | "skipped">,
+  corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">,
   skipped: ReadonlyArray<string>,
 ): void => {
   const counted: ReadonlyArray<readonly [KernelRecordGroup, number]> = [
@@ -331,7 +358,7 @@ const checkCounts = (
   }
 }
 
-const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
+const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">): void => {
   corpus.kinds.forEach((kind, rank) => {
     if (kind.rank !== BigInt(rank)) {
       refuse(`kind ${kind.name} has rank ${kind.rank} at position ${rank}`)
@@ -505,7 +532,7 @@ const edgeKey = (from: bigint, to: bigint): string => `${from}->${to}`
 // pairing come the shape laws - the local namespace, the newest-first
 // admission order, and the redundancy between edges and local arguments -
 // because those are the properties a degenerate producer would drop.
-const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
+const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">): void => {
   if (corpus.programs.length === 0) return
   const fields = generatorFields(corpus.types)
   const kindNames = new Set(corpus.kinds.map((kind) => kind.name))
@@ -747,7 +774,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
   }
   checkCounts(corpus, skipped)
   checkTables(corpus)
-  return { ...corpus, lines: rows, skipped }
+  return { ...corpus, lines: rows, skipped, digest: corpusDigest(source) }
 }
 
 /**

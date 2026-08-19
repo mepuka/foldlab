@@ -10,7 +10,7 @@ import {
 const repository = resolve(import.meta.dir, "../../..")
 const corpus = await loadKernelCorpus(repository)
 const committed = await Bun.file(resolve(repository, PROSE_PATH)).text()
-const checked = checkKernelProse(committed, corpus, CORPUS_PATH)
+const checked = checkKernelProse(committed, corpus)
 if (!checked.ok) {
   console.error(`KERNEL PROSE: FAIL - ${checked.reason}`)
   console.error(`  regenerate with: ${RENDER_PROSE_COMMAND}`)

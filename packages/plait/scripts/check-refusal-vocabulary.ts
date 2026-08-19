@@ -3,9 +3,10 @@ import { resolve } from "node:path"
 import { KERNEL_RUNTIME_STRUCTURAL_REFUSALS } from "../src/kernel/KernelTables.generated.js"
 import {
   DRAFT_MEANING_MARKER,
-  REFUSAL_MEANING_TASTE_TICKET,
+  OFFICIAL_SURFACES,
   REFUSAL_VOCABULARY_PATHS,
   RUNTIME_REFUSAL_WAIVER_TICKET,
+  checkNoTrackingArtifacts,
   checkProjectionAncestry,
   checkRefusalMeanings,
   checkRefusalVocabulary,
@@ -73,9 +74,27 @@ const meanings = checkRefusalMeanings({
   ),
   corpusReasons: evidence.corpusReasons,
   draftMarker: DRAFT_MEANING_MARKER,
-  tasteTicket: REFUSAL_MEANING_TASTE_TICKET,
 })
 if (!meanings.ok) fail(meanings.reason)
+
+const rendered = checkNoTrackingArtifacts(
+  [
+    {
+      surface: OFFICIAL_SURFACES.runtimeUnion,
+      bytes: await read(REFUSAL_VOCABULARY_PATHS.runtimeUnion),
+    },
+    {
+      surface: OFFICIAL_SURFACES.kernelTables,
+      bytes: await read(REFUSAL_VOCABULARY_PATHS.kernelTables),
+    },
+    {
+      surface: OFFICIAL_SURFACES.prosePage,
+      bytes: await read(REFUSAL_VOCABULARY_PATHS.prosePage),
+    },
+  ],
+  DRAFT_MEANING_MARKER,
+)
+if (!rendered.ok) fail(rendered.reason)
 
 console.log(
   `REFUSAL VOCABULARY: PASS (${evidence.runtimeKinds.length} runtime kinds:`
@@ -83,5 +102,7 @@ console.log(
     + ` ${checked.stagedDebt} pinned ${RUNTIME_REFUSAL_WAIVER_TICKET} staged debt,`
     + ` against ${evidence.corpusReasons.length} corpus refusal reasons;`
     + ` ${meanings.kinds} kind and ${meanings.reasons} reason meanings, all still marked`
-    + ` drafts pending the ${REFUSAL_MEANING_TASTE_TICKET} taste pass)`,
+    + " drafts awaiting ratification;"
+    + ` ${rendered.lines} lines across ${rendered.surfaces} official surfaces carry no`
+    + " tracking artifact)",
 )

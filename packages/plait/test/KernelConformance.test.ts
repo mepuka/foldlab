@@ -71,14 +71,19 @@ const corpus = await loadKernelArtifact()
 const doorUnderTest = make(PLANTED_CONTEXT)
 
 describe("kernel conformance tables", () => {
-  test("the committed tables carry the artifact's provenance", () => {
+  test("the committed tables name the artifact by its digest", () => {
     // The generated constants are literal-typed, so every comparison reads
     // artifact-first: the wide value is the subject, the pinned literal is the
     // expectation.
+    //
+    // Provenance is a digest and not a location (root law 10): the corpus these
+    // tables were rendered from is named by SHA-256 over its canonical bytes, so
+    // this assertion re-derives that identity from the corpus the harness just
+    // read and compares. A path would have made the same claim uncheckable —
+    // there is nothing to verify about a string naming where a file sat.
     expect(corpus.header.format).toBe(KERNEL_TABLE_PROVENANCE.format)
-    expect(corpus.header.generator).toBe(KERNEL_TABLE_PROVENANCE.generator)
-    expect(corpus.header.source).toBe(KERNEL_TABLE_PROVENANCE.source)
-    expect(KERNEL_TABLE_PROVENANCE.command).toBe("bun run generate:kernel-tables")
+    expect(corpus.digest).toBe(KERNEL_TABLE_PROVENANCE.corpus)
+    expect(corpus.digest).toMatch(/^[0-9a-f]{64}$/)
   })
 
   test("the kind and stage registries are the artifact's, ranks included", () => {

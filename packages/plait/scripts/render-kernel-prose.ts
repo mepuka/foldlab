@@ -23,6 +23,15 @@
  * behind the draft marker, and the vocabulary wall requires the marker to be
  * there.
  *
+ * The page is an OFFICIAL DOCUMENT and carries no tracking artifacts: no
+ * ticket id, no dev parenthetical, no script invocation, and no filesystem
+ * path of any kind (root law 10, operator-ruled 2026-08-19). Where it has to
+ * say what it came from it says a digest, because a plait item refers only to
+ * digests — a path is an ambient reference, and the algebra refuses those.
+ * Regeneration instructions are not on the page either; they live in the
+ * README beside it, where a maintainer looks and a reader of the language does
+ * not.
+ *
  * Exactly two things are done to a model text, both stated here and in the
  * page itself so no reader has to wonder. Inside a table cell a line break
  * becomes a space and a pipe is escaped, because a cell holds neither. And
@@ -49,8 +58,6 @@ import { generatorFields, type KernelCorpus } from "./kernel-corpus.js"
 import {
   DRAFT_MEANING_MARKER,
   KERNEL_REFUSAL_REASON_MEANINGS,
-  RUNTIME_REFUSAL_PROJECTION_PATH,
-  RUNTIME_REFUSAL_WAIVER_TICKET,
   RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
 } from "./kernel-runtime-refusals.js"
 
@@ -219,7 +226,7 @@ const programSection = (
  * a fixed sentence about the corpus; nothing restates a model text in other
  * words.
  */
-export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): string => {
+export const renderKernelProse = (corpus: KernelCorpus): string => {
   const out: Array<string> = []
   const docs = new Map(corpus.docs.map((doc) => [doc.name, doc.doc] as const))
   const machineApplicable = corpus.refusals
@@ -245,25 +252,32 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
   out.push("<!-- GENERATED FILE - DO NOT EDIT. -->")
   out.push("")
   out.push(
-    `Rendered from \`${corpusPath}\` by \`${RENDER_PROSE_COMMAND}\`, which reads the` +
-      ` interchange emitted from \`${corpus.header.source}\` by \`${corpus.header.generator}\`` +
-      ` at format ${corpus.header.format}. Every name, rank, law, repair, and docstring on` +
-      " this page is the model's own text, reproduced verbatim - not paraphrased, not" +
-      " reflowed, not truncated. Two mechanical exceptions, and no others: inside a table" +
-      " cell a line break becomes a space and a pipe is escaped, because a cell holds" +
-      " neither; and trailing spaces are trimmed from line ends, which Markdown discards" +
-      " anyway. The untrimmed text is what the generated schemas carry.",
+    `Rendered from the kernel corpus \`${corpus.digest}\` at interchange format` +
+      ` ${corpus.header.format}. That is the corpus's identity - SHA-256 over its canonical` +
+      " bytes - and it is what this page names its source by, because everything in this" +
+      " language refers to a digest or to a derivation of one. A path would name wherever a" +
+      " reader happens to be standing, which is precisely the ambient reference the algebra" +
+      " refuses; a digest names one byte sequence forever, so a reader who wants to know" +
+      " whether they hold this page's source hashes what they have and compares.",
+  )
+  out.push("")
+  out.push(
+    "Every name, rank, law, repair, and docstring on this page is the model's own text," +
+      " reproduced verbatim - not paraphrased, not reflowed, not truncated. Two mechanical" +
+      " exceptions, and no others: inside a table cell a line break becomes a space and a" +
+      " pipe is escaped, because a cell holds neither; and trailing spaces are trimmed from" +
+      " line ends, which Markdown discards anyway. The untrimmed text is what the generated" +
+      " schemas carry.",
   )
   out.push("")
   out.push(
     "**One thing on this page is not the model's.** Each refusal kind's *meaning* - the one" +
       " or two sentences under the draft marker, and the runtime structural kinds section -" +
-      " is house prose, read from the reviewed roster at" +
-      ` \`${RUNTIME_REFUSAL_PROJECTION_PATH}\` rather than from the corpus, because the` +
-      " corpus carries no field a meaning could ride in. Those sentences are DRAFTS: the" +
-      " operator's taste pass ratifies them, and until it rules every one of them renders" +
-      " behind its marker line. Read them as the house explaining its own vocabulary, never" +
-      " as a model verdict.",
+      " is house prose, read from the reviewed refusal-kind roster rather than from the" +
+      " corpus, because the corpus carries no field a meaning could ride in. Those sentences" +
+      " are DRAFTS: the operator's taste pass ratifies them, and until it rules every one of" +
+      " them renders behind its marker line. Read them as the house explaining its own" +
+      " vocabulary, never as a model verdict.",
   )
   out.push("")
   out.push(
@@ -314,9 +328,9 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
       " acts. A law and a repair speak at the moment of refusal, to whoever presented the" +
       " candidate, about this one presentation. A meaning speaks about the reason itself," +
       " standing, to anyone reading the vocabulary. The model corpus has no field to carry" +
-      ` a meaning in, so these are reviewed data in \`${RUNTIME_REFUSAL_PROJECTION_PATH}\`` +
-      " and are rendered here from it — every one of them a draft until the operator's" +
-      " taste pass rules, which is what the marker above each says.",
+      " a meaning in, so these are reviewed house data rendered here beside the teaching —" +
+      " every one of them a draft until the operator's taste pass rules, which is what the" +
+      " marker above each says.",
   )
   out.push("")
   for (const refusal of corpus.refusals) {
@@ -358,29 +372,24 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
     `${RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length} structural refusal kinds the plait` +
       " runtime can mint, in the persisted order of the shipped union. These are not model" +
       " rows: a spelling the corpus above also carries is corpus-backed, and a spelling it" +
-      ` does not is explicit staged debt owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}. The` +
-      " roster itself is reviewed data in" +
-      ` \`${RUNTIME_REFUSAL_PROJECTION_PATH}\`, and the same rows are generated into the` +
-      " kernel table with their ancestry and into the truth plane as the shipped union.",
+      " does not is marked staged debt. The roster they come from is reviewed house data," +
+      " and the same rows are generated into the kernel table with their ancestry and into" +
+      " the truth plane as the shipped union.",
   )
   out.push("")
   out.push(
     "Each carries its standing meaning on the same terms as a taught refusal above, and" +
-      " for the same reason: the refusal-time teaching for these kinds lives at their" +
-      " minting sites, byte-pinned in `packages/plait/test/RefusalPayloads.taught.txt`," +
-      " while what follows is the kind's meaning in the language. Every one is a draft" +
-      " until the operator's taste pass rules.",
+      " for the same reason: the refusal-time teaching for these kinds is minted where each" +
+      " refusal fires and is pinned byte for byte by its own wall, while what follows is the" +
+      " kind's meaning in the language. Every one is a draft until the operator's taste pass" +
+      " rules.",
   )
   out.push("")
   for (const row of RUNTIME_STRUCTURAL_REFUSAL_PROJECTION) {
     out.push(`### ${row.kind}`)
     out.push("")
     out.push(
-      `**Ancestry.** ${
-        emitted.has(row.kind)
-          ? "kernel corpus"
-          : `staged debt, owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}`
-      }`,
+      `**Ancestry.** ${emitted.has(row.kind) ? "kernel corpus" : "staged debt"}`,
     )
     out.push("")
     meaningLines(row.meaning, `runtime refusal kind ${row.kind}`, out)
@@ -508,8 +517,7 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
 export const checkKernelProse = (
   committed: string,
   corpus: KernelCorpus,
-  corpusPath: string,
 ): KernelProseCheck =>
-  committed === renderKernelProse(corpus, corpusPath)
+  committed === renderKernelProse(corpus)
     ? { ok: true }
     : { ok: false, reason: "the committed page failed byte-identical regeneration" }
