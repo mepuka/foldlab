@@ -150,6 +150,12 @@ describe("plait chaos CLI", () => {
   }, 120_000)
 
   test("refuses an unpinned head and a module without a fold in six fields", async () => {
+    // bun's default per-test timeout is 5000ms; this wall probes six-field CLI
+    // refusals by spawning three bun CLI processes sequentially, which under
+    // the parallel real-NATS load this wall group runs with trips the loader's
+    // 5s default (observed: "this test timed out after 5000ms", DEV-820) without
+    // any assertion failing. It makes no timing claim — only exit=2 and the six
+    // refusal fields — so it is given the sibling chaos tests' measured bound.
     const unpinned = await runCli(["chaos", "./test/fixtures/chaos-fold.ts"])
     expect(unpinned.exit).toBe(2)
     const unpinnedRefusal = JSON.parse(unpinned.stderr) as Record<string, unknown>
