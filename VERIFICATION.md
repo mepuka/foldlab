@@ -33,7 +33,7 @@ The table points; the entries below carry the bounds.
 | Contract | Rung | Status | Checkable at |
 | --- | --- | --- | --- |
 | Effector (commitment register) | R3 + R4 | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed with proof artifacts unshipped (ticket 013) | the tag; section below kept as record |
-| Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
+| Catalog + ingress — the model substrate under the plait door, engine, and carriage | R2 + R3 + R4 | **Claimed** at R2, R3, and R4. R3 is re-proved at the repaired hypothesis bounds (external review C4 discharged): the inductive invariant now holds over a hypothesis that can express every state it admits at the configured domains. Windows arm only; the second platform is owed. Bounds and the plait consumers are named in the section below | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
 | Journal (CAS-append, verify-on-read) | R0/R1 + R2 | **Claimed** at R0/R1 for the runtime and at R2 for the model, including the refinement into the catalog model; R3 and R4 owed. The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [verify/journal/](verify/journal/), [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
@@ -188,7 +188,7 @@ and unique terminal outcome, for the register
 [go/effector/](go/effector/) — the running code and its tests, until
 ticket 013 lands the proof artifacts.
 
-## Catalog + ingress — R2 + R4; R3 in re-proof at repaired bounds
+## Catalog + ingress — R2 + R3 + R4
 
 ### Claim
 
@@ -198,6 +198,7 @@ ticket 013 lands the proof artifacts.
 | Convergence | equal bytes yield one fact per authority journal, any interleaving, any daemon |
 | Resolution monotonicity | the resolvable set never shrinks |
 | Mirror integrity | a replica holds only a prefix of its origin |
+| CAS freshness (R3's strengthening) | a pending create whose expected own-journal position still holds still has a true absence-check on that journal |
 
 ### Evidence
 
@@ -238,24 +239,66 @@ ticket 013 lands the proof artifacts.
 
 ### Bounds and residuals
 
-- R3 — IN RE-PROOF, claim held (external review C4, 2026-08-13): the
-  original run's induction hypothesis was generated at catalog `Gen(2)`
-  while reachable IndInv states have catalog length 3, so consecution
-  and action safety were discharged over a strict subset; the
-  state-safety obligation was additionally a tautology (now a labeled
-  drift tripwire). The R4 merge also briefly broke Apalache
-  re-checkability (untyped accessors; FINDING-R3-001) — repaired with
-  certified-inert type annotations, so the obligations run at HEAD
-  again. The repaired hypothesis (catalog `Gen(3)` = the exact natural
-  maximum; mirror/creators above theirs; data at a written cutoff
-  argument with an empirical insensitivity control) is committed in
-  `CatalogInd.tla` with its bounds stated as part of the claim;
-  obligations 1 (base) re-verified NoError; consecution and action
-  safety plus both negative controls are re-running on two platforms
-  (macOS at the argued bounds, Windows independently at wider bounds).
-  This entry upgrades to a claim only when those verdicts land. The
-  wire-refinement transfer above inherits this status until the
-  re-proof lands.
+- R3 — CLAIMED at the repaired hypothesis bounds (external review C4
+  discharged; re-proved 2026-08-19). What C4 found was a defect in the
+  harness, not in the invariant: the original run generated the
+  hypothesis at catalog `Gen(2)` while reachable `IndInv` states carry
+  catalogs of length 3, so consecution and action safety had been
+  discharged over a strict subset of `IndInv`, and the state-safety
+  obligation was a propositional tautology. The R4 merge separately
+  broke Apalache re-checkability (untyped accessors; FINDING-R3-001),
+  repaired with certified-inert type annotations. THE HYPOTHESIS BOUNDS
+  ARE PART OF THE CLAIM: catalog `Gen(3)` (the exact natural maximum at
+  `NumVals = 3`), mirror `Gen(4)` and creators `Gen(4)` (both above
+  their natural maxima — stated, not raised), data `Gen(2)` under the
+  written append-only cutoff argument. The invariant re-proved is the
+  five R2 state invariants strengthened by the CAS-freshness clause: a
+  pending create whose expected own-journal position still holds still
+  has a true absence-check on that journal. Nine verdicts, all as
+  required (Apalache 0.61.0 build 831d473, jar sha256
+  `33611081…ad4346` — the sha the earlier record names — on
+  Temurin/OpenJDK 21.0.2, Windows 11 x64): base `NoError` 6s;
+  consecution `NoError` 5,776s; action safety
+  (`AdmissionStep /\ MonotonicityStep`) `NoError` 684s; the StateSafety
+  drift tripwire `NoError` 423s; the CAS-freshness control refuted on
+  `Convergence` 131s; the blind-ingress control refuted on
+  `AdmissionStep` 74s; the independence control — blind ingress must
+  NOT disturb `MonotonicityStep` — `NoError` 653s; the data-cutoff
+  insensitivity control at data `Gen(3)` `NoError` 4,503s, agreeing
+  with consecution as the cutoff argument requires; and a refutability
+  canary that refuted blind ingress from the concrete `Init` in 7s
+  before any obligation ran. Three live obligations and one tripwire,
+  not four obligations: `IndInit => StateSafety` is a tautology and is
+  counted as a drift tripwire only. What R3 does NOT cover: the
+  configured cardinalities are fixed at 2 daemons, 3 values, and 2
+  creators — arbitrary cardinality is not claimed — and the `data`
+  bound is a cutoff licensed by the written argument, corroborated but
+  not proved by its control. The wire-refinement transfer above now
+  rests on a claimed R3 at exactly these bounds.
+- R3 residual, named: this is the WINDOWS arm alone. The earlier entry
+  promised two platforms; the macOS arm at the argued bounds has not
+  been re-run at this HEAD and is owed. Nothing in the claim above
+  depends on it — the bounds, verdicts, and toolchain sha are the
+  Windows run's own — but the cross-platform replication the ledger
+  advertised is not yet satisfied.
+- Downstream consumers, named. This claim is the model substrate under
+  the plait package's door and carriage: `KernelDoor` admits a
+  candidate only when every referent it names is a member of the door
+  context's catalog at admission time and otherwise refuses
+  `forward-reference`, which is the ingress guard in this model's
+  shape; `Engine` holds the catalog as a monotone-growing local replica,
+  so its read-judge-grow race between fibers is benign — the runtime
+  face of resolution monotonicity; the `Catalog` and `Resolved` planes
+  derive identity on write and re-derive it on read rather than
+  trusting an asserted digest, which is W1's runtime face; and the
+  CAS-daemon shape names `admit`/`publish`/`resolve` over the same
+  vocabulary. The dependence is STRUCTURAL, not cited: no file in the
+  plait package references this model or the `catalog-model:W*`
+  registry ids, and the package realizes only the single-holder
+  fragment — no per-daemon authority, no mirror, no lag, and no
+  durable catalog snapshot. Traceability in either direction is owed;
+  until it exists, this model licenses plait's design without walling
+  it.
 - Specificity caveat on the R2 controls (external review,
   FINDING-R3-EVIDENCE-002): the forged-mirror trace violates two other
   laws besides the one checked, so "exactly its dropped law" is not yet
