@@ -202,6 +202,17 @@ export interface ConnectOption {
  * passing a transcribed default would silently become a runtime change the day
  * the transcription and the client disagreed.
  *
+ * **Two rows moved from `client-default` to `estate-set` under the operator's
+ * ruling of 2026-08-19.** The reconnect budget and the reconnect switch are the
+ * two options with a correctness stake rather than a taste: at the client's own
+ * default budget an absent substrate ends the connection permanently, measured,
+ * and nothing in the estate had chosen that. Naming a default is not choosing
+ * it — that is why the rows sat here unpassed while their membership was an
+ * open pin — and the ruling is what converts them into values the spine passes.
+ * Their movement changes the declaration's bytes, so every session folded after
+ * it is a different session, visibly, which is the whole reason the declaration
+ * is folded rather than remembered.
+ *
  * Staged debt, same as the roster above: hand-carried transcription owing the
  * substrate-vocabulary emitter group.
  */
@@ -212,13 +223,13 @@ export const CONNECT_OPTIONS: ReadonlyArray<ConnectOption> = [
   { name: "ignoreClusterUpdates", source: "client-unset" },
   { name: "inboxPrefix", source: "estate-set" },
   { name: "maxPingOut", source: "client-default" },
-  { name: "maxReconnectAttempts", source: "client-default" },
+  { name: "maxReconnectAttempts", source: "estate-set" },
   { name: "name", source: "estate-set" },
   { name: "noEcho", source: "client-unset" },
   { name: "noRandomize", source: "client-default" },
   { name: "pedantic", source: "client-default" },
   { name: "pingInterval", source: "client-default" },
-  { name: "reconnect", source: "client-default" },
+  { name: "reconnect", source: "estate-set" },
   { name: "reconnectJitter", source: "client-default" },
   { name: "reconnectJitterTLS", source: "client-default" },
   { name: "reconnectTimeWait", source: "client-default" },
@@ -229,6 +240,33 @@ export const CONNECT_OPTIONS: ReadonlyArray<ConnectOption> = [
 ]
 
 /**
+ * The two estate-set values the operator ruled, and the only rows here that no
+ * caller supplies.
+ *
+ * Every other `estate-set` row takes its value from the connection the caller
+ * asked for — the servers, the name, the credential's two fields. These two are
+ * the estate's own standing choice, so they are declared once here rather than
+ * threaded through a caller that has no opinion about them. A caller cannot
+ * move them, which is deliberate: a per-call-site reconnect budget would be an
+ * availability policy written at whichever site happened to need one.
+ *
+ * `-1` is the client's own spelling for "never give up". The alternative the
+ * estate ran under until the ruling was the client's default budget, at which
+ * an absent substrate closes the connection permanently — measured at the pins
+ * — and a connection that permanently closes emits its teardown fact and then
+ * nothing. Never giving up does not make absence invisible: absence is read
+ * off the heartbeat lane's silence, which is the honest reading and does not
+ * need the connection to die in order to be taken.
+ */
+export const ESTATE_CONNECT_PINS: {
+  readonly maxReconnectAttempts: number
+  readonly reconnect: boolean
+} = {
+  maxReconnectAttempts: -1,
+  reconnect: true,
+}
+
+/**
  * The value every non-estate-set option above runs at, transcribed from the
  * pinned client.
  *
@@ -237,6 +275,11 @@ export const CONNECT_OPTIONS: ReadonlyArray<ConnectOption> = [
  * and reads as absent, and the connect handshake bound is read at its point of
  * use as "the caller's value or twenty seconds". Both readings are the
  * client's; neither is this package's choice.
+ *
+ * The reconnect budget and the reconnect switch left this table when they
+ * became estate-set: a row the estate passes has no transcribed default to
+ * carry, and leaving the old readings here would be two values nothing reads
+ * sitting beside the two the connection runs under.
  *
  * These are declared, not applied. The bound is stated where it bites: if this
  * transcription and the client ever disagree, the declaration is wrong and the
@@ -250,12 +293,10 @@ export const CONNECT_OPTION_DEFAULTS: {
   ignoreAuthErrorAbort: false,
   ignoreClusterUpdates: false,
   maxPingOut: 2,
-  maxReconnectAttempts: 10,
   noEcho: false,
   noRandomize: false,
   pedantic: false,
   pingInterval: 120_000,
-  reconnect: true,
   reconnectJitter: 100,
   reconnectJitterTLS: 1_000,
   reconnectTimeWait: 2_000,
@@ -420,7 +461,9 @@ export const connectOptionsDeclaration = Effect.fn("Substrate.connectOptions")(f
   const set: { readonly [option: string]: WireValue } = {
     authenticator: input.authenticator,
     inboxPrefix: input.inboxPrefix,
+    maxReconnectAttempts: ESTATE_CONNECT_PINS.maxReconnectAttempts,
     name: input.name,
+    reconnect: ESTATE_CONNECT_PINS.reconnect,
     servers: typeof input.servers === "string" ? [input.servers] : [...input.servers],
   }
   const options: Record<string, WireValue> = {}
@@ -446,6 +489,8 @@ export interface EstateConnectArguments {
   readonly name: string
   readonly inboxPrefix: string | null
   readonly authenticator: string | null
+  readonly maxReconnectAttempts: number
+  readonly reconnect: boolean
 }
 
 /**
@@ -463,6 +508,8 @@ export const estateConnectArguments = Effect.fn("Substrate.estateArguments")(fun
   const name = declaration.options["name"]
   const inboxPrefix = declaration.options["inboxPrefix"]
   const authenticator = declaration.options["authenticator"]
+  const maxReconnectAttempts = declaration.options["maxReconnectAttempts"]
+  const reconnect = declaration.options["reconnect"]
   if (!Array.isArray(servers) || !servers.every((server) => typeof server === "string")) {
     return yield* malformed(["options", "servers"], String(servers), "a list of server addresses")
   }
@@ -475,7 +522,17 @@ export const estateConnectArguments = Effect.fn("Substrate.estateArguments")(fun
   if (authenticator !== null && typeof authenticator !== "string") {
     return yield* malformed(["options", "authenticator"], String(authenticator), "one authenticator name or null")
   }
-  return { servers: [...servers], name, inboxPrefix, authenticator }
+  if (typeof maxReconnectAttempts !== "number" || !Number.isSafeInteger(maxReconnectAttempts)) {
+    return yield* malformed(
+      ["options", "maxReconnectAttempts"],
+      String(maxReconnectAttempts),
+      "one whole reconnect budget, or -1 for never giving up",
+    )
+  }
+  if (typeof reconnect !== "boolean") {
+    return yield* malformed(["options", "reconnect"], String(reconnect), "whether the client reconnects")
+  }
+  return { servers: [...servers], name, inboxPrefix, authenticator, maxReconnectAttempts, reconnect }
 })
 
 /** The digest of one declared connect-options value. */
