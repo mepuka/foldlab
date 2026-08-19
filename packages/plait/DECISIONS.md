@@ -8835,3 +8835,63 @@ the drain-disposition arm and running the package typecheck refuses with the
 missing key named, and the arm was restored from a byte copy rather than
 retyped. **Load-bearing? no** — it records why the absence of a control is
 lawful here and would not be lawful over a generated vocabulary.
+
+### T2. The emission singleton becomes gate clause 6, appended rather than inserted
+
+Decided: `checkTerminalEmission` is the status-vocabulary gate's sixth clause
+and runs sixth, after the pump clause, rather than being inserted beside clause
+4 where it belongs by subject. Alternative: insert it as clause 5 and renumber
+the pump clause to 6.
+
+Why appended: the clause numbers are CITED — by the gate's own prose, by the
+ticket that raised this, and by this log — and renumbering a clause that did not
+change would rot every one of those references to buy an ordering that is a
+matter of taste. The run order follows the numbering, so "runs every clause in
+order and reports the first that refuses" stays literally true of the code.
+
+What the clause holds: exactly one machine row emits the ended fact, and that
+row is the one the machine declares absorbing. Clause 4 already pins the
+absorbing row's uniqueness; this clause pins that the row which ENDS is that
+row. Both halves are one law — the read side's only path from the lane to the
+terminal state. Teardown lands as the session-ended form rather than as a
+transition fact, because the record already had a form for "this connection is
+over", so a fold walking the lane reaches the terminal only by reading that fact
+back through the word of the row whose emission column names it.
+
+**Load-bearing? yes** — the connection fold takes its terminal word out of this
+column and refuses when the column does not name exactly one row. Before this
+clause, a table edit could have taken the lane's only path to the terminal away
+with every gate still green.
+
+### T3. The control plants the singleton half; the other two mutations were measured, not shipped
+
+Decided: the self-test plants one arm — a second row emitting the terminal fact
+— which moves the gate's control line from five refuted to six. That line moving
+is the whole of this gate's output change; the transcription PASS line is
+unmoved, because no count it reports changed.
+
+Two further mutations were executed against the clause before the plant was
+chosen, so what the clause refuses is measured rather than argued: zero emitting
+rows refuse on the same reason with the count reading zero, and an emission
+moved off the absorbing row onto a row that is not absorbing refuses on the
+clause's second reason, naming that row. Only the singleton arm is committed,
+because the gate's anatomy is one plant per clause and a clause carrying two
+plants would read as two clauses. **Load-bearing? no** — it records which half
+of the clause the committed control exercises, and that the other half's refusal
+was executed rather than assumed.
+
+### T4. The suite arm executes the clause instead of restating it
+
+Decided: the connection-fold suite keeps its arm and its name, and the arm now
+runs `checkTerminalEmission` over the shipped table and over a planted one
+instead of writing the four assertions out by hand.
+
+That is the shape the same file's no-spelling arm already has: it runs the
+gate's consumer clause over the fold's source and over a planted source. A suite
+that wrote the property out a second time beside the gate would be the twin the
+vocabulary discipline refuses, and the second statement would agree perfectly
+with the first on the day the first was wrong. The arm keeps its red-on-plant
+half, so the pass is evidence rather than a call to a function that might always
+answer yes. The suite's test count does not move and its expect count falls by
+two. **Load-bearing? no** individually; **yes** as a rule — one statement,
+consumed where it is depended on.
