@@ -36,6 +36,10 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
   "lane-substrate-shape",
   // Payload threshold (DEV-774).
   "payload-substrate-shape",
+  // The authority-carrier laws that are not shape laws (DEV-780): a carrier
+  // that imports its facts, and a carrier that lets the server expire them.
+  "mirrored-authority-carrier",
+  "expiring-authority-carrier",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",

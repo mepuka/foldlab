@@ -4,7 +4,7 @@
  *
  * @module
  */
-import { StorageType } from "@nats-io/jetstream"
+import { StorageType, StoreCompression } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
 import { Effect, Result, Schema, Scope } from "effect"
 
@@ -25,6 +25,16 @@ import {
   type Next,
   type Refusal,
 } from "../truth/Refusal.js"
+import {
+  KV_ALLOW_DIRECT,
+  adminSurface,
+  expiresFacts,
+  expiringAuthorityCarrier,
+  hasPinnedAdminSurface,
+  importsFacts,
+  mirroredAuthorityCarrier,
+  type CarrierSite,
+} from "./carriers.js"
 import {
   CasWriteFailure,
   carries,
@@ -202,6 +212,9 @@ export const lastWriterWinsMerge: MergeDiscipline = {
   reconciled: lawfulMergeDiscipline.reconciled,
 }
 
+/** Where the cell carrier is opened, for a named law to address. */
+const cellSite: CarrierSite = { path: ["bucket"], subject: "bucket.ensure" }
+
 export const makeCellService = (
   options: CellOptions,
 ): Effect.Effect<CellService, Refusal, Scope.Scope> =>
@@ -224,6 +237,10 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
       history: CELL_HISTORY,
       ttl: 0,
       max_bytes: -1,
+      // Declared, not feature-detected: the gate below pins direct-get ON for
+      // the KV carriers, so an unsupporting substrate refuses loudly here
+      // rather than creating a bucket this carrier then refuses as misshaped.
+      allow_direct: KV_ALLOW_DIRECT,
     }),
     catch: (cause) => transportRefusal("bucket.ensure", cause),
   })
@@ -231,11 +248,15 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
     try: () => bucket.status(),
     catch: (cause) => transportRefusal("bucket.status", cause),
   })
+  const config = status.streamInfo.config
+  if (importsFacts(config)) return yield* mirroredAuthorityCarrier(cellSite, config)
+  if (expiresFacts(config)) return yield* expiringAuthorityCarrier(cellSite, config)
   if (status.storage !== StorageType.File || status.replicas !== 1 ||
-    status.history !== CELL_HISTORY || status.ttl !== 0 || status.max_bytes !== -1) {
+    status.history !== CELL_HISTORY || status.ttl !== 0 || status.max_bytes !== -1 ||
+    !hasPinnedAdminSurface(config, KV_ALLOW_DIRECT)) {
     return yield* structuralRefusal({
       kind: "cell-substrate-shape",
-      law: "The cell bucket is file-backed R=1 with one retained revision and no age or size eviction.",
+      law: "The cell bucket is file-backed R=1 with one retained revision, no age or size eviction, and no admin surface beyond it.",
       path: ["bucket", "config"],
       got: JSON.stringify({
         storage: status.storage,
@@ -243,17 +264,27 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
         history: status.history,
         ttl: status.ttl,
         max_bytes: status.max_bytes,
+        ...adminSurface(config),
       }),
-      expected: "file/R=1/history=1/ttl=0/max_bytes=-1",
+      expected:
+        "file/R=1/history=1/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap",
       next: [{
         subject: "bucket.ensure",
-        note: "Configure the cell bucket file-backed with one replica, one retained revision, and no age or size eviction.",
+        note: "Configure the cell bucket file-backed with one replica, one retained revision, no age or size eviction, and none of the admin surface beyond it.",
         body: {
           storage: StorageType.File,
           replicas: 1,
           history: CELL_HISTORY,
           ttl: 0,
           max_bytes: -1,
+          republish: null,
+          subject_transform: null,
+          allow_direct: KV_ALLOW_DIRECT,
+          mirror_direct: false,
+          allow_atomic: false,
+          allow_msg_counter: false,
+          compression: StoreCompression.None,
+          max_msg_size: -1,
         },
       }],
     })

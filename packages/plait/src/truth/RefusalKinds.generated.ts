@@ -44,6 +44,8 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "lane-evidence-mismatch",
   "lane-substrate-shape",
   "payload-substrate-shape",
+  "mirrored-authority-carrier",
+  "expiring-authority-carrier",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",
