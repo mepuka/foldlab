@@ -674,3 +674,35 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   the product's own verb and is lawful. A filesystem that will not carry the
   write is a DEFECT and dies as one: the domain language is refusals about
   meaning, and an unwritable directory is not a sentence in it.
+- **An admitted spawn becomes a seat, and the consumer that brings one up judges
+  nothing.** The kernel's spawn stays world-identity — it lands nothing, and
+  nothing here changes that — so the one place an admitted spawn is legible is a
+  landed run trace, where it is a STEP like every other admitted sentence.
+  `internal/spawnseats.ts` folds the run-trace lane for exactly that, reads each
+  step back through the DOOR'S own `decodeAct` rather than spelling the act
+  framing a second time, and performs carriage only: it constructs no verdict,
+  routes no admission, and re-asks nothing the door already answered. A REFUSED
+  spawn brings up nothing, and the property is structural rather than a check —
+  every arm of a run keeps the prefix that STOOD, so the refused node is not a
+  step — which is why the wall reads it off a recorder outside the consumer, with
+  the executed falsification promoting a refused node into its own trace's steps
+  and requiring the recorder to catch the seat that brings up. A SEAT is one
+  scope forked from the consumer's, the policy the spawn REQUESTED, and one
+  traced run under it; its first landed act is the opening fact and that fact
+  carries the writ, so "this seat speaks under what its spawn asked for" is a
+  fact a reader resolves rather than an inference. A seat ends by LANDING: its
+  run's trace, then a retirement naming how the run ended and where that trace
+  went — never by inference from silence. A finalizer that landed a retirement on
+  interruption would forge the one fact this posture protects, so the retirement
+  is written on the ordinary path only, and an unretired seat is what a dead one
+  looks like. One spawn is ONE seat, named by the digest of the coordinate the
+  spawn was sighted at, so a redelivered trace, a second consumer, and a restart
+  all compute one name; the fence is an atomic claim seeded from the seat lane's
+  own bounded tail, which is a replica in the cell-replica sense and never an
+  oracle — past that bound a restarted consumer may bring a seat up again, and
+  the exclusive claim across every consumer that ever ran is a fenced register
+  round that is NOT built. A charter is a declaration of capability and never a
+  guard: it licenses no spawn, and a spawn whose requested policy no charter
+  names is reported as the absence it is. Adding a lane that announces spawns, a
+  per-step landing, a retirement written from a finalizer, or a charter check
+  dressed as authority is a finding.
