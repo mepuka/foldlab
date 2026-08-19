@@ -108,8 +108,8 @@ The KM-4 composition slice closes the two-doors gap: program admission
 checked the DAG discipline while the single-act door judged one sentence,
 and the two stood side by side. The run walk composes them — a closed
 program walked in admission order, every node routed through that one
-door, the walk stopping at the first refusal. Six statements say what the
-composition is. `run_composition` splits a run over concatenated node
+door, the walk stopping at the first refusal — and at the first node its
+completion cannot speak. Seven statements say what the composition is. `run_composition` splits a run over concatenated node
 lists into the prefix's run and the suffix's run from the context the
 prefix reached. `run_admitted_sequence` proves a landed run is exactly a
 sequence of admitted acts — one step per walked node, in order, each
@@ -118,28 +118,33 @@ context. `run_refusal_decomposition` proves every refusal splits into a
 prefix that landed with exactly the steps the outcome reports and a node
 whose candidate genuinely refuses at the context that prefix reached.
 `run_tail_unjudged` proves the answer is that same refusal for every
-tail. `run_context_grows` carries monotone-context benignity. And
+tail. `run_unspeakable_prefix_standing` carries that tail discipline over
+to the third arm: a node whose completion answers with nothing ends the
+walk with the prefix's steps STANDING, whatever follows it — the ruled
+prefix-keeping semantics. `run_context_grows` carries monotone-context
+benignity. And
 `run_landed_closed` proves a landed run's program required nothing, which
 is where filling — the valuation's action, upstream of the walk — meets
 the run.
 
 Completion and carriage growth are parameters, not fixed functions: the
 composition holds for every completion, and only growth's monotonicity is
-ever used. Three thinnesses are stated rather than hidden. Completion is
-total here, where a carriage may instead fail a node into an error
-channel. Carriage is outside the outcome, so a carrier failure after an
-admission has no third ending in this model's two-way outcome. And the
+ever used. A completion answers with a candidate OR WITH NOTHING, and the
+walk's third outcome is that second answer: `unspeakable`, carrying the
+node and the prefix that stood before it. Two thinnesses remain stated
+rather than hidden. Carriage is outside the outcome, so a carrier failure
+after an admission has no ending of its own here. And the
 program-admission precheck runs before the walk is entered, where the
 empty node list lands vacuously — the unit the composition needs. Outside
 the slice entirely: concurrency beyond the monotone-growth premise,
 liveness, retries, and scheduling.
 
 `./run.sh` is the gate: source hygiene, partition checks, the pinned
-law list, `lake build`, the 124-theorem roster with the trusted-base
-footprint sweep, thirty-one executable controls diffed against committed
+law list, `lake build`, the 127-theorem roster with the trusted-base
+footprint sweep, thirty-two executable controls diffed against committed
 traces (the closure and signature rows, the lawful twin, the provision
 control, three KM-20 mutants, four machine-repair mutants, four
-repair-chain and arbitration mutants, and the two run-composition
+repair-chain and arbitration mutants, and the three run-composition
 mutants), and the four-file must-not-compile class —
 sort-discipline violations the elaborator itself must refuse, each with a
 pinned diagnosis and a compiling witness twin.

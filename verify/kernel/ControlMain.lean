@@ -214,11 +214,14 @@ def continuing (complete : Completion) (carry : Carry) :
     Door -> List RunStep -> List ProgramNode -> RunOutcome
   | context, steps, [] => .landed context steps
   | context, steps, node :: rest =>
-      match admit context (complete steps node) with
-      | .refused _ => continuing complete carry context steps rest
-      | .admitted act =>
-          continuing complete carry (carry context act)
-            (steps ++ [runStepOf complete context steps node act]) rest
+      match complete steps node with
+      | none => .unspeakable node.name steps
+      | some candidate =>
+          match admit context candidate with
+          | .refused _ => continuing complete carry context steps rest
+          | .admitted act =>
+              continuing complete carry (carry context act)
+                (steps ++ [runStepOf context node candidate act]) rest
 
 /-- The mutant that discards the prefix at a refusal: the admissions
     that already stood are thrown away with the refusal. -/
@@ -226,11 +229,33 @@ def forgetting (complete : Completion) (carry : Carry) :
     Door -> List RunStep -> List ProgramNode -> RunOutcome
   | context, steps, [] => .landed context steps
   | context, steps, node :: rest =>
-      match admit context (complete steps node) with
-      | .refused refusal => .refused node.name refusal []
-      | .admitted act =>
-          forgetting complete carry (carry context act)
-            (steps ++ [runStepOf complete context steps node act]) rest
+      match complete steps node with
+      | none => .unspeakable node.name steps
+      | some candidate =>
+          match admit context candidate with
+          | .refused refusal => .refused node.name refusal []
+          | .admitted act =>
+              forgetting complete carry (carry context act)
+                (steps ++ [runStepOf context node candidate act]) rest
+
+/-- The mutant that discards the prefix at an UNSPEAKABLE node: the
+    admissions that already stood are thrown away with the node the
+    completion could not answer for. Everything else — the door, the
+    completion, the carriage growth, the refusal arm's own prefix
+    discipline — is the lawful walk's, so the only thing this walk
+    drops is the ruled prefix-keeping semantics of the third arm. -/
+def erasing (complete : Completion) (carry : Carry) :
+    Door -> List RunStep -> List ProgramNode -> RunOutcome
+  | context, steps, [] => .landed context steps
+  | context, steps, node :: rest =>
+      match complete steps node with
+      | none => .unspeakable node.name []
+      | some candidate =>
+          match admit context candidate with
+          | .refused refusal => .refused node.name refusal steps
+          | .admitted act =>
+              erasing complete carry (carry context act)
+                (steps ++ [runStepOf context node candidate act]) rest
 
 /-- The lawful run of a planted program at the planted door. -/
 def lawful (nodes : List ProgramNode) : RunOutcome :=
@@ -246,25 +271,45 @@ def forgettingRun (nodes : List ProgramNode) : RunOutcome :=
   forgetting Planted.runCandidate Planted.runCarry Planted.door []
     nodes.reverse
 
+/-- The lawful run of a planted program under the SILENT completion —
+    the one that cannot speak the tail node. -/
+def silentRun (nodes : List ProgramNode) : RunOutcome :=
+  runProgram Planted.runCandidateSilent Planted.runCarry Planted.door nodes
+
+/-- The prefix-erasing mutant under the same silent completion. -/
+def erasingRun (nodes : List ProgramNode) : RunOutcome :=
+  erasing Planted.runCandidateSilent Planted.runCarry Planted.door []
+    nodes.reverse
+
 end RunControls
 
 /-- Whether an outcome refuses at one node with one reason. -/
 def refusesAt (node : Nat) (reason : RefusalReason) : RunOutcome -> Bool
   | .refused name refusal _ => name == node && refusal.reason == reason
   | .landed _ _ => false
+  | .unspeakable _ _ => false
+
+/-- Whether an outcome is unspeakable at one node. -/
+def unspeakableAt (node : Nat) : RunOutcome -> Bool
+  | .unspeakable name _ => name == node
+  | .landed _ _ => false
+  | .refused _ _ _ => false
 
 /-- The node names an outcome reports as standing steps. -/
 def standingNames : RunOutcome -> List Nat
   | .landed _ steps => steps.map RunStep.node
   | .refused _ _ steps => steps.map RunStep.node
+  | .unspeakable _ steps => steps.map RunStep.node
 
 /-- Render one run outcome at its observable seam: the verdict, the
-    refusing node and reason when there is one, and the standing steps
-    by node name. -/
+    refusing or unspeakable node and the reason when there is one, and
+    the standing steps by node name. -/
 def renderOutcome : RunOutcome -> String
   | .landed _ steps => s!"landed;steps={(steps.map RunStep.node).toString}"
   | .refused node refusal steps =>
       s!"refused@{node};reason={refusal.reason.wire};steps={(steps.map RunStep.node).toString}"
+  | .unspeakable node steps =>
+      s!"unspeakable@{node};steps={(steps.map RunStep.node).toString}"
 
 /-- Kill a growth implementation that replaces the pinned universe
     instead of extending it. -/
@@ -454,6 +499,26 @@ def showRunPrefixControl : IO UInt32 := do
     s!"control=drop-run-prefix-standing;program=admit-then-clock;landing={renderOutcome landing};lawful={renderOutcome lawful};mutant={renderOutcome mutant};verdict={if refuted then "refuted" else "survived"}"
   return if refuted then 0 else 1
 
+/-- Kill a run implementation that discards the prefix's admissions when
+    a later node cannot be COMPLETED. The completion here answers at
+    the first node and is silent at the second — so the lawful
+    walk stops unspeakable at the tail with the first node's admission
+    standing, and the mutant reports the same arm at the same node with
+    nothing standing. The total-completion landing row is carried beside
+    them so a walk that admitted nothing at all cannot pass as the
+    lawful side. -/
+def showRunUnspeakableControl : IO UInt32 := do
+  let landing := RunControls.lawful Planted.runNodesLanding
+  let lawful := RunControls.silentRun Planted.runNodesLanding
+  let mutant := RunControls.erasingRun Planted.runNodesLanding
+  let refuted :=
+    standingNames landing == [0, 2] &&
+      unspeakableAt 2 lawful && unspeakableAt 2 mutant &&
+      standingNames lawful == [0] && standingNames mutant == []
+  IO.println
+    s!"control=drop-run-unspeakable-prefix-standing;program=admit-then-unspeakable;landing={renderOutcome landing};lawful={renderOutcome lawful};mutant={renderOutcome mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["closure-clock-read"] =>
@@ -528,6 +593,7 @@ def main (args : List String) : IO UInt32 := do
   | ["drop-repair-fault-shrinkage"] => showRepairFaultShrinkageControl
   | ["drop-run-tail-halt"] => showRunTailControl
   | ["drop-run-prefix-standing"] => showRunPrefixControl
+  | ["drop-run-unspeakable-prefix-standing"] => showRunUnspeakableControl
   | ["drop-provision-disjointness"] =>
       showDriftControl "drop-provision-disjointness" "two-arrival-orders"
         (renderValuation (provisionFold Provision.disjointOrderOne))
@@ -536,5 +602,5 @@ def main (args : List String) : IO UInt32 := do
         (renderValuation (provisionFold Provision.overlapOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-fault-listing-order|drop-repair-composition|drop-repair-termination|drop-repair-fault-shrinkage|drop-run-tail-halt|drop-run-prefix-standing|drop-provision-disjointness)"
+        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-fault-listing-order|drop-repair-composition|drop-repair-termination|drop-repair-fault-shrinkage|drop-run-tail-halt|drop-run-prefix-standing|drop-run-unspeakable-prefix-standing|drop-provision-disjointness)"
       return 2

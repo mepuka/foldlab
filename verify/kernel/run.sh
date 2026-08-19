@@ -74,7 +74,8 @@ expected_laws=(
   KProvisionPositionedCorrespondence
   KInterpInflationary
   KRunComposition KRunAdmittedSequence KRunRefusalDecomposition
-  KRunTailUnjudged KRunContextGrows KRunLandedClosed
+  KRunTailUnjudged KRunUnspeakablePrefixStanding
+  KRunContextGrows KRunLandedClosed
   CandidateF13BoundExecutionReplay
 )
 actual_laws=()
@@ -171,11 +172,13 @@ roster=(
   door_le_refl door_le_trans run_walk_append run_composition
   run_walk_landed_admitted run_walk_landed_names run_admitted_sequence
   run_walk_refused_split run_refusal_decomposition run_walk_tail_free
-  run_tail_unjudged run_walk_refusal_absorbs_tail
+  run_tail_unjudged run_walk_unspeakable_free
+  run_unspeakable_prefix_standing run_walk_refusal_absorbs_tail
   run_walk_context_grows run_context_grows
   arg_requires_nil_iff requires_of_nil_iff run_walk_landed_hole_free
   run_landed_closed
   planted_run_carry_monotone planted_run_refuses_with_prefix_standing
+  planted_run_unspeakable_with_prefix_standing
   planted_run_lands planted_run_tail_agrees
 )
 
@@ -275,6 +278,7 @@ check_control drop-repair-termination
 check_control drop-repair-fault-shrinkage
 check_control drop-run-tail-halt
 check_control drop-run-prefix-standing
+check_control drop-run-unspeakable-prefix-standing
 check_control drop-provision-disjointness
 
 committed_controls=()
@@ -345,4 +349,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (31 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (32 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
