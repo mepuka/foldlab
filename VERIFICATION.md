@@ -34,7 +34,7 @@ The table points; the entries below carry the bounds.
 | --- | --- | --- | --- |
 | Effector (commitment register) | R3 + R4 | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed with proof artifacts unshipped (ticket 013) | the tag; section below kept as record |
 | Catalog + ingress | R2 + R4 | **Claimed** at R2 and R4; R3 **HELD**, in re-proof at repaired bounds | [verify/catalog/](verify/catalog/), [proto/go/catalogr4/](proto/go/catalogr4/) |
-| Journal (CAS-append, verify-on-read) | R0/R1 | **Claimed**; no model gate yet (ticket 012). The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
+| Journal (CAS-append, verify-on-read) — the durable substrate under plait's carriage: the content-addressed daemon's publish/resolve/readAt/land, the fabric client's commit-at-expected-revision anchor seam, and the engine's unbuilt run resumption | R0/R1 + **R2 (TLC)** | **Claimed**. R2 model gate green at three appenders / three payloads / a three-entry journal, one substrate mutation, one appender crash: chain integrity, append-only, the one-verifier law on every cursor adoption, verify-on-read relative to a trusted anchor, and the absence snapshot surviving the split-CAS race — six laws, six executed controls, two anti-vacuity witnesses. Composed into the catalog model as a refinement over crash-free, trusted-store behaviours. Two residuals carry committed counterexamples: a forged tail is laundered into the chain by the next honest append, and erasure leaves no evidence in the bytes. Bounds, exclusions, and abstractions in the section below; code-model correspondence **not** claimed. The chain walls' TS≡Go half is **Archived** at `archive/pre-estate-focus` | [verify/journal/](verify/journal/), [go/journal/](go/journal/), [docs/gauntlet/](docs/gauntlet/) |
 | KV meaning fold — combine and join | R0/R1 (TypeScript); R0 (Go) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed at R0 in both languages and R1 in TypeScript | the tag; section below kept as record |
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
@@ -289,7 +289,7 @@ ticket 013 lands the proof artifacts.
 traces, run record) and [proto/go/catalogr4/](proto/go/catalogr4/)
 (executable oracle and driver).
 
-## Journal and chain walls — R0/R1, model pending
+## Journal and chain walls — R0/R1 in code, R2 at the model
 
 > **PARTIALLY ARCHIVED 2026-08-15.** The journal half (CAS-append,
 > verify-on-read, `go/journal/` and its black-box tests) remains in
@@ -347,9 +347,11 @@ order; it does not enable the direct-get surface.
   payload bytes `ef bb bf` and empty bytes have distinct Go heads but
   decode to the same `WireEvent`. The opt-in red witness and choices
   are in `packages/core/FINDING-SCHEMA-BOM-001.md`.
-- No dedicated model of CAS-append + crash recovery yet; the catalog
-  model embeds an abstract CAS. Ticket 012 gives the journal its own
-  model gate.
+- The journal now has its own model gate ([verify/journal/](verify/journal/),
+  R2, section below). The empirical crash evidence above and the model are
+  separate claims: the model does not model broker failure, partition, or
+  restart of the store, and nothing here claims the reference implementation
+  conforms to the model.
 - The new read controls cover one embedded, file-backed daemon and two exact
   attribution corruptions; they do not claim remote-silence diagnosis or
   multi-daemon journal ownership.
@@ -383,6 +385,86 @@ order; it does not enable the direct-get surface.
 [proto/go/protod/hardening_test.go](proto/go/protod/hardening_test.go),
 [the Task 19 benchmark record](docs/bench/2026-08-13-task-19-nats-hardening.md),
 and [docs/gauntlet/](docs/gauntlet/).
+
+## Journal model gate — R2 (TLC)
+
+### Claim
+
+Over a journal of at most three entries, with three appenders racing the
+expected-position CAS, three payloads, at most one substrate mutation and at
+most one appender crash per behaviour:
+
+- **chain integrity** — over a trusted store, what the journal wrote is a
+  chain from genesis: every entry's declared position is the position it
+  occupies and its declared predecessor is the derived head of the prefix
+  before it. The expected-position CAS is what makes the link correct, not
+  merely what guards the race.
+- **append-only** — a durable entry is never rewritten and never lost.
+- **the one-verifier law** — every cursor any path adopts, whether opening,
+  reading, or resyncing after a lost CAS, was produced by the single
+  stored-entry verifier against the bytes then stored.
+- **verify-on-read, relative to a trusted anchor** — if what the journal
+  wrote is a chain, a read standing on an anchor the journal derived from
+  what it wrote, coming back clean, returns at every position below the tail
+  exactly the entry the journal wrote.
+- **the absence snapshot survives the race** — two appenders that both found
+  a payload absent cannot both land it.
+- **refinement** — every journal behaviour is a catalog behaviour under a
+  stated mapping, over crash-free behaviours with a trusted store.
+
+Six laws, six executed negative controls each refuted on exactly the law its
+config drops, two anti-vacuity witnesses, three residuals, three bound
+guards, four clean closures. Seventeen verdicts; the gate passes only on all
+of them.
+
+### Evidence
+
+[verify/journal/](verify/journal/) — spec, configs, committed counterexample
+traces, run record, and `run.sh`. The refinement reads
+[verify/catalog/Catalog.tla](verify/catalog/Catalog.tla) in place through the
+module path, so the catalog transition table stays stated once.
+
+### Bounds and residuals
+
+- A defect needing a fourth appender, a fourth payload, a longer journal, a
+  second tamper step, or a second crash is outside everything checked.
+- **Code-model correspondence is not claimed.** `go/journal/journal.go` is
+  the reference the model was written from; driving the real API through
+  these schedules is R4 and is unbuilt. The split-CAS conformance obligation
+  the catalog gate handed down is therefore discharged at the model level —
+  the stale-CAS branch is real, reachable, and witnessed with its schedule —
+  and explicitly open at the code level.
+- **The refinement does not cover appender crash**: a pending writer that
+  dies maps to a creator going idle at a position still free, and the catalog
+  model has no such step. Process failure is outside its action alphabet, so
+  a catalog claim about appender crashes is not available from this
+  composition; the journal's crash behaviour is checked locally instead.
+- **The refinement does not cover an untrusted store**, ingress,
+  replication, or mirrors. Tamper tolerance is the journal's own law, not one
+  the catalog inherits.
+- Three of the six laws — chain integrity, append-only, and the absence
+  snapshot — hold only over a trusted store, each for a reason with a
+  committed trace.
+- **RESIDUAL-001**, witnessed: a forged tail does not stay at the tail. A
+  reader holding no prior head accepts a mutated tail record, and the next
+  honest appender then chains its entry onto the forgery — after which what
+  the journal wrote is no longer a chain and a fold from genesis comes back
+  clean over a record the journal never wrote. A consumer that keeps its
+  anchor is covered; one that re-reads from genesis is not.
+- **RESIDUAL-002**, witnessed: erasure leaves no evidence. What remains
+  after a purge is a valid shorter chain, and nothing in the bytes says an
+  entry is missing. Durability rests on the substrate refusing delete and
+  purge, not on the chain.
+- No liveness, no crash recovery of the store itself, no broker failure or
+  partition, no Effect runtime. Hash collisions and non-canonical encodings
+  are outside the abstraction: an entry IS its canonical bytes here.
+- Not wired into `bun run gates`, matching the standing arrangement for the
+  other model gates.
+
+### Checkable at
+
+`bash verify/journal/run.sh`, and the committed traces beside their configs
+in [verify/journal/](verify/journal/).
 
 ## KV meaning fold — combine and join — R0/R1 (TypeScript), R0 (Go)
 

@@ -65,11 +65,17 @@ rung definitions. Scoped laws:
   controls with committed traces in `negative-controls/` — one per shipped
   check. Its `run.sh` adds the mechanical axiom-footprint check over every
   headline theorem (Lean).
+- `journal/` — the hash-chained journal under plait's carriage: chained
+  CAS-append, verify-on-read, appender crash, and an untrusted store
+  (TLC). Six laws with six refuted controls, two anti-vacuity witnesses,
+  three residuals, and the refinement into the catalog model — which
+  reads `catalog/Catalog.tla` in place rather than copying it. R2 at the
+  gate caps; R4 conformance against the Go reference is owed, and carries
+  the split-CAS obligation the catalog gate could not drive at its wire.
 - `pipeline/` — the create-pipeline snapshot law with crashes enabled,
   plus the orphan-fact crash residual (TLC).
 - `replay/` — workflow replay soundness: Lean for the unbounded half,
   TLC for the protocol half, the faithless runner refuted in both.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence
   out of `.reference/`, an untracked predecessor repository absent from
-  this checkout), `journal/` (ticket 012, composed into the catalog
-  model as a refinement).
+  this checkout).
