@@ -3829,6 +3829,120 @@ recovery) — this re-scopes to the stable, documented behavior. **Load-bearing?
 yes** — the wall's claim is the repull loop ahead of heartbeat recovery, and
 that is what is asserted; a future client that heartbeat-recovers instead
 (emitting heartbeats_missed) or stops repulling still reddens it.
+## Task DEV-786 — the CLI is @effect/cli
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. The board ticket's
+scope: rewrite `surface/cli.ts` on the official Effect CLI with Effect-4
+semantics throughout, retire the hand-rolled parser, and render refusals from
+the taught vocabulary instead of the six-field rival the CLI hand-assembled.
+
+### T0. The dependency law grows by ONE package, and it is not `@effect/cli`
+
+Decided: `packages/plait/package.json` gains `@effect/platform-bun` at
+`catalog:` — and nothing else. The ticket commissioned adding `@effect/cli`
+plus its `@effect/printer` and `@effect/printer-ansi` dependencies, and that
+addition was not made, because the premise does not hold on this release line:
+the published `@effect/cli` tops out at `0.77.0`, whose peers are
+`effect@^3.22.1` and `@effect/platform@^0.97.1` — the Effect **v3** line. The
+workspace catalog pins `effect@4.0.0-rc.108`, and on v4 the CLI is **in-tree**:
+`effect/unstable/cli` ships `Command`, `Flag`, `Argument`, `Param`, `Primitive`,
+`Prompt`, `CliConfig`, `CliError`, `CliOutput`, `HelpDoc`, `GlobalFlag`, and
+`Completions` inside the catalog-pinned release the package already depends on.
+So the official CLI package arrives at zero cost to the closed list. What the
+tree genuinely lacked is the CLI's `Environment` — `FileSystem`, `Path`,
+`Terminal`, `Stdio`, `ChildProcessSpawner` — for which `effect` core ships only
+`layerNoop`/`layerTest` fakes; `BunServices.layer` provides all five (plus
+`Crypto`) for the real process. Alternatives: hand-write the five service layers
+from core primitives (the exact hand-rolling of a shipped primitive that law 6
+and this whole ticket refuse); pull `@effect/cli@0.77.0` and downgrade the
+workspace to Effect v3 (a catalog rollback nobody ruled, to get a worse
+version of a module already present); ship the CLI against `layerTest` fakes (a
+CLI that cannot read its own argv). Why: the estate's dependency law names a
+closed list, and the cheapest lawful growth is the growth that is actually
+needed. `@effect/platform-bun` is the same Effect release at the same catalog
+pin, so the list grows by one sibling of a member rather than by a family.
+**Load-bearing? yes** — `AGENTS.md`'s runtime-dependency clause is amended to
+name it, so a reviewer sees the addition as a diff rather than inferring it.
+
+### T1. Effect's abstractions carry the algebra, rather than the algebra being rebuilt in Effect
+
+Decided: of the two lawful framings the operator named, this file takes
+"Effect abstractions as the algebra's carrier". A `Command` tree is already a
+declarative structure a parser interprets; `Schema` is already a decode algebra;
+`Layer` is already the wiring algebra; the `Refusal` union is already a sum with
+one total interpretation. So the estate's algebra is expressed by CHOOSING those
+carriers rather than by re-deriving them: the command tree is data, decoded by
+`Flag.withSchema(Digest)` — truth's own schema, so the CLI states no width and
+no alphabet — and refusals are rendered by encoding the value through its own
+schema. The file is laid out in the three movements that follow from this
+(vocabulary, declaration, interpretation) and says so in its header.
+Alternatives: express the estate's algebra with Effect semantics but a bespoke
+parameter model (a second grammar beside the library's — the hand-rolled twin
+the ticket exists to kill); the middle course of a thin library wrapper with
+estate-shaped helpers around it (neither algebra legible, which the operator
+named as the failure mode to avoid). Why: the surface's job is to be a
+projection, and the library's own combinators are the projection's carrier.
+**Load-bearing? yes** — it is why a future generator verb is a `Command` value
+added to `withSubcommands` and nothing else moves.
+
+### T2. The six-field rival rendering dies onto the schema-encoded taught value
+
+Decided: `printRefusal`'s hand-assembled
+`{kind, sort, law, path, got, expected, next}` object is deleted. `renderRefusal`
+encodes the refusal through the `Refusal` schema union and then through the
+package's one RFC 8785 canonicalizer, so what reaches stderr is the taught value
+itself, in the estate's canonical bytes, key order and all. Measured
+consequence: the rendered payload gains `_tag` — eight keys, not seven — because
+a `Schema.TaggedError` carries its tag and the hand-written field list could not.
+That is the DEV-804 staged rival retiring, and it is what moved
+`negative-controls/Fold.cli-refusal.trace.txt` from `component=six-field-refusal`
+to `component=taught-refusal-rendering`. `test/RefusalPayloads.taught.txt` moved
+by exactly two lines: `surface/cli.ts#0`, the `chaosRefusal` minting site, is
+byte-identical — no taught text moved — and `#1` changed from the rival's
+`expected <expression> / next <expression>` to the new total function's
+`expected <absent> / next <absent>`, which is the fallback literal that keeps
+rendering total when a payload will not canonicalize. `test/RefusalNext.test.ts`
+stopped decoding the CLI's stderr through a hand-written `CliStructuralRefusal`
+struct and now decodes through the shipped `StructuralRefusal` schema, because a
+twin on the reading side is the same defect as a twin on the writing side.
+Alternatives: keep the seven-key shape by hand-listing fields after encoding
+(the rival, restated); render with `JSON.stringify` and skip canonicalization
+(two byte forms for one value, and the package has a law against the second).
+Why: "errors reach the terminal AS the taught vocabulary" is satisfiable only by
+rendering the value, and a rendering that names its own fields is a second
+schema. **Load-bearing? yes** — adding a field to `StructuralRefusal` now
+reaches the terminal without editing the CLI.
+
+### T3. The parser owns syntax; the taught vocabulary owns law
+
+Decided: a malformed invocation — unknown flag, unknown subcommand, bad choice,
+malformed digest — is refused by the library's parser and rendered with the
+command's own help, and the CLI adds no word to it. A well-formed invocation
+that violates the estate's law — no fold selector, two fold selectors, an
+unpinned span, two head selectors, `--repeat > 1` with the kill arm, a lane that
+disagrees with the fold — is a `StructuralRefusal` carrying `invalid-chaos-request`.
+`negative-controls/Fold.cli-usage.trace.txt` is the new control arm pinning the
+first half, including the assertion that `StructuralRefusal` is ABSENT from a
+usage error's stderr — the shape that reddens if a hand-rolled parser grows back.
+Two consequences recorded rather than discovered: (1) `plait not-chaos` is no
+longer this package's refusal, so `RefusalNext`'s collection of the
+`invalid-chaos-request` kind moved to `plait chaos` with no arguments; (2)
+judgment order changed — `--fold <digest>` is now refused as uncataloged before
+the span is examined, where the old parser checked the span first. Both orders
+refuse, with the same kind, and the tested paths (`["fold"]`, `["head"]`,
+`["module","fold"]`) are unchanged; the new order answers the more fundamental
+question first. `judgeRequest` RETURNS the admitted run rather than nodding at
+the request, which is why nothing downstream carries a cast. Alternatives: map
+`CliError` into a `StructuralRefusal` so every failure speaks one vocabulary
+(it would re-implement the library's usage rendering — the ticket's central
+refusal — and would mint estate vocabulary for syntax the model never taught);
+keep an `argv[2] === "__pump"` sniff ahead of the parser (the pump is now a
+`Command.unlisted` subcommand, parsed by the same tree, hidden from help and
+completions). Why: the division is what makes the surface a projection — the
+library projects the parameter grammar, the corpus projects the refusal
+vocabulary, and neither is asked to speak for the other. **Load-bearing? yes** —
+the new control fails if either side starts answering for the other.
 
 ## Task DEV-780 — the admin surface pinned; two authority-carrier laws named
 

@@ -3,7 +3,7 @@ import { join, resolve } from "node:path"
 
 import { Effect } from "effect"
 
-import { canonicalBytes } from "../src/truth/Canonical.js"
+import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
 import * as Lane from "../src/planes/Lane.js"
 import { lane } from "./fixtures/chaos-fold.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
@@ -149,19 +149,28 @@ describe("plait chaos CLI", () => {
     console.info(trace)
   }, 120_000)
 
-  test("refuses an unpinned head and a module without a fold in six fields", async () => {
-    // bun's default per-test timeout is 5000ms; this wall probes six-field CLI
-    // refusals by spawning three bun CLI processes sequentially, which under
-    // the parallel real-NATS load this wall group runs with trips the loader's
-    // 5s default (observed: "this test timed out after 5000ms", DEV-820) without
-    // any assertion failing. It makes no timing claim — only exit=2 and the six
-    // refusal fields — so it is given the sibling chaos tests' measured bound.
+  test("renders a refused request as the taught refusal value itself", async () => {
+    // bun's default per-test timeout is 5000ms; this wall probes the CLI's
+    // refusal rendering by spawning three bun CLI processes sequentially, which
+    // under the parallel real-NATS load this wall group runs with trips the
+    // loader's 5s default (observed: "this test timed out after 5000ms",
+    // DEV-820) without any assertion failing. It makes no timing claim — only
+    // exit=2 and the rendered vocabulary — so it is given the sibling chaos
+    // tests' measured bound.
+    //
+    // The pinned key set is the `Refusal` union's OWN encoded form, not a field
+    // list this test agrees with the CLI on. It carries `_tag` because a
+    // `Schema.TaggedError` carries `_tag`; the six-field rival rendering the CLI
+    // used to hand-assemble (DEV-804 staged debt) could not, because it named
+    // its fields by hand and `_tag` was not one of them. Retiring that rendering
+    // onto the taught vocabulary is what moved this control's trace.
+    const taughtKeys = ["_tag", "expected", "got", "kind", "law", "next", "path", "sort"].sort()
+
     const unpinned = await runCli(["chaos", "./test/fixtures/chaos-fold.ts"])
     expect(unpinned.exit).toBe(2)
     const unpinnedRefusal = JSON.parse(unpinned.stderr) as Record<string, unknown>
-    expect(Object.keys(unpinnedRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
+    expect(Object.keys(unpinnedRefusal).sort()).toEqual(taughtKeys)
+    expect(unpinnedRefusal._tag).toBe("StructuralRefusal")
     expect(unpinnedRefusal.path).toEqual(["head"])
 
     const noFold = await runCli([
@@ -172,9 +181,7 @@ describe("plait chaos CLI", () => {
     ])
     expect(noFold.exit).toBe(2)
     const noFoldRefusal = JSON.parse(noFold.stderr) as Record<string, unknown>
-    expect(Object.keys(noFoldRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
+    expect(Object.keys(noFoldRefusal).sort()).toEqual(taughtKeys)
     expect(noFoldRefusal.path).toEqual(["module", "fold"])
     expect(noFoldRefusal.kind).toBe("invalid-chaos-request")
 
@@ -187,11 +194,15 @@ describe("plait chaos CLI", () => {
     ])
     expect(uncataloged.exit).toBe(2)
     const uncatalogedRefusal = JSON.parse(uncataloged.stderr) as Record<string, unknown>
-    expect(Object.keys(uncatalogedRefusal).sort()).toEqual(
-      ["expected", "got", "kind", "law", "next", "path", "sort"].sort(),
-    )
+    expect(Object.keys(uncatalogedRefusal).sort()).toEqual(taughtKeys)
     expect(uncatalogedRefusal.path).toEqual(["fold"])
-    const trace = "FOLD CLI CONTROL: PASS component=six-field-refusal cases=unpinned-head,uncataloged-fold,module-without-fold exit=2"
+
+    // The refusal reaches the terminal through the package's one canonicalizer,
+    // so its bytes are the same bytes the same refusal has anywhere else.
+    const recanonicalized = await Effect.runPromise(canonicalBytes(unpinnedRefusal as WireValue))
+    expect(unpinned.stderr.trimEnd()).toBe(new TextDecoder().decode(recanonicalized))
+
+    const trace = "FOLD CLI CONTROL: PASS component=taught-refusal-rendering cases=unpinned-head,uncataloged-fold,module-without-fold exit=2"
     expect(`${trace}\n`).toBe(await Bun.file(resolve(
       import.meta.dir,
       "../negative-controls/Fold.cli-refusal.trace.txt",
@@ -200,5 +211,46 @@ describe("plait chaos CLI", () => {
     // Three CLI child processes, and the wall group runs four files at once:
     // the default five-second budget is a scheduler measurement, not a claim
     // about the refusals. Its siblings above carry the same explicit bound.
+  }, 120_000)
+
+  test("refuses a malformed invocation with the library's structured usage error", async () => {
+    // The arm this control holds is a NEGATIVE one about authorship: a
+    // malformed invocation must be refused by the CLI library's own parser and
+    // must NOT be a message this package wrote. So it asserts the library's
+    // shape — the command's own help document on stdout, the diagnosis on
+    // stderr, the offending token named — and asserts that the estate's refusal
+    // vocabulary is ABSENT: a `StructuralRefusal` here would mean the
+    // hand-rolled parser had grown back.
+    //
+    // The stream split is the library's and is pinned as found: a help document
+    // is output, a diagnosis is not.
+    const unrecognized = await runCli(["chaos", "./test/fixtures/chaos-fold.ts", "--bogus"])
+    expect(unrecognized.exit).toBe(2)
+    expect(unrecognized.stdout).toContain("USAGE")
+    expect(unrecognized.stdout).toContain("--pin-head")
+    expect(unrecognized.stderr).toContain("ERROR")
+    expect(unrecognized.stderr).toContain("Unrecognized flag: --bogus")
+    expect(unrecognized.stderr).not.toContain("StructuralRefusal")
+
+    const unknownCommand = await runCli(["bogus"])
+    expect(unknownCommand.exit).toBe(2)
+    expect(unknownCommand.stderr).toContain(`Unknown subcommand "bogus"`)
+    expect(unknownCommand.stderr).not.toContain("StructuralRefusal")
+
+    // A digest flag carries the estate's own `Digest` schema, so a malformed
+    // content address is refused by the decode algebra rather than by a width
+    // test the CLI restates. The library reports it; the pattern is truth's.
+    const malformedDigest = await runCli(["chaos", "--fold", "nothex", "--head", "1"])
+    expect(malformedDigest.exit).toBe(2)
+    expect(malformedDigest.stderr).toContain("Invalid value for flag --fold")
+    expect(malformedDigest.stderr).toContain("^[0-9a-f]{64}$")
+    expect(malformedDigest.stderr).not.toContain("StructuralRefusal")
+
+    const trace = "FOLD CLI CONTROL: PASS component=library-usage-error cases=unrecognized-flag,unknown-subcommand,malformed-digest exit=2"
+    expect(`${trace}\n`).toBe(await Bun.file(resolve(
+      import.meta.dir,
+      "../negative-controls/Fold.cli-usage.trace.txt",
+    )).text())
+    console.info(trace)
   }, 120_000)
 })

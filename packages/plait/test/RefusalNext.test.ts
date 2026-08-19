@@ -24,7 +24,7 @@ import { FabricClient } from "../src/carriage/FabricClient.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import {
-  Next,
+  StructuralRefusal,
   StructuralRefusalKind,
   decodeRefusing,
   type Refusal,
@@ -70,16 +70,6 @@ const envelope = (body: unknown): Uint8Array => utf8.encode(JSON.stringify({
 
 const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
 const probeEventSchema = Digest.make("a".repeat(64))
-const CliStructuralRefusal = Schema.Struct({
-  sort: Schema.Literal("structural"),
-  kind: StructuralRefusalKind,
-  law: Schema.String,
-  path: Schema.Array(Schema.String),
-  got: Schema.Json,
-  expected: Schema.Json,
-  next: Schema.Array(Next),
-})
-
 const declareProbeFold = (handle: string) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
     handle,
@@ -257,8 +247,12 @@ describe("structural refusal repairs", () => {
       decodeDurableMessage(probe.fold, 0, message),
     )))
 
+    // A well-FORMED invocation that the estate's law refuses. An unknown verb
+    // is no longer this package's refusal to teach: the CLI library's parser
+    // owns syntax and answers it with a usage error, so the structural kind is
+    // collected from a request that parsed and then failed judgment.
     const cli = Bun.spawn({
-      cmd: ["bun", "run", "./src/surface/cli.ts", "not-chaos"],
+      cmd: ["bun", "run", "./src/surface/cli.ts", "chaos"],
       cwd: resolve(import.meta.dir, ".."),
       stdout: "ignore",
       stderr: "pipe",
@@ -268,7 +262,10 @@ describe("structural refusal repairs", () => {
       cli.stderr instanceof ReadableStream ? new Response(cli.stderr).text() : "",
     ])
     expect(cliExit).toBe(2)
-    refusals.push(Schema.decodeUnknownSync(CliStructuralRefusal)(
+    // The CLI writes the refusal VALUE, so the test reads it back with the
+    // value's own schema. A hand-written twin of the payload here would be the
+    // same rival rendering the CLI just retired, restated on the reading side.
+    refusals.push(Schema.decodeUnknownSync(StructuralRefusal)(
       JSON.parse(cliStderr),
       { onExcessProperty: "error" },
     ) as unknown as Refusal)

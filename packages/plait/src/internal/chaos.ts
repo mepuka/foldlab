@@ -59,7 +59,11 @@ export interface RedeliveryChaosResult {
   readonly anchorWrites: number
 }
 
-/** Exported for the spine wall; no other `src` module imports it. */
+/**
+ * The chaos schedule's transport terms, read by the spine wall and by
+ * `surface/cli.ts` when it pins a head — one teaching for one substrate, so a
+ * transport absence says the same thing wherever the measurement meets it.
+ */
 export const transportRefusal = transportRefusalFor({
   kind: "chaos-transport-unavailable",
   law: "The chaos schedule uses only the real durable-consumer protocol for redelivery.",
