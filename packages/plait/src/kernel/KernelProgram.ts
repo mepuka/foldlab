@@ -64,7 +64,7 @@ import type {
   CasDaemon,
   CasHoleRequirement,
   CasProgramOutcome,
-} from "../carriage/CasDaemon.js"
+} from "./CasDaemon.js"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
