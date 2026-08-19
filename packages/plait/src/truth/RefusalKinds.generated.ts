@@ -75,6 +75,7 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "not-a-directory",
   "unbound-petname",
   "ambiguous-binding",
+  "incarnation-mismatch",
 ] as const
 
 /**

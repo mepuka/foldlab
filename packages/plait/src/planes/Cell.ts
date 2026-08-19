@@ -27,9 +27,12 @@
  * this module still ships read and merge, `KvWatchEntry.isUpdate` is not an
  * initial/live boundary, and no absence may ever be inferred from a watch.
  *
- * Incarnation bound: KV revisions are backing-stream sequences, so every claim
- * this module's walls make holds within a fixed backing-stream incarnation;
- * administrative lifecycle mutation is outside the credential guard.
+ * Incarnation: EXEMPT from the register's incarnation pin — argued and
+ * recorded, not assumed, in packages/plait/DECISIONS.md, Task DEV-779. KV
+ * revisions are backing-stream sequences, but no revision crosses this seam:
+ * `read` and `merge` are the whole surface, so there is no fence a reborn
+ * bucket could honor. A bucket delete+recreate destroys data, which no pin
+ * recovers.
  *
  * @module
  */

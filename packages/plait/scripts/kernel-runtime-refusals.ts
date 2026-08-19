@@ -71,4 +71,15 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
   "not-a-directory",
   "unbound-petname",
   "ambiguous-binding",
+  // The register incarnation pin (DEV-779).
+  //
+  // meaning: "An incarnation is one life of a store — the store a name resolved
+  // to at the moment a fence was taken against it. A store reborn under that
+  // name is a different store answering to it and owes nothing to its
+  // predecessor's fences, so a fence from the dead incarnation names a store
+  // that no longer exists rather than a round that has merely moved on."
+  //
+  // Authored at mint time, shaped as the exact string that moves into the
+  // DEV-825 `meaning` field; that mechanism does not exist in this file yet.
+  "incarnation-mismatch",
 ] as const

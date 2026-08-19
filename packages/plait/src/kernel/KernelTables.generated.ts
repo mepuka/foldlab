@@ -294,6 +294,7 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
   "not-a-directory",
   "unbound-petname",
   "ambiguous-binding",
+  "incarnation-mismatch",
 ] as const
 
 /** One structural-refusal kind the runtime can mint. */
@@ -522,6 +523,11 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
   },
   {
     kind: "ambiguous-binding",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "incarnation-mismatch",
     source: "staged-debt",
     waiver: "DEV-804",
   },

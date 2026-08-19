@@ -66,10 +66,16 @@ import {
  * the cell's own — the bucket's ruled shape, the key law, the observation
  * codec, the carrier's join and identity, and the two committed disciplines.
  *
- * Incarnation bound: KV revisions are backing-stream sequences, so a bucket
- * delete+recreate resets the revision order and every claim here holds only
- * within a fixed backing-stream incarnation; administrative lifecycle mutation
- * is outside the credential guard. No watch surface exists: the now-landed KV
+ * Incarnation: EXEMPT from the register's incarnation pin — argued and
+ * recorded, not assumed, in packages/plait/DECISIONS.md, Task DEV-779. KV
+ * revisions are backing-stream sequences, so a bucket delete+recreate still
+ * resets the revision order, but no cell revision ever crosses a call
+ * boundary: `CellService` is `read` and `merge`, the loop re-reads before
+ * every attempt, and the revision it CASes at is the one it read in that same
+ * attempt. There is no fence a reborn bucket could honor, and the carrier
+ * converges by join, so a re-contributed delta costs nothing twice. What a
+ * deleted bucket destroys is data, which no pin recovers. No watch surface
+ * exists: the now-landed KV
  * watch probe licenses only a future advisory feed, and its `isUpdate` flag is
  * not an initial/live boundary.
  */
