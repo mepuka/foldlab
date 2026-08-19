@@ -724,7 +724,38 @@ export interface TrackingArtifactClass {
   readonly clause: string
   readonly pattern: RegExp
   readonly why: string
+  /**
+   * Matches this class's shape but is language rather than tracking. An
+   * exclusion is by NAME because no shape separates these from the class; see
+   * `LAWFUL_ID_SHAPED_TOKENS`.
+   */
+  readonly except?: ReadonlyArray<string>
 }
+
+/**
+ * Tokens shaped exactly like a tracking id that are LANGUAGE, listed by name.
+ *
+ * The id clause refuses an uppercase letter run, a hyphen, and digits, because
+ * that is the shape every tracking family in this estate takes: DEV-825 for a
+ * board ticket, KM-11 for a kernel-model sitting note, and whatever the next
+ * family is called. `SHA-256` has exactly that shape and is not tracking at
+ * all - it is the name of the hash function this estate derives every identity
+ * with, and it appears on these surfaces for that reason.
+ *
+ * The exclusion is BY NAME and not by shape, and the difference matters enough
+ * to say plainly: `SHA-256` and `KM-11` are shape-identical, so no pattern can
+ * separate them. What separates them is what the letters MEAN, which a regex
+ * cannot read. A shape-based carve-out - a digit-count bound, a letter-run
+ * bound, a lookahead for a power of two - would be a rule invented to fit one
+ * token, and the next family that happened to fit it would pass invisibly,
+ * which is the exact defect this widening repairs.
+ *
+ * Because a name list is a place to hide things, every entry must be LIVE: the
+ * sweep refuses an exclusion that appears on no swept surface. A family cannot
+ * be smuggled in by adding it here and never using it, and a token that stops
+ * being language has to leave in a diff a reviewer reads.
+ */
+export const LAWFUL_ID_SHAPED_TOKENS = ["SHA-256"] as const
 
 /**
  * The classes root law 10 refuses on an official surface.
@@ -742,8 +773,14 @@ export interface TrackingArtifactClass {
 export const TRACKING_ARTIFACT_CLASSES: ReadonlyArray<TrackingArtifactClass> = [
   {
     clause: "tracking id",
-    pattern: /\bDEV-[0-9]+\b/,
+    // The family, not one family's prefix. `DEV-825` was the shape this clause
+    // was written against and `KM-11` slipped past it, which is what a literal
+    // costs: a wall spelled for the instance in front of it checks that
+    // instance and nothing else. Two to four uppercase letters, a hyphen, and
+    // digits is what every tracking family in this estate looks like.
+    pattern: /\b[A-Z]{2,4}-[0-9]+\b/,
     why: "a ticket number is where tracking lives, and tracking is not the language",
+    except: LAWFUL_ID_SHAPED_TOKENS,
   },
   {
     clause: "filesystem path",
@@ -764,7 +801,12 @@ export const TRACKING_ARTIFACT_CLASSES: ReadonlyArray<TrackingArtifactClass> = [
 
 /** The result of sweeping the official surfaces for tracking artifacts. */
 export type TrackingArtifactCheck =
-  | { readonly ok: true; readonly surfaces: number; readonly lines: number }
+  | {
+    readonly ok: true
+    readonly surfaces: number
+    readonly lines: number
+    readonly exclusions: number
+  }
   | { readonly ok: false; readonly reason: string }
 
 /**
@@ -779,12 +821,18 @@ export type TrackingArtifactCheck =
  * pins the EXACT string: a line that opens like a draft marker and is not the
  * ratified one is refused rather than tolerated, which is what stops the marker
  * from quietly acquiring a parenthetical again.
+ *
+ * `lawful` is the by-name exclusion list the id clause is read against, passed
+ * in rather than reached for, so the control can plant a stale one and watch
+ * the liveness clause refuse it.
  */
 export const checkNoTrackingArtifacts = (
   surfaces: ReadonlyArray<OfficialSurface>,
   marker: string,
+  lawful: ReadonlyArray<string>,
 ): TrackingArtifactCheck => {
   if (surfaces.length === 0) return { ok: false, reason: "no official surface was swept" }
+  const seen = new Set<string>()
   let swept = 0
   for (const surface of surfaces) {
     const lines = surface.bytes.split("\n")
@@ -795,13 +843,22 @@ export const checkNoTrackingArtifacts = (
       const line = lines[index]!.replace(/\r$/, "")
       swept++
       for (const artifact of TRACKING_ARTIFACT_CLASSES) {
-        const found = artifact.pattern.exec(line)
-        if (found === null) continue
-        return {
-          ok: false,
-          reason:
-            `${surface.surface} line ${index + 1} renders a ${artifact.clause}`
-            + ` (${quote(found[0].trim())}): ${artifact.why}`,
+        // Every match on the line, not just the first: a line carrying an
+        // excluded token before a real one would otherwise report the excluded
+        // one and stop, which is how an exclusion turns into a hiding place.
+        const excluded = artifact.except === undefined ? [] : lawful
+        for (const found of line.matchAll(new RegExp(artifact.pattern.source, "g"))) {
+          const token = found[0].trim()
+          if (excluded.includes(token)) {
+            seen.add(token)
+            continue
+          }
+          return {
+            ok: false,
+            reason:
+              `${surface.surface} line ${index + 1} renders a ${artifact.clause}`
+              + ` (${quote(token)}): ${artifact.why}`,
+          }
         }
       }
       const trimmed = line.trim()
@@ -816,7 +873,20 @@ export const checkNoTrackingArtifacts = (
       }
     }
   }
-  return { ok: true, surfaces: surfaces.length, lines: swept }
+  // Liveness on the exclusions. A name list is a place to hide a family, so an
+  // entry that no swept surface actually speaks is refused: the only way to
+  // widen what the id clause tolerates is to widen it for something that is
+  // visibly there, in a diff a reviewer reads.
+  for (const token of lawful) {
+    if (seen.has(token)) continue
+    return {
+      ok: false,
+      reason:
+        `${quote(token)} is excused from the tracking-id clause but appears on no official`
+        + " surface, so nothing is relying on the exclusion",
+    }
+  }
+  return { ok: true, surfaces: surfaces.length, lines: swept, exclusions: lawful.length }
 }
 
 /**
