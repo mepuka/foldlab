@@ -220,7 +220,7 @@ Execution was attempted on a declaration with a hole still open. Only closed pro
 
 ## Runtime structural refusal kinds
 
-44 structural refusal kinds the plait runtime can mint, in the persisted order of the shipped union. These are not model rows: a spelling the corpus above also carries is corpus-backed, and a spelling it does not is marked staged debt. The roster they come from is reviewed house data, and the same rows are generated into the kernel table with their ancestry and into the truth plane as the shipped union.
+45 structural refusal kinds the plait runtime can mint, in the persisted order of the shipped union. These are not model rows: a spelling the corpus above also carries is corpus-backed, and a spelling it does not is marked staged debt. The roster they come from is reviewed house data, and the same rows are generated into the kernel table with their ancestry and into the truth plane as the shipped union.
 
 Each carries its standing meaning on the same terms as a taught refusal above, and for the same reason: the refusal-time teaching for these kinds is minted where each refusal fires and is pinned byte for byte by its own wall, while what follows is the kind's meaning in the language. Every one of them is ratified and stands as written.
 
@@ -487,6 +487,12 @@ This name is bound to more than one digest in the directory reached. A directory
 **Ancestry.** staged debt
 
 An incarnation is one life of a store — the store a name resolved to at the moment a fence was taken against it. A store reborn under that name is a different store answering to it and owes nothing to its predecessor's fences, so a fence from the dead incarnation names a store that no longer exists rather than a round that has merely moved on.
+
+### catalog-substrate-shape
+
+**Ancestry.** staged debt
+
+The catalog bucket is not the non-evicting, single-revision shape the durable value store declares. A digest names one byte string forever, so a bucket that evicts what it admitted, or retains a second revision under one address, would answer for a value that address does not name.
 
 ## The type vocabulary
 

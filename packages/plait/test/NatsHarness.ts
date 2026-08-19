@@ -38,6 +38,19 @@ export interface NatsServerOptions {
    * real server that advertises less than the pin, not a mocked INFO block.
    */
   readonly config?: string
+  /**
+   * A file store this server runs on, owned by the caller rather than minted
+   * and removed with the server.
+   *
+   * Row isolation is unchanged when it is omitted, which is every existing
+   * caller: each server still mints a fresh store under its own fresh run
+   * directory and takes it away again on stop. Supplying one is how a caller
+   * asks the opposite question — whether what a server admitted is still there
+   * after that server is gone — which needs the store to outlive the process
+   * that wrote it. The run directory stays per-server either way, so a restart
+   * never reads the dead server's ports file.
+   */
+  readonly storeDirectory?: string
 }
 
 /**
@@ -167,7 +180,7 @@ export const startNatsServer = async (
       ...configArguments,
       "-js",
       "-sd",
-      join(directory, "store"),
+      options.storeDirectory ?? join(directory, "store"),
       "-a",
       "127.0.0.1",
       "-p",

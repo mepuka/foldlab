@@ -7578,3 +7578,274 @@ that boundary is ever widened to the security projection.
 schema as `Schema.String` rather than as the estate's own `Digest`. That is the
 same slip the lane handle beside them had, against a sort this task did not
 mint, and it belongs to whoever tightens that boundary next.
+
+## Task: the durable catalog layer, and the fold's checkpoints become its consumer (2026-08-19)
+
+### T1. The inversion runs the ruled way, and the seam does not move
+
+Decided: `CatalogService` gains a second adapter and nothing else. The interface
+is unchanged — `get` returning `Option<WireValue>`, `put` returning a `Digest` —
+and `Catalog.layerDurable(options)` supplies it from a file-backed, R=1,
+non-evicting KV bucket whose keys are digests. `internal/anchors.ts` then
+consumes that store for fold state: `ensureState` became `catalog.put` and
+`loadState` became `catalog.get` plus the one fact the catalog cannot state,
+that an anchor names a state the store does not hold.
+
+The direction was ruled and the reverse was never open. Moving the fold onto the
+process-local map would delete the crash-durability its two chaos gates prove,
+which is the whole reason the ruling names one direction rather than "unify
+them". What the anchor adapter keeps is what is its own: the checkpoint fact,
+its parse, and the single-shot revision CAS whose loss is a fatal detach. That
+CAS never touched a retry loop before this run and does not now — the three CAS
+disciplines stay unentangled, and admitting a value through a store that
+reconciles by read-back is not routing an anchor through one, because the value
+being admitted is content-addressed and the anchor write is still the one
+unretried `update(rev)` it always was.
+
+One adapter was a hypothetical seam. The seam is real now, which is the
+deep-module payoff: the module hides the bucket's ruled shape, the key layout,
+the idempotent-create mechanics, and the verification, and a caller sees the
+same two functions either way.
+
+**Load-bearing? yes**
+
+### T2. Verify-on-read lives at the store seam this adapter owns, and T18 is intact
+
+Decided: the durable adapter admits on `sha256(fetched octets) == D` before
+anything decodes, then decodes from those verified bytes with the estate's fatal
+constrained decoder, and refuses `digest-mismatch` on disagreement.
+
+That is not a second verify door under `Resolved.resolve`, and the T18 split it
+might look like a breach of is unweakened. T18's argument is about the
+WRITABILITY OF A CONTROL: a store that polices its own answers cannot be made to
+lie by a fixture, so the two stores a resolved reference reads through stay
+unverified and a lying layer can be supplied under them. That argument binds the
+IN-MEMORY seams — `Catalog.layer` and `Payloads` — because a fixture is the only
+way to make them lie. A real backend needs no cooperation at all: its control
+flips bytes in the bucket behind the API, which `CatalogDurable.test.ts` does,
+and the tampered value is refused rather than served. This is the same
+disposition `Blob.ts` already carries in the same words, and the scoped law now
+states the distinction rather than leaving it to be inferred.
+
+Two consequences worth writing down. `CatalogService` still promises no
+verification: a caller resolving a reference verifies at the one seam whichever
+adapter is underneath, and a control can still supply a lying `testLayer` under
+`Resolved.resolve` because that layer is a fixture and not this adapter. And the
+identity check got STRONGER on the fold's path, not merely relocated — see T3.
+
+**Load-bearing? yes**
+
+### T3. The anchor state read's refusal kind moved, because the check moved to the bytes
+
+Decided: a tampered fold-state entry now refuses `digest-mismatch` (the
+catalog's law, path `["catalog", <digest>]`) where it used to refuse
+`malformed-anchor-state` (path `["state", <digest>]`). The anchor adapter still
+mints `malformed-anchor-state` for everything that is its own: a malformed
+checkpoint record, an initial state outside the wire grammar, a committed anchor
+whose `stateDigest` disagrees with what the store admitted, and a state the
+store does not hold.
+
+The kind moved because the CHECK moved, and it is not the same check. The old
+one decoded the entry and re-derived `digestOf(decoded)`, which asks a question
+about the value; the estate already ruled that shape a laundering door at the
+payload leg of `Resolved.resolve`, because every decoder that repairs its input
+answers it for byte strings the store was never given — a member transposition,
+an inserted space, a duplicate member resolved last-wins, an undecodable octet
+turned into U+FFFD. The catalog asks about the octets, before anything
+interprets them. Refusing under the law that actually did the refusing is the
+honest rendering, and dressing the catalog's refusal back up in the anchor's
+kind would be re-teaching a law that no longer fired.
+
+No suite asserted the retired arm; the taught-payload pin carries the anchor's
+kinds unchanged and gained the catalog's three.
+
+**Load-bearing? yes**
+
+### T4. The duplicate-create reconcile's tolerance is named, cited, and walled
+
+Decided: the module law states the tolerance with its upstream citation and the
+maintainers' disposition, and an executed runtime control kills the variant that
+drops it.
+
+A create at a digest key that reports wrong-last-sequence is disposed by reading
+the key back and comparing bytes. That is not defensive style, and the law says
+why: `nats-io/nats-server` issue 5162 — a KV `Create` racing a `Delete` on a
+tombstoned key returns a spurious wrong-last-sequence — has been OPEN since
+2024-03-02 and is judged on the record to be unfixable under the current
+protocol, a project member's "I think this is more a client thing", a
+contributor's "I do not think we can improve this scenario at the moment given
+current API capabilities", and the reporter's root cause: the JetStream protocol
+carries no atomic KV create that avoids the client checking for a delete marker.
+So removing the read-back now costs somebody the work of checking whether that
+issue closed, which is exactly the price a load-bearing tolerance should carry.
+
+The control is a runtime mutant on the house pattern. `catalogStoreOver(bucket,
+disposition)` is the shipped constructor; `reconcileByReadBack` is what ships
+and `trustCreateOutcome` is the twin that believes the report, spelled in the
+shipped module beside it for the same reason the lattice plane's
+last-writer-wins merge is, so the control exercises the real store rather than a
+restatement of it. The wall captures a GENUINE server-minted wrong-last-sequence
+(held to the pinned wire shape at the same time, so a report that stopped
+looking like the one this tolerance is about reddens here) and interposes on the
+bucket handle so a create LANDS and then reports it anyway. Under the shipped
+disposition the value is admitted; under the twin it is refused — and the trace
+records that the refused value is one the store is holding, which is the kill.
+
+Why a landed-then-reported create rather than the tombstone race itself: the
+client cannot tell the two apart, which is the point. What the store sees in
+both is a report about a sequence number and a key whose bytes settle the
+question, and the interposed schedule is the deterministic one.
+
+**Load-bearing? yes**
+
+### T5. One refusal kind was added to the vocabulary, the long way
+
+Decided: `catalog-substrate-shape` joins the runtime refusal roster with its
+standing meaning, and the carrier's shape gate mints it.
+
+The alternative was to reuse a kind. Every candidate was a lie against a
+ratified standing meaning — `substrate-shape` names the commons control stream,
+`anchor-substrate-shape` names the anchor bucket — and the A-11 fact-1 family
+gives each carrier its own kind precisely so a refusal names which carrier
+refused. So the roster grew: the reviewed meaning was written into both copies
+(the model emitter's and the package's), both generated surfaces and the prose
+page were regenerated from the emitter with the digest register, and the
+staged-debt pin gained its row by hand. The corpus digest did not move, because
+the roster is reviewed data beside the corpus rather than part of it. The
+matcher-closure trace was re-recorded, which is the acknowledgement the law
+already names: growing the vocabulary costs every existing fold one deliberate
+re-recording.
+
+Two kinds were NOT added. Verify-on-read failure and a duplicate create whose
+stored bytes differ both refuse `digest-mismatch`, which is the estate's existing
+name for exactly that fact and already carries two laws at two seams; bytes that
+hash right and do not decode refuse `malformed-value`, as the payload leg does.
+The transport absence `catalog-transport-unavailable` needed no roster row —
+absence kinds are free strings by construction, and only structural kinds are
+the generated union's.
+
+**Load-bearing? yes**
+
+### T6. The carrier gained a role, and the anchor role gained a bucket
+
+Decided: `catalog` is a new carrier role granted the catalog bucket alone, and
+the `anchor` role's grant now covers two buckets.
+
+Both fall out of the inversion rather than being scope creep. The anchor carrier
+opens the catalog bucket on its own connection — that is what "consumes the
+store" means — so a grant covering only the checkpoint bucket would strand every
+resume at the first state read, and the writ rows for the fold and session
+layers carry the same two-bucket family set the projection grants. The durable
+layer's own acquire site is a tenth connection the spine opens, and the writ
+table is total over acquire sites by wall; declaring it with the anchor role
+would have over-granted it the checkpoint bucket, and declaring it with the
+least writ would have been false about a connection that plainly publishes to
+`$KV`. So it got a role of its own, whose grant is exactly what it uses.
+
+**Load-bearing? yes**
+
+### T7. The bucket, the key, and where fold state now lives
+
+Decided: `flb-fab-cat`, one retained revision, keys `value.<digest>`.
+
+History is one because a digest names one byte string forever: a second revision
+under one address could only be a value that address does not name, so there is
+no past to retain and a bucket that retains one is refused. The key prefix is
+layout and carries no identity role, exactly as the blob store's fan-out
+directory does; the key function is exported for the same reason the anchor
+carrier exports its own, so a substrate control reaches behind the API without
+guessing the layout.
+
+Fold state moved with it: the `state.<digest>` entries the anchor bucket used to
+carry are `value.<digest>` entries in the catalog bucket now. The durability
+ordering that matters is unchanged and was never atomic — the state is admitted
+before the anchor that names it is written, in that order, across what were
+already two separate KV calls.
+
+G36 class line: the catalog as a store is class (b) per venue — a single-writer
+CAS-append journal whose values are immutable once admitted. The
+create-idempotent-by-comparison write is the append; there is no update path,
+no delete path, and no arbitration.
+
+**Load-bearing? yes**
+
+### T8. The incarnation stamp is placed and its pin is deferred
+
+Decided: the module law names where the incarnation stamp goes and argues the
+carrier's position, and no pin is built.
+
+The argument is the lattice carrier's, not the register's. The register pins its
+incarnation because its fencing tokens ARE bucket revisions, so a token from a
+reborn bucket must refuse instead of landing. Nothing here hands out a revision:
+`put` returns a digest and `get` takes one, addresses are immutable and
+identical across incarnations by construction, and no catalog revision crosses a
+call boundary. There is no fence a reborn bucket could dishonor, and what a
+destroyed bucket destroys is data, which no pin recovers. The three-bucket
+incarnation conversion is what will rule whether that argument becomes a pin or
+stays an exemption, and the reading point is the bucket status the shape gate
+already takes. Building the pin ahead of that ruling would be machinery nothing
+consumes.
+
+**Load-bearing? no**
+
+### T9. The restart arm needed a store the server does not own
+
+Decided: `NatsServerOptions` gained an optional `storeDirectory`, additive and
+defaulted off.
+
+Every existing caller is unchanged: with the field omitted a server still mints
+its own store under its own run directory and takes it away on stop, which is
+the row isolation seam rule 7 binds. Supplying one asks the opposite question —
+whether what a server admitted is still there once that server is gone — which
+needs the store to outlive the process that wrote it. The RUN directory stays
+per-server either way, deliberately: sharing it would leave a dead server's
+ports file for the next one to read, and the restart arm would silently measure
+the wrong server. The fold's two chaos gates ran unchanged afterwards, which is
+the check that the additive edit was additive.
+
+What that arm claims is stated where it runs: the value outlives the server that
+admitted it. It is not a power-durability claim, which nothing in this estate
+makes, and it is not the process-crash claim either — that one is the
+substrate's own, proven where the substrate is, with the fold's chaos gates as
+its runtime evidence.
+
+**Load-bearing? no**
+
+### T10. The type-universe pin was raised by hand
+
+Decided: the `planes` ratchet pin moved from 68 to 69 for
+`Catalog.DurableCatalogOptions`, edited by hand under the coordinator's
+delegation for this ticket, and the ledger was regenerated on top of it.
+
+The gate refuses to raise a pin from a regeneration on purpose, so debt growth
+is always somebody's deliberate edit. This is that edit, and the row it admits
+is the connection-bootstrap options interface the durable layer takes, carrying
+the same `DEV-795` plane-declaration unification target its four neighbours in
+the same module already carry.
+
+**Load-bearing? no**
+
+### T11. What this run deliberately did not touch
+
+Federation, venue authority, blob payload migration, and the object store are
+out of scope by the ticket and stay untouched: no venue is contacted, `Payloads`
+still answers absence, and no blob moves.
+
+The process-local layer remains `Catalog.layer` and remains the default,
+including for every suite that does not name the durable one. The flip is a
+deployment act and belongs to whoever makes it, not to this run.
+
+The engine's seeded door-context replica is the durable store's largest
+consumer, and rebuilding it after a restart is stated as the consumer's concern
+in the restart arm rather than built here. The replica is a monotone lower bound
+seeded at layer build; what re-seeds it, and when, is the engine's question.
+
+Two standing reds are not this run's and were not touched: the `StatusPumpWall`
+kill and reconnect arms fail on this platform before and after this change.
+
+`internal/permissions.ts`'s `CarrierPermissionScope` still carries lane handles
+and stream names as bare literal tokens — the finding the sorts sweep recorded —
+and the new `catalog` role's inbox prefix joins them under the same reading.
+Widening that boundary is still whoever tightens the security projection next.
+
+**Load-bearing? no**

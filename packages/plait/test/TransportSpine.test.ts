@@ -4,6 +4,7 @@ import { readdir } from "node:fs/promises"
 
 import type { Next } from "../src/truth/Refusal.js"
 import { transportRefusal as anchorsRefusal } from "../src/internal/anchors.js"
+import { transportRefusal as catalogsRefusal } from "../src/internal/catalogs.js"
 import { transportRefusal as cellsRefusal } from "../src/internal/cells.js"
 import { transportRefusal as chaosRefusal } from "../src/internal/chaos.js"
 import { transportRefusal as foldsRefusal } from "../src/internal/folds.js"
@@ -158,6 +159,19 @@ const rows: ReadonlyArray<SpineRow> = [
       note: "Reconnect and subscribe again; a session is a value the substrate never learned, so re-opening under the same writ resumes the same read.",
     }],
   },
+  {
+    // The tenth adapter, added with the durable catalog. Like the ninth it has
+    // no pre-extraction commit to be transcribed from, so this row IS its
+    // declaration — a pin against later homogenization rather than an
+    // independent oracle, and it borrows none of the credibility of the eight
+    // rows that do have one. The mutant below is what keeps it honest.
+    adapter: "catalogs",
+    refuse: catalogsRefusal,
+    kind: "catalog-transport-unavailable",
+    law: "Transport absence may be retried; a cataloged value's identity may not.",
+    expected: "the pinned local NATS KV operation to be available",
+    next: retryNote,
+  },
 ]
 
 /**
@@ -228,12 +242,12 @@ describe("the transport spine mints each adapter's own refusal", () => {
     }
   }
 
-  test("nine definitions carry eight distinct absence kinds", () => {
-    expect(rows.length).toBe(9)
+  test("ten definitions carry nine distinct absence kinds", () => {
+    expect(rows.length).toBe(10)
     // `fold-transport-unavailable` is shared by the pump and the fold service,
-    // which is why nine sites carry eight kinds. The affordances record's
-    // "six absence kinds" undercounts by two.
-    expect(new Set(rows.map((row) => row.kind)).size).toBe(8)
+    // which is why ten sites carry nine kinds. The affordances record's
+    // "six absence kinds" undercounts by three.
+    expect(new Set(rows.map((row) => row.kind)).size).toBe(9)
   })
 
   test("membership is derived: every adapter that mints one has a row here", async () => {

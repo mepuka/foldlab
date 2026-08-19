@@ -35,7 +35,14 @@ fenced register over one file-backed, single-replica JetStream server.
   token is the KV revision-CAS order; holder strings are descriptive only.
 - `Catalog` owns the `Catalog` service and the catalog-internal `Payloads`
   seam — the two content-addressed reads a resolved reference decodes through.
-  Both are unverified by design; `Resolved.resolve` is their one verify door.
+  `Resolved.resolve` is their one verify door for a resolved reference. The
+  service has two adapters: `Catalog.layer` is the process-local map, still the
+  default and unverified by design so a lying layer can be supplied under the
+  door; `Catalog.layerDurable` is the fabric-backed store — digest-keyed
+  entries in a file-backed, single-replica, non-evicting bucket — which
+  re-derives identity over the bytes it fetched, because its control flips
+  bytes on the substrate behind the API rather than needing the service's
+  cooperation. Fold checkpoint state is a consumer of that durable store.
 - `Blob` owns the public `Blobs` store — put, verified get, presence — with
   verification inside the service and absence as a `blob-absent` refusal. Its
   first backend rides the pin's portable `FileSystem`; the object-store backend
@@ -197,10 +204,27 @@ derived by the server — so a reader that trusts metadata has verified nothing.
 All cell claims hold within a fixed backing-stream incarnation; the cell store
 is argued exempt from the register's incarnation pin — no cell revision crosses
 a call boundary, so there is no fence a reborn bucket could honor — and the
-argument is recorded in `DECISIONS.md`, Task DEV-779. Neither
-`Catalog` nor `Payloads` ships a durable layer: the catalog layer is
-process-local, and the internal payload seam answers absence — the probed
-object store remains advisory evidence, never a backing store.
+argument is recorded in `DECISIONS.md`, Task DEV-779. `Payloads` ships no
+durable layer: the internal payload seam answers absence — the probed object
+store remains advisory evidence, never a backing store.
+
+What the durable catalog layer claims, and what it does not. Claimed, and
+executed: a value admitted through `Catalog.layerDurable` reads back at the
+digest of its canonical bytes; it is still readable by a later reader after the
+server that admitted it is gone, over a file store that server no longer owns;
+admitting the same value twice lands one entry and refuses nothing; a byte
+flipped in the bucket behind the API is refused `digest-mismatch` and never
+served; a memory-backed or revision-retaining bucket is refused
+`catalog-substrate-shape` at acquisition rather than treated as a degraded
+mode; and a create that landed but reported wrong-last-sequence anyway is
+admitted through the read-back-and-compare reconcile, with the variant that
+believes the report executed beside it and killed. NOT claimed:
+power-durability, which nothing in this estate claims — the durability is the
+substrate's declared crash-durability, and process-crash recovery over that
+substrate is the substrate's own claim with the fold's two chaos gates as its
+runtime evidence. Also not claimed: federation, venue authority, or any durable
+snapshot of a catalog as one value. The process-local layer remains the
+default; moving a deployment onto the durable one is a deployment act.
 
 What the blob conformance suite claims: that a `BlobsService` layer round-trips
 its bytes under the digest it derived, observes absence as `blob-absent`,

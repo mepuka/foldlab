@@ -556,6 +556,7 @@ const FAMILY_SCOPE = {
     "node-publisher": "_INBOX.{node-publisher-inbox}",
     cell: "_INBOX.{cell-inbox}",
     anchor: "_INBOX.{anchor-inbox}",
+    catalog: "_INBOX.{catalog-inbox}",
     register: "_INBOX.{register-inbox}",
     requester: "_INBOX.{requester-inbox}",
   },
@@ -607,8 +608,8 @@ describe("the substrate writ", () => {
   })
 
   test("every acquire site in src/ has a declared writ, walked rather than listed", () => {
-    // The roster of acquire sites is DERIVED from the source, so a ninth site
-    // added tomorrow joins this wall by construction instead of by somebody
+    // The roster of acquire sites is DERIVED from the source, so a site added
+    // tomorrow joins this wall by construction instead of by somebody
     // remembering to extend a list here.
     const root = resolve(import.meta.dir, "../src")
     const sources = readdirSync(root, { recursive: true, encoding: "utf8" })
@@ -628,13 +629,13 @@ describe("the substrate writ", () => {
       }
     }
     // A walk that found nothing would pass over no wall at all.
-    expect(sites.length).toBe(8)
+    expect(sites.length).toBe(9)
     const declared = new Set(SUBSTRATE_WRITS.map((row) => row.layer))
     for (const site of sites) {
       expect({ ...site, declared: declared.has(site.layer) })
         .toEqual({ ...site, declared: true })
     }
-    expect(new Set(sites.map((site) => site.layer)).size).toBe(8)
+    expect(new Set(sites.map((site) => site.layer)).size).toBe(9)
   })
 
   test("a layer with no declared writ is refused by the lookup and folds null at the spine", async () => {

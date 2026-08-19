@@ -2,13 +2,25 @@
  * Plane: internal — private adapters, housed flat.
  * Seam: planes — the state carriers, one seam per plane.
  *
+ * The anchor carrier: checkpoint facts, and the CAS that owns them.
+ *
+ * What this adapter keeps is the checkpoint fact and its single-shot CAS — a
+ * lost anchor revision is a fatal detach and there is no reread-and-continue
+ * path, which is why an anchor write is never routed through a retrying loop.
+ * What it no longer owns is the content-addressed store underneath it. Fold
+ * state is an ordinary cataloged value now: `Catalog`'s durable store admits it
+ * create-idempotently at its digest key and re-derives it on read, and this
+ * module consumes that store on the connection it already holds. The direction
+ * is the ruled one — one verified durable store with the anchor adapter above
+ * it, never a fold checkpoint reaching into a process-local map.
+ *
  * @module
  */
 import { decodeJson } from "@foldlab/core/jcs"
 import { StorageType, StoreCompression } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { Effect, Result, Schema } from "effect"
+import { Effect, Option, Result, Schema } from "effect"
 
 import {
   ANCHOR_BUCKET,
@@ -17,8 +29,9 @@ import {
   initial,
   type Anchor as AnchorValue,
 } from "../planes/Anchor.js"
-import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
-import { digestOf } from "../truth/Digest.js"
+import type { CatalogService } from "../planes/Catalog.js"
+import { canonicalBytes } from "../truth/Canonical.js"
+import type { Digest } from "../truth/Digest.js"
 import type { DeclaredFold } from "../planes/Fold.js"
 import {
   absenceRefusal,
@@ -36,6 +49,7 @@ import {
   mirroredAuthorityCarrier,
   type CarrierSite,
 } from "./carriers.js"
+import { makeCatalogStore } from "./catalogs.js"
 import { KvFailure, isCasRefusal, transportRefusalFor } from "./transport.js"
 
 /** Where the anchor carrier is opened, for a named law to address. */
@@ -114,9 +128,6 @@ const lostCas = (key: string, revision: number, cause: unknown): Refusal =>
     }],
   })
 
-const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean =>
-  left.byteLength === right.byteLength && left.every((value, index) => value === right[index])
-
 const parseAnchor = (entry: KvEntry): Effect.Effect<AnchorValue, Refusal> => {
   const decoded = decodeJson(entry.value)
   if (!decoded.ok) {
@@ -158,54 +169,27 @@ const anchorAbsent = (anchorKey: string): Refusal => absenceRefusal({
   next: [{ subject: "Folds.deploy", note: "Deploy the fold to create or resume its anchor." }],
 })
 
-const stateKey = (digest: string): string => `state.${digest}`
-
-const ensureState = Effect.fn("AnchorStore.ensureState")(function* (
-  bucket: KV,
-  state: WireValue,
-) {
-  const digest = yield* digestOf(state)
-  const bytes = yield* canonicalBytes(state)
-  yield* Effect.tryPromise({
-    try: () => bucket.create(stateKey(digest), bytes),
-    catch: (cause) => new KvFailure(cause),
-  }).pipe(Effect.catch(({ cause }) => {
-    if (!isCasRefusal(cause)) return Effect.fail(transportRefusal("anchor.state.create", cause))
-    return Effect.flatMap(
-      readEntry(bucket, stateKey(digest), "anchor.state.read-existing"),
-      (existing) => existing !== null && bytesEqual(existing.value, bytes)
-        ? Effect.void
-        : Effect.fail(malformed(
-          ["state", digest],
-          existing === null ? "absent after duplicate create" : "different bytes at digest key",
-          "the exact canonical state bytes named by the key",
-        )),
-    )
-  }))
-  return { digest, bytes }
-})
-
+/**
+ * Reads the state a checkpoint fact names, out of the durable catalog.
+ *
+ * The identity check is the store's and is stronger than the one that used to
+ * live here: it admits on the digest of the exact fetched octets before
+ * anything decodes them, where this module re-derived from a decoded value and
+ * so asked the question a repairing decoder can answer for bytes the store was
+ * never given. A tampered state entry therefore refuses as the catalog's
+ * `digest-mismatch` rather than as this module's malformed-state kind; what
+ * stays here is the only fact the catalog cannot state, that an anchor names a
+ * state the store does not hold.
+ */
 const loadState = Effect.fn("AnchorStore.loadState")(function*<State> (
-  bucket: KV,
-  digest: string,
+  catalog: CatalogService,
+  digest: Digest,
 ): Effect.fn.Return<State, Refusal> {
-  const entry = yield* readEntry(bucket, stateKey(digest), "anchor.state.read")
-  if (entry === null) {
+  const found = yield* catalog.get(digest)
+  if (Option.isNone(found)) {
     return yield* malformed(["state", digest], "absent", "the canonical state bytes")
   }
-  const decoded = decodeJson(entry.value)
-  if (!decoded.ok || !Schema.is(WireValueSchema)(decoded.value)) {
-    return yield* malformed(
-      ["state", digest],
-      decoded.ok ? "non-wire state" : decoded.refusal.reason,
-      "one canonical wire-grammar state",
-    )
-  }
-  const actual = yield* digestOf(decoded.value)
-  if (actual !== digest) {
-    return yield* malformed(["state", digest], actual, digest)
-  }
-  return decoded.value as State
+  return found.value as State
 })
 
 export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
@@ -269,6 +253,11 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
     })
   }
 
+  // The durable value store this adapter now sits on, opened on the same
+  // connection: fold state is a cataloged value, and the anchor carrier is one
+  // of its consumers rather than its private implementation.
+  const catalog = yield* makeCatalogStore(connection)
+
   const key: AnchorStore["key"] = (fold, partition) =>
     `anchor.${fold.digest}.${fold.lane.digest}.${partition}`
 
@@ -281,7 +270,7 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
       const present = yield* readEntry(bucket, anchorKey, "anchor.read")
       if (present !== null) {
         const anchor = yield* parseAnchor(present)
-        const state = yield* loadState<State>(bucket, anchor.stateDigest)
+        const state = yield* loadState<State>(catalog, anchor.stateDigest)
         return { anchor, state, revision: present.revision }
       }
 
@@ -290,7 +279,7 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
         return yield* malformed(["state", "initial"], String(state), "one wire-grammar state")
       }
       const anchor = yield* initial(state)
-      yield* ensureState(bucket, state)
+      yield* catalog.put(state)
       const bytes = yield* canonicalBytes(anchor)
       const revision = yield* Effect.tryPromise({
         try: () => bucket.create(anchorKey, bytes),
@@ -311,7 +300,7 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
       const entry = yield* readEntry(bucket, anchorKey, "anchor.read")
       if (entry === null) return yield* anchorAbsent(anchorKey)
       const anchor = yield* parseAnchor(entry)
-      const state = yield* loadState<State>(bucket, anchor.stateDigest)
+      const state = yield* loadState<State>(catalog, anchor.stateDigest)
       return { anchor, state, revision: entry.revision }
     },
   )
@@ -321,13 +310,9 @@ export const makeAnchorStore = Effect.fn("AnchorStore.make")(function* (
       if (!Schema.is(WireValueSchema)(rawState)) {
         return yield* malformed(["state"], String(rawState), "one wire-grammar state")
       }
-      const stored = yield* ensureState(bucket, rawState)
-      if (stored.digest !== anchor.stateDigest) {
-        return yield* malformed(
-          ["anchor", "stateDigest"],
-          anchor.stateDigest,
-          stored.digest,
-        )
+      const stored = yield* catalog.put(rawState)
+      if (stored !== anchor.stateDigest) {
+        return yield* malformed(["anchor", "stateDigest"], anchor.stateDigest, stored)
       }
       const bytes = yield* canonicalBytes(anchor)
       return yield* Effect.tryPromise({

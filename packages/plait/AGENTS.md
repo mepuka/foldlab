@@ -58,7 +58,9 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   value, which is the laundering door (a repairing decode admits bytes the
   digest refuses). Wall: `test/ResolvedByteIdentity.test.ts` with the raw
   bytes + digest as the oracle and its executed mutant. A store that holds
-  values (the catalog) has no byte string to check and says so in place.
+  VALUES rather than bytes — the process-local catalog layer — has no byte
+  string to check and says so in place; the durable catalog holds bytes and is
+  therefore held to this law like any other byte store.
 - The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
   round number: `test/MaxPayloadSemantics.test.ts` measures the budget and the
   emit path's header cost at the pin, and the threshold is a stated quarter of
@@ -107,13 +109,44 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   `KvWatchEntry.isUpdate` is not an initial/live boundary, and no absence is
   ever inferred from a watch.
 - Verify-on-read for a *resolved reference* happens at exactly one seam
-  (`Resolved.resolve`), and the two stores under it — `Catalog` and the
-  catalog-internal `Payloads` seam — stay unverified so a lying layer can be
-  supplied under them (T18). The *public* blob store (`Blob.ts`) is the one
-  place verification lives inside the service: its control flips bytes on the
-  substrate behind the API, so verified-get is testable without any unverified
-  public read path. Adding a second verify door to `Catalog`/`Payloads`, or an
-  unverified read to `Blob`, is a finding either way.
+  (`Resolved.resolve`), and the IN-MEMORY stores under it — `Catalog.layer` and
+  the catalog-internal `Payloads` seam — stay unverified so a lying layer can be
+  supplied under them (T18). What that argument protects is the WRITABILITY OF A
+  CONTROL, not the absence of verification: a store which polices its own
+  answers cannot be made to lie by a fixture. A store with a real substrate
+  needs no cooperation, because its control flips bytes behind the API, so
+  verification lives inside those services and costs the control nothing. Two of
+  them do: the public blob store (`Blob.ts`), and the durable catalog adapter
+  (`internal/catalogs.ts` under `Catalog.layerDurable`), which admits on
+  `sha256(fetched octets) == D` before decoding and refuses `digest-mismatch`.
+  Adding a verify door to the process-local `Catalog.layer` or to `Payloads`, or
+  an unverified read to `Blob` or to the durable catalog, is a finding in either
+  direction. `CatalogService` itself makes no verification promise — a caller
+  resolving a reference still verifies at the one seam, whichever adapter is
+  underneath.
+- The durable catalog is one store with one write path, and the fold's
+  checkpoints are its consumer, never the reverse. `internal/anchors.ts` keeps
+  the checkpoint fact and its single-shot revision CAS — a lost anchor CAS is a
+  fatal detach and never reaches a retry loop — and admits fold state through
+  the catalog store like any other value. Routing the fold onto the
+  process-local layer would delete the crash-durability its two chaos gates
+  prove, and re-deriving a state's digest from a decoded value instead of from
+  the fetched bytes would reopen the laundering door the resolve seam already
+  closed. Either is a finding.
+- The duplicate-create reconcile's tolerance of a wrong-last-sequence is
+  LOAD-BEARING and removing it means checking a stated fact first. A create at a
+  digest key that reports wrong-last-sequence is disposed by reading the key
+  back and comparing bytes, never by believing the report: `nats-io/nats-server`
+  issue 5162 — a KV `Create` racing a `Delete` on a tombstoned key returns a
+  spurious wrong-last-sequence — is OPEN and judged on the record to be
+  unfixable under the current protocol, because the JetStream protocol carries
+  no atomic KV create that avoids the client checking for a delete marker. The
+  citation and its disposition ride the module law in `internal/catalogs.ts`.
+  Wall: `test/CatalogReconcileWall.test.ts` plants a wrong-last-sequence over a
+  create that actually landed and requires the shipped reconcile to admit the
+  value; the committed `negative-controls/Catalog.trusting-reconcile.mutant.ts`
+  builds the same shipped store over the believing disposition and must refuse
+  for its committed reason.
 - The resolve memo decorates the verify door and only it. A cache on
   `Catalog.get` or the `Payloads` seam holds unverified bytes and is a finding;
   so is a cache key that carries an anchor, a petname, or anything else naming

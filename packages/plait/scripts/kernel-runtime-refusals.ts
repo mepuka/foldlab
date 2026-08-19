@@ -423,6 +423,14 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
       + " so a fence from the dead incarnation names a store that no longer exists"
       + " rather than a round that has merely moved on.",
   },
+  {
+    kind: "catalog-substrate-shape",
+    meaning:
+      "The catalog bucket is not the non-evicting, single-revision shape the durable value"
+      + " store declares. A digest names one byte string forever, so a bucket that evicts"
+      + " what it admitted, or retains a second revision under one address, would answer for"
+      + " a value that address does not name.",
+  },
 ] as const satisfies ReadonlyArray<RuntimeRefusalMeaning>
 
 /**

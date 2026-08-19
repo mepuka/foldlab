@@ -16,6 +16,7 @@ Blob.Blobs.prototype#service.put#call[1] Effect error=StructuralRefusal | Absenc
 Blob.Blobs.testLayer#call[1] Layer error=never
 Canonical.canonicalBytes#call[1] Effect error=StructuralRefusal
 Catalog.Catalog.layer Layer error=never
+Catalog.Catalog.layerDurable#call[1] Layer error=StructuralRefusal | AbsenceRefusal
 Catalog.Catalog.prototype#service.get#call[1] Effect error=StructuralRefusal | AbsenceRefusal
 Catalog.Catalog.prototype#service.put#call[1] Effect error=StructuralRefusal | AbsenceRefusal
 Catalog.Catalog.testLayer#call[1] Layer error=never

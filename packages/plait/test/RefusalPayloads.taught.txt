@@ -63,6 +63,30 @@ packages/plait/src/internal/carriers.ts#1
   next[0].subject <expression>
   next[0].note "Open this carrier against a stream created with per-message TTL off — the server refuses to clear `allow_msg_ttl` once it is set, so an existing one is replaced, not edited — and carry material that is meant to expire on a carrier no decision reads."
   next[0].body {"allow_msg_ttl":false}
+packages/plait/src/internal/catalogs.ts#0
+  kind "catalog-transport-unavailable"
+  law "Transport absence may be retried; a cataloged value's identity may not."
+  expected "the pinned local NATS KV operation to be available"
+  next <expression>
+packages/plait/src/internal/catalogs.ts#1
+  kind "digest-mismatch"
+  law "A cataloged value's identity is re-derived from the exact bytes held at its own digest key and is never asserted by the store."
+  expected <expression>
+  next[0].subject "catalog.publish"
+  next[0].note "Publish the value again through the catalog: a digest key holds exactly the canonical bytes that hash to it, and nothing else writes this bucket."
+packages/plait/src/internal/catalogs.ts#2
+  kind "malformed-value"
+  law "Bytes admitted at a digest decode as exactly one RFC 8785 wire value."
+  expected "one RFC 8785 wire value"
+  next[0].subject "catalog.publish"
+  next[0].note "Store the value as the canonical uncompressed bytes of one RFC 8785 wire value."
+packages/plait/src/internal/catalogs.ts#3
+  kind "catalog-substrate-shape"
+  law "The catalog bucket is file-backed R=1 with one retained revision, no age or size eviction, and no admin surface beyond it."
+  expected "file/R=1/history=1/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap"
+  next[0].subject "catalog.publish"
+  next[0].note "Restore the ruled flb-fab-cat bucket shape, admin surface included, before publishing durable values."
+  next[0].body <expression>
 packages/plait/src/internal/cells.ts#0
   kind "cell-transport-unavailable"
   law "Transport absence may be retried; lattice-law refusals may not."

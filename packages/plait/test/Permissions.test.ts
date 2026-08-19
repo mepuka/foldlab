@@ -14,6 +14,7 @@ import { connect } from "@nats-io/transport-node"
 import { Effect, Redacted, Result, Schema } from "effect"
 
 import { ANCHOR_BUCKET } from "../src/planes/Anchor.js"
+import { CATALOG_BUCKET } from "../src/planes/Catalog.js"
 import { CELL_BUCKET } from "../src/planes/Cell.js"
 import { REGISTER_BUCKET } from "../src/planes/Register.js"
 import {
@@ -52,6 +53,7 @@ const scope = {
     "node-publisher": "_INBOX.plait.node.node-a",
     cell: "_INBOX.plait.kv.cell",
     anchor: "_INBOX.plait.kv.anchor",
+    catalog: "_INBOX.plait.kv.catalog",
     register: "_INBOX.plait.kv.register",
     requester: "_INBOX.plait.requester.client-a",
   },
@@ -216,7 +218,7 @@ beforeAll(async () => {
       num_replicas: 1,
     })
     const buckets = new Kvm(admin)
-    for (const bucket of [CELL_BUCKET, ANCHOR_BUCKET, REGISTER_BUCKET]) {
+    for (const bucket of [CELL_BUCKET, ANCHOR_BUCKET, CATALOG_BUCKET, REGISTER_BUCKET]) {
       await buckets.create(bucket, {
         history: 1,
         replicas: 1,
@@ -277,8 +279,20 @@ describe("least-privilege carrier permissions", () => {
           `$JS.API.STREAM.INFO.KV_${ANCHOR_BUCKET}`,
           `$JS.API.DIRECT.GET.KV_${ANCHOR_BUCKET}.>`,
           `$KV.${ANCHOR_BUCKET}.>`,
+          `$JS.API.STREAM.INFO.KV_${CATALOG_BUCKET}`,
+          `$JS.API.DIRECT.GET.KV_${CATALOG_BUCKET}.>`,
+          `$KV.${CATALOG_BUCKET}.>`,
         ],
         subscribe: ["_INBOX.plait.kv.anchor.>"],
+      },
+      catalog: {
+        publish: [
+          "$JS.API.INFO",
+          `$JS.API.STREAM.INFO.KV_${CATALOG_BUCKET}`,
+          `$JS.API.DIRECT.GET.KV_${CATALOG_BUCKET}.>`,
+          `$KV.${CATALOG_BUCKET}.>`,
+        ],
+        subscribe: ["_INBOX.plait.kv.catalog.>"],
       },
       register: {
         publish: [
@@ -354,9 +368,15 @@ describe("least-privilege carrier permissions", () => {
       })
     }
 
+    // The anchor role appears twice on purpose: its carrier opens the anchor
+    // bucket for checkpoint facts and the catalog bucket for the state those
+    // facts name, so a grant covering only the first would strand a resume. The
+    // catalog role reaches the second bucket and only it.
     const buckets = [
       ["cell", CELL_BUCKET],
       ["anchor", ANCHOR_BUCKET],
+      ["anchor", CATALOG_BUCKET],
+      ["catalog", CATALOG_BUCKET],
       ["register", REGISTER_BUCKET],
     ] as const
     for (const [role, bucketName] of buckets) {

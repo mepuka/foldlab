@@ -17,7 +17,12 @@ import * as Address from "../src/planes/Address.js"
 import * as Algebra from "../src/truth/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
-import { substrateLayer } from "../src/planes/Catalog.js"
+import {
+  CATALOG_BUCKET,
+  CATALOG_HISTORY,
+  Catalog,
+  substrateLayer,
+} from "../src/planes/Catalog.js"
 import { CELL_BUCKET, CELL_HISTORY, Cells, CellName } from "../src/planes/Cell.js"
 import { Digest } from "../src/truth/Digest.js"
 import { FabricClient, StreamName } from "../src/carriage/FabricClient.js"
@@ -305,6 +310,15 @@ describe("structural refusal repairs", () => {
         ttl: 0,
         max_bytes: -1,
       })
+      // The catalog bucket on this server is memory-backed. A memory-storage
+      // server is not a degraded mode for a durable store; it is refused.
+      await new Kvm(connection).create(CATALOG_BUCKET, {
+        storage: StorageType.Memory,
+        history: CATALOG_HISTORY,
+        replicas: 1,
+        ttl: 0,
+        max_bytes: -1,
+      })
     } finally {
       await connection.close()
     }
@@ -362,6 +376,22 @@ describe("structural refusal repairs", () => {
       throw new Error(`expected cell-substrate-shape structural refusal, got ${wrongCellShape.kind}`)
     }
     refusals.push(wrongCellShape)
+
+    // catalog-substrate-shape: the durable value store refuses a memory-backed
+    // bucket at acquisition rather than admitting values it cannot keep.
+    const wrongCatalog = await Effect.runPromise(
+      Catalog.pipe(
+        Effect.provide(Catalog.layerDurable({ servers: harness.url })),
+        Effect.scoped,
+        Effect.flip,
+      ),
+    )
+    if (wrongCatalog.sort !== "structural") {
+      throw new Error(
+        `expected catalog-substrate-shape structural refusal, got ${wrongCatalog.kind}`,
+      )
+    }
+    refusals.push(wrongCatalog)
 
     const laneShapeConnection = await connect({ servers: harness.url })
     try {

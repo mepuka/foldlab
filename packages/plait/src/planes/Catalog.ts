@@ -17,13 +17,22 @@
  * absence as an `AbsenceRefusal`, and verification hidden inside the service.
  * Two concepts, two names (affordances record A-9, grill G-5).
  *
- * **Bound, stated once.** Neither service here ships a durable layer yet.
- * `Catalog.layer` is process-local: the durable catalog authority is a
- * venue's, reached through the request plane (`Venues.ts` in the binding
- * module map, not built). `Payloads.layer` answers every lookup with absence
- * because no probed payload substrate stands behind this seam; a layer that
- * trusted store-side digests would be a verify-on-read hole, so none ships.
- * Nothing here claims durability or federation.
+ * **Bound, stated once.** `CatalogService` now has two adapters and they claim
+ * different things. `Catalog.layer` is process-local: values live for the
+ * process, and a restart is an empty store. `Catalog.layerDurable` is the
+ * fabric-backed one — a file-backed, single-replica, non-evicting KV bucket
+ * whose keys are digests, verified on read, described where it is built
+ * (`internal/catalogs.ts`). Crash-durable at the substrate's declared spectrum;
+ * power-loss durability is not claimed. The process-local layer stays the
+ * default, and moving a deployment onto the durable one is a deployment act
+ * rather than a property of this module. Federation and venue authority are
+ * still nobody's here: the durable catalog authority a venue offers is reached
+ * through the request plane (`Venues.ts` in the binding module map, not built),
+ * and a durable local store is not that.
+ *
+ * `Payloads.layer` answers every lookup with absence because no probed payload
+ * substrate stands behind this seam; a layer that trusted store-side digests
+ * would be a verify-on-read hole, so none ships.
  *
  * **The probe gate binds the object-store backend only**, and both halves of
  * that sentence travel together wherever either appears: the filesystem
@@ -36,6 +45,8 @@
  */
 import { Context, Effect, Layer, Option } from "effect"
 
+import { makeDurableCatalog } from "../internal/catalogs.js"
+import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { Refusal } from "../truth/Refusal.js"
@@ -43,10 +54,13 @@ import type { Refusal } from "../truth/Refusal.js"
 /**
  * Reads and admits content-addressed values.
  *
- * `get` is deliberately unverified: re-derivation is the caller's law, and it
- * happens at exactly one seam (`Resolved.resolve`). Verifying inside the
- * service would make the tampered-store control unwritable, because the layer
- * under test would police itself.
+ * `get` carries no verification obligation at this seam: re-derivation for a
+ * resolved reference is the caller's law and happens at exactly one place
+ * (`Resolved.resolve`). Verifying inside the PROCESS-LOCAL layer would make the
+ * tampered-store control unwritable, because the layer under test would police
+ * itself. A durable backend is the other case entirely — its control flips
+ * bytes in the substrate behind the API, so it re-derives without costing the
+ * control anything, and it does.
  */
 export interface CatalogService {
   readonly get: (digest: Digest) => Effect.Effect<Option.Option<WireValue>, Refusal>
@@ -67,6 +81,21 @@ export interface CatalogService {
 export interface PayloadService {
   readonly get: (digest: Digest) => Effect.Effect<Option.Option<Uint8Array>, Refusal>
 }
+
+/** The file-backed KV bucket the durable catalog keeps its values in. */
+export const CATALOG_BUCKET = "flb-fab-cat"
+
+/**
+ * Per-key history retained for cataloged values.
+ *
+ * One, and the reason is the address: a digest names one byte string forever,
+ * so a second revision at a key could only be a value that is not the one the
+ * key names. There is no past here to retain.
+ */
+export const CATALOG_HISTORY = 1
+
+/** Connection bootstrap for the durable, fabric-backed catalog layer. */
+export interface DurableCatalogOptions extends ConnectionBootstrap {}
 
 const makeMemoryCatalog: Effect.Effect<CatalogService> = Effect.sync(() => {
   const store = new Map<string, WireValue>()
@@ -102,6 +131,27 @@ export class Catalog extends Context.Service<Catalog, CatalogService>()(
    * for the fabric: nothing durable, shared, or federated is claimed.
    */
   static readonly layer: Layer.Layer<Catalog> = Layer.effect(Catalog, makeMemoryCatalog)
+
+  /**
+   * The durable store: digest-keyed entries in one file-backed, single-replica,
+   * non-evicting fabric bucket, verified on read against the bytes it fetched.
+   *
+   * Same interface, different claim. A value admitted here survives the process
+   * that admitted it and is readable by any other holder of the bucket; a value
+   * admitted through {@link Catalog.layer} does not and is not. The durability
+   * claimed is the substrate's declared crash-durability, never power-loss
+   * durability — no part of the estate claims that one.
+   *
+   * @example
+   * ```ts
+   * import { Catalog } from "@foldlab/plait/Catalog"
+   *
+   * const layer = Catalog.layerDurable({ servers: "nats://127.0.0.1:4222" })
+   * ```
+   */
+  static readonly layerDurable = (
+    options: DurableCatalogOptions,
+  ): Layer.Layer<Catalog, Refusal> => Layer.effect(Catalog, makeDurableCatalog(options))
 
   /** Supplies a complete fixture implementation through the production tag. */
   static readonly testLayer = (service: CatalogService): Layer.Layer<Catalog> =>

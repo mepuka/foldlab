@@ -93,7 +93,7 @@ export interface LayerWrit {
  * nickname in `layer`, the authority in `writ`.
  *
  * The table is total over the spine's acquire sites and a layer absent from it
- * refuses, which is the fence: a ninth acquire site cannot open a connection
+ * refuses, which is the fence: a further acquire site cannot open a connection
  * until somebody declares what it may do.
  */
 export const SUBSTRATE_WRITS: ReadonlyArray<LayerWrit> = [
@@ -137,13 +137,32 @@ export const SUBSTRATE_WRITS: ReadonlyArray<LayerWrit> = [
     subscribe: [],
   },
   {
+    layer: "foldlab-plait-catalog",
+    roles: ["catalog"],
+    publish: [
+      "$JS.API.DIRECT.GET.KV_flb-fab-cat.>",
+      "$JS.API.INFO",
+      "$JS.API.STREAM.INFO.KV_flb-fab-cat",
+      "$KV.flb-fab-cat.>",
+    ],
+    subscribe: [
+      "_INBOX.{catalog-inbox}.>",
+    ],
+  },
+  {
+    // The anchor carrier reads and writes two buckets: the checkpoint facts are
+    // its own, and the state those facts name is an ordinary cataloged value
+    // this layer admits through the durable catalog on the same connection.
     layer: "foldlab-plait-folds",
     roles: ["anchor"],
     publish: [
       "$JS.API.DIRECT.GET.KV_flb-fab-anchor.>",
+      "$JS.API.DIRECT.GET.KV_flb-fab-cat.>",
       "$JS.API.INFO",
       "$JS.API.STREAM.INFO.KV_flb-fab-anchor",
+      "$JS.API.STREAM.INFO.KV_flb-fab-cat",
       "$KV.flb-fab-anchor.>",
+      "$KV.flb-fab-cat.>",
     ],
     subscribe: [
       "_INBOX.{anchor-inbox}.>",
@@ -179,9 +198,12 @@ export const SUBSTRATE_WRITS: ReadonlyArray<LayerWrit> = [
     roles: ["anchor"],
     publish: [
       "$JS.API.DIRECT.GET.KV_flb-fab-anchor.>",
+      "$JS.API.DIRECT.GET.KV_flb-fab-cat.>",
       "$JS.API.INFO",
       "$JS.API.STREAM.INFO.KV_flb-fab-anchor",
+      "$JS.API.STREAM.INFO.KV_flb-fab-cat",
       "$KV.flb-fab-anchor.>",
+      "$KV.flb-fab-cat.>",
     ],
     subscribe: [
       "_INBOX.{anchor-inbox}.>",

@@ -1,0 +1,17 @@
+{
+  "control": "runtime-catalog-trusting-reconcile-mutant",
+  "schedule": "a create that landed, reporting the pinned wrong-last-sequence anyway",
+  "plantedCode": 10071,
+  "plantedStatus": 400,
+  "lawfulVerdict": "admitted",
+  "lawfulDigest": "a7a6f1c3e1ef6531a94be0a48f9be106609112cb81b7b67c87222e20473c0a4f",
+  "mutantVerdict": "refused",
+  "mutantRefusal": {
+    "sort": "structural",
+    "kind": "digest-mismatch",
+    "law": "A cataloged value's identity is re-derived from the exact bytes held at its own digest key and is never asserted by the store.",
+    "got": "a create the substrate refused, taken at face value"
+  },
+  "valueTheMutantRefusedIsHeld": true,
+  "violatedLaw": "a wrong-last-sequence is evidence about a sequence number and never about content, so the bytes at the digest key settle the create"
+}

@@ -17,6 +17,7 @@ import { Schema } from "effect"
 
 import { TOKEN_PATTERN } from "../kernel/Subjects.js"
 import { ANCHOR_BUCKET } from "../planes/Anchor.js"
+import { CATALOG_BUCKET } from "../planes/Catalog.js"
 import { CELL_BUCKET } from "../planes/Cell.js"
 import { REGISTER_BUCKET } from "../planes/Register.js"
 
@@ -63,6 +64,7 @@ export const CarrierRole = Schema.Literals([
   "node-publisher",
   "cell",
   "anchor",
+  "catalog",
   "register",
   "requester",
   "responder",
@@ -76,6 +78,7 @@ export const ReplyingCarrierRole = Schema.Literals([
   "node-publisher",
   "cell",
   "anchor",
+  "catalog",
   "register",
   "requester",
 ])
@@ -134,14 +137,25 @@ const withInbox = (
   subscribe: [`${inboxPrefix}.>`],
 })
 
+/**
+ * One role's authority over the KV buckets its carrier opens.
+ *
+ * A role usually opens one bucket, but the anchor carrier opens two: the
+ * checkpoint facts are its own, and the state those facts name is an ordinary
+ * cataloged value in the durable catalog's bucket, which the carrier reads and
+ * writes on the same connection. A role that could reach only one of them could
+ * not resume a fold.
+ */
 const kv = (
-  bucket: string,
+  buckets: ReadonlyArray<string>,
   inboxPrefix: string,
 ): CarrierPermission => withInbox([
   jetStreamManagerInfo,
-  `$JS.API.STREAM.INFO.KV_${bucket}`,
-  `$JS.API.DIRECT.GET.KV_${bucket}.>`,
-  `$KV.${bucket}.>`,
+  ...buckets.flatMap((bucket) => [
+    `$JS.API.STREAM.INFO.KV_${bucket}`,
+    `$JS.API.DIRECT.GET.KV_${bucket}.>`,
+    `$KV.${bucket}.>`,
+  ]),
 ], inboxPrefix)
 
 /**
@@ -174,9 +188,10 @@ export const declareCarrierPermissionMap = (
       ...streamInfo([scope.commonsStream]),
       `flb.fab.node.${scope.node}`,
     ], scope.inboxPrefixes["node-publisher"]),
-    cell: kv(CELL_BUCKET, scope.inboxPrefixes.cell),
-    anchor: kv(ANCHOR_BUCKET, scope.inboxPrefixes.anchor),
-    register: kv(REGISTER_BUCKET, scope.inboxPrefixes.register),
+    cell: kv([CELL_BUCKET], scope.inboxPrefixes.cell),
+    anchor: kv([ANCHOR_BUCKET, CATALOG_BUCKET], scope.inboxPrefixes.anchor),
+    catalog: kv([CATALOG_BUCKET], scope.inboxPrefixes.catalog),
+    register: kv([REGISTER_BUCKET], scope.inboxPrefixes.register),
     requester: withInbox(
       ["flb.req.>"],
       scope.inboxPrefixes.requester,

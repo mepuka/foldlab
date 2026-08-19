@@ -307,6 +307,13 @@ export const STRUCTURAL_REFUSAL_KINDS = [
    * merely moved on.
    */
   "incarnation-mismatch",
+  /**
+   * The catalog bucket is not the non-evicting, single-revision shape the durable value
+   * store declares. A digest names one byte string forever, so a bucket that evicts
+   * what it admitted, or retains a second revision under one address, would answer for
+   * a value that address does not name.
+   */
+  "catalog-substrate-shape",
 ] as const
 
 /**

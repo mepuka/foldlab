@@ -6,7 +6,7 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 190 public types: 43 derives-from-the-generated-core, 147 debt-with-a-ticket.
+Classified 191 public types: 43 derives-from-the-generated-core, 148 debt-with-a-ticket.
 
 ## Ratchet pins
 
@@ -14,7 +14,7 @@ Classified 190 public types: 43 derives-from-the-generated-core, 147 debt-with-a
 | --- | --- |
 | `carriage` | 30 |
 | `kernel` | 13 |
-| `planes` | 68 |
+| `planes` | 69 |
 | `truth` | 36 |
 
 ## Classified public types
@@ -59,6 +59,7 @@ Classified 190 public types: 43 derives-from-the-generated-core, 147 debt-with-a
 | `Canonical.WireValue` | `src/truth/Canonical.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Catalog.Catalog` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Catalog.CatalogService` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Catalog.DurableCatalogOptions` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Catalog.PayloadService` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Catalog.Payloads` | `src/planes/Catalog.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Cell.CellName` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |

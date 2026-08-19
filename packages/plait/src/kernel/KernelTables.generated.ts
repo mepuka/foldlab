@@ -380,6 +380,7 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
   "unbound-petname",
   "ambiguous-binding",
   "incarnation-mismatch",
+  "catalog-substrate-shape",
 ] as const
 
 /** One structural-refusal kind the runtime can mint. */
@@ -800,6 +801,16 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
    */
   {
     kind: "incarnation-mismatch",
+    source: "staged-debt",
+  },
+  /**
+   * The catalog bucket is not the non-evicting, single-revision shape the durable value
+   * store declares. A digest names one byte string forever, so a bucket that evicts
+   * what it admitted, or retains a second revision under one address, would answer for
+   * a value that address does not name.
+   */
+  {
+    kind: "catalog-substrate-shape",
     source: "staged-debt",
   },
 ] as const satisfies ReadonlyArray<KernelRuntimeStructuralRefusalRow>
