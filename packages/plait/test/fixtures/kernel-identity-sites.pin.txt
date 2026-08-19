@@ -1,0 +1,35 @@
+# Reviewed sites that read runtime digest bytes as an integer.
+#
+# Operator ruling A1 (2026-08-19, board DEV-772) amends standing law 2 to admit
+# ONE guarded trusted-base seam: `kernelIdentity` translates a runtime content
+# address into a model identity label behind a width-and-alphabet guard that
+# returns a refusal carrying its law and repair, never a bare throw. A second
+# translation of runtime digest bytes into identity labels anywhere under
+# `packages/plait/src/` is refused.
+#
+# `check:kernel-door` reads every hex-prefixed `BigInt(...)` conversion under
+# `src/` and requires each to be named here. This file is nothing's input:
+# adding a row is the whole cost of a new site and is the diff a reviewer
+# reads, and a row that stops naming a real conversion reds the wall rather
+# than rotting.
+#
+# The rule is scoped to `BigInt` because an identity label is an unbounded
+# natural. `Number.parseInt(_, 16)` yields a `number` and is structurally
+# incapable of carrying a 256-bit address, so the JSON `\uXXXX` unescape in
+# `truth/Canonical.ts` is not a translation this law reaches — a bound stated
+# rather than a case quietly skipped.
+#
+# Format: <module path relative to packages/plait> <ticket>
+#
+# src/kernel/KernelIdentity.ts — the ruled seam itself. Its guard and its
+# no-throw discipline are checked separately; this row is what makes a SECOND
+# seam cost a reviewed diff rather than appearing silently beside it.
+src/kernel/KernelIdentity.ts DEV-772
+#
+# src/planes/Lane.ts — routing, never identity. `Lane.partition` reduces an
+# already-branded `Digest` modulo the declared partition count to pick a shard;
+# the result is a routing coordinate that reaches no candidate and names no
+# declaration. It carries the same syntax as the seam and so must be seen by
+# the wall rather than exempted, and the package's own law already governs it:
+# subjects route and envelopes identify.
+src/planes/Lane.ts DEV-772

@@ -1,0 +1,2 @@
+PUBLIC TYPE UNIVERSE RATCHET: owning prefix=negative-controls walked=5 pinned=4 — public type debt only goes down
+PUBLIC TYPE UNIVERSE: FAIL — the debt ratchet refuses a prefix whose count rose above its pin

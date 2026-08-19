@@ -657,14 +657,27 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
     body: renderType(type, context, at, declarationOf(type.name).length + 1 + ".annotate({".length),
   }))
 
+  // Every mini-AST type is emitted with a named value type, and the name is
+  // the whole point: a named type is the only thing a consumer can re-export,
+  // so that the declaration a checker resolves to stays this generated file's.
+  // A consumer-side `typeof Generated.X.Type` reads as derivation and is not —
+  // it declares a type of the consumer's own, whose ancestry no checker can
+  // read back. Where the alias sits is the one thing that varies: a suspended
+  // entry's is written out structurally and emitted ahead of the schemas,
+  // because the annotated const is what refers to it, while every other
+  // entry's names the schema it follows.
+  const aliasDoc = (name: string): ReadonlyArray<string> =>
+    docComment(
+      context.suspended.has(name)
+        ? `The value ${name} carries. Written out because ${name} refers to` +
+          " itself, and a suspended schema needs a type to be annotated with."
+        : `The value ${name} carries, named here so a consumer re-exports this declaration` +
+          " instead of restating the type as one of its own.",
+    )
+
   for (const entry of rendered) {
     if (!context.suspended.has(entry.type.name)) continue
-    for (
-      const row of docComment(
-        `The value ${entry.type.name} carries. Written out because ${entry.type.name} refers to` +
-          " itself, and a suspended schema needs a type to be annotated with.",
-      )
-    ) line(row)
+    for (const row of aliasDoc(entry.type.name)) line(row)
     line(`export type ${valueTypeName(entry.type.name)} =${entry.body.type}`)
     line()
   }
@@ -692,6 +705,13 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
     }
     line("})")
     line()
+    if (!context.suspended.has(entry.type.name)) {
+      for (const row of aliasDoc(entry.type.name)) line(row)
+      line(
+        `export type ${valueTypeName(entry.type.name)} = typeof ${schemaName(entry.type.name)}.Type`,
+      )
+      line()
+    }
     if (context.usesRef && declKind !== undefined && entry.type.name === declKind.type.name) {
       line("/**")
       line(" * A kind-tagged reference: the one lawful way a heterogeneous collection of")
@@ -716,6 +736,12 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
         },`,
       )
       line("})")
+      line()
+      line("/**")
+      line(" * The value KernelRef carries, named here so a consumer re-exports this")
+      line(" * declaration instead of restating the type as one of its own.")
+      line(" */")
+      line("export type KernelRefValue = typeof KernelRef.Type")
       line()
     }
   }

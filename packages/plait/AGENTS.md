@@ -172,11 +172,14 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   `test/fixtures/kernel-conformance.sample.ndjson` is the independently
   transcribed control the corpus wall compares against, never a source.
 - The refusal vocabulary is emitted INTO `truth/`, never imported up from
-  `kernel/`. `truth/` is the deepest plane and imports only itself; a generated
-  artifact carries no import-direction debt because its ancestry is the
-  generator, not an edge in the module graph. A truth module that reaches into
-  `kernel/` for the vocabulary is a Law 4 finding, and so is a hand-written
-  literal union standing beside the generated one.
+  `kernel/`. `truth/` is the deepest plane and imports only itself; a
+  seam-tagged internal edge is tolerated where necessary, each edge pinned in
+  `test/fixtures/truth-internal-edges.pin.txt`, and folding the material into
+  `truth/` proper is preferred when a way exists. A generated artifact carries
+  no import-direction debt because its ancestry is the generator, not an edge in
+  the module graph. A truth module that reaches into `kernel/` for the
+  vocabulary is a Law 4 finding, and so is a hand-written literal union standing
+  beside the generated one.
 - `check:refusal-vocabulary` compares three artifacts and never two views of
   one value: the runtime union read from the truth-plane module's source bytes,
   the refusal reasons read from the interchange fixture's bytes, and the
@@ -199,5 +202,38 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   replays the emitted verdicts against it; its refuse-everything mutant and
   host-identity control make the pass evidence. Conformance is agreement with the
   model's verdicts, never a runtime guarantee promoted out of a model theorem.
+- `check:kernel-door` is standing law 2's mechanical wall (DEV-763/796 stage 4).
+  It reads source bytes, never values: the door's candidate, intrinsic-act, and
+  admission-context bindings must name symbols the generated schema module
+  emits, and no other module under `src/` may construct or declare an admission
+  verdict, route `admit` through anything but the door's own imported function,
+  declare a hand-written twin of a name the door's form owns, or reach one of
+  those names without importing it from the door or the generator. The
+  `*.generated.ts` projections are exempt — their bytes are the model's and are
+  byte-gated elsewhere — and `test/` is outside the sweep so a control can spell
+  a second door. A module that names a judgment route the door does not own is
+  written into `test/fixtures/kernel-door-routes.pin.txt` with its ticket, by
+  hand; the pin is nothing's input, and a row naming no live route reds the
+  wall. `check:kernel-door-control` plants one second-door spelling per clause
+  and must fail for its committed reasons. The wall states what can be SPELLED:
+  runtime route identity is `KernelDoor.routes.test.ts`'s, and a route reached
+  only through an object spread is that test's to hold, not this one's.
+- `src/kernel/KernelIdentity.ts` is the ONE guarded trusted-base seam between a
+  runtime content address and a model identity label (operator ruling A1,
+  2026-08-19, board DEV-772). Its guard is `truth/Digest.ts`'s own schema run
+  through `Refusal.decodeRefusing`: the width and alphabet are never restated
+  here, because the corpus states no hex width at all — the generated
+  `KernelDigest` says a real digest "stays in the trusted base" — so the runtime
+  domain has exactly one statement and this seam inherits it. The refusal rides
+  the error channel carrying its law and repair; a `throw` on this path is a
+  finding, and so is a second reading of digest bytes as an unbounded natural
+  anywhere under `src/`. `check:kernel-door` enforces all four: every
+  conversion in the seam sits behind the guard, the seam never throws, every
+  hex-prefixed `BigInt` site under `src/` is named in
+  `test/fixtures/kernel-identity-sites.pin.txt`, and a pin row naming no live
+  site reds the wall. `Lane.partition` is pinned there as routing, never
+  identity — it reduces an already-branded `Digest` to a shard index that
+  reaches no candidate. The map is injective on the guarded domain and is the
+  trusted base's, never a theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.

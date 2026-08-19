@@ -1,0 +1,22 @@
+# Reviewed judgment routes the one door does not own.
+#
+# Standing law 2: all judgment routes through kernel admission, and a private
+# validator is a second door. `check:kernel-door` reads every `admit` route
+# under `packages/plait/src/` — exported or not, because a private validator is
+# the shape the law names — and requires each one to BE the door's own function.
+# A module that names a route the door does not own is written here, by hand,
+# with the ticket that owns its convergence.
+#
+# This file is nothing's input. Adding a row is the whole cost of the exception
+# and is the diff a reviewer reads; a row that stops naming a real route reds
+# the wall rather than rotting, so the roster cannot outlive what it waives.
+#
+# Format: <module path relative to packages/plait> <ticket>
+#
+# src/planes/Address.ts — the petname name law. It accepts no candidate,
+# constructs no verdict, and teaches no kernel refusal; what it mints is this
+# module's own `invalid-petname`, which the module header already stages as
+# DEV-796 debt beside `Binding` and `Directory`. The row records that the
+# package spells a second admission somewhere, and names the ticket that
+# converges it, rather than letting the name pass unread.
+src/planes/Address.ts DEV-796
