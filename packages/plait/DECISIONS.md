@@ -6171,3 +6171,120 @@ run would prove nothing the first did not. **Load-bearing? yes** — the
 direction is forced by which side can hold a server, and the held-open
 connection is the difference between measuring one connection and measuring
 two.
+
+## Task: the run replay wall (the corpus's run group, operator commission 2026-08-19)
+
+The interchange grew a `run` group carrying the model's own executions of the
+committed program declarations. This side reads them and runs them, and the
+decisions below are about what a replay can honestly claim.
+
+### T33. The comparison is byte-equal on the outcome, and the outcome is label-free
+
+Decided: `test/EngineReplay.test.ts` canonicalizes the outcome this engine
+reaches and compares it byte-for-byte with the vector's own `bytes` field. What
+it compares is the arm, the refusing node, the taught reason, the walked node
+sequence, and per step the generator and the TAGS of the payload atoms.
+
+Alternatives, priced. Compare encoded sentences: the model's identity labels are
+small naturals it chose and this engine's are content addresses its hasher
+computed, so the comparison fails for a reason that is not a defect — and
+"relabel the encoding back" is not sound, because an encoding interleaves labels
+with tags. Compare landed labels: the same problem one level down. Compare
+nothing but the arm: passes on an engine that walks one node and stops.
+
+Why the tags earn their place: they are the strongest label-free statement
+available and they catch the defect this wall exists to catch. A consumed local
+must reach the door as a `literal` and an unfilled hole as a `hole`, so a
+dataflow substitution that silently stopped substituting moves a byte. The
+executed control mutates exactly that, and two more besides. **Load-bearing?
+yes** — it is the definition of what "replays byte-equal" means here, and
+anything stronger would be a claim the two identity scales cannot support.
+
+### T34. The payload comes off the verdict stream, not off a re-derivation
+
+Decided: the wall reads each step's payload atoms from `engine.verdicts` — the
+judgments the engine publishes as it issues them — rather than recomputing what
+the completion should have produced from the declaration and the landings.
+
+Why: recomputing it here would rebuild the engine's completion inside the test,
+which is precisely the hand-built expectation the commission asked to retire.
+The engine's step record carries the node and the ACT's encoding but not the
+candidate, so the stream is the only place the engine itself says what it swept.
+Alternatives: widen `RunStep` to carry the candidate (an engine change, and the
+commission forbids engine semantic changes); accept a re-derivation (a wall that
+agrees with itself). **Load-bearing? yes** — it is what keeps the payload column
+the engine's answer rather than the test's.
+
+### T35. The label map is built by declaring the vector's OWN door
+
+Decided: for each referent the vector's `context` names, the wall declares one
+real carrier through this engine — a lane for a lane, a cell for a resource, a
+register for a program, a declared value otherwise — and the map from the
+model's labels to this engine's falls out of those declarations.
+
+The retired alternative is the one that was there: `test/Engine.test.ts` carries
+hand-typed maps (`if (kind === "index" && id === 8n) return …`) beside hand-typed
+supplies and hand-typed expectations. Those tests are KEPT — a hand-built wall
+and a vector wall disagreeing is a finding, and deleting one of them deletes the
+comparison — but nothing new is added to them.
+
+Why: the map is now a function of the vector, so a vector naming a referent the
+wall has never staged fails loudly instead of silently mapping it to itself.
+**Load-bearing? yes** — it is the difference between running the corpus and
+running a transcription of it.
+
+### T36. A supply slot this wall cannot stage refuses; it is never skipped
+
+Decided: `suppliesOf` translates `kind` and `token` directly, stages `strategy`
+as a cell binding, and THROWS on any other slot.
+
+`anchor` and `predicate` are real slots of the model's completion that no
+committed program vector exercises, because no committed declaration applies
+`fold` or `trigger`. Writing untested translations for them would ship code no
+run has ever taken. Alternatives: translate them speculatively (untested code on
+a wall's critical path); skip unknown slots (a vector whose supply nobody
+translated then replays green by omission, which is the worst of the three).
+
+Why: the loud refusal is the honest shape — the day the corpus grows a fold or
+trigger vector, this wall fails and someone writes the translation with a run to
+test it against. **Load-bearing? yes** — silence on an unknown supply is how a
+conformance wall stops conforming.
+
+### T37. `join`'s strategy is staged as a binding, and the mismatch is reported
+
+Decided: the vector's `strategy` supply is not passed to `Engine.run`. It is
+read, and the cell it names is DECLARED against that algebra, so the engine
+fills the slot from its own binding exactly as it does in production.
+
+This is the finding the commission asked to be reported rather than repaired.
+`RunSupplies` names four members — kinds, anchors, tokens, predicates — and
+`strategy` is not among them, because `Act.join` drops the strategy that
+`CandidateAct.join` carries, so no declaration form and no field table read off
+`Act` can name it. The engine therefore has a fifth completion provenance the
+model's run form has no counterpart for: its own binding replica. Alternatives:
+add a `strategies` member to `RunSupplies` (an engine surface change, forbidden
+here, and a decision that belongs to the model first); drop the join node from
+the landed vector (deletes the only four-generator end-to-end run).
+
+Why: staging the binding replays what the engine actually does, and reporting
+the gap is what the limits require. **Load-bearing? yes** — it is a named gap
+between the model's run form and the runtime's, standing open on purpose.
+
+### T38. The unspeakable arm is not byte-compared, and the divergence is named
+
+Decided: for a vector whose outcome arm is `unspeakable`, the wall asserts that
+`Engine.run` refuses structurally — in the error channel, before the door — and
+checks the vector's account of WHERE against the corpus's own declaration: the
+named slot really is absent from the named node's arguments. It does not compare
+bytes.
+
+The divergence, stated: the model's account carries the steps that stood before
+the unspeakable node; this engine's completion refuses into the error channel,
+which discards every step the run had already carried. So the two sides agree on
+the arm, the node and the reason, and disagree about whether the prefix survives.
+That is a real difference in what a failed completion reports, and it is written
+down rather than smoothed over by dropping the steps from the vector.
+Alternatives: drop the steps from the model's account (destroys the evidence
+that node 1 landed before node 2 could not be spoken); make the engine return
+the prefix (an engine semantic change, forbidden). **Load-bearing? yes** — the
+wall's coverage is uneven across the three arms and a reader has to know where.

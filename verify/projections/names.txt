@@ -25,3 +25,5 @@ Kernel.Door
 Kernel.AdmitResult
 Kernel.GenTag
 Kernel.ProgramNode
+Kernel.RunStep
+Kernel.RunOutcome

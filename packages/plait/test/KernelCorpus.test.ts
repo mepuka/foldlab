@@ -337,16 +337,18 @@ describe("the corpus reader", () => {
       docs: corpus.docs.length,
       canons: corpus.canons.length,
       programs: corpus.programs.length,
+      runs: corpus.runs.length,
     }).toEqual({
       kinds: 12,
       stages: 5,
       refusals: 16,
-      types: 25,
+      types: 27,
       encodings: 12,
       admissions: 19,
-      docs: 25,
+      docs: 27,
       canons: 10,
       programs: 4,
+      runs: 5,
     })
   })
 

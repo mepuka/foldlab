@@ -21,6 +21,7 @@ globs = [
   "Unity",
   "Unity.Canon",
   "Unity.Program",
+  "Unity.Run",
   "Unity.Shape",
   "Unity.Reflect",
   "Unity.Emit",

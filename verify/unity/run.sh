@@ -436,22 +436,24 @@ fi
 # The frozen interchange: the header at its canonical byte form (so the
 # key order is pinned along with the values), the record counts, and
 # printable ASCII on every line, which also refuses a carriage return.
-expected_header='{"counts":{"admission":19,"canon":10,"doc":25,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":25},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
+expected_header='{"counts":{"admission":19,"canon":10,"doc":27,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"run":5,"stage":5,"type":27},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 131 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 140 ]] ||
     [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
     [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
-    [[ "$(grep -c '"record":"type"' "$fixture")" -ne 25 ]] ||
+    [[ "$(grep -c '"record":"type"' "$fixture")" -ne 27 ]] ||
     [[ "$(grep -c '"record":"encoding"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 19 ]] ||
     [[ "$(grep -c '"record":"model-admission"' "$fixture")" -ne 2 ]] ||
     [[ "$(grep -c '"scope":"model-internal"' "$fixture")" -ne 2 ]] ||
-    [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 25 ]] ||
+    [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 27 ]] ||
     [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
     [[ "$(grep -c '"record":"program"' "$fixture")" -ne 4 ]] ||
-    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 17 ]] ||
-    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 4 ]]; then
+    [[ "$(grep -c '"record":"run"' "$fixture")" -ne 5 ]] ||
+    [[ "$(grep -c '"record":"admission","verdict":"refused"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"record":"admission","verdict":"admitted"' "$fixture")" -ne 2 ]] ||
+    [[ "$(grep -c '"record":"model-admission","scope":"model-internal","verdict":"admitted"' "$fixture")" -ne 2 ]]; then
   echo "GATE: FAIL — corpus header or record counts moved" >&2
   exit 1
 fi
@@ -472,7 +474,7 @@ if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
-echo "GATE: PASS (131-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+echo "GATE: PASS (140-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
 
 # The conformance check: the both-ways law over every committed line,
 # the header and group sequence, and every record whose truth lives in
@@ -481,14 +483,15 @@ echo "GATE: PASS (131-record format-2 corpus regenerates byte-identically; heade
 # rebuilt from `getConstInfo` and `findDocString?` and compared with the
 # committed bytes.
 conformance_arms=(
-  "conformance: 131 lines survive read and rewrite byte-identically"
-  "conformance: the header declares 10 groups and every count matches the records present"
+  "conformance: 140 lines survive read and rewrite byte-identically"
+  "conformance: the header declares 11 groups and every count matches the records present"
   "conformance: 2 model-internal rows name real candidates and carry their scope marking"
   "conformance: the kind, stage, refusal and admission tables agree with the environment"
-  "conformance: 25 mini-AST rows agree with the environment"
-  "conformance: 25 docstring rows agree with the environment"
+  "conformance: 27 mini-AST rows agree with the environment"
+  "conformance: 27 docstring rows agree with the environment"
   "conformance: 10 canon vectors re-canonicalize to their own bytes"
   "conformance: 4 program vectors state their own graph, erase to admitted programs, and re-canonicalize to their own bytes"
+  "conformance: 5 run vectors execute the corpus's own programs, walk them in admission order, and re-canonicalize to their own bytes"
 )
 if conformance_output=$(lake env lean ConformanceCheck.lean 2>&1); then
   printf '%s\n' "$conformance_output"
@@ -574,6 +577,22 @@ check_falsification stale-program-bytes \
 check_falsification unresolvable-consumption \
   's/\\"to\\":1}/\\"to\\":9}/; s/{\\"arg\\":\\"local\\",\\"name\\":1}}/{\\"arg\\":\\"local\\",\\"name\\":9}}/; s/"to":1}/"to":9}/; s/{"arg":"local","name":1}}/{"arg":"local","name":9}}/' \
   'erases to a program node admission refuses'
+
+# The run group's own two arms. The first moves a byte inside a run
+# record's `bytes` field only, leaving the outcome value untouched, so
+# the record's own self-test is the only thing that can catch it. The
+# second is the arm that makes a run vector a claim rather than a
+# transcript: it rewrites the OUTCOME and its bytes together, so the
+# record is internally consistent and canonical, and the only thing
+# left standing is the model's door walking the row's own door, writ
+# and supplies over the corpus's own declaration. A run that reported a
+# verdict the door does not reach dies here.
+check_falsification stale-run-bytes \
+  's/\\"reason\\":\\"unfenced-decide\\"/\\"reason\\":\\"unfilled-hole\\"/' \
+  "carries bytes that are not its outcome's canonical form"
+check_falsification unreachable-run-verdict \
+  's/\\"outcome\\":\\"refused\\",\\"reason\\":\\"unfenced-decide\\"/\\"outcome\\":\\"refused\\",\\"reason\\":\\"unfilled-hole\\"/; s/"outcome":"refused","reason":"unfenced-decide"/"outcome":"refused","reason":"unfilled-hole"/' \
+  "reports an outcome the model's door does not reach from the row's own inputs"
 
 # ---------------------------------------------------------------------------
 # The TypeScript surfaces.
@@ -854,4 +873,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 131-record format-2 kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 140-record format-2 kernel conformance corpus)"

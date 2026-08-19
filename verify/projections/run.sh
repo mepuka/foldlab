@@ -197,7 +197,7 @@ if ! diff -u artifacts/prose.md "$first"; then
 fi
 manifest_count=$(grep -c '^[A-Za-z]' names.txt)
 artifact_count=$(grep -c '^## `.*`$' artifacts/prose.md)
-if [[ "$manifest_count" -ne 25 || "$artifact_count" -ne "$manifest_count" ]]; then
+if [[ "$manifest_count" -ne 27 || "$artifact_count" -ne "$manifest_count" ]]; then
   echo "GATE: FAIL — pinned manifest/artifact declaration counts moved" >&2
   exit 1
 fi
@@ -220,11 +220,11 @@ if ! diff <(printf '%s\n' "$manifest_types") <(printf '%s\n' "$corpus_types") >/
   echo "GATE: FAIL — the projection manifest and the corpus type roster diverged" >&2
   exit 1
 fi
-if [[ "$(printf '%s\n' "$corpus_types" | grep -c .)" -ne 25 ]]; then
+if [[ "$(printf '%s\n' "$corpus_types" | grep -c .)" -ne 27 ]]; then
   echo "GATE: FAIL — corpus type roster count moved" >&2
   exit 1
 fi
-echo "GATE: PASS (manifest mirrors the corpus's 25-type roster, file to file)"
+echo "GATE: PASS (manifest mirrors the corpus's 27-type roster, file to file)"
 
 # Refusal arm for item 5: a manifest that names a type the corpus roster does
 # not hold must be refused by this wall.

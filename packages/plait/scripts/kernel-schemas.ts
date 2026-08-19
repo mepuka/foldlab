@@ -240,6 +240,20 @@ const recordBindings = (corpus: KernelCorpus): ReadonlyArray<RecordBinding> => {
           examples: first(corpus.programs, "program"),
         },
       ]),
+    // The eleventh group, under the same add-only allowance. Every run is
+    // carried rather than one: the vectors are a closed reference the way the
+    // canon vectors are — one per outcome arm the model's runs can reach — and
+    // an exported schema that exemplified only the first would document a
+    // landing and leave the two refusals unillustrated.
+    ...(corpus.runs.length === 0
+      ? []
+      : [
+        {
+          name: "KernelRunRecord",
+          gloss: "One execution of a committed program, and the outcome's own bytes",
+          examples: corpus.runs.map(asValue),
+        },
+      ]),
   ]
 }
 
@@ -757,6 +771,7 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   line("  doc: KernelDocRecord,")
   line("  canon: KernelCanonRecord,")
   if (corpus.programs.length > 0) line("  program: KernelProgramRecord,")
+  if (corpus.runs.length > 0) line("  run: KernelRunRecord,")
   line("} as const")
   line()
 
