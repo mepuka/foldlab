@@ -4,7 +4,8 @@ Slimmed 2026-08-15 to the focus substrate, then extended by DEV-711 with a
 fresh `register/` twin and `cmd/registerwall/`, and by the kernel-model slice
 with the conformance consumer `kmconform/`, its generator `cmd/kmgen/`, and
 the brand lint `brandlint/` with `cmd/brandlint/`, and by the estate-daemon
-slice with `daemon/` and `cmd/daemonwall/`: `canonical/`, `journal/`,
+slices with `daemon/`, `cmd/daemonwall/`, `cmd/incarnationwall/` and
+`cmd/teardownwall/`: `canonical/`, `journal/`,
 `register/`, `kmconform/`, `brandlint/`, `daemon/`, and the commands. The
 stream/transform hot path, the archived effector, the
 gauntlet lanes, and their commands live at tag
@@ -33,7 +34,15 @@ gauntlet lanes, and their commands live at tag
   the wall.
 - `register/` is fresh code, not restored `go/effector`. It has exactly the
   five F5 actions and no watch surface; `cmd/registerwall/` exists only for the
-  heterogeneous hard-kill/steal/zombie schedule.
+  heterogeneous hard-kill/steal/zombie schedule. Its INCARNATION PIN is
+  implemented, not deferred: `Open` records the backing stream's creation stamp
+  and every action re-asserts it before its own law checks, so a token minted
+  under a destroyed bucket refuses `incarnation-mismatch` rather than landing on
+  the reborn one. `OpenUnpinned` exists for the pin's committed refutation and
+  for nothing else — no shipped consumer opens it, and the wall that does says
+  so in its own output. Every refusal the package mints carries a repair, and
+  `RefusalKinds` is the roster the totality test walks; a kind added without a
+  repair row reddens.
 - `kmconform/` is the kernel model's conformance corpus, consumed. Its
   serialization is ESTATE CANONICAL JSON — RFC 8785 with one deviation, an
   unbounded non-negative-integer number domain — and it is deliberately not
@@ -65,15 +74,36 @@ gauntlet lanes, and their commands live at tag
   control pair: a lint with no failing case proves nothing.
 - `daemon/` is the estate's substrate held as a scoped process value: the
   declared server-options value, the pinned vendor's own lifecycle verbs, the
-  in-process client zero, readiness observations onto a journal lane, and the
-  Go side of the substrate-session fold. It DECIDES nothing and holds no
-  register — the fenced start, the drain disposition and the incarnation
-  retirement fact are the supervisor slice's, and a local "only one runs"
-  check here is exactly the unfenced act that slice exists to fence. Its
-  session fold is a TRANSCRIPTION of the TypeScript spine's, never a twin: the
-  spine's fold is the reference, and a divergence the wall exposes is a defect
-  here, never a reason to move the reference. The hermetic no-socket posture
-  is held open by its own test and is not to be removed.
+  in-process client zero, readiness observations onto a journal lane, the Go
+  side of the substrate-session fold, and — since the supervisor slice — the
+  incarnation fence and the lifecycle facts. It speaks its `decide` at the
+  register package and holds no register of its own; a local "only one runs"
+  check here would still be the unfenced act the fence exists to refuse. Its
+  session fold AND its incarnation vocabulary are TRANSCRIPTIONS of the
+  TypeScript spine's, never twins: the spine's declarations are the reference,
+  and a divergence a wall exposes is a defect here, never a reason to move the
+  reference. The hermetic no-socket posture is held open by its own test and is
+  not to be removed.
+  Three things in this package are load-bearing refusals rather than
+  conveniences. The retirement-cause roster has exactly two declared estate
+  values and NO row a crash could enter under, which is what makes forging a
+  retirement on a dead incarnation's behalf unsayable. The standing vocabulary
+  has no value meaning live, running, or healthy — an unretired incarnation
+  reads as established forever, and adding a third answer would be the
+  construction failing. And the declared server-options value refuses an unset
+  server name and an unset sync interval, because an option nobody declared is
+  an option the estate is running under unknowingly.
+- `cmd/incarnationwall/` and `cmd/teardownwall/` are the supervisor slice's
+  walls, wired into the battery as five named stages. The register wall races N
+  supervisors for R successive chain positions with one racer out of process,
+  and measures the losers' abstention from the FILESYSTEM — every racer writes a
+  witness before it constructs a server — rather than from how the code reads.
+  Its last round is ORDERED on purpose so the fence is measured refusing the
+  near side too, and it says so in its own output; the bias history is in
+  DECISIONS. The pin control and the consumer control are committed refutations
+  and both are executed both ways. The teardown wall runs three teardowns as
+  three processes and kills a whole process for the crash arm, because an
+  in-process shutdown is not a process crash.
 - `cmd/daemonwall/` is that transcription's wall — the carriage-invariance
   differential, run bare and its numbers printed: one connection folded from
   two carriages in one language, one connection folded from two carriages

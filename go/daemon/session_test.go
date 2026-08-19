@@ -178,6 +178,7 @@ func TestDeclaredOptionsCarryTheVendorsOwnNames(t *testing.T) {
 	declared := DeclaredServerOptions{
 		ServerName: "name", StoreDir: "store", Host: "127.0.0.1", Port: -1,
 		JetStream: true, Listen: true,
+		SyncInterval: DeclaredSyncInterval, SyncAlways: DeclaredSyncAlways,
 	}
 	encoded, err := declared.Bytes()
 	if err != nil {
@@ -185,6 +186,7 @@ func TestDeclaredOptionsCarryTheVendorsOwnNames(t *testing.T) {
 	}
 	for _, name := range []string{
 		`"server_name"`, `"store_dir"`, `"addr"`, `"port"`, `"jetstream"`, `"dont_listen"`,
+		`"no_log"`, `"sync_interval"`, `"sync_always"`,
 	} {
 		if !strings.Contains(string(encoded), name) {
 			t.Fatalf("the declared value does not carry %s: %s", name, encoded)
@@ -198,7 +200,43 @@ func TestDeclaredOptionsCarryTheVendorsOwnNames(t *testing.T) {
 	if options.DontListen {
 		t.Fatal("a listening declared value constructed a no-listen server")
 	}
-	if _, err := (DeclaredServerOptions{JetStream: true}).ServerOptions(); err == nil {
+	if _, err := (DeclaredServerOptions{
+		ServerName: "name", JetStream: true, SyncInterval: DeclaredSyncInterval,
+	}).ServerOptions(); err == nil {
 		t.Fatal("a JetStream-enabled value with no store directory constructed a server")
+	}
+
+	// The three ruled rows, refused when they are absent rather than filled in
+	// silently. An option the estate did not declare is an option the estate is
+	// not running under knowingly, and that is the whole reason the rows exist.
+	if _, err := (DeclaredServerOptions{
+		StoreDir: "store", SyncInterval: DeclaredSyncInterval,
+	}).ServerOptions(); !errors.Is(err, ErrUndeclaredServerName) {
+		t.Fatalf("an unnamed server constructed: %v", err)
+	}
+	if _, err := (DeclaredServerOptions{
+		ServerName: "name", StoreDir: "store",
+	}).ServerOptions(); !errors.Is(err, ErrUndeclaredSyncInterval) {
+		t.Fatalf("an undeclared sync interval constructed: %v", err)
+	}
+
+	// The declared rows reach the vendor's own fields unchanged, and the log
+	// posture is the declared value's rather than this package's.
+	if options.SyncInterval != DeclaredSyncInterval || options.SyncAlways != DeclaredSyncAlways {
+		t.Fatalf("the durability rows did not reach the vendor: %v %t",
+			options.SyncInterval, options.SyncAlways)
+	}
+	if options.NoLog {
+		t.Fatal("the daemon posture suppressed the substrate's log")
+	}
+	hermeticOptions, err := DeclaredServerOptions{
+		ServerName: "name", StoreDir: "store", JetStream: true,
+		NoLog: true, SyncInterval: DeclaredSyncInterval,
+	}.ServerOptions()
+	if err != nil {
+		t.Fatalf("construct the hermetic posture: %v", err)
+	}
+	if !hermeticOptions.NoLog {
+		t.Fatal("a hermetic declared value did not keep its own log suppression")
 	}
 }
