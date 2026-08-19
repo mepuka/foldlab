@@ -405,12 +405,12 @@ value. Each record carries one run of one committed program: the door it
 was judged at, the writ it acted under, the execution-time supplies its
 completion read, the outcome, and the outcome's own canonical bytes.
 
-The rows are computed by walking the model's door, so a door that changed
-its mind about any node moves these bytes. What the completion is — the
-one thing the kernel's run leaves open, because it belongs to the
-carriage — is committed in `Unity/Run.lean` beside the vectors, and the
-emitter refuses to print a run whose walk disagrees with the model's own
-`Kernel.runProgram` at that same completion. -/
+The rows are computed by `Kernel.runProgram` itself, so a door that
+changed its mind about any node moves these bytes. What the completion is
+— the one thing the kernel's run leaves open, because it belongs to the
+carriage — is committed in `Unity/Run.lean` beside the vectors, at
+`Kernel.Completion`'s own type: there is no second walk to disagree with
+the model's. -/
 
 /-- One run record: the vector's whole execution as data. -/
 def runRow (vector : Run.Vector) : String := Run.runRow vector

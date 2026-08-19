@@ -6432,3 +6432,79 @@ and the tie rule is where that second case becomes free. Reported as a finding
 for the emitter-plurality question rather than repaired here — narrowing the
 message id to the body would be a change to the lane's own identity and belongs
 to a ruling, not to this slice. **Load-bearing? yes**
+
+## Task: the run outcome's third arm, in the engine and on the wall (operator ruling 2026-08-19)
+
+The grill on the run group's two model-side questions was ruled. `Completion`
+re-types to `Option CandidateAct` and `RunOutcome` grows `unspeakable (node,
+steps)` with prefix-keeping semantics, and the ruling named this engine's
+error-channel discard of the prefix as the divergence to REPAIR. T38 above was
+written under that divergence; it is SUPERSEDED, not rewritten.
+
+### T39. A node that cannot be spoken ends the run as an outcome, keeping the prefix
+
+Decided: `Engine.run` catches a completion that produces no candidate and
+returns `{ _tag: "unspeakable", node, slot, detail, steps }` with the steps
+that already stood standing. The error channel no longer carries it.
+
+This is the one licensed engine semantic change and nothing else moved with
+it: the walk still stops at the first refusal, the tail after either stop is
+still unjudged, every judgment still routes through the one door, and every
+other engine surface keeps the error channel it had. The gap travels the
+completion's OWN error channel as a private tagged value the run converts, so
+it never escapes as a refusal a caller sees. Alternatives: return the prefix
+alongside the refusal in the error channel (which makes a refusal carry
+success, and every caller pay for it); leave the discard and pin it as a bound
+(what T38 did, and what the ruling closed).
+
+Why: the admissions before the unspeakable node really happened — they were
+judged, carried, and landed — and none of them depended on the node that could
+not be spoken. A report that erases them is a report that lies about work the
+carriers already did. **Load-bearing? yes** — it is the ruled repair, and it is
+what makes the fifth replay vector a byte claim.
+
+### T40. The completion names its gap where the model names one, in the model's four words
+
+Decided: each site where a required slot has no value answers with the slot
+name and one of `unwired`, `unsupplied`, `unlanded`, `unbranded` — a reference
+slot the declaration leaves unwired, a supply the run does not bind, a local
+consumed before it landed, a reference carrying no brand the completion needs.
+The four words are read off the corpus's own run schema through a type
+extraction, never restated as a literal union here.
+
+Before this, an unwired reference slot reached the constrained decoder as an
+absent field and refused there. That refusal was true and unusable: it named a
+schema mismatch, not the slot a program's author has to wire. The explicit
+checks are a transcription of the model's own `completeNode`, in its order —
+payload first, then the reference slots, then the supplies. Everything that
+does complete is still constrained-decoded through the one parse boundary, so
+the boundary is not weakened, only pre-empted where the model already answers.
+Alternatives: derive the slot from the decoder's issue path (couples the report
+to a formatter's shape, and still cannot say `unwired` from `unsupplied`); scan
+the built candidate for absent keys after the fact (needs a key order that
+matches the model's report order, restated by hand).
+
+Why: the corpus's unspeakable row states WHERE and WHY, and byte-equality with
+it is only meaningful if this engine states the same two things from its own
+completion rather than from the vector it is being compared to. **Load-bearing?
+yes** — without it the fifth vector cannot be byte-compared at all.
+
+### T41. Every replay arm is byte-compared, and a dropped prefix step is refutable
+
+Decided: `assertReplays` byte-compares all five vectors. The unspeakable arm's
+exemption is gone, and a fourth mutation joins the executed falsification: drop
+the step that stood before the unspeakable node from the committed bytes, and
+the wall must refuse.
+
+T38 recorded an uneven wall — three arms, two byte-compared — and named the
+divergence behind it. The ruling closed the divergence, so the unevenness has
+no reason left. The fourth mutation is what keeps the ruled semantics a claim
+rather than a sentence: an engine that discarded the prefix would pass a wall
+that only checked the arm, the node and the slot. Alternatives: assert the
+prefix's length separately (a weaker statement that the bytes already make);
+leave three mutations (which would leave the newly-compared field unfalsified).
+
+Why: a byte wall with an exempt arm is a wall with a hole, and the hole was
+exactly where the interesting disagreement lived. **Load-bearing? yes** — "all
+five vectors byte-equal" is the wall's whole claim now, and a mutation per
+thing it is sensitive to is what licenses saying it.

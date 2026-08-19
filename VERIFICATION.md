@@ -39,7 +39,7 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
-| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below. The program-run composition the carriage walks is proved MODEL-SIDE only (KM-4 family: `run_composition`, `run_admitted_sequence`, `run_refusal_decomposition`, `run_tail_unjudged`, `run_context_grows`, `run_landed_closed`, with the `drop-run-tail-halt` and `drop-run-prefix-standing` controls) — no correspondence gate ties it to the carriage, and none is claimed | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts), [verify/kernel/](verify/kernel/) |
+| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below. The program-run composition the carriage walks is proved MODEL-SIDE only (KM-4 family: `run_composition`, `run_admitted_sequence`, `run_refusal_decomposition`, `run_tail_unjudged`, `run_unspeakable_prefix_standing`, `run_context_grows`, `run_landed_closed`, with the `drop-run-tail-halt`, `drop-run-prefix-standing` and `drop-run-unspeakable-prefix-standing` controls) — no correspondence gate ties it to the carriage, and none is claimed | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts), [verify/kernel/](verify/kernel/) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -793,17 +793,18 @@ The KM-4 composition family is a MODEL-LEVEL result and adds no runtime rung:
 it proves what a per-node walk through the one door is, never that the
 carriage's walk is that walk — no correspondence gate ties the two, and none
 is claimed. Its own bounds are one pass by one walker: no concurrency beyond
-the monotone-growth premise, no liveness, no retries, no scheduler. Three
+the monotone-growth premise, no liveness, no retries, no scheduler. Two
 abstractions are stated where the model is thinner than the carriage.
-Completion is total in the model, while the carriage's completion of a node
-into a candidate may instead fail into the error channel (an absent
-execution-time supply, a local consumed before it landed). Carriage itself is
-outside the outcome: an admitted sentence whose carrier is unbound fails into
-the error channel, so the runtime has a third ending the model's two-way
-outcome does not carry. And the program-admission precheck — including the
-refusal of an empty declaration — happens before the walk is entered, where
+Carriage is outside the outcome: an admitted sentence whose carrier is unbound
+fails into the error channel, so the runtime has an ending of its own that the
+model's outcome does not carry. And the program-admission precheck — including
+the refusal of an empty declaration — happens before the walk is entered, where
 the model's walk lands vacuously on the empty node list, which is the unit the
-composition law needs.
+composition law needs. A third abstraction retired under the 2026-08-19 ruling:
+completion is no longer total in the model, so a node the carriage cannot
+complete is the model's own `unspeakable` outcome — with the steps that stood
+before it standing on both sides — rather than an error channel the model has
+no word for.
 
 ### Checkable at
 

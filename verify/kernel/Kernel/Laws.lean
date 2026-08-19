@@ -261,8 +261,11 @@ what that composition is: it associates over concatenation, a landed
 run is exactly a sequence of admitted acts, every refusal decomposes
 into a standing prefix and a genuinely refusing node, the tail after a
 refusal is unjudged, and the context a run reaches extends the one it
-started at when carriage growth only grows. The sixth ties the run to
-filling: only closed programs run.
+started at when carriage growth only grows. A sixth carries the
+refusal's tail discipline over to the silent completion's own arm: a
+node the completion cannot speak ends the walk with its prefix
+standing, whatever follows it. The seventh ties the run to filling:
+only closed programs run.
 
 Bounds, stated with the family: one pass by one walker. No concurrency
 beyond the monotone-context benignity the growth premise names, no
@@ -270,9 +273,10 @@ liveness, no retries, no scheduler. -/
 
 /-- The run composes over concatenation: walking `before ++ after` is
     walking `before`, then walking `after` from the context and steps
-    the prefix reached — and a refusal inside the prefix IS the whole
-    answer, the suffix never consulted. Per-node door judgments compose;
-    a run is their sequence and nothing besides. -/
+    the prefix reached — and a prefix that did not land IS the whole
+    answer, refused or unspeakable, the suffix never consulted. Per-node
+    door judgments compose; a run is their sequence and nothing
+    besides. -/
 def KRunComposition : Prop :=
   forall (complete : Completion) (carry : Carry) (context : Door)
       (steps : List RunStep) (before after : List ProgramNode),
@@ -282,6 +286,7 @@ def KRunComposition : Prop :=
           runWalk complete carry reached prefixSteps after
       | .refused node refusal prefixSteps =>
           .refused node refusal prefixSteps
+      | .unspeakable node prefixSteps => .unspeakable node prefixSteps
 
 /-- An admitted run is exactly a sequence of admitted acts: every step
     a landed run reports records the one door admitting that step's
@@ -307,11 +312,13 @@ def KRunRefusalDecomposition : Prop :=
     runWalk complete carry context steps walked
         = .refused name refusal standing ->
       exists (before : List ProgramNode) (node : ProgramNode)
-        (after : List ProgramNode) (reached : Door),
+        (after : List ProgramNode) (reached : Door)
+        (candidate : CandidateAct),
         walked = before ++ node :: after /\ node.name = name /\
         runWalk complete carry context steps before
           = .landed reached standing /\
-        admit reached (complete standing node) = .refused refusal
+        complete standing node = some candidate /\
+        admit reached candidate = .refused refusal
 
 /-- The tail after a refusal is unjudged: once the prefix has landed
     and the next node's candidate refuses, the outcome is that refusal
@@ -322,13 +329,32 @@ def KRunTailUnjudged : Prop :=
   forall (complete : Completion) (carry : Carry) (context : Door)
       (steps : List RunStep) (before : List ProgramNode)
       (node : ProgramNode) (reached : Door) (standing : List RunStep)
-      (refusal : Refusal),
+      (candidate : CandidateAct) (refusal : Refusal),
     runWalk complete carry context steps before
         = .landed reached standing ->
-    admit reached (complete standing node) = .refused refusal ->
+    complete standing node = some candidate ->
+    admit reached candidate = .refused refusal ->
     forall after : List ProgramNode,
       runWalk complete carry context steps (before ++ node :: after)
         = .refused node.name refusal standing
+
+/-- The unspeakable arm keeps its prefix and judges nothing after it:
+    once the prefix has landed and the next node's completion answers
+    with nothing, the outcome is that node unspeakable with the prefix's
+    steps standing, for EVERY tail. The refusal arm's tail discipline,
+    carried over — a completion that cannot answer is a stop, not an
+    erasure, so the admissions that already stood are still what
+    happened. -/
+def KRunUnspeakablePrefixStanding : Prop :=
+  forall (complete : Completion) (carry : Carry) (context : Door)
+      (steps : List RunStep) (before : List ProgramNode)
+      (node : ProgramNode) (reached : Door) (standing : List RunStep),
+    runWalk complete carry context steps before
+        = .landed reached standing ->
+    complete standing node = none ->
+    forall after : List ProgramNode,
+      runWalk complete carry context steps (before ++ node :: after)
+        = .unspeakable node.name standing
 
 /-- Monotone-context benignity, and no more: when carriage growth only
     grows, the context a landed run reaches extends the context it

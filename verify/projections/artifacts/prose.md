@@ -333,10 +333,18 @@ Plain register:
 
 How one run ended. A landed run reports the context it reached and
 every step in walked order; a refused run reports the refusing
-node, its taught refusal, and the steps that stood before it. The
-reached context is this model's sharpening: the carriage holds the
-same replica behind its own reference and does not return it. 
+node, its taught refusal, and the steps that stood before it; an
+unspeakable run reports the node whose completion answered with
+nothing, and again the steps that stood before it. The reached
+context is this model's sharpening: the carriage holds the same
+replica behind its own reference and does not return it.
+
+The third arm is the silent completion's own outcome. A completion
+that cannot answer never reaches the door, so there is no verdict to
+report and neither arm above can carry it; the prefix's admissions
+stand exactly as they do under a refusal, because nothing about them
+depended on the node that could not be spoken. 
 
 Algebraic register:
 
-`Kernel.RunOutcome ::= Kernel.RunOutcome.landed(context : Door, steps : List(RunStep)) | Kernel.RunOutcome.refused(node : Nat, refusal : Refusal, steps : List(RunStep))`
+`Kernel.RunOutcome ::= Kernel.RunOutcome.landed(context : Door, steps : List(RunStep)) | Kernel.RunOutcome.refused(node : Nat, refusal : Refusal, steps : List(RunStep)) | Kernel.RunOutcome.unspeakable(node : Nat, steps : List(RunStep))`

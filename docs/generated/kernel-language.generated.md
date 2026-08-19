@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE - DO NOT EDIT. -->
 
-Rendered from the kernel corpus `b5a7c9ba123dc2e3e28c209a63752ed9129600e19b7960e3847f60416b1762d3` at interchange format 2. That is the corpus's identity - SHA-256 over its canonical bytes - and it is what this page names its source by, because everything in this language refers to a digest or to a derivation of one. A path would name wherever a reader happens to be standing, which is precisely the ambient reference the algebra refuses; a digest names one byte sequence forever, so a reader who wants to know whether they hold this page's source hashes what they have and compares.
+Rendered from the kernel corpus `61ee317ae1684b939a40350e77162edd0536f8892bb6293593db0e7bfb2042af` at interchange format 2. That is the corpus's identity - SHA-256 over its canonical bytes - and it is what this page names its source by, because everything in this language refers to a digest or to a derivation of one. A path would name wherever a reader happens to be standing, which is precisely the ambient reference the algebra refuses; a digest names one byte sequence forever, so a reader who wants to know whether they hold this page's source hashes what they have and compares.
 
 Every name, rank, law, repair, and docstring on this page is the model's own text, reproduced verbatim - not paraphrased, not reflowed, not truncated. Two mechanical exceptions, and no others: inside a table cell a line break becomes a space and a pipe is escaped, because a cell holds neither; and trailing spaces are trimmed from line ends, which Markdown discards anyway. The untrimmed text is what the generated schemas carry.
 
@@ -852,14 +852,23 @@ A product type, with one constructor.
 
 How one run ended. A landed run reports the context it reached and
 every step in walked order; a refused run reports the refusing
-node, its taught refusal, and the steps that stood before it. The
-reached context is this model's sharpening: the carriage holds the
-same replica behind its own reference and does not return it.
+node, its taught refusal, and the steps that stood before it; an
+unspeakable run reports the node whose completion answered with
+nothing, and again the steps that stood before it. The reached
+context is this model's sharpening: the carriage holds the same
+replica behind its own reference and does not return it.
 
-A sum type, with 2 constructors.
+The third arm is the silent completion's own outcome. A completion
+that cannot answer never reaches the door, so there is no verdict to
+report and neither arm above can carry it; the prefix's admissions
+stand exactly as they do under a refusal, because nothing about them
+depended on the node that could not be spoken.
+
+A sum type, with 3 constructors.
 
 - `landed` — context : Door, steps : List(RunStep)
 - `refused` — node : Nat, refusal : Refusal, steps : List(RunStep)
+- `unspeakable` — node : Nat, steps : List(RunStep)
 
 ## Encoding vectors
 
