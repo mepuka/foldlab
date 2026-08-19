@@ -22,6 +22,7 @@ const map = declareCarrierPermissionMap({
     "node-publisher": "_INBOX.node",
     cell: "_INBOX.cell",
     anchor: "_INBOX.anchor",
+    catalog: "_INBOX.cat",
     register: "_INBOX.reg",
     requester: "_INBOX.req",
   },
