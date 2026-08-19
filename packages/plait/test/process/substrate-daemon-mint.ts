@@ -18,7 +18,7 @@
  */
 import { Effect } from "effect"
 
-import { mintSession } from "../../src/internal/sessionlanes.js"
+import { mintSession } from "../../src/internal/sessionfacts.js"
 import { connectOptionsDeclaration } from "../../src/internal/substrate.js"
 import {
   establishConnection,
