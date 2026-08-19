@@ -137,8 +137,22 @@ func (d *Daemon) Running() bool { return d.server.Running() }
 // ClientURL is the address a client outside this process connects to.
 func (d *Daemon) ClientURL() string { return d.server.ClientURL() }
 
-// Shutdown stops the server. The retirement FACT is a later slice's; this is
-// carriage release and claims no meaning.
+// LameDuckShutdown is the pinned vendor's own drain: the client listener
+// closes, every connected client is told the server has entered lame duck, and
+// the connections are then closed spread over the vendor's own duration.
+//
+// It is CARRIAGE and it claims no meaning. The meaning is the lame-duck fact
+// the supervisor lands on the session lane before calling this, so that a party
+// which was not connected — and a party reading the record a week later — sees
+// the disposition. The vendor's status event reaches the clients that were
+// there; the fact reaches everybody.
+//
+// The call blocks until the drain completes, which is the vendor's contract and
+// not a policy of this package.
+func (d *Daemon) LameDuckShutdown() { d.server.LameDuckShutdown() }
+
+// Shutdown stops the server. The retirement FACT is the supervisor's, landed
+// around this call; this is carriage release and claims no meaning.
 func (d *Daemon) Shutdown() { d.server.Shutdown() }
 
 // WaitForShutdown blocks until the stop completes.

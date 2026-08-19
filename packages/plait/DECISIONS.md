@@ -6418,3 +6418,224 @@ and the tie rule is where that second case becomes free. Reported as a finding
 for the emitter-plurality question rather than repaired here — narrowing the
 message id to the body would be a change to the lane's own identity and belongs
 to a ruling, not to this slice. **Load-bearing? yes**
+
+## Task: the incarnation register and the lifecycle facts (estate-daemon S5, 2026-08-19)
+
+Placeholders `T39`–`T47` continue the series; repository D-numbers are assigned
+at merge. The specification is the estate-daemon spec's fence inventory and its
+lifecycle contract, under the operator's daemon commission of 2026-08-19 and the
+ratification of the round key in the same session. The code this slice lands is
+in the Go module, and the entries live here because the daemon track's earlier
+entries do. What lands in this package is the lifecycle facts' declarations in
+one internal module and one test-only process — the reference side of the byte
+comparison — and nothing under a public surface.
+
+`T29` stands unchanged: the round key is ratified and this slice is built on it
+exactly as the groundwork keyed it. Nothing below re-opens it.
+
+### T39. The Go register pays the incarnation pin by transcription, and the control opens the guard both ways
+
+Decided: the incarnation pin the Go register package recorded as deferred is
+implemented, transcribed from the spine's, and the package documents the debt as
+paid rather than restating it. Open records the backing stream's creation stamp
+and every action re-asserts it ahead of its own law checks; a mismatch refuses
+`incarnation-mismatch` on the incarnation's own law with the spine's taught
+repair, never `stale-register-token`, which would name a current fence no holder
+of that register was ever granted.
+
+An unpinned open is added beside it and exists for exactly one purpose: the pin's
+committed refutation. The wall runs the same stale-token presentation both ways
+and records both outcomes — with the pin the presentation refuses, without it the
+stale token lands on the reborn bucket. A guard whose absence changes nothing was
+never guarding, and the only way to know which kind this one is, is to run it
+both ways.
+
+Alternatives, priced. Leaving the pin deferred and fencing on top of it anyway:
+the daemon's incarnation register is precisely the case the deferral was written
+for, so building the fence on an unpinned register would put the whole slice on
+the bound the ticket exists to close. Making the pin optional per call: the
+assertion's value is that no action can forget it, and a flag at the call site is
+a way to forget it. Comparing something other than the creation stamp: the
+bucket's name is identical across incarnations by construction and every state
+field moves under ordinary writes, so nothing else the pinned client publishes is
+fixed for a stream's life and re-minted by its rebirth. **Load-bearing? yes** —
+without the pin the fence's own token order can be reset out of band.
+
+The cost is one stream-info round trip per action, which is what the spine's
+entry already accepted and what this side now accepts on the same terms. The five
+actions' semantics are otherwise untouched, and existing consumers see one new
+refusal kind rather than a changed law.
+
+### T40. Every register refusal teaches a repair, and the table is walled for totality
+
+Decided: the Go register's refusal type grows a repair, transcribed from the
+spine's taught notes, and a table keyed by refusal kind supplies one for every
+kind the package mints. The refusal-parity law asks for reason, law AND repair,
+and this seam was returning two of the three.
+
+The table is walled rather than trusted: the package publishes the roster of
+kinds it mints and a test walks it, so a kind added without a repair reddens on
+the day it is added. A kind outside the roster teaches nothing, and that arm is
+in the same test — a totality check that passes for everything proves nothing.
+
+Alternatives: a repair per call site (the same repair retyped at each site that
+mints one kind, and they drift); a single generic repair (a repair that fits
+every refusal directs nobody anywhere). **Load-bearing? no** — the refusals were
+already typed and the law was already stated; this closes a gap in how they were
+carried.
+
+### T41. The decide is a function of the register, and the winner starts the server afterwards
+
+Decided: the incarnation decide is grant-then-commit with the granted token
+carried between them, and it returns before anything is constructed. Starting a
+server is the winner's act, performed after the decide returns, and no path
+through the decide reaches a substrate at all.
+
+The separation is MEASURED rather than asserted, and that is the part worth
+recording. Every racer writes a witness file into the contested store directory
+at the instant it commits to constructing a server there, before it constructs
+one, so a loser that proceeded leaves evidence on the filesystem that outlives
+its process. The wall counts witnesses, port binds and bind failures and prints
+all three. "The losers never started" is then a filesystem reading rather than a
+property of how the code happens to be arranged.
+
+Alternatives: asserting the separation from the call graph (true today, silent
+the day somebody moves a line); counting only successful binds (a loser that
+tried and failed would look the same as a loser that never tried, and those are
+very different facts). **Load-bearing? yes** — the whole fence is the claim that
+a loser never touches the store.
+
+### T42. The race is released by one message over one path, and one round is ordered on purpose
+
+Decided: the racing-start wall releases every arm — in process and out of it —
+with one published message that all of them are subscribed to, with every arm
+already connected and its register already open before the release. Two earlier
+schedules were run and both were biased, and the bias is recorded because it is
+what makes the current schedule readable: releasing the in-process arms with a Go
+channel while the far arm waited on a message gave the near arms a head start of
+one network hop, and letting each arm connect after the release gave the far arm
+a head start of one connection handshake. Each bias produced a clean sweep for
+whichever side it favoured.
+
+Under the fair schedule the out-of-process arm still loses most rounds to process
+wake-up latency. So one further round is ORDERED on purpose — the in-process arms
+are held back — and it is labelled as ordered in the wall's own output. Without
+it the fence would only ever have been measured refusing the far side; with it,
+both directions are measured. The fair rounds stay fair and their winners are
+reported as they fall.
+
+Alternatives: tuning the fair schedule until the arms win equally (that is
+engineering the race, and the number it produces means nothing); dropping the
+out-of-process arm (the specification requires it, and a goroutine race inside
+one runtime is not the hazard); reporting the sweep without comment (a result
+whose cause is the scheduler, presented as a result about the fence).
+**Load-bearing? yes** — a race arm's bounds are the whole of what it certifies.
+
+### T43. The lame-duck fact is a new kind on the session lane, and its owed variant row is named
+
+Decided: the drain disposition lands as `substrate-incarnation-lame-duck` on the
+session lane, citing the session it is about, the incarnation that entered lame
+duck, the vendor's own event name, and the server that event names. It is landed
+BEFORE the vendor's drain runs, because a disposition announced only by a status
+event reaches the clients that happen to be connected, and the record is what
+reaches everybody else.
+
+The residual, stated rather than buried: the session lane's declared event form
+carries four variants and this is not one of them, so a reader decoding that lane
+under that form refuses this fact. Appending the variant is owed work in the
+module that owns the form, and this slice does not own it.
+
+Alternatives, priced. Reusing the transcribed transition variant, which already
+carries the vendor's lame-duck row: it has no field for the incarnation, so the
+fact would name the session and the server but not the run that is draining, and
+the join back to the incarnation would go through the server name and the
+declared options value — recoverable, but a join where the specification asks for
+a citation. Appending a fifth variant to the form: the right end state, and not
+this seat's file. **Load-bearing? yes** — which shape the fact has decides what a
+consumer can read without a second lookup.
+
+### T44. The retirement causes are two declared estate values, and there is no row a crash could enter under
+
+Decided: retirement carries a cause, the roster has exactly two rows — drained
+and stopped — and both are marked as DECLARED ESTATE VALUES, because the pinned
+vendor supplies no retirement-cause vocabulary at all; its lifecycle surface is
+verbs. Minting a retirement with any other cause refuses.
+
+The roster's shape is what makes crash-forgery unsayable rather than merely
+discouraged. There is no row a crash could enter under, so "no heartbeat for two
+minutes, so retire it" cannot be written down even by a caller who wanted to. The
+teardown wall executes that: four forged causes are attempted and all four
+refuse, and the killed incarnation is folded twice, once immediately and once
+after the run, and stays established both times.
+
+Alternatives: a free-text cause (anything at all becomes sayable, including a
+verdict on silence); a crashed row (the forgery, spelled); no cause at all (drain
+and stop would then differ only by the presence of a lame-duck fact, and the
+retirement itself would say nothing). **Load-bearing? yes** — absence read
+honestly is the slice's central refusal.
+
+### T45. The fold has no answer that means live, and the standing vocabulary says so
+
+Decided: the fold over the incarnation lane answers with a standing that is
+either established or retired, and there is deliberately no third value meaning
+live, running, or healthy. An incarnation whose process died reads as
+established, forever, which is exactly the absence the supervisor's fenced decide
+is fed.
+
+The teardown wall records the fold's output verbatim rather than summarising it,
+because a summary is where a liveness claim gets added back by a reader.
+
+Alternatives: a live standing computed from a heartbeat (a clock read in meaning,
+and a promise the algebra never makes); an unknown standing (it reads as a third
+state of the world rather than as the absence of a fact). **Load-bearing? yes** —
+"the substrate is alive now" is unsayable by construction, and a fold that could
+say it would be the construction failing.
+
+### T46. Three server-option rows leave the priced-grill list, and the power-loss residual is a declared field
+
+Decided, under the operator ruling of 2026-08-19 riding this lane: the server
+name is SET and refused when absent; the log suppression becomes a declared row
+that is false under the daemon posture, with the hermetic test harness sites
+keeping their own true; and the sync interval is ACCEPTED at the vendor's own two
+minutes, declared out loud, with the power-loss residual stated beside it and the
+one reversible field that would close it — sync-always — declared false.
+
+Each refusal is how the ruling is kept rather than remembered. An absent server
+name would make the session fact's server name and the lame-duck fact's server a
+per-restart identity, so it refuses. An absent sync interval is not the same fact
+as an accepted one: the vendor would fill its own baseline and the estate would
+be running under a value nobody declared, so that refuses too.
+
+The residual, stated: between two flushes the substrate's durability against
+POWER LOSS is not guaranteed. Process crash is a different failure and is covered
+by the recovery suite's measurements. Flipping sync-always is a one-field change
+with a measured throughput cost, and the ruling took the interval rather than the
+flag.
+
+Alternatives: leaving all three implicit (the estate runs under values nobody
+declared, which is the drift class the declared value exists to refuse); setting
+sync-always true (the other end of the trade, not ruled); suppressing the log
+everywhere (a daemon owns its process and therefore owns its log).
+**Load-bearing? yes** — the options digest is what every incarnation cites, so
+what the value carries is what an incarnation can be said to have run under.
+
+### T47. The consumer's freedom from callbacks is by construction, and the control proves the difference is real
+
+Decided: the lane-driven lame-duck consumer is constructed from a lane and
+nothing else. It holds no connection, so there is no object on which a status
+callback could be registered — the absence is structural rather than a discipline
+somebody maintains, and the wall reads the type's fields rather than taking the
+sentence's word for it.
+
+The committed control is what makes the distinction more than a preference. It
+runs the same drain with NO fact landed and a consumer wired to the vendor's own
+lame-duck callback, confirms that the callback fired, and then measures that a
+second party holding an anchor on the session lane can find no trace of the
+reaction. The control passes only when both halves hold: a control that could
+find the reaction would prove nothing, because then the callback shape would be
+auditable too.
+
+Alternatives: asserting the absence in prose (the class of claim this estate does
+not accept); a control that merely fails to compile (it would show the shape is
+unavailable, not that the two shapes differ in what they leave behind).
+**Load-bearing? yes** — the shuttle inherits this seam.

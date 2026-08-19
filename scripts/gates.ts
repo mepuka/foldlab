@@ -221,6 +221,54 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "go"),
     command: ["go", "run", "./cmd/daemonwall", "--control"],
   },
+  // The supervisor slice's four walls and the vocabulary parity that binds its
+  // two languages. Each is run bare from the Go module and each prints its
+  // numbers, because a wall whose numbers are not recorded is a claim rather
+  // than evidence.
+  //
+  // The register wall races N supervisors against one store directory for R
+  // successive chain positions, one racer out of process, and measures that
+  // exactly one incarnation lands per round and that no loser ever bound the
+  // client port or wrote to the store. The pin control is the committed
+  // refutation beside it: the same stale-token presentation is executed with
+  // the incarnation pin and without it, and the stage passes only when the
+  // first refuses and the second lands — a control that cannot fail proves
+  // nothing about the guard it is controlling.
+  {
+    label: "daemon — incarnation register wall",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/incarnationwall"],
+  },
+  {
+    label: "daemon — incarnation pin control",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/incarnationwall", "--pin-control"],
+  },
+  // The incarnation vocabulary crosses the language boundary as a
+  // transcription, so its bytes are compared rather than its tables inspected.
+  // This stage spawns a TypeScript process, like the CL-1 differential above,
+  // and needs the root install already warmed by the preflight.
+  {
+    label: "daemon — incarnation vocabulary parity",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/incarnationwall", "--parity"],
+  },
+  // The teardown differential runs three teardowns as three processes and
+  // compares the fact chains they leave. The kill arm kills a whole process,
+  // because an in-process shutdown is not a process crash. Its consumer control
+  // is the other half of the shuttle seam: a consumer wired to the vendor's own
+  // lame-duck callback reacts, and the stage passes only when no second reader
+  // holding an anchor on the session lane can see that it did.
+  {
+    label: "daemon — teardown fact-chain differential",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/teardownwall"],
+  },
+  {
+    label: "daemon — lane-driven lame-duck consumer control",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/teardownwall", "--consumer-control"],
+  },
   // The ports-file poll's retirement, in the empty-output shape this battery
   // already uses for formatting drift: the check prints every line in the
   // daemon-backed suite that reaches for a ports file or for the stock-binary

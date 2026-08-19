@@ -45,6 +45,27 @@ import { structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
  * decision fed by facts, never to this walk.
  */
 
+/** One store directory, declared as a value so that it has a name of its own. */
+export interface SubstrateStore {
+  readonly v: 0
+  readonly kind: "substrate-store"
+  /** The directory the substrate's durable state lives in. */
+  readonly dir: string
+}
+
+/**
+ * Declares one store directory.
+ *
+ * The DIGEST is what travels — into the round key, into every fact, onto every
+ * lane. The directory itself is an ambient coordinate that means nothing to a
+ * party on another host, and it never leaves this declaration.
+ */
+export const store = (dir: string): SubstrateStore => ({ v: 0, kind: "substrate-store", dir })
+
+/** One store directory's name. */
+export const storeName = (dir: string): Effect.Effect<Digest, Refusal> =>
+  digestOf(store(dir) as unknown as WireValue)
+
 /** One server run over one store directory, successor-chained. */
 export interface SubstrateIncarnation {
   readonly v: 0
@@ -151,6 +172,122 @@ export const landedAt = Effect.fn("Incarnation.landedAt")(function* (
   const round = yield* roundKey(store, predecessor)
   const state = yield* registers.observe(round)
   return state.outcome === null ? null : state.outcome.value
+})
+
+/**
+ * The lifecycle facts an incarnation leaves behind.
+ *
+ * Established and retired accumulate on the incarnation lane; the lame-duck
+ * fact lands on the session lane, because what it is about is the sessions the
+ * drain is going to end. The daemon EMITS them and this module DECLARES them,
+ * and the two languages are held to one shape by a byte comparison rather than
+ * by two tables agreeing on inspection.
+ *
+ * Staged debt, stated rather than absorbed. These are hand-carried declarations
+ * owing the corpus's substrate-vocabulary group, which the emitter does not yet
+ * mint — the same waiver the session fact and the readiness observation wear.
+ * The lame-duck fact owes one thing more: it is not yet a variant of the
+ * session lane's declared event form, so a reader decoding that lane under that
+ * form refuses it. Appending the variant is owed work in the module that owns
+ * the form.
+ */
+
+/** One incarnation's entry into service. */
+export interface IncarnationEstablished {
+  readonly v: 0
+  readonly kind: "substrate-incarnation-established"
+  readonly incarnation: string
+  readonly store: string
+  readonly options: string
+  readonly predecessor: string | null
+}
+
+/** Declares one incarnation's entry into service. */
+export const establishedFact = (
+  digest: Digest,
+  value: SubstrateIncarnation,
+): IncarnationEstablished => ({
+  v: 0,
+  kind: "substrate-incarnation-established",
+  incarnation: digest,
+  store: value.store,
+  options: value.options,
+  predecessor: value.predecessor,
+})
+
+/**
+ * The pinned vendor's own name for the drain disposition, carried verbatim.
+ *
+ * The estate invents no name here: this is the event type the vendor's status
+ * vocabulary publishes and the estate's status table already transcribes.
+ */
+export const LAME_DUCK_EVENT = "ldm"
+
+/** One incarnation's drain disposition, as a fact about one session. */
+export interface IncarnationLameDuck {
+  readonly v: 0
+  readonly kind: "substrate-incarnation-lame-duck"
+  readonly incarnation: string
+  readonly session: string
+  readonly event: typeof LAME_DUCK_EVENT
+  readonly server: string
+}
+
+/**
+ * Declares one drain disposition.
+ *
+ * **The server field is why the server name is a declared row.** Left unset the
+ * vendor aliases a fresh identity per run, and this fact would then carry a
+ * coordinate that means nothing across a restart.
+ */
+export const lameDuckFact = (input: {
+  readonly incarnation: Digest
+  readonly session: Digest
+  readonly server: string
+}): IncarnationLameDuck => ({
+  v: 0,
+  kind: "substrate-incarnation-lame-duck",
+  incarnation: input.incarnation,
+  session: input.session,
+  event: LAME_DUCK_EVENT,
+  server: input.server,
+})
+
+/**
+ * The retirement causes.
+ *
+ * The pinned vendor supplies no retirement-cause vocabulary — its lifecycle
+ * surface is verbs, not causes — so both rows are DECLARED ESTATE VALUES and
+ * are marked as such, which is the only way a name the vendor does not supply
+ * may enter. Neither is a vendor word and neither is presented as one.
+ *
+ * **There is no row for a crash, and that absence is the point.** A crashed
+ * incarnation is an unretired incarnation whose lanes go quiet; the honest
+ * reading is absence, and a cause that could name it would be a forgery this
+ * roster makes unsayable.
+ */
+export const RETIREMENT_CAUSES = ["drained", "stopped"] as const
+
+/** One declared retirement cause. */
+export type RetirementCause = (typeof RETIREMENT_CAUSES)[number]
+
+/** One incarnation's retirement, naming its cause. */
+export interface IncarnationRetired {
+  readonly v: 0
+  readonly kind: "substrate-incarnation-retired"
+  readonly incarnation: string
+  readonly cause: RetirementCause
+}
+
+/** Declares one incarnation's retirement. */
+export const retiredFact = (
+  incarnation: Digest,
+  cause: RetirementCause,
+): IncarnationRetired => ({
+  v: 0,
+  kind: "substrate-incarnation-retired",
+  incarnation,
+  cause,
 })
 
 const teachSeedChain: ReadonlyArray<Next> = [{
