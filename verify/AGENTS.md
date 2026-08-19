@@ -53,6 +53,13 @@ rung definitions. Scoped laws:
   in the laws registry; source-local W1–W5 remain frozen in the spec): R2 at the gate
   caps, R3 inductive invariant, four faithless controls. R4 is ticket
   010.
+- `journal/` — the hash-chained journal (ticket 012): CAS-append,
+  verify-on-read, the one-verifier law, crash recovery. R2 at the gate
+  caps over three clean configs (race, adversary, crash), five faithless
+  controls, plus the REFINEMENT into the catalog model
+  (`JournalCatalog.tla`) with two more controls — one of which discharges
+  the split-CAS conformance obligation received from
+  `catalog/R4-FINDING-001.md`. R3 and R4 are owed.
 - `implication/` — the refusal projection walls: the Lean collapse
   lemma plus TLC over the repaired projection rule (W-COHERENCE,
   W-SCOPE), controls refuting the shipped constructor.
@@ -71,5 +78,4 @@ rung definitions. Scoped laws:
   TLC for the protocol half, the faithless runner refuted in both.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence
   out of `.reference/`, an untracked predecessor repository absent from
-  this checkout), `journal/` (ticket 012, composed into the catalog
-  model as a refinement).
+  this checkout).

@@ -1,0 +1,73 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed 3563209548085476682 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 25840] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-afd056dccdb30f16f\verify\journal\Journal.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-14287430817761358866\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-afd056dccdb30f16f/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Integers
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Journal
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Journal
+Starting... (2026-08-19 05:37:56)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-19 05:37:56.
+Error: Action property WritersNeverForkTheChain is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ tampers = 0
+/\ cur = <<[seq |-> -1, head |-> <<>>]>>
+/\ store = <<>>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ crashes = 0
+
+State 2: <Begin(1,1) line 260, col 3 to line 264, col 47 of module Journal>
+/\ tampers = 0
+/\ cur = <<[seq |-> -1, head |-> <<>>]>>
+/\ store = <<>>
+/\ pend = <<[pay |-> 1, prev |-> <<>>, busy |-> TRUE, exp |-> 0]>>
+/\ crashes = 0
+
+State 3: <Finish(1) line 277, col 3 to line 308, col 53 of module Journal>
+/\ tampers = 0
+/\ cur = <<[seq |-> 0, head |-> <<1>>]>>
+/\ store = <<[pay |-> 1, prev |-> <<>>, seq |-> 0]>>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ crashes = 0
+
+State 4: <Begin(1,1) line 260, col 3 to line 264, col 47 of module Journal>
+/\ tampers = 0
+/\ cur = <<[seq |-> 0, head |-> <<1>>]>>
+/\ store = <<[pay |-> 1, prev |-> <<>>, seq |-> 0]>>
+/\ pend = <<[pay |-> 1, prev |-> <<1>>, busy |-> TRUE, exp |-> 1]>>
+/\ crashes = 0
+
+State 5: <TamperPayload(1) line 366, col 3 to line 371, col 37 of module Journal>
+/\ tampers = 1
+/\ cur = <<[seq |-> 0, head |-> <<1>>]>>
+/\ store = <<[pay |-> 2, prev |-> <<>>, seq |-> 0]>>
+/\ pend = <<[pay |-> 1, prev |-> <<1>>, busy |-> TRUE, exp |-> 1]>>
+/\ crashes = 0
+
+State 6: <Finish(1) line 277, col 3 to line 308, col 53 of module Journal>
+/\ tampers = 1
+/\ cur = <<[seq |-> 1, head |-> <<1, 1>>]>>
+/\ store = << [pay |-> 2, prev |-> <<>>, seq |-> 0],
+   [pay |-> 1, prev |-> <<1>>, seq |-> 1] >>
+/\ pend = <<[pay |-> 0, prev |-> <<>>, busy |-> FALSE, exp |-> 0]>>
+/\ crashes = 0
+
+62 states generated, 45 distinct states found, 26 states left on queue.
+The depth of the complete state graph search is 6.
+Finished in 00s at (2026-08-19 05:37:56)
+Trace exploration spec path: .\Journal_TTrace_1787135875.tla
