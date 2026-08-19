@@ -707,5 +707,11 @@ export const checkRefusalMeanings = (
   }
 }
 
-/** The ticket a staged-debt waiver must cite, re-exported for the control. */
+/**
+ * The reviewed constants both laws are evaluated against, re-exported so the
+ * checks and their controls reach them through the wall rather than through the
+ * generator's own manifest: the ticket a staged-debt waiver must cite, the
+ * marker an unratified meaning renders behind, and the ticket whose taste pass
+ * may retire it.
+ */
 export { DRAFT_MEANING_MARKER, REFUSAL_MEANING_TASTE_TICKET, RUNTIME_REFUSAL_WAIVER_TICKET }
