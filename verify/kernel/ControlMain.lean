@@ -79,6 +79,21 @@ def renderOptionalResult : Option AdmitResult -> String
   | none => "none"
   | some result => renderResult result
 
+/-- Render a fault listing in its own order — the order is the claim
+    these rows are about, so nothing here sorts it. -/
+def renderReasons (listing : List RefusalReason) : String :=
+  "[" ++ String.intercalate "," (listing.map RefusalReason.wire) ++ "]"
+
+/-- Render an arbitrated or surfaced reason. -/
+def renderReason : Option RefusalReason -> String
+  | none => "none"
+  | some reason => reason.wire
+
+/-- Render whether a chain still has a move to make. -/
+def renderMove : Option CandidateAct -> String
+  | none => "fixpoint"
+  | some _ => "moves"
+
 namespace StabilityControls
 
 def monotoneGrownDoor : Door where
@@ -128,6 +143,66 @@ def unchanged (candidate : CandidateAct) (reason : RefusalReason) :
   | none => none
 
 end RepairControls
+
+namespace ChainControls
+
+/-- The mutant rewrite that never leaves its own domain: it answers the
+    anchored-resolve row by MOVING the anchor instead of dropping it, so
+    the repaired candidate is anchored again and the chain never ends.
+    Every other row is the lawful rewrite, so the only law dropped is the
+    image-outside-the-domain one that termination rests on. -/
+def anchorShifting : CandidateAct -> RefusalReason -> Option CandidateAct
+  | .resolveDigest kind target (some anchor), .anchoredResolve =>
+      some (.resolveDigest kind target (some (anchor + 1)))
+  | candidate, reason => repair candidate reason
+
+/-- The mutant rewrite that resurrects a cleared reason: it clears the
+    last-writer strategy exactly as the lawful one does, and then, offered
+    the repaired candidate under the reason that surfaces next, puts the
+    unlawful strategy back. Every other row is the lawful rewrite. -/
+def resurrecting : CandidateAct -> RefusalReason -> Option CandidateAct
+  | .join cell contribution (.declaredAlgebra algebra), .clockRead =>
+      some (.join cell contribution (.lastWriterWins algebra))
+  | candidate, reason => repair candidate reason
+
+/-- One chain step under an arbitrary rewrite. -/
+def stepWith (rewrite : CandidateAct -> RefusalReason -> Option CandidateAct)
+    (door : Door) (candidate : CandidateAct) : Option CandidateAct :=
+  match admit door candidate with
+  | .admitted _ => none
+  | .refused refusal => rewrite candidate refusal.reason
+
+/-- The chain under an arbitrary rewrite. -/
+def chainWith (rewrite : CandidateAct -> RefusalReason -> Option CandidateAct) :
+    Nat -> Door -> CandidateAct -> CandidateAct
+  | 0, _, candidate => candidate
+  | fuel + 1, door, candidate =>
+      match stepWith rewrite door candidate with
+      | none => candidate
+      | some repaired => chainWith rewrite fuel door repaired
+
+/-- The reasons a chain surfaces, oldest first: one entry per door pass,
+    the last being the reason standing when the chain stops. -/
+def reasonTrail
+    (rewrite : CandidateAct -> RefusalReason -> Option CandidateAct) :
+    Nat -> Door -> CandidateAct -> List RefusalReason
+  | 0, _, _ => []
+  | fuel + 1, door, candidate =>
+      match admit door candidate with
+      | .admitted _ => []
+      | .refused refusal =>
+          refusal.reason ::
+            (match rewrite candidate refusal.reason with
+             | none => []
+             | some repaired => reasonTrail rewrite fuel door repaired)
+
+/-- Whether a trail utters one reason twice — a cleared reason back at
+    the door. -/
+def repeatsReason : List RefusalReason -> Bool
+  | [] => false
+  | reason :: rest => rest.contains reason || repeatsReason rest
+
+end ChainControls
 
 namespace RunControls
 
@@ -260,6 +335,90 @@ def showMachineRepairControl (name : String) (candidate : CandidateAct)
     s!"control={name};reason={reason.wire};before={renderResult before};repaired={renderOptionalResult repaired};mutant={renderOptionalResult mutant};verdict={if refuted then "refuted" else "survived"}"
   return if refuted then 0 else 1
 
+/-- Kill the claim that the door arbitrates by declared reason priority.
+    The two rows carry the SAME fault support in different payload order:
+    the door's answer moves with the order while the arbitrated answer
+    does not, so no total order on reasons reproduces this door, whatever
+    order is declared. What survives is the bounded law, and these rows
+    are exactly the candidates its premise excludes. -/
+def showFaultListingOrderControl : IO UInt32 := do
+  let leftFaults := faults Planted.door Planted.clockThenSecretEmit
+  let rightFaults := faults Planted.door Planted.secretThenClockEmit
+  let leftDoor := admitReason (admit Planted.door Planted.clockThenSecretEmit)
+  let rightDoor := admitReason (admit Planted.door Planted.secretThenClockEmit)
+  let leftArbitrated := arbitrate leftFaults
+  let rightArbitrated := arbitrate rightFaults
+  let sameSupport :=
+    leftFaults.all (fun reason => rightFaults.contains reason) &&
+      rightFaults.all (fun reason => leftFaults.contains reason)
+  let refuted :=
+    sameSupport && leftFaults != rightFaults && leftDoor != rightDoor &&
+      leftArbitrated == rightArbitrated
+  IO.println
+    s!"control=drop-fault-listing-order;rows=two-atom-faults-in-both-orders;left-faults={renderReasons leftFaults};right-faults={renderReasons rightFaults};left-door={renderReason leftDoor};right-door={renderReason rightDoor};left-arbitrated={renderReason leftArbitrated};right-arbitrated={renderReason rightArbitrated};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Kill a repair chain that resurrects a reason it already cleared. The
+    two chains share their first move; the lawful one stops when the
+    surfaced reason has no machine rewrite, while the mutant answers that
+    reason by restoring the shape it just repaired, and its trail utters
+    the cleared reason again. -/
+def showRepairCompositionControl : IO UInt32 := do
+  let lawful :=
+    ChainControls.reasonTrail repair 4 Planted.door
+      RepairControls.lastWriterWithClock
+  let mutant :=
+    ChainControls.reasonTrail ChainControls.resurrecting 4 Planted.door
+      RepairControls.lastWriterWithClock
+  let refuted :=
+    lawful.head? == mutant.head? && !ChainControls.repeatsReason lawful &&
+      ChainControls.repeatsReason mutant
+  IO.println
+    s!"control=drop-repair-composition;candidate=lww-join-carrying-a-clock;lawful-trail={renderReasons lawful};mutant-trail={renderReasons mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Kill a repair chain that never terminates. The lawful chain is at its
+    fixpoint after one move and stays there under more fuel; the mutant
+    rewrite lands back inside its own domain, so at any fuel it still has
+    a move to make and still surfaces the reason it was answering. -/
+def showRepairTerminationControl : IO UInt32 := do
+  let lawfulOnce := repairChain 1 Planted.door Planted.anchoredResolve
+  let lawfulMany := repairChain 8 Planted.door Planted.anchoredResolve
+  let mutantMany :=
+    ChainControls.chainWith ChainControls.anchorShifting 8 Planted.door
+      Planted.anchoredResolve
+  let lawfulMove := repairStep Planted.door lawfulOnce
+  let mutantMove :=
+    ChainControls.stepWith ChainControls.anchorShifting Planted.door mutantMany
+  let refuted :=
+    renderResult (admit Planted.door lawfulOnce) ==
+        renderResult (admit Planted.door lawfulMany) &&
+      isAdmitted (admit Planted.door lawfulOnce) && lawfulMove.isNone &&
+      mutantMove.isSome &&
+      isRefusedFor .anchoredResolve (admit Planted.door mutantMany)
+  IO.println
+    s!"control=drop-repair-termination;candidate=anchor-on-identity-read;lawful-at-1={renderResult (admit Planted.door lawfulOnce)};lawful-at-8={renderResult (admit Planted.door lawfulMany)};lawful-move={renderMove lawfulMove};mutant-at-8={renderResult (admit Planted.door mutantMany)};mutant-move={renderMove mutantMove};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Kill the argument that termination follows from the fault set
+    shrinking. The past-mutation rewrite builds a successor declaration
+    pinning its predecessor, and where the acting writ's universe does not
+    hold that predecessor the repaired candidate's listing carries a
+    door-relative reason its input never had. The chain still stops — on
+    the image-outside-the-domain argument, which is what the shipped law
+    rests on. -/
+def showRepairFaultShrinkageControl : IO UInt32 := do
+  let before := faults Planted.door Planted.offWritMutation
+  let move := repairStep Planted.door Planted.offWritMutation
+  let repaired := move.getD Planted.offWritMutation
+  let after := faults Planted.door repaired
+  let grew := after.any (fun reason => !before.contains reason)
+  let stops := (repairStep Planted.door repaired).isNone
+  let refuted := move.isSome && grew && stops
+  IO.println
+    s!"control=drop-repair-fault-shrinkage;candidate=off-writ-in-place-update;before-faults={renderReasons before};after-faults={renderReasons after};grew={grew};stops={stops};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
 /-- Kill a run implementation that judges the tail after a refusal. The
     two programs share their prefix and differ only after the refusing
     node: the lawful walk answers identically for both, because it never
@@ -363,6 +522,10 @@ def main (args : List String) : IO UInt32 := do
   | ["machine-repair-last-writer-wins"] =>
       showMachineRepairControl "machine-repair-last-writer-wins"
         RepairControls.lastWriterWithClock .lastWriterWins
+  | ["drop-fault-listing-order"] => showFaultListingOrderControl
+  | ["drop-repair-composition"] => showRepairCompositionControl
+  | ["drop-repair-termination"] => showRepairTerminationControl
+  | ["drop-repair-fault-shrinkage"] => showRepairFaultShrinkageControl
   | ["drop-run-tail-halt"] => showRunTailControl
   | ["drop-run-prefix-standing"] => showRunPrefixControl
   | ["drop-provision-disjointness"] =>
@@ -373,5 +536,5 @@ def main (args : List String) : IO UInt32 := do
         (renderValuation (provisionFold Provision.overlapOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-run-tail-halt|drop-run-prefix-standing|drop-provision-disjointness)"
+        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-fault-listing-order|drop-repair-composition|drop-repair-termination|drop-repair-fault-shrinkage|drop-run-tail-halt|drop-run-prefix-standing|drop-provision-disjointness)"
       return 2

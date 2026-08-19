@@ -748,6 +748,38 @@ posture.
   (refused — the existing production already carries it).
   Reversal: each adoption is additive; the lane and priority order
   are declared values, retirable pre-consumer.
+
+  Outcome, adoption (3) and the fault-set half of (2), model side.
+  Fault-set construction stands as `faults` with
+  `fault_listing_decomposes_door` — the listing is a decomposition of
+  one door pass, its head the verdict, an empty listing an admission —
+  and the finite-set semilattice as `fault_listing_semilattice`.
+  Composition and termination stand, but not by the argument recorded
+  above. The four rewrites' image lies OUTSIDE their own domain, so a
+  machine-repair chain is at most one move long
+  (`repair_composes_to_fixpoint`) and every refusal standing at the
+  fixpoint, at every door, is advisory (`repair_chain_terminates`) —
+  which is the licence an agent seat needs to follow taught moves
+  without review per step. There is therefore no second step for the
+  priority order to order.
+
+  Two findings against this row as written, both with committed
+  counterexample traces beside the kernel gate. First, "terminates
+  because the fault-set minimum strictly clears" is false: repairing an
+  in-place update of a catalogued-but-unpinned value builds a successor
+  declaration whose reference to the predecessor is off-writ, so the
+  listing moves from `past-mutation` to `off-writ-referent` and does not
+  shrink. Termination is unaffected — it never rested on shrinkage.
+  Second, "the door returns the minimum" is false for ANY declared total
+  order on reasons: the door arbitrates by position inside a payload
+  sweep, so two emit rows carrying the same two atom faults in opposite
+  payload order earn different answers while arbitration by priority
+  gives one. `door_arbitrates_least_fault` is therefore proven under the
+  explicit premise that the listing already leads with its
+  priority-least member, and the unbounded form is refused rather than
+  weakened. Adopting arbitration means changing the door — a door act,
+  not a theorem about this door. Adoptions (1) refusal digests and
+  lineage and (4) the refusal lane are untouched here.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the

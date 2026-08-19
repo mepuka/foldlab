@@ -60,6 +60,9 @@ expected_laws=(
   KAdmitMonotone KIntrinsicFaultRefusedEverywhere
   KRelativeRefusalRepairableByGrowth
   KMachineRepairClearsReason
+  KFaultListingDecomposesDoor KFaultListingSemilattice
+  KDoorArbitratesLeastFault
+  KRepairComposesToFixpoint KRepairChainTerminates
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KProvisionPositionedCorrespondence
@@ -123,6 +126,16 @@ roster=(
   intrinsically_clean_admitted_by_growth
   relative_refusal_repairable_by_growth
   machine_repair_clears_reason
+  arg_sweep_head fault_listing_decomposes_door
+  fault_join_assoc fault_join_comm fault_join_idem
+  fault_listing_semilattice
+  arbitrate_mem arbitrate_head_of_least door_arbitrates_least_fault
+  repair_image_shape repair_shape_inert repair_image_inert
+  repair_step_inert repair_chain_of_inert
+  repair_chain_fixpoint_fuel_free repair_composes_to_fixpoint
+  arg_refusal_advisory arg_sweep_advisory
+  repair_shape_refusals_advisory repair_image_refusals_advisory
+  repair_chain_terminates_at_fixpoint repair_chain_terminates
   admission_refuses_unlawful admit_refusals_taught refusal_parity
   closure_clock_read_refused closure_absence_trigger_refused
   closure_unfenced_decide_refused closure_last_writer_refused
@@ -244,6 +257,10 @@ check_control machine-repair-anchored-resolve
 check_control machine-repair-unverified-read
 check_control machine-repair-past-mutation
 check_control machine-repair-last-writer-wins
+check_control drop-fault-listing-order
+check_control drop-repair-composition
+check_control drop-repair-termination
+check_control drop-repair-fault-shrinkage
 check_control drop-run-tail-halt
 check_control drop-run-prefix-standing
 check_control drop-provision-disjointness
@@ -304,4 +321,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (27 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (31 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"

@@ -1,0 +1,1 @@
+control=drop-repair-termination;candidate=anchor-on-identity-read;lawful-at-1=admitted:[1, 0, 8];lawful-at-8=admitted:[1, 0, 8];lawful-move=fixpoint;mutant-at-8=reason:anchored-resolve|law:a digest names one value forever, so no anchor can change a resolve|repair:drop the anchor; read head-relative state through a fold at an anchor;mutant-move=moves;verdict=refuted

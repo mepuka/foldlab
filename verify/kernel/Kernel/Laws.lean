@@ -79,6 +79,93 @@ def KMachineRepairClearsReason : Prop :=
         admit door repaired = .refused next ->
         next.reason ≠ refusal.reason
 
+/-! ### The machine-repair remainders
+
+What the repair slice left open: constructing the fault set behind one
+surfaced refusal, arbitrating it by a declared order, composing repairs,
+and knowing the composition stops. The run family below composes the
+door over a program; this family composes repairs over one candidate,
+and the two meet only at the door they share.
+
+Bounds, stated with the family: one candidate at one door. Repair
+chaining at RUN scale — re-offering a repaired node inside a walk — is
+not claimed here, and neither is any runtime that would drive the
+chain. -/
+
+/-- The fault listing decomposes the door: the door's verdict is
+    exactly the listing's head, so one refusal is surfaced and its
+    support stands behind it, and an empty listing is an admission.
+    This is the construction the arbitration and the repair chain are
+    read against; it claims nothing the door does not already do. -/
+def KFaultListingDecomposesDoor : Prop :=
+  forall (door : Door) (candidate : CandidateAct),
+    (faults door candidate).head? = admitReason (admit door candidate)
+
+/-- Fault listings are a finite-set semilattice under union: read as
+    support, a listing is its set of reasons, so the join is
+    associative, commutative, and idempotent under that reading. The
+    quotient is lawful HERE and unlawful at the door, where the head of
+    the same list is the answer — which is the gap the arbitration law
+    below has to name. -/
+def KFaultListingSemilattice : Prop :=
+  (forall left middle right : List RefusalReason,
+    Fault.Equiv (Fault.join (Fault.join left middle) right)
+      (Fault.join left (Fault.join middle right))) /\
+  (forall left right : List RefusalReason,
+    Fault.Equiv (Fault.join left right) (Fault.join right left)) /\
+  (forall listing : List RefusalReason,
+    Fault.Equiv (Fault.join listing listing) listing)
+
+/-- Declared-priority arbitration agrees with the door exactly where
+    the fault listing already leads with its priority-least member.
+
+    The premise is load-bearing and the unbounded law is FALSE, not
+    merely unproven: the door arbitrates by position inside a payload
+    sweep, so two candidates carrying the same fault support in
+    different payload order earn different answers. No total order on
+    reasons reproduces that, whatever order is declared, and the
+    executed control exhibits the pair. Making the door arbitrate is a
+    change to the door, not a theorem about this one. -/
+def KDoorArbitratesLeastFault : Prop :=
+  forall (door : Door) (candidate : CandidateAct),
+    PriorityLeastFirst (faults door candidate) ->
+      arbitrate (faults door candidate) = admitReason (admit door candidate)
+
+/-- Repair composition: the four rewrites land OUTSIDE their own
+    domain, so a repaired candidate offers no second machine move, and
+    from one step on the chain is its own fixpoint — fuel past the
+    first step changes nothing. The composition is therefore one move
+    long, and the priority order the arbitration declares has no second
+    step to order. -/
+def KRepairComposesToFixpoint : Prop :=
+  (forall (candidate repaired : CandidateAct) (reason : RefusalReason),
+    repair candidate reason = some repaired -> RepairInert repaired) /\
+  (forall (fuel extra : Nat) (door : Door) (candidate : CandidateAct),
+    repairChain (fuel + 1 + extra) door candidate
+      = repairChain (fuel + 1) door candidate)
+
+/-- Termination, and what standing at the fixpoint means: one step of
+    the chain reaches a candidate at which the door offers no further
+    machine move, and every refusal that candidate earns AT ANY DOOR is
+    advisory — it needs information the candidate does not carry. That
+    pair is the licence to follow machine-applicable taught moves
+    without review per step: the walk is one move long, and what remains
+    is exactly what an operator must answer.
+
+    Stated because the recorded argument differs: termination does NOT
+    rest on the fault set shrinking. The past-mutation rewrite can add a
+    door-relative fault its input never carried, and the executed
+    control exhibits that candidate. Termination rests on the image
+    lying outside the domain instead. -/
+def KRepairChainTerminates : Prop :=
+  (forall (fuel : Nat) (door : Door) (candidate : CandidateAct),
+    repairStep door (repairChain (fuel + 1) door candidate) = none) /\
+  (forall (candidate repaired : CandidateAct) (reason : RefusalReason),
+    repair candidate reason = some repaired ->
+      forall (door : Door) (refusal : Refusal),
+        admit door repaired = .refused refusal ->
+          refusal.reason.applicability = .advisory)
+
 /-- The program pin order is well-founded: under node admission —
     every use names an already-admitted node, every name admits at
     most once — the consumption relation of an admitted program is

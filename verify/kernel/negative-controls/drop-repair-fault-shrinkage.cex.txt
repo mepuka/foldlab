@@ -1,0 +1,1 @@
+control=drop-repair-fault-shrinkage;candidate=off-writ-in-place-update;before-faults=[past-mutation];after-faults=[off-writ-referent];grew=true;stops=true;verdict=refuted
