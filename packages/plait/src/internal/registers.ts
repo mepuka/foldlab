@@ -4,7 +4,7 @@
  *
  * @module
  */
-import { JetStreamApiError, StorageType } from "@nats-io/jetstream"
+import { JetStreamApiError, StorageType, StoreCompression } from "@nats-io/jetstream"
 import { Kvm, type KV, type KvEntry, type KvStatus } from "@nats-io/kv"
 import { Effect, Equal, Result, Schema, Scope } from "effect"
 
@@ -21,6 +21,16 @@ import {
   type Refusal,
   type StructuralRefusalKind,
 } from "../truth/Refusal.js"
+import {
+  KV_ALLOW_DIRECT,
+  adminSurface,
+  expiresFacts,
+  expiringAuthorityCarrier,
+  hasPinnedAdminSurface,
+  importsFacts,
+  mirroredAuthorityCarrier,
+  type CarrierSite,
+} from "./carriers.js"
 import {
   KvFailure,
   acquireConnection,
@@ -173,6 +183,9 @@ const incarnationOf = (status: KvStatus): string | null => {
 const isMissingStream = (cause: unknown): boolean =>
   cause instanceof JetStreamApiError && cause.status === 404
 
+/** Where the register carrier is opened, for a named law to address. */
+const registerSite: CarrierSite = { path: ["bucket"], subject: "bucket.ensure" }
+
 const validWork = (work: string): Effect.Effect<string, Refusal> =>
   workPattern.test(work)
     ? Effect.succeed(work)
@@ -264,6 +277,8 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
       history: REGISTER_HISTORY,
       ttl: 0,
       max_bytes: -1,
+      // Declared, not feature-detected — see the cell carrier's twin.
+      allow_direct: KV_ALLOW_DIRECT,
     }),
     catch: (cause) => transportRefusal("bucket.ensure", cause),
   })
@@ -271,11 +286,15 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
     try: () => bucket.status(),
     catch: (cause) => transportRefusal("bucket.status", cause),
   })
+  const config = status.streamInfo.config
+  if (importsFacts(config)) return yield* mirroredAuthorityCarrier(registerSite, config)
+  if (expiresFacts(config)) return yield* expiringAuthorityCarrier(registerSite, config)
   if (status.storage !== StorageType.File || status.replicas !== 1 ||
-    status.history !== REGISTER_HISTORY || status.ttl !== 0 || status.max_bytes !== -1) {
+    status.history !== REGISTER_HISTORY || status.ttl !== 0 || status.max_bytes !== -1 ||
+    !hasPinnedAdminSurface(config, KV_ALLOW_DIRECT)) {
     return yield* lawRefusal(
       "register-substrate-shape",
-      "The register bucket is file-backed R=1 with 64 retained revisions and no age or size eviction.",
+      "The register bucket is file-backed R=1 with 64 retained revisions, no age or size eviction, and no admin surface beyond it.",
       ["bucket", "config"],
       JSON.stringify({
         storage: status.storage,
@@ -283,17 +302,26 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         history: status.history,
         ttl: status.ttl,
         max_bytes: status.max_bytes,
+        ...adminSurface(config),
       }),
-      "file/R=1/history=64/ttl=0/max_bytes=-1",
+      "file/R=1/history=64/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap",
       [{
         subject: "bucket.ensure",
-        note: "Configure the register bucket file-backed with one replica, 64 retained revisions, and no age or size eviction.",
+        note: "Configure the register bucket file-backed with one replica, 64 retained revisions, no age or size eviction, and none of the admin surface beyond it.",
         body: {
           storage: StorageType.File,
           replicas: 1,
           history: REGISTER_HISTORY,
           ttl: 0,
           max_bytes: -1,
+          republish: null,
+          subject_transform: null,
+          allow_direct: KV_ALLOW_DIRECT,
+          mirror_direct: false,
+          allow_atomic: false,
+          allow_msg_counter: false,
+          compression: StoreCompression.None,
+          max_msg_size: -1,
         },
       }],
     )

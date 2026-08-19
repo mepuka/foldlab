@@ -4187,3 +4187,83 @@ observe: ACCEPTED token 3 holder-c}`. Row 3 reds with `sort: "absence"`. Row 4,
 the untouched-incarnation control, stays green under the mutation, which is what
 makes the other three attributable to the deleted assertions and not to the
 chaos.
+
+### T9. The kind's estate-terms MEANING is authored at the mint, beside its roster line
+
+Decided: `incarnation-mismatch` carries a meaning — what the kind means in the
+estate's language, as distinct from what its refusal teaches a caller at the
+moment it fires. **Meaning authored at mint, pending the DEV-825 mechanism
+pickup and taste pass.** That ticket pinned the contract as a roster field named
+`meaning`, a plain string of one to two sentences; the field does not exist in
+`scripts/kernel-runtime-refusals.ts` yet, so the sentence is authored as a
+comment beside the roster line, shaped as the exact string that moves into the
+field, in the pinned voice — declarative present, estate terms, fact then
+implication:
+
+> An incarnation is one life of a store — the store a name resolved to at the
+> moment a fence was taken against it. A store reborn under that name is a
+> different store answering to it and owes nothing to its predecessor's fences,
+> so a fence from the dead incarnation names a store that no longer exists
+> rather than a round that has merely moved on.
+
+Alternatives: wait for the mechanism and author the sentence then. Why not: the
+meaning is a fact about the kind that only the minting author holds, and
+recovering it later is archaeology over a diff. Three texts are deliberately
+distinct here and none substitutes for another — the `law` is what the carrier
+promises ("A fencing token is honored only by the backing-stream incarnation
+that minted it"), the taught `next` is the repair, and the meaning is what the
+term denotes in the language. The second sentence is the one that earns its
+place: it is why this kind exists rather than reusing `stale-register-token`,
+and it is the same property T1's ordering enforces and the wall's
+`expect(refusal.kind).not.toBe("stale-register-token")` asserts.
+**Load-bearing? no** — it is authored vocabulary; the wall that would catch it
+going wrong is DEV-825's, not this ticket's.
+
+### T10. The DEV-780 admin-surface widening completes at the register seam, on the shared laws
+
+Decided: the register bucket's gate reads the same nine admin-surface fields the
+lane, cell, and anchor carriers pin, through `internal/carriers.ts` —
+`importsFacts`/`mirroredAuthorityCarrier` and `expiresFacts`/
+`expiringAuthorityCarrier` ahead of the shape clause, `hasPinnedAdminSurface`
+inside it, `adminSurface(config)` spread into the `got`, and `allow_direct:
+KV_ALLOW_DIRECT` declared at bucket creation. The read is
+`status.streamInfo.config`, because the `KvStatus` projection carries only five
+of the nine. This is DEV-780's own stated residual (b) — that ticket scoped
+itself to the lane stream and the two KV buckets and named the register gate as
+an owed follow-up rather than absorbing it without a ruling — discharged here
+because this lane holds `internal/registers.ts`. Alternatives: a separate
+ticket, which is what DEV-780 proposed; re-minting the two named laws at this
+carrier. Why not the second: a law minted twice is two texts that drift, and the
+whole point of `carriers.ts` is that the mirror and per-message-TTL laws are
+ADR-0009's role rule rather than any one plane's — the carrier appears in `path`
+and in the repair's subject, and nowhere else. **Load-bearing? yes** — measured
+mutation, the mirrored arm below.
+
+### T11. The register's admin-surface arm plants a MIRROR, and the lawful base is its control
+
+Decided: the wall arm is a mirrored backing stream for `KV_flb-fab-reg`, planted
+by hand on a fresh server, paired with a lawful-base arm that requires the
+carrier to OPEN on the hand-built shape. One field moves; the control is what
+makes the refusal attributable to it. Alternatives: extend
+`CarrierAdminSurface.test.ts`'s ten-row mutation table to a fourth carrier.
+Why not tonight: the table is parameterized over three carriers with two arms
+already carrying carrier-specific plantability exceptions, and widening it is a
+larger change than the seam completion asked for — the arm here proves the
+register gate reads the shared laws, and folding the register into that table is
+a clean follow-up for whoever owns it next. Why the mirror rather than any other
+of the nine: a register is the authority carrier par excellence, and a mirror is
+the failure that a shape gate refuses INCIDENTALLY and for the wrong reason — a
+mirror carries no `subjects`, so before the named law existed the gate refused
+on the subject clause and taught "restore the bucket shape" to an operator whose
+actual repair is a replica read-plane carrier. The arm asserts the named kind
+and `not.toBe("register-substrate-shape")` for exactly that reason.
+**Load-bearing? yes** — measured mutation: with `hasPinnedAdminSurface` and the
+two named-law guards removed from the register gate, the mirrored arm reds
+because `Effect.flip` finds a SUCCESS — the carrier hands back its five-action
+service (`{grant, renew, commit, expireSteal, observe}`) over a mirror, admitting
+a read-only copy of another stream's facts as its authority — while the
+lawful-base control and all four incarnation rows stay green. Note what the
+mutation shows about the old gate: the register's shape clause reads only
+`storage`/`replicas`/`history`/`ttl`/`max_bytes` off `KvStatus`, none of which a
+mirror moves, so before this widening a mirrored register bucket was admitted
+outright rather than refused incidentally.

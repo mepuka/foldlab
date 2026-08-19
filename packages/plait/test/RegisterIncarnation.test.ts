@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-import { StorageType } from "@nats-io/jetstream"
+import {
+  DiscardPolicy,
+  RetentionPolicy,
+  StorageType,
+  StoreCompression,
+  jetstreamManager,
+} from "@nats-io/jetstream"
 import { Kvm, type KV } from "@nats-io/kv"
 import { connect, type NatsConnection } from "@nats-io/transport-node"
 import { Effect, Result } from "effect"
@@ -15,15 +21,24 @@ import type { Refusal } from "../src/truth/Refusal.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
 /**
- * The register incarnation pin (DEV-779), walled against the chaos it exists
- * for: the bucket is DELETED and RECREATED out of band while a holder is still
- * carrying a fence, and the holder then replays its fenced operation.
+ * The register carrier's authority walls: which bucket, and whose facts.
  *
+ * **Which bucket** is the incarnation pin (DEV-779), walled against the chaos
+ * it exists for: the bucket is DELETED and RECREATED out of band while a holder
+ * is still carrying a fence, and the holder then replays its fenced operation.
  * Bucket destroy+recreate is never an isolation primitive in this package
  * (DECISIONS T0, seam rule 7) — here it is the SUBJECT, performed deliberately
  * on a connection the register service does not own, which is exactly the
  * administrative lifecycle mutation the register's claims used to be bounded
  * away from. Row isolation is still one fresh server per test.
+ *
+ * **Whose facts** is the DEV-780 admin-surface completion riding this lane: the
+ * register bucket's gate now reads the same nine admin fields the lane, cell,
+ * and anchor carriers pin, through the shared laws in `internal/carriers.ts`.
+ * The arm below plants the one that matters most at this carrier — a MIRRORED
+ * backing stream — because a register is the authority carrier par excellence:
+ * a mirror stores its origin's facts at its origin's sequence numbers and is
+ * locally read-only, so a fence taken against one is a fence against a copy.
  */
 
 const work = "0123456789abcdef"
@@ -82,6 +97,42 @@ const withRegisters = <A>(
 
 const incarnationLaw =
   "A fencing token is honored only by the backing-stream incarnation that minted it."
+
+/** The mirror origin the planted arm imports from; its subjects touch no carrier. */
+const MIRROR_ORIGIN = "FLB_TEST_REGISTER_MIRROR_ORIGIN"
+
+const duplicateWindowNanos = 2 * 60 * 1_000_000_000
+
+/**
+ * The register bucket's backing stream exactly as `@nats-io/kv` 3.4.0 creates
+ * it for the options this carrier passes, written out by hand rather than
+ * imported: the wall states the shape it admits instead of asking the gate to
+ * agree with itself. Mirrors `lawfulKvStream` in `CarrierAdminSurface.test.ts`
+ * at this carrier's history.
+ */
+const lawfulRegisterStream = (): Record<string, unknown> => ({
+  name: `KV_${REGISTER_BUCKET}`,
+  subjects: [`$KV.${REGISTER_BUCKET}.>`],
+  retention: RetentionPolicy.Limits,
+  storage: StorageType.File,
+  num_replicas: 1,
+  max_msgs: -1,
+  max_bytes: -1,
+  max_age: 0,
+  max_msgs_per_subject: REGISTER_HISTORY,
+  discard: DiscardPolicy.New,
+  duplicate_window: duplicateWindowNanos,
+  deny_delete: false,
+  deny_purge: false,
+  allow_rollup_hdrs: true,
+  allow_direct: true,
+  mirror_direct: false,
+  allow_atomic: false,
+  allow_msg_counter: false,
+  compression: StoreCompression.None,
+  max_msg_size: -1,
+  allow_msg_ttl: false,
+})
 
 describe("register incarnation pin", () => {
   test("a reborn bucket refuses the stale holder's commit, and the substrate would have accepted it", async () => {
@@ -238,5 +289,58 @@ describe("register incarnation pin", () => {
     expect(stolen.holder).toBe("holder-b")
     expect(committed.outcome).toEqual({ token: stolen.token, value: "done" })
     expect(observed.outcome).toEqual({ token: stolen.token, value: "done" })
+  }, 120_000)
+})
+
+/**
+ * The DEV-780 register-seam completion. That ticket widened the lane, cell, and
+ * anchor gates to the nine admin-surface fields and left the register's gate
+ * named as an owed follow-up (its stated residual (b)); this lane owns
+ * `internal/registers.ts` tonight, so the widening lands here against the same
+ * shared laws rather than a second minting of them.
+ */
+describe("register carrier admin surface", () => {
+  /** Plants the register bucket's backing stream by hand on a fresh server. */
+  const plant = async (url: string, config: Record<string, unknown>): Promise<void> => {
+    const connection = await connect({ servers: url })
+    try {
+      const manager = await jetstreamManager(connection)
+      await manager.streams.add({
+        name: MIRROR_ORIGIN,
+        subjects: ["flb.test.register.mirror.origin.>"],
+        storage: StorageType.File,
+        num_replicas: 1,
+      } as never)
+      await manager.streams.add(config as never)
+    } finally {
+      await connection.close()
+    }
+  }
+
+  const openRegisters = (url: string): Effect.Effect<unknown, Refusal> =>
+    Registers.pipe(Effect.provide(Registers.layer({ servers: url })), Effect.scoped)
+
+  test("the hand-built lawful backing stream is admitted", async () => {
+    harness = await startNatsHarness()
+    await plant(harness.url, lawfulRegisterStream())
+    // No flip: the carrier must OPEN on the planted shape. This is what makes
+    // the mirrored arm below attributable to the one field it moved.
+    await Effect.runPromise(openRegisters(harness.url))
+  }, 120_000)
+
+  test("a mirrored backing stream refuses by the named mirror law, not by shape", async () => {
+    harness = await startNatsHarness()
+    const { subjects: _subjects, ...rest } = lawfulRegisterStream()
+    await plant(harness.url, { ...rest, mirror: { name: MIRROR_ORIGIN } })
+
+    const refusal = await Effect.runPromise(Effect.flip(openRegisters(harness.url)))
+    expect(refusal.sort).toBe("structural")
+    // A mirror carries no subjects, so a shape gate refuses one INCIDENTALLY and
+    // teaches "restore the bucket shape" — the wrong repair for an operator
+    // whose actual repair is a replica read-plane carrier (ADR-0009).
+    expect(refusal.kind).toBe("mirrored-authority-carrier")
+    expect(refusal.kind).not.toBe("register-substrate-shape")
+    expect(refusal.path).toEqual(["bucket", "stream", "config", "mirror"])
+    expect(refusal.next.length).toBeGreaterThan(0)
   }, 120_000)
 })
