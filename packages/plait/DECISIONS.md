@@ -5326,3 +5326,99 @@ one thing a spelling-neutral conversion must not do).
 **Load-bearing? yes** — it is the record of why `World` is declared but
 unprojected, and of which two expansions in the generated verdict are the
 generator's rather than the model's.
+
+### T27. Task DEV-852 slice C1 (DEV-824) — the builder control's trace was a recording of a compiler nobody named
+
+Decided: the compiler pin is enforced, the stale arm is re-recorded, and the
+byte comparison stays total. The ticket offered the fork as "normalize the
+trace or enforce the toolchain pin", and the executed evidence decided it
+before the argument did.
+
+What actually reds: `check:kernel-builder` was green (byte-identical
+regeneration); `check:builder-control` failed on its fourth arm alone, the
+cross-sort handle, and on nothing but the order of eight union members inside
+one diagnostic — the same eight sorts, `{join, declare, resolve, emit, fold,
+decide, trigger, spawn}`, printed as a different sequence. The other three
+arms were byte-identical. So the divergence was one line of one trace.
+
+The cause is not host drift, which is what the ticket's framing assumed. The
+traces were recorded at `c2b471c` when the root manifest pinned
+`typescript: "^5.9.2"`; the pin is now the exact `typescript: "7.0.2"` with
+`@effect/tsgo: "0.36.5"` patched over it, and that is a different compiler —
+the Go-native port, not the JS one. Three orders for one unchanged type, all
+executed on this host:
+
+- committed (5.9.2): `"join" | "declare" | "resolve" | "emit" | "fold" | "decide" | "trigger" | "spawn"`
+- 5.9.3 (`typescript-five`, still installed): `"join" | "emit" | "declare" | "resolve" | "fold" | "decide" | "trigger" | "spawn"`
+- pinned 7.0.2: `"decide" | "declare" | "emit" | "fold" | "join" | "resolve" | "spawn" | "trigger"`
+
+That middle line is the one that settles the fork. 5.9.3 is a PATCH bump inside
+the very range `^5.9.2` the trace was recorded under, and it already prints a
+different order: 5.x printed a union in whatever sequence the checker happened
+to instantiate it, so under the old floating range the trace was unstable by
+construction and its greenness was luck. The pinned 7.0.2 prints the members
+sorted — a canonical form, stable across runs (executed six times, identical)
+and across hosts on the same lockfile.
+
+Fork (a), normalize the trace — priced and refused. It is cheap and it is not
+unfalsifiable: sorting is a canonical form, so an added or removed member still
+moves the sorted sequence, and the mutation arm would still red. Three things
+refuse it anyway. It buys nothing the pin does not already buy, because the
+pinned compiler ALREADY prints sorted — the normalizer would be a no-op the day
+it lands, dead machinery justified by a compiler no longer in the tree. It
+weakens the one thing a trace control has: the recorded diagnostic text is the
+claim, named in full, and a comparison that rewrites the text before checking it
+grades the compiler's answer against a paraphrase of its own. And it goes a step
+past the DEV-797 precedent it would cite. That precedent normalizes WHICH
+diagnostics are in the contract (errors, never advisories); it does not touch
+the words inside one. Sorting members inside a printed type is a different act,
+and accepting it is accepting the next one.
+
+Fork (b), enforce the pin — taken. `scripts/negative-trace.ts` gains
+`compilerPin`, which reads `typescript` and `@effect/tsgo` from the repository
+manifest — read, never hard-coded, so the guard cannot drift from the version
+the lockfile installs — runs `tsc --version`, and refuses by name before any arm
+executes. A host on another compiler is now told which compiler it is on and to
+run `bun install`, instead of being shown four moved traces it cannot act on.
+The trace is stable by construction and the comparison stays total. Cost: the
+control refuses rather than reds when the pin moves deliberately, which is one
+extra step — `bun run generate:builder-control`, added for symmetry with the
+door and SDK controls — on any intentional toolchain bump. That is the intended
+price: a toolchain bump SHOULD be a deliberate re-recording act.
+
+Carried with it: this control was the last one still holding a private copy of
+the trace rule. The address, rung, and public-effect controls all read
+`errorDiagnostics` from `negative-trace.ts` and the address control's own header
+says it copied its shape from this one — while this one still compared raw
+compiler output, so an advisory about unrelated `src/` could have reddened it at
+any time (the DEV-797 failure mode exactly, latent here). It now reads the rule
+from the same place. The adoption is byte-neutral, and that was checked rather
+than assumed: re-recording all four arms under the shared rule rewrote three of
+them byte-identical, and the only line in the diff is the union order.
+
+Falsifiability, executed, not asserted. `KERNEL_GENERATORS` had `"trigger"`
+removed — a real member removal, the ticket's named mutation — and the control
+failed with exit 1 on a moved trace; the mutation was reverted and the control
+returned to exit 0. The pin guard was proved the same way: the manifest pin was
+moved to `7.0.3`, the control printed `REFUSED - the compiler is not the pinned
+one` naming both versions, and the manifest was reverted.
+
+Where they run: the ticket asked where, and the answer is the battery, because
+the DEV-799 finding that these were unreached by `bun run gates` is what let the
+red stand for a day. `gates` runs `test:packages`, which runs plait's `test`,
+which chains `test:fast` and `test:types`. `check:kernel-builder` is
+toolchain-free — it regenerates from the corpus and diffs, spawning no
+compiler — so it joins `test:fast` beside the other generated-surface walls.
+`check:builder-control` spawns `tsc`, so it joins `test:types` beside the other
+compile-time controls, next to `check:address-control`, which is its own
+descendant. Neither can silently rot again.
+
+Not done, and named: the other three `tsc` controls (address, rung,
+public-effects) still run on whatever compiler the host offers. `compilerPin`
+lives in the shared module rather than in this script precisely so they can
+adopt it without a second copy, but adopting them is outside this ticket's
+"the control's comparison discipline only" limit.
+
+**Load-bearing? yes** — it is the record that a committed compiler trace is a
+recording of ONE named compiler, and the standing reason the estate does not
+normalize the text inside a diagnostic it commits to.

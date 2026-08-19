@@ -60,6 +60,7 @@
     "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "check:type-universe": "bun scripts/check-public-type-universe.ts && bun scripts/check-public-type-universe.ts --enforce",
     "check:type-universe-control": "bun scripts/check-public-type-universe-negative.ts",
+    "generate:builder-control": "bun scripts/check-kernel-builder-negative.ts --write",
     "generate:corpus": "bun scripts/generate-corpus.ts",
     "generate:kernel-builder": "bun scripts/generate-kernel-builder.ts",
     "generate:kernel-door-control": "bun scripts/check-kernel-door-negative.ts --write",
@@ -76,8 +77,8 @@
     "generate:type-universe": "bun scripts/check-public-type-universe.ts --write",
     "generate:type-universe-control": "bun scripts/check-public-type-universe-negative.ts --write",
     "test": "bun run test:fast && bun run test:walls && bun run test:types",
-    "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:kernel-surfaces && bun run check:kernel-prose && bun run check:kernel-schemas && bun run check:kernel-sdk && bun run check:kernel-sdk-control && bun run check:one-canonicalizer && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control && bun run check:refusal-vocabulary && bun run check:refusal-control && bun run check:refusal-meaning-control && bun run check:tracking-artifacts-control && bun run check:refusal-payloads && bun run check:kernel-door && bun run check:kernel-door-control && bun run check:layering && bun run check:kernel-tools",
-    "test:types": "bun run check:kernel-surfaces-control && bun run check:one-canonicalizer-control && bun run check:type-control && bun run check:type-universe-control && bun run check:rung-control && bun run check:address-control && bun run check:layering-control && bun run check:kernel-tools-control",
+    "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:kernel-surfaces && bun run check:kernel-prose && bun run check:kernel-schemas && bun run check:kernel-builder && bun run check:kernel-sdk && bun run check:kernel-sdk-control && bun run check:one-canonicalizer && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control && bun run check:refusal-vocabulary && bun run check:refusal-control && bun run check:refusal-meaning-control && bun run check:tracking-artifacts-control && bun run check:refusal-payloads && bun run check:kernel-door && bun run check:kernel-door-control && bun run check:layering && bun run check:kernel-tools",
+    "test:types": "bun run check:kernel-surfaces-control && bun run check:one-canonicalizer-control && bun run check:type-control && bun run check:type-universe-control && bun run check:rung-control && bun run check:builder-control && bun run check:address-control && bun run check:layering-control && bun run check:kernel-tools-control",
     "test:walls": "bun scripts/run-test-group.ts walls"
   },
   "dependencies": {

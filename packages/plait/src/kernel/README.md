@@ -41,9 +41,18 @@ Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
 registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
-and an absence control the emitted vectors cannot carry. Those four and
-`check:builder-control` are unreached by `bun run gates` (DEV-799 finding); run
-them by hand — and `check:builder-control` is RED here on a moved trace.
+and an absence control the emitted vectors cannot carry. `check:kernel-builder`
+and `check:builder-control` were unreached by `bun run gates` (DEV-799 finding)
+and are now in `test:fast` and `test:types` respectively, so the battery reaches
+them and they cannot rot unwatched again (DEV-824).
+
+`check:builder-control` compares four committed compiler traces verbatim, which
+only means anything if one compiler printed them: it reads the `typescript` and
+`@effect/tsgo` pins out of the repository manifest and refuses by name on any
+other compiler rather than reporting a moved trace. That is what its long red
+was — the traces were 5.9.2 recordings, and 5.x printed a union's members in
+instantiation order while the pinned 7.0.2 prints them sorted. Re-record with
+`bun run generate:builder-control` after a deliberate change.
 
 `check:kernel-sdk` carries two clauses the older walls do not: it renders twice
 and requires the two renderings byte-equal, and it requires the committed header
