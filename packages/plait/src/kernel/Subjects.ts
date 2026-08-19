@@ -34,9 +34,6 @@ export type NodeSubject = typeof NodeSubject.Type
 /** Every public fabric routing subject. */
 export type FabricSubject = EvidenceSubject | FactSubject | NodeSubject
 
-/** A typed subject computation whose only failure is a structural routing refusal. */
-export type SubjectResult<S extends FabricSubject> = Effect.Effect<S, StructuralRefusal>
-
 const tokenPattern = /^[^.*>\s]+$/u
 
 const invalidToken = (path: string, got: string | number): StructuralRefusal =>

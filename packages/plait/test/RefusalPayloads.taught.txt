@@ -135,6 +135,12 @@ packages/plait/src/internal/folds.ts#2
   expected "an integer from 0 through ${}"
   next[0].subject "FoldHandle.anchor"
   next[0].note "Inspect only a partition declared by this fold's lane."
+packages/plait/src/internal/incarnations.ts#0
+  kind "malformed-value"
+  law "An incarnation chain is walked by predecessor digest and every step names an incarnation the history carries."
+  expected <absent>
+  next[0].subject "incarnation.chain"
+  next[0].note "Walk the chain over a history carrying every incarnation the walk reaches, each named by its own canonical bytes."
 packages/plait/src/internal/lanes.ts#0
   kind "lane-transport-unavailable"
   law "Transport absence may be retried; declared lane shape violations may not."
@@ -238,6 +244,12 @@ packages/plait/src/internal/sessions.ts#0
   expected "the pinned local NATS KV operation to be available"
   next[0].subject "Session.subscribe"
   next[0].note "Reconnect and subscribe again; a session is a value the substrate never learned, so re-opening under the same writ resumes the same read."
+packages/plait/src/internal/substrate.ts#0
+  kind "malformed-value"
+  law "A substrate session folds the substrate's own declaration, field by field, from the declared roster."
+  expected <absent>
+  next[0].subject "substrate.declaration"
+  next[0].note "Fold the substrate declaration from an established connection's own server information; every declared field carries the sort the substrate sends it with."
 packages/plait/src/internal/successors.ts#0
   kind "invalid-fold-state"
   law "Fold states are wire-grammar values whose state digest is SHA-256 over canonical bytes."
@@ -249,6 +261,12 @@ packages/plait/src/internal/transport.ts#0
   law <expression>
   expected <expression>
   next <expression>
+packages/plait/src/internal/writs.ts#0
+  kind "malformed-value"
+  law "A substrate connection acts under a writ this package has declared for its layer."
+  expected <absent>
+  next[0].subject "substrate.writ"
+  next[0].note "Declare this layer's writ as a row of the substrate writ table, naming the carrier roles its connection acts as, before the layer opens a connection."
 packages/plait/src/kernel/Subjects.ts#0
   kind "invalid-subject-token"
   law "Fabric routing tokens are non-empty NATS tokens without dots, whitespace, or wildcards."
