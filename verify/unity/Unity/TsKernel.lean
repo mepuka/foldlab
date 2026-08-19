@@ -1445,8 +1445,9 @@ def resolution : Nat -> String -> SchemaContext -> Nat -> String -> Except Strin
         else if row.2 == position then
           .ok { schema :=
                   schemaCall "suspend"
-                    [.arrow [] (some (.qualified ["Schema", "Codec"] [target.valueType]))
-                      target.schema]
+                    [.arrow [] .inline []
+                      (some (.qualified ["Schema", "Codec"] [target.valueType])) .beside
+                      (.value target.schema)]
               , valueType := target.valueType }
         else .ok target
 
@@ -2054,6 +2055,905 @@ def schemasModule (tables : Tables) (lines : List String) : Except String TsModu
         , .blank ] ++
         vocabulary }
 
+/-! ## The plain-TypeScript SDK surface
+
+One corpus in, one import-free module out: the kernel language spelled as plain
+types and plain functions, with no Effect, no dependency, and nothing a reader
+has to import in order to write a sentence.
+
+Everything closed is transcribed — the inventories and their ranks, the taught
+refusals with their law, repair and applicability, the reviewed standing
+meanings, the whole candidate grammar, the eight generator names, and the
+docstring the model attaches to each type. Two things are decided, and both are
+reviewed tables carried here with their own docstrings: how a model type
+reference becomes a surface parameter (`surfaceType`), and how each of the eight
+generators meets the candidate grammar (`generatorSurface`). A third,
+`projectionNotes`, is reviewed prose: where this projection moved something the
+model's own docstring would otherwise describe wrongly, the note says so beside
+the model's text rather than in place of it.
+
+The projection table is reconciled against the corpus in both directions before
+a byte is written: every generator of the model has exactly one row, every row
+names a candidate constructor that exists, a row's field list is compared to
+that constructor's own name for name and in order, every tag a row writes names
+a constructor the corpus has, and a parameter no field reads is refused. A field
+added to the model reddens the emission rather than arriving as a silently
+dropped argument. -/
+
+/-- The column the SDK surface wraps at. -/
+def sdkWidth : Nat := 96
+
+/-- **Reviewed prose.** What this projection does to a model sort that the
+    model's own docstring would otherwise describe wrongly here.
+
+    Each note is APPENDED to the model's text rather than replacing it, in the
+    same place and for the same reason the generated schemas append theirs: the
+    model says what the sort IS, and a projection that erased an index or
+    widened a grammar owes a reader the sentence saying so. A sort absent from
+    this table is projected without comment because nothing about it moved. -/
+def projectionNotes : List (String × String) :=
+  [ ("Digest",
+      "Branded here by kind over the model's carrier, with a string-literal key rather than a" ++
+      " module-local symbol, so the brand can be named from anywhere and spelled without an" ++
+      " import.")
+  , ("Token",
+      "The register is not a type index here: the constructor that takes a fence writes the" ++
+      " register from the one the caller commits at, so a cross-register claim has no spelling" ++
+      " through it.")
+  , ("AnchorFact",
+      "The reduction and the partition are not type indices here: the constructor that takes an" ++
+      " anchor writes both from the coordinate the caller folds at, so a replay under another" ++
+      " reduction has no spelling through it.")
+  , ("Value",
+      "Spelled here as the raw argument list a candidate carries, because a value IS the" ++
+      " canonicalization of that list and the raw list is what the door is handed.")
+  , ("KTriggerPredicate",
+      "The surface takes the candidate grammar instead, which is this grammar widened by the" ++
+      " shapes it cannot carry, so the door refuses and TEACHES those shapes rather than this" ++
+      " projection preventing them in silence.") ]
+
+/-- The model's docstring for one type, right-trimmed, with this projection's
+    note where it owes one. -/
+def sdkDocOf (docs : List (String × String)) (name : String) : Option String :=
+  let doc := (docs.find? (fun row => row.1 == name)).map (fun row => row.2.trimAsciiEnd.toString)
+  let note := (projectionNotes.find? (fun row => row.1 == name)).map (·.2)
+  match doc with
+  | none => note
+  | some text =>
+      if text == "" then note
+      else
+        match note with
+        | none => some text
+        | some sentence => some (text ++ "\n\n" ++ sentence)
+
+/-- A doc comment carrying a model text. One line when the trimmed comment fits
+    the budget at its indent and the text carries no break of its own, and
+    otherwise a block that keeps the model's own line breaks and wraps each of
+    them. Trailing spaces go: the model's environment returns one, and a
+    byte-gated file must not carry a character an editor's save would remove. -/
+def sdkDoc (indent : String) (text : String) : Doc :=
+  let safe := text.replace "*/" "*\\/"
+  let rows := safe.splitOn "\n"
+  let trimmed := safe.trimAsciiEnd.toString
+  if rows.length == 1 && indent.length + 4 + trimmed.length + 3 <= sdkWidth then
+    Doc.line trimmed
+  else { layout := .block, blocks := rows.map (DocBlock.wrapped descriptionWrap) }
+
+/-- One ratified meaning as a doc comment, opening on the sentence itself. The
+    operator's taste pass ruled on the corpus, so nothing stands above the
+    meaning. A meaning that is empty or carries a line break is refused: it
+    would render a comment this surface cannot stand behind. -/
+def sdkMeaningDoc (meaning : String) (site : String) : Except String Doc :=
+  let text := meaning.trimAscii.toString
+  if text == "" then .error s!"ts: {site} carries no meaning"
+  else if (meaning.splitOn "\n").length > 1 then
+    .error s!"ts: {site}'s meaning carries a line break"
+  else .ok { layout := .block, blocks := [.wrapped descriptionWrap text] }
+
+/-! ### The carriers and the two projection judgements -/
+
+/-- **Reviewed table.** The model's scalar carriers, projected onto the
+    target's. `Nat` is `bigint` and nothing else: the corpus, every generated
+    schema and the admission function end to end already carry model integers at
+    arbitrary precision, and a pinned canon vector past the range a double holds
+    exactly is what makes that load-bearing. -/
+def sdkCarrier (model : String) (site : String) : Except String TsType :=
+  if model == "Nat" then .ok (.keyword "bigint")
+  else if model == "String" then .ok (.keyword "string")
+  else .error s!"ts: {site} carries unmapped model type {model}"
+
+/-- The brand domain the model closes. A brand parameter named after a record
+    class the corpus enumerates is a CLOSED domain and earns a branded alias
+    with one member per name; every other brand domain is open — a register is a
+    digest, a partition is a lane and a shard — so a brand over it separates
+    nothing this projection can name. -/
+def closedBrandDomain : String := "kind"
+
+/-- The SDK's spelling of one branded digest alias for a declaration kind. -/
+def digestAlias (kind : String) : String := capitalize kind ++ "Digest"
+
+/-- **Reviewed table.** How one model type reference becomes a type in the
+    CANDIDATE layer. Every reference in this layer is the raw spelling —
+    identity labels, not branded sorts — which is what "raw" means in the
+    model's own docstring for the argument atoms, and it is why the brands live
+    one layer up where `Act` names a sort rather than a label. Total over what
+    the candidate grammar and the door context use, and refusing anything else. -/
+def candidateType : Nat -> String -> List String -> String -> Except String TsType
+  | 0, _, _, site =>
+      .error s!"ts: {site}: the reference nests deeper than the argument grammar admits"
+  | nesting + 1, model, declared, site => do
+      let (name, arguments) <- parseReference model site
+      if name == "List" then
+        match arguments with
+        | [inner] => do
+            let element <- candidateType nesting inner declared site
+            Except.ok (TsType.reference "ReadonlyArray" [element])
+        | _ => Except.error s!"ts: {site}: List takes one argument, got {arguments.length}"
+      else if name == "Option" then
+        match arguments with
+        | [inner] => do
+            let element <- candidateType nesting inner declared site
+            Except.ok (TsType.union .inline [element, .keyword "undefined"])
+        | _ => Except.error s!"ts: {site}: Option takes one argument, got {arguments.length}"
+      else if name == "Ref" then Except.ok (.reference "Ref" [])
+      else if !arguments.isEmpty then
+        Except.error s!"ts: {site}: {name} carries brand arguments in the candidate layer"
+      else if declared.contains name then Except.ok (.reference name [])
+      else sdkCarrier name site
+
+/-- **Reviewed table.** How one model type reference of the model's own `Act`
+    becomes a parameter of the LAWFUL surface. This is the projection's second
+    judgement and its last one. Read it as the statement of what each of the
+    eight generators asks a caller for:
+
+    * a declaration kind is the kind name itself, and it binds the brand of
+      every later digest the same constructor names;
+    * a digest branded to a fixed kind is that kind's alias;
+    * a digest branded to an earlier field is that field's kind, with the
+      binding refused on the field rather than inferred from the digest;
+    * a canonical value is the raw argument list the candidate carries, because
+      the model's value IS the canonicalization of that list;
+    * a scalar whose brand domain is open is its carrier — the tie the brand
+      carried is written by the constructor out of a coordinate the caller
+      gives once;
+    * a structure the candidate layer already names is that projection. The
+      lawful sentence names the closed five-production trigger grammar; the
+      surface takes the widened candidate one, so the door can refuse and TEACH
+      the four shapes the closed grammar cannot carry rather than this file
+      preventing them silently. -/
+def surfaceType (model : String) (kindParameter : Option String) (kinds : List String)
+    (site : String) : Except String TsType := do
+  let (name, arguments) <- parseReference model site
+  if name == "DeclKind" then .ok (.reference "Kind" [])
+  else if name == "Value" then .ok (.reference "ReadonlyArray" [.reference "RawArg" []])
+  else if name == "StateLabel" then sdkCarrier "Nat" site
+  else if name == "LanePartition" then .ok (.reference "LanePartition" [])
+  else if name == "AnchorFact" then .ok (.reference "AnchorFact" [])
+  else if name == "KTriggerPredicate" then .ok (.reference "CandidatePredicate" [])
+  else if name == "Digest" then
+    match arguments with
+    | [argument] =>
+        if kinds.contains argument then .ok (.reference (digestAlias argument) [])
+        else if kindParameter == some argument then
+          .ok (.reference "Digest" [.reference "NoInfer" [.reference "Kind" []]])
+        else .error s!"ts: {site}: brand argument {argument} names no kind and no kind field"
+    | _ => .error s!"ts: {site}: Digest takes one brand argument, got {arguments.length}"
+  else if name == "Token" || name == "Position" then sdkCarrier "Nat" site
+  else .error s!"ts: {site}: no surface rule for the model reference {model}"
+
+/-! ### The projection table -/
+
+/-- One parameter the surface takes beyond the generator's own fields, with the
+    model reference it carries and the reason the lawful sentence has no field
+    for it. -/
+structure ExtraParameter where
+  name : String
+  model : String
+  why : String
+
+/-- One generator's row of the projection table. -/
+structure GeneratorRow where
+  generator : String
+  arm : String
+  extra : List ExtraParameter
+  fields : List (String × TsExpr)
+  ties : List String
+
+/-- The object a row writes for a fold's anchor: the coordinate the caller
+    folds at, written into both positions at once. -/
+def foldAnchorObject : TsExpr :=
+  .object .block
+    [ (none, .name "foldId", .ident "declared")
+    , (none, .name "lane", .field (.ident "partition") "lane")
+    , (none, .name "shard", .field (.ident "partition") "shard")
+    , (none, .name "floor", .field (.ident "anchor") "floor")
+    , (none, .name "state", .field (.ident "anchor") "state")
+    , (none, .name "head", .field (.ident "anchor") "head") ]
+
+/-- **Reviewed table.** The projection table: how each of the model's eight
+    generators meets the candidate grammar.
+
+    Every parameter of every row is one of the generator's own fields, in the
+    generator's own order, with one stated exception — `join` gains the declared
+    algebra, because the candidate carries a merge strategy the lawful sentence
+    does not and a lawful join presupposes the algebra the strategy names.
+
+    Four rows write a field rather than accepting one, and those four are the
+    dependent ties the model's constructors carry. They are enforced here by
+    CONSTRUCTION rather than by an inference guard: the caller supplies the
+    coordinate once and the constructor writes it into both positions, so a
+    cross-register token and a cross-reduction anchor have no spelling at all.
+    The crimes those ties prevent stay spellable as candidate values, which is
+    what lets the door refuse them and teach the repair. -/
+def generatorSurface : List GeneratorRow :=
+  [ { generator := "declare", arm := "declare", extra := []
+    , fields :=
+        [ ("kind", .ident "kind"), ("payload", .ident "value"), ("writ", .ident "writ") ]
+    , ties := [] }
+  , { generator := "resolve", arm := "resolveDigest", extra := []
+    , fields :=
+        [ ("kind", .ident "kind"), ("target", .ident "target")
+        , ("anchor", .ident "undefined") ]
+    , ties :=
+        [ "a resolve at an anchor: a digest names one value forever, so the lawful" ++
+          " sentence carries no anchor and this constructor writes none" ] }
+  , { generator := "emit", arm := "emit", extra := []
+    , fields := [ ("lane", .ident "lane"), ("body", .ident "body") ]
+    , ties := [] }
+  , { generator := "join", arm := "join"
+    , extra :=
+        [ { name := "algebra", model := "Digest(algebra)"
+          , why :=
+              "the candidate carries the merge strategy and the lawful sentence does" ++
+              " not, because a lawful join presupposes the declared algebra" } ]
+    , fields :=
+        [ ("cell", .ident "cell"), ("contribution", .ident "contribution")
+        , ("strategy",
+            .object .inline
+              [ (none, .name "_tag", .str "declaredAlgebra")
+              , (none, .shorthand "algebra", .ident "algebra") ]) ]
+    , ties :=
+        [ "a join that asks arrival order to override the declared algebra: this" ++
+          " constructor writes the declared-algebra strategy and takes no other" ] }
+  , { generator := "fold", arm := "fold", extra := []
+    , fields :=
+        [ ("declared", .ident "declared"), ("anchor", foldAnchorObject)
+        , ("query", .ident "query") ]
+    , ties :=
+        [ "a fold with no anchor: every head-relative read resumes at a coordinate," ++
+          " so the anchor is a parameter and never absent"
+        , "an anchor replayed under a reduction that is not its own: the reduction" ++
+          " is written from the one the caller folds at" ] }
+  , { generator := "decide", arm := "decide", extra := []
+    , fields :=
+        [ ("register", .ident "register")
+        , ("token",
+            .object .inline
+              [ (none, .shorthand "register", .ident "register")
+              , (none, .name "value", .ident "token") ])
+        , ("outcome", .ident "outcome") ]
+    , ties :=
+        [ "a decide with no token: only a fenced token commits, so the fence is a" ++
+          " parameter and never absent"
+        , "a token fenced at one register committing at another: the register is" ++
+          " written from the one the caller commits at" ] }
+  , { generator := "trigger", arm := "trigger", extra := []
+    , fields := [ ("predicate", .ident "predicate"), ("declaration", .ident "declaration") ]
+    , ties := [] }
+  , { generator := "spawn", arm := "spawn", extra := []
+    , fields := [ ("parent", .ident "parent"), ("request", .ident "request") ]
+    , ties := [] } ]
+
+/-! ### Reconciling the table against the corpus -/
+
+/-- How deep a field expression of the projection table nests. The table writes
+    an identifier, a member access, or one object of those, and nothing deeper;
+    the walks below are given exactly that much room and report nothing past it,
+    which is safe in the direction that matters — an unread parameter or an
+    unknown tag hiding below this depth would still have to be written by a row
+    somebody added, and a row deeper than the grammar is a change to this table
+    rather than to the corpus. -/
+def expressionDepth : Nat := 4
+
+/-- The identifiers one field expression reads. A parameter no field reads is an
+    argument that vanishes at the call, so this is what the reconciliation below
+    quantifies over. -/
+def readsOf : Nat -> TsExpr -> List String
+  | 0, _ => []
+  | _ + 1, .ident name => [name]
+  | depth + 1, .field object _ => readsOf depth object
+  | depth + 1, .object _ properties =>
+      properties.flatMap fun property => readsOf depth property.2.2
+  | depth + 1, .array _ elements => elements.flatMap fun element => readsOf depth element.2
+  | _ + 1, _ => []
+
+/-- The tags one field expression writes, as the `_tag` members it carries. -/
+def tagsOf : Nat -> TsExpr -> List String
+  | 0, _ => []
+  | depth + 1, .object _ properties =>
+      properties.flatMap fun property =>
+        match property.2.1, property.2.2 with
+        | .name "_tag", .str tag => [tag]
+        | _, value => tagsOf depth value
+  | depth + 1, .array _ elements => elements.flatMap fun element => tagsOf depth element.2
+  | _ + 1, _ => []
+
+/-- One generator resolved against the corpus: its parameters and its arm. -/
+structure ResolvedGenerator where
+  row : GeneratorRow
+  parameters : List (String × String × TsType)
+  kindParameter : Option String
+
+/-- Resolve the projection table against the corpus, refusing every way the two
+    can disagree. The checks run in both directions on purpose: a generator the
+    table has not is a surface that silently lost a sentence, a row for a
+    generator the model has not is a surface that invented one, and a field list
+    that has moved is a constructor whose arguments would land in the wrong
+    slots. None of those is visible in the emitted bytes, so all of them are
+    refused before a byte is written. -/
+def resolveGenerators (types : List SchemaType) (kinds : List String)
+    : Except String (List ResolvedGenerator) := do
+  let typeRecord := fun (name : String) =>
+    match types.find? (fun type => type.name == name) with
+    | some type => Except.ok type
+    | none => Except.error s!"ts: the corpus declares no {name} type"
+  let act <- typeRecord "Act"
+  let candidate <- typeRecord "CandidateAct"
+  let constructorNames := types.flatMap fun type => type.constructors.map (·.name)
+  if generatorSurface.length != act.constructors.length then
+    .error
+      s!"ts: the projection table has {generatorSurface.length} rows and Act declares {act.constructors.length} generators"
+  (act.constructors.zipIdx).mapM fun entry => do
+    let generator := entry.1
+    let index := entry.2
+    let row <-
+      match generatorSurface[index]? with
+      | some row =>
+          if row.generator == generator.name then Except.ok row
+          else
+            Except.error
+              s!"ts: projection row {index} names {row.generator} where Act declares {generator.name}; the table is not in the model's order"
+      | none =>
+          Except.error
+            s!"ts: projection row {index} names nothing where Act declares {generator.name}"
+    let earlier := (generatorSurface.take index).map (·.arm)
+    if earlier.contains row.arm then
+      Except.error s!"ts: two generators project onto candidate arm {row.arm}"
+    let arm <-
+      match candidate.constructors.find? (fun one => one.name == row.arm) with
+      | some arm => Except.ok arm
+      | none => Except.error s!"ts: CandidateAct declares no {row.arm} constructor"
+    let wanted := String.intercalate "," (arm.fields.map (·.name))
+    let stated := String.intercalate "," (row.fields.map (·.1))
+    if wanted != stated then
+      Except.error
+        s!"ts: generator {generator.name} fills [{stated}] where candidate arm {row.arm} declares [{wanted}]"
+    for field in row.fields do
+      for tag in tagsOf expressionDepth field.2 do
+        if !constructorNames.contains tag then
+          Except.error
+            s!"ts: generator {generator.name} writes tag {quote tag}, which the corpus has not"
+    let declared :=
+      (generator.fields.map fun field => (field.name, field.model)) ++
+        row.extra.map fun extra => (extra.name, extra.model)
+    let mut kindParameter : Option String := none
+    let mut parameters : List (String × String × TsType) := []
+    for parameter in declared do
+      let site := s!"Act.{generator.name}.{parameter.1}"
+      let (head, _) <- parseReference parameter.2 site
+      if head == "DeclKind" then
+        if kindParameter.isSome then
+          Except.error
+            s!"ts: {site}: a second declaration-kind field; the brand binding would be ambiguous"
+        kindParameter := some parameter.1
+      let projected <- surfaceType parameter.2 kindParameter kinds site
+      parameters := parameters ++ [(parameter.1, parameter.2, projected)]
+    let reads := row.fields.flatMap fun field => readsOf expressionDepth field.2
+    for parameter in parameters do
+      if !reads.contains parameter.1 then
+        Except.error
+          s!"ts: generator {generator.name} takes {parameter.1} and reads it nowhere"
+    Except.ok { row := row, parameters := parameters, kindParameter := kindParameter }
+
+/-! ### The candidate layer -/
+
+/-- The types this projection carries, in the order the emitted file declares
+    them. -/
+def candidateTypes : List String :=
+  ["RawArg", "CandidateAnchor", "TokenClaim", "MergeStrategy", "CandidatePredicate",
+    "CandidateAct"]
+
+/-- One model type as a plain declaration: a sum becomes a tagged union keyed on
+    the discriminant the runtime already speaks, a product becomes an interface.
+    A union member is written open where its flat form would not fit. -/
+def candidateDeclaration (type : SchemaType) (docs : List (String × String))
+    (declared : List String) : Except String TsStmt := do
+  let doc := (sdkDocOf docs type.name).map (sdkDoc "")
+  if type.form == "inductive" then do
+    let members <- type.constructors.mapM fun constructor => do
+      let fields <- constructor.fields.mapM fun field => do
+        let projected <-
+          candidateType referenceNesting field.model declared
+            s!"{type.name}.{constructor.name}.{field.name}"
+        Except.ok ((true, false, PropertyKey.name field.name, projected))
+      let written :=
+        ((true, false, PropertyKey.name "_tag", TsType.literal constructor.name) :: fields)
+      let flat := TsType.record .inline written
+      Except.ok
+        (if ("  | " ++ Ts.typeText flat).length <= sdkWidth then flat
+         else TsType.record .block written)
+    Except.ok (TsStmt.typeAlias doc type.name [] .block (.union .block members))
+  else
+    match type.constructors with
+    | [constructor] => do
+        let members <- constructor.fields.mapM fun field => do
+          let projected <-
+            candidateType referenceNesting field.model declared
+              s!"{type.name}.{constructor.name}.{field.name}"
+          Except.ok
+            ({ readOnly := true, optional := false, key := .name field.name
+             , type := projected } : Member)
+        Except.ok (TsStmt.interfaceDecl doc type.name .inline [] false members)
+    | constructors =>
+        Except.error
+          s!"ts: structure {type.name} carries {constructors.length} constructors, want 1"
+
+/-- One plain constructor per arm of a sum: the model's own constructor name,
+    the model's own field names, and the model's own field order. The three
+    layouts are the three the surface writes, chosen by the same two width tests
+    the retiring renderer applied. -/
+def candidateConstructors (type : SchemaType) (declared : List String)
+    : Except String (List TsStmt) := do
+  let statements <- type.constructors.mapM fun constructor => do
+    let binders <- constructor.fields.mapM fun field => do
+      let projected <-
+        candidateType referenceNesting field.model declared
+          s!"{type.name}.{constructor.name}.{field.name}"
+      Except.ok ((none, field.name, projected) : Option Doc × String × TsType)
+    let body :=
+      TsExpr.group (.object .inline
+        ((none, PropertyKey.name "_tag", TsExpr.str constructor.name) ::
+          constructor.fields.map fun field =>
+            (none, PropertyKey.shorthand field.name, TsExpr.ident field.name)))
+    let doc :=
+      sdkDoc ""
+        s!"The {constructor.name} arm of {type.name}{if constructor.fields.isEmpty then ", which carries nothing" else ""}."
+    let headText :=
+      "export const " ++ constructor.name ++ " = (" ++ Ts.inlineBinders binders ++ "): " ++
+        type.name ++ " =>"
+    let bodyText := Ts.inlineExpr body
+    let arrow :=
+      if (headText ++ " " ++ bodyText).length <= sdkWidth then
+        TsExpr.arrow [] .inline binders (some (.reference type.name [])) .beside (.value body)
+      else if headText.length <= sdkWidth then
+        TsExpr.arrow [] .inline binders (some (.reference type.name [])) .below (.value body)
+      else
+        TsExpr.arrow [] .block binders (some (.reference type.name [])) .beside (.value body)
+    Except.ok [TsStmt.constant (some doc) constructor.name none arrow, TsStmt.blank]
+  Except.ok statements.flatten
+
+/-! ### The module header -/
+
+/-- The module header of the SDK surface. -/
+def sdkHeader (tables : Tables) : List String :=
+  [ "Plane: kernel — the language: corpus, door, programs, and wire grammar."
+  , ""
+  , "GENERATED FILE - DO NOT EDIT."
+  , ""
+  , "Corpus:  " ++ tables.digest
+  , "Format:  interchange format " ++ toString tables.format
+  , ""
+  , "That digest is this module's whole provenance, and it is a digest rather"
+  , "than a location because a plait item refers only to digests: a path names"
+  , "wherever a reader happens to be standing, which is the ambient reference the"
+  , "algebra refuses. It is SHA-256 over the corpus's canonical bytes."
+  , ""
+  , "The kernel language as plain TypeScript: things as functions and arguments."
+  , ""
+  , "Zero imports and zero dependencies. Every type here is spellable with the"
+  , "language's own syntax, every constructor is a plain function, and every"
+  , "closed inventory is a literal array a reader can enumerate. Nothing here is"
+  , "an effect system, a service, or a client: the eight generators build"
+  , "CANDIDATE values, and a candidate becomes a sentence only by being judged."
+  , ""
+  , "The values this module builds are exactly the values the one admission"
+  , "function accepts. That is the property the whole surface is arranged"
+  , "around: a projection that could describe the language but could not hand it"
+  , "to the door would be a description of a door rather than a way through one."
+  , ""
+  , "Three layers, from the outside in."
+  , ""
+  , "The **inventories and the taught refusals** are the vocabulary: what a"
+  , "declaration kind may be, what stages a hole passes through, what the door"
+  , "can refuse, and for every refusal the law it defends and the legal next"
+  , "move. Each refusal row carries its reason's standing MEANING as a doc"
+  , "comment, distinct from the law and the repair a refusal teaches when it"
+  , "fires. The operator's taste pass ratified those sentences, so each one"
+  , "stands as written rather than as a draft awaiting a ruling."
+  , ""
+  , "The **candidate grammar** is the raw spelling: every shape a caller can"
+  , "present, lawful and unlawful alike. The unlawful shapes are here on"
+  , "purpose. A surface that made them unspellable would PREVENT rather than"
+  , "teach, and the taught repair for a refused candidate is only meaningful if"
+  , "the candidate can be written down."
+  , ""
+  , "The **eight generators** are the lawful half: one plain function per"
+  , "generator of the model, taking that generator's own fields, in that"
+  , "generator's own order. Four of them write a field rather than accepting"
+  , "one, and those four are the model's dependent ties - a token is fenced at"
+  , "the register it commits to, an anchor belongs to the reduction it resumes,"
+  , "a resolve carries no anchor, a join carries the declared algebra. The tie"
+  , "is carried by construction, so a crossed pair has no spelling here at all;"
+  , "the crime remains spellable as a candidate value, where the door teaches."
+  , ""
+  , "Integers are `bigint` throughout, because the model's integers are"
+  , "unbounded and an encoded sentence already exceeds what a double holds"
+  , "exactly. Brand identities are string literals rather than unique symbols,"
+  , "because that is how the estate's pinned release spells a type identity and"
+  , "because a module-local symbol cannot be named from anywhere else."
+  , ""
+  , "These are safety-side names and texts, never runtime guarantees. A model"
+  , "theorem stays in the model; what crosses the seam is the vocabulary the"
+  , "door harness then checks the runtime against, verdict for verdict."
+  , ""
+  , "@module" ]
+
+/-! ### The surface -/
+
+/-- The plain-TypeScript SDK surface. -/
+def sdkModule (tables : Tables) (roster : Roster) (lines : List String)
+    : Except String TsModule := do
+  let types <- schemaTypes lines
+  let docs := docTable lines
+  let kindNames := tables.kinds.map (·.1)
+  let generators <- resolveGenerators types kindNames
+  let meanings <- reasonMeanings roster tables.refusals
+  let typeRecord := fun (name : String) =>
+    match types.find? (fun type => type.name == name) with
+    | some type => Except.ok type
+    | none => Except.error s!"ts: the corpus declares no {name} type"
+  let triggers <- typeRecord "KTriggerPredicate"
+  let digest <- typeRecord "Digest"
+  let digestBrand := digest.params
+  if digestBrand != [closedBrandDomain] then
+    .error
+      s!"ts: Digest is branded by [{String.intercalate ", " digestBrand}], and this projection's closed brand domain is {closedBrandDomain}"
+  let digestCarrier <-
+    match digest.constructors with
+    | constructor :: _ =>
+        match constructor.fields with
+        | field :: _ => sdkCarrier field.model "Digest"
+        | [] => Except.error "ts: Digest carries no field"
+    | [] => Except.error "ts: Digest carries no field"
+  let declared := candidateTypes ++ ["DeclKind", "Ref"]
+  -- One flat namespace, so a model that grew two constructors of one name would
+  -- silently shadow one of them. The names are the model's own, so the refusal
+  -- names the model's collision rather than this file's.
+  let mut taken : List String := ["digestOf"]
+  let sumTypes <- candidateTypes.mapM typeRecord
+  let minted :=
+    (sumTypes.filter (fun type => type.form == "inductive" && type.name != "CandidateAct")).flatMap
+      (fun type => type.constructors.map (·.name)) ++
+      generators.map (fun resolved => resolved.row.generator)
+  for name in minted do
+    if taken.contains name then
+      .error s!"ts: two constructors of this projection are both named {name}"
+    taken := taken ++ [name]
+  let admitResult <- typeRecord "AdmitResult"
+  if admitResult.constructors.length != 2 then
+    .error s!"ts: AdmitResult carries {admitResult.constructors.length} constructors, not two"
+  let armOf := fun (name : String) =>
+    match admitResult.constructors.find? (fun one => one.name == name) with
+    | some one => Except.ok one
+    | none => Except.error s!"ts: AdmitResult carries no {name} constructor"
+  let admitted <- armOf "admitted"
+  let refusedArm <- armOf "refused"
+  let soleField := fun (constructor : SchemaConstructor) (expected : String) =>
+    match constructor.fields with
+    | [field] =>
+        if field.model == expected then Except.ok field
+        else
+          Except.error
+            s!"ts: AdmitResult.{constructor.name}.{field.name} carries {field.model}, not {expected}"
+    | fields =>
+        Except.error
+          s!"ts: AdmitResult.{constructor.name} carries {fields.length} fields, not one"
+  let _ <- soleField admitted "Act"
+  let _ <- soleField refusedArm "Refusal"
+  let taughtRows <- tables.refusals.mapM fun refusal => do
+    let meaning :=
+      match meanings.find? (fun row => row.1 == refusal.reason) with
+      | some row => row.2
+      | none => ""
+    let doc <- sdkMeaningDoc meaning s!"refusal reason {quote refusal.reason}"
+    Except.ok
+      ((some doc, TsExpr.object .block
+        [ (none, .name "reason", .str refusal.reason)
+        , (none, .name "law", .str refusal.law)
+        , (none, .name "repair", .str refusal.repair)
+        , (none, .name "applicability", .str refusal.applicability) ])
+        : Option Doc × TsExpr)
+  let candidateBlocks <- candidateTypes.mapM fun name => do
+    let type <- typeRecord name
+    let declaration <- candidateDeclaration type docs declared
+    let constructors <-
+      if type.form == "inductive" && name != "CandidateAct" then
+        candidateConstructors type declared
+      else Except.ok []
+    Except.ok ([declaration, TsStmt.blank] ++ constructors)
+  let door <- typeRecord "Door"
+  let doorDeclaration <- candidateDeclaration door docs declared
+  let generatorBlocks <- generators.mapM fun resolved => do
+    let row := resolved.row
+    let sentence :=
+      String.intercalate " "
+        ([s!"Builds one `{row.generator}` candidate."] ++
+          row.extra.map (fun extra => s!"It also takes `{extra.name}`, because {extra.why}.") ++
+          row.ties.map (fun tie => s!"This constructor cannot spell {tie}.") ++
+          ["Nothing is executed and nothing is published: only the door judges."])
+    let binders <- resolved.parameters.mapM fun parameter => do
+      let (head, _) <- parseReference parameter.2.1 parameter.1
+      let opening := s!"`{parameter.1} : {parameter.2.1}`."
+      let text :=
+        match sdkDocOf docs head with
+        | none => opening
+        | some prose => opening ++ " " ++ prose
+      Except.ok ((some (sdkDoc "  " text), parameter.1, parameter.2.2)
+        : Option Doc × String × TsType)
+    let body :=
+      TsExpr.group (.object .block
+        ((none, PropertyKey.name "_tag", TsExpr.str row.arm) ::
+          row.fields.map fun field =>
+            match field.2 with
+            | .ident name =>
+                if name == field.1 then (none, PropertyKey.shorthand field.1, field.2)
+                else (none, PropertyKey.name field.1, field.2)
+            | value => (none, PropertyKey.name field.1, value)))
+    Except.ok
+      [ TsStmt.constant (some (sdkDoc "" sentence)) row.generator none
+          (.arrow
+            (match resolved.kindParameter with
+             | none => []
+             | some _ => [("Kind", .reference "DeclKind" [])])
+            .block binders (some (.reference "CandidateAct" [])) .beside (.value body))
+      , TsStmt.blank ]
+  Except.ok
+    { statements :=
+        [ .comment (Doc.rows (sdkHeader tables))
+        , .blank
+        , .constant
+            (some (Doc.rows
+              [ "What this surface came from, carried as data for a consumer to assert: the"
+              , "identity of the corpus, and the interchange format it was read at. A"
+              , "consumer that wants to know whether it holds this surface's source hashes"
+              , "the bytes it has and compares - which is a check, where a path would have"
+              , "been a hope." ]))
+            "KERNEL_SDK_PROVENANCE" none
+            (.asConst (.object .block
+              [ (none, .name "corpus", .str tables.digest)
+              , (none, .name "format", .bigint tables.format) ]))
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The vocabulary: the closed inventories, and what the door teaches."
+            , sectionRule ]
+        , .blank
+        , .constant
+            (some (sdkDoc ""
+              ((sdkDocOf docs "DeclKind").getD "The closed universe of declaration kinds.")))
+            "DECL_KINDS" none (literalRoster kindNames)
+        , .blank
+        , .typeAlias (some (Doc.line "One declaration kind of the closed universe."))
+            "DeclKind" [] .inline (rosterMember "DECL_KINDS")
+        , .blank
+        , .constant
+            (some (Doc.line
+              "The wire-stable rank of each declaration kind. An encoded sentence writes it."))
+            "DECL_KIND_RANK" none
+            (.satisfies
+              (.asConst (.object .block (tables.kinds.map fun kind =>
+                (none, PropertyKey.name kind.1, TsExpr.bigint kind.2))))
+              (.mapped .inline "Kind" (.reference "DeclKind" []) (.keyword "bigint")))
+        , .blank
+        , .constant
+            (some (sdkDoc ""
+              ((sdkDocOf docs "HoleStage").getD "The epistemic stages of a hole.")))
+            "HOLE_STAGES" none (literalRoster (tables.stages.map (·.1)))
+        , .blank
+        , .typeAlias (some (Doc.line "One epistemic stage of a hole."))
+            "HoleStage" [] .inline (rosterMember "HOLE_STAGES")
+        , .blank
+        , .constant
+            (some (Doc.rows
+              [ "The rank of each hole stage. Ranks compare in the reached-at-least direction"
+              , "only; the gap between two of them means nothing." ]))
+            "HOLE_STAGE_RANK" none
+            (.satisfies
+              (.asConst (.object .block (tables.stages.map fun stage =>
+                (none, PropertyKey.name stage.1, TsExpr.bigint stage.2))))
+              (.mapped .inline "Stage" (.reference "HoleStage" []) (.keyword "bigint")))
+        , .blank
+        , .constant
+            (some (Doc.line "The generator vocabulary, in the model's own declaration order."))
+            "GENERATORS" none
+            (literalRoster (generators.map (fun resolved => resolved.row.generator)))
+        , .blank
+        , .typeAlias (some (Doc.line "One kernel generator: one way to say something."))
+            "Generator" [] .inline (rosterMember "GENERATORS")
+        , .blank
+        , .constant
+            (some (Doc.rows
+              [ "The closed trigger grammar: exactly the monotone productions the model"
+              , "names. Every production reads its component upward, so stability under"
+              , "growth is a property of the grammar's shape rather than of a check." ]))
+            "TRIGGER_PRODUCTIONS" none
+            (literalRoster (triggers.constructors.map (·.name)))
+        , .blank
+        , .typeAlias (some (Doc.line "One lawful trigger production."))
+            "TriggerProduction" [] .inline (rosterMember "TRIGGER_PRODUCTIONS")
+        , .blank
+        , .constant
+            (some (Doc.line "The wire spelling of every refusal reason, in the model's order."))
+            "REFUSAL_REASONS" none (literalRoster (tables.refusals.map (·.reason)))
+        , .blank
+        , .typeAlias (some (Doc.line "One refusal reason the door can carry."))
+            "RefusalReason" [] .inline (rosterMember "REFUSAL_REASONS")
+        , .blank
+        , .typeAlias
+            (some (sdkDoc ""
+              ((sdkDocOf docs "Applicability").getD "How a taught repair may be applied.")))
+            "Applicability" [] .inline
+            (.union .inline [.literal "machine-applicable", .literal "advisory"])
+        , .blank
+        , .interfaceDecl
+            (some (Doc.line "One taught refusal: the law it defends and the legal next move."))
+            "Refusal" .inline [] false
+            [ { readOnly := true, optional := false, key := .name "reason"
+              , type := .reference "RefusalReason" [] }
+            , { readOnly := true, optional := false, key := .name "law"
+              , type := .keyword "string" }
+            , { readOnly := true, optional := false, key := .name "repair"
+              , type := .keyword "string" }
+            , { readOnly := true, optional := false, key := .name "applicability"
+              , type := .reference "Applicability" [] } ]
+        , .blank
+        , .constant
+            (some (Doc.rows
+              [ "The taught-refusal table - total: a reason without its law, its repair and"
+              , "its marking cannot exist here, because it cannot exist in the model." ]))
+            "TAUGHT" none
+            (.satisfies (.asConst (.array .block taughtRows))
+              (.reference "ReadonlyArray" [.reference "Refusal" []]))
+        , .blank
+        , .constant
+            (some (Doc.line "The taught refusal each reason carries, keyed by its wire spelling."))
+            "TAUGHT_BY_REASON" none
+            (.satisfies
+              (.asConst (.object .block ((tables.refusals.zipIdx).map fun entry =>
+                (none, PropertyKey.quoted entry.1.reason,
+                  TsExpr.element (.ident "TAUGHT") entry.2))))
+              (.mapped .inline "Reason" (.reference "RefusalReason" [])
+                (.reference "Refusal" [])))
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The sort system: one brand per declaration kind, over the model's carrier."
+            , sectionRule ]
+        , .blank
+        , .interfaceDecl
+            (some (Doc.rows
+              [ "The compile-time brand carrier. The property never exists at runtime; it"
+              , "exists so two sorts with the same representation refuse to unify. It is a"
+              , "string-literal key rather than a unique symbol, so it can be named from"
+              , "anywhere and spelled without importing anything." ]))
+            "Brand" .inline
+            [{ name := "Tag", constraint := some (.keyword "string"), fallback := none }] false
+            [ { readOnly := true, optional := false
+              , key := .quoted "~foldlab/plait/kernel/Brand"
+              , type := .reference "Tag" [] } ]
+        , .blank
+        , .typeAlias
+            (some (sdkDoc ""
+              ((sdkDocOf docs "Digest").getD
+                "A content address branded by the declaration kind it names.")))
+            "Digest"
+            [ { name := "Kind", constraint := some (.reference "DeclKind" []), fallback := none }
+            , { name := "Carrier", constraint := none, fallback := some digestCarrier } ]
+            .block
+            (.intersection
+              [ .reference "Carrier" []
+              , .reference "Brand"
+                  [.template "~foldlab/plait/kernel/Digest/"
+                    [(.reference "Kind" [], "")]] ])
+        , .blank
+        , .comment (Doc.rows
+            [ "The per-kind digest aliases. The declaration kinds are the one brand domain"
+            , "the model closes, so they enumerate; a register and a partition are open, so"
+            , "the sorts branded by them are carried here as their carrier and the tie a"
+            , "brand would have made is written by the constructor instead." ]) ] ++
+        (kindNames.map fun kind =>
+          TsStmt.typeAlias
+            (some (Doc.line s!"A content address branded to the {kind} declaration kind."))
+            (digestAlias kind)
+            [{ name := "Carrier", constraint := none, fallback := some digestCarrier }]
+            .inline
+            (.reference "Digest" [.literal kind, .reference "Carrier" []])) ++
+        [ .blank
+        , .constant
+            (some (Doc.rows
+              [ "Names a digest at its kind. It does not MINT one: every identifier is the"
+              , "digest of a declaration or a derivation from one, and minting a name is"
+              , "itself one of the taught refusals - the atom that spells that crime is"
+              , "below, under the raw arguments, where the door can refuse it and teach." ]))
+            "digestOf" none
+            (.arrow [("Kind", .reference "DeclKind" [])] .block
+              [ (none, "kind", .reference "Kind" [])
+              , (none, "id", digestCarrier) ]
+              (some (.reference "Digest" [.reference "Kind" []])) .beside
+              (.statements
+                [ .discard (.ident "kind")
+                , .returns (.coerce (.ident "id") (.reference "Digest" [.reference "Kind" []])) ]))
+        , .blank
+        , .interfaceDecl
+            (some (sdkDoc "" ((sdkDocOf docs "LanePartition").getD "A lane partition.")))
+            "LanePartition" .inline [] false
+            [ { readOnly := true, optional := false, key := .name "lane"
+              , type := .reference "LaneDigest" [] }
+            , { readOnly := true, optional := false, key := .name "shard"
+              , type := digestCarrier } ]
+        , .blank
+        , .interfaceDecl
+            (some (sdkDoc "" ((sdkDocOf docs "AnchorFact").getD "An anchor fact.")))
+            "AnchorFact" .inline [] false
+            [ { readOnly := true, optional := false, key := .name "floor", type := digestCarrier }
+            , { readOnly := true, optional := false, key := .name "state", type := digestCarrier }
+            , { readOnly := true, optional := false, key := .name "head", type := digestCarrier } ]
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The candidate grammar: every shape a caller can present to the door."
+            , sectionRule ]
+        , .blank
+        , .interfaceDecl
+            (some (Doc.rows
+              [ "A kind-tagged reference: the one lawful way a heterogeneous collection of"
+              , "digests is carried, so the kind travels with the identifier instead of"
+              , "being inferred from context." ]))
+            "Ref" .inline [] false
+            [ { readOnly := true, optional := false, key := .name "id", type := digestCarrier }
+            , { readOnly := true, optional := false, key := .name "kind"
+              , type := .reference "DeclKind" [] } ]
+        , .blank ] ++
+        candidateBlocks.flatten ++
+        [ doorDeclaration
+        , .blank
+        , .typeAlias
+            (some (Doc.rows
+              [ "What the door answers. An admitted candidate becomes a sentence and carries"
+              , "its canonical framing - the vector two implementations must agree on. A"
+              , "refused one carries the whole taught row, so the reason, the law it defends"
+              , "and the legal next move arrive together and a caller can repair." ]))
+            "Verdict" [] .block
+            (.union .block
+              [ .record .inline
+                  [ (true, false, .name "verdict", .literal admitted.name)
+                  , (true, false, .name "encoded",
+                      .reference "ReadonlyArray" [digestCarrier]) ]
+              , .parens (.intersection
+                  [ .record .inline
+                      [(true, false, .name "verdict", .literal refusedArm.name)]
+                  , .reference "Refusal" [] ]) ])
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The eight generators: the lawful half, one plain function each."
+            , sectionRule ]
+        , .blank ] ++
+        -- The surface closes on a blank, which is what puts the final newline
+        -- on this file where the schema surface has none. The trailing newline
+        -- is a fact about the surface, never a constant of the printer.
+        generatorBlocks.flatten }
+
 /-! ## The emission door
 
 One name per surface, so a caller names a target rather than a location. -/
@@ -2065,6 +2965,7 @@ inductive Target where
   | refusalKinds
   | surfaceDigests
   | kernelSchemas
+  | kernelSdk
 deriving Repr, BEq
 
 /-- The wire spelling of a target. -/
@@ -2074,6 +2975,7 @@ def Target.wire : Target -> String
   | .refusalKinds => "refusal-kinds"
   | .surfaceDigests => "surface-digests"
   | .kernelSchemas => "kernel-schemas"
+  | .kernelSdk => "kernel-sdk"
 
 /-- The target a caller named. -/
 def Target.ofWire (text : String) : Except String Target :=
@@ -2082,6 +2984,7 @@ def Target.ofWire (text : String) : Except String Target :=
   else if text == "refusal-kinds" then .ok .refusalKinds
   else if text == "surface-digests" then .ok .surfaceDigests
   else if text == "kernel-schemas" then .ok .kernelSchemas
+  else if text == "kernel-sdk" then .ok .kernelSdk
   else .error s!"ts: unsupported target {text}"
 
 /-- The digest register: what each emitted surface hashes to, and what corpus
@@ -2110,6 +3013,7 @@ def emit (target : Target) (corpus rosterLines : List String)
   | .kernelTables => return Ts.render (<- tablesModule tables roster ast)
   | .kernelBuilder => return Ts.render (<- builderModule tables corpus)
   | .kernelSchemas => return Ts.render (<- schemasModule tables corpus)
+  | .kernelSdk => return Ts.render (<- sdkModule tables roster corpus)
   | .refusalKinds =>
       -- The vocabulary's meanings are reviewed rather than model-emitted, so
       -- the reason ledger is still reconciled here: an unexplained kind on

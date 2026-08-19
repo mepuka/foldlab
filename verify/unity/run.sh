@@ -614,6 +614,7 @@ ts_tables="../../packages/plait/src/kernel/KernelTables.generated.ts"
 ts_builder="../../packages/plait/src/kernel/KernelBuilder.generated.ts"
 ts_vocabulary="../../packages/plait/src/truth/RefusalKinds.generated.ts"
 ts_schemas="../../packages/plait/src/kernel/KernelSchemas.generated.ts"
+ts_sdk="../../packages/plait/src/kernel/KernelSdk.generated.ts"
 
 emit_surface() {
   lake exe ts --target="$1" --meanings="$ts_roster" > "$2"
@@ -653,18 +654,19 @@ check_surface kernel-tables "$ts_tables"
 check_surface kernel-builder "$ts_builder"
 check_surface refusal-kinds "$ts_vocabulary"
 check_surface kernel-schemas "$ts_schemas"
+check_surface kernel-sdk "$ts_sdk"
 
 # The em dash survives VERBATIM on this target, and it is the only code point
 # outside ASCII any surface carries. The prose register folds it to two
 # hyphens; applying that fold here would move six lines across the four
 # generated files, so the rule is walled rather than remembered.
 #
-# The count is per surface and measured, not one number for all four: the two
+# The count is per surface and measured, not one number for all five: the two
 # that carry a drafted meaning about an incarnation mismatch carry the dash
-# twice, and the builder and the schemas each carry it once, in the plane
-# header alone. A single expected count would have had to be the wrong one for
-# some surface.
-for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2" "$ts_schemas:1"; do
+# twice, and the builder, the schemas and the SDK each carry it once, in the
+# plane header alone. A single expected count would have had to be the wrong
+# one for some surface.
+for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2" "$ts_schemas:1" "$ts_sdk:1"; do
   surface="${pinned%:*}"
   expected="${pinned##*:}"
   if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne "$expected" ]]; then
@@ -792,6 +794,14 @@ check_ts_mutation option-idiom Unity/TsKernel.lean \
   's/schemaCall "UndefinedOr"/schemaCall "NullOr"/' \
   kernel-schemas "$ts_schemas" \
   "the schema idioms come from the reviewed map; an Option is an undefined-or by ruling, not by default"
+check_ts_mutation sdk-surface-rule Unity/TsKernel.lean \
+  's/if name == "LanePartition" then .ok (.reference "LanePartition" \[\])/if name == "LanePartition" then .ok (.reference "AnchorFact" [])/' \
+  kernel-sdk "$ts_sdk" \
+  "the SDK's parameter types come from the reviewed surface map, which is load-bearing"
+check_ts_mutation sdk-projection-note Unity/TsKernel.lean \
+  's/" canonicalization of that list and the raw list is what the door is handed.")/" canonicalization of that list and the raw list is what the door is given.")/' \
+  kernel-sdk "$ts_sdk" \
+  "the projection notes are reviewed prose the surface carries, not decoration beside it"
 
 # The roster is reviewed data, so the reconciliation between it and the corpus
 # must refuse rather than default in both directions.
@@ -819,6 +829,59 @@ check_ts_refusal() {
   echo "GATE: PASS ($name refused: $reason)"
 }
 
+# The reviewed projection tables must REFUSE rather than render around a corpus
+# they no longer match. This is the clause the retired bun control proved by
+# planting into a corpus file; the emitter reads the model's own emission rather
+# than a file, so the plant is made in the reviewed table instead and the
+# emission has to stop with the reconciliation's own words.
+declare -a exercised_generator_refusals=()
+check_ts_generator_refusal() {
+  local name="$1"
+  local expression="$2"
+  local target="$3"
+  local reason="$4"
+  cp -- Unity/TsKernel.lean "$ts_backup"
+  if ! sed "$expression" "$ts_backup" > Unity/TsKernel.lean ||
+      cmp -s "$ts_backup" Unity/TsKernel.lean; then
+    cp -- "$ts_backup" Unity/TsKernel.lean
+    echo "GATE: FAIL — ts refusal probe $name did not change the generator" >&2
+    exit 1
+  fi
+  ts_mutated="Unity/TsKernel.lean"
+  if ! lake build ts >/dev/null 2>&1; then
+    restore_ts
+    lake build ts >/dev/null 2>&1 || true
+    echo "GATE: FAIL — ts refusal probe $name did not build" >&2
+    exit 1
+  fi
+  if lake exe ts --target="$target" --meanings="$ts_roster" \
+      >/dev/null 2>"$ts_reason"; then
+    restore_ts
+    lake build ts >/dev/null 2>&1 || true
+    echo "GATE: FAIL — ts refusal probe $name was accepted by the emitter" >&2
+    exit 1
+  fi
+  if ! grep -qF "$reason" "$ts_reason"; then
+    cat "$ts_reason" >&2
+    restore_ts
+    lake build ts >/dev/null 2>&1 || true
+    echo "GATE: FAIL — ts refusal probe $name refused for the wrong reason" >&2
+    exit 1
+  fi
+  restore_ts
+  if ! lake build ts >/dev/null 2>&1; then
+    echo "GATE: FAIL — ts refusal probe $name did not rebuild after restore" >&2
+    exit 1
+  fi
+  exercised_generator_refusals+=("$name")
+  echo "GATE: PASS ($name refused: $reason)"
+}
+
+check_ts_generator_refusal moved-candidate-field \
+  's/("outcome", .ident "outcome") \]/("outcomes", .ident "outcome") ]/' \
+  kernel-sdk \
+  'fills [register,token,outcomes] where candidate arm decide declares [register,token,outcome]'
+
 check_ts_refusal unexplained-reason \
   '/"reason":"clock-read"/d' \
   'corpus refusal reason clock-read carries no reviewed meaning'
@@ -826,7 +889,7 @@ check_ts_refusal duplicated-kind \
   '/"kind":"digest-mismatch"/p' \
   'the roster names a runtime refusal kind twice'
 
-echo "GATE: PASS (${#exercised_surfaces[@]} TypeScript surfaces at byte parity; ${#exercised_ts_mutations[@]} printer mutations moved and restored; ${#exercised_ts_refusals[@]} roster reconciliations refused)"
+echo "GATE: PASS (${#exercised_surfaces[@]} TypeScript surfaces at byte parity; ${#exercised_ts_mutations[@]} printer mutations moved and restored; ${#exercised_ts_refusals[@]} roster reconciliations and ${#exercised_generator_refusals[@]} projection-table reconciliations refused)"
 
 # The must-not-compile class: each control file must be REFUSED by the
 # elaborator with its pinned diagnosis, and its witness twin must

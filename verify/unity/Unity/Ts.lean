@@ -126,10 +126,22 @@ def Doc.rows (rows : List String) : Doc :=
 
 /-! ## The tree -/
 
-/-- An object key: a bare identifier, or a string literal. -/
+/-- An object key: a bare identifier, a string literal, or the shorthand the
+    target writes where the key and the value are the same identifier
+    (ShorthandPropertyAssignment, which is a different node from the
+    PropertyAssignment the other two make). -/
 inductive PropertyKey where
   | name (text : String)
   | quoted (text : String)
+  | shorthand (text : String)
+deriving Repr, BEq
+
+/-- Where an arrow's body starts: beside the arrow, or on the line under it at
+    one step deeper. The target admits both and a site picks one, so the choice
+    is data like every other layout here. -/
+inductive BodyPlacement where
+  | beside
+  | below
 deriving Repr, BEq
 
 mutual
@@ -168,8 +180,19 @@ inductive TsExpr where
   | array (layout : Layout) (elements : List (Option Doc × TsExpr))
   | object (layout : Layout) (properties : List (Option Doc × PropertyKey × TsExpr))
   | concat (runs : List TsExpr)
-  | arrow (binders : List (String × TsType)) (result : Option TsType) (body : TsExpr)
+  /-- An arrow function: its own type parameters, the layout its binders are
+      written at, those binders each with the doc comment the site gives it,
+      the result type, where the body starts, and the body. -/
+  | arrow (parameters : List (String × TsType)) (layout : Layout)
+      (binders : List (Option Doc × String × TsType)) (result : Option TsType)
+      (placement : BodyPlacement) (body : TsBody)
   | asConst (inner : TsExpr)
+  /-- The other AsExpression: an assertion to a named type rather than to
+      `const`. -/
+  | coerce (inner : TsExpr) (type : TsType)
+  /-- A ParenthesizedExpression. The target writes one where an object literal
+      would otherwise be read as a block, and nowhere else. -/
+  | group (inner : TsExpr)
   | satisfies (inner : TsExpr) (type : TsType)
   /-- A call whose last argument is written flush against the parentheses:
       the argument's own opening brace closes the calling line and its closing
@@ -181,6 +204,22 @@ inductive TsExpr where
       block object's property reads this; everywhere else it is its inner
       expression. -/
   | offset (inner : TsExpr)
+
+/-- What an arrow returns to: one expression, or a Block of statements. The
+    second is the target's other function body and the surfaces write exactly
+    one of them, which is why it is carried at exactly the two statement forms
+    that one body uses. -/
+inductive TsBody where
+  | value (expression : TsExpr)
+  | statements (rows : List TsStatement)
+
+/-- One statement of a function body. -/
+inductive TsStatement where
+  /-- An ExpressionStatement over a VoidExpression: the target's way of reading
+      a binding it is required to take and required not to use. -/
+  | discard (value : TsExpr)
+  /-- A ReturnStatement. -/
+  | returns (value : TsExpr)
 
 end
 
@@ -317,6 +356,7 @@ def optionalDocLines (indent : String) : Option Doc -> List String
 def keyText : PropertyKey -> String
   | .name text => text
   | .quoted text => quote text
+  | .shorthand text => text
 
 /-- Prepend a prefix to the first line. -/
 def prefixFirst (start : String) : List String -> List String
@@ -430,13 +470,16 @@ def inlineExpr : TsExpr -> String
   | .object _ [] => "{}"
   | .object _ properties => "{ " ++ inlineProperties properties ++ " }"
   | .concat runs => inlineRuns runs
-  | .arrow binders result body =>
-      "(" ++ binderList binders ++ ")" ++
+  | .arrow parameters _ binders result _ body =>
+      (if parameters.isEmpty then "" else "<" ++ functionParameterList parameters ++ ">") ++
+        "(" ++ inlineBinders binders ++ ")" ++
         (match result with
          | none => ""
          | some type => ": " ++ typeText type) ++
-        " => " ++ inlineExpr body
+        " => " ++ inlineBody body
   | .asConst inner => inlineExpr inner ++ " as const"
+  | .coerce inner type => inlineExpr inner ++ " as " ++ typeText type
+  | .group inner => "(" ++ inlineExpr inner ++ ")"
   | .satisfies inner type => inlineExpr inner ++ " satisfies " ++ typeText type
   | .apply callee [] final => inlineExpr callee ++ "(" ++ inlineExpr final ++ ")"
   | .apply callee leading final =>
@@ -465,9 +508,36 @@ def inlineElements : List (Option Doc × TsExpr) -> String
 /-- Comma-separated object properties. -/
 def inlineProperties : List (Option Doc × PropertyKey × TsExpr) -> String
   | [] => ""
+  | [(_, .shorthand name, _)] => name
   | [only] => keyText only.2.1 ++ ": " ++ inlineExpr only.2.2
+  | (_, .shorthand name, _) :: rest => name ++ ", " ++ inlineProperties rest
   | first :: rest =>
       keyText first.2.1 ++ ": " ++ inlineExpr first.2.2 ++ ", " ++ inlineProperties rest
+
+/-- Comma-separated arrow binders. A binder's doc comment has no inline form:
+    no site documents a binder it also writes flat. -/
+def inlineBinders : List (Option Doc × String × TsType) -> String
+  | [] => ""
+  | [only] => only.2.1 ++ ": " ++ typeText only.2.2
+  | first :: rest =>
+      first.2.1 ++ ": " ++ typeText first.2.2 ++ ", " ++ inlineBinders rest
+
+/-- An arrow's body on one line. A Block has no inline form on this target's
+    surfaces; it is written as its own braces so the function stays total. -/
+def inlineBody : TsBody -> String
+  | .value expression => inlineExpr expression
+  | .statements rows => "{ " ++ inlineStatements rows ++ " }"
+
+/-- Semicolon-separated statements, for the inline form no site writes. -/
+def inlineStatements : List TsStatement -> String
+  | [] => ""
+  | [only] => inlineStatement only
+  | first :: rest => inlineStatement first ++ "; " ++ inlineStatements rest
+
+/-- One statement's text. -/
+def inlineStatement : TsStatement -> String
+  | .discard value => "void " ++ inlineExpr value
+  | .returns value => "return " ++ inlineExpr value
 
 end
 
@@ -522,6 +592,23 @@ def exprLines (indent : String) : TsExpr -> List String
         (appendLast (exprLines indent final) ")")
   | .field object name => appendLast (exprLines indent object) ("." ++ name)
   | .offset inner => exprLines indent inner
+  | .group inner => prefixFirst "(" (appendLast (exprLines indent inner) ")")
+  | .coerce inner type => appendLast (exprLines indent inner) (" as " ++ typeText type)
+  | .arrow parameters layout binders result placement body =>
+      let opening :=
+        (if parameters.isEmpty then "" else "<" ++ functionParameterList parameters ++ ">") ++ "("
+      let closing :=
+        ")" ++ (match result with
+                | none => ""
+                | some type => ": " ++ typeText type) ++ " =>"
+      let head :=
+        match layout with
+        | .inline => [opening ++ inlineBinders binders ++ closing]
+        | .block =>
+            opening :: binderLines (indent ++ "  ") binders ++ [indent ++ closing]
+      (match placement with
+       | .beside => spliceLines (appendLast head " ") (bodyLines indent body)
+       | .below => head ++ prefixFirst (indent ++ "  ") (bodyLines (indent ++ "  ") body))
   | .asConst inner => appendLast (exprLines indent inner) " as const"
   | .satisfies inner type =>
       match brokenType indent type with
@@ -543,6 +630,8 @@ def elementLines (indent : String) : List (Option Doc × TsExpr) -> List String
     lines below it, one step deeper. -/
 def propertyLines (indent : String) : List (Option Doc × PropertyKey × TsExpr) -> List String
   | [] => []
+  | (doc, .shorthand name, _) :: rest =>
+      optionalDocLines indent doc ++ [indent ++ name ++ ","] ++ propertyLines indent rest
   | (doc, key, .offset inner) :: rest =>
       optionalDocLines indent doc ++
         (indent ++ keyText key ++ ":") ::
@@ -561,6 +650,20 @@ def argumentLines (indent : String) : List TsExpr -> List String
   | argument :: rest =>
       prefixFirst indent (appendLast (exprLines indent argument) ",") ++
         argumentLines indent rest
+
+/-- The lines of an arrow's broken binders, each documented in place. -/
+def binderLines (indent : String) : List (Option Doc × String × TsType) -> List String
+  | [] => []
+  | (doc, name, type) :: rest =>
+      optionalDocLines indent doc ++
+        [indent ++ name ++ ": " ++ typeText type ++ ","] ++
+        binderLines indent rest
+
+/-- An arrow's body as lines: the expression it returns, or its Block. -/
+def bodyLines (indent : String) : TsBody -> List String
+  | .value expression => exprLines indent expression
+  | .statements rows =>
+      "{" :: rows.map (fun row => indent ++ "  " ++ inlineStatement row) ++ [indent ++ "}"]
 
 /-- A concatenation: the first run on the opening line, each later run behind
     its own continuation at the indent. -/
