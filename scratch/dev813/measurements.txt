@@ -1,0 +1,321 @@
+========================================================================
+PARITY MANIFEST
+========================================================================
+path        : verify/kernel/projections/tools.schema.json
+bytes       : 13058
+sha256      : 8d9cb4b106c86f60f6e74ae60ff20ee57a3f0354e91227480f8562e6ea3bd7d4
+lines       : 235
+final byte  : b'\n'
+has CRLF    : False
+has tab     : False
+non-ascii   : [128, 148, 226]
+backslash escapes used: []
+indent widths (count): {0: 2, 2: 7, 4: 25, 6: 37, 8: 42, 10: 55, 12: 67}
+json.dumps(indent=2) identical: False
+
+========================================================================
+KEYWORD CENSUS (JSON-Schema keywords, in schema position)
+========================================================================
+  type                     46
+  description              34
+  pattern                  14
+  additionalProperties      9
+  properties                9
+  required                  9
+  maximum                   7
+  minimum                   7
+  enum                      6
+  $comment                  3
+  TOTAL                   144   distinct = 10
+
+  type values: {'string': 30, 'object': 9, 'integer': 7}
+
+  ENVELOPE keys (NOT JSON-Schema keywords -- MCP tool-list frame):
+    $comment                  1
+    digest_format             1
+    refusal_result            1
+    tools                     1
+    tools[].description       8
+    tools[].input_schema      8
+    tools[].name              8
+
+  keywords ABSENT from the sketch (the vocabulary the printer must NOT emit):
+    $anchor, $defs, $id, $ref, $schema, allOf, anyOf, const, contains, default, dependentRequired, dependentSchemas, deprecated, else, examples, exclusiveMaximum, exclusiveMinimum, format, if, items, maxItems, maxLength, minItems, minLength, multipleOf, not, oneOf, patternProperties, prefixItems, propertyNames, readOnly, then, title, unevaluatedProperties, uniqueItems, writeOnly
+
+========================================================================
+STALE-BOUND AUDIT (A4: estate integers exact and unbounded)
+========================================================================
+  [STALE] kernel_fold.shard
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_fold.anchor_floor
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_fold.anchor_head
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_decide.token_fence
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_trigger.hole
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_trigger.shard
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  [STALE] kernel_trigger.position
+          as committed : {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  integer-carrying rows: 7   carrying maximum=9007199254740991: 7
+  rows typed "number": 0
+  literal 9007199254740991 occurrences in bytes: 7
+  'safe range' / 'I-JSON' / 'float' mentions in prose:
+     ... The kernel language projected as MCP tool input schemas. EXPLORATORY, hand-derived from the Lean model in verify/kernel at this commit; the design mandates proj
+
+========================================================================
+PROSE-WITH-NO-SOURCE INVENTORY
+========================================================================
+tool descriptions: 8
+field descriptions: 34
+$comment paragraphs: 3
+total prose words: 819
+
+law citations per tool description:
+  kernel_declare     -> ['c7_pin_well_founded']
+  kernel_resolve     -> ['content addressing', 'verify-on-read']
+  kernel_emit        -> ['f2_trace_invariant']
+  kernel_join        -> ['f1_cell_merge_aci', 'join-semilattice']
+  kernel_fold        -> ['f11_query_deterministic', 'f3_resume_exact']
+  kernel_decide      -> ['at_most_one_landed_commit']
+  kernel_trigger     -> ['f10_stability']
+  kernel_spawn       -> ['f9_policy_meet_semilattice', 'f9_tree_attenuation']
+
+refusal-reason citations inside prose (model-sourced tokens embedded in unsourced prose):
+  kernel_join                  -> ['last-writer-wins']
+  kernel_trigger               -> ['absence-trigger']
+  kernel_declare.writ_digest   -> ['off-writ-referent']
+  kernel_resolve.kind          -> ['cross-sort-identifier']
+  kernel_fold.query            -> ['ambient-query-input']
+  kernel_decide.token_fence    -> ['unfenced-decide', 'cross-sort-identifier']
+
+wrote census-out.json
+============================================================================
+(a) THE NAMING MAP  --  model field -> wire spelling
+============================================================================
+generator  model field                  wire field             note
+declare    declare.kind                 kind                   identity
+declare    declare.value                value                  identity
+declare    declare.writ                 writ_digest            carrier suffix +_digest
+resolve    resolve.kind                 kind                   identity
+resolve    resolve.target               digest                 RENAMED (target -> digest); NOT the +_digest rule
+emit       emit.lane                    lane_digest            carrier suffix +_digest
+emit       emit.body                    body                   identity
+join       join.cell                    cell_digest            carrier suffix +_digest
+join       join.contribution            contribution           identity
+fold       fold.declared                reduction_digest       RENAMED (declared -> reduction) + _digest
+fold       fold.partition               lane_digest            FLATTENED LanePartition.lane + _digest
+fold       fold.partition               shard                  FLATTENED LanePartition.shard
+fold       fold.anchor                  anchor_floor           FLATTENED AnchorFact.floor, prefix anchor_
+fold       fold.anchor                  anchor_state           FLATTENED AnchorFact.state, prefix anchor_
+fold       fold.anchor                  anchor_head            FLATTENED AnchorFact.head, prefix anchor_
+fold       fold.query                   query                  identity
+decide     decide.register              register_digest        carrier suffix +_digest
+decide     decide.token                 token_fence            RENAMED (token -> token_fence); Token.value flattened
+decide     decide.outcome               outcome                identity
+trigger    trigger.predicate            production             FLATTENED KTriggerPredicate -> tag slot (see table c)
+trigger    trigger.declaration          declaration_digest     carrier suffix +_digest
+spawn      spawn.parent                 parent_writ_digest     RENAMED parent -> parent_writ + _digest
+spawn      spawn.request                request_writ_digest    RENAMED request -> request_writ + _digest
+
+  Act rows: 23
+trigger    evidenceAppears.lane         lane_digest            shared slot; carrier suffix
+trigger    evidenceAppears.pattern      pattern                identity
+trigger    cellReaches.cell             cell_digest            carrier suffix
+trigger    cellReaches.threshold        threshold              identity
+trigger    holeReaches.hole             hole                   identity
+trigger    holeReaches.target           stage                  RENAMED (target -> stage)
+trigger    outcomeLanded.register       register_digest        carrier suffix
+trigger    headAdvancedPast.partition   lane_digest + shard    FLATTENED LanePartition, SHARED with evidence-appears/fold
+trigger    headAdvancedPast.position    position               identity; Position.value flattened
+  KTriggerPredicate rows: 9
+  NAMING-MAP TOTAL ROWS: 32
+
+  wire fields NOT reached by a model row (must be justified by a table):
+    count: 0
+  model fields with NO wire counterpart: 0
+
+  Act-row rule frequency: {'identity (name unchanged)': 7, '+_digest suffix': 5, 'renamed': 5, 'flattened': 6}
+
+============================================================================
+(b) THE CARRIER MAP  --  model sort -> JSON-Schema fragment
+============================================================================
+  DeclKind
+      model   : 12-constructor closed inductive
+      fragment: {"type": "string", "enum": ["schema", "program", "policy", "capability", "lane", "algebra", "index", "resource", "ontology", "schedule", "template", "language"]}
+      note    : brand erased; the 12 ranks are printed as their constructor names, order = DeclKind.rank
+  Digest kind
+      model   : structure { id : Nat }, brand in the type index
+      fragment: {"type": "string", "pattern": "^sha256:[0-9a-f]+$"}
+      note    : BRAND ERASED: the kind index vanishes; a wire digest carries no sort. The cross-sort-identifier refusal is the only thing left defending it.
+  Value
+      model   : structure { bytes : Nat }
+      fragment: {"type": "string"}
+      note    : opaque; no pattern, no length
+  StateLabel
+      model   : structure { value : Nat }
+      fragment: {"type": "string"}
+      note    : SORT COLLAPSE: StateLabel and Value print the same fragment; anchor_state is typed string
+  Nat (Position.value)
+      model   : Nat, brand = partition
+      fragment: {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      note    : STALE under A4 -- see the stale-bound audit
+  Nat (Token.value)
+      model   : Nat, brand = register
+      fragment: {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      note    : STALE under A4
+  Nat (LanePartition.shard)
+      model   : Nat, unbranded
+      fragment: {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      note    : STALE under A4
+  Nat (hole name)
+      model   : Nat
+      fragment: {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      note    : STALE under A4
+  HoleStage
+      model   : 5-constructor closed inductive
+      fragment: {"type": "string", "enum": ["opened", "filled", "disputed", "decided", "sealed"]}
+      note    : order = HoleStage.rank; note `opened` is the model's keyword-forced spelling and survives to wire
+  RefusalReason
+      model   : 16-constructor closed inductive
+      fragment: {"type": "string", "enum": ["clock-read", "absence-trigger", "unfenced-decide", "last-writer-wins", "unverified-read", "cross-sort-identifier", "minted-identifier", "ambient-query-input", "forward-reference", "secret-carrier", "absence-claim", "past-mutation", "off-writ-referent", "closure-introspection", "anchored-resolve", "unfilled-hole"]}
+      note    : the ONE row with a model-carried wire spelling: RefusalReason.wire
+  Applicability
+      model   : 2-constructor closed inductive
+      fragment: {"type": "string", "enum": ["machine-applicable", "advisory"]}
+      note    : model-carried wire spelling: Applicability.wire
+  Refusal.law / Refusal.repair
+      model   : String
+      fragment: {"type": "string"}
+      note    : carried as free text in the model too
+  KTriggerPredicate
+      model   : 5-constructor closed inductive
+      fragment: {"type": "string", "enum": ["evidence-appears", "cell-reaches", "hole-reaches", "outcome-landed", "head-advanced-past"]}
+      note    : wire spellings are kebab-cased constructor names -- NOT carried by the model (no .wire fn)
+  Act (the sentence)
+      model   : 8-constructor closed inductive
+      fragment: {"<tool>": "one flat MCP tool per constructor, name = kernel_<ctor>"}
+      note    : NOT a JSON-Schema shape: the sum is flattened into the tool list, not a oneOf
+
+  carrier rows: 14
+
+  ENUM PARITY (sketch enum vs model constructor list):
+    kernel_declare.kind              n=12  IDENTICAL to model constructor names
+    kernel_resolve.kind              n=12  IDENTICAL to model constructor names
+    kernel_trigger.production        n=5   kebab-case of model constructor names, same order
+    kernel_trigger.stage             n=5   IDENTICAL to model constructor names
+    refusal_result.reason            n=16  IDENTICAL to model constructor names
+    refusal_result.applicability     n=2   IDENTICAL to model constructor names
+
+============================================================================
+(c) THE TRIGGER-FLATTENING RULE  --  5 productions -> 1 enum + optional slots
+============================================================================
+  required (always present): ['production', 'declaration_digest']
+  all properties          : ['production', 'declaration_digest', 'lane_digest', 'pattern', 'cell_digest', 'threshold', 'hole', 'stage', 'register_digest', 'shard', 'position']
+  optional slots          : ['lane_digest', 'pattern', 'cell_digest', 'threshold', 'hole', 'stage', 'register_digest', 'shard', 'position'] (n=9)
+
+  production           model constructor      slots used                                 slots left unset
+  evidence-appears     evidenceAppears        lane_digest+pattern                        7
+  cell-reaches         cellReaches            cell_digest+threshold                      7
+  hole-reaches         holeReaches            hole+stage                                 7
+  outcome-landed       outcomeLanded          register_digest                            8
+  head-advanced-past   headAdvancedPast       lane_digest+shard+position                 6
+
+  THE RULE, stated once:
+    - the 5-constructor sum becomes ONE required enum field `production`
+    - every constructor field becomes an OPTIONAL top-level slot
+    - slots are SHARED when two productions carry the same sort+meaning
+      (lane_digest: evidence-appears + head-advanced-past; shard: head-advanced-past only)
+    - the production->slot correspondence is carried ONLY in prose
+      (kernel_trigger.production.description), enforced NOWHERE in the schema
+    - additionalProperties:false + no if/then/else + no oneOf means an
+      ILL-FORMED combination (production=outcome-landed with threshold set)
+      VALIDATES. The door refuses it; the schema does not.
+
+  slot sharing, measured:
+    lane_digest        used by 2: evidence-appears, head-advanced-past
+    pattern            used by 1: evidence-appears
+    cell_digest        used by 1: cell-reaches
+    threshold          used by 1: cell-reaches
+    hole               used by 1: hole-reaches
+    stage              used by 1: hole-reaches
+    register_digest    used by 1: outcome-landed
+    shard              used by 1: head-advanced-past
+    position           used by 1: head-advanced-past
+
+wrote tables-out.json
+
+============================================================================
+DETERMINISM PROBES  --  what the sketch actually does
+============================================================================
+key order, measured (a printer must fix ONE order):
+  top level             : ['$comment', 'digest_format', 'tools', 'refusal_result'] sorted? False
+  tool object           : ['name', 'description', 'input_schema']
+  input_schema          : ['type', 'additionalProperties', 'required', 'properties']
+  properties order      : required-first, then optionals, in every tool: True
+  per-field key orders observed:
+      13x  ['type', 'pattern', 'description']
+      10x  ['type', 'description']
+       7x  ['type', 'minimum', 'maximum', 'description']
+       2x  ['type', 'description', 'enum']
+       2x  ['type', 'enum', 'description']
+       2x  ['type', 'enum']
+  DIVERGENCE: `enum` sits before `description` in 4 fields and after it in 2
+     (kernel_declare.kind, kernel_resolve.kind put description first)
+
+layout: 12 property objects written on ONE line, 24 expanded across lines
+  single-line at: [186, 187, 188, 189, 190, 191, 192, 193, 194, 230, 231, 232]
+  indent unit: 2 spaces; deepest indent: 12
+
+prose alphabet:
+  U+2014 EM DASH occurrences in the sketch: 9
+  the landed Prose.lean artifact carries U+2014: 0 and '--': 7
+  -> Projections.asciiDoc transliterates 0x2014 to '--'; a printer that reuses it diverges from the sketch on every one of those lines
+  JSON escapes used in the sketch: none
+
+docstring availability in the model (the prose the printer cannot source):
+  constructor-level docstrings in Definitions.lean: 0
+  declaration-level docstrings: 109
+  names.txt manifest size: 22
+  -> ProjectionAst.docs carries one DocSentence per MANIFEST NAME.
+     Walk.docOf calls findDocString? on the declaration only. There is no
+     per-constructor and no per-field docstring anywhere to print from.
+
+the A4 witness, read from the corpus:
+  verify/unity/run.sh:434: if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
+  verify/unity/run.sh:509: 's/"bytes":"9007199254740993"/"bytes":"9007199254740992"/' \
+  KernelSchemas.generated.ts:259: "{\"bytes\":\"9007199254740993\",\"name\":\"big-integer\",\"record\":\"canon\",\"value\":9007199254740993}",
+  2^53+1 = 9007199254740993 is a GATED corpus record. The sketch's
+  maximum 9007199254740991 refuses a value the corpus is required to carry.
+
+============================================================================
+CITATION-LEDGER PARITY  --  the sketch's law names vs the model's ledger
+============================================================================
+verify/unity/citations.txt rows: 8 -- gated by verify/unity/run.sh:182-225 (scraped from Definitions.lean,
+   reconciled against the ledger, each venue resolved in fabric's roster)
+
+laws cited by the sketch's tool prose: 9
+  at_most_one_landed_commit                  in ledger (veil)
+  c7_pin_well_founded                        in ledger (fabric)
+  f10_stability                              in ledger (fabric)
+  f11_query_deterministic                    in ledger (fabric)
+  f1_cell_merge_aci                          in ledger (fabric)
+  f2_trace_invariant                         NOT IN THE LEDGER
+  f3_resume_exact                            NOT IN THE LEDGER
+  f9_policy_meet_semilattice                 NOT IN THE LEDGER
+  f9_tree_attenuation                        NOT IN THE LEDGER
+
+  cited by the sketch, absent from the model's ledger: 4
+     f2_trace_invariant
+     f3_resume_exact
+     f9_policy_meet_semilattice
+     f9_tree_attenuation
+  in the model's ledger, never cited by the sketch: 3
+     cell_absorb_inflationary
+     compact_below_floor_preserves_resumption
+     f11_topk_of_support
+
+  A citations.txt-style wall over the emitted prose goes RED today: the
+  sketch reaches for four laws the model's own taught table never cites.
