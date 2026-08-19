@@ -5811,3 +5811,159 @@ a role, and a layer acting as two roles would then need two writs and a rule for
 combining them. **Load-bearing? yes** — group 3's writ field existed and named
 nothing; it now names a value, and the difference between those two states is
 the whole of what "open writs" asked for.
+
+---
+
+## Task: the status pump as a fact source, over the transcribed event vocabulary (estate-daemon S2, 2026-08-19)
+
+Placeholders `T33`–`T38` continue the series; repository D-numbers are assigned
+at merge. The commission is the estate-daemon slice plan's second vertical
+slice, cut under the daemon commission's ruling R-3 — *the protocol is the wire
+vocabulary, by transcription* — and rider (b), full adoption of the vendor's
+lifecycle events. The session-fact schema this slice builds against is the
+LANDED one, roster digest and writ digest included, not the commissioning body's
+prose.
+
+### T33. The vocabulary is a transcribed table with per-row provenance, and the machine is a second table over it
+
+Decided: the eleven status event types the pinned client declares are
+transcribed into one declared value in the pin's own declaration order, with the
+vendor's own event name, the vendor's own payload field names, a sort per field,
+and the vendor's own type-alias name as that row's provenance. A second declared
+value places seven of the eleven as state transitions, carrying per row the
+state entered, the admissible predecessors, whether the row mints a successor,
+which fact form it emits, and whether the state is absorbing. Both tables are
+data. The event-name type and the state type are PROJECTIONS of those tables,
+derived from them, so a row appended tomorrow widens both by construction.
+
+The refused alternative is the hand-written union — a `type ConnectionState =
+"connected" | "disconnected" | ...` beside a switch statement over eleven cases.
+It is refused for a mechanical reason and not a stylistic one: the parity ticket
+in this same stage byte-compares the two language sides' tables against one
+another and against the pinned source, and a table that exists only as inline
+branches has nothing to compare. The gate this slice ships makes the refusal
+executable rather than asserted — it plants the union and requires the refusal.
+
+**The state before any transition is `null`, not a word.** The pin declares no
+event meaning "attached for the first time", so naming that condition would have
+been the invention R-3 forbids. Every state is named by the transition that
+enters it, and the absence of one is spelled as an absence. The cost is that a
+reader sees `null` where they expected a name; the payoff is that every word in
+the machine is the substrate's own, checkably.
+
+**Sorts are this transcription's vocabulary and events are the vendor's, and the
+two share no word.** The client's error payload is transcribed at the sort
+`error-object` rather than `error`, because the vendor also declares an event
+named `error` and a consumer branching on the sort would then be
+indistinguishable from a consumer branching on the event — which is exactly what
+the gate's fifth clause refuses. The collision was found by that clause going
+red on the first honest spelling. **Load-bearing? yes.**
+
+### T34. Readings within a state are observations, and the split is walled rather than asserted
+
+Decided: four of the eleven rows — the cluster-list update, the protocol error,
+the client ping, the slow consumer — are placed as READINGS. They emit
+observation facts citing the session and the state they were read within, they
+move the machine nowhere, and no row of the machine names one as a state. The
+gate holds all three: no reading appears as a state, no reading has a machine
+row at all, and every machine state is a transcribed transition's own name.
+
+Modelling them as states would have been the invention the composition rule
+warns about, and it is a live temptation: three of the four read like conditions
+a connection could be *in*. The wall is what keeps the temptation from being
+resolved by taste. Its plant promotes a reading to a state and requires the
+refusal; the runtime half of the claim is a real slow-consumer condition induced
+on a real connection, landing as an observation with the state it was read
+within, next to zero transition facts.
+
+The commissioned second reading — the client's own ping — is NOT induced against
+a live server. The client emits one on its declared ping interval, that interval
+is a declared connect option, and this slice may not move a declared value to
+make an arm convenient. The ping row is exercised over a constructed status
+value of the pin's own shape instead, and the gap is named here rather than
+papered over. **Load-bearing? yes.**
+
+### T35. The pump attaches where connections are established, and its exposure is a hand-off rather than a landing
+
+Decided: the one consumer of a connection's status source is built inside
+`establishConnection`, which also mints the session that consumer cites. There
+is no other place a connection comes into existence, so "one pump per
+connection" is a property of the tree rather than a rule someone has to
+remember. Facts leave through a bounded queue that a lane-holder takes from and
+lands through the session lane's one emit.
+
+The landing regress the predecessor slice recorded is unchanged and was not
+worked around: the lane service opens a connection whose establishment is itself
+a session, so a spine that landed its own facts would open a connection to
+record that it had opened a connection. The pump therefore mints and exposes;
+it holds no lane, imports no lane module, and has no second landing path to
+build. Backpressure is real rather than lossy — a holder that stops taking stops
+the pump, and the client's own status iterator buffers behind it — because
+dropping the record of what happened to a connection is the one outcome this
+slice exists to prevent.
+
+**A finalizer closes the connection before the consumer is interrupted, and that
+is load-bearing rather than tidy.** The pin's status source is a generator parked
+on a signal that only the connection's own teardown resolves, so a scope that
+interrupted the consumer first waited forever on an iterator nothing was going
+to wake. Two wall arms hung for two minutes each before the ordering was
+corrected. **Load-bearing? yes.**
+
+### T36. The commissioning record's single-consumption premise is false at the pin, and the fence stands for the other reason
+
+Decided: the fence against a second consumer of one connection's status source
+stays, and its stated reason is corrected. The commission ruled that "the pinned
+client's status source is not a broadcast: consuming it twice splits events
+between consumers and silently loses facts". Measured at the pin, it is the
+opposite: each call to the source registers a fresh listener and the protocol
+pushes every event to every listener. A second consumer therefore loses nothing
+and DOUBLES everything — every transition minted twice, and a second successor
+chain running against one connection.
+
+Both halves are executed rather than argued. One arm reads the client's own
+dispatch out of the installed bytes; another runs two consumers over one event
+sequence and shows the facts duplicated exactly. The fence itself is a defect
+and not a refusal: calling the spine twice on one connection is this package
+calling itself wrong, and the transport spine's own two-sided rule is that a
+defect never wears the absence sort — a retryable absence over a bug is what
+that rule exists to prevent.
+
+The alternative was to build against the commission's premise and wall
+"consuming it twice loses facts", which would have been a wall that passes over
+a falsehood. **Load-bearing? yes** — the reported reason is what a later reader
+uses to decide whether the fence may be relaxed.
+
+### T37. The session lane's event form grows add-only, and teardown keeps its own variant
+
+Decided: the transition and observation variants are APPENDED to the declared
+event form, leaving the established and ended variants in place and in order.
+The form's digest is the lane's route, so an append moves the route visibly
+while a rewrite in place would move it silently — the same discipline the field
+roster carries, for the same reason.
+
+The terminal transition does NOT emit a transition fact. It emits the
+session-ended fact, because the record already has a form for "this connection
+is over" and a second one would be a twin of it. That decision is what makes the
+empty cause meaningful: the pin resolves its closed promise with an error when
+the connection died of one and with nothing when it was taken down in order, so
+an empty cause is the pin's own report rather than a missing field, and an
+orderly drain and a hard kill stay distinguishable in the record instead of
+being remembered. **Load-bearing? yes.**
+
+### T38. The status vocabulary sits at the truth seam, and the session facts moved down with it
+
+Decided: the fact vocabulary the establishment path mints — the declared event
+form, the four schemas, the mints — moved into its own module at the truth seam,
+and the lane module above it kept the declaration and the one emit. The pump
+ranks at truth for the same reason: it reaches nothing on the state-carrier
+plane.
+
+This was forced rather than chosen. The spine reaches the session mint the
+moment a connection resolves, before any lane exists; the lane module imports
+the lane plane, which imports the lane adapter, which imports the spine. Leaving
+the mints in the lane module would have closed that cycle through a module whose
+top-level bindings are built at import time, and the first test file to import
+the spine directly would have hit the dead binding rather than a stack trace
+anyone could read. Splitting by seam rank rather than by resemblance is what the
+layering law already asks for, and the split says so in both module headers.
+**Load-bearing? yes.**

@@ -15,6 +15,10 @@ import { Effect, Redacted, Scope } from "effect"
 
 import type { Digest } from "../truth/Digest.js"
 import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
+import type { MintedSession } from "./sessionfacts.js"
+import { mintSession } from "./sessionfacts.js"
+import type { StatusPump } from "./statuspump.js"
+import { attachStatusPump, pumpTerms } from "./statuspump.js"
 import {
   connectOptionsDeclaration,
   connectOptionsDigest,
@@ -252,6 +256,19 @@ export interface EstablishedConnection {
   readonly declared: DeclaredConnect
   /** The three groups, folded and ready to name the session. */
   readonly groups: SessionGroups
+  /** The session this establishment minted, and the fact announcing it. */
+  readonly minted: MintedSession
+  /**
+   * The one status pump this connection carries.
+   *
+   * It is attached HERE, at the single point where a connection comes into
+   * existence, which is what makes "one pump per connection" a construction
+   * rather than a convention: there is no other place a caller could attach a
+   * second one, and the pump itself refuses a second attach besides. Its body
+   * runs in this connection's own scope, so the consumer dies with the
+   * connection it consumes.
+   */
+  readonly pump: StatusPump
 }
 
 /**
@@ -292,24 +309,44 @@ export const establishConnection = (
       closeConnection,
     )
     const substrate = yield* substrateDeclarationOf(connection.info)
-    return {
-      connection,
-      declared,
-      groups: {
-        substrate,
-        options: declared.digest,
-        // The writ digest names the declared value this layer's connection acts
-        // under; resolving it returns the exact bytes. The asserted shape set is
-        // empty because every carrier asserts its shapes after this point —
-        // honestly empty, which is the whole reason the field is declared rather
-        // than omitted.
-        estate: estateDeclaration({
-          writ,
-          layer: options.connectionName ?? defaultName,
-          shapes: [],
-        }),
-      },
+    const groups: SessionGroups = {
+      substrate,
+      options: declared.digest,
+      // The writ digest names the declared value this layer's connection acts
+      // under; resolving it returns the exact bytes. The asserted shape set is
+      // empty because every carrier asserts its shapes after this point —
+      // honestly empty, which is the whole reason the field is declared rather
+      // than omitted.
+      estate: estateDeclaration({
+        writ,
+        layer: options.connectionName ?? defaultName,
+        shapes: [],
+      }),
     }
+    const minted = yield* mintSession(groups, null)
+    const pump = yield* attachStatusPump(
+      connection,
+      pumpTerms(connection, {
+        session: minted.digest,
+        options: groups.options,
+        estate: groups.estate,
+      }),
+    )
+    // The consumer runs for as long as the connection does. It is forked into
+    // the connection's own scope rather than awaited, because its productivity
+    // measure is facts advancing on the session lane and it terminates only
+    // when the pin's source terminates — which the pin does exactly once, at
+    // the terminal transition.
+    yield* Effect.forkScoped(pump.run)
+    // Registered LAST, so it releases FIRST: the pin's status source is a
+    // generator parked on a signal only the connection's own teardown resolves,
+    // so a scope that interrupted the consumer before closing the connection
+    // would wait forever for an iterator nothing was going to wake. Closing
+    // here ends the source, the consumer finishes on its own, and the acquire's
+    // own release below is then a second close of an already-closed connection,
+    // which the pin resolves at once.
+    yield* Effect.addFinalizer(() => closeConnection(connection))
+    return { connection, declared, groups, minted, pump }
   })
 
 /**
