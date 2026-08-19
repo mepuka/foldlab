@@ -1371,6 +1371,181 @@ def interp {Evidence : Type} (merge : Evidence -> Evidence -> Evidence)
   | .trigger _ _, world => world
   | .spawn _ _, world => world
 
+/-! ## The program run — the two doors composed
+
+Program admission checks the DAG discipline; the single-act door judges
+one sentence. A run is the composition: a closed program walked in
+admission order, every node routed through that one door, the walk
+stopping at the first refusal. This section carries the walk at kernel
+sorts so the composition is a theorem rather than a coincidence between
+a model and the carriage that runs it.
+
+Two abstractions are stated, not hidden. COMPLETION is a parameter: how
+a node's declared arguments and its execution-time supplies become one
+candidate sentence belongs to the carriage, and the composition holds
+for every completion, so nothing is assumed about it beyond what a law
+names in its premise. CARRIAGE GROWTH is a parameter too: the context
+left behind by an admitted sentence is whatever that carrier's own
+admissions add, and only its monotonicity is ever used.
+
+What stays outside: concurrency beyond the monotone-context benignity
+the growth premise states, liveness, retries, and scheduling. A run
+here is one pass by one walker. -/
+
+/-- One judged node of a run: the program-scoped name, the context the
+    node was judged at, the candidate sentence it completed to, and the
+    intrinsic sentence the door translated that candidate into. -/
+structure RunStep where
+  node : Nat
+  context : Door
+  candidate : CandidateAct
+  act : Act
+
+/-- How one run ended. A landed run reports the context it reached and
+    every step in walked order; a refused run reports the refusing
+    node, its taught refusal, and the steps that stood before it. The
+    reached context is this model's sharpening: the carriage holds the
+    same replica behind its own reference and does not return it. -/
+inductive RunOutcome where
+  | landed (context : Door) (steps : List RunStep)
+  | refused (node : Nat) (refusal : Refusal) (steps : List RunStep)
+
+/-- A completion: the steps already standing plus one node's
+    declaration determine the candidate sentence offered to the door. -/
+abbrev Completion := List RunStep -> ProgramNode -> CandidateAct
+
+/-- A carriage growth rule: the context an admitted sentence leaves
+    behind for the nodes after it. -/
+abbrev Carry := Door -> Act -> Door
+
+/-- The step one admitted node contributes: its name, the context it
+    was judged at, the candidate it completed to, and the sentence the
+    door translated that candidate into. -/
+def runStepOf (complete : Completion) (context : Door)
+    (steps : List RunStep) (node : ProgramNode) (act : Act) : RunStep where
+  node := node.name
+  context := context
+  candidate := complete steps node
+  act := act
+
+/-- The walk. Judge the next node at the current context through the
+    one door; carry an admitted sentence, record its step, and continue
+    at the grown context; stop at the first refusal with the prefix's
+    steps intact and the remaining nodes untouched. There is no second
+    verdict path: the walk's only judgment is `admit`. -/
+def runWalk (complete : Completion) (carry : Carry) :
+    Door -> List RunStep -> List ProgramNode -> RunOutcome
+  | context, steps, [] => .landed context steps
+  | context, steps, node :: rest =>
+      match admit context (complete steps node) with
+      | .refused refusal => .refused node.name refusal steps
+      | .admitted act =>
+          runWalk complete carry (carry context act)
+            (steps ++ [runStepOf complete context steps node act]) rest
+
+/-- One program run. A declaration is newest-first, so the walk reads it
+    back into admission order — the oldest node first, exactly the order
+    node admission built. -/
+def runProgram (complete : Completion) (carry : Carry) (context : Door)
+    (nodes : List ProgramNode) : RunOutcome :=
+  runWalk complete carry context [] nodes.reverse
+
+/-- A step records an admitted judgment: at its own context the door
+    translated its candidate into exactly its act. -/
+def RunStep.Admitted (step : RunStep) : Prop :=
+  admit step.context step.candidate = .admitted step.act
+
+/-- A completion that fills no hole: whatever hole a node's declaration
+    still carries reaches the door in the candidate's payload. Filling
+    is the valuation's action on the declaration, upstream of the walk,
+    so under this premise a run's landing is evidence that the program
+    it walked was closed. -/
+def Completion.HolePreserving (complete : Completion) : Prop :=
+  forall (steps : List RunStep) (node : ProgramNode) (name : Nat),
+    RawArg.hole name ∈ node.args ->
+      RawArg.hole name ∈ actArgs (complete steps node)
+
+/-- A carriage growth rule that only ever grows. The engine's replica
+    of the door context is a lower bound grown by its own admissions,
+    which is why the read-judge-grow interleaving is benign: this is
+    that property as a premise. -/
+def Carry.Monotone (carry : Carry) : Prop :=
+  forall (context : Door) (act : Act), Door.Le context (carry context act)
+
+namespace Planted
+
+/-- The run rows' carriage growth: an admitted declaration extends both
+    the catalog and the pinned universe in lockstep, every other
+    sentence leaves the context alone. The lockstep is the carriage's
+    own reading of its writ-universe view. -/
+def runCarry (context : Door) (act : Act) : Door :=
+  match act with
+  | .declare kind value _ =>
+      { catalog := (kind, value.bytes) :: context.catalog
+        pinned := (kind, value.bytes) :: context.pinned }
+  | _ => context
+
+/-- The run rows' completion: the node's name names the candidate it
+    completes to. Dataflow substitution belongs to the carriage and the
+    composition holds for every completion, so the ground rows use the
+    simplest one that exercises an admission, a refusal, and two
+    distinguishable tails. -/
+def runCandidate (_steps : List RunStep) (node : ProgramNode) :
+    CandidateAct :=
+  match node.name with
+  | 0 => lawfulDeclare
+  | 1 => clockFold
+  | 2 => catalogedTrigger
+  | _ => lawfulDeclare
+
+/-- Walked first: the lawful declaration the door admits. -/
+def runNodeAdmitted : ProgramNode where
+  name := 0
+  generator := .declare
+  args := []
+  uses := []
+
+/-- Walked second: the row whose candidate spells a wall clock into a
+    fold's query, so the walk refuses here. -/
+def runNodeRefusing : ProgramNode where
+  name := 1
+  generator := .fold
+  args := []
+  uses := [0]
+
+/-- The tail: a node the door would admit, planted after the refusing
+    row so that judging it would be visible in the outcome. -/
+def runNodeTail : ProgramNode where
+  name := 2
+  generator := .trigger
+  args := []
+  uses := [1]
+
+/-- A different tail, admitted to a different sentence, so that a walk
+    which judged the tail answers differently for the two programs. -/
+def runNodeTailOther : ProgramNode where
+  name := 3
+  generator := .declare
+  args := []
+  uses := [1]
+
+/-- The planted declaration, newest first. -/
+def runNodes : List ProgramNode :=
+  [runNodeTail, runNodeRefusing, runNodeAdmitted]
+
+/-- The same prefix under the other tail. -/
+def runNodesOtherTail : List ProgramNode :=
+  [runNodeTailOther, runNodeRefusing, runNodeAdmitted]
+
+/-- The lawful twin at run scale: a program whose every node the door
+    admits, so the walk lands. Without this row a walk that refused
+    everything would satisfy every refusal statement above and still be
+    wrong. -/
+def runNodesLanding : List ProgramNode :=
+  [runNodeTail, runNodeAdmitted]
+
+end Planted
+
 /-! ## The composed execution shape
 
 The replay obligation's statement vocabulary: an execution record

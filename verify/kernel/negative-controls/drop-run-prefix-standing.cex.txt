@@ -1,0 +1,1 @@
+control=drop-run-prefix-standing;program=admit-then-clock;landing=landed;steps=[0, 2];lawful=refused@1;reason=clock-read;steps=[0];mutant=refused@1;reason=clock-read;steps=[];verdict=refuted

@@ -63,7 +63,10 @@ expected_laws=(
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KProvisionPositionedCorrespondence
-  KInterpInflationary CandidateF13BoundExecutionReplay
+  KInterpInflationary
+  KRunComposition KRunAdmittedSequence KRunRefusalDecomposition
+  KRunTailUnjudged KRunContextGrows KRunLandedClosed
+  CandidateF13BoundExecutionReplay
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
@@ -140,6 +143,15 @@ roster=(
   provision_override_idem requires_arg_fill requires_list_fill
   requires_of_fill greatest_at_cons greatest_at_le_length
   provision_positioned_correspondence
+  door_le_refl door_le_trans run_walk_append run_composition
+  run_walk_landed_admitted run_walk_landed_names run_admitted_sequence
+  run_walk_refused_split run_refusal_decomposition run_walk_tail_free
+  run_tail_unjudged run_walk_refusal_absorbs_tail
+  run_walk_context_grows run_context_grows
+  arg_requires_nil_iff requires_of_nil_iff run_walk_landed_hole_free
+  run_landed_closed
+  planted_run_carry_monotone planted_run_refuses_with_prefix_standing
+  planted_run_lands planted_run_tail_agrees
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
@@ -232,6 +244,8 @@ check_control machine-repair-anchored-resolve
 check_control machine-repair-unverified-read
 check_control machine-repair-past-mutation
 check_control machine-repair-last-writer-wins
+check_control drop-run-tail-halt
+check_control drop-run-prefix-standing
 check_control drop-provision-disjointness
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
@@ -290,4 +304,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (25 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (27 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
