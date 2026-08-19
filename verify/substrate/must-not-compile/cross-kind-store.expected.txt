@@ -1,0 +1,6 @@
+Type mismatch
+  incarnationRegister
+has type
+  Digest DeclKind.program
+but is expected to have type
+  Store

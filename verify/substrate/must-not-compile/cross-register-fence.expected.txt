@@ -1,0 +1,6 @@
+Application type mismatch: The argument
+  strayFence
+has type
+  Token otherRegister
+but is expected to have type
+  Fence

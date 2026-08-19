@@ -1,0 +1,1 @@
+control=machine-totality;symbol=forceReconnect-at-established;lawful-total=true;lawful-rows=88;mutant-total=false;mutant-rows=87;mutant-step=absent;verdict=refuted

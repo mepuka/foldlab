@@ -1,0 +1,17 @@
+name = "substrate"
+defaultTargets = ["Substrate", "control", "alphabet"]
+
+[[require]]
+name = "kernel"
+path = "../kernel"
+
+[[lean_lib]]
+name = "Substrate"
+
+[[lean_exe]]
+name = "control"
+root = "ControlMain"
+
+[[lean_exe]]
+name = "alphabet"
+root = "AlphabetMain"
