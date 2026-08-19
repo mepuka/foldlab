@@ -1,0 +1,1 @@
+control=drop-run-prefix-standing;program=admitted-prefix-refusing-node;lawful=refused@2:unfenced-decide[1=[0, 0, 7000051000172, 4]];mutant=refused@2:unfenced-decide[];verdict=refuted

@@ -129,6 +129,108 @@ def unchanged (candidate : CandidateAct) (reason : RefusalReason) :
 
 end RepairControls
 
+namespace RunControls
+
+/-- Mutant: a walk that records the refusal but keeps judging the
+    tail — the wrong composition the run laws forbid, where a node
+    after a refusal reaches the door anyway. -/
+def tailJudgingWalk (complete : Completion) (door : Door)
+    (executed : List ProgramNode) : List ProgramNode -> WalkOutcome
+  | [] => .landed []
+  | node :: rest =>
+      match admit door (complete executed node) with
+      | .refused refusal =>
+          match tailJudgingWalk complete door (executed ++ [node]) rest with
+          | .landed steps => .refused node.name refusal steps
+          | .refused _ _ steps => .refused node.name refusal steps
+      | .admitted act =>
+          prependSteps [(node.name, act)]
+            (tailJudgingWalk complete (growDoor door act)
+              (executed ++ [node]) rest)
+
+/-- Mutant: a walk that stops at the first refusal, as it must, but
+    discards the steps the prefix admitted — a refusal retracting the
+    admissions that stood before it. -/
+def prefixErasingWalk (complete : Completion) (door : Door)
+    (executed : List ProgramNode) : List ProgramNode -> WalkOutcome
+  | [] => .landed []
+  | node :: rest =>
+      match admit door (complete executed node) with
+      | .refused refusal => .refused node.name refusal []
+      | .admitted act =>
+          match prefixErasingWalk complete (growDoor door act)
+              (executed ++ [node]) rest with
+          | .landed steps => .landed ((node.name, act) :: steps)
+          | .refused name refusal _ => .refused name refusal []
+
+/-- The refusing node and reason an outcome reports, with its steps
+    dropped: what both sides of the prefix control must agree on, so
+    the kill is attributable to the discarded prefix alone. -/
+def verdictOf : WalkOutcome -> String
+  | .landed _ => "landed"
+  | .refused node refusal _ => s!"{node}:{refusal.reason.wire}"
+
+/-- The steps an outcome carries. -/
+def stepsOf : WalkOutcome -> List RunStep
+  | .landed steps => steps
+  | .refused _ _ steps => steps
+
+end RunControls
+
+/-- One executed step, rendered as its node name and the canonical
+    encoding of the sentence it was admitted to. -/
+def renderStep : RunStep -> String
+  | (name, act) => s!"{name}={(encodeAct act).toString}"
+
+/-- A walk outcome, rendered whole: the verdict and every step it
+    carries. -/
+def renderWalk : WalkOutcome -> String
+  | .landed steps =>
+      s!"landed[{String.intercalate "," (steps.map renderStep)}]"
+  | .refused node refusal steps =>
+      s!"refused@{node}:{refusal.reason.wire}[{String.intercalate "," (steps.map renderStep)}]"
+
+/-- Kill a run implementation that judges the tail after a refusal.
+    The lawful walk is independent of what follows the refusing node,
+    so two programs sharing an admitted prefix and a refusing node
+    give one outcome; the mutant's outcome moves with the tail, which
+    is exactly the dropped law made visible. -/
+def showRunTailControl : IO UInt32 := do
+  let lawfulLeft :=
+    renderWalk (walk RunPlanted.completion Planted.door []
+      RunPlanted.refusingLeft)
+  let lawfulRight :=
+    renderWalk (walk RunPlanted.completion Planted.door []
+      RunPlanted.refusingRight)
+  let mutantLeft :=
+    renderWalk (RunControls.tailJudgingWalk RunPlanted.completion
+      Planted.door [] RunPlanted.refusingLeft)
+  let mutantRight :=
+    renderWalk (RunControls.tailJudgingWalk RunPlanted.completion
+      Planted.door [] RunPlanted.refusingRight)
+  let refuted := lawfulLeft == lawfulRight && mutantLeft != mutantRight
+  IO.println
+    s!"control=drop-run-tail-unjudged;program=admitted-prefix-refusing-node-differing-tails;lawful-left={lawfulLeft};lawful-right={lawfulRight};mutant-left={mutantLeft};mutant-right={mutantRight};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
+/-- Kill a run implementation that discards the prefix's admitted
+    steps at a refusal. Both sides must report the same refusing node
+    and reason — the kill is the vanished prefix, never a different
+    verdict. -/
+def showRunPrefixControl : IO UInt32 := do
+  let lawful :=
+    walk RunPlanted.completion Planted.door [] RunPlanted.refusingLeft
+  let mutant :=
+    RunControls.prefixErasingWalk RunPlanted.completion Planted.door []
+      RunPlanted.refusingLeft
+  let refuted :=
+    RunControls.verdictOf lawful == RunControls.verdictOf mutant &&
+      !(RunControls.stepsOf lawful).isEmpty &&
+      (RunControls.stepsOf mutant).isEmpty
+  IO.println
+    s!"control=drop-run-prefix-standing;program=admitted-prefix-refusing-node;lawful={renderWalk lawful};mutant={renderWalk mutant};verdict={if refuted then "refuted" else "survived"}"
+  return if refuted then 0 else 1
+
 /-- Kill a growth implementation that replaces the pinned universe
     instead of extending it. -/
 def showAdmitMonotonicityControl : IO UInt32 := do
@@ -266,6 +368,8 @@ def main (args : List String) : IO UInt32 := do
   | ["machine-repair-last-writer-wins"] =>
       showMachineRepairControl "machine-repair-last-writer-wins"
         RepairControls.lastWriterWithClock .lastWriterWins
+  | ["drop-run-tail-unjudged"] => showRunTailControl
+  | ["drop-run-prefix-standing"] => showRunPrefixControl
   | ["drop-provision-disjointness"] =>
       showDriftControl "drop-provision-disjointness" "two-arrival-orders"
         (renderValuation (provisionFold Provision.disjointOrderOne))
@@ -274,5 +378,5 @@ def main (args : List String) : IO UInt32 := do
         (renderValuation (provisionFold Provision.overlapOrderTwo))
   | _ =>
       (← IO.getStderr).putStrLn
-        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-provision-disjointness)"
+        "usage: control (closure-clock-read|closure-absence-trigger|closure-unfenced-decide|closure-last-writer-wins|closure-unverified-read|closure-cross-sort-token|closure-minted-identifier|closure-ambient-query|closure-forward-reference|closure-secret-carrier|closure-absence-claim|closure-past-mutation|closure-off-writ-referent|closure-function-value|anchored-resolve|unfilled-hole|door-admits-lawful|drop-admit-monotonicity|drop-intrinsic-refusal|drop-relative-repair-growth|machine-repair-anchored-resolve|machine-repair-unverified-read|machine-repair-past-mutation|machine-repair-last-writer-wins|drop-run-tail-unjudged|drop-run-prefix-standing|drop-provision-disjointness)"
       return 2

@@ -241,6 +241,8 @@ check_control machine-repair-anchored-resolve
 check_control machine-repair-unverified-read
 check_control machine-repair-past-mutation
 check_control machine-repair-last-writer-wins
+check_control drop-run-tail-unjudged
+check_control drop-run-prefix-standing
 check_control drop-provision-disjointness
 
 mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
@@ -299,4 +301,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (25 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
+echo "GATE: PASS (27 executable controls; 4 must-not-compile refusals; roster ${#roster[@]})"
