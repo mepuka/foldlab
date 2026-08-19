@@ -131,8 +131,8 @@ describe("the wire vocabulary in the spine", () => {
     expect(underPrefix.length).toBeGreaterThan(0)
     for (const subject of underPrefix) {
       const matched = WIRE_API_SUBJECTS.some((row) => {
-        const template = row.template === "" ? row.subject : row.template
-        if (template === "") return false
+        const template: string = row.template.length === 0 ? row.subject : row.template
+        if (template.length === 0) return false
         const pattern = template
           .split("%s")
           .map((segment) => segment.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&"))
