@@ -8144,3 +8144,247 @@ and the new `catalog` role's inbox prefix joins them under the same reading.
 Widening that boundary is still whoever tightens the security projection next.
 
 **Load-bearing? no**
+## Task: the wire vocabulary by transcription — five tables, two languages, one parity wall (estate-daemon, 2026-08-19)
+
+### T1. The pinned vendors, by identity and version, as installed
+
+Decided: the five tables draw on four pinned packages and each row names the one
+whose own source declares that row's word. The Go modules are
+`github.com/nats-io/nats-server/v2` at `v2.14.4` and `github.com/nats-io/nats.go`
+at `v1.53.1`, both linked by the daemon and read out of the toolchain's module
+cache. The node packages are `@nats-io/nats-core` and `@nats-io/kv`, both at
+`3.4.0`, read out of the spine's own install; the wall checks the installed
+version against the pin before digesting anything, so a checkout that installed
+something else fails rather than digesting the wrong bytes.
+
+The alternative was one pin for the whole vocabulary. It was refused because
+half the surface is what a substrate writes and half is what a client writes,
+and a table that pinned both to one package would be citing a package that does
+not declare the row. **Load-bearing? yes** — a provenance pin that names the
+wrong package is a provenance pin that cannot be checked.
+
+### T2. A row's pin is the party that WRITES the word
+
+Decided: where two pinned packages state a word, the row is pinned at the one
+belonging to the party that writes it. The substrate declares what the substrate
+sends — the liveness exchange, the acknowledgement, the protocol error, the
+declaration block — and the client declares what the client sends — the connect
+line, the publish and subscribe forms. The direction column and the pin then
+agree by construction rather than by coincidence.
+
+Alternative: pin everything at the substrate, since the daemon owns it. Refused:
+the substrate does not state the client's publish or subscribe forms as protocol
+constants at all, so half the table would have had no narrowest region.
+**Load-bearing? yes.**
+
+### T3. Two rows have no whole-literal declaration, and the choice is recorded
+
+Decided: the message-delivery words are the one pair the pinned sources never
+state as a whole literal. The substrate assembles both from a single route-form
+constant by dropping or replacing its first byte, and both clients recognise them
+character by character in a parse state machine. The narrowest region that states
+either row is therefore that constant's own declaration block, and both rows are
+pinned there with the derivation recorded in the shape column.
+
+This is the one row-level ambiguity the transcription met. It was decidable, so
+it was decided and written down rather than stopped on. **Load-bearing? no** —
+the digest is checkable either way; what the record buys is that the next reader
+does not re-litigate it.
+
+### T4. Full adoption, with the closure rules stated so completeness is checkable
+
+Decided: each group carries a stated closure rule, so a reader can check that
+the table is complete rather than trust that it is.
+
+The API subject group is every constant the pinned substrate declares in its
+JetStream API source whose value begins with the API prefix, paired into one row
+per operation where the vendor declares both a subscription spelling and a
+format spelling — thirty-eight rows — plus the two key-value coordinates the
+pinned key-value client declares, which the permission projection addresses and
+the substrate declares only as a deny-all family. Forty rows.
+
+The system event group is every constant the pinned substrate declares whose
+value is a subject rooted at the system-account prefix followed by a token
+separator — thirty-eight rows across three of its source files. The substrate's
+own system-account NAME is declared elsewhere and is not a subject; that
+exclusion is a stated closure and not an omission.
+
+The lifecycle group is the ten entry points the estate's own lifecycle contract
+names in its vocabulary sentence. The in-process health read appears in that
+contract's phase table but not in its vocabulary sentence, so it is not a row: it
+is the carriage the readiness row leans on, and a table that quietly grew an
+eleventh row would be a table nobody declared. The readiness gate names it as
+its own second gate word, spelled there and said so in place.
+
+**Load-bearing? yes** — "transcribed in full" is only a claim if what "full"
+means is written down.
+
+### T5. Declared-but-unused is a column, never an omission
+
+Decided: every row the single-server posture never reaches is transcribed and
+marked declared-but-unused. Counted from the rendered bytes: seventy-four of the
+hundred and eleven — one protocol verb, thirty-two of the forty API subjects,
+all thirty-eight system-account subjects, two status events, and one lifecycle
+entry. The stream and consumer administration requests, the cluster and account
+requests, the auth-callout subject, the clustered assignment results, the
+verbose acknowledgement, the cluster-update and force-reconnect statuses, and
+the resource-plane enable the declared options value already carries.
+
+Omission was the alternative and it is how a table starts lying: a table that
+carried only the reachable rows would read, to the next posture, as a claim that
+the others do not exist. **Load-bearing? yes.**
+
+### T6. The provenance is a digest and the region is machinery
+
+Decided: a rendered row carries the vendor package, its version, and the sha256
+of the exact source region transcribed — and nothing else. The region's
+coordinates live beside the row as the wall's own oracle input and never reach
+the rendering, because a rendered surface carries no filesystem path: what a
+reader of the table obtains is a name for some bytes, and a name for bytes is
+checkable wherever the bytes are.
+
+The digests themselves are DERIVED and committed, not typed: a hundred and ten
+hand-copied digests are a hundred and ten chances to copy one wrong, and a vendor
+whose declaration MOVED is exactly what a re-derivation catches and a hand-copy
+hides. The wall re-derives all of them on every run and diffs against the
+committed bytes.
+
+The neighbouring option table renders a file-and-line site instead. That
+difference is deliberate and this table is the stricter of the two.
+**Load-bearing? yes.**
+
+### T7. The spine's table is a pass-through, never a second reading
+
+Decided: the Go tables are the normative home and the spine's module is EMITTED
+from their canonical rendering — same rows, same order, same spelling. It reads
+no vendor source of its own.
+
+The alternative is what the option table does: transcribe twice, once per
+language, and hold the two byte-equal. That is refused here because a second
+reading is a second transcription, and two transcriptions sharing a mistake
+agree perfectly — the byte comparison would then be measuring consensus rather
+than correctness. With a pass-through, the byte comparison catches an edit and a
+staleness, and the oracle for correctness is the vendor's own bytes, read once.
+**Load-bearing? yes.**
+
+### T8. Group four ABSORBS the status vocabulary rather than standing beside it
+
+Decided: the eleven status event rows are stated once. The connection-status
+module no longer declares them; it projects them out of the wire vocabulary's
+status group and keeps the machine it builds over them.
+
+Verdict on the absorption: BYTE-EQUAL. The transcription agrees with the module
+that carried the rows before it in every column the module reads — event name,
+vendor declaration, payload field names, sorts and optionality, and placement —
+and the package's own transcription gate, which reads the pinned client's
+declaration file directly and knows nothing about the wire vocabulary, passes
+unchanged against the absorbed table while its five negative controls still
+refute. No disagreement was found, so no finding is reported.
+
+The alternative was to leave both tables standing and hold them byte-equal by a
+wall. Refused: two statements of one table in one language is a twin however
+carefully they are kept in step. **Load-bearing? yes.**
+
+### T9. Consumers reach a row by the vendor's identifier, never by its word
+
+Decided: every re-sourced consumer looks a row up by the pinned vendor's own
+IDENTIFIER for the declaration — a name in the vendor's source, never a word on
+the wire — so the word travels out of the table and never into the query. A
+lookup keyed by the wire word would have restated the word to find it, which is
+exactly the second statement the footprint sweep refuses.
+
+The emitted spine module carries an index per group, holding references into the
+same array rather than copies, so the lookups preserve the literal types a
+consumer needs without restating a row. **Load-bearing? yes** — without this the
+sweep and the re-sourcing are in direct contradiction.
+
+### T10. The permission projection re-sourced, byte-identical
+
+Decided: the projection reads its four subject coordinates from the table — the
+account-information subject, the stream-information template, the
+direct-get-last-by-subject template, and the two key-value prefixes — and fills
+the vendor's own format spellings rather than writing subjects out with the
+deployment's coordinates baked in. A template given the wrong number of
+coordinates refuses rather than filling what it can.
+
+The emitted subjects before and after are identical: a diff over the projection's
+whole output for one fixed scope is empty. The requirement was that if
+byte-identity could not be reached the re-sourcing would be dropped and reported;
+it was reached, so it shipped. **Load-bearing? yes** — a changed grant is a
+changed security posture, and this slice ruled nothing about grants.
+
+### T11. The writ table stays hand-spelled, and that is an allowance with a reason
+
+Decided: the substrate writ table keeps its own spellings. It is the INDEPENDENT
+ORACLE the permission projection is checked against, and its rows are declared
+values whose digests session facts already cite. Re-sourcing it from the same
+table the projection now reads would make that check compare a value with itself,
+and re-spelling its bytes would rename every writ the estate has ever declared.
+
+Two declared allowances carry it, one per subject family it names.
+**Load-bearing? yes** — this is the one place where re-sourcing would have made
+the estate worse, and saying so is the difference between an allowance and a
+convenience.
+
+### T12. Every allowlisted sweep hit, by class
+
+Decided: seventy-one further hits are declared, each as a file-and-word line
+standing on one of three stated reason classes. No hit is skipped and an
+allowance that stops matching anything fails the arm, so the list cannot rot into
+a list of claims nobody checks.
+
+Test oracles — sixty-seven lines across the Go daemon, journal and substrate
+suites and the spine's connection, permission, payload, consumer, key-value,
+heartbeat and session suites. A test states its own expectation; re-sourcing it
+from the table under test would make the assertion agree with the table by
+construction and delete the independent oracle the transcription is checked
+against.
+
+Homonyms — three lines, where the literal is an ordinary word the estate uses for
+a purpose of its own (the schema library's excess-property setting, a diagnostic
+severity) that happens to spell one of the eleven status discriminants. The
+sweep reads text and cannot tell the two apart.
+
+The connect-option name — one line, where the pinned client's own CONNECT option
+happens to spell the reconnect status discriminant. The connect-option roster is
+its own declared surface with its own provenance; reading it out of the status
+group would name an option after an event.
+
+Eight further paths are exempt wholesale as members of the transcription family
+— the two tables, their tests, the wall and its controls, the spine's
+pass-through, the connection machine built over the absorbed rows, and the
+wall's TypeScript half. **Load-bearing? yes.**
+
+### T13. Three consumers re-sourced in the daemon package
+
+Decided: the greeting operation, the lame-duck event name, and the readiness
+gate name are read from the tables instead of spelled again, and a test holds
+each consumer to the row it now reads. Their own comments already said the words
+were the vendor's and that the estate's table already transcribed them; now that
+is true mechanically rather than by assertion.
+
+**Load-bearing? no** individually; **yes** as a set, because the footprint arm is
+only a wall if the estate passes it without exceptions written for its own
+convenience.
+
+### T14. What this slice does NOT do
+
+The corpus grows no substrate-vocabulary emitter group. Every table here is
+hand-carried transcription wearing the waiver that names the owed group by name:
+the **substrate-vocabulary emitter group**, which the corpus provably does not
+mint today — no generator emits a protocol verb, an API subject, a system event
+subject, a status event type, or a lifecycle entry. Growing it is the second half
+of this walk and belongs to whoever is dispatched for it. Until then the tables
+are transcription with provenance, never a twin of one.
+
+Three bounds of the footprint arm are stated where they bite rather than
+discovered later: comments are not read, one literal reports one word, and the
+arm reads text so it cannot distinguish the vendor's discriminant from an
+ordinary word spelled the same — which is why the homonyms are declared
+allowances rather than words narrowed out of the vocabulary for every file at
+once.
+
+The sweep's reach is stated too: the spine's sources, scripts and tests, and the
+whole Go module. The tracer bullet's own protocol is outside it — its words are
+its own closed list and its teardown move is not a connection status — and the
+canonicalization seam speaks no substrate at all.

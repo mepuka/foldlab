@@ -10,10 +10,13 @@ import (
 )
 
 // greetingOp is the pinned vendor's own protocol word for the block a server
-// writes to a connection before anything else. It is transcribed, not named
-// here: a wire word this estate invented would be a word the substrate never
-// carried.
-const greetingOp = "INFO "
+// writes to a connection before anything else, READ FROM THE WIRE VOCABULARY
+// rather than spelled again here.
+//
+// The row is reached by the vendor's own identifier for the declaration, so
+// finding it costs no second statement of the word: the word travels out of the
+// table and never into the query.
+var greetingOp = mustVerb("server.InfoProto").Word + " "
 
 // maxGreeting bounds the read so a connection that never terminates a line
 // cannot grow the buffer without limit. The pinned server's client greeting is

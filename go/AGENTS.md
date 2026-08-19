@@ -4,8 +4,8 @@ Slimmed 2026-08-15 to the focus substrate, then extended by DEV-711 with a
 fresh `register/` twin and `cmd/registerwall/`, and by the kernel-model slice
 with the conformance consumer `kmconform/`, its generator `cmd/kmgen/`, and
 the brand lint `brandlint/` with `cmd/brandlint/`, and by the estate-daemon
-slices with `daemon/`, `cmd/daemonwall/`, `cmd/incarnationwall/` and
-`cmd/teardownwall/`: `canonical/`, `journal/`,
+slices with `daemon/`, `cmd/daemonwall/`, `cmd/incarnationwall/`,
+`cmd/teardownwall/`, `cmd/optionswall/` and `cmd/wirewall/`: `canonical/`, `journal/`,
 `register/`, `kmconform/`, `brandlint/`, `daemon/`, and the commands. The
 stream/transform hot path, the archived effector, the
 gauntlet lanes, and their commands live at tag
@@ -104,6 +104,40 @@ gauntlet lanes, and their commands live at tag
   and both are executed both ways. The teardown wall runs three teardowns as
   three processes and kills a whole process for the crash arm, because an
   in-process shutdown is not a process crash.
+- `daemon/wirevocabulary.go` is the NORMATIVE home of the whole surface the
+  estate speaks to its substrate: five transcribed tables — protocol verbs, the
+  JetStream API and key-value subject surface, the system-account event
+  subjects, the client status events, and the substrate's lifecycle surface. It
+  is the one exception to the "transcription of the spine's" rule above,
+  because it points the other way: the spine's table is EMITTED from this one's
+  canonical rendering and reads no vendor source of its own. A second reading
+  there would be a second transcription, and two transcriptions sharing a
+  mistake agree perfectly.
+  Every row carries the shape its word takes, a provenance pin — vendor
+  package, version, and the sha256 of the exact source region — its place under
+  the three wire shapes, and, where it is chatter, what it may accelerate and
+  what it may never decide. The region's coordinates ride beside the row as the
+  wall's oracle input and never reach the rendering. The digests are DERIVED
+  from the installed sources into `daemon/wirevocabularydigests.go` and
+  committed; the rendering is committed beside them; a fresh emission diffs
+  against both. Each group states its closure rule, so completeness is
+  checkable; a row this posture never reaches is carried and marked
+  declared-but-unused, because omission is how a table starts lying. Adding a
+  wire word the pinned vendor surface does not carry is a finding — such a word
+  may enter only as a declared estate value under its own digest.
+- `cmd/wirewall/` is that vocabulary's wall, wired into the battery as two
+  named stages. Five arms, each failing on its own named reason: byte parity
+  across the language boundary and against the committed artifacts; every row's
+  provenance digest re-derived from the pinned vendor source AS INSTALLED, where
+  a missing pinned source FAILS and never skips; a declared row census against
+  an independently derived one; per-row closure; and a sweep of the estate's own
+  sources for wire words written as bare literals outside the transcription
+  modules. It spawns a TypeScript process for the parity arm, so it needs the
+  root install warm. `--controls` is the committed refutation set: four planted
+  defects, each of which must refute on the arm it was planted against.
+  The sweep's exceptions are declared lines with stated reasons and an exception
+  that stops matching anything fails the arm; re-sourcing a consumer to spell a
+  wire word again, or adding a silent skip to that list, is a finding.
 - `cmd/daemonwall/` is that transcription's wall — the carriage-invariance
   differential, run bare and its numbers printed: one connection folded from
   two carriages in one language, one connection folded from two carriages

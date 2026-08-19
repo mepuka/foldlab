@@ -20,6 +20,7 @@ import { ANCHOR_BUCKET } from "../planes/Anchor.js"
 import { CATALOG_BUCKET } from "../planes/Catalog.js"
 import { CELL_BUCKET } from "../planes/Cell.js"
 import { REGISTER_BUCKET } from "../planes/Register.js"
+import { WIRE_API_SUBJECT_BY_DECLARATION } from "./wirevocabulary.js"
 
 /**
  * One free coordinate of a subject family: the fabric's own literal-token
@@ -124,10 +125,56 @@ export const CarrierPermissionScope = Schema.Struct({
 
 export type CarrierPermissionScope = typeof CarrierPermissionScope.Type
 
-const streamInfo = (streams: ReadonlyArray<string>): ReadonlyArray<string> =>
-  streams.map((stream) => `$JS.API.STREAM.INFO.${stream}`)
+/**
+ * Fills one of the pinned vendor's own subject templates.
+ *
+ * The vendor states each API subject twice — a subscription spelling with its
+ * wildcards and a format spelling with its holes — and the wire vocabulary
+ * carries both. What a grant needs is the format spelling with the deployment's
+ * own coordinates in the holes, so the filling is done here rather than by
+ * writing the subject out again with the coordinates baked in.
+ *
+ * A template with the wrong number of coordinates REFUSES rather than filling
+ * what it can: a subject with a hole left in it is a subject nobody can be
+ * granted, and one filled from the wrong end is a grant of something else.
+ */
+const fill = (template: string, ...tokens: ReadonlyArray<string>): string => {
+  const segments = template.split("%s")
+  if (segments.length !== tokens.length + 1) {
+    throw new Error(
+      `the subject template takes ${segments.length - 1} coordinates and ${tokens.length} were given`,
+    )
+  }
+  return segments.reduce(
+    (built, segment, index) => (index === 0 ? segment : `${built}${tokens[index - 1]}${segment}`),
+    "",
+  )
+}
 
-const jetStreamManagerInfo = "$JS.API.INFO"
+/**
+ * The four subject coordinates this projection addresses, read from the wire
+ * vocabulary rather than written out here.
+ *
+ * Each row is reached by the pinned vendor's own identifier for its
+ * declaration, so finding a subject costs no second statement of it: the
+ * subject travels out of the table and never into the query. Before the table
+ * existed these four were spelled by hand, which is how a projection and a
+ * substrate come to disagree about a word neither of them owns.
+ */
+const accountInfoSubject = WIRE_API_SUBJECT_BY_DECLARATION["server.JSApiAccountInfo"].subject
+const streamInfoTemplate = WIRE_API_SUBJECT_BY_DECLARATION["server.JSApiStreamInfo"].template
+const directGetLastTemplate =
+  WIRE_API_SUBJECT_BY_DECLARATION["server.JSDirectGetLastBySubject"].template
+const kvSubjectPrefix = WIRE_API_SUBJECT_BY_DECLARATION["kv.kvSubjectPrefix"].subject
+const kvStreamPrefix = WIRE_API_SUBJECT_BY_DECLARATION["kv.kvPrefix"].subject
+
+/** One key-value bucket's backing stream name, in the pinned client's spelling. */
+const kvStream = (bucket: string): string => `${kvStreamPrefix}${bucket}`
+
+const streamInfo = (streams: ReadonlyArray<string>): ReadonlyArray<string> =>
+  streams.map((stream) => fill(streamInfoTemplate, stream))
+
+const jetStreamManagerInfo = accountInfoSubject
 
 const withInbox = (
   publish: ReadonlyArray<string>,
@@ -152,9 +199,9 @@ const kv = (
 ): CarrierPermission => withInbox([
   jetStreamManagerInfo,
   ...buckets.flatMap((bucket) => [
-    `$JS.API.STREAM.INFO.KV_${bucket}`,
-    `$JS.API.DIRECT.GET.KV_${bucket}.>`,
-    `$KV.${bucket}.>`,
+    fill(streamInfoTemplate, kvStream(bucket)),
+    fill(directGetLastTemplate, kvStream(bucket), ">"),
+    `${kvSubjectPrefix}.${bucket}.>`,
   ]),
 ], inboxPrefix)
 

@@ -206,11 +206,12 @@ func EstablishedIncarnationFact(digest string, value SubstrateIncarnation) map[s
 	}
 }
 
-// LameDuckEvent is the pinned vendor's own name for the disposition, carried
-// verbatim. The estate invents no name here: this is the event type the
-// vendor's status vocabulary publishes and the estate's status table already
-// transcribes.
-const LameDuckEvent = "ldm"
+// LameDuckEvent is the pinned vendor's own name for the disposition, READ FROM
+// THE WIRE VOCABULARY rather than spelled again here.
+//
+// The row is reached by the vendor's own type-alias name for the status event,
+// so the event name is stated once in the estate and travels out of the table.
+var LameDuckEvent = mustStatusEvent("LDMStatus").Type
 
 // LameDuckFact is the drain disposition as a fact on the session lane.
 //
