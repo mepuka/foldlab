@@ -46,10 +46,16 @@ const suite: ReadonlyArray<string> = [
   "go/daemon/greeting.go",
   "go/daemon/options.go",
   "go/daemon/readiness.go",
+  "go/daemon/serveroptions.go",
+  "go/daemon/serveroptions_test.go",
   "go/daemon/session.go",
   "go/daemon/session_test.go",
   "go/cmd/daemonwall/main.go",
+  "go/cmd/optionswall/citation.go",
+  "go/cmd/optionswall/main.go",
+  "go/cmd/optionswall/parity.go",
   "packages/plait/test/process/substrate-daemon-mint.ts",
+  "packages/plait/test/process/substrate-options-mint.ts",
 ]
 
 /** What a ports-file readiness poll looks like, in either language. */

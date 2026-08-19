@@ -6729,6 +6729,197 @@ not accept); a control that merely fails to compile (it would show the shape is
 unavailable, not that the two shapes differ in what they leave behind).
 **Load-bearing? yes** — the shuttle inherits this seam.
 
+## Task: server options as declared data, and the closed-channel refusal (estate-daemon S6, 2026-08-19)
+
+### T1. The option table is the schema, and the declared value's key set IS the table
+
+Decided: one transcribed table of server options lives on both sides of the
+language boundary, and the declared server-options value carries exactly its
+rows — no more and no fewer. Both directions are walked by a test rather than
+argued: a table row the value does not carry is a row nobody declares, and a
+value key the table does not name is a key nobody transcribed.
+
+The alternative was a schema stated once in prose and a value assembled by hand
+at each site, which is the shape that lets a row exist in the struct and not in
+the bytes. **Load-bearing? yes** — the digest of this value is what every
+incarnation cites, so its key set is what "the options this run used" means.
+
+### T2. The values are transcribed, never ruled
+
+Decided: this slice records what is MEASURED at every row and moves nothing. The
+rows whose values are priced decisions belonging to the operator — the sync
+interval and sync-always, the log suppression, the server name, and the
+monitoring HTTP port — are carried at their measured settings, with the pricing
+noted in their own declarations. A value moved here would be a ruling taken by a
+transcription.
+
+The monitoring HTTP port is the clearest case: it is transcribed at zero because
+zero is what is measured, and zero also happens to close the listener — but it
+is NOT an inventory row, because refusing a non-zero value there would be this
+slice ruling a row that was explicitly left priced. The HTTPS monitoring
+listener is a different row and IS in the inventory, because nothing about it
+has ever been priced.
+
+Alternatives: ruling the open rows here (out of scope by declaration, and the
+declaration is the point); leaving them out of the table entirely (then the
+estate runs under values nobody declared, which is what this slice retires).
+**Load-bearing? yes.**
+
+### T3. Two rows are declared inverted so that the zero value is the hermetic posture
+
+Decided: the listen switch and the signal switch are carried in the Go struct as
+the positive reading of the vendor's `dont_listen` and `no_sigs`. The declared
+VALUE carries the vendor's own key at the vendor's own polarity; the inversion
+lives in the field a caller writes and never in the bytes.
+
+The reason is not taste. The signal row used to be set behind the declared
+value's back, on the sound ground that an embedded server does not own its
+process's signals; making it a declared row at the vendor's polarity would have
+made the zero value of the struct install signal handlers, so every construction
+site would have carried a setting whose omission changed behaviour. Inverted,
+the zero value is the posture the daemon actually holds and no existing site
+moved.
+
+Alternatives: a declared row at the vendor's polarity with every site updated (a
+footgun left behind for the next site); keeping the value out of the declaration
+(the exception the slice exists to retire). **Load-bearing? yes.**
+
+### T4. Keys are the vendor's, and the nesting is the vendor's
+
+Decided: a row's key is the vendor's own configuration word where the vendor has
+one, and the vendor's own field name in the snake spelling its configuration
+uses everywhere else where it does not. A `named` column records which of the
+two each row is, so a reader resolves a key back to the vendor rather than to a
+convention. Rows the vendor declares inside a configuration block are declared
+inside that block in the value, spelled with that block's own word, so the
+table's key for such a row is a path through the vendor's own structure.
+
+The refused alternative was flattening the nested rows into estate-composed
+names. A flattened name is an estate word wearing vendor parts, and the adoption
+rule is that no estate word enters the option vocabulary at all.
+**Load-bearing? yes** — the rule is what makes the table a transcription.
+
+### T5. Provenance is the vendor's declaration AND the place it is declared
+
+Decided: every row carries the vendor's own identifier verbatim and the file and
+line where that identifier is declared at the pinned version. The identifier
+resolves a row to a declaration; the place makes the transcription checkable by
+a machine that has the vendor's source, which is what the parity wall's site
+oracle does.
+
+A tracking-artifact concern was weighed and answered: a source location is
+tracking-land, and these tables are internal transcription modules rather than
+rendered or projected surfaces — nothing generates a document from them. The
+place stays. **Load-bearing? no** — the identifier alone would resolve the row;
+the place is what buys the oracle.
+
+### T6. One law over an inventory, with per-row reason and repair as DATA
+
+Decided: the closed-channel refusal states one law — the estate's substrate
+admits at the doors the estate declared and at no others — and the inventory
+carries, per row, the option it reads, the setting at which that option is
+closed, the surface a repair happens at, and the repair itself. The door WALKS
+the inventory; it branches on nothing.
+
+That is what makes the refusal comparable across the language boundary at all: a
+repair written at a call site cannot be byte-compared, and a switch statement
+over eight channels cannot be read by anybody who has not gone looking for it.
+It is also what makes the closed setting a declaration rather than an inference
+— absence is not closure. **Load-bearing? yes.**
+
+### T7. "Remove the field" is a failing repair, and the failure is walled
+
+Decided: every repair must name the closed inventory, say the row is closed by
+declaration rather than by accident, and name the act that would open it — an
+operator ruling, because a new listener is a new authentication surface. A
+repair telling a party to remove the field is refused by a test, because
+removing the field would replace a declared closure with an absence, which is
+the state the declared value exists to retire.
+
+Alternatives: leaving the repair's content to review (a teaching nobody
+executes). **Load-bearing? yes** — a refusal that does not teach is a verdict.
+
+### T8. The inventory is a parameter, and the committed control empties it
+
+Decided: the door takes its inventory as an argument, and the shipped door
+passes the estate's. The control passes an EMPTY one, and the same enabling
+values are then admitted. This follows the register's own precedent, where the
+unpinned client exists solely so the incarnation pin's refutation can be
+executed rather than argued; no shipped caller passes anything else.
+
+The alternative — asserting in prose that the inventory is what refuses — cannot
+distinguish the inventory from any other check the value might have failed.
+**Load-bearing? yes** — a refusal that cannot be turned off proves nothing about
+what is doing the refusing.
+
+### T9. A citation RESOLVES; it is not re-derived
+
+Decided: the options citation is admitted only when the cited digest resolves in
+a content-addressed store AND the bytes it resolves to are byte-identical to the
+value the server was constructed from. Two reasons are distinguished — a digest
+nothing resolves, and a digest resolving to another value — because they teach
+different repairs.
+
+Re-deriving the running value's digest and comparing digests was the weaker
+alternative, and weaker in exactly the place that matters: it compares two names
+rather than the value a reader would obtain, so a store resolving a digest to
+the wrong bytes would pass. **Load-bearing? yes.**
+
+### T10. The greatest-position read compares canonical bytes, not Go values
+
+Decided: the tie check at the greatest position compares the two candidates'
+canonical bytes. Identity is of canonical bytes throughout the estate, and the
+declared value now carries a list, which Go cannot compare at all — so the
+comparison the tie needs and the comparison the digest already makes became one
+comparison rather than two. **Load-bearing? no** — it is the same verdict by a
+better route.
+
+### T11. The parity wall carries two oracles outside both transcriptions
+
+Decided: before the two languages' bytes are compared, the pin the tables name
+is checked against the module the wall's own binary links, and every row's site
+is opened in the pinned vendor's source and checked to declare the field the row
+names. Both-sides-agree is not verification: two transcriptions sharing a
+mistake agree perfectly, and the vendor is the only referee outside both.
+
+A module cache that does not carry the pinned vendor FAILS the arm rather than
+skipping it. **Load-bearing? yes** — without the oracles the parity stage would
+certify consensus.
+
+### T12. The flush interval crosses the boundary as the vendor's own rendering
+
+Decided: the declared value carries the interval as the string the daemon's
+language renders it to, and the spine carries that rendering rather than
+deriving one. The bound is stated where it bites: the parity comparison over
+that field compares what both sides declared, not two independent renderings of
+one duration. Deriving it on the spine side would have meant restating a
+duration format nobody transcribed. **Load-bearing? no**, but the bound is real
+and is recorded rather than discovered later.
+
+### T13. The table's digest does not ride the declared value
+
+Decided against, deliberately: the session declaration carries its roster's
+digest so a party can resolve the exact roster it folded under, and the same
+could have been done here. It is not, because the option value's key set already
+determines the table up to sorts and provenance, and making the value's
+construction depend on a digest would make it an effectful construction in both
+languages for a property the key set nearly carries.
+
+Recorded as the considered alternative, so a later slice that wants the
+self-description knows it was weighed rather than missed. **Load-bearing? no.**
+
+### T14. New Go code, and where an existing package would have served
+
+Decided, with the gaps named: the daemon mints its own typed refusal because the
+Go side has no shared refusal package — the register's is package-scoped — and
+the two declarations are held together by their fields and by review rather than
+by a wall. The options store is new for the same reason: the Go side has no
+content-addressed store, and the citation needs a resolve rather than a
+recomputation. Everything else is adopted rather than rebuilt — the
+canonicalizer and the digest are the canonical package's, the lanes are the
+journal's, the fence is the register's, and the incarnation fact machinery is
+the one the fence slice built. **Load-bearing? no**, but the gaps are the honest
+list of what a shared Go refusal package would absorb.
 ## Task: the read-side folds, the digest instances, and the coherence wall (2026-08-19)
 
 ### T1. The structural-kind fold is a mapped arm record, not the pin's discriminator matcher

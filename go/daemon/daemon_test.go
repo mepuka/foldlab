@@ -219,7 +219,7 @@ func TestGreatestDeclaredOptions(t *testing.T) {
 		{Position: 7, Declared: high},
 		{Position: 3, Declared: low},
 	})
-	if err != nil || read != high {
+	if err != nil || !sameDeclared(t, read, high) {
 		t.Fatalf("greatest-position read returned %+v, %v", read, err)
 	}
 
@@ -239,9 +239,25 @@ func TestGreatestDeclaredOptions(t *testing.T) {
 		{Position: 3, Declared: low},
 		{Position: 3, Declared: low},
 	})
-	if err != nil || same != low {
+	if err != nil || !sameDeclared(t, same, low) {
 		t.Fatalf("one value declared twice returned %+v, %v", same, err)
 	}
+}
+
+// sameDeclared compares two declared values the way the read itself does, by
+// canonical bytes. Go cannot compare the values directly since one field is a
+// list, and comparing by bytes is the comparison the estate means anyway.
+func sameDeclared(t *testing.T, left DeclaredServerOptions, right DeclaredServerOptions) bool {
+	t.Helper()
+	leftBytes, err := left.Bytes()
+	if err != nil {
+		t.Fatalf("take the left value's bytes: %v", err)
+	}
+	rightBytes, err := right.Bytes()
+	if err != nil {
+		t.Fatalf("take the right value's bytes: %v", err)
+	}
+	return string(leftBytes) == string(rightBytes)
 }
 
 // TestUnregisteredConnectionRefuses holds the registration read's refusal.
