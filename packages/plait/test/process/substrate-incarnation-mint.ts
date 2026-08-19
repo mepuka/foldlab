@@ -18,6 +18,7 @@
 import { Effect } from "effect"
 
 import {
+  dispositionFact,
   establishedFact,
   incarnation,
   lameDuckFact,
@@ -26,17 +27,19 @@ import {
   store,
   type RetirementCause,
 } from "../../src/internal/incarnations.js"
+import { endedFact } from "../../src/internal/sessionfacts.js"
 import { canonicalBytes, type WireValue } from "../../src/truth/Canonical.js"
 import { Digest } from "../../src/truth/Digest.js"
 import { digestOf } from "../../src/truth/Digest.js"
 
-const [dir, options, predecessor, session, server, cause] = process.argv.slice(2)
+const [dir, options, predecessor, session, server, cause, terminal] = process.argv.slice(2)
 if (
   dir === undefined || options === undefined || predecessor === undefined ||
-  session === undefined || server === undefined || cause === undefined
+  session === undefined || server === undefined || cause === undefined ||
+  terminal === undefined
 ) {
   throw new Error(
-    "usage: substrate-incarnation-mint DIR OPTIONS PREDECESSOR SESSION SERVER CAUSE",
+    "usage: substrate-incarnation-mint DIR OPTIONS PREDECESSOR SESSION SERVER CAUSE TERMINAL",
   )
 }
 
@@ -68,6 +71,8 @@ await Effect.runPromise(
         server,
       }) as unknown as WireValue,
       retired: retiredFact(digest, cause as RetirementCause) as unknown as WireValue,
+      disposition: dispositionFact(digest, cause as RetirementCause) as unknown as WireValue,
+      ended: endedFact(Digest.make(session), terminal) as unknown as WireValue,
     }
 
     const rows: Record<string, { bytes: string; digest: string }> = {}

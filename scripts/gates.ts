@@ -269,6 +269,31 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "go"),
     command: ["go", "run", "./cmd/teardownwall", "--consumer-control"],
   },
+  // The substrate lifecycle command's own two walls. The succession arm runs
+  // up, down, up, down over ONE store directory with every verb in its own
+  // process, and measures what only a second start can show: that the second
+  // incarnation names the first as its predecessor and the chain walks total
+  // and acyclic from the newest. It closes on the fence, measured through the
+  // shipped command — a round held out of band, a start run against it, and a
+  // refusal that must carry reason, law and repair while binding nothing and
+  // landing nothing.
+  //
+  // The readiness arm is the ports-file finding's other half, executed both
+  // ways: the shipped probe admits a substrate whose JetStream answers a round
+  // trip on the first attempt, and REFUSES a real vendor server whose JetStream
+  // has been taken down by the vendor's own verb — while the mutant reading, a
+  // bound listener, admits it. A readiness gate that cannot be measured
+  // refusing an unready substrate is a gate nobody has measured.
+  {
+    label: "daemon — lifecycle succession (up, down, up)",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/lifecyclewall"],
+  },
+  {
+    label: "daemon — readiness gate and its refuted mutant",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/lifecyclewall", "--readiness"],
+  },
   // The server-options slice's four walls. The options a substrate runs under
   // are declared data now, so what the battery measures is that the data is
   // what decides: the inventory refuses at the one admission door, the door

@@ -5,7 +5,10 @@ import { basename, dirname, join, resolve } from "node:path"
 
 import { Schema } from "effect"
 
-const Ports = Schema.Struct({ nats: Schema.Array(Schema.String) })
+const Ports = Schema.Struct({
+  nats: Schema.Array(Schema.String),
+  monitoring: Schema.Array(Schema.String),
+})
 const goRoot = resolve(import.meta.dir, "../../../go")
 
 /**
@@ -73,6 +76,43 @@ const waitForPorts = async (directory: string): Promise<string> => {
     await Bun.sleep(25)
   }
   throw new Error("nats-server did not write its ports file within 60 seconds")
+}
+
+/**
+ * The readiness affordance, and why the ports file is not one.
+ *
+ * A ports file appears when a listener is bound. That proves a client can
+ * connect and proves nothing about JetStream, so a start that returned there
+ * would hand back a URL for a substrate whose `$JS.API` may not be answering
+ * yet — which is the race every suite on this harness used to run, and which
+ * the sixty-second ports-file budget only ever hid.
+ *
+ * The signal is the PINNED VENDOR'S OWN health probe with JetStream enablement
+ * requested: the endpoint answers 200 once the listener is up AND the server's
+ * JetStream is enabled, and 503 while it is not. Nothing here reads a port as
+ * an answer and nothing here invents a readiness rule of its own — the estate's
+ * daemon takes the same probe in process, and this is the same read over a
+ * socket because a spawned binary offers no in-process surface.
+ *
+ * The bound is the same load-stretch shape `waitForPorts` states: on a
+ * saturated machine each sleep overruns, so 2400x25ms is a generous but bounded
+ * ceiling, and a substrate that never becomes JetStream-ready still fails the
+ * row loudly rather than passing it slowly.
+ */
+const waitForJetStreamHealth = async (monitoring: string): Promise<void> => {
+  const probe = `${monitoring.replace(/\/+$/, "")}/healthz?js-enabled-only=true`
+  let last = "no response"
+  for (let attempt = 0; attempt < 2400; attempt++) {
+    try {
+      const response = await fetch(probe)
+      if (response.status === 200) return
+      last = `${response.status} ${await response.text()}`
+    } catch (cause) {
+      last = String(cause)
+    }
+    await Bun.sleep(25)
+  }
+  throw new Error(`nats-server never reported JetStream healthy: ${last}`)
 }
 
 /** Reports whether a built server answers `-v` with the pin this harness binds. */
@@ -185,6 +225,14 @@ export const startNatsServer = async (
       "127.0.0.1",
       "-p",
       "-1",
+      // The monitoring listener on an operating-system-assigned port. It is
+      // here for exactly one reason: it is where the pinned vendor serves its
+      // own readiness probe, and a spawned binary offers no in-process surface
+      // to take that read on. The estate's daemon opens no such listener and
+      // needs none — its health read is in process — and the closed-channel
+      // inventory keeps the HTTPS and profiling listeners shut in both.
+      "-m",
+      "-1",
       "--ports_file_dir",
       directory,
     ],
@@ -201,6 +249,14 @@ export const startNatsServer = async (
     )
     const url = ports.nats[0]
     if (url === undefined) throw new Error("nats-server ports file has no client URL")
+    const monitoring = ports.monitoring[0]
+    if (monitoring === undefined) {
+      throw new Error("nats-server ports file has no monitoring URL to probe readiness at")
+    }
+    // After the ports file and BEFORE the URL is handed out. A caller that
+    // receives this URL receives a substrate whose JetStream the vendor's own
+    // probe has admitted, so nothing downstream needs to race `$JS.API`.
+    await waitForJetStreamHealth(monitoring)
     return {
       url,
       directory,

@@ -297,6 +297,44 @@ export const retiredFact = (
   cause,
 })
 
+/** One incarnation's teardown disposition: the cause it is to retire under. */
+export interface IncarnationDisposition {
+  readonly v: 0
+  readonly kind: "substrate-incarnation-disposition"
+  readonly incarnation: string
+  readonly cause: RetirementCause
+}
+
+/**
+ * Declares one incarnation's teardown disposition.
+ *
+ * A retirement is a fact about an incarnation that has stopped; a disposition
+ * is a fact about the act that asked it to. They are separate rows because they
+ * are separate facts: a disposition that never reached its incarnation is still
+ * a true record of the asking, and reading it as a retirement would be reading
+ * an intention as an outcome.
+ *
+ * **The disposition is why a running incarnation needs no callback and no
+ * signal.** A party that holds an anchor on the incarnation lane advances on
+ * this fact, which is a record every later reader can audit and any second
+ * reader can reproduce; a signal is a private truth no anchor can read. The
+ * lane-driven shape is the shuttle's, consumed here rather than re-derived.
+ *
+ * **The cause is drawn from the retirement roster, and that is the whole
+ * refusal.** There is no cause naming a crash, so a disposition asking for one
+ * is unsayable in exactly the way a retirement claiming one is: the roster the
+ * two share has no row a crash could enter under.
+ */
+export const dispositionFact = (
+  incarnation: Digest,
+  cause: RetirementCause,
+): IncarnationDisposition => ({
+  v: 0,
+  kind: "substrate-incarnation-disposition",
+  incarnation,
+  cause,
+})
+
 const teachSeedChain: ReadonlyArray<Next> = [{
   subject: "incarnation.chain",
   note: "Walk the chain over a history carrying every incarnation the walk reaches, each named by its own canonical bytes.",

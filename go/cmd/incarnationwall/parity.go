@@ -33,6 +33,12 @@ type parityCase struct {
 	session     string
 	server      string
 	cause       string
+	// terminal is the word the pinned client reports for the state a session
+	// ended in. It is a separate coordinate from the retirement cause because
+	// the two are separate vocabularies — one is the client's account of its own
+	// connection, the other is a declared estate value — and a case that fed one
+	// into the other would compare two languages agreeing to conflate them.
+	terminal string
 }
 
 // Two digests that are not each other, spelled out rather than derived, so the
@@ -53,6 +59,7 @@ func runParity(minter string) error {
 			session:     paritySession,
 			server:      "foldlab-substrate",
 			cause:       daemon.CauseDrained,
+			terminal:    "CLOSED",
 		},
 		{
 			label:       "successor",
@@ -62,6 +69,12 @@ func runParity(minter string) error {
 			session:     paritySession,
 			server:      "foldlab-substrate",
 			cause:       daemon.CauseStopped,
+			// The empty terminal is the pinned client's own report of an
+			// orderly end, and it is the coordinate most likely to be folded
+			// differently by two languages: an absent field and a field
+			// carrying the empty string are the same value only if both sides
+			// declare it the same way.
+			terminal: "",
 		},
 	}
 
@@ -91,12 +104,18 @@ func runParity(minter string) error {
 		if err != nil {
 			return err
 		}
+		disposition, err := daemon.DispositionFact(digest, row.cause)
+		if err != nil {
+			return err
+		}
 		near := map[string]map[string]any{
 			"store":       daemon.StoreValue(row.dir),
 			"incarnation": daemon.IncarnationValue(value),
 			"established": daemon.EstablishedIncarnationFact(digest, value),
 			"lame-duck":   daemon.LameDuckFact(digest, row.session, row.server),
 			"retired":     retired,
+			"disposition": disposition,
+			"ended":       daemon.EndedSessionFact(row.session, row.terminal),
 		}
 
 		if reference.Round != round {
@@ -104,7 +123,9 @@ func runParity(minter string) error {
 				row.label, reference.Round, round)
 		}
 		fmt.Printf("%s round key: %s (equal)\n", row.label, round)
-		for _, name := range []string{"store", "incarnation", "established", "lame-duck", "retired"} {
+		for _, name := range []string{
+			"store", "incarnation", "established", "lame-duck", "retired", "disposition", "ended",
+		} {
 			bytes, err := canonical.CanonicalizeValue(near[name])
 			if err != nil {
 				return err
@@ -144,7 +165,8 @@ type referenceMint struct {
 
 func mintReference(minter string, row parityCase) (referenceMint, error) {
 	command := exec.Command(
-		"bun", minter, row.dir, row.options, row.predecessor, row.session, row.server, row.cause,
+		"bun", minter,
+		row.dir, row.options, row.predecessor, row.session, row.server, row.cause, row.terminal,
 	)
 	command.Stderr = os.Stderr
 	output, err := command.Output()

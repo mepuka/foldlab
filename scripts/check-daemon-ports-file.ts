@@ -41,9 +41,12 @@ const repo = resolve(import.meta.dir, "..")
  * measured.
  */
 const suite: ReadonlyArray<string> = [
+  "go/daemon/consumer.go",
   "go/daemon/daemon.go",
   "go/daemon/daemon_test.go",
   "go/daemon/greeting.go",
+  "go/daemon/incarnation.go",
+  "go/daemon/lifecycle_test.go",
   "go/daemon/options.go",
   "go/daemon/readiness.go",
   "go/daemon/serveroptions.go",
@@ -51,9 +54,14 @@ const suite: ReadonlyArray<string> = [
   "go/daemon/session.go",
   "go/daemon/session_test.go",
   "go/cmd/daemonwall/main.go",
+  "go/cmd/lifecyclewall/main.go",
   "go/cmd/optionswall/citation.go",
   "go/cmd/optionswall/main.go",
   "go/cmd/optionswall/parity.go",
+  "go/cmd/substrate/down.go",
+  "go/cmd/substrate/main.go",
+  "go/cmd/substrate/status.go",
+  "go/cmd/substrate/up.go",
   "packages/plait/test/process/substrate-daemon-mint.ts",
   "packages/plait/test/process/substrate-options-mint.ts",
 ]

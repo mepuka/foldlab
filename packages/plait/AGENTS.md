@@ -78,6 +78,31 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   throws across a package seam, and only `sort: "absence"` is retryable.
 - NATS types remain under `src/internal/`. Public reads are `Stream`s and every
   connection, consumer, and message pump is owned by `Scope`.
+- **A scope-owned connection is released by a CLOSE, and that is ruled, not
+  incidental.** The release path is a finalizer that must not fail and must not
+  hang; a drain waits for in-flight work and would make every scope teardown an
+  unbounded wait against a wedged substrate. The ruling rests on two premises
+  and both are walled in `test/ShutdownPosture.test.ts`: every publish and every
+  key-value write is a request whose acknowledgement its own Effect yields, so
+  nothing a caller has been told about is in flight when a scope closes; and an
+  acknowledgement follows the covering anchor CAS, so an acknowledgement an
+  undrained close loses costs a redelivery the pump absorbs as stale. The wall
+  takes the shutdown at the SCOPE rather than at the process — a hard kill is an
+  undrained close plus everything else the process held, and the chaos suite
+  measures that — and pins both halves at the pump seam: the consumer's
+  acknowledgement floor stays at or below the anchor floor, and a resumed pump
+  reaches an uninterrupted run's state digests. Replacing the close with a drain,
+  or adding a write path whose acknowledgement its caller does not await, is a
+  finding against this ruling and needs its own.
+- The test harness's readiness signal is the PINNED VENDOR'S OWN health probe
+  with JetStream enablement requested, taken after the ports file and before the
+  URL is handed back. A ports file says a listener is bound and says nothing
+  about JetStream, so a start that returned there would hand out a URL for a
+  substrate whose API may not answer — the race every suite on this harness used
+  to run. The harness opens a monitoring listener for that read and it is the
+  only place in the estate that does: the daemon takes the same read in process
+  and needs no socket, and the closed-channel inventory keeps the HTTPS
+  monitoring and profiling listeners shut in both.
 - The successor discipline protects; the anchor floor records. Raw arrivals
   enter the position buffer, application advances only through consecutive
   successors, and explicit ack follows the covering anchor CAS.

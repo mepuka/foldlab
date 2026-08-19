@@ -42,14 +42,31 @@ controls traced into `../../negative-controls/Presence.*.trace.txt`, and
 `../../test/PresenceWall.test.ts` over a real substrate with one holder taken
 away by signal 9.
 
+`incarnations.ts` is the REFERENCE side of the substrate's own lifecycle
+vocabulary — the store, the incarnation, the round a start competes at, and the
+facts a run leaves: established, lame-duck, retired, and the teardown
+disposition an operator lands to ask a running incarnation to retire. The Go
+daemon transcribes every one of them and a byte-parity wall across the language
+boundary is what makes the transcription honest; this side is the reference, so
+a divergence is a defect there. Two of its shapes are load-bearing: the
+retirement causes are a two-row roster with no row a crash could enter under, so
+a forged retirement and a forged disposition are both unsayable, and the chain
+walk refuses a step the history does not carry rather than ending early.
+
 Wall: two of them, and which one runs a suite is derived rather than chosen —
 `../../scripts/run-test-group.ts` puts a file in the wall group exactly when it
 imports `./NatsHarness.js`. `bun run test:walls` brings up a `nats-server` and
 pins what the broker really does (ordered consumers, KV watch semantics, the
 object store), with `bun run check:parity-control` refuting a planted field-drop
-mutant on `../../negative-controls/SubstrateParity.field-drop.trace.txt`. The
-brokerless suites ride `bun run test:fast` instead, pinning adapter behaviour
-against constructed client values: transport defects and pump backpressure.
+mutant on `../../negative-controls/SubstrateParity.field-drop.trace.txt`. That
+harness hands back a URL only after the pinned vendor's own health probe admits
+the substrate with JetStream enablement requested — the ports file says a
+listener is bound and says nothing about JetStream — and
+`../../test/ShutdownPosture.test.ts` is where the release side of the same
+connection is ruled: the scope-owned connection closes undrained, and the two
+premises that makes lawful are executed at the seam. The brokerless suites ride
+`bun run test:fast` instead, pinning adapter behaviour against constructed
+client values: transport defects and pump backpressure.
 
 One level deeper: each module's `@module` header; `../../CONTEXT.md` for the
 terms these adapters implement; `../planes/README.md` for the public seams they

@@ -8388,3 +8388,249 @@ The sweep's reach is stated too: the spine's sources, scripts and tests, and the
 whole Go module. The tracer bullet's own protocol is outside it — its words are
 its own closed list and its teardown move is not a connection status — and the
 canonicalization seam speaks no substrate at all.
+
+## Task: the daemon turns on — one command up, one down, one status (estate-daemon, 2026-08-19)
+
+Placeholders `U1`–`U10` for this task; repository D-numbers are assigned at
+merge. The specification is the estate-daemon spec's lifecycle contract and the
+substrate-lifecycle ticket as amended by the coordinator on 2026-08-19. Most of
+what lands is in the Go module — the lifecycle command and its two walls — and
+the entries live here because the daemon track's earlier entries do. What lands
+in this package is one declared value on the incarnation vocabulary's reference
+side, the harness's readiness affordance, and the shutdown posture's wall.
+
+Nothing below re-opens the round key (`T29`), the incarnation pin (`T39`), or
+the closed-channel inventory: all three are consumed exactly as they were ruled.
+
+### U1. Three verbs in one command, and its home is beside the walls
+
+Decided: the lifecycle is one binary with three verbs — up, down, status — in
+the Go module's command tree, beside the walls that already spawn substrates.
+Go is the only language that can hold the server as a process value, so the
+entrypoint has no other home; splitting the verbs into three binaries would
+have split the coordination wiring they share three ways, and every one of them
+opens the same lanes at the same substrate.
+
+The alternative considered and refused: an entrypoint exported by the daemon
+package for a host to embed. That is a library seam, not a command, and the
+operator asked for a system that turns on. The package keeps exporting exactly
+what it exported before; the command is a consumer of it and adds no verb to
+the pinned vendor's lifecycle surface. **Load-bearing? no** — the home is a
+choice the specification did not fix, and this entry is the record of taking it.
+
+### U2. The register and the lanes live on a coordination substrate, named as an argument
+
+Decided: every verb takes the address of the substrate the incarnation register
+and the two lanes live on, and refuses without one.
+
+This is the fence's own law rather than a deployment convenience. The fence
+decides whether a server may exist over a store directory, so it cannot live on
+the server whose existence it is deciding — a fence there would need the thing
+it is deciding whether to start. The record has the second half of the same
+reason: an incarnation's facts outlive the incarnation, and a lane inside the
+substrate the lane is about goes away with it. Both walls that came before this
+one already run this way, and the shipped command now runs the way the walls
+measured.
+
+Alternatives, priced. Bootstrapping a register on the substrate being started:
+refused, it is the circularity above wearing a workaround. A file-based fence on
+the store directory: refused — it is a second fence beside the one the estate
+proved, with none of the register's revision discipline and none of its
+incarnation pin. **Load-bearing? yes** — a reader who does not know this reads
+the argument as an inconvenience and looks for a way around it.
+
+### U3. The teardown disposition is a fact, and a signal is not
+
+Decided: a running incarnation is asked to retire by a DISPOSITION landed on the
+incarnation lane, naming the incarnation and the cause it is to retire under.
+`down` lands it; the serving start holds an anchor on that lane and advances on
+it, through the lame-duck consumer's own shape.
+
+The alternative is a signal, and it is refused for the reason the estate refuses
+every callback on this path: a signal reaches one process once, leaves no
+record, cannot be replayed, and cannot be audited by a second reader. The
+declared server-options value installs no signal handler and the command
+installs none of its own; a process the operating system takes down therefore
+lands NOTHING and reads as an unretired incarnation whose lanes went quiet,
+which is the honest reading and the one the teardown differential already
+measures. That is a consequence worth stating plainly: interrupting the command
+at a terminal is the crash path, not the drain path.
+
+The disposition is a separate row from the retirement because it is a separate
+fact. A retirement is about an incarnation that has stopped; a disposition is
+about the act that asked it to, and it stays true whether or not it was ever
+read. Its cause is drawn from the RETIREMENT ROSTER rather than from a
+vocabulary of its own, which is what makes asking for a crash unsayable in
+exactly the way claiming one is: the roster has no row a crash could enter
+under, and one roster walk admits both facts.
+
+The value is declared on this package's side and TRANSCRIBED into the Go daemon,
+like every other row of that vocabulary, and the parity wall now compares it —
+together with the session-lane teardown fact, which crossed the language
+boundary untested until this slice and which the wall now compares at both an
+ordinary cause and the empty one. **Load-bearing? yes.**
+
+### U4. The predecessor is read from the register's chain, never from the lane
+
+Decided: a start walks the REGISTER from a store directory's first round to the
+first round nobody has decided, and decides there.
+
+Reading the predecessor off the incarnation lane is the obvious thing and it is
+wrong, in a way that only bites after a failure. A start that wins its round and
+then fails before it can land an established fact has SPENT that round: a landed
+outcome never changes, and the lane carries nothing. A lane-derived predecessor
+would send the next start back to that spent round and it would be refused
+there for good — one failed start, and the store directory can never be started
+again. The register walk steps past the spent round to the first one still open,
+which is where a decide belongs.
+
+The walk's depth is a stated bound rather than an implicit one: a chain grows by
+one per start, and a walk that ran forever over a corrupted register would hang
+a start instead of refusing it. **Load-bearing? yes.**
+
+### U5. Readiness is both of the vendor's gates, and the gates are a parameter
+
+Decided: the readiness probe performs the vendor's readiness gate and then the
+vendor's in-process health read with JetStream enablement requested, lands one
+observation per gate whichever way each went, and admits only on both. A bound
+port is not readiness and is never read as one.
+
+The pair of gates is an INTERFACE for the same reason the closed-channel
+inventory is a parameter: a gate that cannot be executed against an unready
+substrate is a gate nobody has measured. The committed refutation drives the
+same probe over a real vendor server whose JetStream has been taken down by the
+vendor's own verb — the shipped probe refuses it, the mutant reading (a bound
+listener, which is exactly what a ports-file wait observes) admits it, and a
+JetStream round trip taken once with no retry answers on the healthy substrate
+and fails on the other.
+
+**A bound of the vendor's probe, found while measuring it and stated here rather
+than discovered later.** With JetStream enablement requested, the health read
+returns healthy when the server's options never asked for JetStream at all: the
+vendor stops before the JetStream check when the option is off. So the probe
+says "JetStream is up if this server was configured for it", not "JetStream is
+up". The estate's declared value asks for it, and the option is a declared row
+the citation pins, so the gap is closed by the declaration rather than by the
+probe — but a caller that read this probe over an arbitrary server would be
+reading a weaker sentence than it looks like. **Load-bearing? yes.**
+
+### U6. The status read probes nothing, says no liveness word, and reports staleness as a number
+
+Decided: status folds the incarnation lane and reports established-at-position,
+retired-with-cause, and one positional staleness number. It opens no connection
+to any substrate but the coordination one it reads from.
+
+The staleness is the lane's head minus the greatest position at which the lane
+names an incarnation — how many positions have landed since it last appeared —
+and it is handed over as a number with no tolerance applied and no verdict
+attached. An incarnation the lane never names has NO reading rather than a
+reading of zero, which is the same distinction the presence read already makes:
+the absence of a reading is not a reading of zero.
+
+The succession wall reads the shipped report back for the words a fold cannot
+say — live, alive, running, healthy — and fails on any of them, so the surface
+cannot grow a liveness answer behind the fold's back. **Load-bearing? yes.**
+
+### U7. The shutdown posture is RULED: the close stays, and its two premises are walled
+
+Decided: the scope-owned connection is released by a CLOSE, not a drain, and
+that is now a ruling with a wall rather than a safety by consequence. The two
+premises the ruling rests on, named:
+
+**The awaited-request premise.** Every publish and every key-value write on
+these paths is a request whose acknowledgement the write's own Effect yields,
+so at the instant a scope closes there is no write in flight whose outcome a
+caller has been told. The wall executes it at the seam: twelve emissions inside
+one scope, the scope closed the instant the last one returned, and a second
+party on a connection the closed one never had finds every position an emit
+returned carrying the bytes that emit named — and finds nothing beyond the last
+one. Beside it, the refutation on the same seam: one write NOT awaited and the
+same close, whose acknowledgement the caller never receives.
+
+**The anchor-before-ack premise.** An acknowledgement follows the covering
+anchor CAS, so an acknowledgement lost in an undrained close costs a redelivery
+the pump absorbs as stale. The wall interrupts a running pump MID-TRANCHE by
+closing its own scope and pins both halves from a fresh connection: the
+consumer's acknowledgement floor is at or below the anchor floor on every
+partition — no unanchored position is acknowledged — and a resumed pump reaches
+the state digests an uninterrupted run reaches — no anchored position is lost.
+That second premise's committed refutation is the ack-before-anchor mutant the
+chaos suite already executes against its own trace: it acknowledges a position
+it never anchored and loses it.
+
+The drain was the alternative and it is priced. A drain unsubscribes, waits for
+in-flight work, flushes, and only then closes; the release path it would sit on
+is a finalizer that must not fail and must not hang, and a drain against a
+wedged substrate is an unbounded wait at every scope teardown in the package.
+The status pump's source is a generator parked on the connection's own
+teardown, so the release ordering that ends it is delicate already and a drain
+would put a second wait inside it. The close is bounded, the premises hold, and
+they now hold measurably.
+
+**A bound, stated.** These arms take the shutdown at the SCOPE, not at the
+process. That is deliberately weaker than the chaos suite's signal 9 — a hard
+kill is an undrained close plus everything else the process was holding — so
+the two arms measure the close on its own terms rather than inheriting the
+kill's evidence. **Load-bearing? yes.**
+
+### U8. The stock-binary harness gains a monitoring listener; the daemon still needs none
+
+Decided: the test harness starts its spawned server with a monitoring listener
+on an operating-system-assigned port, reads that address out of the ports file
+beside the client address, and waits on the vendor's own health probe with
+JetStream enablement requested BEFORE it hands back a URL.
+
+The ports file stays where it was and is not the readiness signal any more: it
+is how a spawned binary reports the two addresses it bound, and binding is not
+readiness. A caller that receives the URL now receives a substrate whose
+JetStream the vendor's own probe has admitted, so nothing downstream races the
+JetStream API at startup.
+
+The listener is opened in the harness and NOWHERE else. The estate's daemon
+takes the same read in process and opens no monitoring socket at all; the
+closed-channel inventory keeps the HTTPS monitoring listener and the profiling
+listener shut in both, and neither of those rows moves here. The harness needs
+the socket only because the JavaScript client ecosystem is client-only and a
+spawned binary offers no in-process surface to read health on. **Load-bearing?
+yes** — a reader who finds a monitoring port in the harness and not in the
+daemon should find the reason here rather than infer an inconsistency.
+
+### U9. What the daemon's own connection reports when its substrate stops
+
+Decided: the session-ended fact for the daemon's own connection cites the pinned
+client's own word for the state that connection had reached when its owner
+closed it, read after the stop completed and before the close. Under both
+teardowns that word is the client's reconnecting state, because the daemon's
+connection carries the client's own reconnect posture and its substrate went
+away underneath it.
+
+It is an honest reading and it is not the tidy one. The alternative — closing
+the connection first and citing the state closing puts every connection in —
+would report the same word for every teardown and for every cause, which is
+exactly the distinguishability the ended fact's cause field exists to carry.
+Giving the daemon's own connection a no-reconnect posture would change the word,
+and it would also change the connect-options declaration the session fact pins,
+which is a wider act than this slice has a ruling for. **Load-bearing? no** —
+recorded so the word in the record is not read as a defect.
+
+### U10. What this slice does NOT do
+
+The double-start hazard is FENCED for concurrency and not for liveness, and that
+was already the bound. Two starts racing at one open round are decided by the
+register and exactly one proceeds. A start run while an earlier incarnation is
+still serving walks past that incarnation's landed round to the next open one
+and wins it, because the record cannot tell a serving incarnation from a dead
+one — crash is not a fact, and refusing to succeed an unretired incarnation
+would make recovery after a crash impossible without forging one. What stops the
+second server is carriage: it fails to bind the address the declared value
+names. The register walk keeps that failure from wedging the chain, because the
+spent round is walked past; it does not make the second start impossible, and
+nothing here claims it does.
+
+Neither wall claims a bound on how long a drain takes. The vendor spreads client
+closes over its own duration, that duration is a declared option nobody has
+ruled, and the succession arm measures a chain rather than a schedule.
+
+The corpus grows no substrate-vocabulary emitter group. The disposition joins
+the same hand-carried transcription the rest of the incarnation vocabulary
+wears, under the same waiver naming the same owed group.

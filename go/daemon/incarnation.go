@@ -187,6 +187,50 @@ func LandedAt(registers *register.Client, store string, predecessor string) (str
 	return state.Outcome.Value, nil
 }
 
+// ErrChainDepth refuses a register chain longer than the walk's stated bound.
+var ErrChainDepth = errors.New("the register's incarnation chain is longer than the walk's stated bound")
+
+// OpenRound walks the REGISTER's own chain over one store directory and reports
+// the first chain position nobody has decided, together with the chain it
+// walked, oldest first.
+//
+// **The walk reads the register and not the lane, and the difference is the
+// whole reason this exists.** A round that landed an outcome never lands
+// another, so a party that decided a round and then failed before it could land
+// an established fact has SPENT that round: the lane shows nothing and the
+// register shows an outcome. A predecessor read from the lane would return that
+// party's own predecessor, send the next start back to the spent round, and
+// refuse it there forever. Reading the register instead walks past the spent
+// round to the first one still open, which is exactly where a decide belongs.
+//
+// Nothing here says anything about liveness. The chain is a history of decided
+// rounds; whether any of their incarnations is running is a question this walk
+// cannot ask and does not.
+//
+// The depth bound is stated rather than implicit: a store directory's chain
+// grows by one per start, and a walk that ran forever over a corrupted register
+// would hang a start instead of refusing it.
+func OpenRound(
+	registers *register.Client,
+	store string,
+	depth int,
+) (string, []string, error) {
+	walked := make([]string, 0, 8)
+	predecessor := ""
+	for step := 0; step <= depth; step++ {
+		landed, err := LandedAt(registers, store, predecessor)
+		if err != nil {
+			return "", nil, err
+		}
+		if landed == "" {
+			return predecessor, walked, nil
+		}
+		walked = append(walked, landed)
+		predecessor = landed
+	}
+	return "", nil, fmt.Errorf("%w: %d", ErrChainDepth, depth)
+}
+
 // The lifecycle facts, and the lanes they land on.
 //
 // Established and retired accumulate on the incarnation lane; the lame-duck
@@ -258,6 +302,21 @@ var RetirementCauses = []string{CauseDrained, CauseStopped}
 // ErrUndeclaredCause refuses a retirement cause the roster does not name.
 var ErrUndeclaredCause = errors.New("the retirement cause is not a declared estate value")
 
+// admitCause is the roster walk both cause-carrying facts pass through.
+//
+// One walk rather than two, because the roster is what refuses: a second copy
+// of this loop would be a second place a row could be admitted from, and the
+// whole point of the roster having no crash row is that there is nowhere to
+// admit one.
+func admitCause(cause string) error {
+	for _, candidate := range RetirementCauses {
+		if candidate == cause {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: %q", ErrUndeclaredCause, cause)
+}
+
 // RetiredIncarnationFact is one incarnation's retirement, naming its cause.
 //
 // **There is no fact for a crash and this function will not mint one.** A
@@ -266,15 +325,8 @@ var ErrUndeclaredCause = errors.New("the retirement cause is not a declared esta
 // incarnation's behalf is the forgery this slice refuses; the cause roster has
 // no row for it, so the refusal is by construction rather than by convention.
 func RetiredIncarnationFact(incarnation string, cause string) (map[string]any, error) {
-	declared := false
-	for _, candidate := range RetirementCauses {
-		if candidate == cause {
-			declared = true
-			break
-		}
-	}
-	if !declared {
-		return nil, fmt.Errorf("%w: %q", ErrUndeclaredCause, cause)
+	if err := admitCause(cause); err != nil {
+		return nil, err
 	}
 	return map[string]any{
 		"v":           float64(0),
@@ -282,6 +334,60 @@ func RetiredIncarnationFact(incarnation string, cause string) (map[string]any, e
 		"incarnation": incarnation,
 		"cause":       cause,
 	}, nil
+}
+
+// DispositionFact is one incarnation's teardown disposition: the cause it is
+// being asked to retire under.
+//
+// A retirement is a fact about an incarnation that has stopped; a disposition
+// is a fact about the act that asked it to. They are separate rows because they
+// are separate facts: a disposition that never reached its incarnation is still
+// a true record of the asking, and reading it as a retirement would be reading
+// an intention as an outcome.
+//
+// **This is why a running incarnation needs no signal and no callback.** A
+// party holding an anchor on the incarnation lane advances on this fact, which
+// every later reader can audit and any second reader can reproduce. A signal is
+// a private truth: it reaches one process once, leaves no record, and cannot be
+// replayed. The lane-driven consumer shape is the shuttle's, consumed here
+// rather than re-derived.
+//
+// **The cause is drawn from the retirement roster, and that is the whole
+// refusal.** The roster carries no row a crash could enter under, so a
+// disposition asking for one is unsayable in exactly the way a retirement
+// claiming one is.
+//
+// TRANSCRIPTION, like every other value in this file: the spine's declaration
+// is the reference and the parity wall compares the bytes.
+func DispositionFact(incarnation string, cause string) (map[string]any, error) {
+	if err := admitCause(cause); err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"v":           float64(0),
+		"kind":        "substrate-incarnation-disposition",
+		"incarnation": incarnation,
+		"cause":       cause,
+	}, nil
+}
+
+// EndedSessionFact is one connection's teardown, citing the cause the pinned
+// client reported for itself.
+//
+// An empty cause is not a missing one: the client reports no cause for a
+// teardown it took in order, so the empty string is the client's own account of
+// an orderly end rather than a field somebody forgot. That is what keeps an
+// orderly teardown and a hard kill distinguishable in the record.
+//
+// TRANSCRIPTION of the spine's session-lane teardown variant; the parity wall
+// compares the bytes.
+func EndedSessionFact(session string, cause string) map[string]any {
+	return map[string]any{
+		"v":       float64(0),
+		"kind":    "substrate-session-ended",
+		"session": session,
+		"cause":   cause,
+	}
 }
 
 // ReadLane reads one lane whole, newest last, and returns the decoded facts in
@@ -450,6 +556,40 @@ func GreatestIncarnation(
 		return IncarnationStanding{}, ErrNoIncarnation
 	}
 	return *read, nil
+}
+
+// LatestMention is the greatest position at which one lane names one
+// incarnation, or -1 for a lane that never names it.
+func LatestMention(facts []map[string]any, incarnation string) int {
+	latest := -1
+	for position, fact := range facts {
+		if named, _ := fact["incarnation"].(string); named == incarnation {
+			latest = position
+		}
+	}
+	return latest
+}
+
+// Staleness is the positional distance between a lane's head and the greatest
+// position at which the lane names one incarnation.
+//
+// **It is a number a reader is handed, and it is never a verdict.** Nothing
+// here reads a clock, nothing here compares against a tolerance, and nothing
+// here has an answer that says an incarnation is or is not running: what the
+// number says is how many positions the lane has taken since this incarnation
+// last appeared on it, which is exactly as much as the record knows. A reader
+// that wants to act on it brings its own tolerance and owns the reading.
+//
+// The second return is whether the lane names the incarnation at all. An
+// unmentioned incarnation has no staleness rather than a staleness of zero,
+// which is the same distinction the estate's other positional reads make: the
+// absence of a reading is not a reading of zero.
+func Staleness(facts []map[string]any, incarnation string) (int, bool) {
+	latest := LatestMention(facts, incarnation)
+	if latest < 0 {
+		return 0, false
+	}
+	return len(facts) - 1 - latest, true
 }
 
 // ErrChainStep refuses a chain step the history does not carry, or one already

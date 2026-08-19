@@ -5,7 +5,9 @@ fresh `register/` twin and `cmd/registerwall/`, and by the kernel-model slice
 with the conformance consumer `kmconform/`, its generator `cmd/kmgen/`, and
 the brand lint `brandlint/` with `cmd/brandlint/`, and by the estate-daemon
 slices with `daemon/`, `cmd/daemonwall/`, `cmd/incarnationwall/`,
-`cmd/teardownwall/`, `cmd/optionswall/` and `cmd/wirewall/`: `canonical/`, `journal/`,
+`cmd/teardownwall/`, `cmd/optionswall/`, `cmd/wirewall/`, and — since the
+lifecycle slice — the shipped entrypoint `cmd/substrate/` with its wall
+`cmd/lifecyclewall/`: `canonical/`, `journal/`,
 `register/`, `kmconform/`, `brandlint/`, `daemon/`, and the commands. The
 stream/transform hot path, the archived effector, the
 gauntlet lanes, and their commands live at tag
@@ -93,6 +95,47 @@ gauntlet lanes, and their commands live at tag
   construction failing. And the declared server-options value refuses an unset
   server name and an unset sync interval, because an option nobody declared is
   an option the estate is running under unknowingly.
+  Two more since the lifecycle slice. The readiness probe performs BOTH of the
+  pinned vendor's gates — the readiness gate, then the in-process health read
+  with JetStream enablement requested — lands one observation per gate whichever
+  way each went, and admits only on both; a bound port is never read as
+  readiness. Its gate pair is an interface for the same reason the
+  closed-channel inventory is a parameter, and no shipped caller passes anything
+  but a daemon. The teardown DISPOSITION is a fact about the act that asked an
+  incarnation to retire, distinct from the retirement that records the outcome,
+  and it draws its cause from the retirement roster — so asking for a crash is
+  unsayable in exactly the way claiming one is.
+- `cmd/substrate/` is the estate's substrate lifecycle, shipped: `up`, `down`,
+  `status`, and no fourth verb. It is a CONSUMER of `daemon/` and adds no verb to
+  the pinned vendor's lifecycle surface. Three of its shapes are law rather than
+  convenience. The register and the two lanes live on a COORDINATION substrate
+  whose address is an argument, because a fence that lived on the server it is
+  deciding whether to start would need that server, and a lane inside the
+  substrate it is about goes away with it. A running incarnation is asked to
+  retire by a DISPOSITION fact on the incarnation lane, never by a signal —
+  nothing here installs a signal handler, so a process the operating system
+  takes down lands nothing and reads as an unretired incarnation whose lanes went
+  quiet, which is the crash path and is correct. And the predecessor a start
+  succeeds is read by walking the REGISTER's chain to the first undecided round,
+  never by folding the lane: a start that won its round and failed before landing
+  a fact spent that round without leaving one, and a lane-derived predecessor
+  would send every later start back to it and be refused there for good.
+  `status` probes nothing, reaches no server but the coordination one, and has no
+  answer that says an incarnation is running; its one number is positional and is
+  reported as a number.
+- `cmd/lifecyclewall/` is that command's wall, wired into the battery as two
+  named stages. The succession arm runs up, down, up, down over ONE store
+  directory with every verb in its own process and measures what only a second
+  start can show — the second incarnation naming the first, the chain walking
+  total and acyclic, the two teardowns leaving distinguishable chains — then
+  measures the fence through the shipped command by holding a round out of band
+  and requiring the start against it to teach a refusal while binding nothing and
+  landing nothing. The readiness arm is executed BOTH WAYS: the shipped probe
+  admits a substrate whose JetStream answers a round trip on the first attempt,
+  and refuses a real vendor server whose JetStream has been taken down by the
+  vendor's own verb — while the mutant reading, a bound listener, admits it. A
+  readiness gate that cannot be measured refusing an unready substrate is a gate
+  nobody has measured.
 - `cmd/incarnationwall/` and `cmd/teardownwall/` are the supervisor slice's
   walls, wired into the battery as five named stages. The register wall races N
   supervisors for R successive chain positions with one racer out of process,

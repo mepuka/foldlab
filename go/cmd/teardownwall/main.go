@@ -668,7 +668,7 @@ func runChild(mode string, url string, store string, port int) error {
 	client.Close()
 	if mode != modePrivate {
 		if _, _, err := daemon.Land(
-			ctx, sessions, endedFact(session, cause),
+			ctx, sessions, daemon.EndedSessionFact(session, cause),
 		); err != nil {
 			return err
 		}
@@ -695,17 +695,6 @@ func retirementCause(mode string) string {
 		return daemon.CauseDrained
 	}
 	return daemon.CauseStopped
-}
-
-// endedFact is the session-lane teardown variant, cited by the terminal cause
-// the pinned client reports for itself.
-func endedFact(session string, cause string) map[string]any {
-	return map[string]any{
-		"v":       float64(0),
-		"kind":    "substrate-session-ended",
-		"session": session,
-		"cause":   cause,
-	}
 }
 
 // foldSession names the arm's one client connection, from the options value and
