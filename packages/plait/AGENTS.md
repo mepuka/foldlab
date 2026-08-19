@@ -51,6 +51,14 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   removed the excuse.
 - Envelope identity is SHA-256 over canonical, uncompressed bytes. Compression,
   framing, storage, and chunking are transport only and never move identity.
+- **Verify-on-read verifies the FETCHED BYTES.** A store that holds bytes is
+  admitted on `sha256(bytes) == D` over the exact octets BEFORE anything
+  decodes them, and the value is then decoded from those verified bytes with
+  the estate's fatal constrained decoder — never re-derived from a decoded
+  value, which is the laundering door (a repairing decode admits bytes the
+  digest refuses). Wall: `test/ResolvedByteIdentity.test.ts` with the raw
+  bytes + digest as the oracle and its executed mutant. A store that holds
+  values (the catalog) has no byte string to check and says so in place.
 - The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
   round number: `test/MaxPayloadSemantics.test.ts` measures the budget and the
   emit path's header cost at the pin, and the threshold is a stated quarter of
