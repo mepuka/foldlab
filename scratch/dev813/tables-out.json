@@ -1,0 +1,460 @@
+{
+  "naming_act": [
+    {
+      "generator": "declare",
+      "model_field": "Act.declare.kind",
+      "model_sort": "DeclKind",
+      "wire_field": "kind",
+      "tool": "kernel_declare",
+      "note": "identity"
+    },
+    {
+      "generator": "declare",
+      "model_field": "Act.declare.value",
+      "model_sort": "Value",
+      "wire_field": "value",
+      "tool": "kernel_declare",
+      "note": "identity"
+    },
+    {
+      "generator": "declare",
+      "model_field": "Act.declare.writ",
+      "model_sort": "Digest DeclKind.policy",
+      "wire_field": "writ_digest",
+      "tool": "kernel_declare",
+      "note": "carrier suffix +_digest"
+    },
+    {
+      "generator": "resolve",
+      "model_field": "Act.resolve.kind",
+      "model_sort": "DeclKind",
+      "wire_field": "kind",
+      "tool": "kernel_resolve",
+      "note": "identity"
+    },
+    {
+      "generator": "resolve",
+      "model_field": "Act.resolve.target",
+      "model_sort": "Digest kind",
+      "wire_field": "digest",
+      "tool": "kernel_resolve",
+      "note": "RENAMED (target -> digest); NOT the +_digest rule"
+    },
+    {
+      "generator": "emit",
+      "model_field": "Act.emit.lane",
+      "model_sort": "Digest DeclKind.lane",
+      "wire_field": "lane_digest",
+      "tool": "kernel_emit",
+      "note": "carrier suffix +_digest"
+    },
+    {
+      "generator": "emit",
+      "model_field": "Act.emit.body",
+      "model_sort": "Value",
+      "wire_field": "body",
+      "tool": "kernel_emit",
+      "note": "identity"
+    },
+    {
+      "generator": "join",
+      "model_field": "Act.join.cell",
+      "model_sort": "Digest DeclKind.resource",
+      "wire_field": "cell_digest",
+      "tool": "kernel_join",
+      "note": "carrier suffix +_digest"
+    },
+    {
+      "generator": "join",
+      "model_field": "Act.join.contribution",
+      "model_sort": "Value",
+      "wire_field": "contribution",
+      "tool": "kernel_join",
+      "note": "identity"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.declared",
+      "model_sort": "Digest DeclKind.index",
+      "wire_field": "reduction_digest",
+      "tool": "kernel_fold",
+      "note": "RENAMED (declared -> reduction) + _digest"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.partition",
+      "model_sort": "LanePartition",
+      "wire_field": "lane_digest",
+      "tool": "kernel_fold",
+      "note": "FLATTENED LanePartition.lane + _digest"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.partition",
+      "model_sort": "LanePartition",
+      "wire_field": "shard",
+      "tool": "kernel_fold",
+      "note": "FLATTENED LanePartition.shard"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.anchor",
+      "model_sort": "AnchorFact declared partition",
+      "wire_field": "anchor_floor",
+      "tool": "kernel_fold",
+      "note": "FLATTENED AnchorFact.floor, prefix anchor_"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.anchor",
+      "model_sort": "AnchorFact declared partition",
+      "wire_field": "anchor_state",
+      "tool": "kernel_fold",
+      "note": "FLATTENED AnchorFact.state, prefix anchor_"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.anchor",
+      "model_sort": "AnchorFact declared partition",
+      "wire_field": "anchor_head",
+      "tool": "kernel_fold",
+      "note": "FLATTENED AnchorFact.head, prefix anchor_"
+    },
+    {
+      "generator": "fold",
+      "model_field": "Act.fold.query",
+      "model_sort": "Value",
+      "wire_field": "query",
+      "tool": "kernel_fold",
+      "note": "identity"
+    },
+    {
+      "generator": "decide",
+      "model_field": "Act.decide.register",
+      "model_sort": "Digest DeclKind.program",
+      "wire_field": "register_digest",
+      "tool": "kernel_decide",
+      "note": "carrier suffix +_digest"
+    },
+    {
+      "generator": "decide",
+      "model_field": "Act.decide.token",
+      "model_sort": "Token register",
+      "wire_field": "token_fence",
+      "tool": "kernel_decide",
+      "note": "RENAMED (token -> token_fence); Token.value flattened"
+    },
+    {
+      "generator": "decide",
+      "model_field": "Act.decide.outcome",
+      "model_sort": "Value",
+      "wire_field": "outcome",
+      "tool": "kernel_decide",
+      "note": "identity"
+    },
+    {
+      "generator": "trigger",
+      "model_field": "Act.trigger.predicate",
+      "model_sort": "KTriggerPredicate",
+      "wire_field": "production",
+      "tool": "kernel_trigger",
+      "note": "FLATTENED KTriggerPredicate -> tag slot (see table c)"
+    },
+    {
+      "generator": "trigger",
+      "model_field": "Act.trigger.declaration",
+      "model_sort": "Digest DeclKind.program",
+      "wire_field": "declaration_digest",
+      "tool": "kernel_trigger",
+      "note": "carrier suffix +_digest"
+    },
+    {
+      "generator": "spawn",
+      "model_field": "Act.spawn.parent",
+      "model_sort": "Digest DeclKind.policy",
+      "wire_field": "parent_writ_digest",
+      "tool": "kernel_spawn",
+      "note": "RENAMED parent -> parent_writ + _digest"
+    },
+    {
+      "generator": "spawn",
+      "model_field": "Act.spawn.request",
+      "model_sort": "Digest DeclKind.policy",
+      "wire_field": "request_writ_digest",
+      "tool": "kernel_spawn",
+      "note": "RENAMED request -> request_writ + _digest"
+    }
+  ],
+  "naming_pred": [
+    {
+      "production": "evidenceAppears",
+      "model_field": "KTriggerPredicate.evidenceAppears.lane",
+      "model_sort": "Digest DeclKind.lane",
+      "wire_field": "lane_digest",
+      "note": "shared slot; carrier suffix"
+    },
+    {
+      "production": "evidenceAppears",
+      "model_field": "KTriggerPredicate.evidenceAppears.pattern",
+      "model_sort": "Value",
+      "wire_field": "pattern",
+      "note": "identity"
+    },
+    {
+      "production": "cellReaches",
+      "model_field": "KTriggerPredicate.cellReaches.cell",
+      "model_sort": "Digest DeclKind.resource",
+      "wire_field": "cell_digest",
+      "note": "carrier suffix"
+    },
+    {
+      "production": "cellReaches",
+      "model_field": "KTriggerPredicate.cellReaches.threshold",
+      "model_sort": "Value",
+      "wire_field": "threshold",
+      "note": "identity"
+    },
+    {
+      "production": "holeReaches",
+      "model_field": "KTriggerPredicate.holeReaches.hole",
+      "model_sort": "Nat",
+      "wire_field": "hole",
+      "note": "identity"
+    },
+    {
+      "production": "holeReaches",
+      "model_field": "KTriggerPredicate.holeReaches.target",
+      "model_sort": "HoleStage",
+      "wire_field": "stage",
+      "note": "RENAMED (target -> stage)"
+    },
+    {
+      "production": "outcomeLanded",
+      "model_field": "KTriggerPredicate.outcomeLanded.register",
+      "model_sort": "Digest DeclKind.program",
+      "wire_field": "register_digest",
+      "note": "carrier suffix"
+    },
+    {
+      "production": "headAdvancedPast",
+      "model_field": "KTriggerPredicate.headAdvancedPast.partition",
+      "model_sort": "LanePartition",
+      "wire_field": "lane_digest + shard",
+      "note": "FLATTENED LanePartition, SHARED with evidence-appears/fold"
+    },
+    {
+      "production": "headAdvancedPast",
+      "model_field": "KTriggerPredicate.headAdvancedPast.position",
+      "model_sort": "Position partition",
+      "wire_field": "position",
+      "note": "identity; Position.value flattened"
+    }
+  ],
+  "carriers": [
+    {
+      "sort": "DeclKind",
+      "model": "12-constructor closed inductive",
+      "fragment": {
+        "type": "string",
+        "enum": [
+          "schema",
+          "program",
+          "policy",
+          "capability",
+          "lane",
+          "algebra",
+          "index",
+          "resource",
+          "ontology",
+          "schedule",
+          "template",
+          "language"
+        ]
+      },
+      "note": "brand erased; the 12 ranks are printed as their constructor names, order = DeclKind.rank"
+    },
+    {
+      "sort": "Digest kind",
+      "model": "structure { id : Nat }, brand in the type index",
+      "fragment": {
+        "type": "string",
+        "pattern": "^sha256:[0-9a-f]+$"
+      },
+      "note": "BRAND ERASED: the kind index vanishes; a wire digest carries no sort. The cross-sort-identifier refusal is the only thing left defending it."
+    },
+    {
+      "sort": "Value",
+      "model": "structure { bytes : Nat }",
+      "fragment": {
+        "type": "string"
+      },
+      "note": "opaque; no pattern, no length"
+    },
+    {
+      "sort": "StateLabel",
+      "model": "structure { value : Nat }",
+      "fragment": {
+        "type": "string"
+      },
+      "note": "SORT COLLAPSE: StateLabel and Value print the same fragment; anchor_state is typed string"
+    },
+    {
+      "sort": "Nat (Position.value)",
+      "model": "Nat, brand = partition",
+      "fragment": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "note": "STALE under A4 -- see the stale-bound audit"
+    },
+    {
+      "sort": "Nat (Token.value)",
+      "model": "Nat, brand = register",
+      "fragment": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "note": "STALE under A4"
+    },
+    {
+      "sort": "Nat (LanePartition.shard)",
+      "model": "Nat, unbranded",
+      "fragment": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "note": "STALE under A4"
+    },
+    {
+      "sort": "Nat (hole name)",
+      "model": "Nat",
+      "fragment": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "note": "STALE under A4"
+    },
+    {
+      "sort": "HoleStage",
+      "model": "5-constructor closed inductive",
+      "fragment": {
+        "type": "string",
+        "enum": [
+          "opened",
+          "filled",
+          "disputed",
+          "decided",
+          "sealed"
+        ]
+      },
+      "note": "order = HoleStage.rank; note `opened` is the model's keyword-forced spelling and survives to wire"
+    },
+    {
+      "sort": "RefusalReason",
+      "model": "16-constructor closed inductive",
+      "fragment": {
+        "type": "string",
+        "enum": [
+          "clock-read",
+          "absence-trigger",
+          "unfenced-decide",
+          "last-writer-wins",
+          "unverified-read",
+          "cross-sort-identifier",
+          "minted-identifier",
+          "ambient-query-input",
+          "forward-reference",
+          "secret-carrier",
+          "absence-claim",
+          "past-mutation",
+          "off-writ-referent",
+          "closure-introspection",
+          "anchored-resolve",
+          "unfilled-hole"
+        ]
+      },
+      "note": "the ONE row with a model-carried wire spelling: RefusalReason.wire"
+    },
+    {
+      "sort": "Applicability",
+      "model": "2-constructor closed inductive",
+      "fragment": {
+        "type": "string",
+        "enum": [
+          "machine-applicable",
+          "advisory"
+        ]
+      },
+      "note": "model-carried wire spelling: Applicability.wire"
+    },
+    {
+      "sort": "Refusal.law / Refusal.repair",
+      "model": "String",
+      "fragment": {
+        "type": "string"
+      },
+      "note": "carried as free text in the model too"
+    },
+    {
+      "sort": "KTriggerPredicate",
+      "model": "5-constructor closed inductive",
+      "fragment": {
+        "type": "string",
+        "enum": [
+          "evidence-appears",
+          "cell-reaches",
+          "hole-reaches",
+          "outcome-landed",
+          "head-advanced-past"
+        ]
+      },
+      "note": "wire spellings are kebab-cased constructor names -- NOT carried by the model (no .wire fn)"
+    },
+    {
+      "sort": "Act (the sentence)",
+      "model": "8-constructor closed inductive",
+      "fragment": {
+        "<tool>": "one flat MCP tool per constructor, name = kernel_<ctor>"
+      },
+      "note": "NOT a JSON-Schema shape: the sum is flattened into the tool list, not a oneOf"
+    }
+  ],
+  "trigger": {
+    "evidence-appears": [
+      "lane_digest",
+      "pattern"
+    ],
+    "cell-reaches": [
+      "cell_digest",
+      "threshold"
+    ],
+    "hole-reaches": [
+      "hole",
+      "stage"
+    ],
+    "outcome-landed": [
+      "register_digest"
+    ],
+    "head-advanced-past": [
+      "lane_digest",
+      "shard",
+      "position"
+    ]
+  },
+  "trigger_optional": [
+    "lane_digest",
+    "pattern",
+    "cell_digest",
+    "threshold",
+    "hole",
+    "stage",
+    "register_digest",
+    "shard",
+    "position"
+  ],
+  "orphan_wire_fields": []
+}

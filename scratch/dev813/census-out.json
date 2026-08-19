@@ -1,0 +1,235 @@
+{
+  "keyword_census": {
+    "$comment": 3,
+    "type": 46,
+    "pattern": 14,
+    "additionalProperties": 9,
+    "required": 9,
+    "properties": 9,
+    "description": 34,
+    "enum": 6,
+    "minimum": 7,
+    "maximum": 7
+  },
+  "type_values": {
+    "string": 30,
+    "object": 9,
+    "integer": 7
+  },
+  "tool_descriptions": [
+    {
+      "tool": "kernel_declare",
+      "text": "Mint an immutable value through the certifier (license: c7_pin_well_founded \u2014 references resolve only to already-admitted digests). The value's canonical bytes become its digest, its name forever. There is no update: revision is a successor declaration pinning its predecessor.",
+      "laws": [
+        "c7_pin_well_founded"
+      ]
+    },
+    {
+      "tool": "kernel_resolve",
+      "text": "Digest to value, verify-on-read (license: content addressing \u2014 the decode re-derives the digest of what it fetched and refuses on mismatch). No anchor parameter exists: a digest names one value forever, so nothing an anchor could change. Head-relative reads are kernel_fold.",
+      "laws": [
+        "content addressing",
+        "verify-on-read"
+      ]
+    },
+    {
+      "tool": "kernel_emit",
+      "text": "Attributed evidence onto a lane (license: f2_trace_invariant \u2014 duplication and reordering of deliveries cannot move the folded state). Not a send: no point-to-point primitive exists; lanes mean, subjects route.",
+      "laws": [
+        "f2_trace_invariant"
+      ]
+    },
+    {
+      "tool": "kernel_join",
+      "text": "Merge a contribution into a lattice cell (license: f1_cell_merge_aci and the join-semilattice package \u2014 associative, commutative, idempotent, so arrival order and duplication cannot matter). No ordering parameter and no conflict strategy exist; idempotent join leaves nothing to choose (refusal: last-writer-wins, machine-applicable repair).",
+      "laws": [
+        "f1_cell_merge_aci",
+        "join-semilattice"
+      ]
+    },
+    {
+      "tool": "kernel_fold",
+      "text": "Read reduced state at a checkpoint (license: f3_resume_exact for resumption; f11_query_deterministic \u2014 the answer is a function of support and query alone). Every head-relative read is this tool: search, views, rosters, audits. The anchor names the position the answer is true at; it is never wrong later, only earlier.",
+      "laws": [
+        "f11_query_deterministic",
+        "f3_resume_exact"
+      ]
+    },
+    {
+      "tool": "kernel_decide",
+      "text": "The fenced one-winner commit (license: at_most_one_landed_commit over monotone tokens \u2014 at most one outcome lands per register). The one priced act. At most one landed outcome is not at most one external side effect.",
+      "laws": [
+        "at_most_one_landed_commit"
+      ]
+    },
+    {
+      "tool": "kernel_trigger",
+      "text": "Deposit a standing monotone reaction (license: f10_stability \u2014 a predicate that holds at a state holds at every grown state; an enabled firing never un-fires). Five productions exist; absence, negation, and deadline are unspellable (refusal: absence-trigger).",
+      "laws": [
+        "f10_stability"
+      ]
+    },
+    {
+      "tool": "kernel_spawn",
+      "text": "Derive a narrower writ (license: f9_policy_meet_semilattice and f9_tree_attenuation \u2014 the child is the meet of parent and request, and every descendant stays under the root grant). An escalating request is clamped, not refused.",
+      "laws": [
+        "f9_policy_meet_semilattice",
+        "f9_tree_attenuation"
+      ]
+    }
+  ],
+  "field_descriptions": [
+    {
+      "field": "kernel_declare.kind",
+      "text": "The declaration kind the minted digest is branded with."
+    },
+    {
+      "field": "kernel_declare.value",
+      "text": "The value's canonical bytes. One canonical form exists; excess or non-canonical bytes refuse."
+    },
+    {
+      "field": "kernel_declare.writ_digest",
+      "text": "Digest of the policy value this declaration acts under. Every referent inside value must lie in this writ's pinned universe (refusal: off-writ-referent)."
+    },
+    {
+      "field": "kernel_resolve.kind",
+      "text": "The declaration kind the digest is branded with; a kind/brand mismatch refuses (cross-sort-identifier)."
+    },
+    {
+      "field": "kernel_resolve.digest",
+      "text": "The content address to resolve. Absence is retryable; a digest mismatch is structural."
+    },
+    {
+      "field": "kernel_emit.lane_digest",
+      "text": "Digest of the declared evidence lane the envelope lands on."
+    },
+    {
+      "field": "kernel_emit.body",
+      "text": "The evidence body, canonical bytes. The envelope's message id is its digest, so redelivery is harmless."
+    },
+    {
+      "field": "kernel_join.cell_digest",
+      "text": "Digest of the declared cell resource whose ACI algebra governs the merge."
+    },
+    {
+      "field": "kernel_join.contribution",
+      "text": "The contribution value, canonical bytes."
+    },
+    {
+      "field": "kernel_fold.reduction_digest",
+      "text": "Digest of the declared reduction (kind: index) being read."
+    },
+    {
+      "field": "kernel_fold.lane_digest",
+      "text": "The lane whose partition the anchor coordinates name."
+    },
+    {
+      "field": "kernel_fold.shard",
+      "text": "The partition within the lane. Positions mean nothing across partitions."
+    },
+    {
+      "field": "kernel_fold.anchor_floor",
+      "text": "The checkpoint floor position, within this partition only."
+    },
+    {
+      "field": "kernel_fold.anchor_state",
+      "text": "The state label at the floor, as the anchor fact recorded it."
+    },
+    {
+      "field": "kernel_fold.anchor_head",
+      "text": "The journal head the anchor observed, within this partition only."
+    },
+    {
+      "field": "kernel_fold.query",
+      "text": "The question, as declared data. A view passes a constant; any seed lives inside this value (refusal: ambient-query-input)."
+    },
+    {
+      "field": "kernel_decide.register_digest",
+      "text": "The work declaration digest that keys the register. No anonymous decision exists."
+    },
+    {
+      "field": "kernel_decide.token_fence",
+      "text": "The fencing token, meaningful at this register only. Committing without it, or across registers, refuses (unfenced-decide, cross-sort-identifier)."
+    },
+    {
+      "field": "kernel_decide.outcome",
+      "text": "The outcome value; the door decodes it against the capability's declared output schema."
+    },
+    {
+      "field": "kernel_trigger.production",
+      "text": "Which of the five monotone productions. Each uses its own slots below: evidence-appears uses lane_digest+pattern; cell-reaches uses cell_digest+threshold; hole-reaches uses hole+stage; outcome-landed uses register_digest; head-advanced-past uses lane_digest+shard+position."
+    },
+    {
+      "field": "kernel_trigger.declaration_digest",
+      "text": "The declaration a firing hints at. Its landed claim dedups at the register."
+    },
+    {
+      "field": "kernel_trigger.lane_digest",
+      "text": "evidence-appears, head-advanced-past."
+    },
+    {
+      "field": "kernel_trigger.pattern",
+      "text": "evidence-appears: the observation pattern to await."
+    },
+    {
+      "field": "kernel_trigger.cell_digest",
+      "text": "cell-reaches."
+    },
+    {
+      "field": "kernel_trigger.threshold",
+      "text": "cell-reaches: the lattice threshold to reach at least."
+    },
+    {
+      "field": "kernel_trigger.hole",
+      "text": "hole-reaches."
+    },
+    {
+      "field": "kernel_trigger.stage",
+      "text": "hole-reaches: the stage to reach at least."
+    },
+    {
+      "field": "kernel_trigger.register_digest",
+      "text": "outcome-landed."
+    },
+    {
+      "field": "kernel_trigger.shard",
+      "text": "head-advanced-past."
+    },
+    {
+      "field": "kernel_trigger.position",
+      "text": "head-advanced-past: fire once the head passes this position (within this partition only)."
+    },
+    {
+      "field": "kernel_spawn.parent_writ_digest",
+      "text": "The authority being attenuated."
+    },
+    {
+      "field": "kernel_spawn.request_writ_digest",
+      "text": "The requested authority; the child is parent meet request."
+    },
+    {
+      "field": "refusal_result.law",
+      "text": "The law this refusal defends, by its real name."
+    },
+    {
+      "field": "refusal_result.repair",
+      "text": "The legal next move, taught as data."
+    }
+  ],
+  "comments": [
+    {
+      "path": "/",
+      "text": "The kernel language projected as MCP tool input schemas. EXPLORATORY, hand-derived from the Lean model in verify/kernel at this commit; the design mandates projections be GENERATED from the one grammar and walled served-equals-derived \u2014 this file is the reference sketch that generation owes. Shapes follow the survey leans: eight flat tools, no oneOf, compound self-descriptive field names (a field is named for the value it carries), digests as prefixed opaque strings with pattern, integers only (I-JSON safe range; no floats exist in the canonical grammar). Constraints beyond type/enum may not be sampler-enforced by every provider; the admission door enforces them all, and a violation returns the taught refusal (see refusal_result)."
+    },
+    {
+      "path": "/digest_format",
+      "text": "Model uses short identity labels (sha256:NN); the running system carries 64 lowercase hex chars. The pattern below is the model's."
+    },
+    {
+      "path": "/refusal_result",
+      "text": "Every tool returns either its admitted result or this refusal shape. Refusal parity: the door never refuses without the law it defends and the taught repair; applicability marks whether the repair is a mechanical rewrite of the refused call (machine-applicable) or needs information the call does not carry (advisory)."
+    }
+  ],
+  "sha256": "8d9cb4b106c86f60f6e74ae60ff20ee57a3f0354e91227480f8562e6ea3bd7d4",
+  "bytes": 13058
+}
