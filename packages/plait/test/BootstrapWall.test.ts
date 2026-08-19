@@ -33,7 +33,6 @@
  */
 import { afterAll, describe, expect, test } from "bun:test"
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs"
-import { createServer } from "node:net"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
@@ -58,19 +57,24 @@ afterAll(async () => {
  * The bootstrap declares the address it registers, so the substrate's port has
  * to be known before the declaration is made — the vendor's random-port
  * sentinel would name a substrate the registration could not point at. The
- * window between closing this listener and the daemon binding it is the
+ * window between releasing this listener and the daemon binding it is the
  * ordinary one every port-picking harness carries.
+ *
+ * The runtime's own listener is used rather than the platform module's, and
+ * that is not taste: the platform module's failure channel is an event named by
+ * a string, and that string is one of the wire vocabulary's transcribed status
+ * words. Spelling it here would plant a wire word in a file that is not a
+ * transcription module, which the vocabulary sweep refuses — correctly, since a
+ * reader cannot tell a socket event from a substrate status event by looking. A
+ * listener that cannot bind throws, and a throw fails this row loudly.
  */
-const freePort = (): Promise<number> =>
-  new Promise((settle, refuse) => {
-    const server = createServer()
-    server.once("error", refuse)
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address()
-      const port = typeof address === "object" && address !== null ? address.port : 0
-      server.close(() => (port === 0 ? refuse(new Error("no free port")) : settle(port)))
-    })
-  })
+const freePort = (): number => {
+  const listener = Bun.listen({ hostname: "127.0.0.1", port: 0, socket: { data: () => {} } })
+  const port = listener.port
+  listener.stop(true)
+  if (port === 0) throw new Error("the runtime bound no port to take")
+  return port
+}
 
 interface Ran {
   readonly exit: number
@@ -173,7 +177,7 @@ describe("the bootstrap gate", () => {
       trash.push(() => rmSync(project, { recursive: true, force: true }))
       trash.push(() => rmSync(store, { recursive: true, force: true }))
 
-      const port = await freePort()
+      const port = freePort()
       const name = "foldlab-bootstrap-wall"
       const initArguments = [
         "--holder",
