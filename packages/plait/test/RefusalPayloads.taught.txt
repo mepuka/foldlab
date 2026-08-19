@@ -349,7 +349,7 @@ packages/plait/src/planes/Resolved.ts#1
   next[0].note "Re-derive the digest from the value's canonical uncompressed bytes and reference it under that digest."
 packages/plait/src/planes/Resolved.ts#2
   kind "malformed-value"
-  law "Stored payload bytes decode as one RFC 8785 wire value before any identity check."
+  law "Bytes admitted at a digest decode as exactly one RFC 8785 wire value."
   expected "one RFC 8785 wire value"
   next[0].subject "catalog.publish"
   next[0].note "Store the payload as the canonical uncompressed bytes of one RFC 8785 wire value."

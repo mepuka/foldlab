@@ -5,11 +5,18 @@
  * Two reviewed data live here, and they answer two different questions.
  *
  * The **projection** is the small reviewed datum that pins which existing
- * runtime spellings belong in the kernel projection. The generator resolves
+ * runtime spellings belong in the kernel projection. A generator resolves
  * every spelling against the model-emitted refusal rows. A match is
  * corpus-backed; a miss is emitted as explicit Law 1 staged debt citing
  * DEV-804. The manifest is not a second public union: `truth/Refusal.ts`
  * consumes only the generated schema.
+ *
+ * What still reads this file is the prose page. The generated tables and the
+ * truth-plane vocabulary are now projected by the kernel model's own emitter,
+ * which reads the same reviewed rows from its own committed copy; the two
+ * copies are held together by the byte wall over what each renders, so they
+ * cannot part company silently. Retiring this copy belongs to the slice that
+ * moves the prose page across.
  *
  * The **meaning** is the kind's standing sense in the language, one to two
  * sentences in estate terms: what fact the kind names, and what that implies

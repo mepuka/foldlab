@@ -16,8 +16,8 @@ const packageRoot = resolve(import.meta.dir, "..")
  *
  * The union admits `src/truth/` as well as `src/kernel/`, because the tables
  * generator emits the refusal vocabulary into the plane that speaks it rather
- * than up from `kernel/` — one generator, two emissions, both byte-gated by
- * `check:kernel-tables`. Widening the directory changes nothing about the law
+ * than up from `kernel/` — one generator, two emissions, both byte-gated where
+ * that generator runs. Widening the directory changes nothing about the law
  * T4 states: a path that does not end `.generated.d.ts` is still
  * unrepresentable, in either plane.
  */
@@ -25,6 +25,7 @@ const generatedCoreAnchors: ReadonlyArray<
   `src/kernel/${string}.generated.d.ts` | `src/truth/${string}.generated.d.ts`
 > = [
   "src/kernel/KernelSchemas.generated.d.ts",
+  "src/kernel/KernelSdk.generated.d.ts",
   "src/kernel/KernelTables.generated.d.ts",
   "src/truth/RefusalKinds.generated.d.ts",
 ]

@@ -15,10 +15,10 @@ here. It carries the closed structural-refusal union, projected from
 and mints no union of its own. The projection is emitted *into* this plane
 rather than imported up from `../kernel/`, because truth is the deepest plane
 and imports only itself — a generated artifact's ancestry is its generator,
-not an edge in the module graph. Regenerate with
-`bun run generate:kernel-tables`; the kernel table is the other half of that
-one render, and it carries each spelling's ancestry, with a corpus miss named
-as `DEV-804` staged debt.
+not an edge in the module graph. Regenerate it with the kernel model's own
+emitter, which documents its targets in `verify/unity`; the kernel table is the
+other half of that one emission, and it carries each spelling's ancestry, with
+a corpus miss named as `DEV-804` staged debt.
 
 "Exactly one canonicalizer" is enforced, not asserted. `bun run
 check:one-canonicalizer` reads every module under `src/` and refuses a retired
@@ -31,8 +31,10 @@ this plane carried until DEV-804 slice C — `CanonicalJson.ts` and
 `SchemaCanonical.ts` — were justified only by a number-domain divergence the
 operator closed on 2026-08-18 (DEV-807).
 
-Walls: `bun run check:kernel-tables` regenerates both halves and byte-compares
-them. `bun run check:refusal-vocabulary` reads the union out of this module's
+Walls: the emitter's own gate regenerates both halves and byte-compares them,
+and `bun run check:kernel-surfaces` holds the committed bytes here to the
+digests that gate registers, so a hand edit and a stale surface are both caught
+without a Lean toolchain. `bun run check:refusal-vocabulary` reads the union out of this module's
 source bytes, the model's refusal reasons out of the fixture's bytes, and the
 staged-debt roster out of the reviewed pin at
 `../../test/fixtures/refusal-staged-debt.pin.txt` — three artifacts, no two of

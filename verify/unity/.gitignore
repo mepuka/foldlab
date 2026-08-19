@@ -3,4 +3,8 @@
 .discovered.*
 .footprint.*.lean
 .corpus.*.ndjson
+<<<<<<< HEAD
 .goemit.*
+=======
+.surface.*
+>>>>>>> origin/main

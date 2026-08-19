@@ -51,6 +51,14 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   removed the excuse.
 - Envelope identity is SHA-256 over canonical, uncompressed bytes. Compression,
   framing, storage, and chunking are transport only and never move identity.
+- **Verify-on-read verifies the FETCHED BYTES.** A store that holds bytes is
+  admitted on `sha256(bytes) == D` over the exact octets BEFORE anything
+  decodes them, and the value is then decoded from those verified bytes with
+  the estate's fatal constrained decoder — never re-derived from a decoded
+  value, which is the laundering door (a repairing decode admits bytes the
+  digest refuses). Wall: `test/ResolvedByteIdentity.test.ts` with the raw
+  bytes + digest as the oracle and its executed mutant. A store that holds
+  values (the catalog) has no byte string to check and says so in place.
 - The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
   round number: `test/MaxPayloadSemantics.test.ts` measures the budget and the
   emit path's header cost at the pin, and the threshold is a stated quarter of
@@ -171,10 +179,13 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   overclaim until the law is proved; this seam ships its shape, not its
   enforcement.
 - `src/kernel/KernelTables.generated.ts` and
-  `src/truth/RefusalKinds.generated.ts` are generated only, from
-  `fixtures/kernel-conformance.ndjson` plus the reviewed runtime-refusal
-  projection in `scripts/kernel-runtime-refusals.ts`, and
-  `bun run check:kernel-tables` must regenerate both byte-identically. Never
+  `src/truth/RefusalKinds.generated.ts` are generated only, and no longer from
+  here: the kernel model's own emitter projects them, from the corpus it mints
+  plus the reviewed refusal roster it reads. Regenerate them with the emitter
+  (`verify/unity`, which documents the two targets beside them) and commit the
+  surfaces and the emitter's digest register together;
+  `bun run check:kernel-surfaces` holds the committed bytes to that register,
+  and byte-identical regeneration is walled where the emitter runs. Never
   hand-edit a kind, a rank, a taught law, or a repair: the model emits its rows;
   runtime spellings absent from that corpus carry an explicit `DEV-804`
   staged-debt waiver in the generated ancestry.
@@ -211,7 +222,7 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   one name carries one meaning, and the page and the modules render the same
   sentence. Only the DEV-825 operator taste pass retires the marker — until it
   rules, adding a kind means adding its drafted meaning, and moving a sentence
-  reddens `check:kernel-tables` and `check:kernel-prose` until both are
+  reddens the model emitter's gate and `check:kernel-prose` until both are
   regenerated. `check:refusal-meaning-control` plants a meaningless kind, an
   unmarked meaning, and a paraphrased page, and must fail on all three.
 - A refusal's taught payload is persisted evidence. `check:refusal-payloads`

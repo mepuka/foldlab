@@ -31,6 +31,7 @@ if (actual !== expected) {
 }
 
 console.log(
-  "TRACKING ARTIFACTS CONTROL: PASS (planted tracking id, filesystem path, generation"
-    + " command, and retired draft marker each refused for their committed reasons)",
+  "TRACKING ARTIFACTS CONTROL: PASS (planted board-ticket id, sitting-note id, filesystem"
+    + " path, generation command, retired draft marker, and stale by-name exclusion each"
+    + " refused for their committed reasons)",
 )

@@ -9,6 +9,16 @@
  * path that trusts an asserted digest: the schema *is* the verify-on-read law,
  * and a handler that decodes such a body cannot compile without the services.
  *
+ * **The two legs re-derive over different material, and the difference is
+ * stated rather than glossed.** The payload leg is handed BYTES, so identity
+ * there is `sha256(bytes) == D` taken before anything decodes them, and the
+ * value it returns is parsed from those verified bytes. The catalog leg is
+ * handed a VALUE — that store holds values, not bytes, and there is no byte
+ * string to check — so identity there is the digest of the value's canonical
+ * bytes. A catalog that lies with a different value is refused; a catalog that
+ * hands back a value whose canonical bytes are not the ones the publisher
+ * stored is not a case that seam can distinguish, because it never saw bytes.
+ *
  * **Encode is total and NOT publishing.** `encode` computes the digest of the
  * canonical bytes and writes nothing, so `decode ∘ encode = id` holds only in
  * a catalog already holding the value. Publication is the explicit `publish`
@@ -27,6 +37,7 @@
  *
  * @module
  */
+import { decodeJson } from "@foldlab/core/jcs"
 import {
   Cache,
   Context,
@@ -42,6 +53,7 @@ import {
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
 import { Catalog, Payloads } from "./Catalog.js"
 import { Digest, digestOf } from "../truth/Digest.js"
+import { digestOfStoredBytes } from "../internal/digests.js"
 import {
   absenceRefusal,
   structuralRefusal,
@@ -89,7 +101,7 @@ const incoherent = (expected: Digest, got: Digest): Refusal =>
 const malformedPayload = (digest: Digest, reason: string): Refusal =>
   structuralRefusal({
     kind: "malformed-value",
-    law: "Stored payload bytes decode as one RFC 8785 wire value before any identity check.",
+    law: "Bytes admitted at a digest decode as exactly one RFC 8785 wire value.",
     path: ["blob", digest],
     got: reason,
     expected: "one RFC 8785 wire value",
@@ -105,14 +117,40 @@ const verified = Effect.fn("Resolved.verified")(function* (
   return yield* incoherent(digest, rederived)
 })
 
-const decodePayload = (
+/**
+ * Admits stored payload bytes at a digest: identity first, then decode.
+ *
+ * The order is the law, not an implementation detail. A digest names one exact
+ * byte string, so the only question this door may ask is whether these octets
+ * hash to it — asked before anything has had a chance to interpret them. The
+ * check the seam used to perform, `sha256(canonical(parse(bytes))) == D`, is a
+ * question about the value, and every decoder that repairs its input on the way
+ * to that value answers it for byte strings the store was never given: a member
+ * transposition, an inserted space, a duplicate member resolved last-wins, a
+ * needless escape, or an undecodable octet a non-fatal decoder turns into
+ * U+FFFD. The Go twin has always closed this loop against its stored bytes;
+ * this leg now closes it too.
+ *
+ * The decode that follows is the estate's constrained decoder, which is fatal
+ * on invalid UTF-8 and refuses duplicate member names, non-finite numbers, and
+ * over-deep nesting — never the platform parser over a lenient decoder. It can
+ * still refuse: the digest is supplied by the reference, so bytes that hash to
+ * it are not thereby one wire value.
+ *
+ * The value handed back is parsed FROM the verified bytes, so the object a
+ * caller reads on this leg is the object the digest attests to rather than one
+ * the store also holds a reference to.
+ */
+const admitPayload = Effect.fn("Resolved.admitPayload")(function* (
   digest: Digest,
   bytes: Uint8Array,
-): Effect.Effect<WireValue, Refusal> =>
-  Effect.try({
-    try: () => JSON.parse(new TextDecoder().decode(bytes)) as WireValue,
-    catch: (cause) => malformedPayload(digest, String(cause)),
-  })
+): Effect.fn.Return<WireValue, Refusal> {
+  const stored = digestOfStoredBytes(bytes)
+  if (stored !== digest) return yield* incoherent(digest, stored)
+  const decoded = decodeJson(bytes)
+  if (!decoded.ok) return yield* malformedPayload(digest, decoded.refusal.reason)
+  return decoded.value
+})
 
 /**
  * Resolves one digest to its value, re-deriving identity before returning it.
@@ -140,7 +178,7 @@ export const resolve = Effect.fn("Resolved.resolve")(function* (
   const payloads = yield* Payloads
   const payload = yield* payloads.get(digest)
   if (Option.isNone(payload)) return yield* absent(digest)
-  return yield* verified(digest, yield* decodePayload(digest, payload.value))
+  return yield* admitPayload(digest, payload.value)
 })
 
 /** How large the memo may grow. Deployment configuration, never identity. */

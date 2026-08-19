@@ -52,7 +52,7 @@ export const PAYLOAD_MARKER = "law"
  *
  * `law` alone is not enough: the kernel corpus schemas declare a `law` field on
  * the model's own taught-refusal record, and those declarations are generated
- * from the corpus and already walled by `check:kernel-tables`. A refusal
+ * from the corpus and already walled where the emitter runs. A refusal
  * payload is the literal a minting site hands to the constructor, so it also
  * carries at least one of the constructor's other fields.
  */

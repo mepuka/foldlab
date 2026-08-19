@@ -8,9 +8,11 @@
  *
  * The sweep quantifies over every `.ts` file under `src/` except two kinds:
  * the door itself, which is the module the law grants the authority, and the
- * `*.generated.ts` projections, whose bytes are the model's and are held to a
- * byte-identical regeneration by `check:kernel-schemas`, `check:kernel-tables`,
- * and `check:kernel-builder`. Anything else that ships is swept.
+ * `*.generated.ts` projections, whose bytes are the model's: two of them are
+ * held to a byte-identical regeneration here by `check:kernel-schemas` and
+ * `check:kernel-builder`, and the other two by the model emitter's own gate,
+ * with `check:kernel-surfaces` holding the committed bytes to the digests that
+ * gate registers. Anything else that ships is swept.
  */
 import { readdirSync } from "node:fs"
 import { relative, resolve } from "node:path"

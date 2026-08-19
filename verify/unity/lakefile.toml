@@ -1,5 +1,5 @@
 name = "unity"
-defaultTargets = ["Unity", "control", "emit", "goemit"]
+defaultTargets = ["Unity", "control", "emit", "ts", "goemit"]
 
 [[require]]
 name = "fabric"
@@ -8,6 +8,12 @@ path = "../fabric"
 [[require]]
 name = "kernel"
 path = "../kernel"
+
+# The projection AST, consumed one way only: the toolkit knows nothing about
+# this package, and its own gate refuses a second path dependency.
+[[require]]
+name = "projections"
+path = "../projections"
 
 [[lean_lib]]
 name = "Unity"
@@ -23,6 +29,9 @@ globs = [
   "Unity.GoAst",
   "Unity.GoPrinter",
   "Unity.GoTables",
+  "Unity.Sha",
+  "Unity.Ts",
+  "Unity.TsKernel",
 ]
 
 [[lean_exe]]
@@ -34,5 +43,11 @@ name = "emit"
 root = "EmitMain"
 
 [[lean_exe]]
+<<<<<<< HEAD
 name = "goemit"
 root = "GoEmitMain"
+=======
+name = "ts"
+root = "TsMain"
+supportInterpreter = true
+>>>>>>> origin/main

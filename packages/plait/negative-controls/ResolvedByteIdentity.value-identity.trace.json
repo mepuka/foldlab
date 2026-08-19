@@ -1,0 +1,79 @@
+{
+  "control": "resolved-value-identity-mutant",
+  "droppedLaw": "identity is re-derived over the fetched bytes before any decode",
+  "oracle": "sha256(bytes) == D over the exact octets, FIPS 180-4",
+  "digest": "a3c46438cc195471f394b43eb762f7307df06bfa0e491312308e9512d1624fb2",
+  "rows": [
+    {
+      "row": "canonical",
+      "lie": "none: these are the bytes the digest names",
+      "parsesToValue": true,
+      "oracleAdmits": true,
+      "shippedAdmits": true,
+      "mutantAdmits": true
+    },
+    {
+      "row": "member-order",
+      "lie": "a digest names a value, so member order may vary",
+      "parsesToValue": true,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": true
+    },
+    {
+      "row": "inserted-space",
+      "lie": "insignificant whitespace does not change identity",
+      "parsesToValue": true,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": true
+    },
+    {
+      "row": "duplicate-member",
+      "lie": "a repeated member is resolved last-wins before identity is taken",
+      "parsesToValue": true,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": true
+    },
+    {
+      "row": "needless-escape",
+      "lie": "an escape and the character it names are the same bytes",
+      "parsesToValue": true,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": true
+    },
+    {
+      "row": "replacement-laundering",
+      "lie": "an undecodable byte may be repaired to U+FFFD and then hashed",
+      "parsesToValue": true,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": true
+    },
+    {
+      "row": "truncated",
+      "lie": "a prefix of the bytes carries the whole value's identity",
+      "parsesToValue": false,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": false
+    },
+    {
+      "row": "other-value",
+      "lie": "canonical bytes are admissible whatever value they name",
+      "parsesToValue": false,
+      "oracleAdmits": false,
+      "shippedAdmits": false,
+      "mutantAdmits": false
+    }
+  ],
+  "launderedRows": [
+    "member-order",
+    "inserted-space",
+    "duplicate-member",
+    "needless-escape",
+    "replacement-laundering"
+  ]
+}

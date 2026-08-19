@@ -4648,3 +4648,360 @@ the marker may say, not whether the meanings are ratified. (c) The
 `incarnation-mismatch` meaning landed from its own lane while this branch was
 out and is kept VERBATIM — this round did not re-word another lane's sentence,
 only re-marked it along with every other.
+
+## Task DEV-831 — the plain-TypeScript SDK becomes generated
+
+Task-local placeholders `T0`–`T7`; repository D-numbers are assigned at merge.
+The authority is the TypeScript-projection ruling (§11a ruling 4, adopted with
+the operator's four requirements — complete, simple, fully self-contained,
+100% fidelity) and the projection wall it left owed. The subject is
+`src/kernel/KernelSdk.generated.ts`, emitted by `scripts/kernel-sdk.ts` and
+gated by `check:kernel-sdk` with an executed mutation arm beside it.
+
+The prep lane measured fourteen drift rows between the adopted reference sketch
+and what the corpus emits today. Four of them were not implementation choices,
+and each is answered below with the measurement that decided it.
+
+### T0. The code projection spells the model's own field names
+
+Decided: every field of every generator is the name the model's `Act` record
+carries — `writ`, `target`, `lane`, `cell`, `declared`, `register`,
+`declaration`, `parent`, `request` — and the surface parameter list of each
+constructor is that generator's field list, in that generator's order.
+Alternatives: the compound self-descriptive convention the sketch uses
+(`writ_digest`, `lane_digest`, `reduction_digest`); a third convention local to
+this surface. Why: the compound convention is ruled, and it is ruled for the
+WIRE projection, where a flat argument list has no surrounding structure to
+carry the sort. A code projection has the sort in the type, and this one has a
+harder constraint on top of that — its output values must BE the values the
+door accepts, and the door's fields are the model's, so a compound rename would
+need a translation layer between the surface and the judgment. That layer is
+the hand-derivation the whole pipeline exists to prevent. The generated schemas
+and the generated builder already spell the model's names, so this keeps one
+code spelling in the estate rather than two. **Load-bearing? yes** — it is what
+makes "the SDK's output is exactly what the door takes" a property of the bytes
+rather than of a converter nobody wrote.
+
+### T1. The carrier is `bigint`, on the generated family's side of the split
+
+Decided: every model integer is `bigint` in this surface — identity labels,
+ranks, fences, positions, and the encoded vectors a verdict carries.
+Alternatives: the sketch's `string` for digests and `number` for every scalar;
+`number` with a documented ceiling; a substitutable carrier parameter with
+`number` as the default, which is what the generated brand aliases do. Why: the
+corpus, every generated schema, and the door end to end are already `bigint`,
+and the estate's number-domain ruling makes integers exact and unbounded. The
+sketch's carriers are the only ones in play that are neither the model's nor a
+parameter over it, and their cost is measurable rather than stylistic: a
+`number` carrier rounds the pinned canon vector at 2^53 + 1, and a `string`
+digest cannot be handed to the door without a conversion the sketch never
+defined. The branded aliases keep a `Carrier` parameter so a call site
+migrating a real runtime value can substitute, but the default is the model's.
+The exactness is walled, not asserted: a lawful emit carrying 2^53 + 1 goes
+through admission and its encoded vector is compared against the arithmetic the
+model's own canonicalizer specifies. **Load-bearing? yes** — it is the one row
+where the sketch was not merely different but unusable.
+
+### T2. The discriminant is `_tag` at camel case, and the reachability requirement is what decides it
+
+Decided: `_tag`, with the model's own camel constructor spellings, on every
+tagged union this surface projects. Alternatives: the sketch's `act` key with
+kebab tags; a per-layer split, kebab on the wire and camel in code. Why: both
+spellings are generated today, in different layers — the tables carry the kebab
+wire spelling of the refusal reasons, the schemas carry the camel constructor
+names — and an emitter must be told which register it prints. Here it is not a
+free choice. The door's candidate type keys on `_tag` at camel, so any other
+register would make the SDK's values a different type from the door's, and the
+one property this artifact exists to have would be gone. The kebab register
+still appears, in exactly the place the door uses it: the taught refusal rows,
+whose reasons are the wire spellings. **Load-bearing? yes** — it is the
+difference between one grammar and two that resemble each other.
+
+### T3. Brands are string-literal keys, and only a closed brand domain earns one
+
+Decided: the brand carrier is an interface with the string-literal key
+`~foldlab/plait/kernel/Brand`, byte-identical to the one the generated tables
+declare, and the sorts that earn an alias are those whose every brand parameter
+names a record class the corpus enumerates. Today that is exactly `Digest`, by
+declaration kind, with the twelve per-kind aliases; `Token` and `Position` are
+branded in the model over open domains and are carried here as their carrier.
+Alternatives: the sketch's `declare const KIND: unique symbol`; a brand key
+local to this file; branding every indexed sort with a type parameter. Why: a
+module-local symbol cannot be named from another module, which is precisely
+what the twelve aliases exist to provide, and it is not how the estate's pinned
+release spells a type identity. Reusing the tables' key is the stronger half of
+the decision and it is checked: one kind's digest is ONE type across the two
+generated files, and the test assigns in both directions to say so. An open
+brand domain is dropped rather than faked because the tie it would have carried
+is carried better — see T4. **Load-bearing? yes** — a brand nobody outside the
+file can name is a brand that separates nothing.
+
+### T4. The dependent ties are carried by construction, not by an inference guard
+
+Decided: the four ties live in what the constructors WRITE. `decide` takes a
+register and a fence and writes the register into the token claim; `fold` takes
+a reduction and writes it into the anchor; `resolve` writes no anchor at all;
+`join` takes a declared algebra and writes the declared-algebra strategy.
+Alternatives: the sketch's `NoInfer` guards on constructor parameters, which is
+the sketch's real invention and the thing nothing else in the estate carries;
+accepting the raw candidate members and checking at admission only. Why: a
+guard refuses a crossed pair that was spelled; construction gives it no
+spelling. There is nothing to cross, because the caller supplies the coordinate
+once and the constructor is the only thing that writes it twice. That is
+strictly stronger than the guard and it survives erasure, which a type-level
+tie does not. The one guard worth keeping is kept: `resolve` binds the digest
+brand to the named kind through `NoInfer`, because there the two arguments are
+genuinely independent and the caller supplies both. The claim is measured on
+returned values across several inputs rather than argued from a signature.
+**Load-bearing? yes** — it is the answer to the census's asymmetry finding, and
+it is why the emitted surface carries ties the program builder had to drop.
+
+### T5. The candidate grammar is projected whole; the eight generators are its lawful half
+
+Decided: the surface carries the entire candidate grammar the corpus declares —
+eleven candidate arms, nine predicate productions, eight raw argument atoms,
+both merge strategies — as types with constructors for the atoms, the
+predicates and the strategies; and eight constructors, one per model generator,
+and none for anything else. Alternatives: project only the lawful arms, which
+is the sketch's stated principle — an SDK that cannot spell the crime is the
+point; project the candidate grammar alone and drop the eight. Why: the sketch's
+principle has a measured consequence, and it is the reason this ticket exists —
+the sketch declares an admitted-or-refused result and can produce nothing of the
+kind, because the door judges candidates and the sketch cannot spell one. A
+surface that makes the crime unwritable PREVENTS it; the door REFUSES it and
+teaches the repair, and four of the sixteen repairs are machine-applicable,
+which is only a meaningful claim if the refused candidate can be written down.
+So the principle is kept where it belongs: at the constructors. Twelve of the
+nineteen emitted conformance vectors are built by the eight; the other seven are
+the structural crimes the four ties forbid plus the three arms with no lawful
+generator, and they are written as candidate values so the door can teach them.
+All nineteen get the model's own verdict. **Load-bearing? yes** — it is the
+whole of "the door stays reachable", and it is the row the code-mode view was
+blocked on.
+
+Stated openly: this resolves the code-mode spec's central row in the shape it
+called "one SDK, two halves, with the door between them", and it resolves it
+because the reachability requirement forces it, not because the alternatives
+were priced. Whether the code-mode view takes this whole surface or only one of
+its halves is still open and still wants the operator.
+
+### T6. The surface joins the swept official documents
+
+Decided: `KernelSdk.generated.ts` is a fourth official surface under root law
+10. Its provenance is the corpus digest and the interchange format and nothing
+else; the renderer takes no path, so rendering one is a compile-time
+impossibility rather than a rule to remember; and the standing sweep for
+tracking artifacts now reads its committed bytes line by line alongside the
+other three. Alternatives: carry the header path, command and source line the
+schemas and the builder still carry; declare conformance in this file and leave
+it unswept. Why: the law's own test is whether a reader is handed the document
+as the language, and this one is handed to a model as the language. The two
+generated artifacts that still carry paths and commands were measured and left
+where they were — each is a real instance of the same law and each wants its own
+slice — but a surface landing today has no excuse to land dirty. Every draft
+meaning is rendered behind the ratified marker, verbatim, so the marker clause
+bites here too. **Load-bearing? yes** — 3470 swept lines across four surfaces is
+a wall; a sentence in a header is not.
+
+### T7. The reference sketch is not deleted, and its retirement is a separate act
+
+Decided: `verify/kernel/projections/kernel.ts` stays exactly where it is. The
+generated surface is its SUCCESSOR, not its transcription: it carries every
+inventory at the same cardinality and the same wire names, it carries the same
+sixteen taught refusals at their CURRENT texts (three of which the sketch has
+stale), it carries the dependent ties the sketch invented, and it reaches the
+door, which the sketch cannot. Alternatives: delete the sketch in this slice;
+keep it and wall it against the emitted surface. Why: the sketch is the adopted
+reference and it carries four `@ts-expect-error` controls that are each
+load-bearing — measured, one error per control with all four neutralised —
+which is evidence this surface does not yet reproduce. Retiring it is a review
+act at a sitting, on parity of intent, not a side effect of landing its
+successor. Walling the two against each other would wall a divergence that is
+deliberate on nine of the fourteen measured rows. **Load-bearing? yes** — the
+sketch is the only place the type-level tie argument is written down, and
+losing it before the sitting reads it would lose the argument.
+
+**Stated residual.** Four things this round does NOT do. (a) The admitted
+sentence is projected as its canonical encoding vector and not as a structured
+act. The door's verdict is assignable to the projected one, so the surface is
+reachable in both directions, but a caller who wants the sentence's fields
+reads them from the door's own types. The vector is what two implementations
+must agree on, which is why it is the half that landed. (b) The sketch's four
+compile-time controls have no twin here. The ties they exercise are carried by
+construction and measured on values, which is a different and stronger
+measurement, but "this spelling does not compile" is not among the claims this
+slice makes. (c) The wall's tracking-id class still matches one ticket series
+only, so an obligation cited from a second series inline would pass the sweep.
+It was found by the prep lane, it is not fixed here, and it is not exercised by
+this surface. (d) `KernelSchemas.generated.ts` and `KernelBuilder.generated.ts`
+still carry header paths and generation commands. Each is the same law as T6
+and each wants its own slice; neither was quietly fixed.
+## Task DEV-825 round 3 — the id clause learns the family, not one prefix
+
+Placeholders `T14`–`T16`. Same ruling as round 2: **operator ruling 2026-08-19,
+tracking artifacts out of official documents.** A measurement from another lane
+found the round-2 clause spelled `DEV-` and therefore blind to every sibling
+tracking family; a live sitting-note citation had walked past it in a projection
+outside the swept set.
+
+### T14. The clause is the shape, and the finding is reproduced before it is repaired
+
+Decided: the tracking-id pattern widens from the `DEV-` literal to two-to-four
+uppercase letters, a hyphen, and digits — the shape every tracking family in
+this estate takes. Before widening, the blind spot was reproduced first-hand:
+with the old clause restored and a sitting-note citation planted into an
+official surface, the sweep returned no tracking-id refusal for it at all.
+Alternatives: add the known sibling prefixes by name (a list of prefixes is the
+same defect one level up — it checks the families someone thought of); match any
+letter run of any length (collides with far more ordinary prose, and the
+measured surfaces gave no reason to reach that wide). **Load-bearing? yes** — a
+wall spelled for the instance in front of it checks that instance and nothing
+else, which is what this round is repairing.
+
+### T15. The one lawful collision is excused BY NAME, because no shape separates it
+
+Decided: the three swept surfaces were measured before the clause moved, not
+after. Across all of them exactly one id-shaped token appears and it appears
+twice — `SHA-256`, on the page's provenance line and in the kernel table's
+header. Nothing else in the corpus's own prose, the type vocabulary, the
+docstrings, or the generated headers takes that shape; widening the letter run
+to one-through-six letters and re-measuring returned the same single token. So
+`SHA-256` is excused by name, and the decision worth recording is WHY it is not
+excused by shape: `SHA-256` and `KM-11` are shape-identical, and what separates
+them is what the letters mean, which no pattern can read. Alternatives: bound
+the digits, bound the letter run, or look ahead for a power of two — each is a
+rule invented to fit one token, and the next family that happened to fit it
+would pass invisibly, which is the exact defect being repaired. **Load-bearing?
+yes** — the excuse is the one hole in the clause, and its shape decides whether
+the hole is one token wide or a family wide.
+
+### T16. The by-name excuse is walled by liveness, and gets its own plant
+
+Decided: every entry in the excuse list must be spoken by some swept surface;
+one that is not reddens the wall. A name list is where a family could be
+admitted on purpose, so it is held to the same discipline as every other pin
+here — it may only widen for something visibly there, in a diff a reviewer
+reads. The control gains two arms: a sitting-note id planted into a surface, and
+a stale excuse planted into the list the clause is read against (which is why
+the list is now passed into `checkNoTrackingArtifacts` rather than reached for
+inside it). The sweep also stopped taking only the FIRST match per line, since an
+excused token standing before a real one would otherwise report the excused one
+and stop — an exclusion that shadows a line is a hiding place. **Load-bearing?
+yes** — without liveness the excuse list is an unguarded bypass of the clause it
+belongs to.
+
+**Stated residual.** The swept surface set is UNCHANGED and deliberately so: the
+measured residuals outside it — the other generated projections and the CLI's
+rendered output — remain their own slices under the standing posture, and the
+live citation that prompted this round sits in one of them. This round widened
+the class, not the sweep.
+## Task DEV-823 — identity on the resolve path is the fetched bytes
+
+Placeholders `T14`–`T18`; repository D-numbers are assigned at merge. The
+disposition of the digest-resolution audit's F-1 and F-2 was pre-ruled by the
+coordinator under DEV-823, from standing law rather than from a fresh judgment:
+a repairing decoder names a value that did not arrive (finding #36), byte-to-
+value admission passes one constrained door (DEV-806), and identity is exact
+bytes (DEV-807). The payload resolve leg was the same defect standing on the
+read path. F-3 is a dossier and no code under `internal/registers.ts` moved.
+
+### T14. Identity first, decode second, and the order is the law
+
+Decided: the payload leg admits on `sha256(bytes) == D` over the fetched octets
+BEFORE anything decodes them, and only then runs the estate's constrained
+decoder over those same bytes. Alternatives: keep the value-level check and
+merely make the decoder fatal (that closes the invalid-UTF-8 and
+duplicate-member halves and leaves member order, whitespace, and needless
+escapes wide open — three of the five laundered rows in the committed control
+trace survive it); check the bytes AND then re-derive from the decoded value as
+well (a second identity derivation that can only disagree with the first when
+the canonicalizer is not idempotent, which would make a canonicalizer defect
+surface here as a resolve refusal rather than where it lives). Why: a digest
+names one exact byte string, so the only question a read door may ask is
+whether these octets hash to it, and asking it first means no interpretation
+has had a chance to repair the input. The value handed back is parsed from the
+verified bytes, so on this leg the object a caller reads is the object the
+digest attests to. **Load-bearing? yes** — it is the finding's whole
+disposition.
+
+### T15. One taught law moved, and it moved because the repair inverted its order
+
+Decided: `malformed-value` on the payload leg now teaches *"Bytes admitted at a
+digest decode as exactly one RFC 8785 wire value."* The retired sentence said
+the decode happened *before any identity check*, which was true of the defect
+and is false of the repair — it named the very order the audit found wrong.
+Alternatives: leave the sentence (it would print a law the code no longer
+follows, which is the condition the audit already flagged once); mint a new
+kind for a post-identity decode failure (the fact has not changed — presented
+bytes are not one wire value — only where in the sequence it is discovered).
+The pin moved by exactly one line and the diff shows it. This is a wire change
+and is recorded as one, not as a rendering detail: a consumer reading the
+taught law will read a different sentence. **Load-bearing? yes** — a moved
+taught text is persisted evidence.
+
+### T16. The oracle is the octets and the digest, and it is pinned before any row is graded
+
+Decided: every row's expected verdict is `sha256(octets) == D` under FIPS
+180-4, computed over the exact byte string, consulting neither the resolve door
+nor the Go twin; `D` itself is pinned first by requiring the TypeScript seam's
+digest of the value to equal the SHA-256 of the Go twin's canonical bytes for
+that same value. The Go arm then contributes the question its read door
+actually asks — are these bytes already canonical — through the line-oriented
+constrained-decode endpoint. Alternatives: compare the two implementations to
+each other (both-sides-agree is consensus, not verification, and a shared
+decoder assumption is exactly the bug class here); freeze a hand-typed digest
+constant in the corpus (a transcription error would make every row agree on a
+falsehood). Why the arms compose into a theorem rather than a coincidence:
+because `D` is by construction the digest of a canonical byte string,
+`sha256(bytes) == D` already implies the bytes are canonical, so the repaired
+byte check subsumes the twin's canonicality check instead of sitting beside it.
+**Load-bearing? yes** — without a named outside oracle the wall would prove
+only that two decoders were written by people who read the same document.
+
+### T17. The control restates the one function, and the control test keeps the restatement honest
+
+Decided: the value-identity control is a deliberate restatement of the payload
+leg with one law dropped, not a re-use of the shipped path through a
+substitution point. Alternatives: export a seam from the resolve module so the
+control could inject its identity step (it would put a test hook on the
+package's public surface with no law licensing it, and the public-surface walk
+would pin it forever); plant the mutation into the module's bytes and restore
+the tree, as the canonicalizer twin control does (that shape suits a source
+SCAN, and what wants measuring here is an admission decision at runtime). The
+restatement's hazard — drifting into agreement with the shipped door and
+passing quietly — is closed by what the control asserts: the variant must ADMIT
+byte strings the shipped door refuses, and the committed trace names which
+five. A drifted variant fails the control instead of passing it.
+**Load-bearing? yes** — a wall no mutant can fail is not a wall.
+
+### T18. F-3 ships evidence and no repair, and the evidence says what it cannot show
+
+Decided: the register finding's disposition is the operator's, so this round
+lands two measured rows against a real server and changes no line of the
+register adapter. The rows say what a single-replica server can answer — that
+the bucket is opened on the direct-read route at one replica, and that the
+substrate's compare-and-set, presented with the revision a landing produced,
+ACCEPTS an outcome overwrite. Alternatives: land no evidence and argue the
+disposition from reading (the whole question is whether the CAS reaches the
+pre-check's verdict on its own, and that is a fact about the substrate, not
+about the source); reproduce the staleness itself (one replica is the only
+replica and cannot lag behind itself; a row claiming otherwise would be
+theatre). What the rows deliberately do NOT claim: no staleness was
+reproduced, and no reachability argument is made for the revision the raw CAS
+was handed. **Load-bearing? yes** — the second row is what makes "demote the
+pre-check to advisory, the CAS arbitrates" an unsafe disposition rather than a
+tidy one, and it is a fact nobody had measured.
+
+**Stated residual.** Three things this round does NOT do. (a) The catalog leg
+still re-derives from the VALUE, because that store holds values and there is
+no byte string to check; the module now says so in place rather than letting
+the memo's licence sentence imply otherwise. (b) F-2's other two legs are
+untouched and still launder: `Wire.verifyEnvelopeDigest` re-canonicalizes the
+decoded envelope and compares that laundered digest to the message id — run on
+this branch and observed ADMIT for transposed members carrying the canonical
+digest — and the anchor adapter's state read hashes the decoded value while the
+same file's write path compares raw bytes at the same key. Both are outside
+this ticket's file scope and neither was quietly fixed. (c) The audit's hygiene
+rows F-5, F-6 and F-7 stay open; the payload leg now happens to return a value
+parsed from the verified bytes, which is F-7's structural repair on one leg of
+one seam and is not F-7's disposition.
