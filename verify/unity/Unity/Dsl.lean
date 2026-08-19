@@ -117,14 +117,14 @@ macro_rules
 declare_syntax_cat kcMerge (behavior := symbol)
 
 syntax &"algebra" num : kcMerge
-syntax &"lastWriterWins" : kcMerge
+syntax &"lastWriterWins" num : kcMerge
 
 /-- The term a merge strategy spells. -/
 syntax:max "kcMerge% " kcMerge : term
 
 macro_rules
   | `(kcMerge% algebra $id:num) => `(Kernel.MergeStrategy.declaredAlgebra $id)
-  | `(kcMerge% lastWriterWins) => `(Kernel.MergeStrategy.lastWriterWins)
+  | `(kcMerge% lastWriterWins $id:num) => `(Kernel.MergeStrategy.lastWriterWins $id)
 
 /-! ## Trigger predicates
 
@@ -216,7 +216,7 @@ syntax &"decide" num "[" kcArg,* "]" : kcAct
 syntax &"decide" num &"holding" kcToken "[" kcArg,* "]" : kcAct
 syntax &"trigger" kcPred &"declaring" num : kcAct
 syntax &"spawn" num &"requesting" num : kcAct
-syntax &"update" num "[" kcArg,* "]" : kcAct
+syntax &"update" kcKind num "[" kcArg,* "]" &"writ" num : kcAct
 
 /-- The term a candidate act spells. -/
 syntax:max "candidate% " kcAct : term
@@ -250,8 +250,9 @@ macro_rules
       `(Kernel.CandidateAct.trigger (kcPred% $predicate) $declaration)
   | `(candidate% spawn $parent:num requesting $request:num) =>
       `(Kernel.CandidateAct.spawn $parent $request)
-  | `(candidate% update $target:num [$args,*]) =>
-      `(Kernel.CandidateAct.updateInPlace $target (kcArgs% [$args,*]))
+  | `(candidate% update $kind:kcKind $target:num [$args,*] writ $writ:num) =>
+      `(Kernel.CandidateAct.updateInPlace (kcKind% $kind) $target
+          (kcArgs% [$args,*]) $writ)
 
 namespace Unity
 
@@ -278,7 +279,7 @@ theorem dsl_unfenced_decide :
 
 /-- A last-writer-wins merge spelled at a cell. -/
 theorem dsl_last_writer_join :
-    (candidate% join 6 [42] via lastWriterWins)
+    (candidate% join 6 [42] via lastWriterWins 7)
       = Kernel.Planted.lastWriterJoin := rfl
 
 /-- A read that trusts asserted bytes without re-derivation. -/
@@ -316,7 +317,7 @@ theorem dsl_absence_claim_trigger :
 
 /-- An in-place mutation of an admitted value. -/
 theorem dsl_past_mutation :
-    (candidate% update 8 [43]) = Kernel.Planted.pastMutation := rfl
+    (candidate% update schema 8 [43] writ 4) = Kernel.Planted.pastMutation := rfl
 
 /-- A referent that resolves in the catalog but lies outside the writ's
     pinned universe. -/
@@ -410,7 +411,7 @@ theorem dsl_spells_every_predicate :
 /-- Both merge strategies, and all twelve declaration kinds. -/
 theorem dsl_spells_every_kind :
     ( [ candidate% join 6 [42] via algebra 7
-      , candidate% join 6 [42] via lastWriterWins ]
+      , candidate% join 6 [42] via lastWriterWins 7 ]
     , [ candidate% resolve schema 0, candidate% resolve program 0
       , candidate% resolve policy 0, candidate% resolve capability 0
       , candidate% resolve lane 0, candidate% resolve algebra 0
@@ -420,7 +421,7 @@ theorem dsl_spells_every_kind :
       = ( [ Kernel.CandidateAct.join 6 [Kernel.RawArg.literal 42]
               (Kernel.MergeStrategy.declaredAlgebra 7)
           , Kernel.CandidateAct.join 6 [Kernel.RawArg.literal 42]
-              Kernel.MergeStrategy.lastWriterWins ]
+              (Kernel.MergeStrategy.lastWriterWins 7) ]
         , [ Kernel.CandidateAct.resolveDigest Kernel.DeclKind.schema 0 none
           , Kernel.CandidateAct.resolveDigest Kernel.DeclKind.program 0 none
           , Kernel.CandidateAct.resolveDigest Kernel.DeclKind.policy 0 none
