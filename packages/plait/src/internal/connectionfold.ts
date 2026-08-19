@@ -308,7 +308,9 @@ export const connectionsOf = Effect.fn("Connection.snapshot")(function* (
       position: step.position,
     })
   }
-  return [...readings.values()].sort((left, right) => (left.session < right.session ? -1 : 1))
+  return [...readings.values()].sort((left, right) =>
+    left.session === right.session ? 0 : left.session < right.session ? -1 : 1
+  )
 })
 
 /**
@@ -323,7 +325,9 @@ export const connectionsOf = Effect.fn("Connection.snapshot")(function* (
  *
  * The threaded state is a map from session to position, so one stream carries
  * every session on the lane and each one's machine advances only on its own
- * facts.
+ * facts. It is advanced in place rather than rebuilt per element: the stream
+ * threads it and nothing else ever holds it, so rebuilding would cost a copy
+ * per fact to protect a value with no second reader.
  */
 export const connectionChanges = <E, R>(
   delivered: Stream.Stream<PositionedEvent<SessionFact>, E, R>,
