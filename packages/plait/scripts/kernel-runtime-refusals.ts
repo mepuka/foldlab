@@ -21,33 +21,49 @@
  * because the emitted reasons are vocabulary too and the model corpus has no
  * field to carry a meaning in.
  *
- * Every meaning below is a DRAFT. The operator's taste pass (DEV-825) ratifies
- * the sentences; until it rules, every projection renders the meaning behind
+ * Every meaning below is a DRAFT. The operator's taste pass ratifies the
+ * sentences; until it rules, every projection renders the meaning behind
  * `DRAFT_MEANING_MARKER`, and the vocabulary wall requires that marker to be
  * there. Editing a sentence here is a visible act: the generated modules and
  * the prose page all move, and their byte-identical regeneration checks show
  * the diff.
  *
- * DEV-804 owns replacing each staged row with its corpus declaration. Removing
- * or renaming a spelling here is a persisted-wire change and is outside that
- * ticket as well as DEV-808.
+ * THIS FILE IS A TRACKING-NATIVE SOURCE, and the distinction is law (root law
+ * 10, operator-ruled 2026-08-19). The waiver ticket below, and every ticket
+ * citation in these comments, live here and in the pins and the decisions log,
+ * where tracking belongs. The generators never project them: nothing rendered
+ * outward — a generated doc comment, the prose page, a refusal payload —
+ * carries a ticket id, a dev parenthetical, a script invocation, or a
+ * filesystem path. A rendered surface that must say where it came from says a
+ * digest.
+ *
+ * The waiver ticket owns replacing each staged row with its corpus
+ * declaration. Removing or renaming a spelling here is a persisted-wire change
+ * and is outside that ticket.
  *
  * @module
  */
 
-/** The ticket owning runtime refusal rows the kernel corpus does not yet carry. */
+/**
+ * The ticket owning runtime refusal rows the kernel corpus does not yet carry.
+ *
+ * Read by the wall and by the reviewed pin, never rendered: it classifies a
+ * row for a reviewer, and a reviewer is not an official document.
+ */
 export const RUNTIME_REFUSAL_WAIVER_TICKET = "DEV-804" as const
-
-/** The ticket whose operator taste pass ratifies the drafted meanings. */
-export const REFUSAL_MEANING_TASTE_TICKET = "DEV-825" as const
 
 /**
  * The line every unratified meaning is rendered behind, verbatim, in every
  * projection. Its presence is walled: a meaning that lost its marker reads as
- * ratified prose, and nothing but the taste-pass ruling may make it read that
- * way.
+ * ratified prose, and nothing but the operator's taste pass may make it read
+ * that way.
+ *
+ * The marker names no ticket and carries no parenthetical, because it is
+ * rendered into official documents and those carry no tracking artifacts. What
+ * it has to say is that the sentence is not yet ruled on, and it says exactly
+ * that.
  */
-export const DRAFT_MEANING_MARKER = "Draft meaning (pending DEV-825 taste pass):" as const
+export const DRAFT_MEANING_MARKER = "Draft meaning, awaiting ratification." as const
 
 /** One runtime structural spelling and its standing meaning. */
 export interface RuntimeRefusalMeaning {
@@ -60,10 +76,6 @@ export interface KernelReasonMeaning {
   readonly reason: string
   readonly meaning: string
 }
-
-/** Where this reviewed projection manifest lives, relative to the repository root. */
-export const RUNTIME_REFUSAL_PROJECTION_PATH =
-  "packages/plait/scripts/kernel-runtime-refusals.ts" as const
 
 /**
  * The existing runtime structural spellings, in their persisted order, each

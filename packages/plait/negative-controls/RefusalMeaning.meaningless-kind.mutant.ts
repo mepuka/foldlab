@@ -23,7 +23,6 @@ import { resolve } from "node:path"
 
 import {
   DRAFT_MEANING_MARKER,
-  REFUSAL_MEANING_TASTE_TICKET,
   REFUSAL_VOCABULARY_PATHS,
   checkRefusalMeanings,
   readCorpusRefusalReasons,
@@ -78,7 +77,6 @@ const judge = (
     proseMeanings: readProseMeanings(plantedPage, REFUSAL_VOCABULARY_PATHS.prosePage),
     corpusReasons,
     draftMarker: DRAFT_MEANING_MARKER,
-    tasteTicket: REFUSAL_MEANING_TASTE_TICKET,
   })
   return checked.ok ? abandon(`the ${arm} plant was accepted`) : checked.reason
 }

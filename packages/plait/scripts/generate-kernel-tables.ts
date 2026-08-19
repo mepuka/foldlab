@@ -13,11 +13,11 @@ const repository = resolve(import.meta.dir, "../../..")
 const corpus = await loadKernelCorpus(repository)
 await Bun.write(
   resolve(repository, GENERATED_PATH),
-  renderKernelTables(corpus, ARTIFACT_PATH),
+  renderKernelTables(corpus),
 )
 await Bun.write(
   resolve(repository, REFUSAL_KINDS_PATH),
-  renderRefusalKinds(corpus, ARTIFACT_PATH),
+  renderRefusalKinds(corpus),
 )
 console.log(
   `KERNEL TABLES: wrote ${GENERATED_PATH} and ${REFUSAL_KINDS_PATH} from ${ARTIFACT_PATH}` +

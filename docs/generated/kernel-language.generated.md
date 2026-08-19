@@ -2,9 +2,11 @@
 
 <!-- GENERATED FILE - DO NOT EDIT. -->
 
-Rendered from `packages/plait/fixtures/kernel-conformance.ndjson` by `bun run generate:kernel-prose`, which reads the interchange emitted from `verify/kernel` by `verify/unity emit` at format 2. Every name, rank, law, repair, and docstring on this page is the model's own text, reproduced verbatim - not paraphrased, not reflowed, not truncated. Two mechanical exceptions, and no others: inside a table cell a line break becomes a space and a pipe is escaped, because a cell holds neither; and trailing spaces are trimmed from line ends, which Markdown discards anyway. The untrimmed text is what the generated schemas carry.
+Rendered from the kernel corpus `64afd406f040a419f7c4192906944f7abb75def21fb7c729980d3035508456ed` at interchange format 2. That is the corpus's identity - SHA-256 over its canonical bytes - and it is what this page names its source by, because everything in this language refers to a digest or to a derivation of one. A path would name wherever a reader happens to be standing, which is precisely the ambient reference the algebra refuses; a digest names one byte sequence forever, so a reader who wants to know whether they hold this page's source hashes what they have and compares.
 
-**One thing on this page is not the model's.** Each refusal kind's *meaning* - the one or two sentences under the draft marker, and the runtime structural kinds section - is house prose, read from the reviewed roster at `packages/plait/scripts/kernel-runtime-refusals.ts` rather than from the corpus, because the corpus carries no field a meaning could ride in. Those sentences are DRAFTS: the operator's taste pass ratifies them, and until it rules every one of them renders behind its marker line. Read them as the house explaining its own vocabulary, never as a model verdict.
+Every name, rank, law, repair, and docstring on this page is the model's own text, reproduced verbatim - not paraphrased, not reflowed, not truncated. Two mechanical exceptions, and no others: inside a table cell a line break becomes a space and a pipe is escaped, because a cell holds neither; and trailing spaces are trimmed from line ends, which Markdown discards anyway. The untrimmed text is what the generated schemas carry.
+
+**One thing on this page is not the model's.** Each refusal kind's *meaning* - the one or two sentences under the draft marker, and the runtime structural kinds section - is house prose, read from the reviewed refusal-kind roster rather than from the corpus, because the corpus carries no field a meaning could ride in. Those sentences are DRAFTS: the operator's taste pass ratifies them, and until it rules every one of them renders behind its marker line. Read them as the house explaining its own vocabulary, never as a model verdict.
 
 **What this page is not.** These are the model's verdicts, not guarantees about any running system. A conforming implementation is one whose door refuses the same candidates for the same reasons, encodes the same sentences the same way, and serializes the same values to the same bytes. Nothing more is claimed, and nothing more should be read into a green conformance run.
 
@@ -43,7 +45,7 @@ A hole passes through these as it is filled, disputed, decided, and sealed. The 
 
 Each refusal carries the law it defends and the legal next move. The model's teaching function is total, so a reason with no law and no repair cannot exist.
 
-Each also carries its standing **meaning**: one to two sentences saying what fact the reason names and what that implies. The two registers are deliberately different acts. A law and a repair speak at the moment of refusal, to whoever presented the candidate, about this one presentation. A meaning speaks about the reason itself, standing, to anyone reading the vocabulary. The model corpus has no field to carry a meaning in, so these are reviewed data in `packages/plait/scripts/kernel-runtime-refusals.ts` and are rendered here from it — every one of them a draft until the operator's taste pass rules, which is what the marker above each says.
+Each also carries its standing **meaning**: one to two sentences saying what fact the reason names and what that implies. The two registers are deliberately different acts. A law and a repair speak at the moment of refusal, to whoever presented the candidate, about this one presentation. A meaning speaks about the reason itself, standing, to anyone reading the vocabulary. The model corpus has no field to carry a meaning in, so these are reviewed house data rendered here beside the teaching — every one of them a draft until the operator's taste pass rules, which is what the marker above each says.
 
 ### clock-read
 
@@ -53,7 +55,7 @@ Each also carries its standing **meaning**: one to two sentences saying what fac
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A fold read a clock. The fold carrier has no clock parameter, so a time a fold consumes arrives as a tick fact on an evidence lane like every other fact.
 
@@ -65,7 +67,7 @@ A fold read a clock. The fold carrier has no clock parameter, so a time a fold c
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A trigger fires on silence rather than on a fact. The trigger grammar is closed at five monotone productions, so acting on the absence of evidence has no production to be written in.
 
@@ -77,7 +79,7 @@ A trigger fires on silence rather than on a fact. The trigger grammar is closed 
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A commit was attempted without holding a fencing token. Only a fenced token lands an outcome, so an unfenced decide has nothing making it at most once.
 
@@ -89,7 +91,7 @@ A commit was attempted without holding a fencing token. Only a fenced token land
 
 **Applicability.** machine-applicable
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A write was resolved by arrival order. Cells merge by join under a declared ACI algebra, so an idempotent merge leaves arrival order nothing to decide.
 
@@ -101,7 +103,7 @@ A write was resolved by arrival order. Cells merge by join under a declared ACI 
 
 **Applicability.** machine-applicable
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A fetched value was trusted without re-deriving its digest. A decode re-derives the identity of what it fetched, so an unverified read makes the store, rather than the bytes, the authority.
 
@@ -113,7 +115,7 @@ A fetched value was trusted without re-deriving its digest. A decode re-derives 
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Two identifiers were compared across the spaces that mint them. Tokens are per-register and positions are per-partition, so a comparison across spaces is a sort error wearing the shape of a number.
 
@@ -125,7 +127,7 @@ Two identifiers were compared across the spaces that mint them. Tokens are per-r
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A name was invented rather than derived. Every identifier is the digest of a declaration or a derivation from one, so nothing in the language mints a name out of nothing.
 
@@ -137,7 +139,7 @@ A name was invented rather than derived. Every identifier is the digest of a dec
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A derived read depends on something outside its support and its query value. Such a read is a function of those two alone, so an ambient input would make one query at one anchor answerable two ways.
 
@@ -149,7 +151,7 @@ A derived read depends on something outside its support and its query value. Suc
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A pin names a declaration that has not been admitted. The reference graph is a DAG in admission order, so a referent is declared before anything points at it.
 
@@ -161,7 +163,7 @@ A pin names a declaration that has not been admitted. The reference graph is a D
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A secret was carried in the wire grammar. The grammar admits no secret position, so credentials ride the environmental band as redacted configuration, outside meaning.
 
@@ -173,7 +175,7 @@ A secret was carried in the wire grammar. The grammar admits no secret position,
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A read claimed that something is present nowhere. A local view is a lattice lower bound, so it licenses an at-least claim and never a global negative.
 
@@ -185,7 +187,7 @@ A read claimed that something is present nowhere. A local view is a lattice lowe
 
 **Applicability.** machine-applicable
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A recorded fact was changed after the fact. Journals are append-only, so a correction is a successor value pinning its predecessor and forgetting is fenced compaction above the horizon.
 
@@ -197,7 +199,7 @@ A recorded fact was changed after the fact. Journals are append-only, so a corre
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A declaration names an identifier outside the universe its writ pins. The writ is the boundary a declaration's references live inside, so reaching past it would let a spawn read what its grant never admitted.
 
@@ -209,7 +211,7 @@ A declaration names an identifier outside the universe its writ pins. The writ i
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A program's identity was taken from its closure bytes. A declaration is the identity, so computation is referenced by the digest of a declared fold and never by the shape of a function value.
 
@@ -221,7 +223,7 @@ A program's identity was taken from its closure bytes. A declaration is the iden
 
 **Applicability.** machine-applicable
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A resolve was qualified by an anchor. A digest names one value forever, so an anchor could only decorate that answer; head-relative reading belongs to a fold read at an anchor instead.
 
@@ -233,7 +235,7 @@ A resolve was qualified by an anchor. A digest names one value forever, so an an
 
 **Applicability.** advisory
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Execution was attempted on a declaration with a hole still open. Only closed programs execute, and a hole is a declared parameter rather than a wildcard, so it is filled before the declaration is a run.
 
@@ -250,359 +252,359 @@ Execution was attempted on a declaration with a hole still open. Only closed pro
 
 ## Runtime structural refusal kinds
 
-44 structural refusal kinds the plait runtime can mint, in the persisted order of the shipped union. These are not model rows: a spelling the corpus above also carries is corpus-backed, and a spelling it does not is explicit staged debt owned by DEV-804. The roster itself is reviewed data in `packages/plait/scripts/kernel-runtime-refusals.ts`, and the same rows are generated into the kernel table with their ancestry and into the truth plane as the shipped union.
+44 structural refusal kinds the plait runtime can mint, in the persisted order of the shipped union. These are not model rows: a spelling the corpus above also carries is corpus-backed, and a spelling it does not is marked staged debt. The roster they come from is reviewed house data, and the same rows are generated into the kernel table with their ancestry and into the truth plane as the shipped union.
 
-Each carries its standing meaning on the same terms as a taught refusal above, and for the same reason: the refusal-time teaching for these kinds lives at their minting sites, byte-pinned in `packages/plait/test/RefusalPayloads.taught.txt`, while what follows is the kind's meaning in the language. Every one is a draft until the operator's taste pass rules.
+Each carries its standing meaning on the same terms as a taught refusal above, and for the same reason: the refusal-time teaching for these kinds is minted where each refusal fires and is pinned byte for byte by its own wall, while what follows is the kind's meaning in the language. Every one is a draft until the operator's taste pass rules.
 
 ### non-canonical-value
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The presented value has no canonical form under the estate's RFC 8785 seam, so it cannot be given a content address. Identity here is bytes, and a value the canonicalizer will not admit has no identity to name.
 
 ### invalid-subject-token
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A routing token presented to the fabric is not one literal NATS token. Subjects route and never identify, so a token that could expand or wildcard would widen a route no declaration named.
 
 ### malformed-envelope
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The presented bytes do not carry the fixed v0 envelope shape the fabric contract declares. The envelope is the frame every fact travels in, so a shape the grammar does not admit is refused before anything reads a body.
 
 ### malformed-blob-reference
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A body claiming to reach outside itself is not the exact closed blob-reference form envelope v0 reserves. That reserved form is the only way a body may name bytes it does not carry, so a near miss is refused rather than guessed at.
 
 ### inline-body-too-large
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A canonical body exceeds what envelope v0 carries inline. Bodies above the pinned threshold travel as blobs, which is what keeps the emit path inside a measured substrate budget instead of discovering the ceiling under load.
 
 ### digest-mismatch
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Bytes re-derived on read do not hash to the digest that named them. Verify-on-read is what makes a content address a claim about bytes rather than a claim about a store, so a mismatch is structural and is never retried.
 
 ### substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The commons control stream is not the shape the fabric declares for it. A carrier's shape is part of its meaning, so a stream that evicts, imports, or admits evidence the declaration excludes is refused before anything is written to it.
 
 ### invalid-lane-declaration
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A lane declaration is not canonical data carrying one literal route handle, a positive partition count, and a declared key path. A lane is the addressing unit every partition under it inherits, so an ill-formed one would place facts on routes no declaration names.
 
 ### invalid-partition-key
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A partition key was derived from something other than the declared path over the admitted event, or names a partition the fold handle does not expose. Routing is a function of the declaration alone, so an ambient or invented key is refused.
 
 ### lane-evidence-mismatch
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An arriving event is not addressed by the lane and partition key its pump declared. A durable pump consumes only its own declared evidence, so a foreign arrival is refused rather than folded into a state that could no longer be attributed.
 
 ### lane-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The stream backing a declared lane partition is not the exact non-evicting shape the declaration requires. Each declared pair owns one stream whose dense sequence is the successor position, so an evicting or duplicated stream would break the successor discipline that protects application.
 
 ### payload-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The live substrate advertises a maximum payload too small to carry an emit at the pinned inline threshold. The threshold is pinned against a measured budget, so a substrate below it is refused at open time rather than at emit time.
 
 ### mirrored-authority-carrier
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An authority carrier was opened against a stream that imports its facts from another origin. A mirroring or sourcing stream is a locally read-only copy of someone else's journal, so holding it as an authority would attribute decisions to facts it does not own.
 
 ### expiring-authority-carrier
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An authority carrier was opened against a stream whose server may expire the facts it holds. A fact the substrate deletes un-decides every decision that cited it, so material meant to expire belongs on a carrier no decision reads.
 
 ### invalid-algebra-declaration
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A declared algebra's definition or initial state is not a canonical wire-grammar value. An algebra is declared before it is trusted, so a definition with no canonical bytes has no digest to seed its law suite from.
 
 ### invalid-fold-declaration
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A fold declaration carries a flow-control or pinned-head value outside the domain the runtime admits. The declaration is what every pump and checkpoint under the fold is configured from, so an out-of-domain field is refused here rather than surfacing later as a runtime failure.
 
 ### unearned-commutative-algebra
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An algebra was spread across more than one partition without having earned the commutative brand. F4 licenses partition fan-out only for an algebra whose digest-seeded law suite passed, so an unearned brand would let arrival order choose the answer.
 
 ### invalid-anchor-advance
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An anchor advance is not the contiguous successor step the anchor discipline admits. A floor advances by exactly one applied position, so a jump would record a frontier no application actually reached.
 
 ### anchor-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The anchor bucket is not the non-evicting, revision-retaining shape the fold plane declares. Anchors are what a resumption reads back, so a bucket that evicts or carries admin surface beyond the declaration cannot be trusted to still hold the frontier.
 
 ### malformed-anchor-state
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An anchor and the content-addressed state it names do not re-derive to the recorded canonical digests. The anchor is the record a resumption trusts, so state that does not re-derive is refused rather than resumed from.
 
 ### lost-anchor-cas
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 This pump lost the anchor revision CAS it held. One live pump owns each fold partition, so a lost revision means another owner exists and this one detaches; there is deliberately no re-read-and-continue path.
 
 ### consumer-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A fold partition's durable consumer is not the explicit-ack, bounded-in-flight pull consumer the fold plane declares. That window is what bounds the reorder buffer, so a consumer outside the shape would let the buffer grow past its declared bound.
 
 ### fold-buffer-overflow
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Positions arrived beyond what the position-addressed reorder buffer may hold. The buffer is bounded by the durable consumer's in-flight window, so an overflow reports a substrate not honouring that window rather than a buffer that should grow.
 
 ### invalid-session-declaration
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A session declaration is missing its holder, its set of declared views, an anchor policy this seam knows, or a partition its fold's lane declares. A session is read-plane state judged before any layer is reached, so an ill-formed one is refused where no fixture service can drop it.
 
 ### undeclared-view
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A session asked for an image outside the declared views its writ names. A session emits only the image of the declared fold it subscribed to, and only while the writ still names that view.
 
 ### invalid-chaos-request
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A chaos run was requested over something other than one pinned span of one admitted declared fold. Chaos measures the real durable-consumer protocol, so an ambient head or an arbitrary program would measure something no declaration describes.
 
 ### invalid-fold-state
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A presented fold state is not a wire-grammar value whose state digest re-derives over its canonical bytes. Fold state is content-addressed like everything else, so a state whose digest does not re-derive cannot be anchored.
 
 ### invalid-register-key
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A work digest presented to the register plane does not map to one literal key. A register is keyed by the work it fences, so a key that could expand would fence something other than what was named.
 
 ### malformed-register-state
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The bytes stored at a register key are not the closed holder-and-outcome record the register plane writes. Only that adapter writes the bucket, so a value outside the closed shape means the substrate holds something no lawful write produced.
 
 ### register-absent
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Renew, commit, or expire-steal was attempted against a register that does not exist. A grant creates the register before anything fences on it, so this names a missing grant and not a retryable observation.
 
 ### register-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The register bucket is not the non-evicting, revision-retaining shape the fencing plane declares. A fencing token is that bucket's revision order, so a bucket that evicts or renumbers would make a stale token indistinguishable from a current one.
 
 ### duplicate-grant
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A grant was attempted against work whose register already exists. A grant requires absence, so admitting a second one would hand two holders a lease over the same work.
 
 ### outcome-already-landed
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The register already carries a landed outcome. An outcome, once set, never changes, so this round is over whether or not the presented token is current.
 
 ### stale-register-token
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The presented fencing token is not the register's current one. Only a current token renews or commits, so a stale one belongs to a superseded round and must never land.
 
 ### concurrent-register-update
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An expire-steal lost its compare-and-set against a concurrently advancing register. A steal grants a strictly larger token from the revision it read, so a moved revision is re-read and the steal re-attempted against it.
 
 ### malformed-value
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 Presented bytes do not decode as their declared schema, or do not decode as one wire value at all. A decoder that repairs its input names a different value, so a near miss is refused rather than coerced.
 
 ### invalid-cell-key
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A cell name does not map to one literal key. A cell is named by that key, so a name that could expand would merge into a keyspace the caller never named.
 
 ### malformed-cell-state
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The bytes stored at a cell key are not the canonical array of holder-attributed observations. Only a join writes that bucket, so a value outside the canonical shape means the substrate holds something no merge produced.
 
 ### cell-substrate-shape
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The cell bucket is not the non-evicting, single-revision shape the lattice plane declares. A cell is a join-semilattice carrier, so a bucket retaining extra revisions would offer a history the merge discipline does not admit.
 
 ### invalid-petname
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A petname carries a separator or a control character, or is one of the relative forms. Petnames name values rather than positions, so the relative forms are refused along with anything a reader could take for a path.
 
 ### not-a-directory
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 A hop of a path opened a value that is not a directory. A walk never reinterprets a value, so it stops here instead of guessing at a structure the value does not have.
 
 ### unbound-petname
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 The directory reached at this hop binds no such name. A root digest names one immutable directory, so the answer never moves: this is structural, never a retryable absence.
 
 ### ambiguous-binding
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 This name is bound to more than one digest in the directory reached. A directory carries a binding set and nothing in a walk arbitrates, so an ambiguous name resolves to none of its candidates.
 
 ### incarnation-mismatch
 
-**Ancestry.** staged debt, owned by DEV-804
+**Ancestry.** staged debt
 
-Draft meaning (pending DEV-825 taste pass):
+Draft meaning, awaiting ratification.
 
 An incarnation is one life of a store — the store a name resolved to at the moment a fence was taken against it. A store reborn under that name is a different store answering to it and owes nothing to its predecessor's fences, so a fence from the dead incarnation names a store that no longer exists rather than a round that has merely moved on.
 

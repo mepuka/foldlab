@@ -50,7 +50,6 @@ import * as ts from "typescript-five"
 import { CORPUS_PATH } from "./kernel-corpus.js"
 import {
   DRAFT_MEANING_MARKER,
-  REFUSAL_MEANING_TASTE_TICKET,
   RUNTIME_REFUSAL_WAIVER_TICKET,
 } from "./kernel-runtime-refusals.js"
 
@@ -368,7 +367,7 @@ export const checkRefusalVocabulary = (
  * same projection; this is what keeps the two emissions from parting company.
  */
 export const checkProjectionAncestry = (
-  rows: ReadonlyArray<{ readonly kind: string; readonly source: string; readonly waiver?: string }>,
+  rows: ReadonlyArray<{ readonly kind: string; readonly source: string }>,
   evidence: RefusalVocabularyEvidence,
 ): RefusalVocabularyCheck => {
   const corpus = new Set(evidence.corpusReasons)
@@ -400,14 +399,11 @@ export const checkProjectionAncestry = (
           + ` corpus fixture says ${quote(expected)}`,
       }
     }
-    if (expected === "staged-debt" && row.waiver !== evidence.waiverTicket) {
-      return {
-        ok: false,
-        reason:
-          `the kernel table's staged-debt row ${quote(kind)} does not cite`
-          + ` ${evidence.waiverTicket}`,
-      }
-    }
+    // Which ticket owns a staged-debt row is deliberately NOT checked here, and
+    // is deliberately not on the row: root law 10 keeps ticket citations off
+    // every rendered surface. The citation still has to exist and still has to
+    // be right — `checkRefusalVocabulary` holds it against the reviewed pin,
+    // which is a tracking-native record and the correct home for it.
   }
   return { ok: true, corpusBacked: 0, stagedDebt: 0 }
 }
@@ -575,8 +571,6 @@ export interface RefusalMeaningEvidence {
   readonly corpusReasons: ReadonlyArray<string>
   /** The marker every unratified meaning must still carry. */
   readonly draftMarker: string
-  /** The ticket whose taste pass may retire that marker. */
-  readonly tasteTicket: string
 }
 
 /** The result of checking the standing meanings. */
@@ -631,8 +625,8 @@ export const checkRefusalMeanings = (
           ok: false,
           reason:
             `${what} ${quote(row.name)} renders its meaning behind ${quote(row.marker)}`
-            + ` rather than ${quote(evidence.draftMarker)}; only the`
-            + ` ${evidence.tasteTicket} taste pass retires that marker`,
+            + ` rather than ${quote(evidence.draftMarker)}; only the operator's taste pass`
+            + ` retires that marker`,
         }
       }
       const already = expected.get(row.name)
@@ -708,10 +702,128 @@ export const checkRefusalMeanings = (
 }
 
 /**
- * The reviewed constants both laws are evaluated against, re-exported so the
- * checks and their controls reach them through the wall rather than through the
- * generator's own manifest: the ticket a staged-debt waiver must cite, the
- * marker an unratified meaning renders behind, and the ticket whose taste pass
- * may retire it.
+ * The three surfaces the estate renders as the language itself. Everything on
+ * them is read here as bytes, and each is named rather than pathed, because a
+ * refusal about a document that carries no paths should not itself have to
+ * print one.
  */
-export { DRAFT_MEANING_MARKER, REFUSAL_MEANING_TASTE_TICKET, RUNTIME_REFUSAL_WAIVER_TICKET }
+export const OFFICIAL_SURFACES = {
+  runtimeUnion: "the truth-plane refusal vocabulary",
+  kernelTables: "the kernel conformance tables",
+  prosePage: "the kernel language page",
+} as const
+
+/** One official surface's committed bytes, under the name a refusal prints. */
+export interface OfficialSurface {
+  readonly surface: string
+  readonly bytes: string
+}
+
+/** One class of tracking artifact, with the reason it may not be rendered. */
+export interface TrackingArtifactClass {
+  readonly clause: string
+  readonly pattern: RegExp
+  readonly why: string
+}
+
+/**
+ * The classes root law 10 refuses on an official surface.
+ *
+ * Each pattern is deliberately narrow enough to name what it caught, and the
+ * set is deliberately not "anything with a slash": the model's own prose says
+ * things like `immutable/head-relative`, which is a pair of words and not a
+ * reference to a file. What is refused is a REFERENCE — something a reader
+ * could follow to a location — and the three shapes one takes here are an
+ * extension-bearing name, a path rooted at a directory of this repository, and
+ * any deeper multi-segment path form. Brand tags and package specifiers are
+ * excluded by their leading `~` and `@`: those are identities, not locations,
+ * which is the whole distinction the law is about.
+ */
+export const TRACKING_ARTIFACT_CLASSES: ReadonlyArray<TrackingArtifactClass> = [
+  {
+    clause: "tracking id",
+    pattern: /\bDEV-[0-9]+\b/,
+    why: "a ticket number is where tracking lives, and tracking is not the language",
+  },
+  {
+    clause: "filesystem path",
+    pattern:
+      /(?:^|[^A-Za-z0-9_~@/-])(?:[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:ts|tsx|js|mjs|cjs|jsx|json|ndjson|md|sh|ps1|txt|lean|go|yaml|yml|toml|lock)(?![A-Za-z0-9_])|(?:packages|scripts|src|test|tests|fixtures|docs|verify|proto|node_modules|negative-controls)\/|[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+)/,
+    why: "a plait item refers to a digest or a derived digest; a path is an ambient reference",
+  },
+  {
+    clause: "generation command",
+    // `node` is deliberately absent from the runner list: the model's own prose
+    // about program declarations calls a graph vertex a node, and a wall that
+    // cannot tell a vertex from a runtime would be refusing the language to
+    // protect it. The runners left here name nothing but themselves.
+    pattern: /(?:\b(?:bun|npm|pnpm|yarn|deno)\s)|(?:\b(?:check|generate|build):[a-z][a-z0-9-]*)/,
+    why: "how an artifact is rebuilt belongs in the README beside it, not inside it",
+  },
+] as const
+
+/** The result of sweeping the official surfaces for tracking artifacts. */
+export type TrackingArtifactCheck =
+  | { readonly ok: true; readonly surfaces: number; readonly lines: number }
+  | { readonly ok: false; readonly reason: string }
+
+/**
+ * Root law 10's mechanical clause: an official document carries no tracking
+ * artifact, and a draft marker on one is the exact ratified form.
+ *
+ * The sweep is over the COMMITTED bytes of the three rendered surfaces, one
+ * line at a time, so a refusal can say which surface, which line, which class,
+ * and what it matched. Two things make it a wall rather than a lint. It reads
+ * what shipped, not what a generator intended, so removing a path from a
+ * template and forgetting to regenerate still reddens. And the marker arm
+ * pins the EXACT string: a line that opens like a draft marker and is not the
+ * ratified one is refused rather than tolerated, which is what stops the marker
+ * from quietly acquiring a parenthetical again.
+ */
+export const checkNoTrackingArtifacts = (
+  surfaces: ReadonlyArray<OfficialSurface>,
+  marker: string,
+): TrackingArtifactCheck => {
+  if (surfaces.length === 0) return { ok: false, reason: "no official surface was swept" }
+  let swept = 0
+  for (const surface of surfaces) {
+    const lines = surface.bytes.split("\n")
+    if (lines.length <= 1) {
+      return { ok: false, reason: `${surface.surface} read as no lines at all` }
+    }
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index]!.replace(/\r$/, "")
+      swept++
+      for (const artifact of TRACKING_ARTIFACT_CLASSES) {
+        const found = artifact.pattern.exec(line)
+        if (found === null) continue
+        return {
+          ok: false,
+          reason:
+            `${surface.surface} line ${index + 1} renders a ${artifact.clause}`
+            + ` (${quote(found[0].trim())}): ${artifact.why}`,
+        }
+      }
+      const trimmed = line.trim()
+      if (!trimmed.startsWith("Draft meaning")) continue
+      const stated = trimmed.startsWith("* ") ? trimmed.slice(2) : trimmed
+      if (stated === marker) continue
+      return {
+        ok: false,
+        reason:
+          `${surface.surface} line ${index + 1} renders ${quote(stated)} rather than the`
+          + ` ratified draft marker ${quote(marker)}`,
+      }
+    }
+  }
+  return { ok: true, surfaces: surfaces.length, lines: swept }
+}
+
+/**
+ * The reviewed constants the laws are evaluated against, re-exported so the
+ * checks and their controls reach them through the wall rather than through the
+ * generator's own manifest: the ticket a staged-debt waiver must cite (which
+ * lives in the roster and is never rendered), and the marker an unratified
+ * meaning renders behind.
+ */
+export { DRAFT_MEANING_MARKER, RUNTIME_REFUSAL_WAIVER_TICKET }
