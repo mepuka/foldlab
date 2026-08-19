@@ -24,18 +24,18 @@ import {
   type NatsServerBinary,
 } from "./NatsHarness.js"
 
-const Outcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
+const Outcome = Schema.Struct({ token: Schema.Finite, value: Schema.String })
 const State = Schema.Struct({
-  token: Schema.Number,
+  token: Schema.Finite,
   holder: Schema.NullOr(Schema.String),
   outcome: Schema.NullOr(Outcome),
 })
 const Action = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("grant"), holder: Schema.String }),
-  Schema.Struct({ kind: Schema.Literal("renew"), token: Schema.Number }),
+  Schema.Struct({ kind: Schema.Literal("renew"), token: Schema.Finite }),
   Schema.Struct({
     kind: Schema.Literal("commit"),
-    token: Schema.Number,
+    token: Schema.Finite,
     outcome: Schema.String,
   }),
   Schema.Struct({ kind: Schema.Literal("expire-steal"), holder: Schema.String }),
@@ -44,7 +44,7 @@ const Action = Schema.Union([
 type Action = typeof Action.Type
 const TraceState = Schema.Struct({
   fields: State,
-  index: Schema.Number,
+  index: Schema.Finite,
   transition: Schema.Union([Schema.Literal("after_init"), Action]),
 })
 const Row = Schema.Struct({
@@ -56,7 +56,7 @@ const Row = Schema.Struct({
   observed: State,
 })
 type Row = typeof Row.Type
-const Header = Schema.Struct({ provenance: Schema.String, rows: Schema.Number })
+const Header = Schema.Struct({ provenance: Schema.String, rows: Schema.Finite })
 
 const fixture = resolve(import.meta.dir, "../fixtures/register-traces.ndjson")
 const mutantTrace = resolve(import.meta.dir, "../negative-controls/stale-token-mutant.trace.json")
@@ -318,7 +318,7 @@ describe("Veil register replay wall", () => {
         stderr: "pipe",
       })
       await waitForFile(readyPath)
-      const ready = Schema.decodeUnknownSync(Schema.Struct({ token: Schema.Number }))(
+      const ready = Schema.decodeUnknownSync(Schema.Struct({ token: Schema.Finite }))(
         JSON.parse(await Bun.file(readyPath).text()),
       )
       holder.kill()

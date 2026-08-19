@@ -9,7 +9,7 @@ import { declare, emit, Lanes } from "../src/planes/Lane.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
-const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("c".repeat(64))
 let harness: NatsHarness | undefined
 

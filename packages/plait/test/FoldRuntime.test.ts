@@ -9,7 +9,7 @@ import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
-const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("d".repeat(64))
 let harness: NatsHarness | undefined
 

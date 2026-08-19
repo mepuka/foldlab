@@ -155,7 +155,7 @@ describe("the canonical writer, derived from the tree", () => {
       bytes: Schema.String,
       name: Schema.String,
       record: Schema.Literal("canon"),
-      value: Schema.Number,
+      value: Schema.Finite,
     })
     const line =
       "{\"bytes\":\"9007199254740993\",\"name\":\"big-integer\",\"record\":\"canon\","

@@ -68,7 +68,7 @@ const envelope = (body: unknown): Uint8Array => utf8.encode(JSON.stringify({
   pins: [],
 }))
 
-const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const probeEventSchema = Digest.make("a".repeat(64))
 const declareProbeFold = (handle: string) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
@@ -197,7 +197,7 @@ describe("structural refusal repairs", () => {
     })
     refusals.push(await Effect.runPromise(Effect.flip(Session.writ({
       holder: "reader",
-      views: ["not-a-digest" as unknown as typeof Digest.Type],
+      views: ["not-a-digest" as unknown as Digest],
     }))))
     const emptyWrit = await Effect.runPromise(Session.writ({ holder: "reader", views: [] }))
     refusals.push(await Effect.runPromise(Effect.flip(

@@ -174,7 +174,7 @@ export const closeConnection = (connection: NatsConnection): Effect.Effect<void>
   Effect.tryPromise({
     try: () => connection.close(),
     catch: () => undefined,
-  }).pipe(Effect.catch(() => Effect.void))
+  }).pipe(Effect.ignore)
 
 /**
  * Opens one scope-owned connection to the pinned servers.

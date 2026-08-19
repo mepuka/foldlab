@@ -203,7 +203,7 @@ export const decodeCanonicalText = <S extends Schema.ConstraintDecoder<unknown>>
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : String(error) }
   }
-  const decoded = Schema.decodeUnknownResult(schema)(parsed)
+  const decoded = Schema.decodeResult(schema)(parsed)
   return decoded._tag === "Success"
     ? { ok: true, value: decoded.success }
     : { ok: false, reason: SchemaIssue.makeFormatterDefault()(decoded.failure.issue) }

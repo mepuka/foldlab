@@ -8,7 +8,7 @@ import { Digest } from "../src/truth/Digest.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 
-const Event = Schema.Struct({ partition: Schema.String, delta: Schema.Number })
+const Event = Schema.Struct({ partition: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("b".repeat(64))
 
 const makeLane = () => Lane.declare({

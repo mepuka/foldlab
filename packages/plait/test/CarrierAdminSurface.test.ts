@@ -42,7 +42,7 @@ import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
  * mutation per incarnation is the only way to keep the arms independent.
  */
 const duplicateWindowNanos = 2 * 60 * 1_000_000_000
-const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const probeEventSchema = Digest.make("b".repeat(64))
 
 const declareProbeLane = (handle: string) =>

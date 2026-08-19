@@ -190,7 +190,7 @@ export const decodeDurableMessage = Effect.fn("Folds.decodeRecord")(function*<Ev
       fold.lane.digest,
     )
   }
-  const decoded = Schema.decodeUnknownResult(fold.lane.event, {
+  const decoded = Schema.decodeResult(fold.lane.event, {
     onExcessProperty: "error",
     errors: "first",
   })(verified.envelope.body)

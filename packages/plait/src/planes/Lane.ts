@@ -15,7 +15,7 @@ import { makeLaneService } from "../internal/lanes.js"
 
 /** The closed, identity-bearing grammar for deriving a partition key. */
 export const PartitionKey = Schema.Struct({
-  path: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
+  path: Schema.Array(Schema.Union([Schema.String, Schema.Finite])),
 })
 
 /** The closed, identity-bearing grammar for deriving a partition key. */
@@ -159,7 +159,7 @@ export const declare = Effect.fn("Lane.declare")(function*<Event, const Partitio
       refusal.expected,
     )),
   )
-  const parsedKey = Schema.decodeUnknownResult(PartitionKey, {
+  const parsedKey = Schema.decodeResult(PartitionKey, {
     onExcessProperty: "error",
     errors: "first",
   })(options.partitionKey)

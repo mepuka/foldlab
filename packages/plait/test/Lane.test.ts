@@ -5,7 +5,7 @@ import { Effect, Schema } from "effect"
 import { Digest } from "../src/truth/Digest.js"
 import { declare, partition } from "../src/planes/Lane.js"
 
-const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("a".repeat(64))
 
 describe("declared evidence lanes", () => {

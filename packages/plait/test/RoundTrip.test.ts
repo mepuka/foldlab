@@ -15,7 +15,7 @@ const PublisherResultFile = Schema.Struct({
   digests: Schema.Array(Digest),
   duplicate: Schema.Struct({
     digest: Digest,
-    sequence: Schema.Number,
+    sequence: Schema.Finite,
     duplicate: Schema.Boolean,
   }),
 })
