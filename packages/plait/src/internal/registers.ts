@@ -4,8 +4,8 @@
  *
  * @module
  */
-import { StorageType } from "@nats-io/jetstream"
-import { Kvm, type KV, type KvEntry } from "@nats-io/kv"
+import { JetStreamApiError, StorageType, StoreCompression } from "@nats-io/jetstream"
+import { Kvm, type KV, type KvEntry, type KvStatus } from "@nats-io/kv"
 import { Effect, Equal, Result, Schema, Scope } from "effect"
 
 import {
@@ -22,6 +22,16 @@ import {
   type StructuralRefusalKind,
 } from "../truth/Refusal.js"
 import {
+  KV_ALLOW_DIRECT,
+  adminSurface,
+  expiresFacts,
+  expiringAuthorityCarrier,
+  hasPinnedAdminSurface,
+  importsFacts,
+  mirroredAuthorityCarrier,
+  type CarrierSite,
+} from "./carriers.js"
+import {
   KvFailure,
   acquireConnection,
   isCasRefusal,
@@ -31,14 +41,23 @@ import {
 /**
  * NATS KV adapter for the commitment register.
  *
- * Incarnation bound: every claim this adapter's walls make holds within a
- * fixed backing-stream incarnation; administrative lifecycle mutation is
- * outside the credential guard. KV revisions are stream sequences, so a
+ * Incarnation pin (DEV-779). KV revisions are backing-stream sequences, so a
  * bucket delete+recreate resets the token order and a stale holder's
- * `update(expected)` can land on the reborn bucket. The incarnation pin at
- * open (record the backing stream's creation time; refuse on mismatch) is
- * NOT yet implemented — recorded deferral, see packages/plait/DECISIONS.md;
- * the DEV-716 ACL suite is the other half of the guard.
+ * `update(expected)` would otherwise land on the reborn bucket as though its
+ * fence still held. This adapter records the backing stream's incarnation
+ * identity at open and re-asserts it ahead of every action, so no fence
+ * derived from one incarnation is ever honored by another. The assertion runs
+ * BEFORE any staleness comparison: a reborn bucket refuses
+ * `incarnation-mismatch`, never `stale-register-token`, which would name a
+ * current fence the reborn bucket never minted.
+ *
+ * What the pin does not claim: it is a precondition, not a two-phase commit.
+ * A rebirth that lands between the assertion and the CAS is a residual window
+ * of one round trip, which no client-side check can close — the pinned server
+ * publishes no expected-stream-identity precondition to attach to the write.
+ * The DEV-716 ACL suite (application credentials cannot delete or recreate
+ * streams and buckets) is the other half of the guard. See
+ * packages/plait/DECISIONS.md, Task DEV-779.
  */
 
 const StoredOutcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
@@ -115,6 +134,57 @@ const teachReattemptSteal: ReadonlyArray<Next> = [{
   subject: "register.observe",
   note: "Re-read the register at its current revision and re-attempt the expire-steal against it.",
 }]
+const teachReopenRegister: ReadonlyArray<Next> = [{
+  subject: "register.open",
+  note: "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again.",
+}]
+
+/**
+ * The law the pin defends: F5's fencing order is an order within one backing
+ * stream, and a reborn stream is a different one.
+ */
+const incarnationLaw =
+  "A fencing token is honored only by the backing-stream incarnation that minted it."
+
+/**
+ * The backing stream's incarnation identity.
+ *
+ * `StreamInfo.created` is the strongest identity the pinned
+ * `@nats-io/jetstream@3.4.0` publishes. Its `StreamInfo` carries `config`,
+ * `created`, `state`, `cluster`, `mirror`, `sources`, `alternates`, and `ts`,
+ * and none of them is a server-minted stream UID: `config.name` is the bucket's
+ * own name and identical across incarnations by construction,
+ * `config.metadata` carries only the server's `_nats.level`/`_nats.req.level`/
+ * `_nats.ver` rows, and every `state` field moves under ordinary writes.
+ * `created` is the one field fixed for a stream's whole life and re-minted by
+ * its rebirth.
+ *
+ * `null` is the answer for a status a server did not stamp. It refuses rather
+ * than pins, because pinning an empty identity would compare equal to every
+ * later empty identity and leave a guard that guards nothing.
+ */
+const incarnationOf = (status: KvStatus): string | null => {
+  const created: unknown = status.streamInfo.created
+  return typeof created === "string" && created !== "" ? created : null
+}
+
+/**
+ * Whether the pinned client answered a stream-info request with "this stream
+ * is not here".
+ *
+ * Classified by operation context plus the API status, never by an error name
+ * (DEV-704 seam rule 2), and read off the published `JetStreamApiError` getter
+ * rather than an unpublished code constant: `@nats-io/jetstream@3.4.0` exports
+ * `JetStreamApiCodes` without a stream-not-found row, and the concrete
+ * `StreamNotFoundError` class is absent from the package entrypoint. On a
+ * stream-info request for one named stream a 404 says exactly one thing, and
+ * that thing is a destroyed incarnation, not a retryable absence.
+ */
+const isMissingStream = (cause: unknown): boolean =>
+  cause instanceof JetStreamApiError && cause.status === 404
+
+/** Where the register carrier is opened, for a named law to address. */
+const registerSite: CarrierSite = { path: ["bucket"], subject: "bucket.ensure" }
 
 const validWork = (work: string): Effect.Effect<string, Refusal> =>
   workPattern.test(work)
@@ -207,6 +277,8 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
       history: REGISTER_HISTORY,
       ttl: 0,
       max_bytes: -1,
+      // Declared, not feature-detected — see the cell carrier's twin.
+      allow_direct: KV_ALLOW_DIRECT,
     }),
     catch: (cause) => transportRefusal("bucket.ensure", cause),
   })
@@ -214,11 +286,15 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
     try: () => bucket.status(),
     catch: (cause) => transportRefusal("bucket.status", cause),
   })
+  const config = status.streamInfo.config
+  if (importsFacts(config)) return yield* mirroredAuthorityCarrier(registerSite, config)
+  if (expiresFacts(config)) return yield* expiringAuthorityCarrier(registerSite, config)
   if (status.storage !== StorageType.File || status.replicas !== 1 ||
-    status.history !== REGISTER_HISTORY || status.ttl !== 0 || status.max_bytes !== -1) {
+    status.history !== REGISTER_HISTORY || status.ttl !== 0 || status.max_bytes !== -1 ||
+    !hasPinnedAdminSurface(config, KV_ALLOW_DIRECT)) {
     return yield* lawRefusal(
       "register-substrate-shape",
-      "The register bucket is file-backed R=1 with 64 retained revisions and no age or size eviction.",
+      "The register bucket is file-backed R=1 with 64 retained revisions, no age or size eviction, and no admin surface beyond it.",
       ["bucket", "config"],
       JSON.stringify({
         storage: status.storage,
@@ -226,21 +302,97 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
         history: status.history,
         ttl: status.ttl,
         max_bytes: status.max_bytes,
+        ...adminSurface(config),
       }),
-      "file/R=1/history=64/ttl=0/max_bytes=-1",
+      "file/R=1/history=64/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap",
       [{
         subject: "bucket.ensure",
-        note: "Configure the register bucket file-backed with one replica, 64 retained revisions, and no age or size eviction.",
+        note: "Configure the register bucket file-backed with one replica, 64 retained revisions, no age or size eviction, and none of the admin surface beyond it.",
         body: {
           storage: StorageType.File,
           replicas: 1,
           history: REGISTER_HISTORY,
           ttl: 0,
           max_bytes: -1,
+          republish: null,
+          subject_transform: null,
+          allow_direct: KV_ALLOW_DIRECT,
+          mirror_direct: false,
+          allow_atomic: false,
+          allow_msg_counter: false,
+          compression: StoreCompression.None,
+          max_msg_size: -1,
         },
       }],
     )
   }
+
+  /**
+   * The incarnation this service is bound to, taken from the status the shape
+   * check already read — so the pin itself costs no extra round trip at open.
+   * An unstamped identity refuses here rather than pinning a value that would
+   * make every later assertion vacuously true.
+   */
+  const pinned = incarnationOf(status)
+  if (pinned === null) {
+    return yield* structuralRefusal({
+      kind: "incarnation-mismatch",
+      law: incarnationLaw,
+      path: ["bucket", "incarnation"],
+      got: "a backing stream that reports no creation time",
+      expected: "a backing stream that reports its creation time",
+      next: teachReopenRegister,
+    })
+  }
+
+  /**
+   * Minted as a literal rather than through `lawRefusal`, so the taught-payload
+   * wall pins this law and this repair byte for byte: the positional helper
+   * builds its record from shorthand properties, which the walk does not see.
+   */
+  const incarnationRefusal = (got: string): Refusal => structuralRefusal({
+    kind: "incarnation-mismatch",
+    law: incarnationLaw,
+    path: ["bucket", "incarnation"],
+    got,
+    expected: pinned,
+    next: teachReopenRegister,
+  })
+
+  /**
+   * Re-reads the backing stream's identity and refuses unless it is still the
+   * incarnation this service pinned at open.
+   *
+   * Every action runs this FIRST, ahead of its own law checks. Ordering is the
+   * whole point: a reborn bucket's revisions restart from one, so a stale token
+   * compared against them would refuse `stale-register-token` naming a
+   * "current" fence that no holder of this register was ever granted. The pin
+   * refuses the question instead of answering it wrongly.
+   *
+   * The cost is one stream-info round trip per action, measured at 0.109ms p50
+   * against the pinned local server — the same order as the `get` each action
+   * already performs (0.093ms p50). That cost is what DECISIONS T6 deferred and
+   * what Task DEV-779 accepts.
+   */
+  const assertIncarnation = (operation: string): Effect.Effect<void, Refusal> =>
+    Effect.flatMap(
+      Effect.tryPromise({
+        try: () => bucket.status(),
+        // A destroyed bucket is not a retryable absence: no future retry can
+        // make the pinned incarnation exist again.
+        catch: (cause) => isMissingStream(cause)
+          ? incarnationRefusal("a destroyed backing stream")
+          : transportRefusal(operation, cause),
+      }),
+      (current) => {
+        const observed = incarnationOf(current)
+        return observed === pinned
+          ? Effect.void
+          : Effect.fail(incarnationRefusal(
+            observed ?? "a backing stream that reports no creation time",
+          ))
+      },
+    )
 
   /**
    * Reconciles one failed `update(presented)` per DEV-704 seam rules 1-2.
@@ -272,8 +424,11 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
     const { operation, work, presented, intended, kind, law, next, cause } = options
     const entry = yield* read(bucket, work)
     if (entry === null) {
-      // Vanishing mid-flight is lifecycle mutation: outside the fixed
-      // backing-stream incarnation this adapter is bounded to.
+      // Vanishing mid-flight is lifecycle mutation. Ask the pin which kind it
+      // was: a bucket reborn under this call refuses on the pin's law, and a
+      // still-pinned incarnation leaves this write's outcome genuinely
+      // ambiguous, which is a transport absence.
+      yield* assertIncarnation(operation)
       return yield* transportRefusal(operation, cause)
     }
     const stored = yield* decode(entry)
@@ -296,6 +451,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
   const grant: RegisterService["grant"] = Effect.fn("Registers.grant")(
     function* (rawWork, holder) {
       const work = yield* validWork(rawWork)
+      yield* assertIncarnation("register.grant")
       const existing = yield* read(bucket, work)
       if (existing !== null) return yield* lawRefusal(
         "duplicate-grant",
@@ -349,6 +505,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
   const renew: RegisterService["renew"] = Effect.fn("Registers.renew")(
     function* (rawWork, token) {
       const work = yield* validWork(rawWork)
+      yield* assertIncarnation("register.renew")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
       // A landed outcome refuses on its own law even when the presented
@@ -392,6 +549,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
   const commit: RegisterService["commit"] = Effect.fn("Registers.commit")(
     function* (rawWork, token, outcome) {
       const work = yield* validWork(rawWork)
+      yield* assertIncarnation("register.commit")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
       if (stored.outcome !== null) return yield* lawRefusal(
@@ -429,6 +587,7 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
   const expireSteal: RegisterService["expireSteal"] = Effect.fn("Registers.expireSteal")(
     function* (rawWork, holder) {
       const work = yield* validWork(rawWork)
+      yield* assertIncarnation("register.expireSteal")
       const entry = yield* requirePresent(yield* read(bucket, work))
       const stored = yield* decode(entry)
       if (stored.outcome !== null) return yield* lawRefusal(
@@ -462,6 +621,10 @@ export const makeRegisterService = Effect.fn("Registers.make")(function* (
   const observe: RegisterService["observe"] = Effect.fn("Registers.observe")(
     function* (rawWork) {
       const work = yield* validWork(rawWork)
+      // `observe` is the taught repair of nearly every register refusal, so it
+      // is pinned too: handing back a reborn bucket's holder and token as this
+      // register's state is the silent answer the pin exists to refuse.
+      yield* assertIncarnation("register.observe")
       const entry = yield* read(bucket, work)
       if (entry === null) return { token: 0, holder: null, outcome: null }
       return yield* stateOf(entry)

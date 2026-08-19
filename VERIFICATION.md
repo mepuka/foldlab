@@ -103,12 +103,24 @@ external side effect: an external call may fire and then fail to land
 its outcome — the register bounds landings, never attempts (ruled G23;
 this sentence rides every action-consuming claim). Non-clustered R=1, single node, local pinned
 nats-server v2.14.4. Per-work-digest registers with no cross-register
-claim. Every runtime claim holds within a fixed backing-stream
-incarnation; administrative lifecycle mutation is outside the
-credential guard — the incarnation pin at register-open is not yet
-implemented (recorded deferral, `packages/plait/DECISIONS.md` T6); the
-DEV-716 ACL suite is the other half of the guard; epoch-bearing tokens
-are ruled out for v0. The corpus↔model bridge checks the exported rows
+claim. Every runtime claim holds within one backing-stream
+incarnation. The TS runtime now ENFORCES that bound rather than
+assuming it (DEV-779, `packages/plait/DECISIONS.md` Task DEV-779,
+discharging the T6 deferral): the backing stream's creation time is
+pinned at open and re-asserted ahead of every action, so a fence minted
+under a destroyed bucket refuses `incarnation-mismatch` — ahead of any
+staleness comparison — with a live chaos wall that deletes and recreates
+the bucket mid-claim and shows the raw substrate accepting the same
+stale token the pin refused. Residuals stated rather than closed: the
+pin is a precondition, not a two-phase commit, so a rebirth landing
+between the assertion and the CAS is a one-round-trip window no
+client-side check can close; two incarnations created inside one
+microsecond would carry the same creation time; the GO twin carries no
+pin, so its bound sentence is unchanged; and the cell and anchor stores
+are argued exempt (T6/T7 of that task), not pinned. Administrative
+lifecycle mutation is still outside the credential guard — the DEV-716
+ACL suite is the other half of the guard; epoch-bearing tokens are ruled
+out for v0. The corpus↔model bridge checks the exported rows
 at one finite interpreted instance; the invariants are proved for all
 instances. Trusted base: cvc5 with proof reconstruction, the corpus
 serializer with its name tables, the exporter binary, the bridge's

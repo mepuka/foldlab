@@ -25,6 +25,8 @@ invalid-partition-key DEV-804
 lane-evidence-mismatch DEV-804
 lane-substrate-shape DEV-804
 payload-substrate-shape DEV-804
+mirrored-authority-carrier DEV-804
+expiring-authority-carrier DEV-804
 invalid-algebra-declaration DEV-804
 invalid-fold-declaration DEV-804
 unearned-commutative-algebra DEV-804
@@ -54,3 +56,4 @@ invalid-petname DEV-804
 not-a-directory DEV-804
 unbound-petname DEV-804
 ambiguous-binding DEV-804
+incarnation-mismatch DEV-804

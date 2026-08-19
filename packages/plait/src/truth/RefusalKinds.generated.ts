@@ -44,6 +44,8 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "lane-evidence-mismatch",
   "lane-substrate-shape",
   "payload-substrate-shape",
+  "mirrored-authority-carrier",
+  "expiring-authority-carrier",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",
@@ -73,6 +75,7 @@ export const STRUCTURAL_REFUSAL_KINDS = [
   "not-a-directory",
   "unbound-petname",
   "ambiguous-binding",
+  "incarnation-mismatch",
 ] as const
 
 /**

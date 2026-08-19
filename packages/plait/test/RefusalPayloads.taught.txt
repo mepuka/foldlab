@@ -26,10 +26,25 @@ packages/plait/src/internal/anchors.ts#3
   next[0].note "Deploy the fold to create or resume its anchor."
 packages/plait/src/internal/anchors.ts#4
   kind "anchor-substrate-shape"
-  law "The anchor bucket is file-backed R=1 with 64 revisions and no age or size eviction."
-  expected "file/R=1/history=64/ttl=0/max_bytes=-1"
+  law "The anchor bucket is file-backed R=1 with 64 revisions, no age or size eviction, and no admin surface beyond it."
+  expected "file/R=1/history=64/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap"
   next[0].subject "Folds.deploy"
-  next[0].note "Restore the ruled flb-fab-anchor bucket shape before deploying folds."
+  next[0].note "Restore the ruled flb-fab-anchor bucket shape, admin surface included, before deploying folds."
+  next[0].body <expression>
+packages/plait/src/internal/carriers.ts#0
+  kind "mirrored-authority-carrier"
+  law "An authority carrier is the sole origin of its facts: its stream imports nothing — no mirror, no sources."
+  expected {"mirror":null,"sources":[]}
+  next[0].subject <expression>
+  next[0].note "Open this carrier against a stream that imports nothing, and declare a replica read-plane carrier for the mirrored copy instead: a mirror stores its origin's facts at its origin's sequence numbers and is locally read-only, so it can be read but never held as an authority (ADR-0009). Sources renumber and carry no journal at all."
+  next[0].body {"mirror":null,"sources":[]}
+packages/plait/src/internal/carriers.ts#1
+  kind "expiring-authority-carrier"
+  law "An authority carrier never expires a fact it carries: a fact the server deletes un-decides every decision that cited it."
+  expected {"allow_msg_ttl":false}
+  next[0].subject <expression>
+  next[0].note "Open this carrier against a stream created with per-message TTL off — the server refuses to clear `allow_msg_ttl` once it is set, so an existing one is replaced, not edited — and carry material that is meant to expire on a carrier no decision reads."
+  next[0].body {"allow_msg_ttl":false}
 packages/plait/src/internal/cells.ts#0
   kind "cell-transport-unavailable"
   law "Transport absence may be retried; lattice-law refusals may not."
@@ -49,10 +64,10 @@ packages/plait/src/internal/cells.ts#2
   next[0].note "Restore the canonical observation array at this key; only cell merges write this bucket."
 packages/plait/src/internal/cells.ts#3
   kind "cell-substrate-shape"
-  law "The cell bucket is file-backed R=1 with one retained revision and no age or size eviction."
-  expected "file/R=1/history=1/ttl=0/max_bytes=-1"
+  law "The cell bucket is file-backed R=1 with one retained revision, no age or size eviction, and no admin surface beyond it."
+  expected "file/R=1/history=1/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap"
   next[0].subject "bucket.ensure"
-  next[0].note "Configure the cell bucket file-backed with one replica, one retained revision, and no age or size eviction."
+  next[0].note "Configure the cell bucket file-backed with one replica, one retained revision, no age or size eviction, and none of the admin surface beyond it."
   next[0].body <expression>
 packages/plait/src/internal/cells.ts#4
   kind "cell-update-contended"
@@ -110,7 +125,7 @@ packages/plait/src/internal/lanes.ts#0
   next[0].note "Reconnect and re-emit; F2 makes duplicate delivery harmless, and the envelope digest is the message id."
 packages/plait/src/internal/lanes.ts#1
   kind "lane-substrate-shape"
-  law "Each declared (lane, partition) has one exact, file-backed R=1 stream with no count, byte, or age eviction."
+  law "Each declared (lane, partition) has one exact, file-backed R=1 stream with no count, byte, or age eviction, and no admin surface beyond it."
   expected <expression>
   next[0].subject "Lane.emit"
   next[0].note "Restore the declared partition stream shape before admitting evidence."
@@ -170,18 +185,30 @@ packages/plait/src/internal/registers.ts#0
   next[0].subject "register.observe"
   next[0].note "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it."
 packages/plait/src/internal/registers.ts#1
+  kind "incarnation-mismatch"
+  law "A fencing token is honored only by the backing-stream incarnation that minted it."
+  expected "a backing stream that reports its creation time"
+  next[0].subject "register.open"
+  next[0].note "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again."
+packages/plait/src/internal/registers.ts#2
+  kind "incarnation-mismatch"
+  law "A fencing token is honored only by the backing-stream incarnation that minted it."
+  expected <expression>
+  next[0].subject "register.open"
+  next[0].note "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again."
+packages/plait/src/internal/registers.ts#3
   kind "stale-register-token"
   law "renew requires the current fencing token"
   expected <absent>
   next[0].subject "register.observe"
   next[0].note "Observe the register for the current token and holder; this lease is superseded; do not renew with this token."
-packages/plait/src/internal/registers.ts#2
+packages/plait/src/internal/registers.ts#4
   kind "stale-register-token"
   law "no stale token ever lands"
   expected <absent>
   next[0].subject "register.observe"
   next[0].note "Observe the register for the current token and landed outcome; this round is superseded; do not retry this commit."
-packages/plait/src/internal/registers.ts#3
+packages/plait/src/internal/registers.ts#5
   kind "concurrent-register-update"
   law "expire-steal grants a strictly larger token from the current revision"
   expected <absent>

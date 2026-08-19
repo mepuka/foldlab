@@ -60,19 +60,26 @@ const SharedRefusalFields = {
  * The projection is emitted as `RefusalKinds.generated.ts` — a sibling in
  * `truth/` — rather than imported from `kernel/`, because `truth/` is the
  * deepest plane and imports only itself.
+ *
+ * One re-export, not a const beside a type alias. `StructuralRefusalKind` is a
+ * merged value-and-type name, and TypeScript admits one export declaration per
+ * exported NAME across both meanings (TS2323/TS2484), so the const and a
+ * re-exported type cannot stand together under it. The re-export is the half
+ * that had to win: it carries the schema and the type it admits, and both
+ * resolve to `RefusalKinds.generated.d.ts`, where the public-type census can
+ * read the ancestry back. A `typeof GeneratedStructuralRefusalKind.Type` alias
+ * — the spelling this replaces — is this file's own declaration, and DEV-800
+ * round 2 measured that the census credits it here rather than to the
+ * generator.
  */
-export const StructuralRefusalKind: typeof GeneratedStructuralRefusalKind =
-  GeneratedStructuralRefusalKind
-
-/** Every structural refusal kind the package can mint. */
-export type StructuralRefusalKind = typeof GeneratedStructuralRefusalKind.Type
+export { StructuralRefusalKind } from "./RefusalKinds.generated.js"
 
 /** A permanent statement that input violated a pinned structural law. */
 export class StructuralRefusal extends Schema.TaggedError<StructuralRefusal>()(
   "StructuralRefusal",
   {
     sort: Schema.Literal("structural"),
-    kind: StructuralRefusalKind,
+    kind: GeneratedStructuralRefusalKind,
     ...SharedRefusalFields,
   },
 ) {}

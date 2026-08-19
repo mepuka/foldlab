@@ -162,8 +162,9 @@ over real NATS KV revision CAS with verdict, law-name and observed-state
 equality. Rung: R3 plus the replay wall; **R4 stays reserved** at the
 15,378-schedule bar and no R4 language attaches until a lockstep run at that bar
 exists. Bounds: safety only; single non-clustered node, R=1, file storage; every
-runtime claim holds within a fixed backing-stream incarnation, and the
-incarnation pin at register-open is a recorded deferral. Full row and residuals:
+runtime claim holds within a fixed backing-stream incarnation, which the
+register now enforces — the incarnation pin at register-open landed with
+DEV-779, refusing `incarnation-mismatch` on a reborn bucket. Full row and residuals:
 `VERIFICATION.md`, "The Plait register (F5)".
 
 **One DX note from running it.** The fencing token is the KV entry revision, and

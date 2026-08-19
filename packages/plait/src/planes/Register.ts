@@ -34,10 +34,14 @@ export interface RegisterOptions extends ConnectionBootstrap {}
 /**
  * The five-action register surface walled against the proved Veil model.
  *
- * Every claim holds within a fixed backing-stream incarnation;
- * administrative lifecycle mutation is outside the credential guard. The
- * incarnation pin at open is a recorded deferral (DECISIONS); the DEV-716
- * ACL suite is the other half of the guard.
+ * Every claim holds within one backing-stream incarnation, and the live layer
+ * now enforces that rather than assuming it: the incarnation is pinned at open
+ * and re-asserted ahead of every action, so a fence minted under a destroyed
+ * bucket refuses `incarnation-mismatch` instead of landing on its reborn
+ * successor (DECISIONS, Task DEV-779). The pin is a precondition, not a
+ * two-phase commit — a rebirth landing between the assertion and the CAS is a
+ * residual one-round-trip window — and the DEV-716 ACL suite is the other half
+ * of the guard.
  */
 export interface RegisterService {
   readonly grant: (work: string, holder: string) => Effect.Effect<RegisterState, Refusal>
