@@ -180,7 +180,7 @@ mirror advances then empties, shrinking daemon 2's resolvable set from
 in its checked set and does NOT violate it — losing a prefix and forging
 one are different sins, and the model separates them.
 
-## R3 inductive proof (IN RE-PROOF at repaired bounds — claim HELD, 2026-08-13)
+## R3 inductive proof (CLAIMED at the repaired bounds, 2026-08-19)
 
 `CatalogInd.tla` strengthens the five R2 state invariants with one
 **CAS-freshness clause**: a pending create whose expected own-journal
@@ -202,15 +202,54 @@ natural maxima), `data = Gen(2)` under the written append-only cutoff
 argument with `IndInitDataDeep` as its empirical insensitivity
 control. The proof fixes the configured cardinalities at 2 daemons,
 3 values, and 2 creators; it does **not** claim arbitrary cardinality.
-Re-proof at these bounds is running on two platforms (`run-ind.sh` /
-`run-ind.ps1` is the gate; `WORKLOG.md` and `_runlogs/` carry the
-verbatim records). The claim upgrades in VERIFICATION.md only when
-those verdicts land.
+The re-proof at these bounds RAN and PASSED on 2026-08-19 — nine
+verdicts, all as required, recorded below; `run-ind.sh` / `run-ind.ps1`
+is the gate, and `WORKLOG.md` and `_runlogs/` carry the verbatim
+records. That run is the Windows arm; the macOS arm the earlier entry
+promised is owed and is named as a residual in VERIFICATION.md.
 
 Toolchain: Apalache 0.61.0 (build 831d473), jar sha256
 `33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346`,
 on Temurin/OpenJDK 21.0.2 via `mise x java@21.0.2`. The commands below
 use `APALACHE_JAR` for the verified release jar.
+
+### The claim: the repaired-bounds run (2026-08-19, Windows 11 x64)
+
+`bash verify/catalog/run-ind.sh`, one uninterrupted gate invocation,
+exit code 0. The jar sha256 reproduced the value recorded above exactly,
+so the tool pin is confirmed rather than asserted, and the release
+tarball's own sha256 matched
+`68fb56dd9d053cf21d692fd7ec3fbaaeba1395661ec7434fa2b4c47e6fc432b8`.
+Hypothesis: catalog `Gen(3)`, mirror `Gen(4)`, data `Gen(2)`, creators
+`Gen(4)`; domains 2 daemons / 3 values / 2 creators, `DataCap = 0`.
+
+| # | Run | Init / invariant / length | Verdict | Wall |
+|---|---|---|---|---:|
+| 0 | CANARY: blind ingress refuted from the concrete `Init` | `Init` / `AdmissionStep` / 1, blind config | **Error, required** | 7s |
+| 1 | base: `Init => IndInv` | `Init` / `IndInv` / 0 | NoError | 6s |
+| 2 | consecution: `IndInv /\ Next => IndInv'` | `IndInit` / `IndInv` / 1 | NoError | 5,776s |
+| 4 | action safety: admission + monotonicity | `IndInit` / `SafetySteps` / 1 | NoError | 684s |
+| 3 | TRIPWIRE (not an obligation): state safety still conjoined | `IndInit` / `StateSafety` / 0 | NoError | 423s |
+| 5 | CONTROL: consecution without CAS freshness | `IndInitSansFreshness` / `Convergence` / 1 | **Error, required** | 131s |
+| 6 | CONTROL: action safety under blind ingress | `IndInit` / `AdmissionStep` / 1, blind config | **Error, required** | 74s |
+| 6b | CONTROL (independence): blind ingress must NOT disturb monotonicity | `IndInit` / `MonotonicityStep` / 1, blind config | NoError | 653s |
+| 7 | CONTROL (insensitivity): consecution at data `Gen(3)` | `IndInitDataDeep` / `IndInv` / 1 | NoError | 4,503s |
+
+Three live obligations, one tripwire, three controls, and one
+insensitivity control — the gate passes only on all of them together,
+and it fails on a flip in either direction, a control that comes back
+green included. Obligation 2 is the verdict external review C4 put in
+doubt: at `Gen(2)` it had been discharged over a strict subset of
+`IndInv`, and at `Gen(3)` — the exact natural maximum — it still returns
+`NoError`, so the repair cost the invariant nothing. Control 7 agrees
+with obligation 2, which is what the data cutoff argument predicts; a
+verdict that had MOVED between them would have refuted the argument and
+been a finding.
+
+### First pass at `catalog = Gen(2)` — RETAINED AS HISTORY, not the claim
+
+These are the verdicts external review C4 found under-covered. They are
+kept because the repair is only legible beside them.
 
 | # | Obligation | Init / invariant / length | Verdict | Time |
 |---|---|---|---|---:|
