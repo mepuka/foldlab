@@ -1,0 +1,91 @@
+
+── closed inventories: cardinality and wire spelling ─────────────
+AGREE  declaration kinds  sketch 12 / generated 12
+AGREE  hole stages  sketch 5 / generated 5
+AGREE  refusal reasons  sketch 16 / generated 16
+
+── taught-refusal rows: law / repair / applicability, exact strings 
+DRIFT    unfenced-decide.repair
+         sketch:    "hold the register token and commit with it; grant and renew are runtime liveness, not grammar"
+         generated: "hold the register's token and commit with it; grant and renew are runtime liveness, not grammar"
+DRIFT    off-writ-referent.law
+         sketch:    "a declaration identifiers lie inside the universe its writ pins"
+         generated: "a declaration's identifiers lie inside the universe its writ pins"
+DRIFT    closure-introspection.law
+         sketch:    "a program identity is its declaration, never its closure bytes"
+         generated: "a program's identity is its declaration, never its closure bytes"
+
+3 text drift(s) across 16 taught rows
+
+── the meaning field ─────────────────────────────────────────────
+generated tables carry 60 draft-meaning markers
+the sketch carries      0
+taught refusals 16 + runtime structural kinds 44 = 60 spellings in the generated vocabulary
+the sketch projects 16
+
+── the eight generators: field names, per generator ──────────────
+AGREE  generator tags  sketch 8 / generated 8
+DRIFT  declare
+        model:  kind, value, writ
+        sketch: kind, value, writ_digest
+DRIFT  resolve
+        model:  kind, target
+        sketch: kind, digest
+DRIFT  emit
+        model:  lane, body
+        sketch: lane_digest, body
+DRIFT  join
+        model:  cell, contribution
+        sketch: cell_digest, contribution
+DRIFT  fold
+        model:  declared, partition, anchor, query
+        sketch: reduction_digest, partition, anchor, query
+        the declaration form carries no reference for: partition, anchor
+DRIFT  decide
+        model:  register, token, outcome
+        sketch: register_digest, token, outcome
+        the declaration form carries no reference for: token
+DRIFT  trigger
+        model:  predicate, declaration
+        sketch: predicate, declaration_digest
+        the declaration form carries no reference for: predicate
+DRIFT  spawn
+        model:  parent, request
+        sketch: parent_writ_digest, request_writ_digest
+
+── the discriminant ──────────────────────────────────────────────
+sketch discriminant key:  "act"  (values declare, resolve, emit, ...)
+runtime discriminant key: "_tag" (the door switches on candidate._tag / act._tag)
+sketch trigger production: "outcome-landed"  (key "production", kebab-case)
+runtime trigger tag:       "outcomeLanded" (key "_tag", camelCase)
+
+── the number domain / carrier ───────────────────────────────────
+model carrier, per the generated brand table:
+   Digest(kind) carrier Nat
+   Token(register) carrier Nat
+   Position(partition) carrier Nat
+   AnchorFact(declared,partition) — no single carrier, no scalar alias
+generated alias default carrier: number  (KernelDigest<Kind, Carrier = number>)
+generated builder carrier:       bigint  (KernelDigestRef.id, literal.value, hole.name)
+the door's carrier:              bigint  (identity labels stay bigint through the door)
+the sketch's carrier:            string  (Digest<K> = string & brand; Value = string)
+the sketch's scalars:            number  (fence, floor, head, shard, hole, name)
+the builder's provenance format: 2
+the tables' provenance format:   2
+
+── the brand mechanism ───────────────────────────────────────────
+generated: string-literal brand keys —
+   KernelBrand<Tag> = { readonly "~foldlab/plait/kernel/Brand": Tag }
+   the tables say why: that is how the estate's pinned Effect release
+   spells a type identity.
+sketch:    unique symbol brand keys —
+   declare const KIND: unique symbol; Digest<K> = string & { [KIND]: K }
+generated per-kind aliases: 12 (SchemaDigest ... LanguageDigest)
+sketch per-kind aliases:    0 (one parameterised Digest<K>)
+
+── provenance shape ──────────────────────────────────────────────
+tables:  {"corpus":"64afd406f040a419f7c4192906944f7abb75def21fb7c729980d3035508456ed","format":"2n"}
+builder: {"command":"bun run generate:kernel-builder","corpus":"packages/plait/fixtures/kernel-conformance.ndjson","format":"2n","generator":"verify/unity emit","source":"verify/kernel"}
+
+── total ─────────────────────────────────────────────────────────
+14 drift row(s) between the sketch and the generated vocabulary.
