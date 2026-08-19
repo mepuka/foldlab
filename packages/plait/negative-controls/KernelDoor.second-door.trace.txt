@@ -5,3 +5,7 @@ host-candidate-surface: src/carriage/SecondDoor.surface.ts:4 declares an admissi
 form-twin: src/carriage/SecondDoor.twin.ts:1 declares "KernelCandidateAct", a hand-written twin of the shared candidate form
 unbound-form-name: src/planes/SecondDoor.unbound.ts:1 names "KernelCandidateAct" without importing it from the one door or the generated schema module
 stale-pin: the route pin names "src/carriage/CasDaemon.ts", which declares no admission route outside the one door
+unguarded-seam: src/kernel/KernelIdentity.ts:85 converts BigInt(`0x${address}`) outside the digest domain guard — the trusted-base seam translates only behind the digest domain guard
+throwing-guard: src/kernel/KernelIdentity.ts:86 throws throw new Error("not a digest") — the seam refuses in the error channel and never throws on the meaning path
+second-identity-site: src/carriage/SecondBase.identity.ts:2 converts BigInt(`0x${digestHex}`) — a second reading of runtime digest bytes as an identity label, and no reviewed pin row owns it
+stale-identity-pin: the identity-site pin names "src/carriage/CasDaemon.ts", which reads no runtime digest bytes as an integer

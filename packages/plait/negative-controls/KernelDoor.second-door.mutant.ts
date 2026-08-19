@@ -28,6 +28,7 @@ import {
   readGeneratedExports,
   readRoutePin,
   sweepModule,
+  sweepSeam,
   type DoorForm,
   type KernelDoorEvidence,
   type ModuleFindings,
@@ -39,6 +40,8 @@ const read = (path: string): Promise<string> => Bun.file(resolve(packageRoot, pa
 const doorSource = await read(KERNEL_DOOR_PATHS.door)
 const generatedSource = await read(KERNEL_DOOR_PATHS.generatedSchemas)
 const pinSource = await read(KERNEL_DOOR_PATHS.routePin)
+const seamSource = await read(KERNEL_DOOR_PATHS.seam)
+const sitePinSource = await read(KERNEL_DOOR_PATHS.sitePin)
 
 const generatedExports = readGeneratedExports(
   generatedSource,
@@ -46,6 +49,8 @@ const generatedExports = readGeneratedExports(
 )
 const form = readDoorForm(doorSource, KERNEL_DOOR_PATHS.door)
 const pin = readRoutePin(pinSource, KERNEL_DOOR_PATHS.routePin)
+const seam = sweepSeam(seamSource, KERNEL_DOOR_PATHS.seam)
+const sitePin = readRoutePin(sitePinSource, KERNEL_DOOR_PATHS.sitePin)
 
 /**
  * The shipped modules the pin's liveness clause is evaluated against. Only the
@@ -53,7 +58,12 @@ const pin = readRoutePin(pinSource, KERNEL_DOOR_PATHS.routePin)
  * has its route, and one clean host, so the stale-pin arm has a module that
  * carries routes and violates nothing.
  */
-const shipped: ReadonlyArray<string> = ["src/planes/Address.ts", "src/carriage/CasDaemon.ts"]
+const shipped: ReadonlyArray<string> = [
+  "src/planes/Address.ts",
+  "src/carriage/CasDaemon.ts",
+  "src/kernel/KernelIdentity.ts",
+  "src/planes/Lane.ts",
+]
 const baselineModules: Array<ModuleFindings> = []
 for (const modulePath of shipped) {
   baselineModules.push(sweepModule(await read(modulePath), modulePath, form))
@@ -84,6 +94,23 @@ const FORM_TWIN = `export interface KernelCandidateAct { readonly _tag: string }
 const UNBOUND_FORM_NAME = `export const judged = (candidate: KernelCandidateAct): boolean => candidate !== undefined
 `
 
+/** A second reading of digest bytes as an identity, at a module nothing pins. */
+const SECOND_IDENTITY_SITE = `export const identityOf = (digestHex: string): bigint =>
+  BigInt(\`0x\${digestHex}\`)
+`
+
+/** The seam with its guard removed: the ungrilled shape, which throws on "". */
+const UNGUARDED_SEAM = seamSource
+  .replace("  const guarded = yield* decodeRefusing(Digest)(address)\n", "")
+  .replace("BigInt(`0x${guarded}`)", "BigInt(`0x${address}`)")
+
+/** The seam guarding by throwing rather than by refusing in the error channel. */
+const THROWING_SEAM = seamSource.replace(
+  "  const guarded = yield* decodeRefusing(Digest)(address)",
+  "  const guarded = yield* decodeRefusing(Digest)(address)\n"
+    + "  if (guarded.length === 0) throw new Error(\"not a digest\")",
+)
+
 const planted = (modulePath: string, source: string): ModuleFindings =>
   sweepModule(source, modulePath, form)
 
@@ -92,6 +119,8 @@ const withModule = (modulePath: string, source: string): KernelDoorEvidence => (
   form,
   modules: [...baselineModules, planted(modulePath, source)],
   pin,
+  seam,
+  sitePin,
 })
 
 /**
@@ -111,7 +140,14 @@ const driftedForm = (): DoorForm =>
 const arms: ReadonlyArray<{ readonly name: string; readonly evidence: () => KernelDoorEvidence }> = [
   {
     name: "door-form-drift",
-    evidence: () => ({ generatedExports, form: driftedForm(), modules: baselineModules, pin }),
+    evidence: () => ({
+      generatedExports,
+      form: driftedForm(),
+      modules: baselineModules,
+      pin,
+      seam,
+      sitePin,
+    }),
   },
   {
     name: "private-verdict",
@@ -140,6 +176,45 @@ const arms: ReadonlyArray<{ readonly name: string; readonly evidence: () => Kern
       form,
       modules: baselineModules,
       pin: [...pin, { module: "src/carriage/CasDaemon.ts", ticket: "DEV-763" }],
+      seam,
+      sitePin,
+    }),
+  },
+  {
+    name: "unguarded-seam",
+    evidence: () => ({
+      generatedExports,
+      form,
+      modules: baselineModules,
+      pin,
+      seam: sweepSeam(UNGUARDED_SEAM, KERNEL_DOOR_PATHS.seam),
+      sitePin,
+    }),
+  },
+  {
+    name: "throwing-guard",
+    evidence: () => ({
+      generatedExports,
+      form,
+      modules: baselineModules,
+      pin,
+      seam: sweepSeam(THROWING_SEAM, KERNEL_DOOR_PATHS.seam),
+      sitePin,
+    }),
+  },
+  {
+    name: "second-identity-site",
+    evidence: () => withModule("src/carriage/SecondBase.identity.ts", SECOND_IDENTITY_SITE),
+  },
+  {
+    name: "stale-identity-pin",
+    evidence: () => ({
+      generatedExports,
+      form,
+      modules: baselineModules,
+      pin,
+      seam,
+      sitePin: [...sitePin, { module: "src/carriage/CasDaemon.ts", ticket: "DEV-772" }],
     }),
   },
 ]

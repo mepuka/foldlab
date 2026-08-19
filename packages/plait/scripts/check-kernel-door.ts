@@ -24,6 +24,7 @@ import {
   readGeneratedExports,
   readRoutePin,
   sweepModule,
+  sweepSeam,
   type ModuleFindings,
 } from "./kernel-door-containment.js"
 
@@ -91,6 +92,11 @@ const check = Effect.fn("KernelDoor.check")(function* () {
           await read(KERNEL_DOOR_PATHS.routePin),
           KERNEL_DOOR_PATHS.routePin,
         ),
+        seam: sweepSeam(await read(KERNEL_DOOR_PATHS.seam), KERNEL_DOOR_PATHS.seam),
+        sitePin: readRoutePin(
+          await read(KERNEL_DOOR_PATHS.sitePin),
+          KERNEL_DOOR_PATHS.sitePin,
+        ),
       }
     },
     catch: (cause) => new CheckFailure({ message: messageOf(cause) }),
@@ -104,7 +110,9 @@ const check = Effect.fn("KernelDoor.check")(function* () {
   yield* Console.log(
     `ONE DOOR: PASS (${evidence.form.form.length} generated form roles;`
       + ` ${checked.routes} admission routes over ${checked.modules} swept modules,`
-      + ` ${checked.pinned} pinned outside the door)`,
+      + ` ${checked.pinned} pinned outside the door;`
+      + ` ${checked.translations} identity translations, ${evidence.sitePin.length} pinned,`
+      + ` ${evidence.seam.guarded} guarded at the seam)`,
   )
 })
 

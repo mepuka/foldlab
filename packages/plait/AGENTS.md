@@ -204,5 +204,22 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   and must fail for its committed reasons. The wall states what can be SPELLED:
   runtime route identity is `KernelDoor.routes.test.ts`'s, and a route reached
   only through an object spread is that test's to hold, not this one's.
+- `src/kernel/KernelIdentity.ts` is the ONE guarded trusted-base seam between a
+  runtime content address and a model identity label (operator ruling A1,
+  2026-08-19, board DEV-772). Its guard is `truth/Digest.ts`'s own schema run
+  through `Refusal.decodeRefusing`: the width and alphabet are never restated
+  here, because the corpus states no hex width at all — the generated
+  `KernelDigest` says a real digest "stays in the trusted base" — so the runtime
+  domain has exactly one statement and this seam inherits it. The refusal rides
+  the error channel carrying its law and repair; a `throw` on this path is a
+  finding, and so is a second reading of digest bytes as an unbounded natural
+  anywhere under `src/`. `check:kernel-door` enforces all four: every
+  conversion in the seam sits behind the guard, the seam never throws, every
+  hex-prefixed `BigInt` site under `src/` is named in
+  `test/fixtures/kernel-identity-sites.pin.txt`, and a pin row naming no live
+  site reds the wall. `Lane.partition` is pinned there as routing, never
+  identity — it reduces an already-branded `Digest` to a shard index that
+  reaches no candidate. The map is injective on the guarded domain and is the
+  trusted base's, never a theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.

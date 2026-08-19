@@ -21,6 +21,7 @@
     "./FabricClient": "./src/carriage/FabricClient.ts",
     "./Fold": "./src/planes/Fold.ts",
     "./KernelDoor": "./src/kernel/KernelDoor.ts",
+    "./KernelIdentity": "./src/kernel/KernelIdentity.ts",
     "./Lane": "./src/planes/Lane.ts",
     "./Refusal": "./src/truth/Refusal.ts",
     "./Register": "./src/planes/Register.ts",

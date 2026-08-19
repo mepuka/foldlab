@@ -2804,3 +2804,93 @@ a claim is sized to its evidence, and the bound belongs in the module header
 where the next reader meets it rather than in a ticket nobody re-reads.
 **Load-bearing? yes** — the pair of walls is what makes standing law 2's wall
 mechanical; either alone leaves a hole the other closes.
+
+### T5. The guard's domain is the runtime's, because the corpus deliberately has none
+
+Decided (ruling A1, 2026-08-19, board DEV-772): `kernel/KernelIdentity.ts`
+holds `kernelIdentity`, and its width-and-alphabet guard is `truth/Digest.ts`'s
+own schema run through `Refusal.decodeRefusing` — not a `/^[0-9a-f]{64}$/`
+restated in the kernel plane. The ruling asked for the width to be read from
+the generated schema rather than assumed. **Measured: there is none to read.**
+The generated `KernelDigest` is `Schema.Struct({ id: KernelNat })`, and its own
+emitted description says a real digest "is a hash over one canonical byte form"
+that "stays in the trusted base" — the model models identity labels and says
+nothing about hexadecimal, deliberately. So the only statement of the runtime
+digest domain in this package is `truth/Digest.ts:14-15`, and the guard
+inherits it rather than twinning it. Alternatives: hard-code 64 lowercase hex
+in the kernel plane (a second statement of a domain that already has one, and
+the exact hand-written twin Law 1 refuses — it would also silently disagree the
+day the domain moves); derive a width from `KernelNat` (the model's naturals
+are unbounded, so there is no width there to derive); assume the ruling's "64"
+literally and stop reading (it would have been right today and unfounded
+tomorrow). Why: the ruling's intent is that the guard not invent its domain,
+and the honest way to satisfy that here is to inherit the one domain statement
+that exists and to write down that the generated one does not. **Load-bearing?
+yes** — this is the difference between a guard that tracks the digest domain
+and one that agrees with it by coincidence.
+
+### T6. The guard reuses `malformed-value` and mints no vocabulary at all
+
+Decided: the guard refuses through the existing schema-issue bridge, so its
+refusal is `malformed-value` — kind, law, and repair already taught and already
+pinned in `test/RefusalPayloads.taught.txt`. Nothing is added to
+`scripts/kernel-runtime-refusals.ts`, nothing is regenerated, and no model
+refusal reason is minted. The ruling licensed the staged runtime-refusal
+mechanism as a fallback "if no emitted reason fits"; measured, the fallback is
+not needed, because the bridge that mechanism feeds already carries this exact
+meaning: `decodeRefusing(Digest)("")` refuses `malformed-value` teaching "A
+decoded value satisfies its declared schema", which is precisely the law a
+malformed content address fails. Alternatives: mint `malformed-digest` as a new
+DEV-804 staged row (grows the roster, the taught-payload pin, and both
+generated files, to say what an existing spelling already says — and every
+runtime spelling added is persisted wire vocabulary that DEV-804 must later
+converge); reach for a model reason (forbidden by the ruling, and none of the
+sixteen means "this text is not an address"). Why: the cheapest lawful refusal
+is an existing one that is already true, and the ruling's constraint was about
+not minting MODEL vocabulary — honoring it by minting no vocabulary at all
+honors it strictly. **Load-bearing? yes** — a reviewer overruling this pays one
+line in the seam plus a manifest row, and the wall does not change either way.
+*Note for the coordinator: this is the one place I read the ruling's fallback
+as permission rather than instruction.*
+
+### T7. Ruling A1's clauses are four, and the second site is pinned rather than refused
+
+Decided: the wall gains four clauses — the seam's conversions all sit behind the
+domain guard; the seam contains no `throw`; no unpinned module under `src/`
+reads digest bytes as an unbounded natural; and the identity pin names only live
+sites. An identity translation is defined as a `BigInt(...)` call over a
+hex-prefixed argument. Measured, the tree already carries a SECOND such site:
+`Lane.partition` computes `Number(BigInt(\`0x${keyDigest}\`) % BigInt(lane.partitions))`.
+It is not refused, and it is not silently exempted either — it gets a pin row
+saying what it is. It reduces an ALREADY-BRANDED `Digest` to a shard index; the
+result is a routing coordinate that reaches no candidate and names no
+declaration, and the package's own law already governs it ("subjects route and
+envelopes identify"). Alternatives: refuse it and ship the wall red (an
+overclaim — the ruling refuses a second translation into IDENTITY LABELS, and a
+partition index is not one); exempt it inside the checker (a waiver nobody
+reviews, buried in mechanics — the shape T1 already rejected for `Address.ts`);
+widen the rule to `Number.parseInt(_, 16)` as well (it would catch the JSON
+`\uXXXX` unescape in `truth/Canonical.ts`, which cannot carry a 256-bit address
+because it yields a `number` — the bound is stated in the pin instead of
+discovered as noise). Why: a wall that cannot see a site cannot be trusted about
+it, and the pin is where "seen and lawful" is written down separately from
+"seen and refused". **Load-bearing? yes** — the pin's liveness clause means the
+day `Lane.partition` stops converting, the row reds rather than rotting.
+
+### T8. The seam is a subpath export and stays out of the barrel
+
+Decided: `package.json` gains `"./KernelIdentity"` so the module's own example
+is truthful, and `src/index.ts` is NOT touched. The plane-reorg spec's open
+placement 4 rules that "Exporting Kernel* namespaces from index.ts: a real
+surface decision with T7 consequences; stage 3+, its own ticket, not assumed",
+and this ticket has no licence to make it. Measured: the public type quantifier
+is the emitted barrel, so the subpath export moves neither walk — 132 public
+types and 79 emitted signatures before and after. Alternatives: add
+`export * as KernelIdentity` to the barrel (assumes the placement decision the
+spec reserves, and grows the DEV-795 debt ledger with rows nobody ratified);
+ship no export at all (the module docstring's `@example` would name an import
+path that does not resolve, which is a doc that lies). Why: hosts inside the
+package reach the seam directly, which is what "hosts become judgable" needs,
+and the barrel decision stays where the spec put it. **Load-bearing? no** — it
+is reversible in one line, and it is recorded so the reviewer sees it was a
+choice.

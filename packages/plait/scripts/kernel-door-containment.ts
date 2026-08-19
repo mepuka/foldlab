@@ -35,9 +35,27 @@
  *    to be written into the pin, with the ticket that owns its convergence, in
  *    a diff a reviewer reads.
  *
- * The mutation arm is `check:kernel-door-control`: it plants each of the six
- * second-door spellings into the bytes this module parses and requires this
- * same law to refuse each one for the reason committed in the control's trace.
+ * ## The amendment: one guarded trusted-base seam (ruling A1)
+ *
+ * Operator ruling A1 (2026-08-19, board DEV-772) amends standing law 2. A
+ * runtime whose addresses are hex digests cannot build a candidate about them
+ * without a map into the model's identity labels, so the law now ADMITS one
+ * such map — `kernel/KernelIdentity.ts` — and holds it guarded. Two more
+ * artifacts join the four above: the seam's own bytes, read for whether every
+ * conversion sits behind the digest-domain guard and whether anything throws;
+ * and a reviewed identity-site pin naming every place under `src/` that reads
+ * digest bytes as an unbounded natural at all.
+ *
+ * The reason the seam is admitted rather than forbidden is worth stating: the
+ * previous rule forbade the conversion, so every host was doorless — the rule
+ * refused the feature rather than the defect. What the defect actually was is
+ * now checkable: an unguarded `BigInt("0x" + hex)` over a bare `string` throws
+ * on `""`, at the exact seam where a host hands in caller-supplied bytes.
+ *
+ * The mutation arm is `check:kernel-door-control`: it plants each second-door
+ * and each unguarded-seam spelling into the bytes this module parses and
+ * requires this same law to refuse each one for the reason committed in the
+ * control's trace.
  *
  * **Bounds.** This wall reads source bytes, so it states what can be SPELLED
  * in `src/`, never what a running program does: identity of the shipped routes
@@ -58,6 +76,7 @@ export type KernelDoorCheck =
     readonly modules: number
     readonly routes: number
     readonly pinned: number
+    readonly translations: number
   }
   | { readonly ok: false; readonly reason: string }
 
@@ -75,9 +94,22 @@ export const KERNEL_DOOR_PATHS = {
   generatedSchemas: "src/kernel/KernelSchemas.generated.ts",
   /** The reviewed route pin, never a generator input. */
   routePin: "test/fixtures/kernel-door-routes.pin.txt",
+  /** The one guarded trusted-base seam, read as source bytes (ruling A1). */
+  seam: "src/kernel/KernelIdentity.ts",
+  /** The reviewed identity-translation site pin, never a generator input. */
+  sitePin: "test/fixtures/kernel-identity-sites.pin.txt",
   /** The tree the sweep quantifies over. */
   sweepRoot: "src",
 } as const
+
+/** The specifier the seam's guard must take its domain from. */
+export const DIGEST_DOMAIN_SPECIFIER = "../truth/Digest.js"
+
+/** The binding the truth plane gives the runtime content-address domain. */
+export const DIGEST_DOMAIN_BINDING = "Digest"
+
+/** The refusing decoder the guard must run the domain through. */
+export const GUARD_DECODER = "decodeRefusing"
 
 /** The module specifier a host imports the door through, as its bytes spell it. */
 export const DOOR_MODULE_BASENAME = "KernelDoor.js"
@@ -138,6 +170,19 @@ export interface ModuleFindings {
   readonly twins: ReadonlyArray<JudgmentSite>
   /** Uses of a form name that no door or generator import bound. */
   readonly unbound: ReadonlyArray<JudgmentSite>
+  /** Hex-prefixed `BigInt` conversions: runtime digest bytes read as an integer. */
+  readonly translations: ReadonlyArray<JudgmentSite>
+}
+
+/** What the one guarded seam's own bytes said (ruling A1). */
+export interface SeamFindings {
+  readonly module: string
+  /** Identity translations the guard does not enclose. */
+  readonly unguarded: ReadonlyArray<JudgmentSite>
+  /** Throw statements on the meaning path. */
+  readonly throws: ReadonlyArray<JudgmentSite>
+  /** How many translations the guard does enclose. */
+  readonly guarded: number
 }
 
 const quote = (value: string): string => JSON.stringify(value)
@@ -370,7 +415,104 @@ const isMemberPosition = (node: ts.Identifier): boolean => {
 }
 
 /**
- * Sweeps one shipped module's bytes for the four shapes a second door takes.
+ * One identity translation: a `BigInt` conversion over a hex-prefixed
+ * expression, which is how runtime digest bytes are read as an unbounded
+ * natural.
+ *
+ * The rule is scoped to `BigInt` deliberately. `Number.parseInt(_, 16)` yields
+ * a `number` and is structurally incapable of carrying a 256-bit address, so
+ * the JSON `\uXXXX` unescape in `truth/Canonical.ts` is outside this law — a
+ * bound stated here rather than a case quietly skipped in the walk.
+ */
+const isIdentityTranslation = (node: ts.Node): node is ts.CallExpression =>
+  ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+  && node.expression.text === "BigInt"
+  && node.arguments.length > 0 && node.arguments[0]!.getText().includes("0x")
+
+/** The guard: the truth-plane digest domain run through the refusing decoder. */
+const isDomainGuard = (node: ts.Node, domainAlias: string): boolean =>
+  ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+  && node.expression.text === GUARD_DECODER
+  && node.arguments.some((argument) =>
+    ts.isIdentifier(argument) && argument.text === domainAlias
+  )
+
+const enclosingBody = (node: ts.Node): ts.Node | undefined => {
+  let current: ts.Node | undefined = node.parent
+  while (current !== undefined) {
+    if (
+      ts.isFunctionDeclaration(current) || ts.isFunctionExpression(current)
+      || ts.isArrowFunction(current) || ts.isMethodDeclaration(current)
+    ) {
+      return current
+    }
+    current = current.parent
+  }
+  return undefined
+}
+
+const subtreeHas = (root: ts.Node, predicate: (node: ts.Node) => boolean): boolean => {
+  let found = false
+  visitAll(root, (node) => {
+    if (predicate(node)) found = true
+  })
+  return found
+}
+
+/**
+ * Sweeps the one guarded seam's own bytes (ruling A1).
+ *
+ * Two questions, asked separately so a red wall names which one moved: is every
+ * conversion in this file enclosed by the domain guard, and does the file throw
+ * anywhere on the meaning path. The guard is located by the function that
+ * contains it, so a guard moved out of the converting function reads as
+ * unguarded rather than as present-somewhere-in-the-file.
+ */
+export const sweepSeam = (source: string, modulePath: string): SeamFindings => {
+  const file = parse(source, modulePath)
+  let domainAlias: string | undefined
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement)) continue
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue
+    if (!statement.moduleSpecifier.text.endsWith("/Digest.js")) continue
+    const bindings = statement.importClause?.namedBindings
+    if (bindings === undefined || !ts.isNamedImports(bindings)) continue
+    for (const element of bindings.elements) {
+      const imported = element.propertyName?.text ?? element.name.text
+      if (imported === DIGEST_DOMAIN_BINDING) domainAlias = element.name.text
+    }
+  }
+
+  const unguarded: Array<JudgmentSite> = []
+  const throws: Array<JudgmentSite> = []
+  let guarded = 0
+
+  visitAll(file, (node) => {
+    if (ts.isThrowStatement(node)) {
+      throws.push({ module: modulePath, line: lineOf(node), detail: `throws ${describe(node)}` })
+    }
+    if (!isIdentityTranslation(node)) return
+    const body = enclosingBody(node)
+    const isGuarded = domainAlias !== undefined && body !== undefined
+      && subtreeHas(body, (candidate) => isDomainGuard(candidate, domainAlias))
+    if (isGuarded) {
+      guarded += 1
+      return
+    }
+    unguarded.push({
+      module: modulePath,
+      line: lineOf(node),
+      detail: domainAlias === undefined
+        ? `converts ${describe(node)} in a module that never imports the digest domain`
+        : `converts ${describe(node)} outside the digest domain guard`,
+    })
+  })
+
+  return { module: modulePath, unguarded, throws, guarded }
+}
+
+/**
+ * Sweeps one shipped module's bytes for the shapes a second door takes.
  *
  * Every finding carries its line, because a red wall has to name the site it
  * refuses and not merely the file.
@@ -387,6 +529,7 @@ export const sweepModule = (
   const routes: Array<JudgmentSite> = []
   const twins: Array<JudgmentSite> = []
   const unbound: Array<JudgmentSite> = []
+  const translations: Array<JudgmentSite> = []
   let routeCount = 0
 
   const site = (node: ts.Node, detail: string): JudgmentSite => ({
@@ -467,9 +610,14 @@ export const sweepModule = (
     ) {
       unbound.push(site(node, `names ${quote(node.text)}`))
     }
+
+    // Runtime digest bytes read as an unbounded natural (ruling A1).
+    if (isIdentityTranslation(node)) {
+      translations.push(site(node, `converts ${describe(node)}`))
+    }
   })
 
-  return { module: modulePath, verdicts, routes, routeCount, twins, unbound }
+  return { module: modulePath, verdicts, routes, routeCount, twins, unbound, translations }
 }
 
 /**
@@ -494,7 +642,7 @@ export const readRoutePin = (
   return routes
 }
 
-/** The four independent derivations the containment law is evaluated over. */
+/** The independent derivations the containment law is evaluated over. */
 export interface KernelDoorEvidence {
   /** Read from the generated schema module's source bytes. */
   readonly generatedExports: ReadonlyArray<string>
@@ -502,17 +650,23 @@ export interface KernelDoorEvidence {
   readonly form: DoorForm
   /** Read from every other shipped module's source bytes. */
   readonly modules: ReadonlyArray<ModuleFindings>
-  /** Read from the reviewed pin, which is nothing's input. */
+  /** Read from the reviewed route pin, which is nothing's input. */
   readonly pin: ReadonlyArray<PinnedRoute>
+  /** Read from the one guarded seam's source bytes (ruling A1). */
+  readonly seam: SeamFindings
+  /** Read from the reviewed identity-site pin, which is nothing's input. */
+  readonly sitePin: ReadonlyArray<PinnedRoute>
 }
 
 /**
  * The containment law.
  *
- * Six clauses, evaluated in order, each naming the shape it refuses. They are
+ * Ten clauses, evaluated in order, each naming the shape it refuses. They are
  * separate because a red wall has to say which one moved, and because the
  * control plants one spelling per clause and requires exactly that clause to
- * answer.
+ * answer. Clauses 7 to 10 are ruling A1's: the seam is guarded, the seam does
+ * not throw, no unpinned module reads digest bytes as an identity, and the
+ * identity pin names only live sites.
  */
 export const checkKernelDoorContainment = (
   evidence: KernelDoorEvidence,
@@ -607,10 +761,90 @@ export const checkKernelDoorContainment = (
     }
   }
 
+  // 7. The one seam is guarded: every conversion sits behind the digest domain.
+  {
+    const bare = evidence.seam.unguarded[0]
+    if (bare !== undefined) {
+      return {
+        ok: false,
+        reason:
+          `${bare.module}:${bare.line} ${bare.detail} — the trusted-base seam translates only`
+          + ` behind the digest domain guard`,
+      }
+    }
+    if (evidence.seam.guarded === 0) {
+      return {
+        ok: false,
+        reason:
+          `${evidence.seam.module} performs no guarded identity translation, so the wall`
+          + ` would be guarding a seam that is not there`,
+      }
+    }
+  }
+
+  // 8. The guard refuses, it does not throw. A bare throw on the meaning path
+  //    is what ruling A1 exists to refuse.
+  {
+    const thrown = evidence.seam.throws[0]
+    if (thrown !== undefined) {
+      return {
+        ok: false,
+        reason:
+          `${thrown.module}:${thrown.line} ${thrown.detail} — the seam refuses in the error`
+          + ` channel and never throws on the meaning path`,
+      }
+    }
+  }
+
+  const pinnedSites = new Map<string, string>()
+  for (const site of evidence.sitePin) {
+    if (pinnedSites.has(site.module)) {
+      return { ok: false, reason: `the identity-site pin names ${quote(site.module)} twice` }
+    }
+    pinnedSites.set(site.module, site.ticket)
+  }
+
+  // 9. One identity translation site: a second reading of digest bytes as an
+  //    identity label is a second trusted base.
+  for (const findings of evidence.modules) {
+    const translation = findings.translations[0]
+    if (translation === undefined) continue
+    if (pinnedSites.has(findings.module)) continue
+    return {
+      ok: false,
+      reason:
+        `${translation.module}:${translation.line} ${translation.detail} — a second reading of`
+        + ` runtime digest bytes as an identity label, and no reviewed pin row owns it`,
+    }
+  }
+
+  // 10. The identity pin is live too.
+  for (const site of evidence.sitePin) {
+    const findings = evidence.modules.find((module) => module.module === site.module)
+    if (findings === undefined) {
+      return {
+        ok: false,
+        reason: `the identity-site pin names ${quote(site.module)}, which the sweep did not read`,
+      }
+    }
+    if (findings.translations.length === 0) {
+      return {
+        ok: false,
+        reason:
+          `the identity-site pin names ${quote(site.module)}, which reads no runtime digest`
+          + ` bytes as an integer`,
+      }
+    }
+  }
+
   return {
     ok: true,
     modules: evidence.modules.length,
     routes: evidence.modules.reduce((total, findings) => total + findings.routeCount, 0),
     pinned: evidence.pin.length,
+    translations: evidence.modules.reduce(
+      (total, findings) => total + findings.translations.length,
+      0,
+    ),
   }
 }
