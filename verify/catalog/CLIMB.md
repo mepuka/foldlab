@@ -186,7 +186,7 @@ still reads as valid.
 insensitivity control. It corroborates the argument; the argument is
 what licenses the bound.
 
-## Result (repaired)
+## Result (repaired, and re-proved 2026-08-19)
 
 The verdicts at the repaired bounds, the timings, and the run record are
 in `README.md`; the chronological log with every command is
@@ -195,3 +195,14 @@ values, 2 creators, unbounded data journals, arbitrary trace length —
 but it is now discharged over a hypothesis that can express every state
 `IndInv` admits at those domains, which is what the first pass did not
 do.
+
+The re-proof ran and passed: all nine verdicts as required, obligation 2
+returning `NoError` at catalog `Gen(3)` exactly as it had at `Gen(2)`.
+That is the outcome the repair predicted and it is worth naming plainly,
+because it is the one an under-covered hypothesis cannot distinguish
+from success. Candidate B was inductive all along; what was defective
+was the harness's ability to ask it the last question. The lesson the
+next person needs is therefore not about this invariant but about `Gen`:
+a green run over a bound below the natural maximum looks identical to a
+green run over the whole invariant, and only deriving each variable's
+natural maximum and comparing tells them apart.
