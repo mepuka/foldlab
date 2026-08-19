@@ -750,17 +750,18 @@ The KM-4 composition family is a MODEL-LEVEL result and adds no runtime rung:
 it proves what a per-node walk through the one door is, never that the
 carriage's walk is that walk — no correspondence gate ties the two, and none
 is claimed. Its own bounds are one pass by one walker: no concurrency beyond
-the monotone-growth premise, no liveness, no retries, no scheduler. Three
+the monotone-growth premise, no liveness, no retries, no scheduler. Two
 abstractions are stated where the model is thinner than the carriage.
-Completion is total in the model, while the carriage's completion of a node
-into a candidate may instead fail into the error channel (an absent
-execution-time supply, a local consumed before it landed). Carriage itself is
-outside the outcome: an admitted sentence whose carrier is unbound fails into
-the error channel, so the runtime has a third ending the model's two-way
-outcome does not carry. And the program-admission precheck — including the
-refusal of an empty declaration — happens before the walk is entered, where
+Carriage is outside the outcome: an admitted sentence whose carrier is unbound
+fails into the error channel, so the runtime has an ending of its own that the
+model's outcome does not carry. And the program-admission precheck — including
+the refusal of an empty declaration — happens before the walk is entered, where
 the model's walk lands vacuously on the empty node list, which is the unit the
-composition law needs.
+composition law needs. A third abstraction retired under the 2026-08-19 ruling:
+completion is no longer total in the model, so a node the carriage cannot
+complete is the model's own `unspeakable` outcome — with the steps that stood
+before it standing on both sides — rather than an error channel the model has
+no word for.
 
 ### Checkable at
 
