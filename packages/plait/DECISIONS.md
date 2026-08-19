@@ -2699,6 +2699,83 @@ one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
 
+## Task DEV-804 — the generator emits named types
+
+### T0. The alias sits beside its schema, and only the suspended entry's moves
+
+Decided: every mini-AST type in `KernelSchemas.generated.ts` is emitted with a
+named value type. A non-suspended entry's is
+`export type KernelXValue = typeof KernelX.Type`, written immediately after the
+const it names; the one suspended entry keeps the structural alias it already
+had, emitted ahead of the schemas because the annotated const is what refers to
+it. What varies between entries is where the alias sits, never whether it
+exists. Alternatives: emit all twenty-two structurally in the pre-schema block
+(twenty-one restatements of shapes the schemas already carry, each a second
+place one shape can be wrong); emit the suspended entry's alias a second time as
+`typeof KernelCandidatePredicate.Type` (its const is annotated
+`Schema.Codec<KernelCandidatePredicateValue>`, so the alias would be defined
+through itself and the module would not compile). Why: DEV-796's wall,
+`isDeclaredByGeneratedCore`, credits the file a symbol's declarations resolve
+to, so a consumer-side `typeof Generated.X.Type` is the consumer's own
+declaration and traces back to nothing — `KernelDoor.ts` spells seven types
+exactly that way and scores 0 derived. A named type is the only thing a
+consumer can re-export. **Load-bearing? yes** — restoring the suspended-only
+gate regenerates main's file exactly (1 `export type`, not 23) and
+`check:kernel-schemas` reds on the committed bytes.
+
+### T0a. `KernelRef` gets an alias although it has no type record
+
+Decided: the expanded `Ref` abbreviation is emitted with
+`export type KernelRefValue = typeof KernelRef.Type` like every declared type.
+The model spells `Ref` as an abbreviation rather than a declaration, so it
+carries no type record and is not a mini-AST entry; it is nonetheless one of the
+seven types `KernelDoor.ts` restates, so leaving it unnamed would leave that
+family one alias short of derivable for a reason no reader could see.
+Alternatives: emit no alias and let the consumer keep restating it (leaves the
+hole in exactly the family this ticket converts); promote `Ref` to a corpus type
+record (hand-authors model structure). Why: the alias is a projection of a
+schema this generator already emits, so it claims nothing the corpus does not
+already license. **Load-bearing? no** — nothing but that seventh consumer type
+depends on it.
+
+### T1. The anchor element type widens by union, not by dropping the template
+
+Decided: `generatedCoreAnchors` takes the element type
+`` `src/kernel/${string}.generated.d.ts` | `src/truth/${string}.generated.d.ts` ``,
+and `src/truth/RefusalKinds.generated.d.ts` joins the list. DEV-796's T4 fixed
+the template deliberately: an anchor must spell `.generated.d.ts`, so the walk
+cannot be granted authority over a file nothing byte-gates, and
+`KernelCorpusSchemas.d.ts` was struck from the list on exactly that ground. The
+widening preserves that law in full — both arms of the union still end
+`.generated.d.ts`, so a hand-written path stays unrepresentable in either plane.
+What moves is the directory, and the directory moved for a reason the record
+already carries: DEV-808's T0a emits the refusal vocabulary into `truth/` rather
+than importing it up from `kernel/`, because root Law 4 makes `truth/` the
+deepest plane. One generator, two emissions, both byte-gated by
+`check:kernel-tables`; refusing the second emission an anchor would make Law 4's
+compliance cost Law 1's credit. Alternatives: relax the element type to
+`` `${string}.generated.d.ts` `` (admits a generated file in any plane, gated or
+not); move `RefusalKinds.generated.ts` into `kernel/` (undoes DEV-808 T0a and
+re-crosses Law 4); leave the list alone and let the truth-plane vocabulary stay
+debt permanently (the union it names is generated, so the ledger would record a
+falsehood about it). Why: the law T4 states is about what byte-gates a file, not
+about which directory the file sits in. **Load-bearing? yes** — measured:
+appending `"src/truth/Refusal.d.ts"` and `"src/kernel/KernelCorpusSchemas.d.ts"`
+to the list reds `tsgo -p packages/plait/tsconfig.json --noEmit` with two TS2322
+diagnostics naming both spellings, so the unrepresentability T4 bought survives
+the widening intact.
+
+### T2. The ledger's authority prose is left to the lane that owns the ledger
+
+Decided: `renderInventory`'s authority line still reads
+`` (`src/kernel/*.generated.d.ts`) `` and is deliberately not updated in this
+branch. That line is generated into `test/PublicTypeUniverse.inventory.md`,
+which the concurrent DEV-805 lane is rewriting; editing it here would move the
+committed ledger's bytes under another lane for prose alone. Reported as
+untouched rather than quietly fixed, and owed to whichever lane lands second.
+**Load-bearing? no** — this branch does not move the census (132 total, 0
+derived, 132 debt before and after), so the ledger is byte-identical either way
+and only the sentence describing the rule is stale.
 ## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
 
 ### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
