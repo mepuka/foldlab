@@ -25,10 +25,17 @@ import (
 // needs no authority.
 
 // The gates a readiness observation can name. Both are the pinned vendor's own
-// surface, transcribed: the readiness gate the vendor exports, and the vendor's
-// in-process health read with JetStream enablement requested.
-const (
-	GateReadyForConnections = "ReadyForConnections"
+// surface: the readiness gate the vendor exports, and the vendor's in-process
+// health read with JetStream enablement requested.
+//
+// The first is READ FROM THE WIRE VOCABULARY, reached by the vendor's own
+// qualified identifier so the entry point's name is stated once in the estate.
+// The second is spelled here because the lifecycle table does not carry it: the
+// lifecycle contract's vocabulary sentence names ten entry points and the health
+// read is not one of them — it is the carriage this gate's own row leans on, and
+// a table that quietly grew an eleventh row would be a table nobody declared.
+var (
+	GateReadyForConnections = mustLifecycleEntry("server.Server.ReadyForConnections").Name()
 	GateHealthz             = "Healthz"
 )
 

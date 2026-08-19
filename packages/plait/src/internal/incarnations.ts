@@ -11,6 +11,7 @@ import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import { structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
+import { WIRE_STATUS_BY_DECLARATION } from "./wirevocabulary.js"
 
 /**
  * The substrate-incarnation fence — one server run over one store directory.
@@ -220,12 +221,14 @@ export const establishedFact = (
 })
 
 /**
- * The pinned vendor's own name for the drain disposition, carried verbatim.
+ * The pinned vendor's own name for the drain disposition, READ FROM THE WIRE
+ * VOCABULARY rather than spelled again here.
  *
- * The estate invents no name here: this is the event type the vendor's status
- * vocabulary publishes and the estate's status table already transcribes.
+ * The row is reached by the vendor's own type-alias name for the status event,
+ * so the event name is stated once in the estate and travels out of the table
+ * instead of into the query.
  */
-export const LAME_DUCK_EVENT = "ldm"
+export const LAME_DUCK_EVENT = WIRE_STATUS_BY_DECLARATION.LDMStatus.type
 
 /** One incarnation's drain disposition, as a fact about one session. */
 export interface IncarnationLameDuck {

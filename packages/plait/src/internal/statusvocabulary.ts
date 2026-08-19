@@ -51,11 +51,19 @@
  *    one-pump-per-connection fence is a fence against double-minting and not
  *    against silent loss.
  *
- * Staged debt, the same shape the substrate roster carries: this table is
- * hand-carried transcription and owes the substrate-vocabulary emitter group,
- * which the corpus does not yet mint. It is transcription with provenance
- * until that group exists, never a twin of one.
+ * **The transcription table is no longer stated here.** It was, and it was one
+ * of two statements of the same eleven rows once the wire vocabulary carried
+ * them too. Two statements of one table in one language is a twin however
+ * carefully they are kept in step, so the rows below are ABSORBED from the wire
+ * vocabulary's own status group — same rows, same order, same spelling, one
+ * statement — and what this module adds is the machine over them.
+ *
+ * Staged debt, the same shape the substrate roster carries: the absorbed table
+ * is hand-carried transcription and owes the substrate-vocabulary emitter
+ * group, which the corpus does not yet mint. It is transcription with
+ * provenance until that group exists, never a twin of one.
  */
+import { WIRE_STATUS_EVENTS } from "./wirevocabulary.js"
 
 /** Where one transcribed payload field's value comes from at the pin. */
 export type StatusFieldSort =
@@ -101,7 +109,7 @@ export interface StatusEventRow {
 }
 
 /**
- * The pin the table below was transcribed at, carried as data.
+ * The pin the absorbed table was transcribed at, carried as data.
  *
  * A version is a pin and not a location: a reader checks the table against the
  * declaration the named package version ships, which is what the transcription
@@ -114,96 +122,39 @@ export const STATUS_VOCABULARY_PIN = {
 } as const
 
 /**
- * Every status event the pinned client declares, transcribed whole.
+ * Every status event the pinned client declares, ABSORBED from the wire
+ * vocabulary rather than stated a second time.
  *
- * Rows are in the pin's declaration order. Each row's `declaration` is the
- * vendor's own alias name, so a row resolves to a declaration rather than to a
- * position, and a reordering that kept the names would still be caught.
+ * Rows are in the order the wire vocabulary carries them, which is the pinned
+ * client's own declaration order. Each row's `declaration` is the vendor's own
+ * alias name, so a row resolves to a declaration rather than to a position, and
+ * a reordering that kept the names would still be caught.
+ *
+ * The projection keeps exactly the four columns this module's machine reads.
+ * The wire vocabulary's rows carry more — a provenance pin, a wire shape, a
+ * promotion note — and those belong to the vocabulary rather than to the
+ * machine built over it.
  */
-export const STATUS_EVENTS = [
-  {
-    type: "disconnect",
-    declaration: "DisconnectStatus",
-    payload: [{ name: "server", sort: "string", optional: false }],
-    placement: "transition",
-  },
-  {
-    type: "reconnect",
-    declaration: "ReconnectStatus",
-    payload: [{ name: "server", sort: "string", optional: false }],
-    placement: "transition",
-  },
-  {
-    type: "reconnecting",
-    declaration: "ReconnectingStatus",
-    payload: [],
-    placement: "transition",
-  },
-  {
-    type: "update",
-    declaration: "ClusterUpdateStatus",
-    payload: [
-      { name: "added", sort: "string-list", optional: true },
-      { name: "deleted", sort: "string-list", optional: true },
-    ],
-    placement: "observation",
-  },
-  {
-    type: "ldm",
-    declaration: "LDMStatus",
-    payload: [{ name: "server", sort: "string", optional: false }],
-    placement: "transition",
-  },
-  {
-    type: "error",
-    declaration: "ServerErrorStatus",
-    payload: [{ name: "error", sort: "error-object", optional: false }],
-    placement: "observation",
-  },
-  {
-    type: "ping",
-    declaration: "ClientPingStatus",
-    payload: [{ name: "pendingPings", sort: "number", optional: false }],
-    placement: "observation",
-  },
-  {
-    type: "staleConnection",
-    declaration: "StaleConnectionStatus",
-    payload: [],
-    placement: "transition",
-  },
-  {
-    type: "forceReconnect",
-    declaration: "ForceReconnectStatus",
-    payload: [],
-    placement: "transition",
-  },
-  {
-    type: "slowConsumer",
-    declaration: "SlowConsumerStatus",
-    payload: [
-      { name: "sub", sort: "subscription", optional: false },
-      { name: "pending", sort: "number", optional: false },
-    ],
-    placement: "observation",
-  },
-  {
-    type: "close",
-    declaration: "CloseStatus",
-    payload: [],
-    placement: "transition",
-  },
-] as const satisfies ReadonlyArray<StatusEventRow>
+export const STATUS_EVENTS: ReadonlyArray<StatusEventRow> = WIRE_STATUS_EVENTS.map((row) => ({
+  type: row.type,
+  declaration: row.declaration,
+  payload: row.payload.map((field) => ({
+    name: field.name,
+    sort: field.sort,
+    optional: field.optional,
+  })),
+  placement: row.placement,
+}))
 
 /**
- * Every transcribed event name, derived from the table.
+ * Every transcribed event name, derived from the absorbed table.
  *
  * The type is a PROJECTION of the data and never a second statement of it: a
  * hand-written union standing beside the table is the refused alternative, and
- * deriving it here means a row appended tomorrow widens the type by
- * construction.
+ * deriving it from the wire vocabulary's own rows means a row appended tomorrow
+ * widens the type by construction.
  */
-export type StatusEventType = (typeof STATUS_EVENTS)[number]["type"]
+export type StatusEventType = (typeof WIRE_STATUS_EVENTS)[number]["type"]
 
 /**
  * Which fact form one transition row emits.
