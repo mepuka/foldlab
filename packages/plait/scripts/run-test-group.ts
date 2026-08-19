@@ -56,6 +56,21 @@ if (files.length === 0) throw new Error(`plait ${requested} test group is empty`
  */
 const workers = requested === "walls" ? ["--parallel=4"] : []
 
+/**
+ * The wall group fans out into the workers above, and each worker loads the
+ * harness in its own process. The harness resolves the pinned server as it
+ * loads, so no row is ever charged for a compile — but four workers starting
+ * together on a cold Go build cache would start four of them. Resolving it once
+ * here, before the fan-out, leaves each worker a cached binary to check against
+ * the pin instead of a compiler to wait on. The fast group never imports the
+ * harness, which is the same fact the partition above reads, so this arm is the
+ * only one that pays.
+ */
+if (requested === "walls") {
+  const { buildServerBinary } = await import("../test/NatsHarness.js")
+  await buildServerBinary()
+}
+
 const run = Bun.spawnSync({
   cmd: ["bun", "test", ...workers, ...files],
   cwd: packageRoot,
