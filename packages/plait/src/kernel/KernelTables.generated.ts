@@ -3,7 +3,7 @@
  *
  * GENERATED FILE - DO NOT EDIT.
  *
- * Corpus:  533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c
+ * Corpus:  b5a7c9ba123dc2e3e28c209a63752ed9129600e19b7960e3847f60416b1762d3
  * Format:  interchange format 2
  *
  * That digest is this module's whole provenance, and it is a digest rather
@@ -42,7 +42,7 @@
  * been a hope.
  */
 export const KERNEL_TABLE_PROVENANCE = {
-  corpus: "533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c",
+  corpus: "b5a7c9ba123dc2e3e28c209a63752ed9129600e19b7960e3847f60416b1762d3",
   format: 2n,
 } as const
 
