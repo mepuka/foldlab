@@ -15,11 +15,13 @@ if ! command -v lake >/dev/null 2>&1; then
 fi
 
 for required in lean-toolchain lakefile.toml lake-manifest.json Unity.lean \
-    ControlMain.lean EmitMain.lean ConformanceCheck.lean \
+    ControlMain.lean EmitMain.lean TsMain.lean ConformanceCheck.lean \
     Unity/Definitions.lean Unity/Laws.lean Unity/Proofs.lean \
     Unity/Canon.lean Unity/Program.lean Unity/Shape.lean \
     Unity/Reflect.lean Unity/Emit.lean \
-    Unity/Check.lean Unity/Dsl.lean citations.txt; do
+    Unity/Check.lean Unity/Dsl.lean \
+    Unity/Sha.lean Unity/Ts.lean Unity/TsKernel.lean \
+    refusal-meanings.ndjson surface-digests.ndjson citations.txt README.md DECISIONS.md; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
     exit 1
@@ -30,33 +32,36 @@ done
 # builds only because something else happens to import it is a module
 # the gate does not really cover.
 for module in Unity Unity.Canon Unity.Program Unity.Shape Unity.Reflect \
-    Unity.Emit Unity.Check Unity.Dsl; do
+    Unity.Emit Unity.Check Unity.Dsl Unity.Sha Unity.Ts Unity.TsKernel; do
   if ! grep -q "\"$module\"," lakefile.toml; then
     echo "GATE: FAIL — $module is not in the library globs" >&2
     exit 1
   fi
 done
 
-# Toolchain unanimity: one pin across the bridge and both models.
+# Toolchain unanimity: one pin across the bridge, both models, and the
+# projection toolkit.
 for toolchain in lean-toolchain ../fabric/lean-toolchain \
-    ../kernel/lean-toolchain; do
+    ../kernel/lean-toolchain ../projections/lean-toolchain; do
   if ! grep -q 'leanprover/lean4:v4.33.0' "$toolchain"; then
     echo "GATE: FAIL — toolchain pin moved in $toolchain" >&2
     exit 1
   fi
 done
 
-# The bridge's manifest names exactly the two models, by path, nothing
-# else: no network dependency can appear without reddening this gate.
-if [[ "$(grep -c '"type": "path"' lake-manifest.json)" -ne 2 ]] ||
+# The bridge's manifest names exactly the two models and the projection
+# toolkit, by path, nothing else: no network dependency can appear
+# without reddening this gate.
+if [[ "$(grep -c '"type": "path"' lake-manifest.json)" -ne 3 ]] ||
     grep -q '"type": "git"' lake-manifest.json ||
     ! grep -q '"name": "fabric"' lake-manifest.json ||
-    ! grep -q '"name": "kernel"' lake-manifest.json; then
-  echo "GATE: FAIL — the bridge must require exactly fabric and kernel by path" >&2
+    ! grep -q '"name": "kernel"' lake-manifest.json ||
+    ! grep -q '"name": "projections"' lake-manifest.json; then
+  echo "GATE: FAIL — the bridge must require exactly fabric, kernel and projections by path" >&2
   exit 1
 fi
 
-# Both upstream manifests stay zero-dependency: the bridge asserts from
+# Both model manifests stay zero-dependency: the bridge asserts from
 # the dependent side what each model's own gate asserts from inside.
 for manifest in ../fabric/lake-manifest.json ../kernel/lake-manifest.json; do
   if ! grep -Eq '"packages"[[:space:]]*:[[:space:]]*\[\]' "$manifest"; then
@@ -65,23 +70,37 @@ for manifest in ../fabric/lake-manifest.json ../kernel/lake-manifest.json; do
   fi
 done
 
-# No reverse mention: neither model's gate may come to depend on this
-# package — coupling stays one-directional and rollback stays a
-# directory deletion.
-if grep -q 'unity' ../fabric/run.sh ../kernel/run.sh; then
+# The toolkit's own topology, asserted from the dependent side: it
+# requires exactly the kernel, so consuming its AST here cannot drag a
+# third tree in behind it.
+if [[ "$(grep -c '"type": "path"' ../projections/lake-manifest.json)" -ne 1 ]] ||
+    grep -q '"type": "git"' ../projections/lake-manifest.json ||
+    ! grep -q '"name": "kernel"' ../projections/lake-manifest.json; then
+  echo "GATE: FAIL — the projection toolkit must require exactly kernel by path" >&2
+  exit 1
+fi
+
+# No reverse mention: neither model's gate nor the toolkit's may come to
+# depend on this package — coupling stays one-directional and rollback
+# stays a directory deletion.
+if grep -q 'unity' ../fabric/run.sh ../kernel/run.sh ../projections/run.sh; then
   echo "GATE: FAIL — an upstream gate mentions the bridge" >&2
+  exit 1
+fi
+if grep -rqE '^import[[:space:]]+Unity' ../projections/Projections ../projections/Main.lean; then
+  echo "GATE: FAIL — the projection toolkit imported the bridge" >&2
   exit 1
 fi
 
 # Upstream sources byte-identical to the committed tree: requiring is
 # not touching.
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if ! git diff --quiet -- ../fabric ../kernel; then
-    echo "GATE: FAIL — an upstream model tree moved" >&2
+  if ! git diff --quiet -- ../fabric ../kernel ../projections; then
+    echo "GATE: FAIL — an upstream tree moved" >&2
     exit 1
   fi
 fi
-echo "GATE: PASS (topology: two read-only path requires, both models untouched)"
+echo "GATE: PASS (topology: three read-only path requires, every upstream tree untouched)"
 
 # Portable array read: macOS ships bash 3.2, which has no mapfile, and a
 # gate only one host can run is not a gate.
@@ -89,7 +108,7 @@ lean_sources=()
 while IFS= read -r lean_file; do
   lean_sources+=("$lean_file")
 done < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
-lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ConformanceCheck.lean)
+lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean TsMain.lean ConformanceCheck.lean)
 
 # Kernel-bound source hygiene, at the kernel's own word list.
 if grep -nE "(^|[^A-Za-z0-9_'])(sorry|partial|panic|implemented_by|extern|native_decide|unsafe|axiom|seal)($|[^A-Za-z0-9_'])|panic!" \
@@ -280,7 +299,25 @@ probe_check=$(mktemp "./.footprint.XXXXXX") && mv "$probe_check" "$probe_check.l
 corpus_first=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_first" "$corpus_first.ndjson" && corpus_first="$corpus_first.ndjson"
 corpus_second=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_second" "$corpus_second.ndjson" && corpus_second="$corpus_second.ndjson"
 corpus_mutant=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_mutant" "$corpus_mutant.ndjson" && corpus_mutant="$corpus_mutant.ndjson"
-trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$probe_check" "$corpus_first" "$corpus_second" "$corpus_mutant"' EXIT
+ts_first=$(mktemp "./.surface.XXXXXX")
+ts_second=$(mktemp "./.surface.XXXXXX")
+ts_mutant=$(mktemp "./.surface.XXXXXX")
+ts_backup=$(mktemp "./.surface.XXXXXX")
+ts_reason=$(mktemp "./.surface.XXXXXX")
+ts_roster_mutant=$(mktemp "./.surface.XXXXXX")
+
+# A mutation arm edits a source file in place, so a run that dies mid-arm
+# must put it back: the restore rides the same EXIT handler the temporary
+# files do, and a gate that left the tree edited would be worse than one
+# that failed.
+ts_mutated=""
+restore_ts() {
+  if [[ -n "$ts_mutated" ]]; then
+    cp -- "$ts_backup" "$ts_mutated"
+    ts_mutated=""
+  fi
+}
+trap 'restore_ts; rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$probe_check" "$corpus_first" "$corpus_second" "$corpus_mutant" "$ts_first" "$ts_second" "$ts_mutant" "$ts_backup" "$ts_reason" "$ts_roster_mutant"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
 grep -rhoE "^[[:space:]]*(@\[[^]]+\][[:space:]]*)?(theorem|lemma)[[:space:]]+[A-Za-z0-9_']+" \
@@ -537,6 +574,218 @@ check_falsification stale-program-bytes \
 check_falsification unresolvable-consumption \
   's/\\"to\\":1}/\\"to\\":9}/; s/{\\"arg\\":\\"local\\",\\"name\\":1}}/{\\"arg\\":\\"local\\",\\"name\\":9}}/; s/"to":1}/"to":9}/; s/{"arg":"local","name":1}}/{"arg":"local","name":9}}/' \
   'erases to a program node admission refuses'
+
+# ---------------------------------------------------------------------------
+# The TypeScript surfaces.
+#
+# The target grammar lives in Unity/Ts.lean and its one printer beside it; the
+# generators in Unity/TsKernel.lean fold three inputs into it — the corpus this
+# package emits, the projection AST walked over the emitter's own manifest, and
+# the reviewed refusal roster read as data. The wall is bytes: each surface is
+# emitted twice, the two emissions must agree, and both must equal the file
+# committed in the runtime package. A divergence is a FINDING about which side
+# is right, never a licence to overwrite the committed file.
+#
+# The provenance a surface carries is the corpus's own digest, derived here by
+# this package's SHA-256 over the bytes the emitter prints. No path and no
+# command reaches an emitted surface.
+# ---------------------------------------------------------------------------
+ts_roster="refusal-meanings.ndjson"
+ts_tables="../../packages/plait/src/kernel/KernelTables.generated.ts"
+ts_vocabulary="../../packages/plait/src/truth/RefusalKinds.generated.ts"
+
+emit_surface() {
+  lake exe ts --target="$1" --meanings="$ts_roster" > "$2"
+}
+
+declare -a exercised_surfaces=()
+check_surface() {
+  local target="$1"
+  local committed="$2"
+  if [[ ! -f "$committed" ]]; then
+    echo "GATE: FAIL — the committed $target surface is missing" >&2
+    exit 1
+  fi
+  if ! emit_surface "$target" "$ts_first"; then
+    echo "GATE: FAIL — the $target emission refused" >&2
+    exit 1
+  fi
+  if ! emit_surface "$target" "$ts_second"; then
+    echo "GATE: FAIL — the $target emission refused on the second run" >&2
+    exit 1
+  fi
+  if ! cmp -s "$ts_first" "$ts_second"; then
+    echo "GATE: FAIL — the $target emission is not deterministic across two runs" >&2
+    exit 1
+  fi
+  if ! diff -u "$committed" "$ts_first"; then
+    echo "GATE: FAIL — the committed $target surface is not a fresh emission" >&2
+    echo "FINDING: intended change — regenerate and commit the surface IN THE SAME COMMIT as the change" >&2
+    echo "FINDING: unintended change — report the finding and STOP; never edit the surface to agree" >&2
+    exit 1
+  fi
+  exercised_surfaces+=("$target")
+  echo "GATE: PASS ($target: two emissions byte-identical, and equal to the committed surface)"
+}
+
+check_surface kernel-tables "$ts_tables"
+check_surface refusal-kinds "$ts_vocabulary"
+
+# The em dash survives VERBATIM on this target, and it is the only code point
+# outside ASCII either surface carries. The prose register folds it to two
+# hyphens; applying that fold here would move six lines across the four
+# generated files, so the rule is walled rather than remembered.
+for surface in "$ts_tables" "$ts_vocabulary"; do
+  if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne 2 ]]; then
+    echo "GATE: FAIL — $surface lost an em dash the target carries verbatim" >&2
+    exit 1
+  fi
+  stray=$(LC_ALL=C tr -d '\11\12\40-\176' < "$surface" | LC_ALL=C tr -d '\342\200\224' | wc -c | tr -d ' ')
+  if [[ "$stray" -ne 0 ]]; then
+    echo "GATE: FAIL — $surface carries a code point outside ASCII that is not the em dash" >&2
+    exit 1
+  fi
+done
+echo "GATE: PASS (the em dash rides through verbatim; no other code point leaves ASCII)"
+
+# The digest register. This side states what each surface hashes to and what
+# corpus it was projected from; the runtime package's battery, which carries no
+# Lean toolchain, hashes the files it holds and compares. The register is
+# proven fresh here, and every digest in it is cross-checked against a host
+# digest tool — an independent implementation of the same standard, which is
+# what keeps Unity/Sha.lean from agreeing only with itself.
+host_digest() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  else
+    echo ""
+  fi
+}
+if [[ -z "$(host_digest "$fixture")" ]]; then
+  echo "GATE: FAIL — no host digest tool, so the emitter's SHA-256 has no outside oracle" >&2
+  exit 1
+fi
+if ! lake exe ts --target=surface-digests --meanings="$ts_roster" > "$ts_first"; then
+  echo "GATE: FAIL — the digest register refused to emit" >&2
+  exit 1
+fi
+if ! diff -u surface-digests.ndjson "$ts_first"; then
+  echo "GATE: FAIL — the committed digest register is not a fresh emission" >&2
+  exit 1
+fi
+while IFS=$'\t' read -r label registered; do
+  measured=$(host_digest "$label")
+  if [[ "$measured" != "$registered" ]]; then
+    echo "GATE: FAIL — the register names $registered for $label; the host hashes $measured" >&2
+    exit 1
+  fi
+done < <(
+  printf '%s\t%s\n' \
+    "$fixture" "$(grep '"record":"corpus"' surface-digests.ndjson | sed 's/.*"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_tables" "$(grep '"target":"kernel-tables"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_vocabulary" "$(grep '"target":"refusal-kinds"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
+)
+echo "GATE: PASS (digest register fresh; the corpus and both surfaces hash as registered under a host oracle)"
+
+# Falsification of the printer itself. Each arm edits ONE constant or ONE rule
+# in this package's own sources, rebuilds, and demands that the emitted surface
+# MOVE — then restores and demands it come back byte-identically. An arm whose
+# anchor stopped matching fails loudly rather than passing vacuously.
+declare -a exercised_ts_mutations=()
+check_ts_mutation() {
+  local name="$1"
+  local file="$2"
+  local expression="$3"
+  local target="$4"
+  local committed="$5"
+  local reason="$6"
+  cp -- "$file" "$ts_backup"
+  if ! sed "$expression" "$ts_backup" > "$file" || cmp -s "$ts_backup" "$file"; then
+    cp -- "$ts_backup" "$file"
+    echo "GATE: FAIL — ts mutation $name did not change $file; its anchor stopped matching" >&2
+    exit 1
+  fi
+  ts_mutated="$file"
+  if ! lake build ts >/dev/null 2>&1; then
+    restore_ts
+    lake build ts >/dev/null 2>&1 || true
+    echo "GATE: FAIL — ts mutation $name did not build" >&2
+    exit 1
+  fi
+  emit_surface "$target" "$ts_mutant" || true
+  if cmp -s "$committed" "$ts_mutant"; then
+    restore_ts
+    lake build ts >/dev/null 2>&1 || true
+    echo "GATE: FAIL — ts mutation $name did not move the surface: $reason" >&2
+    exit 1
+  fi
+  restore_ts
+  if ! lake build ts >/dev/null 2>&1; then
+    echo "GATE: FAIL — ts mutation $name did not rebuild after restore" >&2
+    exit 1
+  fi
+  emit_surface "$target" "$ts_first"
+  if ! cmp -s "$committed" "$ts_first"; then
+    echo "GATE: FAIL — ts mutation $name did not restore byte-identically" >&2
+    exit 1
+  fi
+  exercised_ts_mutations+=("$name")
+  echo "GATE: PASS (ts mutation $name: $reason)"
+}
+
+check_ts_mutation meaning-wrap-column Unity/Ts.lean \
+  's/column := 88/column := 87/' \
+  refusal-kinds "$ts_vocabulary" \
+  "the drafted meanings are wrapped at the pinned column, not at whatever fits"
+check_ts_mutation binder-role Unity/TsKernel.lean \
+  's/field.role == .brand/field.role == .typeArgument/' \
+  kernel-tables "$ts_tables" \
+  "the branded aliases are selected by the walked binder role, not by a name list"
+check_ts_mutation corpus-digest Unity/TsKernel.lean \
+  's|lines ++ "\\n"|lines|' \
+  kernel-tables "$ts_tables" \
+  "the provenance digest is taken over the corpus's own bytes, final newline included"
+check_ts_mutation refusal-ancestry Unity/TsKernel.lean \
+  's/else "staged-debt"/else "kernel-corpus"/' \
+  kernel-tables "$ts_tables" \
+  "each runtime spelling's ancestry is resolved against the corpus, never assumed"
+
+# The roster is reviewed data, so the reconciliation between it and the corpus
+# must refuse rather than default in both directions.
+declare -a exercised_ts_refusals=()
+check_ts_refusal() {
+  local name="$1"
+  local expression="$2"
+  local reason="$3"
+  sed "$expression" "$ts_roster" > "$ts_roster_mutant"
+  if cmp -s "$ts_roster" "$ts_roster_mutant"; then
+    echo "GATE: FAIL — ts roster probe $name did not change the roster" >&2
+    exit 1
+  fi
+  if lake exe ts --target=kernel-tables --meanings="$ts_roster_mutant" \
+      >/dev/null 2>"$ts_reason"; then
+    echo "GATE: FAIL — ts roster probe $name was accepted by the emitter" >&2
+    exit 1
+  fi
+  if ! grep -qF "$reason" "$ts_reason"; then
+    cat "$ts_reason" >&2
+    echo "GATE: FAIL — ts roster probe $name refused for the wrong reason" >&2
+    exit 1
+  fi
+  exercised_ts_refusals+=("$name")
+  echo "GATE: PASS ($name refused: $reason)"
+}
+
+check_ts_refusal unexplained-reason \
+  '/"reason":"clock-read"/d' \
+  'corpus refusal reason clock-read carries no reviewed meaning'
+check_ts_refusal duplicated-kind \
+  '/"kind":"digest-mismatch"/p' \
+  'the roster names a runtime refusal kind twice'
+
+echo "GATE: PASS (${#exercised_surfaces[@]} TypeScript surfaces at byte parity; ${#exercised_ts_mutations[@]} printer mutations moved and restored; ${#exercised_ts_refusals[@]} roster reconciliations refused)"
 
 # The must-not-compile class: each control file must be REFUSED by the
 # elaborator with its pinned diagnosis, and its witness twin must

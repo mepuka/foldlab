@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "projections",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "../projections",
+   "configFile": "lakefile.toml"},
+  {"type": "path",
+   "scope": "",
    "name": "kernel",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

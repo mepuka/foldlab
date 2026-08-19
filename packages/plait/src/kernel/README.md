@@ -27,13 +27,18 @@ live under `../../test/` is gone; the replay targets the shipping door.
 `KernelIdentity.ts` is the one guarded seam reading a runtime content address as
 a model identity label (ruling A1), and it judges nothing.
 
-The emitted four come from `../../fixtures/kernel-conformance.ndjson`, which
-`verify/unity`'s emitter writes out of the `verify/kernel` model. From
-`packages/plait`: `bun run generate:kernel-tables` (likewise `-schemas`,
-`-builder`, `-sdk`), and `generate:kernel-prose` for the prose under
+The emitted set comes from `../../fixtures/kernel-conformance.ndjson`, which
+`verify/unity`'s emitter writes out of the `verify/kernel` model. Two of them
+are also emitted there — `KernelTables.generated.ts` and its truth-plane half —
+so regenerate those with that emitter, which documents its targets beside them.
+From `packages/plait`: `bun run generate:kernel-schemas`,
+`generate:kernel-builder`, and `generate:kernel-sdk`, and
+`generate:kernel-prose` for the prose under
 `docs/generated/`. Never hand-edit a kind, a rank, a taught law, or a repair.
 
 Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
+`check:kernel-surfaces` holds the model-emitted pair to the digests its gate
+registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
 and an absence control the emitted vectors cannot carry. Those four and
