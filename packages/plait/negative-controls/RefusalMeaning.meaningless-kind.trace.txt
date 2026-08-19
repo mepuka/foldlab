@@ -1,0 +1,3 @@
+runtime structural refusal kind "meaningless-refusal" carries no standing meaning; every refusal kind states what it means and what that implies
+runtime structural refusal kind "non-canonical-value" renders its meaning behind "Meaning:" rather than "Draft meaning (pending DEV-825 taste pass):"; only the DEV-825 taste pass retires that marker
+the prose page's standing meaning for "clock-read" is not the one the generated modules carry

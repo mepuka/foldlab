@@ -3972,3 +3972,158 @@ without a ruling. (c) Every check is still open-time. A config mutated after the
 carrier opened is invisible to all three gates, exactly as scorecard item 1's
 residue says; the standing-invariant ticket owns that and this one does not
 claim it.
+
+## Task DEV-825 — the kind-meaning mechanism
+
+Placeholders `T0`–`T7` are task-local; repository D-numbers are assigned at
+merge.
+
+### T0. The drafting voice: declarative present, two sentences, fact then implication
+
+Decided: every one of the 59 drafted meanings is written in one register —
+declarative present tense, estate vocabulary, at most two sentences, the first
+naming what fact the kind names and the second what that implies or protects.
+No sentence addresses a reader, none carries a repair, and none paraphrases the
+`law` text the same kind teaches at refusal time. Alternatives: mirror the
+refusal-time teaching's imperative voice (would make the two registers
+indistinguishable, which is the one thing the operator's requirement is
+against); a single sentence throughout (loses the implication half, which is
+where the estate lesson lives); free length (unreviewable as a set — the
+operator's sitting reads 59 of these in a row, and an uneven register turns a
+taste pass into a copy-edit). The register was recommended by the dispatch and
+is not overridden by the requirement comment, which is silent on voice.
+**Load-bearing? yes** — the sentences are what the taste pass rules on, and a
+mixed register would be ruled on as prose rather than as vocabulary.
+
+### T1. A meaning is a doc comment, not a data field
+
+Decided: the roster row carries `meaning: string` (the coordinator-pinned
+shape), and every projection renders it as a DOC COMMENT — over each literal in
+`STRUCTURAL_REFUSAL_KINDS`, over each row of `KERNEL_REFUSALS` and
+`KERNEL_RUNTIME_STRUCTURAL_REFUSALS`, and as a paragraph on the prose page.
+Nothing gains a runtime field. Alternatives: add `meaning` to
+`KernelRefusalRow` and to the runtime ancestry row (would put unratified prose
+into a shipped data shape, so a consumer could read it, depend on it, and be
+broken by the taste pass); a separate generated meanings module (a fourth
+artifact for one string per kind). Why: a doc comment is where a reader and an
+agent both meet the kind, it costs no public type — `check:type-universe`
+reports the same 132 classified types and the same ratchet pins before and
+after — and it can be rewritten wholesale at the taste pass without a wire
+change. The roster's own shape did move, from a string array to
+`{ kind, meaning }` rows; nothing but `kernel-tables.ts` consumed it.
+**Load-bearing? yes** — it is what keeps drafts out of the shipped data shape.
+
+### T2. The emitted reasons get meanings too, in the same reviewed file
+
+Decided: the 16 refusal reasons the kernel model emits get meanings on the same
+terms as the 43 runtime kinds, in a second reviewed ledger
+(`KERNEL_REFUSAL_REASON_MEANINGS`) beside the roster in
+`scripts/kernel-runtime-refusals.ts`. The dispatch rules this the default when
+the operator's requirement comment is silent on emitted reasons, and it is —
+the comment says "every minted refusal kind" and names only runtime spellings
+in its retroactive list. Alternatives: cover the runtime kinds only (leaves the
+model's own vocabulary, which is the half a reader of the prose page meets
+FIRST, unexplained); put the meanings in the corpus (impossible and forbidden —
+the corpus is the model's emission, this package cannot edit it, and it carries
+no field a meaning could ride in); a separate `scripts/refusal-meanings.ts`
+(two files for one reviewed ledger, and the cross-seat merge surface doubles).
+The generator resolves the ledger against the corpus in both directions and
+refuses either gap. **Load-bearing? yes** — it decides the mechanism's domain,
+and a later ruling to narrow it would have to delete rows rather than add them.
+
+### T3. The prose page gains a runtime-kinds section, and says which of its text is not the model's
+
+Decided: `docs/generated/kernel-language.generated.md` renders each emitted
+reason's meaning inside that reason's existing section, beside its law and
+repair, and gains a new `## Runtime structural refusal kinds` section carrying
+all 43 runtime spellings with their ancestry and their meanings. The page's
+header gains a paragraph saying, in as many words, that the meanings are the
+one thing on the page that is NOT the model's text. Alternatives: render
+meanings for the emitted reasons only (the runtime kinds would have no prose
+home at all, and the operator's requirement names them first); a second page
+for the runtime vocabulary (a second artifact and a second wall for one
+section). Why: the page opened by promising every word on it is the model's
+own, reproduced verbatim; adding house prose without retracting that promise
+would make the page lie about itself, which is worse than the gap it fills.
+**Load-bearing? yes** — the retraction is what keeps the page honest now that
+it has two sources.
+
+### T4. The meaning law reads three artifacts' bytes, and the ancestry law is left alone
+
+Decided: `checkRefusalMeanings` is a second law beside `checkRefusalVocabulary`
+in the same wall, reading the meanings back out of three sets of committed
+bytes — the truth-plane union's source, the kernel table's source, and the
+rendered page's — with the emitted reasons themselves still read from the
+corpus fixture's bytes. It never consults the reviewed roster the generators
+read. Alternatives: check the roster module's values (self-comparison: the
+generator's input agreeing with the generator's input); fold the clauses into
+`checkRefusalVocabulary` (a red wall would stop naming which of ancestry and
+meaning moved). Why the page is the third read and not a convenience: the page
+is rendered by `render-kernel-prose.ts` and the modules by `kernel-tables.ts`,
+two renderers, so requiring them to agree byte for byte is what catches one
+projection dropping, truncating, or reflowing a meaning the other renders in
+full. **Load-bearing? yes** — without the independent reads the law would be a
+tautology over one value.
+
+### T5. `check:kernel-prose` joins the battery, because a projection outside it is unwalled
+
+Decided: `check:kernel-prose` is added to `test:fast`, which is what `bun run
+gates` reaches through `test:packages`. It existed as a script and sat in no
+chain, so the committed page's byte-identical regeneration was proven by
+nothing before this ticket. Alternatives: leave it out and let the meaning law
+alone hold the page (that law compares meanings, not the whole page, so every
+other rendered word would stay unwalled); wire it into `test:walls` (that group
+is the real-NATS suite, and a pure byte check does not belong behind a
+substrate). Cited: root law 9 — a generated artifact needs a check wired into
+the battery. **Load-bearing? yes** — it converts a claim about the page into a
+gate arm, and it is what makes the page usable as the meaning law's third
+artifact.
+
+### T6. One plant per clause, and the fourth clause's absence is stated rather than hidden
+
+Decided: `negative-controls/RefusalMeaning.meaningless-kind.mutant.ts` plants
+three mutations into the bytes of the artifacts the wall parses — a kind with
+no meaning, a shipped meaning whose marker line was rewritten, and a page
+meaning rewritten to a paraphrase — and each is refused on its own clause, with
+all three reasons committed in one trace. The fourth clause, one name and one
+meaning across both registers, has NO plant, and the mutant's header says so:
+no name is carried by both registers at this pin — all 43 runtime kinds are
+staged debt and none of the 16 emitted reasons spells one of them — so making
+the two disagree would mean inventing a roster row. Alternatives: plant only
+the meaningless kind (the dispatch's floor, but it leaves the marker law, which
+is the clause the taste-pass ruling will flip, with no evidence it can fail);
+synthesise a shared name for clause 3 (a control planting a kind the estate
+does not have proves a law over a vocabulary that does not exist).
+**Load-bearing? yes** — the marker arm is the only evidence that the draft pin
+is a wall and not a comment.
+
+### T7. `unwrapAssertions` learns `satisfies`
+
+Decided: the wall's expression unwrapper now sees past `satisfies` as well as
+`as` and the older type-assertion form, because `KERNEL_REFUSALS` is written
+`[...] as const satisfies ReadonlyArray<KernelRefusalRow>` and a reader that
+stopped at the annotation reported "not an array literal" over a file that
+plainly carries one. Alternatives: a second unwrapper for the new readers (two
+spellings of one operation, and the next reader picks the wrong one); drop
+`satisfies` from the generated table (the annotation is what makes the
+generated rows type-check against the row interface, and dropping it to please
+a parser inverts which side is the authority). The widening cannot make the
+ancestry law pass where it failed: it only lets the reader reach a literal it
+previously refused to look at, and every element check still runs.
+**Load-bearing? no** — mechanical, but recorded because it moves a shared
+reader every clause of the wall depends on.
+
+**Stated residual.** Four things this ticket does NOT do. (a) The sentences are
+DRAFTS. Nothing here pins them: the marker is on every one, the wall requires
+it, and only the DEV-825 operator taste pass may retire it — reading a green
+wall as ratified prose is exactly the misread the marker exists to prevent.
+(b) `incarnation-mismatch` is absent from the roster at this pin, so no meaning
+was drafted for it; the DEV-779 lane authors it inline when the kind lands, in
+the shape this ticket pinned. (c) The meaning law does not prove FRESHNESS. A
+sentence edited in the roster and not regenerated is caught by
+`check:kernel-tables` and `check:kernel-prose`, both of which were run red
+against exactly that mutation and green again after regeneration; the meaning
+law reads only what shipped, and that division of labour is on purpose.
+(d) The refusal-time teachings are untouched: `RefusalPayloads.taught.txt`
+still pins 64 payloads byte for byte and no `law`, `expected`, or `next` moved.
+Adding a meaning is add-only beside the teaching, never a rewrite of it.
