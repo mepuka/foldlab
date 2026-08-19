@@ -646,15 +646,40 @@ describe("the program runtime", () => {
     expect(result.commits).toBe(0)
   })
 
-  test("ground-two-node refuses structurally: the form under-determines execution", async () => {
-    const outcome = await withEngine(({ engine }) =>
-      Effect.result(engine.run(programNamed("ground-two-node"), {
+  test("ground-two-node is unspeakable, and its prefix stands", async () => {
+    // The ruled semantics (operator, 2026-08-19): a completion that cannot
+    // answer ends the run as an OUTCOME, not an error, with the admissions
+    // that already stood standing. Two gaps, one program: without the kind
+    // supply the first node cannot be spoken and nothing stands; with it, the
+    // first node lands and the second stops on a lane the form never wires.
+    const unsupplied = await withEngine(({ engine }) =>
+      engine.run(programNamed("ground-two-node"), {
         writ: rootWritDigest,
         holder: "wall",
-      }))
+      })
     )
-    expect(Result.isFailure(outcome)).toBe(true)
-    if (Result.isFailure(outcome)) expect(outcome.failure.kind).toBe("malformed-value")
+    expect(unsupplied._tag).toBe("unspeakable")
+    if (unsupplied._tag === "unspeakable") {
+      expect(unsupplied.node).toBe(1n)
+      expect(unsupplied.slot).toBe("kind")
+      expect(unsupplied.detail).toBe("unsupplied")
+      expect(unsupplied.steps).toEqual([])
+    }
+
+    const supplied = await withEngine(({ engine }) =>
+      engine.run(programNamed("ground-two-node"), {
+        writ: rootWritDigest,
+        holder: "wall",
+        supplies: { kinds: new Map([[1n, "resource"]]) },
+      })
+    )
+    expect(supplied._tag).toBe("unspeakable")
+    if (supplied._tag === "unspeakable") {
+      expect(supplied.node).toBe(2n)
+      expect(supplied.slot).toBe("lane")
+      expect(supplied.detail).toBe("unwired")
+      expect(supplied.steps.map((step) => step.node)).toEqual([1n])
+    }
   })
 
   test("a forward consumption refuses on the admission relation", async () => {

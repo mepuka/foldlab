@@ -580,16 +580,16 @@ export const KernelRunStep = Schema.Struct({
 /**
  * How one run ended.
  *
- * Two of the three arms are the model's own `RunOutcome`: a run lands, or it
- * meets a taught refusal at a node and the tail is never judged. The third is
- * NOT the model's, and says so. `RunOutcome` has two arms because the model's
- * completion is total — it always produces a candidate — while a carriage's
- * does not: a slot may be unwired by the declaration, unsupplied by the run, or
- * consume a local that never landed, and then the door is never reached and
- * there is no door verdict to report. A row carrying `unspeakable` is a witness
+ * All three arms are the model's own `RunOutcome` (operator ruling,
+ * 2026-08-19): a run lands, it meets a taught refusal at a node and the tail is
+ * never judged, or its completion cannot speak a node at all — a slot unwired
+ * by the declaration, unsupplied by the run, consuming a local that never
+ * landed, or carrying no brand the completion needs — and then the door is
+ * never reached and there is no door verdict to report. In both stopping cases
+ * the steps that already stood stand. A row carrying `unspeakable` is a witness
  * that a program the admission relation accepts is not thereby executable, and
- * it records which node, which slot, and which of the four ways the slot had no
- * value.
+ * it adds what the model's arm leaves to the carriage: which slot, and which of
+ * the four ways the slot had no value.
  */
 export const KernelRunOutcome = Schema.Union([
   Schema.Struct({
@@ -615,7 +615,7 @@ export const KernelRunOutcome = Schema.Union([
   title: "Run outcome",
   description:
     "A run that landed, a run the door refused at a named node, or a run whose completion could" +
-    " not speak a node at all. The third arm is the carriage's, not the door's.",
+    " not speak a node at all. Every arm keeps the steps that stood before it.",
 })
 
 /**

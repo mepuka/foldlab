@@ -32,7 +32,7 @@
  * completion. The suite executes its own falsification once: the same wall,
  * run against a one-byte mutation of a committed vector, must refuse it.
  *
- * ## Two bounds, stated
+ * ## One bound, stated
  *
  * The engine judges at a door that EXTENDS the vector's: its replica also holds
  * the root writ it was seeded with and every carrier this suite declared to
@@ -42,12 +42,12 @@
  * no door growth repairs. A vector refusing for a door-RELATIVE reason could not
  * be replayed this way, and none is carried.
  *
- * The `unspeakable` arm is not byte-compared. The model's account carries the
- * steps that stood before the unspeakable node; this engine's completion
- * refuses into the error channel, which discards them. That divergence is
- * reported rather than papered over: the arm is checked at what both sides do
- * say — that the run refuses structurally, before the door, at a node whose
- * named slot the declaration genuinely leaves unwired.
+ * Every arm is byte-compared, the `unspeakable` one included. It was the one
+ * exemption here: the model kept the steps that stood before the node it could
+ * not speak and this engine's error channel discarded them. The operator ruled
+ * the arm into the model and the prefix-keeping semantics with it, the engine
+ * was repaired to match, and the divergence closed — so all five vectors are
+ * one claim, and this file has no arm it only half checks.
  */
 import { beforeAll, describe, expect, test } from "bun:test"
 
@@ -495,12 +495,22 @@ const replay = (vector: KernelRunRecord): Promise<Replay> =>
           verdict: "admitted",
         }
       })
-      const shaped: JsonValue = outcome.success._tag === "landed"
+      const reached = outcome.success
+      const shaped: JsonValue = reached._tag === "landed"
         ? { outcome: "landed", steps }
-        : {
-          node: outcome.success.node,
+        : reached._tag === "refused"
+        ? {
+          node: reached.node,
           outcome: "refused",
-          reason: outcome.success.refusal.reason,
+          reason: reached.refusal.reason,
+          steps,
+        }
+        : {
+          detail: reached.detail,
+          generator: generatorOf(reached.node),
+          node: reached.node,
+          outcome: "unspeakable",
+          slot: reached.slot,
           steps,
         }
       return { bytes: writeCanonicalValue(shaped, `run vector ${vector.name}`), structural: null }
@@ -508,27 +518,14 @@ const replay = (vector: KernelRunRecord): Promise<Replay> =>
   )
 
 /**
- * The wall over one vector. Landed and refused runs are byte-compared; an
- * unspeakable run is checked at what both sides say, because this engine's
- * completion refuses into the error channel and the steps do not survive it.
+ * The wall over one vector: byte-for-byte against the vector's own bytes, on
+ * every arm. Nothing is exempt any more — the unspeakable arm is the model's
+ * own outcome now, with the prefix standing on both sides, and this engine
+ * reports the same node, the same slot, and the same one of the four ways the
+ * slot had no value.
  */
 const assertReplays = async (vector: KernelRunRecord): Promise<void> => {
   const produced = await replay(vector)
-  const outcome = vector.outcome
-  if (outcome.outcome === "unspeakable") {
-    expect(produced.bytes).toBeNull()
-    expect(produced.structural).not.toBeNull()
-    expect(produced.structural?._tag).toBe("StructuralRefusal")
-    // The vector's account of WHERE and WHY, checked against the corpus's own
-    // declaration: the named slot really is unwired at the named node.
-    const declaration = programNamed(vector.program)
-    const node = declaration.nodes.find((carried) => carried.name === outcome.node)
-    expect(node).toBeDefined()
-    if (outcome.detail === "unwired") {
-      expect(Object.keys(node?.args ?? {})).not.toContain(outcome.slot)
-    }
-    return
-  }
   expect(produced.structural).toBeNull()
   expect(produced.bytes).toBe(vector.bytes)
 }
@@ -558,11 +555,14 @@ describe("Engine.run replays the model's own executions", () => {
     await assertReplays(runNamed("holey"))
   })
 
-  test("ground-two-node is unspeakable: the emit wires no lane", async () => {
+  test("ground-two-node is unspeakable at its unwired lane, byte-equal", async () => {
+    // The fifth vector, and the last to become a byte claim: the model's
+    // unspeakable outcome carries the step that stood before the node it could
+    // not speak, and so does this engine's.
     await assertReplays(runNamed("ground-two-node"))
   })
 
-  test("every run vector replays, and none is skipped", async () => {
+  test("every run vector replays byte-equal, and none is skipped", async () => {
     for (const vector of runVectors) {
       await assertReplays(vector)
     }
@@ -602,6 +602,16 @@ describe("Engine.run replays the model's own executions", () => {
         to: '"reason":"unfilled-hole"',
         what: "the taught refusal reason",
       },
+      // The prefix an unspeakable run keeps: drop the step that stood before
+      // the node the completion could not speak, and the wall must refuse.
+      // This is the ruled semantics as a falsifiable claim rather than a
+      // sentence — an engine that discarded the prefix would pass without it.
+      {
+        vector: "ground-two-node",
+        from: '"steps":[{"generator":"declare","node":1,"payload":[],"verdict":"admitted"}]',
+        to: '"steps":[]',
+        what: "a standing prefix step of an unspeakable run",
+      },
     ]
 
     for (const mutation of mutations) {
@@ -623,6 +633,6 @@ describe("Engine.run replays the model's own executions", () => {
       // mutation and not the wall being broken.
       await assertReplays(vector)
     }
-    expect(mutations.length).toBe(3)
+    expect(mutations.length).toBe(4)
   })
 })

@@ -1614,16 +1614,29 @@ structure RunStep where
 
 /-- How one run ended. A landed run reports the context it reached and
     every step in walked order; a refused run reports the refusing
-    node, its taught refusal, and the steps that stood before it. The
-    reached context is this model's sharpening: the carriage holds the
-    same replica behind its own reference and does not return it. -/
+    node, its taught refusal, and the steps that stood before it; an
+    unspeakable run reports the node whose completion answered with
+    nothing, and again the steps that stood before it. The reached
+    context is this model's sharpening: the carriage holds the same
+    replica behind its own reference and does not return it.
+
+    The third arm is the silent completion's own outcome. A completion
+    that cannot answer never reaches the door, so there is no verdict to
+    report and neither arm above can carry it; the prefix's admissions
+    stand exactly as they do under a refusal, because nothing about them
+    depended on the node that could not be spoken. -/
 inductive RunOutcome where
   | landed (context : Door) (steps : List RunStep)
   | refused (node : Nat) (refusal : Refusal) (steps : List RunStep)
+  | unspeakable (node : Nat) (steps : List RunStep)
 
 /-- A completion: the steps already standing plus one node's
-    declaration determine the candidate sentence offered to the door. -/
-abbrev Completion := List RunStep -> ProgramNode -> CandidateAct
+    declaration determine the candidate sentence offered to the door —
+    when they determine one at all. The completion NEED NOT ANSWER: a
+    node whose slot is unwired, unsupplied, or consumes a value that
+    never landed has no candidate to offer, and `none` is that answer
+    said in the model rather than outside it. -/
+abbrev Completion := List RunStep -> ProgramNode -> Option CandidateAct
 
 /-- A carriage growth rule: the context an admitted sentence leaves
     behind for the nodes after it. -/
@@ -1631,28 +1644,37 @@ abbrev Carry := Door -> Act -> Door
 
 /-- The step one admitted node contributes: its name, the context it
     was judged at, the candidate it completed to, and the sentence the
-    door translated that candidate into. -/
-def runStepOf (complete : Completion) (context : Door)
-    (steps : List RunStep) (node : ProgramNode) (act : Act) : RunStep where
+    door translated that candidate into. The candidate is passed rather
+    than recomputed: where a completion may answer with nothing, only
+    the answered case builds a step, and a step records the one that was
+    actually judged — which is why the standing steps, once the
+    completion's own argument, are no longer this constructor's. -/
+def runStepOf (context : Door) (node : ProgramNode)
+    (candidate : CandidateAct) (act : Act) : RunStep where
   node := node.name
   context := context
-  candidate := complete steps node
+  candidate := candidate
   act := act
 
-/-- The walk. Judge the next node at the current context through the
-    one door; carry an admitted sentence, record its step, and continue
-    at the grown context; stop at the first refusal with the prefix's
-    steps intact and the remaining nodes untouched. There is no second
-    verdict path: the walk's only judgment is `admit`. -/
+/-- The walk. Complete the next node; judge the candidate at the current
+    context through the one door; carry an admitted sentence, record its
+    step, and continue at the grown context; stop at the first refusal
+    with the prefix's steps intact and the remaining nodes untouched,
+    and stop the same way at the first node the completion cannot speak.
+    There is no second verdict path: the walk's only judgment is
+    `admit`. -/
 def runWalk (complete : Completion) (carry : Carry) :
     Door -> List RunStep -> List ProgramNode -> RunOutcome
   | context, steps, [] => .landed context steps
   | context, steps, node :: rest =>
-      match admit context (complete steps node) with
-      | .refused refusal => .refused node.name refusal steps
-      | .admitted act =>
-          runWalk complete carry (carry context act)
-            (steps ++ [runStepOf complete context steps node act]) rest
+      match complete steps node with
+      | none => .unspeakable node.name steps
+      | some candidate =>
+          match admit context candidate with
+          | .refused refusal => .refused node.name refusal steps
+          | .admitted act =>
+              runWalk complete carry (carry context act)
+                (steps ++ [runStepOf context node candidate act]) rest
 
 /-- One program run. A declaration is newest-first, so the walk reads it
     back into admission order — the oldest node first, exactly the order
@@ -1667,14 +1689,19 @@ def RunStep.Admitted (step : RunStep) : Prop :=
   admit step.context step.candidate = .admitted step.act
 
 /-- A completion that fills no hole: whatever hole a node's declaration
-    still carries reaches the door in the candidate's payload. Filling
-    is the valuation's action on the declaration, upstream of the walk,
-    so under this premise a run's landing is evidence that the program
-    it walked was closed. -/
+    still carries reaches the door in the candidate's payload, wherever
+    the completion answers at all. Filling is the valuation's action on
+    the declaration, upstream of the walk, so under this premise a run's
+    landing is evidence that the program it walked was closed. The
+    unanswered case carries no obligation: a node the completion cannot
+    speak never reaches the door, and a walk that meets one does not
+    land. -/
 def Completion.HolePreserving (complete : Completion) : Prop :=
-  forall (steps : List RunStep) (node : ProgramNode) (name : Nat),
-    RawArg.hole name ∈ node.args ->
-      RawArg.hole name ∈ actArgs (complete steps node)
+  forall (steps : List RunStep) (node : ProgramNode) (name : Nat)
+      (candidate : CandidateAct),
+    complete steps node = some candidate ->
+      RawArg.hole name ∈ node.args ->
+        RawArg.hole name ∈ actArgs candidate
 
 /-- A carriage growth rule that only ever grows. The engine's replica
     of the door context is a lower bound grown by its own admissions,
@@ -1700,14 +1727,28 @@ def runCarry (context : Door) (act : Act) : Door :=
     completes to. Dataflow substitution belongs to the carriage and the
     composition holds for every completion, so the ground rows use the
     simplest one that exercises an admission, a refusal, and two
-    distinguishable tails. -/
+    distinguishable tails. This one answers everywhere — the silent
+    twin below is what exercises the unanswered case. -/
 def runCandidate (_steps : List RunStep) (node : ProgramNode) :
-    CandidateAct :=
+    Option CandidateAct :=
   match node.name with
-  | 0 => lawfulDeclare
-  | 1 => clockFold
-  | 2 => catalogedTrigger
-  | _ => lawfulDeclare
+  | 0 => some lawfulDeclare
+  | 1 => some clockFold
+  | 2 => some catalogedTrigger
+  | _ => some lawfulDeclare
+
+/-- The run rows' silent completion: the same answers, except at the
+    tail node, which it cannot speak. Walked over the landing program it
+    admits the first node and then meets a node with no candidate — the
+    ground row for the unspeakable arm, and the one that makes a walk
+    discarding its prefix refutable. -/
+def runCandidateSilent (_steps : List RunStep) (node : ProgramNode) :
+    Option CandidateAct :=
+  match node.name with
+  | 0 => some lawfulDeclare
+  | 1 => some clockFold
+  | 2 => none
+  | _ => some lawfulDeclare
 
 /-- Walked first: the lawful declaration the door admits. -/
 def runNodeAdmitted : ProgramNode where

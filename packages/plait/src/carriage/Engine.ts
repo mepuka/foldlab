@@ -66,7 +66,7 @@
  *
  * @module
  */
-import { Context, Effect, Layer, PubSub, Ref, Stream } from "effect"
+import { Context, Effect, Layer, PubSub, Ref, Result, Stream } from "effect"
 
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
@@ -97,6 +97,7 @@ import {
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
+  KernelRunOutcome,
 } from "../kernel/KernelCorpusSchemas.js"
 import { admissionFault, erase, type KernelProgram } from "../kernel/KernelProgram.js"
 import type { KernelDeclKind, KernelRefusalRow } from "../kernel/KernelTables.generated.js"
@@ -262,9 +263,24 @@ export interface RunStep {
 }
 
 /**
- * How one run ended: every node admitted and carried, or stopped at the
- * first refusing node with the taught row intact and every earlier step
- * kept as evidence.
+ * The way a slot had no value, in the model's own four words. The vocabulary
+ * is read off the corpus's run schema rather than restated here, so a fifth
+ * way would have to reach this type through the corpus that minted it.
+ */
+type RunGapDetail = Extract<KernelRunOutcome, { outcome: "unspeakable" }>["detail"]
+
+/**
+ * How one run ended: every node admitted and carried, stopped at the first
+ * refusing node with the taught row intact, or stopped at the first node the
+ * completion could not speak — and in both stopping cases every earlier step
+ * is kept as evidence.
+ *
+ * The third arm is the model's own `RunOutcome.unspeakable` (operator ruling,
+ * 2026-08-19) with the gap the model's arm leaves to the carriage: which slot,
+ * and which of the four ways it had no value. A completion that cannot answer
+ * never reaches the door, so there is no verdict to report — but the
+ * admissions that already stood are still what happened, which is why they
+ * stand here instead of being discarded with an error.
  */
 export type RunOutcome =
   | {
@@ -276,6 +292,13 @@ export type RunOutcome =
     readonly _tag: "refused"
     readonly node: bigint
     readonly refusal: KernelRefusalRow
+    readonly steps: ReadonlyArray<RunStep>
+  }
+  | {
+    readonly _tag: "unspeakable"
+    readonly node: bigint
+    readonly slot: string
+    readonly detail: RunGapDetail
     readonly steps: ReadonlyArray<RunStep>
   }
 
@@ -404,6 +427,26 @@ const unspeakableNode = (
       note: "Supply the execution-time slot the declaration form cannot carry, or repair the node's arguments.",
     }],
   })
+
+/**
+ * The gap that stopped one node's completion: which slot, and which of the
+ * four ways it had no value. It travels the completion's error channel and is
+ * caught by the run, which turns it into the outcome's third arm — so it is
+ * never a refusal a caller sees, and never an error that swallows the prefix.
+ */
+interface CompletionGap {
+  readonly _tag: "CompletionGap"
+  readonly node: bigint
+  readonly slot: string
+  readonly detail: RunGapDetail
+}
+
+const completionGap = (
+  node: bigint,
+  slot: string,
+  detail: RunGapDetail,
+): Effect.Effect<never, CompletionGap> =>
+  Effect.fail({ _tag: "CompletionGap", node, slot, detail } as const)
 
 const inadmissibleProgram = (fault: string): StructuralRefusal =>
   structuralRefusal({
@@ -671,7 +714,7 @@ const makeEngine = Effect.fn("Engine.make")(function* (
   const payloadOf = Effect.fn("Engine.payloadOf")(function* (
     node: DeclarationNode,
     landings: ReadonlyMap<bigint, EngineLanded>,
-  ): Effect.fn.Return<ReadonlyArray<KernelRawArg>, Refusal> {
+  ): Effect.fn.Return<ReadonlyArray<KernelRawArg>, Refusal | CompletionGap> {
     const fields = fieldsOf(node.generator)
     if (fields === undefined) {
       return yield* unspeakableNode(node.name, node.generator, "names no generator of the model")
@@ -690,11 +733,7 @@ const makeEngine = Effect.fn("Engine.make")(function* (
           payload.push({ _tag: "literal", value: completed.landing.label })
           break
         case "missing":
-          return yield* unspeakableNode(
-            node.name,
-            node.generator,
-            `consumes local ${completed.local} before it landed`,
-          )
+          return yield* completionGap(node.name, field.name, "unlanded")
       }
     }
     return payload
@@ -707,7 +746,7 @@ const makeEngine = Effect.fn("Engine.make")(function* (
     landings: ReadonlyMap<bigint, EngineLanded>,
   ): Effect.fn.Return<
     { readonly id: bigint; readonly kind: KernelDeclKind | null } | undefined,
-    Refusal
+    Refusal | CompletionGap
   > {
     if (field === undefined) return undefined
     const wired = node.args[field.name]
@@ -715,11 +754,7 @@ const makeEngine = Effect.fn("Engine.make")(function* (
     const completed = completeArg(wired, landings)
     switch (completed._tag) {
       case "missing":
-        return yield* unspeakableNode(
-          node.name,
-          node.generator,
-          `consumes local ${completed.local} before it landed`,
-        )
+        return yield* completionGap(node.name, field.name, "unlanded")
       case "landing":
         return { id: completed.landing.label, kind: completed.landing.kind }
       case "raw":
@@ -729,29 +764,30 @@ const makeEngine = Effect.fn("Engine.make")(function* (
           case "literal":
             return { id: completed.raw.value, kind: null }
           default:
-            return yield* unspeakableNode(
-              node.name,
-              node.generator,
-              `wires a ${completed.raw._tag} into the ${field.name} reference slot`,
-            )
+            return yield* completionGap(node.name, field.name, "unbranded")
         }
     }
   })
 
   /**
-   * Completes one node to a candidate sentence. Four provenances and no
-   * fifth: declaration bytes, dataflow landings, the run's supplies, and the
-   * engine's own bindings (a join's strategy is the declared cell's merge
-   * algebra). The completed object is constrained-decoded through the
-   * generated candidate schema — the one parse boundary — so a shape no
-   * candidate slot carries refuses structurally, never silently.
+   * Completes one node to a candidate sentence, or names the gap that stopped
+   * it. Four provenances and no fifth: declaration bytes, dataflow landings,
+   * the run's supplies, and the engine's own bindings (a join's strategy is
+   * the declared cell's merge algebra). Where a slot the generator requires
+   * has no value from any of them, the completion answers with the gap — the
+   * slot, and which of the four ways it had none — rather than handing an
+   * absent field to the decoder, so the run can report WHERE a program the
+   * admission relation accepts stopped being executable. Everything that does
+   * complete is still constrained-decoded through the generated candidate
+   * schema — the one parse boundary — so a shape no candidate slot carries
+   * refuses structurally, never silently.
    */
   const completeNode = Effect.fn("Engine.completeNode")(function* (
     node: DeclarationNode,
     options: RunOptions,
     writLabel: bigint,
     landings: ReadonlyMap<bigint, EngineLanded>,
-  ): Effect.fn.Return<KernelCandidateAct, Refusal> {
+  ): Effect.fn.Return<KernelCandidateAct, Refusal | CompletionGap> {
     const fields = fieldsOf(node.generator)
     if (fields === undefined) {
       return yield* unspeakableNode(node.name, node.generator, "names no generator of the model")
@@ -766,7 +802,9 @@ const makeEngine = Effect.fn("Engine.make")(function* (
         // The declaration's own writ argument is the sentence's authority when
         // wired; the run's writ answers only for nodes that carry none.
         const writ = yield* referenceAt(node, digestField("policy"), landings)
-        raw["kind"] = supplies.kinds?.get(node.name)
+        const kind = supplies.kinds?.get(node.name)
+        if (kind === undefined) return yield* completionGap(node.name, "kind", "unsupplied")
+        raw["kind"] = kind
         raw["payload"] = payload
         raw["writ"] = writ?.id ?? writLabel
         break
@@ -774,47 +812,65 @@ const makeEngine = Effect.fn("Engine.make")(function* (
       case "resolve": {
         const targetField = fields.find((field) => field.form.form === "digestOf")
         const target = yield* referenceAt(node, targetField, landings)
+        if (target === undefined) return yield* completionGap(node.name, "target", "unwired")
+        if (target.kind === null) return yield* completionGap(node.name, "kind", "unbranded")
         raw["_tag"] = "resolveDigest"
-        raw["kind"] = target?.kind ?? undefined
-        raw["target"] = target?.id
+        raw["kind"] = target.kind
+        raw["target"] = target.id
         raw["anchor"] = undefined
         break
       }
       case "emit": {
         const lane = yield* referenceAt(node, digestField("lane"), landings)
-        raw["lane"] = lane?.id
+        if (lane === undefined) return yield* completionGap(node.name, "lane", "unwired")
+        raw["lane"] = lane.id
         raw["body"] = payload
         break
       }
       case "join": {
         const cell = yield* referenceAt(node, digestField("resource"), landings)
+        if (cell === undefined) return yield* completionGap(node.name, "cell", "unwired")
         const bindings = yield* Ref.get(state)
-        const binding = cell === undefined ? undefined : bindings.cells.get(cell.id)
-        raw["cell"] = cell?.id
+        const binding = bindings.cells.get(cell.id)
+        if (binding === undefined) {
+          return yield* completionGap(node.name, "strategy", "unsupplied")
+        }
+        raw["cell"] = cell.id
         raw["contribution"] = payload
-        raw["strategy"] = binding === undefined
-          ? undefined
-          : { _tag: "declaredAlgebra", algebra: binding.algebra }
+        raw["strategy"] = { _tag: "declaredAlgebra", algebra: binding.algebra }
         break
       }
       case "fold": {
         const declared = yield* referenceAt(node, digestField("index"), landings)
-        raw["declared"] = declared?.id
+        if (declared === undefined) {
+          return yield* completionGap(node.name, "declared", "unwired")
+        }
+        raw["declared"] = declared.id
         raw["anchor"] = supplies.anchors?.get(node.name)
         raw["query"] = payload
         break
       }
       case "decide": {
         const register = yield* referenceAt(node, digestField("program"), landings)
-        raw["register"] = register?.id
+        if (register === undefined) {
+          return yield* completionGap(node.name, "register", "unwired")
+        }
+        raw["register"] = register.id
         raw["token"] = supplies.tokens?.get(node.name)
         raw["outcome"] = payload
         break
       }
       case "trigger": {
         const declaration = yield* referenceAt(node, digestField("program"), landings)
-        raw["predicate"] = supplies.predicates?.get(node.name)
-        raw["declaration"] = declaration?.id
+        if (declaration === undefined) {
+          return yield* completionGap(node.name, "declaration", "unwired")
+        }
+        const predicate = supplies.predicates?.get(node.name)
+        if (predicate === undefined) {
+          return yield* completionGap(node.name, "predicate", "unsupplied")
+        }
+        raw["predicate"] = predicate
+        raw["declaration"] = declaration.id
         break
       }
       case "spawn": {
@@ -822,9 +878,11 @@ const makeEngine = Effect.fn("Engine.make")(function* (
           field.form.form === "digest" && field.form.kind === "policy"
         )
         const parent = yield* referenceAt(node, policyFields[0], landings)
+        if (parent === undefined) return yield* completionGap(node.name, "parent", "unwired")
         const request = yield* referenceAt(node, policyFields[1], landings)
-        raw["parent"] = parent?.id
-        raw["request"] = request?.id
+        if (request === undefined) return yield* completionGap(node.name, "request", "unwired")
+        raw["parent"] = parent.id
+        raw["request"] = request.id
         break
       }
       default:
@@ -936,7 +994,24 @@ const makeEngine = Effect.fn("Engine.make")(function* (
     let terminal: EngineLanded | null = null
     // Execution order is admission order read back: oldest node first.
     for (const node of [...declaration.nodes].reverse()) {
-      const candidate = yield* completeNode(node, options, writLabel, landings)
+      // A completion that cannot answer ends the run HERE, with the steps that
+      // already stood standing (operator ruling, 2026-08-19): the admissions
+      // before this node are what happened, and none of them depended on it.
+      const completed = yield* Effect.result(
+        completeNode(node, options, writLabel, landings),
+      )
+      if (Result.isFailure(completed)) {
+        const stopped = completed.failure
+        if (stopped._tag !== "CompletionGap") return yield* stopped
+        return {
+          _tag: "unspeakable",
+          node: stopped.node,
+          slot: stopped.slot,
+          detail: stopped.detail,
+          steps,
+        }
+      }
+      const candidate = completed.success
       const verdict = yield* judge(candidate)
       if (verdict.verdict === "refused") {
         return { _tag: "refused", node: node.name, refusal: rowOf(verdict), steps }
