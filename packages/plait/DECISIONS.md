@@ -9751,3 +9751,184 @@ No writ-scoped read, no program name, and no replay executor. The first two are
 T8 and T4. The third is the doctrine's other half stated but not built: the
 fact carries every admitted sentence's encoding and every landing's identity,
 which is what a replay needs, and the reader that walks one is its own slice.
+
+## Task: root law 10 reaches the daemon's rendered refusals (2026-08-19)
+
+### T1. A refusal is a rendered surface, and the law binds it
+
+Decided: root law 10 — no ids, no paths, no commands on a rendered surface, and
+provenance as a digest rather than a location — governs the strings the Go
+daemon's refusals hand a reader, exactly as it governs the spine's rendered
+documents. The mechanical clause that landed with the law sweeps the generated
+tables and the prose page; a refusal was outside it, and one refusal was
+rendering a filesystem path.
+
+The distinction the law turns on is who the string travels to. A wall's stdout
+is read by the party running the battery, on the host that ran it, beside the
+numbers it is evidence for. A refusal travels to a party who was refused — on
+some other host, where a path resolves to nothing and a ticket number resolves
+to nobody. **Load-bearing? yes** — it is what makes this a law about refusals
+rather than a style rule about strings.
+
+### T2. The mismatch renders the digest; the kind and the law text did not move
+
+Decided: the options-citation mismatch renders the NAME of what the cited digest
+resolved to and the NAME of the value the incarnation ran under. It rendered
+both values' canonical bytes, and those bytes carry the store directory.
+
+What moved is two rendered fields. The refusal's kind is the same kind, its law
+sentence is the same sentence, its repair is the same repair at the same
+subject, and the admission decision is unchanged for every input — the wall's
+citation arm and the package's own round-trip test both pass with no committed
+expectation moved. Alternatives weighed: rendering a truncated value (a
+truncated path is still a path, and now an unusable one); rendering the
+differing FIELD NAMES (it would need a diff over declared values, which is a
+read this seam does not have, and it would name the store directory row anyway).
+**Load-bearing? yes** — it is the ticket.
+
+### T3. The comparison stays over bytes; only the rendering became a name
+
+Decided: the citation is still admitted by comparing the resolved BYTES against
+the running value's bytes. Comparing digests would be the weaker check the
+door's own declaration refuses — it would compare two names rather than the
+value a reader would obtain, so a store that resolved a digest to the wrong
+bytes would pass.
+
+The rendering and the comparison are two different questions and they are
+answered differently here. The bytes stay where they are useful, inside the
+comparison; the reader is handed the names and the read that turns either back
+into a value, which the repair already named before this slice.
+**Load-bearing? yes** — the alternative is a weakened door bought with a
+rendering fix.
+
+### T4. The resolved side's digest is DERIVED, never the citation reprinted
+
+Decided: the refusal renders the digest OF THE BYTES THAT RESOLVED rather than
+reprinting the digest that was cited. The store is content-addressed, so an
+honest resolve renders the citation back and the two read identically; a store
+that resolved a digest to the wrong bytes renders a different name, and the
+refusal shows that instead of covering for it.
+
+The refused alternative was interpolating the citation twice, which is one fewer
+hash and reads the same on every honest input — and says nothing on the one
+input the door's byte comparison exists for. **Load-bearing? yes.**
+
+### T5. The sweep is over EXECUTED refusals, never over source
+
+Decided: the wall arm mints every refusal the package can render, at the shipped
+doors, under a declared value naming a real store directory the arm made on the
+host, and sweeps the strings that come back.
+
+A source sweep would have read the mismatch's format string and found nothing
+wrong, because the path did not enter through the format: it entered through
+what was substituted into it. The same reasoning makes the store directory REAL
+rather than a placeholder — a sweep over a path-free posture is a sweep that
+could not fail. Every inventory row is probed on its own, because every row
+carries its own repair and a sweep that minted one refusal would leave seven
+repairs unread. **Load-bearing? yes** — a source-level sweep would have shipped
+green over the defect that opened this ticket.
+
+### T6. Two exact oracles beside six pattern clauses
+
+Decided: the arm carries six pattern clauses — four filesystem-path shapes, a
+board-ticket id, a generation command — and two exact-value oracles read BEFORE
+them: the store directory the declared value named, and the source coordinate
+every transcribed row carries.
+
+A pattern is a net and an oracle is a measurement. The arm knows the exact path
+it handed the door, so it checks for that path rather than for the shape of one;
+and a row's source coordinate takes no shape a path clause catches — it is a
+dotted word with a slash in it — so it is checked as the value it is. The store
+directory is carried in TWO spellings, the raw one and the canonicalizer's own
+escaping of it, because the rendering that leaked it leaked canonical bytes: on
+a host whose separator is a backslash the raw spelling appears nowhere. The
+escaping is taken from the one canonicalizer rather than reproduced.
+
+Reading the oracles first is also what makes the retired rendering's refutation
+host-independent: the bytes carry whatever separator the host uses, so a
+clause-based refutation would name a different clause on a different host and
+the control would be measuring the host. **Load-bearing? yes.**
+
+### T7. Six clauses rather than three, so every shape has a control
+
+Decided: the four filesystem-path shapes are four CLAUSES with four named
+reasons rather than one clause with four alternatives, so that one planted
+control per clause measures every shape on every host.
+
+Under one path clause a Windows host would only ever exercise the drive-lettered
+alternative and a POSIX host only the slash-rooted one, and two of the four
+shapes would be code nobody had measured. The clauses are read in a declared
+order — drive-lettered before backslash-rooted, dot-rooted before slash-rooted —
+so a path is reported as the path it is rather than as its own tail, and so one
+planted artifact refutes exactly one clause. **Load-bearing? yes.**
+
+### T8. The id clause carries NO exclusion list
+
+Decided: the id clause refuses every uppercase-run-hyphen-digits token with no
+carve-out. The spine's clause carries one, by name and with a liveness rule,
+because its surfaces speak the hash function's own name, which is id-shaped and
+is language. Nothing this package renders is id-shaped.
+
+An empty name list with a liveness rule around it would be machinery guarding
+nothing, and a name list is where the next family hides. The day a refusal needs
+an id-shaped word, the exclusion arrives with the word and with the spine's
+liveness rule, in a diff a reviewer reads. **Load-bearing? no** — it is stricter
+than the spine and costs nothing today.
+
+### T9. Six of the seven controls are minted by the SHIPPED door
+
+Decided: each clause control plants its artifact in the repair note of one
+inventory row and hands that row to the shipped admission door, which takes its
+inventory as a parameter. What reaches the sweep is a refusal the estate's own
+door rendered, not a string the control typed at the detector.
+
+The seam already exists and already carries this reason: the closed-channel
+admission control runs the same door over an EMPTY inventory to show that the
+inventory is what refuses. The seventh control is the retired rendering itself,
+assembled from a refusal the shipped door minted with only the two fields moved
+back — so what is refuted is the exact rendering that used to ship, and it stays
+refuted. **Load-bearing? yes** — a control that plants into the detector instead
+of into the door proves the detector, not the surface.
+
+### T10. The wall PRINTS what a refusal may not RENDER
+
+Decided: the arm and its controls print the store directory, the planted paths
+and the planted ticket id, verbatim, on the battery's stdout — beside the
+existing citation arm, which has always printed the declared value's canonical
+bytes as its evidence.
+
+Evidence that hid what it planted would not be evidence, and this is the exact
+distinction T1 draws: the battery's output is read on the host that produced it
+and is not an official document. The alternative — a wall that reports a count
+and not the artifact — is the shape that lets a detector quietly stop matching.
+**Load-bearing? yes**, and it is the sentence to read first if this ever looks
+like a contradiction.
+
+### T11. What this slice does NOT do
+
+No change to any other refusal's rendering. Every other string the package mints
+was swept and carries no artifact; the closed-channel refusal's rendering of the
+setting that opened a row is the row's own setting and is what makes the refusal
+teach, and no inventory row reads the store directory.
+
+No new sweep over the estate's other Go refusals. The register package mints its
+own typed refusals through its own vocabulary and is not swept here; this arm is
+the daemon's, and widening it is a slice with its own inventory of doors.
+
+No extension-bearing path clause. The spine's path class refuses a name ending
+in a source extension; the shape that would catch here is a transcribed row's
+source coordinate, and that is checked as an exact value instead — precisely
+because no path clause catches it, and a clause written to catch it would refuse
+the vendor's own selector paths, which this package renders by design.
+
+One rendered string is left unswept and is stated rather than hidden: the
+undeclared-option reading for a declared value carrying no options at all. The
+declared type's own value always carries the options block, so that branch
+cannot fire through it — a defensive branch now known to be unreachable, left in
+place because removing a refusal branch is its own ruling. The roster walk the
+arm performs is over KINDS, and over kinds it is total.
+
+The law's own wall clause in the root contract still names the vocabulary wall
+over the generated tables and the prose page. This arm extends the law's
+mechanical coverage to a second surface family; amending the clause to say so is
+an operator ruling and is not taken here.

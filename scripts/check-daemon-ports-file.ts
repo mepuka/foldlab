@@ -58,6 +58,8 @@ const suite: ReadonlyArray<string> = [
   "go/cmd/optionswall/citation.go",
   "go/cmd/optionswall/main.go",
   "go/cmd/optionswall/parity.go",
+  "go/cmd/optionswall/tracking.go",
+  "go/cmd/optionswall/trackingcontrols.go",
   "go/cmd/substrate/down.go",
   "go/cmd/substrate/main.go",
   "go/cmd/substrate/status.go",

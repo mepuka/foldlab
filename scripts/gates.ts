@@ -334,6 +334,30 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "go"),
     command: ["go", "run", "./cmd/optionswall", "--parity"],
   },
+  // Root law 10 over what the daemon RENDERS. A refusal is a rendered surface —
+  // it is the sentence a party who was refused is handed, on some other host,
+  // where a path resolves to nothing and a ticket number resolves to nobody —
+  // and the daemon's refusals were outside every wall for the law until this
+  // stage. The sweep is over EXECUTED refusals rather than over source, because
+  // the artifact this ticket retired did not enter through a format string: it
+  // entered through what was substituted into one, so a source sweep would have
+  // read the format and found nothing wrong.
+  //
+  // The controls stage is the other half: seven planted defects, six of them one
+  // artifact per clause carried in a repair the shipped door renders, and the
+  // seventh the rendering this slice retired — the options-citation mismatch
+  // with the resolved and running bytes in it, store directory and all. Each
+  // must refute, and each on the clause it was planted against.
+  {
+    label: "daemon — refusal tracking-artifact sweep",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall", "--tracking"],
+  },
+  {
+    label: "daemon — refusal tracking-artifact controls",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall", "--tracking-controls"],
+  },
   // The wire vocabulary's parity wall and its executed controls. Five arms —
   // byte parity across the language boundary, every row's provenance digest
   // re-derived from the pinned vendor source as installed, an independently

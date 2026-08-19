@@ -500,6 +500,22 @@ func (s *OptionsStore) Resolve(digest string) (DeclaredServerOptions, []byte, er
 // weaker check by exactly the thing that matters: it would compare two names
 // rather than the value a reader would obtain, so a store that resolved a digest
 // to the wrong bytes would pass it.
+//
+// **The comparison is over bytes and the RENDERING is over digests, and those
+// are two different questions.** A declared server-options value carries the
+// store directory, which is a filesystem path — an ambient coordinate that means
+// nothing to a party on another host and that a rendered surface may not carry
+// at all (root law 10). So the refusal below names what it compared rather than
+// reprinting it: provenance on a rendered surface is a digest of the value,
+// never the value's bytes and never a path out of them. The bytes stay where
+// they are useful — inside the comparison — and the reader is taught the read
+// that turns either digest back into a value, which is what the repair names.
+//
+// The resolved side's digest is DERIVED from the bytes that resolved rather than
+// reprinting the citation, and that derivation is load-bearing. The store is
+// content-addressed, so an honest resolve renders the cited digest back; a store
+// that resolved a digest to the wrong bytes renders a different one, and the
+// refusal shows the store lying instead of covering for it.
 func AdmitOptionsCitation(
 	store *OptionsStore,
 	cited string,
@@ -533,8 +549,14 @@ func AdmitOptionsCitation(
 		return &Refusal{
 			Kind: KindCitationMismatch,
 			Law:  "An incarnation cites the declared server-options value it started under, and a cited digest resolves to that value's bytes.",
-			Got:  fmt.Sprintf("the cited digest %s resolves to %s", cited, resolved),
-			Want: fmt.Sprintf("the running value %s", encoded),
+			Got: fmt.Sprintf(
+				"the cited digest %s resolves to the value named %s",
+				cited, canonical.DigestHex(resolved),
+			),
+			Want: fmt.Sprintf(
+				"a citation of the running value, which is named %s",
+				canonical.DigestHex(encoded),
+			),
 			Next: repairFor(KindCitationMismatch),
 		}
 	}

@@ -1,7 +1,7 @@
 // Command optionswall executes the server-options slice's walls and records
 // their numbers.
 //
-// Four arms, selected by flag, each wired into the battery as its own stage
+// Six arms, selected by flag, each wired into the battery as its own stage
 // because each measures a different claim:
 //
 //	(default) the closed-channel refusal. Every row of the closed inventory is
@@ -35,6 +35,18 @@
 //	that the comparison is not merely two transcriptions agreeing: the pin the
 //	tables name is checked against the module this binary actually links, and
 //	every row's site is checked against the pinned vendor's own source.
+//
+//	--tracking: root law 10 over what the daemon RENDERS. Every refusal the
+//	package mints is minted at a shipped door, under a declared value naming a
+//	real store directory, and every string it hands a reader is swept for the
+//	shapes the law refuses — four filesystem-path shapes, a board-ticket id, a
+//	generation command — beside two exact oracles: the store directory the
+//	value declared, and the source coordinate every transcribed row carries.
+//
+//	--tracking-controls: that sweep's seven committed refutations. Six plant
+//	one artifact per clause in a repair the shipped door renders, and the
+//	seventh plants the rendering this slice retired — the citation mismatch
+//	with the resolved and running bytes in it, store directory and all.
 //
 // Every byte string, digest, port and repair it measures is printed, because a
 // wall whose numbers are not recorded is a claim rather than evidence.
@@ -73,6 +85,16 @@ func main() {
 		false,
 		"run the option table and closed inventory's byte-parity comparison against the spine",
 	)
+	tracking := flag.Bool(
+		"tracking",
+		false,
+		"sweep every refusal this package renders for the tracking artifacts root law 10 refuses",
+	)
+	trackingControls := flag.Bool(
+		"tracking-controls",
+		false,
+		"run the tracking sweep's committed refutations, each of which must refute on its own clause",
+	)
 	minter := flag.String(
 		"minter",
 		filepath.Join("..", "packages", "plait", "test", "process", "substrate-options-mint.ts"),
@@ -88,6 +110,10 @@ func main() {
 		err = runCitation()
 	case *parity:
 		err = runParity(*minter)
+	case *tracking:
+		err = runTracking()
+	case *trackingControls:
+		err = runTrackingControls()
 	default:
 		err = runRefusal()
 	}
