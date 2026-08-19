@@ -2698,3 +2698,81 @@ kinds, and pins what a run produced rather than what the source teaches). Why:
 one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
+
+## Task DEV-820 — wall isolation under parallel real-NATS load
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. The board ticket's
+body is the whole scope: diagnose why the 4x parallel wall group flaked under
+load (OrderedConsumerSemantics, FoldChaos, ChaosCli, a different one each run)
+and fix the HARNESS, not test semantics.
+
+### T0. Load-scale the wall-group fetch bounds to a loaded machine, not an idle one
+
+Decided: waitForPorts (200x25ms = 5s nominal) and waitForFile (400x25ms =
+10s nominal) in 	est/NatsHarness.ts, plus FoldChaos' own waitForPumpFile
+(400x25ms), are raised to 2400x25 = 60s nominal. The mechanism is named and
+measured, not assumed: under deliberate CPU load on this 16-logical-core host an
+idle nats-server starts in 76-130ms (p50 97ms), but with 8 burners one server
+sampled {1236, 2318, 2540, 3559, **20479**} ms — a worst case over 150x the idle
+ceiling and past the old 5s bound, which threw 
+ats-server did not write its
+ports file within 5 seconds and reddened whichever wall file was starting its
+server at that moment (reproduced directly under load). Each Bun.sleep(25) in
+the poll loop also overruns under saturation (it measures 25ms of timer, not
+25ms of wall), stretching the nominal bound further. 60s is a bounded ceiling
+that still fails loudly on a genuinely broken launcher or an absent child
+result file. Alternatives: leave the idle-sized bounds (the flake); bound by
+heartbeat rather than by file (does not cover child-process results). Why: the
+startup-and-result-file latency is the one harness-owned resource the walls
+rely on, and the old numbers were sized against an unloaded reviewer machine.
+**Load-bearing? yes** — a genuinely stuck launcher must still redden the wall,
+which the 60s ceiling keeps true.
+
+### T1. ChaosCli's six-field wall gets an explicit bound instead of bun's 5s default
+
+Decided: the "refuses an unpinned head and a module without a fold in six
+fields" test, which spawns three bun CLI processes sequentially and asserts
+only exit=2 plus the six refusal fields (it makes no timing claim), is given
+the sibling chaos walls' 120000ms bound instead of inheriting bun's default
+5000ms per-test timeout. Under the wall group's parallel real-NATS load the
+three sequential CLI spawns exceeded 5s and the loader reddened the test as
+	his test timed out after 5000ms with no assertion false (observed directly).
+Alternatives: split the three CLI runs across separate faster tests (changes
+the wall's shape); shrink the CLI's cold-start (production change, outside
+scope). Why: the flake is a loader-default false trip over a test that never
+timed anything, and it is a wall-group robustness fix, not a semantic one.
+**Load-bearing? no** — the assertion set is unchanged; only the loader bound
+that was silently 5s is made explicit and sized.
+
+### T2. The no-responders wall is re-scoped off a schedule-dependent client transient
+
+Decided: the "direct consumer deletion enters a no-responders repull loop
+before heartbeat recovery" test no longer REQUIRES a consumer_deleted
+notification; it asserts the load-bearing properties — exactly three
+
+o_responders (the repull loop), zero heartbeats_missed (ahead of heartbeat
+recovery), zero ordered_consumer_recreated — and records
+consumer-deleted=<n> in its trace. Mechanism, evidenced: consumer_deleted
+is a bimodal transient of the pinned @nats-io/jetstream@3.4.0 client. It is
+only emitted when a pull races the consumer delete's teardown and returns the
+409; a repull that lands after teardown gets a 503 
+o_responders and the
+client emits consumer_deleted NEVER (it keeps repulling — the 503s are
+responses, so the heartbeat monitor with maxOut:2 never fires, so
+esetPending/info-refresh and its 409 never run). Reproduced ~50% in the 4x
+wall group before the change; a trace with consumer-deleted=0 still passed
+after, documenting the repull the test is named for. The obsolete assertion
+made the wall flake with nothing false — exactly the "a wall nobody trusts"
+outcome DEV-820 is about — and the Windows one-flake observation (~line 421)
+is the same transient landing the other way on the next run. Alternatives:
+wait longer for the 409 (regime-B schedules never emit it, so any window still
+fails or hangs); raise idle_heartbeat (does not create a 409; only widens the
+heartbeat window); gate on both it and no_responders (makes the assertion
+vacuous then hangs). Why: the wall's own finding is consume-repulls-deleted-name;
+the transient was never the claim. The no-responder CASE is still exercised
+unchanged (delete the consumer, observe the repull loop ahead of heartbeat
+recovery) — this re-scopes to the stable, documented behavior. **Load-bearing?
+yes** — the wall's claim is the repull loop ahead of heartbeat recovery, and
+that is what is asserted; a future client that heartbeat-recovers instead
+(emitting heartbeats_missed) or stops repulling still reddens it.

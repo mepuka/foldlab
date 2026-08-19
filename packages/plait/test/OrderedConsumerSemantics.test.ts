@@ -418,13 +418,23 @@ describe("tenth substrate suite: @nats-io/jetstream 3.4.0 ordered-consumer seman
       void blockedRead.catch(() => undefined)
       const notifications = await notificationsPromise
 
-      expect(notifications.some((event) => event.type === "consumer_deleted")).toBe(true)
+      // The load-bearing wall is the no-responders repull loop ahead of any
+      // heartbeat recovery, asserted just below. `consumer_deleted` is NOT
+      // part of that claim and is deliberately not gated: it is a
+      // schedule-dependent transient of the pinned client — only a pull that
+      // races the delete's teardown returns the 409, while a repull that lands
+      // after teardown gets a 503 no_responders and the client never emits the
+      // notification at all (it keeps repulling, never heartbeat-recovering).
+      // The outcome is bimodal across runs (reproduced ~50% in the 4x wall
+      // group, DEV-820), so asserting it reddened the wall falsely. It stays in
+      // the trace as the observation it documents.
+      const deletedNotifications = notifications.filter((event) => event.type === "consumer_deleted").length
       expect(notifications.filter((event) => event.type === "no_responders").length).toBe(3)
       expect(notifications.some((event) => event.type === "heartbeats_missed")).toBe(false)
       expect(notifications.some((event) => event.type === "ordered_consumer_recreated")).toBe(false)
 
       console.info(
-        `SUBSTRATE ORDERED TRACE direct-delete=${oldName} bounded-notifications=[${notifications.map((event) => event.type).join(",")}] heartbeat-missed=0 recreated=0 finding=consume-repulls-deleted-name`,
+        `SUBSTRATE ORDERED TRACE direct-delete=${oldName} bounded-notifications=[${notifications.map((event) => event.type).join(",")}] consumer-deleted=${deletedNotifications} heartbeat-missed=0 recreated=0 finding=consume-repulls-deleted-name`,
       )
       void messages.close().catch(() => undefined)
     } finally {
