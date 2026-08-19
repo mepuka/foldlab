@@ -23,6 +23,25 @@ attached where connections are established, and it branches on no event name;
 `sessionfacts.ts` carries the facts it mints and `sessionlanes.ts` the one emit
 that lands them.
 
+Three more modules answer the questions those facts make askable.
+`heartbeat.ts` declares the schedule as data, mints the tick fact whose
+occurrence key is `(session, schedule, firing)`, and holds the seat that turns
+firings into facts — every field of a tick is arithmetic over the declaration,
+so two emitters of one occurrence mint byte-identical bodies and the second
+landing is absorbed rather than counted. `heartbeatlane.ts` is its carriage,
+declared at ONE partition because the staleness read is positional and a
+positioned read needs a carrier that keeps order. `presence.ts` carries the two
+reads: presence as a declared reduction over the session lane, read at the
+reader's anchor with head-minus-anchor as the read's own honest staleness, and
+staleness as the heartbeat lane's head minus the greatest firing citing one
+session. Neither read consults a clock, neither asks the broker anything, and
+neither decides: silence is reported as a number, and acting on it is a fenced
+decide that lives nowhere in this package. Walls:
+`../../test/Heartbeat.test.ts` over constructed facts, with the four planted
+controls traced into `../../negative-controls/Presence.*.trace.txt`, and
+`../../test/PresenceWall.test.ts` over a real substrate with one holder taken
+away by signal 9.
+
 Wall: two of them, and which one runs a suite is derived rather than chosen —
 `../../scripts/run-test-group.ts` puts a file in the wall group exactly when it
 imports `./NatsHarness.js`. `bun run test:walls` brings up a `nats-server` and

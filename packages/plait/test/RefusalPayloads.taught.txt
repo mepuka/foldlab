@@ -135,6 +135,12 @@ packages/plait/src/internal/folds.ts#2
   expected "an integer from 0 through ${}"
   next[0].subject "FoldHandle.anchor"
   next[0].note "Inspect only a partition declared by this fold's lane."
+packages/plait/src/internal/heartbeat.ts#0
+  kind "malformed-value"
+  law "A heartbeat schedule is declared data, and every firing's claimed time is arithmetic over it."
+  expected <absent>
+  next[0].subject "Heartbeat.declareSchedule"
+  next[0].note "Declare the schedule with an instant its origin can be read from and a positive whole span between firings."
 packages/plait/src/internal/incarnations.ts#0
   kind "malformed-value"
   law "An incarnation chain is walked by predecessor digest and every step names an incarnation the history carries."
