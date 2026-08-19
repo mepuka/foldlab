@@ -1,5 +1,5 @@
 name = "unity"
-defaultTargets = ["Unity", "control", "emit", "ts", "goemit"]
+defaultTargets = ["Unity", "control", "emit", "ts", "goemit", "jsonschema"]
 
 [[require]]
 name = "fabric"
@@ -32,6 +32,8 @@ globs = [
   "Unity.Sha",
   "Unity.Ts",
   "Unity.TsKernel",
+  "Unity.JsonSchemaManifest",
+  "Unity.JsonSchema",
 ]
 
 [[lean_exe]]
@@ -50,3 +52,8 @@ supportInterpreter = true
 [[lean_exe]]
 name = "goemit"
 root = "GoEmitMain"
+
+[[lean_exe]]
+name = "jsonschema"
+root = "JsonSchemaMain"
+supportInterpreter = true
