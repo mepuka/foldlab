@@ -1,0 +1,6 @@
+interface:
+  display_name: "Architecture to Algebra"
+  short_description: "Map any architecture onto the estate algebra - truth plane, directory plane, fences, fold table with rungs and carriers, and the liveness plane (coalgebras) - ending in generators, sentences, laws, and refusals instead of ad-hoc services. Use when designing or re-deriving a service, feature, harness capability, or data flow in algebraic terms."
+  default_prompt: "Use $architecture-to-algebra to derive a planned service, feature, or data flow from the algebra rather than building it beside the kernel."
+policy:
+  allow_implicit_invocation: true
