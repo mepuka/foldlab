@@ -4,7 +4,7 @@
  *
  * @module
  */
-import { Effect, Reducer } from "effect"
+import { Effect, Match, Reducer } from "effect"
 
 import { commutative, declare as declareAlgebra, type CommutativeAlgebra, type RungName } from "../truth/Algebra.js"
 import type { WireValue } from "../truth/Canonical.js"
@@ -161,10 +161,17 @@ export const presenceAlgebra: Effect.Effect<
 /**
  * The per-event contribution: what one session fact adds to presence.
  *
- * Exactly two of the four session facts contribute anything. An establishment
+ * A fold over the fact union, closed by the compiler: a variant added to the
+ * lane's vocabulary tomorrow is an arm this record is missing, and a variant the
+ * union does not carry is an arm no one can spell. There is no default and no
+ * fallthrough, so "which facts move presence" is a decision recorded in the type
+ * rather than the residue of one branch nobody reads.
+ *
+ * Exactly two of the five session facts contribute anything. An establishment
  * adds its session to the established half; a teardown adds it to the ended
- * half. A transition and a reading contribute the algebra's own bottom, which
- * is the identity law executing rather than a skip written beside the fold.
+ * half. A transition, a reading, and a drain disposition each contribute the
+ * algebra's own bottom, which is the identity law executing rather than a skip
+ * written beside the fold.
  *
  * **A heartbeat contributes nothing here, and cannot.** This contribution is
  * over the session lane's facts, and a tick is not one of them: a fold that
@@ -179,12 +186,26 @@ export const presenceContribution: Contribution<SessionFact, PresenceState> = {
     establishes: "substrate-session-established",
     ends: "substrate-session-ended",
   },
-  apply: (fact) =>
-    fact.kind === "substrate-session-established"
-      ? { v: 0, kind: "substrate-presence", established: [fact.session], ended: [] }
-      : fact.kind === "substrate-session-ended"
-      ? { v: 0, kind: "substrate-presence", established: [], ended: [fact.session] }
-      : PRESENCE_BOTTOM,
+  apply: Match.type<SessionFact>().pipe(
+    Match.withReturnType<PresenceState>(),
+    Match.discriminatorsExhaustive("kind")({
+      "substrate-session-established": (fact) => ({
+        v: 0,
+        kind: "substrate-presence",
+        established: [fact.session],
+        ended: [],
+      }),
+      "substrate-session-ended": (fact) => ({
+        v: 0,
+        kind: "substrate-presence",
+        established: [],
+        ended: [fact.session],
+      }),
+      "substrate-session-transition": () => PRESENCE_BOTTOM,
+      "substrate-session-observation": () => PRESENCE_BOTTOM,
+      "substrate-incarnation-lame-duck": () => PRESENCE_BOTTOM,
+    }),
+  ),
 }
 
 /** Declares the presence fold over one session lane. */

@@ -8,7 +8,7 @@
  * outside this package entirely. That is the whole reason the tables are data:
  * a switch statement over eleven cases has nothing to compare against.
  *
- * Five clauses, each with its own failure line and its own planted mutation:
+ * Six clauses, each with its own failure line and its own planted mutation:
  *
  * 1. **Drift.** The transcribed rows are exactly the vendor's declarations, in
  *    the vendor's declaration order, with the vendor's own field names, sorts
@@ -27,6 +27,14 @@
  * 5. **The pump branches on no event name.** The consumer walks rows and reads
  *    what to do off the row it matched. A per-event branch — a reaction to the
  *    lame-duck row, a hand-written dispatch — refuses.
+ * 6. **The terminal emission is a singleton, and it is the absorbing row's.**
+ *    Exactly one machine row emits the ended fact, and that row is the one the
+ *    machine declares absorbing. Teardown lands as the session-ended form rather
+ *    than as a transition fact, so the emission column is the read side's only
+ *    path from the lane to the terminal state: two emitting rows leave that read
+ *    choosing between words, an empty column leaves it no path at all, and an
+ *    emission on a row nothing declares absorbing lands a teardown in a state
+ *    the machine can leave again.
  *
  * @module
  */
@@ -290,6 +298,39 @@ export const checkTerminal = (machine: ReadonlyArray<TransitionRow>): Clause => 
   return ok
 }
 
+/**
+ * Clause 6: exactly one row emits the ended fact, and it is the absorbing one.
+ *
+ * The read side reaches the terminal state from the lane through this column and
+ * through nothing else. Teardown lands as the session-ended form rather than as
+ * a transition fact — the record already had a form for "this connection is
+ * over" — so a fold that walks the lane reads that fact back through the word of
+ * the row whose emission column names it. Two emitting rows leave that read
+ * choosing between words with nothing to choose by, and an empty column leaves
+ * it no path to the terminal at all.
+ *
+ * The absorbing half is the same law's other end: an emission declared on a row
+ * the machine does not call absorbing would land a teardown in a state some
+ * other row can leave, which is a connection reading as alive after it ended.
+ * Clause 4 pins the absorbing row's uniqueness; this one pins that the row which
+ * ends is that row.
+ */
+export const checkTerminalEmission = (machine: ReadonlyArray<TransitionRow>): Clause => {
+  const emitting = machine.filter((row) => row.emits === "ended")
+  if (emitting.length !== 1) {
+    return no(
+      `${emitting.length} machine rows emit the ended fact; exactly one row carries the lane's path to the terminal state`,
+    )
+  }
+  const only = emitting[0]!
+  if (!only.absorbing) {
+    return no(
+      `the machine's row for ${only.event} emits the ended fact and enters a state the machine does not declare absorbing`,
+    )
+  }
+  return ok
+}
+
 /** Strips comments so a spelling named in prose is not read as a branch. */
 export const withoutComments = (source: string): string =>
   source.replace(/\/\*[\s\S]*?\*\//gu, " ").replace(/^[ \t]*\/\/.*$/gmu, " ")
@@ -337,7 +378,9 @@ export const checkVocabulary = (evidence: VocabularyEvidence): Clause => {
   if (!readings.ok) return readings
   const terminal = checkTerminal(evidence.machine)
   if (!terminal.ok) return terminal
-  return checkNoEventBranch(evidence.transcribed, evidence.pumpSource)
+  const branch = checkNoEventBranch(evidence.transcribed, evidence.pumpSource)
+  if (!branch.ok) return branch
+  return checkTerminalEmission(evidence.machine)
 }
 
 /** Reads the evidence this package actually holds. */

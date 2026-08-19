@@ -11,6 +11,7 @@ import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { Digest as DigestSchema, digestOf, type Digest } from "../truth/Digest.js"
 import { decodeRefusing, structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
+import type { IncarnationLameDuck } from "./sessionfacts.js"
 import { WIRE_STATUS_BY_DECLARATION } from "./wirevocabulary.js"
 
 /**
@@ -191,10 +192,12 @@ export const landedAt = Effect.fn("Incarnation.landedAt")(function* (
  * Staged debt, stated rather than absorbed. These are hand-carried declarations
  * owing the corpus's substrate-vocabulary group, which the emitter does not yet
  * mint — the same waiver the session fact and the readiness observation wear.
- * The lame-duck fact owes one thing more: it is not yet a variant of the
- * session lane's declared event form, so a reader decoding that lane under that
- * form refuses it. Appending the variant is owed work in the module that owns
- * the form.
+ *
+ * The lame-duck fact is the one this module does not declare. It is a variant of
+ * the session lane's own event form, so its shape is the schema next door and
+ * this module MINTS it rather than restating it — a second declaration of one
+ * shape is the drift the vocabulary discipline refuses, and the decoder is the
+ * declaration that wins because it is the one a reader is held to.
  */
 
 /** One incarnation's entry into service. */
@@ -230,18 +233,12 @@ export const establishedFact = (
  */
 export const LAME_DUCK_EVENT = WIRE_STATUS_BY_DECLARATION.LDMStatus.type
 
-/** One incarnation's drain disposition, as a fact about one session. */
-export interface IncarnationLameDuck {
-  readonly v: 0
-  readonly kind: "substrate-incarnation-lame-duck"
-  readonly incarnation: string
-  readonly session: string
-  readonly event: typeof LAME_DUCK_EVENT
-  readonly server: string
-}
-
 /**
- * Declares one drain disposition.
+ * Declares one drain disposition, in the shape the session lane declares.
+ *
+ * The fact's shape is the lane's own schema and is not restated here: this is a
+ * variant of the session lane's declared event form, so the decoder next door
+ * owns the declaration and this function mints a value of it.
  *
  * **The server field is why the server name is a declared row.** Left unset the
  * vendor aliases a fresh identity per run, and this fact would then carry a

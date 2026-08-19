@@ -17,7 +17,7 @@ options, and `statusvocabulary.ts` carries the connection status vocabulary and
 the machine it induces. Neither is a switch statement and neither is a
 hand-written union — a table can be byte-compared against the pinned client's
 own declaration, and `bun run check:status-vocabulary` does exactly that, with
-`check:status-vocabulary-control` planting the five mutations that must redden
+`check:status-vocabulary-control` planting the six mutations that must redden
 it. `statuspump.ts` is the one consumer of one connection's status source,
 attached where connections are established, and it branches on no event name;
 `sessionfacts.ts` carries the facts it mints and `sessionlanes.ts` the one emit
