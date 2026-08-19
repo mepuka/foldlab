@@ -12,3 +12,21 @@ The gate renames this field temporarily and requires the projection to move.
 Algebraic register:
 
 `Projections.Probe.Envelope ::= { payload : Nat }`
+
+## Taught refusals
+
+### `probeUnfencedDecide`
+
+- Law: probe-fence-law
+- Repair: hold the register token
+- Applicability: machine-applicable
+- Plain: The explicit-applicability probe row.
+- Algebraic: `ref(user)`
+
+### `probeOminous`
+
+- Law: probe-applicability-law
+- Repair: machine rewrite
+- Applicability: advisory
+- Plain: The fallback-applicability probe row.
+- Algebraic: `ref(none)`

@@ -107,4 +107,51 @@ def walk (names : List Name) : MetaM ProjectionAst := do
   let docs <- (names.zip declarations).mapM fun entry => docOf entry.2 entry.1
   return { declarations := declarations, docs := docs, refusals := [] }
 
+/-- The universe level of a declaration type's final sort, walking through any
+    leading binders. `Prop` is sort level zero; a data type is a positive sort. -/
+private def declSortLevel : Expr -> MetaM (Option Level)
+  | .forallE _ _ body _ => declSortLevel body
+  | .sort level => return some level
+  | _ => return none
+
+/-- Whether the compiled environment holds a projectable declaration under the
+    given name: an inductive or structure of sort `Type` (not a `Prop` proof
+    predicate) carrying a docstring. This is the bar the manifest's own entries
+    meet, so an eligible-in-namespace declaration the manifest omits is an
+    orphan the gate must surface rather than a silence to accept.
+
+    `isType`/`isProp` treat a `Prop`-codomain under binders as a type, so this
+    reads the final sort's level directly: level zero is a proof predicate and
+    has no row in a data-type register; a positive sort is vocabulary. -/
+private def eligibleDecl (name : Name) : MetaM Bool := do
+  let env <- getEnv
+  match env.constants.find? name with
+  | none => return false
+  | some (.inductInfo info) => do
+      match <- findDocString? env name with
+      | none => return false
+      | some _ => do
+          let sortLevel <- declSortLevel info.type
+          return (sortLevel.isSome && sortLevel.get! != Level.zero)
+  | some _ => return false
+
+/-- List declarations the compiled environment holds under `scope` that
+    meet the projectable bar but are absent from the closed manifest. The
+    names come from the environment's own constant table, so a declaration
+    the kernel adds and the manifest misses shows up here by construction;
+    the result is sorted by rendered name so the committed artifact cannot
+    move under map reordering. -/
+def orphanNames (scope : Name) (manifest : List Name) : MetaM (List String) := do
+  let env <- getEnv
+  -- env.constants is staged (map1 imported, map2 current); SMap.toList folds both.
+  -- The namespace ring is a pure filter so the meta monad is entered only for names
+  -- already inside the manifest's namespace; the full imported map is walked once.
+  let ring := env.constants.toList.filterMap (fun (name, _) =>
+    if scope.isPrefixOf name && name != scope && !manifest.contains name then
+      some name
+    else
+      none)
+  let orphans <- ring.eraseDups.filterM eligibleDecl
+  return (orphans.map (fun name => name.toString)).mergeSort (fun a b => a < b)
+
 end Projections
