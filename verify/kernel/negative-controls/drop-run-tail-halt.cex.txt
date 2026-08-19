@@ -1,0 +1,1 @@
+control=drop-run-tail-halt;program=admit-then-clock-then-tail;lawful-left=refused@1;reason=clock-read;steps=[0];lawful-right=refused@1;reason=clock-read;steps=[0];mutant-left=landed;steps=[0, 2];mutant-right=landed;steps=[0, 3];verdict=refuted

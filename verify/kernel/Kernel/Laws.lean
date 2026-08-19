@@ -166,6 +166,109 @@ def KInterpInflationary : Prop :=
     forall (act : Act) (world : World Evidence),
       World.Le merge world (interp merge contribution act world)
 
+/-! ### The program run — the two doors composed
+
+Program admission checks the DAG discipline and the single-act door
+judges one sentence; the run is their composition. Five statements say
+what that composition is: it associates over concatenation, a landed
+run is exactly a sequence of admitted acts, every refusal decomposes
+into a standing prefix and a genuinely refusing node, the tail after a
+refusal is unjudged, and the context a run reaches extends the one it
+started at when carriage growth only grows. The sixth ties the run to
+filling: only closed programs run.
+
+Bounds, stated with the family: one pass by one walker. No concurrency
+beyond the monotone-context benignity the growth premise names, no
+liveness, no retries, no scheduler. -/
+
+/-- The run composes over concatenation: walking `before ++ after` is
+    walking `before`, then walking `after` from the context and steps
+    the prefix reached — and a refusal inside the prefix IS the whole
+    answer, the suffix never consulted. Per-node door judgments compose;
+    a run is their sequence and nothing besides. -/
+def KRunComposition : Prop :=
+  forall (complete : Completion) (carry : Carry) (context : Door)
+      (steps : List RunStep) (before after : List ProgramNode),
+    runWalk complete carry context steps (before ++ after) =
+      match runWalk complete carry context steps before with
+      | .landed reached prefixSteps =>
+          runWalk complete carry reached prefixSteps after
+      | .refused node refusal prefixSteps =>
+          .refused node refusal prefixSteps
+
+/-- An admitted run is exactly a sequence of admitted acts: every step
+    a landed run reports records the one door admitting that step's
+    candidate to that step's sentence at that step's own context, and
+    the steps name the program's nodes in admission order — one step
+    per node, none skipped, none invented. -/
+def KRunAdmittedSequence : Prop :=
+  forall (complete : Completion) (carry : Carry) (context : Door)
+      (nodes : List ProgramNode) (reached : Door) (steps : List RunStep),
+    runProgram complete carry context nodes = .landed reached steps ->
+      (forall step, step ∈ steps -> step.Admitted) /\
+      steps.map RunStep.node = nodes.reverse.map ProgramNode.name
+
+/-- Every refusal decomposes: a refused run splits the walked nodes at
+    the refusing one, the prefix lands with exactly the steps the
+    outcome reports — the prefix's admissions stand — and the refusing
+    node's candidate genuinely refuses at the context that prefix
+    reached, with the taught row the outcome carries. -/
+def KRunRefusalDecomposition : Prop :=
+  forall (complete : Completion) (carry : Carry) (context : Door)
+      (steps : List RunStep) (walked : List ProgramNode) (name : Nat)
+      (refusal : Refusal) (standing : List RunStep),
+    runWalk complete carry context steps walked
+        = .refused name refusal standing ->
+      exists (before : List ProgramNode) (node : ProgramNode)
+        (after : List ProgramNode) (reached : Door),
+        walked = before ++ node :: after /\ node.name = name /\
+        runWalk complete carry context steps before
+          = .landed reached standing /\
+        admit reached (complete standing node) = .refused refusal
+
+/-- The tail after a refusal is unjudged: once the prefix has landed
+    and the next node's candidate refuses, the outcome is that refusal
+    with the prefix's steps standing, for EVERY tail. A walk whose
+    answer depends on what follows the refusing node is a different
+    walk from this one. -/
+def KRunTailUnjudged : Prop :=
+  forall (complete : Completion) (carry : Carry) (context : Door)
+      (steps : List RunStep) (before : List ProgramNode)
+      (node : ProgramNode) (reached : Door) (standing : List RunStep)
+      (refusal : Refusal),
+    runWalk complete carry context steps before
+        = .landed reached standing ->
+    admit reached (complete standing node) = .refused refusal ->
+    forall after : List ProgramNode,
+      runWalk complete carry context steps (before ++ node :: after)
+        = .refused node.name refusal standing
+
+/-- Monotone-context benignity, and no more: when carriage growth only
+    grows, the context a landed run reaches extends the context it
+    started at, so every judgment the run made stands at the end it
+    reached. Concurrency beyond this premise, liveness, retries, and
+    scheduling are outside the claim. -/
+def KRunContextGrows : Prop :=
+  forall (complete : Completion) (carry : Carry), Carry.Monotone carry ->
+    forall (context : Door) (steps : List RunStep)
+        (walked : List ProgramNode) (reached : Door)
+        (standing : List RunStep),
+      runWalk complete carry context steps walked
+          = .landed reached standing ->
+        Door.Le context reached
+
+/-- Only closed programs run: under a completion that fills no hole, a
+    landed run is evidence that the program it walked required nothing
+    — every hole was filled by the valuation before the walk began. The
+    converse is deliberately absent: closure is necessary for landing,
+    never sufficient. -/
+def KRunLandedClosed : Prop :=
+  forall (complete : Completion), Completion.HolePreserving complete ->
+    forall (carry : Carry) (context : Door) (nodes : List ProgramNode)
+        (reached : Door) (steps : List RunStep),
+      runProgram complete carry context nodes = .landed reached steps ->
+        requiresOf nodes = []
+
 /-- Candidate F13, bound-execution replay — STATED, deliberately
     unproven. For an admitted program, any two execution records
     reached through deterministic assembly, resumption, and landing

@@ -39,7 +39,7 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
-| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts) |
+| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below. The program-run composition the carriage walks is proved MODEL-SIDE only (KM-4 family: `run_composition`, `run_admitted_sequence`, `run_refusal_decomposition`, `run_tail_unjudged`, `run_context_grows`, `run_landed_closed`, with the `drop-run-tail-halt` and `drop-run-prefix-standing` controls) — no correspondence gate ties it to the carriage, and none is claimed | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts), [verify/kernel/](verify/kernel/) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -598,6 +598,28 @@ converts one.
 - The same suite offers one refused candidate through every host route and
   compares the complete taught refusal — reason, law, repair, applicability —
   value for value.
+- Model-side, the shape the carriage's program run walks is proved rather than
+  assumed: `verify/kernel`'s KM-4 composition family states the walk of a
+  closed program in admission order and proves that per-node door judgments
+  compose. `run_composition` splits a run over concatenated node lists into
+  the prefix's run and the suffix's run from the context the prefix reached;
+  `run_admitted_sequence` proves a landed run is exactly a sequence of
+  admitted acts, one step per walked node in order, each recording the one
+  door admitting that node's candidate at that step's own context;
+  `run_refusal_decomposition` proves every refusal splits into a prefix that
+  landed with exactly the steps the outcome reports and a node whose candidate
+  genuinely refuses at the context that prefix reached;
+  `run_tail_unjudged` proves the answer is that same refusal for every tail,
+  so no node after a refusal is judged; `run_context_grows` carries the
+  monotone-context benignity the engine's replica relies on; and
+  `run_landed_closed` proves a landed run's program required nothing — only
+  closed, filled programs run. Two executed controls kill the wrong
+  compositions with committed traces: `drop-run-tail-halt` (a walk that judges
+  the tail after a refusal answers differently for two programs that differ
+  only after the refusing node, while the lawful walk answers identically) and
+  `drop-run-prefix-standing` (a walk that discards the prefix's admissions
+  reports no standing steps where the lawful walk reports one), each refuted
+  on exactly its own dropped clause and green under the other's drop.
 
 ### Bounds and residuals
 
@@ -611,6 +633,22 @@ the chaos CLI accepts no kernel candidate — the claim is that the judgment
 routes those hosts expose cannot bypass the door, not that this slice adds a
 daemon runtime or a CLI command. No Effect service wraps the door; a Layer
 seam, if one is wanted, would wrap this generated door and is not claimed here.
+
+The KM-4 composition family is a MODEL-LEVEL result and adds no runtime rung:
+it proves what a per-node walk through the one door is, never that the
+carriage's walk is that walk — no correspondence gate ties the two, and none
+is claimed. Its own bounds are one pass by one walker: no concurrency beyond
+the monotone-growth premise, no liveness, no retries, no scheduler. Three
+abstractions are stated where the model is thinner than the carriage.
+Completion is total in the model, while the carriage's completion of a node
+into a candidate may instead fail into the error channel (an absent
+execution-time supply, a local consumed before it landed). Carriage itself is
+outside the outcome: an admitted sentence whose carrier is unbound fails into
+the error channel, so the runtime has a third ending the model's two-way
+outcome does not carry. And the program-admission precheck — including the
+refusal of an empty declaration — happens before the walk is entered, where
+the model's walk lands vacuously on the empty node list, which is the unit the
+composition law needs.
 
 ### Checkable at
 

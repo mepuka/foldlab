@@ -1611,4 +1611,362 @@ theorem provision_positioned_correspondence :
 
 end Provision
 
+/-! ## The program run — the two doors composed -/
+
+section RunComposition
+
+/-- Door growth is reflexive. -/
+theorem door_le_refl (door : Door) : Door.Le door door where
+  catalog := fun _ mem => mem
+  pinned := fun _ mem => mem
+
+/-- Door growth is transitive, so a walk's growth accumulates. -/
+theorem door_le_trans {small middle large : Door}
+    (first : Door.Le small middle) (second : Door.Le middle large) :
+    Door.Le small large where
+  catalog := fun ref mem => second.catalog ref (first.catalog ref mem)
+  pinned := fun ref mem => second.pinned ref (first.pinned ref mem)
+
+/-- The walk composes over concatenation: the prefix's outcome decides
+    everything, and only a landed prefix hands its reached context and
+    standing steps to the suffix. -/
+theorem run_walk_append (complete : Completion) (carry : Carry) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (after : List ProgramNode),
+    runWalk complete carry context steps (walked ++ after) =
+      match runWalk complete carry context steps walked with
+      | .landed reached prefixSteps =>
+          runWalk complete carry reached prefixSteps after
+      | .refused node refusal prefixSteps =>
+          .refused node refusal prefixSteps := by
+  intro walked
+  induction walked with
+  | nil => intro context steps after; rfl
+  | cons node rest inductionHypothesis =>
+      intro context steps after
+      cases verdict : admit context (complete steps node) with
+      | refused refusal =>
+          simp only [List.cons_append, runWalk, verdict]
+      | admitted act =>
+          simp only [List.cons_append, runWalk, verdict]
+          exact inductionHypothesis _ _ after
+
+/-- Per-node door judgments compose: a run over a concatenation is the
+    run of the prefix followed by the run of the suffix from the context
+    the prefix reached, and a refusal in the prefix is the whole
+    answer. -/
+theorem run_composition : Laws.KRunComposition := by
+  intro complete carry context steps before after
+  exact run_walk_append complete carry before context steps after
+
+/-- Every step a landed walk carries records an admitted judgment at its
+    own context. -/
+theorem run_walk_landed_admitted (complete : Completion) (carry : Carry) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (reached : Door) (standing : List RunStep),
+    runWalk complete carry context steps walked = .landed reached standing ->
+    (forall step, step ∈ steps -> step.Admitted) ->
+    forall step, step ∈ standing -> step.Admitted := by
+  intro walked
+  induction walked with
+  | nil =>
+      intro context steps reached standing landed prior step mem
+      simp only [runWalk, RunOutcome.landed.injEq] at landed
+      obtain ⟨_, sameSteps⟩ := landed
+      subst sameSteps
+      exact prior step mem
+  | cons node rest inductionHypothesis =>
+      intro context steps reached standing landed prior step mem
+      cases verdict : admit context (complete steps node) with
+      | refused refusal => simp [runWalk, verdict] at landed
+      | admitted act =>
+          simp only [runWalk, verdict] at landed
+          refine inductionHypothesis _ _ _ _ landed ?_ step mem
+          intro earlier earlierMem
+          rcases List.mem_append.mp earlierMem with old | new
+          · exact prior earlier old
+          · rw [List.mem_singleton.mp new]
+            exact verdict
+
+/-- A landed walk names the nodes it walked, in walked order, one step
+    each. -/
+theorem run_walk_landed_names (complete : Completion) (carry : Carry) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (reached : Door) (standing : List RunStep),
+    runWalk complete carry context steps walked = .landed reached standing ->
+    standing.map RunStep.node =
+      steps.map RunStep.node ++ walked.map ProgramNode.name := by
+  intro walked
+  induction walked with
+  | nil =>
+      intro context steps reached standing landed
+      simp only [runWalk, RunOutcome.landed.injEq] at landed
+      obtain ⟨_, sameSteps⟩ := landed
+      subst sameSteps
+      simp
+  | cons node rest inductionHypothesis =>
+      intro context steps reached standing landed
+      cases verdict : admit context (complete steps node) with
+      | refused refusal => simp [runWalk, verdict] at landed
+      | admitted act =>
+          simp only [runWalk, verdict] at landed
+          have names := inductionHypothesis _ _ _ _ landed
+          simpa [runStepOf] using names
+
+/-- An admitted run is exactly a sequence of admitted acts: the steps
+    are the walked nodes in order, and each records the one door
+    admitting that node's candidate. -/
+theorem run_admitted_sequence : Laws.KRunAdmittedSequence := by
+  intro complete carry context nodes reached steps landed
+  simp only [runProgram] at landed
+  refine ⟨?_, ?_⟩
+  · intro step mem
+    refine run_walk_landed_admitted complete carry nodes.reverse context []
+      reached steps landed ?_ step mem
+    intro earlier earlierMem
+    simp at earlierMem
+  · simpa using
+      run_walk_landed_names complete carry nodes.reverse context [] reached
+        steps landed
+
+/-- Every refusal decomposes into a standing prefix and a node that
+    genuinely refuses at the context the prefix reached. -/
+theorem run_walk_refused_split (complete : Completion) (carry : Carry) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (name : Nat) (refusal : Refusal)
+      (standing : List RunStep),
+    runWalk complete carry context steps walked
+        = .refused name refusal standing ->
+    exists (before : List ProgramNode) (node : ProgramNode)
+      (after : List ProgramNode) (reached : Door),
+      walked = before ++ node :: after /\ node.name = name /\
+      runWalk complete carry context steps before
+        = .landed reached standing /\
+      admit reached (complete standing node) = .refused refusal := by
+  intro walked
+  induction walked with
+  | nil =>
+      intro context steps name refusal standing refused
+      simp [runWalk] at refused
+  | cons node rest inductionHypothesis =>
+      intro context steps name refusal standing refused
+      cases verdict : admit context (complete steps node) with
+      | refused surfaced =>
+          simp only [runWalk, verdict, RunOutcome.refused.injEq] at refused
+          obtain ⟨sameName, sameRefusal, sameSteps⟩ := refused
+          subst sameName
+          subst sameRefusal
+          subst sameSteps
+          exact ⟨[], node, rest, context, rfl, rfl, rfl, verdict⟩
+      | admitted act =>
+          simp only [runWalk, verdict] at refused
+          obtain ⟨before, refusing, after, reached, split, refusingName,
+            prefixLanded, refuses⟩ :=
+            inductionHypothesis _ _ _ _ _ refused
+          refine ⟨node :: before, refusing, after, reached, ?_, refusingName,
+            ?_, refuses⟩
+          · simp [split]
+          · simp only [runWalk, verdict]
+            exact prefixLanded
+
+/-- Every refusal decomposes: the prefix's admissions stand, and the
+    refusing node's candidate is refused at the context that prefix
+    reached. -/
+theorem run_refusal_decomposition : Laws.KRunRefusalDecomposition := by
+  intro complete carry context steps walked name refusal standing refused
+  exact run_walk_refused_split complete carry walked context steps name
+    refusal standing refused
+
+/-- Once a prefix has landed and the next node refuses, no tail changes
+    the answer: the nodes after the refusal are never judged. -/
+theorem run_walk_tail_free (complete : Completion) (carry : Carry)
+    (context : Door) (steps : List RunStep) (before : List ProgramNode)
+    (node : ProgramNode) (reached : Door) (standing : List RunStep)
+    (refusal : Refusal)
+    (prefixLanded :
+      runWalk complete carry context steps before = .landed reached standing)
+    (refuses : admit reached (complete standing node) = .refused refusal) :
+    forall after : List ProgramNode,
+      runWalk complete carry context steps (before ++ node :: after)
+        = .refused node.name refusal standing := by
+  intro after
+  rw [run_walk_append complete carry before context steps (node :: after),
+    prefixLanded]
+  simp only [runWalk, refuses]
+
+/-- The tail after a refusal is unjudged. -/
+theorem run_tail_unjudged : Laws.KRunTailUnjudged := by
+  intro complete carry context steps before node reached standing refusal
+    prefixLanded refuses after
+  exact run_walk_tail_free complete carry context steps before node reached
+    standing refusal prefixLanded refuses after
+
+/-- A refusal absorbs every tail appended after it. -/
+theorem run_walk_refusal_absorbs_tail (complete : Completion) (carry : Carry)
+    (context : Door) (steps : List RunStep) (walked : List ProgramNode)
+    (name : Nat) (refusal : Refusal) (standing : List RunStep)
+    (refused :
+      runWalk complete carry context steps walked
+        = .refused name refusal standing)
+    (after : List ProgramNode) :
+    runWalk complete carry context steps (walked ++ after)
+      = .refused name refusal standing := by
+  rw [run_walk_append complete carry walked context steps after, refused]
+
+/-- Under monotone carriage growth a landed walk only ever grows its
+    context. -/
+theorem run_walk_context_grows (complete : Completion) (carry : Carry)
+    (growth : Carry.Monotone carry) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (reached : Door) (standing : List RunStep),
+    runWalk complete carry context steps walked = .landed reached standing ->
+    Door.Le context reached := by
+  intro walked
+  induction walked with
+  | nil =>
+      intro context steps reached standing landed
+      simp only [runWalk, RunOutcome.landed.injEq] at landed
+      obtain ⟨sameContext, _⟩ := landed
+      subst sameContext
+      exact door_le_refl context
+  | cons node rest inductionHypothesis =>
+      intro context steps reached standing landed
+      cases verdict : admit context (complete steps node) with
+      | refused refusal => simp [runWalk, verdict] at landed
+      | admitted act =>
+          simp only [runWalk, verdict] at landed
+          exact door_le_trans (growth context act)
+            (inductionHypothesis _ _ _ _ landed)
+
+/-- Monotone-context benignity: the context a landed run reaches extends
+    the one it started at. -/
+theorem run_context_grows : Laws.KRunContextGrows := by
+  intro complete carry growth context steps walked reached standing landed
+  exact run_walk_context_grows complete carry growth walked context steps
+    reached standing landed
+
+/-- An argument list requires nothing exactly when it carries no hole. -/
+theorem arg_requires_nil_iff (args : List RawArg) :
+    args.flatMap argRequires = [] <-> forall name, RawArg.hole name ∉ args := by
+  induction args with
+  | nil => simp
+  | cons head rest inductionHypothesis =>
+      cases head with
+      | hole name =>
+          constructor
+          · intro empty
+            simp [argRequires] at empty
+          · intro free
+            exact ((free name) (by simp)).elim
+      | digestRef kind id => simp [argRequires, inductionHypothesis]
+      | literal value => simp [argRequires, inductionHypothesis]
+      | clockNow => simp [argRequires, inductionHypothesis]
+      | randomSeed => simp [argRequires, inductionHypothesis]
+      | secretBytes bytes => simp [argRequires, inductionHypothesis]
+      | mintedId token => simp [argRequires, inductionHypothesis]
+      | functionValue code => simp [argRequires, inductionHypothesis]
+
+/-- A program requires nothing exactly when no node carries a hole: the
+    closed reading of the requirement set. -/
+theorem requires_of_nil_iff (nodes : List ProgramNode) :
+    requiresOf nodes = [] <-> forall node, node ∈ nodes ->
+      forall name, RawArg.hole name ∉ node.args := by
+  induction nodes with
+  | nil => simp [requiresOf]
+  | cons head rest inductionHypothesis =>
+      simp only [requiresOf, List.flatMap_cons, List.append_eq_nil_iff,
+        List.mem_cons, forall_eq_or_imp] at *
+      rw [arg_requires_nil_iff head.args, inductionHypothesis]
+
+/-- Under a hole-preserving completion, a landed walk proves every node
+    it walked was already filled: a hole would have been an intrinsic
+    fault, refused at every door. -/
+theorem run_walk_landed_hole_free (complete : Completion) (carry : Carry)
+    (preserving : Completion.HolePreserving complete) :
+    forall (walked : List ProgramNode) (context : Door)
+      (steps : List RunStep) (reached : Door) (standing : List RunStep),
+    runWalk complete carry context steps walked = .landed reached standing ->
+    forall node, node ∈ walked -> forall name, RawArg.hole name ∉ node.args := by
+  intro walked
+  induction walked with
+  | nil =>
+      intro context steps reached standing _ node mem
+      simp at mem
+  | cons head rest inductionHypothesis =>
+      intro context steps reached standing landed node mem name holeMem
+      cases verdict : admit context (complete steps head) with
+      | refused refusal => simp [runWalk, verdict] at landed
+      | admitted act =>
+          simp only [runWalk, verdict] at landed
+          rcases List.mem_cons.mp mem with sameNode | memRest
+          · subst sameNode
+            exact intrinsic_fault_no_admission
+              (IntrinsicFault.payload (complete steps node) (RawArg.hole name)
+                (preserving steps node name holeMem) trivial)
+              context act verdict
+          · exact inductionHypothesis _ _ _ _ landed node memRest name holeMem
+
+/-- Only closed programs run: a landed run's program required nothing. -/
+theorem run_landed_closed : Laws.KRunLandedClosed := by
+  intro complete preserving carry context nodes reached steps landed
+  simp only [runProgram] at landed
+  refine (requires_of_nil_iff nodes).mpr ?_
+  intro node mem name
+  exact run_walk_landed_hole_free complete carry preserving nodes.reverse
+    context [] reached steps landed node (List.mem_reverse.mpr mem) name
+
+end RunComposition
+
+/-! ## The planted run rows -/
+
+section PlantedRun
+
+/-- The planted carriage growth only grows: an admitted declaration
+    extends both memberships, every other sentence leaves them alone. -/
+theorem planted_run_carry_monotone : Carry.Monotone Planted.runCarry := by
+  intro context act
+  cases act with
+  | declare kind value writ =>
+      exact { catalog := fun _ mem => List.mem_cons_of_mem _ mem
+              pinned := fun _ mem => List.mem_cons_of_mem _ mem }
+  | resolve kind target => exact door_le_refl context
+  | emit lane body => exact door_le_refl context
+  | join cell contribution => exact door_le_refl context
+  | fold declared partition anchor query => exact door_le_refl context
+  | decide register token outcome => exact door_le_refl context
+  | trigger predicate declaration => exact door_le_refl context
+  | spawn parent request => exact door_le_refl context
+
+/-- The planted run refuses at its second walked node with the
+    clock-read row, and the first node's admission stands in the steps
+    the outcome reports. -/
+theorem planted_run_refuses_with_prefix_standing :
+    runProgram Planted.runCandidate Planted.runCarry Planted.door
+        Planted.runNodes
+      = .refused 1 (taught .clockRead)
+          [runStepOf Planted.runCandidate Planted.door []
+            Planted.runNodeAdmitted Planted.lawfulDeclareAct] := rfl
+
+/-- The lawful twin at run scale: a program whose every node the door
+    admits lands, one step per node in admission order. The walk that
+    refuses everything is refuted by this row. -/
+theorem planted_run_lands :
+    exists (reached : Door) (steps : List RunStep),
+      runProgram Planted.runCandidate Planted.runCarry Planted.door
+          Planted.runNodesLanding
+        = .landed reached steps /\
+      steps.map RunStep.node = [0, 2] :=
+  ⟨_, _, rfl, rfl⟩
+
+/-- The planted run's answer does not depend on what follows the
+    refusing node: two programs sharing the prefix and differing only in
+    their tail get one outcome. -/
+theorem planted_run_tail_agrees :
+    runProgram Planted.runCandidate Planted.runCarry Planted.door
+        Planted.runNodes
+      = runProgram Planted.runCandidate Planted.runCarry Planted.door
+        Planted.runNodesOtherTail := rfl
+
+end PlantedRun
+
 end Kernel
