@@ -3,4 +3,5 @@
 .discovered.*
 .footprint.*.lean
 .corpus.*.ndjson
+.goemit.*
 .surface.*
