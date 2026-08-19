@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # The Go projection — decisions the dispatch did not fix
 
 Slice D of the projections toolkit (DEV-830): `GoAst`, its one printer, and
@@ -220,7 +219,6 @@ moment one of them writes the file the other checks, the wall stops comparing
 two derivations and starts comparing a generator with itself.
 **Load-bearing? yes** — it is the difference between a parity wall and a
 regeneration check.
-=======
 # verify/unity — decisions the dispatch did not fix
 
 Format per entry: what was decided / alternatives / why / **load-bearing?**
@@ -408,4 +406,3 @@ proves a constant is present proves nothing about what it spells).
 Why: it is the house pattern, and it is the only shape that shows a rule is
 load-bearing rather than merely present. **Load-bearing? no** — but a gate that
 cannot fail proves nothing, and these are the arms that make it able to.
->>>>>>> origin/main
