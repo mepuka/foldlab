@@ -3,7 +3,7 @@
  *
  * @module
  */
-import { Effect, Predicate, Result, Schema, SchemaIssue } from "effect"
+import { Effect, Equivalence, Predicate, Result, Schema, SchemaIssue } from "effect"
 
 import { decodeJson, type JsonValue } from "@foldlab/core/jcs"
 import { canonicalBytes } from "../truth/Canonical.js"
@@ -140,6 +140,59 @@ export interface DecodedEnvelope {
   readonly bytes: Uint8Array
   readonly digest: DigestValue
 }
+
+/**
+ * Folds an envelope over the four monotone observation kinds.
+ *
+ * The arm record's keys are the kind schema's own literals, so a fifth kind
+ * admitted by envelope v0 is a key every caller is missing and a kind the
+ * grammar does not admit is a key no caller can spell. Nothing here restates
+ * the four names.
+ *
+ * @example
+ * ```ts
+ * import { matchKind } from "@foldlab/plait/Wire"
+ *
+ * const isTerminal = matchKind({
+ *   emit: () => false,
+ *   attest: () => false,
+ *   checkpoint: () => false,
+ *   sealed: () => true,
+ * })
+ * ```
+ */
+export const matchKind: <Out>(cases: {
+  readonly [K in EnvelopeKind]: (envelope: Envelope) => Out
+}) => (envelope: Envelope) => Out =
+  <Out>(cases: { readonly [K in EnvelopeKind]: (envelope: Envelope) => Out }) =>
+  (envelope: Envelope): Out => cases[envelope.kind](envelope)
+
+/**
+ * Two decoded envelopes are the same value when their digests agree.
+ *
+ * One string compare stands in for a structural walk because identity here IS
+ * the digest: a decoded envelope carries the canonical bytes it was admitted
+ * from, and the digest is SHA-256 over exactly those bytes. The coincidence
+ * this leans on — structural equality and digest equality are the same
+ * relation — is walled rather than assumed, forward by canonicalization
+ * determinism and backward on SHA-256 collision resistance as trusted base.
+ */
+export const byDigest: Equivalence.Equivalence<DecodedEnvelope> = Equivalence.mapInput(
+  Equivalence.String,
+  (decoded: DecodedEnvelope) => decoded.digest,
+)
+
+/**
+ * Structural equivalence over envelope values that carry no digest yet.
+ *
+ * Derived from the closed envelope schema, so it moves with the grammar. It is
+ * the instance for values on their way to being admitted — a caller comparing
+ * two candidate envelopes before either has canonical bytes. Once a value is
+ * decoded, `byDigest` says the same thing for the price of one string compare.
+ */
+export const envelopeEquivalence: Equivalence.Equivalence<Envelope> = Schema.toEquivalence(
+  Envelope,
+)
 
 const closedEnvelopeLaw =
   "Envelope v0 is a closed struct; excess properties are refused."

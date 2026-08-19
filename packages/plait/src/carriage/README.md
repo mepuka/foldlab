@@ -25,6 +25,23 @@ import back up — `../kernel/KernelProgram.ts` takes `CasDaemon`'s shape and
 `../internal/nats.ts` takes `FabricClient`'s. Both are type-only; the layering
 law carves out no exception, so both are open findings under its pending lint.
 
+`FabricClient` also carries the fold over a publish acknowledgement. It is not
+shared with the lane's, deliberately: the two answer different subscriptions,
+and each `duplicate` bit names its own stream's dedup window — this one the
+commons stream's.
+
+`Engine` carries the folds over its two outcome unions: one judged write, which
+either carried a sentence or holds the door's taught row, and one program run,
+which landed, stopped at the door, or stopped at a node the completion could not
+speak. The write fold is dual because its landing type is parametric — the
+pipeable shape alone has nothing to infer the landing from — and the served face
+folds all five of its judged writes through it. Neither gets a compile-time
+control, and the rule is in the package `AGENTS.md`: a control is owed where a
+union can grow without anyone touching the fold, which is the corpus-projected
+vocabularies and not a union declared in the module beside it. The generated
+`KernelVerdict` beside them stays unfolded here — that fold, if anyone wants it,
+belongs to the door.
+
 Nothing here is machine-generated, and both service shapes are hand-written
 declarations of corpus concepts — staged debt under the first standing law.
 

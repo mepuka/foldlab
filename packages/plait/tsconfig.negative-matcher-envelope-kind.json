@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["negative-controls/MatchClosure.envelope-kind.mutant.ts"]
+}

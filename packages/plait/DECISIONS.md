@@ -6920,3 +6920,363 @@ canonicalizer and the digest are the canonical package's, the lanes are the
 journal's, the fence is the register's, and the incarnation fact machinery is
 the one the fence slice built. **Load-bearing? no**, but the gaps are the honest
 list of what a shared Go refusal package would absorb.
+## Task: the read-side folds, the digest instances, and the coherence wall (2026-08-19)
+
+### T1. The structural-kind fold is a mapped arm record, not the pin's discriminator matcher
+
+Decided: `Refusal.matchKind` is an explicitly typed record dispatch whose arm
+record is a mapped type over the generated kind union, and the pin's
+`Match.discriminatorsExhaustive` is not used for it.
+
+The spec's own signature block writes the mapped record, and the pin explains
+why it has to. `discriminatorsExhaustive` computes each arm's argument as
+`Extract<R, Record<D, Tag>>`, which is a narrowing BETWEEN union members. A
+structural refusal is one class whose `kind` field carries forty-four literals,
+not forty-four classes, so the extraction finds no member for any tag and every
+arm would take the empty type — a matcher that typechecks and hands each arm
+nothing to read. The mapped record states exactly the same totality, keeps the
+argument the refusal itself, and costs one property lookup.
+
+The sort fold is the opposite case and gets the opposite answer: `Refusal.match`
+IS over a union of two tagged classes, so `Match.tagsExhaustive` is the pin's
+own tool and is used.
+
+Alternatives: a matcher for both (arms with nothing to read); a hand-written
+switch (the closure would be a habit rather than a type); one fold covering both
+sort and kind (two different closures, one of which would have to be optional).
+**Load-bearing? yes** — the closure contract is the whole affordance.
+
+### T2. The matcher's `Unify` narrowing is stated at the seam rather than absorbed
+
+Decided: `Refusal.match`'s implementation narrows the pin's
+`(u: Refusal) => Unify<Out>` to the declared `(refusal: Refusal) => Out`, with
+the reason written beside it.
+
+`Unify` reduces at every real application and cannot reduce over a type
+parameter no call site has resolved, so the mismatch exists only inside the one
+function that is generic in it. The declared signature above the implementation
+is the contract, the exhaustiveness is the matcher's, and the narrowing is the
+seam between them.
+
+Alternatives: exporting the pin's return type (every caller would inherit an
+unreduced conditional in its own signature); dropping the matcher for a tag
+switch (T1's reason not to).
+**Load-bearing? no** — a later pin that reduces `Unify` over parameters removes
+this line and changes nothing else.
+
+### T3. A closure suite cannot state the closure, so the compile-time half is a separate executed control
+
+Decided: the runtime half — every kind dispatches, and to its own arm — is the
+derived suite; the claim "a caller that has not handled a new kind fails to
+compile" is an executed must-not-compile control beside it, wired into
+`test:types`.
+
+The two halves cannot be one artifact, and the reason is the amendment that
+required the suites to derive from the union in the first place. A suite that
+builds its arms from the union GROWS with the union, so on the day a kind is
+added it keeps passing — which is correct for what it claims and useless for the
+other claim. The caller the fence is really about is one whose arm record was
+written before the kind existed, and only a compiler can be shown that caller.
+
+Alternatives: asserting the arm count against a written number (the enumeration
+this ticket exists to stop writing); a type-level equality assertion inside the
+suite (it would fail the same compile the suite runs in, so the suite could not
+also report the runtime half).
+**Load-bearing? yes** — without the control the closure is untested at the only
+moment it matters.
+
+### T4. The control declares its arm records instead of building them, and the dropped kind is the union's own first literal
+
+Decided: both mutants use `declare const` for the full record and for the
+arm-short one, and derive the dropped kind as `(typeof Kind.literals)[0]`.
+
+Building the full record needs an `Object.fromEntries` cast, and that cast is
+itself an error under the pinned compiler — two errors in a file whose contract
+is that it fails for one named reason. The claim is about what can be SPELLED,
+so the control needs the types and not the values; nothing in the file runs.
+Deriving the dropped kind rather than naming one keeps the control from falling
+out of step with the union it watches.
+
+Alternatives: casting through `unknown` (a second cast to explain, and the
+scaffolding still in the trace); naming a kind literally (a rename would break
+the control for a reason unrelated to closure).
+**Load-bearing? yes** — a control reporting two errors proves the file does not
+compile, not that the spelling is unlawful.
+
+### T5. The committed traces name the whole arm record, and re-recording is the cost of growing the vocabulary
+
+Decided: the traces are recorded as the pinned compiler prints them, record type
+and all, and adding a refusal kind is expected to move them.
+
+The alternative is a normalizer, and this repository already refused that class
+of answer for the builder control: the words inside a diagnostic ARE the claim,
+so rewriting them before comparing grades the compiler against a paraphrase. The
+consequence is honest and small — a kind added to the vocabulary costs one
+deliberate re-recording, which is one deliberate acknowledgement that every
+caller must now handle it.
+
+Alternatives: matching only the error code (a control that would keep passing
+while pointing at a different property); trimming the type text (the paraphrase
+problem).
+**Load-bearing? no** — a stabler printer would shorten the trace without
+changing what it holds.
+
+### T6. The register fold discriminates on the holder, not on token zero
+
+Decided: `Register.matchState` reads `absent` from a null holder, `held` from a
+null outcome under a holder, and `landed` from both present.
+
+The spec's gloss says "token 0, no holder", and only the second half is a fact
+about the value: the observe path answers a missing entry with a zero token, a
+null holder, and a null outcome, while every present entry carries a holder the
+stored schema types as a string. Reading absence off the token would make the
+fold depend on a revision numbering that belongs to the substrate, and the seam's
+own rules already ban reasoning from revision arithmetic.
+
+Alternatives: discriminating on a zero token (substrate arithmetic); a fourth arm
+for the unrepresentable holder-less landing (a case the stored schema excludes).
+**Load-bearing? yes** — absence is the arm a consumer is most likely to reach.
+
+### T7. The read-side types are spelled through the modules' own exported types, never through `string` and `number`
+
+Decided: every arm shape and instance is written over the concept module's
+exported type — `RegisterState["token"]`, `NonNullable<RegisterState["holder"]>`,
+`RegisterState["outcome"]`, `DecodedEnvelope`, `CellState`, `Envelope`,
+`PublishedEnvelope`, `EmittedEvent` — and no primitive alias is restated here.
+
+The sorts sweep that brands these fields is being built concurrently. Spelled
+this way, a brand landing on a holder or a lane handle transports into these
+folds without touching them; spelled as `string`, each one would be a second
+declaration of a concept the sweep is trying to unify, which is the first
+standing law's definition of a defect. The token order survives the same way for
+a different reason: `Order` is contravariant in its parameter, so the pin's
+number order remains the order of a branded token.
+
+Alternatives: writing the primitives now and re-typing after the sweep merges
+(two edits, and a window in which the wrong type ships).
+**Load-bearing? yes** — it is what makes the rebase mechanical.
+
+### T8. The coherence wall demonstrates the pin's equality cache rather than citing it
+
+Decided: the wall's last case mutates a decoded envelope after its first
+comparison and shows the pin still answering with the answer it had before, then
+shows a fresh decode of the same value answering correctly.
+
+The gotcha is the reason every comparison above it is over decode-fresh values,
+and a discipline whose justification is a sentence in someone else's
+documentation is a discipline nobody can check. Executed, it is evidence: the
+cache is real, plait values are decode-produced and treated as immutable, and the
+wall holds itself to that by construction rather than by intent.
+
+The generated half is bounded the same way. The envelope arbitrary draws from a
+deliberately small pool in every coordinate, because a property that only ever
+produced different envelopes would exercise one side of the biconditional and
+report a pass for both — so a third case samples the pool and requires the
+digests to collide, which makes the positive branch's coverage a measured fact.
+The backward direction is stated as trusted base, in the ledger's own terms:
+observing that no colliding pair appears is not a proof that none exists.
+
+Alternatives: citing the pin's documentation in prose (unfalsifiable); generating
+envelopes from the schema's own arbitrary (the wire-value declaration carries no
+arbitrary, and a wide pool would never collide).
+**Load-bearing? yes** — every digest equivalence in the package inherits this
+wall.
+
+### T9. The named first consumers carry no refusal fold, and none was manufactured
+
+Decided: no consumer was refactored through `Refusal.match` or
+`Refusal.matchKind`, and the reason is reported rather than repaired.
+
+The dispatch charged this run to route the served face and the engine's outcome
+plumbing through the new folds. Reading them, every branch in both is over the
+ENGINE's own outcome union — carried against refused, and the door verdict's
+refused — and not over a refusal at all. The one place the served face touches a
+refusal reads its shared fields uniformly into the wire shape, with no branch to
+replace; folding it would spell two arms doing identical work. A sweep of the
+package finds exactly one conditional anywhere that reads refusal sort, and it is
+the retry predicate the sort exists for.
+
+The nearest genuine candidate for a NEW fold is the incarnation round's landed
+read, which answers null for both non-landed states — a single field read under
+one null check, which is the case the dispatch explicitly excluded.
+
+Alternatives: routing the served face's uniform projection through a two-arm fold
+(ceremony over a shape with no branch, and every served byte at risk for it);
+minting an engine-outcome fold (new public surface outside this scope).
+**Load-bearing? no** — the folds' first real consumers will be the surfaces that
+answer differently per sort, and none is built yet.
+
+### T10. The counted type universe did not grow, so no pin was raised
+
+Decided: no ratchet pin was touched and no waiver was added.
+
+Every export this run lands is a VALUE — folds, an order, three equivalences —
+and the census quantifies over public type declarations. The walk classified the
+same 182 public types before and after, and the public-effect manifest did not
+move either, because nothing added returns an `Effect`, a `Layer`, or a `Stream`.
+Both were run rather than assumed.
+
+Alternatives: pre-emptively raising a pin (a raise that measured nothing).
+**Load-bearing? no** — a later export that names a type will pay the pin then.
+
+## Task: the completion pass — a fold for the engine's unions (operator ruling, 2026-08-19)
+
+The prior task reported the engine's outcome union as a hand-folded site outside
+its scope. The operator ruled the fold in — the beauty is in completeness, a
+match for every matcher — and this task is that completion.
+
+### T1. Both engine unions get a fold, and the run outcome is public surface rather than an internal shape
+
+Decided: `Engine.matchOutcome` over `EngineOutcome<Landed>` and
+`Engine.matchRunOutcome` over `RunOutcome`.
+
+The second one was a judgment the dispatch asked for rather than assumed.
+`RunOutcome` qualifies on every count the completeness rule cares about: it is
+exported through the package barrel, it is a closed three-arm tagged union, it is
+the return type of the public `run`, it is already counted in the public type
+universe as owned debt, and it is read by hand — the engine and replay suites
+both branch on its tags. A union a consumer can only read by branching is a union
+that should offer a fold.
+
+Alternatives: folding only the write outcome (the run outcome is the wider union
+and the one whose third arm is easiest to forget); leaving both and reporting
+(the ruling closed that option).
+**Load-bearing? yes** — the run outcome's third arm is the one a consumer drops.
+
+### T2. Both engine folds use the pin's tag matcher, and that is consistent with refusing it for the kind fold
+
+Decided: `Match.type<...>().pipe(Match.tagsExhaustive(cases))` for both.
+
+This is the same rule the prior task applied, reaching the opposite answer
+because the shapes differ. `Match` discriminates BETWEEN union members: it earns
+its keep exactly when the union is a union of tagged object types, which both
+engine outcomes are, and it cannot work when the union is one type whose field
+carries many literals, which the refusal kind is. The kind fold's mapped record
+and these two matchers are the same discipline applied to two different shapes,
+not two tastes.
+
+Alternatives: conditional folds on `_tag` (they would work and would state the
+closure less; the matcher's arm record makes a missing arm a missing required
+property and an extra arm the empty type).
+**Load-bearing? no** — the closure would survive either spelling.
+
+### T3. `matchOutcome` is dual, because it is the family's only fold whose input is parametric
+
+Decided: `matchOutcome` supports data-first and pipeable use, in the same idiom
+`retryAbsence` already uses; `matchRunOutcome` stays pipeable-only like the rest
+of the family.
+
+The asymmetry is forced and not a preference. Every other fold in the family
+takes a concrete input — a refusal, an envelope, a register state — so the
+pipeable shape has nothing left to infer. `EngineOutcome` is parametric in its
+landing, and a caller who writes the arms first has handed the compiler no
+outcome to read the landing off: `Landed` resolves to `unknown` and the carried
+arm loses the very value it exists to receive. Data-first reads the landing off
+the outcome. Both shapes are declared, so nothing is lost.
+
+The arms' return type is annotated at each served call site rather than inferred.
+A single `Out` is the stronger contract — it forces both arms to agree on what
+the fold answers — and on this surface what they must agree on has a name.
+
+Alternatives: a single `Out` inferred as the union of both arms' returns (weaker:
+the arms would never have to agree); requiring the caller to spell both type
+parameters (noise at every site).
+**Load-bearing? yes** — without it the carried arm is untyped where it matters.
+
+### T4. No must-not-compile control for these two, and the line is where the union comes from
+
+Decided: the two engine folds get runtime closure suites and NO compile-time
+control, and the rule that decides it is stated rather than the case being judged
+one at a time.
+
+A control earns its keep when a union can GROW WITHOUT ANYONE TOUCHING THE FOLD.
+That is exactly the refusal vocabulary and the envelope grammar: both are
+projected from the corpus by an emitter, so a kind can arrive in a regeneration
+that edits no fold and no call site, and only a compiler run against a caller
+written before that day can show what the arrival costs. `EngineOutcome` and
+`RunOutcome` are hand-written unions in this module. A third arm arrives only by
+someone editing the very lines the fold sits beside, and the compiler tells them
+at every call site in the same edit — a control would restate, on a committed
+trace needing re-recording, what that edit already surfaces immediately.
+
+The structural totality is unchanged either way: the matcher's arm record makes a
+missing arm a missing required property and an unknown arm the empty type. What
+the control adds is not the closure, it is the WARNING, and only a generated
+union can spring it.
+
+Alternatives: a control per fold (ceremony, plus two more traces to re-record for
+a union nobody can grow accidentally); no runtime suite either (the dispatch to
+each arm would then be unexercised).
+**Load-bearing? yes** — it is the rule that keeps the control set from growing
+with every union.
+
+### T5. Five sites, not six, and the three that remain are a different union
+
+Decided: the served face's five `EngineOutcome` folds are refactored; the three
+`KernelVerdict` folds beside them are left, and the prior task's count is
+corrected.
+
+The prior report said six hand-fold sites in the served face. Recounting against
+the file: five read `outcome._tag === "refused"` over `EngineOutcome`, and three
+more read `verdict.verdict === "refused"` over `KernelVerdict` — the generated
+door verdict, a different union with a different discriminant. Six was a
+miscount, and the corrected numbers are five refactored and three deliberately
+untouched.
+
+Those three are left for a reason beyond scope. `KernelVerdict` is generated
+kernel vocabulary, and the one-door wall refuses a module that constructs or
+declares an admission verdict or declares a hand-written twin of a name the
+door's form owns. A verdict fold is exactly the shape that wall exists to catch,
+so it is the door's to offer if anyone offers it — minting one on the served face
+would be a second-door spelling wearing a fold's clothes.
+
+Alternatives: folding the verdict sites here (risks the wall this pass was told
+to keep green, and would site kernel vocabulary on a surface).
+**Load-bearing? yes** — the boundary between the engine's unions and the kernel's
+is what keeps the served face out of the door's business.
+
+### T6. The engine's own three carried-guards are left as guards
+
+Decided: the three `if (outcome._tag === "carried")` sites inside the engine's
+lane, cell, and register declares keep their shape.
+
+They are not folds. Each performs a side effect on one arm and returns the same
+outcome on both, so routing them through the fold would spell two arms returning
+the identical value with one of them mutating a replica on the way — the
+"do not force it" case, restated inside the module that owns the union.
+
+Alternatives: folding them for uniformity (uniformity of spelling at the cost of
+saying what the code does).
+**Load-bearing? no** — a later refactor may find a shape where the fold reads
+better.
+
+### T7. Served bytes were held by running the walls, not by inspecting the diff
+
+Decided: the refactor's constraint was checked by executing the parity and door
+gates and the served-face suite rather than by reading the change.
+
+Each site keeps the same constructor calls with the same arguments in the same
+order, so the rendered objects have identical keys in identical order — but that
+is an argument, and the constraint was a wall. `check:kernel-tools` and its
+mutation control, `check:kernel-door` and its eleven planted second-door
+spellings, and the served-face suite were each run bare and each passed.
+
+Alternatives: reasoning from the diff alone (the class of claim this estate does
+not accept).
+**Load-bearing? yes** — served-equals-derived is a blocker-severity law.
+
+### T8. Neither manifest moved, and the pins were left alone
+
+Decided: no ratchet pin was raised and no waiver added, for the second time and
+for the same measured reason.
+
+The folds are values; the arm types they name — the carried and refused arms of
+each union — are non-exported aliases, so the census sees no new public type. The
+walk classified the same 182 public types and the ratchet held at its committed
+pins; the signature manifest regenerated byte-identical, because a fold returns a
+function and never an `Effect`, a `Layer`, or a `Stream`. Both were run.
+
+Alternatives: exporting the arm aliases for callers to name (four new public
+types and four waivers, to save callers a `ReturnType`-shaped spelling nobody has
+asked for yet).
+**Load-bearing? no** — exporting an arm type later is an ordinary reviewed diff.
