@@ -2,13 +2,19 @@ import { resolve } from "node:path"
 
 import { KERNEL_RUNTIME_STRUCTURAL_REFUSALS } from "../src/kernel/KernelTables.generated.js"
 import {
+  DRAFT_MEANING_MARKER,
+  REFUSAL_MEANING_TASTE_TICKET,
   REFUSAL_VOCABULARY_PATHS,
   RUNTIME_REFUSAL_WAIVER_TICKET,
   checkProjectionAncestry,
+  checkRefusalMeanings,
   checkRefusalVocabulary,
   checkRuntimeUnionWiring,
   readCorpusRefusalReasons,
+  readKernelReasonMeanings,
+  readProseMeanings,
   readRuntimeRefusalKinds,
+  readRuntimeRefusalMeanings,
   readStagedDebtPin,
   type RefusalVocabularyEvidence,
 } from "./refusal-vocabulary.js"
@@ -52,9 +58,30 @@ if (!checked.ok) fail(checked.reason)
 const ancestry = checkProjectionAncestry(KERNEL_RUNTIME_STRUCTURAL_REFUSALS, evidence)
 if (!ancestry.ok) fail(ancestry.reason)
 
+const meanings = checkRefusalMeanings({
+  runtimeMeanings: readRuntimeRefusalMeanings(
+    await read(REFUSAL_VOCABULARY_PATHS.runtimeUnion),
+    REFUSAL_VOCABULARY_PATHS.runtimeUnion,
+  ),
+  reasonMeanings: readKernelReasonMeanings(
+    await read(REFUSAL_VOCABULARY_PATHS.kernelTables),
+    REFUSAL_VOCABULARY_PATHS.kernelTables,
+  ),
+  proseMeanings: readProseMeanings(
+    await read(REFUSAL_VOCABULARY_PATHS.prosePage),
+    REFUSAL_VOCABULARY_PATHS.prosePage,
+  ),
+  corpusReasons: evidence.corpusReasons,
+  draftMarker: DRAFT_MEANING_MARKER,
+  tasteTicket: REFUSAL_MEANING_TASTE_TICKET,
+})
+if (!meanings.ok) fail(meanings.reason)
+
 console.log(
   `REFUSAL VOCABULARY: PASS (${evidence.runtimeKinds.length} runtime kinds:`
     + ` ${checked.corpusBacked} corpus-backed,`
     + ` ${checked.stagedDebt} pinned ${RUNTIME_REFUSAL_WAIVER_TICKET} staged debt,`
-    + ` against ${evidence.corpusReasons.length} corpus refusal reasons)`,
+    + ` against ${evidence.corpusReasons.length} corpus refusal reasons;`
+    + ` ${meanings.kinds} kind and ${meanings.reasons} reason meanings, all still marked`
+    + ` drafts pending the ${REFUSAL_MEANING_TASTE_TICKET} taste pass)`,
 )

@@ -38,7 +38,13 @@ staged-debt roster out of the reviewed pin at
 `../../test/fixtures/refusal-staged-debt.pin.txt` — three artifacts, no two of
 them views of one value — and `bun run check:refusal-control` plants a
 hand-minted kind into the union source and must be refused for its committed
-reason. `bun run check:refusal-payloads` pins every `law`, `expected`, and
+reason. The same wall holds the meaning law: each kind in this module's roster
+carries its standing meaning as a doc comment, one to two sentences behind the
+draft marker the DEV-825 taste pass will retire, and the check reads that
+meaning back out of these bytes, out of the kernel table's, and out of the
+prose page's, refusing a kind with none, a meaning that lost its marker, and a
+page that renders a different sentence than the modules do. `bun run
+check:refusal-meaning-control` plants one mutation per clause. `bun run check:refusal-payloads` pins every `law`, `expected`, and
 `next` text under `src/` byte for byte. `bun run test:fast` runs the pure
 suites beside each module, and `bun run check:public-effects` re-emits the
 package's public declarations and refuses any public Effect whose error

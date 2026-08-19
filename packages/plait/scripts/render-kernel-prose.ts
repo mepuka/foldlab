@@ -15,6 +15,14 @@
  * carries the safety disclaimer, because a reader who meets conformance
  * vectors without it will read them as guarantees about a running system.
  *
+ * The page has one input beside the corpus, and the page says so where a
+ * reader meets it: the reviewed refusal-kind roster, which carries each kind's
+ * standing MEANING and the runtime structural spellings the model corpus does
+ * not emit. Those sentences are house prose, not the model's, and they are
+ * drafts until the operator's taste pass rules — every one of them renders
+ * behind the draft marker, and the vocabulary wall requires the marker to be
+ * there.
+ *
  * Exactly two things are done to a model text, both stated here and in the
  * page itself so no reader has to wonder. Inside a table cell a line break
  * becomes a space and a pipe is escaped, because a cell holds neither. And
@@ -38,6 +46,13 @@ import type {
   KernelTypeRecord,
 } from "../src/kernel/KernelCorpusSchemas.js"
 import { generatorFields, type KernelCorpus } from "./kernel-corpus.js"
+import {
+  DRAFT_MEANING_MARKER,
+  KERNEL_REFUSAL_REASON_MEANINGS,
+  RUNTIME_REFUSAL_PROJECTION_PATH,
+  RUNTIME_REFUSAL_WAIVER_TICKET,
+  RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
+} from "./kernel-runtime-refusals.js"
 
 /** The command a reader runs to reproduce the page. */
 export const RENDER_PROSE_COMMAND = "bun run generate:kernel-prose"
@@ -68,6 +83,29 @@ const paragraph = (text: string): string =>
 
 /** One text as inline code, for a byte string a reader may need to copy. */
 const code = (text: string): string => `\`${text}\``
+
+// Annotated at the binding, not only at the arrow, so a bare `refuse(...)`
+// reads as control flow that does not return.
+const refuse: (reason: string) => never = (reason) => {
+  throw new Error(`kernel prose: ${reason}`)
+}
+
+/**
+ * One drafted meaning as page lines: the marker verbatim on its own line, a
+ * blank line, then the sentence. The marker is not decoration — the vocabulary
+ * wall reads it back out of this page's bytes and refuses a meaning that lost
+ * it, because a meaning without the marker reads as prose the operator has
+ * ratified, and only the taste pass may make it read that way.
+ */
+const meaningLines = (meaning: string, where: string, out: Array<string>): void => {
+  const text = meaning.trim()
+  if (text === "") return refuse(`${where} carries no meaning`)
+  if (meaning.includes("\n")) return refuse(`${where}'s meaning carries a line break`)
+  out.push(DRAFT_MEANING_MARKER)
+  out.push("")
+  out.push(text)
+  out.push("")
+}
 
 const constructorLine = (constructor: KernelConstructorRecord): string => {
   const fields = constructor.fields
@@ -186,6 +224,21 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
   const docs = new Map(corpus.docs.map((doc) => [doc.name, doc.doc] as const))
   const machineApplicable = corpus.refusals
     .filter((refusal) => refusal.applicability === "machine-applicable")
+  const reasonMeanings = new Map<string, string>(
+    KERNEL_REFUSAL_REASON_MEANINGS.map((row) => [row.reason, row.meaning] as const),
+  )
+  const emitted = new Set<string>(corpus.refusals.map((refusal) => refusal.reason))
+  const runtimeKinds = new Set<string>(
+    RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map((row) => row.kind),
+  )
+  if (runtimeKinds.size !== RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length) {
+    refuse("the runtime structural-refusal roster names a kind twice")
+  }
+  for (const reason of reasonMeanings.keys()) {
+    if (!emitted.has(reason)) {
+      refuse(`the reason-meaning ledger names ${reason}, which the corpus does not emit`)
+    }
+  }
 
   out.push("# The kernel language")
   out.push("")
@@ -200,6 +253,17 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
       " cell a line break becomes a space and a pipe is escaped, because a cell holds" +
       " neither; and trailing spaces are trimmed from line ends, which Markdown discards" +
       " anyway. The untrimmed text is what the generated schemas carry.",
+  )
+  out.push("")
+  out.push(
+    "**One thing on this page is not the model's.** Each refusal kind's *meaning* - the one" +
+      " or two sentences under the draft marker, and the runtime structural kinds section -" +
+      " is house prose, read from the reviewed roster at" +
+      ` \`${RUNTIME_REFUSAL_PROJECTION_PATH}\` rather than from the corpus, because the` +
+      " corpus carries no field a meaning could ride in. Those sentences are DRAFTS: the" +
+      " operator's taste pass ratifies them, and until it rules every one of them renders" +
+      " behind its marker line. Read them as the house explaining its own vocabulary, never" +
+      " as a model verdict.",
   )
   out.push("")
   out.push(
@@ -244,6 +308,17 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
       " teaching function is total, so a reason with no law and no repair cannot exist.",
   )
   out.push("")
+  out.push(
+    "Each also carries its standing **meaning**: one to two sentences saying what fact the" +
+      " reason names and what that implies. The two registers are deliberately different" +
+      " acts. A law and a repair speak at the moment of refusal, to whoever presented the" +
+      " candidate, about this one presentation. A meaning speaks about the reason itself," +
+      " standing, to anyone reading the vocabulary. The model corpus has no field to carry" +
+      ` a meaning in, so these are reviewed data in \`${RUNTIME_REFUSAL_PROJECTION_PATH}\`` +
+      " and are rendered here from it — every one of them a draft until the operator's" +
+      " taste pass rules, which is what the marker above each says.",
+  )
+  out.push("")
   for (const refusal of corpus.refusals) {
     out.push(`### ${refusal.reason}`)
     out.push("")
@@ -253,6 +328,12 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
     out.push("")
     out.push(`**Applicability.** ${refusal.applicability}`)
     out.push("")
+    meaningLines(
+      reasonMeanings.get(refusal.reason) ??
+        refuse(`corpus refusal reason ${refusal.reason} carries no reviewed meaning`),
+      `refusal reason ${refusal.reason}`,
+      out,
+    )
   }
 
   out.push("## The codemod catalog")
@@ -270,6 +351,40 @@ export const renderKernelProse = (corpus: KernelCorpus, corpusPath: string): str
     out.push(`| ${refusal.reason} | ${cell(refusal.repair)} |`)
   }
   out.push("")
+
+  out.push("## Runtime structural refusal kinds")
+  out.push("")
+  out.push(
+    `${RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length} structural refusal kinds the plait` +
+      " runtime can mint, in the persisted order of the shipped union. These are not model" +
+      " rows: a spelling the corpus above also carries is corpus-backed, and a spelling it" +
+      ` does not is explicit staged debt owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}. The` +
+      " roster itself is reviewed data in" +
+      ` \`${RUNTIME_REFUSAL_PROJECTION_PATH}\`, and the same rows are generated into the` +
+      " kernel table with their ancestry and into the truth plane as the shipped union.",
+  )
+  out.push("")
+  out.push(
+    "Each carries its standing meaning on the same terms as a taught refusal above, and" +
+      " for the same reason: the refusal-time teaching for these kinds lives at their" +
+      " minting sites, byte-pinned in `packages/plait/test/RefusalPayloads.taught.txt`," +
+      " while what follows is the kind's meaning in the language. Every one is a draft" +
+      " until the operator's taste pass rules.",
+  )
+  out.push("")
+  for (const row of RUNTIME_STRUCTURAL_REFUSAL_PROJECTION) {
+    out.push(`### ${row.kind}`)
+    out.push("")
+    out.push(
+      `**Ancestry.** ${
+        emitted.has(row.kind)
+          ? "kernel corpus"
+          : `staged debt, owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}`
+      }`,
+    )
+    out.push("")
+    meaningLines(row.meaning, `runtime refusal kind ${row.kind}`, out)
+  }
 
   out.push("## The type vocabulary")
   out.push("")

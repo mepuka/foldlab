@@ -188,6 +188,23 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   regenerating does not satisfy the wall, because the debt must also be written
   into the pin by hand. `check:refusal-control` plants a hand-minted kind into
   the union source and must fail for its committed reason.
+- Every refusal kind carries its standing MEANING: one to two sentences saying
+  what fact the kind names and what that implies, reviewed data in
+  `scripts/kernel-runtime-refusals.ts` — the runtime spellings' meanings beside
+  their roster rows, the model-emitted reasons' in the ledger below them,
+  because the corpus has no field a meaning could ride in. A meaning is not a
+  refusal's teaching: `law`, `expected`, and `next` speak at the moment of
+  refusal about one presentation, and a meaning speaks about the kind, standing.
+  The generators project every meaning into `KernelTables.generated.ts`,
+  `RefusalKinds.generated.ts`, and the prose page, each behind the verbatim
+  draft marker, and `check:refusal-vocabulary` holds four clauses over those
+  bytes: a kind with no meaning refuses, a meaning that lost the marker refuses,
+  one name carries one meaning, and the page and the modules render the same
+  sentence. Only the DEV-825 operator taste pass retires the marker — until it
+  rules, adding a kind means adding its drafted meaning, and moving a sentence
+  reddens `check:kernel-tables` and `check:kernel-prose` until both are
+  regenerated. `check:refusal-meaning-control` plants a meaningless kind, an
+  unmarked meaning, and a paraphrased page, and must fail on all three.
 - A refusal's taught payload is persisted evidence. `check:refusal-payloads`
   pins every `law`, `expected`, and `next` text under `src/` in
   `test/RefusalPayloads.taught.txt` and byte-compares it, so editing one

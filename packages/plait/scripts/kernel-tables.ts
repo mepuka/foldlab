@@ -27,6 +27,8 @@
 import type { KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { CORPUS_PATH, type KernelCorpus } from "./kernel-corpus.js"
 import {
+  DRAFT_MEANING_MARKER,
+  KERNEL_REFUSAL_REASON_MEANINGS,
   RUNTIME_REFUSAL_PROJECTION_PATH,
   RUNTIME_REFUSAL_WAIVER_TICKET,
   RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
@@ -147,22 +149,94 @@ const brandDomains: { readonly [param: string]: string } = {
 
 const brandConstraint = (param: string): string => brandDomains[param] ?? "string"
 
+/**
+ * The column a drafted meaning's comment lines are wrapped at, counting the
+ * indent and the ` * ` gutter. Wrapping is greedy over single spaces and takes
+ * no other input, so the same sentence renders to the same bytes every run.
+ */
+const MEANING_COMMENT_WIDTH = 88
+
+/**
+ * One drafted meaning as doc-comment lines.
+ *
+ * The marker is its own first line and is reproduced verbatim: the vocabulary
+ * wall reads it back out of these bytes and refuses a meaning that lost it,
+ * because a meaning without the marker reads as ratified prose and only the
+ * operator's taste pass may make it read that way. The sentence itself is
+ * reproduced word for word; only the line breaks are this renderer's.
+ */
+const meaningComment = (
+  meaning: string,
+  indent: string,
+  where: string,
+): ReadonlyArray<string> => {
+  const text = meaning.trim()
+  if (text === "") return refuse(`${where} carries no meaning`)
+  if (meaning.includes("\n")) return refuse(`${where}'s meaning carries a line break`)
+  const gutter = `${indent} * `
+  const lines: Array<string> = [`${indent}/**`, `${gutter}${DRAFT_MEANING_MARKER}`]
+  let current = ""
+  for (const word of text.split(" ")) {
+    if (word === "") continue
+    if (current === "") {
+      current = word
+    } else if (gutter.length + current.length + 1 + word.length > MEANING_COMMENT_WIDTH) {
+      lines.push(`${gutter}${current}`)
+      current = word
+    } else {
+      current = `${current} ${word}`
+    }
+  }
+  lines.push(`${gutter}${current}`)
+  lines.push(`${indent} */`)
+  return lines
+}
+
 interface RuntimeRefusalProjectionRow {
   readonly kind: string
+  readonly meaning: string
   readonly source: "kernel-corpus" | "staged-debt"
   readonly waiver?: typeof RUNTIME_REFUSAL_WAIVER_TICKET
 }
 
 const runtimeRefusalRows = (corpus: KernelCorpus): ReadonlyArray<RuntimeRefusalProjectionRow> => {
-  const projected = new Set<string>(RUNTIME_STRUCTURAL_REFUSAL_PROJECTION)
+  const projected = new Set<string>(RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map((row) => row.kind))
   if (projected.size !== RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.length) {
     return refuse("the runtime structural-refusal projection names a kind twice")
   }
   const corpusReasons = new Set(corpus.refusals.map((row) => row.reason))
-  return RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map((kind) =>
+  return RUNTIME_STRUCTURAL_REFUSAL_PROJECTION.map(({ kind, meaning }) =>
     corpusReasons.has(kind)
-      ? { kind, source: "kernel-corpus" }
-      : { kind, source: "staged-debt", waiver: RUNTIME_REFUSAL_WAIVER_TICKET })
+      ? { kind, meaning, source: "kernel-corpus" }
+      : { kind, meaning, source: "staged-debt", waiver: RUNTIME_REFUSAL_WAIVER_TICKET })
+}
+
+/**
+ * The drafted meaning of each model-emitted refusal reason, resolved against
+ * the corpus's own rows. Both directions are refused rather than defaulted: a
+ * reason the ledger does not cover would render an unexplained kind, and a
+ * ledger row naming no reason is a meaning for a kind that no longer exists.
+ */
+const reasonMeanings = (corpus: KernelCorpus): ReadonlyMap<string, string> => {
+  const ledger = new Map<string, string>()
+  for (const row of KERNEL_REFUSAL_REASON_MEANINGS) {
+    if (ledger.has(row.reason)) {
+      return refuse(`the reason-meaning ledger names ${quote(row.reason)} twice`)
+    }
+    ledger.set(row.reason, row.meaning)
+  }
+  const reasons = new Set(corpus.refusals.map((row) => row.reason))
+  for (const reason of reasons) {
+    if (!ledger.has(reason)) {
+      return refuse(`corpus refusal reason ${quote(reason)} carries no reviewed meaning`)
+    }
+  }
+  for (const reason of ledger.keys()) {
+    if (!reasons.has(reason)) {
+      return refuse(`the reason-meaning ledger names ${quote(reason)}, which the corpus does not emit`)
+    }
+  }
+  return ledger
 }
 
 /**
@@ -177,8 +251,12 @@ export const renderKernelTables = (
   const { branded, skipped } = brandedSorts(corpus.types)
   const digests = branded.find((sort) => sort.name === "Digest")
   const runtimeRows = runtimeRefusalRows(corpus)
+  const meanings = reasonMeanings(corpus)
   const out: Array<string> = []
   const line = (value = ""): void => void out.push(value)
+  const lines = (values: ReadonlyArray<string>): void => {
+    for (const value of values) line(value)
+  }
 
   line("/**")
   line(" * Plane: kernel — the language: corpus, door, programs, and wire grammar.")
@@ -195,6 +273,13 @@ export const renderKernelTables = (
   line(" * refusals with the law each defends and the repair each teaches, and the")
   line(" * compile-time brands of the sort system. The existing runtime refusal")
   line(" * projection is also generated here; corpus gaps wear an owned waiver.")
+  line(" *")
+  line(" * Every refusal row carries its kind's standing MEANING as a doc comment: one")
+  line(" * to two sentences saying what fact the kind names and what that implies,")
+  line(" * distinct from the law and repair a refusal teaches at the moment it fires.")
+  line(" * The meanings are drafts until the operator's taste pass rules, which is what")
+  line(" * the marker line above each of them says. They are reviewed data in")
+  line(` * ${RUNTIME_REFUSAL_PROJECTION_PATH}.`)
   line(" *")
   line(" * These are safety-side names and texts, never runtime guarantees. A model")
   line(" * theorem stays in the model; what crosses the seam is the vocabulary the")
@@ -273,6 +358,7 @@ export const renderKernelTables = (
   line("/** The taught-refusal table. A reason without its law and repair cannot exist. */")
   line("export const KERNEL_REFUSALS = [")
   for (const refusal of corpus.refusals) {
+    lines(meaningComment(meanings.get(refusal.reason)!, "  ", `refusal reason ${quote(refusal.reason)}`))
     line("  {")
     line(`    reason: ${quote(refusal.reason)},`)
     line(`    law: ${quote(refusal.law)},`)
@@ -310,6 +396,7 @@ export const renderKernelTables = (
   line(" */")
   line("export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [")
   for (const row of runtimeRows) {
+    lines(meaningComment(row.meaning, "  ", `runtime refusal kind ${quote(row.kind)}`))
     line("  {")
     line(`    kind: ${quote(row.kind)},`)
     line(`    source: ${quote(row.source)},`)
@@ -401,6 +488,9 @@ export const renderRefusalKinds = (
   const runtimeRows = runtimeRefusalRows(corpus)
   const out: Array<string> = []
   const line = (value = ""): void => void out.push(value)
+  const lines = (values: ReadonlyArray<string>): void => {
+    for (const value of values) line(value)
+  }
 
   line("/**")
   line(" * Plane: truth — the vocabulary every sentence speaks.")
@@ -419,6 +509,13 @@ export const renderRefusalKinds = (
   line(" * `KERNEL_RUNTIME_STRUCTURAL_REFUSALS`, where a spelling the model corpus does")
   line(` * not yet carry is named staged debt owned by ${RUNTIME_REFUSAL_WAIVER_TICKET}.`)
   line(" *")
+  line(" * Each kind carries its standing MEANING as a doc comment: one to two sentences")
+  line(" * saying what fact the kind names and what that implies, which is a different")
+  line(" * act from the law and repair a refusal teaches when it fires. The meanings are")
+  line(" * drafts until the operator's taste pass rules, which is what the marker line")
+  line(" * above each of them says. They are reviewed data in")
+  line(` * ${RUNTIME_REFUSAL_PROJECTION_PATH}.`)
+  line(" *")
   line(" * @module")
   line(" */")
   line("import { Schema } from \"effect\"")
@@ -436,7 +533,10 @@ export const renderRefusalKinds = (
   line()
   line("/** Every structural refusal kind the package can mint, in its persisted order. */")
   line("export const STRUCTURAL_REFUSAL_KINDS = [")
-  for (const row of runtimeRows) line(`  ${quote(row.kind)},`)
+  for (const row of runtimeRows) {
+    lines(meaningComment(row.meaning, "  ", `runtime refusal kind ${quote(row.kind)}`))
+    line(`  ${quote(row.kind)},`)
+  }
   line("] as const")
   line()
   line("/**")
