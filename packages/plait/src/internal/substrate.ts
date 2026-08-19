@@ -24,10 +24,13 @@ import { structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
  *
  * Three constructions carry that property and are not decorations:
  *
- * 1. **The field roster is one declared list.** Group 1 is not read by inline
- *    branches over a connection object; it is the table below, walked. The
- *    open question of whether the per-connection exchange key belongs in the
- *    fold therefore moves one row of one list, never any code.
+ * 1. **The field roster is one declared list, and it is add-only.** Group 1 is
+ *    not read by inline branches over a connection object; it is the table
+ *    below, walked. Expansion therefore appends one row with its provenance and
+ *    moves no code — which is exactly how the per-connection exchange key
+ *    joined the fold under the operator's ruling. The roster is itself a
+ *    declared value whose digest RIDES the folded declaration, so a party on a
+ *    grown roster names a different session AND says which roster it folded.
  * 2. **Nothing here reads a clock.** No establishment time, no round-trip
  *    time, no connection statistics: a claimed time is observation data,
  *    carried, never identifying, and frontier readings are not identity.
@@ -65,15 +68,25 @@ export interface SubstrateField {
  * Every name is the substrate's own and none is renamed. `provenance` records
  * how each row reaches this package: a `declared` row is carried by the pinned
  * client's server-information type, and a `measured` row is one the substrate
- * sends on the wire that the pinned type does not carry — the three of them are
+ * sends on the wire that the pinned type does not carry — those rows are
  * transcribed from a live connection at the pins rather than from that type,
  * and they are the reason this table is data with provenance instead of an
  * interface.
  *
- * The per-connection exchange key is deliberately ABSENT. It was measured on
- * the same live connection; whether it belongs in the fold is an open pin held
- * by the operator, not a drafting question, and this slice lands with it
- * excluded. Ruling it in later adds one row here.
+ * **The expansion discipline is ADD-ONLY, and it is walled rather than asked
+ * for.** A field joins by appending one row with its provenance; no row is ever
+ * renamed, reordered, retyped, or removed. The wall pins the committed prefix,
+ * so an append passes and every other edit reddens. The reason is not tidiness:
+ * the roster's digest is folded into the declaration, so a rewrite in place
+ * would silently rename every session ever folded under the old roster, while
+ * an append renames them visibly and says which roster each party held.
+ *
+ * The per-connection exchange key is the discipline's first exercise. It was
+ * measured on the same live connection and was excluded when the slice landed,
+ * because its membership was an open pin held by the operator. The operator's
+ * ruling in session 2026-08-19 authorized the expansion, and the key joins as
+ * the last row — `measured`, because `@nats-io/nats-core@3.4.0`'s own
+ * server-information type does not carry it.
  *
  * Staged debt: this table is hand-carried and owes the substrate-vocabulary
  * emitter group, which the corpus does not yet mint. It is transcription with
@@ -95,7 +108,40 @@ export const SUBSTRATE_FIELDS: ReadonlyArray<SubstrateField> = [
   { name: "connect_info", sort: "boolean", provenance: "measured" },
   { name: "remote_account", sort: "string", provenance: "measured" },
   { name: "api_lvl", sort: "number", provenance: "declared" },
+  { name: "xkey", sort: "string", provenance: "measured" },
 ]
+
+/**
+ * One field roster, declared as a value so that it has a name of its own.
+ *
+ * The roster is what group 1 means — which keys are folded, at which sorts,
+ * reached how. Declaring it makes the fold SELF-DESCRIBING: the digest below
+ * rides every declaration, so a party holding a folded value can resolve the
+ * exact roster it was folded under instead of inferring one from a key set.
+ */
+export interface FieldRoster {
+  readonly v: 0
+  readonly kind: "substrate-field-roster"
+  readonly fields: ReadonlyArray<SubstrateField>
+}
+
+/** Declares one field roster. */
+export const fieldRoster = (fields: ReadonlyArray<SubstrateField>): FieldRoster => ({
+  v: 0,
+  kind: "substrate-field-roster",
+  fields: fields.map((field) => ({
+    name: field.name,
+    sort: field.sort,
+    provenance: field.provenance,
+  })),
+})
+
+/** The roster this package folds group 1 under. */
+export const SUBSTRATE_ROSTER: FieldRoster = fieldRoster(SUBSTRATE_FIELDS)
+
+/** One roster's name: the digest of its declared bytes. */
+export const rosterDigest = (roster: FieldRoster): Effect.Effect<Digest, Refusal> =>
+  digestOf(roster as unknown as WireValue)
 
 /**
  * Group 1 — what the substrate declares about itself and about you.
@@ -103,10 +149,19 @@ export const SUBSTRATE_FIELDS: ReadonlyArray<SubstrateField> = [
  * Exactly the roster's keys, always all of them: a field the substrate did not
  * send is `null` rather than absent, so the folded key set is fixed and two
  * mints over the same connection cannot differ by an optional field's presence.
+ *
+ * `roster` is the digest of the roster those keys came from, and it is the
+ * whole expansion mechanism. Two parties on the SAME roster fold byte-identical
+ * declarations; a party on a GROWN roster folds a different `roster` digest, so
+ * the session names differ and the difference is READABLE — resolve the two
+ * digests and the added row is right there. Without it, a roster disagreement
+ * would still move the digest, but it would move it the way any other
+ * disagreement does, and neither party could say which one it was.
  */
 export interface SubstrateDeclaration {
   readonly v: 0
   readonly kind: "substrate-declaration"
+  readonly roster: string
   readonly fields: { readonly [field: string]: string | number | boolean | null }
 }
 
@@ -225,10 +280,13 @@ export interface ConnectOptionsDeclaration {
  * parent record calls this group a sketch, so the schema carries exactly the
  * three fields that record names and nothing beyond them.
  *
- * - `writ` is the writ digest the connection acts under, or `null`. The spine
- *   acquires connections below the plane that judges writs, so `null` is the
- *   honest value at this posture and is NOT a placeholder for a writ that
- *   exists and was dropped.
+ * - `writ` is the writ digest the connection acts under. It names a value the
+ *   substrate writ table declares (`internal/writs.ts`), so a party holding the
+ *   session fact resolves what the connection was declared to do rather than
+ *   inferring it from the connection's nickname. The field stays nullable
+ *   because "no writ is declared for this layer" is a real fact and is NOT the
+ *   least writ, which is declared and empty; every layer the spine acquires for
+ *   names one, and the wall walks the acquire sites to keep that true.
  * - `layer` is which service layer opened the connection — the connection name
  *   the spine passes unconditionally, which is what makes per-layer connection
  *   counts readable at all.
@@ -290,22 +348,28 @@ const sortOf = (value: unknown): FieldSort | null =>
     : null
 
 /**
- * Folds group 1 from the substrate's own declaration.
+ * Folds group 1 from the substrate's own declaration, under a named roster.
  *
  * The roster is walked; nothing is selected by hand. A field the substrate did
  * not send folds as `null`, and a field it sent at a sort the roster does not
  * name refuses rather than folding a coerced value — a silently coerced field
  * would move the session digest without moving anything the substrate said.
+ *
+ * The roster is a PARAMETER because the roster is data. That is what lets a
+ * party fold under a grown roster without editing this package, and it is what
+ * makes the expansion wall executable rather than asserted.
  */
-export const substrateDeclarationOf = Effect.fn("Substrate.declarationOf")(function* (
+export const substrateDeclarationUnder = Effect.fn("Substrate.declarationUnder")(function* (
+  roster: FieldRoster,
   info: unknown,
 ): Effect.fn.Return<SubstrateDeclaration, Refusal> {
   if (!Predicate.isObject(info)) {
     return yield* malformed(["info"], String(info), "the substrate's own declaration record")
   }
+  const name = yield* rosterDigest(roster)
   const record = info as { readonly [key: string]: unknown }
   const fields: Record<string, string | number | boolean | null> = {}
-  for (const field of SUBSTRATE_FIELDS) {
+  for (const field of roster.fields) {
     const value = Object.hasOwn(record, field.name) ? record[field.name] : undefined
     if (value === undefined || value === null) {
       fields[field.name] = null
@@ -324,8 +388,14 @@ export const substrateDeclarationOf = Effect.fn("Substrate.declarationOf")(funct
     }
     fields[field.name] = value as string | number | boolean
   }
-  return { v: 0, kind: "substrate-declaration", fields }
+  return { v: 0, kind: "substrate-declaration", roster: name, fields }
 })
+
+/** Folds group 1 under the roster this package stands on. */
+export const substrateDeclarationOf = (
+  info: unknown,
+): Effect.Effect<SubstrateDeclaration, Refusal> =>
+  substrateDeclarationUnder(SUBSTRATE_ROSTER, info)
 
 /** What the estate sets on one connection, before anything is declared. */
 export interface ConnectionDeclarationInput {

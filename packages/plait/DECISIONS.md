@@ -5678,3 +5678,136 @@ here retires an incarnation on another's behalf, and a round nobody decided
 reads as absence, never as a running server. **Load-bearing? yes** — the key
 choice is what makes the fence expressible on the register the estate already
 has.
+
+## Task: the roster expands and the writs open (estate-daemon S1 follow-up, operator ruling 2026-08-19)
+
+Placeholders `T30`–`T32` continue the series; repository D-numbers are
+assigned at merge. The commission is the operator's follow-up ruling in
+session 2026-08-19 — *authorized to update estate facts to allow for digest to
+expand, open writs* — and it resolves the first of the two pins `T25`–`T29`
+were drafted around. The second, what the connect option values should be
+pinned to, stays the operator's and is untouched here.
+
+### T30. The roster is add-only, and its digest rides the value it governs
+
+Decided: the group-1 field roster expands by APPENDING one row with its
+provenance, and the roster is itself a declared value whose digest is folded
+into the substrate declaration and carried on the session-established fact. Two
+parties on the same roster still fold byte-identical declarations; a party on a
+grown roster names a different session, and the difference is READABLE rather
+than merely present — each fact says which roster its holder folded, so the two
+resolve the rosters and see the appended row instead of discovering only that
+two digests disagree.
+
+The add-only half is walled, not asked for: the wall pins the roster as it
+stood before this expansion and asserts it is a PREFIX of the standing one, so
+an append passes and a rename, reorder, retype, or removal reddens. That
+discipline is not tidiness. The roster digest is folded, so a rewrite in place
+would silently rename every session ever folded under the old roster, while an
+append renames them visibly.
+
+Alternatives, priced. A schema version integer on the fact: cheaper to write and
+strictly worse, because a version is a word this package would have to keep
+true by hand — two different rosters can carry the same number, and the number
+says nothing about what differs. Nothing at all, resting on the fact that the
+folded key set already changes when a row is added: true, and it is why the
+derivability wall held before this slice, but a key-set difference is
+indistinguishable from a substrate that sent different fields, and neither party
+can name which roster the other held. A full roster value inside the fold rather
+than its digest: self-describing without a resolve, at the cost of putting
+sixteen rows of transcription into every session's bytes and making the fold's
+size grow with the roster; the digest buys the same property at one field, and
+resolving it is the estate's ordinary act. **Load-bearing? yes** — the digest is
+the whole difference between "we disagree" and "you are on the roster with the
+exchange key and I am not".
+
+### T31. The exchange key joins the roster; T25's exclusion is superseded, not rewritten
+
+Decided: `xkey` is the sixteenth row of the group-1 roster, `measured`, because
+`@nats-io/nats-core@3.4.0`'s own server-information type does not carry it —
+the same class as the connect-info flag and the remote account. T25 recorded the
+key as excluded and said in as many words that its membership was an open pin
+held by the operator rather than a drafting question. The operator ruled in
+session 2026-08-19; this section records the supersession and T25 stands as
+written, because what T25 decided was correct at the posture it was decided at
+and rewriting it would erase the evidence that the exclusion was cheap to
+reverse.
+
+It was cheap to reverse, and that is the claim T25 made and this section
+discharges: ruling the key in moved one row of one declared list and no branch
+of any function. The wall that asserted the key was out INVERTED rather than
+being deleted — a connection carrying an exchange key and a connection stripped
+of one named one session before and name two now, and both parties are shown to
+be on the same roster, so the disagreement is about what the substrate declared
+and says so. Alternatives: leaving the key out and folding it into a separate
+observation value (a second value to carry and reconcile, for a field that is
+part of the substrate's own declaration); folding it but suppressing it when
+absent (an optional key in the fold, which is the presence ambiguity the
+always-all-keys rule exists to refuse). **Load-bearing? yes** — it is the
+expansion discipline's first exercise, and an expansion mechanism never exercised
+is a claim, not a construction.
+
+### T32. The substrate writ declares roles and families, and declares nothing else
+
+Decided: a substrate connection acts under a declared writ — one canonical
+value carrying the layer it is declared for, the carrier roles that layer acts
+as in the permission projection's own vocabulary, and the subject FAMILIES those
+roles are granted, with each deployment coordinate written as its own
+brace-wrapped name. Its digest is its name, group 3 carries that digest, and
+resolving the digest returns the exact bytes. The table is keyed by the layer's
+own name and not by the caller's connection nickname: renaming a connection
+renames a connection, it does not change what the layer may do, so the session
+fact carries both — the nickname in `layer`, the authority in `writ`.
+
+Three bounds, each stated because each bites.
+
+**No enforcement is built, and none is implied.** Enforcement at the substrate
+is the substrate's: the account ACLs the carrier-permission projection derives
+are what refuses a publish, and the daemon that owns the credentials provisions
+them. A writ disagreeing with those ACLs is a WRONG DECLARATION that changes no
+runtime behaviour — the same failure posture T28 chose for the connect options,
+and the one to prefer, because the other posture changes what the estate may do
+by editing a table. It is also why an undeclared layer folds `null` at the spine
+instead of refusing the connection: a declaration that can take down a
+connection is enforcement by the back door at the one seam where this package
+says it builds none. The lookup still refuses, so "no writ is declared" and "the
+least writ is declared" stay two different facts, and the fence against a spine
+acquire site drifting into the first is a wall that WALKS the acquire sites out
+of `src/` — a ninth site joins the wall by construction.
+
+**The content is the permission projection's, gated rather than imported.**
+Every family is exactly what `internal/permissions.ts` grants the named roles,
+read out of that projection under a scope whose free coordinates are their own
+names. The projection is not imported: it sits at the carriage seam, the writ
+sits at truth, and a truth module importing carriage is the one edge the
+layering law refuses. The wall derives the same rows from the projection and
+compares them, so the two cannot drift undetected; what is lost against a direct
+import is that the drift is caught by the battery rather than by the type
+checker, and that is stated rather than absorbed. The alternative that would
+restore the import — inverting the dependency so the projection interpolates a
+scope into families declared at truth — is a rewrite of a security module's
+projection for a property the wall already holds, and it is refused on blast
+radius rather than on taste.
+
+**Two of the eight layers hold the LEAST writ, and that is a finding.** The
+projection declares roles for the estate's publishing and key-value carriers
+only; it declares none for a consuming connection, none for the chaos harness,
+and none for the CLI's head probe. Those two layers therefore declare no role
+and no family — the same shape as the read plane's empty writ, and honest: the
+estate has declared no substrate authority for them. It is not a claim that they
+reach nothing, and the writs of the six layers that do carry roles under-declare
+their consuming half for the same reason. Inventing a role to cover the gap
+would put a word in the security projection's mouth that the projection never
+said.
+
+Alternatives, priced. Roles alone with no families: genuinely minimal and it
+keeps one authority with no gate at all, but a reader then needs the projection
+AND a deployment scope in hand to learn what the connection may address, and the
+writ stops being self-describing — which is the property that makes a digest
+worth resolving. Fully-scoped subjects rather than families: the spine has no
+deployment coordinates at acquire time, so every one of them would have been
+invented. A writ per role rather than per layer: the acquire site is a layer, not
+a role, and a layer acting as two roles would then need two writs and a rule for
+combining them. **Load-bearing? yes** — group 3's writ field existed and named
+nothing; it now names a value, and the difference between those two states is
+the whole of what "open writs" asked for.

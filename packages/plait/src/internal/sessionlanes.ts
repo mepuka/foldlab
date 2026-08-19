@@ -55,7 +55,7 @@ export const SESSION_EVENT_FORM = {
   variants: [
     {
       kind: "substrate-session-established",
-      fields: ["session", "options", "predecessor"],
+      fields: ["session", "options", "roster", "predecessor"],
     },
     {
       kind: "substrate-session-ended",
@@ -64,12 +64,22 @@ export const SESSION_EVENT_FORM = {
   ],
 } as const
 
-/** One connection's establishment, named by the session digest it cites. */
+/**
+ * One connection's establishment, named by the session digest it cites.
+ *
+ * `roster` is the group-1 field roster the session was folded under, carried
+ * for the same reason `options` is: the fact pins the declared values the fold
+ * consumed, so a reader diagnoses a disagreement from the fact instead of
+ * discovering only that two digests differ. Two parties on different rosters
+ * name different sessions — that much the fold already guarantees — and this
+ * field is what lets either of them say WHICH roster the other folded.
+ */
 export const SessionEstablished = Schema.Struct({
   v: Schema.Literal(0),
   kind: Schema.Literal("substrate-session-established"),
   session: Schema.String,
   options: Schema.String,
+  roster: Schema.String,
   predecessor: Schema.NullOr(Schema.String),
 })
 
@@ -151,6 +161,7 @@ export const mintSession = Effect.fn("SessionLane.mint")(function* (
       kind: "substrate-session-established",
       session: named.digest,
       options: groups.options,
+      roster: groups.substrate.roster,
       predecessor,
     },
   }

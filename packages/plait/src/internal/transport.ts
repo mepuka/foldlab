@@ -24,6 +24,7 @@ import {
   type ConnectOptionsDeclaration,
   type SessionGroups,
 } from "./substrate.js"
+import { writDigestFor } from "./writs.js"
 
 /**
  * The transport spine every NATS adapter in this package sits on.
@@ -263,6 +264,14 @@ export interface EstablishedConnection {
  * spine's own. Naming the session is a pure step over those groups, so nothing
  * on this path reads a clock or asks the connection anything a second time.
  *
+ * The writ is read BEFORE the socket opens, and it is keyed by the layer's own
+ * name rather than by the caller's connection nickname: renaming a connection
+ * renames a connection, it does not change what the layer may do. A layer this
+ * package declares no writ for folds `null` rather than refusing — a writ is a
+ * declaration and not a guard, so a missing declaration must not take down a
+ * connection. The fence against a spine acquire site drifting into that state
+ * is a wall over `src/`, not a runtime refusal.
+ *
  * The refusal stays the caller's: `operation` names the acquire in the refusal
  * path and `refuse` carries the adapter's own absence kind.
  */
@@ -274,6 +283,7 @@ export const establishConnection = (
 ): Effect.Effect<EstablishedConnection, Refusal, Scope.Scope> =>
   Effect.gen(function* () {
     const declared = yield* declaredConnect(options, defaultName)
+    const writ = yield* writDigestFor(defaultName)
     const connection = yield* Effect.acquireRelease(
       Effect.tryPromise({
         try: () => connect(declared.arguments_),
@@ -288,13 +298,13 @@ export const establishConnection = (
       groups: {
         substrate,
         options: declared.digest,
-        // The spine acquires connections below the plane that judges writs, so
-        // there is no writ digest to name here and `null` says so. The asserted
-        // shape set is empty because every carrier asserts its shapes after
-        // this point — honestly empty, which is the whole reason the field is
-        // declared rather than omitted.
+        // The writ digest names the declared value this layer's connection acts
+        // under; resolving it returns the exact bytes. The asserted shape set is
+        // empty because every carrier asserts its shapes after this point —
+        // honestly empty, which is the whole reason the field is declared rather
+        // than omitted.
         estate: estateDeclaration({
-          writ: null,
+          writ,
           layer: options.connectionName ?? defaultName,
           shapes: [],
         }),

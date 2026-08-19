@@ -261,6 +261,12 @@ packages/plait/src/internal/transport.ts#0
   law <expression>
   expected <expression>
   next <expression>
+packages/plait/src/internal/writs.ts#0
+  kind "malformed-value"
+  law "A substrate connection acts under a writ this package has declared for its layer."
+  expected <absent>
+  next[0].subject "substrate.writ"
+  next[0].note "Declare this layer's writ as a row of the substrate writ table, naming the carrier roles its connection acts as, before the layer opens a connection."
 packages/plait/src/kernel/Subjects.ts#0
   kind "invalid-subject-token"
   law "Fabric routing tokens are non-empty NATS tokens without dots, whitespace, or wildcards."
