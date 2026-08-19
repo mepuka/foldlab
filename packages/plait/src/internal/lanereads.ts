@@ -6,6 +6,8 @@
  */
 import {
   DeliverPolicy,
+  JetStreamApiCodes,
+  JetStreamApiError,
   ReplayPolicy,
   jetstream,
   jetstreamManager,
@@ -67,6 +69,14 @@ import { acquireConnection, transportRefusalFor } from "./transport.js"
  * message and nothing here consults it: what a row carries is its position, its
  * identity, its holder, and its fact. A reader that wanted an age would be
  * asking a question positions do not answer.
+ *
+ * **A lane nobody has spoken on reads empty, not broken.** The emit path is
+ * what declares a lane's partition streams, and a read declares nothing — so a
+ * partition with no stream is a partition with no facts, and it answers the same
+ * empty tail an empty stream answers. Reporting that as a transport absence
+ * would tell a reader the substrate was unavailable when what is true is that
+ * nothing has been said yet, and a face serving a fresh estate would read as
+ * broken on its first request.
  */
 
 /** Exported for the spine wall; no other `src` module imports it. */
@@ -332,11 +342,27 @@ const tailPartition = Effect.fn("LaneReads.tailPartition")(function* <
 ): Effect.fn.Return<ReadonlyArray<LandedFact<Event>>, Refusal> {
   const stream = laneStreamName(lane, part)
   const subject = yield* evidenceSubject(lane.handle, part)
+  // A partition nobody has emitted on has no stream at all, and a READ creates
+  // nothing — the emit path is what declares a lane's streams. So the absence of
+  // the stream IS the absence of facts, and the honest answer is the empty tail
+  // the same read gives an empty stream. Reporting it as a transport absence
+  // would tell a reader the substrate was unavailable when what is true is that
+  // nothing has been said yet.
   const state = yield* Effect.tryPromise({
-    try: async () => (await manager.streams.info(stream)).state,
+    try: async () => {
+      try {
+        return (await manager.streams.info(stream)).state
+      } catch (cause) {
+        if (
+          cause instanceof JetStreamApiError
+          && cause.code === JetStreamApiCodes.StreamNotFound
+        ) return undefined
+        throw cause
+      }
+    },
     catch: (cause) => transportRefusal("lane.read.info", cause),
   })
-  const span = readSpan(state.first_seq, state.last_seq, limit)
+  const span = state === undefined ? undefined : readSpan(state.first_seq, state.last_seq, limit)
   if (span === undefined) return []
 
   const consumer = yield* orderedConsumer(connection, stream, subject, {

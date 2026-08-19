@@ -190,6 +190,42 @@ describe("the read path over a real substrate", () => {
       .toEqual([measured.first.session, measured.second.session].sort())
   }, 180_000)
 
+  test("a lane nobody has spoken on reads empty, and the face answers rather than refuses", async () => {
+    harness = await startNatsHarness()
+    const servers = harness.url
+
+    // Nothing is emitted here at all, so the partition streams the emit path
+    // would declare do not exist. That is the state a fresh estate is in on its
+    // first request, and it is the state this arm measures.
+    const tail = await Effect.runPromise(Effect.gen(function* () {
+      const reads = yield* LaneReads
+      return yield* reads.tail(yield* sessionLane(), {})
+    }).pipe(Effect.provide(carriers(servers)), Effect.scoped, Effect.orDie))
+    expect(tail).toEqual([])
+
+    const app = ApiFace.layer.pipe(
+      HttpRouter.provideRequest(Layer.mergeAll(
+        LaneReads.layer({ servers }),
+        Cells.layer({ servers }),
+        Registers.layer({ servers }),
+      )),
+      Layer.orDie,
+    )
+    const { dispose, handler } = HttpRouter.toWebHandler(app, { disableLogger: true })
+    try {
+      const response = await handler(new Request(`${ORIGIN}/sessions`))
+      // 200 with nothing to report, never 503: an absent stream is an absent
+      // FACT, and a reader told the substrate was unavailable would read a fresh
+      // estate as a broken one.
+      expect(response.status).toBe(200)
+      const snapshot = valueOf(new Uint8Array(await response.arrayBuffer()))
+      expect(snapshot.connections).toEqual([])
+      expect(snapshot.folded).toBe(0)
+    } finally {
+      await dispose()
+    }
+  }, 180_000)
+
   test("the live read carries an emission that landed after it started", async () => {
     harness = await startNatsHarness()
     const servers = harness.url

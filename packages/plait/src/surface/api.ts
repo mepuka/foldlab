@@ -195,7 +195,8 @@ const READS: ReadonlyArray<ReadDeclaration> = [
   {
     path: "/sessions/changes",
     answers: "one change per landed fact, as it arrives",
-    bound: "live only; no history is replayed and no position is resumed from",
+    bound:
+      `live only, with no history replayed and no position resumed from; the same limit names how many arrivals are staged ahead of the reader, ${LANE_TAIL_LIMIT_DEFAULT} by default, and a reader that falls further behind is told so`,
   },
   {
     path: "/lanes/:handle",
@@ -633,7 +634,12 @@ const changesRead = (sessions: DeclaredLane<SessionFact, 8>) =>
  */
 const uncarried = Effect.gen(function* () {
   const request = yield* HttpServerRequest.HttpServerRequest
-  const path = request.originalUrl
+  // The path the router was asked for, WITHOUT the origin it was asked at. A
+  // host and a port are one deployment's coordinates and mean nothing to a
+  // reader anywhere else, so rendering them into a payload would put an ambient
+  // reference where the estate carries none. What remains is the caller's own
+  // presented request line, quoted as `got` is quoted everywhere else.
+  const path = request.url
   if (READ_METHODS.includes(request.method)) {
     return yield* missed(noSuchRead(request.method, path), 404)
   }

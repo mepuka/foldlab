@@ -9427,6 +9427,14 @@ in the tree would fail it. Driving the face and sweeping the output is the read
 that matches the law's words: an OFFICIAL SURFACE is what a reader receives. No
 by-name exclusion is live on this surface, so none is passed — excusing a token
 nothing serves would be a standing licence nothing relies on.
+
+Its bound is stated rather than discovered later: the sweep covers the strings
+this face COMPOSES. A route miss quotes the caller's own presented request line
+as `got`, exactly as `got` quotes presented input everywhere else in this estate,
+and a caller may present whatever it likes. What the estate ITSELF renders there
+was narrowed instead — the quoted line carries the path and NOT the origin it was
+asked at, because a host and a port are one deployment's coordinates and would be
+an ambient reference the estate had rendered rather than quoted.
 **Load-bearing? yes.**
 
 ### T12. The type-universe pin was raised by hand
@@ -9466,3 +9474,23 @@ What is still NOT claimed: no performance number, no concurrency envelope, and
 no behaviour under a substrate that is reconnecting or draining underneath a
 live read — the follow arm measures arrival, not resumption, and the ordered
 consumer's own recreate-on-gap is the pinned client's and is not walled here.
+
+### T14. A lane nobody has spoken on reads empty, and the artifact is what said so
+
+Decided: a partition whose stream does not exist answers the empty tail, not a
+transport absence.
+
+Found by RUNNING the shipped command against a real substrate rather than by
+reading the code: `plait api` on a fresh estate answered `/sessions` with 503 and
+`lane-read-transport-unavailable`, because the read asked for a stream the emit
+path had not yet declared and the client's stream-not-found error fell into the
+adapter's transport classification. The reading was wrong in the way that
+matters: it told a reader the substrate was unavailable when what was true is
+that nothing had been said yet, so a face serving a fresh estate read as a broken
+one on its first request. The emit path is what declares a lane's partition
+streams and a READ declares nothing, so the absence of the stream IS the absence
+of facts — the same empty tail an empty stream already answered. The arm that
+holds it emits nothing at all and asserts a 200 with an empty snapshot, which is
+the exact state the run found. **Load-bearing? yes** — it is the difference
+between an empty estate and a broken one, on the first request a practitioner
+ever makes.

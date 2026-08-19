@@ -76,6 +76,24 @@ fenced register over one file-backed, single-replica JetStream server.
   the committed copy of the model's own tool-schema projection, handlers
   routed through the engine, door refusals answering with the taught row and
   seam refusals with the estate refusal's own fields.
+- `Api` serves the PLANES over HTTP and carries no write. Seven declared reads —
+  the roster itself, the connection snapshot, a lane's bounded tail, a
+  register's observed state, a cell's observation set with its identity, a
+  store's incarnation chain, and one live change stream — each answering the RFC
+  8785 canonical bytes of the plane read it projects, with the value never
+  re-shaped on the way out. Every collection is bounded and the admitted bound
+  rides in the answer; the change stream is one Server-Sent Events frame per
+  landed fact, written as the fact arrives. The write half is absent by
+  construction: the layer requires the three read services and nothing else, so
+  a write verb answers a taught refusal and the methods this face carries. It
+  authenticates nobody, and `plait api` binds loopback by default for that
+  reason.
+- `Lane`'s read half, `LaneReads`, is the bounded ack-none tail a declared lane
+  is read through, and its live continuation. It opens its own connection so a
+  reader never holds the publisher's emit right, and it runs on ephemeral
+  ordered consumers, so a read acknowledges nothing, checkpoints nothing, and
+  creates nothing durable. The bound is per partition, because two partitions'
+  positions come from two sequences and are not comparable.
 - `surface/init` is first contact. The `plait init` verb mints the opening
   declaration set — the store, the server options, the holder, and the agent
   writ — as canonical values written at the names their own bytes earn, names
@@ -102,6 +120,11 @@ fenced register over one file-backed, single-replica JetStream server.
 - `internal/pump` owns positioned durable records, explicit ack ordering, the
   bounded successor buffer, and durable pull consumers. `internal/anchors`
   owns the anchor KV adapter and fatal lost-CAS detach.
+- `internal/lanereads` owns the read side of a lane: the span a bounded tail
+  clips to, the ephemeral ordered consumers both faces run on, and the staging
+  that turns a reader falling behind into a taught refusal rather than a dropped
+  arrival. A partition with no stream reads as an empty tail, because the emit
+  path is what declares a lane's streams and a read declares nothing.
 - `internal/chaos` drives real NAK redelivery and reordered-arrival schedules.
   The `plait chaos` bin adds the hard-kill arm and prints its canonical measured
   scoreboard; partition reorder is explicitly deferred in v0.
