@@ -1,11 +1,13 @@
 # The pure-Lean model gates, per push.
 #
-# verify/moves/run.sh, verify/ir/run.sh, and verify/fabric/run.sh are whole gates: lake build,
-# a source guard refusing sorry/admit/axiom declarations, and — for
-# moves — the mechanical axiom-footprint check over every headline
-# theorem. All three projects are Lean 4.33.0 with core + Std only, so a
-# runner needs elan and nothing else; the toolchain is pinned by each
-# project's lean-toolchain file, not by this workflow.
+# verify/moves/run.sh, verify/ir/run.sh, verify/fabric/run.sh, and
+# verify/projections/run.sh are whole gates: lake build, a source guard
+# refusing sorry/admit/axiom declarations, and — for moves — the mechanical
+# axiom-footprint check over every headline theorem. All of them are Lean
+# 4.33.0 with core + Std only (projections additionally requires kernel by
+# path, which is itself Lean + Std only), so a runner needs elan and nothing
+# else; the toolchain is pinned by each project's lean-toolchain file, not by
+# this workflow.
 #
 # The implication and replay gates are NOT here: each carries a TLC
 # half whose tla2tools.jar is a rolling upstream asset, so they follow
@@ -40,3 +42,5 @@ jobs:
         run: bash verify/fabric/run.sh
       - name: fabric gate self-test (diff machinery controls)
         run: bash verify/fabric/run.sh --self-test
+      - name: projections gate (prose, orphan register, manifest-vs-corpus)
+        run: bash verify/projections/run.sh

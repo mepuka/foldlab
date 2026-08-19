@@ -1,3 +1,4 @@
+# modules: Kernel.Definitions, Projections.Probe
 # The closed kernel projection manifest, in declaration order.
 Kernel.DeclKind
 Kernel.Digest
