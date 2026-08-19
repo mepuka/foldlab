@@ -4836,3 +4836,62 @@ It was found by the prep lane, it is not fixed here, and it is not exercised by
 this surface. (d) `KernelSchemas.generated.ts` and `KernelBuilder.generated.ts`
 still carry header paths and generation commands. Each is the same law as T6
 and each wants its own slice; neither was quietly fixed.
+## Task DEV-825 round 3 — the id clause learns the family, not one prefix
+
+Placeholders `T14`–`T16`. Same ruling as round 2: **operator ruling 2026-08-19,
+tracking artifacts out of official documents.** A measurement from another lane
+found the round-2 clause spelled `DEV-` and therefore blind to every sibling
+tracking family; a live sitting-note citation had walked past it in a projection
+outside the swept set.
+
+### T14. The clause is the shape, and the finding is reproduced before it is repaired
+
+Decided: the tracking-id pattern widens from the `DEV-` literal to two-to-four
+uppercase letters, a hyphen, and digits — the shape every tracking family in
+this estate takes. Before widening, the blind spot was reproduced first-hand:
+with the old clause restored and a sitting-note citation planted into an
+official surface, the sweep returned no tracking-id refusal for it at all.
+Alternatives: add the known sibling prefixes by name (a list of prefixes is the
+same defect one level up — it checks the families someone thought of); match any
+letter run of any length (collides with far more ordinary prose, and the
+measured surfaces gave no reason to reach that wide). **Load-bearing? yes** — a
+wall spelled for the instance in front of it checks that instance and nothing
+else, which is what this round is repairing.
+
+### T15. The one lawful collision is excused BY NAME, because no shape separates it
+
+Decided: the three swept surfaces were measured before the clause moved, not
+after. Across all of them exactly one id-shaped token appears and it appears
+twice — `SHA-256`, on the page's provenance line and in the kernel table's
+header. Nothing else in the corpus's own prose, the type vocabulary, the
+docstrings, or the generated headers takes that shape; widening the letter run
+to one-through-six letters and re-measuring returned the same single token. So
+`SHA-256` is excused by name, and the decision worth recording is WHY it is not
+excused by shape: `SHA-256` and `KM-11` are shape-identical, and what separates
+them is what the letters mean, which no pattern can read. Alternatives: bound
+the digits, bound the letter run, or look ahead for a power of two — each is a
+rule invented to fit one token, and the next family that happened to fit it
+would pass invisibly, which is the exact defect being repaired. **Load-bearing?
+yes** — the excuse is the one hole in the clause, and its shape decides whether
+the hole is one token wide or a family wide.
+
+### T16. The by-name excuse is walled by liveness, and gets its own plant
+
+Decided: every entry in the excuse list must be spoken by some swept surface;
+one that is not reddens the wall. A name list is where a family could be
+admitted on purpose, so it is held to the same discipline as every other pin
+here — it may only widen for something visibly there, in a diff a reviewer
+reads. The control gains two arms: a sitting-note id planted into a surface, and
+a stale excuse planted into the list the clause is read against (which is why
+the list is now passed into `checkNoTrackingArtifacts` rather than reached for
+inside it). The sweep also stopped taking only the FIRST match per line, since an
+excused token standing before a real one would otherwise report the excused one
+and stop — an exclusion that shadows a line is a hiding place. **Load-bearing?
+yes** — without liveness the excuse list is an unguarded bypass of the clause it
+belongs to.
+
+**Stated residual.** The swept surface set is UNCHANGED and deliberately so: the
+measured residuals outside it — the other generated projections and the CLI's
+rendered output — remain their own slices under the standing posture, and the
+live citation that prompted this round sits in one of them. This round widened
+the class, not the sweep.

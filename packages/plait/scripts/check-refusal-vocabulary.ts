@@ -3,6 +3,7 @@ import { resolve } from "node:path"
 import { KERNEL_RUNTIME_STRUCTURAL_REFUSALS } from "../src/kernel/KernelTables.generated.js"
 import {
   DRAFT_MEANING_MARKER,
+  LAWFUL_ID_SHAPED_TOKENS,
   OFFICIAL_SURFACES,
   REFUSAL_VOCABULARY_PATHS,
   RUNTIME_REFUSAL_WAIVER_TICKET,
@@ -97,6 +98,7 @@ const rendered = checkNoTrackingArtifacts(
     },
   ],
   DRAFT_MEANING_MARKER,
+  LAWFUL_ID_SHAPED_TOKENS,
 )
 if (!rendered.ok) fail(rendered.reason)
 
@@ -108,5 +110,6 @@ console.log(
     + ` ${meanings.kinds} kind and ${meanings.reasons} reason meanings, all still marked`
     + " drafts awaiting ratification;"
     + ` ${rendered.lines} lines across ${rendered.surfaces} official surfaces carry no`
-    + " tracking artifact)",
+    + ` tracking artifact, with ${rendered.exclusions} id-shaped token excused by name`
+    + ` (${LAWFUL_ID_SHAPED_TOKENS.join(", ")}), each live)`,
 )
