@@ -519,6 +519,42 @@ packages/plait/src/surface/cli.ts#1
   law <expression>
   expected <absent>
   next <absent>
+packages/plait/src/surface/init.ts#0
+  kind "transport-unavailable"
+  law "An agent speaks to a substrate that is already serving; a declaration set names one and never starts it."
+  expected "a substrate answering at the declared address"
+  next[0].subject "substrate up"
+  next[0].note "Start the substrate over the store directory this declaration names, giving it the name it declares and the address of the coordination substrate its incarnation fence and its lanes live on — that fence cannot live on the substrate it is deciding whether to start. Then say these sentences again: the same arguments re-derive the same declarations, byte for byte."
+packages/plait/src/surface/init.ts#1
+  kind "malformed-value"
+  law "A holder is a named party; every fact a bootstrap declares is attributed to one, and attribution is never authority."
+  expected "a party name of at least one character"
+  next[0].subject "plait init"
+  next[0].note "Name the party this agent acts as. The name travels on every fact the agent lands, so a later reader can say who spoke; it grants nothing, and nothing is checked against it."
+packages/plait/src/surface/init.ts#2
+  kind "malformed-value"
+  law "A writ grants tools the served artifact declares; the served rows are the enumeration, so a name outside them names nothing."
+  expected <expression>
+  next[0].subject "plait init"
+  next[0].note "Grant one of the tools this server actually serves, or grant none and receive them all. The served rows are the model's own emission; a name spelled by hand would be a grant over a tool nobody serves."
+packages/plait/src/surface/init.ts#3
+  kind "malformed-value"
+  law "A view is named by the digest of the declared fold it images, never by a nickname."
+  expected "a lowercase SHA-256 digest written as 64 hexadecimal characters"
+  next[0].subject "plait init"
+  next[0].note "Name each view by the digest a fold declaration returned. A first contact usually names none: the least writ is lawful, and it grants no view."
+packages/plait/src/surface/init.ts#4
+  kind "malformed-value"
+  law "A declared substrate address is one an agent can dial; the bootstrap declares the address it registers, so the two cannot disagree."
+  expected "a port from 1 through 65535"
+  next[0].subject "plait init"
+  next[0].note "Declare the port the substrate will listen on. The registration carries this address to the agent client, so a port nothing can dial would register a server nothing can reach."
+packages/plait/src/surface/init.ts#5
+  kind "malformed-value"
+  law "An agent-client registration is one JSON object naming servers; a bootstrap adds an entry to it and never overwrites what it cannot read."
+  expected "one JSON object"
+  next[0].subject "plait init"
+  next[0].note "Repair or move the existing registration and say these sentences again. Everything already in it is kept — the bootstrap adds one entry and leaves every other one alone — so the only reason to refuse is that its bytes could not be read at all."
 packages/plait/src/surface/mcp.ts#0
   kind "malformed-value"
   law "A tool call carries exactly the fields its served input schema declares, in their declared spellings."

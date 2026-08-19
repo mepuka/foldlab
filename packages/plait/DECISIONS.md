@@ -8978,6 +8978,223 @@ four ratchet pins unchanged — internal modules are not public surface, so
 retiring one of their exported types costs the manifest nothing. **Load-bearing?
 no** — it records the one count that moved and why, so a reader does not go
 looking for a regression.
+## Task: first contact — one command mints the opening coordination (estate-daemon stage 2, 2026-08-19)
+
+### T0. The set is content-addressed, and exactly one file carries an ambient name
+
+Decided: each declared value is written at `<project>/.plait/values/<digest>.json`
+— the file name IS the SHA-256 of the bytes inside it — and one root,
+`<project>/.plait/opening.json`, names the four by digest.
+
+Idempotence then stops being a comparison and becomes a construction: writing the
+same value twice writes the same bytes at the same name, and a value whose bytes
+moved would land at a name nothing refers to. It is also the estate's own
+addressing discipline applied to a directory — a plait item refers to another by
+digest, and a walk starts from an explicitly named root. Alternatives: one file
+holding the whole set (a value whose bytes change whenever any member changes, so
+the set has no stable name for any of its parts), or a set of nickname-named
+files (`store.json`, `writ.json`, which is the ambient naming the algebra
+refuses). The root has to carry an ambient name because a walk has to start
+somewhere; that it is the ONLY one is the property. **Load-bearing? yes** — it is
+why "say these sentences again" is safe, and the wall executes it rather than
+asserting it.
+
+### T1. The writ minted here is a third writ shape, and that is not a twin
+
+Decided: `AgentWrit` — `{v, kind: "agent-writ", holder, views, tools}` — is a new
+declared value, and neither `Session.WritDeclaration` nor `internal/writs.ts`'s
+`SubstrateWrit` was changed.
+
+The estate already carries two things called writs because they fence two
+different things: the read plane's scopes what a session may image, and the
+substrate's records what a connection may do at the substrate. What a party
+grants their agent at the LANGUAGE DOOR is a third fence, and it is the value the
+door's pinned universe carries as a policy referent — one digest, named in one
+registration argument, seeding one catalog. Alternatives considered and refused:
+(a) growing `Session.WritDeclaration` with a `tools` field, which moves the
+canonical bytes of every writ the read plane has ever minted — a wire change on a
+shipped seam, which wants its own ruled ticket; (b) minting the toolset as a
+second value beside the read-plane writ, which would make the agent act under two
+digests and force the stage-4 guard to look in two places. The views field is the
+read plane's own coordinate vocabulary, so a view granted here is the same thing
+that seam judges. **Load-bearing? yes** — it decides what the guards slice
+enforces against, and it is the one value the registration names.
+
+### T2. The toolset is the served artifact's rows, read through the face that serves them
+
+Decided: the granted toolset is read from `surface/mcp.ts`'s own `servedTools()`,
+which parses the committed tool-schema artifact; no tool name is spelled in the
+bootstrap, and an empty grant means every served row.
+
+A hand-spelled name would be a twin of the model's emission with nothing holding
+the two together — and the twin would be silent, because a writ naming a tool
+nobody serves refuses nothing at all. Reading through the serving face rather
+than re-parsing the artifact keeps one reader. The empty-grant default is what
+makes `plait init --holder <name>` a complete sentence: a party meeting this
+estate should not have to enumerate a language to be heard. Tool names stay BARE
+strings, joining the list this file already keeps: they are the artifact's own
+rows and the artifact is the enumeration, so a brand would be a second statement
+of it. **Load-bearing? yes** — served-equals-derived reaches the writ through
+this, and the wall compares the writ's tools against the artifact's rows.
+
+### T3. No refusal kind was minted; two existing kinds carry every arm
+
+Decided: a malformed holder, an unserved tool name, a malformed view, an
+undialable port and an unreadable registration all refuse with `malformed-value`;
+an absent substrate refuses with the spine's own `transport-unavailable`
+absence.
+
+`malformed-value`'s standing meaning is "presented bytes do not decode as their
+declared schema, or do not decode as one wire value at all", and every structural
+arm above is exactly that: the holder sort, the digest sort, the served
+enumeration and the dialable-port range are each a declared schema the presented
+value failed. The runner-up for the holder was `invalid-session-declaration`,
+whose meaning names a SESSION declaration specifically and would have taught a
+reader about a seam a first contact has not met. For the absent substrate the
+sort matters more than the spelling: it is an ABSENCE, head-relative and
+repealable by later evidence, which is what makes "bring one up and say these
+sentences again" the honest repair rather than a retry over a permanent fault. A
+per-adapter kind (`bootstrap-transport-unavailable`, following the ten that
+exist) was the alternative and was refused: the transport module's own design
+puts the LAW, the expectation and the repair in per-adapter data, and the estate
+gains nothing from an eleventh word for one substrate not answering.
+**Load-bearing? yes** — a refusal's kind is persisted evidence, and the wrong one
+teaches the wrong repair.
+
+### T4. A filesystem that will not carry the write is a defect, not a refusal
+
+Decided: `makeDirectory` and `writeFile` failures die; only meaning refuses.
+
+The estate ruled it in these words: defects are defects and are not part of the
+estate domain language. An unwritable directory is not a sentence about meaning,
+there is no ratified kind whose meaning covers it, and minting one would be
+exactly the hand-minted kind the vocabulary gate refuses. The common case — a
+project directory that does not exist — is refused one layer earlier and by the
+right authority: the flag is declared `Flag.directory(..., { mustExist: true })`,
+so the CLI library's own parser answers it as the usage error it is. That keeps
+the division this surface already holds: the library refuses syntax, the taught
+vocabulary refuses law. **Load-bearing? yes** — dressing an environment failure
+as a refusal would teach a repair this estate cannot perform.
+
+### T5. The declarations are written before the substrate is probed
+
+Decided: `bootstrap` mints and writes the whole set and the registration, and the
+probe runs after; an unanswered substrate then refuses with exit 2 and the
+standing line is not printed.
+
+A declaration is a sentence about what a party declares and does not need a
+server to be true, so refusing to write it would make the repair loop require
+retyping. And the standing line CLAIMS a serving substrate — "your agent can now
+speak" — so printing it against nothing would be the warning-dressed-as-a-report
+the teaching register exists to avoid. The two halves fit because of T0: the
+second run writes the same bytes, so the taught repair can honestly say "say
+these sentences again". Alternative: print the digests, then warn. That is a
+warning, and the ticket's own words rule it out. **Load-bearing? yes** — it is
+the shape of the first failure a practitioner will meet.
+
+### T6. `plait mcp` grew one optional flag, and the seed is the digest alone
+
+Decided: `--writ <digest>`, optional, decoded by the estate's digest schema; when
+present the engine layer is seeded with that digest as an already-admitted
+`policy` referent, and nothing else about the subcommand moved.
+
+That is the smallest change that makes the registration mean something: the
+door's pinned universe is what a declaration's writ is checked against, so a
+server started without one can admit no sentence at all. Optional rather than
+required because no existing invocation named it and a required flag would break
+them; the honest reading of its absence is already the right one, since an
+unseeded engine refuses every declare as a forward reference. The seed is the
+DIGEST and nothing else — this surface reads no writ file and resolves no writ
+value, because a plait item refers to another by digest. **Load-bearing? yes** —
+without it the registration points at a server that refuses everything.
+
+### T7. The registration names the program the party just ran
+
+Decided: the `.mcp.json` entry's `command` is the runtime executing this command
+and its first argument is this command's own module; everything after is the
+product's verb and the digests the opening declared. The file is written through
+the one canonicalizer, and exactly one entry is replaced.
+
+A spawn recipe has to name an executable, so one coordinate in this file is
+unavoidably a location. Making it the invocation's own is what keeps it from
+being a location this surface invented, and it is stable across runs from one
+checkout, which is what keeps the registration byte-identical on a second
+bootstrap. Canonical JSON is valid JSON, so writing through the estate's one
+encoder costs the agent client nothing and buys byte-identity by construction.
+Replacing the whole file was refused: a party may have registered other servers,
+and taking that decision for them is not this command's to take — an existing
+file whose bytes cannot be read at all refuses rather than being overwritten.
+**Load-bearing? yes** — it is the only file another program consumes.
+
+### T8. The port is declared, and the dial address is derived from it
+
+Decided: `--addr` and `--port` default to `127.0.0.1` and `4222`, the registered
+URL is `nats://<addr>:<port>`, and a port outside 1–65535 refuses.
+
+The bootstrap declares the address it registers, so the two cannot disagree — and
+that is why the vendor's own random-port sentinel, which the daemon defaults to,
+is not this command's default: a substrate on a port nobody knows yet is a
+substrate no registration can point at. Stating the pair once and deriving the
+URL is one coordinate instead of two that can drift. **Load-bearing? yes** — the
+gate starts a real daemon on the declared port and connects an agent client to
+the derived URL.
+
+### T9. The daemon's start posture is transcribed, and the wall is executed
+
+Decided: the posture rows the shipped lifecycle command starts a substrate under
+are transcribed in `surface/init.ts`, and the bootstrap gate compares the options
+digest and the store digest the bootstrap declared against the ones the real
+daemon prints before it binds anything.
+
+The options value must be COMPLETE to have a digest, and the digest is only worth
+printing if it names the value the substrate will actually run under — a value
+that merely resembled it would be a wrong declaration, which is the failure the
+declared-value discipline exists to prevent. A transcription held honest by
+inspection would drift; this one is held by an independent oracle in the other
+language, running the shipped binary. Measured while writing this: the two
+digests agree exactly. **Load-bearing? yes** — it is the difference between a
+digest that names the running substrate and a digest that names a guess.
+
+### T10. The probe is a spine acquire site, holding the least writ, named by a literal
+
+Decided: readiness is `acquireConnection` under a new writ-table row whose roles
+and families are empty, and the layer name is written at the acquire site as a
+string literal.
+
+Every connection this package opens goes through one seam and acts under a
+declared writ; a probe is not an exception, and the writ it holds is the honest
+one — it publishes nothing and subscribes to nothing, so the estate has declared
+no substrate authority for it, and inventing a role would put a word in the
+security projection's mouth. The literal is not style: the wall that keeps every
+acquire site under a declared writ reads source bytes and matches a QUOTED second
+argument, so a name reached through a constant would be a site that fence never
+sees. Its two counts moved from nine to ten in the same edit. **Load-bearing?
+yes** — a fence with a hole in it is not a fence.
+
+### T11. The bootstrap is not exported from the barrel
+
+Decided: no entry in `src/index.ts` and none in the package exports map; the
+signature manifest was regenerated and did not move.
+
+`init.ts` is a CLI verb's implementation, like `cli.ts` itself, and no consumer
+outside this package exists for it. Growing the public type universe ahead of a
+consumer would raise a ratchet pin for a surface nobody imports, and adding an
+export later is ordinary whereas removing one is a public break. **Load-bearing?
+no** individually; **yes** as a rule, because the public surface is the one thing
+that cannot be quietly narrowed.
+
+### T12. What this slice does NOT do
+
+No authentication and no identity: the holder is attribution, the writ grants
+nothing that anything checks, and the printed report says so in one clause rather
+than leaving a reader to assume otherwise. No enforcement: nothing refuses a tool
+call or a view for being outside the writ, and the guards slice is where that
+arrives. One registration format, and it is the project-scoped one; other agent
+clients are a stated follow-on row and no shape for them is guessed at here. No
+daemon change: the lifecycle command is consumed exactly as it ships, including
+its ruling that the incarnation fence lives on a coordination substrate the party
+names. No liveness claim: the probe says a substrate answered once, at one
+moment, and the standing line says nothing about now.
 ## Task: the read-side API — the planes served over HTTP, writes stay at the door (2026-08-19)
 
 ### T0. The home is `plait api` on the transport spine, not the substrate daemon

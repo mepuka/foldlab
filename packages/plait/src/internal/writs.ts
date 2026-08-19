@@ -112,6 +112,16 @@ export const SUBSTRATE_WRITS: ReadonlyArray<LayerWrit> = [
     ],
   },
   {
+    // First contact's readiness probe. It opens a connection to learn whether a
+    // substrate answers where a registration says it does, and closes it again:
+    // it publishes nothing and subscribes to nothing, so it holds the LEAST
+    // writ, which is declared and empty rather than absent.
+    layer: "foldlab-plait-bootstrap",
+    roles: [],
+    publish: [],
+    subscribe: [],
+  },
+  {
     layer: "foldlab-plait-cell",
     roles: ["cell"],
     publish: [

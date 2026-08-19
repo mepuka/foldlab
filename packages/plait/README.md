@@ -76,6 +76,21 @@ fenced register over one file-backed, single-replica JetStream server.
   the committed copy of the model's own tool-schema projection, handlers
   routed through the engine, door refusals answering with the taught row and
   seam refusals with the estate refusal's own fields.
+- `surface/init` is first contact. The `plait init` verb mints the opening
+  declaration set — the store, the server options, the holder, and the agent
+  writ — as canonical values written at the names their own bytes earn, names
+  those four from one root, and places a project-scoped agent-client
+  registration pointing at the same program the party just ran. Saying the same
+  sentences twice writes the same bytes, executed rather than asserted on both
+  the pure and the real-substrate side. The writ it mints is DECLARED and not a
+  guard: nothing refuses a tool call or a view for being outside it, and the
+  printed report says so in one clause. The bootstrap gate starts the shipped
+  substrate lifecycle command and requires the options and store digests that
+  command prints to be the ones the bootstrap declared — the one cross-language
+  oracle on this surface — then connects an agent client over the registration's
+  own command and round-trips one admitted sentence. No authentication claim
+  ships with it: the holder is attribution, never authority, and an identity
+  story is future work.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
 - `internal/cas` owns the class-(a) write path: the bounded

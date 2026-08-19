@@ -1,8 +1,10 @@
 # surface — entry points
 
-The outermost layer: what a person or another program actually invokes. Four
-files wear this plane — `cli.ts`, the `plait` bin that deploys a declared fold,
-runs the chaos arms, and serves the two faces; `mcp.ts`, the agent face whose
+The outermost layer: what a person or another program actually invokes. Five
+files wear this plane — `cli.ts`, the `plait` bin that declares the opening
+coordination, deploys a declared fold, runs the chaos arms, and serves the two
+faces; `init.ts`, first contact, which mints the opening declaration set and
+registers the agent client that speaks it; `mcp.ts`, the agent face whose
 eight tools are the model's own tool-schema projection read from the committed
 artifact copy and served verbatim (served equals derived — `bun run
 check:kernel-tools` holds the copy byte-identical to the model gate's
@@ -29,6 +31,19 @@ actually serves with a planted artifact that reddens it. Beside it,
 landed through the emit path, read back through the bounded tail against their
 emit acknowledgement, followed live so a landing after the read started reaches
 the reader, and served through this face over the same substrate.
+
+`init.ts` is where a practitioner meets this estate. It writes no configuration:
+it mints the store, the options, the holder and the writ as canonical values,
+writes each at the name its own bytes earn, names all four from one root, and
+places a project-scoped registration pointing the agent client at the program
+the party just ran. Saying the same sentences twice writes the same bytes, which
+is what makes "start the substrate and run it again" a safe instruction, and it
+is executed rather than asserted — `../../test/Init.test.ts` compares the tree
+byte for byte and `../../test/BootstrapWall.test.ts` does it again over a real
+substrate, then connects an agent client to what the registration named and
+round-trips one admitted sentence. That gate also holds the one cross-language
+oracle in this directory: the options and store digests the bootstrap declares
+must be the ones the shipped substrate lifecycle command prints when it starts.
 
 `cli.ts` is declared on the catalog-pinned Effect release's own CLI,
 `effect/unstable/cli` (DEV-786). It parses nothing: the command tree is data —

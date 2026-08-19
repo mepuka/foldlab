@@ -622,3 +622,29 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   ships only `layerNoop`/`layerTest` fakes of them. `BunServices.layer` is that
   provision. Do not add `@effect/cli`: on this release line it is a v3 package,
   and pulling it would be a second, older CLI beside the one already present.
+- **First contact is a DECLARATION SET, and saying it twice says it once.**
+  `surface/init.ts` mints the opening — the store, the server options, the
+  holder, and the agent writ — as canonical values written at the names their
+  own bytes earn, with one root naming those four by digest and nothing else in
+  the set carrying an ambient name. Idempotence is the wall, not a courtesy, and
+  it is EXECUTED on both sides: the same arguments re-derive the same bytes at
+  the same names, which is exactly what licenses the taught repair "bring a
+  substrate up and say these sentences again". The writ minted here is a THIRD
+  writ shape beside the read plane's and the substrate's, and it is not a twin
+  of either — it fences the language door, its views are the read plane's own
+  coordinates and its tools are the served artifact's own rows. A tool name
+  spelled by hand is the twin the discipline refuses. The writ is a DECLARATION
+  and not a guard; the printed report says so in one clause, and a slice that
+  begins enforcing it moves that clause in the same edit or the report is a lie.
+  The options value is transcribed at the shipped lifecycle command's own start
+  posture, and that transcription's wall is an executed cross-language oracle:
+  the bootstrap gate compares the options and store digests the bootstrap
+  declared against the ones the real daemon prints before it binds anything. The
+  registration names the program the party just ran, because a spawn recipe must
+  name an executable and the invocation's own is the one coordinate this surface
+  did not invent; it replaces exactly one entry and keeps every other. Nothing
+  printed carries a ticket id, a filesystem path the party's own arguments did
+  not name, or a script invocation — a repair naming the daemon's verb is naming
+  the product's own verb and is lawful. A filesystem that will not carry the
+  write is a DEFECT and dies as one: the domain language is refusals about
+  meaning, and an unwritable directory is not a sentence in it.
