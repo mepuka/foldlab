@@ -54,3 +54,4 @@ invalid-petname DEV-804
 not-a-directory DEV-804
 unbound-petname DEV-804
 ambiguous-binding DEV-804
+incarnation-mismatch DEV-804

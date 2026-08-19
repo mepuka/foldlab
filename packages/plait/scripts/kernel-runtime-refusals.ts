@@ -67,4 +67,7 @@ export const RUNTIME_STRUCTURAL_REFUSAL_PROJECTION = [
   "not-a-directory",
   "unbound-petname",
   "ambiguous-binding",
+  // The register incarnation pin (DEV-779): a fencing token is honored only by
+  // the backing-stream incarnation that minted it.
+  "incarnation-mismatch",
 ] as const

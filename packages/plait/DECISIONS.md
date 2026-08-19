@@ -105,6 +105,15 @@ bounded interval over which a repeated envelope is one stored frame.
 
 ### T6. The incarnation pin at register-open is deferred, recorded
 
+**DISCHARGED by Task DEV-779** (this file, "Task DEV-779 — the register
+incarnation pin"). The pin is built: the register records the backing
+stream's creation time at open and re-asserts it ahead of every action; the
+alternative this entry priced — a per-operation stream-info comparison, one
+extra round trip per action — is the one that landed, at a measured 0.109ms
+p50 against the pinned local server. The bound sentences this entry planted
+are replaced there: enforced at the register, argued exempt at the cell and
+anchor stores. The entry below is the record as it stood, kept unedited.
+
 Decided: the register does NOT yet record the backing stream's creation time
 at open or refuse on its mismatch. Every register claim therefore carries the
 bound "within a fixed backing-stream incarnation; administrative lifecycle
@@ -3720,3 +3729,209 @@ recovery) — this re-scopes to the stable, documented behavior. **Load-bearing?
 yes** — the wall's claim is the repull loop ahead of heartbeat recovery, and
 that is what is asserted; a future client that heartbeat-recovers instead
 (emitting heartbeats_missed) or stops repulling still reddens it.
+
+## Task DEV-779 — the register incarnation pin
+
+Task-local placeholders (rule 1): T-numbers restart per task and collide across
+tasks by design; repository D-numbers are assigned at merge. This task
+discharges the T6 deferral above and carries the three-bucket condition the
+DEV-744 hand-off rode on: which buckets are pinned, which are exempt, and on
+what grounds. Measurements below were taken on this Mac against the pinned
+nats-server v2.14.4 and `@nats-io/{jetstream,kv,nats-core,transport-node}@3.4.0`.
+
+### T0. The incarnation identity is the backing stream's creation timestamp
+
+Decided: the register pins `KvStatus.streamInfo.created` — the ISO timestamp
+the server stamps on a stream when it is created — read from the `bucket.status()`
+the substrate-shape check already performs, so the capture itself costs no extra
+round trip at open. Alternatives, all rejected on evidence rather than taste:
+`config.name` (identical across incarnations by construction — it is the
+bucket's name); `config.metadata` (observed identical across three consecutive
+incarnations on one server: `{"_nats.level":"4","_nats.req.level":"0",
+"_nats.ver":"2.14.4"}` — it describes the server, not the stream);
+`state.first_ts`/`first_seq`/`last_seq` (every one of them moves under ordinary
+writes); a server-minted stream UID (**does not exist in the pin**: the
+client's `StreamInfo` is exactly `{config, created, state, cluster, mirror,
+sources, alternates, ts, ...ApiPaged}`, and no field of it is a stream
+identity). Why: `created` is the only field that is fixed for a stream's whole
+life and re-minted by its rebirth, which is precisely the predicate the pin
+needs. Measured resolution: the server emits microseconds
+(`2026-08-19T01:09:02.373135Z`); twenty consecutive destroy-then-create rounds
+produced twenty distinct values with zero collisions and a minimum separation of
+1ms at millisecond parse resolution — about three orders of magnitude above the
+field's own resolution. Stated bound: two incarnations created inside one
+microsecond would collide, and nothing in the pinned client can distinguish
+them. **Load-bearing? yes** — the whole guard is this comparison, and a
+weaker field would make it vacuous.
+
+### T1. The assertion runs at the head of every action, ahead of every staleness comparison
+
+Decided: `assertIncarnation` runs first in `grant`, `renew`, `commit`,
+`expireSteal`, and `observe`, before those actions read the key or compare
+tokens. Alternatives: assert immediately before each `bucket.update`, which is
+one round trip tighter. Why the tighter placement is WRONG here: a reborn
+bucket's revisions restart at one, so the token comparison `token !==
+entry.revision` reaches a verdict on the reborn bucket's numbers and refuses
+`stale-register-token` naming a "current" fence no holder of this register was
+ever granted. Ordering the pin first makes the classification honest — the
+refusal says the bucket was reborn, not that someone else holds the lease — and
+the wall asserts exactly that (`expect(refusal.kind).not.toBe(
+"stale-register-token")`). Measured cost: one stream-info round trip per action,
+0.109ms p50 / 0.173ms p95 / 0.866ms max over 50 samples, against 0.093ms p50 for
+the `get` each action already performs. **Load-bearing? yes** — measured
+mutation: with all six assertions deleted, the reborn-bucket commit refuses
+`stale-register-token`, which is the wrong law, the wrong expectation, and a
+green-looking answer.
+
+### T2. `observe` is pinned, and the read-back path revalidates
+
+Decided: `observe` carries the assertion even though it presents no fence, and
+`reconcileUpdate` asserts the pin on the branch where the key vanished
+mid-flight before minting a transport absence. Alternatives: pin only the three
+fenced writes. Why: `observe` is the taught repair of nearly every register
+refusal ("Observe the register for the current token and holder"), so an
+unpinned `observe` would answer the repair with a different bucket's holder and
+token — the exact silent answer the pin exists to refuse. And a key that
+vanished under an in-flight write is either lifecycle mutation (the pin's law)
+or a genuinely ambiguous outcome (a transport absence); asking the pin is what
+tells the two apart. **Load-bearing? yes** — measured mutation: with the
+assertions deleted, `observe` on the reborn bucket returns
+`{token: 3, holder: "holder-c"}` as this register's state, and `renew`
+successfully renews holder-b's lease at token 2.
+
+### T3. A destroyed bucket refuses on the pin's law, not as a retryable absence
+
+Decided: a stream-info request that answers 404 on the incarnation read refuses
+`incarnation-mismatch` with `got: "a destroyed backing stream"`, rather than
+minting the adapter's transport absence. The classification is
+`cause instanceof JetStreamApiError && cause.status === 404` — operation context
+plus the published API status, the same shape as `isCasRefusal`, and
+deliberately not the unpublished `10059` code constant: `@nats-io/jetstream@3.4.0`
+exports `JetStreamApiCodes` without a stream-not-found row, and the concrete
+`StreamNotFoundError` class is absent from the package entrypoint, so naming
+either would reach past the published surface. Alternatives: leave it a
+transport absence (the behaviour before this task). Why: `Refusal.retryAbsence`
+retries the absence sort, and no retry can bring the pinned incarnation back —
+the absence classification promises a repair that does not exist.
+**Load-bearing? yes** — measured mutation: with the assertions deleted the same
+scenario refuses with `sort: "absence"`, i.e. a retry loop over a destroyed
+bucket.
+
+### T4. The pin is a precondition, not a two-phase commit — the window is stated, not hidden
+
+Decided: the module documentation and this record both say that a rebirth
+landing between the assertion and the CAS is a residual window of one round
+trip. Alternatives: claim the pin closes the hazard. Why: it does not, and no
+client-side check can — the pinned server publishes no expected-stream-identity
+precondition to attach to a KV write, so the assertion and the write cannot be
+made one operation. What the pin does change is the shape of the exposure: an
+unbounded window in which any stale fence lands becomes a one-round-trip window,
+and the DEV-716 ACL suite (application credentials cannot delete or recreate
+streams and buckets) remains the other half of the guard, exactly as T6 said.
+**Load-bearing? no** — it is a bound on the claim, and it moves the day the
+substrate offers the precondition.
+
+### T5. The new kind is minted as an object literal so the taught-payload wall pins it
+
+Decided: `incarnation-mismatch` is constructed by calling `structuralRefusal`
+with an inline object literal rather than through this module's positional
+`lawRefusal` helper. Alternatives: reuse `lawRefusal` like the register's other
+seven structural refusals. Why: `check:refusal-payloads` walks object literals
+carrying a `law` field and reads the field through `ts.isPropertyAssignment`;
+`lawRefusal` builds its record from shorthand properties, which the walk does
+not see, so every refusal minted through it is absent from
+`test/RefusalPayloads.taught.txt`. Minting the pin's payload as a literal is what
+puts its law and its repair under the byte-compared wall — the manifest went
+from 62 to 64 pinned payloads, and both new rows carry the full law and repair
+text. The seven existing sites are left alone: retro-fitting them is a separate
+diff over unchanged behaviour. **Load-bearing? yes** — without it the pin's
+teaching would be editable without reddening anything.
+
+### T6. The cell store is EXEMPT from the pin, and here is the argument
+
+Decided: `flb-fab-cell` is NOT pinned. The argument, read off the seams rather
+than assumed: (1) **no fence crosses a call boundary.** `CellService` is
+`{read, merge}` — no revision is ever returned to a caller, and there is no
+caller-supplied revision parameter anywhere on the surface. (2) **The revision
+the CAS presents is read in the same attempt.** `internal/cas.ts`'s
+`casJoinLoop` re-reads at the top of every iteration and passes
+`observed.revision` to `update` inside that same iteration; nothing carries a
+revision between calls, so there is no stale token for a reborn bucket to
+honor. (3) **The carrier converges by join, not by revision order.** The cell
+join is set union over holder-attributed observations with canonical-byte
+identity (F1's `f1_cell_merge_aci`), the loop's pre-CAS `carries` guard makes a
+re-contributed delta cost one read and no write, and the bucket is `history=1`
+— only the current state has meaning and no audit claim rides cells.
+Alternatives: pin all three buckets uniformly, which was DEV-744's original
+three-bucket order. Why not: the pin's law is about a FENCE being honored across
+a reset, and this store presents none; adding a round trip per merge to defend a
+law the carrier does not rely on would be cost without a claim. **What the
+exemption does NOT say:** a deleted cell bucket destroys data, and the
+observations of writers that never re-contribute are gone. That is the deletion,
+not the revision order, and no pin recovers it. **Load-bearing? yes** — it is
+the recorded half of the DEV-744 hand-off condition, and it is falsifiable: the
+day `CellService` hands a revision back to a caller, the argument fails and the
+cell store needs the pin.
+
+### T7. The anchor store is EXEMPT from the pin, and its argument is different from the cell's
+
+Decided: `flb-fab-anchor` is NOT pinned. Stated honestly first: unlike the
+cell, the anchor store DOES carry a revision across calls —
+`AnchorStore.commit(key, expectedRevision, …)` takes one, and the pump holds
+`revision` between arrivals. So the cell's argument does not transfer, and the
+exemption rests on three different properties that are in the code: (1) **a
+reborn bucket detaches the stale pump loudly.** On an empty reborn bucket
+`update(anchorKey, bytes, R)` refuses wrong-last-sequence for every R, and the
+adapter classifies that as `lost-anchor-cas`, whose law is "One live pump owns
+each fold partition; losing its anchor revision CAS is a fatal detach". (2)
+**Mutual exclusion of pumps is not the anchor's job.** It is the durable
+JetStream consumer `FLB_FOLD_<foldDigest>` on the LANE stream — explicit ack,
+`max_ack_pending` at the buffer bound — and an anchor-bucket rebirth does not
+touch the lane stream. (3) **What the anchor holds is derived and
+re-derivable.** It is `{floor, stateDigest, head}`: the floor is a resume
+coordinate into the journal (`opt_start_seq: anchor.floor + 1`), `Anchor.advance`
+admits only a contiguous `floor + 1` successor, `head` is a hash chain over the
+applied events, and the state is stored content-addressed under `state.<digest>`
+with `loadState` re-deriving the digest on every read and refusing on mismatch.
+A rewound anchor is a rewind of a deterministic fold over a durable journal,
+recoverable by replay; a register's landed outcome is a terminal commitment that
+"once set, never changes" and is recoverable by nothing. **That is the actual
+line between pinned and exempt in this package: the register's fence guards an
+irreversible decision, the cell's and the anchor's revisions guard a value their
+own algebra can re-derive.** Residual, stated rather than waved: if a reborn
+anchor bucket climbs back to exactly the stale revision at that key, the stale
+pump's CAS lands and rewinds the partition's checkpoint — the write is still a
+verifiable, content-addressed checkpoint, and the recovery is replay.
+Alternatives: pin the anchor bucket too (one stream-info round trip per applied
+event — the hottest path in the package, and the pump commits on every applied
+arrival). Why not: paying that on the fold's inner loop to convert a
+loud-detach-or-replayable-rewind into a refusal is the wrong trade at this
+rung, and DEV-744's `Registers.audit` arm plus the DEV-716 ACL posture are where
+that case belongs if it is ever taken. **Load-bearing? yes** — same reason as
+T6, and the residual named here is the thing a future ticket would close.
+
+### T8. The wall is a new file, and bucket destroy+recreate is its SUBJECT, not its isolation
+
+Decided: the chaos wall lands as `test/RegisterIncarnation.test.ts`, four rows,
+and it performs the destroy+recreate on a second connection the register service
+does not own. Row isolation stays one fresh nats-server per row (seam rule 7,
+DECISIONS T0), which is what makes the deliberate lifecycle mutation legible as
+the subject rather than as a leaked isolation trick — the round-1 register wall
+was made nondeterministic by using destroy+recreate for isolation, and that
+prohibition is unchanged. The load-bearing row drives the reborn bucket to the
+exact revision the stale token names (a fresh grant on a reborn stream sits at
+revision 1, numerically the fence the stale holder still carries), so the
+scenario is silent success rather than an incidental miss, and it then presents
+the same stale token to the RAW substrate and asserts it lands — the wall
+proves the pin refused something the substrate would have accepted, not
+something the substrate was going to reject anyway. Alternatives: extend
+`Register.test.ts` (a 386-line file three lanes were touching this week).
+**Load-bearing? yes** — measured mutation, all six `assertIncarnation` calls
+deleted: 3 of 4 rows red and the positive control stays green. Row 1 reds on
+`Result.isFailure(replayed)` being false — the stale commit lands silently. Row
+2 reds with `{grant: "duplicate-grant", renew: ACCEPTED token 2 holder-b,
+commit: "stale-register-token", expireSteal: ACCEPTED token 3 holder-c,
+observe: ACCEPTED token 3 holder-c}`. Row 3 reds with `sort: "absence"`. Row 4,
+the untouched-incarnation control, stays green under the mutation, which is what
+makes the other three attributable to the deleted assertions and not to the
+chaos.

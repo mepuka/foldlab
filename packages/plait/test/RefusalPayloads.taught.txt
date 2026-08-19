@@ -170,18 +170,30 @@ packages/plait/src/internal/registers.ts#0
   next[0].subject "register.observe"
   next[0].note "Reconnect to the pinned server and observe the register: a transport refusal leaves this operation's outcome unknown, so read the landed holder, token, and outcome back before retrying it."
 packages/plait/src/internal/registers.ts#1
+  kind "incarnation-mismatch"
+  law "A fencing token is honored only by the backing-stream incarnation that minted it."
+  expected "a backing stream that reports its creation time"
+  next[0].subject "register.open"
+  next[0].note "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again."
+packages/plait/src/internal/registers.ts#2
+  kind "incarnation-mismatch"
+  law "A fencing token is honored only by the backing-stream incarnation that minted it."
+  expected <expression>
+  next[0].subject "register.open"
+  next[0].note "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again."
+packages/plait/src/internal/registers.ts#3
   kind "stale-register-token"
   law "renew requires the current fencing token"
   expected <absent>
   next[0].subject "register.observe"
   next[0].note "Observe the register for the current token and holder; this lease is superseded; do not renew with this token."
-packages/plait/src/internal/registers.ts#2
+packages/plait/src/internal/registers.ts#4
   kind "stale-register-token"
   law "no stale token ever lands"
   expected <absent>
   next[0].subject "register.observe"
   next[0].note "Observe the register for the current token and landed outcome; this round is superseded; do not retry this commit."
-packages/plait/src/internal/registers.ts#3
+packages/plait/src/internal/registers.ts#5
   kind "concurrent-register-update"
   law "expire-steal grants a strictly larger token from the current revision"
   expected <absent>

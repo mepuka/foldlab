@@ -30,7 +30,7 @@ import {
   type Refusal,
   type StructuralRefusalKind as StructuralKind,
 } from "../src/truth/Refusal.js"
-import { REGISTER_BUCKET, Registers } from "../src/planes/Register.js"
+import { REGISTER_BUCKET, REGISTER_HISTORY, Registers } from "../src/planes/Register.js"
 import { publish } from "../src/planes/Resolved.js"
 import * as Session from "../src/planes/Session.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
@@ -492,6 +492,42 @@ describe("structural refusal repairs", () => {
       throw new Error(`expected malformed-register-state structural refusal, got ${malformed.kind}`)
     }
     refusals.push(malformed)
+
+    // incarnation-mismatch: the bucket is destroyed and recreated out of band
+    // while a service still carries the fence it was granted, and the stale
+    // fenced operation is then replayed against the reborn bucket. This runs
+    // last on this server precisely because it resets the bucket underneath
+    // every register key above it.
+    const incarnation = await Effect.runPromise(
+      Effect.gen(function* () {
+        const registers = yield* Registers
+        const held = yield* registers.grant("workdelta", "seat-a")
+        yield* Effect.promise(async () => {
+          const raw = await connect({ servers: registerUrl })
+          try {
+            const kvm = new Kvm(raw)
+            await (await kvm.open(REGISTER_BUCKET)).destroy()
+            await kvm.create(REGISTER_BUCKET, {
+              storage: StorageType.File,
+              replicas: 1,
+              history: REGISTER_HISTORY,
+              ttl: 0,
+              max_bytes: -1,
+            })
+          } finally {
+            await raw.close()
+          }
+        })
+        return yield* Effect.flip(registers.commit("workdelta", held.token, "zombie"))
+      }).pipe(
+        Effect.provide(Registers.layer({ servers: registerUrl })),
+        Effect.scoped,
+      ),
+    )
+    if (incarnation.sort !== "structural") {
+      throw new Error(`expected incarnation-mismatch structural refusal, got ${incarnation.kind}`)
+    }
+    refusals.push(incarnation)
 
     // The cell kinds run against a healthy cell server, every trigger through
     // the public Cells surface.
