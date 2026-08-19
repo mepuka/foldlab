@@ -1,0 +1,78 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed 7627132588603150024 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 19572] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\Journal.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-15879692593549759101\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Integers
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module Journal
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module Journal
+Starting... (2026-08-19 05:50:26)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-19 05:50:26.
+Error: Invariant NoUncertainRetryDuplicate is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "closed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ],
+   [ phase |-> "closed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 2: <Open(1) line 278, col 3 to line 282, col 56 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "open",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ],
+   [ phase |-> "closed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 3: <Begin(1,1) line 294, col 3 to line 307, col 56 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "pending",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ],
+   [ phase |-> "closed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 4: <FinishAppend(1) line 336, col 3 to line 344, col 40 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ store = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ writers = << [ phase |-> "landed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ],
+   [ phase |-> "closed",
+     cursor |-> [seq |-> -1, head |-> <<>>],
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>] ] >>
+/\ crashLeft = 0
+
+16 states generated, 14 distinct states found, 8 states left on queue.
+The depth of the complete state graph search is 4.
+Finished in 00s at (2026-08-19 05:50:26)
+Trace exploration spec path: .\Journal_TTrace_1787136625.tla

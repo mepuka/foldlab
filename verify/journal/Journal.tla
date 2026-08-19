@@ -33,11 +33,12 @@
 (*     than the reader.  UnverifiedResync trusts the stored record's own   *)
 (*     declared position instead of re-deriving it and must lose           *)
 (*     AdoptionIsVerified.                                                 *)
-(*   - J4 verify-on-read: a read that comes back clean from the genesis    *)
-(*     anchor returns, below the tail, exactly the entries the journal     *)
-(*     wrote.  ForgivingRead drops the prev-link check and must lose       *)
-(*     CleanGenesisReadIsGenuineBelowTheTail.  What this does NOT claim is *)
-(*     stated as RESIDUAL-001 below and witnessed by its own trace.        *)
+(*   - J4 verify-on-read: a read standing on an anchor the journal itself  *)
+(*     derived from what it wrote returns, below the tail, exactly the     *)
+(*     entries the journal wrote — or refuses.  ForgivingRead drops the    *)
+(*     prev-link check and must lose AnchoredReadIsGenuine.  The anchor is *)
+(*     load-bearing and genesis is not one: what a genesis read does NOT   *)
+(*     certify is RESIDUAL-001, witnessed by its own committed trace.      *)
 (*   - J5 the absence snapshot survives the race: the split of create into *)
 (*     a resolve-check (absence, snapshotted with the expected position)   *)
 (*     and a CAS-append is what keeps two racing appenders from both       *)
@@ -77,7 +78,14 @@
 (*     rewrite a payload, rewrite a declared position, drop the tail.  An  *)
 (*     adversary outside that alphabet is not modelled.  Tamper never      *)
 (*     touches what the journal wrote, which is what makes soundness       *)
-(*     statable at all.                                                    *)
+(*     statable at all.  Erasure is separated behind its own bound         *)
+(*     selector because it is a different kind of threat: mutation is what *)
+(*     the chain exists to detect, erasure is what it cannot.              *)
+(*   - Which laws survive an untrusted store is itself a result, not an    *)
+(*     assumption.  J1, J2, and J5 are laws of the trusted-store configs:  *)
+(*     a forged tail poisons the next link, and an erasure un-appends.     *)
+(*     What survives tamper is J3 and J4 — the one verifier and the read   *)
+(*     fold — and the two residuals name precisely what those two miss.    *)
 (*   - Writers are memoryless between attempts: a writer holds at most one *)
 (*     pending entry, and a retry is a fresh open-begin-finish.  Consumer  *)
 (*     groups, leases, and multi-partition folds are NOT modelled.         *)
@@ -98,6 +106,11 @@ CONSTANTS
   Cap,
   \* how many substrate-tamper steps a behaviour may take (0 = trusted store)
   TamperBudget,
+  \* whether the tamper alphabet includes ERASURE of the tail.  A bound
+  \* selector, not a law: erasure is a threat the journal can neither
+  \* prevent nor detect, so it is separated from mutation to keep the two
+  \* residuals distinguishable
+  AllowErasure,
   \* how many appender crashes a behaviour may take (0 = no process failure)
   CrashBudget,
   \* FAITHLESS: the append lands without the expected-position CAS (J1
@@ -132,6 +145,7 @@ ASSUME NumPayloads  \in LiteralDomain
 ASSUME Cap          \in LiteralDomain
 ASSUME TamperBudget \in 0..2
 ASSUME CrashBudget  \in 0..2
+ASSUME AllowErasure     \in BOOLEAN
 ASSUME BlindAppend      \in BOOLEAN
 ASSUME LossyCrash       \in BOOLEAN
 ASSUME UnverifiedResync \in BOOLEAN
@@ -299,14 +313,25 @@ Begin(w, v) ==
 (* re-run the resolve-check: the CAS guards the position, and the recheck  *)
 (* on a fresh Begin is what makes the same-payload race converge.          *)
 (***************************************************************************)
+\* A writer is attempting while it holds an entry it has not yet resolved:
+\* pending (outcome unknown to us and to it) or landed (its bytes are in,
+\* its acknowledgement was lost, and it will retry them byte for byte).
+Attempting(w) == writers[w].phase \in {"pending", "landed"}
+
 CasWins(w) == Len(store) = writers[w].entry.seq
 
 OccupantIsOurs(w) ==
   LET e == writers[w].entry IN
   e.seq + 1 \in 1..Len(store) /\ store[e.seq + 1] = e
 
-\* The CAS lands.  The writer either learns its new cursor or loses the
-\* acknowledgement and stays pending — the uncertain retry.
+\* The CAS lands.  The writer either learns its new cursor, or loses the
+\* acknowledgement and holds its entry for a byte-identical retry.  The
+\* "landed" phase is a HISTORY variable: no participant can tell whether
+\* its own append or a rival's identical bytes occupy the position, and
+\* nothing in the transition relation branches on it.  The model knows,
+\* because the refinement into the catalog model has to distinguish the
+\* appender from a rival who wrote the same bytes, and the two are
+\* observationally identical from inside.
 FinishAppend(w) ==
   /\ writers[w].phase = "pending"
   /\ (CasWins(w) \/ BlindAppend)
@@ -315,14 +340,14 @@ FinishAppend(w) ==
   /\ written' = Append(written, writers[w].entry)
   /\ \/ writers' = [writers EXCEPT ![w] =
            [phase |-> "open", cursor |-> CursorAt(store', Len(store')), entry |-> NullEntry]]
-     \/ writers' = writers
+     \/ writers' = [writers EXCEPT ![w].phase = "landed"]
   /\ UNCHANGED <<tamperLeft, crashLeft>>
 
 \* The position is occupied by our own bytes: the earlier append landed and
 \* its acknowledgement was lost.  The retry is idempotent, and the cursor
 \* the writer adopts is the one it derived itself from those same bytes.
 FinishDuplicate(w) ==
-  /\ writers[w].phase = "pending"
+  /\ Attempting(w)
   /\ ~(CasWins(w) \/ BlindAppend)
   /\ OccupantIsOurs(w)
   /\ writers' = [writers EXCEPT ![w] =
@@ -337,7 +362,7 @@ FinishDuplicate(w) ==
 \* not verify leaves the cursor untouched: the reference heals only through
 \* a head a read would accept.
 FinishConflict(w) ==
-  /\ writers[w].phase = "pending"
+  /\ Attempting(w)
   /\ ~(CasWins(w) \/ BlindAppend)
   /\ ~OccupantIsOurs(w)
   /\ IF StaleCasWins
@@ -401,6 +426,7 @@ TamperSeq(n, k) ==
   /\ UNCHANGED <<written, writers, crashLeft>>
 
 TamperTruncate ==
+  /\ AllowErasure
   /\ tamperLeft > 0
   /\ store # << >>
   /\ store' = SubSeq(store, 1, Len(store) - 1)
@@ -435,14 +461,17 @@ TypeOK ==
   /\ tamperLeft \in 0..TamperBudget
   /\ crashLeft  \in 0..CrashBudget
   /\ \A w \in Writers :
-       /\ writers[w].phase \in {"closed", "open", "pending"}
+       /\ writers[w].phase \in {"closed", "open", "pending", "landed"}
        /\ writers[w].cursor \in CursorSpace
        /\ writers[w].entry \in Entry
        /\ (writers[w].phase = "closed" => writers[w].cursor = GenesisCursor)
 
-\* J1.  What the journal wrote is a chain from genesis: every entry's
-\* declared position is the position it occupies, and every entry's
-\* declared predecessor is the derived head of the prefix before it.
+\* J1.  Over a trusted store: what the journal wrote is a chain from
+\* genesis — every entry's declared position is the position it occupies,
+\* and every entry's declared predecessor is the derived head of the
+\* prefix before it.  A law of the trusted-store configs: an appender that
+\* adopts a FORGED TAIL chains its next entry to bytes the journal never
+\* wrote, and no check the reference performs can see that (RESIDUAL-001).
 \* Refuted by: BlindAppend.
 ChainIntegrity ==
   \A n \in 1..Len(written) :
@@ -450,7 +479,10 @@ ChainIntegrity ==
     /\ written[n].prev = HeadAt(written, n - 1)
 
 \* J2.  A durable entry is never rewritten and never lost: the journal
-\* grows by extension only.  Refuted by: LossyCrash.
+\* grows by extension only.  Conditional on a substrate that does not
+\* erase — an administrative purge is outside anything the journal can
+\* prevent or detect, which is RESIDUAL-002 and its own committed trace.
+\* Refuted by: LossyCrash.
 AppendOnly ==
   [][ /\ Len(written') >= Len(written)
       /\ \A n \in 1..Len(written) : written'[n] = written[n] ]_vars
@@ -473,15 +505,42 @@ AdoptionIsVerified ==
         (writers'[w].cursor # writers[w].cursor)
           => CursorIsVerifiedAgainst(store', writers'[w].cursor) ]_vars
 
-\* J4.  A read that comes back clean from the genesis anchor returns, at
-\* every position below the tail, exactly the entry the journal wrote: a
-\* mutation anywhere but the tail breaks the link its successor declares.
+\* An anchor the journal itself derived over bytes it wrote.  Genesis is
+\* deliberately NOT one: the empty history pins no content, so a read from
+\* genesis certifies the shape of a chain and nothing about whose chain it
+\* is.  This is the resumption coordinate a consumer keeps.
+TrustedAnchor(cur) ==
+  /\ cur.seq >= 0
+  /\ cur.seq + 1 \in 1..Len(written)
+  /\ written[cur.seq + 1].seq = cur.seq
+  /\ cur.head = DigestOf(written[cur.seq + 1])
+
+\* J4.  Verify-on-read is sound below the tail, RELATIVE TO A TRUSTED
+\* ANCHOR, SO LONG AS what the journal wrote is still a chain: a read that
+\* stands on an anchor the journal derived from what it wrote, and comes
+\* back clean, returns at every position below the tail exactly the entry
+\* the journal wrote.  A mutation anywhere but the tail breaks the link
+\* its successor declares; the tail has no successor.
+\*
+\* The chain hypothesis is not decoration, and dropping it was the first
+\* thing this model refuted.  An appender that adopts a forged tail writes
+\* its next entry ONTO the forgery, and from that step on the journal's own
+\* writes are not a chain and no reader can separate them from the bytes
+\* the journal wrote.  That is RESIDUAL-001, with its trace.  J1 and J4
+\* compose here rather than each standing alone, which is the honest shape
+\* of the guarantee a resuming consumer actually gets.
 \* Refuted by: ForgivingRead.
-CleanGenesisReadIsGenuineBelowTheTail ==
-  ReadClean(store, GenesisCursor) =>
-    \A n \in 1..(Len(store) - 1) :
-      /\ n <= Len(written)
-      /\ store[n] = written[n]
+AnchoredReadIsGenuine ==
+  ChainIntegrity =>
+    \A w \in Writers :
+      LET cur == writers[w].cursor IN
+      (  /\ writers[w].phase # "closed"
+         /\ TrustedAnchor(cur)
+         /\ AnchorOk(store, cur)
+         /\ ReadClean(store, cur) )
+        => \A n \in (cur.seq + 2)..(Len(store) - 1) :
+             /\ n <= Len(written)
+             /\ store[n] = written[n]
 
 \* J5.  The absence snapshot survives the race: two appenders that both
 \* found a payload absent cannot both land it, because the loser's CAS
@@ -493,25 +552,39 @@ NoDuplicatePayload ==
     written[m].payload = written[n].payload => m = n
 
 \* RESIDUAL-001.  NOT a claim — the statement verify-on-read does not
-\* support, kept here so the gap is checked rather than assumed.  A tail
-\* mutation is canonical and chains from its predecessor, so the fold
-\* accepts it; the reference has the same gap, stated at tailCursor.  Its
-\* config expects a VIOLATION and commits the trace.
-CleanGenesisReadIsGenuine ==
+\* support, kept here so the gap is checked rather than assumed.  A reader
+\* who anchors at GENESIS, holding no prior head, accepts a mutated tail:
+\* it is canonical and it chains from its predecessor, and the reference
+\* has the same gap, stated where it adopts a tail.  The trace goes
+\* further than the reference's note does, and that is the finding worth
+\* leading with: once an honest appender chains ONTO a forged tail, the
+\* forgery is laundered into the chain's interior and no later read from
+\* genesis can ever detect it.  Tail forgery is not confined to the tail.
+\* The config expects a VIOLATION and commits the trace.
+CleanGenesisReadIsGenuineBelowTheTail ==
   ReadClean(store, GenesisCursor) =>
-    /\ Len(store) <= Len(written)
-    /\ \A n \in 1..Len(store) : store[n] = written[n]
+    \A n \in 1..(Len(store) - 1) :
+      /\ n <= Len(written)
+      /\ store[n] = written[n]
+
+\* RESIDUAL-002.  Also NOT a claim.  With erasure in the tamper alphabet a
+\* durable entry simply leaves, and what remains is a perfectly valid
+\* shorter chain: a fold from genesis comes back clean, and nothing in the
+\* bytes says an entry is missing.  The journal gets no vote on an
+\* administrative purge, and the chain is not the mechanism that would
+\* notice one — only a reader still holding an anchor past the new tail
+\* can tell, and a fresh reader never can.  The config expects a
+\* VIOLATION and commits the trace.
+NothingWrittenIsMissing == Len(store) >= Len(written)
 
 \* Anti-vacuity witnesses.  Each MUST be violated: a law about a branch no
 \* behaviour reaches is a law about nothing.  The first is the split-CAS
 \* conflict the catalog gate could not drive at its wire.
 NoStaleCasConflict ==
-  \A w \in Writers :
-    ~(writers[w].phase = "pending" /\ ~CasWins(w) /\ ~OccupantIsOurs(w))
+  \A w \in Writers : ~(Attempting(w) /\ ~CasWins(w) /\ ~OccupantIsOurs(w))
 
 NoUncertainRetryDuplicate ==
-  \A w \in Writers :
-    ~(writers[w].phase = "pending" /\ ~CasWins(w) /\ OccupantIsOurs(w))
+  \A w \in Writers : ~(writers[w].phase = "landed" /\ ~CasWins(w) /\ OccupantIsOurs(w))
 
 \* A trusted store is one nothing tampered with.  Pinned in the configs
 \* that assume it, so an accidental tamper step cannot hide inside them.

@@ -56,14 +56,23 @@ AbstractCatalog == [d \in {1} |-> [n \in 1..Len(written) |-> CatalogFact(n)]]
 AbstractMirror  == [d \in {1} |-> [o \in {1} |-> << >>]]
 AbstractData    == [d \in {1} |-> << >>]
 
-\* Has this writer's pending entry already landed durably?
-Landed(w) ==
-  LET e == writers[w].entry IN
-  e.seq + 1 \in 1..Len(written) /\ written[e.seq + 1] = e
-
+\* A creator is busy exactly while its writer holds an entry whose append
+\* has not yet landed.  The "landed" phase — the writer whose bytes are in
+\* and whose acknowledgement was lost — maps to an IDLE creator: the
+\* abstract create finished at the moment the bytes landed, and the
+\* byte-identical retry that follows is a stutter.
+\*
+\* The phase is what distinguishes the appender from a rival who wrote the
+\* same bytes, and the distinction is load-bearing: content addressing
+\* makes two creators of one value byte-identical, so a mapping that read
+\* "my entry is at my position" off the journal would idle BOTH creators
+\* on one append, and one journal step would be two catalog steps.  The
+\* rival's own finish is a duplicate outcome at the journal and the
+\* catalog's conflict branch at the abstraction, which is the right answer
+\* and only reachable because the model remembers who appended.
 AbstractCreators ==
   [c \in Writers |->
-     IF writers[c].phase = "pending" /\ ~Landed(c)
+     IF writers[c].phase = "pending"
        THEN [busy |-> TRUE, at |-> 1,
              val |-> writers[c].entry.payload, exp |-> writers[c].entry.seq]
        ELSE [busy |-> FALSE, at |-> 0, val |-> 0, exp |-> 0]]

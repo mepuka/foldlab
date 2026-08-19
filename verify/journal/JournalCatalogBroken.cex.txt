@@ -1,0 +1,99 @@
+TLC2 Version 2026.08.11.125311 (rev: 0894c34)
+Running breadth-first search Model-Checking with fp 1 and seed -4810076392893314357 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 25976] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\JournalCatalogBroken.tla
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\JournalCatalog.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\Journal.tla
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\catalog\Catalog.tla (file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/journal/../catalog/Catalog.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-6938003964694302311\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Integers
+Semantic processing of module Journal
+Semantic processing of module Catalog
+Semantic processing of module JournalCatalog
+Semantic processing of module TLC
+Semantic processing of module TLCExt
+Semantic processing of module _TLCTrace
+Semantic processing of module JournalCatalogBroken
+Linting of module Journal
+Linting of module Catalog
+Linting of module JournalCatalog
+Linting of module TLCExt
+Linting of module _TLCTrace
+Linting of module JournalCatalogBroken
+Starting... (2026-08-19 05:50:23)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-08-19 05:50:23.
+Error: Action property line 323, col 17 to line 323, col 29 of module Catalog is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ],
+   [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 2: <Open(1) line 278, col 3 to line 282, col 56 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "open",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ],
+   [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 3: <Begin(1,1) line 294, col 3 to line 307, col 56 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<>>
+/\ store = <<>>
+/\ writers = << [ phase |-> "pending",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ],
+   [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 4: <FinishAppend(1) line 336, col 3 to line 344, col 40 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ store = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ writers = << [ phase |-> "open",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> 0, head |-> <<<<1, 0>>>>] ],
+   [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ] >>
+/\ crashLeft = 0
+
+State 5: <Begin(1,1) line 294, col 3 to line 307, col 56 of module Journal>
+/\ tamperLeft = 0
+/\ written = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ store = <<[payload |-> 1, seq |-> 0, prev |-> <<>>]>>
+/\ writers = << [ phase |-> "pending",
+     entry |-> [payload |-> 1, seq |-> 1, prev |-> <<<<1, 0>>>>],
+     cursor |-> [seq |-> 0, head |-> <<<<1, 0>>>>] ],
+   [ phase |-> "closed",
+     entry |-> [payload |-> 1, seq |-> 0, prev |-> <<>>],
+     cursor |-> [seq |-> -1, head |-> <<>>] ] >>
+/\ crashLeft = 0
+
+67 states generated, 51 distinct states found, 33 states left on queue.
+The depth of the complete state graph search is 5.
+Finished in 00s at (2026-08-19 05:50:23)
+Trace exploration spec path: .\JournalCatalogBroken_TTrace_1787136623.tla
