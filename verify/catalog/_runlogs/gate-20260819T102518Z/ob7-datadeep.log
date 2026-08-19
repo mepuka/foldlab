@@ -98,3 +98,24 @@ State 1: state invariant 9 holds.                                 I@07:49:52.223
 State 1: state invariant 10 holds.                                I@07:50:08.984
 State 1: state invariant 11 holds.                                I@07:52:14.867
 State 1: state invariant 12 holds.                                I@07:53:17.632
+State 1: state invariant 13 holds.                                I@07:59:45.992
+State 1: Checking 6 state invariants                              I@07:59:53.976
+State 1: state invariant 2 holds.                                 I@08:00:40.016
+State 1: state invariant 3 holds.                                 I@08:06:07.337
+State 1: state invariant 7 holds.                                 I@08:06:20.913
+State 1: state invariant 8 holds.                                 I@08:15:48.011
+State 1: state invariant 11 holds.                                I@08:24:40.041
+State 1: state invariant 13 holds.                                I@08:37:13.694
+State 1: Checking 3 state invariants                              I@08:37:21.334
+State 1: state invariant 1 holds.                                 I@08:37:22.690
+State 1: state invariant 12 holds.                                I@08:46:52.994
+State 1: state invariant 13 holds.                                I@08:49:27.118
+Step 1: picking a transition out of 5 transition(s)               I@08:49:36.353
+The outcome is: NoError                                           I@08:49:36.753
+Checker reports no error up to computation length 1               I@08:49:36.753
+It took me 0 days  1 hours 15 min  2 sec                          I@08:49:36.753
+Total time: 4502.11 sec                                           I@08:49:36.753
+EXITCODE: OK
+### -----------------------------------------------------------
+### exit code: 0
+### wall clock: 4503s
