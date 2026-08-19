@@ -37,6 +37,7 @@
 import { Schema } from "effect"
 
 import * as Grammar from "./KernelCorpusSchemas.js"
+import type { KernelRefusalRow } from "./KernelTables.generated.js"
 
 /** Where these schemas came from, carried as data for a consumer to assert. */
 export const KERNEL_SCHEMA_PROVENANCE = {
@@ -1156,3 +1157,40 @@ export const KernelActEncoding = Schema.Array(KernelNat).annotate({
     [7n, 4n, 5n],
   ],
 })
+
+// ---------------------------------------------------------------------------
+// The door's verdict vocabulary, from the AdmitResult, Door and CandidateAct
+// records. The runtime enrichments are named where they are added.
+// ---------------------------------------------------------------------------
+
+/**
+ * The result of admission. Success carries both the intrinsic sentence and its canonical model
+ * encoding; refusal carries the complete generated teaching row, flattened so every host
+ * exposes identical reason/law/repair fields.
+ */
+export type KernelVerdict =
+  | {
+    readonly verdict: "admitted"
+    readonly act: KernelActValue
+    readonly encoded: ReadonlyArray<bigint>
+  }
+  | ({ readonly verdict: "refused" } & KernelRefusalRow)
+
+/**
+ * A context-bound view of the single admission function. Exported under this name because the
+ * Door record's own schema already holds KernelDoor; the door module re-exports it as
+ * KernelDoor, which is the name a host reads.
+ */
+export interface KernelDoorInterface {
+  readonly admit: (candidate: KernelCandidateActValue) => KernelVerdict
+}
+
+/**
+ * The one host-facing judgment function. The arrow is this generator's composition of three
+ * records: the Door record is the context it judges under, the CandidateAct record is what it
+ * judges, and the AdmitResult record is what it returns.
+ */
+export type KernelAdmit = (
+  context: KernelDoorValue,
+  candidate: KernelCandidateActValue,
+) => KernelVerdict

@@ -609,6 +609,65 @@ const reasonMeanings = (corpus: KernelCorpus): ReadonlyMap<string, string> => {
 }
 
 /** The types this projection carries, in the order the emitted file declares them. */
+/**
+ * The door's answer, read off the `AdmitResult` record instead of written out.
+ *
+ * Until DEV-852 the two arms were three literal `line(...)` calls here — the
+ * one shape in this generator that no type record grounded, so a model that
+ * renamed an arm would have left this file saying the old name. The arm names
+ * and the refused arm's payload now come from the record, and a record whose
+ * shape moves refuses here rather than being rendered around.
+ *
+ * The admitted arm is the one place the SDK's projection is visible, so it is
+ * named rather than assumed. The record's admitted arm carries `act : Act` —
+ * the intrinsic sentence the door mints. This surface has no `Act` carrier and
+ * is not getting one: the SDK's types are the CANDIDATE side, what a caller
+ * builds and hands over, and a minted sentence is not something a caller can
+ * spell. What the SDK gives back for it is that sentence's canonical framing,
+ * `encoded` — the vector two implementations must agree on, which is exactly
+ * what a caller can check. The generator asserts the field it is projecting is
+ * still `Act`, so the projection cannot go on quietly standing for something
+ * else.
+ */
+const renderVerdict = (
+  corpus: KernelCorpus,
+  digestCarrier: string,
+  line: (value?: string) => void,
+): void => {
+  const admitResult = typeRecord(corpus, "AdmitResult")
+  if (admitResult.constructors.length !== 2) {
+    refuse(`AdmitResult carries ${admitResult.constructors.length} constructors, not two`)
+  }
+  const admitted = constructorRecord(admitResult, "admitted")
+  const refused = constructorRecord(admitResult, "refused")
+  const sole = (constructor: KernelConstructorRecord, expected: string): void => {
+    const [field, ...rest] = constructor.fields
+    if (field === undefined || rest.length !== 0) {
+      refuse(`AdmitResult.${constructor.name} carries ${constructor.fields.length} fields, not one`)
+    }
+    if (field.type !== expected) {
+      refuse(`AdmitResult.${constructor.name}.${field.name} carries ${field.type}, not ${expected}`)
+    }
+  }
+  sole(admitted, "Act")
+  sole(refused, "Refusal")
+
+  line("/**")
+  line(" * What the door answers. An admitted candidate becomes a sentence and carries")
+  line(" * its canonical framing - the vector two implementations must agree on. A")
+  line(" * refused one carries the whole taught row, so the reason, the law it defends")
+  line(" * and the legal next move arrive together and a caller can repair.")
+  line(" */")
+  line("export type Verdict =")
+  line(
+    `  | { readonly verdict: ${
+      JSON.stringify(admitted.name)
+    }; readonly encoded: ReadonlyArray<${digestCarrier}> }`,
+  )
+  line(`  | ({ readonly verdict: ${JSON.stringify(refused.name)} } & Refusal)`)
+  line()
+}
+
 const CANDIDATE_TYPES = [
   "RawArg",
   "CandidateAnchor",
@@ -1024,16 +1083,7 @@ export const renderKernelSdk = (corpus: KernelCorpus): string => {
   }
   const door = typeRecord(corpus, "Door")
   renderCandidateType(door, docs, declared, line, lines)
-  line("/**")
-  line(" * What the door answers. An admitted candidate becomes a sentence and carries")
-  line(" * its canonical framing - the vector two implementations must agree on. A")
-  line(" * refused one carries the whole taught row, so the reason, the law it defends")
-  line(" * and the legal next move arrive together and a caller can repair.")
-  line(" */")
-  line("export type Verdict =")
-  line(`  | { readonly verdict: "admitted"; readonly encoded: ReadonlyArray<${digestCarrier}> }`)
-  line("  | ({ readonly verdict: \"refused\" } & Refusal)")
-  line()
+  renderVerdict(corpus, digestCarrier, line)
 
   line("// ---------------------------------------------------------------------------")
   line("// The eight generators: the lawful half, one plain function each.")

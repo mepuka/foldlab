@@ -503,6 +503,125 @@ const docComment = (text: string, indent = ""): ReadonlyArray<string> => {
 }
 
 /**
+ * The door's verdict vocabulary, derived from the type records rather than
+ * written out beside them.
+ *
+ * Three declarations come out of this: the verdict a host reads back, the
+ * context-bound view of the door, and the judgment function itself. All three
+ * were hand-written in `KernelDoor.ts` until DEV-852; the shapes below are the
+ * same shapes, now read off `AdmitResult`, `Door` and `CandidateAct`.
+ *
+ * Two expansions the records do not state are added here, in the shape of the
+ * `KernelRef` precedent above — reviewed generator code, named where it is
+ * applied rather than smuggled in:
+ *
+ * 1. **The framing rides with the admission.** The model separates the two:
+ *    `AdmitResult` carries the admitted `Act`, and the encoding of an act
+ *    lives in the corpus's own `encoding` group, reached through `encodeAct`.
+ *    The runtime door computes both in one pass and returns them together, so
+ *    the admitted arm gains `encoded: ReadonlyArray<bigint>` — the same
+ *    unbounded-integer framing `KernelActEncoding` describes. A host that
+ *    wanted only the sentence reads `act` and ignores it.
+ * 2. **The refusal is flattened, and the discriminant is `verdict`.** The
+ *    model spells the sum with a nested `refusal : Refusal`; the runtime
+ *    spells it with the taught row inline, so every host exposes identical
+ *    `reason`/`law`/`repair`/`applicability` fields at one level. That row is
+ *    `KernelRefusalRow` from `KernelTables.generated.ts` and not this file's
+ *    `KernelRefusalValue`: the two disagree on applicability, which the tables
+ *    spell at the wire (`machine-applicable`) and the schemas spell in camel.
+ *    Referencing the row keeps the type the door already published.
+ *
+ * Nothing else is invented. The arm names, the admitted arm's field name and
+ * the type it carries all come from the record, and a record whose shape stops
+ * matching refuses here rather than being rendered around.
+ */
+const renderDoorVocabulary = (
+  corpus: KernelCorpus,
+  line: (value?: string) => void,
+): void => {
+  const recordFor = (name: string): KernelTypeRecord => {
+    const found = corpus.types.find((type) => type.name === name)
+    return found ?? refuse(`the door vocabulary needs a ${name} type record and the corpus has none`)
+  }
+
+  const admitResult = recordFor("AdmitResult")
+  recordFor("Door")
+  recordFor("CandidateAct")
+
+  const arm = (constructorName: string): KernelConstructorRecord => {
+    const found = admitResult.constructors.find(
+      (constructor) => constructor.name === constructorName,
+    )
+    return found ?? refuse(`AdmitResult carries no ${constructorName} constructor`)
+  }
+  if (admitResult.constructors.length !== 2) {
+    refuse(`AdmitResult carries ${admitResult.constructors.length} constructors, not two`)
+  }
+  const admitted = arm("admitted")
+  const refused = arm("refused")
+
+  const soleField = (
+    constructor: KernelConstructorRecord,
+    expected: string,
+  ): { readonly name: string; readonly type: string } => {
+    const [field, ...rest] = constructor.fields
+    if (field === undefined || rest.length !== 0) {
+      refuse(`AdmitResult.${constructor.name} carries ${constructor.fields.length} fields, not one`)
+    }
+    if (field.type !== expected) {
+      refuse(`AdmitResult.${constructor.name}.${field.name} carries ${field.type}, not ${expected}`)
+    }
+    return field
+  }
+  const admittedField = soleField(admitted, "Act")
+  soleField(refused, "Refusal")
+
+  line("// ---------------------------------------------------------------------------")
+  line("// The door's verdict vocabulary, from the AdmitResult, Door and CandidateAct")
+  line("// records. The runtime enrichments are named where they are added.")
+  line("// ---------------------------------------------------------------------------")
+  line()
+  for (
+    const row of docComment(
+      "The result of admission. Success carries both the intrinsic sentence and its" +
+        " canonical model encoding; refusal carries the complete generated teaching row," +
+        " flattened so every host exposes identical reason/law/repair fields.",
+    )
+  ) line(row)
+  line("export type KernelVerdict =")
+  line("  | {")
+  line(`    readonly verdict: ${quote(admitted.name)}`)
+  line(`    readonly ${admittedField.name}: ${valueTypeName(admittedField.type)}`)
+  line("    readonly encoded: ReadonlyArray<bigint>")
+  line("  }")
+  line(`  | ({ readonly verdict: ${quote(refused.name)} } & KernelRefusalRow)`)
+  line()
+  for (
+    const row of docComment(
+      "A context-bound view of the single admission function. Exported under this name" +
+        " because the Door record's own schema already holds KernelDoor; the door module" +
+        " re-exports it as KernelDoor, which is the name a host reads.",
+    )
+  ) line(row)
+  line("export interface KernelDoorInterface {")
+  line(`  readonly admit: (candidate: ${valueTypeName("CandidateAct")}) => KernelVerdict`)
+  line("}")
+  line()
+  for (
+    const row of docComment(
+      "The one host-facing judgment function. The arrow is this generator's composition" +
+        " of three records: the Door record is the context it judges under, the" +
+        " CandidateAct record is what it judges, and the AdmitResult record is what it" +
+        " returns.",
+    )
+  ) line(row)
+  line("export type KernelAdmit = (")
+  line(`  context: ${valueTypeName("Door")},`)
+  line(`  candidate: ${valueTypeName("CandidateAct")},`)
+  line(") => KernelVerdict")
+}
+
+/**
  * Renders the generated module. The rendering is a total function of the
  * corpus and its repository-relative path, so two runs over one corpus produce
  * identical bytes.
@@ -552,6 +671,7 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   line("import { Schema } from \"effect\"")
   line()
   line("import * as Grammar from \"./KernelCorpusSchemas.js\"")
+  line("import type { KernelRefusalRow } from \"./KernelTables.generated.js\"")
   line()
   line("/** Where these schemas came from, carried as data for a consumer to assert. */")
   line("export const KERNEL_SCHEMA_PROVENANCE = {")
@@ -775,6 +895,9 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   )
   exampleAnnotations(corpus.encodings.map((encoding) => asValue(encoding.act)))
   line("})")
+  line()
+
+  renderDoorVocabulary(corpus, line)
 
   return out.join("\n")
 }

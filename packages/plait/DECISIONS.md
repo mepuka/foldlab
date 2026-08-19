@@ -5230,3 +5230,99 @@ F7 is specified against). Ledger movement: 190 public types → 182, debt 150 �
 **Load-bearing? yes** — it is the record of which kernel names are public
 because something reads them, and the standing evidence that the door's three
 form bindings are wall contract rather than dead consts.
+
+### T26. Task DEV-852 slice B — the corpus grows the door's verdict, and the verdict vocabulary becomes generated
+
+Decided: three of the four orphan types enter the emitter's manifest —
+`AdmitResult`, `GenTag`, `ProgramNode` — and the door's three hand-written
+declarations become re-exports of generated ones. `verify/kernel` was not
+edited: all four commissioned types already carried docstrings, so the only
+lawful edit was never needed.
+
+**`World` is withheld, and the withholding is the finding.** Its type argument
+survives the Lean side intact — `renderRef`'s fvar path renders the binder and
+the type record lands carrying `params:[{"name":"Evidence","role":"type"}]` —
+so the risk the commission named did not materialise where it was expected. It
+materialised one stage downstream, in `scripts/kernel-schemas.ts`, which has
+exactly one story for a type parameter: brand erasure, the compile-time
+separation carried by the generated aliases. That story is false for a genuine
+type argument, whose field `evidence : Evidence` names no declared type and has
+no runtime shape at all. Rendering it honestly means a schema factory
+parameterized by the evidence schema, which is a surface design the ticket did
+not commission and which would move the type universe, the prose renderer and
+the SDK together. So `World` stays declared and unprojected, the orphan
+register names it at count 1, and the projections gate pins that name where it
+pinned `AdmitResult` before. A generator surprise is a finding, not a field to
+improvise around.
+
+**The frozen-header pin is a count pin, so updating it is part of add-only
+growth.** `type` and `doc` moved 22 → 25 and the corpus 125 lines → 131. The
+pin's identity fields — format 2, the generator string, the record and source
+names — are untouched, which is the test that distinguished a count update from
+a wall being edited to agree. Eight count sites moved in
+`verify/unity/run.sh` and three in `verify/projections/run.sh`. Two further
+pins moved for cause rather than for count: the projections orphan wall named
+`Kernel.AdmitResult` as its known orphan and now names `Kernel.World`, and one
+test — `KernelCorpus.test.ts` — counted 22 types and 22 docs and now counts 25.
+
+**The enrichment, in the `KernelRef` precedent's shape.** `KernelVerdict` is
+rendered from the `AdmitResult` record: arm names from its constructors, the
+admitted arm's field name and carrier from its field. Two things the record
+does not state are added by the generator, under a doc comment that names them
+where they are applied. First, the admitted arm gains
+`encoded: ReadonlyArray<bigint>`: the model SEPARATES admission from framing —
+`AdmitResult` carries the `Act`, and an act's encoding lives in the corpus's own
+`encoding` group — while the runtime door computes both in one pass and returns
+them together. Second, the refused arm flattens `KernelRefusalRow` and the
+discriminant is spelled `verdict` rather than `_tag`, because that is what the
+door already published. The row comes from `KernelTables.generated.ts` and
+deliberately not from this file's `KernelRefusalValue`: the two disagree on
+applicability, which the tables spell at the wire (`machine-applicable`) and the
+schemas spell in camel. This is the `KernelRef` precedent exactly — reviewed
+generator code that admits in a doc comment what the model spells differently,
+rather than a hand-written twin standing beside the corpus.
+
+**The SDK's `Verdict` was the ungrounded-generated finding, and is now
+grounded.** Three literal `line(...)` calls rendered its two arms with no type
+record behind them, so a model that renamed an arm would have left a generated
+file asserting the old name. The arm names and the refused arm's payload now
+come from the record, and the generator refuses a record whose shape moved. The
+admitted arm does NOT gain `act`: this surface's types are the CANDIDATE side,
+what a caller builds and hands over, and a minted sentence is not something a
+caller can spell — there is no `Act` carrier here and this round does not add
+one. What the SDK returns for it is that sentence's canonical framing,
+`encoded`, which is what a caller can actually check. The generator asserts the
+field it is projecting is still `Act`, so the projection cannot go on quietly
+standing for something else. The rendering reproduced the committed bytes
+exactly, so no test moved and `KernelSdk.test.ts` needed no reconciliation.
+
+**Three conversions.** `KernelVerdict`, `KernelDoor` and `KernelAdmit` leave
+`KernelDoor.ts` as declarations and return as
+`export type { ... } from "./KernelSchemas.generated.js"` — the only shape the
+type-universe walk counts as derived. `KernelDoorInterface` is renamed on the
+way through because the generated module already binds `KernelDoor` to the Door
+record's schema; the name a host reads is unchanged. The runtime `admit` and
+`make` implementations stay exactly where they were, annotated now against the
+re-exported types, which the file also imports locally — a bare re-export binds
+nothing in the module's own scope. Ledger movement: 182 public types classified,
+derived 40 → 43, debt 142 → 139, and the kernel ratchet pin fell 12 → 9 under
+`--write`. No pin rose.
+
+Alternatives priced: re-export the SDK's `Verdict` across from the door rather
+than rendering it (refused — the carriers differ on both sides of the sum, since
+the SDK's `Refusal` is its own declaration and its integers ride its own digest
+carrier, so the re-export would have dragged the schemas module's carrier set
+into a surface built to be free of it); leave the SDK hard-coding in place
+(refused — it is precisely the ungrounded-generated defect this series exists to
+remove, and a generated file that no record grounds is worse than a hand-written
+one, because its provenance header claims otherwise); expand the schemas
+generator to render `World` as a parameterized schema factory (refused — see
+above, an uncommissioned surface design); render the refused arm structurally
+from this file's own `Refusal` and `Applicability` schemas to avoid the
+cross-module import (refused — the applicability spellings differ, so the
+conversion would have silently changed the type the door publishes, which is the
+one thing a spelling-neutral conversion must not do).
+
+**Load-bearing? yes** — it is the record of why `World` is declared but
+unprojected, and of which two expansions in the generated verdict are the
+generator's rather than the model's.
