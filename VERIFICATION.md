@@ -52,6 +52,9 @@ The table points; the entries below carry the bounds.
 | Plait contexts, runtime half (E6: `Cell` + the merge-write loop, `Catalog`/`Blobs` stores, `ResolvedOf`, `ContextProgram` shapes) | runtime, walled (R0 differential + executable integration) | **Claimed** at the runtime level (merged PR #81 @2b28d9efb after adversarial review + twice-delivered round-2 + five-HOLD confirm): the cell write path is merge-then-`update(rev)` over the ruled `flb-fab-cell` bucket, bounded at 8 attempts with exhaustion a typed absence refusal (`cell-update-contended`), reconciled by read-back subsumption before classification; the T16 subsumption boundary is walled by two discriminating rows with a byte-compared executed trace (8/8 CAS attempts, lawful `converged` vs mutant `exhausted`, identical final digest `35e68e88…`) — the boundary claim was independently re-plantable and its own prior overclaim is retracted in the record; both cell mutants derive from the shipped service through the one named `MergeDiscipline` seam; verify-on-read lives at `Resolved.resolve` (re-derivation unskippable) with the store services deliberately unverified beneath it (T18) and no durable layer claimed (T19 — both stores say so in their types' documentation); `decodeRefusing` is the one public schema-issue door at `<T,E,RD,RE>`; `ContextProgram` ships declaration shapes and an order with no assembly executor and NO F7 claim. Bounds: all claims within a fixed backing-stream incarnation; the loop's attempt bound is flow control (completion not claimed); absence refusals are head-relative, never global; the M3 semilattice package (`cell_absorb_inflationary`, `cell_le_iff_subset`) is the model-side license the adoption wave's replica work cites — the runtime replica and watch surface remain unbuilt; DEV-731's ninth substrate suite licenses a future watch feed only as advisory, with no absence inference and no use of `KvWatchEntry.isUpdate` as an initial/live boundary | [packages/plait/](packages/plait/) |
 | Substrate assumptions gate (subject CAS with global-sequence cursors; KV revision lifecycle; CAS-before-dedup precedence; delivery-interleaving witnesses; work-queue shape; application ACL across protected publish subjects and the witnessed `$JS.API` stream delete/purge/update scope, retention mutation included, with the `DenyDelete` seal pinned server-immutable; Linux SIGKILL process recovery, both sync modes, witnessed in CI; TS client parity with the wrong-last-sequence refusals pinned wire-indistinguishable at the client pin; KV watch replay/coalescing, ordering, tombstones, resume, and reconnect; object-store put/get integrity, chunk boundaries, delete, and metadata stability) | executable integration | **Claimed** for the pinned envelope (single node, R=1, file storage, `nats-server v2.14.4` / `nats.go v1.53.1` / `@nats-io/* 3.4.0`): operation-context classification is a client-side convention layered on the pinned indistinguishable wire, never a wire-derived fact; default KV watch replay coalesces pre-watch history to the latest value per key and delivered those values in bucket-global revision order — a three-key replay whose order rules out both alphabetical and first-write order; one connected 32-write burst with all puts in flight together delivered every PUT in revision order with nothing coalesced, the revision-to-value expectation derived from the server's own assignment; DEL/PURGE markers delivered with empty payloads; `resumeFromRevision` is inclusive and bucket-global; one forced 750 ms same-server reconnect delivered all three in-gap writes to one key, in order, before the post-reconnect write. FINDING-DEV731-WATCH-INITIAL-001: `isUpdate` does not separate replay from live — the last (or only) initial entry is `true`. The object store round-trips bytes unchanged with a client-computed `SHA-256=`-prefixed digest an independent Node `crypto` derivation reproduces, chunks at ⌈size ÷ max_chunk_size⌉ (default 131072, echoed in the object's metadata, overridable per put), delivers one stored chunk per read, purges chunk messages on delete while leaving one rolled-up tombstone (`deleted: true`, `size: 0`, `chunks: 0`, empty digest, `nuid`/`mtime` retained, revision advanced) that `get` answers `null` for and `list` omits, and mints a fresh `nuid` and a fresh revision on every put of a name — identical bytes included, so there is no content dedup — with the revision being the backing stream's meta-message sequence that `previousRevision` fences on (a stale one refused `wrong last sequence`); `mtime` is recomputed by the client on every put and observed nondecreasing, and is NOT a freshness oracle — it is `new Date().toISOString()` at millisecond resolution, so two puts inside one millisecond carry the same string. FINDING-DEV730-OBJ-RANGED-001: the pinned client exposes NO ranged read (enumerated surface; `get`/`getBlob` are arity-1; `ObjectResult` is `{info, error, data}`), and the only partial read — cancelling the whole-object stream — is unverified, because the digest covers the whole object and is checked at the last chunk; an injected chunk left size/chunks/digest unchanged in metadata, `getBlob` refused `received a corrupt object`, and the reader was handed all 131072/131072/3 bytes before that refusal. FINDING-DEV730-OBJ-SHAPE-003: `ObjectResult.error` resolves `undefined` on non-empty success (`null` only for zero-size) and `list()` entries carry no `revision`. Bounds: the burst is not a losslessness theorem; reconnect did not restart the server; watch is advisory and silence never proves absence; process-crash recovery only, never power loss; no clustering; five sizes and one tamper class, not theorems over all sizes or all corruptions; no Plait code correspondence — the gate corroborates the substrate contract the design consumes, and no blob surface exists to correspond with | [go/substrate/](go/substrate/), [packages/plait/test/SubstrateParity.test.ts](packages/plait/test/SubstrateParity.test.ts), [packages/plait/test/KVWatchSemantics.test.ts](packages/plait/test/KVWatchSemantics.test.ts), [packages/plait/test/ObjectStoreSemantics.test.ts](packages/plait/test/ObjectStoreSemantics.test.ts), [watch finding](docs/findings/2026-08-18-dev-731-kv-watch-semantics.md), [object-store finding](docs/findings/2026-08-18-dev-730-object-store-semantics.md) |
 | Workflow replay soundness (determinacy, schedule irrelevance, replay = execution) | model-level R5 (Lean) + R2 (TLC protocol) | **Archived** 2026-08-15 at `archive/pre-estate-focus`; was Claimed for static DAGs with deterministic bindings, faithless runner refuted in both instruments | the tag; section below kept as record |
+| Substrate model, CL-1 — carriage invariance of the session fold | model-level R5 (Lean) | **Claimed** at the model level: the fold is a function of the three declared groups alone, so two mints under any carriage give one value, one byte string under every canonical encoding, and one digest under every naming of those bytes; a mutated group field moves the bytes under every injective encoding. The canonical form and the digest are parameters, never restated here; collision-freedom is claimed nowhere. No refinement map ties the model to the runtime mint — the daemon's byte-equality differential corroborates and does not prove. Bounds in the section below | [verify/substrate/](verify/substrate/), [go/cmd/daemonwall/](go/cmd/daemonwall/) |
+| Substrate model, CL-4 — lifecycle machine soundness over the transcribed status vocabulary | model-level R5 (Lean) | **Claimed** at the model level: total over the eleven transcribed symbols, readings held within states, transitions landing in the state their own event names, the terminal absorbing and reachable, drain and close two paths to it. The alphabet is DATA held against the transcription's own canonical rendering by an executed equality arm — name and placement, in row order — with its own drift control derived at gate time; a model-side reordering that every theorem survives reddens that arm alone. Timing carries no claim, and nothing here speaks about the vendor's implementation of the surface. Bounds in the section below | [verify/substrate/](verify/substrate/), [go/daemon/wirevocabulary.canonical.json](go/daemon/wirevocabulary.canonical.json), [packages/plait/test/StatusPumpWall.test.ts](packages/plait/test/StatusPumpWall.test.ts) |
+| Substrate model, CL-5 — incarnation chain integrity | model-level R5 (Lean) | **Claimed** at the model level in two halves: successor-names-predecessor over one store directory is well-founded under a landing-rank embedding — the kernel's own pin argument brought to the substrate — so no run names itself; and at most one incarnation stands landed-current per store directory at every revision, discharged as base, consecution and safety over the register's inductive invariant, with the fenced landing replacing the incumbent in one act. Crash is absence, and nothing infers a crash from silence. No refinement map ties the modeled register to the runtime one. Bounds in the section below | [verify/substrate/](verify/substrate/), [go/cmd/incarnationwall/](go/cmd/incarnationwall/), [go/cmd/teardownwall/](go/cmd/teardownwall/) |
 
 ## The Plait register (F5) — R3 + replay wall
 
@@ -1369,6 +1372,289 @@ the engine may now be built against a proved contract.
 [verify/replay/](verify/replay/) (Lean project, spec, configs, committed
 trace, run record in README) and
 [docs/design/2026-08-14-workflow-authoring-and-emission.md](docs/design/2026-08-14-workflow-authoring-and-emission.md) §5.1.
+
+## Substrate model — CL-1 carriage invariance — model-level R5 (Lean)
+
+### Claim
+
+The substrate session fact is invariant under mint carriage. A mint site
+holds the three declared groups — the substrate's own declaration of
+itself, the digest of the connect-options value the process declared, and
+the estate's declaration of the writ and asserted-shape set it opened
+under — and, beside them, everything that is carriage: the posture it
+mints under, the transport it read the groups through, and the position
+on its own lane at which it minted. "The same three groups" is stated as
+a value (`SessionGroups`), and the fold is proved to be a function of
+that value alone: two mint sites whose groups are one value fold to one
+session value (`carriage_invariance`), hence to one byte string under
+every canonical encoding (`carriage_invariant_bytes`), hence to one
+digest under every naming of those bytes (`one_digest_per_groups`).
+Carriage is proved not to be an input in the sharper positive form as
+well — moving posture, transport, and lane position moves nothing the
+fold sees (`posture_not_an_input`). The fold is faithful to its groups
+(`fold_faithful`), so a mutated group field moves the canonical bytes
+under every injective canonical encoding
+(`mutated_group_moves_bytes`).
+
+The canonical encoding and the digest are PARAMETERS of the statements,
+not definitions: the theorems hold of every canonical form, and of every
+injective one where injectivity is needed. Restating the estate's own
+canonical bytes inside the model would have been a second canonicalizer
+in the one place the estate least wants one.
+
+### Evidence
+
+`verify/substrate/run.sh`, Lean 4.33.0, zero external dependencies, one
+read-only path require on `verify/kernel` with the import direction
+walled in both directions. Thirty-two rostered theorems, each swept by
+`#print axioms` with the footprint pinned inside
+`{propext, Classical.choice, Quot.sound}`.
+
+Negative control, executed with its trace committed
+(`controls/mutated-group-moves-bytes.cex.txt`): the lawful row folds ONE
+triple of groups under two carriages — a privileged client's site and the
+daemon's site, differing in posture, transport and position — and the two
+renderings must agree; the mutant row moves exactly one field of exactly
+one group and the renderings must differ. A fold that read its carriage
+breaks the first half; a fold that dropped a group breaks the second.
+Verdict `refuted`.
+
+Sort discipline, executed as must-not-compile refusals with pinned
+diagnoses and compiling witness twins: a fencing token minted at another
+register presented at the incarnation register, and a store-directory
+digest compared with the register's digest across declaration kinds.
+
+Runtime differential this claim cites, not part of this gate: the
+daemon's byte-equality differential and its mutated-group control
+([go/cmd/daemonwall/](go/cmd/daemonwall/), battery stages "daemon — CL-1
+session-fact differential" and "daemon — CL-1 differential control
+(mutated group)"), with the TypeScript half at
+[packages/plait/test/SubstrateSession.test.ts](packages/plait/test/SubstrateSession.test.ts).
+
+### Bounds and residuals
+
+Model-level. No refinement map ties this model to the runtime mint: the
+differential above corroborates the claim by execution at a bound and is
+not a correspondence proof, and none is claimed. The walls' own ledger
+rows are owed and this row does not stand in for them.
+
+Collision-freedom is NOT claimed anywhere: the model proves equal groups
+give one digest, and proves a mutated group field moves the canonical
+BYTES; that the digest moves with them holds unless the digest collides,
+which stays in the trusted base with the standing SHA-256 assumption. The
+executed control witnesses the moved bytes on a concrete pair rather than
+a moved hash.
+
+The three groups are modeled at their canonical value identity rather
+than field by field; what a group's fields are is the differential's
+business. No liveness theorem — what the substrate is doing now is
+unsayable in this package. Single-server posture: no clustering,
+consensus, or replication claims. The vendor's own internals are not
+modeled; the model covers the estate's use of the transcribed surface.
+
+### Checkable at
+
+[verify/substrate/](verify/substrate/) (`Substrate/Laws.lean`
+`SCarriageInvariance`, `SPostureNotAnInput`, `SCarriageInvariantBytes`,
+`SOneDigestPerGroups`, `SFoldFaithful`, `SMutatedGroupMovesBytes`; the
+stated abstractions in `Substrate/Definitions.lean`; the decisions in
+`verify/substrate/DECISIONS.md`) and
+[docs/design/2026-08-19-estate-daemon-spec.md](docs/design/2026-08-19-estate-daemon-spec.md)
+§5.
+
+## Substrate model — CL-4 lifecycle machine soundness — model-level R5 (Lean)
+
+### Claim
+
+The connection machine over the transcribed eleven-symbol status
+vocabulary is sound in five stated senses: it is TOTAL — every state
+carries a row for every symbol (`LMachineTotal`); a reading is read
+WITHIN a state and never moves it (`LReadingsHoldState`), the four
+readings being exactly the events the transcription places as
+observations; a transition lands in the state its own event names,
+everywhere but at the terminal (`LTransitionNamesItsState`); the terminal
+state absorbs every symbol (`LTerminalAbsorbing`) and is reachable from
+establishment (`LTerminalReachable`); and drain and close are distinct
+paths to that shared terminal — the lame-duck disposition lands in a
+state of its own, that state is not the terminal, the drain path reaches
+the terminal all the same, and the two paths are two
+(`LDrainCloseDistinct`). The alphabet is the transcribed eleven, split
+seven transitions to four readings, with no symbol spelled twice
+(`LAlphabetTranscribed`).
+
+The alphabet is DATA, not prose the model re-spells. The model declares a
+roster of wire types and placement columns; the gate holds that roster
+against the transcribed status-events vocabulary's own canonical
+rendering, name for name and in the table's own row order. A status event
+spelled in the transcription and again in the model is the drift class the
+vocabulary discipline refuses, and this arm is what refuses it.
+
+The machine is a TABLE rather than a total function, deliberately: a
+total function cannot express a machine missing a symbol, and a totality
+claim no mutant can break is not a claim.
+
+### Evidence
+
+`verify/substrate/run.sh`, Lean 4.33.0. The alphabet-equality arm is
+executed against the transcribed vocabulary's canonical rendering and
+fails on its own named reason; its clean record is committed
+(`controls/alphabet-equality.txt`) and re-diffed, and the arm reports the
+placement split it read (seven transitions, four readings), which the
+gate pins. Its drift control renames one status event in a copy DERIVED
+from the real transcription at gate time — never a committed twin of the
+table — and the arm must report drift; trace committed
+(`controls/alphabet-drift.cex.txt`). Planted independently for this
+delivery: permuting two entries of the model's roster leaves every
+theorem provable and reddens the gate at this arm alone.
+
+Three executable negative controls, each refuted on its own named reason
+with its trace committed:
+
+- `machine-totality` — a machine with one state-and-symbol row dropped;
+  the lawful table is total at 88 rows, the mutant is not at 87, and the
+  absent step is named rather than hidden behind a fallback.
+- `reading-promoted-to-state` — a machine that moves the connection on
+  the error reading, which the transcription places as an observation;
+  the lawful machine holds the state, the mutant moves it.
+- `drain-close-conflated` — a machine in which the lame-duck disposition
+  lands straight in the terminal, so draining and closing stop being two
+  paths. Both machines must still REACH the terminal, or the control
+  would be killing reachability instead of conflation.
+
+Runtime differentials this claim cites, not part of this gate: the status
+pump walls
+([packages/plait/test/StatusPumpWall.test.ts](packages/plait/test/StatusPumpWall.test.ts),
+[packages/plait/test/StatusPump.test.ts](packages/plait/test/StatusPump.test.ts))
+and the transcribed table itself with its parity wall
+([go/daemon/wirevocabulary.canonical.json](go/daemon/wirevocabulary.canonical.json),
+[go/cmd/wirewall/](go/cmd/wirewall/),
+[packages/plait/test/WireVocabulary.test.ts](packages/plait/test/WireVocabulary.test.ts)).
+
+### Bounds and residuals
+
+Model-level, and a theorem about the TRANSCRIBED vocabulary and the
+declared defaults — it says nothing about the vendor's implementation of
+them. No refinement map ties the machine to the runtime pump; the status
+pump walls corroborate by execution and no correspondence is claimed.
+
+The alphabet arm is name-and-placement equality in row order, so it
+catches a renamed symbol, a moved placement, a dropped row, an added row
+and a reordering. It does not read the payload column: what fields a
+status event carries is the transcription's parity wall's business, not
+this model's. If the transcribed table were itself wrong about the
+vendor, this arm would agree with it — the arm walls the model against
+the transcription, and the transcription against the vendor is walled
+elsewhere.
+
+Timing carries no claim: the measured close latency is a property of the
+declared defaults and appears nowhere in this model, which is a
+statement about paths and never about durations. No liveness theorem —
+that a connection eventually reaches the terminal is not claimed, only
+that the terminal is reachable and absorbing. Single-server posture.
+
+### Checkable at
+
+[verify/substrate/](verify/substrate/) (`Substrate/Laws.lean`
+`LAlphabetTranscribed`, `LMachineTotal`, `LReadingsHoldState`,
+`LTransitionNamesItsState`, `LTerminalAbsorbing`, `LTerminalReachable`,
+`LDrainCloseDistinct`; the alphabet arm in `AlphabetMain.lean` and
+`run.sh`) and
+[docs/design/2026-08-19-estate-daemon-spec.md](docs/design/2026-08-19-estate-daemon-spec.md)
+§5.
+
+## Substrate model — CL-5 incarnation chain integrity — model-level R5 (Lean)
+
+### Claim
+
+Two halves, both proved.
+
+Acyclicity: over one store directory, successor-names-predecessor is
+well-founded. A landing order given inductively requires that a named
+predecessor be already landed over the SAME store directory, that a
+landing naming none be the first over its store, and that a name land at
+most once; under it, the predecessor relation strictly descends a
+landing-rank embedding (`chain_pin_rank_lt`), so it is well-founded
+(`RChainPinWellFounded`) and no run names itself
+(`RNoSelfPredecessor`). This is the kernel's own program-pin
+well-foundedness argument brought to the substrate, not a second shape
+for the same mathematics.
+
+At-most-one-landed-current: at every register revision, at most one
+incarnation stands landed-current per store directory. Stated in the
+register's inductive-invariant idiom and discharged as its three
+obligations — base (`RRegisterBase`: the register at its beginning
+satisfies the invariant), consecution (`RRegisterConsecution`: every
+lawful act carries it forward), and safety (`RRegisterSafety`: the
+invariant implies exactly the two claims above). The lawful landing is
+the one fenced decide: it prepends the successor to the chain and
+REPLACES the store directory's current binding in the same act, under a
+fence whose token type names the incarnation register — a token from
+another register cannot be presented, and the attempt does not elaborate.
+A retirement drops the binding and leaves the chain exactly as it lies,
+because history is the point.
+
+The current bindings are carried as a LIST that can hold two entries for
+one store directory. Modeling them as a function to at-most-one name
+would make the claim true by construction and therefore empty, and the
+unfenced mutant would have nowhere to exist.
+
+### Evidence
+
+`verify/substrate/run.sh`, Lean 4.33.0. Two executable negative controls,
+each refuted on its own named reason with its trace committed:
+
+- `chain-cycle` — a run naming ITSELF as its predecessor. The lawful step
+  refuses the landing outright; the mutant, which drops the successor
+  discipline and keeps the fence and the freshness check, admits it and
+  leaves a one-step cycle standing in the chain, which the control reads
+  off the chain rather than asserting.
+- `two-landed-current` — a successor landing over a store directory that
+  already has a current incarnation. The lawful landing leaves one name
+  current; the mutant, which appends beside the incumbent instead of
+  replacing it, leaves two.
+
+Sort discipline, executed as a must-not-compile refusal with a pinned
+diagnosis and a compiling witness twin: a fencing token minted at another
+register, presented at the incarnation register.
+
+Runtime differentials this claim cites, not part of this gate: the
+incarnation register wall and its pin control
+([go/cmd/incarnationwall/](go/cmd/incarnationwall/), battery stages
+"daemon — incarnation register wall" and "daemon — incarnation pin
+control") and the teardown fact-chain differential
+([go/cmd/teardownwall/](go/cmd/teardownwall/), battery stage "daemon —
+teardown fact-chain differential"), with the TypeScript half at
+[packages/plait/test/SubstrateIncarnation.test.ts](packages/plait/test/SubstrateIncarnation.test.ts).
+
+### Bounds and residuals
+
+Model-level. No refinement map ties the modeled register to the runtime
+one: the incarnation wall executes a bounded race with one racer out of
+process and certifies its bounds, and the teardown wall executes three
+teardowns; neither is a correspondence proof and none is claimed. Those
+walls' own ledger rows are owed and this row does not stand in for them.
+
+That a real digest cycle would need a hash preimage stays in the trusted
+base, exactly as it does in the kernel's pin order. A revision is a
+counter here and a fence is a token carrying one; real revision
+assignment is the substrate's, and the substrate assumptions gate is
+where it is probed.
+
+Crash is absence, not a fact: an incarnation whose process dies stays
+landed with its lanes quiet, and nothing in this model manufactures a
+crash event or infers one from silence. Acting on prolonged silence is a
+fenced act outside this model. No liveness theorem. Single-server
+posture: no clustering, consensus, or replication claims, and the model
+says nothing about two hosts racing over one store directory beyond what
+one register's revisions express.
+
+### Checkable at
+
+[verify/substrate/](verify/substrate/) (`Substrate/Laws.lean`
+`RChainPinWellFounded`, `RNoSelfPredecessor`, `RRegisterBase`,
+`RRegisterConsecution`, `RRegisterSafety`) and
+[docs/design/2026-08-19-estate-daemon-spec.md](docs/design/2026-08-19-estate-daemon-spec.md)
+§5.
 
 ## Standing assumptions
 

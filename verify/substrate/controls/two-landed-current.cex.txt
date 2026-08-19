@@ -1,0 +1,1 @@
+control=two-landed-current;candidate=successor-over-one-store;lawful-currents=[2];lawful-count=1;mutant-currents=[1,2];mutant-count=2;verdict=refuted

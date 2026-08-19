@@ -1,0 +1,1 @@
+control=mutated-group-moves-bytes;vector=one-substrate-field-moved;lawful-left=v=0|kind=substrate-session|substrate=11|options=22|estate=33;lawful-right=v=0|kind=substrate-session|substrate=11|options=22|estate=33;mutant-left=v=0|kind=substrate-session|substrate=11|options=22|estate=33;mutant-right=v=0|kind=substrate-session|substrate=12|options=22|estate=33;verdict=refuted

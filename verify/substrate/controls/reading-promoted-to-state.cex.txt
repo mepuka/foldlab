@@ -1,0 +1,1 @@
+control=reading-promoted-to-state;reading=error;placement=observation;lawful=Substrate.State.reconnecting;mutant=Substrate.State.disconnect;verdict=refuted

@@ -1,0 +1,1 @@
+control=drain-close-conflated;paths=ldm-then-close-versus-close;lawful-drain-step=Substrate.State.ldm;lawful-drain-end=Substrate.State.close;lawful-close-end=Substrate.State.close;mutant-drain-step=Substrate.State.close;mutant-drain-end=Substrate.State.close;verdict=refuted

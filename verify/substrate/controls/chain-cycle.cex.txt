@@ -1,0 +1,1 @@
+control=chain-cycle;candidate=run-naming-itself;seeded-chain=[1<-none];lawful=refused;mutant=[3<-3,1<-none];mutant-self-cycle=true;verdict=refuted
