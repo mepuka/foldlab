@@ -240,8 +240,9 @@ evidence, not proof, and the ledger says so.
 
 ### The REF lane
 
-The other active lane makes the Lean ground-truth model the executable
-referee for the `flb.type.v0` type grammar
+The prior lane — standing evidence, superseded 2026-08-18 — made the
+Lean ground-truth model the executable referee for the `flb.type.v0`
+type grammar
 ([verify/ir/](verify/ir/)): the grammar stated once as an algebraic
 type with a denotational semantics, and eight prose laws about meaning
 turned into theorems — brands are denotationally invisible, union
