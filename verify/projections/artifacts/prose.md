@@ -8,7 +8,7 @@ The manifest selects declarations; Lean's environment supplies every shape and d
 Plain register:
 
 The closed universe of declaration kinds. One brand per kind: a
-digest is always the digest of a declaration of a known kind.
+digest is always the digest of a declaration of a known kind. 
 
 Algebraic register:
 
@@ -23,11 +23,11 @@ are modeled as identity labels; that a real digest is a hash over
 one canonical byte form stays in the trusted base. A digest of one
 kind never compares with a digest of another: the comparison has no
 type, which is the referent-pinning discipline carried by the sort
-system itself.
+system itself. 
 
 Algebraic register:
 
-`Kernel.Digest(kind : Kernel.DeclKind) ::= { id : Nat }`
+`Kernel.Digest(brand kind : DeclKind) ::= { id : Nat }`
 
 ## `Kernel.Value`
 
@@ -35,7 +35,7 @@ Plain register:
 
 An immutable value at its canonical byte form, modeled as an opaque
 identity label. Canonical-byte identity (one value, one byte form)
-is the certifier's own wall and is not restated here.
+is the certifier's own wall and is not restated here. 
 
 Algebraic register:
 
@@ -47,7 +47,7 @@ Plain register:
 
 The digest of a fold state: a value identity, never a declaration
 identity. Its own sort keeps it out of every declaration-digest
-position.
+position. 
 
 Algebraic register:
 
@@ -59,7 +59,7 @@ Plain register:
 
 A human-facing petname. Naming, never identity: no operation in this
 package derives a digest from a petname, because resolution is a
-head-relative read served by a fold, outside the identity plane.
+head-relative read served by a fold, outside the identity plane. 
 
 Algebraic register:
 
@@ -73,45 +73,45 @@ A fencing token, meaningful only within the register that issued
 it. The register is part of the token's type: a cross-register
 comparison fails to elaborate, so the proven-but-vacuous-bound
 failure (two sides of a comparison denominated in different spaces)
-has no syntax.
+has no syntax. 
 
 Algebraic register:
 
-`Kernel.Token(register : Kernel.Digest(Kernel.DeclKind.program)) ::= { value : Nat }`
+`Kernel.Token(brand register : Digest(program)) ::= { value : Nat }`
 
 ## `Kernel.LanePartition`
 
 Plain register:
 
-A lane partition: the venue-local shard of an evidence stream.
+A lane partition: the venue-local shard of an evidence stream. 
 
 Algebraic register:
 
-`Kernel.LanePartition ::= { lane : Kernel.Digest(Kernel.DeclKind.lane), shard : Nat }`
+`Kernel.LanePartition ::= { lane : Digest(lane), shard : Nat }`
 
 ## `Kernel.Position`
 
 Plain register:
 
 A journal position, meaningful only within its partition. As with
-tokens, the space rides the type.
+tokens, the space rides the type. 
 
 Algebraic register:
 
-`Kernel.Position(partition : Kernel.LanePartition) ::= { value : Nat }`
+`Kernel.Position(brand partition : LanePartition) ::= { value : Nat }`
 
 ## `Kernel.AnchorFact`
 
 Plain register:
 
 An anchor fact: `(fold digest, partition) -> (floor, state, head)`.
-A fact, not a cache — the resume coordinate every head-relative
+A fact, not a cache -- the resume coordinate every head-relative
 read carries. The fold digest and partition are part of the type:
-an anchor replays nowhere but at its own fold and partition.
+an anchor replays nowhere but at its own fold and partition. 
 
 Algebraic register:
 
-`Kernel.AnchorFact(declared : Kernel.Digest(Kernel.DeclKind.index), partition : Kernel.LanePartition) ::= { floor : Kernel.Position(partition), state : Kernel.StateLabel, head : Kernel.Position(partition) }`
+`Kernel.AnchorFact(brand declared : Digest(index), brand partition : LanePartition) ::= { floor : Position(partition), state : StateLabel, head : Position(partition) }`
 
 ## `Kernel.HoleStage`
 
@@ -119,7 +119,7 @@ Plain register:
 
 The epistemic stages of a hole, in rising rank order. `opened` is
 the protocol stage named open; the language keyword forces the
-spelling.
+spelling. 
 
 Algebraic register:
 
@@ -132,11 +132,11 @@ Plain register:
 The closed trigger grammar at kernel sorts: exactly the five
 monotone productions. Every production reads its component upward
 (presence, reached-at-least, landed, advanced-past), so stability
-under growth is a property of the grammar's shape.
+under growth is a property of the grammar's shape. 
 
 Algebraic register:
 
-`Kernel.KTriggerPredicate ::= Kernel.KTriggerPredicate.evidenceAppears(lane : Kernel.Digest(Kernel.DeclKind.lane), pattern : Kernel.Value) | Kernel.KTriggerPredicate.cellReaches(cell : Kernel.Digest(Kernel.DeclKind.resource), threshold : Kernel.Value) | Kernel.KTriggerPredicate.holeReaches(hole : Nat, target : Kernel.HoleStage) | Kernel.KTriggerPredicate.outcomeLanded(register : Kernel.Digest(Kernel.DeclKind.program)) | Kernel.KTriggerPredicate.headAdvancedPast(partition : Kernel.LanePartition, position : Kernel.Position(partition))`
+`Kernel.KTriggerPredicate ::= Kernel.KTriggerPredicate.evidenceAppears(lane : Digest(lane), pattern : Value) | Kernel.KTriggerPredicate.cellReaches(cell : Digest(resource), threshold : Value) | Kernel.KTriggerPredicate.holeReaches(hole : Nat, target : HoleStage) | Kernel.KTriggerPredicate.outcomeLanded(register : Digest(program)) | Kernel.KTriggerPredicate.headAdvancedPast(partition : LanePartition, position : Position(partition))`
 
 ## `Kernel.Act`
 
@@ -145,15 +145,15 @@ Plain register:
 One lawful kernel sentence: the eight generators, each constructor
 demanding exactly the sorts its licensing law names.
 `resolve` is anchor-free because a digest names one value forever;
-every head-relative read is `fold` at an anchor — the
+every head-relative read is `fold` at an anchor -- the
 immutable/head-relative split carried by the constructors
 themselves. `decide` is commit-with-token: the token's type pins
 the register, so an unfenced or cross-register commit has no
-derivation.
+derivation. 
 
 Algebraic register:
 
-`Kernel.Act ::= Kernel.Act.declare(kind : Kernel.DeclKind, value : Kernel.Value, writ : Kernel.Digest(Kernel.DeclKind.policy)) | Kernel.Act.resolve(kind : Kernel.DeclKind, target : Kernel.Digest(kind)) | Kernel.Act.emit(lane : Kernel.Digest(Kernel.DeclKind.lane), body : Kernel.Value) | Kernel.Act.join(cell : Kernel.Digest(Kernel.DeclKind.resource), contribution : Kernel.Value) | Kernel.Act.fold(declared : Kernel.Digest(Kernel.DeclKind.index), partition : Kernel.LanePartition, anchor : Kernel.AnchorFact(declared, partition), query : Kernel.Value) | Kernel.Act.decide(register : Kernel.Digest(Kernel.DeclKind.program), token : Kernel.Token(register), outcome : Kernel.Value) | Kernel.Act.trigger(predicate : Kernel.KTriggerPredicate, declaration : Kernel.Digest(Kernel.DeclKind.program)) | Kernel.Act.spawn(parent : Kernel.Digest(Kernel.DeclKind.policy), request : Kernel.Digest(Kernel.DeclKind.policy))`
+`Kernel.Act ::= Kernel.Act.declare(kind : DeclKind, value : Value, writ : Digest(policy)) | Kernel.Act.resolve(kind : DeclKind, target : Digest(kind)) | Kernel.Act.emit(lane : Digest(lane), body : Value) | Kernel.Act.join(cell : Digest(resource), contribution : Value) | Kernel.Act.fold(declared : Digest(index), partition : LanePartition, anchor : AnchorFact(declared,partition), query : Value) | Kernel.Act.decide(register : Digest(program), token : Token(register), outcome : Value) | Kernel.Act.trigger(predicate : KTriggerPredicate, declaration : Digest(program)) | Kernel.Act.spawn(parent : Digest(policy), request : Digest(policy))`
 
 ## `Kernel.RawArg`
 
@@ -162,19 +162,19 @@ Plain register:
 A raw argument atom. The lawful atoms are digest references and
 literals; holes are lawful in program declarations and refused in a
 single sentence; every other atom is an unlawful shape kept
-spellable so the door's refusal of it is demonstrable.
+spellable so the door's refusal of it is demonstrable. 
 
 Algebraic register:
 
-`Kernel.RawArg ::= Kernel.RawArg.digestRef(kind : Kernel.DeclKind, id : Nat) | Kernel.RawArg.literal(value : Nat) | Kernel.RawArg.hole(name : Nat) | Kernel.RawArg.clockNow | Kernel.RawArg.randomSeed | Kernel.RawArg.secretBytes(bytes : Nat) | Kernel.RawArg.mintedId(token : Nat) | Kernel.RawArg.functionValue(code : Nat)`
+`Kernel.RawArg ::= Kernel.RawArg.digestRef(kind : DeclKind, id : Nat) | Kernel.RawArg.literal(value : Nat) | Kernel.RawArg.hole(name : Nat) | Kernel.RawArg.clockNow | Kernel.RawArg.randomSeed | Kernel.RawArg.secretBytes(bytes : Nat) | Kernel.RawArg.mintedId(token : Nat) | Kernel.RawArg.functionValue(code : Nat)`
 
 ## `Kernel.CandidateAnchor`
 
 Plain register:
 
 A candidate anchor: the raw spelling of a resume coordinate, its
-fold carried as data rather than as a type index — which is exactly
-what lets a cross-fold anchor be spelled and refused.
+fold carried as data rather than as a type index -- which is exactly
+what lets a cross-fold anchor be spelled and refused. 
 
 Algebraic register:
 
@@ -186,7 +186,7 @@ Plain register:
 
 A raw token claim: the register the claimant believes the token
 belongs to, carried as data so a cross-register claim is spellable
-and refused.
+and refused. 
 
 Algebraic register:
 
@@ -200,7 +200,7 @@ A candidate merge strategy. Both spellings retain the intended
 declared algebra. Last-writer-wins additionally asks arrival order
 to override that algebra and is refused at the door. Retaining the
 algebra makes dropping the unlawful override a candidate-only
-repair: no catalog lookup or new choice is smuggled into it.
+repair: no catalog lookup or new choice is smuggled into it. 
 
 Algebraic register:
 
@@ -211,13 +211,13 @@ Algebraic register:
 Plain register:
 
 The candidate trigger grammar: the five lawful productions plus the
-shapes the closed grammar deliberately cannot carry — absence,
+shapes the closed grammar deliberately cannot carry -- absence,
 negation, deadline, and the not-present-anywhere claim a local
-replica can never ground.
+replica can never ground. 
 
 Algebraic register:
 
-`Kernel.CandidatePredicate ::= Kernel.CandidatePredicate.evidenceAppears(lane : Nat, pattern : Nat) | Kernel.CandidatePredicate.cellReaches(cell : Nat, threshold : Nat) | Kernel.CandidatePredicate.holeReaches(hole : Nat, stage : Nat) | Kernel.CandidatePredicate.outcomeLanded(register : Nat) | Kernel.CandidatePredicate.headAdvancedPast(lane : Nat, shard : Nat, position : Nat) | Kernel.CandidatePredicate.onAbsence(subject : Nat) | Kernel.CandidatePredicate.negation(inner : Kernel.CandidatePredicate) | Kernel.CandidatePredicate.deadline(tick : Nat) | Kernel.CandidatePredicate.absentEverywhere(cell : Nat)`
+`Kernel.CandidatePredicate ::= Kernel.CandidatePredicate.evidenceAppears(lane : Nat, pattern : Nat) | Kernel.CandidatePredicate.cellReaches(cell : Nat, threshold : Nat) | Kernel.CandidatePredicate.holeReaches(hole : Nat, stage : Nat) | Kernel.CandidatePredicate.outcomeLanded(register : Nat) | Kernel.CandidatePredicate.headAdvancedPast(lane : Nat, shard : Nat, position : Nat) | Kernel.CandidatePredicate.onAbsence(subject : Nat) | Kernel.CandidatePredicate.negation(inner : CandidatePredicate) | Kernel.CandidatePredicate.deadline(tick : Nat) | Kernel.CandidatePredicate.absentEverywhere(cell : Nat)`
 
 ## `Kernel.CandidateAct`
 
@@ -226,17 +226,17 @@ Plain register:
 The raw candidate grammar. Every generator is spellable, and so is
 every unlawful shape: an anchored resolve, a trusted read, an
 unfenced or cross-register decide, a last-writer-wins join, an
-unanchored latest read, and an in-place mutation of the past.
+unanchored latest read, and an in-place mutation of the past. 
 
 Algebraic register:
 
-`Kernel.CandidateAct ::= Kernel.CandidateAct.declare(kind : Kernel.DeclKind, payload : List(Kernel.RawArg), writ : Nat) | Kernel.CandidateAct.resolveDigest(kind : Kernel.DeclKind, target : Nat, anchor : Option(Nat)) | Kernel.CandidateAct.trustBytes(kind : Kernel.DeclKind, target : Nat, asserted : Nat) | Kernel.CandidateAct.emit(lane : Nat, body : List(Kernel.RawArg)) | Kernel.CandidateAct.join(cell : Nat, contribution : List(Kernel.RawArg), strategy : Kernel.MergeStrategy) | Kernel.CandidateAct.readLatest(subject : Nat) | Kernel.CandidateAct.fold(declared : Nat, anchor : Option(Kernel.CandidateAnchor), query : List(Kernel.RawArg)) | Kernel.CandidateAct.decide(register : Nat, token : Option(Kernel.TokenClaim), outcome : List(Kernel.RawArg)) | Kernel.CandidateAct.trigger(predicate : Kernel.CandidatePredicate, declaration : Nat) | Kernel.CandidateAct.spawn(parent : Nat, request : Nat) | Kernel.CandidateAct.updateInPlace(kind : Kernel.DeclKind, target : Nat, payload : List(Kernel.RawArg), writ : Nat)`
+`Kernel.CandidateAct ::= Kernel.CandidateAct.declare(kind : DeclKind, payload : List(RawArg), writ : Nat) | Kernel.CandidateAct.resolveDigest(kind : DeclKind, target : Nat, anchor : Option(Nat)) | Kernel.CandidateAct.trustBytes(kind : DeclKind, target : Nat, asserted : Nat) | Kernel.CandidateAct.emit(lane : Nat, body : List(RawArg)) | Kernel.CandidateAct.join(cell : Nat, contribution : List(RawArg), strategy : MergeStrategy) | Kernel.CandidateAct.readLatest(subject : Nat) | Kernel.CandidateAct.fold(declared : Nat, anchor : Option(CandidateAnchor), query : List(RawArg)) | Kernel.CandidateAct.decide(register : Nat, token : Option(TokenClaim), outcome : List(RawArg)) | Kernel.CandidateAct.trigger(predicate : CandidatePredicate, declaration : Nat) | Kernel.CandidateAct.spawn(parent : Nat, request : Nat) | Kernel.CandidateAct.updateInPlace(kind : DeclKind, target : Nat, payload : List(RawArg), writ : Nat)`
 
 ## `Kernel.RefusalReason`
 
 Plain register:
 
-The closed refusal reasons of the kernel door.
+The closed refusal reasons of the kernel door. 
 
 Algebraic register:
 
@@ -248,11 +248,11 @@ Plain register:
 
 A structural refusal: the reason, the law it defends, and the
 taught repair. Refusal parity as data: the door never refuses
-without teaching the legal next move.
+without teaching the legal next move. 
 
 Algebraic register:
 
-`Kernel.Refusal ::= { reason : Kernel.RefusalReason, law : String, repair : String }`
+`Kernel.Refusal ::= { reason : RefusalReason, law : String, repair : String }`
 
 ## `Kernel.Applicability`
 
@@ -260,11 +260,11 @@ Plain register:
 
 How a taught repair may be applied. A repair is machine-applicable
 exactly when the lawful rewrite is a function of the refused
-candidate alone — an agent may apply it mechanically, with no new
+candidate alone -- an agent may apply it mechanically, with no new
 information; it is advisory when the repair needs something the
 candidate does not carry (a token to hold, a value to declare, an
 authority to request). The Rust diagnostic discipline, adopted by
-the operator's ruling.
+the operator's ruling. 
 
 Algebraic register:
 
@@ -275,8 +275,8 @@ Algebraic register:
 Plain register:
 
 The admission context: the already-admitted catalog and the
-universe of referents the acting writ pins.
+universe of referents the acting writ pins. 
 
 Algebraic register:
 
-`Kernel.Door ::= { catalog : List(Kernel.Ref), pinned : List(Kernel.Ref) }`
+`Kernel.Door ::= { catalog : List(Ref), pinned : List(Ref) }`
