@@ -592,6 +592,7 @@ check_falsification unresolvable-consumption \
 # ---------------------------------------------------------------------------
 ts_roster="refusal-meanings.ndjson"
 ts_tables="../../packages/plait/src/kernel/KernelTables.generated.ts"
+ts_builder="../../packages/plait/src/kernel/KernelBuilder.generated.ts"
 ts_vocabulary="../../packages/plait/src/truth/RefusalKinds.generated.ts"
 
 emit_surface() {
@@ -629,15 +630,23 @@ check_surface() {
 }
 
 check_surface kernel-tables "$ts_tables"
+check_surface kernel-builder "$ts_builder"
 check_surface refusal-kinds "$ts_vocabulary"
 
 # The em dash survives VERBATIM on this target, and it is the only code point
-# outside ASCII either surface carries. The prose register folds it to two
+# outside ASCII any surface carries. The prose register folds it to two
 # hyphens; applying that fold here would move six lines across the four
 # generated files, so the rule is walled rather than remembered.
-for surface in "$ts_tables" "$ts_vocabulary"; do
-  if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne 2 ]]; then
-    echo "GATE: FAIL — $surface lost an em dash the target carries verbatim" >&2
+#
+# The count is per surface and measured, not one number for all three: the two
+# that carry a drafted meaning about an incarnation mismatch carry the dash
+# twice, and the builder carries it once, in its plane header alone. A single
+# expected count would have had to be the wrong one for some surface.
+for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2"; do
+  surface="${pinned%:*}"
+  expected="${pinned##*:}"
+  if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne "$expected" ]]; then
+    echo "GATE: FAIL — $surface does not carry its $expected em-dash lines verbatim" >&2
     exit 1
   fi
   stray=$(LC_ALL=C tr -d '\11\12\40-\176' < "$surface" | LC_ALL=C tr -d '\342\200\224' | wc -c | tr -d ' ')
@@ -685,9 +694,10 @@ done < <(
   printf '%s\t%s\n' \
     "$fixture" "$(grep '"record":"corpus"' surface-digests.ndjson | sed 's/.*"digest":"\([^"]*\)".*/\1/')" \
     "$ts_tables" "$(grep '"target":"kernel-tables"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_builder" "$(grep '"target":"kernel-builder"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
     "$ts_vocabulary" "$(grep '"target":"refusal-kinds"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
 )
-echo "GATE: PASS (digest register fresh; the corpus and both surfaces hash as registered under a host oracle)"
+echo "GATE: PASS (digest register fresh; the corpus and all three surfaces hash as registered under a host oracle)"
 
 # Falsification of the printer itself. Each arm edits ONE constant or ONE rule
 # in this package's own sources, rebuilds, and demands that the emitted surface
@@ -751,6 +761,10 @@ check_ts_mutation refusal-ancestry Unity/TsKernel.lean \
   's/else "staged-debt"/else "kernel-corpus"/' \
   kernel-tables "$ts_tables" \
   "each runtime spelling's ancestry is resolved against the corpus, never assumed"
+check_ts_mutation field-form-rule Unity/TsKernel.lean \
+  's/else if name == "Value" then .ok .value/else if name == "Value" then .ok .absent/' \
+  kernel-builder "$ts_builder" \
+  "the builder's argument shapes come from the reviewed reference rule, which is load-bearing"
 
 # The roster is reviewed data, so the reconciliation between it and the corpus
 # must refuse rather than default in both directions.

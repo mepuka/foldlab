@@ -5422,3 +5422,110 @@ adopt it without a second copy, but adopting them is outside this ticket's
 **Load-bearing? yes** — it is the record that a committed compiler trace is a
 recording of ONE named compiler, and the standing reason the estate does not
 normalize the text inside a diagnostic it commits to.
+
+### T28. Task DEV-852 slice C2 — the builder surface flips to the Lean emission, and its interpretive load becomes reviewed data
+
+Decided: `KernelBuilder.generated.ts` is projected by `verify/unity`'s
+TypeScript emitter, the bun renderer that used to write it is deleted in this
+same commit, and the runtime battery holds the surface through the digest
+register rather than through a second generator. This is U9's flip discipline
+applied to the third surface: retire the renderer in the commit that flips the
+gate, or the wall compares a generator with itself.
+
+**The parity evidence.** `lake exe ts --target=kernel-builder` twice; the two
+emissions agree; and the emission equals the committed surface byte for byte
+over **19,521 bytes / 520 lines — an empty diff, at the first attempt, with no
+divergence class met and no iteration spent.** The emitted bytes hash to
+`3f79603043cca553bc056ff01884f10a7ab24a6be2afff850899ba9cb143004b`, which is
+the digest the DEV-812 measurement artifact recorded for the committed file
+before any of this was written, so the two sides agree against a number neither
+of them computed for the occasion. The committed target was never edited toward
+the generator.
+
+**What the corpus answers, and what it does not.** The eight generators, their
+field names, their field order, and each field's own model type reference are
+read out of the `Act` record. Four things are not in the corpus, and each is
+carried as a reviewed Lean table with a docstring saying so, on the
+`JsonSchemaManifest` J1/J2 precedent rather than smuggled in as if the model had
+said it: `fieldForm`, the one judgement — how a model type reference becomes an
+accepted argument shape, total over what `Act` uses and refusing anything else;
+`argumentGrammar`, the three reference forms, which are the freeze's and not the
+corpus's, stated once as tree; `handleBrandKey`, the property a handle's brand
+rides on; and two authored sentences — what calling a `$` constructor does, and
+the two paragraphs about the reference helpers and `Holes`. The model's own
+`Act` docstring rides through as its own rows rather than being re-wrapped: it
+is prose the model wrote at a width the model chose.
+
+**The grammar had to be reopened, and U6 is the reason that is worth saying.**
+U6 sized `TsType`/`TsExpr`/`TsStmt` to all four surfaces so the next slice would
+not reopen them, and on node KINDS it succeeded — every construct the builder
+needs was already carried. What the census did not size was LAYOUT. Five
+constructs the builder writes broken had no broken rendering: an interface whose
+members carry their own doc comments and stand a blank line apart, an interface
+whose type parameters break one per line, a member whose function type breaks
+its binders, a type alias whose union is written one member per line behind a
+leading bar, and a `satisfies` whose mapped type breaks. So `Layout` reached
+`.union`, `.mapped` and `.function`, `Member` gained a `doc`, `.interfaceDecl`
+gained a parameter layout and a spacing flag, and `brokenType` states — as an
+`Option`, so a type with no broken rendering says so instead of acquiring one —
+which two types the target breaks. The rule the reopening did NOT break is the
+one that mattered: no raw-text escape hatch was added. `TsType.keyword` would
+have rendered any of these in one line as a string, and using it that way is
+exactly how a target grammar stops being a grammar.
+
+Alternatives priced: normalize the layout inside the printer with a width budget
+(refused — U5, and it would have agreed with these bytes by coincidence);
+render the five broken forms through `.keyword` as raw text (refused — see
+above, and the grammar's own docstring forbids it by name); leave the builder
+on the bun renderer and wall the two against each other (refused — that is U9's
+named defect, two generators for one surface).
+
+**The self-test probe that this flip would have silently retired.**
+`check-kernel-surfaces.ts` proved its "unplaceable target" clause by rewriting a
+register row to `"kernel-builder"` — a target the check could not place BECAUSE
+THE BUILDER HAD NOT FLIPPED YET. Enrolling the builder in `SURFACE_PATHS` would
+have turned that probe into a self-comparison accepting its own unmutated input,
+which is the identical failure the digest-flip probe already carries a guard and
+a comment against. The probe now names `no-such-surface`: a probe keyed to "not
+yet a target" expires, one keyed to a name the register cannot mint does not.
+
+**Where the wall now lives.** `scripts/kernel-builder.ts`,
+`scripts/generate-kernel-builder.ts` and `scripts/check-kernel-builder.ts` are
+deleted, with `check:kernel-builder` and `generate:kernel-builder`. This is the
+addendum T27 asked for: C1 put `check:kernel-builder` into `test:fast` so the
+builder wall could not rot unwatched, and one commit later the wall changed
+shape rather than went away. The surface is now covered by
+`check:kernel-surfaces`, which was already in `test:fast` and now holds three
+surfaces instead of two, and `check:builder-control` stays in `test:types`
+exactly where C1 put it. Both walls are still in the battery; neither is a
+second name for the other. `verify/unity/run.sh` gains the third
+`check_surface` arm, the builder's digest under the host oracle, and a printer
+mutation arm — `field-form-rule` — that moves the surface by changing the
+reviewed reference rule and restores it byte-identically, so the one judgement
+in the generator is shown load-bearing rather than merely present.
+
+**The em-dash clause needed a per-surface count.** The gate asserted exactly two
+em dashes on every surface. The builder carries one — its plane header, and
+nothing else — because the second occurrence on the other two is a drafted
+meaning about an incarnation mismatch that this surface does not project. One
+expected count for three surfaces would have had to be wrong for one of them, so
+the count is now pinned per surface and measured.
+
+**Finding, not fixed here: the header still names a command that no longer
+exists.** The surface's header carries `Corpus:` as a path, `Command: bun run
+generate:kernel-builder`, and `Source:` as a path, and `KERNEL_BUILDER_PROVENANCE`
+carries the same three as data. That is U8's filed law-10 residual, and U8
+pre-approved the clean header landing at this slice. It did NOT land, and the
+reason is the parity wall: cleaning the header moves the bytes, and moving the
+bytes in the same commit that flips the generator would have left the flip with
+no verifiable parity evidence — the one thing that proves the new generator is
+faithful rather than merely plausible. The generator carries the three strings
+as reviewed constants documented as the residual they are, so the follow-up is a
+three-line change to `builderCorpusPath`, `builderCommand` and `builderHeader`
+plus a re-emission. Until it lands, that `Command:` line names a script this
+commit deleted, and a reader who runs it gets nothing.
+
+**Load-bearing? yes** — it is the record of which four things in the builder are
+reviewed judgement rather than model emission, of why the grammar's layout had
+to be reopened when its node census did not, and of the one probe whose meaning
+this flip consumed.

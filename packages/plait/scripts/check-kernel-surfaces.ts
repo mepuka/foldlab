@@ -38,6 +38,7 @@ export const REGISTER_PATH = "verify/unity/surface-digests.ndjson"
 
 /** Each emitted surface, by the target the register names it under. */
 export const SURFACE_PATHS: { readonly [target: string]: string } = {
+  "kernel-builder": "packages/plait/src/kernel/KernelBuilder.generated.ts",
   "kernel-tables": "packages/plait/src/kernel/KernelTables.generated.ts",
   "refusal-kinds": "packages/plait/src/truth/RefusalKinds.generated.ts",
 }
@@ -174,8 +175,14 @@ if (Bun.argv.includes("--self-test")) {
       "omits target refusal-kinds",
     ],
     [
+      // The name here must be one NO target will ever carry. It used to be
+      // `kernel-builder`, which was unplaceable only until the builder surface
+      // flipped to the model emitter and enrolled above - at which point this
+      // probe would have quietly become a self-comparison, the same way the
+      // digest flip did. A probe keyed to "not yet a target" expires; one keyed
+      // to a name the register cannot mint does not.
       "unplaceable target",
-      register.replace(`"kernel-tables"`, `"kernel-builder"`),
+      register.replace(`"kernel-tables"`, `"no-such-surface"`),
       held,
       "cannot place",
     ],

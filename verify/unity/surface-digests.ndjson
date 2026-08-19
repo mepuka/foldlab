@@ -1,3 +1,4 @@
 {"digest":"533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c","record":"corpus"}
 {"digest":"b182562b8ee6e6b98c6077d4312bf6a13cc02970c372c24e5240e80229be4033","record":"surface","target":"kernel-tables"}
+{"digest":"3f79603043cca553bc056ff01884f10a7ab24a6be2afff850899ba9cb143004b","record":"surface","target":"kernel-builder"}
 {"digest":"e2b1b9df1da03745aeddd8dc9f965d07b1054bf9ad02f9221a4dde763f453451","record":"surface","target":"refusal-kinds"}

@@ -28,23 +28,24 @@ live under `../../test/` is gone; the replay targets the shipping door.
 a model identity label (ruling A1), and it judges nothing.
 
 The emitted set comes from `../../fixtures/kernel-conformance.ndjson`, which
-`verify/unity`'s emitter writes out of the `verify/kernel` model. Two of them
-are also emitted there — `KernelTables.generated.ts` and its truth-plane half —
-so regenerate those with that emitter, which documents its targets beside them.
-From `packages/plait`: `bun run generate:kernel-schemas`,
-`generate:kernel-builder`, and `generate:kernel-sdk`, and
-`generate:kernel-prose` for the prose under
+`verify/unity`'s emitter writes out of the `verify/kernel` model. Three of them
+are also emitted there — `KernelTables.generated.ts`, its truth-plane half, and
+`KernelBuilder.generated.ts` — so regenerate those with that emitter, which
+documents its targets beside them: `lake exe ts --target=kernel-builder` under
+`verify/unity`, and the digest register re-emitted with it. From
+`packages/plait`, two renderers remain: `bun run generate:kernel-schemas` and
+`generate:kernel-sdk`, and `generate:kernel-prose` for the prose under
 `docs/generated/`. Never hand-edit a kind, a rank, a taught law, or a repair.
 
 Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
-`check:kernel-surfaces` holds the model-emitted pair to the digests its gate
-registers,
+`check:kernel-surfaces` holds the three model-emitted surfaces to the digests
+its gate registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
-and an absence control the emitted vectors cannot carry. `check:kernel-builder`
-and `check:builder-control` were unreached by `bun run gates` (DEV-799 finding)
-and are now in `test:fast` and `test:types` respectively, so the battery reaches
-them and they cannot rot unwatched again (DEV-824).
+and an absence control the emitted vectors cannot carry. The builder's two walls
+were unreached by `bun run gates` (DEV-799 finding) and are now in the battery
+(DEV-824): the surface rides `check:kernel-surfaces` in `test:fast` since it
+flipped to the model emitter, and `check:builder-control` is in `test:types`.
 
 `check:builder-control` compares four committed compiler traces verbatim, which
 only means anything if one compiler printed them: it reads the `typescript` and
