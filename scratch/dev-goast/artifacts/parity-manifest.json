@@ -1,0 +1,85 @@
+{
+  "measuredAt": "2026-08-18",
+  "commit": "9a69e1012e7c37536d60824fe87ec8bafdb462dd",
+  "toolchain": "go1.26.5 darwin/arm64 (mise x go@1.26.5)",
+  "note": "sha256 over the committed bytes. The two-run, committed-versus-fresh and mutation arms are in mutation-arms.md.",
+  "files": [
+    {
+      "path": "go/kmconform/tables_generated.go",
+      "role": "the generated Go artifact \u2014 the byte-parity target",
+      "regenerate": "cd go && go run ./cmd/kmgen",
+      "check": "cd go && go run ./cmd/kmgen -check",
+      "gate": "cd go && go test -count=1 ./cmd/kmgen  (TestGeneratedTablesAreAFreshEmission, TestTheEmissionIsGofmtCanonical, TestTheGeneratorIsDeterministic, TestTheGeneratorRefusesAMalformedCorpus)",
+      "ci": ".github/workflows/gates.yml \u2014 'go \u2014 go test ./...' (working-directory: go, -count=1)",
+      "bytes": 29896,
+      "lines": 694,
+      "sha256": "5d19cc38470a130a041261f8c9361d438298aad45177034550b63dc271d30426"
+    },
+    {
+      "path": "packages/plait/fixtures/kernel-conformance.ndjson",
+      "role": "the corpus \u2014 the single source both languages read",
+      "regenerate": "verify/unity: lake exe emit",
+      "check": "kmconform.CheckBothWays (the both-ways law)",
+      "gate": "cd go && go test -count=1 ./kmconform",
+      "ci": "same",
+      "bytes": 26647,
+      "lines": 125,
+      "sha256": "64afd406f040a419f7c4192906944f7abb75def21fb7c729980d3035508456ed"
+    },
+    {
+      "path": "go/cmd/kmgen/main.go",
+      "role": "the generator \u2014 a strings.Builder emitter, then one go/format.Source pass",
+      "regenerate": "hand-written",
+      "check": "cd go && gofmt -l .",
+      "gate": "cd go && go vet ./...",
+      "ci": "same",
+      "bytes": 23718,
+      "lines": 719,
+      "sha256": "c0b7fc902686602c2fc4dd68791e40e70f92cb67b63d3dd675646b585c3b3bde"
+    },
+    {
+      "path": "go/kmconform/kmconform.go",
+      "role": "declares ConformanceCorpusPath, the corpus the generator reads",
+      "regenerate": "hand-written",
+      "check": "-",
+      "gate": "-",
+      "ci": "-",
+      "bytes": 5147,
+      "lines": 95,
+      "sha256": "4d7c34a61cd9976e3b37bd3a899672ea0574c795427806eaa041ad53faf8fe60"
+    },
+    {
+      "path": "packages/plait/src/kernel/KernelSchemas.generated.ts",
+      "role": "the TypeScript twin (DEV-812's parity target), for scale",
+      "regenerate": "packages/plait/scripts/kernel-schemas.ts",
+      "check": "-",
+      "gate": "bun run gates",
+      "ci": ".github/workflows/gates.yml",
+      "bytes": 44129,
+      "lines": 1085,
+      "sha256": "d7cfaa78b76995f836ae3638549d5463799ac4dad177508b459de91434ea7019"
+    },
+    {
+      "path": "packages/plait/src/kernel/KernelTables.generated.ts",
+      "role": "the TypeScript twin, for scale",
+      "regenerate": "packages/plait/scripts/kernel-schemas.ts",
+      "check": "-",
+      "gate": "bun run gates",
+      "ci": "same",
+      "bytes": 35410,
+      "lines": 935,
+      "sha256": "b3165a1ae0b63ba6f78fa04543288384ee3e73d61ad36a81ed321dd8dbd392b1"
+    },
+    {
+      "path": "packages/plait/src/kernel/KernelBuilder.generated.ts",
+      "role": "the TypeScript twin, for scale",
+      "regenerate": "packages/plait/scripts/kernel-corpus.ts",
+      "check": "-",
+      "gate": "bun run gates",
+      "ci": "same",
+      "bytes": 19521,
+      "lines": 519,
+      "sha256": "3f79603043cca553bc056ff01884f10a7ab24a6be2afff850899ba9cb143004b"
+    }
+  ]
+}
