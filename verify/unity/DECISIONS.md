@@ -185,3 +185,156 @@ proves a constant is present proves nothing about what it spells).
 Why: it is the house pattern, and it is the only shape that shows a rule is
 load-bearing rather than merely present. **Load-bearing? no** — but a gate that
 cannot fail proves nothing, and these are the arms that make it able to.
+
+## The MCP tool-schema target and its reviewed convention manifest
+
+### J1. The wire-convention table is a reviewed manifest beside the printer
+
+Decided: `Unity/JsonSchemaManifest.lean` carries the naming map, the carrier
+map, the trigger correspondence, the citation set and all forty-five prose
+paragraphs as Lean data, on the runtime-refusal-roster pattern: a small datum a
+person ratifies, read by a generator, never computed. Its header states what it
+is, the ruling that homes it, and the model as its destination — once the
+kernel carries constructor-level and field-level docstrings the prose is read
+out of the environment and these rows shrink to the naming and carrier
+decisions that stay genuinely conventional.
+
+Alternatives: put the table inside the printer (a convention nobody can find is
+a convention nobody reviews); wait for model docstrings (the ticket's own
+recut measured that roughly 80% of the artifact has no model source, so the
+wait is indefinite); hand-author the schema and wall it (the debt this slice
+discharges).
+
+Why: the operator ruled it on 2026-08-19, closing A3's deferred sub-row. What
+makes the ruling work rather than merely file the debt is that the manifest is
+RECONCILED, not trusted: the printer refuses a row whose model path the walked
+environment cannot answer, and refuses a model field no row names.
+**Load-bearing? yes** — it is the whole shape of the slice.
+
+### J2. Every shape is derived; only names, fragments and prose are reviewed
+
+Decided: the projection AST decides the tool set and its order, every property
+and its order, which properties are required, every enum's members and their
+order, and every carrier lookup. The manifest decides the wire spelling of each
+property, the JSON fragment each model sort travels as, the trigger
+correspondence, and the prose. The split is checked in both directions rather
+than described: a manifest row is validated whether or not the walk reaches it,
+and a row filed under a tool its own model constructor does not project is
+refused as unreachable.
+
+Alternatives: carry the property order in the manifest (then the artifact stops
+being a projection and starts being a transcription); derive the names by rule
+(measured: five rules and thirty-six rows, six of the wire names carrying
+compound self-descriptive spellings with no model source at all).
+
+Why: the emitted property order is EXACTLY the model's declaration order with
+flattened fields expanded in place — including `kernel_trigger`'s eleven
+properties, which fall out of `Act.trigger`'s two fields followed by the closed
+trigger grammar's own constructor order. That was measured against the sketch
+and matches it row for row, so the derivation is the sketch's implicit rule
+made explicit rather than a new one. **Load-bearing? yes.**
+
+### J3. The seven stale ceilings are dropped, and a ceiling is refused
+
+Decided: `{"type":"integer","minimum":0}`, seven times. `minimum` stays because
+`Nat` is non-negative and that is a model fact; the ceiling goes because
+DEV-807 ruled estate integers exact and unbounded and the conformance corpus
+carries a gated witness above the retired double-safe range. `IntegerDomain`
+carries a `ceiling` field whose only lawful value is `none`, so a reviewer who
+writes the ceiling back gets a refusal naming the ruled domain rather than a
+schema that cannot spell a corpus-legal identity.
+
+Alternatives: drop the field (then the ruling is enforced by absence, and an
+absence is not a wall); keep the sketch's bound for parity (a projection that
+cannot spell a corpus-legal value is refused by its own logic).
+
+Why: this is the one correction that changes what the artifact ACCEPTS rather
+than how it reads. **Load-bearing? yes** — the refusal arm is the only thing
+that would notice the domain being re-narrowed.
+
+### J4. The digest pattern is the running system's, not the model's
+
+Decided: `^sha256:[0-9a-f]{64}$` on all fourteen digest fragments. The sketch's
+own paragraph said why it could not: the model uses short identity labels and
+the running system carries sixty-four lowercase hex characters. The width is a
+wire fact with no model source, so it lives in the manifest beside the
+corrected integer fragments.
+
+Alternatives: carry the model's `+` pattern forward (a served artifact that
+validates a two-character digest is a served artifact that lies).
+
+Why: the emitted schema is for clients, and a client checks what the pattern
+says. **Load-bearing? yes.**
+
+### J5. One key order, one layout, one alphabet
+
+Decided: a property schema is `type`, `enum`, `pattern`, `minimum`,
+`description` — the discriminator, the constraints from most closed to least,
+then the sentence. An object always expands, two spaces per level; an array of
+scalars is one line, an array of objects expands. Every string is folded
+through the interchange's ASCII table and then escaped, so the escape rule
+closes over exactly three cases and the closure is a fact about the alphabet
+rather than a bet on the corpus.
+
+Alternatives: reproduce the sketch (it wrote six different per-property key
+orders and twelve of thirty-six property objects on one line — there is nothing
+to reproduce); sort keys (nothing in the artifact is in sorted order and
+sorting would move every node); carry the em dash verbatim as the TypeScript
+target does (U7).
+
+Why the alphabet differs from U7: that decision was MEASURED against committed
+bytes that carry U+2014 and had no freedom. This target has no committed
+successor to match, and an MCP schema is read by arbitrary client stacks, so it
+takes the interchange's rule — which also means a docstring reaching a code
+point the table cannot name reddens the emission instead of arriving mangled.
+The gate plants U+00A0 and observes the refusal. **Load-bearing? yes** — the
+escape path is unexercised by the corpus and is proven by a planted control.
+
+### J6. The four unledgered citations are named, not laundered
+
+Decided: the reviewed prose cites nine laws; five resolve in `citations.txt`
+and four do not. Each carries a `CitationStatus` row, the gate reconciles both
+ways, and the four are printed by name every run under an UNLEDGERED banner.
+A row that claims the ledger carries it reds; an UNLEDGERED row the ledger
+later grows also reds, so the posture cannot rot in either direction.
+
+Alternatives: edit the reviewed prose to cite only ledgered laws (editing
+reviewed prose to suit a wall is the wrong repair); emit the citations
+unmarked (laundering); block the slice on the model's citation growth (work
+this lane does not own).
+
+Why: the gate should be honest about a gap without pretending to close it. The
+repair is the model's, and the banner is what keeps it visible until then.
+**Load-bearing? yes** — it is the difference between a known gap and a silence.
+
+### J7. The successor is emitted here; the sketch is not retired here
+
+Decided: the artifact is `artifacts/tools.schema.json`, committed beside the
+gate that proves it a fresh regeneration. The hand-derived sketch stays where
+it is, unread by anything but this gate's divergence census.
+
+Alternatives: overwrite the sketch in place (its tree is read-only to the
+projection toolkit's own topology wall, which holds `verify/kernel` unchanged);
+delete it in this slice (the house pattern is that a flip is one isolated act,
+and the divergence census wants both files present to measure).
+
+Why: the divergences are ruled, not resolved by fiat, and a reviewer should be
+able to read both. The served copy's home and the sketch's retirement are the
+next act. **Load-bearing? no** — but it keeps the retirement reviewable.
+
+### J8. Parity is parity of intent, and every divergence is named out loud
+
+Decided: the gate does not diff the emission against the sketch. It pins the
+counts on both sides — seven ceilings there and none here, fourteen short
+digest patterns there and fourteen wide ones here, nine em dashes there, twelve
+one-line objects there — and prints six `DIVERGENCE` lines, each marked ruled
+or pre-filed.
+
+Alternatives: a byte diff with an allow-list (an allow-list that grows is a
+parity claim that means nothing); no comparison at all (the ticket's evidence
+of done is the divergences filed with their measurements).
+
+Why: the sketch was hand-derived and four of its rows were already known
+defects before this slice started. Diffing against it would measure the sketch,
+not the printer. **Load-bearing? yes** — it is what makes "the sketch retires
+at parity of intent" a checkable sentence.
