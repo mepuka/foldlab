@@ -1,5 +1,6 @@
 /**
- * Plane: internal — private adapters serve any layer and reach back only to their own public seam.
+ * Plane: internal — private adapters, housed flat.
+ * Seam: planes — the state carriers, one seam per plane.
  *
  * @module
  */
