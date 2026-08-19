@@ -240,8 +240,8 @@ describe("the transcribed status vocabulary", () => {
       },
       { kind: "substrate-session-ended", fields: ["session", "cause"] },
     ])
-    expect(SESSION_EVENT_FORM.variants.length).toBe(4)
-    expect(new Set(SESSION_EVENT_FORM.variants.map((variant) => variant.kind)).size).toBe(4)
+    expect(SESSION_EVENT_FORM.variants.length).toBe(5)
+    expect(new Set(SESSION_EVENT_FORM.variants.map((variant) => variant.kind)).size).toBe(5)
   })
 })
 
