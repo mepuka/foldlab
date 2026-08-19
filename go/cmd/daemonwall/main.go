@@ -85,9 +85,12 @@ func run(minter string, layer string, control bool) error {
 	// unproven — it would fail.
 	declared, err := daemon.GreatestDeclaredOptions([]daemon.PositionedOptions{
 		{Position: 1, Declared: daemon.DeclaredServerOptions{
-			ServerName: "foldlab-daemon-superseded",
-			StoreDir:   filepath.Join(store, "superseded"),
-			Listen:     false,
+			ServerName:   "foldlab-daemon-superseded",
+			StoreDir:     filepath.Join(store, "superseded"),
+			Listen:       false,
+			NoLog:        true,
+			SyncInterval: daemon.DeclaredSyncInterval,
+			SyncAlways:   daemon.DeclaredSyncAlways,
 		}},
 		{Position: 2, Declared: daemon.DeclaredServerOptions{
 			ServerName: "foldlab-daemon-cl1",
@@ -96,6 +99,12 @@ func run(minter string, layer string, control bool) error {
 			Port:       -1,
 			JetStream:  true,
 			Listen:     true,
+			// This wall is a hermetic battery site and keeps its own log
+			// suppression: its stdout is its evidence, and the substrate's
+			// account of itself is not part of that evidence.
+			NoLog:        true,
+			SyncInterval: daemon.DeclaredSyncInterval,
+			SyncAlways:   daemon.DeclaredSyncAlways,
 		}},
 	})
 	if err != nil {

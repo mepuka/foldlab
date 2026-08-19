@@ -22,6 +22,12 @@ func hermetic(t *testing.T) DeclaredServerOptions {
 		StoreDir:   t.TempDir(),
 		JetStream:  true,
 		Listen:     false,
+		// A hermetic test harness site keeps its own log suppression: the
+		// daemon posture's false belongs to a process that owns its log, and a
+		// test process owns neither its output nor the battery's.
+		NoLog:        true,
+		SyncInterval: DeclaredSyncInterval,
+		SyncAlways:   DeclaredSyncAlways,
 	}
 }
 

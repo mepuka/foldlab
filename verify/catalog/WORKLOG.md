@@ -80,6 +80,63 @@ identical to `be3ebf8`'s).
 
 (Rows filled in as each run lands; the log is the record.)
 
+## 2026-08-19T10:25Z — the repaired-bounds re-proof, Windows arm: GATE PASS
+
+The re-proof the 2026-08-13 entries left in flight. One uninterrupted
+`bash verify/catalog/run-ind.sh`, exit code 0, verbatim logs in
+`_runlogs/gate-20260819T102518Z/`.
+
+Machine W: Windows 11 Home 26200, x64. Java: Temurin/OpenJDK 21.0.2+13-58
+via `mise x java@21` (there is no `java` on PATH on this host — `mise`
+provisions it, which is the resolution order `run-ind.sh` documents).
+
+Toolchain, recorded rather than asserted. The release tarball fetched
+today hashed to
+`68fb56dd9d053cf21d692fd7ec3fbaaeba1395661ec7434fa2b4c47e6fc432b8` and
+the extracted jar to
+`33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346` —
+both identical to the values the 2026-08-13 repair recorded, so this is
+the same Apalache 0.61.0 build 831d473 and the timings below are
+comparable to that entry's.
+
+| # | Run | Verdict | Wall | Log |
+|---|---|---|---:|---|
+| 0 | CANARY: blind ingress from concrete `Init` | Error, required | 7s | `ob0-canary-refutable.log` |
+| 1 | base | NoError | 6s | `ob1-base.log` |
+| 2 | consecution | NoError | 5,776s | `ob2-consecution.log` |
+| 4 | action safety | NoError | 684s | `ob4-actionsafety.log` |
+| 3 | TRIPWIRE: state safety | NoError | 423s | `ob3-tripwire.log` |
+| 5 | CONTROL: no CAS freshness, on `Convergence` | Error, required | 131s | `ob5-ctrl-nofresh.log` |
+| 6 | CONTROL: blind ingress, on `AdmissionStep` | Error, required | 74s | `ob6-ctrl-blind.log` |
+| 6b | CONTROL: independence, `MonotonicityStep` undisturbed | NoError | 653s | `ob6b-ctrl-blind-independence.log` |
+| 7 | CONTROL: insensitivity, consecution at data `Gen(3)` | NoError | 4,503s | `ob7-datadeep.log` |
+
+Apalache's own `Total time` for the two long runs was 5773.495 sec
+(obligation 2) and 4502.11 sec (control 7); the wall-clock column is
+the harness measurement and includes JVM startup. Obligation 2 ran
+roughly 3.6x the 2026-08-13 macOS time (26m35s), for two reasons worth
+recording so the numbers are not read as a regression: this is a
+different host, and for its first 22 minutes it shared the machine with
+the R2 TLC closure described below. The verdicts, not the timings, are
+the gate.
+
+Verdicts against the 2026-08-13 macOS entry: every one agrees. What
+moved is the hypothesis, not the answer — obligation 2 at catalog
+`Gen(3)` returns the same `NoError` it returned at `Gen(2)`, which is
+the whole content of the C4 repair.
+
+The R2 gate was run first on the clean tree, as the preflight that makes
+this arm meaningful: `bash verify/catalog/run.sh` returned `R2 GATE:
+PASS`, with the cap2 cross-version canary exact (119,145 generated /
+18,295 distinct / depth 16) and the gate closure at 103,407,991
+generated / 12,707,989 distinct — the same closure the R2 record names,
+on TLC `2026.08.11.125311` (the rolling `v1.8.0` asset, sha256
+`ab323b79802aedc3203b3f9af37c6aca3ed43f4e0225b36f2aa77b26de46c05f`).
+
+Residual, stated because the ledger advertised it: this is the Windows
+arm alone. The macOS arm at the argued bounds has not been re-run at
+this HEAD.
+
 ---
 
 # Catalog gate hardening worklog
