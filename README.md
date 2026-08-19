@@ -68,9 +68,11 @@ Plait ships the checking, in the repository, runnable by you:
   the diagnostic that kills it — twenty public-effect regressions, one
   set of six hand-written twins of a generated type that the public
   type-universe walk refuses to launder — including one that merges
-  itself into the generated symbol rather than sitting beside it — one
-  narrowed substrate field set, and one commit path with its token
-  guard removed, killed on a live KV bucket. The Lean packages carry
+  itself into the generated symbol rather than sitting beside it, and
+  each carrying the ticketed waiver that admits it while three ledger
+  mutations take that waiver away, one per reason the enforce arm
+  refuses — one narrowed substrate field set, and one commit path with
+  its token guard removed, killed on a live KV bucket. The Lean packages carry
   mutants that each drop exactly one law, die on their named vectors,
   and provably retain the laws they did not drop. A control that is
   committed but never run fails the gate.
