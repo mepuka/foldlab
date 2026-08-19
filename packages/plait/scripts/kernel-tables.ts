@@ -447,6 +447,14 @@ export const renderRefusalKinds = (
   line(" */")
   line("export const StructuralRefusalKind = Schema.Literals(STRUCTURAL_REFUSAL_KINDS)")
   line()
+  line("/**")
+  line(" * One structural refusal kind, named here so a consumer re-exports this")
+  line(" * declaration instead of restating the type as one of its own. A consumer-side")
+  line(" * `typeof StructuralRefusalKind.Type` reads as derivation and is not: it is the")
+  line(" * consumer's own declaration, and no checker can read its ancestry back.")
+  line(" */")
+  line("export type StructuralRefusalKind = typeof StructuralRefusalKind.Type")
+  line()
 
   return out.join("\n")
 }
