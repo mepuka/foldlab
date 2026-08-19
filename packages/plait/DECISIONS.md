@@ -6927,3 +6927,165 @@ Both were run rather than assumed.
 
 Alternatives: pre-emptively raising a pin (a raise that measured nothing).
 **Load-bearing? no** — a later export that names a type will pay the pin then.
+
+## Task: the completion pass — a fold for the engine's unions (operator ruling, 2026-08-19)
+
+The prior task reported the engine's outcome union as a hand-folded site outside
+its scope. The operator ruled the fold in — the beauty is in completeness, a
+match for every matcher — and this task is that completion.
+
+### T1. Both engine unions get a fold, and the run outcome is public surface rather than an internal shape
+
+Decided: `Engine.matchOutcome` over `EngineOutcome<Landed>` and
+`Engine.matchRunOutcome` over `RunOutcome`.
+
+The second one was a judgment the dispatch asked for rather than assumed.
+`RunOutcome` qualifies on every count the completeness rule cares about: it is
+exported through the package barrel, it is a closed three-arm tagged union, it is
+the return type of the public `run`, it is already counted in the public type
+universe as owned debt, and it is read by hand — the engine and replay suites
+both branch on its tags. A union a consumer can only read by branching is a union
+that should offer a fold.
+
+Alternatives: folding only the write outcome (the run outcome is the wider union
+and the one whose third arm is easiest to forget); leaving both and reporting
+(the ruling closed that option).
+**Load-bearing? yes** — the run outcome's third arm is the one a consumer drops.
+
+### T2. Both engine folds use the pin's tag matcher, and that is consistent with refusing it for the kind fold
+
+Decided: `Match.type<...>().pipe(Match.tagsExhaustive(cases))` for both.
+
+This is the same rule the prior task applied, reaching the opposite answer
+because the shapes differ. `Match` discriminates BETWEEN union members: it earns
+its keep exactly when the union is a union of tagged object types, which both
+engine outcomes are, and it cannot work when the union is one type whose field
+carries many literals, which the refusal kind is. The kind fold's mapped record
+and these two matchers are the same discipline applied to two different shapes,
+not two tastes.
+
+Alternatives: conditional folds on `_tag` (they would work and would state the
+closure less; the matcher's arm record makes a missing arm a missing required
+property and an extra arm the empty type).
+**Load-bearing? no** — the closure would survive either spelling.
+
+### T3. `matchOutcome` is dual, because it is the family's only fold whose input is parametric
+
+Decided: `matchOutcome` supports data-first and pipeable use, in the same idiom
+`retryAbsence` already uses; `matchRunOutcome` stays pipeable-only like the rest
+of the family.
+
+The asymmetry is forced and not a preference. Every other fold in the family
+takes a concrete input — a refusal, an envelope, a register state — so the
+pipeable shape has nothing left to infer. `EngineOutcome` is parametric in its
+landing, and a caller who writes the arms first has handed the compiler no
+outcome to read the landing off: `Landed` resolves to `unknown` and the carried
+arm loses the very value it exists to receive. Data-first reads the landing off
+the outcome. Both shapes are declared, so nothing is lost.
+
+The arms' return type is annotated at each served call site rather than inferred.
+A single `Out` is the stronger contract — it forces both arms to agree on what
+the fold answers — and on this surface what they must agree on has a name.
+
+Alternatives: a single `Out` inferred as the union of both arms' returns (weaker:
+the arms would never have to agree); requiring the caller to spell both type
+parameters (noise at every site).
+**Load-bearing? yes** — without it the carried arm is untyped where it matters.
+
+### T4. No must-not-compile control for these two, and the line is where the union comes from
+
+Decided: the two engine folds get runtime closure suites and NO compile-time
+control, and the rule that decides it is stated rather than the case being judged
+one at a time.
+
+A control earns its keep when a union can GROW WITHOUT ANYONE TOUCHING THE FOLD.
+That is exactly the refusal vocabulary and the envelope grammar: both are
+projected from the corpus by an emitter, so a kind can arrive in a regeneration
+that edits no fold and no call site, and only a compiler run against a caller
+written before that day can show what the arrival costs. `EngineOutcome` and
+`RunOutcome` are hand-written unions in this module. A third arm arrives only by
+someone editing the very lines the fold sits beside, and the compiler tells them
+at every call site in the same edit — a control would restate, on a committed
+trace needing re-recording, what that edit already surfaces immediately.
+
+The structural totality is unchanged either way: the matcher's arm record makes a
+missing arm a missing required property and an unknown arm the empty type. What
+the control adds is not the closure, it is the WARNING, and only a generated
+union can spring it.
+
+Alternatives: a control per fold (ceremony, plus two more traces to re-record for
+a union nobody can grow accidentally); no runtime suite either (the dispatch to
+each arm would then be unexercised).
+**Load-bearing? yes** — it is the rule that keeps the control set from growing
+with every union.
+
+### T5. Five sites, not six, and the three that remain are a different union
+
+Decided: the served face's five `EngineOutcome` folds are refactored; the three
+`KernelVerdict` folds beside them are left, and the prior task's count is
+corrected.
+
+The prior report said six hand-fold sites in the served face. Recounting against
+the file: five read `outcome._tag === "refused"` over `EngineOutcome`, and three
+more read `verdict.verdict === "refused"` over `KernelVerdict` — the generated
+door verdict, a different union with a different discriminant. Six was a
+miscount, and the corrected numbers are five refactored and three deliberately
+untouched.
+
+Those three are left for a reason beyond scope. `KernelVerdict` is generated
+kernel vocabulary, and the one-door wall refuses a module that constructs or
+declares an admission verdict or declares a hand-written twin of a name the
+door's form owns. A verdict fold is exactly the shape that wall exists to catch,
+so it is the door's to offer if anyone offers it — minting one on the served face
+would be a second-door spelling wearing a fold's clothes.
+
+Alternatives: folding the verdict sites here (risks the wall this pass was told
+to keep green, and would site kernel vocabulary on a surface).
+**Load-bearing? yes** — the boundary between the engine's unions and the kernel's
+is what keeps the served face out of the door's business.
+
+### T6. The engine's own three carried-guards are left as guards
+
+Decided: the three `if (outcome._tag === "carried")` sites inside the engine's
+lane, cell, and register declares keep their shape.
+
+They are not folds. Each performs a side effect on one arm and returns the same
+outcome on both, so routing them through the fold would spell two arms returning
+the identical value with one of them mutating a replica on the way — the
+"do not force it" case, restated inside the module that owns the union.
+
+Alternatives: folding them for uniformity (uniformity of spelling at the cost of
+saying what the code does).
+**Load-bearing? no** — a later refactor may find a shape where the fold reads
+better.
+
+### T7. Served bytes were held by running the walls, not by inspecting the diff
+
+Decided: the refactor's constraint was checked by executing the parity and door
+gates and the served-face suite rather than by reading the change.
+
+Each site keeps the same constructor calls with the same arguments in the same
+order, so the rendered objects have identical keys in identical order — but that
+is an argument, and the constraint was a wall. `check:kernel-tools` and its
+mutation control, `check:kernel-door` and its eleven planted second-door
+spellings, and the served-face suite were each run bare and each passed.
+
+Alternatives: reasoning from the diff alone (the class of claim this estate does
+not accept).
+**Load-bearing? yes** — served-equals-derived is a blocker-severity law.
+
+### T8. Neither manifest moved, and the pins were left alone
+
+Decided: no ratchet pin was raised and no waiver added, for the second time and
+for the same measured reason.
+
+The folds are values; the arm types they name — the carried and refused arms of
+each union — are non-exported aliases, so the census sees no new public type. The
+walk classified the same 182 public types and the ratchet held at its committed
+pins; the signature manifest regenerated byte-identical, because a fold returns a
+function and never an `Effect`, a `Layer`, or a `Stream`. Both were run.
+
+Alternatives: exporting the arm aliases for callers to name (four new public
+types and four waivers, to save callers a `ReturnType`-shaped spelling nobody has
+asked for yet).
+**Load-bearing? no** — exporting an arm type later is an ordinary reviewed diff.

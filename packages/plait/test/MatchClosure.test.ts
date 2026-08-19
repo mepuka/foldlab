@@ -48,6 +48,17 @@ import {
 } from "../src/planes/Register.js"
 import { matchPublished, type PublishedEnvelope } from "../src/carriage/FabricClient.js"
 import { matchEmitted, type EmittedEvent } from "../src/planes/Lane.js"
+import {
+  matchOutcome,
+  matchRunOutcome,
+  type EngineOutcome,
+  type RunOutcome,
+} from "../src/carriage/Engine.js"
+import type { KernelAct } from "../src/kernel/KernelDoor.js"
+import {
+  KERNEL_REFUSALS,
+  type KernelRefusalRow,
+} from "../src/kernel/KernelTables.generated.js"
 
 const lane = Digest.make("015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862")
 
@@ -221,6 +232,95 @@ describe("the acknowledgement folds are two, deliberately", () => {
   test("a partition acknowledgement folds over its own window", () => {
     expect(emitFold(emitted(false))).toBe("fresh:3")
     expect(emitFold(emitted(true))).toBe("duplicate:3")
+  })
+})
+
+describe("the engine outcome fold covers both ways a judged write ends", () => {
+  const act: KernelAct = { _tag: "spawn", parent: { id: 1n }, request: { id: 2n } }
+  const row: KernelRefusalRow = KERNEL_REFUSALS[0]!
+
+  const carried: EngineOutcome<{ readonly token: number }> = {
+    _tag: "carried",
+    act,
+    encoded: [7n, 0n],
+    landed: { token: 4 },
+  }
+  const refused: EngineOutcome<{ readonly token: number }> = {
+    _tag: "refused",
+    refusal: row,
+  }
+
+  const fold = {
+    carried: (value: { readonly landed: { readonly token: number } }) =>
+      `carried:${value.landed.token}`,
+    refused: (value: { readonly refusal: KernelRefusalRow }) =>
+      `refused:${value.refusal.reason}`,
+  }
+
+  test("an admitted sentence reaches the carried arm with its landing typed", () => {
+    expect(matchOutcome(carried, fold)).toBe("carried:4")
+  })
+
+  test("a refused sentence reaches the refused arm with the taught row", () => {
+    expect(matchOutcome(refused, fold)).toBe(`refused:${row.reason}`)
+  })
+
+  test("the pipeable shape answers alike when the landing is pinned", () => {
+    const pipeable = matchOutcome<{ readonly token: number }, string>(fold)
+    expect(pipeable(carried)).toBe("carried:4")
+    expect(pipeable(refused)).toBe(`refused:${row.reason}`)
+  })
+
+  test("the two arms are distinguished, so neither outcome folds into the other", () => {
+    expect(new Set([matchOutcome(carried, fold), matchOutcome(refused, fold)]).size)
+      .toBe(2)
+  })
+})
+
+describe("the run outcome fold covers the three ways a run ends", () => {
+  const row: KernelRefusalRow = KERNEL_REFUSALS[0]!
+  const steps = [{ node: 1n, encoded: [7n], landed: null }]
+
+  const landed: RunOutcome = { _tag: "landed", steps, landed: null }
+  const refused: RunOutcome = { _tag: "refused", node: 2n, refusal: row, steps }
+  const unspeakable: RunOutcome = {
+    _tag: "unspeakable",
+    node: 3n,
+    slot: "anchor",
+    detail: "unsupplied",
+    steps,
+  }
+
+  const fold = matchRunOutcome({
+    landed: (run) => `landed:${run.steps.length}`,
+    refused: (run) => `refused:${run.node}:${run.refusal.reason}`,
+    unspeakable: (run) => `unspeakable:${run.node}:${run.slot}:${run.detail}`,
+  })
+
+  test("a run whose every node carried reaches the landed arm", () => {
+    expect(fold(landed)).toBe("landed:1")
+  })
+
+  test("a run stopped at the door reaches the refused arm with the taught row", () => {
+    expect(fold(refused)).toBe(`refused:2:${row.reason}`)
+  })
+
+  test("a run stopped before the door reaches the unspeakable arm, with no row", () => {
+    expect(fold(unspeakable)).toBe("unspeakable:3:anchor:unsupplied")
+  })
+
+  test("every arm keeps the steps that already happened", () => {
+    for (const outcome of [landed, refused, unspeakable]) {
+      expect(matchRunOutcome({
+        landed: (run) => run.steps.length,
+        refused: (run) => run.steps.length,
+        unspeakable: (run) => run.steps.length,
+      })(outcome)).toBe(1)
+    }
+  })
+
+  test("the three arms are distinguished, so no ending folds into another", () => {
+    expect(new Set([fold(landed), fold(refused), fold(unspeakable)]).size).toBe(3)
   })
 })
 

@@ -375,6 +375,20 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   re-recording — which is the acknowledgement that every caller must now handle
   the new kind. A hand-enumerated arm record, a hand-written switch over kinds,
   or an optional arm is a finding.
+- **Every closed union a consumer reads by hand carries a fold, and the pin's
+  matcher is used exactly where the union is a union of tagged types.** The
+  engine's write outcome and its run outcome are folded by `Match.tagsExhaustive`
+  because they are unions of tagged object types; the refusal kinds are folded by
+  a mapped arm record because they are one type whose field carries many
+  literals, and the pin's discriminator matcher would narrow every arm to the
+  empty type. Same discipline, two shapes, two spellings. A compile-time control
+  is owed only where a union can GROW WITHOUT ANYONE TOUCHING THE FOLD — the
+  corpus-projected vocabularies — because only there can a kind arrive in a
+  regeneration that edits no call site. A hand-written union in the module that
+  declares it needs no control: the compiler reports it at every call site in the
+  same edit that grew it. Folding the generated `KernelVerdict` on a surface is a
+  second-door spelling wearing a fold's clothes; a verdict fold is the door's to
+  offer.
 - **Equality of a decoded value IS equality of its digest, and that is walled.**
   The digest equivalences over decoded envelopes and over cell states replace a
   structural walk with one string compare, and `test/EqualCoherence.test.ts` is

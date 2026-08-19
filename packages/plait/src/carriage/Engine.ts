@@ -66,7 +66,8 @@
  *
  * @module
  */
-import { Context, Effect, Layer, PubSub, Ref, Result, Stream } from "effect"
+import { Context, Effect, Layer, Match, PubSub, Ref, Result, Stream } from "effect"
+import { dual } from "effect/Function"
 
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
@@ -301,6 +302,128 @@ export type RunOutcome =
     readonly detail: RunGapDetail
     readonly steps: ReadonlyArray<RunStep>
   }
+
+/** The admitted-and-carried arm, named so the fold's arms can receive it whole. */
+type EngineCarried<Landed> = Extract<EngineOutcome<Landed>, { readonly _tag: "carried" }>
+
+/** The refused arm, whose taught row is the whole answer. */
+type EngineRefused<Landed> = Extract<EngineOutcome<Landed>, { readonly _tag: "refused" }>
+
+/**
+ * Folds one judged write over its two outcomes.
+ *
+ * The `carried` arm receives the admitted act, its canonical encoding, and
+ * whatever the carrier landed — the landing type is the caller's, so a fold
+ * over a declare hands back a `DeclaredLanding` and a fold over an emit hands
+ * back an `EmittedEvent`, with no cast at the seam. The `refused` arm receives
+ * the taught row and nothing else, because on that arm the row IS the answer:
+ * no act was spoken, no encoding exists, and nothing was carried.
+ *
+ * **Bounds.** This folds an outcome that has already been judged; it performs
+ * no judgment, constructs no verdict, and cannot turn a refusal into a
+ * landing. The row it hands the `refused` arm is the generated table's,
+ * passed through — this module mints none — so a surface rendering it is
+ * rendering the model's own words.
+ *
+ * A refusal on the error channel is a different thing and is not folded here:
+ * that channel carries the seam vocabulary, and `Refusal.match` is its fold.
+ *
+ * Supports data-first and pipeable use, and the reason is the landing type
+ * rather than taste. This is the family's only fold whose INPUT is parametric,
+ * so the pipeable shape alone has nothing to infer `Landed` from — a caller
+ * writing the arms first would be handed `unknown` where the landing belongs.
+ * Data-first reads the landing off the outcome, which is why every immediate
+ * application uses it; the pipeable shape stays for callers who pin the
+ * landing themselves.
+ *
+ * @example
+ * ```ts
+ * import { matchOutcome } from "@foldlab/plait/Engine"
+ *
+ * const rendered = matchOutcome(outcome, {
+ *   carried: (carried) => carried.landed.digest,
+ *   refused: (refused) => refused.refusal.reason,
+ * })
+ * ```
+ */
+export const matchOutcome: {
+  <Landed, Out>(cases: {
+    readonly carried: (carried: EngineCarried<Landed>) => Out
+    readonly refused: (refused: EngineRefused<Landed>) => Out
+  }): (outcome: EngineOutcome<Landed>) => Out
+  <Landed, Out>(
+    outcome: EngineOutcome<Landed>,
+    cases: {
+      readonly carried: (carried: EngineCarried<Landed>) => Out
+      readonly refused: (refused: EngineRefused<Landed>) => Out
+    },
+  ): Out
+} = dual(2, <Landed, Out>(
+  outcome: EngineOutcome<Landed>,
+  cases: {
+    readonly carried: (carried: EngineCarried<Landed>) => Out
+    readonly refused: (refused: EngineRefused<Landed>) => Out
+  },
+): Out =>
+  // The same narrowing `Refusal.match` states: the pin's matcher answers
+  // `Unify<Out>`, which reduces at every real application and cannot reduce
+  // over a type parameter no call site has resolved. The declared signatures
+  // above are the contract.
+  Match.type<EngineOutcome<Landed>>().pipe(Match.tagsExhaustive(cases))(
+    outcome,
+  ) as Out)
+
+/** The arm of a run that reached its end with every node admitted. */
+type RunLanded = Extract<RunOutcome, { readonly _tag: "landed" }>
+
+/** The arm of a run that stopped at a refusing node. */
+type RunRefused = Extract<RunOutcome, { readonly _tag: "refused" }>
+
+/** The arm of a run that stopped at a node the completion could not speak. */
+type RunUnspeakable = Extract<RunOutcome, { readonly _tag: "unspeakable" }>
+
+/**
+ * Folds one program run over the three ways it can end.
+ *
+ * Every arm receives the steps that already happened, because in all three
+ * cases they are what happened: a run that stopped did not undo the nodes it
+ * had already carried, and discarding them would report a partial run as
+ * nothing. The two stopping arms also name the node they stopped at.
+ *
+ * The `refused` arm carries the door's taught row — the run reached the door
+ * and was told no. The `unspeakable` arm carries no row at all, and the
+ * difference is the whole reason it is a third arm rather than a refusal: a
+ * completion that cannot answer never reaches the door, so there is no
+ * verdict to report, only the slot and which of the model's four ways it had
+ * no value.
+ *
+ * **Bounds.** A fold over how a run ended says nothing about how it will end
+ * next time: the engine holds no clock, no retry, and no queue, so re-running
+ * is the caller's act.
+ *
+ * @example
+ * ```ts
+ * import { matchRunOutcome } from "@foldlab/plait/Engine"
+ *
+ * const stoppedAt = matchRunOutcome({
+ *   landed: () => null,
+ *   refused: (run) => run.node,
+ *   unspeakable: (run) => run.node,
+ * })
+ * ```
+ */
+export const matchRunOutcome: <Out>(cases: {
+  readonly landed: (run: RunLanded) => Out
+  readonly refused: (run: RunRefused) => Out
+  readonly unspeakable: (run: RunUnspeakable) => Out
+}) => (outcome: RunOutcome) => Out = <Out>(cases: {
+  readonly landed: (run: RunLanded) => Out
+  readonly refused: (run: RunRefused) => Out
+  readonly unspeakable: (run: RunUnspeakable) => Out
+}): ((outcome: RunOutcome) => Out) =>
+  Match.type<RunOutcome>().pipe(Match.tagsExhaustive(cases)) as (
+    outcome: RunOutcome,
+  ) => Out
 
 /** Transport-free engine operations: judgment first, carriage after. */
 export interface EngineService {
