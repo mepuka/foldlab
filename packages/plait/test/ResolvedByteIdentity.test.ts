@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { beforeAll, describe, expect, test } from "bun:test"
 import { createHash } from "node:crypto"
 import { resolve as resolvePath } from "node:path"
 
@@ -214,6 +214,33 @@ const goProbe = (rows: ReadonlyArray<Uint8Array>): ReadonlyArray<ProbeReply> => 
   }
   return replies
 }
+
+/**
+ * Compiling the probe is not part of what any row states, but on a cold Go
+ * build cache it costs about as much as a row's whole budget on its own —
+ * measured here at roughly five seconds cold against half a second warm — so a
+ * row that pays for the compiler fails on the toolchain rather than on the
+ * wall. This step pays that cost once, before the first row, under a budget
+ * sized for a compile instead of for an assertion. It is the rows' own
+ * invocation over empty input: empty stdin means no request lines, so the
+ * probe writes nothing and exits zero, and the build and link the rows need
+ * are exactly the ones the cache is left holding. Every row keeps the default
+ * budget, and a probe too slow to answer under it is still a failure.
+ */
+beforeAll(() => {
+  const warm = Bun.spawnSync({
+    cmd: ["go", "run", "./cmd/jcsprobe"],
+    cwd: goRoot,
+    stdin: Buffer.alloc(0),
+    stdout: "pipe",
+    stderr: "pipe",
+  })
+  if (warm.exitCode !== 0) {
+    throw new Error(
+      `Go constrained-decode probe warm step exited ${warm.exitCode}: ${warm.stderr.toString()}`,
+    )
+  }
+}, 120_000)
 
 describe("payload identity is the fetched bytes", () => {
   test("the counterexample rows really do parse to the value the digest names", () => {
