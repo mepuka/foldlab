@@ -18,6 +18,21 @@ The engine decides nothing, schedules nothing, and stores nothing
 authoritative; the package `AGENTS.md` carries its laws, and
 `../../test/Engine.test.ts` is its wall.
 
+`RunTrace` is the engine's execution log and a pure consumer of it: it runs a
+program through `Engine`, projects the outcome into ONE canonical fact, and
+lands that fact on a declared lane through the engine's own judged emit. The
+split with the verdict stream is the flux/meaning law made concrete — the stream
+is the live per-act story and is transport, the fact is the run as a value with
+a digest, and there is exactly one fact per run rather than one per step. The
+steps travel verbatim and every unbounded integer is written as its exact
+decimal, because a JSON number rounds an identity into a different one. Its
+vocabulary and route live one plane deeper in `../internal/runtraces.ts`, which
+is what lets the read face serve the lane without reaching this plane at all.
+Wall: `../../test/RunTrace.test.ts` executes the corpus's own run vectors over
+fixtures with the vectors as the oracle, and `../../test/RunTraceWall.test.ts`
+lands two traces on a real substrate and reads them back through the lane's own
+declared schema.
+
 Plane layering seats carriage above planes. The tree is narrower and wider than
 that at once: carriage imports `kernel`, `truth`, and `internal`
 (`FabricClient.ts:12`) and no plane module at all, while two modules beneath it

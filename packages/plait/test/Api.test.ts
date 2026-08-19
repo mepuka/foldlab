@@ -40,6 +40,7 @@ import {
   roundKey,
 } from "../src/internal/incarnations.js"
 import { admittedLimit, readSpan, readerBehind, stageArrival } from "../src/internal/lanereads.js"
+import { runTraceLane, type RunTraceFact } from "../src/internal/runtraces.js"
 import type { SessionFact } from "../src/internal/sessionfacts.js"
 import { mintSession, observationFact, transitionFact } from "../src/internal/sessionfacts.js"
 import { sessionLane } from "../src/internal/sessionlanes.js"
@@ -182,6 +183,9 @@ interface Fixture {
   readonly sessionLaneDigest: Digest
   readonly sessionHandle: string
   readonly heartbeatHandle: string
+  readonly runTraceHandle: string
+  readonly runTraceLaneDigest: Digest
+  readonly runTraces: ReadonlyArray<LandedFact<RunTraceFact>>
   readonly observations: ReadonlyArray<Observation>
   readonly register: RegisterState
   readonly store: Digest
@@ -202,6 +206,18 @@ const buildFixture = async (): Promise<Fixture> => {
   ]
   const lane = await run(sessionLane())
   const beats = await run(heartbeatLane())
+  const runs = await run(runTraceLane())
+  // One trace of one run that landed. It is typed by the lane's own declared
+  // event schema, so a member that form does not carry is a compile error here
+  // rather than a served payload nobody checked.
+  const trace: RunTraceFact = {
+    v: 0,
+    kind: "engine-run-trace",
+    writ: await run(digestOf({ v: 0, kind: "policy", name: "read-face-writ" })),
+    outcome: "landed",
+    steps: [{ node: "1", encoded: ["0", "6", "42", "4"], landed: null }],
+    landed: null,
+  }
 
   const store = await run(digestOf({ v: 0, kind: "substrate-store", dir: "a-store" }))
   const options = await run(digestOf({ v: 0, kind: "substrate-options" }))
@@ -220,6 +236,9 @@ const buildFixture = async (): Promise<Fixture> => {
     sessionLaneDigest: lane.digest,
     sessionHandle: lane.handle,
     heartbeatHandle: beats.handle,
+    runTraceHandle: runs.handle,
+    runTraceLaneDigest: runs.digest,
+    runTraces: await landed([trace], 5),
     observations: [{ holder: "seat-a", value: 1 }, { holder: "seat-b", value: 2 }],
     register,
     store,
@@ -245,6 +264,8 @@ const laneReadsFixture = (
       Effect.succeed(
         lane.digest === fixture.sessionLaneDigest
           ? clipped(fixture.sessionFacts, admittedLimit(options?.limit), options?.partition)
+          : lane.digest === fixture.runTraceLaneDigest
+          ? clipped(fixture.runTraces, admittedLimit(options?.limit), options?.partition)
           : [],
       )) as unknown as LaneReadService["tail"],
     follow: (() => live) as unknown as LaneReadService["follow"],
@@ -414,6 +435,32 @@ describe("served equals derived: the payload is the plane read's own bytes", () 
       expect(rows.map((row) => row.partition!)).toEqual(
         [...rows.map((row) => row.partition!)].sort((a, b) => a - b),
       )
+    } finally {
+      await served.dispose()
+    }
+  })
+
+  test("the run-trace lane is one of the lanes this face serves", async () => {
+    // The engine's execution log is a declared lane like any other, so it joins
+    // this face by being declared rather than by being listed twice: the route
+    // is its own form's digest and the tail is the same bounded read.
+    const fixture = await buildFixture()
+    const served = face(fixture)
+    try {
+      const bytes = await bytesOf(await served.get(`/lanes/${fixture.runTraceHandle}`))
+      const derived = clipped(fixture.runTraces, LANE_TAIL_LIMIT_DEFAULT, undefined)
+      expect(await memberBytes(bytes, "facts")).toEqual(
+        await canonical(derived.map((fact) => ({
+          partition: fact.partition,
+          position: fact.position,
+          digest: fact.digest,
+          holder: fact.holder,
+          event: fact.event as unknown as WireValue,
+        }))),
+      )
+      const value = valueOf(bytes)
+      expect(value.lane).toBe(fixture.runTraceLaneDigest)
+      expect(value.handle).toBe(fixture.runTraceHandle)
     } finally {
       await served.dispose()
     }

@@ -333,3 +333,15 @@ value. A refusal's status is a fold over the two sorts; a request the route
 table does not carry reaches no plane read and says instead why it was not
 carried. The face authenticates nobody: attribution is never authority here
 either, and whoever reaches the listener takes every read on it.
+
+**Run trace**:
+One program run as one landed fact: the writ it acted under, which of the three
+ways it ended, the node it stopped at where it stopped, the door's own taught row
+where the door refused it, and every walked step — the node, the admitted
+sentence's canonical encoding, and what the carrier landed — verbatim and in
+walked order, with each stopping arm keeping the prefix that stood. Unbounded
+integers travel as exact decimal text, because a JSON number holds 2^53 and an
+identity that rounds is a different identity. It is the MEANING half of a run:
+the flux half is the verdict stream, live and unaddressed, and a trace is what
+survives it. There is one trace per run and never one per step, and no clock on
+one.

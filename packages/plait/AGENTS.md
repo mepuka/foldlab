@@ -450,6 +450,32 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   returning read canon stays on the session and fold seams. Wall: the run
   suite executes the corpus's own program vectors, label-mapped for the
   landing cases and byte-raw for the refusing ones.
+- **A run's trace is ONE landed fact, and replay reads it rather than running
+  again.** `carriage/RunTrace.ts` projects one `Engine.run` outcome into one
+  canonical value and lands it, through the engine's own judged emit, onto the
+  declared run-trace lane keyed by the run's writ. The live per-act story
+  already exists and is FLUX — the verdict stream, in process and unaddressed —
+  so a fact per judgment would fill a lane with tokens whose digests name
+  keystrokes instead of runs; one fact per run is the meaning half of that same
+  law. The steps land VERBATIM: the node names, the admitted sentences'
+  canonical encodings and the landings the engine answered with, in the order
+  it walked them, with the two stopping arms keeping the prefix that stood and
+  the refused arm carrying the door's own taught row field for field. The one
+  transformation is the exact decimal rendering of every unbounded integer,
+  because a JSON number holds 2^53 and an identity that rounds is a different
+  identity. A replay reads that fact and re-asks NO completion — a supply is
+  execution-time data the declaration does not carry, and re-running would
+  re-derive rather than recover it. There is no wall-clock anywhere on a trace,
+  and there is no program name on one either: the model states that a
+  declaration's canonical bytes ARE its program's identity and writes identity
+  labels as JSON numbers, which cannot hold this runtime's 256-bit labels, so
+  naming the program here would mint a second identity for a concept the corpus
+  already names. Landing is judged like every other sentence: a refused
+  sentence answers with the door's row and a refused seam with the estate
+  refusal, both handed back in the value, because a trace nobody could land is
+  a fact and the run it describes still happened. Adding a per-step landing, a
+  time field, a replay that re-executes, or a landing path that does not reach
+  the door is a finding.
 - **Environments are directories at the ruled minimal surface.**
   `planes/Environment.ts` carries positioned provision facts, the
   greatest-position read, and the fold form the proven collapse equates with

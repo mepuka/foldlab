@@ -120,6 +120,7 @@ import { connectionChanges, connectionsOf } from "../internal/connectionfold.js"
 import { heartbeatLane } from "../internal/heartbeatlane.js"
 import { INCARNATION_CHAIN_MAX, chainOf } from "../internal/incarnations.js"
 import { admittedLimit } from "../internal/lanereads.js"
+import { runTraceLane } from "../internal/runtraces.js"
 import type { SessionFact } from "../internal/sessionfacts.js"
 import { sessionLane } from "../internal/sessionlanes.js"
 
@@ -672,7 +673,8 @@ export const layer: Layer.Layer<
 > = HttpRouter.use(Effect.fnUntraced(function* (router) {
   const sessions = yield* sessionLane()
   const heartbeats = yield* heartbeatLane()
-  const lanes = [serving(sessions), serving(heartbeats)]
+  const runs = yield* runTraceLane()
+  const lanes = [serving(sessions), serving(heartbeats), serving(runs)]
 
   yield* router.addAll([
     HttpRouter.route("GET", "/", answering(Effect.succeed(indexRead))),

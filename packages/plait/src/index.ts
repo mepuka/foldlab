@@ -60,6 +60,9 @@ export * as Refusal from "./truth/Refusal.js"
 /** Fenced five-action commitment registers over NATS KV revision CAS. */
 export * as Register from "./planes/Register.js"
 
+/** One program run as one landed fact: the engine's execution log on a lane. */
+export * as RunTrace from "./carriage/RunTrace.js"
+
 /** References that decode by resolving, with verify-on-read unskippable. */
 export * as Resolved from "./planes/Resolved.js"
 
