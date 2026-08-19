@@ -11,6 +11,18 @@ a `SchemaIssue`-typed signature that escapes diverges the public type walk.
 Nothing here is machine-generated, and nothing restates a corpus concept:
 `digests.ts` and `refusals.ts` delegate to `truth`, so no first-law debt is due.
 
+Two transcriptions live here and both are DATA with provenance, wearing the
+same staged-debt waiver: `substrate.ts` carries the field roster and the connect
+options, and `statusvocabulary.ts` carries the connection status vocabulary and
+the machine it induces. Neither is a switch statement and neither is a
+hand-written union — a table can be byte-compared against the pinned client's
+own declaration, and `bun run check:status-vocabulary` does exactly that, with
+`check:status-vocabulary-control` planting the five mutations that must redden
+it. `statuspump.ts` is the one consumer of one connection's status source,
+attached where connections are established, and it branches on no event name;
+`sessionfacts.ts` carries the facts it mints and `sessionlanes.ts` the one emit
+that lands them.
+
 Wall: two of them, and which one runs a suite is derived rather than chosen —
 `../../scripts/run-test-group.ts` puts a file in the wall group exactly when it
 imports `./NatsHarness.js`. `bun run test:walls` brings up a `nats-server` and
