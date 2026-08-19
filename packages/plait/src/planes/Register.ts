@@ -3,7 +3,17 @@
  *
  * @module
  */
-import { Context, Duration, Effect, Layer, Schedule, Schema, Scope, SynchronizedRef } from "effect"
+import {
+  Context,
+  Duration,
+  Effect,
+  Layer,
+  Order,
+  Schedule,
+  Schema,
+  Scope,
+  SynchronizedRef,
+} from "effect"
 
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import {
@@ -118,6 +128,108 @@ export interface RegisterState {
 
 /** Connection bootstrap for the register bucket. */
 export interface RegisterOptions extends ConnectionBootstrap {}
+
+/**
+ * Folds an observed register over the three states the model gives it.
+ *
+ * The vocabulary is the proved model's own — a key nobody has fenced is
+ * **absent**, a lease standing with no result is **held**, and a result written
+ * under its fencing token is **landed**. Landed is terminal: at most one commit
+ * lands per key and no stale token lands at all, which is what lets the arm take
+ * the outcome as a value rather than as a maybe.
+ *
+ * A conditional fold and not a pattern matcher: the three states are readings of
+ * two nullable fields on one struct rather than three struct types, so a matcher
+ * would be ceremony over a shape it cannot discriminate. `holder` is the absence
+ * marker, because a register nobody has fenced has no holder to name.
+ *
+ * Read-side only. Nothing here arbitrates — deciding which of two observations
+ * wins is the register's own act, under its revision fence.
+ *
+ * @example
+ * ```ts
+ * import { matchState } from "@foldlab/plait/Register"
+ *
+ * const rendered = matchState({
+ *   absent: () => "unclaimed",
+ *   held: (state) => `held by ${state.holder}`,
+ *   landed: (state) => `decided: ${state.outcome.value}`,
+ * })
+ * ```
+ */
+export const matchState: <Out>(cases: {
+  readonly absent: () => Out
+  readonly held: (state: {
+    readonly token: RegisterState["token"]
+    readonly holder: NonNullable<RegisterState["holder"]>
+  }) => Out
+  readonly landed: (state: {
+    readonly token: RegisterState["token"]
+    readonly holder: NonNullable<RegisterState["holder"]>
+    readonly outcome: NonNullable<RegisterState["outcome"]>
+  }) => Out
+}) => (state: RegisterState) => Out =
+  <Out>(cases: {
+    readonly absent: () => Out
+    readonly held: (state: {
+      readonly token: RegisterState["token"]
+      readonly holder: NonNullable<RegisterState["holder"]>
+    }) => Out
+    readonly landed: (state: {
+      readonly token: RegisterState["token"]
+      readonly holder: NonNullable<RegisterState["holder"]>
+      readonly outcome: NonNullable<RegisterState["outcome"]>
+    }) => Out
+  }) =>
+  (state: RegisterState): Out => {
+    if (state.holder === null) return cases.absent()
+    if (state.outcome === null) {
+      return cases.held({ token: state.token, holder: state.holder })
+    }
+    return cases.landed({
+      token: state.token,
+      holder: state.holder,
+      outcome: state.outcome,
+    })
+  }
+
+/**
+ * The order fencing tokens carry: a token never decreases, and a grant or a
+ * steal strictly increases it.
+ *
+ * **Bounds, and they are the whole of the claim.** The order is meaningful
+ * within ONE register key and ONE backing-stream incarnation, and nowhere else.
+ * The token is a revision of a bucket-global monotone stream, so it is total per
+ * key and never consecutive per key, and comparing tokens across two keys
+ * compares two positions in a shared stream rather than two moments of one
+ * round. A bucket destroyed and recreated starts the stream again, so a token
+ * from the dead incarnation orders against nothing in the live one.
+ *
+ * Read-side only. This sorts observed states — an audit rendering, a task view's
+ * attempt list — and licenses no client-side arbitration: "read the maximum and
+ * act on it" is the register's act, taken under its revision fence, and taking
+ * it out here would be a second arbitration path beside the fenced one.
+ */
+export const TokenOrder: Order.Order<RegisterState["token"]> = Order.Number
+
+/**
+ * Observed register states ordered by their fencing token.
+ *
+ * Carries `TokenOrder`'s bounds unchanged: one register key, one backing-stream
+ * incarnation, read side only.
+ *
+ * @example
+ * ```ts
+ * import { byToken } from "@foldlab/plait/Register"
+ * import { Order } from "effect"
+ *
+ * const later = Order.max(byToken)(mine, observed)
+ * ```
+ */
+export const byToken: Order.Order<RegisterState> = Order.mapInput(
+  Order.Number,
+  (state: RegisterState) => state.token,
+)
 
 /**
  * The five-action register surface walled against the proved Veil model.

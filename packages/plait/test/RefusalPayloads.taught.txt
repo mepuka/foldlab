@@ -69,25 +69,19 @@ packages/plait/src/internal/cells.ts#0
   expected "the pinned local NATS KV operation to be available"
   next <expression>
 packages/plait/src/internal/cells.ts#1
-  kind "invalid-cell-key"
-  law "A cell name maps to one literal NATS KV key."
-  expected "one non-empty token without dots, whitespace, or wildcards"
-  next[0].subject "cell.read"
-  next[0].note "Present the cell name as one literal KV token without dots, whitespace, or wildcards."
-packages/plait/src/internal/cells.ts#2
   kind "malformed-cell-state"
   law "Cell state is the canonical array of holder-attributed observations."
   expected "[{ holder: Json, value: Json }, ...]"
   next[0].subject "cell.read"
   next[0].note "Restore the canonical observation array at this key; only cell merges write this bucket."
-packages/plait/src/internal/cells.ts#3
+packages/plait/src/internal/cells.ts#2
   kind "cell-substrate-shape"
   law "The cell bucket is file-backed R=1 with one retained revision, no age or size eviction, and no admin surface beyond it."
   expected "file/R=1/history=1/ttl=0/max_bytes=-1/direct=on, and no republish, subject transform, mirror-direct, atomic publish, message counter, compression, or value-size cap"
   next[0].subject "bucket.ensure"
   next[0].note "Configure the cell bucket file-backed with one replica, one retained revision, no age or size eviction, and none of the admin surface beyond it."
   next[0].body <expression>
-packages/plait/src/internal/cells.ts#4
+packages/plait/src/internal/cells.ts#3
   kind "cell-update-contended"
   law "A merge lands its delta or reports contention; a cell is never written by anything but a join."
   expected "one uncontended revision within the attempt bound"
@@ -359,6 +353,12 @@ packages/plait/src/planes/Blob.ts#1
   expected <absent>
   next[0].subject "blob.put"
   next[0].note "Re-put the original bytes: this store is holding bytes that do not hash to the requested digest."
+packages/plait/src/planes/Cell.ts#0
+  kind "invalid-cell-key"
+  law "A cell name maps to one literal NATS KV key."
+  expected "one non-empty token without dots, whitespace, or wildcards"
+  next[0].subject "cell.read"
+  next[0].note "Present the cell name as one literal KV token without dots, whitespace, or wildcards."
 packages/plait/src/planes/Environment.ts#0
   kind "ambiguous-binding"
   law "One hole carries at most one provision per position; ties are the fenced register's to arbitrate, never a read's."
@@ -383,6 +383,12 @@ packages/plait/src/planes/Lane.ts#1
   expected <absent>
   next[0].subject "Lane.partitionKey"
   next[0].note "Choose a path present in every admitted event, or use an empty path to key by the whole event."
+packages/plait/src/planes/Register.ts#0
+  kind "invalid-register-key"
+  law "A work digest maps to one literal NATS KV key."
+  expected "one non-empty token without dots, whitespace, or wildcards"
+  next[0].subject "register.key"
+  next[0].note "Present the work digest as one literal KV token without dots, whitespace, or wildcards."
 packages/plait/src/planes/Resolved.ts#0
   kind "cataloged-value-absent"
   law "A reference resolves only against a catalog or payload store that holds its value."

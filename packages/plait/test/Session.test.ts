@@ -129,7 +129,10 @@ describe("declared writs", () => {
 
   test("a holder with no name refuses the declaration", async () => {
     const refusal = await Effect.runPromise(Effect.flip(
-      Session.writ({ holder: Holder.make(""), views: [] }),
+      // Cast, deliberately: the holder brand makes an unnamed holder
+      // unspellable, and the seam's own runtime check is what this asserts —
+      // the same shape the view arm above uses to present a non-digest.
+      Session.writ({ holder: "" as unknown as Holder, views: [] }),
     ))
 
     expect(refusal.kind).toBe("invalid-session-declaration")

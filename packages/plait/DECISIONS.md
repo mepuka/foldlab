@@ -6728,3 +6728,459 @@ Alternatives: asserting the absence in prose (the class of claim this estate doe
 not accept); a control that merely fails to compile (it would show the shape is
 unavailable, not that the two shapes differ in what they leave behind).
 **Load-bearing? yes** — the shuttle inherits this seam.
+
+## Task: the read-side folds, the digest instances, and the coherence wall (2026-08-19)
+
+### T1. The structural-kind fold is a mapped arm record, not the pin's discriminator matcher
+
+Decided: `Refusal.matchKind` is an explicitly typed record dispatch whose arm
+record is a mapped type over the generated kind union, and the pin's
+`Match.discriminatorsExhaustive` is not used for it.
+
+The spec's own signature block writes the mapped record, and the pin explains
+why it has to. `discriminatorsExhaustive` computes each arm's argument as
+`Extract<R, Record<D, Tag>>`, which is a narrowing BETWEEN union members. A
+structural refusal is one class whose `kind` field carries forty-four literals,
+not forty-four classes, so the extraction finds no member for any tag and every
+arm would take the empty type — a matcher that typechecks and hands each arm
+nothing to read. The mapped record states exactly the same totality, keeps the
+argument the refusal itself, and costs one property lookup.
+
+The sort fold is the opposite case and gets the opposite answer: `Refusal.match`
+IS over a union of two tagged classes, so `Match.tagsExhaustive` is the pin's
+own tool and is used.
+
+Alternatives: a matcher for both (arms with nothing to read); a hand-written
+switch (the closure would be a habit rather than a type); one fold covering both
+sort and kind (two different closures, one of which would have to be optional).
+**Load-bearing? yes** — the closure contract is the whole affordance.
+
+### T2. The matcher's `Unify` narrowing is stated at the seam rather than absorbed
+
+Decided: `Refusal.match`'s implementation narrows the pin's
+`(u: Refusal) => Unify<Out>` to the declared `(refusal: Refusal) => Out`, with
+the reason written beside it.
+
+`Unify` reduces at every real application and cannot reduce over a type
+parameter no call site has resolved, so the mismatch exists only inside the one
+function that is generic in it. The declared signature above the implementation
+is the contract, the exhaustiveness is the matcher's, and the narrowing is the
+seam between them.
+
+Alternatives: exporting the pin's return type (every caller would inherit an
+unreduced conditional in its own signature); dropping the matcher for a tag
+switch (T1's reason not to).
+**Load-bearing? no** — a later pin that reduces `Unify` over parameters removes
+this line and changes nothing else.
+
+### T3. A closure suite cannot state the closure, so the compile-time half is a separate executed control
+
+Decided: the runtime half — every kind dispatches, and to its own arm — is the
+derived suite; the claim "a caller that has not handled a new kind fails to
+compile" is an executed must-not-compile control beside it, wired into
+`test:types`.
+
+The two halves cannot be one artifact, and the reason is the amendment that
+required the suites to derive from the union in the first place. A suite that
+builds its arms from the union GROWS with the union, so on the day a kind is
+added it keeps passing — which is correct for what it claims and useless for the
+other claim. The caller the fence is really about is one whose arm record was
+written before the kind existed, and only a compiler can be shown that caller.
+
+Alternatives: asserting the arm count against a written number (the enumeration
+this ticket exists to stop writing); a type-level equality assertion inside the
+suite (it would fail the same compile the suite runs in, so the suite could not
+also report the runtime half).
+**Load-bearing? yes** — without the control the closure is untested at the only
+moment it matters.
+
+### T4. The control declares its arm records instead of building them, and the dropped kind is the union's own first literal
+
+Decided: both mutants use `declare const` for the full record and for the
+arm-short one, and derive the dropped kind as `(typeof Kind.literals)[0]`.
+
+Building the full record needs an `Object.fromEntries` cast, and that cast is
+itself an error under the pinned compiler — two errors in a file whose contract
+is that it fails for one named reason. The claim is about what can be SPELLED,
+so the control needs the types and not the values; nothing in the file runs.
+Deriving the dropped kind rather than naming one keeps the control from falling
+out of step with the union it watches.
+
+Alternatives: casting through `unknown` (a second cast to explain, and the
+scaffolding still in the trace); naming a kind literally (a rename would break
+the control for a reason unrelated to closure).
+**Load-bearing? yes** — a control reporting two errors proves the file does not
+compile, not that the spelling is unlawful.
+
+### T5. The committed traces name the whole arm record, and re-recording is the cost of growing the vocabulary
+
+Decided: the traces are recorded as the pinned compiler prints them, record type
+and all, and adding a refusal kind is expected to move them.
+
+The alternative is a normalizer, and this repository already refused that class
+of answer for the builder control: the words inside a diagnostic ARE the claim,
+so rewriting them before comparing grades the compiler against a paraphrase. The
+consequence is honest and small — a kind added to the vocabulary costs one
+deliberate re-recording, which is one deliberate acknowledgement that every
+caller must now handle it.
+
+Alternatives: matching only the error code (a control that would keep passing
+while pointing at a different property); trimming the type text (the paraphrase
+problem).
+**Load-bearing? no** — a stabler printer would shorten the trace without
+changing what it holds.
+
+### T6. The register fold discriminates on the holder, not on token zero
+
+Decided: `Register.matchState` reads `absent` from a null holder, `held` from a
+null outcome under a holder, and `landed` from both present.
+
+The spec's gloss says "token 0, no holder", and only the second half is a fact
+about the value: the observe path answers a missing entry with a zero token, a
+null holder, and a null outcome, while every present entry carries a holder the
+stored schema types as a string. Reading absence off the token would make the
+fold depend on a revision numbering that belongs to the substrate, and the seam's
+own rules already ban reasoning from revision arithmetic.
+
+Alternatives: discriminating on a zero token (substrate arithmetic); a fourth arm
+for the unrepresentable holder-less landing (a case the stored schema excludes).
+**Load-bearing? yes** — absence is the arm a consumer is most likely to reach.
+
+### T7. The read-side types are spelled through the modules' own exported types, never through `string` and `number`
+
+Decided: every arm shape and instance is written over the concept module's
+exported type — `RegisterState["token"]`, `NonNullable<RegisterState["holder"]>`,
+`RegisterState["outcome"]`, `DecodedEnvelope`, `CellState`, `Envelope`,
+`PublishedEnvelope`, `EmittedEvent` — and no primitive alias is restated here.
+
+The sorts sweep that brands these fields is being built concurrently. Spelled
+this way, a brand landing on a holder or a lane handle transports into these
+folds without touching them; spelled as `string`, each one would be a second
+declaration of a concept the sweep is trying to unify, which is the first
+standing law's definition of a defect. The token order survives the same way for
+a different reason: `Order` is contravariant in its parameter, so the pin's
+number order remains the order of a branded token.
+
+Alternatives: writing the primitives now and re-typing after the sweep merges
+(two edits, and a window in which the wrong type ships).
+**Load-bearing? yes** — it is what makes the rebase mechanical.
+
+### T8. The coherence wall demonstrates the pin's equality cache rather than citing it
+
+Decided: the wall's last case mutates a decoded envelope after its first
+comparison and shows the pin still answering with the answer it had before, then
+shows a fresh decode of the same value answering correctly.
+
+The gotcha is the reason every comparison above it is over decode-fresh values,
+and a discipline whose justification is a sentence in someone else's
+documentation is a discipline nobody can check. Executed, it is evidence: the
+cache is real, plait values are decode-produced and treated as immutable, and the
+wall holds itself to that by construction rather than by intent.
+
+The generated half is bounded the same way. The envelope arbitrary draws from a
+deliberately small pool in every coordinate, because a property that only ever
+produced different envelopes would exercise one side of the biconditional and
+report a pass for both — so a third case samples the pool and requires the
+digests to collide, which makes the positive branch's coverage a measured fact.
+The backward direction is stated as trusted base, in the ledger's own terms:
+observing that no colliding pair appears is not a proof that none exists.
+
+Alternatives: citing the pin's documentation in prose (unfalsifiable); generating
+envelopes from the schema's own arbitrary (the wire-value declaration carries no
+arbitrary, and a wide pool would never collide).
+**Load-bearing? yes** — every digest equivalence in the package inherits this
+wall.
+
+### T9. The named first consumers carry no refusal fold, and none was manufactured
+
+Decided: no consumer was refactored through `Refusal.match` or
+`Refusal.matchKind`, and the reason is reported rather than repaired.
+
+The dispatch charged this run to route the served face and the engine's outcome
+plumbing through the new folds. Reading them, every branch in both is over the
+ENGINE's own outcome union — carried against refused, and the door verdict's
+refused — and not over a refusal at all. The one place the served face touches a
+refusal reads its shared fields uniformly into the wire shape, with no branch to
+replace; folding it would spell two arms doing identical work. A sweep of the
+package finds exactly one conditional anywhere that reads refusal sort, and it is
+the retry predicate the sort exists for.
+
+The nearest genuine candidate for a NEW fold is the incarnation round's landed
+read, which answers null for both non-landed states — a single field read under
+one null check, which is the case the dispatch explicitly excluded.
+
+Alternatives: routing the served face's uniform projection through a two-arm fold
+(ceremony over a shape with no branch, and every served byte at risk for it);
+minting an engine-outcome fold (new public surface outside this scope).
+**Load-bearing? no** — the folds' first real consumers will be the surfaces that
+answer differently per sort, and none is built yet.
+
+### T10. The counted type universe did not grow, so no pin was raised
+
+Decided: no ratchet pin was touched and no waiver was added.
+
+Every export this run lands is a VALUE — folds, an order, three equivalences —
+and the census quantifies over public type declarations. The walk classified the
+same 182 public types before and after, and the public-effect manifest did not
+move either, because nothing added returns an `Effect`, a `Layer`, or a `Stream`.
+Both were run rather than assumed.
+
+Alternatives: pre-emptively raising a pin (a raise that measured nothing).
+**Load-bearing? no** — a later export that names a type will pay the pin then.
+
+## Task: the sorts sweep — canonical strings become concrete types (2026-08-19)
+
+### T1. The sorts are brands over the shipped checks, not new validation
+
+Decided: seven canonical strings became branded schemas on the `Digest`/subject
+precedent — `CellName`, `WorkKey`, `Holder`, `OutcomeValue`, `LaneHandle`,
+`StreamName`, `SegmentName` — each `Schema.String.check(...)` piped through
+`Schema.brand` and annotated, and each carrying exactly the check its seam
+already made.
+
+The sweep's claim is nominal identity, not stricter admission. Every token-shaped
+sort is checked against the grammar the adapter under it was already testing, and
+the two non-token sorts carry the non-empty check their seams already enforced
+(`Session.writ` refuses an unnamed holder today, and did before this run). So no
+value that was admitted yesterday is refused now, and no value that was refused
+is admitted. What changed is that a cell name and a work key stopped being
+interchangeable, and that a bare string stopped being either.
+
+Alternatives: `Schema.fromBrand` over a `Brand.Constructor` (a second place to
+state a grammar, for a brand tag we already spell); tightening the checks while
+branding (would have made this a behaviour change wearing a typing change's
+clothes, and the register key's real tightening belongs to the slice that makes
+it a digest).
+**Load-bearing? yes** — every later constraint on these values lands on the
+brand rather than on a sweep of the seams that spell it.
+
+### T2. Two sorts live one plane deeper than their concept, and are re-exported
+
+Decided: `CellName` is declared in `kernel/Subjects.ts` and `Holder` in
+`kernel/Wire.ts`; `planes/Cell.ts` and `planes/Register.ts` re-export them.
+Every other sort is declared in its concept module.
+
+The dispatch asked for the brands at the concept modules. Two of them cannot be:
+the context program's cell selector is a kernel-plane declaration that spells a
+cell name, and the envelope is a kernel-plane value that carries a holder, and
+plane layering refuses a kernel module importing `planes/`. The choice was a
+kernel-plane home with a re-export, or leaving those two kernel seams spelling
+bare strings. Leaving them bare would have put a hole in the sweep exactly where
+the corpus's own declarations are, so the sorts went deeper and the concept
+modules re-export them — one declaration, reachable where its concept lives.
+
+The homes are not arbitrary. `Subjects.ts` already owned the literal-token
+grammar, which is `CellName`'s whole check; `Wire.ts` is where the estate's
+holder field actually crosses the wire.
+
+Alternatives: a new sorts module (refused — no new modules, API log 0018);
+declaring each sort twice (a second declaration of a corpus concept is a
+first-standing-law defect); leaving the two kernel seams unbranded and reporting
+them (a stated hole in an acceptance the dispatch scoped).
+**Load-bearing? yes** — the placement is what lets the sweep be total.
+
+### T3. One minting site per sort that teaches a refusal; the adapter calls it
+
+Decided: `Cell.cellName`, `Register.workKey`, and `Lane.laneHandle` are the
+public smart constructors, they mint the refusals that used to be minted inside
+`internal/cells.ts` and `internal/registers.ts`, and those adapters now call them
+rather than re-testing the grammar. `Lane.declare` calls `laneHandle` instead of
+composing an evidence subject itself.
+
+"Minted once" is the dispatch's own word for the pattern, and it has two halves:
+one regular expression (`Subjects.TOKEN_PATTERN`, which replaced three private
+copies) and one teaching. Leaving the refusal in the adapter while the check
+moved to the schema would have left the law stated in one place and taught in
+another.
+
+**Refusal delta: none, and it was measured.** The payload pin regenerated with
+the two refusals moved from `internal/cells.ts` and `internal/registers.ts` to
+`planes/Cell.ts` and `planes/Register.ts`; `kind`, `law`, `expected`, and every
+`next` text are byte-identical across the move, which the pin diff shows line for
+line. No kind was added, none was retired, and no taught text moved.
+
+Alternatives: a second refusal beside the adapter's (two law texts for one kind);
+`Refusal.decodeRefusing` at the constructors (would have replaced the seams'
+specific teaching with the generic parse refusal).
+**Load-bearing? yes** — the one-site rule is what the AGENTS law now names.
+
+### T4. The keep-list, with the reason each stays bare
+
+Decided: four families keep bare strings, for four different reasons.
+
+| Family | Verdict | Reason it stays |
+| --- | --- | --- |
+| bucket names (`CELL_BUCKET`, `REGISTER_BUCKET`) | keep | internal literal consts; no seam crossing, so a sort would name nothing a caller can hold |
+| refusal kinds, envelope kinds, volatility classes | keep | already closed literal unions, which IS the sweep's target state — a brand over a closed union weakens it to a string |
+| `connectionName` | keep bare | deployment configuration, outside meaning; a brand here would dignify an ops nickname into a sort |
+| operation names in refusal `path`s | keep bare | diagnostics inside a refusal payload, not identities; the refusal schema is their law |
+
+Two further families were examined and kept, beyond the dispatch's list.
+`Cell.Observation.holder` is a `WireValue`, not the `Holder` sort: a cell's
+observation is holder-attributed in the lattice's own alphabet, where the
+attribution is a canonical value rather than a name, and narrowing it to a string
+sort would narrow the carrier. `internal/writs.ts`'s `SubstrateWrit.holder` is
+derived from a connection name — it is the layer the writ is declared for — so it
+belongs to the keep-bare connection-name family and not to the attribution sort,
+despite sharing its field name.
+
+**Load-bearing? yes** — the keep-list is the sweep's boundary, and an unbounded
+sweep is how ops labels become sorts.
+
+### T5. Where a digest becomes a work key or an outcome value, the mint is explicit
+
+Decided: the engine's two commit paths, the incarnation round key, and the two
+daemon lane handles mint their sorts explicitly rather than widening the sorts to
+admit digests.
+
+These are the sites where the kernel's direction is already visible in the
+runtime: a register key IS a work digest, a decide lands the cataloged outcome's
+ADDRESS, and the heartbeat and session lanes route under their own event-schema
+digest rather than a chosen name. A digest is a lawful literal token by
+construction, so every one of these mints is total — but it is written out, so
+the day the commit door constrains an outcome against a declared schema, the
+sites that have to answer for it are the sites that named themselves here.
+`roundKey` now returns a `WorkKey` directly, because its own doc comment already
+argued that a digest is one literal key.
+
+Alternatives: widening `WorkKey`/`OutcomeValue` to accept `Digest` (would have
+made the sort a union and hidden exactly the transition the kernel is heading
+for).
+**Load-bearing? yes**
+
+### T6. The Symbol statements, restated where they bind
+
+Decided: no code changed for the Symbol decision; the statements are recorded
+here and, where they bind on a shipped surface, in the module that carries them.
+
+Service identity stays `Context.Service` over string keys, which is the pinned
+release's own service-identity form. Value identity is brands, which is what this
+task landed. A string TypeId field ships only on a demonstrated same-shape
+runtime collision, and none exists in this tree — the sweep looked, because
+branding every canonical name is exactly the pass that would have surfaced one.
+`Algebra.ts`'s phantom `unique symbol` plus separate runtime witness is kept as
+the house earned-brand form and is the precedent for future earned brands: the
+phantom makes the brand unforgeable outside its module and the witness makes it
+checkable at the deployment door, which no single mechanism does. `PrimaryKey`
+stays reserved for the first class-shaped carrier. `Equal`/`Hash` instances stay
+refused for plain structs; the coherence wall that landed beside this run rests
+on structural equality being native at the pin, which an instance would displace.
+
+**Load-bearing? no** — the statements bind future work, and each names the
+condition that would change it.
+
+### T7. The template-literal option is not exercised, and the refusal stands
+
+Decided: no `Schema.TemplateLiteral` was introduced. The brands are the
+deliverable; the template-literal form for the subject family remains a priced
+option, adopted only when a consumer needs to PARSE a subject rather than
+construct one. The fixed-length digest's refusal is untouched.
+
+This was ratified before the run and is recorded so the next reviewer does not
+re-derive it. Nothing in this sweep created a decomposition consumer.
+**Load-bearing? no**
+
+### T8. The type universe grew by eight, and the pins were raised by hand
+
+Decided: the ratchet pins moved `carriage` 29 → 30, `kernel` 9 → 13, and
+`planes` 65 → 68; `truth` is unchanged at 36. The raise is a hand edit of
+`test/PublicTypeUniverse.inventory.md`, made under the coordinator's explicit
+delegation for this dispatch.
+
+The gate refused `--write` until the pins were raised, which is the discipline
+working: the eight new rows are `Cell.CellName`, `Subjects.CellName`,
+`Wire.Holder`, `Register.Holder`, `Register.WorkKey`, `Register.OutcomeValue`,
+`Lane.LaneHandle`, and `FabricClient.StreamName`, each a hand-written type
+wearing the unification ticket its owning module already carries. `CellName` and
+`Holder` are counted twice because the census quantifies over barrel namespaces
+and each is reachable through two — one declaration, two reachable names, and the
+ledger says so by naming one owning module for both rows. `ContextProgram`'s
+`SegmentName` is not counted, because that module is not exported from the
+barrel the census walks.
+
+The classified total moved 182 → 190, and the signature manifest moved by exactly
+three lines: the three smart constructors, each carrying only `StructuralRefusal`.
+**Load-bearing? yes** — the count is the estate's staged-debt measure.
+
+### T9. One project for the whole family's compile-time wall
+
+Decided: `check:sorts-control` runs ONE project over one mutant carrying eight
+planted spellings — one per sort, plus a work key spent where a cell name is
+demanded — each with its lawful twin beside it, against one committed trace.
+
+The house pattern is one mutant per project so the compiler reports one error and
+not two. The reason behind that pattern is the twin, not the count: what
+separates "the unlawful shape is unrepresentable" from "this file does not
+compile" is that the lawful spelling keeps compiling in the same project. Eight
+twins do that eight times. And the sweep's claim is about the FAMILY — no bare
+string survives for ANY canonical value — so a sort that quietly stopped refusing
+has to redden this wall, which one trace over the whole family does and seven
+near-identical files would only obscure.
+
+The trace names the brand identifiers, so renaming or adding a sort moves it.
+That is the intended cost: one deliberate re-recording per change to the family
+the fence watches.
+
+Alternatives: eight projects and eight traces (seven copies of one file);
+folding the plants into the existing rung control (a different law's arm).
+**Load-bearing? yes** — this is the dispatch's stated acceptance.
+
+### T10. Two adapter schemas suspend their sorts, for the reason the cell adapter already stated
+
+Decided: `internal/registers.ts` builds its stored-state schema with
+`Schema.suspend(() => Holder)` and `Schema.suspend(() => OutcomeValue)`.
+
+`Register.ts` imports the adapter and the adapter now imports the sorts back —
+the same public/internal cycle `internal/cells.ts` already carries for
+`Observation`, and it bites the same way: a direct reference reads the binding
+before the public module has initialized it, which is a module-init
+`ReferenceError` and not a type error. The suite caught it, which is the point of
+running the battery rather than the typechecker alone. The comment beside it
+states the reason in place.
+
+**Load-bearing? yes** — the next sort that reaches an adapter's schema meets the
+same cycle.
+
+### T11. One committed trace moved, and it moved for a printed type
+
+Decided: `negative-controls/MatchClosure.envelope-kind.trace.txt` was re-recorded
+with `generate:matcher-control`; its sibling refusal-kind trace did not move.
+
+The concurrently landed matcher control commits the compiler's rendering of the
+envelope arm record, and that rendering prints `holder`. Branding the field
+changed `holder: string` to `holder: string & Brand<...>` inside a diagnostic
+whose refusal reason — `Property 'emit' is missing` — is unchanged. Nothing about
+what the control refuses moved, and the re-recording is the trace-comparison
+discipline behaving as designed rather than a weakening of it.
+
+**Load-bearing? no**
+
+### T12. One test asserts a refusal the brand makes unspellable, and says so
+
+Decided: the session suite's unnamed-holder arm presents `"" as unknown as
+Holder` rather than a minted empty holder.
+
+The brand makes an unnamed holder a compile error, which is the sweep working;
+the seam's runtime check still exists and is still what the test is about, so the
+test presents an ill-typed value through a cast — the same shape the arm directly
+above it already used to present a non-digest view. The alternative, deleting the
+arm, would have retired a runtime refusal because a compile-time fence now stands
+in front of it, and the two fences catch different callers.
+
+**Load-bearing? no**
+
+### T13. What this run deliberately did not touch
+
+Two findings are reported rather than fixed, both outside this dispatch.
+
+`ContextProgram.declare` takes `candidate: unknown` and decodes, so the branded
+`Segment` and `Selector` shapes constrain a caller who BUILDS a typed program —
+which the control exercises — and not a caller who hands `declare` a literal.
+That is the module's declared parse boundary, and changing it is the assembly
+slice's call, not this sweep's.
+
+`internal/nats.ts` and `internal/substrate.ts` carry `stream: string` and
+`name: string` on internal helpers below the `StreamName` seam. They are private
+adapter plumbing under a branded public option and were left bare; branding them
+would be a second statement of the public sort's grammar with no seam crossing to
+justify it.

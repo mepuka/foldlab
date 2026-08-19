@@ -504,8 +504,10 @@ describe("structural refusal repairs", () => {
       Effect.gen(function* () {
         const registers = yield* Registers
         const list: Array<Refusal> = []
-        // invalid-register-key: the key law refuses before any KV call.
-        list.push(yield* Effect.flip(registers.grant(WorkKey.make("not.a.key"), Holder.make("seat-a"))))
+        // invalid-register-key: the key law refuses before any KV call. The cast
+        // is deliberate — the brand makes an unlawful key unspellable, and this
+        // arm is about the runtime refusal that still stands behind it.
+        list.push(yield* Effect.flip(registers.grant("not.a.key" as WorkKey, Holder.make("seat-a"))))
         // register-absent: renew requires a present register.
         list.push(yield* Effect.flip(registers.renew(WorkKey.make("absentwork"), 1)))
         // duplicate-grant: the same work granted twice.
@@ -601,8 +603,9 @@ describe("structural refusal repairs", () => {
       Effect.gen(function* () {
         const cells = yield* Cells
         const list: Array<Refusal> = []
-        // invalid-cell-key: the key law refuses before any KV call.
-        list.push(yield* Effect.flip(cells.read(CellName.make("not.a.cell"))))
+        // invalid-cell-key: the key law refuses before any KV call. The cast is
+        // deliberate, for the same reason the register arm above casts.
+        list.push(yield* Effect.flip(cells.read("not.a.cell" as CellName)))
         return list
       }).pipe(Effect.provide(Cells.layer({ servers: cellUrl })), Effect.scoped),
     )

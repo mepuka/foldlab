@@ -63,9 +63,18 @@ import {
  * packages/plait/DECISIONS.md, Task DEV-779.
  */
 
-const StoredOutcome = Schema.Struct({ token: Schema.Finite, value: OutcomeValue })
+/**
+ * The sorts are suspended because `Register.ts` imports this adapter: the cycle
+ * is the shipped public/internal split, and a direct reference here would read
+ * the bindings before the public module has initialized them — the same reason
+ * the cell adapter suspends its observation schema.
+ */
+const StoredOutcome = Schema.Struct({
+  token: Schema.Finite,
+  value: Schema.suspend(() => OutcomeValue),
+})
 const StoredRegister = Schema.Struct({
-  holder: Holder,
+  holder: Schema.suspend(() => Holder),
   outcome: Schema.NullOr(StoredOutcome),
 })
 

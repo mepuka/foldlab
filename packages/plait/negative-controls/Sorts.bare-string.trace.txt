@@ -1,0 +1,18 @@
+negative-controls/Sorts.bare-string.mutant.ts(56,3): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/LaneHandle">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/LaneHandle">'.
+negative-controls/Sorts.bare-string.mutant.ts(69,35): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/Holder">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/Holder">'.
+negative-controls/Sorts.bare-string.mutant.ts(82,3): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/StreamName">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/StreamName">'.
+negative-controls/Sorts.bare-string.mutant.ts(102,5): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/SegmentName">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/SegmentName">'.
+negative-controls/Sorts.bare-string.mutant.ts(104,31): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/CellName">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/CellName">'.
+negative-controls/Sorts.bare-string.mutant.ts(120,3): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string & Brand<"@foldlab/plait/WorkKey">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/WorkKey">'.
+negative-controls/Sorts.bare-string.mutant.ts(132,60): error TS2322: Type 'string' is not assignable to type 'string & Brand<"@foldlab/plait/OutcomeValue">'.
+  Type 'string' is not assignable to type 'Brand<"@foldlab/plait/OutcomeValue">'.
+negative-controls/Sorts.bare-string.mutant.ts(148,14): error TS2322: Type 'string & Brand<"@foldlab/plait/WorkKey">' is not assignable to type 'string & Brand<"@foldlab/plait/CellName">'.
+  Type 'string & Brand<"@foldlab/plait/WorkKey">' is not assignable to type 'Brand<"@foldlab/plait/CellName">'.
+    Types of property '[TypeId]' are incompatible.
+      Property '"@foldlab/plait/CellName"' is missing in type '{ readonly "@foldlab/plait/WorkKey": "@foldlab/plait/WorkKey"; }' but required in type '{ readonly "@foldlab/plait/CellName": "@foldlab/plait/CellName"; }'.
