@@ -4895,3 +4895,113 @@ measured residuals outside it — the other generated projections and the CLI's
 rendered output — remain their own slices under the standing posture, and the
 live citation that prompted this round sits in one of them. This round widened
 the class, not the sweep.
+## Task DEV-823 — identity on the resolve path is the fetched bytes
+
+Placeholders `T14`–`T18`; repository D-numbers are assigned at merge. The
+disposition of the digest-resolution audit's F-1 and F-2 was pre-ruled by the
+coordinator under DEV-823, from standing law rather than from a fresh judgment:
+a repairing decoder names a value that did not arrive (finding #36), byte-to-
+value admission passes one constrained door (DEV-806), and identity is exact
+bytes (DEV-807). The payload resolve leg was the same defect standing on the
+read path. F-3 is a dossier and no code under `internal/registers.ts` moved.
+
+### T14. Identity first, decode second, and the order is the law
+
+Decided: the payload leg admits on `sha256(bytes) == D` over the fetched octets
+BEFORE anything decodes them, and only then runs the estate's constrained
+decoder over those same bytes. Alternatives: keep the value-level check and
+merely make the decoder fatal (that closes the invalid-UTF-8 and
+duplicate-member halves and leaves member order, whitespace, and needless
+escapes wide open — three of the five laundered rows in the committed control
+trace survive it); check the bytes AND then re-derive from the decoded value as
+well (a second identity derivation that can only disagree with the first when
+the canonicalizer is not idempotent, which would make a canonicalizer defect
+surface here as a resolve refusal rather than where it lives). Why: a digest
+names one exact byte string, so the only question a read door may ask is
+whether these octets hash to it, and asking it first means no interpretation
+has had a chance to repair the input. The value handed back is parsed from the
+verified bytes, so on this leg the object a caller reads is the object the
+digest attests to. **Load-bearing? yes** — it is the finding's whole
+disposition.
+
+### T15. One taught law moved, and it moved because the repair inverted its order
+
+Decided: `malformed-value` on the payload leg now teaches *"Bytes admitted at a
+digest decode as exactly one RFC 8785 wire value."* The retired sentence said
+the decode happened *before any identity check*, which was true of the defect
+and is false of the repair — it named the very order the audit found wrong.
+Alternatives: leave the sentence (it would print a law the code no longer
+follows, which is the condition the audit already flagged once); mint a new
+kind for a post-identity decode failure (the fact has not changed — presented
+bytes are not one wire value — only where in the sequence it is discovered).
+The pin moved by exactly one line and the diff shows it. This is a wire change
+and is recorded as one, not as a rendering detail: a consumer reading the
+taught law will read a different sentence. **Load-bearing? yes** — a moved
+taught text is persisted evidence.
+
+### T16. The oracle is the octets and the digest, and it is pinned before any row is graded
+
+Decided: every row's expected verdict is `sha256(octets) == D` under FIPS
+180-4, computed over the exact byte string, consulting neither the resolve door
+nor the Go twin; `D` itself is pinned first by requiring the TypeScript seam's
+digest of the value to equal the SHA-256 of the Go twin's canonical bytes for
+that same value. The Go arm then contributes the question its read door
+actually asks — are these bytes already canonical — through the line-oriented
+constrained-decode endpoint. Alternatives: compare the two implementations to
+each other (both-sides-agree is consensus, not verification, and a shared
+decoder assumption is exactly the bug class here); freeze a hand-typed digest
+constant in the corpus (a transcription error would make every row agree on a
+falsehood). Why the arms compose into a theorem rather than a coincidence:
+because `D` is by construction the digest of a canonical byte string,
+`sha256(bytes) == D` already implies the bytes are canonical, so the repaired
+byte check subsumes the twin's canonicality check instead of sitting beside it.
+**Load-bearing? yes** — without a named outside oracle the wall would prove
+only that two decoders were written by people who read the same document.
+
+### T17. The control restates the one function, and the control test keeps the restatement honest
+
+Decided: the value-identity control is a deliberate restatement of the payload
+leg with one law dropped, not a re-use of the shipped path through a
+substitution point. Alternatives: export a seam from the resolve module so the
+control could inject its identity step (it would put a test hook on the
+package's public surface with no law licensing it, and the public-surface walk
+would pin it forever); plant the mutation into the module's bytes and restore
+the tree, as the canonicalizer twin control does (that shape suits a source
+SCAN, and what wants measuring here is an admission decision at runtime). The
+restatement's hazard — drifting into agreement with the shipped door and
+passing quietly — is closed by what the control asserts: the variant must ADMIT
+byte strings the shipped door refuses, and the committed trace names which
+five. A drifted variant fails the control instead of passing it.
+**Load-bearing? yes** — a wall no mutant can fail is not a wall.
+
+### T18. F-3 ships evidence and no repair, and the evidence says what it cannot show
+
+Decided: the register finding's disposition is the operator's, so this round
+lands two measured rows against a real server and changes no line of the
+register adapter. The rows say what a single-replica server can answer — that
+the bucket is opened on the direct-read route at one replica, and that the
+substrate's compare-and-set, presented with the revision a landing produced,
+ACCEPTS an outcome overwrite. Alternatives: land no evidence and argue the
+disposition from reading (the whole question is whether the CAS reaches the
+pre-check's verdict on its own, and that is a fact about the substrate, not
+about the source); reproduce the staleness itself (one replica is the only
+replica and cannot lag behind itself; a row claiming otherwise would be
+theatre). What the rows deliberately do NOT claim: no staleness was
+reproduced, and no reachability argument is made for the revision the raw CAS
+was handed. **Load-bearing? yes** — the second row is what makes "demote the
+pre-check to advisory, the CAS arbitrates" an unsafe disposition rather than a
+tidy one, and it is a fact nobody had measured.
+
+**Stated residual.** Three things this round does NOT do. (a) The catalog leg
+still re-derives from the VALUE, because that store holds values and there is
+no byte string to check; the module now says so in place rather than letting
+the memo's licence sentence imply otherwise. (b) F-2's other two legs are
+untouched and still launder: `Wire.verifyEnvelopeDigest` re-canonicalizes the
+decoded envelope and compares that laundered digest to the message id — run on
+this branch and observed ADMIT for transposed members carrying the canonical
+digest — and the anchor adapter's state read hashes the decoded value while the
+same file's write path compares raw bytes at the same key. Both are outside
+this ticket's file scope and neither was quietly fixed. (c) The audit's hygiene
+rows F-5, F-6 and F-7 stay open; the payload leg now happens to return a value
+parsed from the verified bytes, which is F-7's structural repair on one leg of
+one seam and is not F-7's disposition.
