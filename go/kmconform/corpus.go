@@ -45,6 +45,14 @@ const (
 	// the group — so it is not "skipped" and a generator reading the corpus
 	// is not left guessing — and deliberately projects nothing from it.
 	RecordModelAdmission = "model-admission"
+	// RecordRun is the eleventh group. Its rows are the model's own run
+	// executions — per program vector: the door context, the writ, the
+	// supplies, the walked steps and the outcome, with the outcome's own
+	// canonical bytes beside it. This consumer KNOWS the group — a
+	// generator reading the corpus is not left guessing — and deliberately
+	// projects nothing from it: the replay wall that consumes these rows
+	// is the TypeScript engine's, not this module's.
+	RecordRun = "run"
 )
 
 // groupOrder is the mandated file order of the record groups this consumer
@@ -61,6 +69,7 @@ var groupOrder = []string{
 	RecordCanon,
 	RecordProgram,
 	RecordModelAdmission,
+	RecordRun,
 }
 
 // countedGroups are the counts keys the header must ALWAYS carry. Extra keys
@@ -81,11 +90,12 @@ var countedGroups = []string{
 	RecordModelAdmission,
 	RecordProgram,
 	RecordRefusal,
+	RecordRun,
 	RecordStage,
 	RecordType,
 }
 
-// closedTypeNames is the closed twenty-five, in Kernel/Definitions.lean
+// closedTypeNames is the closed twenty-seven, in Kernel/Definitions.lean
 // declaration order. Adding a name is an add-only change to the corpus and a
 // one-line change here; removing one is a format bump. The last three joined
 // with the 2026-08-19 manifest growth (the door's verdict and the program
@@ -96,7 +106,7 @@ var closedTypeNames = []string{
 	"KTriggerPredicate", "Act", "RawArg", "CandidateAnchor", "TokenClaim",
 	"MergeStrategy", "CandidatePredicate", "CandidateAct", "RefusalReason",
 	"Refusal", "Applicability", "Door", "AdmitResult", "GenTag",
-	"ProgramNode",
+	"ProgramNode", "RunStep", "RunOutcome",
 }
 
 // machineApplicableReasons are the four repairs that are a function of the
@@ -213,6 +223,13 @@ type Skipped struct {
 	Value  JSONValue
 }
 
+// RunRow is one run record, retained verbatim and not projected.
+type RunRow struct {
+	Line  int
+	Name  string
+	Value JSONValue
+}
+
 // ModelInternalRow is one model-admission record, retained verbatim.
 //
 // The group is RECOGNISED — so it never lands in the skip log and no
@@ -243,6 +260,10 @@ type Corpus struct {
 	Docs       []DocRow
 	Canons     []CanonRow
 	Programs   []ProgramRow
+	// Runs carries the run group: recognised, retained verbatim, projected
+	// by the TypeScript replay wall and by nothing here.
+	Runs []RunRow
+
 	// ModelInternal carries the model-admission group: recognised, retained
 	// for the both-ways law, projected nowhere.
 	ModelInternal []ModelInternalRow
@@ -360,6 +381,18 @@ func ParseCorpus(data []byte) (*Corpus, error) {
 			var row ProgramRow
 			row, err = decodeProgram(value)
 			corpus.Programs = append(corpus.Programs, row)
+		case RecordRun:
+			var runName, runProgram string
+			runName, err = stringMember(value, "name")
+			if err == nil {
+				runProgram, err = stringMember(value, "program")
+			}
+			if err == nil && runProgram == "" {
+				err = fmt.Errorf("run record %q names no program", runName)
+			}
+			if err == nil {
+				corpus.Runs = append(corpus.Runs, RunRow{Line: lineNo, Name: runName, Value: value})
+			}
 		case RecordModelAdmission:
 			// Recognised and deliberately not projected. The scope marking is
 			// checked because it is the whole reason the row is exempt: a
@@ -502,6 +535,11 @@ func (c *Corpus) Emit() ([]byte, error) {
 		}
 	}
 	for _, row := range c.ModelInternal {
+		if err := write(row.Value, nil); err != nil {
+			return nil, err
+		}
+	}
+	for _, row := range c.Runs {
 		if err := write(row.Value, nil); err != nil {
 			return nil, err
 		}

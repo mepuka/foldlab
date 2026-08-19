@@ -149,7 +149,8 @@ func TestTheProgramGroupComesLast(t *testing.T) {
 			seenProgram = true
 			continue
 		}
-		if seenProgram && !strings.Contains(line, `"record":"model-admission"`) {
+		if seenProgram && !strings.Contains(line, `"record":"model-admission"`) &&
+			!strings.Contains(line, `"record":"run"`) {
 			t.Fatalf("line %d is neither a program record nor a later-appended group and follows the "+
 				"program group; groups are appended after every existing group, never interleaved", index+1)
 		}
