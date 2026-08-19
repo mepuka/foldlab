@@ -25,6 +25,7 @@ const generatedCoreAnchors: ReadonlyArray<
   `src/kernel/${string}.generated.d.ts` | `src/truth/${string}.generated.d.ts`
 > = [
   "src/kernel/KernelSchemas.generated.d.ts",
+  "src/kernel/KernelSdk.generated.d.ts",
   "src/kernel/KernelTables.generated.d.ts",
   "src/truth/RefusalKinds.generated.d.ts",
 ]

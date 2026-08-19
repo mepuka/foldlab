@@ -4648,3 +4648,191 @@ the marker may say, not whether the meanings are ratified. (c) The
 `incarnation-mismatch` meaning landed from its own lane while this branch was
 out and is kept VERBATIM — this round did not re-word another lane's sentence,
 only re-marked it along with every other.
+
+## Task DEV-831 — the plain-TypeScript SDK becomes generated
+
+Task-local placeholders `T0`–`T7`; repository D-numbers are assigned at merge.
+The authority is the TypeScript-projection ruling (§11a ruling 4, adopted with
+the operator's four requirements — complete, simple, fully self-contained,
+100% fidelity) and the projection wall it left owed. The subject is
+`src/kernel/KernelSdk.generated.ts`, emitted by `scripts/kernel-sdk.ts` and
+gated by `check:kernel-sdk` with an executed mutation arm beside it.
+
+The prep lane measured fourteen drift rows between the adopted reference sketch
+and what the corpus emits today. Four of them were not implementation choices,
+and each is answered below with the measurement that decided it.
+
+### T0. The code projection spells the model's own field names
+
+Decided: every field of every generator is the name the model's `Act` record
+carries — `writ`, `target`, `lane`, `cell`, `declared`, `register`,
+`declaration`, `parent`, `request` — and the surface parameter list of each
+constructor is that generator's field list, in that generator's order.
+Alternatives: the compound self-descriptive convention the sketch uses
+(`writ_digest`, `lane_digest`, `reduction_digest`); a third convention local to
+this surface. Why: the compound convention is ruled, and it is ruled for the
+WIRE projection, where a flat argument list has no surrounding structure to
+carry the sort. A code projection has the sort in the type, and this one has a
+harder constraint on top of that — its output values must BE the values the
+door accepts, and the door's fields are the model's, so a compound rename would
+need a translation layer between the surface and the judgment. That layer is
+the hand-derivation the whole pipeline exists to prevent. The generated schemas
+and the generated builder already spell the model's names, so this keeps one
+code spelling in the estate rather than two. **Load-bearing? yes** — it is what
+makes "the SDK's output is exactly what the door takes" a property of the bytes
+rather than of a converter nobody wrote.
+
+### T1. The carrier is `bigint`, on the generated family's side of the split
+
+Decided: every model integer is `bigint` in this surface — identity labels,
+ranks, fences, positions, and the encoded vectors a verdict carries.
+Alternatives: the sketch's `string` for digests and `number` for every scalar;
+`number` with a documented ceiling; a substitutable carrier parameter with
+`number` as the default, which is what the generated brand aliases do. Why: the
+corpus, every generated schema, and the door end to end are already `bigint`,
+and the estate's number-domain ruling makes integers exact and unbounded. The
+sketch's carriers are the only ones in play that are neither the model's nor a
+parameter over it, and their cost is measurable rather than stylistic: a
+`number` carrier rounds the pinned canon vector at 2^53 + 1, and a `string`
+digest cannot be handed to the door without a conversion the sketch never
+defined. The branded aliases keep a `Carrier` parameter so a call site
+migrating a real runtime value can substitute, but the default is the model's.
+The exactness is walled, not asserted: a lawful emit carrying 2^53 + 1 goes
+through admission and its encoded vector is compared against the arithmetic the
+model's own canonicalizer specifies. **Load-bearing? yes** — it is the one row
+where the sketch was not merely different but unusable.
+
+### T2. The discriminant is `_tag` at camel case, and the reachability requirement is what decides it
+
+Decided: `_tag`, with the model's own camel constructor spellings, on every
+tagged union this surface projects. Alternatives: the sketch's `act` key with
+kebab tags; a per-layer split, kebab on the wire and camel in code. Why: both
+spellings are generated today, in different layers — the tables carry the kebab
+wire spelling of the refusal reasons, the schemas carry the camel constructor
+names — and an emitter must be told which register it prints. Here it is not a
+free choice. The door's candidate type keys on `_tag` at camel, so any other
+register would make the SDK's values a different type from the door's, and the
+one property this artifact exists to have would be gone. The kebab register
+still appears, in exactly the place the door uses it: the taught refusal rows,
+whose reasons are the wire spellings. **Load-bearing? yes** — it is the
+difference between one grammar and two that resemble each other.
+
+### T3. Brands are string-literal keys, and only a closed brand domain earns one
+
+Decided: the brand carrier is an interface with the string-literal key
+`~foldlab/plait/kernel/Brand`, byte-identical to the one the generated tables
+declare, and the sorts that earn an alias are those whose every brand parameter
+names a record class the corpus enumerates. Today that is exactly `Digest`, by
+declaration kind, with the twelve per-kind aliases; `Token` and `Position` are
+branded in the model over open domains and are carried here as their carrier.
+Alternatives: the sketch's `declare const KIND: unique symbol`; a brand key
+local to this file; branding every indexed sort with a type parameter. Why: a
+module-local symbol cannot be named from another module, which is precisely
+what the twelve aliases exist to provide, and it is not how the estate's pinned
+release spells a type identity. Reusing the tables' key is the stronger half of
+the decision and it is checked: one kind's digest is ONE type across the two
+generated files, and the test assigns in both directions to say so. An open
+brand domain is dropped rather than faked because the tie it would have carried
+is carried better — see T4. **Load-bearing? yes** — a brand nobody outside the
+file can name is a brand that separates nothing.
+
+### T4. The dependent ties are carried by construction, not by an inference guard
+
+Decided: the four ties live in what the constructors WRITE. `decide` takes a
+register and a fence and writes the register into the token claim; `fold` takes
+a reduction and writes it into the anchor; `resolve` writes no anchor at all;
+`join` takes a declared algebra and writes the declared-algebra strategy.
+Alternatives: the sketch's `NoInfer` guards on constructor parameters, which is
+the sketch's real invention and the thing nothing else in the estate carries;
+accepting the raw candidate members and checking at admission only. Why: a
+guard refuses a crossed pair that was spelled; construction gives it no
+spelling. There is nothing to cross, because the caller supplies the coordinate
+once and the constructor is the only thing that writes it twice. That is
+strictly stronger than the guard and it survives erasure, which a type-level
+tie does not. The one guard worth keeping is kept: `resolve` binds the digest
+brand to the named kind through `NoInfer`, because there the two arguments are
+genuinely independent and the caller supplies both. The claim is measured on
+returned values across several inputs rather than argued from a signature.
+**Load-bearing? yes** — it is the answer to the census's asymmetry finding, and
+it is why the emitted surface carries ties the program builder had to drop.
+
+### T5. The candidate grammar is projected whole; the eight generators are its lawful half
+
+Decided: the surface carries the entire candidate grammar the corpus declares —
+eleven candidate arms, nine predicate productions, eight raw argument atoms,
+both merge strategies — as types with constructors for the atoms, the
+predicates and the strategies; and eight constructors, one per model generator,
+and none for anything else. Alternatives: project only the lawful arms, which
+is the sketch's stated principle — an SDK that cannot spell the crime is the
+point; project the candidate grammar alone and drop the eight. Why: the sketch's
+principle has a measured consequence, and it is the reason this ticket exists —
+the sketch declares an admitted-or-refused result and can produce nothing of the
+kind, because the door judges candidates and the sketch cannot spell one. A
+surface that makes the crime unwritable PREVENTS it; the door REFUSES it and
+teaches the repair, and four of the sixteen repairs are machine-applicable,
+which is only a meaningful claim if the refused candidate can be written down.
+So the principle is kept where it belongs: at the constructors. Twelve of the
+nineteen emitted conformance vectors are built by the eight; the other seven are
+the structural crimes the four ties forbid plus the three arms with no lawful
+generator, and they are written as candidate values so the door can teach them.
+All nineteen get the model's own verdict. **Load-bearing? yes** — it is the
+whole of "the door stays reachable", and it is the row the code-mode view was
+blocked on.
+
+Stated openly: this resolves the code-mode spec's central row in the shape it
+called "one SDK, two halves, with the door between them", and it resolves it
+because the reachability requirement forces it, not because the alternatives
+were priced. Whether the code-mode view takes this whole surface or only one of
+its halves is still open and still wants the operator.
+
+### T6. The surface joins the swept official documents
+
+Decided: `KernelSdk.generated.ts` is a fourth official surface under root law
+10. Its provenance is the corpus digest and the interchange format and nothing
+else; the renderer takes no path, so rendering one is a compile-time
+impossibility rather than a rule to remember; and the standing sweep for
+tracking artifacts now reads its committed bytes line by line alongside the
+other three. Alternatives: carry the header path, command and source line the
+schemas and the builder still carry; declare conformance in this file and leave
+it unswept. Why: the law's own test is whether a reader is handed the document
+as the language, and this one is handed to a model as the language. The two
+generated artifacts that still carry paths and commands were measured and left
+where they were — each is a real instance of the same law and each wants its own
+slice — but a surface landing today has no excuse to land dirty. Every draft
+meaning is rendered behind the ratified marker, verbatim, so the marker clause
+bites here too. **Load-bearing? yes** — 3470 swept lines across four surfaces is
+a wall; a sentence in a header is not.
+
+### T7. The reference sketch is not deleted, and its retirement is a separate act
+
+Decided: `verify/kernel/projections/kernel.ts` stays exactly where it is. The
+generated surface is its SUCCESSOR, not its transcription: it carries every
+inventory at the same cardinality and the same wire names, it carries the same
+sixteen taught refusals at their CURRENT texts (three of which the sketch has
+stale), it carries the dependent ties the sketch invented, and it reaches the
+door, which the sketch cannot. Alternatives: delete the sketch in this slice;
+keep it and wall it against the emitted surface. Why: the sketch is the adopted
+reference and it carries four `@ts-expect-error` controls that are each
+load-bearing — measured, one error per control with all four neutralised —
+which is evidence this surface does not yet reproduce. Retiring it is a review
+act at a sitting, on parity of intent, not a side effect of landing its
+successor. Walling the two against each other would wall a divergence that is
+deliberate on nine of the fourteen measured rows. **Load-bearing? yes** — the
+sketch is the only place the type-level tie argument is written down, and
+losing it before the sitting reads it would lose the argument.
+
+**Stated residual.** Four things this round does NOT do. (a) The admitted
+sentence is projected as its canonical encoding vector and not as a structured
+act. The door's verdict is assignable to the projected one, so the surface is
+reachable in both directions, but a caller who wants the sentence's fields
+reads them from the door's own types. The vector is what two implementations
+must agree on, which is why it is the half that landed. (b) The sketch's four
+compile-time controls have no twin here. The ties they exercise are carried by
+construction and measured on values, which is a different and stronger
+measurement, but "this spelling does not compile" is not among the claims this
+slice makes. (c) The wall's tracking-id class still matches one ticket series
+only, so an obligation cited from a second series inline would pass the sweep.
+It was found by the prep lane, it is not fixed here, and it is not exercised by
+this surface. (d) `KernelSchemas.generated.ts` and `KernelBuilder.generated.ts`
+still carry header paths and generation commands. Each is the same law as T6
+and each wants its own slice; neither was quietly fixed.

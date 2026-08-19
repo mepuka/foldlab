@@ -42,6 +42,9 @@ export * as Lane from "./planes/Lane.js"
 /** The generated candidate language and its one admission function. */
 export * as KernelDoor from "./kernel/KernelDoor.js"
 
+/** The language as plain TypeScript: the candidate grammar and the eight generators. */
+export * as KernelSdk from "./kernel/KernelSdk.generated.js"
+
 /** Structural and absence refusals plus the absence-only retry policy. */
 export * as Refusal from "./truth/Refusal.js"
 

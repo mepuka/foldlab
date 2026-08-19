@@ -1,0 +1,10 @@
+a model docstring
+  was  /** A lane partition: the venue-local shard of an evidence stream. */
+  now  /** A lane partition: the venue-local slice of an evidence stream. */
+a taught repair
+  was      repair: "declare the merge algebra; idempotent join leaves nothing for arrival order to choose",
+  now      repair: "declare the merge algebra; idempotent join leaves nothing for arrival order to pick",
+kernel plain-TypeScript SDK: generator decide fills [register,token,outcome] where candidate arm decide declares [register,token,outcomes]
+an unprojected record
+  was  <unmoved>
+  now  <unmoved>
