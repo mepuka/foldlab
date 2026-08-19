@@ -720,9 +720,10 @@ done < <(
     "$ts_tables" "$(grep '"target":"kernel-tables"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
     "$ts_builder" "$(grep '"target":"kernel-builder"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
     "$ts_vocabulary" "$(grep '"target":"refusal-kinds"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
-    "$ts_schemas" "$(grep '"target":"kernel-schemas"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
+    "$ts_schemas" "$(grep '"target":"kernel-schemas"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_sdk" "$(grep '"target":"kernel-sdk"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
 )
-echo "GATE: PASS (digest register fresh; the corpus and all four surfaces hash as registered under a host oracle)"
+echo "GATE: PASS (digest register fresh; the corpus and all five surfaces hash as registered under a host oracle)"
 
 # Falsification of the printer itself. Each arm edits ONE constant or ONE rule
 # in this package's own sources, rebuilds, and demands that the emitted surface

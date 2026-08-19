@@ -3,3 +3,4 @@
 {"digest":"3f79603043cca553bc056ff01884f10a7ab24a6be2afff850899ba9cb143004b","record":"surface","target":"kernel-builder"}
 {"digest":"78f2a6cd44ed9a4a3f19633a33bf67b5485d744608c3f92238700b9a99901438","record":"surface","target":"refusal-kinds"}
 {"digest":"744519efc2848c28b536a07ac0055d93ed99ab5da957647395ae095c58d8df6f","record":"surface","target":"kernel-schemas"}
+{"digest":"9f53a87cd425e2f7580efa993953ceabaa55d151351b69a30d19f8ef32cd47f6","record":"surface","target":"kernel-sdk"}

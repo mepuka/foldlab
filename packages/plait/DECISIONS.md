@@ -6901,3 +6901,126 @@ would have retired a real wall to avoid restating four lines).
 
 **Load-bearing? yes** — after this commit nothing hand-written stands on the
 surface's road.
+
+### T7. The SDK manifest is transcribed whole, and reconciled against the corpus in both directions
+
+Decided: the ratified SDK manifest — the eight-row projection table with each
+row's candidate arm, its extra parameter and the ties it makes unspellable, the
+two type maps, and the projection notes — is carried as reviewed Lean data,
+verbatim.
+
+The reconciliation is the part worth stating, because it is what makes the table
+safe to transcribe. Before a byte is written the emitter checks that the table
+has exactly as many rows as `Act` has generators, that row `n` names generator
+`n`, that no two rows claim one candidate arm, that a row's field list equals the
+candidate constructor's own field list name for name and in order, that every
+tag a row writes names a constructor the corpus has, and that no parameter is
+taken and read nowhere. A field added to the model reddens the emission instead
+of arriving as a silently dropped argument.
+
+Two of those checks changed shape in the move and both got stronger. The
+retiring renderer found the tags with a regular expression over the expression's
+source text and found the unread parameters with a second one; the emitter walks
+the expression tree, so it is reading what the surface will actually write
+rather than a rendering of it.
+
+Alternatives: derive the table from the corpus (it cannot be — the projection is
+a judgement about how a lawful sentence meets a raw one, and the corpus states
+neither side of that); check one direction only (the failure it misses is a
+surface that silently lost a sentence).
+
+**Load-bearing? yes** — the table decides what every caller of the SDK is asked
+for.
+
+### T8. The target grammar grew PAST the ratified layout fence, and this is the entry that says so
+
+Decided, and NOT covered by the operator's in-session ratification: emitting the
+SDK required five additions to `Unity.Ts` that are structural rather than
+layout. The census moves from forty-five reachable kinds to fifty. This is
+recorded as its own decision, separate from T3, because T3's ratification was
+argued on the ground that no structural TypeScript construct was added — and
+here some are.
+
+What forced each, from the committed bytes:
+
+  * `digestOf` is written with a Block body:
+    `): Digest<Kind> => {` / `  void kind` / `  return id as Digest<Kind>` / `}`.
+    That is a Block, a ReturnStatement, and an ExpressionStatement over a
+    VoidExpression — three kinds the spine did not carry, because until this
+    surface every function the emitter wrote returned an expression.
+  * `id as Digest<Kind>` is an AsExpression that is not `as const`, which the
+    spine carried only in its const-assertion form.
+  * The generators' bodies are written `{ _tag: "declare", kind, payload: value,
+    writ }` — `kind` and `writ` are ShorthandPropertyAssignments, a different
+    node from the PropertyAssignment the spine's object properties were.
+
+The layout-axis additions in the same commit are the ratified kind and are
+listed for completeness: an arrow now carries its own type parameters, the
+layout its binders are written at, a doc comment per binder, and where its body
+starts. Those are four renderings of an ArrowFunction, not four new kinds.
+
+One function in one surface forces the first four of the five. That is the
+smallest true statement of the cost, and it is the number the operator should
+rule against. The alternative was to change the committed bytes of `digestOf` to
+an expression body, which is the one move a parity discipline may never make —
+the surface is the target, and a generator that edits its target to fit itself
+has stopped being a projection.
+
+Refused outright: a raw-text escape hatch on the tree. It would have carried all
+five as strings and cost nothing today, and it is exactly how a target grammar
+stops being a grammar.
+
+**Load-bearing? yes** — and reversible in one direction only: reverting these
+five reverts the SDK surface, and the other four surfaces re-emit
+byte-identically without them.
+
+### T9. The SDK's two walls move to where the emitter runs, and the sharpest one is rebuilt rather than dropped
+
+Decided: `check:kernel-sdk` and `check:kernel-sdk-control` retire with the
+renderer, and what each proved is re-established under `verify/unity/run.sh`.
+
+`check:kernel-sdk` proved three things. Determinism — two renderings of one
+corpus byte-equal — is what the gate's `check_surface` does for every surface it
+emits. Served-equals-derived is the parity arm itself. Provenance-is-a-digest is
+unchanged in the bytes: the surface still names the corpus by digest and the
+register now cross-checks that digest against a host oracle.
+
+`check:kernel-sdk-control` is the one that could not simply move. It planted
+mutations into the *bytes of the corpus file* the renderer read; the emitter
+reads the model's own emission rather than a file, so that plant has no site.
+The clause worth keeping is the third arm — a moved candidate field name must
+make the generator REFUSE rather than drop an argument into the wrong slot — and
+it is rebuilt as a gate arm that plants the moved field into the reviewed table
+and requires the emission to stop, naming the two field lists it could not
+match. The two "a model edit reaches the surface" arms are covered by the
+existing shape of the wall: the surface is byte-compared against a fresh
+emission from the model on every gate run, so a model edit that failed to reach
+it reddens by construction, which is a stronger statement than a planted word.
+
+The fourth arm — renaming a record the surface does not project must NOT move
+the bytes — is the one thing genuinely lost, and it is recorded as lost rather
+than waved at. It discriminated a wall that reddens on any change from one that
+reddens on a vocabulary change. Its replacement, if the operator wants one, is a
+gate arm that edits the model and requires exactly one surface to move; that is
+a change to the model gates rather than to this lane, so it is not made here.
+
+Alternatives: keep the bun control by having it read the emitter's output (it
+would compare the emitter against itself); leave both walls declared but
+unreachable (the DEV-799 failure).
+
+**Load-bearing? yes** — and it carries one named loss, above.
+
+### T10. The trailing newline is a fact about each surface, measured separately
+
+Decided: the schema surface ends without a final newline and the SDK surface
+ends with one, and the emitter reproduces each.
+
+Measured, and it was the only byte wrong on the SDK's first emission: both
+renderers join their lines with newlines and write, so the difference is entirely
+whether the renderer's last act was a blank line. The SDK's generator loop ends
+with one; the schema renderer's last statement does not. The printer already
+treats the trailing newline as a fact about the surface rather than a constant of
+its own, so both are expressed by what the module's last statement is.
+
+**Load-bearing? no** — one byte, on two files. Recorded because it is the kind of
+difference a reader assumes is a mistake in one of the two files, and it is not.

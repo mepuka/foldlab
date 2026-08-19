@@ -28,18 +28,18 @@ live under `../../test/` is gone; the replay targets the shipping door.
 a model identity label (ruling A1), and it judges nothing.
 
 The emitted set comes from `../../fixtures/kernel-conformance.ndjson`, which
-`verify/unity`'s emitter writes out of the `verify/kernel` model. Four of them
-are also emitted there — `KernelTables.generated.ts`, its truth-plane half,
-`KernelBuilder.generated.ts` and `KernelSchemas.generated.ts` — so regenerate
-those with that emitter, which documents its targets beside them: `lake exe ts
---target=kernel-schemas` under `verify/unity`, and the digest register
-re-emitted with it. From `packages/plait`, one renderer remains: `bun run
-generate:kernel-sdk`, and `generate:kernel-prose` for the prose under
-`docs/generated/`. Never hand-edit a kind, a rank, a taught law, or a repair.
+`verify/unity`'s emitter writes out of the `verify/kernel` model. Every
+generated module beside this file is emitted there — `KernelTables.generated.ts`
+and its truth-plane half, `KernelBuilder.generated.ts`,
+`KernelSchemas.generated.ts` and `KernelSdk.generated.ts` — so regenerate them
+with that emitter, which documents its targets beside them: `lake exe ts
+--target=kernel-sdk` under `verify/unity`, and the digest register re-emitted
+with it. No renderer remains in `packages/plait`; `generate:kernel-prose` still
+writes the prose under `docs/generated/`. Never hand-edit a kind, a rank, a
+taught law, or a repair.
 
-Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
-`check:kernel-surfaces` holds the four model-emitted surfaces to the digests
-its gate registers,
+Wall: `check:kernel-surfaces` holds the five model-emitted surfaces to the
+digests its gate registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
 and an absence control the emitted vectors cannot carry. The builder's two walls
@@ -55,14 +55,17 @@ was — the traces were 5.9.2 recordings, and 5.x printed a union's members in
 instantiation order while the pinned 7.0.2 prints them sorted. Re-record with
 `bun run generate:builder-control` after a deliberate change.
 
-`check:kernel-sdk` carries two clauses the older walls do not: it renders twice
-and requires the two renderings byte-equal, and it requires the committed header
-to name the digest of the corpus this reading hashed. Its control,
-`check:kernel-sdk-control`, executes a mutation arm — a moved docstring, a moved
-taught repair, a moved candidate field name, each planted in the corpus bytes
-and each required to reach the surface, with a fourth arm renaming a record this
-surface does not project and requiring the bytes NOT to move. Both are wired
-into `test:fast` rather than merely declared.
+The SDK's own two walls moved with it when it flipped. `check:kernel-sdk`
+rendered twice and required the two renderings byte-equal; the emitter's gate
+does that for every surface it emits. `check:kernel-sdk-control` planted a moved
+docstring, a moved taught repair and a moved candidate field name into the
+corpus bytes and required each to reach the surface, with a fourth arm renaming
+a record the surface does not project and requiring the bytes NOT to move. The
+emitter reads the model's own emission rather than a corpus file, so those
+plants are made in its reviewed tables instead: the gate moves the surface by
+editing the projection map and the projection notes, and refuses the emission
+outright when a row's field list stops matching the model's — which is the
+clause the third arm proved.
 
 One level deeper: the corpus file, then
 [`verify/kernel/README.md`](../../../../verify/kernel/README.md).

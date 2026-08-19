@@ -40,6 +40,7 @@ export const REGISTER_PATH = "verify/unity/surface-digests.ndjson"
 export const SURFACE_PATHS: { readonly [target: string]: string } = {
   "kernel-builder": "packages/plait/src/kernel/KernelBuilder.generated.ts",
   "kernel-schemas": "packages/plait/src/kernel/KernelSchemas.generated.ts",
+  "kernel-sdk": "packages/plait/src/kernel/KernelSdk.generated.ts",
   "kernel-tables": "packages/plait/src/kernel/KernelTables.generated.ts",
   "refusal-kinds": "packages/plait/src/truth/RefusalKinds.generated.ts",
 }
