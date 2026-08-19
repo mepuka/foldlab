@@ -128,7 +128,7 @@ export const STATED_ROOT_MODULES: ReadonlyArray<StatedRootModule> = [
     file: "index.ts",
     plane: "surface",
     citation:
-      "packages/plait/src/surface/README.md — \"Two files wear this plane —"
+      "packages/plait/src/surface/README.md — \"Four files wear this plane —"
       + " cli.ts ... and ../index.ts, the curated barrel that *is* the public"
       + " surface.\"",
   },

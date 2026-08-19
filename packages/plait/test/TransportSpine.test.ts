@@ -8,6 +8,7 @@ import { transportRefusal as catalogsRefusal } from "../src/internal/catalogs.js
 import { transportRefusal as cellsRefusal } from "../src/internal/cells.js"
 import { transportRefusal as chaosRefusal } from "../src/internal/chaos.js"
 import { transportRefusal as foldsRefusal } from "../src/internal/folds.js"
+import { transportRefusal as laneReadsRefusal } from "../src/internal/lanereads.js"
 import { transportRefusal as lanesRefusal } from "../src/internal/lanes.js"
 import { transportRefusal as natsRefusal } from "../src/internal/nats.js"
 import { transportRefusal as pumpRefusal } from "../src/internal/pump.js"
@@ -97,6 +98,22 @@ const rows: ReadonlyArray<SpineRow> = [
     next: () => [{
       subject: "Folds.deploy",
       note: "A transport refusal leaves this anchor write's outcome unknown. Do not retry it in place: detach and redeploy - resumption reads the landed anchor back, and a retried CAS that already landed refuses as lost-anchor-cas by design.",
+    }],
+  },
+  {
+    // This adapter POSTDATES the spine, so its row is not a restatement of a
+    // pre-extraction definition — there is none. What the row does is the same
+    // job the others' do: it pins the terms a caller reads to decide whether to
+    // retry, so an edit to this adapter's teaching reddens here and shows the
+    // edit rather than shipping quietly.
+    adapter: "lanereads",
+    refuse: laneReadsRefusal,
+    kind: "lane-read-transport-unavailable",
+    law: "Transport absence may be retried; a fact whose identity does not verify may not.",
+    expected: "the pinned local NATS JetStream stream read to be available",
+    next: () => [{
+      subject: "Lane.tail",
+      note: "Reconnect and read again; a read acknowledges nothing, so a repeated read costs the substrate nothing.",
     }],
   },
   {
@@ -242,12 +259,12 @@ describe("the transport spine mints each adapter's own refusal", () => {
     }
   }
 
-  test("ten definitions carry nine distinct absence kinds", () => {
-    expect(rows.length).toBe(10)
+  test("eleven definitions carry ten distinct absence kinds", () => {
+    expect(rows.length).toBe(11)
     // `fold-transport-unavailable` is shared by the pump and the fold service,
-    // which is why ten sites carry nine kinds. The affordances record's
-    // "six absence kinds" undercounts by three.
-    expect(new Set(rows.map((row) => row.kind)).size).toBe(9)
+    // which is why eleven sites carry ten kinds. The affordances record's
+    // "six absence kinds" undercounts by four.
+    expect(new Set(rows.map((row) => row.kind)).size).toBe(10)
   })
 
   test("membership is derived: every adapter that mints one has a row here", async () => {
@@ -284,7 +301,7 @@ describe("negative control — a homogenized spine is refuted", () => {
     next: teachRetryOperation,
   })
 
-  test("eight of the nine rows refute it, and the survivor is nats", () => {
+  test("ten of the eleven rows refute it, and the survivor is nats", () => {
     const survivors = rows
       .filter((row) => mismatches(row, homogenized, "connection.acquire", plantedCause("boom")).length === 0)
       .map((row) => row.adapter)
@@ -301,7 +318,7 @@ describe("negative control — a homogenized spine is refuted", () => {
     }
   })
 
-  test("erasing only the taught repair still refutes the seven fixed-subject rows", () => {
+  test("erasing only the taught repair still refutes the eight fixed-subject rows", () => {
     const refuted = rows
       .filter((row) => {
         const noteOnly = transportRefusalFor({
@@ -316,6 +333,7 @@ describe("negative control — a homogenized spine is refuted", () => {
     expect(refuted).toEqual([
       "registers",
       "anchors",
+      "lanereads",
       "lanes",
       "pump",
       "folds",

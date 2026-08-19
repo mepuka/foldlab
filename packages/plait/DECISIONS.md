@@ -8785,3 +8785,265 @@ under the standing staged-debt waiver, and this slice mints no generated
 artifact. No lockstep model oracle, and no refinement map between this fold and
 the substrate model's run function — the model gate proves the machine, this
 suite executes a walk over it, and neither is claimed to be the other.
+
+## Task: the read-side API — the planes served over HTTP, writes stay at the door (2026-08-19)
+
+### T0. The home is `plait api` on the transport spine, not the substrate daemon
+
+Decided: the read face is a subcommand of the `plait` command tree, beside
+`plait mcp`, and the substrate daemon does not host it.
+
+Re-derived from the tree rather than assumed. The daemon that landed today is a
+Go binary and what it owns is the substrate PROCESS — one server over one store
+directory, fenced at the incarnation register. What this face serves is the
+PLANES, and every one of those reads is a TypeScript carrier in this package:
+the register observe, the cell read, the bounded lane tail, the connection fold.
+A read face inside the daemon would have to restate all of them in the daemon's
+language, which is the second spelling of a read the estate refuses; a read face
+on the spine reaches them by calling them. The spine already carries the
+precedent one verb over: `plait mcp` builds its carriers from `--nats` and
+launches a served face, and `plait api` is that shape with an HTTP transport
+instead of stdio. Alternatives: host it in the daemon (rejected above); ship it
+as its own binary (a third entry point for one more face, and the CLI's growth
+rule is that a face is a `Command` value appended to the root).
+**Load-bearing? yes** — it decides which language the read surface is written in
+for every consumer after this one.
+
+### T1. The router, not the schema-first API family, and the reason is law 3
+
+Decided: the face is built on `HttpRouter` from the pinned release's own HTTP
+family, and NOT on `HttpApi`/`HttpApiBuilder`.
+
+`HttpApi` is schema-first: an endpoint declares its success SCHEMA, and the
+builder encodes the handler's value through that schema and serializes the
+result. For this face that would mean writing a second statement of every
+payload shape — a `Schema.Struct` twin of the connection reading, the cell
+state, the register state, the landed fact — beside the plane values those reads
+already return. That is exactly the hand-authored twin standing law 3 refuses
+and the extra hand-written public types standing law 1 counts as debt, and it
+would buy nothing this face needs: the served bytes must be the estate's RFC
+8785 canonical bytes, and a schema-driven JSON serializer does not produce them
+(key order alone is not canonical). Routing, path parameters, middleware, the
+server, and the streaming response are all the pinned release's, so nothing is
+hand-rolled — `HttpApiBuilder` itself compiles down to the same `HttpRouter`
+routes this face registers. What the choice gives up is stated: no generated
+OpenAPI document and no generated typed client. When a client generator is
+wanted, the honest shape is to project it from the same route table this module
+already declares as data, not to re-declare the payloads as schemas.
+**Load-bearing? yes** — it is the reason the served bytes can be canonical at
+all.
+
+### T2. One answer shape: coordinates, and exactly one member carrying the plane read
+
+Decided: every read answers `{ v, kind, <coordinates>, <one member> }`, where
+the member holds the plane read's own value verbatim and nothing re-shapes it.
+
+The alternative that looks simpler — answer the plane value alone, with no
+envelope — loses the two things a bounded read must say: which bound it was
+taken under, and what it is. A reader that cannot tell a short answer from a
+clipped one has to guess, and a payload that names itself is the estate's own
+idiom for a value that travels (every declared value in this package carries `v`
+and `kind`, and the chaos scoreboard on the CLI already renders that way). The
+member is verbatim on purpose: the wall compares the member's canonical bytes
+against the canonical bytes of the plane read taken directly, so a flattened or
+renamed projection reddens. **Load-bearing? yes** — it is what makes
+served-equals-derived checkable per endpoint rather than per field.
+
+### T3. A refusal's status is a fold over the two sorts; the router's own misses are a separate clause
+
+Decided: structural → 422, absence → 503. A request the route table does not
+carry answers 404 when it names no declared read and 405 when its verb is not a
+read, and both still carry a taught structural refusal payload.
+
+The ticket suggested the triple structural=422 / absence=404 / transport=503,
+and the estate has no transport SORT — a transport failure is an
+`AbsenceRefusal`, which is also what a head-relative absence is — so the triple
+collapses to two arms over the two sorts, folded through `Refusal.match` so a
+third sort would be a third arm the compiler demands. Which of 404 and 503 the
+absence arm takes is the whole decision: 404 says the thing does not exist,
+which is a claim about the world an absence refusal explicitly does not make
+("absence is head-relative"), while 503 is the one status whose meaning is
+"this may succeed later", which is precisely what makes absence the only
+retryable class. The router's misses reach no plane read, so their status is not
+a sort's projection and says instead why the request was not carried; answering
+422 there would tell a caller its request was unprocessable when the truth is
+that nothing here answers it. **Load-bearing? yes** — a status is what a UI
+branches on before it reads a byte.
+
+### T4. The refusal is rendered by encoding it through its own schema, as the CLI does
+
+Decided: a refusal on this wire is `Refusal`-schema-encoded and then
+canonicalized — the CLI's rendering — rather than the seven hand-listed fields
+the MCP face writes.
+
+The two faces differ because their wires differ, and the difference is worth
+stating rather than smoothing. The MCP face's results travel through the
+protocol's own JSON serializer as tool-result objects, so it names the fields it
+puts in one; this face's body IS bytes, so it renders the value itself and names
+no field at all — which is the stronger form of the same discipline, because a
+field added to the refusal vocabulary tomorrow reaches this wire without an edit
+here. The rendered fields are a superset by exactly the schema's own `_tag`.
+Both derive from the one `Refusal` union, so there is one statement of what a
+refusal is and two renderings of it. A fallback rendering exists for the refusal
+whose own payload will not canonicalize, for the reason the CLI states: a total
+function may not fail, and a rendering that refused to render would lose the
+only evidence there is. **Load-bearing? maybe** — the shape is checked by the
+canonical round-trip arm, so a drift is caught either way.
+
+### T5. The connection fold needs no plane-level face, and no pin was raised for it
+
+Decided: `surface/api.ts` imports `internal/connectionfold.ts` directly, and
+nothing else was built to make that lawful.
+
+Re-derived from the layering wall rather than from the ticket's caution. An
+`internal/` module is a plane member by its `Seam:` tag, and the connection fold
+declares `Seam: planes`; the one layering rule is that an edge must point at a
+plane at or deeper than the importer's own, and surface is the shallowest. So
+the edge is lawful as it stands — `check:layering` reports it among 342 edges
+all pointing deeper or level. The truth-edge pin binds only truth-plane edges
+into `internal/`, so no pin row was owed and none was written. A thin
+plane-level face over the fold would have been new public surface, a Law 1
+waiver, and a hand-raised type-universe pin bought to satisfy a rule that does
+not apply. The fold's own ruling — that it has no public face — is unmoved: it
+still has none, and the face that reads it is not a public export of it.
+**Load-bearing? yes** — it is the precedent for every later surface that wants
+an internal read.
+
+### T6. The lane read is its own service on its own connection, not a verb on `Lanes`
+
+Decided: `LaneReads` is a second service beside `Lanes`, with its own layer and
+its own connection, rather than two more methods on the emit service.
+
+The read face must not be able to write, and "must not" is worth spending a
+connection on: `Lanes`'s whole surface is `emit`, and its writ grants
+`flb.fab.ev.{lane}.*`, so a read that shared that service would carry the emit
+right in its context and the publish grant on its connection. Two services means
+the API's requirements name three READ services and nothing else, which is the
+one-door law read off a signature rather than promised in prose. The cost is one
+more connection per process and one more acquire site, and the acquire site is
+what forced T10. Alternative: add `tail`/`follow` to `LaneService` (rejected:
+it puts the emit door in every reader's context, and it would have broken three
+fixture layers into carrying stubs for verbs they never call).
+**Load-bearing? yes.**
+
+### T7. The tail's bound is per partition, and a tail never interleaves
+
+Decided: `limit` bounds each partition's own span, and rows come back grouped by
+partition, each group in its own position order.
+
+This is the connection fold's ruling read from the other end. Positions are
+per-partition coordinates: a declared `(lane, partition)` owns one exact stream
+and its dense sequence is the position, so two partitions' positions come from
+two sequences and are not comparable at all. A lane-wide limit would have to
+divide across those sequences and whichever division it chose would be
+arbitrary; a tail sorted by position across partitions would be interleaving
+independent sequences into an order no reader ever saw. Every row carries its
+partition, so the grouping is legible in the value rather than remembered by the
+caller. Bounds: 32 positions by default, 256 at most, per partition.
+**Load-bearing? yes** — it is the difference between a coordinate and a number.
+
+### T8. A read acknowledges nothing, checkpoints nothing, and creates nothing durable
+
+Decided: both read faces run on EPHEMERAL ORDERED consumers — ack-none, expiring
+on their own inactivity — and neither commits an anchor nor acknowledges a
+message.
+
+That is what lets a reader attach beside a deployed fold. The fold's pump owns a
+DURABLE consumer, an anchor, and an explicit acknowledgement discipline; a
+reader that acquired any of the three would be advancing a frontier some other
+party depends on, which is the second write path wearing a read's clothes. The
+live face's backpressure is the consumer's own in-flight window: the client asks
+for at most that many messages ahead, so a reader that stops pulling stops the
+request from being renewed rather than filling memory. **Load-bearing? yes.**
+
+### T9. The incarnation chain is discovered at the fence and walked by the one walk
+
+Decided: `walkChain` was factored into `walkPredecessors` — the walk over the
+predecessor relation, which is the only field a chain step reads — and
+`chainOf(store)` discovers the relation by reading the incarnation register
+forward from the store's first round, then hands it to that same walk.
+
+The alternative was a second walk beside the first, and two walks agreeing about
+acyclicity by inspection is exactly the drift the estate refuses; the projection
+from a history of whole values onto the predecessor relation is one line, so
+`walkChain` keeps its signature and its refusals unchanged and both callers
+share one implementation. What is NOT claimed, and it is a real bound: this
+reads the chain THE FENCE DECIDED, not the whole incarnation values. A landed
+outcome is an incarnation's name, and an incarnation value also carries an
+options digest that no register outcome holds, so a history of values cannot be
+rebuilt from the register alone — and rebuilding one with a fabricated options
+field would be a value whose digest does not match its key, which is a forgery
+and not a shortcut. The daemon's own establishment facts DO carry the values,
+and they land on the Go-side journal lane rather than on a plait lane, so this
+package cannot reach them today; that gap is reported as a finding rather than
+papered over. The walk is bounded at 256 chain positions and REFUSES past it
+rather than truncating, because a truncated chain read as a whole one would say
+a store had fewer incarnations than it has. **Load-bearing? yes.**
+
+### T10. The lane-read layer's writ is the LEAST writ, and the evidence-reader role is owed
+
+Decided: `foldlab-plait-lane-reads` is declared in the substrate writ table with
+no roles, no publish families, and no subscribe families.
+
+The writ table is total over the spine's acquire sites, and this slice adds one,
+so a row was mandatory — the wall that walks acquire sites out of the source is
+what said so, and its site count moved from nine to ten. What the row may NOT do
+is borrow the publisher's roles: `evidence-publisher` grants
+`flb.fab.ev.{lane}.*`, which is the emit right this whole seam was split to keep
+out of a reader's hands. What it SHOULD carry — the evidence streams' info and
+the ephemeral ordered consumers a read runs on — is a carrier role the
+permission projection does not declare, and minting one here would be an
+un-grilled permission vocabulary landing inside an API ticket, touching the
+projection, its schema literals, and its daemon-side parity twin. So the row is
+the least writ, which the table already carries for two other layers, and it
+fails CLOSED: under a credentialed deployment this layer is granted nothing.
+Owed work, reported: the evidence-reader role, on its own ruled ticket.
+**Load-bearing? yes** — it is a stated hole in the credentialed story, and
+naming it is the difference between a bound and a bug.
+
+### T11. Law 10 is walled over the bytes this face actually serves
+
+Decided: the law-10 arm drives every endpoint, collects the payloads it really
+put on the wire — answers, both refusal registers, and the change stream's
+frames — and runs the estate's own tracking-artifact classes over them, with a
+planted id, path, and generation command that must redden it.
+
+The existing sweep reads the committed bytes of four rendered documents, and
+this face renders none: its strings become bytes only when a request is
+answered. A roster of served strings kept beside the module would have been a
+hand-maintained twin of what the handlers actually say — the drift the law is
+about. Sweeping the module's own source is not available either: an import
+specifier is a filesystem path by that sweep's own definition, so every module
+in the tree would fail it. Driving the face and sweeping the output is the read
+that matches the law's words: an OFFICIAL SURFACE is what a reader receives. No
+by-name exclusion is live on this surface, so none is passed — excusing a token
+nothing serves would be a standing licence nothing relies on.
+**Load-bearing? yes.**
+
+### T12. The type-universe pin was raised by hand
+
+Recorded: the `planes` ratchet pin moved from 69 to 75, by hand, under the
+coordinator's dispatch of this ticket. The six rows are the read seam's —
+`LandedFact`, `TailOptions`, `FollowOptions`, `LaneReadOptions`,
+`LaneReadService`, `LaneReads` — each a Law 1 waiver citing the standing plane
+unification ticket, exactly as the rest of that module's types do. The
+`carriage` pin did not move: the read face exports three values and no type at
+all, so the surface plane grew no public type.
+
+### T13. What this slice does NOT do
+
+No authentication and no authorization: the holder ruling stands — attribution
+is never authority — and this face has no identity story of any kind. Whoever
+reaches the listener takes every read on it, which is why the CLI binds loopback
+by default and says so. No resume on the change stream, no Last-Event-Id, and no
+keepalive frame: the live read is a tail, and a reader that needs history reads
+the tail endpoint. No federation, no UI, and no write of any kind.
+
+The walls are the FACE's, and their oracle is a fixture rather than a substrate:
+what they hold is that a payload is the plane read's own canonical bytes, that a
+collection is bounded, that the live read is transport rather than
+accumulation, that a write verb refuses, and that no served string carries a
+tracking artifact. What is NOT walled here is that the new read adapters speak
+JetStream correctly — the ordered-consumer tail and follow have no live-substrate
+row in this slice, and their behaviour against a real server is claimed by
+nobody until one exists.

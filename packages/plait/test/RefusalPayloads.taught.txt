@@ -171,6 +171,30 @@ packages/plait/src/internal/incarnations.ts#0
   expected <absent>
   next[0].subject "incarnation.chain"
   next[0].note "Walk the chain over a history carrying every incarnation the walk reaches, each named by its own canonical bytes."
+packages/plait/src/internal/incarnations.ts#1
+  kind "malformed-value"
+  law "An incarnation chain is read under a stated bound; a chain longer than the bound is refused rather than truncated."
+  expected "at most ${} chain positions"
+  next[0].subject "incarnation.chain"
+  next[0].note "Read the chain of a store whose succession fits the stated bound; a truncated chain would understate a store's history rather than shorten the answer."
+packages/plait/src/internal/lanereads.ts#0
+  kind "lane-read-transport-unavailable"
+  law "Transport absence may be retried; a fact whose identity does not verify may not."
+  expected "the pinned local NATS JetStream stream read to be available"
+  next[0].subject "Lane.tail"
+  next[0].note "Reconnect and read again; a read acknowledges nothing, so a repeated read costs the substrate nothing."
+packages/plait/src/internal/lanereads.ts#1
+  kind "invalid-partition-key"
+  law "Lane partition routing is derived only from the declared path over the admitted event value."
+  expected "an integer from 0 through ${}"
+  next[0].subject "Lane.tail"
+  next[0].note "Read a partition the lane declares, or omit the partition to read every one of them."
+packages/plait/src/internal/lanereads.ts#2
+  kind "lane-evidence-mismatch"
+  law "A durable partition pump accepts only verified events addressed by its declared lane and partition key."
+  expected <absent>
+  next[0].subject "Lane.emit"
+  next[0].note "Emit through the declared lane so identity, key, subject, and partition are derived together."
 packages/plait/src/internal/lanes.ts#0
   kind "lane-transport-unavailable"
   law "Transport absence may be retried; declared lane shape violations may not."
@@ -449,6 +473,35 @@ packages/plait/src/planes/Session.ts#1
   expected <absent>
   next[0].subject "Session.writ"
   next[0].note "Declare this fold as a view of the writ, or read through the session opened for a view the writ already names."
+packages/plait/src/surface/api.ts#0
+  kind "malformed-value"
+  law "The read face answers exactly the reads it declares; a path outside that roster names no plane to read."
+  expected <expression>
+  next[0].subject "plait.read"
+  next[0].note "Take one of the declared reads; the index at the root answers with every path this face carries and the bound each is taken under."
+packages/plait/src/surface/api.ts#1
+  kind "malformed-value"
+  law "The read face carries no write; judgment routes through the one admission door and never through a read."
+  expected <expression>
+  next[0].subject "plait.read"
+  next[0].note "This face reads and never writes. A sentence that changes the estate is offered to the agent face, judged by the one admission door, and lands through the engine."
+packages/plait/src/surface/api.ts#2
+  kind "malformed-value"
+  law "A lane is read by the handle its declared event form derives; a handle no declaration derives names no stream."
+  expected <expression>
+  next[0].subject "plait.read"
+  next[0].note "Read a lane this face declares; a lane's handle is the digest of the event form it carries."
+packages/plait/src/surface/api.ts#3
+  kind "malformed-value"
+  law "A read names what it reads; a path segment the router matched empty names nothing."
+  expected "one non-empty path segment"
+  next[0].subject "plait.read"
+  next[0].note "Take one of the declared reads; the index at the root answers with every path this face carries and the bound each is taken under."
+packages/plait/src/surface/api.ts#4
+  kind <expression>
+  law <expression>
+  expected <absent>
+  next <absent>
 packages/plait/src/surface/cli.ts#0
   kind "invalid-chaos-request"
   law "plait chaos runs one pinned span of one admitted declared fold; no ambient head or arbitrary program is accepted."

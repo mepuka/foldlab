@@ -1,15 +1,30 @@
 # surface — entry points
 
-The outermost layer: what a person or another program actually invokes. Three
+The outermost layer: what a person or another program actually invokes. Four
 files wear this plane — `cli.ts`, the `plait` bin that deploys a declared fold,
-runs the chaos arms, and serves the MCP face; `mcp.ts`, the agent face whose
+runs the chaos arms, and serves the two faces; `mcp.ts`, the agent face whose
 eight tools are the model's own tool-schema projection read from the committed
 artifact copy and served verbatim (served equals derived — `bun run
 check:kernel-tools` holds the copy byte-identical to the model gate's
-emission, and `../../test/KernelMcp.test.ts` walls artifact-to-wire); and
-`../index.ts`, the curated barrel that *is* the public surface. Nothing leaves
-the package that is not exported there. Surface may import every layer beneath
-it; nothing imports surface.
+emission, and `../../test/KernelMcp.test.ts` walls artifact-to-wire); `api.ts`,
+the read face; and `../index.ts`, the curated barrel that *is* the public
+surface. Nothing leaves the package that is not exported there. Surface may
+import every layer beneath it; nothing imports surface.
+
+`api.ts` serves the planes over HTTP and carries NO write. Its answers are the
+canonical bytes of the plane read each one projects — the value is never
+re-shaped on the way out, so a digest taken over a served payload is the digest
+of the value — and every collection is bounded by a limit with a default and a
+ceiling. The live read is a Server-Sent Events response over the estate's own
+change stream, one frame per landed fact, written as the fact arrives. The
+write half is absent by construction rather than by promise: the layer requires
+the three read services and nothing else, so no handler under it can reach the
+engine, the emit service, or the admission door. Wall:
+`../../test/Api.test.ts` — served-equals-derived per endpoint, the canonical
+round trip over every payload including both refusal registers, the bound, the
+stream replay, the first frame observed before the producing sequence
+completes, the write-verb refusal, and root law 10 over the bytes this face
+actually serves with a planted artifact that reddens it.
 
 `cli.ts` is declared on the catalog-pinned Effect release's own CLI,
 `effect/unstable/cli` (DEV-786). It parses nothing: the command tree is data —

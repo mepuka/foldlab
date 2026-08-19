@@ -35,15 +35,17 @@
  */
 import { fileURLToPath } from "node:url"
 
-import { BunServices } from "@effect/platform-bun"
+import { BunHttpServer, BunServices } from "@effect/platform-bun"
 import { Console, Context, Effect, FileSystem, Layer, Option, Path, Ref, Result, Schema, SchemaParser, Scope } from "effect"
 import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
+import { HttpRouter } from "effect/unstable/http"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 
 import { jetstreamManager } from "@nats-io/jetstream"
 
 import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import { Engine } from "../carriage/Engine.js"
+import * as ApiFace from "./api.js"
 import * as McpFace from "./mcp.js"
 import { Catalog, Payloads } from "../planes/Catalog.js"
 import { Cells } from "../planes/Cell.js"
@@ -853,9 +855,54 @@ const mcp = Command.make("mcp", {
     ),
   )
 
+/**
+ * `plait api` — the read-side face over HTTP.
+ *
+ * The reads it serves are the planes' own, so its carriers are the READ
+ * services and nothing else: no engine, no emit service, no admission door. The
+ * home is here rather than in the substrate daemon because the daemon owns the
+ * substrate PROCESS — one server over one store directory, fenced at the
+ * incarnation register — while the planes it serves are read through this
+ * package's own carriers. A read face inside the daemon would have to restate
+ * every one of those reads in the daemon's language, which is the second
+ * spelling the estate refuses.
+ *
+ * The listener binds loopback by default, and that is a stated posture rather
+ * than a convenience: this face carries no authentication, so anything that can
+ * reach the socket can take every read on it.
+ */
+const api = Command.make("api", {
+  nats: Flag.string("nats").pipe(
+    Flag.withDescription("NATS server URL the live lane, cell, and register reads connect to"),
+  ),
+  port: Flag.integer("port").pipe(
+    Flag.withDescription("Listener port; 0 asks the operating system for one, which is logged"),
+    Flag.withDefault(0),
+  ),
+  host: Flag.string("host").pipe(
+    Flag.withDescription("Listener address; loopback by default, because this face authenticates nobody"),
+    Flag.withDefault("127.0.0.1"),
+  ),
+}, (request) =>
+  Effect.gen(function* () {
+    const carriers = Layer.mergeAll(
+      Lane.LaneReads.layer({ servers: request.nats }),
+      Cells.layer({ servers: request.nats }),
+      Registers.layer({ servers: request.nats }),
+    )
+    return yield* Layer.launch(HttpRouter.serve(ApiFace.layer).pipe(
+      Layer.provide(carriers),
+      Layer.provide(BunHttpServer.layer({ port: request.port, hostname: request.host })),
+    ))
+  })).pipe(
+    Command.withDescription(
+      "Serve the planes over HTTP: bounded reads, one live change stream, and no write endpoint anywhere.",
+    ),
+  )
+
 const plait = Command.make("plait").pipe(
   Command.withDescription("The Plait coordination fabric spine."),
-  Command.withSubcommands([chaos, mcp, pump]),
+  Command.withSubcommands([api, chaos, mcp, pump]),
 )
 
 // ===========================================================================

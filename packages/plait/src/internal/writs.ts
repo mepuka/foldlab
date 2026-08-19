@@ -169,6 +169,22 @@ export const SUBSTRATE_WRITS: ReadonlyArray<LayerWrit> = [
     ],
   },
   {
+    // The bounded lane read opens its own connection, and it opens one BECAUSE
+    // the read must not carry the emit right: the publishing layer next door
+    // holds `flb.fab.ev.{lane}.*`, and a read that shared its connection would
+    // hold it too. What that read may address instead — the evidence streams'
+    // own info and the ephemeral ordered consumers it reads them through — is a
+    // carrier role the permission projection does not yet declare, so this row
+    // is the LEAST writ: declared, empty, and honest about naming no authority
+    // rather than borrowing the publisher's. The owed work is that role, and
+    // until it lands a credentialed deployment grants this layer nothing, which
+    // fails closed rather than open.
+    layer: "foldlab-plait-lane-reads",
+    roles: [],
+    publish: [],
+    subscribe: [],
+  },
+  {
     layer: "foldlab-plait-lanes",
     roles: ["evidence-publisher"],
     publish: [

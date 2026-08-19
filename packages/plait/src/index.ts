@@ -15,6 +15,9 @@ export * as Algebra from "./truth/Algebra.js"
 /** Durable fold checkpoint facts and their contiguous-frontier transition. */
 export * as Anchor from "./planes/Anchor.js"
 
+/** The planes served over HTTP: bounded reads, one live change stream, no write. */
+export * as Api from "./surface/api.js"
+
 /** The public content-addressed blob store: put, verified get, presence. */
 export * as Blob from "./planes/Blob.js"
 

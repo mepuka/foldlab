@@ -629,13 +629,13 @@ describe("the substrate writ", () => {
       }
     }
     // A walk that found nothing would pass over no wall at all.
-    expect(sites.length).toBe(9)
+    expect(sites.length).toBe(10)
     const declared = new Set(SUBSTRATE_WRITS.map((row) => row.layer))
     for (const site of sites) {
       expect({ ...site, declared: declared.has(site.layer) })
         .toEqual({ ...site, declared: true })
     }
-    expect(new Set(sites.map((site) => site.layer)).size).toBe(9)
+    expect(new Set(sites.map((site) => site.layer)).size).toBe(10)
   })
 
   test("a layer with no declared writ is refused by the lookup and folds null at the spine", async () => {

@@ -6,7 +6,7 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 191 public types: 43 derives-from-the-generated-core, 148 debt-with-a-ticket.
+Classified 197 public types: 43 derives-from-the-generated-core, 154 debt-with-a-ticket.
 
 ## Ratchet pins
 
@@ -14,7 +14,7 @@ Classified 191 public types: 43 derives-from-the-generated-core, 148 debt-with-a
 | --- | --- |
 | `carriage` | 30 |
 | `kernel` | 13 |
-| `planes` | 69 |
+| `planes` | 75 |
 | `truth` | 36 |
 
 ## Classified public types
@@ -159,13 +159,19 @@ Classified 191 public types: 43 derives-from-the-generated-core, 148 debt-with-a
 | `Lane.DeclaredLane` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.EmitOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.EmittedEvent` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.FollowOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.LandedFact` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneDeclaration` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneHandle` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LanePartition` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.LaneReadOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.LaneReadService` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.LaneReads` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.LaneService` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.Lanes` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.PartitionKey` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Lane.TailOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Mcp.McpOptions` | `src/surface/mcp.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Mcp.ServedTool` | `src/surface/mcp.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Refusal.AbsenceRefusal` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |

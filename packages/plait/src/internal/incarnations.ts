@@ -9,8 +9,8 @@ import { Effect } from "effect"
 import { OutcomeValue, Registers, WorkKey } from "../planes/Register.js"
 import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
-import { digestOf, type Digest } from "../truth/Digest.js"
-import { structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
+import { Digest as DigestSchema, digestOf, type Digest } from "../truth/Digest.js"
+import { decodeRefusing, structuralRefusal, type Next, type Refusal } from "../truth/Refusal.js"
 import { WIRE_STATUS_BY_DECLARATION } from "./wirevocabulary.js"
 
 /**
@@ -354,21 +354,27 @@ const chainRefusal = (
 })
 
 /**
- * Walks one incarnation chain from a head, newest first.
+ * Walks one chain from a head over the predecessor relation, newest first.
+ *
+ * This is THE walk. Everything a chain step needs is the predecessor of the
+ * incarnation the step stands on, so the walk takes exactly that relation and
+ * nothing more — which is what lets one implementation serve a caller holding
+ * whole incarnation values and a caller that learned the relation from the
+ * fence, rather than two walks agreeing about acyclicity by inspection.
  *
  * Total and acyclic, and both are checked rather than argued. A step naming an
- * incarnation the history does not carry refuses instead of stopping quietly,
+ * incarnation the relation does not carry refuses instead of stopping quietly,
  * because a chain that ends early reads as a shorter history rather than as a
  * missing one. A step naming an incarnation already walked refuses instead of
  * looping: a cycle cannot be built out of honest digests, since a value's name
- * covers its predecessor's name, and the check is here for the histories that
+ * covers its predecessor's name, and the check is here for the relations that
  * were not built out of honest digests.
  *
  * Nothing about liveness is read here. The walk is a history, and a history
  * says what happened, never what is.
  */
-export const walkChain = Effect.fn("Incarnation.walkChain")(function* (
-  history: ReadonlyMap<string, SubstrateIncarnation>,
+export const walkPredecessors = Effect.fn("Incarnation.walkPredecessors")(function* (
+  predecessors: ReadonlyMap<string, string | null>,
   head: string,
 ): Effect.fn.Return<ReadonlyArray<string>, Refusal> {
   const walked: Array<string> = []
@@ -378,13 +384,95 @@ export const walkChain = Effect.fn("Incarnation.walkChain")(function* (
     if (seen.has(cursor)) {
       return yield* chainRefusal(["chain", cursor], "already walked", "an unwalked predecessor")
     }
-    const value: SubstrateIncarnation | undefined = history.get(cursor)
-    if (value === undefined) {
+    if (!predecessors.has(cursor)) {
       return yield* chainRefusal(["chain", cursor], "absent", "an incarnation the history carries")
     }
     seen.add(cursor)
     walked.push(cursor)
-    cursor = value.predecessor
+    cursor = predecessors.get(cursor) ?? null
   }
   return walked
+})
+
+/**
+ * Walks one incarnation chain from a head over a history of whole incarnation
+ * values, newest first.
+ *
+ * The history is projected onto the predecessor relation and handed to the one
+ * walk above; the projection is the only thing this function does, because the
+ * only field a chain step reads is `predecessor`.
+ */
+export const walkChain = Effect.fn("Incarnation.walkChain")(function* (
+  history: ReadonlyMap<string, SubstrateIncarnation>,
+  head: string,
+): Effect.fn.Return<ReadonlyArray<string>, Refusal> {
+  const predecessors = new Map<string, string | null>()
+  for (const [digest, value] of history) predecessors.set(digest, value.predecessor)
+  return yield* walkPredecessors(predecessors, head)
+})
+
+/**
+ * The bound one chain read is taken under.
+ *
+ * The fence answers one round at a time, so discovering a store's chain costs
+ * one register observation per chain position and an unbounded discovery would
+ * be an unbounded read. A store whose chain runs past this bound refuses rather
+ * than truncating: a truncated chain read as a whole one would say a store had
+ * fewer incarnations than it has, which is a falsehood about succession and not
+ * a smaller answer.
+ */
+export const INCARNATION_CHAIN_MAX = 256
+
+const chainTooLong = (store: Digest): Refusal =>
+  structuralRefusal({
+    kind: "malformed-value",
+    law: "An incarnation chain is read under a stated bound; a chain longer than the bound is refused rather than truncated.",
+    path: ["chain", store],
+    got: INCARNATION_CHAIN_MAX,
+    expected: `at most ${INCARNATION_CHAIN_MAX} chain positions`,
+    next: [{
+      subject: "incarnation.chain",
+      note: "Read the chain of a store whose succession fits the stated bound; a truncated chain would understate a store's history rather than shorten the answer.",
+    }],
+  })
+
+/**
+ * One store directory's incarnation chain, newest first, as the fence decided
+ * it.
+ *
+ * The chain is DISCOVERED at the register and then WALKED by the one walk. The
+ * fence is what makes succession a fact at all — at most one incarnation lands
+ * per round, and a round is a store together with the incarnation it succeeds —
+ * so reading forward from the store's first round is reading the decisions
+ * themselves rather than a report of them. A round nobody decided ends the
+ * discovery, which is absence at a position and says nothing about whether a
+ * server is running.
+ *
+ * What is NOT claimed: this reads the chain the fence decided, not the whole
+ * incarnation values. The values carry an options digest that no register
+ * outcome holds, so the answer is the succession of names and the read does not
+ * pretend to more. A history carrying the values themselves is walked by
+ * {@link walkChain}, over the same one walk.
+ */
+export const chainOf = Effect.fn("Incarnation.chainOf")(function* (
+  store: Digest,
+): Effect.fn.Return<ReadonlyArray<string>, Refusal, Registers> {
+  const predecessors = new Map<string, string | null>()
+  let predecessor: Digest | null = null
+  let head: Digest | null = null
+  for (let position = 0; position <= INCARNATION_CHAIN_MAX; position++) {
+    const outcome: string | null = yield* landedAt(store, predecessor)
+    if (outcome === null) break
+    if (position === INCARNATION_CHAIN_MAX) return yield* chainTooLong(store)
+    // Through the digest door rather than cast through it: a landed outcome is
+    // a register value, and reading one as a name is a decode like any other.
+    const landed: Digest = yield* decodeRefusing(DigestSchema)(outcome)
+    if (predecessors.has(landed)) {
+      return yield* chainRefusal(["chain", landed], "already walked", "an unwalked predecessor")
+    }
+    predecessors.set(landed, predecessor)
+    head = landed
+    predecessor = landed
+  }
+  return head === null ? [] : yield* walkPredecessors(predecessors, head)
 })

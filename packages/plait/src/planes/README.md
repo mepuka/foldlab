@@ -12,6 +12,16 @@ read-back, anchors never retry at all — and `../../AGENTS.md` says which surfa
 may do what. Every public type here is hand-written under a unification ticket:
 the largest block of staged debt under the first standing law.
 
+A lane carries two seams and they are deliberately two services. `Lanes` emits;
+`LaneReads` takes a bounded, ack-none tail and its live continuation, and it
+opens its own connection so that a reader never holds the publisher's emit
+right. Its bound is per PARTITION, because a partition is the unit that has an
+order: positions come from one dense stream each, two partitions' positions are
+not comparable, and a lane-wide count would have to divide across sequences
+nothing can compare. A read acknowledges nothing, checkpoints nothing, and
+creates nothing durable, so it may stand beside a deployed fold without touching
+the frontier that fold advances.
+
 The read-side folds and instances live in the module whose concept they are
 about, never in a module of their own: the register's three-state fold and its
 token order, the cell's digest equivalence, the lane's emission-acknowledgement

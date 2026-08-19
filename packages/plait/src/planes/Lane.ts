@@ -3,7 +3,7 @@
  *
  * @module
  */
-import { Context, Effect, Layer, Predicate, Result, Schema } from "effect"
+import { Context, Effect, Layer, Predicate, Result, Schema, Stream } from "effect"
 
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import type { WireValue } from "../truth/Canonical.js"
@@ -12,6 +12,7 @@ import { structuralRefusal, type Refusal, type StructuralRefusal, WireValueSchem
 import { evidenceSubject, TOKEN_PATTERN } from "../kernel/Subjects.js"
 import type { Certificate, Holder } from "../kernel/Wire.js"
 import { makeLaneService } from "../internal/lanes.js"
+import { makeLaneReadService } from "../internal/lanereads.js"
 
 /**
  * The route name one evidence lane is declared under.
@@ -132,6 +133,113 @@ export interface LaneService {
     event: Event,
     options: EmitOptions,
   ) => Effect.Effect<EmittedEvent, Refusal>
+}
+
+/**
+ * One fact as its partition carries it: where it sits, what it is called, who
+ * landed it, and the fact itself.
+ *
+ * `position` is the declared `(lane, partition)` stream's dense sequence and
+ * `partition` says which sequence it belongs to — the pair is the coordinate,
+ * and a position alone names nothing, because two partitions' positions come
+ * from two sequences and are not comparable. `digest` is SHA-256 over the
+ * envelope's canonical bytes, checked against the substrate's own message id
+ * before the body was decoded. `holder` is attribution and never authority.
+ *
+ * There is no time on this value and that is deliberate: the substrate stamps
+ * one on every stored message, and reading it back as meaning would put a clock
+ * where the estate has positions.
+ */
+export interface LandedFact<Event> {
+  /** Which of the lane's declared partitions carried it. */
+  readonly partition: number
+  /** Its dense position in that partition's own stream. */
+  readonly position: number
+  /** SHA-256 over the envelope's canonical uncompressed bytes. */
+  readonly digest: DigestValue
+  /** Who the envelope attributes the landing to. */
+  readonly holder: Holder
+  /** The fact, decoded through the lane's own declared event schema. */
+  readonly event: Event
+}
+
+/**
+ * The default number of positions one partition's tail covers when a reader
+ * asks for no bound.
+ *
+ * A default exists so that "read the lane" is a bounded request by
+ * construction: there is no spelling of a tail read on this seam that reaches
+ * the whole stream.
+ */
+export const LANE_TAIL_LIMIT_DEFAULT = 32
+
+/**
+ * The ceiling one partition's tail is clipped to however much is asked for.
+ *
+ * The bound is per PARTITION rather than per lane, because a partition is the
+ * unit that has an order: a lane-wide count would have to be divided across
+ * sequences that cannot be compared, and whichever division it chose would be
+ * arbitrary.
+ */
+export const LANE_TAIL_LIMIT_MAX = 256
+
+/** What one bounded tail read asks for. */
+export interface TailOptions {
+  /** Read only this declared partition; every one of them when absent. */
+  readonly partition?: number | undefined
+  /** Positions per partition, clipped to the declared default and ceiling. */
+  readonly limit?: number | undefined
+}
+
+/** What one live read asks for. */
+export interface FollowOptions {
+  /** Follow only this declared partition; every one of them when absent. */
+  readonly partition?: number | undefined
+  /** In-flight messages the reader lets the substrate stage ahead of it. */
+  readonly window?: number | undefined
+}
+
+/** Connection bootstrap for bounded lane reads. */
+export interface LaneReadOptions extends ConnectionBootstrap {}
+
+/**
+ * The read face of a declared lane: a bounded tail, and the live continuation.
+ *
+ * Both are reads in the strict sense — they acknowledge nothing, checkpoint
+ * nothing, and create nothing durable, so a reader may attach beside a deployed
+ * fold without touching the frontier that fold advances. `tail` answers the
+ * positions that exist, oldest first within each partition; `follow` answers
+ * each arrival as one element, so the first is visible before the last exists.
+ */
+export interface LaneReadService {
+  readonly tail: <Event, const Partitions extends number>(
+    lane: DeclaredLane<Event, Partitions>,
+    options?: TailOptions,
+  ) => Effect.Effect<ReadonlyArray<LandedFact<Event>>, Refusal>
+  readonly follow: <Event, const Partitions extends number>(
+    lane: DeclaredLane<Event, Partitions>,
+    options?: FollowOptions,
+  ) => Stream.Stream<LandedFact<Event>, Refusal>
+}
+
+/**
+ * Scope-owned bounded lane reads; all NATS types remain internal.
+ *
+ * Held apart from {@link Lanes} on purpose. That service's whole surface is
+ * `emit`, and a read-only consumer that required it would be carrying the
+ * emit door in its context for no read it takes — which is exactly the
+ * capability a read-side surface is supposed not to have.
+ */
+export class LaneReads extends Context.Service<LaneReads, LaneReadService>()(
+  "@foldlab/plait/LaneReads",
+) {
+  /** Builds a scope-owned NATS implementation. */
+  static readonly layer = (options: LaneReadOptions): Layer.Layer<LaneReads, Refusal> =>
+    Layer.effect(LaneReads, makeLaneReadService(options))
+
+  /** Supplies a fixture implementation through the production service tag. */
+  static readonly testLayer = (service: LaneReadService): Layer.Layer<LaneReads> =>
+    Layer.succeed(LaneReads, LaneReads.of(service))
 }
 
 /** Scope-owned live evidence lanes; all NATS types remain internal. */
