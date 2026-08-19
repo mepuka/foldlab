@@ -54,6 +54,7 @@ import type {
   KernelCandidatePredicate,
 } from "../kernel/KernelDoor.js"
 import { HOLE_STAGE_RANK, type DeclKind, type HoleStage } from "../kernel/KernelSdk.generated.js"
+import type { Holder } from "../kernel/Wire.js"
 import { Engine } from "../carriage/Engine.js"
 
 /** One served tool, exactly as the committed artifact spells it. */
@@ -272,7 +273,7 @@ const resolveHandler = (payload: Record<string, unknown>) =>
     })
   }))
 
-const emitHandler = (holder: string) => (payload: Record<string, unknown>) =>
+const emitHandler = (holder: Holder) => (payload: Record<string, unknown>) =>
   renderSeam(Effect.gen(function* () {
     const lane = yield* wireDigest("lane_digest", string(payload, "lane_digest"))
     const body = yield* readCanonical("body", string(payload, "body"))
@@ -287,7 +288,7 @@ const emitHandler = (holder: string) => (payload: Record<string, unknown>) =>
       })
   }))
 
-const joinHandler = (holder: string) => (payload: Record<string, unknown>) =>
+const joinHandler = (holder: Holder) => (payload: Record<string, unknown>) =>
   renderSeam(Effect.gen(function* () {
     const cell = yield* wireDigest("cell_digest", string(payload, "cell_digest"))
     const contribution = yield* readCanonical("contribution", string(payload, "contribution"))
@@ -455,7 +456,7 @@ const spawnHandler = (payload: Record<string, unknown>) =>
 
 /** Options for the served face; the holder attributes what the tools land. */
 export interface McpOptions {
-  readonly holder: string
+  readonly holder: Holder
 }
 
 /**

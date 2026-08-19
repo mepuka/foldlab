@@ -436,7 +436,7 @@ describe("the substrate-session fact", () => {
 
   test("the session lane's route is derived from its declared event form, not named", async () => {
     const lane = await Effect.runPromise(sessionLane().pipe(Effect.orDie))
-    expect(lane.handle).toBe(lane.declaration.eventSchema)
+    expect(String(lane.handle)).toBe(String(lane.declaration.eventSchema))
     expect(lane.handle).toMatch(/^[0-9a-f]{64}$/u)
     expect(lane.partitionKey).toEqual({ path: ["session"] })
   })

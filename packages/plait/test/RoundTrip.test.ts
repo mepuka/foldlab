@@ -6,7 +6,7 @@ import { connect } from "@nats-io/transport-node"
 import { Effect, Option, Schema, Stream } from "effect"
 
 import { Digest } from "../src/truth/Digest.js"
-import { FabricClient } from "../src/carriage/FabricClient.js"
+import { FabricClient, StreamName } from "../src/carriage/FabricClient.js"
 import { evidenceSubject, nodeSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
 
@@ -98,7 +98,7 @@ describe("local NATS envelope round trip", () => {
             Effect.timeoutOption("250 millis"),
           )
         }).pipe(
-          Effect.provide(FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" })),
+          Effect.provide(FabricClient.layer({ servers: harness.url, stream: StreamName.make("PLAIT_SPINE") })),
           Effect.scoped,
         ),
       ),
@@ -114,7 +114,7 @@ describe("local NATS envelope round trip", () => {
         const client = yield* FabricClient
         return yield* Effect.flip(client.subscribe(subject))
       }).pipe(
-        Effect.provide(FabricClient.layer({ servers: harness.url, stream: "PLAIT_SPINE" })),
+        Effect.provide(FabricClient.layer({ servers: harness.url, stream: StreamName.make("PLAIT_SPINE") })),
         Effect.scoped,
       ),
     )

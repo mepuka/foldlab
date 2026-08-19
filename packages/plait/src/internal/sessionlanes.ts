@@ -7,7 +7,8 @@
 import { Effect } from "effect"
 
 import type { DeclaredLane, EmittedEvent } from "../planes/Lane.js"
-import { declare, emit, type Lanes } from "../planes/Lane.js"
+import { declare, emit, laneHandle, type Lanes } from "../planes/Lane.js"
+import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { Refusal } from "../truth/Refusal.js"
@@ -53,7 +54,7 @@ export const sessionLane = Effect.fn("SessionLane.declare")(function* (): Effect
 > {
   const eventSchema = yield* sessionEventSchema
   return yield* declare({
-    handle: eventSchema,
+    handle: yield* laneHandle(eventSchema),
     event: SessionFactSchema,
     eventSchema,
     partitions: 8 as const,
@@ -65,7 +66,7 @@ export const sessionLane = Effect.fn("SessionLane.declare")(function* (): Effect
 export const landFact = Effect.fn("SessionLane.land")(function* (
   lane: DeclaredLane<SessionFact, 8>,
   fact: SessionFact,
-  holder: string,
+  holder: Holder,
 ): Effect.fn.Return<EmittedEvent, Refusal, Lanes> {
   return yield* emit(lane, fact, { holder })
 })
@@ -82,7 +83,7 @@ export const landFact = Effect.fn("SessionLane.land")(function* (
 export const landFacts = Effect.fn("SessionLane.landAll")(function* (
   lane: DeclaredLane<SessionFact, 8>,
   facts: ReadonlyArray<SessionFact>,
-  holder: string,
+  holder: Holder,
 ): Effect.fn.Return<ReadonlyArray<EmittedEvent>, Refusal, Lanes> {
   const landed: Array<EmittedEvent> = []
   for (const fact of facts) landed.push(yield* landFact(lane, fact, holder))

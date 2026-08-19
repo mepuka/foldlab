@@ -1,6 +1,6 @@
 import { Effect, Stream } from "effect"
 
-import { FabricClient } from "../../src/carriage/FabricClient.js"
+import { FabricClient, StreamName } from "../../src/carriage/FabricClient.js"
 import { factSubject } from "../../src/kernel/Subjects.js"
 
 const [url, resultPath, countText] = process.argv.slice(2)
@@ -22,7 +22,7 @@ const program = Effect.gen(function* () {
     digests: Array.from(received, (message) => message.digest),
   })))
 }).pipe(
-  Effect.provide(FabricClient.layer({ servers: url, stream: "PLAIT_SPINE" })),
+  Effect.provide(FabricClient.layer({ servers: url, stream: StreamName.make("PLAIT_SPINE") })),
   Effect.scoped,
 )
 

@@ -13,6 +13,28 @@ import { structuralRefusal, type StructuralRefusal,
   WireValueSchema,
 } from "../truth/Refusal.js"
 
+/**
+ * Who a value is attributed to.
+ *
+ * The substrate writ's declared stance holds here verbatim and is not restated:
+ * the holder a value names is attribution, never authority. The brand says only
+ * that attribution is a SORT — a holder is not a cell name, not a work key, and
+ * not a bare string that happened to be in scope — and carries the one check
+ * the concept has always had, that a holder is named at all. Authority is the
+ * register's fencing token and the substrate's own account rules; nothing about
+ * this type licenses anything.
+ *
+ * The sort lives in the wire grammar because the envelope is its deepest seam;
+ * `Register.ts` re-exports it so the commitment concept carries its own sort.
+ */
+export const Holder = Schema.String
+  .check(Schema.isMinLength(1))
+  .pipe(Schema.brand("@foldlab/plait/Holder"))
+  .annotate({ identifier: "PlaitHolder" })
+
+/** Who a value is attributed to; attribution, never authority. */
+export type Holder = typeof Holder.Type
+
 /** The four monotone observation kinds admitted by envelope v0. */
 export const EnvelopeKind = Schema.Literals([
   "emit",
@@ -125,7 +147,7 @@ export const Envelope = Schema.Struct({
   kind: EnvelopeKind,
   lane: Digest,
   key: WireValueSchema,
-  holder: Schema.String,
+  holder: Holder,
   body: WireValueSchema,
   cert: Schema.optionalKey(Certificate),
   pins: Schema.Array(Digest),

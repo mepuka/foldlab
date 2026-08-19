@@ -20,7 +20,7 @@ describe("decodeEnvelope", () => {
   test("carries holder verbatim and re-derives the envelope digest", async () => {
     const decoded = await Effect.runPromise(decodeEnvelope(frame("")))
 
-    expect(decoded.envelope.holder).toBe("seat-a")
+    expect(String(decoded.envelope.holder)).toBe("seat-a")
     expect(String(decoded.digest)).toBe(
       "bb4f3e5e257ca09b067986bbcb6fa72f9b868eea9d4dff92afd94e2876aa795a",
     )

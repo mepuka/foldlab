@@ -7,12 +7,13 @@ import * as Algebra from "../src/truth/Algebra.js"
 import { Digest } from "../src/truth/Digest.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const Event = Schema.Struct({ partition: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("b".repeat(64))
 
 const makeLane = () => Lane.declare({
-  handle: "fold-counter",
+  handle: LaneHandle.make("fold-counter"),
   event: Event,
   eventSchema,
   partitions: 2 as const,

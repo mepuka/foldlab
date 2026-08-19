@@ -23,6 +23,7 @@ import { Effect, Schema } from "effect"
 
 import { Digest, digestOf } from "../truth/Digest.js"
 import { decodeRefusing, type Refusal } from "../truth/Refusal.js"
+import { CellName } from "./Subjects.js"
 
 /**
  * How often a segment's rendered bytes are expected to move.
@@ -71,7 +72,7 @@ export const Selector = Schema.Union([
   /** A journal span, by the lane and the anchor it reads at. */
   Schema.TaggedStruct("span", { lane: Digest, anchor: Digest }),
   /** A lattice cell's state, at a named cell. */
-  Schema.TaggedStruct("cell", { cell: Schema.String }),
+  Schema.TaggedStruct("cell", { cell: CellName }),
   /** A seat's frontier in a session, state-anchored and seat-relative. */
   Schema.TaggedStruct("frontier", { session: Digest, seat: Digest }),
   /** A landed outcome, by the work digest whose register holds it. */
@@ -93,9 +94,25 @@ export const Renderer = Schema.Struct({ renderer: Digest })
 /** A declared semantic fold from a substrate value to a context segment. */
 export type Renderer = typeof Renderer.Type
 
+/**
+ * What one segment is called inside its program.
+ *
+ * A segment name is an ordering and addressing label within a single declared
+ * program, not a fabric route, so the grammar is only that it is named at all —
+ * the sort exists so a segment name cannot be spent where a cell name, a lane
+ * handle, or a holder is wanted.
+ */
+export const SegmentName = Schema.String
+  .check(Schema.isMinLength(1))
+  .pipe(Schema.brand("@foldlab/plait/SegmentName"))
+  .annotate({ identifier: "PlaitSegmentName" })
+
+/** What one segment is called inside its program. */
+export type SegmentName = typeof SegmentName.Type
+
 /** One (selector, renderer) pair tagged with its declared volatility class. */
 export const Segment = Schema.Struct({
-  name: Schema.String,
+  name: SegmentName,
   volatility: VolatilityClass,
   selector: Selector,
   renderer: Renderer,

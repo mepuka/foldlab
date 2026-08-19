@@ -1,6 +1,6 @@
 import { Effect, Result, Schema } from "effect"
 
-import { Registers } from "../../src/planes/Register.js"
+import { Registers, OutcomeValue, WorkKey } from "../../src/planes/Register.js"
 
 const [url, work, tokenText, outputPath] = process.argv.slice(2)
 if (url === undefined || work === undefined || tokenText === undefined || outputPath === undefined) {
@@ -10,7 +10,7 @@ const token = Schema.decodeSync(Schema.FiniteFromString)(tokenText)
 
 const result = await Effect.runPromise(Effect.gen(function* () {
   const registers = yield* Registers
-  return yield* Effect.result(registers.commit(work, token, "zombie"))
+  return yield* Effect.result(registers.commit(WorkKey.make(work), token, OutcomeValue.make("zombie")))
 }).pipe(
   Effect.provide(Registers.layer({ servers: url, connectionName: "ts-zombie" })),
   Effect.scoped,

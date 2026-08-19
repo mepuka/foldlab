@@ -79,6 +79,7 @@ import {
   type StructuralRefusal,
 } from "../truth/Refusal.js"
 import { kernelIdentity } from "../kernel/KernelIdentity.js"
+import type { Holder } from "../kernel/Wire.js"
 import {
   admit as kernelAdmit,
   Candidate,
@@ -107,9 +108,9 @@ import type {
   TokenClaim,
 } from "../kernel/KernelSdk.generated.js"
 import { Catalog, Payloads } from "../planes/Catalog.js"
-import { Cells, type CellState, type Observation } from "../planes/Cell.js"
+import { Cells, type CellName, type CellState, type Observation } from "../planes/Cell.js"
 import { Lanes, type DeclaredLane, type EmittedEvent } from "../planes/Lane.js"
-import { Registers, type RegisterState } from "../planes/Register.js"
+import { OutcomeValue, Registers, type RegisterState, type WorkKey } from "../planes/Register.js"
 import { resolve as resolveVerified } from "../planes/Resolved.js"
 
 /** One reference at the runtime scale: the kind brand and the content address. */
@@ -184,7 +185,7 @@ export interface DeclareLaneOptions<Event, Partitions extends number> {
 
 /** Inputs for declaring a cell resource and binding its runtime carrier. */
 export interface DeclareCellOptions {
-  readonly cell: string
+  readonly cell: CellName
   /** The address of the already-declared merge algebra this cell joins under. */
   readonly algebra: Digest
   readonly writ: Digest
@@ -192,7 +193,7 @@ export interface DeclareCellOptions {
 
 /** Inputs for declaring a commitment register and binding its runtime carrier. */
 export interface DeclareRegisterOptions {
-  readonly work: string
+  readonly work: WorkKey
   readonly writ: Digest
 }
 
@@ -201,7 +202,7 @@ export interface EngineEmitOptions {
   /** The address of the declared lane the event lands on. */
   readonly lane: Digest
   readonly event: WireValue
-  readonly holder: string
+  readonly holder: Holder
   readonly pins?: ReadonlyArray<EngineRef>
 }
 
@@ -247,7 +248,7 @@ export interface RunOptions {
   /** The policy digest declare nodes act under; must be admitted already. */
   readonly writ: Digest
   /** Attribution carried on every event or observation a run lands. */
-  readonly holder: string
+  readonly holder: Holder
   readonly supplies?: RunSupplies
 }
 
@@ -348,13 +349,13 @@ interface LaneBinding {
 }
 
 interface CellBinding {
-  readonly cell: string
+  readonly cell: CellName
   readonly algebra: bigint
   readonly digest: Digest
 }
 
 interface RegisterBinding {
-  readonly work: string
+  readonly work: WorkKey
   readonly digest: Digest
 }
 
@@ -681,10 +682,16 @@ const makeEngine = Effect.fn("Engine.make")(function* (
     const binding = bindings.registers.get(registerLabel)
     if (binding === undefined) return yield* unboundCarrier("decide", options.register)
     yield* catalogService.put(options.outcome)
+    // What a decide lands in the register is the cataloged outcome's ADDRESS,
+    // which is the kernel's own direction for this key: the register holds a
+    // reference, never a rendered value. The mint is total on a digest — the
+    // outcome sort's only standing check is that it says something — and it
+    // stays explicit so the day the commit door constrains outcomes against a
+    // declared schema, this is the one site that has to answer for it.
     const landed = yield* registersService.commit(
       binding.work,
       options.token,
-      outcomeDigest,
+      OutcomeValue.make(outcomeDigest),
     )
     return { _tag: "carried", act: verdict.act, encoded: verdict.encoded, landed }
   })
@@ -966,7 +973,11 @@ const makeEngine = Effect.fn("Engine.make")(function* (
         }
         const outcome = wireValueOfPayload("outcome", candidate.outcome)
         const stored = yield* catalogService.put(outcome)
-        yield* registersService.commit(binding.work, Number(act.token.value), stored)
+        yield* registersService.commit(
+          binding.work,
+          Number(act.token.value),
+          OutcomeValue.make(stored),
+        )
         const label = yield* kernelIdentity(stored)
         return { label, kind: null, digest: stored }
       }

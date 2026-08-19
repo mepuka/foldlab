@@ -9,6 +9,8 @@ import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import * as Session from "../src/planes/Session.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const CounterEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("c".repeat(64))
@@ -23,7 +25,7 @@ afterEach(async () => {
   harness = undefined
 })
 
-const declareFold = (handle: string) => Effect.gen(function* () {
+const declareFold = (handle: LaneHandle) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
     handle,
     event: CounterEvent,
@@ -63,10 +65,10 @@ describe("read sessions over a deployed fold", () => {
   test("a view is the image the pump checkpointed, read after the pump detached", async () => {
     harness = await startNatsHarness()
     const url = harness.url
-    const { lane, fold } = await Effect.runPromise(declareFold("session-counter"))
-    const other = await Effect.runPromise(declareFold("session-other"))
+    const { lane, fold } = await Effect.runPromise(declareFold(LaneHandle.make("session-counter")))
+    const other = await Effect.runPromise(declareFold(LaneHandle.make("session-other")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader-seat",
+      holder: Holder.make("reader-seat"),
       views: [fold.digest],
     }))
     const lanes = Lane.Lanes.layer({ servers: url })
@@ -76,7 +78,7 @@ describe("read sessions over a deployed fold", () => {
       await Effect.runPromise(Lane.emit(
         lane,
         { tenant: "north", delta },
-        { holder: "test" },
+        { holder: Holder.make("test") },
       ).pipe(Effect.provide(lanes), Effect.scoped))
     }
 
@@ -135,9 +137,9 @@ describe("read sessions over a deployed fold", () => {
 
   test("a view of a fold no pump has deployed is a retryable absence", async () => {
     harness = await startNatsHarness()
-    const { fold } = await Effect.runPromise(declareFold("session-undeployed"))
+    const { fold } = await Effect.runPromise(declareFold(LaneHandle.make("session-undeployed")))
     const scope = await Effect.runPromise(Session.writ({
-      holder: "reader-seat",
+      holder: Holder.make("reader-seat"),
       views: [fold.digest],
     }))
 

@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
 import { declareChaosCounter } from "../ChaosFixture.js"
+import { LaneHandle } from "../../src/planes/Lane.js"
 
 /**
  * Declared once and handed out as a promise rather than awaited at the top of
@@ -11,7 +12,7 @@ import { declareChaosCounter } from "../ChaosFixture.js"
  * already awaits whatever `fold` a chaos module exports (`loadFold`), so a
  * promise is the same contract from its side.
  */
-const declared = Effect.runPromise(declareChaosCounter("cli-chaos-counter"))
+const declared = Effect.runPromise(declareChaosCounter(LaneHandle.make("cli-chaos-counter")))
 
 export const fold = declared.then((declaration) => declaration.fold)
 export const lane = declared.then((declaration) => declaration.lane)

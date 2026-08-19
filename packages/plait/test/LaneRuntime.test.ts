@@ -5,9 +5,10 @@ import { connect } from "@nats-io/transport-node"
 import { Effect, Schema } from "effect"
 
 import { Digest } from "../src/truth/Digest.js"
-import { declare, emit, Lanes } from "../src/planes/Lane.js"
+import { declare, emit, Lanes, LaneHandle } from "../src/planes/Lane.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("c".repeat(64))
@@ -22,7 +23,7 @@ describe("live evidence lanes", () => {
   test("emit ensures one file-backed stream per declared partition", async () => {
     harness = await startNatsHarness()
     const lane = await Effect.runPromise(declare({
-      handle: "live-counter",
+      handle: LaneHandle.make("live-counter"),
       event: Event,
       eventSchema,
       partitions: 2 as const,
@@ -30,7 +31,7 @@ describe("live evidence lanes", () => {
     }))
 
     const emitted = await Effect.runPromise(
-      emit(lane, { tenant: "north", delta: 1 }, { holder: "seat-a" }).pipe(
+      emit(lane, { tenant: "north", delta: 1 }, { holder: Holder.make("seat-a") }).pipe(
         Effect.provide(Lanes.layer({ servers: harness.url })),
         Effect.scoped,
       ),

@@ -6,7 +6,7 @@ import { jetstreamManager } from "@nats-io/jetstream"
 import { connect } from "@nats-io/transport-node"
 import { Effect, Schema } from "effect"
 
-import { verifyEnvelopeDigest } from "../src/kernel/Wire.js"
+import { verifyEnvelopeDigest, Holder } from "../src/kernel/Wire.js"
 import { initial } from "../src/planes/Anchor.js"
 import type { DeclaredLane } from "../src/planes/Lane.js"
 import { Lanes } from "../src/planes/Lane.js"
@@ -332,14 +332,14 @@ describe("presence and staleness over a real substrate", () => {
         // waiting for the other, and both envelopes therefore identical.
         const [first, second] = yield* Effect.all(
           [
-            landTick(heartbeats, tick, "wall.presence.emitter"),
-            landTick(heartbeats, twin, "wall.presence.emitter"),
+            landTick(heartbeats, tick, Holder.make("wall.presence.emitter")),
+            landTick(heartbeats, twin, Holder.make("wall.presence.emitter")),
           ],
           { concurrency: 2 },
         )
         // And once more under a DIFFERENT holder, which is a different envelope
         // around the same body — the finding this arm reports below.
-        const other = yield* landTick(heartbeats, twin, "wall.presence.other-holder")
+        const other = yield* landTick(heartbeats, twin, Holder.make("wall.presence.other-holder"))
         return {
           left,
           right,

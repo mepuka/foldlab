@@ -16,6 +16,8 @@ import {
   type RegisterState,
 } from "../src/planes/Register.js"
 import { structuralRefusal } from "../src/truth/Refusal.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { OutcomeValue, WorkKey } from "../src/planes/Register.js"
 import {
   buildServerBinary,
   startNatsServer,
@@ -78,21 +80,41 @@ const loadCorpus = async (): Promise<ReadonlyArray<Row>> => {
   return rows
 }
 
+/**
+ * The model's actions arrive as plain corpus strings, so this wall mints the
+ * sorts at the boundary the corpus crosses — which is the only place a bare
+ * string may become one.
+ */
 const invoke = (
   registers: RegisterService,
-  work: string,
+  work: WorkKey,
   action: Action,
 ): Effect.Effect<RegisterState, import("../src/truth/Refusal.js").Refusal> => {
   switch (action.kind) {
-    case "grant": return registers.grant(work, action.holder)
+    case "grant": return registers.grant(work, Holder.make(action.holder))
     case "renew": return registers.renew(work, action.token)
-    case "commit": return registers.commit(work, action.token, action.outcome)
-    case "expire-steal": return registers.expireSteal(work, action.holder)
+    case "commit":
+      return registers.commit(work, action.token, OutcomeValue.make(action.outcome))
+    case "expire-steal": return registers.expireSteal(work, Holder.make(action.holder))
     case "observe": return registers.observe(work)
   }
 }
 
-const work = "0123456789abcdef"
+const work = WorkKey.make("0123456789abcdef")
+
+/**
+ * The model's own state row, lifted to the seam's sorts so the comparison is
+ * between two register states rather than between a state and a shape that
+ * merely looks like one. The lift is total: the model's corpus is the
+ * generated one, and every string in it is already a lawful sort.
+ */
+const asState = (fields: typeof State.Type): RegisterState => ({
+  token: fields.token,
+  holder: fields.holder === null ? null : Holder.make(fields.holder),
+  outcome: fields.outcome === null
+    ? null
+    : { token: fields.outcome.token, value: OutcomeValue.make(fields.outcome.value) },
+})
 
 /**
  * Envelope note (seam rule 4): KV revisions are bucket-global and never
@@ -106,16 +128,16 @@ const runRow = (row: Row) => Effect.gen(function* () {
   for (const step of row.trace.states.slice(1)) {
     if (step.transition === "after_init") throw new Error("after_init may only be the first state")
     const state = yield* invoke(registers, work, step.transition)
-    expect(state).toEqual(step.fields)
+    expect(state).toEqual(asState(step.fields))
   }
 
   const attempted = yield* Effect.result(invoke(registers, work, row.attempt))
   expect(Result.isSuccess(attempted)).toBe(row.verdict === "accepted")
   if (Result.isSuccess(attempted)) {
-    expect(attempted.success).toEqual(row.observed)
+    expect(attempted.success).toEqual(asState(row.observed))
   } else {
     expect(attempted.failure.law).toBe(row.law)
-    expect(yield* registers.observe(work)).toEqual(row.observed)
+    expect(yield* registers.observe(work)).toEqual(asState(row.observed))
   }
 })
 
@@ -278,7 +300,7 @@ describe("Veil register replay wall", () => {
     })
     let renewals = 0
     const fixtureService: RegisterService = {
-      grant: () => Effect.succeed({ token: 1, holder: "holder", outcome: null }),
+      grant: () => Effect.succeed({ token: 1, holder: Holder.make("holder"), outcome: null }),
       renew: () => {
         renewals++
         return Effect.fail(lost)
@@ -288,7 +310,7 @@ describe("Veil register replay wall", () => {
       observe: () => Effect.die("unused"),
     }
     const result = await Effect.runPromise(Effect.result(
-      hold("work", "holder", () => Effect.never, "1 millis").pipe(
+      hold(WorkKey.make("work"), Holder.make("holder"), () => Effect.never, "1 millis").pipe(
         Effect.provide(Registers.testLayer(fixtureService)),
         Effect.scoped,
       ),

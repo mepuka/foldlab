@@ -14,6 +14,7 @@ import {
   CELL_HISTORY,
   CELL_MERGE_ATTEMPTS,
   Observation,
+  cellName,
   join,
   stateOf,
   type CellOptions,
@@ -88,7 +89,6 @@ import {
 const StoredCell = Schema.Array(Schema.suspend(() => Observation))
 
 const decoder = new TextDecoder()
-const cellPattern = /^[^.*>\s]+$/u
 
 /** Exported for the spine wall; no other `src` module imports it. */
 export const transportRefusal = transportRefusalFor({
@@ -99,10 +99,6 @@ export const transportRefusal = transportRefusalFor({
 })
 
 /** One taught repair per structural law; every refusal names its legal next step. */
-const teachCellKey: ReadonlyArray<Next> = [{
-  subject: "cell.read",
-  note: "Present the cell name as one literal KV token without dots, whitespace, or wildcards.",
-}]
 const teachStoredCell: ReadonlyArray<Next> = [{
   subject: "cell.read",
   note: "Restore the canonical observation array at this key; only cell merges write this bucket.",
@@ -111,18 +107,6 @@ const teachContention: ReadonlyArray<Next> = [{
   subject: "cell.merge",
   note: "Re-attempt the merge; the join is idempotent, so a repeated delta adds nothing twice.",
 }]
-
-const validCell = (cell: string): Effect.Effect<string, Refusal> =>
-  cellPattern.test(cell)
-    ? Effect.succeed(cell)
-    : Effect.fail(structuralRefusal({
-      kind: "invalid-cell-key",
-      law: "A cell name maps to one literal NATS KV key.",
-      path: ["cell"],
-      got: cell,
-      expected: "one non-empty token without dots, whitespace, or wildcards",
-      next: teachCellKey,
-    }))
 
 const malformedCell = (got: string): Refusal =>
   structuralRefusal({
@@ -304,7 +288,7 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
 
   const readCell: CellService["read"] = Effect.fn("Cells.read")(
     function* (rawCell) {
-      const cell = yield* validCell(rawCell)
+      const cell = yield* cellName(rawCell)
       return yield* stateOf(yield* currentOf(yield* read(bucket, cell)))
     },
   )
@@ -344,7 +328,7 @@ export const makeCellServiceWith = Effect.fn("Cells.make")(function* (
 
   const merge: CellService["merge"] = Effect.fn("Cells.merge")(
     function* (rawCell, rawDelta) {
-      const cell = yield* validCell(rawCell)
+      const cell = yield* cellName(rawCell)
       const delta = yield* join([], rawDelta)
       return yield* stateOf(yield* casJoinLoop({
         join: cellJoin,

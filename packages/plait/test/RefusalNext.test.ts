@@ -18,9 +18,9 @@ import * as Algebra from "../src/truth/Algebra.js"
 import { ANCHOR_BUCKET, advance, initial } from "../src/planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
 import { substrateLayer } from "../src/planes/Catalog.js"
-import { CELL_BUCKET, CELL_HISTORY, Cells } from "../src/planes/Cell.js"
+import { CELL_BUCKET, CELL_HISTORY, Cells, CellName } from "../src/planes/Cell.js"
 import { Digest } from "../src/truth/Digest.js"
-import { FabricClient } from "../src/carriage/FabricClient.js"
+import { FabricClient, StreamName } from "../src/carriage/FabricClient.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import {
@@ -30,7 +30,7 @@ import {
   type Refusal,
   type StructuralRefusalKind as StructuralKind,
 } from "../src/truth/Refusal.js"
-import { REGISTER_BUCKET, REGISTER_HISTORY, Registers } from "../src/planes/Register.js"
+import { REGISTER_BUCKET, REGISTER_HISTORY, Registers, OutcomeValue, WorkKey } from "../src/planes/Register.js"
 import { publish } from "../src/planes/Resolved.js"
 import * as Session from "../src/planes/Session.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
@@ -55,6 +55,8 @@ import {
   type HoldProxy,
 } from "./HoldProxy.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const utf8 = new TextEncoder()
 const digest = "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"
@@ -70,7 +72,7 @@ const envelope = (body: unknown): Uint8Array => utf8.encode(JSON.stringify({
 
 const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const probeEventSchema = Digest.make("a".repeat(64))
-const declareProbeFold = (handle: string) => Effect.gen(function* () {
+const declareProbeFold = (handle: LaneHandle) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
     handle,
     event: ProbeEvent,
@@ -157,7 +159,7 @@ describe("structural refusal repairs", () => {
     refusals.push(...addressRefusals)
 
     const invalidLane = await Effect.runPromise(Effect.flip(Lane.declare({
-      handle: "refusal-lane",
+      handle: LaneHandle.make("refusal-lane"),
       event: ProbeEvent,
       eventSchema: probeEventSchema,
       partitions: 0,
@@ -166,7 +168,7 @@ describe("structural refusal repairs", () => {
     refusals.push(invalidLane)
 
     const invalidKeyLane = await Effect.runPromise(Lane.declare({
-      handle: "refusal-key",
+      handle: LaneHandle.make("refusal-key"),
       event: ProbeEvent,
       eventSchema: probeEventSchema,
       partitions: 1 as const,
@@ -182,7 +184,7 @@ describe("structural refusal repairs", () => {
       reducer: Reducer.make<number>((left, right) => left + right, Number.NaN),
     }))))
 
-    const probe = await Effect.runPromise(declareProbeFold("refusal-probe"))
+    const probe = await Effect.runPromise(declareProbeFold(LaneHandle.make("refusal-probe")))
     refusals.push(await Effect.runPromise(Effect.flip(Algebra.commutative(
       probe.algebra,
       { arbitrary: () => 0, equals: Object.is },
@@ -196,10 +198,10 @@ describe("structural refusal repairs", () => {
       read: () => Effect.die("the seam judges before any layer is reached"),
     })
     refusals.push(await Effect.runPromise(Effect.flip(Session.writ({
-      holder: "reader",
+      holder: Holder.make("reader"),
       views: ["not-a-digest" as unknown as Digest],
     }))))
-    const emptyWrit = await Effect.runPromise(Session.writ({ holder: "reader", views: [] }))
+    const emptyWrit = await Effect.runPromise(Session.writ({ holder: Holder.make("reader"), views: [] }))
     refusals.push(await Effect.runPromise(Effect.flip(
       Session.subscribe(probe.fold, {
         writ: emptyWrit,
@@ -232,7 +234,7 @@ describe("structural refusal repairs", () => {
       kind: "emit",
       lane: Digest.make("f".repeat(64)),
       key: "north",
-      holder: "seat-a",
+      holder: Holder.make("seat-a"),
       body: { tenant: "north", delta: 1 },
       pins: [],
     }))
@@ -271,7 +273,7 @@ describe("structural refusal repairs", () => {
     ) as unknown as Refusal)
 
     harness = await startNatsHarness()
-    const shapeProbe = await Effect.runPromise(declareProbeFold("shape-probe"))
+    const shapeProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("shape-probe")))
     const connection = await connect({ servers: harness.url })
     try {
       const manager = await jetstreamManager(connection)
@@ -310,7 +312,7 @@ describe("structural refusal repairs", () => {
       FabricClient.pipe(
         Effect.provide(FabricClient.layer({
           servers: harness.url,
-          stream: "WRONG_SHAPE",
+          stream: StreamName.make("WRONG_SHAPE"),
         })),
         Effect.scoped,
         Effect.flip,
@@ -385,7 +387,7 @@ describe("structural refusal repairs", () => {
     const laneShape = await Effect.runPromise(Effect.flip(Lane.emit(
       shapeProbe.lane,
       { tenant: "north", delta: 1 },
-      { holder: "seat-a" },
+      { holder: Holder.make("seat-a") },
     ).pipe(
       Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
       Effect.scoped,
@@ -406,8 +408,8 @@ describe("structural refusal repairs", () => {
     // lane of its own so neither can be satisfied by the shape refusal above.
     // Their mutated-config controls, across all three carriers and every newly
     // pinned field, are `test/CarrierAdminSurface.test.ts`.
-    const mirrorProbe = await Effect.runPromise(declareProbeFold("mirrored-carrier"))
-    const ttlProbe = await Effect.runPromise(declareProbeFold("expiring-carrier"))
+    const mirrorProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("mirrored-carrier")))
+    const ttlProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("expiring-carrier")))
     const namedLawConnection = await connect({ servers: harness.url })
     try {
       const manager = await jetstreamManager(namedLawConnection)
@@ -446,7 +448,7 @@ describe("structural refusal repairs", () => {
     const mirrored = await Effect.runPromise(Effect.flip(Lane.emit(
       mirrorProbe.lane,
       { tenant: "north", delta: 1 },
-      { holder: "seat-a" },
+      { holder: Holder.make("seat-a") },
     ).pipe(
       Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
       Effect.scoped,
@@ -457,7 +459,7 @@ describe("structural refusal repairs", () => {
     const expiring = await Effect.runPromise(Effect.flip(Lane.emit(
       ttlProbe.lane,
       { tenant: "north", delta: 1 },
-      { holder: "seat-a" },
+      { holder: Holder.make("seat-a") },
     ).pipe(
       Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
       Effect.scoped,
@@ -470,11 +472,11 @@ describe("structural refusal repairs", () => {
     // seam refuses at acquisition. The measurement that pins the threshold
     // against the budget is `test/MaxPayloadSemantics.test.ts`.
     payloadHarness = await startNatsHarness({ config: "max_payload: 65536\n" })
-    const budgetProbe = await Effect.runPromise(declareProbeFold("payload-budget"))
+    const budgetProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("payload-budget")))
     const budget = await Effect.runPromise(Effect.flip(Lane.emit(
       budgetProbe.lane,
       { tenant: "north", delta: 1 },
-      { holder: "seat-a" },
+      { holder: Holder.make("seat-a") },
     ).pipe(
       Effect.provide(Lane.Lanes.layer({ servers: payloadHarness.url })),
       Effect.scoped,
@@ -503,20 +505,20 @@ describe("structural refusal repairs", () => {
         const registers = yield* Registers
         const list: Array<Refusal> = []
         // invalid-register-key: the key law refuses before any KV call.
-        list.push(yield* Effect.flip(registers.grant("not.a.key", "seat-a")))
+        list.push(yield* Effect.flip(registers.grant(WorkKey.make("not.a.key"), Holder.make("seat-a"))))
         // register-absent: renew requires a present register.
-        list.push(yield* Effect.flip(registers.renew("absentwork", 1)))
+        list.push(yield* Effect.flip(registers.renew(WorkKey.make("absentwork"), 1)))
         // duplicate-grant: the same work granted twice.
-        const granted = yield* registers.grant("workalpha", "seat-a")
-        list.push(yield* Effect.flip(registers.grant("workalpha", "seat-b")))
+        const granted = yield* registers.grant(WorkKey.make("workalpha"), Holder.make("seat-a"))
+        list.push(yield* Effect.flip(registers.grant(WorkKey.make("workalpha"), Holder.make("seat-b"))))
         // outcome-already-landed: a landed outcome never changes.
-        yield* registers.commit("workalpha", granted.token, "landed")
-        list.push(yield* Effect.flip(registers.renew("workalpha", granted.token)))
+        yield* registers.commit(WorkKey.make("workalpha"), granted.token, OutcomeValue.make("landed"))
+        list.push(yield* Effect.flip(registers.renew(WorkKey.make("workalpha"), granted.token)))
         // stale-register-token: an expire-steal advances the fencing token,
         // then the superseded holder attempts the stale commit.
-        const lease = yield* registers.grant("workbeta", "seat-a")
-        yield* registers.expireSteal("workbeta", "seat-b")
-        list.push(yield* Effect.flip(registers.commit("workbeta", lease.token, "late")))
+        const lease = yield* registers.grant(WorkKey.make("workbeta"), Holder.make("seat-a"))
+        yield* registers.expireSteal(WorkKey.make("workbeta"), Holder.make("seat-b"))
+        list.push(yield* Effect.flip(registers.commit(WorkKey.make("workbeta"), lease.token, OutcomeValue.make("late"))))
         return list
       }).pipe(
         Effect.provide(Registers.layer({ servers: registerUrl })),
@@ -544,7 +546,7 @@ describe("structural refusal repairs", () => {
     const malformed = await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
-        return yield* Effect.flip(registers.observe("workgamma"))
+        return yield* Effect.flip(registers.observe(WorkKey.make("workgamma")))
       }).pipe(
         Effect.provide(Registers.layer({ servers: registerUrl })),
         Effect.scoped,
@@ -563,7 +565,7 @@ describe("structural refusal repairs", () => {
     const incarnation = await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
-        const held = yield* registers.grant("workdelta", "seat-a")
+        const held = yield* registers.grant(WorkKey.make("workdelta"), Holder.make("seat-a"))
         yield* Effect.promise(async () => {
           const raw = await connect({ servers: registerUrl })
           try {
@@ -580,7 +582,7 @@ describe("structural refusal repairs", () => {
             await raw.close()
           }
         })
-        return yield* Effect.flip(registers.commit("workdelta", held.token, "zombie"))
+        return yield* Effect.flip(registers.commit(WorkKey.make("workdelta"), held.token, OutcomeValue.make("zombie")))
       }).pipe(
         Effect.provide(Registers.layer({ servers: registerUrl })),
         Effect.scoped,
@@ -600,7 +602,7 @@ describe("structural refusal repairs", () => {
         const cells = yield* Cells
         const list: Array<Refusal> = []
         // invalid-cell-key: the key law refuses before any KV call.
-        list.push(yield* Effect.flip(cells.read("not.a.cell")))
+        list.push(yield* Effect.flip(cells.read(CellName.make("not.a.cell"))))
         return list
       }).pipe(Effect.provide(Cells.layer({ servers: cellUrl })), Effect.scoped),
     )
@@ -625,7 +627,7 @@ describe("structural refusal repairs", () => {
     const malformedCell = await Effect.runPromise(
       Effect.gen(function* () {
         const cells = yield* Cells
-        return yield* Effect.flip(cells.read("cellgamma"))
+        return yield* Effect.flip(cells.read(CellName.make("cellgamma")))
       }).pipe(Effect.provide(Cells.layer({ servers: cellUrl })), Effect.scoped),
     )
     if (malformedCell.sort !== "structural") {
@@ -643,10 +645,10 @@ describe("structural refusal repairs", () => {
     const conflicted = await Effect.runPromise(
       Effect.gen(function* () {
         const registers = yield* Registers
-        const lease = yield* registers.grant("workdelta", "seat-a")
+        const lease = yield* registers.grant(WorkKey.make("workdelta"), Holder.make("seat-a"))
         yield* Effect.sync(() => tap.arm())
         const stealing = yield* Effect.forkChild(
-          Effect.flip(registers.expireSteal("workdelta", "seat-b")),
+          Effect.flip(registers.expireSteal(WorkKey.make("workdelta"), Holder.make("seat-b"))),
         )
         yield* Effect.promise(() => tap.captured())
         yield* Effect.promise(async () => {
@@ -680,13 +682,13 @@ describe("structural refusal repairs", () => {
       const anchors = await Effect.runPromise(makeAnchorStore(foldConnection))
       const bucket = await new Kvm(foldConnection).open(ANCHOR_BUCKET)
 
-      const malformedProbe = await Effect.runPromise(declareProbeFold("malformed-anchor"))
+      const malformedProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("malformed-anchor")))
       await bucket.put(anchors.key(malformedProbe.fold, 0), "not a canonical anchor")
       refusals.push(await Effect.runPromise(Effect.flip(
         anchors.initialize(malformedProbe.fold, 0),
       )))
 
-      const lostProbe = await Effect.runPromise(declareProbeFold("lost-anchor"))
+      const lostProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("lost-anchor")))
       const [left, right] = await Effect.runPromise(Effect.all([
         anchors.initialize(lostProbe.fold, 0),
         anchors.initialize(lostProbe.fold, 0),
@@ -700,7 +702,7 @@ describe("structural refusal repairs", () => {
         anchors.commit(lostKey, right.revision, rightNext, 1),
       )))
 
-      const consumerProbe = await Effect.runPromise(declareProbeFold("consumer-shape"))
+      const consumerProbe = await Effect.runPromise(declareProbeFold(LaneHandle.make("consumer-shape")))
       await Effect.runPromise(ensureLaneStreams(foldConnection, consumerProbe.lane))
       const loaded = await Effect.runPromise(anchors.initialize(consumerProbe.fold, 0))
       const consumerSubject = await Effect.runPromise(evidenceSubject(consumerProbe.lane.handle, 0))

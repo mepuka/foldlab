@@ -10,6 +10,7 @@ import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
 import type { DeclaredFold } from "./Fold.js"
 import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
+import type { Holder } from "../kernel/Wire.js"
 import { makeSessionService } from "../internal/sessions.js"
 
 /** Where a session takes its opening consumer position. */
@@ -22,7 +23,7 @@ export const ANCHOR_POLICIES: ReadonlyArray<AnchorPolicy> = ["resume", "replay"]
 export interface WritDeclaration {
   readonly v: 0
   readonly kind: "writ"
-  readonly holder: string
+  readonly holder: Holder
   readonly views: ReadonlyArray<DigestValue>
 }
 
@@ -30,13 +31,13 @@ export interface WritDeclaration {
 export interface DeclaredWrit {
   readonly declaration: WritDeclaration
   readonly digest: DigestValue
-  readonly holder: string
+  readonly holder: Holder
   readonly views: ReadonlyArray<DigestValue>
 }
 
 /** Inputs for declaring one read scope. */
 export interface WritOptions {
-  readonly holder: string
+  readonly holder: Holder
   readonly views: ReadonlyArray<DigestValue>
 }
 

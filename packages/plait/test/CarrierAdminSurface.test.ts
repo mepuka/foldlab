@@ -19,6 +19,8 @@ import type { Refusal, StructuralRefusalKind } from "../src/truth/Refusal.js"
 import { evidenceSubject } from "../src/kernel/Subjects.js"
 import { laneStreamName } from "../src/internal/lanes.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 /**
  * The admin-surface mutation arms (DEV-780).
@@ -45,7 +47,7 @@ const duplicateWindowNanos = 2 * 60 * 1_000_000_000
 const ProbeEvent = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const probeEventSchema = Digest.make("b".repeat(64))
 
-const declareProbeLane = (handle: string) =>
+const declareProbeLane = (handle: LaneHandle) =>
   Lane.declare({
     handle,
     event: ProbeEvent,
@@ -297,7 +299,7 @@ const emit = (
   lane: Lane.DeclaredLane<typeof ProbeEvent.Type>,
   url: string,
 ): Effect.Effect<unknown, Refusal> =>
-  Lane.emit(lane, { tenant: "north", delta: 1 }, { holder: "seat-a" }).pipe(
+  Lane.emit(lane, { tenant: "north", delta: 1 }, { holder: Holder.make("seat-a") }).pipe(
     Effect.provide(Lane.Lanes.layer({ servers: url })),
     Effect.scoped,
   )
@@ -311,7 +313,7 @@ const openFolds = (url: string): Effect.Effect<unknown, Refusal> =>
 describe("authority carrier admin surface", () => {
   test("the hand-built lawful shapes are admitted by all three carriers", async () => {
     harness = await startNatsHarness()
-    const lane = await Effect.runPromise(declareProbeLane("admin-lawful"))
+    const lane = await Effect.runPromise(declareProbeLane(LaneHandle.make("admin-lawful")))
     await plant(harness.url, lane, { field: "none", law: "shape", lane: identity, kv: identity }, [])
     // No flip: each carrier must OPEN on the planted shape. This is what makes
     // every refusal below attributable to the one field its arm moved.
@@ -325,7 +327,7 @@ describe("authority carrier admin surface", () => {
     test(`a carrier configured with ${mutation.field} refuses by its ${mutation.law} law`, async () => {
       harness = await startNatsHarness()
       const url = harness.url
-      const lane = await Effect.runPromise(declareProbeLane(`admin-${mutation.field}`))
+      const lane = await Effect.runPromise(declareProbeLane(LaneHandle.make(`admin-${mutation.field}`)))
       await plant(url, lane, mutation, carriers)
 
       const expected: Array<[Carrier, StructuralRefusalKind, Effect.Effect<unknown, Refusal>]> = []

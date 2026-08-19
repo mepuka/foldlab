@@ -7,6 +7,7 @@ import { canonicalBytes, type WireValue } from "../src/truth/Canonical.js"
 import * as Lane from "../src/planes/Lane.js"
 import { lane } from "./fixtures/chaos-fold.js"
 import { startNatsHarness, type NatsHarness } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
 
 let harness: NatsHarness | undefined
 
@@ -53,7 +54,7 @@ const emitSpan = async (url: string, perPartition: number): Promise<void> => {
           tenant: tenants[partition]!,
           ordinal: index * 2 + partition,
           delta: 1,
-        }, { holder: "cli-test" })
+        }, { holder: Holder.make("cli-test") })
       }
     }
   }).pipe(

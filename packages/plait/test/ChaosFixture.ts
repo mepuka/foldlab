@@ -4,6 +4,7 @@ import * as Algebra from "../src/truth/Algebra.js"
 import { Digest } from "../src/truth/Digest.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 export const ChaosEvent = Schema.Struct({
   tenant: Schema.String,
@@ -15,7 +16,7 @@ export type ChaosEvent = typeof ChaosEvent.Type
 export const chaosEventSchema = Digest.make("e".repeat(64))
 
 /** The non-idempotent commutative counter shared by parent and killed child. */
-export const declareChaosCounter = (handle: string) => Effect.gen(function* () {
+export const declareChaosCounter = (handle: LaneHandle) => Effect.gen(function* () {
   const lane = yield* Lane.declare({
     handle,
     event: ChaosEvent,

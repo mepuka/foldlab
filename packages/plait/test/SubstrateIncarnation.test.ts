@@ -2,9 +2,15 @@ import { describe, expect, test } from "bun:test"
 
 import { Effect, Result } from "effect"
 
-import { Registers, type RegisterService, type RegisterState } from "../src/planes/Register.js"
+import {
+  Registers,
+  type RegisterOutcome,
+  type RegisterService,
+  type RegisterState,
+} from "../src/planes/Register.js"
 import { Digest } from "../src/truth/Digest.js"
 import { structuralRefusal, type Refusal } from "../src/truth/Refusal.js"
+import { Holder } from "../src/kernel/Wire.js"
 import {
   decideIncarnation,
   establishedFact,
@@ -37,7 +43,7 @@ const fixtureRegisters = (): {
   readonly service: RegisterService
   readonly landings: () => number
 } => {
-  const stored = new Map<string, { holder: string; outcome: { token: number; value: string } | null }>()
+  const stored = new Map<string, { holder: Holder; outcome: RegisterOutcome | null }>()
   let revision = 0
   let landings = 0
 
@@ -138,7 +144,7 @@ const STORE = Digest.make("5".repeat(64))
 const OPTIONS = Digest.make("7".repeat(64))
 
 const race = async (
-  holders: ReadonlyArray<string>,
+  holders: ReadonlyArray<Holder>,
   predecessor: string | null,
 ) => {
   const fixture = fixtureRegisters()
@@ -161,7 +167,7 @@ const race = async (
 describe("the substrate-incarnation fence", () => {
   test("two racing decides land exactly one incarnation, and the loser is taught", async () => {
     for (let round = 0; round < 32; round++) {
-      const { outcomes, landings } = await race(["supervisor-a", "supervisor-b"], null)
+      const { outcomes, landings } = await race(["supervisor-a", "supervisor-b"].map((each) => Holder.make(each)), null)
       const won = outcomes.filter(Result.isSuccess)
       const lost = outcomes.filter(Result.isFailure)
       expect(won).toHaveLength(1)
@@ -179,7 +185,7 @@ describe("the substrate-incarnation fence", () => {
     const winners: Array<number> = []
     for (let round = 0; round < 16; round++) {
       const { outcomes, landings } = await race(
-        ["a", "b", "c", "d", "e"],
+        ["a", "b", "c", "d", "e"].map((each) => Holder.make(each)),
         null,
       )
       winners.push(outcomes.filter(Result.isSuccess).length)
@@ -200,7 +206,7 @@ describe("the substrate-incarnation fence", () => {
           unfencedLandings += 1
           return {
             token,
-            holder: work,
+            holder: Holder.make(work),
             outcome: { token, value: outcome },
           } satisfies RegisterState
         }),
@@ -215,7 +221,7 @@ describe("the substrate-incarnation fence", () => {
     let granted = 0
     const outcomes = await Effect.runPromise(
       Effect.all(
-        ["a", "b"].map((holder) =>
+        ["a", "b"].map((each) => Holder.make(each)).map((holder) =>
           Effect.result(decideIncarnation({
             store: STORE,
             options: OPTIONS,
@@ -235,7 +241,7 @@ describe("the substrate-incarnation fence", () => {
     const layer = Registers.testLayer(fixture.service)
 
     const first = await Effect.runPromise(
-      decideIncarnation({ store: STORE, options: OPTIONS, predecessor: null, holder: "one" })
+      decideIncarnation({ store: STORE, options: OPTIONS, predecessor: null, holder: Holder.make("one") })
         .pipe(Effect.provide(layer)),
     )
     expect(first.value.options).toBe(OPTIONS)
@@ -246,7 +252,7 @@ describe("the substrate-incarnation fence", () => {
         store: STORE,
         options: OPTIONS,
         predecessor: first.digest,
-        holder: "two",
+        holder: Holder.make("two"),
       }).pipe(Effect.provide(layer)),
     )
     expect(second.value.predecessor).toBe(first.digest)

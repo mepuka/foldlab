@@ -26,6 +26,7 @@ import { filtered, mapped, type Contribution } from "../src/planes/Fold.js"
 import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import { Digest } from "../src/truth/Digest.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 const run = <A>(effect: Effect.Effect<A, unknown>): A =>
   Effect.runSync(effect as Effect.Effect<A, never>)
@@ -128,7 +129,7 @@ describe("the contribution transformers", () => {
   test("the rung survives the transformers: a partitioned fold accepts the filtered step", () => {
     const algebra = earnedSum()
     const lane = run(Lane.declare({
-      handle: "combinator-lane",
+      handle: LaneHandle.make("combinator-lane"),
       event: Event,
       eventSchema: Digest.make("e".repeat(64)),
       partitions: 2 as const,

@@ -3,11 +3,28 @@
  *
  * @module
  */
-import { Context, Duration, Effect, Layer, Schedule, Scope, SynchronizedRef } from "effect"
+import { Context, Duration, Effect, Layer, Schedule, Schema, Scope, SynchronizedRef } from "effect"
 
 import type { ConnectionBootstrap } from "../internal/transport.js"
-import type { Refusal } from "../truth/Refusal.js"
+import {
+  structuralRefusal,
+  type Next,
+  type Refusal,
+  type StructuralRefusal,
+} from "../truth/Refusal.js"
+import { TOKEN_PATTERN } from "../kernel/Subjects.js"
+import { Holder } from "../kernel/Wire.js"
 import { makeRegisterService } from "../internal/registers.js"
+
+/**
+ * Who a commitment is attributed to, re-exported at the concept it names.
+ *
+ * The sort is declared once in the wire grammar, where the envelope carries it;
+ * this seam is the other place the estate speaks it, and holder identity here
+ * is descriptive exactly as it is there — only the revision-derived token is
+ * authority.
+ */
+export { Holder } from "../kernel/Wire.js"
 
 /** The file-backed KV bucket that is authoritative for commitment registers. */
 export const REGISTER_BUCKET = "flb-fab-reg"
@@ -15,16 +32,87 @@ export const REGISTER_BUCKET = "flb-fab-reg"
 /** Per-key retained revisions; there is no age or byte-size eviction policy. */
 export const REGISTER_HISTORY = 64
 
+/**
+ * The key one commitment register is held at.
+ *
+ * The grammar is the fabric's literal-token alphabet, which is what the KV
+ * keyspace can carry. The kernel's direction is that this key IS a work digest,
+ * so the sort is expected to tighten into a digest alias; the brand lands now
+ * so that tightening is a change of check behind one name rather than a sweep
+ * of every seam that spells it.
+ */
+export const WorkKey = Schema.String
+  .check(Schema.isPattern(TOKEN_PATTERN))
+  .pipe(Schema.brand("@foldlab/plait/WorkKey"))
+  .annotate({ identifier: "PlaitWorkKey" })
+
+/** The key one commitment register is held at. */
+export type WorkKey = typeof WorkKey.Type
+
+/**
+ * The terminal value a fenced commit lands.
+ *
+ * Today the register treats it as opaque: the only standing law is that a
+ * landed outcome says something, so the check is that it is non-empty. The
+ * commit door that will judge an outcome against its declared schema lands on
+ * this brand, which is why the sort exists before the constraint does.
+ */
+export const OutcomeValue = Schema.String
+  .check(Schema.isMinLength(1))
+  .pipe(Schema.brand("@foldlab/plait/OutcomeValue"))
+  .annotate({ identifier: "PlaitOutcomeValue" })
+
+/** The terminal value a fenced commit lands. */
+export type OutcomeValue = typeof OutcomeValue.Type
+
+/** One taught repair per structural law; every refusal names its legal next step. */
+const teachRegisterKey: ReadonlyArray<Next> = [{
+  subject: "register.key",
+  note: "Present the work digest as one literal KV token without dots, whitespace, or wildcards.",
+}]
+
+/**
+ * Admits one work key, refusing anything the KV keyspace cannot carry.
+ *
+ * This is the sort's one minting site: the adapter under this seam calls it
+ * rather than re-testing the grammar, so a key that reached the substrate was
+ * admitted exactly once and the teaching has one home.
+ *
+ * @example
+ * ```ts
+ * import { workKey } from "@foldlab/plait/Register"
+ * import { Effect } from "effect"
+ *
+ * Effect.runSync(workKey("render-report"))
+ * // "render-report"
+ * ```
+ */
+export const workKey = Effect.fn("Register.workKey")(function* (
+  key: string,
+): Effect.fn.Return<WorkKey, StructuralRefusal> {
+  if (!Schema.is(WorkKey)(key)) {
+    return yield* structuralRefusal({
+      kind: "invalid-register-key",
+      law: "A work digest maps to one literal NATS KV key.",
+      path: ["work"],
+      got: key,
+      expected: "one non-empty token without dots, whitespace, or wildcards",
+      next: teachRegisterKey,
+    })
+  }
+  return key
+})
+
 /** A terminal result landed under one fencing token. */
 export interface RegisterOutcome {
   readonly token: number
-  readonly value: string
+  readonly value: OutcomeValue
 }
 
 /** The observable meaning-state of one per-work-digest register. */
 export interface RegisterState {
   readonly token: number
-  readonly holder: string | null
+  readonly holder: Holder | null
   readonly outcome: RegisterOutcome | null
 }
 
@@ -44,15 +132,15 @@ export interface RegisterOptions extends ConnectionBootstrap {}
  * of the guard.
  */
 export interface RegisterService {
-  readonly grant: (work: string, holder: string) => Effect.Effect<RegisterState, Refusal>
-  readonly renew: (work: string, token: number) => Effect.Effect<RegisterState, Refusal>
+  readonly grant: (work: WorkKey, holder: Holder) => Effect.Effect<RegisterState, Refusal>
+  readonly renew: (work: WorkKey, token: number) => Effect.Effect<RegisterState, Refusal>
   readonly commit: (
-    work: string,
+    work: WorkKey,
     token: number,
-    outcome: string,
+    outcome: OutcomeValue,
   ) => Effect.Effect<RegisterState, Refusal>
-  readonly expireSteal: (work: string, holder: string) => Effect.Effect<RegisterState, Refusal>
-  readonly observe: (work: string) => Effect.Effect<RegisterState, Refusal>
+  readonly expireSteal: (work: WorkKey, holder: Holder) => Effect.Effect<RegisterState, Refusal>
+  readonly observe: (work: WorkKey) => Effect.Effect<RegisterState, Refusal>
 }
 
 /**
@@ -83,8 +171,8 @@ export class Registers extends Context.Service<Registers, RegisterService>()(
  * connection, so the heartbeat fiber can never outlive its transport.
  */
 export const hold = Effect.fn("Register.hold")(function*<A, R> (
-  work: string,
-  holder: string,
+  work: WorkKey,
+  holder: Holder,
   use: (currentToken: Effect.Effect<number>) => Effect.Effect<A, Refusal, R>,
   heartbeatEvery: Duration.Input = "1 second",
 ): Effect.fn.Return<A, Refusal, R | Registers | Scope.Scope> {

@@ -33,6 +33,7 @@ import {
   type NatsHarness,
   type NatsServerBinary,
 } from "./NatsHarness.js"
+import { CellName } from "../src/planes/Cell.js"
 
 const Pair = Schema.Tuple([Schema.Finite, Schema.Finite])
 const Header = Schema.Struct({
@@ -177,7 +178,7 @@ afterAll(async () => {
 
 describe("F1 cell wall — the fabric model's cell families replayed on the live KV bucket", () => {
   test("the bucket the cells land in carries the ruled shape", async () => {
-    await withCells((cells) => cells.read("shapeprobe"))
+    await withCells((cells) => cells.read(CellName.make("shapeprobe")))
     const connection = await connect({ servers: (await server()).url })
     try {
       const status = await new Kvm(connection).open(CELL_BUCKET).then((kv) => kv.status())
@@ -200,20 +201,20 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       const right = row.input.right.map(observationOf)
       const forward = await withCells((cells) =>
         Effect.gen(function* () {
-          yield* cells.merge(`${row.name}-forward`, left)
-          return yield* cells.merge(`${row.name}-forward`, right)
+          yield* cells.merge(CellName.make(`${row.name}-forward`), left)
+          return yield* cells.merge(CellName.make(`${row.name}-forward`), right)
         })
       )
       const backward = await withCells((cells) =>
         Effect.gen(function* () {
-          yield* cells.merge(`${row.name}-backward`, right)
-          return yield* cells.merge(`${row.name}-backward`, left)
+          yield* cells.merge(CellName.make(`${row.name}-backward`), right)
+          return yield* cells.merge(CellName.make(`${row.name}-backward`), left)
         })
       )
       expect(forward.digest).toBe(modelDigest(row.verdict.state))
       expect(backward.digest).toBe(forward.digest)
       // The state survives a re-read: convergence is of the stored bytes.
-      const reread = await withCells((cells) => cells.read(`${row.name}-forward`))
+      const reread = await withCells((cells) => cells.read(CellName.make(`${row.name}-forward`)))
       expect(reread.digest).toBe(forward.digest)
       replayed++
     }
@@ -231,18 +232,18 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       const deliveries = row.input.deliveries.map(observationOf)
       const arrival = await withCells((cells) =>
         Effect.gen(function* () {
-          let state = yield* cells.read(`${row.name}-arrival`)
+          let state = yield* cells.read(CellName.make(`${row.name}-arrival`))
           for (const delivery of deliveries) {
-            state = yield* cells.merge(`${row.name}-arrival`, [delivery])
+            state = yield* cells.merge(CellName.make(`${row.name}-arrival`), [delivery])
           }
           return state
         })
       )
       const reversed = await withCells((cells) =>
         Effect.gen(function* () {
-          let state = yield* cells.read(`${row.name}-reversed`)
+          let state = yield* cells.read(CellName.make(`${row.name}-reversed`))
           for (const delivery of [...deliveries].reverse()) {
-            state = yield* cells.merge(`${row.name}-reversed`, [delivery])
+            state = yield* cells.merge(CellName.make(`${row.name}-reversed`), [delivery])
           }
           return state
         })
@@ -256,8 +257,8 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
 
   test("a settled cell absorbs its own delta again without a write", async () => {
     const delta = [observationOf([1, 10]), observationOf([2, 20])]
-    const first = await withCells((cells) => cells.merge("idempotence", delta))
-    const again = await withCells((cells) => cells.merge("idempotence", [...delta].reverse()))
+    const first = await withCells((cells) => cells.merge(CellName.make("idempotence"), delta))
+    const again = await withCells((cells) => cells.merge(CellName.make("idempotence"), [...delta].reverse()))
     expect(again.digest).toBe(first.digest)
 
     const connection = await connect({ servers: (await server()).url })
@@ -278,7 +279,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
     const alpha = observationOf([1, 10])
     const beta = observationOf([2, 20])
     const gamma = observationOf([3, 30])
-    const cell = "lostcas"
+    const cell = CellName.make("lostcas")
 
     await withCells((cells) => cells.merge(cell, [alpha]))
 
@@ -334,7 +335,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
    */
   const subsumedByRival = async (
     layer: (options: { readonly servers: string }) => Layer.Layer<Cells, unknown>,
-    cell: string,
+    cell: CellName,
   ): Promise<Result.Result<CellState, Refusal>> => {
     const alpha = observationOf([1, 10])
     const beta = observationOf([2, 20])
@@ -376,14 +377,14 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
   }
 
   test("T16: a rival's subsuming join is convergence under subsumption and a refusal under byte-equality", async () => {
-    const lawful = await subsumedByRival(Cells.layer, "subsumed-lawful")
+    const lawful = await subsumedByRival(Cells.layer, CellName.make("subsumed-lawful"))
     expect(Result.isSuccess(lawful)).toBe(true)
     if (!Result.isSuccess(lawful)) throw new Error("the lawful merge did not converge")
     // The delta is in the cell — carried there by the rival's join — so the
     // merge reports the converged state rather than fighting for its own write.
     expect(lawful.success.digest).toBe(modelDigest([[1, 10], [2, 20], [3, 30]]))
 
-    const mutant = await subsumedByRival(byteEqualityLayer, "subsumed-byte-equality")
+    const mutant = await subsumedByRival(byteEqualityLayer, CellName.make("subsumed-byte-equality"))
     expect(Result.isFailure(mutant)).toBe(true)
     if (!Result.isFailure(mutant)) throw new Error("byte-equality reconciliation did not refuse")
     expect(mutant.failure.sort).toBe("absence")
@@ -391,7 +392,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
 
     // The mutant refused a merge whose delta the cell already carries: its own
     // read-back holds beta, and it reported unavailability anyway.
-    const settled = await withCells((cells) => cells.read("subsumed-byte-equality"))
+    const settled = await withCells((cells) => cells.read(CellName.make("subsumed-byte-equality")))
     expect(settled.digest).toBe(modelDigest([[1, 10], [2, 20], [3, 30]]))
 
     const record = {
@@ -429,7 +430,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
    */
   const contendedToExhaustion = async (
     layer: (options: { readonly servers: string }) => Layer.Layer<Cells, unknown>,
-    cell: string,
+    cell: CellName,
   ): Promise<{
     readonly result: Result.Result<CellState, Refusal>
     readonly casAttempts: number
@@ -493,7 +494,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
   }
 
   test("T16: at the retry boundary a subsuming rival is success under subsumption and exhaustion under byte-equality", async () => {
-    const lawful = await contendedToExhaustion(Cells.layer, "boundary-lawful")
+    const lawful = await contendedToExhaustion(Cells.layer, CellName.make("boundary-lawful"))
     expect(lawful.casAttempts).toBe(CELL_MERGE_ATTEMPTS)
     expect(Result.isSuccess(lawful.result)).toBe(true)
     if (!Result.isSuccess(lawful.result)) throw new Error("the lawful merge did not converge")
@@ -501,7 +502,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
       Effect.runSync(stateOf(lawful.finalState)).digest,
     )
 
-    const mutant = await contendedToExhaustion(byteEqualityLayer, "boundary-byte-equality")
+    const mutant = await contendedToExhaustion(byteEqualityLayer, CellName.make("boundary-byte-equality"))
     expect(mutant.casAttempts).toBe(CELL_MERGE_ATTEMPTS)
     expect(Result.isFailure(mutant.result)).toBe(true)
     if (!Result.isFailure(mutant.result)) {
@@ -512,7 +513,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
 
     // Both ran the same schedule and the same number of CAS attempts; the cell
     // carries the delta in both cases. Only the result classification differs.
-    const settled = await withCells((cells) => cells.read("boundary-byte-equality"))
+    const settled = await withCells((cells) => cells.read(CellName.make("boundary-byte-equality")))
     expect(settled.digest).toBe(Effect.runSync(stateOf(mutant.finalState)).digest)
 
     const record = {
@@ -547,7 +548,7 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
     // ensures its own bucket and runs the SAME two schedules through the same
     // shipped write path the lawful cells just converged on.
     const mutantUrl = await serverUrl()
-    const mutantMerge = (cell: string, delta: ReadonlyArray<Observation>): Promise<unknown> =>
+    const mutantMerge = (cell: CellName, delta: ReadonlyArray<Observation>): Promise<unknown> =>
       Effect.runPromise(
         Effect.gen(function* () {
           const cells = yield* Cells
@@ -557,13 +558,13 @@ describe("F1 cell wall — the fabric model's cell families replayed on the live
           Effect.scoped,
         ) as Effect.Effect<unknown, never>,
       )
-    await mutantMerge("mutant-forward", left)
-    await mutantMerge("mutant-forward", right)
-    await mutantMerge("mutant-backward", right)
-    await mutantMerge("mutant-backward", left)
+    await mutantMerge(CellName.make("mutant-forward"), left)
+    await mutantMerge(CellName.make("mutant-forward"), right)
+    await mutantMerge(CellName.make("mutant-backward"), right)
+    await mutantMerge(CellName.make("mutant-backward"), left)
 
-    const forward = await withCells((cells) => cells.read("mutant-forward"))
-    const backward = await withCells((cells) => cells.read("mutant-backward"))
+    const forward = await withCells((cells) => cells.read(CellName.make("mutant-forward")))
+    const backward = await withCells((cells) => cells.read(CellName.make("mutant-backward")))
     const expected = modelDigest(row!.verdict.state)
 
     expect(forward.digest).not.toBe(expected)

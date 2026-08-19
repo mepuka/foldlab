@@ -52,6 +52,7 @@ import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
 import { digestOf, Digest } from "../truth/Digest.js"
+import { Holder } from "../kernel/Wire.js"
 import {
   Folds,
   declare as declareFold,
@@ -827,6 +828,7 @@ const mcp = Command.make("mcp", {
     Flag.withDescription("NATS server URL the live lane, cell, and register carriers connect to"),
   ),
   holder: Flag.string("holder").pipe(
+    Flag.withSchema(Holder),
     Flag.withDescription("The attribution carried on every fact this connection lands"),
   ),
 }, (request) =>

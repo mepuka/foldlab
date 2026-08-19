@@ -7,7 +7,8 @@
 import { Effect } from "effect"
 
 import type { DeclaredLane, EmittedEvent } from "../planes/Lane.js"
-import { declare, emit, type Lanes } from "../planes/Lane.js"
+import { declare, emit, laneHandle, type Lanes } from "../planes/Lane.js"
+import type { Holder } from "../kernel/Wire.js"
 import type { WireValue } from "../truth/Canonical.js"
 import { digestOf, type Digest } from "../truth/Digest.js"
 import type { Refusal } from "../truth/Refusal.js"
@@ -50,7 +51,7 @@ export const heartbeatLane = Effect.fn("HeartbeatLane.declare")(function* (): Ef
 > {
   const eventSchema = yield* heartbeatEventSchema
   return yield* declare({
-    handle: eventSchema,
+    handle: yield* laneHandle(eventSchema),
     event: HeartbeatFact,
     eventSchema,
     partitions: 1 as const,
@@ -70,7 +71,7 @@ export const heartbeatLane = Effect.fn("HeartbeatLane.declare")(function* (): Ef
 export const landTick = Effect.fn("HeartbeatLane.land")(function* (
   lane: DeclaredLane<HeartbeatTick, 1>,
   tick: HeartbeatTick,
-  holder: string,
+  holder: Holder,
 ): Effect.fn.Return<EmittedEvent, Refusal, Lanes> {
   return yield* emit(lane, tick, { holder })
 })

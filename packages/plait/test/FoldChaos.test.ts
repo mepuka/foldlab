@@ -11,6 +11,8 @@ import * as Lane from "../src/planes/Lane.js"
 import { runRedeliveryChaos } from "../src/internal/chaos.js"
 import { declareChaosCounter, type ChaosEvent } from "./ChaosFixture.js"
 import { startNatsHarness, type NatsHarness, waitForFile } from "./NatsHarness.js"
+import { Holder } from "../src/kernel/Wire.js"
+import { LaneHandle } from "../src/planes/Lane.js"
 
 interface PumpResult {
   readonly anchors: ReadonlyArray<Anchor>
@@ -90,7 +92,7 @@ const emitEvents = async (
 ): Promise<ReadonlyArray<number>> => Effect.runPromise(Effect.gen(function* () {
   const targets = [0, 0]
   for (const event of events) {
-    const emitted = yield* Lane.emit(lane, event, { holder: "chaos-gate" })
+    const emitted = yield* Lane.emit(lane, event, { holder: Holder.make("chaos-gate") })
     targets[emitted.partition] = emitted.position
   }
   return targets
@@ -124,7 +126,7 @@ const waitForPumpFile = async (
 describe("real-substrate fold chaos", () => {
   test("the ack-before-anchor mutant loses the acknowledged successor after kill", async () => {
     harness = await startNatsHarness()
-    const declaration = await Effect.runPromise(declareChaosCounter("chaos-ack-mutant"))
+    const declaration = await Effect.runPromise(declareChaosCounter(LaneHandle.make("chaos-ack-mutant")))
     const tenants = await tenantsByPartition(declaration.lane)
     const events: Array<ChaosEvent> = []
     for (let index = 0; index < 3; index++) {
@@ -191,7 +193,7 @@ describe("real-substrate fold chaos", () => {
 
   test("NAK redelivers every event twice under a reordered arrival schedule", async () => {
     harness = await startNatsHarness()
-    const declaration = await Effect.runPromise(declareChaosCounter("chaos-redelivery"))
+    const declaration = await Effect.runPromise(declareChaosCounter(LaneHandle.make("chaos-redelivery")))
     const tenants = await tenantsByPartition(declaration.lane)
     const lines = (await Bun.file(resolve(
       import.meta.dir,
@@ -255,8 +257,8 @@ describe("real-substrate fold chaos", () => {
 
   test("a hard-killed pump resumes to the uninterrupted per-partition digests", async () => {
     harness = await startNatsHarness()
-    const killedDeclaration = await Effect.runPromise(declareChaosCounter("chaos-killed"))
-    const referenceDeclaration = await Effect.runPromise(declareChaosCounter("chaos-reference"))
+    const killedDeclaration = await Effect.runPromise(declareChaosCounter(LaneHandle.make("chaos-killed")))
+    const referenceDeclaration = await Effect.runPromise(declareChaosCounter(LaneHandle.make("chaos-reference")))
     const tenants = await tenantsByPartition(killedDeclaration.lane)
     const referenceTenants = await tenantsByPartition(referenceDeclaration.lane)
     const perPartition = 100
