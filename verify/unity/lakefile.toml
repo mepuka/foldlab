@@ -1,5 +1,5 @@
 name = "unity"
-defaultTargets = ["Unity", "control", "emit"]
+defaultTargets = ["Unity", "control", "emit", "goemit"]
 
 [[require]]
 name = "fabric"
@@ -20,6 +20,9 @@ globs = [
   "Unity.Emit",
   "Unity.Check",
   "Unity.Dsl",
+  "Unity.GoAst",
+  "Unity.GoPrinter",
+  "Unity.GoTables",
 ]
 
 [[lean_exe]]
@@ -29,3 +32,7 @@ root = "ControlMain"
 [[lean_exe]]
 name = "emit"
 root = "EmitMain"
+
+[[lean_exe]]
+name = "goemit"
+root = "GoEmitMain"
