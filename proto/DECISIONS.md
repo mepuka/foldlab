@@ -3347,6 +3347,40 @@ opencode get native discovery; Claude (not in this ticket's fleet) loses its
 section, which this ticket's wall pins. **Load-bearing? yes** — every seat
 finds the skills by the path this decides.
 
+SUPERSEDED BY the coordinator review of the DEV-801 first delivery: the
+relocation was refused on measured grounds. Removing `.claude/skills/`
+regresses Claude (an incumbent seat that reviews against these laws) from
+native discovery to a bridge for the sake of a layout whose one stated
+justification for refusing dual-home — that opencode would advertise a skill
+in both homes twice — was asserted from docs, not measured. It was measured
+this repair: raw opencode discovery finds a skill under both project sources,
+but opencode's documented runtime precedence ("first found wins, no
+duplication or shadowing") collapses the union to one advertisement per
+skill name, and the vendored `repos/effect/.agents/skills/` is already a
+tracked precedent. The corrected decision is the entry below.
+
+### D??. Skills are dual-homed: `.claude/skills/` + `.agents/skills/`, byte-identical
+
+Decided: the skills live in BOTH `.claude/skills/<name>/` (Claude's native
+source) and `.agents/skills/<name>/` (the cross-agent convention codex, pi,
+and opencode read natively; antigravity and cursor reach the skills through
+the AGENTS.md section). The two homes are one teaching material shipped
+twice, and the wall (D?? above) holds `.claude/skills/<name>/`
+byte-identical to `.agents/skills/<name>/`, with the codex `agents/`
+manifest dir living only in `.agents`. The wall's `--self-test` arm gained
+the two mirror mutants (`.claude` missing a skill; `.claude` carrying
+drifted bytes) alongside the roster ones, pinned in the same committed
+trace. Alternatives: the previous relocation (regresses Claude, REFUSED);
+symlink the two homes (Windows refuses the mechanism). Why: every harness
+that supports native discovery keeps it — codex, pi, and opencode on
+`.agents`, Claude on `.claude` — no seat bridges a path it can discover, and
+the byte-identity mirror plus its two refused mutants make the "two copies
+drifting" risk mechanical rather than a promise. Cost, stated: editing a
+skill's teaching touches BOTH homes, and the wall makes that a hard
+requirement on purpose. **Load-bearing? yes** — the whole point of the
+ticket is that seats discover the discipline natively; this is the layout
+that does it without regressing any seat.
+
 ### D??. The wall is a root `scripts/` check wired into the battery
 
 Decided: the roster wall lives at `scripts/check-skills.ts`, run by

@@ -69,22 +69,28 @@ archived all off-path work at tag `archive/pre-estate-focus`
 ## Skills — read as documents, every harness
 
 Three estate skills carry the teaching material behind the standing
-laws. Their canonical home is `.agents/skills/<name>/SKILL.md` (with
-references beside it) — the cross-agent convention the vendored
-`repos/effect` already uses, so codex, pi, and opencode discover them
-natively; antigravity and cursor reach them through this section, which
-the wall below keeps honest. Every seat, harness native or not, reads a
-skill as an ordinary file when the trigger below matches. Not optional:
-reviews already judge against the laws these teach, and misadherence to
-the API discipline is a high-severity finding.
+laws. They are dual-homed so every harness that can discovers them
+natively: `.claude/skills/<name>/SKILL.md` (with references beside it)
+is Claude's native source, and `.agents/skills/<name>/SKILL.md` is the
+cross-agent convention the vendored `repos/effect` already uses, so
+codex, pi, and opencode discover it natively; antigravity and cursor
+reach the skills through this section, which the wall below keeps
+honest. The two homes are the same skill shipped twice — byte-identical
+by wall, because one teaching material at liberty to drift would be two
+teachings. Every seat, harness native or not, reads a skill as an
+ordinary file when the trigger below matches. Not optional: reviews
+already judge against the laws these teach, and misadherence to the API
+discipline is a high-severity finding.
 
 The absorption is mechanical, not prose-held. `bun run gates` runs
-`scripts/check-skills.ts`, which pins this section's roster against the
-on-disk skill set and their per-tool `agents/openai.yaml` manifests in
-BOTH directions: a skill added on disk without a row here, or a row
-pointing at a missing or incomplete skill, reddens the battery. The
-check's own `--self-test` arm replays a mutated section and disk set
-and refuses, so the wall cannot quietly stop failing.
+`scripts/check-skills.ts`, which pins this section's roster against BOTH
+on-disk homes and the per-tool `agents/openai.yaml` manifests in EACH
+direction AND holds `.claude/skills/` byte-identical to
+`.agents/skills/`: a skill added on disk without a row here, a row
+pointing at a missing or incomplete skill, or a drift between the two
+homes, reddens the battery. The check's own `--self-test` arm replays a
+mutated section, disk set, and mirror and refuses, so the wall cannot
+quietly stop failing.
 
 - `.agents/skills/architecture-to-algebra/` — mapping any system or
   feature onto the algebra: truth plane, directory plane, fences, the

@@ -5,7 +5,8 @@
  * harness reach the three estate skills. Claims rot: a skill dropped from a
  * seat's awareness is a seat that cannot see the discipline it is judged by.
  * This script pins the steering against the tree in BOTH directions, plus the
- * per-tool manifest each skill ships for the codex-class harnesses:
+ * per-tool manifest each skill ships for the codex-class harnesses, plus the
+ * byte-identity of the skills in their two homes:
  *
  *   steering→disk   every skill AGENTS.md names exists on disk at
  *                   `.agents/skills/<name>/` (a row pointing at a missing
@@ -16,6 +17,13 @@
  *   completeness    each steered skill carries its `SKILL.md` and its
  *                   `agents/openai.yaml` per-tool manifest - a row pointing
  *                   at an incomplete skill fails.
+ *   mirror          the skills are dual-homed so no harness regresses: Claude
+ *                   reads `.claude/skills/<name>/`, codex/pi/opencode read
+ *                   `.agents/skills/<name>/`. The two homes must carry the
+ *                   same skill bytes - `.claude/skills/<name>/` must mirror
+ *                   `.agents/skills/<name>/` exactly, with only the codex
+ *                   `agents/` manifest dir living in `.agents`. A missing or
+ *                   drifted mirror fails.
  *   vacuity         AGENTS.md steers at least one skill, so deleting the
  *                   section (and not the skills) or both together cannot
  *                   make an empty agreement pass.
@@ -106,13 +114,70 @@ export const verifySkillRoster = (
   return reasons
 }
 
+/** Files under `dir`, sorted, forward-slash relative; empty when absent. */
+const listFiles = (dir: string): ReadonlyArray<string> => {
+  const out: Array<string> = []
+  const walk = (base: string, prefix: string): void => {
+    for (const entry of readdirSync(base, { withFileTypes: true })) {
+      const rel = prefix === "" ? entry.name : `${prefix}/${entry.name}`
+      if (entry.isDirectory()) walk(resolve(base, entry.name), rel)
+      else out.push(rel)
+    }
+  }
+  if (existsSync(dir)) walk(dir, "")
+  return out.sort()
+}
+
+/**
+ * The dual-home mirror law. `.claude/skills/<name>/` must be a byte-identical
+ * copy of `.agents/skills/<name>/` (the codex `agents/` manifest dir excluded
+ * - it lives only in `.agents`), both directions, so no skill content drifts
+ * between the Claude native home and the cross-agent home.
+ */
+export const verifyClaudeMirror = (
+  root: string,
+  steering: ReadonlyArray<string>,
+): ReadonlyArray<string> => {
+  const reasons: Array<string> = []
+  for (const name of steering) {
+    const agentsDir = resolve(root, ".agents", "skills", name)
+    const claudeDir = resolve(root, ".claude", "skills", name)
+    if (!existsSync(claudeDir)) {
+      reasons.push(`SKILL ROSTER: .claude mirror is missing skill '${name}'`)
+      continue
+    }
+    const required = listFiles(agentsDir).filter((rel) => !rel.startsWith("agents/"))
+    const present = listFiles(claudeDir)
+    const diverged = (rel: string, from: ReadonlyArray<string>): boolean => {
+      if (!from.includes(rel)) return true
+      const aBytes = readFileSync(join(agentsDir, rel))
+      const cBytes = readFileSync(join(claudeDir, rel))
+      return !aBytes.equals(cBytes)
+    }
+    for (const rel of required) {
+      if (diverged(rel, present)) {
+        reasons.push(`SKILL ROSTER: .claude mirror diverges for skill '${name}' file '${rel}'`)
+      }
+    }
+    for (const rel of present) {
+      if (!required.includes(rel)) {
+        reasons.push(`SKILL ROSTER: .claude mirror diverges for skill '${name}' file '${rel}'`)
+      }
+    }
+  }
+  return reasons
+}
+
 export const checkSkills = (
   root: string,
 ): { readonly ok: boolean; readonly reasons: ReadonlyArray<string> } => {
   const agentsPath = resolve(root, "AGENTS.md")
   const steering = existsSync(agentsPath) ? parseSteering(readFileSync(agentsPath, "utf8")) : []
   const disk = discoverSkills(root)
-  const reasons = verifySkillRoster(steering, disk)
+  const reasons = [
+    ...verifySkillRoster(steering, disk),
+    ...verifyClaudeMirror(root, steering),
+  ]
   return { ok: reasons.length === 0, reasons }
 }
 
@@ -122,12 +187,12 @@ const runGate = (): number => {
   const result = checkSkills(repo)
   if (result.ok) {
     console.log(
-      `SKILLS ROSTER: PASS (${result.reasons.length} refusals; AGENTS.md steering agrees with the on-disk skill set and their manifests)`,
+      `SKILLS ROSTER: PASS (${result.reasons.length} refusals; AGENTS.md steering agrees with both on-disk homes at .claude/skills and .agents/skills, their manifests, and the byte-identical mirror)`,
     )
     return 0
   }
   for (const reason of result.reasons) console.error(reason)
-  console.error("SKILLS ROSTER: FAIL - regenerate steering in AGENTS.md or repair the skill set")
+  console.error("SKILLS ROSTER: FAIL - regenerate steering in AGENTS.md or repair the skill set / mirror")
   return 1
 }
 
@@ -146,23 +211,56 @@ const syntheticAgents = (steered: ReadonlyArray<string>): string => {
   ].join("\n")
 }
 
-type Spec = {
+type AgentSpec = {
   readonly name: string
   readonly hasSkillMd: boolean
   readonly hasManifest: boolean
 }
 
-const plantSkill = (root: string, spec: Spec): void => {
+const skillContent = (name: string): string =>
+  `---\nname: ${name}\ndescription: synthetic\n---\ntext\n`
+
+const manifestContent = (name: string): string =>
+  `interface:\n  display_name: "${name}"\n`
+
+/** Plant `.agents/skills/<name>/{SKILL.md, agents/openai.yaml}` on demand. */
+const plantAgentsSkill = (root: string, spec: AgentSpec): void => {
   const dir = resolve(root, ".agents", "skills", spec.name)
   mkdirSync(dir, { recursive: true })
-  if (spec.hasSkillMd) {
-    writeFileSync(join(dir, "SKILL.md"), `---\nname: ${spec.name}\ndescription: synthetic\n---\ntext\n`)
-  }
+  if (spec.hasSkillMd) writeFileSync(join(dir, "SKILL.md"), skillContent(spec.name))
   if (spec.hasManifest) {
     const agents = join(dir, "agents")
     mkdirSync(agents, { recursive: true })
-    writeFileSync(join(agents, "openai.yaml"), `interface:\n  display_name: "${spec.name}"\n`)
+    writeFileSync(join(agents, "openai.yaml"), manifestContent(spec.name))
   }
+}
+
+/** Plant the `.claude` twin of a skill: `ok` mirrors, `drift` changes bytes. */
+const plantClaudeSkill = (root: string, name: string, kind: "ok" | "drift"): void => {
+  const dir = resolve(root, ".claude", "skills", name)
+  mkdirSync(dir, { recursive: true })
+  const body = kind === "drift" ? `${skillContent(name)}# drifted\n` : skillContent(name)
+  writeFileSync(join(dir, "SKILL.md"), body)
+}
+
+type Mutant = {
+  readonly name: string
+  readonly steered: ReadonlyArray<string>
+  readonly agents: ReadonlyArray<AgentSpec>
+  /** Which agents-side skills get a `.claude` twin, and whether it drifts. */
+  readonly claude?: ReadonlyArray<{ readonly name: string; readonly kind: "ok" | "drift" }>
+}
+
+const refusalsFor = (
+  temporaryRoot: string,
+  mutant: Mutant,
+): ReadonlyArray<string> => {
+  const root = resolve(temporaryRoot, mutant.name)
+  mkdirSync(root, { recursive: true })
+  writeFileSync(resolve(root, "AGENTS.md"), syntheticAgents(mutant.steered))
+  for (const spec of mutant.agents) plantAgentsSkill(root, spec)
+  for (const twin of mutant.claude ?? []) plantClaudeSkill(root, twin.name, twin.kind)
+  return checkSkills(root).reasons
 }
 
 const selfTest = (): void => {
@@ -171,29 +269,17 @@ const selfTest = (): void => {
   const write = process.argv.includes("--write")
 
   try {
-    const refusalsFor = (mutant: {
-      readonly name: string
-      readonly steered: ReadonlyArray<string>
-      readonly specs: ReadonlyArray<Spec>
-    }): ReadonlyArray<string> => {
-      const root = resolve(temporaryRoot, mutant.name)
-      mkdirSync(root, { recursive: true })
-      writeFileSync(resolve(root, "AGENTS.md"), syntheticAgents(mutant.steered))
-      for (const spec of mutant.specs) plantSkill(root, spec)
-      return checkSkills(root).reasons
-    }
+    const both = { alpha: { name: "alpha", hasSkillMd: true, hasManifest: true }, beta: { name: "beta", hasSkillMd: true, hasManifest: true } }
 
-    // The healthy control first: a section that steers the same skills the
-    // disk carries, each complete. Machinery that refuses a lawful roster or
-    // that misthrows on the prose line would fall here; a green trace that
-    // never saw a lawful tree proves nothing.
-    const healthy = refusalsFor({
+    // The healthy control first: a section that steers the same skills both
+    // homes carry, each complete, each mirrored. Machinery that refuses a
+    // lawful roster or that misthrows on the prose line would fall here; a
+    // green trace that never saw a lawful dual-home tree proves nothing.
+    const healthy = refusalsFor(temporaryRoot, {
       name: "healthy",
       steered: ["alpha", "beta"],
-      specs: [
-        { name: "alpha", hasSkillMd: true, hasManifest: true },
-        { name: "beta", hasSkillMd: true, hasManifest: true },
-      ],
+      agents: [both.alpha, both.beta],
+      claude: [{ name: "alpha", kind: "ok" }, { name: "beta", kind: "ok" }],
     })
     if (healthy.length !== 0) {
       throw new Error(`healthy control refused: ${healthy.join(" | ")}`)
@@ -202,37 +288,51 @@ const selfTest = (): void => {
     // One mutant per law the wall guards, each dropping exactly that law:
     // the ticket's named control (a skill left on disk but dropped from the
     // section), a row steered to a missing skill, a section pointing at an
-    // incomplete skill (no SKILL.md), a skill without its codex manifest,
-    // and a section whose bullet set is gone entirely (the vacuity guard).
+    // incomplete skill (no SKILL.md), a skill without its codex manifest, a
+    // section whose bullet set is gone entirely (the vacuity guard), and the
+    // two mirror breaks - `.claude` missing a skill and `.claude` carrying
+    // drifted bytes.
     const label = (name: string): string => `== mutant: ${name}`
 
-    const orphan = refusalsFor({
+    const orphan = refusalsFor(temporaryRoot, {
       name: "unsteered-skill",
       steered: ["alpha"],
-      specs: [
-        { name: "alpha", hasSkillMd: true, hasManifest: true },
-        { name: "beta", hasSkillMd: true, hasManifest: true },
-      ],
+      agents: [both.alpha, both.beta],
+      claude: [{ name: "alpha", kind: "ok" }, { name: "beta", kind: "ok" }],
     })
-    const ghost = refusalsFor({
+    const ghost = refusalsFor(temporaryRoot, {
       name: "steering-to-missing",
       steered: ["alpha", "ghost"],
-      specs: [{ name: "alpha", hasSkillMd: true, hasManifest: true }],
+      agents: [both.alpha],
+      claude: [{ name: "alpha", kind: "ok" }],
     })
-    const noSkillMd = refusalsFor({
+    const noSkillMd = refusalsFor(temporaryRoot, {
       name: "missing-skill-md",
       steered: ["alpha"],
-      specs: [{ name: "alpha", hasSkillMd: false, hasManifest: true }],
+      agents: [{ name: "alpha", hasSkillMd: false, hasManifest: true }],
     })
-    const noManifest = refusalsFor({
+    const noManifest = refusalsFor(temporaryRoot, {
       name: "missing-manifest",
       steered: ["alpha"],
-      specs: [{ name: "alpha", hasSkillMd: true, hasManifest: false }],
+      agents: [{ name: "alpha", hasSkillMd: true, hasManifest: false }],
+      claude: [{ name: "alpha", kind: "ok" }],
     })
-    const emptySection = refusalsFor({
+    const emptySection = refusalsFor(temporaryRoot, {
       name: "empty-section",
       steered: [],
-      specs: [{ name: "alpha", hasSkillMd: true, hasManifest: true }],
+      agents: [both.alpha],
+      claude: [{ name: "alpha", kind: "ok" }],
+    })
+    const mirrorMissing = refusalsFor(temporaryRoot, {
+      name: "mirror-missing",
+      steered: ["alpha"],
+      agents: [both.alpha],
+    })
+    const mirrorDrift = refusalsFor(temporaryRoot, {
+      name: "mirror-drift",
+      steered: ["alpha"],
+      agents: [both.alpha],
+      claude: [{ name: "alpha", kind: "drift" }],
     })
 
     const trace = [
@@ -246,6 +346,10 @@ const selfTest = (): void => {
       ...noManifest,
       label("empty-section"),
       ...emptySection,
+      label("mirror-missing"),
+      ...mirrorMissing,
+      label("mirror-drift"),
+      ...mirrorDrift,
       "",
     ].join("\n")
 
@@ -260,20 +364,21 @@ const selfTest = (): void => {
       throw new Error(`skills roster control trace moved\n${trace}`)
     }
 
-    const orphansRefused = orphan.length > 0
-    const ghostRefused = ghost.length > 0
-    const skillMdRefused = noSkillMd.length > 0
-    const manifestRefused = noManifest.length > 0
-    const emptyRefused = emptySection.length > 0
-    if (!(orphansRefused && ghostRefused && skillMdRefused && manifestRefused && emptyRefused)) {
-      throw new Error(
-        "a skills roster mutant was not refused " +
-          `(orphan=${orphansRefused} ghost=${ghostRefused} skillMd=${skillMdRefused} ` +
-          `manifest=${manifestRefused} empty=${emptyRefused})`,
-      )
+    const refused = {
+      orphan: orphan.length > 0,
+      ghost: ghost.length > 0,
+      skillMd: noSkillMd.length > 0,
+      manifest: noManifest.length > 0,
+      empty: emptySection.length > 0,
+      mirrorMissing: mirrorMissing.length > 0,
+      mirrorDrift: mirrorDrift.length > 0,
+    }
+    if (Object.values(refused).some((value) => !value)) {
+      const flat = Object.entries(refused).map(([key, value]) => `${key}=${value}`).join(" ")
+      throw new Error(`a skills roster mutant was not refused (${flat})`)
     }
     console.log(
-      "\nSKILLS ROSTER CONTROL: PASS (unsteered skill, steering-to-missing, missing SKILL.md, missing manifest, and empty-section all refused; healthy control accepted)",
+      "\nSKILLS ROSTER CONTROL: PASS (unsteered skill, steering-to-missing, missing SKILL.md, missing manifest, empty-section, missing .claude mirror, and drifted .claude mirror all refused; healthy dual-home control accepted)",
     )
   } finally {
     if (!temporaryRoot.startsWith(`${resolvedTemp}\\`) &&

@@ -2,9 +2,15 @@
 SKILL ROSTER: on-disk skill 'beta' has no steering in AGENTS.md
 == mutant: steering-to-missing
 SKILL ROSTER: AGENTS.md steers to missing skill 'ghost'
+SKILL ROSTER: .claude mirror is missing skill 'ghost'
 == mutant: missing-skill-md
 SKILL ROSTER: skill 'alpha' is missing SKILL.md
+SKILL ROSTER: .claude mirror is missing skill 'alpha'
 == mutant: missing-manifest
 SKILL ROSTER: skill 'alpha' is missing its agents/openai.yaml manifest
 == mutant: empty-section
 SKILL ROSTER: AGENTS.md steers no skill (section deleted)
+== mutant: mirror-missing
+SKILL ROSTER: .claude mirror is missing skill 'alpha'
+== mutant: mirror-drift
+SKILL ROSTER: .claude mirror diverges for skill 'alpha' file 'SKILL.md'
