@@ -310,9 +310,8 @@ style notes.
 4. **Plane layering.** truth ← kernel ← planes ← carriage ← surface;
    a layer imports only itself and deeper; internal modules rank by
    their Seam: tag, and truth's internal edges ride a reviewed pin.
-   Wall: check:layering (landed; its control battery-gated; the lint
-   itself gates when the ruled F1 inversion lands and the red set
-   empties). Severity: blocker.
+   Wall: check:layering and its executed control, battery-gated (red
+   set emptied by the ruled F1 inversion, PR #146). Severity: blocker.
 5. **Effect first-class, idiomatic, deep.** Layers for services,
    typed errors, Stream/PubSub/Cache/RequestResolver over hand-rolls,
    @effect/cli for CLIs; core algebras as shared services. Wall:

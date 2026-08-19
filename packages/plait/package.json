@@ -66,7 +66,7 @@
     "generate:type-universe": "bun scripts/check-public-type-universe.ts --write",
     "generate:type-universe-control": "bun scripts/check-public-type-universe-negative.ts --write",
     "test": "bun run test:fast && bun run test:walls && bun run test:types",
-    "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:kernel-tables && bun run check:kernel-schemas && bun run check:one-canonicalizer && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control && bun run check:refusal-vocabulary && bun run check:refusal-control && bun run check:refusal-payloads && bun run check:kernel-door && bun run check:kernel-door-control",
+    "test:fast": "bun scripts/run-test-group.ts fast && bun run check:corpus && bun run check:kernel-tables && bun run check:kernel-schemas && bun run check:one-canonicalizer && bun run check:public-effects && bun run check:type-universe && bun run check:parity-control && bun run check:refusal-vocabulary && bun run check:refusal-control && bun run check:refusal-payloads && bun run check:kernel-door && bun run check:kernel-door-control && bun run check:layering",
     "test:types": "bun run check:one-canonicalizer-control && bun run check:type-control && bun run check:type-universe-control && bun run check:rung-control && bun run check:address-control && bun run check:layering-control",
     "test:walls": "bun scripts/run-test-group.ts walls"
   },
