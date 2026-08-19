@@ -100,11 +100,11 @@ def readTables (lines : List String) : Except String Tables := do
 
 /-! ## Reading the reviewed roster -/
 
-/-- The reviewed refusal roster: the marker every unratified meaning is
-    rendered behind, the runtime spellings in their persisted order, and the
-    standing meaning of each model-emitted reason. -/
+/-- The reviewed refusal roster: the runtime spellings in their persisted
+    order, and the standing meaning of each model-emitted reason. Every meaning
+    is ratified, so nothing here says how one is introduced — a sentence is
+    rendered as itself. -/
 structure Roster where
-  marker : String
   runtimeKinds : List (String × String)
   modelReasons : List (String × String)
 
@@ -117,13 +117,6 @@ def rosterRow (nameKey : String) (value : Canon.Value) : Except String (String �
 /-- Read the roster from its committed lines. -/
 def readRoster (lines : List String) : Except String Roster := do
   let rows := lines.filter (fun line => !line.isEmpty)
-  let marker <-
-    match recordsOf "marker" rows with
-    | [value] =>
-        match Canon.stringAt value "text" with
-        | some text => .ok text
-        | none => .error "ts: the roster's marker row carries no text"
-    | _ => .error "ts: the roster must carry exactly one marker row"
   let runtimeKinds <- (recordsOf "runtime-kind" rows).mapM (rosterRow "kind")
   let modelReasons <- (recordsOf "model-reason" rows).mapM (rosterRow "reason")
   if runtimeKinds.isEmpty then .error "ts: the roster names no runtime refusal kinds"
@@ -137,7 +130,7 @@ def readRoster (lines : List String) : Except String Roster := do
       if reasons.any (fun name => (reasons.filter (fun other => other == name)).length != 1) then
         .error "ts: the roster names a model refusal reason twice"
       else
-        .ok { marker := marker, runtimeKinds := runtimeKinds, modelReasons := modelReasons }
+        .ok { runtimeKinds := runtimeKinds, modelReasons := modelReasons }
 
 /-- The standing meaning of one model-emitted reason. Both directions refuse
     rather than default: a reason the roster does not cover would render an
@@ -230,12 +223,12 @@ def brandTag (sort : BrandedSort) : TsType :=
 
 /-! ## Doc comments the surfaces carry -/
 
-/-- One drafted meaning as a doc comment: the marker on its own line, then the
-    sentence greedy-wrapped. The marker is reproduced verbatim because a
-    meaning without it reads as ratified prose. -/
-def meaningDoc (marker meaning : String) : Doc :=
+/-- One ratified meaning as a doc comment: the sentence greedy-wrapped, and
+    nothing above it. The taste pass ruled on these sentences, so a line
+    introducing one as unratified would now be false. -/
+def meaningDoc (meaning : String) : Doc :=
   { layout := .block
-  , blocks := [.verbatim [marker], .wrapped meaningWrap meaning.trimAscii.toString] }
+  , blocks := [.wrapped meaningWrap meaning.trimAscii.toString] }
 
 /-! ## The kernel tables surface -/
 
@@ -263,8 +256,8 @@ def tablesHeader (tables : Tables) : List String :=
   , "Every refusal row carries its kind's standing MEANING as a doc comment: one"
   , "to two sentences saying what fact the kind names and what that implies,"
   , "distinct from the law and repair a refusal teaches at the moment it fires."
-  , "The meanings are drafts until the operator's taste pass rules, which is what"
-  , "the marker line above each of them says."
+  , "The operator's taste pass ratified those sentences, so each one stands as"
+  , "written and nothing is rendered above it."
   , ""
   , "These are safety-side names and texts, never runtime guarantees. A model"
   , "theorem stays in the model; what crosses the seam is the vocabulary the"
@@ -420,7 +413,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
             "KERNEL_REFUSALS"
             (.satisfies
               (.asConst (.array .block (tables.refusals.map fun refusal =>
-                (some (meaningDoc roster.marker (meaningOf refusal.reason)),
+                (some (meaningDoc (meaningOf refusal.reason)),
                   TsExpr.object .block
                     [ (none, .name "reason", .str refusal.reason)
                     , (none, .name "law", .str refusal.law)
@@ -466,7 +459,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
             "KERNEL_RUNTIME_STRUCTURAL_REFUSALS"
             (.satisfies
               (.asConst (.array .block (roster.runtimeKinds.map fun row =>
-                (some (meaningDoc roster.marker row.2),
+                (some (meaningDoc row.2),
                   TsExpr.object .block
                     [ (none, .name "kind", .str row.1)
                     , (none, .name "source", .str (runtimeSource tables row.1)) ]))))
@@ -519,9 +512,9 @@ def vocabularyHeader (tables : Tables) : List String :=
   , ""
   , "Each kind carries its standing MEANING as a doc comment: one to two sentences"
   , "saying what fact the kind names and what that implies, which is a different"
-  , "act from the law and repair a refusal teaches when it fires. The meanings are"
-  , "drafts until the operator's taste pass rules, which is what the marker line"
-  , "above each of them says."
+  , "act from the law and repair a refusal teaches when it fires. The operator's"
+  , "taste pass ratified those sentences, so each one stands as written and"
+  , "nothing is rendered above it."
   , ""
   , "@module" ]
 
@@ -546,7 +539,7 @@ def vocabularyModule (tables : Tables) (roster : Roster) : TsModule :=
           (some (Doc.line "Every structural refusal kind the package can mint, in its persisted order."))
           "STRUCTURAL_REFUSAL_KINDS"
           (.asConst (.array .block (roster.runtimeKinds.map fun row =>
-            (some (meaningDoc roster.marker row.2), TsExpr.str row.1))))
+            (some (meaningDoc row.2), TsExpr.str row.1))))
       , .blank
       , .constant
           (some (Doc.rows

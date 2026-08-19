@@ -1,4 +1,3 @@
-{"record":"marker","text":"Draft meaning, awaiting ratification."}
 {"kind":"non-canonical-value","meaning":"The presented value has no canonical form under the estate's RFC 8785 seam, so it cannot be given a content address. Identity here is bytes, and a value the canonicalizer will not admit has no identity to name.","record":"runtime-kind"}
 {"kind":"invalid-subject-token","meaning":"A routing token presented to the fabric is not one literal NATS token. Subjects route and never identify, so a token that could expand or wildcard would widen a route no declaration named.","record":"runtime-kind"}
 {"kind":"malformed-envelope","meaning":"The presented bytes do not carry the fixed v0 envelope shape the fabric contract declares. The envelope is the frame every fact travels in, so a shape the grammar does not admit is refused before anything reads a body.","record":"runtime-kind"}

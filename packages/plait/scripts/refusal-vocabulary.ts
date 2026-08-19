@@ -36,8 +36,8 @@
  * MEANS, and a vocabulary whose words are traceable but unexplained is still
  * not a language. So `checkRefusalMeanings` holds a second law over the same
  * artifacts: every runtime structural kind and every reason the model emits
- * carries one to two sentences of standing meaning, rendered behind the draft
- * marker until the operator's taste pass rules, and rendered identically by
+ * carries one to two sentences of standing meaning, rendered as standing text
+ * now that the operator's taste pass has ruled, and rendered identically by
  * the two projections that carry it — the generated modules and the prose
  * page, which are written by different renderers and are read here as bytes.
  *
@@ -50,7 +50,7 @@ import * as ts from "typescript-five"
 
 import { CORPUS_PATH } from "./kernel-corpus.js"
 import {
-  DRAFT_MEANING_MARKER,
+  RETIRED_DRAFT_MARKERS,
   RUNTIME_REFUSAL_WAIVER_TICKET,
 } from "./kernel-runtime-refusals.js"
 
@@ -415,11 +415,28 @@ export const checkProjectionAncestry = (
 export interface ReadMeaning {
   /** The refusal kind or emitted reason the meaning belongs to. */
   readonly name: string
-  /** The first line of the rendering, which the draft marker law is about. */
+  /**
+   * The draft marker the rendering opens with, or the empty string when it
+   * opens with the meaning itself. A ratified corpus renders no marker, so
+   * anything here is what the marker law refuses.
+   */
   readonly marker: string
   /** The meaning itself, line breaks rejoined as single spaces. */
   readonly meaning: string
 }
+
+/**
+ * How a claim of draftness opens, whatever the rest of the line says.
+ *
+ * The two retired forms are named as data and refused by name, and this prefix
+ * is what stops a third spelling from being invented: the law is that a
+ * ratified sentence does not claim to be a draft, and a wall spelled only for
+ * the two forms that happened to exist would check those and nothing else.
+ */
+const DRAFT_CLAIM_OPENING = "Draft meaning"
+
+/** Whether one rendered line claims the sentence under it is a draft. */
+const claimsDraft = (line: string): boolean => line.startsWith(DRAFT_CLAIM_OPENING)
 
 const leadingDocBlock = (file: ts.SourceFile, node: ts.Node): string | undefined => {
   const text = file.getFullText()
@@ -433,8 +450,8 @@ const leadingDocBlock = (file: ts.SourceFile, node: ts.Node): string | undefined
 /**
  * One doc block as its content lines: the comment syntax removed, each line
  * trimmed, and the blank ends dropped. The rendering wraps a meaning at a
- * fixed column, so the sentence is rebuilt by rejoining the lines that follow
- * the marker with single spaces — the same text, read back out of the bytes.
+ * fixed column, so the sentence is rebuilt by rejoining those lines with
+ * single spaces — the same text, read back out of the bytes.
  */
 const docBlockLines = (raw: string): ReadonlyArray<string> => {
   const body = raw.slice("/**".length, raw.length - "*/".length)
@@ -447,14 +464,19 @@ const docBlockLines = (raw: string): ReadonlyArray<string> => {
   return lines
 }
 
+/**
+ * One doc block read as a meaning: the marker line if the block still opens
+ * with a claim of draftness, and the sentence rejoined from whatever follows.
+ * A ratified rendering has no first line to split off, so the whole block is
+ * the meaning — which is what makes a marker, if one is there, visible to the
+ * law rather than absorbed into the sentence.
+ */
 const meaningOfDoc = (raw: string | undefined, name: string): ReadMeaning => {
   if (raw === undefined) return { name, marker: "", meaning: "" }
   const lines = docBlockLines(raw)
-  return {
-    name,
-    marker: lines.at(0) ?? "",
-    meaning: lines.slice(1).join(" ").trim(),
-  }
+  const marker = lines.length > 0 && claimsDraft(lines[0]!) ? lines[0]! : ""
+  const body = marker === "" ? lines : lines.slice(1)
+  return { name, marker, meaning: body.join(" ").trim() }
 }
 
 /**
@@ -529,11 +551,28 @@ export const readKernelReasonMeanings = (
 }
 
 /**
- * Reads the meanings out of the rendered prose page's bytes. A level-three
- * heading names the kind; a line equal to the draft marker opens its meaning,
- * and the next non-empty line is the sentence. Headings carrying no marker —
- * every type and program vector on the page — are not meanings and are not
- * read as empty ones.
+ * The page's two meaning-bearing sections, named here rather than reached for.
+ *
+ * The marker used to be what said "a meaning starts here", and it was doing two
+ * jobs: claiming draftness, and locating the sentence. Ratification takes the
+ * first job away, so the second is stated as page STRUCTURE instead — the two
+ * level-two sections that render a refusal vocabulary. Every other section on
+ * the page is a type, an encoding vector, a verdict, or a program, and none of
+ * them carries a meaning; reading them would turn a section rename into a
+ * silent loss of coverage rather than a red wall.
+ */
+export const PROSE_MEANING_SECTIONS = [
+  "Taught refusals",
+  "Runtime structural refusal kinds",
+] as const
+
+/**
+ * Reads the meanings out of the rendered prose page's bytes. Inside a
+ * meaning-bearing section a level-three heading names the kind, the bold field
+ * paragraphs under it are the refusal-time teaching, and what is left is the
+ * standing meaning — preceded by a draft marker if the page still renders one,
+ * which is how a page that claims draftness reaches the law instead of hiding
+ * inside the sentence.
  */
 export const readProseMeanings = (
   page: string,
@@ -541,24 +580,45 @@ export const readProseMeanings = (
 ): ReadonlyArray<ReadMeaning> => {
   const lines = page.split("\n").map((line) => line.replace(/\r$/, ""))
   const found: Array<ReadMeaning> = []
+  let inSection = false
   let heading: string | undefined
+  let block: Array<string> = []
+  let openedAt = 0
+  const close = (): void => {
+    if (heading === undefined) return
+    const marker = block.length > 0 && claimsDraft(block[0]!) ? block[0]! : ""
+    const body = marker === "" ? block : block.slice(1)
+    if (body.length === 0) {
+      return refuse(`${path} line ${openedAt} renders ${quote(heading)} with no standing meaning`)
+    }
+    found.push({ name: heading, marker, meaning: body.join(" ").trim() })
+    heading = undefined
+  }
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index]!
-    if (line.startsWith("### ")) {
-      heading = line.slice("### ".length).trim()
+    if (line.startsWith("## ")) {
+      close()
+      inSection = (PROSE_MEANING_SECTIONS as ReadonlyArray<string>).includes(
+        line.slice("## ".length).trim(),
+      )
       continue
     }
-    if (line.trim() !== DRAFT_MEANING_MARKER) continue
-    if (heading === undefined) {
-      return refuse(`${path} line ${index + 1} carries a draft marker under no heading`)
+    if (line.startsWith("### ")) {
+      close()
+      if (!inSection) continue
+      heading = line.slice("### ".length).trim()
+      openedAt = index + 1
+      block = []
+      continue
     }
-    let cursor = index + 1
-    while (cursor < lines.length && lines[cursor]!.trim() === "") cursor++
-    if (cursor >= lines.length) {
-      return refuse(`${path} line ${index + 1} carries a draft marker with nothing after it`)
-    }
-    found.push({ name: heading, marker: line.trim(), meaning: lines[cursor]!.trim() })
+    if (heading === undefined) continue
+    const trimmed = line.trim()
+    // The bold field paragraphs are the refusal-time teaching and the ancestry,
+    // both pinned by their own walls. What is left in the block is the meaning.
+    if (trimmed === "" || trimmed.startsWith("**")) continue
+    block.push(trimmed)
   }
+  close()
   return found
 }
 
@@ -572,8 +632,8 @@ export interface RefusalMeaningEvidence {
   readonly proseMeanings: ReadonlyArray<ReadMeaning>
   /** Read from the model interchange fixture's bytes. */
   readonly corpusReasons: ReadonlyArray<string>
-  /** The marker every unratified meaning must still carry. */
-  readonly draftMarker: string
+  /** The markers a meaning used to be rendered behind, and now may not be. */
+  readonly retiredMarkers: ReadonlyArray<string>
 }
 
 /** The result of checking the standing meanings. */
@@ -593,11 +653,11 @@ export type RefusalMeaningCheck =
  *    emits, has a non-empty meaning in the generated artifact that ships it. A
  *    kind with no meaning refuses here — silently shipping an unexplained kind
  *    is exactly the drift the operator's requirement exists to stop.
- * 2. **The draft marker stands.** Every meaning is rendered behind the marker,
- *    verbatim, until the taste pass rules. An unmarked meaning reads as prose
- *    the operator has ratified, and nothing but that sitting may make it read
- *    that way — so the marker's PRESENCE is pinned exactly like the sentences'
- *    bytes are.
+ * 2. **No meaning claims draftness.** The taste pass ruled on 2026-08-19, so
+ *    every meaning is standing text and a marker above one would tell a reader
+ *    the operator has not ruled. The clause inverted when the corpus was
+ *    ratified: what used to be required is now refused, by name for the two
+ *    retired forms and by opening for anything else that claims the same thing.
  * 3. **One kind, one meaning.** A name carried by both registers carries the
  *    same sentence in both.
  * 4. **The projections agree.** The prose page carries a meaning for exactly
@@ -609,27 +669,31 @@ export type RefusalMeaningCheck =
 export const checkRefusalMeanings = (
   evidence: RefusalMeaningEvidence,
 ): RefusalMeaningCheck => {
+  const draftClaim = (marker: string): string =>
+    evidence.retiredMarkers.includes(marker)
+      ? `the retired draft marker ${quote(marker)}`
+      : `${quote(marker)}, which claims draftness`
+
   const expected = new Map<string, string>()
   const register = (
     read: ReadonlyArray<ReadMeaning>,
     what: string,
   ): RefusalMeaningCheck | undefined => {
     for (const row of read) {
+      if (row.marker !== "") {
+        return {
+          ok: false,
+          reason:
+            `${what} ${quote(row.name)} renders its meaning behind ${draftClaim(row.marker)};`
+            + " the operator ratified the corpus, so a meaning is standing text",
+        }
+      }
       if (row.meaning === "") {
         return {
           ok: false,
           reason:
             `${what} ${quote(row.name)} carries no standing meaning; every refusal kind`
             + ` states what it means and what that implies`,
-        }
-      }
-      if (row.marker !== evidence.draftMarker) {
-        return {
-          ok: false,
-          reason:
-            `${what} ${quote(row.name)} renders its meaning behind ${quote(row.marker)}`
-            + ` rather than ${quote(evidence.draftMarker)}; only the operator's taste pass`
-            + ` retires that marker`,
         }
       }
       const already = expected.get(row.name)
@@ -671,12 +735,12 @@ export const checkRefusalMeanings = (
           + ` neither a runtime structural kind nor an emitted refusal reason`,
       }
     }
-    if (row.marker !== evidence.draftMarker) {
+    if (row.marker !== "") {
       return {
         ok: false,
         reason:
-          `the prose page renders ${quote(row.name)}'s meaning behind ${quote(row.marker)}`
-          + ` rather than ${quote(evidence.draftMarker)}`,
+          `the prose page renders ${quote(row.name)}'s meaning behind`
+          + ` ${draftClaim(row.marker)}`,
       }
     }
     if (row.meaning !== wanted) {
@@ -819,24 +883,31 @@ export type TrackingArtifactCheck =
 
 /**
  * Root law 10's mechanical clause: an official document carries no tracking
- * artifact, and a draft marker on one is the exact ratified form.
+ * artifact, and no draft marker at all.
  *
- * The sweep is over the COMMITTED bytes of the three rendered surfaces, one
- * line at a time, so a refusal can say which surface, which line, which class,
- * and what it matched. Two things make it a wall rather than a lint. It reads
- * what shipped, not what a generator intended, so removing a path from a
- * template and forgetting to regenerate still reddens. And the marker arm
- * pins the EXACT string: a line that opens like a draft marker and is not the
- * ratified one is refused rather than tolerated, which is what stops the marker
- * from quietly acquiring a parenthetical again.
+ * The sweep is over the COMMITTED bytes of the rendered surfaces, one line at a
+ * time, so a refusal can say which surface, which line, which class, and what
+ * it matched. Two things make it a wall rather than a lint. It reads what
+ * shipped, not what a generator intended, so removing a path from a template
+ * and forgetting to regenerate still reddens. And the marker arm now refuses
+ * every draft marker rather than pinning one: both retired forms by name — the
+ * original, which carried a ticket number outward, and the artifact-free one
+ * the mechanism ran under — and any other line that opens by claiming
+ * draftness, so a third spelling cannot be invented back into the surfaces.
  *
- * `lawful` is the by-name exclusion list the id clause is read against, passed
- * in rather than reached for, so the control can plant a stale one and watch
- * the liveness clause refuse it.
+ * The marker arm is read BEFORE the artifact classes, so a retired marker that
+ * also carries a ticket id is reported as the marker it is. The id clause has
+ * its own plants, and an arm that could not tell those two apart would prove
+ * neither.
+ *
+ * `retired` and `lawful` are both passed in rather than reached for: the first
+ * so the control can plant each retired form and watch the marker clause refuse
+ * it, the second so it can plant a stale exclusion and watch the liveness
+ * clause refuse that.
  */
 export const checkNoTrackingArtifacts = (
   surfaces: ReadonlyArray<OfficialSurface>,
-  marker: string,
+  retired: ReadonlyArray<string>,
   lawful: ReadonlyArray<string>,
 ): TrackingArtifactCheck => {
   if (surfaces.length === 0) return { ok: false, reason: "no official surface was swept" }
@@ -850,6 +921,17 @@ export const checkNoTrackingArtifacts = (
     for (let index = 0; index < lines.length; index++) {
       const line = lines[index]!.replace(/\r$/, "")
       swept++
+      const trimmed = line.trim()
+      const stated = trimmed.startsWith("* ") ? trimmed.slice(2) : trimmed
+      if (claimsDraft(stated)) {
+        return {
+          ok: false,
+          reason:
+            `${surface.surface} line ${index + 1} renders ${quote(stated)}, which claims the`
+            + ` sentence under it is a draft; the operator ratified the corpus`
+            + `${retired.includes(stated) ? " and retired that marker" : ""}`,
+        }
+      }
       for (const artifact of TRACKING_ARTIFACT_CLASSES) {
         // Every match on the line, not just the first: a line carrying an
         // excluded token before a real one would otherwise report the excluded
@@ -868,16 +950,6 @@ export const checkNoTrackingArtifacts = (
               + ` (${quote(token)}): ${artifact.why}`,
           }
         }
-      }
-      const trimmed = line.trim()
-      if (!trimmed.startsWith("Draft meaning")) continue
-      const stated = trimmed.startsWith("* ") ? trimmed.slice(2) : trimmed
-      if (stated === marker) continue
-      return {
-        ok: false,
-        reason:
-          `${surface.surface} line ${index + 1} renders ${quote(stated)} rather than the`
-          + ` ratified draft marker ${quote(marker)}`,
       }
     }
   }
@@ -901,7 +973,8 @@ export const checkNoTrackingArtifacts = (
  * The reviewed constants the laws are evaluated against, re-exported so the
  * checks and their controls reach them through the wall rather than through the
  * generator's own manifest: the ticket a staged-debt waiver must cite (which
- * lives in the roster and is never rendered), and the marker an unratified
- * meaning renders behind.
+ * lives in the roster and is never rendered), and the markers a meaning was
+ * rendered behind before the corpus was ratified and may not be rendered behind
+ * now.
  */
-export { DRAFT_MEANING_MARKER, RUNTIME_REFUSAL_WAIVER_TICKET }
+export { RETIRED_DRAFT_MARKERS, RUNTIME_REFUSAL_WAIVER_TICKET }

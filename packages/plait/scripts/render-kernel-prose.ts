@@ -18,10 +18,9 @@
  * The page has one input beside the corpus, and the page says so where a
  * reader meets it: the reviewed refusal-kind roster, which carries each kind's
  * standing MEANING and the runtime structural spellings the model corpus does
- * not emit. Those sentences are house prose, not the model's, and they are
- * drafts until the operator's taste pass rules — every one of them renders
- * behind the draft marker, and the vocabulary wall requires the marker to be
- * there.
+ * not emit. Those sentences are house prose, not the model's. The operator's
+ * taste pass ratified them, so every one renders as standing text and the
+ * vocabulary wall refuses a meaning that still claims to be a draft.
  *
  * The page is an OFFICIAL DOCUMENT and carries no tracking artifacts: no
  * ticket id, no dev parenthetical, no script invocation, and no filesystem
@@ -56,7 +55,6 @@ import type {
 } from "../src/kernel/KernelCorpusSchemas.js"
 import { generatorFields, type KernelCorpus } from "./kernel-corpus.js"
 import {
-  DRAFT_MEANING_MARKER,
   KERNEL_REFUSAL_REASON_MEANINGS,
   RUNTIME_STRUCTURAL_REFUSAL_PROJECTION,
 } from "./kernel-runtime-refusals.js"
@@ -98,18 +96,16 @@ const refuse: (reason: string) => never = (reason) => {
 }
 
 /**
- * One drafted meaning as page lines: the marker verbatim on its own line, a
- * blank line, then the sentence. The marker is not decoration — the vocabulary
- * wall reads it back out of this page's bytes and refuses a meaning that lost
- * it, because a meaning without the marker reads as prose the operator has
- * ratified, and only the taste pass may make it read that way.
+ * One ratified meaning as page lines: the sentence, standing on its own. It is
+ * rendered behind nothing — the operator's taste pass ruled on the corpus, and
+ * a marker over a ratified sentence would tell a reader the opposite. The
+ * vocabulary wall reads the sentence back out of this page's bytes and refuses
+ * one that reappears behind a draft marker.
  */
 const meaningLines = (meaning: string, where: string, out: Array<string>): void => {
   const text = meaning.trim()
   if (text === "") return refuse(`${where} carries no meaning`)
   if (meaning.includes("\n")) return refuse(`${where}'s meaning carries a line break`)
-  out.push(DRAFT_MEANING_MARKER)
-  out.push("")
   out.push(text)
   out.push("")
 }
@@ -272,12 +268,12 @@ export const renderKernelProse = (corpus: KernelCorpus): string => {
   out.push("")
   out.push(
     "**One thing on this page is not the model's.** Each refusal kind's *meaning* - the one" +
-      " or two sentences under the draft marker, and the runtime structural kinds section -" +
-      " is house prose, read from the reviewed refusal-kind roster rather than from the" +
-      " corpus, because the corpus carries no field a meaning could ride in. Those sentences" +
-      " are DRAFTS: the operator's taste pass ratifies them, and until it rules every one of" +
-      " them renders behind its marker line. Read them as the house explaining its own" +
-      " vocabulary, never as a model verdict.",
+      " or two sentences closing its section, and the runtime structural kinds section - is" +
+      " house prose, read from the reviewed refusal-kind roster rather than from the corpus," +
+      " because the corpus carries no field a meaning could ride in. Those sentences are" +
+      " RATIFIED: the operator's taste pass ruled on the corpus and its voice, so each stands" +
+      " as written and an amendment is an ordinary reviewed change to the roster. Read them" +
+      " as the house explaining its own vocabulary, never as a model verdict.",
   )
   out.push("")
   out.push(
@@ -329,8 +325,7 @@ export const renderKernelProse = (corpus: KernelCorpus): string => {
       " candidate, about this one presentation. A meaning speaks about the reason itself," +
       " standing, to anyone reading the vocabulary. The model corpus has no field to carry" +
       " a meaning in, so these are reviewed house data rendered here beside the teaching —" +
-      " every one of them a draft until the operator's taste pass rules, which is what the" +
-      " marker above each says.",
+      " every one of them ratified by the operator's taste pass and standing as written.",
   )
   out.push("")
   for (const refusal of corpus.refusals) {
@@ -381,8 +376,7 @@ export const renderKernelProse = (corpus: KernelCorpus): string => {
     "Each carries its standing meaning on the same terms as a taught refusal above, and" +
       " for the same reason: the refusal-time teaching for these kinds is minted where each" +
       " refusal fires and is pinned byte for byte by its own wall, while what follows is the" +
-      " kind's meaning in the language. Every one is a draft until the operator's taste pass" +
-      " rules.",
+      " kind's meaning in the language. Every one of them is ratified and stands as written.",
   )
   out.push("")
   for (const row of RUNTIME_STRUCTURAL_REFUSAL_PROJECTION) {

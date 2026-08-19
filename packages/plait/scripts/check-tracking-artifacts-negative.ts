@@ -1,3 +1,11 @@
+/**
+ * Root law 10's control arm, executed.
+ *
+ * The trace is the contract: every plant has to keep failing for its own named
+ * reason, and a refusal that moves is reported as a moved trace rather than
+ * absorbed. Run with `--write` to re-record it after a deliberate change — the
+ * bytes come from EXECUTING the mutant, never from typing what it ought to say.
+ */
 import { resolve } from "node:path"
 
 const packageRoot = resolve(import.meta.dir, "..")
@@ -20,6 +28,12 @@ if (run.exitCode === 0) {
 }
 
 const actual = normalize(`${run.stdout.toString()}${run.stderr.toString()}`)
+if (process.argv.includes("--write")) {
+  await Bun.write(resolve(packageRoot, trace), actual)
+  console.log(`TRACKING ARTIFACTS CONTROL: wrote ${trace}`)
+  process.exit(0)
+}
+
 const expected = normalize(await Bun.file(resolve(packageRoot, trace)).text())
 if (actual !== expected) {
   console.error("TRACKING ARTIFACTS CONTROL: FAIL — named refusal trace moved")
@@ -32,6 +46,6 @@ if (actual !== expected) {
 
 console.log(
   "TRACKING ARTIFACTS CONTROL: PASS (planted board-ticket id, sitting-note id, filesystem"
-    + " path, generation command, retired draft marker, and stale by-name exclusion each"
-    + " refused for their committed reasons)",
+    + " path, generation command, both retired draft markers, and stale by-name exclusion"
+    + " each refused for their committed reasons)",
 )

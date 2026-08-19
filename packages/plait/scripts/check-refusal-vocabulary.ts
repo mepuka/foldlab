@@ -2,10 +2,10 @@ import { resolve } from "node:path"
 
 import { KERNEL_RUNTIME_STRUCTURAL_REFUSALS } from "../src/kernel/KernelTables.generated.js"
 import {
-  DRAFT_MEANING_MARKER,
   LAWFUL_ID_SHAPED_TOKENS,
   OFFICIAL_SURFACES,
   REFUSAL_VOCABULARY_PATHS,
+  RETIRED_DRAFT_MARKERS,
   RUNTIME_REFUSAL_WAIVER_TICKET,
   checkNoTrackingArtifacts,
   checkProjectionAncestry,
@@ -74,7 +74,7 @@ const meanings = checkRefusalMeanings({
     REFUSAL_VOCABULARY_PATHS.prosePage,
   ),
   corpusReasons: evidence.corpusReasons,
-  draftMarker: DRAFT_MEANING_MARKER,
+  retiredMarkers: RETIRED_DRAFT_MARKERS,
 })
 if (!meanings.ok) fail(meanings.reason)
 
@@ -97,7 +97,7 @@ const rendered = checkNoTrackingArtifacts(
       bytes: await read(REFUSAL_VOCABULARY_PATHS.plainSdk),
     },
   ],
-  DRAFT_MEANING_MARKER,
+  RETIRED_DRAFT_MARKERS,
   LAWFUL_ID_SHAPED_TOKENS,
 )
 if (!rendered.ok) fail(rendered.reason)
@@ -107,8 +107,8 @@ console.log(
     + ` ${checked.corpusBacked} corpus-backed,`
     + ` ${checked.stagedDebt} pinned ${RUNTIME_REFUSAL_WAIVER_TICKET} staged debt,`
     + ` against ${evidence.corpusReasons.length} corpus refusal reasons;`
-    + ` ${meanings.kinds} kind and ${meanings.reasons} reason meanings, all still marked`
-    + " drafts awaiting ratification;"
+    + ` ${meanings.kinds} kind and ${meanings.reasons} reason meanings, every one ratified`
+    + " standing text behind no marker;"
     + ` ${rendered.lines} lines across ${rendered.surfaces} official surfaces carry no`
     + ` tracking artifact, with ${rendered.exclusions} id-shaped token excused by name`
     + ` (${LAWFUL_ID_SHAPED_TOKENS.join(", ")}), each live)`,

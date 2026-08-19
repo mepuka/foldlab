@@ -5005,3 +5005,62 @@ this ticket's file scope and neither was quietly fixed. (c) The audit's hygiene
 rows F-5, F-6 and F-7 stay open; the payload leg now happens to return a value
 parsed from the verified bytes, which is F-7's structural repair on one leg of
 one seam and is not F-7's disposition.
+
+## Task DEV-825 round 4 — the operator ratifies the corpus, and the marker retires
+
+Placeholder `T17` continues the DEV-825 series above; repository D-numbers are
+assigned at merge.
+
+### T17. The corpus is ratified whole, and the marker clause inverts rather than leaves
+
+Decided: the operator ratified the drafted meaning corpus in session on
+2026-08-19 — all sixty sentences, forty-four runtime kinds and sixteen emitted
+reasons, in the voice they were drafted in — so the draft marker leaves every
+projection and no sentence changes with it. Not one word of a meaning moved in
+this round; what moved is markers and walls. The marker row leaves the reviewed
+roster the model emitter reads and the marker field leaves its `Roster`, the
+prose renderer and the plain-TypeScript renderer stop emitting the line, and the
+five affected surfaces were regenerated through their own commands rather than
+edited. From here a sentence-level amendment is an ordinary reviewed diff: the
+byte walls still show it, and no ruling gates it.
+
+The marker clause INVERTS instead of being deleted. What was required is now
+refused: a meaning rendered behind a draft marker is a ratified sentence telling
+its reader the operator has not ruled, which is false. The retired-marker clause
+on the official-surface sweep covers BOTH old forms — the original, which
+carried a ticket number outward, and the artifact-free one the mechanism ran
+under — and refuses anything else that opens by claiming draftness, so a third
+spelling cannot be invented back in. That sweep now reads the marker arm BEFORE
+the artifact classes, because the original form carries an id and would
+otherwise be caught as a tracking id rather than as the marker it is.
+
+Alternatives: delete the marker machinery outright (nothing would then stop a
+generator that was never flipped, or a copied doc comment, from rendering
+draftness over a ratified sentence — the mechanism's whole point was that the
+claim is walled, and the claim inverted rather than expired); keep the marker
+row in the roster as unrendered data (dead data a reader has to be told is dead,
+and a row nothing reads is a row nothing keeps honest); pin only the
+artifact-free form as retired (the original is the one a reader would reach for,
+since it is what the earlier commits show, and a wall spelled for the newer
+mistake would miss the older one); refuse only the two named forms without the
+opening test (a wall spelled for the instances in front of it checks those and
+nothing else, which is the defect the id clause was widened to repair one level
+up).
+
+Both control arms inverted with the law. The meaning control's second plant used
+to remove the marker and now puts one back, and the sweep's retired-marker arm
+became two — one per retired form, each refused for its own reason. Their traces
+were re-recorded by EXECUTING the mutants through a `--write` path added to each
+control driver for exactly that purpose; no trace line was typed by hand.
+**Load-bearing? yes** — this is the ruling the mechanism was built to receive,
+and the inversion is what keeps the ratified corpus from quietly acquiring a
+draft claim again.
+
+**Stated residual.** Three things this round does NOT do. (a) It changes no
+meaning, no law, no repair, and no refusal-time teaching; the taught-payload pin
+is untouched. (b) The prose page's meanings are now located by page STRUCTURE
+rather than by the marker line — the two meaning-bearing sections, named in the
+wall — so renaming one of those sections reddens the wall rather than silently
+dropping its coverage, which is the trade the marker's second job left behind.
+(c) `incarnation-mismatch` is still absent from the roster, as it was when the
+mechanism landed; ratification rules on the sentences that exist.

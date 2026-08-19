@@ -1,7 +1,7 @@
 /**
  * Root law 10's mutation arm.
  *
- * Six plants, one per way the sweep can fail, each made in the *bytes of an
+ * Seven plants, one per way the sweep can fail, each made in the *bytes of an
  * official surface* — the artifacts the production wall reads — and then judged
  * by the production law. Nothing here re-states the law: every arm differs from
  * the green run by exactly the one line it plants.
@@ -18,13 +18,15 @@
  * 4. **A generation command**, planted into the truth-plane vocabulary: the
  *    shape a regeneration instruction takes when it is written into the
  *    artifact instead of the README beside it.
- * 5. **A retired draft marker**, planted over the page's first real one. The
- *    plant carries no id, no path, and no command on purpose: the marker clause
- *    has to refuse it ON ITS OWN, or the clause would only ever be firing
- *    because the old marker happened to name a ticket. The literal retired
- *    string is refused twice over — once as a tracking id and once as a wrong
- *    marker — and an arm that cannot tell those apart proves neither.
- * 6. **A stale by-name exclusion**, planted into the list the id clause is read
+ * 5. **The original retired marker**, planted over the page's first meaning.
+ *    It carries a ticket number, which is exactly why it is planted: the marker
+ *    clause is read BEFORE the artifact classes, so this arm proves the clause
+ *    catches the marker as a marker rather than the id clause catching it by
+ *    accident. An arm that could not tell those apart would prove neither.
+ * 6. **The artifact-free retired marker**, planted the same way. It carries no
+ *    id, no path, and no command, so nothing but the marker clause can refuse
+ *    it — and it is the form a generator left un-flipped would still render.
+ * 7. **A stale by-name exclusion**, planted into the list the id clause is read
  *    against rather than into a surface. The exclusion list is the one place a
  *    tracking family could be admitted on purpose, so the liveness clause that
  *    guards it needs its own plant: an excuse nothing on any surface relies on
@@ -33,10 +35,10 @@
 import { resolve } from "node:path"
 
 import {
-  DRAFT_MEANING_MARKER,
   LAWFUL_ID_SHAPED_TOKENS,
   OFFICIAL_SURFACES,
   REFUSAL_VOCABULARY_PATHS,
+  RETIRED_DRAFT_MARKERS,
   checkNoTrackingArtifacts,
   type OfficialSurface,
 } from "../scripts/refusal-vocabulary.js"
@@ -59,8 +61,8 @@ const PLANTED_PATH = " * Artifact: packages/plait/fixtures/kernel-conformance.nd
 /** A regeneration instruction, written into the artifact rather than beside it. */
 const PLANTED_COMMAND = " * Command:  bun run generate:kernel-tables"
 
-/** A draft marker that is not the ratified one, and names nothing else. */
-const PLANTED_MARKER = "Draft meaning (pending ratification):"
+/** Where the first rendered meaning's teaching ends on the page. */
+const PAGE_TEACHING_CLOSE = "\n**Applicability.**"
 
 const abandon = (reason: string): never => {
   console.error(`TRACKING ARTIFACTS MUTANT: ${reason}`)
@@ -78,6 +80,16 @@ const plant = (bytes: string, line: string): string => {
   return `${bytes.slice(0, at)}\n${line}${bytes.slice(at)}`
 }
 
+/** The page's bytes with a marker put back over its first standing meaning. */
+const remark = (marker: string): string => {
+  const teachingClose = page.indexOf(PAGE_TEACHING_CLOSE)
+  if (teachingClose < 0) return abandon("the rendered page renders no taught refusal")
+  let at = page.indexOf("\n", teachingClose + 1) + 1
+  while (page.startsWith("\n", at)) at++
+  if (at <= 0) return abandon("the rendered page's first meaning has no sentence")
+  return `${page.slice(0, at)}${marker}\n\n${page.slice(at)}`
+}
+
 const surfaces = (
   plantedUnion: string,
   plantedTables: string,
@@ -93,20 +105,17 @@ const judge = (
   planted: ReadonlyArray<OfficialSurface>,
   lawful: ReadonlyArray<string> = LAWFUL_ID_SHAPED_TOKENS,
 ): string => {
-  const checked = checkNoTrackingArtifacts(planted, DRAFT_MEANING_MARKER, lawful)
+  const checked = checkNoTrackingArtifacts(planted, RETIRED_DRAFT_MARKERS, lawful)
   return checked.ok ? abandon(`the ${arm} plant was accepted`) : checked.reason
 }
-
-if (!page.includes(`${DRAFT_MEANING_MARKER}\n`)) {
-  abandon("the rendered page carries no ratified marker to retire")
-}
-const retired = page.replace(DRAFT_MEANING_MARKER, PLANTED_MARKER)
 
 console.error(judge("board ticket id", surfaces(union, tables, plant(page, PLANTED_ID))))
 console.error(judge("sitting-note id", surfaces(union, plant(tables, PLANTED_SIBLING_ID), page)))
 console.error(judge("filesystem path", surfaces(union, plant(tables, PLANTED_PATH), page)))
 console.error(judge("generation command", surfaces(plant(union, PLANTED_COMMAND), tables, page)))
-console.error(judge("retired marker", surfaces(union, tables, retired)))
+for (const marker of RETIRED_DRAFT_MARKERS) {
+  console.error(judge(`retired marker ${marker}`, surfaces(union, tables, remark(marker))))
+}
 console.error(
   judge("stale exclusion", surfaces(union, tables, page), [
     ...LAWFUL_ID_SHAPED_TOKENS,

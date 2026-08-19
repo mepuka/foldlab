@@ -406,3 +406,28 @@ proves a constant is present proves nothing about what it spells).
 Why: it is the house pattern, and it is the only shape that shows a rule is
 load-bearing rather than merely present. **Load-bearing? no** — but a gate that
 cannot fail proves nothing, and these are the arms that make it able to.
+
+### U11. Ratification removes the marker from the roster, not just from the rendering
+
+Decided: the operator ratified the meaning corpus on 2026-08-19, so the marker
+row leaves `refusal-meanings.ndjson`, the `marker` field leaves `Roster`, the
+exactly-one-marker-row read leaves `readRoster`, and `meaningDoc` takes the
+sentence alone. The roster is now sixty rows: forty-four runtime spellings and
+sixteen model-emitted reasons, each with its meaning and nothing else.
+
+Alternatives: keep the row and stop rendering it (an input nothing reads is an
+input nothing keeps honest, and the reader's own refusal — that the roster must
+carry exactly one marker row — would then be guarding a value with no
+consumer); keep the field and pass the empty string (the same dead datum with a
+sentinel spelling, and a printer arm that renders a blank line whenever someone
+forgets what the sentinel means).
+
+Why: the marker was never decoration on this side — it was a reviewed datum
+threaded from the roster through the printer into two surfaces, and ratification
+is the fact that retires the datum, not merely its rendering. Whether a ratified
+sentence may reappear behind a draft marker is a question about the SHIPPED
+bytes, and the runtime package's vocabulary wall is where that is answered; this
+package's job is to emit the sentence and prove the emission fresh.
+**Load-bearing? no** — the byte wall would catch a stale rendering either way,
+but a roster carrying a value no target reads is exactly the drift this package
+exists to refuse.
