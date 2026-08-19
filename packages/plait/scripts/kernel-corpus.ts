@@ -22,6 +22,17 @@
  * worse than one that refuses, because whatever is generated from it would
  * carry the half.
  *
+ * One group is deliberately absent from `KERNEL_RECORD_GROUPS`:
+ * `model-admission`. Those rows are marked `scope: "model-internal"` by the
+ * emitter and document the MODEL rather than claiming anything about a host,
+ * so this reader leaves them where the add-only rule puts them - reported in
+ * `skipped`, collected nowhere, and therefore absent from the conformance
+ * roster a door is replayed against. That is the whole of the exclusion:
+ * nothing here has to know what the group contains, only that it is not
+ * addressed to a host. Adding the name to `KERNEL_RECORD_GROUPS` would silently
+ * promote those rows into the roster, so the skip is checked by a test rather
+ * than left to habit (operator grill ruling A8, sitting record DEV-772).
+ *
  * @module
  */
 import {
@@ -254,31 +265,70 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
     if (!tags.has(tag)) refuse(`no encoding vector represents generator tag ${tag}`)
   }
 
+  // The admission block is refused rows and then admitted rows, and the split
+  // is load-bearing: the refused prefix is what gets read against the taught
+  // refusal table position for position, so a single admitted row in the middle
+  // would shift every later refusal off its reason. More refused rows than the
+  // table has reasons is lawful - one reason can be earned by more than one
+  // candidate shape, and the stage-rank edge earns absence-trigger a second
+  // time - so the alignment is checked only as far as the table reaches.
+  const firstAdmitted = corpus.admissions.findIndex((row) => row.verdict === "admitted")
+  if (firstAdmitted < 0) refuse("the admission block carries no admitted verdict")
+  if (firstAdmitted === 0) refuse("the admission block opens admitted, so it pins no refusal")
+  const admitted: Array<{
+    readonly name: string
+    readonly encoded: ReadonlyArray<bigint>
+  }> = []
   corpus.admissions.forEach((admission, index) => {
-    if (admission.verdict === "refused") {
-      if (!reasons.has(admission.reason)) {
-        refuse(`admission ${admission.name} names unknown reason ${admission.reason}`)
-      }
-      const aligned = corpus.refusals[index]
-      if (aligned !== undefined && aligned.reason !== admission.reason) {
-        refuse(
-          `admission ${index} names ${admission.reason} where refusal ${index} names` +
-            ` ${aligned.reason}; the gate order and the declaration order have diverged`,
-        )
-      }
-    } else if (index !== corpus.admissions.length - 1) {
-      refuse(`admitted verdict ${admission.name} is not the last admission record`)
+    if (admission.verdict !== "refused") {
+      admitted.push({ name: admission.name, encoded: admission.encoded })
+      return
+    }
+    if (index > firstAdmitted) {
+      refuse(
+        `refused verdict ${admission.name} stands after an admitted one;` +
+          " the refused rows are not a prefix of the admission block",
+      )
+    }
+    if (!reasons.has(admission.reason)) {
+      refuse(`admission ${admission.name} names unknown reason ${admission.reason}`)
+    }
+    const aligned = corpus.refusals[index]
+    if (aligned !== undefined && aligned.reason !== admission.reason) {
+      refuse(
+        `admission ${index} names ${admission.reason} where refusal ${index} names` +
+          ` ${aligned.reason}; the gate order and the declaration order have diverged`,
+      )
     }
   })
-  const last = corpus.admissions.at(-1)
-  if (last === undefined || last.verdict !== "admitted") {
-    refuse("the admission block does not end with an admitted verdict")
-  } else {
-    const twin = corpus.encodings
-      .find((encoding) => encoding.act.join(",") === last.encoded.join(","))
-    if (twin === undefined) {
-      refuse(`the admitted encoding ${last.encoded.join(",")} matches no encoding vector`)
+
+  // Every admitted row is a sentence at its own generator's arity, and at least
+  // one of them is a sentence the encoding group states as well. The second
+  // half is the tie between the two groups: an admission block that drifted
+  // clear of the encoding vectors would still satisfy the arity check alone.
+  //
+  // Two admitted rows MAY carry the same sentence. The model's payload
+  // canonicalizer is a fold into one identity, and distinct lawful payloads
+  // reach the same value; the corpus plants such a pair on purpose. Whether
+  // that quotient is intended is an open question for the model, so this reader
+  // records the collision rather than refusing it.
+  for (const row of admitted) {
+    const tag = row.encoded[0]
+    if (tag === undefined) refuse(`admission ${row.name} carries an empty sentence`)
+    const arity = GENERATOR_ARITY[Number(tag)]
+    if (arity === undefined) refuse(`admission ${row.name} carries unknown generator tag ${tag}`)
+    if (row.encoded.length !== arity) {
+      refuse(
+        `admission ${row.name} has ${row.encoded.length} entries, tag ${tag} requires ${arity}`,
+      )
     }
+  }
+  if (
+    !admitted.some((row) =>
+      corpus.encodings.some((encoding) => encoding.act.join(",") === row.encoded.join(","))
+    )
+  ) {
+    refuse("no admitted sentence matches an encoding vector; the two groups have come apart")
   }
 
   const documented = corpus.docs.map((doc) => doc.name)

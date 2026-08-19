@@ -356,25 +356,73 @@ func (c *Corpus) lawfulEncoding() (EncodingRow, bool) {
 	return EncodingRow{}, false
 }
 
+// encodingNamed resolves one encoding vector by name.
+func (c *Corpus) encodingNamed(name string) (EncodingRow, bool) {
+	for _, row := range c.Encodings {
+		if row.Name == name {
+			return row, true
+		}
+	}
+	return EncodingRow{}, false
+}
+
+// admissionNamed resolves one admission row by the model's candidate name.
+// Rows are found by name rather than by position: the admission group grows
+// as the model plants candidates, and a positional lookup silently reads a
+// different row when it does.
+func (c *Corpus) admissionNamed(name string) (AdmissionRow, bool) {
+	for _, row := range c.Admissions {
+		if row.Name == name {
+			return row, true
+		}
+	}
+	return AdmissionRow{}, false
+}
+
 func (c *Corpus) validateAdmissions(map[string]int) error {
-	if len(c.Admissions) != 17 {
-		return fmt.Errorf("admission records: got %d, want 17", len(c.Admissions))
+	if len(c.Admissions) != 19 {
+		return fmt.Errorf("admission records: got %d, want 19", len(c.Admissions))
 	}
+	// The refused rows form a prefix and the admitted rows the suffix. The
+	// prefix is what the taught refusal table is read against position for
+	// position, so one admitted row in the middle would shift every later
+	// refusal off its reason. The block runs longer than the sixteen taught
+	// reasons because one reason can be earned by more than one candidate
+	// shape: the stage-rank edge earns absence-trigger a second time.
+	firstAdmitted := -1
 	for index, row := range c.Admissions {
-		wantVerdict := "refused"
-		if index == 16 {
-			wantVerdict = "admitted"
-		}
-		if row.Verdict != wantVerdict {
+		switch row.Verdict {
+		case "admitted":
+			if firstAdmitted < 0 {
+				firstAdmitted = index
+			}
+		case "refused":
+			if firstAdmitted >= 0 {
+				return fmt.Errorf(
+					"admission %d (%s) is refused after admitted row %d; the refused rows are not a prefix",
+					index, row.Name, firstAdmitted)
+			}
+		default:
 			return fmt.Errorf(
-				"admission %d (%s) has verdict %q, want %q; sixteen refusals then the lawful twin",
-				index, row.Name, row.Verdict, wantVerdict)
+				"admission %d (%s) has verdict %q, want \"refused\" or \"admitted\"",
+				index, row.Name, row.Verdict)
 		}
 	}
-	// The seventeenth row exists to refute the door that refuses everything.
-	admitted := c.Admissions[16]
-	if len(admitted.Encoded) == 0 {
-		return fmt.Errorf("admitted row %q carries no encoding", admitted.Name)
+	// A suite of refusals alone cannot tell a correct door from one that
+	// refuses everything; the admitted rows are what refute it.
+	if firstAdmitted < 0 {
+		return fmt.Errorf("no admitted admission row; the corpus cannot refute a door that refuses everything")
+	}
+	if firstAdmitted == 0 {
+		return fmt.Errorf("the admission block opens admitted, so it pins no refusal")
+	}
+	if refused := firstAdmitted; refused != 17 {
+		return fmt.Errorf("refused admission records: got %d, want 17", refused)
+	}
+	for _, row := range c.Admissions[firstAdmitted:] {
+		if len(row.Encoded) == 0 {
+			return fmt.Errorf("admitted row %q carries no encoding", row.Name)
+		}
 	}
 	return nil
 }
@@ -680,15 +728,38 @@ func (c *Corpus) validateCrossRecord(map[string]int) error {
 				index, c.Admissions[index].Reason, index, c.Refusals[index].Reason)
 		}
 	}
-	// Two emissions of one fact must agree.
+	// Two emissions of one fact must agree. The admitted rows and the
+	// encoding vectors are independent emissions of the same sentences, so
+	// each pair below is one fact written twice and checked against itself.
 	lawful, ok := c.lawfulEncoding()
 	if !ok {
 		return fmt.Errorf("the lawful encoding vector is absent")
 	}
-	if !sameNats(lawful.Act, c.Admissions[16].Encoded) {
+	twin, ok := c.admissionNamed("lawfulDeclare")
+	if !ok {
+		return fmt.Errorf("the admitted lawful twin is absent from the admission group")
+	}
+	if !sameNats(lawful.Act, twin.Encoded) {
 		return fmt.Errorf(
 			"the admitted row encodes %s while the %q vector encodes %s; these are two emissions of the same fact",
-			formatNats(c.Admissions[16].Encoded), lawful.Name, formatNats(lawful.Act))
+			formatNats(twin.Encoded), lawful.Name, formatNats(lawful.Act))
+	}
+	// The trigger arm carries the same tie. Before this row the admission
+	// group reached no trigger at all: both other planted triggers refuse on
+	// their predicate production, so the arm's referent check had no admitted
+	// witness anywhere in the corpus.
+	trigger, ok := c.admissionNamed("catalogedTrigger")
+	if !ok {
+		return fmt.Errorf("the admitted catalogued trigger is absent from the admission group")
+	}
+	triggerVector, ok := c.encodingNamed("trigger-evidence-appears")
+	if !ok {
+		return fmt.Errorf("the trigger-evidence-appears vector is absent")
+	}
+	if !sameNats(triggerVector.Act, trigger.Encoded) {
+		return fmt.Errorf(
+			"the admitted trigger encodes %s while the %q vector encodes %s; these are two emissions of the same fact",
+			formatNats(trigger.Encoded), triggerVector.Name, formatNats(triggerVector.Act))
 	}
 	return nil
 }

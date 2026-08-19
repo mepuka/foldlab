@@ -166,9 +166,10 @@ func TestGeneratedVectorsMatchTheCorpus(t *testing.T) {
 				row.Name, generated.Reason)
 		}
 	}
-	if admitted != 1 {
-		t.Fatalf("%d admitted vectors, want exactly 1: a suite of refusals alone cannot tell a "+
-			"correct door from one that refuses everything", admitted)
+	if admitted != 2 {
+		t.Fatalf("%d admitted vectors, want exactly 2: a suite of refusals alone cannot tell a "+
+			"correct door from one that refuses everything, and the corpus carries the lawful "+
+			"twin beside the catalogued trigger", admitted)
 	}
 }
 

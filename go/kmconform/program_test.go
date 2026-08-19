@@ -132,7 +132,10 @@ func TestTheGrownCorpusCountsAccountForEveryLine(t *testing.T) {
 
 // TestTheProgramGroupComesLast is the add-only rule read the other way: the
 // ninth group was appended after all eight, which is the condition that let it
-// arrive without a format bump.
+// arrive without a format bump. The tenth group, model-admission, arrived the
+// same way and stands after it — so what this test pins is that nothing but a
+// LATER-appended group may follow the program records, never that the file
+// ends there.
 func TestTheProgramGroupComesLast(t *testing.T) {
 	raw := corpusBytes(t)
 	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
@@ -140,12 +143,15 @@ func TestTheProgramGroupComesLast(t *testing.T) {
 	for index, line := range lines {
 		isProgram := strings.Contains(line, `"record":"program"`)
 		if isProgram {
+			if seenProgram && index > 0 && !strings.Contains(lines[index-1], `"record":"program"`) {
+				t.Fatalf("line %d resumes the program group after it ended; a group is contiguous", index+1)
+			}
 			seenProgram = true
 			continue
 		}
-		if seenProgram {
-			t.Fatalf("line %d is not a program record and follows one; the ninth group is appended "+
-				"after every existing group, never interleaved", index+1)
+		if seenProgram && !strings.Contains(line, `"record":"model-admission"`) {
+			t.Fatalf("line %d is neither a program record nor a later-appended group and follows the "+
+				"program group; groups are appended after every existing group, never interleaved", index+1)
 		}
 	}
 	if !seenProgram {
@@ -466,7 +472,21 @@ func TestProgramMutationControls(t *testing.T) {
 			mutated: func() []byte {
 				raw := corpusBytes(t)
 				lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
-				first := len(lines) - len(loadCorpus(t).Programs)
+				// The first program line is FOUND, not computed from the end of
+				// the file: a later-appended group stands after the program
+				// group, so counting backwards from the last line swaps two
+				// rows inside that group instead of across the boundary under
+				// test, and the control passes vacuously.
+				first := -1
+				for index, line := range lines {
+					if strings.Contains(line, `"record":"program"`) {
+						first = index
+						break
+					}
+				}
+				if first <= 0 {
+					t.Fatal("no program record found; the group-order control has nothing to swap")
+				}
 				lines[first-1], lines[first] = lines[first], lines[first-1]
 				return []byte(strings.Join(lines, "\n") + "\n")
 			},

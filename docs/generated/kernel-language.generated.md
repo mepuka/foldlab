@@ -386,14 +386,16 @@ A product type, with one constructor.
 
 ### MergeStrategy
 
-A candidate merge strategy. The lawful strategy names a declared
-merge algebra; last-writer-wins is spellable here and refused at
-the door, because no such carrier exists in the fabric.
+A candidate merge strategy. Both spellings retain the intended
+declared algebra. Last-writer-wins additionally asks arrival order
+to override that algebra and is refused at the door. Retaining the
+algebra makes dropping the unlawful override a candidate-only
+repair: no catalog lookup or new choice is smuggled into it.
 
 A sum type, with 2 constructors.
 
 - `declaredAlgebra` — algebra : Nat
-- `lastWriterWins`
+- `lastWriterWins` — algebra : Nat
 
 ### CandidatePredicate
 
@@ -433,7 +435,7 @@ A sum type, with 11 constructors.
 - `decide` — register : Nat, token : Option(TokenClaim), outcome : List(RawArg)
 - `trigger` — predicate : CandidatePredicate, declaration : Nat
 - `spawn` — parent : Nat, request : Nat
-- `updateInPlace` — target : Nat, payload : List(RawArg)
+- `updateInPlace` — kind : DeclKind, target : Nat, payload : List(RawArg), writ : Nat
 
 ### RefusalReason
 
@@ -533,7 +535,9 @@ Every planted candidate and the verdict the model's door returns for it. The adm
 | functionDeclare | refused | closure-introspection |
 | anchoredResolve | refused | anchored-resolve |
 | holeyEmit | refused | unfilled-hole |
+| staleStageTrigger | refused | absence-trigger |
 | lawfulDeclare | admitted | `[0, 0, 7000051000172, 4]` |
+| catalogedTrigger | admitted | `[6, 0, 1, 17, 0, 3]` |
 
 ## Canonical form
 
