@@ -6288,3 +6288,18 @@ Alternatives: drop the steps from the model's account (destroys the evidence
 that node 1 landed before node 2 could not be spoken); make the engine return
 the prefix (an engine semantic change, forbidden). **Load-bearing? yes** — the
 wall's coverage is uneven across the three arms and a reader has to know where.
+
+### T25. The incarnation register key is the round digest, ratified
+
+Decided: the operator ratified in session (2026-08-19) the incarnation
+fence's key discipline as landed — the register key is the digest of the
+ROUND, the store directory together with the incarnation being succeeded
+(`digest({store, predecessor})`), never the store alone. The reasoning the
+module records stands ratified with it: a landed outcome never changes,
+which is right for one round and wrong for a lifetime; a store-keyed
+register that admitted one landing ever would make succession unsayable,
+while the round key makes at-most-one-landing-per-round exactly
+at-most-one-incarnation-current-per-store — the fence the store needs, in
+the register's own at-most-once vocabulary with no new machinery.
+**Load-bearing? yes** — it is the key law every successor slice of the
+daemon epic builds on.

@@ -780,6 +780,19 @@ posture.
   weakened. Adopting arbitration means changing the door — a door act,
   not a theorem about this door. Adoptions (1) refusal digests and
   lineage and (4) the refusal lane are untouched here.
+
+  **RULED 2026-08-19 (operator, in session): both findings' dispositions
+  ratified as delivered.** Termination is ratified TRACE-BACKED in its
+  corrected form — the chain terminates because the repair image lies
+  outside the repair domain, never because the fault set shrinks, and
+  the fault-set-growth candidate's committed trace is the record's
+  witness; this row's original shrinkage argument is superseded, not
+  repaired. Arbitration is ratified WITH `PriorityLeastFirst` as the
+  least-fault law's stated bound — the premise is the law's boundary,
+  the unbounded form stays refused, and any future door that arbitrates
+  by declared order is a door change wanting its own ruling. Bounds
+  unchanged: one candidate at one door; run-scale repair chaining
+  unclaimed.
 - **KM-14 — adopt holes-as-requirements and provision-as-fold as the
   Effect binding's dependency story.** Recommended: yes — the
   correspondence above, with the two upgrade claims stated on the
