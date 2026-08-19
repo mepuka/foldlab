@@ -223,7 +223,7 @@ const ChaosFoldExport = Schema.Struct({
     declaration: PlainObject,
     digest: Schema.String,
     handle: Schema.String,
-    partitions: Schema.Number,
+    partitions: Schema.Finite,
   }),
   algebra: Schema.Struct({
     declaration: PlainObject,
@@ -258,24 +258,24 @@ const rebuildChaosFoldExport = Effect.fn("cli.rebuildChaosFoldExport")(function*
     partitionKey: exported.lane.partitionKey,
   })
   if (lane.digest !== exported.lane.digest) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["module", "fold", "lane", "digest"],
       exported.lane.digest,
       lane.digest,
       "Export the exact admitted lane returned by Lane.declare.",
-    ))
+    )
   }
   const algebra = yield* Algebra.declare({
     declaration: exported.algebra.declaration.definition,
     reducer: exported.algebra.reducer,
   })
   if (algebra.digest !== exported.algebra.digest) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["module", "fold", "algebra", "digest"],
       exported.algebra.digest,
       algebra.digest,
       "Export the exact admitted algebra returned by Algebra.declare.",
-    ))
+    )
   }
   const admitted = yield* declareFold({
     lane,
@@ -284,12 +284,12 @@ const rebuildChaosFoldExport = Effect.fn("cli.rebuildChaosFoldExport")(function*
   })
   const exportedDigest = yield* digestOf(exported.declaration as unknown as WireValue)
   if (exportedDigest !== exported.digest || admitted.digest !== exported.digest) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["module", "fold", "digest"],
       exported.digest,
       admitted.digest,
       "Export one internally consistent fold declaration returned by Fold.declare.",
-    ))
+    )
   }
   return admitted
 })
@@ -350,12 +350,12 @@ const readHeads = Effect.fn("cli.readHeads")(function* (
       catch: (cause) => transportRefusal("chaos.pin-head", cause),
     })
     if (info.state.last_seq < 1) {
-      return yield* Effect.fail(chaosRefusal(
+      return yield* chaosRefusal(
         ["head", String(partition)],
         0,
         "a positive pinned stream head",
         "Emit a finite span before running chaos.",
-      ))
+      )
     }
     heads.push(info.state.last_seq)
   }
@@ -389,21 +389,21 @@ const waitForJson = <A>(
       }
       const running = yield* child.isRunning.pipe(Effect.orElseSucceed(() => false))
       if (!running) {
-        return yield* Effect.fail(chaosRefusal(
+        return yield* chaosRefusal(
           ["kill", "child"],
           `exited: ${lastParseFailure}`,
           "a live pump child and one complete JSON handoff",
           "Inspect the child refusal and substrate.",
-        ))
+        )
       }
       yield* Effect.sleep("25 millis")
     }
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["kill", "child"],
       `timeout: ${lastParseFailure}`,
       "one complete checkpoint marker",
       "Use a larger pinned span or inspect the substrate.",
-    ))
+    )
   })
 
 /**
@@ -461,12 +461,12 @@ const runKill = Effect.fn("cli.runKill")(function* (
   const first = yield* spawn(true)
   const marked = yield* waitForJson<{ anchors: ReadonlyArray<Anchor> }>(marker, first)
   if (marked.anchors.every((anchor, partition) => anchor.floor >= heads[partition]!)) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["kill", "span"],
       "fully anchored before interruption",
       "an unanchored suffix",
       "Use a fresh declared fold and a larger pinned span so the hard kill lands mid-stream.",
-    ))
+    )
   }
   yield* first.kill({ killSignal: "SIGKILL" }).pipe(Effect.ignore)
   yield* first.exitCode.pipe(Effect.ignore)
@@ -552,39 +552,37 @@ const judgeRequest = Effect.fn("cli.judgeRequest")(function* (
 ): Effect.fn.Return<AdmittedRun, Refusal> {
   if (Option.isSome(request.fold)) {
     if (Option.isSome(request.module)) {
-      return yield* Effect.fail(
-        chaosRefusal(["fold"], "module path and digest", "exactly one fold selector", usage),
-      )
+      return yield* chaosRefusal(["fold"], "module path and digest", "exactly one fold selector", usage)
     }
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["fold"],
       request.fold.value,
       "a cataloged fold available through the future catalog slice",
       "v0 can load a declared fold module; digest lookup is refused until the catalog exists.",
-    ))
+    )
   }
   if (Option.isNone(request.module)) {
-    return yield* Effect.fail(chaosRefusal(["fold"], "missing", "a module path or --fold digest", usage))
+    return yield* chaosRefusal(["fold"], "missing", "a module path or --fold digest", usage)
   }
   if (Option.isNone(request.head) && !request.pinHead) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["head"],
       "unpinned",
       "--head <position> or --pin-head",
       "Pin the span before running either arm.",
-    ))
+    )
   }
   if (Option.isSome(request.head) && request.pinHead) {
-    return yield* Effect.fail(chaosRefusal(["head"], "two head selectors", "exactly one head selector", usage))
+    return yield* chaosRefusal(["head"], "two head selectors", "exactly one head selector", usage)
   }
   const axes = request.axis.length === 0 ? AXES : [...new Set(request.axis)]
   if (request.repeat > 1 && axes.includes("kill")) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["repeat"],
       request.repeat,
       1,
       "The v0 hard-kill arm owns one immutable anchor namespace; repeat duplicate/reorder schedules or use a fresh fold declaration.",
-    ))
+    )
   }
   return { modulePath: request.module.value, axes }
 })
@@ -600,12 +598,12 @@ const measure = Effect.fn("cli.measure")(function* (
   const { axes: selected, modulePath } = yield* judgeRequest(request)
   const fold = yield* loadFold(modulePath)
   if (Option.isSome(request.lane) && request.lane.value !== fold.lane.digest) {
-    return yield* Effect.fail(chaosRefusal(
+    return yield* chaosRefusal(
       ["lane"],
       request.lane.value,
       fold.lane.digest,
       "Use the lane committed by the fold declaration.",
-    ))
+    )
   }
   const servers = process.env.PLAIT_NATS_URL ?? "nats://127.0.0.1:4222"
   const heads = yield* readHeads(servers, fold, request.head)

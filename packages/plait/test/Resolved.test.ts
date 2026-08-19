@@ -13,7 +13,7 @@ const terms = { alpha: "one", beta: "two" }
 const termsDigest = Effect.runSync(digestOf(terms))
 
 /** A frame whose body is itself a resolved reference — the nesting case. */
-const Frame = Schema.Struct({ at: Schema.Number, terms: ResolvedOf(TermMap) })
+const Frame = Schema.Struct({ at: Schema.Finite, terms: ResolvedOf(TermMap) })
 
 const Envelope = Schema.Struct({
   lane: Schema.String,
@@ -48,7 +48,7 @@ describe("resolved references", () => {
       Effect.gen(function* () {
         const encoded = yield* Schema.encodeEffect(Envelope)({ lane: "l", body: terms })
         yield* publish(terms)
-        return yield* Schema.decodeUnknownEffect(Envelope)(encoded)
+        return yield* Schema.decodeEffect(Envelope)(encoded)
       }).pipe(Effect.provide(substrateLayer)),
     )
     expect(decoded).toEqual({ lane: "l", body: terms })

@@ -7,8 +7,8 @@ import * as Lane from "../src/planes/Lane.js"
 
 export const ChaosEvent = Schema.Struct({
   tenant: Schema.String,
-  ordinal: Schema.Number,
-  delta: Schema.Number,
+  ordinal: Schema.Finite,
+  delta: Schema.Finite,
 })
 export type ChaosEvent = typeof ChaosEvent.Type
 

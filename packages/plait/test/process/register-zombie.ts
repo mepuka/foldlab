@@ -6,7 +6,7 @@ const [url, work, tokenText, outputPath] = process.argv.slice(2)
 if (url === undefined || work === undefined || tokenText === undefined || outputPath === undefined) {
   throw new Error("usage: register-zombie URL WORK TOKEN OUTPUT_PATH")
 }
-const token = Schema.decodeUnknownSync(Schema.NumberFromString)(tokenText)
+const token = Schema.decodeSync(Schema.FiniteFromString)(tokenText)
 
 const result = await Effect.runPromise(Effect.gen(function* () {
   const registers = yield* Registers

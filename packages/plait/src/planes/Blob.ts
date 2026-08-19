@@ -160,14 +160,12 @@ const makeFileSystemBlobs = Effect.fn("Blobs.makeFileSystem")(function* (
   const put: BlobsService["put"] = Effect.fn("Blobs.put")(function* (bytes) {
     const digest = digestOfStoredBytes(bytes)
     const directory = directoryOf(digest)
-    yield* Effect.orDie(fileSystem.makeDirectory(directory, { recursive: true }))
-    const staged = yield* Effect.orDie(
-      fileSystem.makeTempFile({ directory, prefix: "staged-" }),
-    )
-    yield* Effect.orDie(fileSystem.writeFile(staged, bytes))
-    yield* Effect.orDie(fileSystem.rename(staged, pathOf(digest)))
+    yield* fileSystem.makeDirectory(directory, { recursive: true })
+    const staged = yield* fileSystem.makeTempFile({ directory, prefix: "staged-" })
+    yield* fileSystem.writeFile(staged, bytes)
+    yield* fileSystem.rename(staged, pathOf(digest))
     return digest
-  })
+  }, Effect.orDie)
 
   const get: BlobsService["get"] = Effect.fn("Blobs.get")(function* (digest) {
     const bytes = yield* fileSystem.readFile(pathOf(digest)).pipe(

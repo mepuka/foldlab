@@ -112,7 +112,7 @@ export interface RefusalFields {
 
 /** Fields accepted when constructing structural evidence. */
 export interface StructuralRefusalFields extends RefusalFields {
-  readonly kind: typeof GeneratedStructuralRefusalKind.Type
+  readonly kind: GeneratedStructuralRefusalKind
 }
 
 /** Constructs structural evidence; shipped retry policies never retry it. */
@@ -190,8 +190,8 @@ export const decodeRefusing = <T, E, RD, RE>(
   Effect.fn("Refusal.decodeRefusing")(function* (
     input: unknown,
   ): Effect.fn.Return<T, Refusal, RD> {
-    return yield* Effect.catch(
+    return yield* Effect.mapError(
       SchemaParser.decodeUnknownEffect(codec)(input),
-      (issue) => Effect.fail(refusalOf(issue)),
+      (issue) => refusalOf(issue),
     )
   })

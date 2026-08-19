@@ -9,7 +9,7 @@ import * as Fold from "../src/planes/Fold.js"
 import * as Lane from "../src/planes/Lane.js"
 import * as Session from "../src/planes/Session.js"
 
-const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Number })
+const Event = Schema.Struct({ tenant: Schema.String, delta: Schema.Finite })
 const eventSchema = Digest.make("e".repeat(64))
 
 const declareFold = (handle: string) => Effect.gen(function* () {

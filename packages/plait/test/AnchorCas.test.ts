@@ -21,7 +21,7 @@ afterEach(async () => {
 describe("anchor revision ownership", () => {
   test("a lost CAS is a fatal structural detach, never reread-and-continue", async () => {
     harness = await startNatsHarness()
-    const Event = Schema.Struct({ value: Schema.Number })
+    const Event = Schema.Struct({ value: Schema.Finite })
     const lane = await Effect.runPromise(Lane.declare({
       handle: "anchor-cas",
       event: Event,

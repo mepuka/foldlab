@@ -249,7 +249,7 @@ describe("kernel door conformance", () => {
     // the model's `none`, so a door testing `!== null` refuses this LAWFUL
     // sentence and no planted vector says so: the corpus carries the anchored
     // resolve that must be refused, never the bare one that must be admitted.
-    const candidate = Schema.decodeUnknownSync(Candidate)({
+    const candidate = Schema.decodeSync(Candidate)({
       _tag: "resolveDigest",
       kind: "schema",
       target: 8n,

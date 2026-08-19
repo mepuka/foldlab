@@ -34,13 +34,13 @@ import {
   type NatsServerBinary,
 } from "./NatsHarness.js"
 
-const Pair = Schema.Tuple([Schema.Number, Schema.Number])
+const Pair = Schema.Tuple([Schema.Finite, Schema.Finite])
 const Header = Schema.Struct({
   command: Schema.String,
-  counts: Schema.Record(Schema.String, Schema.Number),
+  counts: Schema.Record(Schema.String, Schema.Finite),
   format: Schema.Literal(1),
   generator: Schema.String,
-  vectors: Schema.Number,
+  vectors: Schema.Finite,
 })
 const Kind = Schema.Struct({ kind: Schema.String })
 const F1Row = Schema.Struct({

@@ -60,7 +60,7 @@ import {
  * packages/plait/DECISIONS.md, Task DEV-779.
  */
 
-const StoredOutcome = Schema.Struct({ token: Schema.Number, value: Schema.String })
+const StoredOutcome = Schema.Struct({ token: Schema.Finite, value: Schema.String })
 const StoredRegister = Schema.Struct({
   holder: Schema.String,
   outcome: Schema.NullOr(StoredOutcome),

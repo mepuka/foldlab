@@ -15,7 +15,7 @@ const digestB = "bb4f3e5e257ca09b067986bbcb6fa72f9b868eea9d4dff92afd94e2876aa795
 
 const segment = (
   name: string,
-  volatility: typeof VolatilityClass.Type,
+  volatility: VolatilityClass,
   selector: unknown,
 ): unknown => ({
   name,
