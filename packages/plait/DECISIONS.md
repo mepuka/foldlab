@@ -3342,6 +3342,111 @@ ship red on a law nobody has a repair for); keep the roster in a comment
 (a comment is not an artifact a check can read). Why: the reviewed diff is what
 "not encouraged" means when a machine has to enforce it. **Load-bearing? yes** —
 without the pin the deepest plane's exception is invisible the moment it grows.
+## Task DEV-763 — the one admission door
+
+### T0. The model-generated language is the contract; a runtime digest is not an identity conversion
+
+**SUPERSEDED in part by ruling A1** (2026-08-19, board DEV-772), recorded under
+`Task DEV-763/796 stage 4` below: one guarded seam, `kernel/KernelIdentity.ts`,
+does read a runtime content address as a model identity label. The clause that
+fell is "no function converts it into a model label"; the clause that stands is
+that the door never consults a digest and nothing derives a model label from one
+on the judgment path. Restored here because A1 supersedes it, and a supersession
+whose antecedent is missing from the record is not a record.
+
+Decided: `KernelDoor` derives candidate, context, and intrinsic-act types from
+`KernelSchemas.generated.ts` and preserves the model's `bigint` identity labels
+through admission and encoding. A runtime hex digest may ride beside a caller's
+value, but no function converts it into a model label and the door never consults
+it. Alternatives: hand-write a number-shaped candidate twin (a second type
+universe, already demonstrated to drift); derive labels from hex digests (two
+different identity scales made falsely interchangeable). Why: the formal model
+already emits the literal kernel-language shapes; the trusted-base statement
+that real identities are hashes of canonical bytes is evidence about the
+runtime, not a missing field in the model algebra. **Load-bearing? yes** — this
+is the ruling that unblocks both the door and the CLI projection.
+
+### T1. Context is explicit until the catalog owns its assembly
+
+Decided: the pure seam is `admit(context, candidate)`, with `make(context)` as a
+context-bound view. The catalog/pinned-universe value is generated too, but this
+ticket does not invent an ambient source for it; the durable catalog slice can
+assemble and pass that value when it lands. Alternatives: wait for the catalog
+ticket (leaves every host blocked despite a complete judgment contract); read a
+global catalog from the kernel (inverts the plane stack and hides an Effectful
+dependency inside a pure law function). Why: context assembly and candidate
+judgment are separate responsibilities, and an explicit parameter preserves
+that boundary without weakening either. **Load-bearing? yes** — it is how this
+slice proceeds without pretending the catalog already ships.
+
+### T2. Hosts alias the function; they do not wrap or inject it
+
+Decided: CLI, `FabricClient`, and `CasDaemon` expose the exact
+`KernelDoor.admit` function object. The control asserts reference identity for
+all three and kills an invented host function. Alternatives: thin wrappers
+(semantically innocent today, but a place for host-specific validation to grow);
+injectable service methods (fixtures could replace the judgment and erase the
+one-door guarantee). Why: carriage and surface contribute no semantics, so the
+strongest and simplest representation is literal identity. **Load-bearing?
+yes** — this is the executable no-bypass control.
+
+### T3. A verdict carries the intrinsic act or the complete taught refusal
+
+Decided: admission success returns the generated intrinsic act and its canonical
+model encoding; refusal flattens the generated table row beside
+`verdict: "refused"`, preserving reason, law, repair, and applicability at every
+host. Alternatives: return encoding only (throws away the very act the door
+constructs); return reason only and require host lookups (permits parity to
+depend on the host); nest a second refusal object (adds a vocabulary shape the
+model table does not need). Why: the door is the sole constructor of intrinsic
+acts and the refusal table is already the single taught vocabulary.
+**Load-bearing? yes** — both acceptance halves are observable in one value.
+
+### T4. The door is a named public namespace, barrel and subpath both
+
+Decided: `KernelDoor` joins the root barrel and the `./KernelDoor` subpath in
+this ticket. (It was the eighteenth namespace when this was written; the count has
+moved since and the ordinal is not the decision.) It is pure, so the public Effect manifest remains byte-stable even
+though the namespace is new; the host-route suite asserts the barrel names the
+same function. Alternatives: leave the door reachable only by internal deep
+import (DEV-786 could not consume the ruled seam as package API); export the
+generated schema module wholesale (widens the surface from one concept to an
+emitter's file layout). Why: a public admission seam must be nameable, while the
+deep module should keep the generated family behind its candidate/act/context
+projections. **Load-bearing? yes** — it records that the surface change is the
+ticket's decision, not accidental barrel churn.
+
+### T5. The corpus is not the whole wall: absence gets its own control
+
+Decided: one control decodes a lawful `resolveDigest` whose anchor is absent
+through the generated codec, admits it at the shipping door, and pins the
+resulting sentence against the corpus's own `resolve-schema` vector.
+Alternatives: trust the seventeen replayed vectors (they carry the anchored
+resolve that must be refused and no bare one that must be admitted, so a door
+reading absence as `null` passes all seventeen while refusing a lawful
+sentence — measured, not hypothesised: planting `!== null` leaves the replay
+green and kills only this row); add a vector to the corpus (the corpus is
+emitted by executing the model, so a runtime gap is not a reason to hand-write
+into it). Why: the emitted vectors are the model's claims about the language,
+and this control is the runtime's claim about the *spelling* the generated
+schema hands it — `Schema.UndefinedOr` is the model's `none`, so absence
+compares against `undefined` and nothing else. **Load-bearing? yes** — it is
+the only row that fails when a door and its generated schema disagree about
+how absence is written.
+
+### T6. No service wraps the door in this slice
+
+Decided: hosts hold the `admit` function object itself; no Effect service, tag,
+or layer stands between a caller and judgment. Alternatives: an `Admission`
+service with a layer per context (it makes the door injectable, which is a
+bypass surface the identity control can no longer close, and it was tried and
+reverted on this ticket); a per-host wrapper (a place for host-specific
+validation to grow). Why: `admit` is pure and total — it needs no environment,
+so a service would buy substitutability the no-bypass law exists to deny. A
+Layer seam, if a later slice wants one, wraps this generated door.
+**Load-bearing? yes** — it records that the missing service is a decision, and
+what a future one may and may not wrap.
+
 ## Task DEV-763/796 stage 4 — the one-door containment wall
 
 ### T0. The shared candidate form is read out of the door's bytes, and its ancestry is checked first
