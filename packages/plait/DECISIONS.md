@@ -5529,3 +5529,152 @@ commit deleted, and a reader who runs it gets nothing.
 reviewed judgement rather than model emission, of why the grammar's layout had
 to be reopened when its node census did not, and of the one probe whose meaning
 this flip consumed.
+
+## Task: the substrate-session fact and the incarnation fence (estate-daemon S1, and S5's fence groundwork, 2026-08-19)
+
+Placeholders `T25`–`T29` continue the series; repository D-numbers are
+assigned at merge. The specification is the estate-daemon spec (COMMISSIONED,
+operator ruling 2026-08-19) and its parent measurement record, the
+substrate-session-plane record. Two open pins named in that specification stay
+the operator's and are NOT resolved here: whether the per-connection exchange
+key belongs in the fold, and what the connect option values should be pinned
+to. Every decision below is a drafting decision made so that either ruling
+later moves one declared list and no code.
+
+### T25. The exchange key is out of the fold, and its exclusion is one row
+
+Decided: the group-1 field roster in `src/internal/substrate.ts` carries the
+fifteen fields the parent record measured on a live connection and does NOT
+carry the per-connection exchange key. The record lists the key because it was
+measured and says in as many words that its membership is a grill question
+rather than a drafting one, so the slice lands with it excluded and the
+exclusion is a row of a declared table rather than a shape of the code: the
+fold walks the roster and selects nothing by hand, so ruling the key in adds
+one entry and moves no branch. The wall executes the exclusion rather than
+asserting it — a connection carrying an exchange key and a connection stripped
+of one name the same session.
+
+The roster also records, per field, whether the pinned client's own
+server-information type declares it or whether the substrate sends it on the
+wire without that type carrying it. Two of the fifteen are in the second class
+— the connect-info flag and the remote account — which is a real finding: the
+transcription target is a strict SUBSET of the field set the record measured,
+so a transcription narrowed to the type would have silently dropped two fields
+the record calls part of the substrate's declaration. Provenance is carried per
+row so the narrowing is visible rather than absorbed. Alternatives: transcribe
+only the pinned type's fields (drops what the substrate actually declared, and
+those fields are named explicitly in the slice's own contract); transcribe
+whatever the wire carries by iterating the received object (the fold's key set
+would then depend on what one server happened to send, and two mints against
+different builds would name different sessions). **Load-bearing? yes** — the
+roster IS the fold, and the open pin's whole cheapness is that it moves one row
+of it.
+
+### T26. Group 3 is minimal by declaration, and its bound is stated in the value
+
+Decided: the estate's group carries exactly three fields — the writ digest the
+connection acts under, which service layer opened it, and the asserted-shape
+set — because the parent record calls this group a sketch and names those
+three. At the running posture the spine fills the writ with `null` and the
+shape set with the empty set, and both are HONEST rather than placeholders: the
+spine acquires connections below the plane that judges writs, so there is no
+writ to name, and every carrier asserts its shapes after the connection
+resolves, so the set at open is empty. That is precisely the ambiguity the
+field exists to close — an empty asserted-shape set is now empty by declaration
+instead of empty by omission, and re-assertion after a reconnect has a declared
+target to compare against. The set is sorted and deduplicated inside the
+constructor, so two parties asserting the same shapes in different orders fold
+to the same bytes.
+
+Stated bound, because it bites the claim: this slice does not make group 3
+carry a writ. A session fact is connection-attributed mechanics and not an
+evidentiary "who", and with the writ null it is not even that — it is the
+service layer's own name, which any process could claim. Alternatives: omitting
+the fields until they can be filled (the omission is what made the empty memo
+ambiguous in the first place); reaching up for a writ from the transport spine
+(a deeper plane reading a shallower one's judgment, which the layering law
+refuses and which would make the fold depend on what was convenient to have at
+hand). **Load-bearing? yes** — the empty set's honesty is the field's entire
+purpose.
+
+### T27. The predecessor rides the fact, never the fold
+
+Decided: the session's NAME is the digest of the three groups alone; the
+predecessor session is a field of the session-established fact that lands on
+the lane. The reason is derivability, which is the property the whole
+construction exists for: a party holding the same three groups must compute the
+same digest with zero I/O, and a predecessor is not one of the three groups — a
+party that never saw the connection could not supply it. Folding it in would
+make the name uncomputable by exactly the parties the name is for, and would
+make the client-minted and owner-minted bytes differ whenever the two disagreed
+about history. A reconnect still mints a new session, because the connection
+identifier the substrate assigns has moved, and the prior fact is never edited:
+nothing on the mint path reads or writes a fact at all. Alternatives:
+predecessor inside the folded value (breaks derivability, as above); a separate
+successor fact linking two sessions (a second fact kind carrying one field, and
+a chain that breaks by dropping a message rather than by editing one).
+**Load-bearing? yes** — it is the difference between a name and a log line.
+
+### T28. The declared connect options are the connect's source, not its description
+
+Decided: every connect option the estate runs under is named in one declared
+table, with the four the spine sets taking the caller's values and every other
+row taking the pinned client's own value, transcribed. The arguments handed to
+the client are then PROJECTED back out of that declaration rather than built
+beside it, so "the session fact pins the options the connection ran under" is a
+construction and not a comment — there is one value, read twice. No transcribed
+default is passed: passing one would convert a transcription mistake into a
+silent change to what the estate runs under, and the wall asserts that the
+argument object's key set is exactly the estate-set rows. This slice changes no
+option value; the value pins stay the operator's, and changing one afterwards
+is a one-field edit to a declared value.
+
+The table separates two kinds of inherited value, because they are not the same
+fact: a row the pinned client's default table carries, and a row it carries
+nowhere and reads as absent at its point of use. Four options are in the second
+class, and they are exactly the ones nobody could have read without opening the
+client's source. Alternatives: declaring only the four options the spine sets
+(leaves the defaults undeclared, which is the omission the ruling retires);
+passing the transcribed defaults through to the client (turns a declaration
+into a runtime change, and the transcription is not the authority on the
+client's behaviour). **Load-bearing? yes** — it is the declared-data half of
+the standing connect-options requirement.
+
+### T29. The incarnation register is keyed by the chain position, not by the store alone
+
+Decided: the register key a decide competes at is the digest of the round — the
+store-directory digest together with the incarnation being succeeded — rather
+than the store-directory digest alone. The reason is the register's own law: an
+outcome, once landed, never changes. A key that is the store digest alone
+therefore admits exactly one landed incarnation for the life of the store,
+which is right for one round and wrong for a store directory that outlives many
+server runs; succession would be unsayable without destroying and recreating
+the backing bucket, which is precisely the lifecycle mutation the incarnation
+pin exists to refuse. With the round as the key, at most one incarnation lands
+per chain position, which is at most one incarnation current per store
+directory, which is the property the store needs. The store digest remains the
+key's only free coordinate at any one position.
+
+The fence is built ON the register and does not extend it: grant then commit,
+with the granted token carried between them, and no path through the decide
+starts a server — starting one is the winner's act afterwards. The register's
+incarnation pin is what makes this fence trustworthy at all, and it is
+consumed, not re-derived.
+
+Alternatives, both refused on the register's own semantics: key by the store
+digest alone (one incarnation ever, or bucket lifecycle mutation, and the
+second is the pin's refused case); re-open a landed round with expire-steal
+(the steal takes a lease, and an outcome once landed never changes, so it
+cannot re-open what has landed).
+
+Stated bounds. The race arm is executed against a fixture carrier with a
+scheduling window between every read and write, with a committed refutation —
+the same fence minus its token comparison lands two incarnations — so the arm
+is falsifiable. It is not the out-of-process race the specification's later
+slice describes, and it certifies only its own bounds. The chain walk is total
+and acyclic over seeded histories and refuses on a planted cycle; nothing is
+claimed about chains this package did not build. Crash is not forged: nothing
+here retires an incarnation on another's behalf, and a round nobody decided
+reads as absence, never as a running server. **Load-bearing? yes** — the key
+choice is what makes the fence expressible on the register the estate already
+has.
