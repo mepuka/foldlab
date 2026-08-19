@@ -1,0 +1,1425 @@
+{
+  "toolchain": "go/parser+go/printer, go version go1.26.5 darwin/arm64",
+  "files": [
+    {
+      "path": "/private/tmp/claude-501/-Users-pooks-Dev-foldlab/ecb54cf3-09bc-4863-a073-b75591959def/scratchpad/wt-goast/go/kmconform/tables_generated.go",
+      "bytes": 29896,
+      "lines": 694,
+      "sha256": "5d19cc38470a130a041261f8c9361d438298aad45177034550b63dc271d30426",
+      "census": [
+        {
+          "node": "*ast.Ident",
+          "count": 738
+        },
+        {
+          "node": "*ast.BasicLit",
+          "count": 342
+        },
+        {
+          "node": "*ast.KeyValueExpr",
+          "count": 200
+        },
+        {
+          "node": "*ast.CompositeLit",
+          "count": 102
+        },
+        {
+          "node": "*ast.Field",
+          "count": 101
+        },
+        {
+          "node": "*ast.Comment",
+          "count": 88
+        },
+        {
+          "node": "*ast.FieldList",
+          "count": 84
+        },
+        {
+          "node": "*ast.BlockStmt",
+          "count": 53
+        },
+        {
+          "node": "*ast.CommentGroup",
+          "count": 52
+        },
+        {
+          "node": "*ast.ValueSpec",
+          "count": 48
+        },
+        {
+          "node": "*ast.ReturnStmt",
+          "count": 47
+        },
+        {
+          "node": "*ast.GenDecl",
+          "count": 41
+        },
+        {
+          "node": "*ast.CallExpr",
+          "count": 34
+        },
+        {
+          "node": "*ast.FuncDecl",
+          "count": 33
+        },
+        {
+          "node": "*ast.FuncType",
+          "count": 33
+        },
+        {
+          "node": "*ast.ArrayType",
+          "count": 28
+        },
+        {
+          "node": "*ast.TypeSpec",
+          "count": 25
+        },
+        {
+          "node": "*ast.SelectorExpr",
+          "count": 24
+        },
+        {
+          "node": "*ast.BinaryExpr",
+          "count": 21
+        },
+        {
+          "node": "*ast.IfStmt",
+          "count": 13
+        },
+        {
+          "node": "*ast.StructType",
+          "count": 9
+        },
+        {
+          "node": "*ast.RangeStmt",
+          "count": 6
+        },
+        {
+          "node": "*ast.IndexExpr",
+          "count": 4
+        },
+        {
+          "node": "*ast.CaseClause",
+          "count": 3
+        },
+        {
+          "node": "*ast.Ellipsis",
+          "count": 3
+        },
+        {
+          "node": "*ast.AssignStmt",
+          "count": 2
+        },
+        {
+          "node": "*ast.File",
+          "count": 1
+        },
+        {
+          "node": "*ast.ImportSpec",
+          "count": 1
+        },
+        {
+          "node": "*ast.SwitchStmt",
+          "count": 1
+        },
+        {
+          "node": "*ast.UnaryExpr",
+          "count": 1
+        }
+      ],
+      "variants": [
+        {
+          "field": "ArrayType.form",
+          "value": "slice ([]T)",
+          "count": 25
+        },
+        {
+          "field": "ArrayType.form",
+          "value": "inferred-length ([...]T)",
+          "count": 3
+        },
+        {
+          "field": "AssignStmt.Tok",
+          "value": ":=",
+          "count": 1
+        },
+        {
+          "field": "AssignStmt.Tok",
+          "value": "=",
+          "count": 1
+        },
+        {
+          "field": "BasicLit.Kind",
+          "value": "STRING",
+          "count": 214
+        },
+        {
+          "field": "BasicLit.Kind",
+          "value": "INT",
+          "count": 128
+        },
+        {
+          "field": "BasicLit.stringForm",
+          "value": "interpreted (quoted)",
+          "count": 214
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "==",
+          "count": 7
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "+",
+          "count": 5
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "\u003e=",
+          "count": 5
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "!=",
+          "count": 2
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "\u003c",
+          "count": 1
+        },
+        {
+          "field": "BinaryExpr.Op",
+          "value": "\u003e",
+          "count": 1
+        },
+        {
+          "field": "CompositeLit.form",
+          "value": "keyed",
+          "count": 75
+        },
+        {
+          "field": "CompositeLit.form",
+          "value": "positional",
+          "count": 25
+        },
+        {
+          "field": "CompositeLit.form",
+          "value": "empty",
+          "count": 2
+        },
+        {
+          "field": "Field.form",
+          "value": "named",
+          "count": 59
+        },
+        {
+          "field": "Field.form",
+          "value": "anonymous/embedded or unnamed param",
+          "count": 42
+        },
+        {
+          "field": "FuncDecl.form",
+          "value": "function",
+          "count": 24
+        },
+        {
+          "field": "FuncDecl.form",
+          "value": "method",
+          "count": 9
+        },
+        {
+          "field": "GenDecl.Tok",
+          "value": "type",
+          "count": 25
+        },
+        {
+          "field": "GenDecl.Tok",
+          "value": "var",
+          "count": 10
+        },
+        {
+          "field": "GenDecl.Tok",
+          "value": "const",
+          "count": 5
+        },
+        {
+          "field": "GenDecl.Tok",
+          "value": "import",
+          "count": 1
+        },
+        {
+          "field": "GenDecl.parenthesized",
+          "value": "false",
+          "count": 36
+        },
+        {
+          "field": "GenDecl.parenthesized",
+          "value": "true",
+          "count": 5
+        },
+        {
+          "field": "RangeStmt.Tok",
+          "value": ":=",
+          "count": 6
+        },
+        {
+          "field": "UnaryExpr.Op",
+          "value": "-",
+          "count": 1
+        }
+      ],
+      "stringTable": [
+        {
+          "node": "*ast.ArrayType",
+          "distinct": 9,
+          "examples": [
+            "\"[]string\"",
+            "\"[]uint64\"",
+            "\"[]Refusal\"",
+            "\"[]DocEntry\"",
+            "\"[...]string\"",
+            "\"[]AdmissionVector\""
+          ]
+        },
+        {
+          "node": "*ast.AssignStmt",
+          "distinct": 2,
+          "examples": [
+            "\"catalog = append(catalog, row)\"",
+            "\"catalog := make([]Refusal, 0, len(RefusalTable))\""
+          ]
+        },
+        {
+          "node": "*ast.BasicLit",
+          "distinct": 191,
+          "examples": [
+            "\"0\"",
+            "\"1\"",
+            "\"2\"",
+            "\"3\"",
+            "\"\\\"fold-at-anchor\\\"\"",
+            "\"\\\"{\\\\\\\"edges\\\\\\\":[{\\\\\\\"from\\\\\\\":4,\\\\\\\"to\\\\\\\":3},{\\\\\\\"from\\\\\\\":3,\\\\\\\"to\\\\\\\":2},{\\\\\\\"from\\\\\\\":2,\\\\\\\"to\\\\\\\":1}],\\\\\\\"holes\\\\\\\":[],\\\\\\\"lineage\\\\\\\":[9],\\\\\" ...(+578 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.BinaryExpr",
+          "distinct": 20,
+          "examples": [
+            "\"s \u003e= target\"",
+            "\"known == name\"",
+            "\"entry.Name == name\"",
+            "\"vector.Name == name\"",
+            "\"int(s) \u003e= len(holeStageNames)\"",
+            "\"e.Refusal.Wire + \\\": \\\" + e.Refusal.Law + \\\" [repair: \\\" + e.Refusal.Repair + \\\"]\\\"\""
+          ]
+        },
+        {
+          "node": "*ast.BlockStmt",
+          "distinct": 49,
+          "examples": [
+            "\"{ return t.register }\"",
+            "\"{\\n\\t\\treturn 0, false\\n\\t}\"",
+            "\"{ return p.partition }\"",
+            "\"{ return s \u003e= target }\"",
+            "\"{\\n\\t\\treturn 0, Refuse(ReasonCrossSortIdentifier)\\n\\t}\"",
+            "\"{\\n\\tif p.partition != other.partition {\\n\\t\\treturn 0, Refuse(ReasonCrossSortIdentifier)\\n\\t}\\n\\tswitch {\\n\\tcase p.valu\" ...(+109 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.CallExpr",
+          "distinct": 29,
+          "examples": [
+            "\"int(k)\"",
+            "\"int(s)\"",
+            "\"uint8(k)\"",
+            "\"uint8(s)\"",
+            "\"len(RefusalTable)\"",
+            "\"fmt.Sprintf(\\\"HoleStage(%d)\\\", uint8(s))\""
+          ]
+        },
+        {
+          "node": "*ast.CaseClause",
+          "distinct": 3,
+          "examples": [
+            "\"default:\\n\\t\\treturn 0, nil\"",
+            "\"case p.value \u003e other.value:\\n\\t\\treturn 1, nil\"",
+            "\"case p.value \u003c other.value:\\n\\t\\treturn -1, nil\""
+          ]
+        },
+        {
+          "node": "*ast.Comment",
+          "distinct": 88,
+          "examples": [
+            "\"//\"",
+            "\"// branches on it.\"",
+            "\"//foldlab:brand lane\"",
+            "\"//foldlab:brand index\"",
+            "\"// ProgramVectorByName resolves a vector. Unknown names are refused.\"",
+            "\"// Refusal is one row of the taught table: the reason, the law it defends, the\""
+          ]
+        },
+        {
+          "node": "*ast.CommentGroup",
+          "distinct": 52,
+          "examples": [
+            "\"//foldlab:brand lane\"",
+            "\"//foldlab:brand index\"",
+            "\"//foldlab:brand policy\"",
+            "\"//foldlab:brand schema\"",
+            "\"// EncodingVectorByName resolves a vector. Unknown names are refused.\"",
+            "\"// EncodingVectors is the encoding group in corpus order.\\n//\\n// The wire number domain is the unbounded non-ne\" ...(+299 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.CompositeLit",
+          "distinct": 100,
+          "examples": [
+            "\"ProgramVector{}\"",
+            "\"EncodingVector{}\"",
+            "\"[]uint64{1, 0, 8}\"",
+            "\"[]uint64{7, 4, 5}\"",
+            "\"{Name: \\\"lawfulDeclare\\\", Admitted: true, Encoded: []uint64{0, 0, 7000051000172, 4}}\"",
+            "\"[]DocEntry{\\n\\t{Name: \\\"DeclKind\\\", Doc: \\\"The closed universe of declaration kinds. One brand per kind: a\\\\ndigest \" ...(+5281 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.Ellipsis",
+          "distinct": 1,
+          "examples": [
+            "\"...\""
+          ]
+        },
+        {
+          "node": "*ast.Field",
+          "distinct": 62,
+          "examples": [
+            "\"int\"",
+            "\"bool\"",
+            "\"Token\"",
+            "\"error\"",
+            "\"AlgebraDigest\"",
+            "\"Reason        RefusalReason\""
+          ]
+        },
+        {
+          "node": "*ast.FieldList",
+          "distinct": 54,
+          "examples": [
+            "\"()\"",
+            "\"bool\"",
+            "\"Token\"",
+            "\"error\"",
+            "\"ResourceDigest\"",
+            "\"{\\n\\tReason        RefusalReason\\n\\tWire          string\\n\\tLaw           string\\n\\tRepair        string\\n\\tApplicabilit\" ...(+17 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.File",
+          "distinct": 1,
+          "examples": [
+            "\"package kmconform\\n\\nimport \\\"fmt\\\"\\n\\n// The provenance of the tables in this file. Display data: no behaviour\\n// b\" ...(+29109 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.FuncDecl",
+          "distinct": 33,
+          "examples": [
+            "\"func (t Token) Register() ProgramDigest { return t.register }\"",
+            "\"func Taught(r RefusalReason) Refusal { return RefusalTable[r] }\"",
+            "\"func (p Position) Partition() LanePartition { return p.partition }\"",
+            "\"func Refuse(r RefusalReason) error { return RefusalError{Taught(r)} }\"",
+            "\"func NewCapabilityDigest(id uint64) CapabilityDigest { return CapabilityDigest(id) }\"",
+            "\"func (p Position) Compare(other Position) (int, error) {\\n\\tif p.partition != other.partition {\\n\\t\\treturn 0, Refu\" ...(+164 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.FuncType",
+          "distinct": 33,
+          "examples": [
+            "\"func (k DeclKind) String() string\"",
+            "\"func (s HoleStage) String() string\"",
+            "\"func Refuse(r RefusalReason) error\"",
+            "\"func (e RefusalError) Error() string\"",
+            "\"func NewLanguageDigest(id uint64) LanguageDigest\"",
+            "\"func NewPosition(partition LanePartition, value uint64) Position\""
+          ]
+        },
+        {
+          "node": "*ast.GenDecl",
+          "distinct": 41,
+          "examples": [
+            "\"import \\\"fmt\\\"\"",
+            "\"type DeclKind uint8\"",
+            "\"type HoleStage uint8\"",
+            "\"type LaneDigest uint64\"",
+            "\"type EncodingVector struct {\\n\\tName string\\n\\tAct  []uint64\\n}\"",
+            "\"var DocTable = []DocEntry{\\n\\t{Name: \\\"DeclKind\\\", Doc: \\\"The closed universe of declaration kinds. One brand per k\" ...(+5296 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.Ident",
+          "distinct": 155,
+          "examples": [
+            "\"_\"",
+            "\"a\"",
+            "\"e\"",
+            "\"k\"",
+            "\"LaneDigest\"",
+            "\"ReasonClosureIntrospection\""
+          ]
+        },
+        {
+          "node": "*ast.IfStmt",
+          "distinct": 12,
+          "examples": [
+            "\"if vector.Name == name {\\n\\t\\t\\treturn vector, true\\n\\t\\t}\"",
+            "\"if entry.Name == name {\\n\\t\\t\\treturn entry.Doc, true\\n\\t\\t}\"",
+            "\"if known == name {\\n\\t\\t\\treturn DeclKind(rank), true\\n\\t\\t}\"",
+            "\"if int(rank) \u003e= len(declKindNames) {\\n\\t\\treturn 0, false\\n\\t}\"",
+            "\"if t.register != register {\\n\\t\\treturn 0, Refuse(ReasonCrossSortIdentifier)\\n\\t}\"",
+            "\"if int(s) \u003e= len(holeStageNames) {\\n\\t\\treturn fmt.Sprintf(\\\"HoleStage(%d)\\\", uint8(s))\\n\\t}\""
+          ]
+        },
+        {
+          "node": "*ast.ImportSpec",
+          "distinct": 1,
+          "examples": [
+            "\"\\\"fmt\\\"\""
+          ]
+        },
+        {
+          "node": "*ast.IndexExpr",
+          "distinct": 4,
+          "examples": [
+            "\"RefusalTable[r]\"",
+            "\"declKindNames[k]\"",
+            "\"holeStageNames[s]\"",
+            "\"RefusalTable[index]\""
+          ]
+        },
+        {
+          "node": "*ast.KeyValueExpr",
+          "distinct": 183,
+          "examples": [
+            "\"Name: \\\"Act\\\"\"",
+            "\"Name: \\\"Door\\\"\"",
+            "\"value: value\"",
+            "\"Name: \\\"Token\\\"\"",
+            "\"Wire:          \\\"clock-read\\\"\"",
+            "\"Bytes: \\\"{\\\\\\\"edges\\\\\\\":[{\\\\\\\"from\\\\\\\":4,\\\\\\\"to\\\\\\\":3},{\\\\\\\"from\\\\\\\":3,\\\\\\\"to\\\\\\\":2},{\\\\\\\"from\\\\\\\":2,\\\\\\\"to\\\\\\\":1}],\\\\\\\"holes\\\\\\\":[],\\\\\\\"lineage\\\\\" ...(+585 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.RangeStmt",
+          "distinct": 6,
+          "examples": [
+            "\"for _, entry := range DocTable {\\n\\t\\tif entry.Name == name {\\n\\t\\t\\treturn entry.Doc, true\\n\\t\\t}\\n\\t}\"",
+            "\"for _, vector := range EncodingVectors {\\n\\t\\tif vector.Name == name {\\n\\t\\t\\treturn vector, true\\n\\t\\t}\\n\\t}\"",
+            "\"for rank, known := range declKindNames {\\n\\t\\tif known == name {\\n\\t\\t\\treturn DeclKind(rank), true\\n\\t\\t}\\n\\t}\"",
+            "\"for _, vector := range ProgramVectorTable {\\n\\t\\tif vector.Name == name {\\n\\t\\t\\treturn vector, true\\n\\t\\t}\\n\\t}\"",
+            "\"for _, row := range RefusalTable {\\n\\t\\tif row.Applicability == MachineApplicable {\\n\\t\\t\\tcatalog = append(catalog, \" ...(+11 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.ReturnStmt",
+          "distinct": 41,
+          "examples": [
+            "\"return 0, nil\"",
+            "\"return 1, nil\"",
+            "\"return -1, nil\"",
+            "\"return catalog\"",
+            "\"return ProgramDigest(id)\"",
+            "\"return e.Refusal.Wire + \\\": \\\" + e.Refusal.Law + \\\" [repair: \\\" + e.Refusal.Repair + \\\"]\\\"\""
+          ]
+        },
+        {
+          "node": "*ast.SelectorExpr",
+          "distinct": 16,
+          "examples": [
+            "\"p.value\"",
+            "\"t.value\"",
+            "\"e.Refusal\"",
+            "\"entry.Doc\"",
+            "\"p.partition\"",
+            "\"RefusalTable[index].Wire\""
+          ]
+        },
+        {
+          "node": "*ast.StructType",
+          "distinct": 9,
+          "examples": [
+            "\"struct{ Refusal Refusal }\"",
+            "\"struct {\\n\\tName string\\n\\tDoc  string\\n}\"",
+            "\"struct {\\n\\tName  string\\n\\tBytes string\\n}\"",
+            "\"struct {\\n\\tName string\\n\\tAct  []uint64\\n}\"",
+            "\"struct {\\n\\tLane  LaneDigest\\n\\tShard uint64\\n}\"",
+            "\"struct {\\n\\tReason        RefusalReason\\n\\tWire          string\\n\\tLaw           string\\n\\tRepair        string\\n\\tAppli\" ...(+24 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.SwitchStmt",
+          "distinct": 1,
+          "examples": [
+            "\"switch {\\n\\tcase p.value \u003c other.value:\\n\\t\\treturn -1, nil\\n\\tcase p.value \u003e other.value:\\n\\t\\treturn 1, nil\\n\\tdefault:\\n\" ...(+18 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.TypeSpec",
+          "distinct": 25,
+          "examples": [
+            "\"DeclKind uint8\"",
+            "\"HoleStage uint8\"",
+            "\"LaneDigest uint64\"",
+            "\"IndexDigest uint64\"",
+            "\"ResourceDigest uint64\"",
+            "\"Refusal struct {\\n\\tReason        RefusalReason\\n\\tWire          string\\n\\tLaw           string\\n\\tRepair        strin\" ...(+32 bytes)"
+          ]
+        },
+        {
+          "node": "*ast.UnaryExpr",
+          "distinct": 1,
+          "examples": [
+            "\"-1\""
+          ]
+        },
+        {
+          "node": "*ast.ValueSpec",
+          "distinct": 48,
+          "examples": [
+            "\"Advisory\"",
+            "\"CorpusFormat = 2\"",
+            "\"KindAlgebra    DeclKind = 5\"",
+            "\"KindCapability DeclKind = 3\"",
+            "\"ReasonClockRead            RefusalReason = 0\"",
+            "\"DocTable = []DocEntry{\\n\\t{Name: \\\"DeclKind\\\", Doc: \\\"The closed universe of declaration kinds. One brand per kind:\" ...(+5292 bytes)"
+          ]
+        }
+      ],
+      "layout": {
+        "gofmtClean": true,
+        "printerClean": true,
+        "gofmtConfig": "printer.Config{Mode: UseSpaces|TabIndent, Tabwidth: 8}",
+        "trailingNewline": true,
+        "crlfLines": 0,
+        "trailingWhitespace": 0,
+        "linesWithTabIndent": 358,
+        "linesWithInteriorTab": 0,
+        "linesWithAlignment": 125,
+        "alignmentSites": [
+          "\"\\tSource       = \\\"verify/kernel\\\"\"",
+          "\"\\tGenerator    = \\\"verify/unity emit\\\"\"",
+          "\"\\tKindSchema     DeclKind = 0\"",
+          "\"\\tKindProgram    DeclKind = 1\"",
+          "\"\\tKindPolicy     DeclKind = 2\"",
+          "\"\\tKindLane       DeclKind = 4\"",
+          "\"\\tKindAlgebra    DeclKind = 5\"",
+          "\"\\tKindIndex      DeclKind = 6\"",
+          "\"\\tKindResource   DeclKind = 7\"",
+          "\"\\tKindOntology   DeclKind = 8\"",
+          "\"\\tKindSchedule   DeclKind = 9\"",
+          "\"\\tKindTemplate   DeclKind = 10\"",
+          "\"\\tKindLanguage   DeclKind = 11\"",
+          "\"\\tStageOpened   HoleStage = 0\""
+        ],
+        "tabwriterTouchedLines": 155,
+        "tabwriterTouchedSites": [
+          "L20 committed=\"\\tSource       = \\\"verify/kernel\\\"\" raw=\"\\tSource\\t= \\\"verify/kernel\\\"\"",
+          "L21 committed=\"\\tGenerator    = \\\"verify/unity emit\\\"\" raw=\"\\tGenerator\\t= \\\"verify/unity emit\\\"\"",
+          "L22 committed=\"\\tCorpusFormat = 2\" raw=\"\\tCorpusFormat\\t= 2\"",
+          "L30 committed=\"\\tKindSchema     DeclKind = 0\" raw=\"\\tKindSchema\\tDeclKind\\t= 0\"",
+          "L31 committed=\"\\tKindProgram    DeclKind = 1\" raw=\"\\tKindProgram\\tDeclKind\\t= 1\"",
+          "L32 committed=\"\\tKindPolicy     DeclKind = 2\" raw=\"\\tKindPolicy\\tDeclKind\\t= 2\"",
+          "L33 committed=\"\\tKindCapability DeclKind = 3\" raw=\"\\tKindCapability\\tDeclKind\\t= 3\"",
+          "L34 committed=\"\\tKindLane       DeclKind = 4\" raw=\"\\tKindLane\\tDeclKind\\t= 4\"",
+          "L35 committed=\"\\tKindAlgebra    DeclKind = 5\" raw=\"\\tKindAlgebra\\tDeclKind\\t= 5\"",
+          "L36 committed=\"\\tKindIndex      DeclKind = 6\" raw=\"\\tKindIndex\\tDeclKind\\t= 6\"",
+          "L37 committed=\"\\tKindResource   DeclKind = 7\" raw=\"\\tKindResource\\tDeclKind\\t= 7\"",
+          "L38 committed=\"\\tKindOntology   DeclKind = 8\" raw=\"\\tKindOntology\\tDeclKind\\t= 8\"",
+          "L39 committed=\"\\tKindSchedule   DeclKind = 9\" raw=\"\\tKindSchedule\\tDeclKind\\t= 9\"",
+          "L40 committed=\"\\tKindTemplate   DeclKind = 10\" raw=\"\\tKindTemplate\\tDeclKind\\t= 10\""
+        ],
+        "rawPlusTabwriterReproducesFile": true,
+        "tabwriterParams": "tabwriter.NewWriter(out, minwidth=0, tabwidth=8, padding=1, padchar=' ', DiscardEmptyColumns|TabIndent)",
+        "maxLineBytes": 722,
+        "blankLines": 70,
+        "maxConsecutiveBlankLines": 1,
+        "nonASCIIBytes": 12,
+        "rawStringLiterals": 0
+      },
+      "topLevelDecls": [
+        {
+          "kind": "GenDecl",
+          "tok": "import",
+          "name": "\"fmt\"",
+          "specs": 1,
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "const",
+          "name": "Source (+2 more)",
+          "specs": 3,
+          "doc": true,
+          "lines": 5
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "DeclKind",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "const",
+          "name": "KindSchema (+11 more)",
+          "specs": 12,
+          "doc": false,
+          "lines": 14
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "declKindNames",
+          "specs": 1,
+          "doc": false,
+          "lines": 14
+        },
+        {
+          "kind": "method",
+          "name": "DeclKind.String",
+          "doc": false,
+          "lines": 6
+        },
+        {
+          "kind": "func",
+          "name": "DeclKindFromRank",
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "func",
+          "name": "DeclKindByName",
+          "doc": true,
+          "lines": 8
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "HoleStage",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "const",
+          "name": "StageOpened (+4 more)",
+          "specs": 5,
+          "doc": false,
+          "lines": 7
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "holeStageNames",
+          "specs": 1,
+          "doc": false,
+          "lines": 7
+        },
+        {
+          "kind": "method",
+          "name": "HoleStage.String",
+          "doc": false,
+          "lines": 6
+        },
+        {
+          "kind": "method",
+          "name": "HoleStage.Reached",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "HoleStageFromRank",
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "Applicability",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "const",
+          "name": "MachineApplicable (+1 more)",
+          "specs": 2,
+          "doc": false,
+          "lines": 4
+        },
+        {
+          "kind": "method",
+          "name": "Applicability.String",
+          "doc": false,
+          "lines": 6
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "RefusalReason",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "const",
+          "name": "ReasonClockRead (+15 more)",
+          "specs": 16,
+          "doc": false,
+          "lines": 18
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "Refusal",
+          "specs": 1,
+          "doc": true,
+          "lines": 7
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "RefusalTable",
+          "specs": 1,
+          "doc": true,
+          "lines": 114
+        },
+        {
+          "kind": "func",
+          "name": "Taught",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "RefusalByWire",
+          "doc": true,
+          "lines": 8
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "RefusalError",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "method",
+          "name": "RefusalError.Error",
+          "doc": false,
+          "lines": 3
+        },
+        {
+          "kind": "func",
+          "name": "Refuse",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "MachineApplicableRepairs",
+          "doc": true,
+          "lines": 9
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "SchemaDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "ProgramDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "PolicyDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "CapabilityDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "LaneDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "AlgebraDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "IndexDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "ResourceDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "OntologyDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "ScheduleDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "TemplateDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "LanguageDigest",
+          "specs": 1,
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewSchemaDigest",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewProgramDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewPolicyDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewCapabilityDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewLaneDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewAlgebraDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewIndexDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewResourceDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewOntologyDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewScheduleDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewTemplateDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "func",
+          "name": "NewLanguageDigest",
+          "doc": false,
+          "lines": 1
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "BrandTypeNames",
+          "specs": 1,
+          "doc": true,
+          "lines": 14
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "Token",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "func",
+          "name": "NewToken",
+          "doc": true,
+          "lines": 3
+        },
+        {
+          "kind": "method",
+          "name": "Token.Register",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "method",
+          "name": "Token.Spend",
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "LanePartition",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "Position",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "func",
+          "name": "NewPosition",
+          "doc": true,
+          "lines": 3
+        },
+        {
+          "kind": "method",
+          "name": "Position.Partition",
+          "doc": true,
+          "lines": 1
+        },
+        {
+          "kind": "method",
+          "name": "Position.Compare",
+          "doc": true,
+          "lines": 13
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "TypeNames",
+          "specs": 1,
+          "doc": true,
+          "lines": 24
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "DocEntry",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "DocTable",
+          "specs": 1,
+          "doc": true,
+          "lines": 24
+        },
+        {
+          "kind": "func",
+          "name": "DocFor",
+          "doc": true,
+          "lines": 8
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "EncodingVector",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "EncodingVectors",
+          "specs": 1,
+          "doc": true,
+          "lines": 14
+        },
+        {
+          "kind": "func",
+          "name": "EncodingVectorByName",
+          "doc": true,
+          "lines": 8
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "AdmissionVector",
+          "specs": 1,
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "AdmissionVectors",
+          "specs": 1,
+          "doc": true,
+          "lines": 21
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "type",
+          "name": "ProgramVector",
+          "specs": 1,
+          "doc": true,
+          "lines": 4
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "ProgramVectorTable",
+          "specs": 1,
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "GenDecl",
+          "tok": "var",
+          "name": "ProgramVectorNames",
+          "specs": 1,
+          "doc": true,
+          "lines": 6
+        },
+        {
+          "kind": "func",
+          "name": "ProgramVectorByName",
+          "doc": true,
+          "lines": 8
+        }
+      ],
+      "comments": {
+        "groups": 58,
+        "lines": 153,
+        "lineComments": 153,
+        "blockComments": 0,
+        "docGroups": 52,
+        "floatingGroups": 6,
+        "directives": [
+          "foldlab:brand"
+        ],
+        "generatedBanner": "// Code generated by cmd/kmgen from ../../packages/plait/fixtures/kernel-conformance.ndjson. DO NOT EDIT.",
+        "bannerMatchesGoConvention": true,
+        "headerCommentLines": 11,
+        "commentsInsideFuncBodies": 0
+      },
+      "structural": {
+        "maxAstDepth": 12,
+        "declCount": 74,
+        "funcDecls": 33,
+        "methods": 9,
+        "statementKinds": [
+          {
+            "node": "*ast.BlockStmt",
+            "count": 53
+          },
+          {
+            "node": "*ast.ReturnStmt",
+            "count": 47
+          },
+          {
+            "node": "*ast.IfStmt",
+            "count": 13
+          },
+          {
+            "node": "*ast.RangeStmt",
+            "count": 6
+          },
+          {
+            "node": "*ast.CaseClause",
+            "count": 3
+          },
+          {
+            "node": "*ast.AssignStmt",
+            "count": 2
+          },
+          {
+            "node": "*ast.SwitchStmt",
+            "count": 1
+          }
+        ],
+        "expressionKinds": [
+          {
+            "node": "*ast.Ident",
+            "count": 738
+          },
+          {
+            "node": "*ast.BasicLit",
+            "count": 342
+          },
+          {
+            "node": "*ast.KeyValueExpr",
+            "count": 200
+          },
+          {
+            "node": "*ast.CompositeLit",
+            "count": 102
+          },
+          {
+            "node": "*ast.CallExpr",
+            "count": 34
+          },
+          {
+            "node": "*ast.FuncType",
+            "count": 33
+          },
+          {
+            "node": "*ast.ArrayType",
+            "count": 28
+          },
+          {
+            "node": "*ast.SelectorExpr",
+            "count": 24
+          },
+          {
+            "node": "*ast.BinaryExpr",
+            "count": 21
+          },
+          {
+            "node": "*ast.StructType",
+            "count": 9
+          },
+          {
+            "node": "*ast.IndexExpr",
+            "count": 4
+          },
+          {
+            "node": "*ast.Ellipsis",
+            "count": 3
+          },
+          {
+            "node": "*ast.UnaryExpr",
+            "count": 1
+          }
+        ],
+        "compositeLitShapes": {
+          "EncodingVector [empty]": 1,
+          "Position [keyed]": 1,
+          "ProgramVector [empty]": 1,
+          "RefusalError [positional]": 1,
+          "Token [keyed]": 1,
+          "[...]Refusal [positional]": 1,
+          "[...]string [positional]": 2,
+          "[]AdmissionVector [positional]": 1,
+          "[]DocEntry [positional]": 1,
+          "[]EncodingVector [positional]": 1,
+          "[]ProgramVector [positional]": 1,
+          "[]string [positional]": 3,
+          "[]uint64 [positional]": 14,
+          "untyped [keyed]": 73
+        }
+      }
+    }
+  ],
+  "totals": [
+    {
+      "node": "*ast.Ident",
+      "count": 738
+    },
+    {
+      "node": "*ast.BasicLit",
+      "count": 342
+    },
+    {
+      "node": "*ast.KeyValueExpr",
+      "count": 200
+    },
+    {
+      "node": "*ast.CompositeLit",
+      "count": 102
+    },
+    {
+      "node": "*ast.Field",
+      "count": 101
+    },
+    {
+      "node": "*ast.Comment",
+      "count": 88
+    },
+    {
+      "node": "*ast.FieldList",
+      "count": 84
+    },
+    {
+      "node": "*ast.BlockStmt",
+      "count": 53
+    },
+    {
+      "node": "*ast.CommentGroup",
+      "count": 52
+    },
+    {
+      "node": "*ast.ValueSpec",
+      "count": 48
+    },
+    {
+      "node": "*ast.ReturnStmt",
+      "count": 47
+    },
+    {
+      "node": "*ast.GenDecl",
+      "count": 41
+    },
+    {
+      "node": "*ast.CallExpr",
+      "count": 34
+    },
+    {
+      "node": "*ast.FuncDecl",
+      "count": 33
+    },
+    {
+      "node": "*ast.FuncType",
+      "count": 33
+    },
+    {
+      "node": "*ast.ArrayType",
+      "count": 28
+    },
+    {
+      "node": "*ast.TypeSpec",
+      "count": 25
+    },
+    {
+      "node": "*ast.SelectorExpr",
+      "count": 24
+    },
+    {
+      "node": "*ast.BinaryExpr",
+      "count": 21
+    },
+    {
+      "node": "*ast.IfStmt",
+      "count": 13
+    },
+    {
+      "node": "*ast.StructType",
+      "count": 9
+    },
+    {
+      "node": "*ast.RangeStmt",
+      "count": 6
+    },
+    {
+      "node": "*ast.IndexExpr",
+      "count": 4
+    },
+    {
+      "node": "*ast.CaseClause",
+      "count": 3
+    },
+    {
+      "node": "*ast.Ellipsis",
+      "count": 3
+    },
+    {
+      "node": "*ast.AssignStmt",
+      "count": 2
+    },
+    {
+      "node": "*ast.File",
+      "count": 1
+    },
+    {
+      "node": "*ast.ImportSpec",
+      "count": 1
+    },
+    {
+      "node": "*ast.SwitchStmt",
+      "count": 1
+    },
+    {
+      "node": "*ast.UnaryExpr",
+      "count": 1
+    }
+  ],
+  "distinctNodeTypes": 30
+}
