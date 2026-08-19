@@ -1,0 +1,21 @@
+---------------------------- MODULE JournalBroken -----------------------------
+(***************************************************************************)
+(* The FAITHLESS variants: the negative controls.  The transition table    *)
+(* lives in Journal.tla (stated once; each config flips exactly one law    *)
+(* off), so the ratified and faithless models cannot drift apart.  TLC     *)
+(* must REFUTE every configuration of this module — a checker that cannot  *)
+(* find a planted violation proves nothing by finding none:                *)
+(*                                                                         *)
+(*   JournalBroken.blind.cfg       BlindAppend      -> ChainIntegrity      *)
+(*   JournalBroken.durability.cfg  LossyCrash       -> AppendOnly          *)
+(*   JournalBroken.resync.cfg      UnverifiedResync -> AdoptionIsVerified  *)
+(*   JournalBroken.read.cfg        ForgivingRead    -> CleanGenesisRead... *)
+(*   JournalBroken.stalecas.cfg    StaleCasWins     -> NoDuplicatePayload  *)
+(*                                                                         *)
+(* Each configuration names ONLY the invariant its dropped law must lose,  *)
+(* so a refutation cannot be credited to a law the control did not touch.  *)
+(* Each counterexample trace is committed beside its config as             *)
+(* JournalBroken.*.cex.txt.                                                *)
+(***************************************************************************)
+EXTENDS Journal
+================================================================================
