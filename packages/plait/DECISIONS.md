@@ -8634,3 +8634,154 @@ ruled, and the succession arm measures a chain rather than a schedule.
 The corpus grows no substrate-vocabulary emitter group. The disposition joins
 the same hand-carried transcription the rest of the incarnation vocabulary
 wears, under the same waiver naming the same owed group.
+
+## Task: the connection machine becomes observable — per-session state as a fold, served live (2026-08-19)
+
+### T0. The fold lives beside presence, and grew no public face
+
+Decided: `src/internal/connectionfold.ts`, plane `internal`, seam `planes`, with
+no barrel export and no entry in the package's exports map.
+
+The seam tag is the rank the module actually holds: it reaches the
+positioned-carrier vocabulary the plane's readers speak and mints nothing below
+it, which is exactly where `presence.ts` sits and for the same reason.
+Alternatives: a public plane module beside `Session.ts`, or a truth-seam module.
+The truth seam is unavailable — the positioned carrier ranks at the plane seam
+and a truth-seam module importing it would invert the ladder. The public face
+was refused for now on the evidence rather than on taste: presence and staleness
+are the two sibling reads over these same lanes, both have lived entirely under
+`internal/` since they landed, and no consumer outside this package exists for
+any of the three. Growing the public type universe ahead of a consumer would
+raise a ratchet pin for a surface nobody imports; the signature manifest was
+regenerated and did not move, which is the mechanical statement of that.
+**Load-bearing? yes** — where a read lives decides who may depend on it, and
+adding the face later is an ordinary export whereas removing one is a public
+break.
+
+### T1. The initial state is the absence this runtime already spells, never the model's word for it
+
+Decided: the fold's initial position is `null`, and the correspondence to the
+substrate model's initial state is stated in prose rather than transcribed as a
+name.
+
+The model names its initial state because an inductive type has to name its
+constructors; the runtime does not, and the transcription discipline forbids a
+state carrying a word the substrate never said. `null` is already this package's
+spelling for "established, and no transition observed yet" — the machine table's
+own predecessor column uses it, the transition fact's `from` field carries it,
+and the pump's position starts there. Alternatives: mint the model's word as a
+twelfth name, or add a row to the machine table for it. Both would put a state
+into the runtime vocabulary that no transcribed transition enters, which the
+vocabulary gate refuses by clause. **Load-bearing? yes** — this is the one place
+the model and the runtime disagree about spelling, and writing the
+correspondence down is what keeps the disagreement from reading as drift.
+
+### T2. The teardown fact is read back through the row that emits it
+
+Decided: on a session-ended fact the fold takes the word of the machine row
+whose emission column names that form, then walks the table with it like any
+other word.
+
+The pump lands teardown as the session-ended fact rather than as a transition
+fact, because the record already had a form for "this connection is over". A
+fold that did not read that fact back through the table would never reach the
+terminal from the lane at all. Alternatives: land the terminal state directly
+off the absorbing row with no word, or treat the ended fact as no symbol. The
+first skips the alphabet check the model's own step performs; the second would
+leave every closed connection reading as whatever it was before it closed. A
+table placing no such emission is refused rather than assumed, on the same
+refusal as an unplaced word. **Load-bearing? yes** — this is the only path from
+the lane to the terminal state.
+
+### T3. The drain-disposition fact hands the machine nothing
+
+Decided: the incarnation lame-duck fact contributes no symbol to the connection
+machine, and the fold's arm for it says so beside the union's other arms.
+
+That fact is the daemon's report about a server incarnation, minted by the side
+that runs the server; it rides the session lane because it cites a session, not
+because it is a reading taken from that connection's status source. The client's
+own status source reports the same disposition through its own transcribed row,
+which the pump already lands as a transition. Alternative: consume it as the
+word it carries. That would move one disposition twice — once when the server
+said it and once when the client heard it — and the second move would come from
+a party that is not the connection. **Load-bearing? yes** — it decides whether a
+daemon-side fact can move a client-side machine.
+
+### T4. The twelfth symbol refuses on an existing kind, and the runner-up is named
+
+Decided: an event word the transcription places nowhere refuses with the
+existing kind `malformed-value`. No kind was minted.
+
+Its standing meaning is the closest of the forty-five: presented input does not
+decode as its declared schema or as one wire value at all, and a decoder that
+repairs its input names a different value, so a near miss is refused rather than
+coerced. That is exactly this fact — the fold is the decoder from a fact to a
+machine symbol, and a fold that held the state on an unknown word would be
+repairing its input into a different answer. The runner-up was
+`lane-evidence-mismatch`, whose second sentence fits well ("refused rather than
+folded into a state that could no longer be attributed") and whose first does
+not: it names lane and partition-key addressing, and nothing here is
+mis-addressed. Both mint sites — an unplaced word, and a table placing no
+terminal emission — go through one object literal, so the teaching is pinned
+once. **Load-bearing? yes** — a refusal's kind is persisted evidence and the
+wrong one teaches the wrong repair.
+
+### T5. The wall's oracle is the table's own columns, and the bound is stated
+
+Decided: expectations are read off the matched row — the state column, the
+placement column, the absorbing column — and never written as names. The three
+clause arms (the terminal absorbs, a reading holds, a transition lands where its
+own event names) are checked across every position-and-symbol pair, with a
+fourth arm proving the three partition that space rather than overlapping on it.
+
+The sequences the fold walks are minted by the pump's own transducer from
+constructed status values, so what is folded is the pump's output rather than a
+fixture that agrees with it. Stated bound: this is NOT lockstep against the
+substrate model's own run function over a generated corpus. What holds the table
+itself honest stays where it already is — the transcription gate against the
+pinned client's declaration bytes, and the model gate's alphabet arm against the
+transcription's canonical rendering. **Load-bearing? yes** — a wall that claimed
+the model oracle without executing it would be the overclaim the ledger exists
+to prevent.
+
+### T6. No gate was widened; the sweep that already existed is the wall for the no-spelling rule
+
+Decided: the status-vocabulary gate's consumer clause still reads exactly the
+pump's source, and the new module and its suite were NOT added to it.
+
+The wire vocabulary's own footprint sweep already reads every TypeScript file
+under this package's source, script and test trees and refuses a bare literal
+equal to any transcribed word — and since a state is named by the transition
+that enters it, the seven state names are seven of the eleven words that sweep
+already looks for. Adding a second scan over the same files would be a second
+statement of one rule. The suite carries its own arm over both sources anyway,
+with a planted spelling proving the arm can go red, and neither file needed an
+allowance, which the sweep reports as zero unlawful hits. **Load-bearing? no**
+individually; **yes** as a rule, because a discipline with two walls drifts at
+whichever one is edited first.
+
+### T7. Positions are per-partition, so the fold never sorts and never compares across sessions
+
+Decided: the walk takes the delivered facts in the order the caller read them
+and reports each session's own last position; nothing is sorted.
+
+The session lane partitions by the session digest, so one session's facts are
+one dense sequence and the order a reader read them in IS oldest-first. Two
+sessions' positions come from two sequences and are not comparable at all.
+Alternative: sort the input by position for safety. That would interleave up to
+eight independent sequences into an order no reader ever saw, and would answer
+about a sequence that never existed. **Load-bearing? yes** — it is the reason
+the snapshot is keyed by session rather than reduced over one timeline.
+
+### T8. What this slice does NOT do
+
+No public export, no service, no layer, and no arbitration: nothing here
+retries, emits, evicts, or decides, and the estate gains no new sentence for
+acting on a connection state. No liveness — the answer is the last state the
+facts support and carries no age, and the staleness read stays the heartbeat
+lane's. No corpus growth: the machine tables remain hand-carried transcription
+under the standing staged-debt waiver, and this slice mints no generated
+artifact. No lockstep model oracle, and no refinement map between this fold and
+the substrate model's run function — the model gate proves the machine, this
+suite executes a walk over it, and neither is claimed to be the other.

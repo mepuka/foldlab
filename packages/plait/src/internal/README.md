@@ -42,6 +42,25 @@ controls traced into `../../negative-controls/Presence.*.trace.txt`, and
 `../../test/PresenceWall.test.ts` over a real substrate with one holder taken
 away by signal 9.
 
+`connectionfold.ts` is the read over the machine those same status facts
+describe: per session, walk that session's facts oldest-first through the
+transcribed tables and answer with the state they support and the position of
+the last one consumed. The transition rule is the substrate model's own —
+alphabet first, so a word the table places nowhere refuses instead of being
+guessed at; then the terminal absorbs, a reading holds, and a transition lands
+in the state its own event names — and no event word or state name is written by
+hand here or in the suite, which the wire vocabulary's footprint sweep holds
+mechanically. Three faces over one walk: a per-session read, a snapshot of every
+session the facts cite, and a stream of the fold's steps with a transitions-only
+filter beside it. It reports the last state the facts support and never what is
+running now, and it consults no clock at all — the staleness question is
+`presence.ts`'s and stays there. Walls: `../../test/ConnectionFold.test.ts`
+over sequences the pump's own transducer minted, with the promoted-reading
+mutant traced into
+`../../negative-controls/ConnectionFold.reading-promoted.trace.txt`, and the
+readings arm of `../../test/StatusPumpWall.test.ts` folding a sequence a real
+substrate produced.
+
 `incarnations.ts` is the REFERENCE side of the substrate's own lifecycle
 vocabulary — the store, the incarnation, the round a start competes at, and the
 facts a run leaves: established, lame-duck, retired, and the teardown

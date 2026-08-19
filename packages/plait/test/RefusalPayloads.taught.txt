@@ -135,6 +135,12 @@ packages/plait/src/internal/chaos.ts#3
   expected "${} positive safe-integer heads"
   next[0].subject "plait chaos"
   next[0].note "Pin one positive stream head for each declared lane partition."
+packages/plait/src/internal/connectionfold.ts#0
+  kind "malformed-value"
+  law "A connection state is folded only from words the transcribed status vocabulary places; a word the table carries no row for names no landing to read."
+  expected "a word the transcribed status vocabulary places"
+  next[0].subject "Connection.read"
+  next[0].note "Fold facts whose event word the transcribed status vocabulary places. A word that reached the lane from outside that vocabulary is transcribed into the table before anything folds it, so the state it lands in is read rather than guessed."
 packages/plait/src/internal/folds.ts#0
   kind "fold-transport-unavailable"
   law "Transport absence may be retried; declared fold laws may not."

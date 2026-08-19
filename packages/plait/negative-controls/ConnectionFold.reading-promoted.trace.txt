@@ -1,0 +1,1 @@
+CONNECTION CONTROL: PASS component=connection-fold mutant=reading-promoted-to-state vector=transition-then-reading law=readings-hold-state

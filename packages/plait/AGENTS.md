@@ -268,6 +268,50 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   lifecycle entry point as a bare literal outside the transcription modules is
   a finding — the daemon-side parity wall's footprint arm refuses it, and its
   exceptions are declared lines with stated reasons, never silent skips.
+- **The connection machine is READ as a fold, and every name in it comes out of
+  the table.** `internal/connectionfold.ts` walks one session's status facts
+  oldest-first and answers with the state those facts support plus the position
+  of the last one it consumed — a state and a position, never an age. The
+  transition rule is the ruled one the substrate model proves and this module
+  cites rather than restates: the alphabet is consulted FIRST, so a symbol
+  outside it has no row from any state and the fold refuses `malformed-value`
+  rather than guessing; then the terminal absorbs everything, a reading holds
+  the state it is read within, and a transition lands in the state its own event
+  names. The initial position is `null` — the model's initial state, which is
+  named by no event because establishment is not a status event — and the
+  admissible-predecessor column is deliberately NOT consulted, because a status
+  event is the client's own evidence and evidence is never re-aimed for arriving
+  in an order a table did not expect. No event word and no state name is spelled
+  by hand in the module or in its suite; the wire vocabulary's own footprint
+  sweep is what holds that mechanically, and a hand-typed word there is a
+  finding whichever file carries it. The reads arbitrate nothing, retry nothing
+  and emit nothing, and they consult no clock: staleness is the heartbeat read's
+  and stays there. Positions are per-partition coordinates and the lane
+  partitions by session, so the fold never sorts its input and never compares
+  two sessions' positions — a fold that sorted would be interleaving eight
+  independent sequences into an order no reader ever saw. Wall:
+  `test/ConnectionFold.test.ts` over sequences the pump's own transducer minted,
+  with the three transition clauses checked across the whole table, the planted
+  twelfth symbol refused on every read, and the reading-promoted-to-a-state
+  mutant executed and traced into
+  `negative-controls/ConnectionFold.reading-promoted.trace.txt`; the readings arm
+  of `test/StatusPumpWall.test.ts` folds a sequence a real substrate produced.
+  What is NOT claimed: no lockstep against the model's own `run` over a
+  generated corpus, and no liveness — the answer is the last state the facts
+  support and says nothing about now.
+- **The lane IS the log, and diagnostics are never read back into meaning.** The
+  substrate's own events reach this estate as facts — minted by the one status
+  pump, landed through the one emit onto the session lane — and folding those
+  facts is how anything here knows what a connection did. Diagnostics are a
+  different register entirely: Effect spans, console output, and the vendor
+  server's own log are EVIDENCE MACHINERY, they help a reader or an agent see
+  what ran, and nothing reads them back. No fact, digest, fold, refusal or claim
+  in this package is load-bearing on a span, a log line, or a printed
+  measurement. A trace, in this estate's sense, is the causal chain of facts
+  reachable by digest from a root; `internal/connectionfold.ts` is the first
+  named trace view over one such chain. A read that consulted a span, a log line
+  or a clock in order to decide what a fact means is a finding, and so is a
+  claim whose only evidence is something printed.
 - A session is read-plane state and writes nothing. `Session` reads anchors and
   the states they name; it never commits an anchor, never emits, and never
   carries a revision on its values. A write verb on that seam is a finding, and
