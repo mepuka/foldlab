@@ -76,6 +76,15 @@ rung definitions. Scoped laws:
   plus the orphan-fact crash residual (TLC).
 - `replay/` — workflow replay soundness: Lean for the unbounded half,
   TLC for the protocol half, the faithless runner refuted in both.
+- `substrate/` — the substrate model's first slice (Lean): carriage
+  invariance for the session fold, lifecycle-machine soundness over the
+  transcribed status vocabulary, and incarnation chain integrity in the
+  register's inductive-invariant idiom. Cites the kernel by path and is
+  never cited back — the import direction is a gate arm. The lifecycle
+  alphabet is DATA held against the transcription's own canonical
+  rendering by an executed equality arm with its own drift control, so a
+  status event is never spelled twice. Six executable controls, two
+  must-not-compile refusals, traces committed.
 - Owed: `effector/` (ticket 013 ports the proven register's evidence
   out of `.reference/`, an untracked predecessor repository absent from
   this checkout).
