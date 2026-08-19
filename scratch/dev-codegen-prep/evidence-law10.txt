@@ -1,0 +1,64 @@
+transcription: PASS (all three refusal classes verbatim from the wall)
+
+== verify/kernel/projections/kernel.ts   [not walled]
+   lines 409   hits 1
+   filesystem path: 1
+   line 4 [filesystem path] "verify/"
+
+== verify/kernel/projections/prose.md   [not walled]
+   lines 97   hits 1
+   filesystem path: 1
+   line 3 [filesystem path] "`verify/"
+
+== verify/kernel/projections/tools.schema.json   [not walled]
+   lines 236   hits 1
+   filesystem path: 1
+   line 2 [filesystem path] "verify/"
+
+== packages/plait/src/kernel/KernelBuilder.generated.ts   [not walled]
+   lines 520   hits 8
+   filesystem path: 6
+   generation command: 2
+   line 6 [filesystem path] "packages/"
+   line 7 [generation command] "bun"
+   line 8 [filesystem path] "verify/"
+   line 32 [filesystem path] ".generated.js"
+   line 36 [generation command] "bun"
+   line 37 [filesystem path] "\"packages/"
+   line 39 [filesystem path] "\"verify/"
+   line 40 [filesystem path] "\"verify/"
+
+== packages/plait/src/kernel/KernelSchemas.generated.ts   [not walled]
+   lines 1086   hits 11
+   filesystem path: 9
+   generation command: 2
+   line 6 [filesystem path] "packages/"
+   line 7 [generation command] "bun"
+   line 8 [filesystem path] "verify/"
+   line 30 [filesystem path] "KernelTables.generated.ts"
+   line 43 [generation command] "bun"
+   line 44 [filesystem path] "\"packages/"
+   line 46 [filesystem path] "\"verify/"
+   line 47 [filesystem path] "\"verify/"
+   line 82 [filesystem path] "\"verify/"
+   line 99 [filesystem path] "\"verify/"
+   line 101 [filesystem path] "\"verify/"
+
+== packages/plait/src/kernel/KernelTables.generated.ts   [WALLED]
+   lines 936   hits 0
+
+== packages/plait/src/truth/RefusalKinds.generated.ts   [WALLED]
+   lines 371   hits 0
+
+== docs/generated/kernel-language.generated.md   [WALLED]
+   lines 1063   hits 0
+
+── summary ──
+   1  NOT WALLED  verify/kernel/projections/kernel.ts
+   1  NOT WALLED  verify/kernel/projections/prose.md
+   1  NOT WALLED  verify/kernel/projections/tools.schema.json
+   8  NOT WALLED  packages/plait/src/kernel/KernelBuilder.generated.ts
+  11  NOT WALLED  packages/plait/src/kernel/KernelSchemas.generated.ts
+   0  walled      packages/plait/src/kernel/KernelTables.generated.ts
+   0  walled      packages/plait/src/truth/RefusalKinds.generated.ts
+   0  walled      docs/generated/kernel-language.generated.md

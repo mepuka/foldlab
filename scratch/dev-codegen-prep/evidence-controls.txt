@@ -1,0 +1,10 @@
+== 1. the sketch as committed
+   GREEN — the four controls all fail to compile, as claimed
+
+== 2. the same file with every control neutralised
+   declared controls: 4
+   errors reported:   4
+   subject.ts(399,53): error TS2345: Argument of type 'Token<{ readonly [KIND]: "program"; } & "sha256:03">' is not assignable to parameter of type 'Token<NoInfer<{ readonly [KIND]: "program"; } & "sha256:99">>'.
+   subject.ts(402,60): error TS2345: Argument of type 'AnchorFact<{ readonly [KIND]: "index"; } & "sha256:20", { readonly lane_digest: { readonly [KIND]: "lane"; } & "sha256:10"; readonly shard: 2; }>' is not assignable to parameter of type 'AnchorFact<NoInfer<{ ...; } & "sha256:02">, NoInfer<{ ...; }>>'.
+   subject.ts(405,14): error TS2322: Type '{ readonly [KIND]: "schema"; } & "sha256:08"' is not assignable to type 'Digest<"program">'.
+   subject.ts(408,50): error TS2345: Argument of type '{ readonly [KIND]: "schema"; } & "sha256:08"' is not assignable to parameter of type 'Digest<"program">'.
