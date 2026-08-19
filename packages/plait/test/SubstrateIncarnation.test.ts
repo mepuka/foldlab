@@ -7,10 +7,17 @@ import { Digest } from "../src/truth/Digest.js"
 import { structuralRefusal, type Refusal } from "../src/truth/Refusal.js"
 import {
   decideIncarnation,
+  establishedFact,
   incarnation,
   incarnationName,
+  LAME_DUCK_EVENT,
+  lameDuckFact,
   landedAt,
+  RETIREMENT_CAUSES,
+  retiredFact,
   roundKey,
+  store,
+  storeName,
   walkChain,
   type SubstrateIncarnation,
 } from "../src/internal/incarnations.js"
@@ -271,6 +278,55 @@ describe("the substrate-incarnation fence", () => {
       roundKey(other, null),
     ]))
     expect(new Set([a, b, c]).size).toBe(3)
+  })
+})
+
+describe("the lifecycle facts", () => {
+  test("the store's digest travels and the directory does not", async () => {
+    const declared = store("/var/lib/foldlab/substrate")
+    expect(declared.kind).toBe("substrate-store")
+    const named = await Effect.runPromise(storeName("/var/lib/foldlab/substrate"))
+    const elsewhere = await Effect.runPromise(storeName("/srv/foldlab/substrate"))
+    expect(named).not.toBe(elsewhere)
+    expect(named).not.toContain("/")
+  })
+
+  test("the established fact cites the options digest and the predecessor", async () => {
+    const value = incarnation({ store: STORE, options: OPTIONS, predecessor: null })
+    const digest = await Effect.runPromise(incarnationName(value))
+    const head = establishedFact(digest, value)
+    expect(head.incarnation).toBe(digest)
+    expect(head.options).toBe(OPTIONS)
+    expect(head.predecessor).toBe(null)
+
+    const successor = incarnation({ store: STORE, options: OPTIONS, predecessor: digest })
+    const next = establishedFact(
+      await Effect.runPromise(incarnationName(successor)),
+      successor,
+    )
+    expect(next.predecessor).toBe(digest)
+  })
+
+  test("the lame-duck fact carries the vendor's own event name", () => {
+    const fact = lameDuckFact({
+      incarnation: STORE,
+      session: OPTIONS,
+      server: "foldlab-substrate",
+    })
+    expect(fact.event).toBe("ldm")
+    expect(LAME_DUCK_EVENT).toBe("ldm")
+    // The server rides the fact, which is why the server name is a declared
+    // row: an unset one aliases a fresh identity per run.
+    expect(fact.server).toBe("foldlab-substrate")
+    expect(fact.session).toBe(OPTIONS)
+  })
+
+  test("the retirement causes are two declared estate values, and neither names a crash", () => {
+    expect([...RETIREMENT_CAUSES]).toEqual(["drained", "stopped"])
+    for (const forged of ["crashed", "killed", "timed-out", "unreachable"]) {
+      expect(RETIREMENT_CAUSES).not.toContain(forged)
+    }
+    expect(retiredFact(STORE, "drained").cause).toBe("drained")
   })
 })
 

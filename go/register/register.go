@@ -1,13 +1,23 @@
 // Package register is a fresh Go twin of Plait's five-action commitment register.
 //
-// Incarnation bound: every claim this twin's walls make holds within a fixed
-// backing-stream incarnation; administrative lifecycle mutation is outside
-// the credential guard. KV revisions are stream sequences, so a bucket
-// delete+recreate resets the token order and a stale holder's revision CAS
-// can land on the reborn bucket. The incarnation pin at Open (record the
-// backing stream's creation time; refuse on mismatch) is NOT yet implemented
-// — recorded deferral, see packages/plait/DECISIONS.md; the DEV-716 ACL
-// suite is the other half of the guard.
+// Incarnation bound, and how it is now closed. KV revisions are stream
+// sequences, so a bucket delete+recreate resets the token order and a stale
+// holder's revision CAS could land on the reborn bucket. That bound used to be
+// recorded here as a deferral; it is now PAID. [Open] records the backing
+// stream's creation identity and every action re-asserts it before its own law
+// checks, so a fence minted under one backing-stream incarnation is never
+// honored by another — it refuses `incarnation-mismatch` with a taught repair
+// instead. [OpenUnpinned] is the same client with that assertion removed and
+// exists only so the pin's refutation can be executed rather than argued; no
+// shipped consumer opens it.
+//
+// The pin is a TRANSCRIPTION of the TypeScript spine's, which landed first: the
+// identity, the refusal kind, its law, and its repair are read out of that
+// implementation and restated here. A divergence is a defect on this side.
+//
+// The other half of the guard, the credential suite, is unchanged and still
+// outside this package: administrative lifecycle mutation is refused here, not
+// prevented here.
 package register
 
 import (
@@ -15,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/nats-io/nats.go"
 )
@@ -42,11 +53,22 @@ type storedState struct {
 	Outcome *Outcome `json:"outcome"`
 }
 
+// Next is one taught repair step: the surface to go to, and what to do there.
+//
+// Transcribed from the spine's refusal shape so the two languages teach one
+// repair. A refusal without one is a bare error wearing a type.
+type Next struct {
+	Subject string
+	Note    string
+}
+
 type Refusal struct {
 	Kind string
 	Law  string
 	Got  any
 	Want any
+	// Next is the repair. Every refusal this package mints carries one.
+	Next []Next
 }
 
 func (r *Refusal) Error() string {
@@ -54,14 +76,127 @@ func (r *Refusal) Error() string {
 }
 
 func refuse(kind, law string, got, want any) error {
-	return &Refusal{Kind: kind, Law: law, Got: got, Want: want}
+	return &Refusal{Kind: kind, Law: law, Got: got, Want: want, Next: repairFor(kind)}
 }
+
+// repairFor is the repair table, keyed by refusal kind, transcribed from the
+// spine's taught notes. A kind with no row would be a refusal that teaches
+// nothing, so the table is total over the kinds this package mints and the
+// wall below reads it back.
+func repairFor(kind string) []Next {
+	switch kind {
+	case "incarnation-mismatch":
+		return []Next{{
+			Subject: "register.open",
+			Note:    "Re-open the register and re-derive the fence from the live bucket; a reborn bucket's revisions restart, so every token minted under the destroyed incarnation is void and none of them may be presented again.",
+		}}
+	case "duplicate-grant":
+		return []Next{{
+			Subject: "register.observe",
+			Note:    "Observe the register for its current token, holder, and landed outcome; this round already has a holder and this contender does not start.",
+		}}
+	case "outcome-already-landed":
+		return []Next{{
+			Subject: "register.observe",
+			Note:    "Observe the landed outcome and take it as this round's result; an outcome, once set, never changes.",
+		}}
+	case "stale-register-token":
+		return []Next{{
+			Subject: "register.observe",
+			Note:    "Observe the register for the current token and landed outcome; this fence is superseded and must not be presented again.",
+		}}
+	case "concurrent-register-update":
+		return []Next{{
+			Subject: "register.observe",
+			Note:    "Re-read the register at its current revision and re-attempt the expire-steal against it.",
+		}}
+	case "register-absent":
+		return []Next{{
+			Subject: "register.grant",
+			Note:    "Grant the register before renewing, committing, or stealing it; an absent register holds no fence to present.",
+		}}
+	case "invalid-register-key":
+		return []Next{{
+			Subject: "register.key",
+			Note:    "Present one literal key with no dots, whitespace, or wildcards; a work digest is already one.",
+		}}
+	case "malformed-register-state":
+		return []Next{{
+			Subject: "register.observe",
+			Note:    "Read the stored state back and repair it to a holder/outcome record; this register's bytes are not one.",
+		}}
+	case "register-substrate-shape":
+		return []Next{{
+			Subject: "register.open",
+			Note:    "Provision the register bucket file-backed at R=1 with 64 retained revisions and no age or size eviction, then re-open.",
+		}}
+	default:
+		return nil
+	}
+}
+
+// RefusalKinds is the roster of kinds this package mints, so the repair table's
+// totality is checkable rather than asserted.
+var RefusalKinds = []string{
+	"incarnation-mismatch",
+	"duplicate-grant",
+	"outcome-already-landed",
+	"stale-register-token",
+	"concurrent-register-update",
+	"register-absent",
+	"invalid-register-key",
+	"malformed-register-state",
+	"register-substrate-shape",
+}
+
+// incarnationLaw is the law the pin defends: the fencing order is an order
+// within one backing stream, and a reborn stream is a different one.
+const incarnationLaw = "A fencing token is honored only by the backing-stream incarnation that minted it."
 
 type Client struct {
 	kv nats.KeyValue
+	// pinned is the backing stream's creation identity, recorded at open.
+	// Empty only on a client opened by [OpenUnpinned].
+	pinned string
+	// pin says whether every action re-asserts the identity above.
+	pin bool
 }
 
-func Open(nc *nats.Conn) (*Client, error) {
+// incarnationOf is the backing stream's incarnation identity.
+//
+// `StreamInfo.Created` is the strongest identity the pinned client publishes:
+// the bucket's name is identical across incarnations by construction and every
+// state field moves under ordinary writes, while the creation stamp is fixed
+// for a stream's whole life and re-minted by its rebirth. The empty string is
+// the answer for a status the server did not stamp, and it refuses rather than
+// pins — pinning an empty identity would compare equal to every later empty one
+// and leave a guard that guards nothing.
+func incarnationOf(status nats.KeyValueStatus) string {
+	bucket, ok := status.(*nats.KeyValueBucketStatus)
+	if !ok {
+		return ""
+	}
+	info := bucket.StreamInfo()
+	if info == nil || info.Created.IsZero() {
+		return ""
+	}
+	return info.Created.UTC().Format(time.RFC3339Nano)
+}
+
+// Open opens the register bucket and PINS the backing stream's incarnation.
+func Open(nc *nats.Conn) (*Client, error) { return open(nc, true) }
+
+// OpenUnpinned opens the register bucket with the incarnation assertion
+// removed.
+//
+// It exists for exactly one purpose: the pin's committed refutation. A control
+// that cannot fail proves nothing, so the wall runs the same stale-token
+// sequence both ways and records both outcomes — with the pin the stale CAS
+// refuses, without it the stale CAS lands on the reborn bucket. No shipped
+// consumer calls this, and the wall that does says so in its own output.
+func OpenUnpinned(nc *nats.Conn) (*Client, error) { return open(nc, false) }
+
+func open(nc *nats.Conn, pin bool) (*Client, error) {
 	js, err := nc.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("jetstream: %w", err)
@@ -87,7 +222,55 @@ func Open(nc *nats.Conn) (*Client, error) {
 			"The register bucket is file-backed R=1 with 64 retained revisions and no age or size eviction.",
 			cfg, "file/R=1/history=64/ttl=0/max_bytes=-1")
 	}
-	return &Client{kv: kv}, nil
+	// The pin costs no extra round trip at open: it reads the status the shape
+	// check already took.
+	pinned := incarnationOf(status)
+	if pin && pinned == "" {
+		return nil, refuse("incarnation-mismatch", incarnationLaw,
+			"a backing stream that reports no creation time",
+			"a backing stream that reports its creation time")
+	}
+	return &Client{kv: kv, pinned: pinned, pin: pin}, nil
+}
+
+// Incarnation is the backing-stream identity this client is bound to.
+func (c *Client) Incarnation() string { return c.pinned }
+
+// Pinned reports whether this client asserts its incarnation.
+func (c *Client) Pinned() bool { return c.pin }
+
+// assertIncarnation re-reads the backing stream's identity and refuses unless
+// it is still the incarnation this client pinned at open.
+//
+// Every action runs this FIRST, ahead of its own law checks, and the ordering
+// is the whole point: a reborn bucket's revisions restart from one, so a stale
+// token compared against them would refuse `stale-register-token` naming a
+// "current" fence no holder of this register was ever granted. The pin refuses
+// the question instead of answering it wrongly.
+func (c *Client) assertIncarnation() error {
+	if !c.pin {
+		return nil
+	}
+	status, err := c.kv.Status()
+	if err != nil {
+		// A destroyed bucket is not a retryable absence: no future retry can
+		// make the pinned incarnation exist again. Classified by operation
+		// context plus the error the pinned client returns for "this bucket is
+		// not here", never by an error identity alone.
+		if errors.Is(err, nats.ErrBucketNotFound) || errors.Is(err, nats.ErrStreamNotFound) {
+			return refuse("incarnation-mismatch", incarnationLaw,
+				"a destroyed backing stream", c.pinned)
+		}
+		return fmt.Errorf("assert the register incarnation: %w", err)
+	}
+	observed := incarnationOf(status)
+	if observed == c.pinned {
+		return nil
+	}
+	if observed == "" {
+		observed = "a backing stream that reports no creation time"
+	}
+	return refuse("incarnation-mismatch", incarnationLaw, observed, c.pinned)
 }
 
 func validateWork(work string) error {
@@ -158,8 +341,13 @@ const (
 func (c *Client) reconcileUpdate(work string, presented uint64, intended storedState) (reconcileVerdict, nats.KeyValueEntry, error) {
 	entry, err := c.kv.Get(work)
 	if err != nil {
-		// Vanishing mid-flight is lifecycle mutation: outside the fixed
-		// backing-stream incarnation this twin is bounded to.
+		// Vanishing mid-flight is lifecycle mutation. Ask the pin which kind it
+		// was: a bucket reborn under this call refuses on the pin's law, and a
+		// still-pinned incarnation leaves this write's outcome genuinely
+		// ambiguous, which is a transport absence.
+		if pinErr := c.assertIncarnation(); pinErr != nil {
+			return reconciledUnchanged, nil, pinErr
+		}
 		return reconciledUnchanged, nil, fmt.Errorf("read-back after failed update: %w", err)
 	}
 	stored, err := decode(entry)
@@ -202,6 +390,9 @@ func (c *Client) Grant(work, holder string) (State, error) {
 	if err := validateWork(work); err != nil {
 		return State{}, err
 	}
+	if err := c.assertIncarnation(); err != nil {
+		return State{}, err
+	}
 	intended := storedState{Holder: holder}
 	b, err := encode(intended)
 	if err != nil {
@@ -233,8 +424,15 @@ func (c *Client) Grant(work, holder string) (State, error) {
 	return State{Token: token, Holder: &holder}, nil
 }
 
+// get is the read every fenced action starts from, and the incarnation
+// assertion runs ahead of it: Renew, Commit and ExpireSteal all reach the
+// backing stream through here, so one assertion site covers all three without
+// any of them being able to forget it.
 func (c *Client) get(work string) (nats.KeyValueEntry, storedState, error) {
 	if err := validateWork(work); err != nil {
+		return nil, storedState{}, err
+	}
+	if err := c.assertIncarnation(); err != nil {
 		return nil, storedState{}, err
 	}
 	entry, err := c.kv.Get(work)
@@ -330,6 +528,9 @@ func (c *Client) ExpireSteal(work, holder string) (State, error) {
 
 func (c *Client) Observe(work string) (State, error) {
 	if err := validateWork(work); err != nil {
+		return State{}, err
+	}
+	if err := c.assertIncarnation(); err != nil {
 		return State{}, err
 	}
 	entry, err := c.kv.Get(work)
