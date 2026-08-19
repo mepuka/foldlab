@@ -317,8 +317,13 @@ committed format-1 record, not typed by hand.
 than `header`, sorted. *(from the corpus)*
 
 ```json
-{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
+{"counts":{"admission":19,"canon":10,"doc":22,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
 ```
+
+2026-08-19: header refreshed against the committed corpus
+(`packages/plait/fixtures/kernel-conformance.ndjson`): admission grew 17
+-> 19 (one extra admitted row joined the lawful twin) and a tenth
+`model-admission` group (2 rows, scope model-internal) was added.
 
 Every count MUST equal the number of records of that group actually
 emitted.

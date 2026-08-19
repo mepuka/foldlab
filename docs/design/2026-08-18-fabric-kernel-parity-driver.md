@@ -127,9 +127,15 @@ fixtures. Minimal path, in order:
   `kernel-conformance.ndjson`: the DeclKind table with ranks, the
   sentence-encoding vectors with round-trips, the sixteen taught
   refusals with wire reasons, laws, repairs, and applicability marks,
-  and the admission verdicts for the seventeen planted candidates plus
-  the lawful twin. This is model-executed generation — no hand-typed
+  and the admission verdicts for the nineteen admission rows (seventeen
+  refused candidates plus the two admitted: the lawful twin and a
+  cataloged trigger). This is model-executed generation — no hand-typed
   vectors, per the standing ruling.
+
+  2026-08-19: admission count refreshed against the committed corpus
+  (`packages/plait/fixtures/kernel-conformance.ndjson`): admission grew
+  17 -> 19, and a tenth `model-admission` group (2 rows, scope
+  model-internal) was added.
 - **B2 — derived runtime tables.** On the packages side, a codegen step
   turns the emitted tables into the runtime's constants: the DeclKind
   registry, refusal-reason enum with taught texts, applicability

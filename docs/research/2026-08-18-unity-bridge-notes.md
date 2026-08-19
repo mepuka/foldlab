@@ -284,6 +284,11 @@ emitter now derives its type and doc rows from the environment by
 metaprogramming; Unity/Dsl.lean adds a `candidate%` macro surface over
 the whole candidate grammar with all seventeen planted rows respelled
 and proved equal by rfl (roster 19 -> 40, empty footprints).
+
+2026-08-19: repaired on main, PR #149; issue #147 — Dsl.lean's two
+drift-locked productions (lastWriterWins' algebra carrier, update's kind
+and writ) catch up to the model; the planted-row theorems and the
+every-kind roster elaborate again.
 TypeScript grew generated Effect Schemas with first-class annotations
 (descriptions from doc records; a canonicalExamples byte-string
 annotation working around Effect's JSON Schema export dropping
