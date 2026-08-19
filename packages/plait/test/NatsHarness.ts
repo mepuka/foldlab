@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs"
-import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises"
+import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from "node:fs"
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 
@@ -68,11 +68,11 @@ const answersToPin = (binary: string): boolean => {
   return version.exitCode === 0 && version.stdout.toString().includes(serverPin)
 }
 
-const compileServerBinary = async (): Promise<NatsServerBinary> => {
+const compileServerBinary = (): NatsServerBinary => {
   if (existsSync(cachedBinary) && answersToPin(cachedBinary)) return { binary: cachedBinary }
 
-  await mkdir(cacheRoot, { recursive: true })
-  const staging = await mkdtemp(join(cacheRoot, "staging-"))
+  mkdirSync(cacheRoot, { recursive: true })
+  const staging = mkdtempSync(join(cacheRoot, "staging-"))
   const staged = join(staging, binaryName)
   try {
     const build = Bun.spawnSync({
@@ -88,49 +88,61 @@ const compileServerBinary = async (): Promise<NatsServerBinary> => {
     if (version.exitCode !== 0 || !version.stdout.toString().includes(serverPin)) {
       throw new Error(`wrong nats-server pin: ${version.stdout.toString()}${version.stderr.toString()}`)
     }
-    await mkdir(dirname(cachedBinary), { recursive: true })
+    mkdirSync(dirname(cachedBinary), { recursive: true })
     // Publish by rename inside the same cache root, so no reader can ever
     // observe a half-linked binary and a loser of the race leaves the winner's
     // file untouched. Windows refuses to replace an existing destination; that
     // arm falls through to the same `-v` check, which is the only thing that
     // decides whether a file at the cached path may be used.
     try {
-      await rename(staged, cachedBinary)
+      renameSync(staged, cachedBinary)
     } catch (cause) {
       if (!answersToPin(cachedBinary)) {
         throw new Error(`publish nats-server: ${String(cause)}`)
       }
     }
   } finally {
-    await rm(staging, { recursive: true, force: true })
+    rmSync(staging, { recursive: true, force: true })
   }
   return { binary: cachedBinary }
 }
 
-let compiled: Promise<NatsServerBinary> | undefined
-
 /**
- * Resolves the pinned upstream nats-server, building it from the Go module
- * lock only when the cache has no binary that answers to the pin.
+ * The pinned upstream nats-server, resolved as this module loads and built from
+ * the Go module lock only when the cache has no binary that answers to the pin.
  *
  * The binary is CONTENT, not incarnation: seam rule 7 binds row isolation to a
  * fresh server on a fresh store on a fresh port, and `startNatsServer` still
  * mints all three per call. Rebuilding the same pinned executable at each of
  * the seventeen call sites bought no isolation, so the build lands once at a
  * path keyed by the pin and is shared from there. The `-v` check did not move:
- * it now gates REUSE as well as construction, so a cached file that is not the
- * pin is rebuilt rather than trusted.
+ * it gates REUSE as well as construction, so a cached file that is not the pin
+ * is rebuilt rather than trusted.
+ *
+ * Acquiring at module load is what keeps the compiler out of a row's budget.
+ * Building the pinned server is not part of what any wall states, but on a cold
+ * Go build cache it costs many times a row's whole budget on its own, so a row
+ * that pays for the compiler fails on the toolchain instead of on the wall —
+ * measured on a cleared cache as three wall files timing out on the five-second
+ * default, all green once a binary was cached. Widening the rows' budget was
+ * the alternative and is the wrong shape: that number would have to cover the
+ * worst compile any machine might do, and would then also cover a harness that
+ * had genuinely gone slow, which is the failure these walls exist to catch.
+ *
+ * The acquisition is SYNCHRONOUS on purpose. A top-level `await` here makes the
+ * module async, and an importing file's hooks then run while it is still
+ * initializing — observed directly as a hook reaching `startNatsHarness` before
+ * this module had bound it. Blocking module evaluation instead means no hook of
+ * any importing file can start before the binary exists. A wall file reaches
+ * this harness only by importing it, which is the same fact that sorts it into
+ * the wall group, so every wall file is covered however the runner was invoked.
+ * Each row keeps the default budget, and a server too slow to start under it
+ * still fails the row.
  */
-export const buildServerBinary = (): Promise<NatsServerBinary> => {
-  // A rejected build is not memoized: the failure is usually a missing or
-  // wrong Go toolchain, and a caller that fixes it mid-suite deserves a retry
-  // rather than a cached refusal.
-  compiled ??= compileServerBinary().catch((cause: unknown) => {
-    compiled = undefined
-    throw cause
-  })
-  return compiled
-}
+const serverBinary: NatsServerBinary = compileServerBinary()
+
+/** Hands back the pinned binary this module acquired as it loaded. */
+export const buildServerBinary = (): Promise<NatsServerBinary> => Promise.resolve(serverBinary)
 
 /**
  * Starts one fresh single-node JetStream server on a fresh file store.
