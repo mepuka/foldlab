@@ -30,6 +30,12 @@ export * as ContextProgram from "./kernel/ContextProgram.js"
 /** SHA-256 identity over canonical uncompressed bytes. */
 export * as Digest from "./truth/Digest.js"
 
+/** The language-speaking service: judgment through the one door, then carriage. */
+export * as Engine from "./carriage/Engine.js"
+
+/** Environments as directories: positioned provision facts and the greatest-position read. */
+export * as Environment from "./planes/Environment.js"
+
 /** Scope-owned transport-free fabric client service. */
 export * as FabricClient from "./carriage/FabricClient.js"
 
@@ -44,6 +50,9 @@ export * as KernelDoor from "./kernel/KernelDoor.js"
 
 /** The language as plain TypeScript: the candidate grammar and the eight generators. */
 export * as KernelSdk from "./kernel/KernelSdk.generated.js"
+
+/** The kernel language served over MCP: eight tools, served equals derived. */
+export * as Mcp from "./surface/mcp.js"
 
 /** Structural and absence refusals plus the absence-only retry policy. */
 export * as Refusal from "./truth/Refusal.js"

@@ -3,7 +3,7 @@
  *
  * @module
  */
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Layer, Schema, Stream } from "effect"
 
 import type { Anchor } from "./Anchor.js"
 import type { WireValue } from "../truth/Canonical.js"
@@ -284,3 +284,22 @@ export const read = Effect.fn("Session.read")(function*<
   const sessions = yield* Sessions
   return yield* sessions.read(session, fold)
 })
+
+/**
+ * The stream face of the coalgebra: the unfold of {@link read}. Every element
+ * is one consumer step — an anchored image and the session it leaves behind —
+ * and the writ is judged on every element by construction, because each pull
+ * IS a `read`. The stream never closes itself: a session names a position,
+ * not a lifetime.
+ *
+ * Pacing is the consumer's. A pull that arrives before the anchor advanced
+ * repeats the standing image at its anchor, which is lawful — a folded answer
+ * is never wrong later, only earlier — and any schedule, batching, or
+ * debounce is composed downstream by the reader, never promised here.
+ */
+export const changes = <Event, State, const Partitions extends number>(
+  session: Session,
+  fold: DeclaredFold<Event, State, Partitions>,
+): Stream.Stream<Step<State>, Refusal, Sessions> =>
+  Stream.unfold(session, (current) =>
+    Effect.map(read(current, fold), (step) => [step, step.session] as const))

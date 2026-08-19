@@ -214,3 +214,60 @@ export const deploy = Effect.fn("Folds.deploy")(function*<
   const folds = yield* Folds
   return yield* folds.deploy(fold, options)
 })
+
+/** A declared event transform: canonical data naming executable behavior. */
+export interface Transform<From, To> {
+  readonly declaration: WireValue
+  readonly apply: (event: From) => To
+}
+
+/** A declared event predicate: canonical data naming executable behavior. */
+export interface DeclaredPredicate<Event> {
+  readonly declaration: WireValue
+  readonly test: (event: Event) => boolean
+}
+
+/**
+ * A contribution over transformed events: the map transformer of the closed
+ * combinator set. The algebra is untouched, so every law the fold's algebra
+ * earned still licenses exactly what it licensed — a transformer moves the
+ * event side of the F4 bridge and never the state side.
+ */
+export const mapped = <From, To, State>(
+  transform: Transform<From, To>,
+  contribution: Contribution<To, State>,
+): Contribution<From, State> => ({
+  declaration: {
+    combinator: "map",
+    transform: transform.declaration,
+    contribution: contribution.declaration,
+  },
+  apply: (event) => contribution.apply(transform.apply(event)),
+})
+
+/**
+ * A contribution over filtered events: the filter transformer of the closed
+ * combinator set, by the fusion law. An excluded event contributes the
+ * algebra's own identity, so the derived step leaves the state exactly where
+ * it stood — `combine(state, e) = state` is the identity law executing, not
+ * a skip bolted beside the bridge — and the rung is preserved because the
+ * algebra is untouched. The identity comes FROM the algebra, never from the
+ * caller, so no neutral element a law does not license can enter.
+ *
+ * The predicate is declared data over the event alone. Filtering on absence
+ * has no spelling here: silence is not an event, and acting on it routes
+ * through the deadline seat, exactly where the closure list already puts it.
+ */
+export const filtered = <Event, State>(
+  algebra: DeclaredAlgebra<State>,
+  predicate: DeclaredPredicate<Event>,
+  contribution: Contribution<Event, State>,
+): Contribution<Event, State> => ({
+  declaration: {
+    combinator: "filter",
+    predicate: predicate.declaration,
+    contribution: contribution.declaration,
+  },
+  apply: (event) =>
+    predicate.test(event) ? contribution.apply(event) : algebra.reducer.initialValue,
+})

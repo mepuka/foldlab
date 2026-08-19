@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { Effect, Reducer, Schema } from "effect"
+import { Effect, Reducer, Result, Schema, Stream } from "effect"
 
 import * as Algebra from "../src/truth/Algebra.js"
 import { initial } from "../src/planes/Anchor.js"
@@ -292,5 +292,89 @@ describe("the consumer seam", () => {
     expect(refusal.kind).toBe("undeclared-view")
     expect(refusal.path).toEqual(["session", "view"])
     expect(refusal.expected).toBe(subscribed.digest)
+  })
+})
+
+/**
+ * The stream face: `changes` is the unfold of `read`, so its elements are the
+ * read chain's own steps and the writ is judged on every pull by
+ * construction. The fixture advances its floor per read, so element equality
+ * with the sequential chain is a real sequencing claim, not a constant.
+ */
+const advancingDoor = (): Session.SessionService => {
+  let floor = 0
+  const subscribe: Session.SessionService["subscribe"] = Effect.fn(
+    "Session.fixture.subscribe",
+  )(function* (fold, options) {
+    return {
+      writ: options.writ,
+      view: fold.digest,
+      partition: options.partition,
+      position: options.policy === "replay" ? 0 : floor,
+    }
+  })
+  const read: Session.SessionService["read"] = Effect.fn("Session.fixture.read")(
+    function* (session, fold) {
+      floor += 1
+      const anchor = { ...(yield* initial(floor)), floor }
+      return {
+        view: {
+          view: fold.digest,
+          writ: session.writ.digest,
+          partition: session.partition,
+          from: session.position,
+          anchor,
+          state: floor as never,
+        },
+        session: { ...session, position: floor },
+      }
+    },
+  )
+  return { subscribe, read }
+}
+
+describe("the changes stream face", () => {
+  test("take(n) is exactly n sequential reads", async () => {
+    const fold = Effect.runSync(declareFold("stream-face"))
+    const collected = await Effect.runPromise(
+      Effect.gen(function* () {
+        const writ = yield* Session.writ({ holder: "reader", views: [fold.digest] })
+        const session = yield* Session.subscribe(fold, {
+          writ,
+          partition: 0,
+          policy: "replay",
+        })
+        return yield* Stream.runCollect(Stream.take(Session.changes(session, fold), 3))
+      }).pipe(Effect.provide(Session.Sessions.testLayer(advancingDoor()))) as unknown as Effect.Effect<
+        ReadonlyArray<Session.Step<number>>,
+        never
+      >,
+    )
+    expect(collected.map((step) => step.view.anchor.floor)).toEqual([1, 2, 3])
+    expect(collected.map((step) => step.view.from)).toEqual([0, 1, 2])
+    expect(collected.map((step) => step.session.position)).toEqual([1, 2, 3])
+  })
+
+  test("the writ is judged on every element: an unnamed view refuses on the stream", async () => {
+    const fold = Effect.runSync(declareFold("stream-face-unnamed"))
+    const outcome = await Effect.runPromise(
+      Effect.gen(function* () {
+        const writ = yield* Session.writ({ holder: "reader", views: [] })
+        const session: Session.Session = {
+          writ,
+          view: fold.digest,
+          partition: 0,
+          position: 0,
+        }
+        return yield* Effect.result(
+          Stream.runCollect(Stream.take(Session.changes(session, fold), 1)),
+        )
+      }).pipe(Effect.provide(Session.Sessions.testLayer(advancingDoor()))) as unknown as Effect.Effect<
+        Result.Result<unknown, { readonly kind: string }>,
+        never
+      >,
+    )
+    expect(Result.isFailure(outcome)).toBe(true)
+    if (Result.isFailure(outcome)) expect(outcome.failure.kind).toBe("undeclared-view")
   })
 })

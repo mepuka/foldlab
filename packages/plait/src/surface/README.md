@@ -1,8 +1,12 @@
 # surface — entry points
 
-The outermost layer: what a person or another program actually invokes. Two
-files wear this plane — `cli.ts`, the `plait` bin that deploys a declared fold
-and runs the chaos arms that print a canonical measured scoreboard, and
+The outermost layer: what a person or another program actually invokes. Three
+files wear this plane — `cli.ts`, the `plait` bin that deploys a declared fold,
+runs the chaos arms, and serves the MCP face; `mcp.ts`, the agent face whose
+eight tools are the model's own tool-schema projection read from the committed
+artifact copy and served verbatim (served equals derived — `bun run
+check:kernel-tools` holds the copy byte-identical to the model gate's
+emission, and `../../test/KernelMcp.test.ts` walls artifact-to-wire); and
 `../index.ts`, the curated barrel that *is* the public surface. Nothing leaves
 the package that is not exported there. Surface may import every layer beneath
 it; nothing imports surface.

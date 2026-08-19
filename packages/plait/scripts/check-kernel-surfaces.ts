@@ -133,10 +133,31 @@ for (const path of Object.values(SURFACE_PATHS)) held[path] = await read(path)
 if (Bun.argv.includes("--self-test")) {
   // A checker that cannot fail proves nothing. Each probe moves one thing the
   // check is supposed to notice, and each must be refused for its own reason.
+  //
+  // The digest flip is derived from the register's own first digest character
+  // and REFUSES a no-op, because a mutation keyed to a byte the register no
+  // longer contains silently becomes a self-comparison: the retired spelling
+  // replaced a literal that a register rotation removed, and the probe then
+  // reported its unmutated input as an accepted mutant.
+  const flipped = (() => {
+    const found = register.match(/"digest":"([0-9a-f])/)
+    if (found === null) {
+      console.error("KERNEL SURFACES CONTROL: FAIL - the register carries no digest to flip")
+      process.exit(1)
+    }
+    const first = found[1]!
+    const other = first === "0" ? "1" : "0"
+    const mutated = register.replace(/"digest":"[0-9a-f]/, `"digest":"${other}`)
+    if (mutated === register) {
+      console.error("KERNEL SURFACES CONTROL: FAIL - the digest flip did not change the register")
+      process.exit(1)
+    }
+    return mutated
+  })()
   const probes: ReadonlyArray<readonly [string, string, { [path: string]: Uint8Array }, string]> = [
     [
       "flipped surface digest",
-      register.replace(/"digest":"b/, `"digest":"c`),
+      flipped,
       held,
       "hashes to",
     ],

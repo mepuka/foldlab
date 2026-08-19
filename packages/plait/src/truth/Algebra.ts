@@ -14,7 +14,7 @@
  *
  * @module
  */
-import { Effect, Schema, type Reducer } from "effect"
+import { Effect, Reducer, Schema } from "effect"
 
 import type { WireValue } from "./Canonical.js"
 import { digestOf, type Digest } from "./Digest.js"
@@ -548,6 +548,70 @@ export const earnedLawsOf = <State>(
   const carried: unknown = Reflect.get(algebra, earnedWitness)
   return Array.isArray(carried) ? carried as ReadonlyArray<LawName> : []
 }
+
+/**
+ * The product of two declared algebras: the pointwise pair.
+ *
+ * This is the first combinator of the closed lawful set — the rung classes
+ * are equational varieties, and varieties are closed under products — so the
+ * earned brand TRANSPORTS: every law atom both operands earned holds
+ * pointwise on the pair, and the runtime witness carries exactly that
+ * intersection. Transport is the metatheorem applied, never a suite skipped:
+ * a suite over the product confirms what the intersection already licenses,
+ * and the wall beside this module runs that confirmation. The type-level
+ * `Laws` parameter is the rung the caller claims of both operands at once,
+ * so a product claiming a rung either operand lacks does not compile.
+ *
+ * What is deliberately NOT here closes the set from the other side: no
+ * arbitration combinator, no finishing projection, no last-writer hook — a
+ * construction outside the variety is a new algebra and a ruling, not a call.
+ *
+ * @example
+ * ```ts
+ * import { declare, product } from "@foldlab/plait/Algebra"
+ * import { Effect, Reducer } from "effect"
+ *
+ * Effect.gen(function* () {
+ *   const sum = yield* declare({
+ *     declaration: { name: "sum" },
+ *     reducer: Reducer.make<number>((a, b) => a + b, 0),
+ *   })
+ *   const max = yield* declare({
+ *     declaration: { name: "max" },
+ *     reducer: Reducer.make<number>((a, b) => (a > b ? a : b), 0),
+ *   })
+ *   return yield* product(sum, max)
+ * })
+ * ```
+ */
+export const product = Effect.fn("Algebra.product")(function*<
+  Left,
+  Right,
+  Laws extends LawSet = LawSet,
+>(
+  left: DeclaredAlgebra<Left> & Laws,
+  right: DeclaredAlgebra<Right> & Laws,
+): Effect.fn.Return<
+  Algebra<readonly [Left, Right], Laws>,
+  StructuralRefusal
+> {
+  const declared = yield* declare<readonly [Left, Right]>({
+    declaration: {
+      combinator: "product",
+      left: left.digest,
+      right: right.digest,
+    },
+    reducer: Reducer.make<readonly [Left, Right]>(
+      (first, second) => [
+        left.reducer.combine(first[0], second[0]),
+        right.reducer.combine(first[1], second[1]),
+      ],
+      [left.reducer.initialValue, right.reducer.initialValue],
+    ),
+  })
+  const transported = earnedLawsOf(left).filter((law) => earnedLawsOf(right).includes(law))
+  return brand(declared, transported)
+})
 
 /**
  * Runtime half of the earned-brand check: whether every law the rung obligates

@@ -5064,3 +5064,132 @@ wall — so renaming one of those sections reddens the wall rather than silently
 dropping its coverage, which is the trade the marker's second job left behind.
 (c) `incarnation-mismatch` is still absent from the roster, as it was when the
 mechanism landed; ratification rules on the sentences that exist.
+
+## Task: the algebra-engine unification (operator-direct commission, 2026-08-19)
+
+Placeholders `T18`–`T21` continue the series; repository D-numbers are
+assigned at merge. The operator foreclosed the grill in session ("we are
+foregoing the grill and you are clear to work till completion"), so each
+decision below was resolved at its recommended option under that delegation.
+The full sheet (AEU-1..AEU-12) is in
+`docs/design/2026-08-19-algebra-engine-unification.md`; these are the
+load-bearing rows.
+
+### T18. The engine lives in carriage, and its door context is a replica
+
+Decided: `src/carriage/Engine.ts` is the one language-speaking service —
+judgment through the imported `KernelDoor.admit` (never a wrapper), carriage
+through the plane services, and a `Ref`-held `KernelDoorContext` grown only
+by the engine's own admitted declares (seedable at layer build). Carriage is
+the home because the engine decides nothing and carries everything; the
+context is a replica in the `CellReplica` sense — a lower bound, never an
+oracle — and the read-judge-grow race is benign because door growth is
+monotone (the KM-20 `admit_monotone` shape, cited). Alternatives: a new
+plane directory (a reorg no ruling covers); holding context in a carrier
+read per judgment (a substrate round-trip per T0 operation, and the catalog
+service enumerates nothing). **Load-bearing? yes** — every surface that
+speaks sentences routes here.
+
+### T19. Execution supplies are refused by the door, never by the engine
+
+Decided: `Engine.run` completes each program node from four provenances —
+declaration bytes, dataflow (a consumed local lands as its producer's landed
+identity label), supplies bound by node name (`kinds` for declare, `anchors`
+for fold, `tokens` for decide, `predicates` for trigger), and nothing else —
+then offers the completed candidate to the one door. A missing supply is the
+door's own teaching (`unfenced-decide`, `ambient-query-input`); a shape no
+candidate slot can carry refuses structurally at `decodeRefusing`, the one
+parse boundary. The declaration form under-determines execution BY DESIGN
+(kind fields brand and are never written; anchor/token/predicate are
+`form: "absent"`), so supplies are the model's own erasure read back, not an
+invention. Alternatives: engine-side pre-checks (a second door — refused on
+law 2); defaulted kinds or writs (sentences the author never spoke).
+**Load-bearing? yes** — this is refusal parity at the program scale.
+
+### T20. The runtime payload projection is pins-plus-identity
+
+Decided: a runtime declare's candidate payload is its pins as `digestRef`s
+followed by one `literal` carrying the value's own identity label (the
+guarded `kernelIdentity` read of its digest). The model reads a Value as an
+opaque identity label, so the projection is faithful; pins surface real
+referents to the door's forward-reference and off-writ sweeps. Bound,
+stated: an unpinned reference escapes the sweep — the same trust class as
+the hash. Alternative: structural translation of every wire value into atom
+lists (a second canonicalizer in disguise). **Load-bearing? yes** — it is
+the one place the runtime chooses how values meet the model's sweep.
+
+### T21. The MCP surface serves the model's artifact, byte-walled, dual-homed
+
+Decided: `fixtures/tools.schema.json` is a byte-identical committed copy of
+`verify/unity/artifacts/tools.schema.json` (the skills-mirror pattern);
+`check:kernel-tools` holds the two homes identical with an executed mutation
+control; the served toolkit is derived from those bytes at layer build by a
+total interpreter over the artifact's nine-keyword census; handlers route
+through the engine; the wire-name→candidate-field mapping is hand-carried
+data under an A5-shape waiver naming the corpus's provably-absent wire-name
+group. The server is the pin's in-tree `effect/unstable/ai/McpServer`
+(the DEV-786 in-tree precedent), stdio, as a `plait mcp` subcommand.
+Alternatives: a runtime JSON-schema generator from the corpus (a second
+generator beside the model's, the drift class); Effect-Schema tools written
+by hand (the twin the boundary law refuses). **Load-bearing? yes** — it is
+law 3 at the agent face.
+
+### T22. Three ratchet pins rise under the foregone-grill delegation
+
+Decided: the type-universe ratchet pins rose by hand three times this
+commission — `carriage` 7→27→29 (the engine service, its outcome and run
+vocabulary, then the barrel-walked wrapper types), `planes` 61→65 (the
+environment plane's provision shapes and the fold transformers) — each raise
+the operator act the ledger's rule demands, performed under the operator's
+in-session foregone-grill delegation and cited to it. Every new row is
+ticketed debt in the DEV-795/DEV-817 shape the walk assigns, so the
+unification lanes those tickets name absorb the new surface with the old.
+Alternatives: minting corpus groups first (the right end state — but the
+emitter growth is model-side work this commission's bounds exclude);
+unexported internals (would hide the public surface the commission exists to
+build). **Load-bearing? yes** — it is the audit trail for every hand edit of
+a reviewed pin this session.
+
+### T23. The one-door sweep caught the engine's first spelling, and the repair removed the spelling
+
+Decided: when the barrel exports brought `carriage/Engine.ts` and
+`surface/mcp.ts` into `check:kernel-door`'s sweep, the wall refused two
+spellings this commission had written — a type-level extract naming the
+refused verdict shape in the engine's row projection, and an invented
+`verdict` wrapper field constructed on every MCP tool result. Both were
+second-door spellings by the wall's letter, and the wall was right twice: the
+type extract DECLARED a shape the door's form owns, and the wrapper field was
+vocabulary the artifact's refusal_result never carried. The repair removed
+the spellings rather than pinning them — the row projection takes the
+intersection the refused arm already satisfies (field-total, no verdict type
+named), and MCP results carry exactly the artifact's fields: a result with
+`reason` is the taught refusal, a result with `sentence` is an admission, a
+result with `kind` and `sort` is a seam refusal. Alternatives: a pin row
+(the pin ledger is for judgment ROUTES, and the verdict clause is absolute by
+design); weakening the sweep (the wall firing on the first new consumer is
+the wall working). **Load-bearing? yes** — it is the session's executed
+evidence that law 2's wall covers the engine, and the reason MCP results
+carry no wrapper vocabulary.
+
+### T24. A pre-existing no-op probe in the surfaces control, found and repaired at the close
+
+Finding, then the fix. `check:kernel-surfaces-control`'s flipped-digest probe
+mutated the register with a literal replace keyed to a digest beginning with
+the letter b. The register rotation that landed with the meaning-corpus
+ratification left no digest beginning with b, so the replace became a no-op:
+the probe compared the checker's answer on an UNMUTATED register and reported
+"probe flipped surface digest was accepted". The control had therefore been
+red since that rotation — before this commission's first edit — and the red
+was masked in this session's early battery runs by tail-piped invocations
+that reported the pipe's exit rather than the battery's, which is the exact
+masking failure the estate has already ruled against once. Decided: the probe
+now derives its flip from the register's own first digest character and
+REFUSES a no-op — a mutation that did not change its input fails the control
+by name — the same did-the-mutation-take guard the model-side gates already
+carry. All five probes refuse on their own reasons and the healthy tree is
+accepted. Alternatives: re-keying the literal to the current register (the
+same rot on the next rotation); leaving the red standing (the control's job
+is to fail the CHECKER, and a probe that cannot mutate proves nothing about
+it). **Load-bearing? yes** — it restores the surfaces wall's falsifiability,
+and it is the session's second executed lesson that battery exits are read
+unmasked.

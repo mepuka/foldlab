@@ -3,7 +3,10 @@
 One module per carrier, each owning exactly what its law licenses: lanes and
 folds (declared evidence, positions, the anchor floor), cells (join-merged
 observation sets), registers (fenced commitments), the catalog and the payload
-seam beneath it, blobs, resolved references, and read-plane sessions. The three
+seam beneath it, blobs, resolved references, read-plane sessions (whose
+`changes` face is the unfold of `read`), and environments (positioned
+provision facts under the greatest-position read, feeding the one proven
+program fill). The three
 CAS disciplines stay separate on purpose — joins retry, registers reconcile by
 read-back, anchors never retry at all — and `../../AGENTS.md` says which surface
 may do what. Every public type here is hand-written under a unification ticket:

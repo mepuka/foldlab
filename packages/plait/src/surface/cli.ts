@@ -43,6 +43,11 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 import { jetstreamManager } from "@nats-io/jetstream"
 
 import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
+import { Engine } from "../carriage/Engine.js"
+import * as McpFace from "./mcp.js"
+import { Catalog, Payloads } from "../planes/Catalog.js"
+import { Cells } from "../planes/Cell.js"
+import { Registers } from "../planes/Register.js"
 import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
@@ -806,9 +811,46 @@ const pump = Command.make("__pump", {
  * arrives, which is the property that makes this a projection rather than a
  * twin of the grammar.
  */
+/**
+ * `plait mcp` — the agent face over stdio.
+ *
+ * The eight served tools are the model's own tool-schema projection, read
+ * from the committed artifact and served verbatim; every call routes through
+ * the engine, so judgment is the door's and a refusal is the taught row. The
+ * carriers are the live NATS planes at the named server, plus the
+ * process-local catalog; declaring lanes, cells, and registers through the
+ * engine is how this server is configured, because configuration is declared
+ * sentences.
+ */
+const mcp = Command.make("mcp", {
+  nats: Flag.string("nats").pipe(
+    Flag.withDescription("NATS server URL the live lane, cell, and register carriers connect to"),
+  ),
+  holder: Flag.string("holder").pipe(
+    Flag.withDescription("The attribution carried on every fact this connection lands"),
+  ),
+}, (request) =>
+  Effect.gen(function* () {
+    const carriers = Layer.mergeAll(
+      Catalog.layer,
+      Payloads.layer,
+      Lane.Lanes.layer({ servers: request.nats }),
+      Cells.layer({ servers: request.nats }),
+      Registers.layer({ servers: request.nats }),
+    )
+    const engine = Engine.layer().pipe(Layer.provide(carriers))
+    return yield* Layer.launch(McpFace.layerStdio({ holder: request.holder }).pipe(
+      Layer.provide(engine),
+    ))
+  })).pipe(
+    Command.withDescription(
+      "Serve the kernel language over MCP stdio: eight tools, served equals derived, judged by the one door.",
+    ),
+  )
+
 const plait = Command.make("plait").pipe(
   Command.withDescription("The Plait coordination fabric spine."),
-  Command.withSubcommands([chaos, pump]),
+  Command.withSubcommands([chaos, mcp, pump]),
 )
 
 // ===========================================================================

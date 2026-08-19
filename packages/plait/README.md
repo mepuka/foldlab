@@ -57,6 +57,18 @@ fenced register over one file-backed, single-replica JetStream server.
   state, and no stream. A fold the writ does not name refuses on this surface,
   and that refusal is the seam's own — no claim about the package's other read
   paths ships with it.
+- `Engine` is the language-speaking service: candidate sentences judged by the
+  one door, admitted sentences carried to their planes, configuration built by
+  declaring, and closed program declarations executed node by node through
+  that same door with the taught refusal stopping a run where it fires.
+- `Environment` carries environments as directories: positioned provision
+  facts, the greatest-position read that never arbitrates, and
+  `fillFrom`, which hands the derived valuation to the program builder's one
+  proven fill.
+- `Mcp` serves the kernel language over MCP: eight tools read verbatim from
+  the committed copy of the model's own tool-schema projection, handlers
+  routed through the engine, door refusals answering with the taught row and
+  seam refusals with the estate refusal's own fields.
 - `internal/nats` owns the NATS connection, exact stream shape, ephemeral
   ordered consumers, and interruptible callback-to-Stream adaptation.
 - `internal/cas` owns the class-(a) write path: the bounded

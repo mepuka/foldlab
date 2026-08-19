@@ -275,6 +275,63 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   identity — it reduces an already-branded `Digest` to a shard index that
   reaches no candidate. The map is injective on the guarded domain and is the
   trusted base's, never a theorem.
+- **The engine speaks through the one door and carries only admitted
+  sentences.** `carriage/Engine.ts` is the language-speaking service: every
+  judgment routes through the imported `KernelDoor.admit` — never a wrapper —
+  and a refused sentence performs no carriage, which
+  `test/Engine.test.ts` holds with an out-of-engine recording carrier and an
+  executed carry-before-judgment falsification. The engine's door context is
+  a REPLICA in the cell-replica sense: seeded at layer build, grown only by
+  the engine's own admitted declares, a lower bound and never an oracle; its
+  pinned universe grows in lockstep, and a narrower per-writ discipline is
+  the writ slice's. The engine holds no clock, schedule, retry, or queue —
+  the daemon fence — and there is no fixture engine: judgment cannot be
+  replaced, so a test configuration is the same layer over fixture carriers.
+- **A program run completes each node from four provenances and no fifth**:
+  declaration bytes, dataflow landings (a consumed local is its producer's
+  landed identity label), supplies bound by node name (kinds, anchors,
+  tokens, predicates — the slots the declaration form deliberately does not
+  carry), and the engine's bindings (a join's strategy is the declared
+  cell's merge algebra). A missing supply is refused by the DOOR with the
+  model's own row; a shape no candidate slot carries refuses at
+  `decodeRefusing`, the one parse boundary. The runtime never pre-judges: a
+  run's refusals are the door's, taught, with the node named and prior steps
+  kept. Trigger and spawn land nothing — the model interprets both as
+  world-identity — and a fold lands its anchor's state label; the value-
+  returning read canon stays on the session and fold seams. Wall: the run
+  suite executes the corpus's own program vectors, label-mapped for the
+  landing cases and byte-raw for the refusing ones.
+- **Environments are directories at the ruled minimal surface.**
+  `planes/Environment.ts` carries positioned provision facts, the
+  greatest-position read, and the fold form the proven collapse equates with
+  it; a genuine tie refuses `ambiguous-binding`, because a read never
+  arbitrates — arbitration is the fenced register's. `fillFrom` hands the
+  greatest-position valuation to the builder's one proven `fill`; no second
+  substitution path exists. Wall: digest-seeded correspondence cases plus
+  the corpus tie — filling the builder twin of the holey vector through a
+  shadowed environment must reach the committed filled twin's exact bytes.
+- **The MCP face serves the model's artifact, byte-walled at two homes.**
+  `fixtures/tools.schema.json` is a byte-identical committed copy of the
+  model gate's own tool-schema emission; `bun run check:kernel-tools` holds
+  the two homes identical and `check:kernel-tools-control` executes the
+  mutation that reds it. `surface/mcp.ts` serves those bytes: dynamic tools
+  carry the raw schema verbatim to the wire, handlers route through the
+  engine, a door refusal answers with exactly the artifact's four refusal
+  fields, and a seam refusal answers with the estate refusal's own fields —
+  the two registers never dress as each other. The wire-name mapping is
+  hand-carried reviewed data under a Law 1 waiver naming the corpus's
+  provably-absent wire-name group.
+- **`Session.changes` is the unfold of `read`.** Every element is one
+  anchored consumer step, the writ is judged on every element by
+  construction, and pacing, batching, and debounce are the consumer's —
+  never promised by the seam.
+- **Algebra combinators stay in the closed set.** `Algebra.product`
+  transports exactly the intersection of earned brands — the variety
+  argument — and the suite CONFIRMS the transport in the wall rather than
+  being skipped by it. `Fold.mapped` and `Fold.filtered` move the event side
+  of the F4 bridge only: a filtered-out event contributes the algebra's own
+  identity, so the rung survives because the algebra is untouched. No
+  arbitration, finishing, or open combinator hook exists to call.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, `@effect/platform-bun` at that same catalog pin, and the five
   NATS packages pinned at 3.4.0. Add nothing else. The platform package joined

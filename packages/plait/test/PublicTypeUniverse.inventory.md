@@ -6,15 +6,15 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a-ticket.
+Classified 190 public types: 40 derives-from-the-generated-core, 150 debt-with-a-ticket.
 
 ## Ratchet pins
 
 | Owning prefix | Pinned debt |
 | --- | --- |
-| `carriage` | 7 |
+| `carriage` | 29 |
 | `kernel` | 20 |
-| `planes` | 61 |
+| `planes` | 65 |
 | `truth` | 36 |
 
 ## Classified public types
@@ -74,6 +74,28 @@ Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a
 | `ContextProgram.Selector` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `ContextProgram.VolatilityClass` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Digest.Digest` | `src/truth/Digest.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
+| `Engine.DeclareCellOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.DeclareLaneOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.DeclareOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.DeclareRegisterOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.DeclaredLanding` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.Engine` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineDecideOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineEmitOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineJoinOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineLanded` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineOutcome` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineRef` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineResolveOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineSeed` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineService` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.EngineVerdict` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.RunOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.RunOutcome` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.RunStep` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Engine.RunSupplies` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Environment.ProvisionFact` | `src/planes/Environment.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Environment.Valuation` | `src/planes/Environment.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `FabricClient.ConnectionBootstrap` | `src/internal/transport.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `FabricClient.ConnectionCredential` | `src/internal/transport.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `FabricClient.FabricClient` | `src/carriage/FabricClient.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
@@ -84,6 +106,7 @@ Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a
 | `Fold.Contribution` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.DeclareOptions` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.DeclaredFold` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Fold.DeclaredPredicate` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.DeployOptions` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.FoldDeclaration` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.FoldHandle` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
@@ -92,6 +115,7 @@ Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a
 | `Fold.Folds` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.FoldsOptions` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.LaneQuotient` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Fold.Transform` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `KernelDoor.KernelAct` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelAdmit` | `src/kernel/KernelDoor.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `KernelDoor.KernelCandidateAct` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
@@ -144,6 +168,8 @@ Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a
 | `Lane.LaneService` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.Lanes` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.PartitionKey` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `Mcp.McpOptions` | `src/surface/mcp.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `Mcp.ServedTool` | `src/surface/mcp.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Refusal.AbsenceRefusal` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Refusal.Next` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Refusal.Refusal` | `src/truth/Refusal.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
