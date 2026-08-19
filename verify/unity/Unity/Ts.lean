@@ -10,25 +10,31 @@ it, and it decides that once.
 
 ## The measured spine, and which constructor carries each row
 
-Forty-five structural kinds are reachable across the four generated surfaces.
+Forty-five structural kinds are reachable across the five generated surfaces.
 Each is carried here; where the target spells one construct with several nodes,
-one constructor carries the group, and the group is named.
+one constructor carries the group, and the group is named. The schema surface
+added no kind to that census — it added LAYOUTS, which is the axis a census of
+kinds cannot measure and the axis every reopening of this file has been on.
 
   module frame   ImportDeclaration + ImportClause + NamedImports +
                  ImportSpecifier -> `TsStmt.importNamed`;
                  NamespaceImport -> `TsStmt.importNamespace`
   declarations   VariableStatement + VariableDeclarationList +
                  VariableDeclaration -> `TsStmt.constant` (the target writes
-                 one exported declarator and no other form);
+                 one exported declarator and no other form, with or without a
+                 type annotation on it);
                  TypeAliasDeclaration -> `TsStmt.typeAlias`;
                  InterfaceDeclaration -> `TsStmt.interfaceDecl`
-  members        PropertyAssignment -> an object property;
+  members        PropertyAssignment -> an object property, beside or under its
+                 key (`.offset` writes it under);
                  PropertySignature -> `Member.property`;
                  IndexSignature -> `Member.index`
   expressions    Identifier `.ident`, StringLiteral `.str`, BigIntLiteral
                  `.bigint`, NumericLiteral `.nat`, ObjectLiteralExpression
                  `.object`, ArrayLiteralExpression `.array`, CallExpression
-                 `.call`, PropertyAccessExpression `.field`,
+                 `.call` and `.apply` (the same kind at its two renderings: the
+                 arguments broken one per line, or the last one written flush
+                 against the parentheses), PropertyAccessExpression `.field`,
                  ElementAccessExpression `.element`, BinaryExpression (with its
                  PlusToken) `.concat`, AsExpression `.asConst`,
                  SatisfiesExpression `.satisfies`, ArrowFunction `.arrow`,
@@ -165,6 +171,16 @@ inductive TsExpr where
   | arrow (binders : List (String × TsType)) (result : Option TsType) (body : TsExpr)
   | asConst (inner : TsExpr)
   | satisfies (inner : TsExpr) (type : TsType)
+  /-- A call whose last argument is written flush against the parentheses:
+      the argument's own opening brace closes the calling line and its closing
+      brace carries the closing parenthesis. It is a CallExpression like
+      `.call`, carried apart because the two renderings are different facts
+      about a site and neither is derivable from a width. -/
+  | apply (callee : TsExpr) (leading : List TsExpr) (final : TsExpr)
+  /-- A value written on the lines after its key rather than beside it. Only a
+      block object's property reads this; everywhere else it is its inner
+      expression. -/
+  | offset (inner : TsExpr)
 
 end
 
@@ -191,7 +207,7 @@ inductive TsStmt where
   | banner (rows : List String)
   | importNamed (typeOnly : Bool) (bindings : List String) (source : String)
   | importNamespace (binding : String) (source : String)
-  | constant (doc : Option Doc) (name : String) (value : TsExpr)
+  | constant (doc : Option Doc) (name : String) (type : Option TsType) (value : TsExpr)
   | typeAlias (doc : Option Doc) (name : String) (parameters : List TypeParameter)
       (layout : Layout) (value : TsType)
   | interfaceDecl (doc : Option Doc) (name : String) (parameterLayout : Layout)
@@ -256,6 +272,27 @@ def wrapWords (policy : WrapPolicy) (gutterWidth : Nat) (words : List String)
   let all := rows ++ [current]
   if policy.trimRows then all.map (fun row => row.trimAsciiEnd.toString) else all
 
+/-- Greedy split of a paragraph into runs, each run KEEPING the separator that
+    followed it, so that concatenating the runs reproduces the paragraph
+    character for character. `fits` is the rendered width test the site applies
+    to a candidate run.
+
+    This is not a doc-comment wrap and no `Doc` reaches it. It is here for the
+    same reason `flatWidth` is: a generator that writes a long string as a
+    concatenation of literals has to split it somewhere, the split is a value
+    the tree then carries, and the runs must add back up — a wrap that dropped
+    the separators would silently rewrite the string it was splitting. -/
+def splitRuns (fits : String -> Bool) (text : String) : List String :=
+  let step := fun (state : Nat × List String × String) (word : String) =>
+    let (index, runs, current) := state
+    let candidate := if index == 0 then word else current ++ " " ++ word
+    if !current.isEmpty && !fits candidate then
+      (index + 1, runs ++ [current ++ " "], word)
+    else (index + 1, runs, candidate)
+  let (_, runs, current) :=
+    (text.splitOn " ").foldl step ((0, [], "") : Nat × List String × String)
+  runs ++ [current]
+
 /-- The rows one doc run contributes, before the gutter. -/
 def blockRows (gutterWidth : Nat) : DocBlock -> List String
   | .verbatim rows => rows
@@ -291,6 +328,15 @@ def appendLast (lines : List String) (suffix : String) : List String :=
   match lines.reverse with
   | [] => [suffix]
   | last :: rest => rest.reverse ++ [last ++ suffix]
+
+/-- Two runs of lines written as one construct: the second run's first line
+    continues the first run's last line. This is what lets a call whose callee
+    is itself broken across lines keep its opening parenthesis where the target
+    writes it — on the line the callee ended on. -/
+def spliceLines (before after : List String) : List String :=
+  match before.reverse with
+  | [] => after
+  | last :: rest => rest.reverse ++ prefixFirst last after
 
 mutual
 
@@ -392,6 +438,10 @@ def inlineExpr : TsExpr -> String
         " => " ++ inlineExpr body
   | .asConst inner => inlineExpr inner ++ " as const"
   | .satisfies inner type => inlineExpr inner ++ " satisfies " ++ typeText type
+  | .apply callee [] final => inlineExpr callee ++ "(" ++ inlineExpr final ++ ")"
+  | .apply callee leading final =>
+      inlineExpr callee ++ "(" ++ inlineList leading ++ ", " ++ inlineExpr final ++ ")"
+  | .offset inner => inlineExpr inner
 
 /-- Comma-separated expressions. -/
 def inlineList : List TsExpr -> String
@@ -465,6 +515,13 @@ def exprLines (indent : String) : TsExpr -> List String
       (inlineExpr callee ++ "(") :: argumentLines (indent ++ "  ") arguments ++
         [indent ++ ")"]
   | .concat runs => runLines indent runs
+  | .apply callee leading final =>
+      spliceLines
+        (appendLast (exprLines indent callee)
+          ("(" ++ String.join (leading.map fun argument => inlineExpr argument ++ ", ")))
+        (appendLast (exprLines indent final) ")")
+  | .field object name => appendLast (exprLines indent object) ("." ++ name)
+  | .offset inner => exprLines indent inner
   | .asConst inner => appendLast (exprLines indent inner) " as const"
   | .satisfies inner type =>
       match brokenType indent type with
@@ -481,13 +538,21 @@ def elementLines (indent : String) : List (Option Doc × TsExpr) -> List String
         prefixFirst indent (appendLast (exprLines indent element.2) ",") ++
         elementLines indent rest
 
-/-- The lines of a block object's properties, each documented in place. -/
+/-- The lines of a block object's properties, each documented in place. A
+    property whose value is `offset` writes the key alone and the value on the
+    lines below it, one step deeper. -/
 def propertyLines (indent : String) : List (Option Doc × PropertyKey × TsExpr) -> List String
   | [] => []
-  | property :: rest =>
-      optionalDocLines indent property.1 ++
-        prefixFirst (indent ++ keyText property.2.1 ++ ": ")
-          (appendLast (exprLines indent property.2.2) ",") ++
+  | (doc, key, .offset inner) :: rest =>
+      optionalDocLines indent doc ++
+        (indent ++ keyText key ++ ":") ::
+          prefixFirst (indent ++ "  ")
+            (appendLast (exprLines (indent ++ "  ") inner) ",") ++
+        propertyLines indent rest
+  | (doc, key, value) :: rest =>
+      optionalDocLines indent doc ++
+        prefixFirst (indent ++ keyText key ++ ": ")
+          (appendLast (exprLines indent value) ",") ++
         propertyLines indent rest
 
 /-- The lines of a broken call's arguments. -/
@@ -539,10 +604,18 @@ def interfaceMembers (spaced : Bool) : List Member -> List String
   | first :: rest =>
       memberLines first ++ (if spaced then [""] else []) ++ interfaceMembers spaced rest
 
+/-- One member of a union written behind its own bar: on one line, or — where
+    the member is a record the site writes broken — its brace opening the bar's
+    line and one member per line under it, with no separators between them. -/
+def unionMemberLines : TsType -> List String
+  | .record .block members =>
+      "  | {" :: members.map (fun member => "    " ++ recordMember member) ++ ["  }"]
+  | member => ["  | " ++ typeText member]
+
 /-- The value of a type alias broken onto its own lines: a union written one
     member per line behind its leading bar, anything else on one line. -/
 def aliasValueLines : TsType -> List String
-  | .union .block members => members.map (fun member => "  | " ++ typeText member)
+  | .union .block members => members.flatMap unionMemberLines
   | value => ["  " ++ typeText value]
 
 /-- One statement as lines. -/
@@ -554,14 +627,21 @@ def statementLines : TsStmt -> List String
         String.intercalate ", " bindings ++ " } from " ++ quote source]
   | .importNamespace binding source =>
       ["import * as " ++ binding ++ " from " ++ quote source]
-  | .constant doc name value =>
+  | .constant doc name type value =>
+      let annotation :=
+        match type with
+        | none => ""
+        | some declared => ": " ++ typeText declared
       optionalDocLines "" doc ++
-        prefixFirst ("export const " ++ name ++ " = ") (exprLines "" value)
+        prefixFirst ("export const " ++ name ++ annotation ++ " = ") (exprLines "" value)
   | .typeAlias doc name parameters layout value =>
       let head := "export type " ++ name ++ parametersText parameters ++ " ="
       optionalDocLines "" doc ++
         (match layout with
-         | .inline => [head ++ " " ++ typeText value]
+         | .inline =>
+             match brokenType "" value with
+             | some (opening, rest) => (head ++ " " ++ opening) :: rest
+             | none => [head ++ " " ++ typeText value]
          | .block => head :: aliasValueLines value)
   | .interfaceDecl doc name parameterLayout parameters spaced members =>
       optionalDocLines "" doc ++

@@ -613,6 +613,7 @@ ts_roster="refusal-meanings.ndjson"
 ts_tables="../../packages/plait/src/kernel/KernelTables.generated.ts"
 ts_builder="../../packages/plait/src/kernel/KernelBuilder.generated.ts"
 ts_vocabulary="../../packages/plait/src/truth/RefusalKinds.generated.ts"
+ts_schemas="../../packages/plait/src/kernel/KernelSchemas.generated.ts"
 
 emit_surface() {
   lake exe ts --target="$1" --meanings="$ts_roster" > "$2"
@@ -651,17 +652,19 @@ check_surface() {
 check_surface kernel-tables "$ts_tables"
 check_surface kernel-builder "$ts_builder"
 check_surface refusal-kinds "$ts_vocabulary"
+check_surface kernel-schemas "$ts_schemas"
 
 # The em dash survives VERBATIM on this target, and it is the only code point
 # outside ASCII any surface carries. The prose register folds it to two
 # hyphens; applying that fold here would move six lines across the four
 # generated files, so the rule is walled rather than remembered.
 #
-# The count is per surface and measured, not one number for all three: the two
+# The count is per surface and measured, not one number for all four: the two
 # that carry a drafted meaning about an incarnation mismatch carry the dash
-# twice, and the builder carries it once, in its plane header alone. A single
-# expected count would have had to be the wrong one for some surface.
-for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2"; do
+# twice, and the builder and the schemas each carry it once, in the plane
+# header alone. A single expected count would have had to be the wrong one for
+# some surface.
+for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2" "$ts_schemas:1"; do
   surface="${pinned%:*}"
   expected="${pinned##*:}"
   if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne "$expected" ]]; then
@@ -784,6 +787,10 @@ check_ts_mutation field-form-rule Unity/TsKernel.lean \
   's/else if name == "Value" then .ok .value/else if name == "Value" then .ok .absent/' \
   kernel-builder "$ts_builder" \
   "the builder's argument shapes come from the reviewed reference rule, which is load-bearing"
+check_ts_mutation option-idiom Unity/TsKernel.lean \
+  's/schemaCall "UndefinedOr"/schemaCall "NullOr"/' \
+  kernel-schemas "$ts_schemas" \
+  "the schema idioms come from the reviewed map; an Option is an undefined-or by ruling, not by default"
 
 # The roster is reviewed data, so the reconciliation between it and the corpus
 # must refuse rather than default in both directions.

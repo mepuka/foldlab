@@ -347,7 +347,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
             [ "Brand-indexed sorts with no single carrier field, so no scalar alias is"
             , "generated for them. They are reported rather than invented: a structure"
             , "with several fields has no one value a brand could ride on." ]))
-          "KERNEL_UNBRANDED_INDEXED_SORTS"
+          "KERNEL_UNBRANDED_INDEXED_SORTS" none
           (.asConst (.array .block (reported.map fun sort =>
             (none, TsExpr.object .inline
               [ (none, .name "name", .str sort.name)
@@ -365,29 +365,29 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
               , "consumer that wants to know whether it holds these tables' source hashes"
               , "the bytes it has and compares - which is a check, where a path would have"
               , "been a hope." ]))
-            "KERNEL_TABLE_PROVENANCE" (provenance tables)
+            "KERNEL_TABLE_PROVENANCE" none (provenance tables)
         , .blank
         , .constant (some (Doc.line "The closed universe of declaration kinds, in rank order."))
-            "KERNEL_DECL_KINDS" (literalRoster (tables.kinds.map (·.1)))
+            "KERNEL_DECL_KINDS" none (literalRoster (tables.kinds.map (·.1)))
         , .blank
         , .typeAlias (some (Doc.line "One declaration kind of the closed universe."))
             "KernelDeclKind" [] .inline (rosterMember "KERNEL_DECL_KINDS")
         , .blank
         , .constant (some (Doc.line "The numeric rank of each declaration kind."))
-            "KERNEL_DECL_KIND_RANK"
+            "KERNEL_DECL_KIND_RANK" none
             (.satisfies
               (.asConst (.object .block (tables.kinds.map fun kind =>
                 (none, PropertyKey.name kind.1, TsExpr.nat kind.2))))
               (.mapped .inline "Kind" (.reference "KernelDeclKind" []) (.keyword "number")))
         , .blank
         , .constant (some (Doc.line "The epistemic stages of a hole, in rising rank order."))
-            "KERNEL_HOLE_STAGES" (literalRoster (tables.stages.map (·.1)))
+            "KERNEL_HOLE_STAGES" none (literalRoster (tables.stages.map (·.1)))
         , .blank
         , .typeAlias (some (Doc.line "One epistemic stage of a hole."))
             "KernelHoleStage" [] .inline (rosterMember "KERNEL_HOLE_STAGES")
         , .blank
         , .constant (some (Doc.line "The numeric rank of each hole stage."))
-            "KERNEL_HOLE_STAGE_RANK"
+            "KERNEL_HOLE_STAGE_RANK" none
             (.satisfies
               (.asConst (.object .block (tables.stages.map fun stage =>
                 (none, PropertyKey.name stage.1, TsExpr.nat stage.2))))
@@ -402,7 +402,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
             (.union .inline [.literal "machine-applicable", .literal "advisory"])
         , .blank
         , .constant (some (Doc.line "The wire spelling of every refusal reason, in the model's order."))
-            "KERNEL_REFUSAL_REASONS" (literalRoster (tables.refusals.map (·.reason)))
+            "KERNEL_REFUSAL_REASONS" none (literalRoster (tables.refusals.map (·.reason)))
         , .blank
         , .typeAlias (some (Doc.line "One refusal reason the kernel door can carry."))
             "KernelRefusalReason" [] .inline (rosterMember "KERNEL_REFUSAL_REASONS")
@@ -421,7 +421,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
         , .blank
         , .constant
             (some (Doc.line "The taught-refusal table. A reason without its law and repair cannot exist."))
-            "KERNEL_REFUSALS"
+            "KERNEL_REFUSALS" none
             (.satisfies
               (.asConst (.array .block (tables.refusals.map fun refusal =>
                 (some (meaningDoc (meaningOf refusal.reason)),
@@ -434,7 +434,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
         , .blank
         , .constant
             (some (Doc.line "The taught refusal each reason carries, keyed by its wire spelling."))
-            "KERNEL_REFUSAL_BY_REASON"
+            "KERNEL_REFUSAL_BY_REASON" none
             (.satisfies
               (.asConst (.object .block
                 ((tables.refusals.zipIdx).map fun entry =>
@@ -446,7 +446,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
         , .constant
             (some (Doc.line
               "The existing runtime structural-refusal spellings, generated from the projection manifest."))
-            "KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS"
+            "KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS" none
             (literalRoster (roster.runtimeKinds.map (·.1)))
         , .blank
         , .typeAlias (some (Doc.line "One structural-refusal kind the runtime can mint."))
@@ -467,7 +467,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
               , "corpus does not carry is marked staged debt, never a silent twin. Which"
               , "ticket owns closing that debt is a tracking fact and stays in the reviewed"
               , "roster, where a reviewer reads it; it is not part of the language." ]))
-            "KERNEL_RUNTIME_STRUCTURAL_REFUSALS"
+            "KERNEL_RUNTIME_STRUCTURAL_REFUSALS" none
             (.satisfies
               (.asConst (.array .block (roster.runtimeKinds.map fun row =>
                 (some (meaningDoc row.2),
@@ -491,7 +491,7 @@ def tablesModule (tables : Tables) (roster : Roster) (ast : Projections.Projecti
               [ "The sorts this module brands, and the parameters that index each. The"
               , "carrier is the model's own scalar; a call site migrating a real runtime"
               , "value substitutes its carrier through the alias's second parameter." ]))
-            "KERNEL_BRANDED_SORTS"
+            "KERNEL_BRANDED_SORTS" none
             (.asConst (.array .block (branded.map fun sort =>
               (none, TsExpr.object .inline
                 [ (none, .name "name", .str sort.name)
@@ -544,11 +544,11 @@ def vocabularyModule (tables : Tables) (roster : Roster) : TsModule :=
             , "the identity of the corpus, and the interchange format it was read at. The"
             , "corpus is named by its digest and never by a location - a plait item refers"
             , "only to digests, so a consumer checks by hashing rather than by looking." ]))
-          "REFUSAL_KIND_PROVENANCE" (provenance tables)
+          "REFUSAL_KIND_PROVENANCE" none (provenance tables)
       , .blank
       , .constant
           (some (Doc.line "Every structural refusal kind the package can mint, in its persisted order."))
-          "STRUCTURAL_REFUSAL_KINDS"
+          "STRUCTURAL_REFUSAL_KINDS" none
           (.asConst (.array .block (roster.runtimeKinds.map fun row =>
             (some (meaningDoc row.2), TsExpr.str row.1))))
       , .blank
@@ -558,7 +558,7 @@ def vocabularyModule (tables : Tables) (roster : Roster) : TsModule :=
             , ""
             , "Deliberately unannotated: an `identifier` would replace the admitted"
             , "literals in a failed decode's reported expectation with this schema's name." ]))
-          "StructuralRefusalKind"
+          "StructuralRefusalKind" none
           (.call (.field (.ident "Schema") "Literals") .inline [.ident "STRUCTURAL_REFUSAL_KINDS"])
       , .blank
       , .typeAlias
@@ -1062,7 +1062,7 @@ def builderModule (tables : Tables) (lines : List String) : Except String TsModu
         , .blank
         , .constant
             (some (Doc.line "Where this surface came from, carried as data for a consumer to assert."))
-            "KERNEL_BUILDER_PROVENANCE"
+            "KERNEL_BUILDER_PROVENANCE" none
             (.asConst (.object .block
               [ (none, .name "command", .str builderCommand)
               , (none, .name "corpus", .str builderCorpusPath)
@@ -1071,7 +1071,7 @@ def builderModule (tables : Tables) (lines : List String) : Except String TsModu
               , (none, .name "source", .str tables.source) ]))
         , .blank
         , .constant (some (Doc.line "The generator vocabulary, in the model's own declaration order."))
-            "KERNEL_GENERATORS" (literalRoster (generators.map (·.name)))
+            "KERNEL_GENERATORS" none (literalRoster (generators.map (·.name)))
         , .blank
         , .typeAlias (some (Doc.line "One kernel generator.")) "KernelGenerator" [] .inline
             (rosterMember "KERNEL_GENERATORS")
@@ -1083,7 +1083,7 @@ def builderModule (tables : Tables) (lines : List String) : Except String TsModu
               [ "Each generator's fields, in the model's declaration order. The emitter"
               , "walks this table rather than knowing any field name of its own, so a"
               , "renamed field moves the emitter with it." ]))
-            "KERNEL_GENERATOR_FIELDS"
+            "KERNEL_GENERATOR_FIELDS" none
             (.satisfies
               (.asConst (.object .block (generators.map fun generator =>
                 (none, PropertyKey.name generator.name,
@@ -1101,7 +1101,7 @@ def builderModule (tables : Tables) (lines : List String) : Except String TsModu
               , "constructor names one. A generator that names no kind produces a handle"
               , "branded `null`, and such a handle is spendable only where a value is"
               , "wanted - which is the whole of the compile-time separation." ]))
-            "KERNEL_GENERATOR_KIND_FIELD"
+            "KERNEL_GENERATOR_KIND_FIELD" none
             (.satisfies
               (.asConst (.object .block (generators.map fun generator =>
                 (none, PropertyKey.name generator.name,
@@ -1135,6 +1135,925 @@ def builderModule (tables : Tables) (lines : List String) : Except String TsModu
             (.index "field" (.keyword "string") (.reference "KernelBuilderArg" []))
         , .blank ] }
 
+/-! ## The Effect-schema surface
+
+The interchange and the model's own type vocabulary as Effect schemas. The
+corpus answers almost everything: the record groups supply every example, the
+`type` records supply every shape, the `doc` records supply every sentence, and
+a docstring's first sentence supplies every title.
+
+One judgement is not in the corpus and is carried below as a reviewed table
+with its own docstring — the idiom map, `resolution`, saying how a model type
+reference becomes an Effect schema. Two constants are not in the corpus either:
+where the runtime commits this surface and the command that reproduces it,
+which are LOCATIONS and the same law-10 residual the builder header carries.
+They are transcribed exactly as the retiring renderer wrote them, so parity is
+measurable over the whole file before the header is cleaned.
+
+The recursion rule is mechanical rather than named. A field whose type
+references the type being declared makes that type SUSPENDED: its schema is
+written `Schema.suspend`, and because a suspended schema needs a type to be
+annotated with, the value type is written out in full ahead of the schema
+instead of being read back off it. Nothing here knows which type that is; the
+corpus's own declaration order decides. -/
+
+/-- **Reviewed.** Where the runtime commits this surface. A LOCATION, carried
+    for the same reason `builderCorpusPath` is: the retiring renderer wrote it
+    into the header, and moving it would move the bytes parity is measured
+    over. -/
+def schemasCorpusPath : String := "packages/plait/fixtures/kernel-conformance.ndjson"
+
+/-- **Reviewed.** See `schemasCorpusPath`. -/
+def schemasCommand : String := "bun run generate:kernel-schemas"
+
+/-- The column the schema surface wraps at. -/
+def schemaWidth : Nat := 96
+
+/-! ### The model's type vocabulary, read out of the corpus -/
+
+/-- One field of one constructor: its name and the model's own type reference. -/
+structure SchemaField where
+  name : String
+  model : String
+
+/-- One constructor of a mini-AST type. -/
+structure SchemaConstructor where
+  name : String
+  fields : List SchemaField
+
+/-- One type of the model's emitted vocabulary, as the corpus states it. -/
+structure SchemaType where
+  name : String
+  form : String
+  params : List String
+  constructors : List SchemaConstructor
+
+/-- One declared field. -/
+def schemaField (value : Canon.Value) : Except String SchemaField :=
+  match Canon.stringAt value "name", Canon.stringAt value "type" with
+  | some name, some model => .ok { name := name, model := model }
+  | _, _ => .error "ts: a type field is missing its name or its type"
+
+/-- One declared constructor, with its fields in declaration order. -/
+def schemaConstructor (value : Canon.Value) : Except String SchemaConstructor := do
+  let name <-
+    match Canon.stringAt value "name" with
+    | some name => .ok name
+    | none => .error "ts: a type constructor is missing its name"
+  let fields <-
+    match (Canon.member value "fields").bind Canon.asItems with
+    | some fields => .ok fields
+    | none => .error s!"ts: constructor {name} carries no field list"
+  let read <- fields.mapM schemaField
+  .ok { name := name, fields := read }
+
+/-- One `type` record. -/
+def schemaTypeRow (value : Canon.Value) : Except String SchemaType := do
+  let name <-
+    match Canon.stringAt value "name" with
+    | some name => .ok name
+    | none => .error "ts: a type record is missing its name"
+  let form <-
+    match Canon.stringAt value "form" with
+    | some form => .ok form
+    | none => .error s!"ts: type {name} declares no form"
+  let params <-
+    match (Canon.member value "params").bind Canon.asItems with
+    | some items =>
+        items.mapM fun item =>
+          match Canon.stringAt item "name" with
+          | some parameter => Except.ok parameter
+          | none => Except.error s!"ts: a parameter of {name} is missing its name"
+    | none => .error s!"ts: type {name} carries no parameter list"
+  let constructors <-
+    match (Canon.member value "constructors").bind Canon.asItems with
+    | some items => items.mapM schemaConstructor
+    | none => .error s!"ts: type {name} carries no constructor list"
+  .ok { name := name, form := form, params := params, constructors := constructors }
+
+/-- The closed type list, in the model's declaration order. -/
+def schemaTypes (lines : List String) : Except String (List SchemaType) := do
+  let types <- (recordsOf "type" lines).mapM schemaTypeRow
+  if types.isEmpty then .error "ts: the corpus declares no types" else .ok types
+
+/-- The docstring the model attaches to each name. -/
+def docTable (lines : List String) : List (String × String) :=
+  (recordsOf "doc" lines).filterMap fun value =>
+    match Canon.stringAt value "name", Canon.stringAt value "doc" with
+    | some name, some text => some (name, text)
+    | _, _ => none
+
+/-! ### The prose the surface writes -/
+
+/-- The first sentence of a docstring, which becomes the schema's title: text
+    up to the first sentence break or the first newline, whichever comes first.
+    The rule is mechanical so that a docstring edit moves the title with it. -/
+def firstSentence (doc : String) : String :=
+  let sentences := doc.splitOn ". "
+  let paragraphs := doc.splitOn "\n"
+  let breaks :=
+    (if sentences.length > 1 then [(sentences.headD "").length] else []) ++
+    (if paragraphs.length > 1 then [(paragraphs.headD "").length] else [])
+  match breaks with
+  | [] => doc
+  | first :: rest =>
+      let cut := rest.foldl (fun least value => if value < least then value else least) first
+      if (doc.drop cut).startsWith "." then (doc.take (cut + 1)).toString
+      else (doc.take cut).toString
+
+/-- Whether a name is written as a bare object key on this target. -/
+def identifierLike (name : String) : Bool :=
+  match name.toList with
+  | [] => false
+  | first :: rest =>
+      (first.isAlpha || first == '_' || first == '$') &&
+        rest.all fun character =>
+          character.isAlphanum || character == '_' || character == '$'
+
+/-- An object key: bare where the target admits it, quoted otherwise. -/
+def schemaKey (name : String) : PropertyKey :=
+  if identifierLike name then .name name else .quoted name
+
+/-- A doc comment carrying a model text. One line when the whole comment fits
+    the budget at its indent and the text carries no break of its own, and
+    otherwise a block that keeps the model's own line breaks and splits each of
+    them at the pinned column. A `*/` inside the text is escaped, because a
+    comment that closed itself early would truncate the surface. -/
+def schemaDoc (indent : String) (text : String) : Doc :=
+  let safe := text.replace "*/" "*\\/"
+  let rows := safe.splitOn "\n"
+  if rows.length == 1 && indent.length + 4 + safe.length + 3 <= schemaWidth then
+    Doc.line safe
+  else
+    { layout := .block, blocks := rows.map (DocBlock.wrapped descriptionWrap) }
+
+/-- A string literal spread across source lines, so a long description reads as
+    a paragraph in the generated file instead of as one runaway line. The
+    concatenation is the original text, character for character: the split
+    keeps each run's separator, which is what makes the runs add back up. -/
+def stringExpression (text : String) (indent : Nat) : TsExpr :=
+  .concat
+    ((Ts.splitRuns (fun run => (quote run).length + indent <= schemaWidth) text).map
+      TsExpr.str)
+
+/-! ### Corpus values as TypeScript literals -/
+
+/-- A run of spaces. -/
+def spaces (width : Nat) : String := String.ofList (List.replicate width ' ')
+
+/-- One expression as the text a width test measures: the flat rendering where
+    the site writes it flat, and the broken rendering where it does not. -/
+def renderedText (indent : Nat) (expression : TsExpr) : String :=
+  String.intercalate "\n" (Ts.exprLines (spaces indent) expression)
+
+mutual
+
+/-- One corpus value as the TypeScript literal that denotes it. Every number is
+    a `bigint`: the interchange's integers are unbounded, and the corpus carries
+    a vector past the range a double holds exactly, so a numeric literal here
+    would put a rounded identity into a generated file.
+
+    The container rule is the one the retiring renderer measured: the elements
+    are written at the inner indent FIRST, and the container is written flat
+    only if that flat rendering still fits. A container whose element broke
+    therefore breaks too, without a second test. -/
+def literalExpr (indent : Nat) : Canon.Value -> TsExpr
+  | .null => .ident "null"
+  | .bool true => .ident "true"
+  | .bool false => .ident "false"
+  | .num value => .bigint value
+  | .str value => .str value
+  | .arr [] => .array .inline []
+  | .arr items =>
+      let elements := literalItems (indent + 2) items
+      let flat := "[" ++ String.intercalate ", "
+        (elements.map (renderedText (indent + 2))) ++ "]"
+      .array (if flat.length + indent <= schemaWidth then .inline else .block)
+        (elements.map fun element => (none, element))
+  | .obj [] => .object .inline []
+  | .obj members =>
+      let properties := literalMembers (indent + 2) members
+      let written := properties.map fun property =>
+        keyText property.1 ++ ": " ++ renderedText (indent + 2) property.2
+      let flat := "{ " ++ String.intercalate ", " written ++ " }"
+      .object (if flat.length + indent <= schemaWidth then .inline else .block)
+        (properties.map fun property => (none, property.1, property.2))
+
+/-- The elements of an array literal. -/
+def literalItems (indent : Nat) : List Canon.Value -> List TsExpr
+  | [] => []
+  | item :: rest => literalExpr indent item :: literalItems indent rest
+
+/-- The members of an object literal, keys untouched. -/
+def literalMembers (indent : Nat) : List (String × Canon.Value) -> List (PropertyKey × TsExpr)
+  | [] => []
+  | member :: rest =>
+      (schemaKey member.1, literalExpr indent member.2) :: literalMembers indent rest
+
+end
+
+/-- One corpus record as the literal a generated example carries. The value is
+    canonicalized first, so the members are written in the one order the
+    interchange admits rather than in the order a reader happened to see. -/
+def exampleLiteral (indent : Nat) (value : Canon.Value) : TsExpr :=
+  literalExpr indent (Canon.canonicalize value)
+
+/-! ### The idiom map -/
+
+/-- One resolved field: the schema expression it becomes, and the TypeScript
+    value that schema decodes to. -/
+structure Resolution where
+  schema : TsExpr
+  valueType : TsType
+
+/-- What the resolver needs to know about the closed type list as a whole: the
+    declaration index of each name, and which names are referenced at or before
+    their own declaration and therefore carry a written-out value type. -/
+structure SchemaContext where
+  order : List (String × Nat)
+  suspended : List String
+  usesRef : Bool
+
+/-- The schema module's name for a model type. -/
+def schemaNameOf (name : String) : String := "Kernel" ++ name
+
+/-- The schema module's name for a model type's value. -/
+def valueNameOf (name : String) : String := "Kernel" ++ name ++ "Value"
+
+/-- A reference to an already-declared type: its schema, and the value type a
+    consumer names. A suspended type's value is the written-out alias, because
+    reading it back off a suspended schema is what the suspension prevents. -/
+def referenceOf (context : SchemaContext) (name : String) : Resolution :=
+  { schema := .ident (schemaNameOf name)
+  , valueType :=
+      if context.suspended.contains name then .reference (valueNameOf name) []
+      else .query (.qualified [schemaNameOf name, "Type"] []) }
+
+/-- A call on the `Schema` module. -/
+def schemaCall (name : String) (arguments : List TsExpr) : TsExpr :=
+  .call (.field (.ident "Schema") name) .inline arguments
+
+/-- **Reviewed table.** The idiom map: how one model type reference becomes an
+    Effect schema and the value it decodes to. It is total over the references
+    the corpus uses today and refuses anything else, so a new field type stops
+    the emission here rather than arriving as a silently widened shape.
+
+    * `Nat` is the interchange's one numeric shape and carries `bigint`;
+      `String` is the target's own string; `Ref` is the kind-tagged reference
+      the model spells as an abbreviation and this surface expands.
+    * `List` is `Schema.Array`, `Option` is `Schema.UndefinedOr`. Both take one
+      argument, and a second would be a reference this map has no shape for.
+    * A declared type resolves to its own schema — except where it references
+      ITSELF, which is the model's one recursion: that reference becomes
+      `Schema.suspend` at the written-out value type, because a suspended
+      schema has no type to read back. A forward reference is refused rather
+      than suspended: the model writes none, and admitting one would emit a
+      schema that is not yet bound.
+    * Brand arguments are dropped. The target erases, so one schema describes
+      every brand of a shape, and the compile-time separation is generated on
+      the tables surface where the branded aliases live. -/
+def resolution : Nat -> String -> SchemaContext -> Nat -> String -> Except String Resolution
+  | 0, _, _, _, site =>
+      .error s!"ts: {site}: the reference nests deeper than the argument grammar admits"
+  | nesting + 1, reference, context, position, site => do
+  let (name, arguments) <- parseReference reference site
+  if name == "Nat" then
+    .ok { schema := .ident "KernelNat", valueType := .keyword "bigint" }
+  else if name == "String" then
+    .ok { schema := .field (.ident "Schema") "String", valueType := .keyword "string" }
+  else if name == "Ref" then
+    .ok { schema := .ident "KernelRef"
+        , valueType := .query (.qualified ["KernelRef", "Type"] []) }
+  else if name == "List" || name == "Option" then
+    match arguments with
+    | [argument] => do
+        let inner <- resolution nesting argument context position site
+        if name == "List" then
+          .ok { schema := schemaCall "Array" [inner.schema]
+              , valueType := .reference "ReadonlyArray" [inner.valueType] }
+        else
+          .ok { schema := schemaCall "UndefinedOr" [inner.schema]
+              , valueType := .union .inline [inner.valueType, .keyword "undefined"] }
+    | _ => .error s!"ts: {site}: {name} takes one argument"
+  else
+    match context.order.find? (fun row => row.1 == name) with
+    | none => .error s!"ts: {site}: {name} is neither a leaf nor a declared type"
+    | some row =>
+        let target := referenceOf context name
+        if row.2 > position then
+          .error s!"ts: {site}: {name} is declared after the type that references it"
+        else if row.2 == position then
+          .ok { schema :=
+                  schemaCall "suspend"
+                    [.arrow [] (some (.qualified ["Schema", "Codec"] [target.valueType]))
+                      target.schema]
+              , valueType := target.valueType }
+        else .ok target
+
+/-- How deep a model type reference may nest. The grammar writes one container
+    around one leaf and nothing deeper, so the walk is given exactly that much
+    room: a reference that needed more is refused by name rather than silently
+    truncated to the part that fitted. -/
+def referenceNesting : Nat := 2
+
+/-- One field's reference, resolved at the grammar's own depth. -/
+def resolveField (reference : String) (context : SchemaContext) (position : Nat)
+    (site : String) : Except String Resolution :=
+  resolution referenceNesting reference context position site
+
+/-! ### The shapes -/
+
+/-- One rendered mini-AST type: its schema expression and its value type. -/
+structure RenderedSchema where
+  schema : TsExpr
+  valueType : TsType
+
+/-- The resolved fields of one constructor. -/
+def resolvedFields (type : SchemaType) (constructor : SchemaConstructor)
+    (context : SchemaContext) (position : Nat)
+    : Except String (List (String × Resolution)) :=
+  constructor.fields.mapM fun field => do
+    let resolved <-
+      resolveField field.model context position s!"{type.name}.{constructor.name}.{field.name}"
+    Except.ok (field.name, resolved)
+
+/-- A struct expression, written flat where the whole declaration line still
+    fits and broken otherwise. The prefix is the declaration head and the
+    `.annotate({` that follows, because both share the line with it. -/
+def structExpression (members : List (String × TsExpr)) (indent prefixWidth : Nat) : TsExpr :=
+  let properties := members.map fun member => (none, schemaKey member.1, member.2)
+  let flat := TsExpr.apply (.field (.ident "Schema") "Struct") [] (.object .inline properties)
+  if members.isEmpty then flat
+  else if (Ts.inlineExpr flat).length + indent + prefixWidth <= schemaWidth then flat
+  else .apply (.field (.ident "Schema") "Struct") [] (.object .block properties)
+
+/-- One constructor of a sum. `TaggedStruct` rather than a `Struct` with a
+    literal `_tag` member: the two build the same tree, and the estate's own
+    language service asks for this spelling. -/
+def taggedStructExpression (tag : String) (members : List (String × TsExpr)) (indent : Nat)
+    : TsExpr :=
+  let properties := members.map fun member => (none, schemaKey member.1, member.2)
+  let flat := TsExpr.apply (.field (.ident "Schema") "TaggedStruct") [.str tag]
+    (.object .inline properties)
+  if members.isEmpty then flat
+  else if (Ts.inlineExpr flat).length + indent <= schemaWidth then flat
+  else .apply (.field (.ident "Schema") "TaggedStruct") [.str tag] (.object .block properties)
+
+/-- The record type one shape decodes to, flat where it fits. -/
+def objectTypeExpression (members : List (String × TsType)) (indent : Nat) : TsType :=
+  let written := members.map fun member => (true, false, PropertyKey.name member.1, member.2)
+  let flat := TsType.record .inline written
+  if members.isEmpty then flat
+  else if (Ts.typeText flat).length + indent <= schemaWidth then flat
+  else .record .block written
+
+/-- One mini-AST type as a schema and a value type. A structure is a struct; a
+    sum whose constructors are all nullary is a closed set of names and becomes
+    a union of literals, because the wire never carries anything else and a
+    literal union is what a caller switches on; every other sum is a union of
+    tagged structs. -/
+def renderSchemaType (type : SchemaType) (context : SchemaContext) (position prefixWidth : Nat)
+    : Except String RenderedSchema := do
+  if type.form == "structure" then
+    match type.constructors with
+    | [constructor] => do
+        let fields <- resolvedFields type constructor context position
+        Except.ok
+          { schema :=
+              structExpression (fields.map fun field => (field.1, field.2.schema)) 0 prefixWidth
+          , valueType :=
+              objectTypeExpression (fields.map fun field => (field.1, field.2.valueType)) 0 }
+    | _ =>
+        Except.error
+          s!"ts: structure {type.name} carries {type.constructors.length} constructors"
+  else if type.constructors.all (fun constructor => constructor.fields.isEmpty) then
+    let names := type.constructors.map (·.name)
+    let flat := TsExpr.apply (.field (.ident "Schema") "Literals") []
+      (.array .inline (names.map fun name => (none, TsExpr.str name)))
+    Except.ok
+      { schema :=
+          if (Ts.inlineExpr flat).length + prefixWidth <= schemaWidth then flat
+          else .apply (.field (.ident "Schema") "Literals") []
+            (.array .block (names.map fun name => (none, TsExpr.str name)))
+      , valueType :=
+          match names with
+          | [only] => .literal only
+          | _ => .union .block (names.map fun name => TsType.literal name) }
+  else do
+    let members <- type.constructors.mapM fun constructor => do
+      let fields <- resolvedFields type constructor context position
+      Except.ok
+        ( taggedStructExpression constructor.name
+            (fields.map fun field => (field.1, field.2.schema)) 2
+        , objectTypeExpression
+            (("_tag", TsType.literal constructor.name) ::
+              fields.map fun field => (field.1, field.2.valueType)) 2 )
+    Except.ok
+      { schema :=
+          .apply (.field (.ident "Schema") "Union") []
+            (.array .block (members.map fun member => (none, member.1)))
+      , valueType := .union .block (members.map (·.2)) }
+
+/-- The declaration order of the closed type list, plus the one fact no single
+    record carries: which types are referenced at or before their own
+    declaration. A field whose type references the type being declared is the
+    whole of the rule, and it is read off the records rather than named. -/
+def schemaContext (types : List SchemaType) : Except String SchemaContext := do
+  let order := types.zipIdx.map fun entry => (entry.1.name, entry.2)
+  let mut suspended : List String := []
+  let mut usesRef := false
+  for entry in types.zipIdx do
+    let type := entry.1
+    let position := entry.2
+    for constructor in type.constructors do
+      for field in constructor.fields do
+        let site := s!"{type.name}.{field.name}"
+        let (head, arguments) <- parseReference field.model site
+        let heads <-
+          if head == "List" || head == "Option" then
+            match arguments with
+            | [argument] => do
+                let (inner, _) <- parseReference argument site
+                Except.ok [inner]
+            | _ => Except.error s!"ts: {site}: {head} takes one argument"
+          else Except.ok [head]
+        for name in heads do
+          if name == "Ref" then usesRef := true
+          match order.find? (fun row => row.1 == name) with
+          | some row => if row.2 >= position && !suspended.contains name then
+              suspended := suspended ++ [name]
+          | none => pure ()
+  .ok { order := order, suspended := suspended, usesRef := usesRef }
+
+/-! ### The record schemas -/
+
+/-- A record group's schema, and the corpus records that exemplify it. -/
+structure RecordBinding where
+  name : String
+  gloss : String
+  examples : List Canon.Value
+
+/-- Which corpus records exemplify which record schema. One example per shape,
+    except where the whole set IS the reference — the encoding vectors, the
+    canonical-form vectors and the run vectors are named, closed sets, and a
+    reader who sees three of them has to go looking for the rest. The last two
+    groups arrived under the add-only rule, so a corpus emitted before they
+    exist is still a corpus this generator can read. -/
+def recordBindings (lines : List String) : Except String (List RecordBinding) := do
+  let group := fun (name : String) => recordsOf name lines
+  let firstOf := fun (rows : List Canon.Value) (named : String) =>
+    match rows with
+    | [] => Except.error s!"ts: the corpus carries no {named} record"
+    | row :: _ => Except.ok [row]
+  let admissions := group "admission"
+  let refused := admissions.filter fun row => Canon.stringAt row "verdict" == some "refused"
+  let admitted := admissions.filter fun row => Canon.stringAt row "verdict" == some "admitted"
+  let header <-
+    match lines with
+    | [] => Except.error "ts: the corpus is empty"
+    | first :: _ =>
+        match Canon.parse first with
+        | .ok value => Except.ok value
+        | .error reason => Except.error s!"ts: the corpus header does not parse: {reason}"
+  let kinds <- firstOf (group "kind") "kind"
+  let stages <- firstOf (group "stage") "stage"
+  let refusals <- firstOf (group "refusal") "refusal"
+  let types <- firstOf (group "type") "type"
+  let refusedRow <- firstOf refused "refused admission"
+  let admittedRow <- firstOf admitted "admitted admission"
+  let docs <- firstOf (group "doc") "doc"
+  let programs := group "program"
+  let runs := group "run"
+  let programRows <-
+    if programs.isEmpty then Except.ok ([] : List RecordBinding)
+    else do
+      let row <- firstOf programs "program"
+      Except.ok
+        [{ name := "KernelProgramRecord"
+         , gloss := "One program declaration and the bytes that are its identity"
+         , examples := row }]
+  let runRows :=
+    if runs.isEmpty then ([] : List RecordBinding)
+    else
+      [{ name := "KernelRunRecord"
+       , gloss := "One execution of a committed program, and the outcome's own bytes"
+       , examples := runs }]
+  Except.ok
+    ([ { name := "KernelHeaderRecord"
+       , gloss := "The provenance line, with the counts it pins", examples := [header] }
+     , { name := "KernelKindRecord"
+       , gloss := "One declaration kind of the closed universe", examples := kinds }
+     , { name := "KernelStageRecord"
+       , gloss := "One epistemic stage of a hole", examples := stages }
+     , { name := "KernelRefusalRecord"
+       , gloss := "One taught refusal: the law it defends, the repair it teaches"
+       , examples := refusals }
+     , { name := "KernelTypeRecord"
+       , gloss := "One type of the model's emitted vocabulary", examples := types }
+     , { name := "KernelEncodingRecord"
+       , gloss := "One sentence in its canonical framing", examples := group "encoding" }
+     , { name := "KernelAdmissionRefusedRecord"
+       , gloss := "A planted candidate the door refused", examples := refusedRow }
+     , { name := "KernelAdmissionAdmittedRecord"
+       , gloss := "The lawful twin the door admitted", examples := admittedRow }
+     , { name := "KernelDocRecord"
+       , gloss := "One type's docstring, read out of the model's environment"
+       , examples := docs }
+     , { name := "KernelCanonRecord"
+       , gloss := "One canonical-form vector: a value and the bytes it must produce"
+       , examples := group "canon" } ] ++ programRows ++ runRows)
+
+/-- The two example annotations every exemplified schema carries: the records as
+    canonical byte strings, beside the same records as values. The byte strings
+    exist because a JSON Schema export drops the whole `examples` key when any
+    example holds an unbounded integer, and nearly every record here holds one. -/
+def exampleAnnotations (examples : List Canon.Value)
+    : List (Option Doc × PropertyKey × TsExpr) :=
+  [ (none, .name "canonicalExamples",
+      .array .block (examples.map fun sample => (none, TsExpr.str (Canon.render sample))))
+  , (none, .name "examples",
+      .array .block (examples.map fun sample => (none, exampleLiteral 4 sample))) ]
+
+/-! ### The module header -/
+
+/-- The module header of the schema surface. -/
+def schemasHeader (tables : Tables) : List String :=
+  [ "Plane: kernel — the language: corpus, door, programs, and wire grammar."
+  , ""
+  , "GENERATED FILE - DO NOT EDIT."
+  , ""
+  , "Corpus:  " ++ schemasCorpusPath
+  , "Command: " ++ schemasCommand
+  , "Source:  " ++ tables.source ++ ", emitted by " ++ quote tables.generator
+  , "         at interchange format " ++ toString tables.format ++ "."
+  , ""
+  , "The interchange as schemas, in two halves."
+  , ""
+  , "The record schemas re-export the hand-written grammar of the file with the"
+  , "examples the corpus supplies. The grammar itself cannot be generated from"
+  , "the file it reads, so it stays hand-written next door; what is generated is"
+  , "every example, taken from a real record rather than invented."
+  , ""
+  , "The mini-AST schemas are the model's own type vocabulary. Their shape comes"
+  , "from the type records, their description from the docstring the model"
+  , "carries, their title from that docstring's first sentence. A sentence"
+  , "written once in the model reaches an agent's tool description with no human"
+  , "in the path, and a drifted description is a failing check rather than a"
+  , "rotting comment."
+  , ""
+  , "Numbers are bigint everywhere. The interchange's integers are unbounded and"
+  , "an encoded sentence already exceeds what a JavaScript number holds exactly."
+  , ""
+  , "Brand arguments are dropped here. TypeScript erases, so one schema describes"
+  , "every brand of a shape; the compile-time separation is generated into"
+  , "KernelTables.generated.ts, where the branded aliases live."
+  , ""
+  , "These are safety-side shapes and texts, never runtime guarantees. A model"
+  , "theorem stays in the model."
+  , ""
+  , "@module" ]
+
+/-- **Reviewed prose.** The annotation key's own doc comment: a measured gap
+    written down where the key is declared. -/
+def canonicalExamplesDoc : List String :=
+  [ "The annotation key carrying each schema's examples as canonical byte"
+  , "strings, beside the `examples` key carrying them as values."
+  , ""
+  , "It exists because of a measured gap. A JSON Schema export describes the"
+  , "encoded view, JSON has no unbounded integer, and Effect drops the whole"
+  , "`examples` key - silently, not partially - when any example holds a"
+  , "bigint. Nearly every record here holds one, so the examples that matter"
+  , "most would never reach a reader of the export. The canonical bytes are"
+  , "strings, they survive the export, and they are the exact bytes the"
+  , "interchange carries, so nothing is approximated to make them fit."
+  , ""
+  , "Read them with:"
+  , "`Schema.toJsonSchemaDocument(schema, { includeAnnotationKey: (key) =>`"
+  , "`key === KERNEL_CANONICAL_EXAMPLES_KEY })`." ]
+
+/-! ### The door's verdict vocabulary -/
+
+/-- **Reviewed expansions.** The door's verdict vocabulary, derived from the
+    `AdmitResult`, `Door` and `CandidateAct` records rather than written out
+    beside them. Two expansions the records do not state are named here, in the
+    shape of the `KernelRef` precedent:
+
+    1. **The framing rides with the admission.** The model separates the two;
+       the runtime door computes both in one pass and returns them together, so
+       the admitted arm gains `encoded`.
+    2. **The refusal is flattened, and the discriminant is `verdict`.** The
+       model spells the sum with a nested refusal; the runtime spells the taught
+       row inline, so every host exposes identical reason/law/repair fields at
+       one level. That row is the tables surface's, not this file's: the two
+       disagree on applicability, which the tables spell at the wire and the
+       schemas spell in camel.
+
+    Nothing else is invented: the arm names, the admitted arm's field name and
+    the type it carries all come from the record, and a record whose shape stops
+    matching refuses here rather than being rendered around. -/
+def doorVocabulary (types : List SchemaType) : Except String (List TsStmt) := do
+  let recordFor := fun (name : String) =>
+    match types.find? (fun type => type.name == name) with
+    | some type => Except.ok type
+    | none =>
+        Except.error s!"ts: the door vocabulary needs a {name} type record and the corpus has none"
+  let admitResult <- recordFor "AdmitResult"
+  let _ <- recordFor "Door"
+  let _ <- recordFor "CandidateAct"
+  if admitResult.constructors.length != 2 then
+    .error s!"ts: AdmitResult carries {admitResult.constructors.length} constructors, not two"
+  let arm := fun (name : String) =>
+    match admitResult.constructors.find? (fun constructor => constructor.name == name) with
+    | some constructor => Except.ok constructor
+    | none => Except.error s!"ts: AdmitResult carries no {name} constructor"
+  let admitted <- arm "admitted"
+  let refused <- arm "refused"
+  let soleField := fun (constructor : SchemaConstructor) (expected : String) =>
+    match constructor.fields with
+    | [field] =>
+        if field.model == expected then Except.ok field
+        else
+          Except.error
+            s!"ts: AdmitResult.{constructor.name}.{field.name} carries {field.model}, not {expected}"
+    | fields =>
+        Except.error
+          s!"ts: AdmitResult.{constructor.name} carries {fields.length} fields, not one"
+  let admittedField <- soleField admitted "Act"
+  let _ <- soleField refused "Refusal"
+  Except.ok
+    [ .banner
+        [ sectionRule
+        , "The door's verdict vocabulary, from the AdmitResult, Door and CandidateAct"
+        , "records. The runtime enrichments are named where they are added."
+        , sectionRule ]
+    , .blank
+    , .typeAlias
+        (some (schemaDoc ""
+          ("The result of admission. Success carries both the intrinsic sentence and its" ++
+            " canonical model encoding; refusal carries the complete generated teaching row," ++
+            " flattened so every host exposes identical reason/law/repair fields.")))
+        "KernelVerdict" [] .block
+        (.union .block
+          [ .record .block
+              [ (true, false, .name "verdict", .literal admitted.name)
+              , (true, false, .name admittedField.name,
+                  .reference (valueNameOf admittedField.model) [])
+              , (true, false, .name "encoded",
+                  .reference "ReadonlyArray" [.keyword "bigint"]) ]
+          , .parens (.intersection
+              [ .record .inline [(true, false, .name "verdict", .literal refused.name)]
+              , .reference "KernelRefusalRow" [] ]) ])
+    , .blank
+    , .interfaceDecl
+        (some (schemaDoc ""
+          ("A context-bound view of the single admission function. Exported under this name" ++
+            " because the Door record's own schema already holds KernelDoor; the door module" ++
+            " re-exports it as KernelDoor, which is the name a host reads.")))
+        "KernelDoorInterface" .inline [] false
+        [ { readOnly := true, optional := false, key := .name "admit"
+          , type := .function [] .inline [("candidate", .reference (valueNameOf "CandidateAct") [])]
+              (.reference "KernelVerdict" []) } ]
+    , .blank
+    , .typeAlias
+        (some (schemaDoc ""
+          ("The one host-facing judgment function. The arrow is this generator's composition" ++
+            " of three records: the Door record is the context it judges under, the" ++
+            " CandidateAct record is what it judges, and the AdmitResult record is what it" ++
+            " returns.")))
+        "KernelAdmit" [] .inline
+        (.function [] .block
+          [ ("context", .reference (valueNameOf "Door") [])
+          , ("candidate", .reference (valueNameOf "CandidateAct") []) ]
+          (.reference "KernelVerdict" [])) ]
+
+/-! ### The surface -/
+
+/-- The Effect-schema surface. -/
+def schemasModule (tables : Tables) (lines : List String) : Except String TsModule := do
+  let types <- schemaTypes lines
+  let context <- schemaContext types
+  let docs := docTable lines
+  let bindings <- recordBindings lines
+  let docOf := fun (name : String) =>
+    (docs.find? (fun row => row.1 == name)).map (·.2)
+  let declarationHead := fun (name : String) =>
+    if context.suspended.contains name then
+      "export const " ++ schemaNameOf name ++ ": Schema.Codec<" ++ valueNameOf name ++ "> ="
+    else "export const " ++ schemaNameOf name ++ " ="
+  let rendered <- types.zipIdx.mapM fun entry => do
+    let body <-
+      renderSchemaType entry.1 context entry.2
+        ((declarationHead entry.1.name).length + 1 + ".annotate({".length)
+    Except.ok (entry.1, entry.2, body)
+  let aliasDoc := fun (name : String) =>
+    schemaDoc ""
+      (if context.suspended.contains name then
+        "The value " ++ name ++ " carries. Written out because " ++ name ++ " refers to" ++
+          " itself, and a suspended schema needs a type to be annotated with."
+      else
+        "The value " ++ name ++ " carries, named here so a consumer re-exports this declaration" ++
+          " instead of restating the type as one of its own.")
+  let suspendedAliases := rendered.flatMap fun entry =>
+    if context.suspended.contains entry.1.name then
+      [ TsStmt.typeAlias (some (aliasDoc entry.1.name)) (valueNameOf entry.1.name) [] .block
+          entry.2.2.valueType
+      , TsStmt.blank ]
+    else []
+  let refExpansion : List TsStmt :=
+    if !context.usesRef then []
+    else
+      [ .constant
+          (some (Doc.rows
+            [ "A kind-tagged reference: the one lawful way a heterogeneous collection of"
+            , "digests is carried. The model spells it as an abbreviation rather than a"
+            , "declaration, so it has no type record of its own and is expanded here." ]))
+          "KernelRef" none
+          (.apply
+            (.field
+              (.apply (.field (.ident "Schema") "Struct") []
+                (.object .block
+                  [ (none, .name "id", .ident "KernelNat")
+                  , (none, .name "kind", .ident "KernelDeclKind") ]))
+              "annotate")
+            []
+            (.object .block
+              [ (none, .name "identifier", .str "KernelRef")
+              , (none, .name "title", .str "A kind-tagged reference.")
+              , (none, .name "description",
+                  .offset (stringExpression
+                    ("The pair of a declaration kind and an identifier. It appears wherever a" ++
+                      " collection holds digests of several kinds at once, so that the kind" ++
+                      " travels with the identifier instead of being inferred from context.")
+                    4)) ]))
+      , .blank
+      , .typeAlias
+          (some (Doc.rows
+            [ "The value KernelRef carries, named here so a consumer re-exports this"
+            , "declaration instead of restating the type as one of its own." ]))
+          "KernelRefValue" [] .inline (.query (.qualified ["KernelRef", "Type"] []))
+      , .blank ]
+  let declKind := rendered.find? fun entry =>
+    entry.1.name == "DeclKind"
+  let typeStatements := rendered.flatMap fun entry =>
+    let type := entry.1
+    let body := entry.2.2
+    let doc := docOf type.name
+    let brands :=
+      if type.params.isEmpty then ""
+      else
+        "Branded in the model by " ++ String.intercalate " and " type.params ++
+          "; the brand is erased here and carried by the generated aliases instead."
+    let separator :=
+      match doc with
+      | none => ""
+      | some text => if text.endsWith " " || brands == "" then "" else " "
+    let description := (doc.getD "") ++ separator ++ brands
+    let annotations :=
+      [ (none, PropertyKey.name "identifier", TsExpr.str (schemaNameOf type.name)) ] ++
+      (match doc with
+       | none => []
+       | some text => [(none, PropertyKey.name "title", TsExpr.str (firstSentence text))]) ++
+      (if description == "" then []
+       else [(none, PropertyKey.name "description", TsExpr.offset (stringExpression description 4))])
+    (match doc with
+     | none => []
+     | some text => [TsStmt.comment (schemaDoc "" text)]) ++
+    [ .constant none (schemaNameOf type.name)
+        (if context.suspended.contains type.name then
+          some (.qualified ["Schema", "Codec"] [.reference (valueNameOf type.name) []])
+         else none)
+        (.apply (.field body.schema "annotate") [] (.object .block annotations))
+    , .blank ] ++
+    (if context.suspended.contains type.name then []
+     else
+       [ .comment (aliasDoc type.name)
+       , .typeAlias none (valueNameOf type.name) [] .inline
+           (.query (.qualified [schemaNameOf type.name, "Type"] []))
+       , .blank ]) ++
+    (match declKind with
+     | some found => if found.1.name == type.name then refExpansion else []
+     | none => [])
+  let recordStatements := bindings.flatMap fun binding =>
+    [ TsStmt.comment (schemaDoc ""
+        (binding.gloss ++ ". Examples are real records from the corpus."))
+    , TsStmt.constant none binding.name none
+        (.apply (.field (.field (.ident "Grammar") binding.name) "annotate") []
+          (.object .block (exampleAnnotations binding.examples)))
+    , TsStmt.blank ]
+  let admissionExamples := (bindings.filter fun binding =>
+    binding.name == "KernelAdmissionRefusedRecord" ||
+      binding.name == "KernelAdmissionAdmittedRecord").flatMap (·.examples)
+  let vocabulary <- doorVocabulary types
+  Except.ok
+    { statements :=
+        [ .comment (Doc.rows (schemasHeader tables))
+        , .importNamed false ["Schema"] "effect"
+        , .blank
+        , .importNamespace "Grammar" "./KernelCorpusSchemas.js"
+        , .importNamed true ["KernelRefusalRow"] "./KernelTables.generated.js"
+        , .blank
+        , .constant
+            (some (Doc.line "Where these schemas came from, carried as data for a consumer to assert."))
+            "KERNEL_SCHEMA_PROVENANCE" none
+            (.asConst (.object .block
+              [ (none, .name "command", .str schemasCommand)
+              , (none, .name "corpus", .str schemasCorpusPath)
+              , (none, .name "format", .bigint tables.format)
+              , (none, .name "generator", .str tables.generator)
+              , (none, .name "source", .str tables.source) ]))
+        , .blank
+        , .constant
+            (some (Doc.rows
+              [ "An unbounded non-negative integer, the interchange's one numeric shape."
+              , "Re-exported so a generated schema and the grammar it extends cannot drift"
+              , "onto two different carriers." ]))
+            "KernelNat" none (.field (.ident "Grammar") "KernelNat")
+        , .blank
+        , .constant (some (Doc.rows canonicalExamplesDoc))
+            "KERNEL_CANONICAL_EXAMPLES_KEY" none (.str "canonicalExamples")
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The interchange records, annotated with the corpus's own examples."
+            , sectionRule ]
+        , .blank ] ++
+        recordStatements ++
+        [ .comment
+            (Doc.line "One admission verdict, refused or admitted, with both shapes exemplified.")
+        , .constant none "KernelAdmissionRecord" none
+            (.apply
+              (.field
+                (.apply (.field (.ident "Schema") "Union") []
+                  (.array .block
+                    [ (none, .ident "KernelAdmissionRefusedRecord")
+                    , (none, .ident "KernelAdmissionAdmittedRecord") ]))
+                "annotate")
+              []
+              (.object .block
+                ([ (none, PropertyKey.name "identifier", TsExpr.str "KernelAdmissionRecord")
+                 , (none, PropertyKey.name "title", TsExpr.str "Admission record")
+                 , (none, PropertyKey.name "description",
+                     TsExpr.str
+                       "One door verdict for one planted candidate. The verdict selects the shape.") ] ++
+                  exampleAnnotations admissionExamples)))
+        , .blank
+        , .comment (Doc.line "Every interchange record schema, keyed by its record group.")
+        , .constant none "KERNEL_RECORD_SCHEMA" none
+            (.asConst (.object .block
+              ([ (none, PropertyKey.name "kind", TsExpr.ident "KernelKindRecord")
+               , (none, PropertyKey.name "stage", TsExpr.ident "KernelStageRecord")
+               , (none, PropertyKey.name "refusal", TsExpr.ident "KernelRefusalRecord")
+               , (none, PropertyKey.name "type", TsExpr.ident "KernelTypeRecord")
+               , (none, PropertyKey.name "encoding", TsExpr.ident "KernelEncodingRecord")
+               , (none, PropertyKey.name "admission", TsExpr.ident "KernelAdmissionRecord")
+               , (none, PropertyKey.name "doc", TsExpr.ident "KernelDocRecord")
+               , (none, PropertyKey.name "canon", TsExpr.ident "KernelCanonRecord") ] ++
+                (if (bindings.find? fun binding => binding.name == "KernelProgramRecord").isSome then
+                  [(none, PropertyKey.name "program", TsExpr.ident "KernelProgramRecord")]
+                 else []) ++
+                (if (bindings.find? fun binding => binding.name == "KernelRunRecord").isSome then
+                  [(none, PropertyKey.name "run", TsExpr.ident "KernelRunRecord")]
+                 else []))))
+        , .blank
+        , .banner
+            [ sectionRule
+            , "The model's type vocabulary. Shapes from the type records, prose from the"
+            , "doc records; the closed list, in the model's declaration order."
+            , sectionRule ]
+        , .blank ] ++
+        suspendedAliases ++
+        typeStatements ++
+        [ .comment (Doc.line "Every mini-AST schema, keyed by the model's short name for the type.")
+        , .constant none "KERNEL_TYPE_SCHEMA" none
+            (.asConst (.object .block (types.map fun type =>
+              (none, schemaKey type.name, TsExpr.ident (schemaNameOf type.name)))))
+        , .blank
+        , .comment (Doc.rows
+            [ "A sentence in its canonical framing: the generator tag, then that"
+            , "generator's arguments. The examples are the model's own vectors, so an"
+            , "example can never drift from what the door admits."
+            , ""
+            , "This, and not the act schema, is what the encoding vectors exemplify: a"
+            , "vector is the encoding of an act, not an act." ])
+        , .constant none "KernelActEncoding" none
+            (.apply
+              (.field
+                (.call (.field (.ident "Schema") "Array") .inline [.ident "KernelNat"])
+                "annotate")
+              []
+              (.object .block
+                ([ (none, PropertyKey.name "identifier", TsExpr.str "KernelActEncoding")
+                 , (none, PropertyKey.name "title", TsExpr.str "An encoded sentence.")
+                 , (none, PropertyKey.name "description",
+                     TsExpr.offset (stringExpression
+                       ("The output of the model's encoder as an array of unbounded integers." ++
+                         " Element zero is the generator tag and the arity is fixed per tag, so" ++
+                         " a decoder can dispatch on length and tag alone.") 4)) ] ++
+                  exampleAnnotations
+                    ((recordsOf "encoding" lines).filterMap fun row => Canon.member row "act"))))
+        , .blank ] ++
+        vocabulary }
+
 /-! ## The emission door
 
 One name per surface, so a caller names a target rather than a location. -/
@@ -1145,6 +2064,7 @@ inductive Target where
   | kernelBuilder
   | refusalKinds
   | surfaceDigests
+  | kernelSchemas
 deriving Repr, BEq
 
 /-- The wire spelling of a target. -/
@@ -1153,6 +2073,7 @@ def Target.wire : Target -> String
   | .kernelBuilder => "kernel-builder"
   | .refusalKinds => "refusal-kinds"
   | .surfaceDigests => "surface-digests"
+  | .kernelSchemas => "kernel-schemas"
 
 /-- The target a caller named. -/
 def Target.ofWire (text : String) : Except String Target :=
@@ -1160,6 +2081,7 @@ def Target.ofWire (text : String) : Except String Target :=
   else if text == "kernel-builder" then .ok .kernelBuilder
   else if text == "refusal-kinds" then .ok .refusalKinds
   else if text == "surface-digests" then .ok .surfaceDigests
+  else if text == "kernel-schemas" then .ok .kernelSchemas
   else .error s!"ts: unsupported target {text}"
 
 /-- The digest register: what each emitted surface hashes to, and what corpus
@@ -1187,6 +2109,7 @@ def emit (target : Target) (corpus rosterLines : List String)
   match target with
   | .kernelTables => return Ts.render (<- tablesModule tables roster ast)
   | .kernelBuilder => return Ts.render (<- builderModule tables corpus)
+  | .kernelSchemas => return Ts.render (<- schemasModule tables corpus)
   | .refusalKinds =>
       -- The vocabulary's meanings are reviewed rather than model-emitted, so
       -- the reason ledger is still reconciled here: an unexplained kind on
