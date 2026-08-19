@@ -4651,7 +4651,7 @@ only re-marked it along with every other.
 
 ## Task DEV-823 — identity on the resolve path is the fetched bytes
 
-Placeholders `T14`–`T17`; repository D-numbers are assigned at merge. The
+Placeholders `T14`–`T18`; repository D-numbers are assigned at merge. The
 disposition of the digest-resolution audit's F-1 and F-2 was pre-ruled by the
 coordinator under DEV-823, from standing law rather than from a fresh judgment:
 a repairing decoder names a value that did not arrive (finding #36), byte-to-
@@ -4727,6 +4727,24 @@ passing quietly — is closed by what the control asserts: the variant must ADMI
 byte strings the shipped door refuses, and the committed trace names which
 five. A drifted variant fails the control instead of passing it.
 **Load-bearing? yes** — a wall no mutant can fail is not a wall.
+
+### T18. F-3 ships evidence and no repair, and the evidence says what it cannot show
+
+Decided: the register finding's disposition is the operator's, so this round
+lands two measured rows against a real server and changes no line of the
+register adapter. The rows say what a single-replica server can answer — that
+the bucket is opened on the direct-read route at one replica, and that the
+substrate's compare-and-set, presented with the revision a landing produced,
+ACCEPTS an outcome overwrite. Alternatives: land no evidence and argue the
+disposition from reading (the whole question is whether the CAS reaches the
+pre-check's verdict on its own, and that is a fact about the substrate, not
+about the source); reproduce the staleness itself (one replica is the only
+replica and cannot lag behind itself; a row claiming otherwise would be
+theatre). What the rows deliberately do NOT claim: no staleness was
+reproduced, and no reachability argument is made for the revision the raw CAS
+was handed. **Load-bearing? yes** — the second row is what makes "demote the
+pre-check to advisory, the CAS arbitrates" an unsafe disposition rather than a
+tidy one, and it is a fact nobody had measured.
 
 **Stated residual.** Three things this round does NOT do. (a) The catalog leg
 still re-derives from the VALUE, because that store holds values and there is
