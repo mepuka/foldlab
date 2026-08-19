@@ -571,22 +571,42 @@ def vocabularyModule (tables : Tables) (roster : Roster) : TsModule :=
 
 One name per surface, so a caller names a target rather than a location. -/
 
-/-- The surfaces this module emits. -/
+/-- The surfaces this module emits, and the register of their digests. -/
 inductive Target where
   | kernelTables
   | refusalKinds
+  | surfaceDigests
 deriving Repr, BEq
 
 /-- The wire spelling of a target. -/
 def Target.wire : Target -> String
   | .kernelTables => "kernel-tables"
   | .refusalKinds => "refusal-kinds"
+  | .surfaceDigests => "surface-digests"
 
 /-- The target a caller named. -/
 def Target.ofWire (text : String) : Except String Target :=
   if text == "kernel-tables" then .ok .kernelTables
   else if text == "refusal-kinds" then .ok .refusalKinds
+  else if text == "surface-digests" then .ok .surfaceDigests
   else .error s!"ts: unsupported target {text}"
+
+/-- The digest register: what each emitted surface hashes to, and what corpus
+    it was projected from. Surfaces are named by TARGET rather than by
+    location, so the register carries no path; a consumer that wants to know
+    whether the file it holds is this emission hashes its bytes and compares.
+
+    The register exists so a checker with no Lean toolchain can still hold the
+    surfaces to the model's emission: this side states the digests and proves
+    them fresh, and the other side hashes what it has. -/
+def digestRegister (tables : Tables) (surfaces : List (String × String)) : String :=
+  String.intercalate "\n"
+    (Canon.render (.obj [("record", .str "corpus"), ("digest", .str tables.digest)]) ::
+      surfaces.map fun surface =>
+        Canon.render (.obj
+          [ ("record", .str "surface")
+          , ("target", .str surface.1)
+          , ("digest", .str (Sha.digestOf surface.2)) ])) ++ "\n"
 
 /-- Emit one surface's bytes. -/
 def emit (target : Target) (corpus rosterLines : List String)
@@ -601,5 +621,11 @@ def emit (target : Target) (corpus rosterLines : List String)
       -- either surface is one finding, not two.
       let _ <- reasonMeanings roster tables.refusals
       return Ts.render (vocabularyModule tables roster)
+  | .surfaceDigests =>
+      let renderedTables := Ts.render (<- tablesModule tables roster ast)
+      let renderedVocabulary := Ts.render (vocabularyModule tables roster)
+      return digestRegister tables
+        [ (Target.kernelTables.wire, renderedTables)
+        , (Target.refusalKinds.wire, renderedVocabulary) ]
 
 end Unity.TsKernel

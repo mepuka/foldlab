@@ -55,7 +55,7 @@ const SharedRefusalFields = {
 
 /**
  * Every structural refusal kind the package can mint, projected from the
- * kernel corpus into this plane by `generate:kernel-tables`.
+ * kernel corpus into this plane by the model's own emitter.
  *
  * The projection is emitted as `RefusalKinds.generated.ts` — a sibling in
  * `truth/` — rather than imported from `kernel/`, because `truth/` is the

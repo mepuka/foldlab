@@ -171,10 +171,13 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   overclaim until the law is proved; this seam ships its shape, not its
   enforcement.
 - `src/kernel/KernelTables.generated.ts` and
-  `src/truth/RefusalKinds.generated.ts` are generated only, from
-  `fixtures/kernel-conformance.ndjson` plus the reviewed runtime-refusal
-  projection in `scripts/kernel-runtime-refusals.ts`, and
-  `bun run check:kernel-tables` must regenerate both byte-identically. Never
+  `src/truth/RefusalKinds.generated.ts` are generated only, and no longer from
+  here: the kernel model's own emitter projects them, from the corpus it mints
+  plus the reviewed refusal roster it reads. Regenerate them with the emitter
+  (`verify/unity`, which documents the two targets beside them) and commit the
+  surfaces and the emitter's digest register together;
+  `bun run check:kernel-surfaces` holds the committed bytes to that register,
+  and byte-identical regeneration is walled where the emitter runs. Never
   hand-edit a kind, a rank, a taught law, or a repair: the model emits its rows;
   runtime spellings absent from that corpus carry an explicit `DEV-804`
   staged-debt waiver in the generated ancestry.
@@ -211,7 +214,7 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   one name carries one meaning, and the page and the modules render the same
   sentence. Only the DEV-825 operator taste pass retires the marker — until it
   rules, adding a kind means adding its drafted meaning, and moving a sentence
-  reddens `check:kernel-tables` and `check:kernel-prose` until both are
+  reddens the model emitter's gate and `check:kernel-prose` until both are
   regenerated. `check:refusal-meaning-control` plants a meaningless kind, an
   unmarked meaning, and a paraphrased page, and must fail on all three.
 - A refusal's taught payload is persisted evidence. `check:refusal-payloads`

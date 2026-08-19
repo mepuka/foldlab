@@ -19,12 +19,16 @@ live under `../../test/` is gone; the replay targets the shipping door.
 a model identity label (ruling A1), and it judges nothing.
 
 The emitted three come from `../../fixtures/kernel-conformance.ndjson`, which
-`verify/unity`'s emitter writes out of the `verify/kernel` model. From
-`packages/plait`: `bun run generate:kernel-tables` (likewise `-schemas`,
-`-builder`), and `generate:kernel-prose` for the prose under `docs/generated/`.
-Never hand-edit a kind, a rank, a taught law, or a repair.
+`verify/unity`'s emitter writes out of the `verify/kernel` model. Two of them
+are also emitted there — `KernelTables.generated.ts` and its truth-plane half —
+so regenerate those with that emitter, which documents its targets beside them.
+From `packages/plait`: `bun run generate:kernel-schemas` and
+`generate:kernel-builder`, and `generate:kernel-prose` for the prose under
+`docs/generated/`. Never hand-edit a kind, a rank, a taught law, or a repair.
 
 Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
+`check:kernel-surfaces` holds the model-emitted pair to the digests its gate
+registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
 and an absence control the seventeen vectors cannot carry. Those four and

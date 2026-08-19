@@ -21,7 +21,7 @@ for required in lean-toolchain lakefile.toml lake-manifest.json Unity.lean \
     Unity/Reflect.lean Unity/Emit.lean \
     Unity/Check.lean Unity/Dsl.lean \
     Unity/Sha.lean Unity/Ts.lean Unity/TsKernel.lean \
-    refusal-meanings.ndjson citations.txt README.md DECISIONS.md; do
+    refusal-meanings.ndjson surface-digests.ndjson citations.txt README.md DECISIONS.md; do
   if [[ ! -f "$required" ]]; then
     echo "GATE: FAIL — package roster is missing $required" >&2
     exit 1
@@ -647,6 +647,47 @@ for surface in "$ts_tables" "$ts_vocabulary"; do
   fi
 done
 echo "GATE: PASS (the em dash rides through verbatim; no other code point leaves ASCII)"
+
+# The digest register. This side states what each surface hashes to and what
+# corpus it was projected from; the runtime package's battery, which carries no
+# Lean toolchain, hashes the files it holds and compares. The register is
+# proven fresh here, and every digest in it is cross-checked against a host
+# digest tool — an independent implementation of the same standard, which is
+# what keeps Unity/Sha.lean from agreeing only with itself.
+host_digest() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  else
+    echo ""
+  fi
+}
+if [[ -z "$(host_digest "$fixture")" ]]; then
+  echo "GATE: FAIL — no host digest tool, so the emitter's SHA-256 has no outside oracle" >&2
+  exit 1
+fi
+if ! lake exe ts --target=surface-digests --meanings="$ts_roster" > "$ts_first"; then
+  echo "GATE: FAIL — the digest register refused to emit" >&2
+  exit 1
+fi
+if ! diff -u surface-digests.ndjson "$ts_first"; then
+  echo "GATE: FAIL — the committed digest register is not a fresh emission" >&2
+  exit 1
+fi
+while IFS=$'\t' read -r label registered; do
+  measured=$(host_digest "$label")
+  if [[ "$measured" != "$registered" ]]; then
+    echo "GATE: FAIL — the register names $registered for $label; the host hashes $measured" >&2
+    exit 1
+  fi
+done < <(
+  printf '%s\t%s\n' \
+    "$fixture" "$(grep '"record":"corpus"' surface-digests.ndjson | sed 's/.*"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_tables" "$(grep '"target":"kernel-tables"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_vocabulary" "$(grep '"target":"refusal-kinds"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
+)
+echo "GATE: PASS (digest register fresh; the corpus and both surfaces hash as registered under a host oracle)"
 
 # Falsification of the printer itself. Each arm edits ONE constant or ONE rule
 # in this package's own sources, rebuilds, and demands that the emitted surface

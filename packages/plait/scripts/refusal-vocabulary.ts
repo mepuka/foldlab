@@ -12,9 +12,10 @@
  * 1. **The runtime union** is read out of the *bytes* of the shipped
  *    truth-plane module, through the TypeScript AST — not by importing the
  *    schema and asking it for its literals, which would only ask the generated
- *    value to agree with itself. `check:kernel-tables` separately holds those
- *    bytes to a byte-identical regeneration, so the source this reader parses
- *    is the source the projection produced.
+ *    value to agree with itself. The model emitter's gate separately holds
+ *    those bytes to a byte-identical regeneration, and `check:kernel-surfaces`
+ *    holds them here to the digest that gate registers, so the source this
+ *    reader parses is the source the projection produced.
  * 2. **The corpus reasons** are read out of the *bytes* of the model's
  *    interchange fixture, by parsing its NDJSON lines here — not through the
  *    corpus loader the generator itself runs, and not from any table rendered
