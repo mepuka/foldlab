@@ -39,7 +39,7 @@ The table points; the entries below carry the bounds.
 | Schema identity | interim law only | **Interim**; the owned encoding is ticket 004 | [proto/wire/fixtures/](proto/wire/fixtures/) |
 | RFC 8785 canonical JSON | R1 differential | **Claimed** for the stated corpus and its generated sample | [fixtures/jcs-rfc8785.json](fixtures/jcs-rfc8785.json), [packages/core/test/jcs.differential.test.ts](packages/core/test/jcs.differential.test.ts), [go/canonical/differential_fuzz_test.go](go/canonical/differential_fuzz_test.go) |
 | Plait spine (envelope identity + local NATS round trip + error-channel refusals with the barrel-derived conformance gate) | R0 differential + R1 + executable integration | **Claimed** for the four-row generated envelope corpus on one file-backed `nats-server v2.14.4`, R=1; bounds in the section below | [packages/plait/](packages/plait/), [go/cmd/plaitwall/](go/cmd/plaitwall/) |
-| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes) | R0 differential + executable no-bypass control | **Claimed** for the committed admission corpus and the three host surfaces; refusal parity and bounds in the section below | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts) |
+| Plait kernel admission door (model-emitted vectors → one generated-schema door → CLI/carriage/daemon routes, and the algebra engine's program run over them) | R0 differential + executable no-bypass control; model-level R5 (Lean) for the run composition | **Claimed** for the committed admission corpus and the three host surfaces; the engine's per-node run composition additionally **Claimed** at the model level — a landed run is exactly a sequence of admitted acts, a refusal leaves the prefix standing and the tail unjudged, and door growth never retracts an admission; refusal parity and bounds in the section below | [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts), [packages/plait/src/carriage/Engine.ts](packages/plait/src/carriage/Engine.ts), [packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts), [verify/kernel/](verify/kernel/) |
 | Tracer conformance (W1–W10; flb.protocol.v0 session laws) | R0/R1 | **Claimed**, single daemon | [proto/](proto/) |
 | Refusal projection walls (W-COHERENCE, W-SCOPE) | R2 (TLC) + model-level R5 (Lean) | **Claimed** for the repaired rule; the union-refusal mislocation it refutes is **fixed and merged** on `main` (`ab77d6bfc`) — the TLC controls now stand as regression guards over the historical constructor | [verify/implication/](verify/implication/) |
 | IR denotational laws (brand/check invisibility, union extensionality, sort-invariance, resolver monotonicity, C5 round trip) | model-level R5 (Lean) | **Claimed** at the model level; code-model correspondence unproved | [verify/ir/](verify/ir/) |
@@ -598,6 +598,24 @@ converts one.
 - The same suite offers one refused candidate through every host route and
   compares the complete taught refusal — reason, law, repair, applicability —
   value for value.
+- The algebra engine's program run composes those per-node judgments, and the
+  composition is now a model-level theorem family rather than a
+  recommendation. `verify/kernel` carries the engine's walk at kernel sorts —
+  admission order, completion as a parameter, door growth as the engine's own
+  replica growth — and proves five laws over it: `run_composes_admissions` (an
+  iff: a landed run is exactly a sequence of admitted acts, and nothing beyond
+  those judgments lands one), `run_sequential_composition`,
+  `run_tail_unjudged` (the outcome after a refusing prefix is independent of
+  the tail), `run_refusal_prefix_stands` (a refusal splits the node list at
+  one node and leaves the prefix standing as an admitted walk whose steps the
+  outcome carries), and `run_monotone_context` (growth never retracts a run's
+  admission — the engine's replica-as-lower-bound claim). The consumers are
+  `packages/plait/src/carriage/Engine.ts`'s `run` and its differential suite:
+  the stop-at-first-refusal and untouched-tail walls in
+  `packages/plait/test/Engine.test.ts` now witness proven laws. Two executed
+  controls die on exactly the dropped law — a walk that judges the tail after
+  a refusal, and a walk that erases the prefix that refusal stood on — with
+  their traces committed under `verify/kernel/negative-controls/`.
 
 ### Bounds and residuals
 
@@ -609,15 +627,28 @@ a durable catalog snapshot nor invents an ambient source for one. `CasDaemon`
 remains a type and a route with no tag, layer, or daemon implementation, and
 the chaos CLI accepts no kernel candidate — the claim is that the judgment
 routes those hosts expose cannot bypass the door, not that this slice adds a
-daemon runtime or a CLI command. No Effect service wraps the door; a Layer
-seam, if one is wanted, would wrap this generated door and is not claimed here.
+daemon runtime or a CLI command.
+
+The run-composition family is a model-level result about the model's own
+walk, never a runtime guarantee promoted out of a theorem: the engine's
+agreement with that walk is the differential suite's business, and no
+correspondence between the model's identity labels and the engine's content
+addresses is claimed. Completion is a parameter, so nothing here says the
+engine completes a node correctly — only that whatever it completes to is
+judged at the door the prefix produced. Carriage is absent from the model
+entirely; the only feedback carriage gives the door is context growth. The
+bounds are the engine's own: one sequential walk, no concurrency beyond the
+monotone benignity `run_monotone_context` states, no liveness, no retries, no
+scheduler.
 
 ### Checkable at
 
 [packages/plait/src/kernel/KernelDoor.ts](packages/plait/src/kernel/KernelDoor.ts),
+[packages/plait/src/carriage/Engine.ts](packages/plait/src/carriage/Engine.ts),
 [packages/plait/test/KernelConformance.test.ts](packages/plait/test/KernelConformance.test.ts),
-and
-[packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts).
+[packages/plait/test/KernelDoor.routes.test.ts](packages/plait/test/KernelDoor.routes.test.ts),
+[packages/plait/test/Engine.test.ts](packages/plait/test/Engine.test.ts),
+and [verify/kernel/](verify/kernel/).
 
 ## Plait spine — R0 differential + executable integration
 
