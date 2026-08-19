@@ -2987,6 +2987,106 @@ untouched rather than quietly fixed, and owed to whichever lane lands second.
 **Load-bearing? no** — this branch does not move the census (132 total, 0
 derived, 132 debt before and after), so the ledger is byte-identical either way
 and only the sentence describing the rule is stale.
+## Task DEV-804 (slices A+B) — the first public types credit as corpus-derived
+
+### T0. A re-export of a NAMED generated type is the one crediting shape
+
+Decided: the conversion is `export type { KernelXValue as KernelX } from
+"./KernelSchemas.generated.js"`, and nothing else counts. Seven of
+`KernelDoor.ts`'s types and `truth/Refusal.ts`'s `StructuralRefusalKind`
+convert; the census moves 0 → 8 derived, and the kernel and truth pins fall
+27 → 20 and 37 → 36. What does NOT convert stays hand-written and waivered:
+`KernelVerdict` (a host projection that flattens a generated refusal row into a
+tagged union the corpus does not carry), the `KernelDoor` context interface, and
+`KernelAdmit` — no generated counterpart exists for any of them, and inventing
+one would put a shape in the generator that the model never declared.
+Alternatives: `typeof Generated.X.Type` at the consumer, which is what the seven
+door types said before this branch and which reads as derivation while being a
+fresh local declaration — DEV-800 round 2 measured it at 0 derived across the
+whole barrel, and T0 of the generator slice records the same finding from the
+emitter's side; a structural restatement of the shape (a second place one shape
+can be wrong); crediting by import-graph proximity rather than by declaration
+owner (the false-positive direction `isDeclaredByGeneratedCore` exists to
+refuse). Why: the walk credits the file a symbol's declarations resolve to, and
+a re-export is the only spelling that leaves a public name with no declaration
+of its own. **Load-bearing? yes** — measured on this branch: reverting
+`KernelRawArg` alone to `export type KernelRawArg = typeof
+Generated.KernelRawArg.Type` reds enforce at exit 1 with `PUBLIC TYPE UNIVERSE
+UNWAIVERED: KernelDoor.KernelRawArg owner=src/kernel/KernelDoor.ts
+classification=debt-with-a-ticket ticket=DEV-795`, because the conversion
+removed that row's waiver from the ledger; and `--write` cannot launder it back,
+reding at `PUBLIC TYPE UNIVERSE RATCHET: owning prefix=kernel walked=21
+pinned=20 — raising a pin is the operator's act`. Restored, both green.
+
+### T0a. The door binds the generated names locally by importing them under its own spelling
+
+Decided: `KernelDoor.ts` carries the seven names twice — once as
+`import type { KernelRawArgValue as KernelRawArg } from ...` for its own body,
+once as the `export type { ... } from` re-export that is the public surface. A
+re-export creates no local binding, so the door's twenty-odd internal uses need
+something to refer to, and the import alias is that something without declaring
+anything: it is the generated declaration under the door's name. Alternatives:
+spell every internal use `Generated.KernelRawArgValue` through the namespace
+import the door already has (correct, and it churns every signature in the file
+for no change in what anything means); declare local non-exported aliases
+(`type KernelRawArg = Generated.KernelRawArgValue`), which reintroduces the
+local declaration this task is removing and would credit only by the accident
+that the census walks exports. Why: the diff should be the conversion and
+nothing else, so a reviewer can see the seven names move in one block.
+**Load-bearing? no** — the census reads the export, not the import.
+
+### T1. The refusal kind converts as ONE value-and-type re-export, because it must
+
+Decided: `truth/Refusal.ts`'s `export const StructuralRefusalKind: typeof
+GeneratedStructuralRefusalKind = GeneratedStructuralRefusalKind` beside
+`export type StructuralRefusalKind = typeof GeneratedStructuralRefusalKind.Type`
+becomes the single `export { StructuralRefusalKind } from
+"./RefusalKinds.generated.js"`, and the `StructuralRefusal` class takes its
+`kind` field from the import alias instead of from the retired const. This was
+forced, not chosen: `StructuralRefusalKind` is one name in both declaration
+spaces, and TypeScript admits ONE export declaration per exported name across
+both — keeping the const and adding `export type { StructuralRefusalKind } from`
+reds with TS2323 and TS2484, and renaming the type in the generated module does
+not help because the collision is on the EXPORTED name, not on the source name
+(probed both ways). Alternatives: keep the const and leave the type as a local
+`typeof` alias (leaves the one truth-plane type the generator actually emits
+uncredited, which is the row this slice exists to move); drop the type export
+and keep only the const (`Refusal.StructuralRefusalKind` in type position is
+public surface two call sites already use, so this deletes surface); emit the
+generated type under a second name and re-export that (same collision). Why: the
+re-export carries the schema and the type it admits, and both resolve to
+`RefusalKinds.generated.d.ts`. **Load-bearing? yes** — it is the whole of slice
+B: without it truth stays pinned at 37 and the derived count stops at 7.
+
+### T2. Two wall readers learn the export-declaration form, in the direction that keeps them strict
+
+Decided: `scripts/kernel-door-containment.ts`'s `readDoorForm` collects `Kernel*`
+names from export declarations as well as from type-alias and interface
+declarations, and `scripts/refusal-vocabulary.ts`'s `checkRuntimeUnionWiring`
+now asks for a value re-export from the generated module rather than for an
+exported const whose initializer traces back to an import alias. Both changes
+are caused by the conversion and both are checked, not assumed. The door reader
+matters because the form vocabulary is what the twin and unbound-use clauses
+quantify over: an export declaration is not a type-alias declaration, so reading
+only declarations would have silently dropped the seven converted names and
+turned two arms of `check:kernel-door-control` — `form-twin` and
+`unbound-form-name`, both planted as `KernelCandidateAct`, one of the seven —
+green on an accepted mutant. The vocabulary reader gets STRICTER for the move: an
+`export ... from` cannot be a second roster wearing the name, so the clause no
+longer has to chase an initializer and hope no later statement rebound it, and a
+module that declares a roster of its own is now refused by name rather than by a
+mismatched-identifier message. Alternatives: leave `readDoorForm` alone and let
+the vocabulary shrink (a wall weakened as a side effect of a conversion, which
+is the failure this record exists to make impossible); admit both the const and
+the re-export shape in the vocabulary clause (two admissible spellings for one
+law, and the older one is the one that cannot credit); move
+`StructuralRefusalKind` out of the wall's reach (it IS the union the minting
+sites speak). Why: a wall whose subject changed shape has to be re-read against
+the new shape or it is measuring nothing. **Load-bearing? yes** — the door
+control still refuses all eleven planted spellings on its committed trace
+(`ONE DOOR CONTROL: PASS (11 planted second-door spellings refused, each for its
+committed reason)`), which is only true because the vocabulary still carries the
+converted names.
 ## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
 
 ### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
