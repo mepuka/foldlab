@@ -83,7 +83,12 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 echo "GATE: PASS (topology: two read-only path requires, both models untouched)"
 
-mapfile -t lean_sources < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
+# Portable array read: macOS ships bash 3.2, which has no mapfile, and a
+# gate only one host can run is not a gate.
+lean_sources=()
+while IFS= read -r lean_file; do
+  lean_sources+=("$lean_file")
+done < <(find Unity must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
 lean_sources+=(Unity.lean ControlMain.lean EmitMain.lean ConformanceCheck.lean)
 
 # Kernel-bound source hygiene, at the kernel's own word list.
@@ -119,7 +124,10 @@ expected_laws=(
   UProgramVectorsEdgeConsistent UGroundLiftErasesToPlanted
   UHoleyFillCorrespondence
 )
-mapfile -t actual_laws < <(
+actual_laws=()
+while IFS= read -r _line; do
+  actual_laws+=("$_line")
+done < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
     Unity/Laws.lean | sed -E 's/.*def[[:space:]]+//'
 )
@@ -174,11 +182,17 @@ echo "GATE: PASS (docstrings read from the environment, not transcribed)"
 # Citation ledger: the kernel's taught table cites law rows by name.
 # The committed ledger pins that set; every fabric row must resolve in
 # fabric's roster and every veil-walled row must stay out of it.
-mapfile -t cited < <(
+cited=()
+while IFS= read -r _line; do
+  cited+=("$_line")
+done < <(
   grep -oE '\(([a-z][a-z0-9]*(_[a-z0-9]+)+)\)' ../kernel/Kernel/Definitions.lean |
     tr -d '()' | LC_ALL=C sort -u
 )
-mapfile -t ledgered < <(cut -f1 citations.txt | LC_ALL=C sort -u)
+ledgered=()
+while IFS= read -r _line; do
+  ledgered+=("$_line")
+done < <(cut -f1 citations.txt | LC_ALL=C sort -u)
 if [[ "${cited[*]}" != "${ledgered[*]}" ]]; then
   echo "GATE: FAIL — the kernel's citation set drifted from the committed ledger" >&2
   echo "cited:    ${cited[*]}" >&2
@@ -210,7 +224,10 @@ while IFS=$'\t' read -r name venue; do
 done < citations.txt
 echo "GATE: PASS (citation ledger: ${#cited[@]} names reconciled, venues checked)"
 
-mapfile -t actual_private < <(
+actual_private=()
+while IFS= read -r _line; do
+  actual_private+=("$_line")
+done < <(
   grep -rhoE '^[[:space:]]*(private|protected)[[:space:]]+(theorem|lemma)[[:space:]]+[A-Za-z0-9_]+' Unity/ \
     | sed -E 's/.*(theorem|lemma)[[:space:]]+//' | sort
 )
@@ -256,11 +273,13 @@ roster=(
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
 discovered_tmp=$(mktemp "./.discovered.XXXXXX")
-footprint_check=$(mktemp "./.footprint.XXXXXX.lean")
-probe_check=$(mktemp "./.footprint.XXXXXX.lean")
-corpus_first=$(mktemp "./.corpus.XXXXXX.ndjson")
-corpus_second=$(mktemp "./.corpus.XXXXXX.ndjson")
-corpus_mutant=$(mktemp "./.corpus.XXXXXX.ndjson")
+# BSD mktemp substitutes only trailing Xs, so the .lean suffix is added by
+# rename: the same gate must run on every host that carries the model.
+footprint_check=$(mktemp "./.footprint.XXXXXX") && mv "$footprint_check" "$footprint_check.lean" && footprint_check="$footprint_check.lean"
+probe_check=$(mktemp "./.footprint.XXXXXX") && mv "$probe_check" "$probe_check.lean" && probe_check="$probe_check.lean"
+corpus_first=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_first" "$corpus_first.ndjson" && corpus_first="$corpus_first.ndjson"
+corpus_second=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_second" "$corpus_second.ndjson" && corpus_second="$corpus_second.ndjson"
+corpus_mutant=$(mktemp "./.corpus.XXXXXX") && mv "$corpus_mutant" "$corpus_mutant.ndjson" && corpus_mutant="$corpus_mutant.ndjson"
 trap 'rm -f "$roster_tmp" "$discovered_tmp" "$footprint_check" "$probe_check" "$corpus_first" "$corpus_second" "$corpus_mutant"' EXIT
 
 printf '%s\n' "${roster[@]}" | LC_ALL=C sort > "$roster_tmp"
@@ -328,8 +347,14 @@ check_control tie-orientation
 check_control ascending-positions
 check_control broken-erasure-pins
 
-mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
-mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
+committed_controls=()
+while IFS= read -r _line; do
+  committed_controls+=("$_line")
+done < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
+exercised_sorted=()
+while IFS= read -r _line; do
+  exercised_sorted+=("$_line")
+done < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
 if [[ "${committed_controls[*]}" != "${exercised_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed control trace is orphaned" >&2
   exit 1
@@ -553,8 +578,14 @@ check_must_not_compile() {
 check_must_not_compile cross-model-stage
 check_must_not_compile wrong-shape
 
-mapfile -t committed_refusals < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
-mapfile -t exercised_refusals_sorted < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
+committed_refusals=()
+while IFS= read -r _line; do
+  committed_refusals+=("$_line")
+done < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
+exercised_refusals_sorted=()
+while IFS= read -r _line; do
+  exercised_refusals_sorted+=("$_line")
+done < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
 if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed must-not-compile control is orphaned" >&2
   exit 1
