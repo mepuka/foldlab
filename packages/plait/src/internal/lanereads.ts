@@ -10,10 +10,11 @@ import {
   jetstream,
   jetstreamManager,
   type ConsumerMessages,
+  type JetStreamManager,
   type JsMsg,
 } from "@nats-io/jetstream"
 import type { NatsConnection } from "@nats-io/nats-core"
-import { Effect, Queue, Result, Schema, Scope, Stream } from "effect"
+import { Cause, Effect, Queue, Result, Schema, Scope, Stream } from "effect"
 
 import type {
   DeclaredLane,
@@ -22,7 +23,7 @@ import type {
   LaneReadService,
 } from "../planes/Lane.js"
 import { LANE_TAIL_LIMIT_DEFAULT, LANE_TAIL_LIMIT_MAX } from "../planes/Lane.js"
-import { structuralRefusal, type Refusal } from "../truth/Refusal.js"
+import { absenceRefusal, structuralRefusal, type Refusal } from "../truth/Refusal.js"
 import { evidenceSubject } from "../kernel/Subjects.js"
 import { verifyEnvelopeDigest } from "../kernel/Wire.js"
 import { laneStreamName } from "./lanes.js"
@@ -212,7 +213,7 @@ export const admitFact = Effect.fn("LaneReads.admit")(function* <
       subject,
     )
   }
-  const decoded = Schema.decodeUnknownResult(lane.event, {
+  const decoded = Schema.decodeResult(lane.event, {
     onExcessProperty: "error",
     errors: "first",
   })(verified.envelope.body)
@@ -233,6 +234,55 @@ export const admitFact = Effect.fn("LaneReads.admit")(function* <
 })
 
 const messageIdOf = (message: JsMsg): string => message.headers?.get("Nats-Msg-Id") ?? ""
+
+/**
+ * The reader fell behind the window its live read stages.
+ *
+ * An absence and not a structural refusal, and the sort is the honest one: the
+ * facts are all still on the lane, and re-reading the bounded tail from the last
+ * position taken recovers every one of them. What is absent is the arrival on
+ * THIS stream, which is head-relative in exactly the way the sort names, and
+ * repealable by the read the repair points at.
+ */
+export const readerBehind = (
+  lane: DeclaredLane<unknown>,
+  part: number,
+  window: number,
+): Refusal =>
+  absenceRefusal({
+    kind: "lane-read-window-exceeded",
+    law:
+      "A live read stages at most its declared window of arrivals; a reader that falls further behind is served from the lane, never from a buffer grown to meet it.",
+    path: ["lane", lane.digest, "partition", String(part), "window"],
+    got: window,
+    expected: "a reader taking arrivals at least as fast as its partition delivers them",
+    next: [{
+      subject: "Lane.tail",
+      note:
+        "Read the bounded tail from the last position taken and follow again; the lane holds every fact this stream could not stage.",
+    }],
+  })
+
+/**
+ * Stages one arrival, or ends the stream saying the reader fell behind.
+ *
+ * The whole reason this is a named function rather than two lines inside a
+ * callback: a bounded queue's unsafe offer answers `false` when it is full and
+ * DROPS the message, so a live read that ignored the answer would lose
+ * arrivals silently — which is the one failure a stream carrying "each landing,
+ * once" cannot have. Failing the queue turns a drop into a taught refusal the
+ * reader receives, and the arm that exercises it fills a real queue rather than
+ * describing one.
+ */
+export const stageArrival = <A>(
+  queue: Queue.Enqueue<A, Refusal | Cause.Done>,
+  message: A,
+  behind: () => Refusal,
+): boolean => {
+  if (Queue.offerUnsafe(queue, message)) return true
+  Queue.failCauseUnsafe(queue, Cause.fail(behind()))
+  return false
+}
 
 /**
  * The ordered ephemeral consumer one read runs on.
@@ -275,6 +325,7 @@ const tailPartition = Effect.fn("LaneReads.tailPartition")(function* <
   const Partitions extends number,
 >(
   connection: NatsConnection,
+  manager: JetStreamManager,
   lane: DeclaredLane<Event, Partitions>,
   part: number,
   limit: number,
@@ -282,11 +333,7 @@ const tailPartition = Effect.fn("LaneReads.tailPartition")(function* <
   const stream = laneStreamName(lane, part)
   const subject = yield* evidenceSubject(lane.handle, part)
   const state = yield* Effect.tryPromise({
-    try: async () => {
-      const manager = await jetstreamManager(connection)
-      const info = await manager.streams.info(stream)
-      return info.state
-    },
+    try: async () => (await manager.streams.info(stream)).state,
     catch: (cause) => transportRefusal("lane.read.info", cause),
   })
   const span = readSpan(state.first_seq, state.last_seq, limit)
@@ -325,11 +372,13 @@ const tailPartition = Effect.fn("LaneReads.tailPartition")(function* <
  * One partition's live continuation, element by element as the substrate
  * delivers it.
  *
- * The consumer's own in-flight window is the flow control: the client asks for
- * at most that many messages ahead, so a reader that stops pulling stops the
- * request from being renewed rather than filling memory. Nothing is collected
- * here — every arrival is one element, and the first is available before the
- * second exists.
+ * Nothing is collected here and nothing is buffered per lane: every arrival is
+ * one element, and the first is available before the second exists. What is
+ * staged between the substrate and the reader is exactly the declared window —
+ * the consumer asks for at most that many messages ahead, and the stream holds
+ * at most that many. A reader slower than its partition therefore ENDS with a
+ * taught refusal rather than growing a buffer to meet it, which is the whole
+ * difference between a live read and an accumulation wearing one's name.
  */
 const followPartition = <Event, const Partitions extends number>(
   connection: NatsConnection,
@@ -350,7 +399,7 @@ const followPartition = <Event, const Partitions extends number>(
             consumer.consume({
               max_messages: window,
               callback: (message) => {
-                Queue.offerUnsafe(queue, message)
+                stageArrival(queue, message, () => readerBehind(lane, part, window))
               },
             }),
           catch: (cause) => transportRefusal("lane.read.consume", cause),
@@ -382,13 +431,26 @@ export const makeLaneReadService = Effect.fn("LaneReads.make")(function* (
     "lane.read.connection.acquire",
     transportRefusal,
   )
+  // Built once, at service build, because building one is itself a round trip:
+  // a manager per partition per read would put that trip on the latency of
+  // every answer this service gives.
+  const manager = yield* Effect.tryPromise({
+    try: () => jetstreamManager(connection),
+    catch: (cause) => transportRefusal("lane.read.manager", cause),
+  })
 
   const tail: LaneReadService["tail"] = Effect.fn("LaneReads.tail")(function* (lane, request) {
     const parts = yield* requestedPartitions(lane, request?.partition)
     const limit = admittedLimit(request?.limit)
+    // The partitions are read together rather than one after another: they are
+    // independent streams, so a lane of eight would otherwise cost eight round
+    // trips in series for an answer that is one read. Order is unaffected —
+    // the results come back in the order the partitions were asked for, and
+    // each partition's own span is ordered by the fetch that read it.
     const spans = yield* Effect.forEach(
       parts,
-      (part) => tailPartition(connection, lane, part, limit),
+      (part) => tailPartition(connection, manager, lane, part, limit),
+      { concurrency: "unbounded" },
     )
     return spans.flat()
   })

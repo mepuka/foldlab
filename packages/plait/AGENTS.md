@@ -470,6 +470,52 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   the two registers never dress as each other. The wire-name mapping is
   hand-carried reviewed data under a Law 1 waiver naming the corpus's
   provably-absent wire-name group.
+- **The read face serves the planes and carries no write, and both halves are
+  read off a type.** `surface/api.ts` answers the RFC 8785 canonical bytes of
+  the plane read each endpoint projects — `v` and `kind` naming the value, the
+  coordinates it was taken at, and exactly ONE member holding the plane read
+  verbatim — so a digest over a served payload is the digest of the value and a
+  flattened or renamed projection reddens the wall. Every collection is
+  bounded: a tail takes a limit with a default and a ceiling and REPORTS the
+  admitted bound in its answer, and the incarnation walk refuses past its bound
+  rather than truncating, because a truncated chain read as a whole one
+  understates a store's history. The live read is a Server-Sent Events response
+  over the estate's own change stream — one frame per landed fact, written as
+  the fact arrives, no stage holding more than one element. The write half is
+  absent by CONSTRUCTION: the layer requires the three read services and
+  nothing else, so a handler that wanted to land a fact would have to grow a
+  requirement a reviewer reads in the signature; a write verb answers the
+  taught refusal and the methods this face carries. A refusal's status is a
+  fold over the two sorts — structural 422, absence 503, and 503 rather than
+  404 because an absence observation makes no claim that a thing does not
+  exist — while a request the route table does not carry reaches no plane read
+  and says instead why it was not carried. There is no authentication of any
+  kind, and the listener binds loopback by default for that reason. Wall:
+  `test/Api.test.ts` — served-equals-derived per endpoint against the plane
+  read taken directly, the canonical round trip over every payload including
+  both refusal registers, the bound, the stream replay in order and once each,
+  the first frame observed before the producing sequence completes, the
+  write-verb refusal, and root law 10 over the bytes this face actually serves
+  with planted artifacts that redden it. The adapters underneath are walled
+  separately, over a real server, in `test/ApiWall.test.ts`: a fixture cannot
+  say whether a read speaks the substrate, and a substrate cannot say whether a
+  payload is the plane read's own bytes.
+- **A lane is emitted through one service and read through another.** `Lanes`
+  emits; `LaneReads` takes a bounded ack-none tail and its live continuation,
+  on its own connection, so a reader never holds the publisher's
+  `flb.fab.ev.{lane}.*` grant. Both read faces run on ephemeral ORDERED
+  consumers: a read acknowledges nothing, checkpoints nothing, and creates
+  nothing durable, so it may stand beside a deployed fold without advancing the
+  frontier that fold owns — a read that acquired a durable consumer, an anchor,
+  or an acknowledgement discipline would be the pump built beside itself. The
+  bound is per PARTITION, because a partition is the unit that has an order:
+  two partitions' positions come from two sequences and are not comparable, so
+  a tail groups by partition and never interleaves, and a lane-wide count would
+  have to divide across sequences nothing can compare. Verify-on-read is the
+  FETCHED bytes': every row is admitted by the envelope digest before anything
+  decodes it. That layer's writ is the LEAST writ today — the evidence-reader
+  carrier role is owed its own ruled ticket, and until it lands a credentialed
+  deployment grants this layer nothing, which fails closed.
 - **`Session.changes` is the unfold of `read`.** Every element is one
   anchored consumer step, the writ is judged on every element by
   construction, and pacing, batching, and debounce are the consumer's —

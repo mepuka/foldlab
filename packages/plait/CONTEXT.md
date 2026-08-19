@@ -306,3 +306,30 @@ A read over the causal chain of facts reachable by digest from a root. The
 connection reading is the first named one: it consumes facts, never spans, log
 lines, or console output, which are evidence machinery and are never read back
 into meaning.
+
+**Landed fact**:
+One fact as its partition carries it: which partition, its dense position in
+that partition's own stream, the identity of the envelope that carried it, the
+holder the envelope attributes it to, and the fact itself. The partition and the
+position are ONE coordinate — a position alone names nothing, because two
+partitions' positions come from two sequences and are not comparable. There is
+no time on the value: the substrate stamps one on every stored message, and
+reading it back as meaning would put a clock where the estate has positions.
+
+**Bounded tail**:
+The last N positions of each of a lane's partitions, oldest first within each
+partition and never interleaved across them. N has a default and a ceiling, so
+"read the lane" is a bounded request by construction; the admitted bound travels
+with the answer, which is what lets a reader tell a short answer from a clipped
+one. A tail acknowledges nothing and checkpoints nothing, so it may be taken
+beside a deployed fold without moving the frontier that fold owns.
+
+**Read face**:
+The planes served over HTTP: bounded reads, one live change stream, and no
+write. Every answer is the canonical bytes of one wire value — `v` and `kind`
+naming it, the coordinates it was taken at, and exactly one member carrying the
+plane read verbatim — so a digest over a served payload is the digest of the
+value. A refusal's status is a fold over the two sorts; a request the route
+table does not carry reaches no plane read and says instead why it was not
+carried. The face authenticates nobody: attribution is never authority here
+either, and whoever reaches the listener takes every read on it.

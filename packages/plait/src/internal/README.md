@@ -61,6 +61,19 @@ mutant traced into
 readings arm of `../../test/StatusPumpWall.test.ts` folding a sequence a real
 substrate produced.
 
+`lanereads.ts` is the read side of a declared lane: a bounded tail of its
+partitions' facts, and the live continuation of that tail. Both run on
+EPHEMERAL ORDERED consumers — ack-none, expiring on their own inactivity — so a
+read acknowledges nothing, checkpoints nothing, and creates nothing durable,
+which is what lets one stand beside the fold pump next door without advancing
+the frontier that pump owns. The span is computed from the stream's own
+reported edges and then clipped to a limit with a default and a ceiling, so
+there is no unbounded read on this seam to reach for, and it is clipped PER
+PARTITION because a partition is the unit that has an order. Every row is
+admitted by the envelope digest over the fetched octets before anything decodes
+it, and nothing reads the substrate's stored timestamp: a row carries its
+position, its identity, its holder, and its fact.
+
 `incarnations.ts` is the REFERENCE side of the substrate's own lifecycle
 vocabulary — the store, the incarnation, the round a start competes at, and the
 facts a run leaves: established, lame-duck, retired, and the teardown
@@ -70,7 +83,15 @@ boundary is what makes the transcription honest; this side is the reference, so
 a divergence is a defect there. Two of its shapes are load-bearing: the
 retirement causes are a two-row roster with no row a crash could enter under, so
 a forged retirement and a forged disposition are both unsayable, and the chain
-walk refuses a step the history does not carry rather than ending early.
+walk refuses a step the history does not carry rather than ending early. There
+is ONE chain walk, over the predecessor relation, because the predecessor is the
+only field a chain step reads: a caller holding whole incarnation values
+projects onto that relation, and the chain read discovers the relation at the
+fence — reading the register forward from a store's first round, bounded, and
+refusing past the bound rather than truncating. What that read answers is the
+succession of NAMES the fence decided; the values themselves carry an options
+digest no register outcome holds, so a history of values cannot be rebuilt from
+the register and this side does not pretend to.
 
 Wall: two of them, and which one runs a suite is derived rather than chosen —
 `../../scripts/run-test-group.ts` puts a file in the wall group exactly when it

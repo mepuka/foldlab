@@ -24,7 +24,11 @@ engine, the emit service, or the admission door. Wall:
 round trip over every payload including both refusal registers, the bound, the
 stream replay, the first frame observed before the producing sequence
 completes, the write-verb refusal, and root law 10 over the bytes this face
-actually serves with a planted artifact that reddens it.
+actually serves with a planted artifact that reddens it. Beside it,
+`../../test/ApiWall.test.ts` holds the other half over a real server: facts
+landed through the emit path, read back through the bounded tail against their
+emit acknowledgement, followed live so a landing after the read started reaches
+the reader, and served through this face over the same substrate.
 
 `cli.ts` is declared on the catalog-pinned Effect release's own CLI,
 `effect/unstable/cli` (DEV-786). It parses nothing: the command tree is data —

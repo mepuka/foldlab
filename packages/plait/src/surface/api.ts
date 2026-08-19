@@ -47,6 +47,13 @@
  * a chain runs past it. There is no spelling on this face that reads a whole
  * lane.
  *
+ * One read is deliberately NOT paged, and the reason is identity rather than
+ * size: a cell's observation set is one lattice value whose digest is taken
+ * over exactly that set, so a page of it is a different set with a different
+ * identity — an answer that would be wrong rather than short. What bounds it is
+ * the carrier's own payload budget, which is where a value's size is already
+ * ruled.
+ *
  * ## The live read is transport, not accumulation
  *
  * The change stream is a Server-Sent Events response over the estate's own
@@ -204,7 +211,8 @@ const READS: ReadonlyArray<ReadDeclaration> = [
   {
     path: "/cells/:cell",
     answers: "one lattice cell's canonical observation set and the identity of that set",
-    bound: "one observation; the answer is a lower bound of the truth, never an oracle",
+    bound:
+      "one whole value, never a page: a truncated observation set is a different set with a different identity, and the carrier's own payload budget is what bounds its size",
   },
   {
     path: "/incarnations/:store",
@@ -418,6 +426,15 @@ const serving = <Event, const Partitions extends number>(
   tail: (options) => Effect.flatMap(LaneReads, (reads) => reads.tail(lane, options)),
 })
 
+/**
+ * One landed fact as a wire value.
+ *
+ * The projection is TOTAL over the value's own fields and drops none of them.
+ * It is written out rather than cast because the plane value is a typed
+ * interface and this is the seam where it becomes a wire value; the totality is
+ * held mechanically rather than by care, by an arm that compares the served
+ * row's key set against the plane value's own.
+ */
 const factRow = (fact: LandedFact<unknown>): WireValue => ({
   partition: fact.partition,
   position: fact.position,

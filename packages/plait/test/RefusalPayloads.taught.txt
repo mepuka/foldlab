@@ -195,6 +195,12 @@ packages/plait/src/internal/lanereads.ts#2
   expected <absent>
   next[0].subject "Lane.emit"
   next[0].note "Emit through the declared lane so identity, key, subject, and partition are derived together."
+packages/plait/src/internal/lanereads.ts#3
+  kind "lane-read-window-exceeded"
+  law "A live read stages at most its declared window of arrivals; a reader that falls further behind is served from the lane, never from a buffer grown to meet it."
+  expected "a reader taking arrivals at least as fast as its partition delivers them"
+  next[0].subject "Lane.tail"
+  next[0].note "Read the bounded tail from the last position taken and follow again; the lane holds every fact this stream could not stage."
 packages/plait/src/internal/lanes.ts#0
   kind "lane-transport-unavailable"
   law "Transport absence may be retried; declared lane shape violations may not."

@@ -9231,11 +9231,21 @@ by default and says so. No resume on the change stream, no Last-Event-Id, and no
 keepalive frame: the live read is a tail, and a reader that needs history reads
 the tail endpoint. No federation, no UI, and no write of any kind.
 
-The walls are the FACE's, and their oracle is a fixture rather than a substrate:
-what they hold is that a payload is the plane read's own canonical bytes, that a
-collection is bounded, that the live read is transport rather than
-accumulation, that a write verb refuses, and that no served string carries a
-tracking artifact. What is NOT walled here is that the new read adapters speak
-JetStream correctly — the ordered-consumer tail and follow have no live-substrate
-row in this slice, and their behaviour against a real server is claimed by
-nobody until one exists.
+The walls come in two halves and the split is deliberate. The FACE's laws are
+held over fixtures, because a fixture is the only oracle that lets a wall
+compare a served payload against the plane read it projects: that the bytes are
+the value's own, that a collection is bounded, that the live read is transport
+rather than accumulation, that a write verb refuses, and that no served string
+carries a tracking artifact. The ADAPTERS' behaviour is held over a real server
+instead, because a fixture answers whatever it was given: facts are landed
+through the emit path, read back through the bounded tail with their emit
+acknowledgement as the oracle, followed live so that a landing after the read
+started reaches the reader, and then served through the face over the same
+server. A read that agreed with the acknowledgement but disagreed with the
+stream fails one arm and passes the other, which is what makes the pair evidence
+rather than a round trip through one implementation.
+
+What is still NOT claimed: no performance number, no concurrency envelope, and
+no behaviour under a substrate that is reconnecting or draining underneath a
+live read — the follow arm measures arrival, not resumption, and the ordered
+consumer's own recreate-on-gap is the pinned client's and is not walled here.

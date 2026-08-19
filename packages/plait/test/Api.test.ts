@@ -3,7 +3,8 @@ import { resolve } from "node:path"
 
 import { describe, expect, test } from "bun:test"
 
-import { Deferred, Effect, Layer, Stream } from "effect"
+import type { Cause } from "effect"
+import { Deferred, Effect, Layer, Queue, Result, Stream } from "effect"
 import { HttpRouter } from "effect/unstable/http"
 
 import { decodeJson, encodeJsonValue } from "@foldlab/core/jcs"
@@ -38,7 +39,7 @@ import {
   incarnationName,
   roundKey,
 } from "../src/internal/incarnations.js"
-import { admittedLimit, readSpan } from "../src/internal/lanereads.js"
+import { admittedLimit, readSpan, readerBehind, stageArrival } from "../src/internal/lanereads.js"
 import type { SessionFact } from "../src/internal/sessionfacts.js"
 import { mintSession, observationFact, transitionFact } from "../src/internal/sessionfacts.js"
 import { sessionLane } from "../src/internal/sessionlanes.js"
@@ -479,6 +480,42 @@ describe("served equals derived: the payload is the plane read's own bytes", () 
     }
   })
 
+  test("the projection is total over each plane value's own fields", async () => {
+    const fixture = await buildFixture()
+    const served = face(fixture)
+    try {
+      // Nothing is re-shaped on the way out, and that is held mechanically: a
+      // field added to a plane value and not to its projection would leave the
+      // wire silently narrower, and the key sets would stop agreeing here.
+      const facts = valueOf(await bytesOf(
+        await served.get(`/lanes/${fixture.sessionHandle}`),
+      )).facts as ReadonlyArray<Record<string, WireValue>>
+      expect(Object.keys(facts[0]!).sort())
+        .toEqual(Object.keys(fixture.sessionFacts[0]!).sort())
+
+      const connections = valueOf(await bytesOf(await served.get("/sessions")))
+        .connections as ReadonlyArray<Record<string, WireValue>>
+      const reading = (await run(connectionsOf(fixture.sessionFacts)))[0]!
+      expect(Object.keys(connections[0]!).sort()).toEqual(Object.keys(reading).sort())
+
+      const state = valueOf(await bytesOf(await served.get(`/cells/${CELL_NAME}`)))
+        .state as Record<string, WireValue>
+      const cell = await run(stateOf(fixture.observations))
+      expect(Object.keys(state).sort()).toEqual(Object.keys(cell).sort())
+      expect(Object.keys((state.observations as ReadonlyArray<Record<string, WireValue>>)[0]!).sort())
+        .toEqual(Object.keys(cell.observations[0]!).sort())
+
+      const observed = valueOf(await bytesOf(await served.get(`/registers/${REGISTER_KEY}`)))
+        .observed as Record<string, WireValue>
+      // The register's projection is the FOLD's, so its key set is the arm's
+      // and not the observed struct's: a landed state names its token, its
+      // holder and its outcome, and the fold's own name for which arm answered.
+      expect(Object.keys(observed).sort()).toEqual(["holder", "outcome", "state", "token"])
+    } finally {
+      await served.dispose()
+    }
+  })
+
   test("every served payload is its own canonical form: decoding and re-encoding returns the bytes", async () => {
     const fixture = await buildFixture()
     const served = face(fixture)
@@ -555,6 +592,34 @@ describe("every collection is bounded", () => {
     } finally {
       await served.dispose()
     }
+  })
+
+  test("a live read that cannot stage an arrival teaches instead of dropping it", async () => {
+    // The measurement is over a real bounded queue rather than a description of
+    // one: the unsafe offer a live read stages with answers `false` when the
+    // queue is full and DROPS the message, so this arm fills a queue of one and
+    // watches what the second arrival does. A stream carrying "each landing,
+    // once" cannot lose one quietly, so the second arrival must end the stream
+    // with the refusal rather than vanish.
+    const lane = await run(sessionLane())
+    const staged = await Effect.runPromise(Effect.gen(function* () {
+      const queue = yield* Queue.make<string, Refusal | Cause.Done>({ capacity: 1 })
+      const first = stageArrival(queue, "one", () => readerBehind(lane, 0, 1))
+      const second = stageArrival(queue, "two", () => readerBehind(lane, 0, 1))
+      const drained = yield* Effect.result(Stream.runCollect(Stream.fromQueue(queue)))
+      return { first, second, drained }
+    }))
+    expect({ first: staged.first, second: staged.second })
+      .toEqual({ first: true, second: false })
+    expect(Result.isFailure(staged.drained)).toBe(true)
+    if (!Result.isFailure(staged.drained)) return
+    const refusal = staged.drained.failure
+    // Absence, because the facts are all still on the lane: the repair is the
+    // bounded tail, and the sort is what tells a reader the read may be taken
+    // again.
+    expect({ sort: refusal.sort, kind: refusal.kind })
+      .toEqual({ sort: "absence", kind: "lane-read-window-exceeded" })
+    expect(refusal.next[0]!.subject).toBe("Lane.tail")
   })
 
   test("a malformed bound refuses structurally rather than being repaired into a default", async () => {
