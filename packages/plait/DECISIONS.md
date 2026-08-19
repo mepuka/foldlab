@@ -2894,3 +2894,198 @@ ship red on a law nobody has a repair for); keep the roster in a comment
 (a comment is not an artifact a check can read). Why: the reviewed diff is what
 "not encouraged" means when a machine has to enforce it. **Load-bearing? yes** —
 without the pin the deepest plane's exception is invisible the moment it grows.
+## Task DEV-763/796 stage 4 — the one-door containment wall
+
+### T0. The shared candidate form is read out of the door's bytes, and its ancestry is checked first
+
+Decided: `check:kernel-door` reads the door module's *source bytes* through the
+TypeScript AST for the form it claims — which generated symbol each of the
+candidate, intrinsic-act, and admission-context bindings names, and which
+`Kernel*` type names it exports — and requires every one of those symbols to be
+a name the generated schema module's own bytes emit. That clause runs before
+any other module is swept. Alternatives: import `KernelDoor` and read the
+schemas off the values (the generated value would only be asked to agree with
+itself, verified-codegen's self-comparison failure); hard-code the three
+generated symbol names in the checker (a hand-maintained twin of the thing the
+wall exists to keep generated); sweep the hosts and never check the door (a
+sweep held against a drifted door guards nothing — a door whose `Candidate`
+stopped naming a generated symbol would leave every host lawfully consuming a
+hand-written form). Why: the ratified stage-4 target is "consume the shared
+generated-core candidate form through KernelDoor", so the wall has to establish
+that the door's form IS the generated one before it can hold anything to it.
+**Load-bearing? yes** — the `door-form-drift` control arm plants exactly this
+and is refused before the module clauses are reached.
+
+### T1. The sweep quantifies over every `admit` route, exported or not, and the exception rides a reviewed pin
+
+Decided: the route clause reads every binding, class member, object property,
+property signature, method, and function under `src/` named `admit` — not only
+the exported ones — and requires each to BE the door's imported function: a
+bare identifier bound by `import { admit } from ".../KernelDoor.js"`, or
+`<namespace>.admit`, or a signature typed `typeof <that binding>`. A module
+that names a route the door does not own is written into
+`test/fixtures/kernel-door-routes.pin.txt` by hand with the ticket that owns
+its convergence, and a pin row that stops naming a real route reds the wall.
+Measured: the tree carries exactly one such route, `src/planes/Address.ts`'s
+petname name law, which accepts no candidate, constructs no verdict, and mints
+`invalid-petname` — a spelling that module's own header already stages as
+DEV-796 debt beside `Binding` and `Directory`. Alternatives: quantify over
+exported routes only (a private validator called by an exported function is the
+exact shape standing law 2 names, and it would pass); refuse `Address.ts`
+outright and ship the wall red (an overclaim — law 2 is about kernel candidate
+admission, and this function judges a name against a regular expression);
+special-case `Address.ts` inside the checker (a waiver nobody reviews, buried
+in mechanics). Why: the pin is nothing's input, so an exception costs a diff a
+reviewer reads, and the liveness clause stops the roster outliving what it
+waives. **Load-bearing? yes** — narrowing the quantifier to exported bindings
+was measured to admit the wrapper the control plants.
+
+### T2. Four spellings of a second door, and two exemptions stated rather than assumed
+
+Decided: the module sweep refuses four shapes — an admission verdict
+constructed or declared outside the door (an object property `verdict` whose
+initializer is a string literal, or a type member `verdict` whose type is a
+string literal); an `admit` route that is not the door's own function; a
+hand-written declaration of a name in the door's `Kernel*` form vocabulary; and
+a use of one of those names that no import from the door or the generated
+schema module bound. Two exemptions: the `*.generated.ts` projections, whose
+bytes are the model's and carry the corpus's own admission examples, and whose
+regeneration is byte-gated by `check:kernel-schemas` and `check:kernel-tables`;
+and `test/` with `negative-controls/`, because a control that plants a second
+door has to be able to spell one. Alternatives: refuse any `verdict` field
+whatever its initializer (`KernelCorpusSchemas.ts` describes the field with
+`Schema.Literal("refused")` — a grammar that describes a verdict is not a door
+that mints one, and refusing it would red the wall on the corpus schema);
+structurally compare each declared type against the generated candidate union
+(fragile, and it answers a question the type-universe walk already owns);
+sweep `test/` too (it would refuse `KernelDoor.routes.test.ts`'s own identity
+control). Why: the four shapes are the four ways a second door can be written
+down in source, and each is refused by its own clause so a red wall names which
+one moved. **Load-bearing? yes** — each clause has a planted arm, and dropping
+the route clause was measured to leave the other six green.
+
+### T3. The control plants one spelling per clause, at synthetic module paths
+
+Decided: `negative-controls/KernelDoor.second-door.mutant.ts` builds seven
+evidence sets from the shipped bytes — the real generated roster, the real door
+form, real swept modules — and plants exactly one thing in each, then runs the
+production readers and the production law over them. The planted modules carry
+paths this file owns rather than the package's, and each avoids every clause
+but its own, since the clauses are ordered and an arm that tripped two would
+answer with whichever came first. The trace is recorded by executing the mutant
+(`bun run generate:kernel-door-control`), never transcribed. Alternatives:
+splice the plant into a shipped module's real bytes (the committed trace would
+then carry that module's line numbers and "move" on every unrelated edit above
+the site — a control reporting a moved law when a comment was added); plant one
+mutant that trips several clauses (it answers with the first clause and can no
+longer name the law it drops — the shape DEV-796's control was refused for);
+assert the refusal strings in a test (a deleted assertion is invisible). Why: a
+negative control asks one question, and seven single-clause arms answer seven.
+**Load-bearing? yes** — dropping the route clause was measured to make the
+control report `the wrapper-route plant was accepted` rather than a trace diff.
+
+### T4. The wall states what can be SPELLED, and says what it does not cover
+
+Decided: this wall reads source bytes, so its claim is about `src/` as written
+and never about a running program. Runtime identity of the three host routes
+stays `test/KernelDoor.routes.test.ts`, agreement with the model's verdicts
+stays `test/KernelConformance.test.ts`, and a route reached only through an
+object spread is invisible to the sweep and is the runtime test's to hold.
+Alternatives: import the modules and compare function identity in the check
+(that is the routes test, already shipped, and a second copy would be the twin
+this estate refuses); claim the wall proves no second door exists anywhere
+(false — a spread, a dynamic import, or a `test/` fixture is outside it). Why:
+a claim is sized to its evidence, and the bound belongs in the module header
+where the next reader meets it rather than in a ticket nobody re-reads.
+**Load-bearing? yes** — the pair of walls is what makes standing law 2's wall
+mechanical; either alone leaves a hole the other closes.
+
+### T5. The guard's domain is the runtime's, because the corpus deliberately has none
+
+Decided (ruling A1, 2026-08-19, board DEV-772): `kernel/KernelIdentity.ts`
+holds `kernelIdentity`, and its width-and-alphabet guard is `truth/Digest.ts`'s
+own schema run through `Refusal.decodeRefusing` — not a `/^[0-9a-f]{64}$/`
+restated in the kernel plane. The ruling asked for the width to be read from
+the generated schema rather than assumed. **Measured: there is none to read.**
+The generated `KernelDigest` is `Schema.Struct({ id: KernelNat })`, and its own
+emitted description says a real digest "is a hash over one canonical byte form"
+that "stays in the trusted base" — the model models identity labels and says
+nothing about hexadecimal, deliberately. So the only statement of the runtime
+digest domain in this package is `truth/Digest.ts:14-15`, and the guard
+inherits it rather than twinning it. Alternatives: hard-code 64 lowercase hex
+in the kernel plane (a second statement of a domain that already has one, and
+the exact hand-written twin Law 1 refuses — it would also silently disagree the
+day the domain moves); derive a width from `KernelNat` (the model's naturals
+are unbounded, so there is no width there to derive); assume the ruling's "64"
+literally and stop reading (it would have been right today and unfounded
+tomorrow). Why: the ruling's intent is that the guard not invent its domain,
+and the honest way to satisfy that here is to inherit the one domain statement
+that exists and to write down that the generated one does not. **Load-bearing?
+yes** — this is the difference between a guard that tracks the digest domain
+and one that agrees with it by coincidence.
+
+### T6. The guard reuses `malformed-value` and mints no vocabulary at all
+
+Decided: the guard refuses through the existing schema-issue bridge, so its
+refusal is `malformed-value` — kind, law, and repair already taught and already
+pinned in `test/RefusalPayloads.taught.txt`. Nothing is added to
+`scripts/kernel-runtime-refusals.ts`, nothing is regenerated, and no model
+refusal reason is minted. The ruling licensed the staged runtime-refusal
+mechanism as a fallback "if no emitted reason fits"; measured, the fallback is
+not needed, because the bridge that mechanism feeds already carries this exact
+meaning: `decodeRefusing(Digest)("")` refuses `malformed-value` teaching "A
+decoded value satisfies its declared schema", which is precisely the law a
+malformed content address fails. Alternatives: mint `malformed-digest` as a new
+DEV-804 staged row (grows the roster, the taught-payload pin, and both
+generated files, to say what an existing spelling already says — and every
+runtime spelling added is persisted wire vocabulary that DEV-804 must later
+converge); reach for a model reason (forbidden by the ruling, and none of the
+sixteen means "this text is not an address"). Why: the cheapest lawful refusal
+is an existing one that is already true, and the ruling's constraint was about
+not minting MODEL vocabulary — honoring it by minting no vocabulary at all
+honors it strictly. **Load-bearing? yes** — a reviewer overruling this pays one
+line in the seam plus a manifest row, and the wall does not change either way.
+*Note for the coordinator: this is the one place I read the ruling's fallback
+as permission rather than instruction.*
+
+### T7. Ruling A1's clauses are four, and the second site is pinned rather than refused
+
+Decided: the wall gains four clauses — the seam's conversions all sit behind the
+domain guard; the seam contains no `throw`; no unpinned module under `src/`
+reads digest bytes as an unbounded natural; and the identity pin names only live
+sites. An identity translation is defined as a `BigInt(...)` call over a
+hex-prefixed argument. Measured, the tree already carries a SECOND such site:
+`Lane.partition` computes `Number(BigInt(\`0x${keyDigest}\`) % BigInt(lane.partitions))`.
+It is not refused, and it is not silently exempted either — it gets a pin row
+saying what it is. It reduces an ALREADY-BRANDED `Digest` to a shard index; the
+result is a routing coordinate that reaches no candidate and names no
+declaration, and the package's own law already governs it ("subjects route and
+envelopes identify"). Alternatives: refuse it and ship the wall red (an
+overclaim — the ruling refuses a second translation into IDENTITY LABELS, and a
+partition index is not one); exempt it inside the checker (a waiver nobody
+reviews, buried in mechanics — the shape T1 already rejected for `Address.ts`);
+widen the rule to `Number.parseInt(_, 16)` as well (it would catch the JSON
+`\uXXXX` unescape in `truth/Canonical.ts`, which cannot carry a 256-bit address
+because it yields a `number` — the bound is stated in the pin instead of
+discovered as noise). Why: a wall that cannot see a site cannot be trusted about
+it, and the pin is where "seen and lawful" is written down separately from
+"seen and refused". **Load-bearing? yes** — the pin's liveness clause means the
+day `Lane.partition` stops converting, the row reds rather than rotting.
+
+### T8. The seam is a subpath export and stays out of the barrel
+
+Decided: `package.json` gains `"./KernelIdentity"` so the module's own example
+is truthful, and `src/index.ts` is NOT touched. The plane-reorg spec's open
+placement 4 rules that "Exporting Kernel* namespaces from index.ts: a real
+surface decision with T7 consequences; stage 3+, its own ticket, not assumed",
+and this ticket has no licence to make it. Measured: the public type quantifier
+is the emitted barrel, so the subpath export moves neither walk — 132 public
+types and 79 emitted signatures before and after. Alternatives: add
+`export * as KernelIdentity` to the barrel (assumes the placement decision the
+spec reserves, and grows the DEV-795 debt ledger with rows nobody ratified);
+ship no export at all (the module docstring's `@example` would name an import
+path that does not resolve, which is a doc that lies). Why: hosts inside the
+package reach the seam directly, which is what "hosts become judgable" needs,
+and the barrel decision stays where the spec put it. **Load-bearing? no** — it
+is reversible in one line, and it is recorded so the reviewer sees it was a
+choice.
