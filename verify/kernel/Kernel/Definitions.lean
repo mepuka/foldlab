@@ -940,6 +940,194 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
       (writ : Nat) :
       Unlawful door (.updateInPlace kind target payload writ)
 
+/-! ## The fault listing, declared arbitration, and the repair chain
+
+A door pass utters ONE refusal. The listing below names every fault
+that same pass can see, in the order it sees them, so the door's answer
+is the listing's head and the rest is the support standing beside it —
+the ambiguity-listing shape, applied to refusals.
+
+The listing is a DECOMPOSITION of one door pass, never a second
+opinion. Each shape row is carried under exactly the guard the door
+checks it behind: the off-writ row appears only where the reference
+sweep came back clean, which is the same premise the unlawful-shapes
+predicate carries. Atom faults are listed in payload order, because the
+sweep's stop at the first fault is an efficiency of the fold and not a
+claim that the later atoms are lawful.
+
+The declared priority is a total order on reasons — a cataloged value,
+not a control-flow accident — and arbitration returns a listing's
+priority-least member. The repair chain iterates the machine-applicable
+rewrites at a door until none is offered. -/
+
+/-- Every fault the reference sweep can name in one payload, in payload
+    order. The sweep returns this listing's head. -/
+def argFaults (door : Door) : List RawArg -> List RefusalReason
+  | [] => []
+  | arg :: rest =>
+      match argRefusal door arg with
+      | some reason => reason :: argFaults door rest
+      | none => argFaults door rest
+
+/-- The fault listing of a candidate at a door: the door's own checks,
+    arm for arm, with every atom fault of the payload it sweeps kept
+    rather than dropped at the first. An empty listing is an
+    admission. -/
+def faults (door : Door) : CandidateAct -> List RefusalReason
+  | .declare _ payload writ =>
+      match argSweep door payload with
+      | some _ => argFaults door payload
+      | none =>
+          if insideUniverse door payload then
+            if refMember DeclKind.policy writ door.catalog then []
+            else [.forwardReference]
+          else [.offWritReferent]
+  | .resolveDigest kind target anchor =>
+      match anchor with
+      | some _ => [.anchoredResolve]
+      | none =>
+          if refMember kind target door.catalog then []
+          else [.forwardReference]
+  | .trustBytes _ _ _ => [.unverifiedRead]
+  | .emit lane body =>
+      match argSweep door body with
+      | some _ => argFaults door body
+      | none =>
+          if refMember DeclKind.lane lane door.catalog then []
+          else [.forwardReference]
+  | .join cell contribution strategy =>
+      match strategy with
+      | .lastWriterWins _ => .lastWriterWins :: argFaults door contribution
+      | .declaredAlgebra algebra =>
+          match argSweep door contribution with
+          | some _ => argFaults door contribution
+          | none =>
+              if refMember DeclKind.resource cell door.catalog then
+                if refMember DeclKind.algebra algebra door.catalog then []
+                else [.forwardReference]
+              else [.forwardReference]
+  | .readLatest _ => [.ambientQueryInput]
+  | .fold declared anchor query =>
+      match anchor with
+      | none => .ambientQueryInput :: argFaults door query
+      | some anchor =>
+          if anchor.foldId = declared then
+            match argSweep door query with
+            | some _ => argFaults door query
+            | none =>
+                if refMember DeclKind.index declared door.catalog then []
+                else [.forwardReference]
+          else .crossSortIdentifier :: argFaults door query
+  | .decide register token outcome =>
+      match token with
+      | none => .unfencedDecide :: argFaults door outcome
+      | some claim =>
+          if claim.register = register then
+            match argSweep door outcome with
+            | some _ => argFaults door outcome
+            | none =>
+                if refMember DeclKind.program register door.catalog then []
+                else [.forwardReference]
+          else .crossSortIdentifier :: argFaults door outcome
+  | .trigger predicate declaration =>
+      match predicateRefusal predicate with
+      | some reason => [reason]
+      | none =>
+          match translatePredicate predicate with
+          | some _ =>
+              if refMember DeclKind.program declaration door.catalog then []
+              else [.forwardReference]
+          | none => [.absenceTrigger]
+  | .spawn parent request =>
+      if refMember DeclKind.policy parent door.catalog then
+        if refMember DeclKind.policy request door.catalog then []
+        else [.forwardReference]
+      else [.forwardReference]
+  | .updateInPlace _ _ payload _ => .pastMutation :: argFaults door payload
+
+/-- The reason a verdict surfaces, if it surfaces one. -/
+def admitReason : AdmitResult -> Option RefusalReason
+  | .admitted _ => none
+  | .refused refusal => some refusal.reason
+
+/-- The fault seam's join: the union of two listings. Order and
+    multiplicity carry no meaning HERE, where a listing is read as
+    support — which is exactly what the door seam cannot say about the
+    same list. -/
+def Fault.join (left right : List RefusalReason) : List RefusalReason :=
+  left ++ right
+
+/-- Extensional equality of fault listings: the same reasons, whatever
+    the order or the repetition. This is the finite-set reading. -/
+def Fault.Equiv (left right : List RefusalReason) : Prop :=
+  forall reason, reason ∈ left ↔ reason ∈ right
+
+/-- The declared refusal priority: a total order on reasons, cataloged
+    in the language declaration rather than read off the door's control
+    flow. The four machine-applicable rows come first — an agent clears
+    them with no information the candidate does not already carry — then
+    the remaining candidate-intrinsic rows, and last the two
+    door-relative rows, which growth alone repairs. -/
+def RefusalReason.priority : RefusalReason -> Nat
+  | .anchoredResolve => 0
+  | .unverifiedRead => 1
+  | .pastMutation => 2
+  | .lastWriterWins => 3
+  | .unfencedDecide => 4
+  | .crossSortIdentifier => 5
+  | .absenceTrigger => 6
+  | .absenceClaim => 7
+  | .ambientQueryInput => 8
+  | .clockRead => 9
+  | .secretCarrier => 10
+  | .mintedIdentifier => 11
+  | .closureIntrospection => 12
+  | .unfilledHole => 13
+  | .offWritReferent => 14
+  | .forwardReference => 15
+
+/-- Arbitration by the declared order: the priority-least member of a
+    fault listing, and nothing at all for an empty listing. -/
+def arbitrate : List RefusalReason -> Option RefusalReason
+  | [] => none
+  | reason :: rest =>
+      match arbitrate rest with
+      | none => some reason
+      | some best =>
+          if best.priority < reason.priority then some best else some reason
+
+/-- A listing that already leads with its priority-least fault. This is
+    the premise under which the door's positional answer and the
+    declared arbitration coincide, and it is not vacuous in either
+    direction. -/
+def PriorityLeastFirst (listing : List RefusalReason) : Prop :=
+  forall head, listing.head? = some head ->
+    forall other, other ∈ listing -> head.priority ≤ other.priority
+
+/-- One machine-repair step at a door: offer the candidate, and where
+    the door refuses with a reason whose taught repair is a function of
+    the candidate alone, apply that rewrite. An admission and an
+    advisory refusal both end the step. -/
+def repairStep (door : Door) (candidate : CandidateAct) :
+    Option CandidateAct :=
+  match admit door candidate with
+  | .admitted _ => none
+  | .refused refusal => repair candidate refusal.reason
+
+/-- The repair chain under fuel: follow machine-applicable taught moves
+    at one door until the door offers none. -/
+def repairChain : Nat -> Door -> CandidateAct -> CandidateAct
+  | 0, _, candidate => candidate
+  | fuel + 1, door, candidate =>
+      match repairStep door candidate with
+      | none => candidate
+      | some repaired => repairChain fuel door repaired
+
+/-- A candidate no machine-applicable rewrite touches, whatever reason
+    is offered with it. -/
+def RepairInert (candidate : CandidateAct) : Prop :=
+  forall reason, repair candidate reason = none
+
 /-! ## Planted ground programs
 
 One committed unlawful program per closure row, each refused at the
@@ -1105,6 +1293,29 @@ def staleStageTrigger : CandidateAct :=
     sitting, and no vector here answers it. -/
 def catalogedTrigger : CandidateAct :=
   .trigger (.evidenceAppears 1 17) 3
+
+/-- Repair-growth row: an in-place update of a value the catalog holds
+    and the acting writ's universe does not pin. The past-mutation
+    rewrite is lawful and clears its reason, and the successor
+    declaration it builds carries a reference to the predecessor — a
+    reference the pinned universe does not hold. So the repaired
+    candidate's fault listing carries a door-relative reason the
+    original's listing never had, and the repair does not shrink the
+    fault set. -/
+def offWritMutation : CandidateAct :=
+  .updateInPlace .schema 9 [.literal 43] 4
+
+/-- Arbitration row, one order: two atom faults spelled into one
+    evidence body, the wall clock first. -/
+def clockThenSecretEmit : CandidateAct :=
+  .emit 1 [.clockNow, .secretBytes 31337]
+
+/-- Arbitration row, the other order: the SAME two atom faults, the
+    secret first. The fault support is identical to the row above and
+    the door's answer is not, which is what no total order on reasons
+    can reproduce. -/
+def secretThenClockEmit : CandidateAct :=
+  .emit 1 [.secretBytes 31337, .clockNow]
 
 /-- Aliasing pair, reference side. `canonicalBytes` weighs a digest
     reference `1 + kind.rank * 4096 + id`; at kind `lane` (rank 4) and

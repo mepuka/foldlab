@@ -1,0 +1,1 @@
+control=drop-fault-listing-order;rows=two-atom-faults-in-both-orders;left-faults=[clock-read,secret-carrier];right-faults=[secret-carrier,clock-read];left-door=clock-read;right-door=secret-carrier;left-arbitrated=clock-read;right-arbitrated=clock-read;verdict=refuted

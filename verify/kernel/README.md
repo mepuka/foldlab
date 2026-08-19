@@ -57,8 +57,52 @@ as the partial function `repair` and proves
 candidate cannot surface the reason it answers, while admission or a
 different remaining refusal is lawful. The last-writer control exercises
 that caveat directly by surfacing `clock-read` after clearing
-`last-writer-wins`. Fault-set construction, declared priority arbitration,
-repair composition, and termination remain outside this slice.
+`last-writer-wins`.
+
+The slice's four remainders now stand, two of them with their bounds
+named rather than silently widened.
+
+`faults` is the fault-set construction: the door's own checks, arm for
+arm, with every atom fault of the payload it sweeps kept rather than
+dropped at the first. `fault_listing_decomposes_door` proves the listing
+is a decomposition and not a second opinion — the door's verdict is the
+listing's head, and an empty listing is an admission — and
+`fault_listing_semilattice` gives the finite-set reading its
+associative, commutative, idempotent join.
+
+Arbitration is `arbitrate`, the priority-least member under a declared
+total order on reasons; the order leads with the four
+machine-applicable rows and ends with the two door-relative ones.
+`door_arbitrates_least_fault` proves it agrees with the door exactly
+where the listing already leads with its priority-least member, and the
+premise is where the honesty is: the unbounded claim is FALSE, because
+the door arbitrates by position inside a payload sweep. Two emit rows
+carrying the same two atom faults in opposite payload order earn
+different answers from the door and the same answer from arbitration,
+so no total order on reasons reproduces this door, whatever order is
+declared. Making the door arbitrate is a change to the door, not a
+theorem about this one.
+
+Composition and termination are the harness's licence. `repair`'s image
+lies outside its own domain, so a repaired candidate offers no second
+machine move (`repair_composes_to_fixpoint`), the chain is its own
+fixpoint from one step on, and every refusal standing at that fixpoint —
+at every door, not merely the one that refused — is advisory
+(`repair_chain_terminates`). An agent may follow machine-applicable
+taught moves to the fixpoint without review per step, and what remains
+there is exactly what needs information the candidate does not carry.
+
+Termination does NOT rest on the fault set shrinking, and the recorded
+argument that it does is refuted in place. The past-mutation rewrite
+builds a successor declaration pinning its predecessor; where the acting
+writ's universe does not hold that predecessor, the repaired candidate's
+listing carries a door-relative reason its input never had. The
+`drop-repair-fault-shrinkage` control commits that candidate, showing a
+listing that moves from `past-mutation` to `off-writ-referent` while the
+chain still stops.
+
+Outside the slice: repair chaining at RUN scale — re-offering a repaired
+node inside a walk — and any runtime that would drive the chain.
 
 The KM-4 composition slice closes the two-doors gap: program admission
 checked the DAG discipline while the single-act door judged one sentence,
@@ -91,10 +135,11 @@ the slice entirely: concurrency beyond the monotone-growth premise,
 liveness, retries, and scheduling.
 
 `./run.sh` is the gate: source hygiene, partition checks, the pinned
-law list, `lake build`, the 102-theorem roster with the trusted-base
-footprint sweep, twenty-seven executable controls diffed against committed
+law list, `lake build`, the 124-theorem roster with the trusted-base
+footprint sweep, thirty-one executable controls diffed against committed
 traces (the closure and signature rows, the lawful twin, the provision
-control, three KM-20 mutants, four machine-repair mutants, and the two
-run-composition mutants), and the four-file must-not-compile class —
+control, three KM-20 mutants, four machine-repair mutants, four
+repair-chain and arbitration mutants, and the two run-composition
+mutants), and the four-file must-not-compile class —
 sort-discipline violations the elaborator itself must refuse, each with a
 pinned diagnosis and a compiling witness twin.

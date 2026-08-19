@@ -1026,6 +1026,498 @@ theorem refusal_parity : Laws.KRefusalParity :=
 
 end Door
 
+/-! ## The fault listing, arbitration, and the repair chain -/
+
+section Faults
+
+/-- The sweep is the listing's head: one door pass reports the first
+    fault of the listing that same pass could have reported whole. -/
+theorem arg_sweep_head (door : Door) :
+    forall args : List RawArg,
+      argSweep door args = (argFaults door args).head? := by
+  intro args
+  induction args with
+  | nil => rfl
+  | cons arg rest inductionHypothesis =>
+      cases refused : argRefusal door arg with
+      | some reason => simp [argSweep, argFaults, refused]
+      | none => simp [argSweep, argFaults, refused, inductionHypothesis]
+
+/-- The fault listing decomposes the door: the verdict is the listing's
+    head, and an empty listing is an admission. -/
+theorem fault_listing_decomposes_door :
+    Laws.KFaultListingDecomposesDoor := by
+  intro door candidate
+  cases candidate with
+  | declare kind payload writ =>
+      cases swept : argSweep door payload with
+      | some reason =>
+          simp [faults, admit, swept, admitReason, taught_reason,
+            ← arg_sweep_head door payload]
+      | none =>
+          cases inside : insideUniverse door payload with
+          | true =>
+              cases writPresent :
+                  refMember DeclKind.policy writ door.catalog with
+              | true =>
+                  simp [faults, admit, swept, inside, writPresent, admitReason]
+              | false =>
+                  simp [faults, admit, swept, inside, writPresent, admitReason,
+                    taught_reason]
+          | false =>
+              simp [faults, admit, swept, inside, admitReason, taught_reason]
+  | resolveDigest kind target anchor =>
+      cases anchor with
+      | some anchor => simp [faults, admit, admitReason, taught_reason]
+      | none =>
+          cases present : refMember kind target door.catalog with
+          | true => simp [faults, admit, present, admitReason]
+          | false => simp [faults, admit, present, admitReason, taught_reason]
+  | trustBytes kind target asserted =>
+      simp [faults, admit, admitReason, taught_reason]
+  | emit lane body =>
+      cases swept : argSweep door body with
+      | some reason =>
+          simp [faults, admit, swept, admitReason, taught_reason,
+            ← arg_sweep_head door body]
+      | none =>
+          cases present : refMember DeclKind.lane lane door.catalog with
+          | true => simp [faults, admit, swept, present, admitReason]
+          | false =>
+              simp [faults, admit, swept, present, admitReason, taught_reason]
+  | join cell contribution strategy =>
+      cases strategy with
+      | lastWriterWins algebra =>
+          simp [faults, admit, admitReason, taught_reason]
+      | declaredAlgebra algebra =>
+          cases swept : argSweep door contribution with
+          | some reason =>
+              simp [faults, admit, swept, admitReason, taught_reason,
+                ← arg_sweep_head door contribution]
+          | none =>
+              cases cellPresent :
+                  refMember DeclKind.resource cell door.catalog with
+              | true =>
+                  cases algebraPresent :
+                      refMember DeclKind.algebra algebra door.catalog with
+                  | true =>
+                      simp [faults, admit, swept, cellPresent, algebraPresent,
+                        admitReason]
+                  | false =>
+                      simp [faults, admit, swept, cellPresent, algebraPresent,
+                        admitReason, taught_reason]
+              | false =>
+                  simp [faults, admit, swept, cellPresent, admitReason,
+                    taught_reason]
+  | readLatest subject => simp [faults, admit, admitReason, taught_reason]
+  | fold declared anchor query =>
+      cases anchor with
+      | none => simp [faults, admit, admitReason, taught_reason]
+      | some anchor =>
+          by_cases sameFold : anchor.foldId = declared
+          · cases swept : argSweep door query with
+            | some reason =>
+                simp [faults, admit, sameFold, swept, admitReason,
+                  taught_reason, ← arg_sweep_head door query]
+            | none =>
+                cases present :
+                    refMember DeclKind.index declared door.catalog with
+                | true =>
+                    simp [faults, admit, sameFold, swept, present, admitReason]
+                | false =>
+                    simp [faults, admit, sameFold, swept, present, admitReason,
+                      taught_reason]
+          · simp [faults, admit, sameFold, admitReason, taught_reason]
+  | decide register token outcome =>
+      cases token with
+      | none => simp [faults, admit, admitReason, taught_reason]
+      | some claim =>
+          by_cases sameRegister : claim.register = register
+          · cases swept : argSweep door outcome with
+            | some reason =>
+                simp [faults, admit, sameRegister, swept, admitReason,
+                  taught_reason, ← arg_sweep_head door outcome]
+            | none =>
+                cases present :
+                    refMember DeclKind.program register door.catalog with
+                | true =>
+                    simp [faults, admit, sameRegister, swept, present,
+                      admitReason]
+                | false =>
+                    simp [faults, admit, sameRegister, swept, present,
+                      admitReason, taught_reason]
+          · simp [faults, admit, sameRegister, admitReason, taught_reason]
+  | trigger predicate declaration =>
+      cases refusedPredicate : predicateRefusal predicate with
+      | some reason =>
+          simp [faults, admit, refusedPredicate, admitReason, taught_reason]
+      | none =>
+          cases translated : translatePredicate predicate with
+          | some inner =>
+              cases present :
+                  refMember DeclKind.program declaration door.catalog with
+              | true =>
+                  simp [faults, admit, refusedPredicate, translated, present,
+                    admitReason]
+              | false =>
+                  simp [faults, admit, refusedPredicate, translated, present,
+                    admitReason, taught_reason]
+          | none =>
+              simp [faults, admit, refusedPredicate, translated, admitReason,
+                taught_reason]
+  | spawn parent request =>
+      cases parentPresent :
+          refMember DeclKind.policy parent door.catalog with
+      | true =>
+          cases requestPresent :
+              refMember DeclKind.policy request door.catalog with
+          | true =>
+              simp [faults, admit, parentPresent, requestPresent, admitReason]
+          | false =>
+              simp [faults, admit, parentPresent, requestPresent, admitReason,
+                taught_reason]
+      | false =>
+          simp [faults, admit, parentPresent, admitReason, taught_reason]
+  | updateInPlace kind target payload writ =>
+      simp [faults, admit, admitReason, taught_reason]
+
+/-- The fault join is associative under the finite-set reading. -/
+theorem fault_join_assoc (left middle right : List RefusalReason) :
+    Fault.Equiv (Fault.join (Fault.join left middle) right)
+      (Fault.join left (Fault.join middle right)) := by
+  unfold Fault.Equiv Fault.join
+  intro reason
+  simp [List.mem_append]
+
+/-- The fault join is commutative under the finite-set reading. -/
+theorem fault_join_comm (left right : List RefusalReason) :
+    Fault.Equiv (Fault.join left right) (Fault.join right left) := by
+  unfold Fault.Equiv Fault.join
+  intro reason
+  simp [List.mem_append, Or.comm]
+
+/-- The fault join is idempotent under the finite-set reading. -/
+theorem fault_join_idem (listing : List RefusalReason) :
+    Fault.Equiv (Fault.join listing listing) listing := by
+  unfold Fault.Equiv Fault.join
+  intro reason
+  simp [List.mem_append]
+
+/-- Fault listings are a finite-set semilattice under union. -/
+theorem fault_listing_semilattice : Laws.KFaultListingSemilattice :=
+  ⟨fault_join_assoc, fault_join_comm, fault_join_idem⟩
+
+/-- Arbitration answers with a member of the listing it arbitrated. -/
+theorem arbitrate_mem :
+    forall (listing : List RefusalReason) (best : RefusalReason),
+      arbitrate listing = some best -> best ∈ listing := by
+  intro listing
+  induction listing with
+  | nil =>
+      intro best chosen
+      simp [arbitrate] at chosen
+  | cons reason rest inductionHypothesis =>
+      intro best chosen
+      cases inner : arbitrate rest with
+      | none =>
+          simp only [arbitrate, inner, Option.some.injEq] at chosen
+          subst chosen
+          simp
+      | some other =>
+          simp only [arbitrate, inner] at chosen
+          by_cases better : other.priority < reason.priority
+          · rw [if_pos better] at chosen
+            injection chosen with chosen
+            subst chosen
+            exact List.mem_cons_of_mem _ (inductionHypothesis other inner)
+          · rw [if_neg better] at chosen
+            injection chosen with chosen
+            subst chosen
+            simp
+
+/-- A listing that already leads with its priority-least member is
+    arbitrated to that head. -/
+theorem arbitrate_head_of_least :
+    forall listing : List RefusalReason,
+      PriorityLeastFirst listing -> arbitrate listing = listing.head? := by
+  intro listing least
+  cases listing with
+  | nil => rfl
+  | cons reason rest =>
+      cases inner : arbitrate rest with
+      | none => simp [arbitrate, inner]
+      | some other =>
+          have otherMem : other ∈ reason :: rest :=
+            List.mem_cons_of_mem _ (arbitrate_mem rest other inner)
+          have le : reason.priority ≤ other.priority :=
+            least reason rfl other otherMem
+          have notBetter : ¬ other.priority < reason.priority :=
+            Nat.not_lt.mpr le
+          simp [arbitrate, inner, notBetter]
+
+/-- Declared-priority arbitration agrees with the door exactly where
+    the listing already leads with its priority-least fault. -/
+theorem door_arbitrates_least_fault : Laws.KDoorArbitratesLeastFault := by
+  intro door candidate least
+  rw [arbitrate_head_of_least _ least]
+  exact fault_listing_decomposes_door door candidate
+
+/-- The three shapes the four machine repairs can land on. -/
+theorem repair_image_shape :
+    forall (candidate repaired : CandidateAct) (reason : RefusalReason),
+      repair candidate reason = some repaired ->
+        (exists kind target, repaired = .resolveDigest kind target none) \/
+        (exists kind payload writ, repaired = .declare kind payload writ) \/
+        (exists cell contribution algebra,
+          repaired = .join cell contribution (.declaredAlgebra algebra)) := by
+  intro candidate repaired reason repairedEq
+  cases candidate with
+  | declare kind payload writ =>
+      cases reason <;> simp [repair] at repairedEq
+  | resolveDigest kind target anchor =>
+      cases anchor with
+      | none => cases reason <;> simp [repair] at repairedEq
+      | some anchor =>
+          cases reason <;> simp [repair] at repairedEq
+          subst repairedEq
+          exact Or.inl ⟨kind, target, rfl⟩
+  | trustBytes kind target asserted =>
+      cases reason <;> simp [repair] at repairedEq
+      subst repairedEq
+      exact Or.inl ⟨kind, target, rfl⟩
+  | emit lane body => cases reason <;> simp [repair] at repairedEq
+  | join cell contribution strategy =>
+      cases strategy with
+      | declaredAlgebra algebra =>
+          cases reason <;> simp [repair] at repairedEq
+      | lastWriterWins algebra =>
+          cases reason <;> simp [repair] at repairedEq
+          subst repairedEq
+          exact Or.inr (Or.inr ⟨cell, contribution, algebra, rfl⟩)
+  | readLatest subject => cases reason <;> simp [repair] at repairedEq
+  | fold declared anchor query =>
+      cases reason <;> simp [repair] at repairedEq
+  | decide register token outcome =>
+      cases reason <;> simp [repair] at repairedEq
+  | trigger predicate declaration =>
+      cases reason <;> simp [repair] at repairedEq
+  | spawn parent request => cases reason <;> simp [repair] at repairedEq
+  | updateInPlace kind target payload writ =>
+      cases reason <;> simp [repair] at repairedEq
+      subst repairedEq
+      exact Or.inr (Or.inl ⟨kind, .digestRef kind target :: payload, writ, rfl⟩)
+
+/-- No machine repair applies to any shape the repairs land on. -/
+theorem repair_shape_inert :
+    forall repaired : CandidateAct,
+      ((exists kind target, repaired = .resolveDigest kind target none) \/
+       (exists kind payload writ, repaired = .declare kind payload writ) \/
+       (exists cell contribution algebra,
+         repaired = .join cell contribution (.declaredAlgebra algebra))) ->
+        RepairInert repaired := by
+  intro repaired shape reason
+  rcases shape with ⟨kind, target, shapeEq⟩ | ⟨kind, payload, writ, shapeEq⟩ |
+    ⟨cell, contribution, algebra, shapeEq⟩ <;> subst shapeEq <;>
+    cases reason <;> simp [repair]
+
+/-- A repaired candidate offers no second machine move: the image of
+    the repair function lies outside its own domain. -/
+theorem repair_image_inert :
+    forall (candidate repaired : CandidateAct) (reason : RefusalReason),
+      repair candidate reason = some repaired -> RepairInert repaired := by
+  intro candidate repaired reason repairedEq
+  exact repair_shape_inert repaired
+    (repair_image_shape candidate repaired reason repairedEq)
+
+/-- One chain step lands on an inert candidate. -/
+theorem repair_step_inert :
+    forall (door : Door) (candidate repaired : CandidateAct),
+      repairStep door candidate = some repaired -> RepairInert repaired := by
+  intro door candidate repaired stepped
+  cases verdict : admit door candidate with
+  | admitted act => simp [repairStep, verdict] at stepped
+  | refused refusal =>
+      simp only [repairStep, verdict] at stepped
+      exact repair_image_inert candidate repaired refusal.reason stepped
+
+/-- The chain leaves an inert candidate where it found it. -/
+theorem repair_chain_of_inert :
+    forall (fuel : Nat) (door : Door) (candidate : CandidateAct),
+      RepairInert candidate -> repairChain fuel door candidate = candidate := by
+  intro fuel door candidate inert
+  cases fuel with
+  | zero => rfl
+  | succ fuel =>
+      have stepNone : repairStep door candidate = none := by
+        cases verdict : admit door candidate with
+        | admitted act => simp [repairStep, verdict]
+        | refused refusal =>
+            simp only [repairStep, verdict]
+            exact inert refusal.reason
+      simp only [repairChain, stepNone]
+
+/-- Past one step the chain is its own fixpoint: extra fuel changes
+    nothing. -/
+theorem repair_chain_fixpoint_fuel_free :
+    forall (fuel extra : Nat) (door : Door) (candidate : CandidateAct),
+      repairChain (fuel + 1 + extra) door candidate
+        = repairChain (fuel + 1) door candidate := by
+  intro fuel extra door candidate
+  rw [show fuel + 1 + extra = fuel + extra + 1 by omega]
+  cases stepped : repairStep door candidate with
+  | none => simp only [repairChain, stepped]
+  | some repaired =>
+      have inert := repair_step_inert door candidate repaired stepped
+      simp only [repairChain, stepped]
+      rw [repair_chain_of_inert (fuel + extra) door repaired inert,
+        repair_chain_of_inert fuel door repaired inert]
+
+/-- Repair composition: the image lies outside the domain, so the chain
+    is its own fixpoint from one step on. -/
+theorem repair_composes_to_fixpoint : Laws.KRepairComposesToFixpoint :=
+  ⟨repair_image_inert, repair_chain_fixpoint_fuel_free⟩
+
+/-- Every atom fault the sweep can name carries an advisory repair. -/
+theorem arg_refusal_advisory (door : Door) :
+    forall (arg : RawArg) (reason : RefusalReason),
+      argRefusal door arg = some reason ->
+        reason.applicability = .advisory := by
+  intro arg reason refused
+  cases arg with
+  | digestRef kind id =>
+      cases present : refMember kind id door.catalog with
+      | true => simp [argRefusal, present] at refused
+      | false =>
+          simp [argRefusal, present] at refused
+          subst refused
+          rfl
+  | literal value => simp [argRefusal] at refused
+  | hole name => simp [argRefusal] at refused; subst refused; rfl
+  | clockNow => simp [argRefusal] at refused; subst refused; rfl
+  | randomSeed => simp [argRefusal] at refused; subst refused; rfl
+  | secretBytes bytes => simp [argRefusal] at refused; subst refused; rfl
+  | mintedId token => simp [argRefusal] at refused; subst refused; rfl
+  | functionValue code => simp [argRefusal] at refused; subst refused; rfl
+
+/-- Every reason a payload sweep surfaces carries an advisory repair. -/
+theorem arg_sweep_advisory (door : Door) :
+    forall (args : List RawArg) (reason : RefusalReason),
+      argSweep door args = some reason ->
+        reason.applicability = .advisory := by
+  intro args
+  induction args with
+  | nil =>
+      intro reason swept
+      simp [argSweep] at swept
+  | cons arg rest inductionHypothesis =>
+      intro reason swept
+      cases refused : argRefusal door arg with
+      | some inner =>
+          simp only [argSweep, refused, Option.some.injEq] at swept
+          subst swept
+          exact arg_refusal_advisory door arg inner refused
+      | none =>
+          simp only [argSweep, refused] at swept
+          exact inductionHypothesis reason swept
+
+/-- Every refusal a repaired shape earns, at every door, is advisory. -/
+theorem repair_shape_refusals_advisory :
+    forall repaired : CandidateAct,
+      ((exists kind target, repaired = .resolveDigest kind target none) \/
+       (exists kind payload writ, repaired = .declare kind payload writ) \/
+       (exists cell contribution algebra,
+         repaired = .join cell contribution (.declaredAlgebra algebra))) ->
+        forall (door : Door) (refusal : Refusal),
+          admit door repaired = .refused refusal ->
+            refusal.reason.applicability = .advisory := by
+  intro repaired shape door refusal refused
+  rcases shape with ⟨kind, target, shapeEq⟩ | ⟨kind, payload, writ, shapeEq⟩ |
+    ⟨cell, contribution, algebra, shapeEq⟩ <;> subst shapeEq
+  · cases present : refMember kind target door.catalog with
+    | true => simp [admit, present] at refused
+    | false =>
+        simp [admit, present] at refused
+        subst refused
+        rfl
+  · cases swept : argSweep door payload with
+    | some reason =>
+        simp [admit, swept] at refused
+        subst refused
+        rw [taught_reason]
+        exact arg_sweep_advisory door payload reason swept
+    | none =>
+        cases inside : insideUniverse door payload with
+        | false =>
+            simp [admit, swept, inside] at refused
+            subst refused
+            rfl
+        | true =>
+            cases writPresent :
+                refMember DeclKind.policy writ door.catalog with
+            | true => simp [admit, swept, inside, writPresent] at refused
+            | false =>
+                simp [admit, swept, inside, writPresent] at refused
+                subst refused
+                rfl
+  · cases swept : argSweep door contribution with
+    | some reason =>
+        simp [admit, swept] at refused
+        subst refused
+        rw [taught_reason]
+        exact arg_sweep_advisory door contribution reason swept
+    | none =>
+        cases cellPresent : refMember DeclKind.resource cell door.catalog with
+        | false =>
+            simp [admit, swept, cellPresent] at refused
+            subst refused
+            rfl
+        | true =>
+            cases algebraPresent :
+                refMember DeclKind.algebra algebra door.catalog with
+            | true =>
+                simp [admit, swept, cellPresent, algebraPresent] at refused
+            | false =>
+                simp [admit, swept, cellPresent, algebraPresent] at refused
+                subst refused
+                rfl
+
+/-- Every refusal a repaired candidate earns, at every door, needs
+    information the candidate does not carry. -/
+theorem repair_image_refusals_advisory :
+    forall (candidate repaired : CandidateAct) (reason : RefusalReason),
+      repair candidate reason = some repaired ->
+        forall (door : Door) (refusal : Refusal),
+          admit door repaired = .refused refusal ->
+            refusal.reason.applicability = .advisory := by
+  intro candidate repaired reason repairedEq
+  exact repair_shape_refusals_advisory repaired
+    (repair_image_shape candidate repaired reason repairedEq)
+
+/-- One step of the chain reaches a candidate the door offers no
+    further machine move at. -/
+theorem repair_chain_terminates_at_fixpoint :
+    forall (fuel : Nat) (door : Door) (candidate : CandidateAct),
+      repairStep door (repairChain (fuel + 1) door candidate) = none := by
+  intro fuel door candidate
+  cases stepped : repairStep door candidate with
+  | none => simp only [repairChain, stepped]
+  | some repaired =>
+      have inert := repair_step_inert door candidate repaired stepped
+      simp only [repairChain, stepped]
+      rw [repair_chain_of_inert fuel door repaired inert]
+      cases verdict : admit door repaired with
+      | admitted act => simp [repairStep, verdict]
+      | refused refusal =>
+          simp only [repairStep, verdict]
+          exact inert refusal.reason
+
+/-- Termination: the chain reaches its fixpoint in one step, and every
+    refusal standing there is advisory. -/
+theorem repair_chain_terminates : Laws.KRepairChainTerminates :=
+  ⟨repair_chain_terminates_at_fixpoint, repair_image_refusals_advisory⟩
+
+end Faults
+
 /-! ## The planted ground programs, each refused with its named law -/
 
 section Planted

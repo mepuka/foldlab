@@ -1,0 +1,1 @@
+control=drop-repair-composition;candidate=lww-join-carrying-a-clock;lawful-trail=[last-writer-wins,clock-read];mutant-trail=[last-writer-wins,clock-read,last-writer-wins,clock-read];verdict=refuted
