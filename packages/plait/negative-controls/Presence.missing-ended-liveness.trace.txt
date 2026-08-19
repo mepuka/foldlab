@@ -1,0 +1,1 @@
+PRESENCE CONTROL: PASS component=absent-by-silence mutant=no-ended-fact-implies-live vector=killed-session-stopped-heartbeat law=silence-is-absence

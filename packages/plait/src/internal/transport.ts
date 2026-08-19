@@ -238,6 +238,8 @@ export const declaredConnect = Effect.fn("Transport.declaredConnect")(function* 
     arguments_: {
       servers: [...estate.servers],
       name: estate.name,
+      maxReconnectAttempts: estate.maxReconnectAttempts,
+      reconnect: estate.reconnect,
       ...(credential === undefined ? {} : {
         authenticator: usernamePasswordAuthenticator(
           credential.user,

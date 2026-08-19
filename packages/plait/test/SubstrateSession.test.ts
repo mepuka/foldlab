@@ -12,6 +12,7 @@ import { declaredConnect } from "../src/internal/transport.js"
 import {
   CONNECT_OPTIONS,
   CONNECT_OPTION_DEFAULTS,
+  ESTATE_CONNECT_PINS,
   SUBSTRATE_FIELDS,
   SUBSTRATE_ROSTER,
   connectOptionsDeclaration,
@@ -150,7 +151,7 @@ const recordedGroups = (overrides: {
         noRandomize: false,
         noEcho: false,
         name: LAYER,
-        maxReconnectAttempts: 10,
+        maxReconnectAttempts: -1,
         maxPingOut: 2,
         inboxPrefix: null,
         ignoreClusterUpdates: false,
@@ -285,7 +286,8 @@ describe("the substrate-session fact", () => {
     const estate = await Effect.runPromise(estateConnectArguments(declared.declaration).pipe(Effect.orDie))
     expect(declared.arguments_.servers).toEqual([...estate.servers])
     expect(declared.arguments_.name).toBe(estate.name)
-    expect(Object.keys(declared.arguments_).sort()).toEqual(["name", "servers"])
+    expect(Object.keys(declared.arguments_).sort())
+      .toEqual(["maxReconnectAttempts", "name", "reconnect", "servers"])
     for (const option of CONNECT_OPTIONS) {
       if (option.source === "estate-set") continue
       expect(Object.hasOwn(declared.arguments_, option.name)).toBe(false)
@@ -293,14 +295,31 @@ describe("the substrate-session fact", () => {
         CONNECT_OPTION_DEFAULTS[option.name] as never,
       )
     }
+    // The two rows the operator ruled: declared at the pinned values, projected
+    // back out, and handed to the client — one source read twice, so the value
+    // the session fact pins is the value the connection ran under.
+    expect(declared.declaration.options["maxReconnectAttempts"])
+      .toBe(ESTATE_CONNECT_PINS.maxReconnectAttempts)
+    expect(declared.declaration.options["reconnect"]).toBe(ESTATE_CONNECT_PINS.reconnect)
+    expect(estate.maxReconnectAttempts).toBe(ESTATE_CONNECT_PINS.maxReconnectAttempts)
+    expect(estate.reconnect).toBe(ESTATE_CONNECT_PINS.reconnect)
+    expect(declared.arguments_.maxReconnectAttempts)
+      .toBe(ESTATE_CONNECT_PINS.maxReconnectAttempts)
+    expect(declared.arguments_.reconnect).toBe(ESTATE_CONNECT_PINS.reconnect)
+    // A ruled row leaves the transcribed-default table: there is no second
+    // reading of it for the declaration and the client to disagree over.
+    expect(Object.hasOwn(CONNECT_OPTION_DEFAULTS, "maxReconnectAttempts")).toBe(false)
+    expect(Object.hasOwn(CONNECT_OPTION_DEFAULTS, "reconnect")).toBe(false)
   })
 
   test("moving exactly one declared option moves the session digest", async () => {
     const declared = await Effect.runPromise(declaredConnect({ servers: SERVERS }, LAYER).pipe(Effect.orDie))
     // One field of one declared value, and nothing else in the three groups.
+    // The field is a ruled one, moved OFF its pin: the pin's own value is what
+    // the declaration already carries, so mutating to it would move nothing.
     const moved = {
       ...declared.declaration,
-      options: { ...declared.declaration.options, maxReconnectAttempts: -1 },
+      options: { ...declared.declaration.options, maxReconnectAttempts: 10 },
     }
     const movedDigest = await Effect.runPromise(connectOptionsDigest(moved).pipe(Effect.orDie))
     expect(movedDigest).not.toBe(declared.digest)
@@ -324,7 +343,14 @@ describe("the substrate-session fact", () => {
     expect(declared.declaration.options["authenticator"]).toBe("username-password")
     expect(declared.declaration.options["inboxPrefix"]).toBe("_INBOX.carrier")
     expect(Object.keys(declared.arguments_).sort())
-      .toEqual(["authenticator", "inboxPrefix", "name", "servers"])
+      .toEqual([
+        "authenticator",
+        "inboxPrefix",
+        "maxReconnectAttempts",
+        "name",
+        "reconnect",
+        "servers",
+      ])
     // The redacted secret never enters the declared value or its digest.
     const bytes = new TextDecoder().decode(await bytesOf(declared.declaration))
     expect(bytes).not.toContain("secret")
