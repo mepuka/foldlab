@@ -29,20 +29,20 @@ as a supply rather than invented into the declaration.
 
 ## What a run row cannot be
 
-`Kernel.RunOutcome` has two arms because `Kernel.Completion` is TOTAL: a
-completion always answers, so a walk either lands or meets a refusal at
-the door. A carriage's completion does not always answer — a node whose
-slot is unwired, unsupplied, or consumes a local that never landed
-produces no candidate at all, so the door is never reached and there is
-no door verdict to report. That third outcome is the carriage's, not the door's,
-and it is spelled `unspeakable` here after the carriage's own name for
-it. A run vector carrying that arm is a witness that a program the
-admission relation accepts is not thereby executable.
+A carriage's completion does not always answer — a node whose slot is
+unwired, unsupplied, or consumes a local that never landed produces no
+candidate at all, so the door is never reached and there is no door
+verdict to report. `Kernel.Completion` says exactly that: it answers
+with a candidate or with nothing, and `Kernel.RunOutcome`'s third arm,
+`unspeakable`, is where a walk that met one ends — carrying the node and
+the steps that stood before it. A run vector on that arm is a witness
+that a program the admission relation accepts is not thereby executable.
 
-Where the completion answers at every node, this walk is
-`Kernel.runWalk` at the completion that maps each node name to the
-candidate computed here, and the emitter checks exactly that against the
-model's own walk before it prints a row.
+The arm is the MODEL's, not this module's. There is no second walk here:
+the completion below has `Kernel.Completion`'s own type, the outcome is
+`Kernel.runProgram`'s, and what this module adds is the rendering — the
+gap's slot and detail, which the model's arm does not carry and a
+consumer repairing a program wants.
 -/
 import Unity.Program
 
@@ -326,63 +326,66 @@ def landingOf : Kernel.Act -> Option (Nat × Option Kernel.DeclKind)
   | .trigger _ _ => none
   | .spawn _ _ => none
 
-/-- One judged node of a run, at the scale the interchange carries: the
-    node, its generator, the candidate it completed to, and the payload
-    the door swept. -/
-structure Step where
-  node : Nat
-  generator : Kernel.GenTag
-  candidate : Kernel.CandidateAct
-  payload : List Kernel.RawArg
-deriving Repr
+/-- The landings the steps already standing leave behind: every admitted
+    sentence's own label and brand, read off the step's act. The model's
+    step carries the act, so the dataflow a completion reads is a
+    projection of the walk rather than a ledger kept beside it. -/
+def landingsOf (steps : List Kernel.RunStep) : List Landing :=
+  steps.filterMap fun step =>
+    (landingOf step.act).map fun landed => ⟨step.node, landed.1, landed.2⟩
 
-/-- How one run ended. The first two arms are `Kernel.RunOutcome`'s; the
-    third is the carriage's, and carries the node, the slot, and the way
-    the slot had no value. -/
-inductive Outcome where
-  | landed (steps : List Step)
-  | refused (node : Nat) (reason : Kernel.RefusalReason) (steps : List Step)
-  | unspeakable (node : Nat) (generator : Kernel.GenTag) (gap : Gap)
-      (steps : List Step)
+/-- The declaration node one name denotes. The erasure the model's walk
+    carries drops the field names a completion reads, so the source node
+    is recovered by its name — unique inside an admitted program, which
+    is the freshness half of node admission. -/
+def sourceOf (declaration : Program.Declaration) (name : Nat) :
+    Option Program.Node :=
+  declaration.nodes.find? fun node => node.name == name
 
-/-- A whole run: how it ended, and every candidate it completed, judged
-    or not. The judged list is what lets the emitter re-run the model's
-    own walk at the same completion. -/
-structure Trace where
-  outcome : Outcome
-  judged : List (Nat × Kernel.CandidateAct)
+/-- This module's completion, at `Kernel.Completion`'s own type: the
+    steps standing supply the dataflow, the declaration supplies the
+    field-keyed arguments the erasure dropped, and the run's supplies
+    fill the slots no declaration carries. A node this completion cannot
+    speak answers with nothing, which is the model's own domain and no
+    longer a vocabulary beside it. -/
+def completion (declaration : Program.Declaration) (supplies : List SupplyRow)
+    (writ : Nat) : Kernel.Completion :=
+  fun steps node =>
+    match sourceOf declaration node.name with
+    | none => none
+    | some source =>
+        match completeNode source supplies writ (landingsOf steps) with
+        | .error _ => none
+        | .ok candidate => some candidate
 
-/-- The walk, in admission order. Judge the next node at the current
-    context through the one door; carry an admitted sentence, record its
-    step and its landing, and continue at the grown context; stop at the
-    first refusal with the prefix intact, or at the first node the
-    completion cannot speak. -/
-def walk (supplies : List SupplyRow) (writ : Nat) :
-    Kernel.Door -> List Landing -> List Step ->
-    List (Nat × Kernel.CandidateAct) -> List Program.Node -> Trace
-  | _, _, steps, judged, [] => ⟨.landed steps, judged⟩
-  | door, landings, steps, judged, node :: rest =>
-      match completeNode node supplies writ landings with
-      | .error gap =>
-          ⟨.unspeakable node.name node.generator gap steps, judged⟩
-      | .ok candidate =>
-          let judged := judged ++ [(node.name, candidate)]
-          match Kernel.admit door candidate with
-          | .refused refusal =>
-              ⟨.refused node.name refusal.reason steps, judged⟩
-          | .admitted act =>
-              let step : Step :=
-                { node := node.name
-                , generator := node.generator
-                , candidate := candidate
-                , payload := Kernel.actArgs candidate }
-              let landings :=
-                match landingOf act with
-                | some (label, brand) =>
-                    landings ++ [⟨node.name, label, brand⟩]
-                | none => landings
-              walk supplies writ (Kernel.Planted.runCarry door act) landings
-                (steps ++ [step]) judged rest
+/-- The gap standing at an unspeakable node: the same completion, at the
+    same steps the outcome itself reports, asked for its reason instead
+    of its answer. A landed or refused outcome has none. -/
+def gapOf (declaration : Program.Declaration) (supplies : List SupplyRow)
+    (writ : Nat) : Kernel.RunOutcome -> Option (Kernel.GenTag × Gap)
+  | .unspeakable name steps =>
+      match sourceOf declaration name with
+      | none => none
+      | some source =>
+          match completeNode source supplies writ (landingsOf steps) with
+          | .error gap => some (source.generator, gap)
+          | .ok _ => none
+  | _ => none
+
+/-- The generator one admitted sentence applies. A step records the
+    intrinsic sentence the door translated its candidate into, and
+    `Kernel.Act`'s constructors ARE the eight generators, so a step names
+    its generator out of what was admitted rather than out of the
+    declaration it came from. -/
+def actGenerator : Kernel.Act -> Kernel.GenTag
+  | .declare _ _ _ => .declare
+  | .resolve _ _ => .resolve
+  | .emit _ _ => .emit
+  | .join _ _ => .join
+  | .fold _ _ _ _ => .fold
+  | .decide _ _ _ => .decide
+  | .trigger _ _ => .trigger
+  | .spawn _ _ => .spawn
 
 /-! ## The vectors
 
@@ -470,12 +473,14 @@ def vectors : List Vector :=
 /-- The vector names, in emission order. -/
 def vectorNames : List String := vectors.map (·.name)
 
-/-- One vector's run. The declaration is newest first, so the walk reads
-    it back into admission order — the same reading `Kernel.runProgram`
-    performs. -/
-def traceOf (vector : Vector) : Trace :=
-  walk vector.supplies vector.writ vector.door [] [] []
-    vector.declaration.nodes.reverse
+/-- One vector's run: the model's own walk, at this module's completion
+    and the run rows' carriage growth, over the vector's erased
+    declaration. `Kernel.runProgram` reads a newest-first declaration
+    back into admission order, which is the order the declaration was
+    admitted in. -/
+def outcomeOf (vector : Vector) : Kernel.RunOutcome :=
+  Kernel.runProgram (completion vector.declaration vector.supplies vector.writ)
+    Kernel.Planted.runCarry vector.door (Program.erase vector.declaration)
 
 /-! ## Rendering -/
 
@@ -559,29 +564,44 @@ def supplyRowValue (row : SupplyRow) : Canon.Value :=
     atom tags: a run's identity labels are the model's, and a consumer at
     another identity scale can still check that the completion wired the
     same shapes in the same order. -/
-def stepValue (step : Step) : Canon.Value :=
+def stepValue (step : Kernel.RunStep) : Canon.Value :=
   .obj
-    [ ("generator", .str (Program.generatorName step.generator))
+    [ ("generator", .str (Program.generatorName (actGenerator step.act)))
     , ("node", .num step.node)
-    , ("payload", .arr (step.payload.map fun arg => .str (argTag arg)))
+    , ("payload",
+        .arr ((Kernel.actArgs step.candidate).map fun arg => .str (argTag arg)))
     , ("verdict", .str "admitted") ]
 
-/-- One outcome as a canonical value. -/
-def outcomeValue : Outcome -> Canon.Value
-  | .landed steps =>
+/-- One outcome as a canonical value. The landed arm drops the context
+    the model reaches: a run row publishes the door it was judged AT, and
+    the context after is a replica the carriage holds behind its own
+    reference. The unspeakable arm adds the gap the model's arm does not
+    carry — the slot, and the way the slot had no value — and an
+    unspeakable node whose gap cannot be recovered renders without them,
+    which the emitter refuses below rather than printing. -/
+def outcomeValue (declaration : Program.Declaration) (supplies : List SupplyRow)
+    (writ : Nat) (outcome : Kernel.RunOutcome) : Canon.Value :=
+  match outcome with
+  | .landed _ steps =>
       .obj [("outcome", .str "landed"), ("steps", .arr (steps.map stepValue))]
-  | .refused node reason steps =>
+  | .refused node refusal steps =>
       .obj
         [ ("node", .num node), ("outcome", .str "refused")
-        , ("reason", .str reason.wire)
+        , ("reason", .str refusal.reason.wire)
         , ("steps", .arr (steps.map stepValue)) ]
-  | .unspeakable node generator gap steps =>
-      .obj
-        [ ("detail", .str gap.detail)
-        , ("generator", .str (Program.generatorName generator))
-        , ("node", .num node), ("outcome", .str "unspeakable")
-        , ("slot", .str gap.slot)
-        , ("steps", .arr (steps.map stepValue)) ]
+  | .unspeakable node steps =>
+      match gapOf declaration supplies writ outcome with
+      | some (generator, gap) =>
+          .obj
+            [ ("detail", .str gap.detail)
+            , ("generator", .str (Program.generatorName generator))
+            , ("node", .num node), ("outcome", .str "unspeakable")
+            , ("slot", .str gap.slot)
+            , ("steps", .arr (steps.map stepValue)) ]
+      | none =>
+          .obj
+            [ ("node", .num node), ("outcome", .str "unspeakable")
+            , ("steps", .arr (steps.map stepValue)) ]
 
 /-- One run record: the vector, the door it was judged at, the supplies
     its completion read, the outcome, and the outcome's own canonical
@@ -589,7 +609,9 @@ def outcomeValue : Outcome -> Canon.Value
     consumer that computes an outcome and canonicalizes it has the answer
     beside the question. -/
 def runValue (vector : Vector) : Canon.Value :=
-  let outcome := outcomeValue (traceOf vector).outcome
+  let outcome :=
+    outcomeValue vector.declaration vector.supplies vector.writ
+      (outcomeOf vector)
   .obj
     [ ("record", .str "run")
     , ("name", .str vector.name)
@@ -727,53 +749,9 @@ def readSupplyRows : List Canon.Value -> Option (List SupplyRow)
     that these inputs and the model's door produce exactly these bytes. -/
 def recompute (door : Kernel.Door) (writ : Nat) (supplies : List SupplyRow)
     (declaration : Program.Declaration) : Canon.Value :=
-  outcomeValue (walk supplies writ door [] [] [] declaration.nodes.reverse).outcome
-
-/-! ## The model's own walk
-
-The cross-check that keeps this module a restatement rather than a
-second machine: for a vector whose completion answered at every node,
-`Kernel.runProgram` at the completion "this node name completes to this
-candidate" must reach the same outcome. The comparison is at the
-projections a `Kernel.RunStep` exposes without a decidable equality —
-the walked node names, the arm, and the refusing node and reason. -/
-
-/-- The candidate a judged node completed to, or the planted lawful
-    declaration where the trace judged no such node. The fallback is
-    never reached for a gap-free vector, and a `Kernel.Completion` is
-    total, so one has to be named. -/
-def judgedCompletion (judged : List (Nat × Kernel.CandidateAct)) :
-    Kernel.Completion :=
-  fun _ node =>
-    match judged.find? fun entry => entry.1 == node.name with
-    | some entry => entry.2
-    | none => Kernel.Planted.lawfulDeclare
-
-/-- The arm and walked shape of one of this module's outcomes. -/
-def outcomeShape : Outcome -> String
-  | .landed steps => s!"landed:{steps.map (·.node)}"
-  | .refused node reason steps =>
-      s!"refused:{node}:{reason.wire}:{steps.map (·.node)}"
-  | .unspeakable node _ gap steps =>
-      s!"unspeakable:{node}:{gap.slot}:{steps.map (·.node)}"
-
-/-- The arm and walked shape of one of the model's own outcomes. -/
-def modelShape : Kernel.RunOutcome -> String
-  | .landed _ steps => s!"landed:{steps.map (·.node)}"
-  | .refused node refusal steps =>
-      s!"refused:{node}:{refusal.reason.wire}:{steps.map (·.node)}"
-
-/-- The model's own walk over one vector, at the completion this module
-    computed. -/
-def modelOutcome (vector : Vector) : Kernel.RunOutcome :=
-  Kernel.runProgram (judgedCompletion (traceOf vector).judged)
-    Kernel.Planted.runCarry vector.door (Program.erase vector.declaration)
-
-/-- Whether a vector's completion answered at every node it reached. -/
-def gapFree (vector : Vector) : Bool :=
-  match (traceOf vector).outcome with
-  | .unspeakable _ _ _ _ => false
-  | _ => true
+  outcomeValue declaration supplies writ
+    (Kernel.runProgram (completion declaration supplies writ)
+      Kernel.Planted.runCarry door (Program.erase declaration))
 
 /-! ## Emit-time checks -/
 
@@ -789,17 +767,17 @@ def outcomeArms : List String :=
   ["landed", "refused", "unspeakable"]
 
 /-- The arm one outcome takes. -/
-def armOf : Outcome -> String
-  | .landed _ => "landed"
+def armOf : Kernel.RunOutcome -> String
+  | .landed _ _ => "landed"
   | .refused _ _ _ => "refused"
-  | .unspeakable _ _ _ _ => "unspeakable"
+  | .unspeakable _ _ => "unspeakable"
 
 /-- Every reason the emitter would refuse to print the run group: a
     vector naming a program the corpus does not carry, a vector carrying
     a declaration that is not that program's, a rendered row whose bytes
-    are not its outcome's canonical form, a gap-free vector whose walk
-    disagrees with the model's own, and an arm the group leaves
-    unexercised. -/
+    are not its outcome's canonical form, an unspeakable outcome whose
+    gap the completion no longer reports at the steps the outcome
+    carries, and an arm the group leaves unexercised. -/
 def runFailures : List String :=
   vectors.flatMap (fun vector =>
     (match declarationOf vector.program with
@@ -816,11 +794,13 @@ def runFailures : List String :=
              if Canon.render outcome == bytes then [] else
                [s!"run: vector {vector.name} carries bytes that are not its outcome's canonical form"]
          | _, _ => [s!"run: a run record is missing a field: {vector.name}"]) ++
-    (if !gapFree vector then [] else
-      if outcomeShape (traceOf vector).outcome == modelShape (modelOutcome vector)
-        then [] else
-        [s!"run: vector {vector.name} walks {outcomeShape (traceOf vector).outcome}; the model's own walk reaches {modelShape (modelOutcome vector)}"])) ++
-  (let arms := vectors.map fun vector => armOf (traceOf vector).outcome
+    (match outcomeOf vector with
+     | .unspeakable node _ =>
+         if (gapOf vector.declaration vector.supplies vector.writ
+             (outcomeOf vector)).isSome then [] else
+           [s!"run: vector {vector.name} is unspeakable at node {node}, and the completion reports no gap there"]
+     | _ => [])) ++
+  (let arms := vectors.map fun vector => armOf (outcomeOf vector)
    outcomeArms.filterMap fun arm =>
      if arms.contains arm then none
      else some s!"run: the run group exercises no {arm} outcome")
