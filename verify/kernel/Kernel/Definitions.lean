@@ -945,7 +945,35 @@ inductive Unlawful (door : Door) : CandidateAct -> Prop where
 One committed unlawful program per closure row, each refused at the
 door with its named law — the negative-control discipline at API
 scale — plus the lawful twin the door must admit, refuting the
-door-that-refuses-everything. -/
+door-that-refuses-everything.
+
+Beyond that roster the namespace carries rows planted for what the
+closure list alone cannot say. A refusal row states which spellings the
+door rejects; it never states which spellings the door ACCEPTS, and a
+door that also refused those would satisfy every closure row and still
+be wrong. Three such rows stand below:
+
+  * the stage-rank edge — a lawful trigger production carrying a rank
+    the closed stage table cannot read, refused on the absence-trigger
+    row, so the refusal spelling for an unreadable rank is emitted
+    rather than left to a runtime test;
+  * a lawful trigger every one of whose referents is catalogued, so
+    the trigger arm's referent check is exercised by an ADMISSION.
+    Both planted triggers above refuse on their predicate production,
+    which means no passing admission has ever reached that arm;
+  * an aliasing pair — two DISTINCT lawful payloads that
+    `canonicalBytes` folds to one value, both admitted, so the
+    canonicalizer's quotient is a replayed fact instead of an
+    arithmetic observation. Whether that quotient is intended is a
+    question for ratification, not a claim made here; nothing below
+    changes the canonicalizer.
+
+Deliberately NOT planted here: the admitted side of the pinned-universe
+asymmetry — a catalog-resident referent from outside the writ's pinned
+universe, carried by a non-declaration. `requiredPinned` makes that
+admission true today, and a vector would turn its docstring into a gated
+wall. That reading is one of two adjacent questions before a grill
+sitting, so it is held rather than pinned. -/
 
 namespace Planted
 
@@ -1051,6 +1079,47 @@ def lawfulDeclare : CandidateAct :=
 /-- The intrinsic sentence the lawful twin admits to. -/
 def lawfulDeclareAct : Act :=
   .declare .schema ⟨canonicalBytes [.digestRef .schema 8, .literal 5]⟩ ⟨4⟩
+
+/-- Stage-rank edge: a hole-reaches trigger whose stage rank lies past
+    the closed stage table. `rankToStage 5` has no answer, so the
+    production has no translation and `predicateRefusal` returns the
+    absence-trigger row — the same row the unlawful productions earn,
+    reached here from a LAWFUL production carrying an unreadable rank.
+    Without this row the refusal spelling for a bad rank is stated only
+    where a runtime test happens to agree with it. -/
+def staleStageTrigger : CandidateAct :=
+  .trigger (.holeReaches 0 5) 3
+
+/-- A lawful trigger the door admits, every referent it names already in
+    the catalog: the declaration `(program, 3)` and the predicate's lane
+    leaf `(lane, 1)`. Both planted triggers above refuse on their
+    predicate production, so before this row the trigger arm's referent
+    check had never been reached by a passing admission.
+
+    Scope, stated because the omission is deliberate: the predicate
+    leaves here are catalogued, and this row claims NOTHING about a
+    predicate naming an uncatalogued lane, cell, or register. Predicate
+    leaves are bare naturals rather than raw arguments, so
+    `requiredCatalog`'s trigger arm names only the declaration; whether
+    that is the intended reading is an open question before a grill
+    sitting, and no vector here answers it. -/
+def catalogedTrigger : CandidateAct :=
+  .trigger (.evidenceAppears 1 17) 3
+
+/-- Aliasing pair, reference side. `canonicalBytes` weighs a digest
+    reference `1 + kind.rank * 4096 + id`; at kind `lane` (rank 4) and
+    id 1 that is 16386. -/
+def aliasRefDeclare : CandidateAct :=
+  .declare .schema [.digestRef .lane 1] 4
+
+/-- Aliasing pair, literal side. A literal weighs `2 + value * 16`;
+    at 1024 that is 16386 as well, so this DISTINCT lawful payload folds
+    to the byte identity the reference side folds to, and both
+    declarations are admitted under one encoded sentence. Both referents
+    are catalog-resident and pinned, so neither row is refused for a
+    reason that would mask the collision. -/
+def aliasLiteralDeclare : CandidateAct :=
+  .declare .schema [.literal 1024] 4
 
 end Planted
 

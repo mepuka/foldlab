@@ -546,7 +546,7 @@ var DocTable = []DocEntry{
 	{Name: "RawArg", Doc: "A raw argument atom. The lawful atoms are digest references and\nliterals; holes are lawful in program declarations and refused in a\nsingle sentence; every other atom is an unlawful shape kept\nspellable so the door's refusal of it is demonstrable. "},
 	{Name: "CandidateAnchor", Doc: "A candidate anchor: the raw spelling of a resume coordinate, its\nfold carried as data rather than as a type index -- which is exactly\nwhat lets a cross-fold anchor be spelled and refused. "},
 	{Name: "TokenClaim", Doc: "A raw token claim: the register the claimant believes the token\nbelongs to, carried as data so a cross-register claim is spellable\nand refused. "},
-	{Name: "MergeStrategy", Doc: "A candidate merge strategy. The lawful strategy names a declared\nmerge algebra; last-writer-wins is spellable here and refused at\nthe door, because no such carrier exists in the fabric. "},
+	{Name: "MergeStrategy", Doc: "A candidate merge strategy. Both spellings retain the intended\ndeclared algebra. Last-writer-wins additionally asks arrival order\nto override that algebra and is refused at the door. Retaining the\nalgebra makes dropping the unlawful override a candidate-only\nrepair: no catalog lookup or new choice is smuggled into it. "},
 	{Name: "CandidatePredicate", Doc: "The candidate trigger grammar: the five lawful productions plus the\nshapes the closed grammar deliberately cannot carry -- absence,\nnegation, deadline, and the not-present-anywhere claim a local\nreplica can never ground. "},
 	{Name: "CandidateAct", Doc: "The raw candidate grammar. Every generator is spellable, and so is\nevery unlawful shape: an anchored resolve, a trusted read, an\nunfenced or cross-register decide, a last-writer-wins join, an\nunanchored latest read, and an in-place mutation of the past. "},
 	{Name: "RefusalReason", Doc: "The closed refusal reasons of the kernel door. "},
@@ -639,7 +639,9 @@ var AdmissionVectors = []AdmissionVector{
 	{Name: "functionDeclare", Reason: "closure-introspection"},
 	{Name: "anchoredResolve", Reason: "anchored-resolve"},
 	{Name: "holeyEmit", Reason: "unfilled-hole"},
+	{Name: "staleStageTrigger", Reason: "absence-trigger"},
 	{Name: "lawfulDeclare", Admitted: true, Encoded: []uint64{0, 0, 7000051000172, 4}},
+	{Name: "catalogedTrigger", Admitted: true, Encoded: []uint64{6, 0, 1, 17, 0, 3}},
 }
 
 // ---- Program vectors ----

@@ -2698,3 +2698,112 @@ kinds, and pins what a run produced rather than what the source teaches). Why:
 one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
+
+### T4. The admission corpus grows past its closure roster, and the reader's "one admitted, last" rule becomes a prefix rule
+
+Decided: the emitted admission group carries nineteen rows — the sixteen
+closure refusals, the stage-rank edge, then two admitted sentences — and
+`scripts/kernel-corpus.ts` now requires the refused rows to form a PREFIX and
+the admitted rows the suffix, instead of requiring exactly one admitted row in
+final position. A refusal roster states which spellings the door rejects and
+never which it accepts, so a door that refused everything satisfied every
+closure row; the admitted rows are what closes that gap, and one of them carries
+a claim the closure list cannot state (the fully catalogued trigger).
+Alternatives: keep one admitted row and
+assert the new facts in hand-written runtime tests (refused — a hand-written
+expectation standing in for a model verdict is the artifact the 2026-08-15
+ruling bans, and these verdicts are the model's); place the admitted rows first
+(refused — the refused prefix is what aligns position for position with the
+taught refusal table, and an admitted row in the middle shifts every later
+refusal off its reason); emit the new rows into a tenth record group (refused —
+a new group is a format decision needing a ruling, and these rows are admission
+verdicts by every property except their count). The alignment rule is kept but
+bounded: it is checked only as far as the refusal table reaches, because one
+reason can be earned by more than one candidate shape and the stage-rank edge
+earns `absence-trigger` a second time. **Load-bearing? yes** — the reader's own
+control arm plants an admitted row before a refused one, a corpus with no
+admitted verdict, and a corpus with no refused verdict, and each must be refused
+for its own reason.
+
+### T4a. The off-writ admitted vector is DROPPED: the behaviour it would have pinned is ruled a defect
+
+Decided: no vector is emitted for a catalogue-resident, non-pinned referent
+carried by a non-declaration, and none should be. The brief asked for one as a
+pin-as-chosen; grill round 2 (record on DEV-772) ruled the behaviour A DEFECT
+rather than a chosen asymmetry. DEV-754 repairs the model — catalogue checks on
+predicate leaves — and the REFUSAL vectors that replace it emit only after the
+model moves, which is DEV-754's work and not this seat's. Emitting the admitted
+vector first would have pinned a defect into the corpus as a replayed fact and
+then required a retraction plus a regeneration of every downstream artifact.
+Distinguish the two lines the sitting separated: (a) pinned-universe inspection
+being declare-only, DOCUMENTED as chosen in `requiredPinned`'s docstring;
+(b) the trigger arm's catalogue support naming only the declaration, because
+predicate leaves are bare naturals rather than raw arguments — UNDOCUMENTED,
+verified admitting an uncatalogued lane first-hand, and now the defect DEV-754
+repairs. **Load-bearing? no** — it records a deliberate absence so a later
+reader does not read the gap as an oversight.
+
+### T4b. One record group carries model-internal rows, and the host reader skips it by not knowing it
+
+Decided: a tenth group, `model-admission`, carries admitted sentences that
+document the MODEL and claim nothing about a host; each row is emitted with
+`scope: "model-internal"`, and the marking originates in emission rather than
+being annotated afterwards, so a row cannot reach a consumer without it. The
+host reader excludes them by leaving `model-admission` out of
+`KERNEL_RECORD_GROUPS`: the add-only rule then reports the group in `skipped`
+and collects it nowhere, so it never enters the conformance roster the door is
+replayed against. Cited: operator grill ruling A8, sitting record DEV-772,
+2026-08-19, which authorised the smallest loader change that respects the
+marking. Alternatives: a `scope` field on every admission row (refused — it
+changes the shape of nineteen rows that have no scope question, and every
+consumer's schema with them); a filter in the replay harness (refused — the
+roster would still contain the rows, so a second consumer would replay what the
+first was told to skip); relying on the group being unknown without saying so
+(refused — an incidental skip is one edit away from an accidental promotion).
+**Load-bearing? yes** — the skip is asserted by test rather than left to habit:
+adding the name to `KERNEL_RECORD_GROUPS` would promote the rows into the
+roster and turn a model convenience into a host conformance claim.
+
+### T5. The aliasing pair documents a RULED quotient, and the canonicalizer is not touched
+
+Decided: two rows, `aliasRefDeclare` and `aliasLiteralDeclare`, are emitted into
+the model-internal group carrying byte-identical `encoded` sentences.
+`canonicalBytes` folds a payload into one identity, weighing a digest reference
+`1 + kind.rank * 4096 + id` against a literal's `2 + value * 16`, so
+`[ref lane 1]` and `[literal 1024]` both weigh 16386 and the two DISTINCT lawful
+declarations become one sentence. Operator grill ruling A8 (sitting record
+DEV-772, 2026-08-19) rules that collision an INTENDED QUOTIENT and
+model-internal: a payload denotes its canonical value, so inside the model two
+spellings of one value are one sentence. Real injectivity remains the byte-level
+canonicalizer's obligation and is walled separately under DEV-807 — which is
+precisely why the pair is excluded from the host roster (T4b): a host
+reproducing this collision would be reproducing a model convenience, not the
+estate's byte identity. The canonicalizer is untouched. Alternatives considered
+before the ruling and now moot: changing the fold so the two separate; refusing
+duplicate encodings in the reader. What the host test asserts is the EXCLUSION —
+that neither name reaches `corpus.admissions` or the replay table — not the
+collision. The emitter, which is model-side, does pin the collision, so a fold
+that silently stopped quotienting is caught where the ruling applies.
+**Load-bearing? yes** — the emitter refuses to print a model-internal group
+whose two rows are not both admitted to one encoded sentence, so the group
+cannot become a stale illustration. Grill note: KM-24 in
+`docs/research/2026-08-18-kernel-model-notes.md`.
+
+### T6. One lawful trigger is emitted so the trigger arm's referent check is reached by an admission
+
+Decided: `catalogedTrigger` — `trigger (evidenceAppears lane 1 pattern 17)
+declaring 3` — is planted and admitted, its declaration `(program, 3)` and its
+predicate's lane leaf `(lane, 1)` both in the catalogue. The roster's two other
+triggers refuse on their PREDICATE production, so no passing admission had ever
+reached the trigger arm's referent check; the arm was live code with no green
+vector through it. Its encoded sentence `[6,0,1,17,0,3]` is the one the
+`trigger-evidence-appears` encoding vector already states, so the admission
+group and the encoding group now meet on a trigger as well as on a declaration.
+Alternatives: a `cellReaches` or `outcomeLanded` production instead (equivalent;
+`evidenceAppears` was taken because its sentence already exists in the encoding
+group, which buys the cross-group tie for free); no such vector (refused — the
+gap is real and cheap to close). Scope is stated in the definition, the fixture,
+and the test: every leaf here is catalogued deliberately, and the row claims
+NOTHING about an uncatalogued predicate leaf, which is the held question in T4a.
+**Load-bearing? yes** — it is the only admitted trigger in the corpus, so the
+refuse-everything mutant is now killed on a trigger as well as on a declaration.

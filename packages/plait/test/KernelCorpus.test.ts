@@ -239,13 +239,53 @@ describe("the control arm", () => {
     expect(() => readKernelCorpus(mutate("\"schema\"", "\"sch\u00e9ma\""))).toThrow(/not ASCII/)
   })
 
+  test("an admitted row before a refused one is refused: the prefix rule has teeth", () => {
+    // The refused block is read against the taught refusal table position for
+    // position, so the split between refused rows and admitted rows is what
+    // keeps that alignment meaningful. Swap the last refusal past the first
+    // admission and the reader must say so - otherwise the rule is a comment.
+    const stale = "{\"name\":\"staleStageTrigger\",\"reason\":\"absence-trigger\"," +
+      "\"record\":\"admission\",\"verdict\":\"refused\"}"
+    const lawful = "{\"encoded\":[0,0,7000051000172,4],\"name\":\"lawfulDeclare\"," +
+      "\"record\":\"admission\",\"verdict\":\"admitted\"}"
+    expect(source).toContain(`${stale}\n${lawful}`)
+    const swapped = mutate(`${stale}\n${lawful}`, `${lawful}\n${stale}`)
+    expect(() => readKernelCorpus(swapped)).toThrow(/are not a prefix of the admission block/)
+  })
+
+  test("an admission block with no refusal, and one with no admission, are refused", () => {
+    // The two degenerate ends of the same rule. A corpus whose door admitted
+    // everything, or refused everything, would carry no evidence at all - and
+    // the all-refusing door is exactly the mutant the conformance wall kills.
+    const admissions = source.split("\n").filter((line) => line.includes("\"record\":\"admission\""))
+    const refusedOnly = admissions.filter((line) => line.includes("\"verdict\":\"refused\""))
+    const admittedOnly = admissions.filter((line) => line.includes("\"verdict\":\"admitted\""))
+    expect(refusedOnly).toHaveLength(17)
+    expect(admittedOnly).toHaveLength(2)
+
+    // The header count moves with the records, so the mutant reaches the rule
+    // under test instead of tripping the count check on the way in.
+    const recount = (text: string, to: number): string =>
+      text.replace("\"admission\":19", `"admission":${to}`)
+    const withoutAdmitted = recount(mutate(`${admittedOnly.join("\n")}\n`, ""), 17)
+    expect(() => readKernelCorpus(withoutAdmitted)).toThrow(/carries no admitted verdict/)
+    const withoutRefused = recount(mutate(`${refusedOnly.join("\n")}\n`, ""), 2)
+    expect(() => readKernelCorpus(withoutRefused)).toThrow(/pins no refusal/)
+  })
+
   test("an unknown record group is skipped, not fatal", () => {
     const extended = `${source}{"record":"future","what":"a group this reader does not know"}\n`
     const read = readKernelCorpus(extended)
-    expect(read.skipped).toEqual(["future"])
+    // `model-admission` rides the same rule on purpose: the emitter marks those
+    // rows model-internal and this reader must not collect them, so the group
+    // the corpus already carries and an invented one are skipped alike
+    // (operator grill ruling A8, DEV-772).
+    expect(read.skipped).toEqual(["model-admission", "future"])
+    expect(readKernelCorpus(source).skipped).toEqual(["model-admission"])
     console.info(
       "CORPUS CONTROLS: PASS refused=member-swap,double-rounded-integer,long-form-escape," +
-        "canon-bytes-drift,unknown-format,miscount,carriage-return,missing-final-lf,non-ascii" +
+        "canon-bytes-drift,unknown-format,miscount,carriage-return,missing-final-lf,non-ascii," +
+        "admitted-before-refused,no-admitted-verdict,no-refused-verdict" +
         ` skipped-group=${read.skipped.join(",")}`,
     )
   })
@@ -269,7 +309,7 @@ describe("the corpus reader", () => {
       refusals: 16,
       types: 22,
       encodings: 12,
-      admissions: 17,
+      admissions: 19,
       docs: 22,
       canons: 10,
       programs: 4,
@@ -292,10 +332,24 @@ describe("the corpus reader", () => {
   })
 
   test("admission row i and refusal row i name the same reason", () => {
+    // The refused block may run longer than the refusal table: one reason can
+    // be earned by more than one candidate shape, and the stage-rank edge earns
+    // absence-trigger a second time. The alignment claim is about the prefix the
+    // table reaches, so the rows past it are checked for a KNOWN reason instead
+    // of against a row that does not exist.
+    const reasons = new Set(corpus.refusals.map((refusal) => refusal.reason))
+    let aligned = 0
     corpus.admissions.forEach((admission, index) => {
       if (admission.verdict !== "refused") return
-      expect(admission.reason).toBe(corpus.refusals[index]!.reason)
+      const row = corpus.refusals[index]
+      if (row === undefined) {
+        expect(reasons.has(admission.reason)).toBe(true)
+        return
+      }
+      expect(admission.reason).toBe(row.reason)
+      aligned += 1
     })
+    expect(aligned).toBe(corpus.refusals.length)
   })
 
   test("the corpus read is the model's own emission, not a stand-in", () => {

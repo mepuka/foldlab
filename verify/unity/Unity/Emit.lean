@@ -193,11 +193,23 @@ def roundTrips (act : Kernel.Act) : Bool :=
 
 /-! ## Admission verdicts
 
-The seventeen planted candidates of `Kernel.Planted`, in the order the
-kernel gate exercises them: the sixteen unlawful rows the door must
-refuse, then the lawful twin it must admit. The verdicts are computed
-by running the door, so a door that changed its mind changes the
-artifact and reddens the regeneration check. -/
+The planted candidates of `Kernel.Planted`, refused rows first and
+admitted rows after. The refused block opens with the sixteen closure
+rows in the order the kernel gate exercises them — that prefix stays
+aligned with the taught-refusal table position for position, which a
+consumer checks — and closes with the stage-rank edge, a lawful trigger
+production carrying a rank the closed stage table cannot read. The
+admitted block opens with the lawful twin and closes with a lawful
+trigger whose every referent is catalogued — the first passing admission
+to reach the trigger arm's referent check at all, since both planted
+triggers refuse on their predicate production.
+
+The verdicts are computed by running the door, so a door that changed
+its mind changes the artifact and reddens the regeneration check.
+
+This group is the HOST conformance roster: every row here is a verdict a
+runtime door is expected to reproduce. Rows that document the model and
+make no claim on a host go to `model-admission` below. -/
 
 /-- The planted candidates by their `Kernel.Planted` definition name. -/
 def planted : List (String × Kernel.CandidateAct) :=
@@ -217,7 +229,9 @@ def planted : List (String × Kernel.CandidateAct) :=
   , ("functionDeclare", Kernel.Planted.functionDeclare)
   , ("anchoredResolve", Kernel.Planted.anchoredResolve)
   , ("holeyEmit", Kernel.Planted.holeyEmit)
+  , ("staleStageTrigger", Kernel.Planted.staleStageTrigger)
   , ("lawfulDeclare", Kernel.Planted.lawfulDeclare)
+  , ("catalogedTrigger", Kernel.Planted.catalogedTrigger)
   ]
 
 /-- One admission record: the door's verdict on the named candidate. -/
@@ -244,6 +258,63 @@ def wasRefused (entry : String × Kernel.CandidateAct) : Bool :=
   match Kernel.admit Kernel.Planted.door entry.2 with
   | .refused _ => true
   | .admitted _ => false
+
+/-! ## Model-internal admissions
+
+The tenth group. Rows here are admitted sentences the model publishes to
+DOCUMENT itself, and they are marked so no host replays them: each
+carries `scope = "model-internal"` under its own record tag, so a
+consumer that walks record tags skips the whole group without having to
+know what is in it.
+
+What the group carries today is the aliasing pair. `canonicalBytes`
+folds a payload into one identity, weighing a digest reference
+`1 + kind.rank * 4096 + id` against a literal's `2 + value * 16`, so
+`[ref lane 1]` and `[literal 1024]` both weigh 16386 and the two
+DISTINCT lawful declarations become one encoded sentence. That quotient
+is RULED INTENDED and model-internal (operator grill ruling A8, sitting
+record DEV-772, 2026-08-19): a payload denotes its canonical value, so
+two spellings of one value are one sentence HERE. Real injectivity is
+the byte-level canonicalizer's obligation and is walled separately under
+DEV-807, which is exactly why these rows must not become a host
+conformance claim — a host that reproduced this collision would be
+reproducing a model convenience, not the estate's byte identity. -/
+
+/-- The model-internal candidates by their `Kernel.Planted` name. -/
+def modelInternal : List (String × Kernel.CandidateAct) :=
+  [ ("aliasRefDeclare", Kernel.Planted.aliasRefDeclare)
+  , ("aliasLiteralDeclare", Kernel.Planted.aliasLiteralDeclare)
+  ]
+
+/-- One model-internal record. The scope field is written by the model,
+    not annotated afterwards: the marking originates in emission, so a
+    row cannot reach a consumer without it. -/
+def modelInternalRow (entry : String × Kernel.CandidateAct) : String :=
+  match Kernel.admit Kernel.Planted.door entry.2 with
+  | .refused refusal =>
+      Canon.render (.obj
+        [ ("record", .str "model-admission")
+        , ("scope", .str "model-internal")
+        , ("name", .str entry.1)
+        , ("verdict", .str "refused")
+        , ("reason", .str refusal.reason.wire) ])
+  | .admitted act =>
+      Canon.render (.obj
+        [ ("record", .str "model-admission")
+        , ("scope", .str "model-internal")
+        , ("name", .str entry.1)
+        , ("verdict", .str "admitted")
+        , ("encoded", .arr ((Kernel.encodeAct act).map Canon.Value.num)) ])
+
+/-- The model-internal rows. -/
+def modelInternalRows : List String := modelInternal.map modelInternalRow
+
+/-- The encoded sentence a candidate admits to, if the door admits it. -/
+def admittedEncoding (entry : String × Kernel.CandidateAct) :
+    Option (List Nat) :=
+  match Kernel.admit Kernel.Planted.door entry.2 with
+  | .admitted act => some (Kernel.encodeAct act)
+  | .refused _ => none
 
 /-! ## The canon vectors
 
@@ -327,10 +398,19 @@ def programRows : List String := Program.vectors.map programRow
 
 /-! ## The document -/
 
-/-- The record groups, in the order the freeze fixes them. -/
+/-- The record groups, in the order the freeze fixes them.
+
+    `model-admission` is LAST, and the position is load-bearing rather
+    than cosmetic. A consumer that does not know a group skips it, and
+    the strict reading of the add-only rule — the one the Go reader
+    enforces — is that an unrecognised group must be APPENDED after
+    every known group, so that skipping it can never leave a known group
+    stranded behind an unknown one. A tenth group written between
+    `admission` and `doc` is refused by that reader; written after
+    `program` it is skipped by every reader that does not want it. -/
 def groupOrder : List String :=
   ["kind", "stage", "refusal", "type", "encoding", "admission", "doc",
-    "canon", "program"]
+    "canon", "program", "model-admission"]
 
 /-- The counts the header declares. The emitter re-derives every one of
     them from the RENDERED document before printing: a declared count is
@@ -345,7 +425,8 @@ def counts : List (String × Nat) :=
   , ("admission", admissionRows.length)
   , ("doc", docRows.length)
   , ("canon", canonRows.length)
-  , ("program", programRows.length) ]
+  , ("program", programRows.length)
+  , ("model-admission", modelInternalRows.length) ]
 
 /-- The header. -/
 def header : String :=
@@ -359,7 +440,8 @@ def header : String :=
 /-- The whole artifact, one line per record, in the frozen order. -/
 def document : List String :=
   header :: kindRows ++ stageRows ++ refusalRows ++ typeRows ++
-    encodingRows ++ admissionRows ++ docRows ++ canonRows ++ programRows
+    encodingRows ++ admissionRows ++ docRows ++ canonRows ++
+    programRows ++ modelInternalRows
 
 /-! ## Emit-time checks
 
@@ -415,18 +497,46 @@ def roundTripFailures : List String :=
   (vectors.filter fun entry => !roundTrips entry.2).map fun entry =>
     s!"emit: encoding vector {entry.1} does not decode back to its own framing"
 
-/-- The planted set must refuse sixteen and admit exactly one; the
-    admitted one must be the lawful twin. -/
+/-- The names the door must admit in the HOST roster, in emission order:
+    the lawful twin and the fully catalogued trigger. Spelled out rather
+    than counted, because a count agrees with a roster that swapped a
+    refusal for an admission. -/
+def admittedRoster : List String :=
+  ["lawfulDeclare", "catalogedTrigger"]
+
+/-- The planted set must refuse seventeen and admit exactly the roster
+    above, and the refused rows must form a PREFIX of the emission —
+    the shape every consumer of the admission group reads by, since the
+    refused prefix is what aligns position for position with the taught
+    refusal table. -/
 def verdictFailures : List String :=
-  let refused := (planted.filter wasRefused).length
-  let admitted := planted.length - refused
+  let refusedNames := (planted.filter wasRefused).map (·.1)
   let admittedNames := (planted.filter fun entry => !wasRefused entry).map (·.1)
-  (if refused == 16 then [] else
-    [s!"emit: expected sixteen refused planted candidates, the door refused {refused}"]) ++
-  (if admitted == 1 then [] else
-    [s!"emit: expected one admitted planted candidate, the door admitted {admitted}"]) ++
-  (if admittedNames == ["lawfulDeclare"] then [] else
-    [s!"emit: the admitted candidate set is {admittedNames}, not the lawful twin"])
+  (if refusedNames.length == 17 then [] else
+    [s!"emit: expected seventeen refused planted candidates, the door refused {refusedNames.length}"]) ++
+  (if admittedNames == admittedRoster then [] else
+    [s!"emit: the admitted candidate set is {admittedNames}, not {admittedRoster}"]) ++
+  (if planted.map (·.1) == refusedNames ++ admittedNames then [] else
+    [s!"emit: the refused rows are not a prefix of the planted roster: {planted.map (·.1)}"])
+
+/-- The model-internal group states one ruled fact, so the emitter
+    refuses to print it unless the fact still holds: both rows admitted,
+    and both admitting to ONE encoded sentence. That collision is the
+    ruled model quotient (A8); if the fold ever separates them, this
+    group is documenting something that stopped being true and the
+    emitter says so rather than shipping a stale illustration. -/
+def modelInternalFailures : List String :=
+  match modelInternal with
+  | [left, right] =>
+      (if modelInternal.map (·.1) == ["aliasRefDeclare", "aliasLiteralDeclare"]
+        then [] else
+        [s!"emit: the model-internal roster is {modelInternal.map (·.1)}"]) ++
+      (match admittedEncoding left, admittedEncoding right with
+       | some leftEncoded, some rightEncoded =>
+           if leftEncoded == rightEncoded then [] else
+             [s!"emit: the aliasing pair no longer shares one encoded sentence: {leftEncoded} vs {rightEncoded}"]
+       | _, _ => ["emit: a model-internal aliasing row is no longer admitted"])
+  | _ => [s!"emit: the model-internal group carries {modelInternal.length} rows, not two"]
 
 /-- The freeze is ASCII: no line may carry a control character or a
     byte above the printable range. -/
@@ -486,7 +596,7 @@ def programFailures : List String :=
 /-- Every reason the emitter would refuse to print. -/
 def emitFailures : List String :=
   parseFailures ++ bothWaysFailures ++ countFailures ++ orderFailures ++
-    roundTripFailures ++ verdictFailures ++ asciiFailures ++
-    canonFailures ++ programFailures
+    roundTripFailures ++ verdictFailures ++ modelInternalFailures ++
+    asciiFailures ++ canonFailures ++ programFailures
 
 end Unity.Emit

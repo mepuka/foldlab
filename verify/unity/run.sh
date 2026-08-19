@@ -344,7 +344,9 @@ fi
 # fails to decode back to its framing, if a line fails the both-ways
 # law, if the header's counts disagree with the records rendered, if
 # the record groups interleave, or if the planted set stops refusing
-# sixteen and admitting one.
+# seventeen, stops admitting exactly its two-name roster, stops writing
+# the refused rows as a prefix, or if the model-internal group stops
+# stating the one ruled fact it exists to state.
 fixture="../../packages/plait/fixtures/kernel-conformance.ndjson"
 if [[ ! -f "$fixture" ]]; then
   echo "GATE: FAIL — the committed kernel conformance corpus is missing" >&2
@@ -372,20 +374,22 @@ fi
 # The frozen interchange: the header at its canonical byte form (so the
 # key order is pinned along with the values), the record counts, and
 # printable ASCII on every line, which also refuses a carriage return.
-expected_header='{"counts":{"admission":17,"canon":10,"doc":22,"encoding":12,"kind":12,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
+expected_header='{"counts":{"admission":19,"canon":10,"doc":22,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 121 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 125 ]] ||
     [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
     [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
     [[ "$(grep -c '"record":"type"' "$fixture")" -ne 22 ]] ||
     [[ "$(grep -c '"record":"encoding"' "$fixture")" -ne 12 ]] ||
-    [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 19 ]] ||
+    [[ "$(grep -c '"record":"model-admission"' "$fixture")" -ne 2 ]] ||
+    [[ "$(grep -c '"scope":"model-internal"' "$fixture")" -ne 2 ]] ||
     [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 22 ]] ||
     [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
     [[ "$(grep -c '"record":"program"' "$fixture")" -ne 4 ]] ||
-    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 16 ]] ||
-    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 1 ]]; then
+    [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 17 ]] ||
+    [[ "$(grep -c '"verdict":"admitted"' "$fixture")" -ne 4 ]]; then
   echo "GATE: FAIL — corpus header or record counts moved" >&2
   exit 1
 fi
@@ -406,7 +410,7 @@ if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
-echo "GATE: PASS (121-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+echo "GATE: PASS (125-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
 
 # The conformance check: the both-ways law over every committed line,
 # the header and group sequence, and every record whose truth lives in
@@ -415,8 +419,9 @@ echo "GATE: PASS (121-record format-2 corpus regenerates byte-identically; heade
 # rebuilt from `getConstInfo` and `findDocString?` and compared with the
 # committed bytes.
 conformance_arms=(
-  "conformance: 121 lines survive read and rewrite byte-identically"
-  "conformance: the header declares 9 groups and every count matches the records present"
+  "conformance: 125 lines survive read and rewrite byte-identically"
+  "conformance: the header declares 10 groups and every count matches the records present"
+  "conformance: 2 model-internal rows name real candidates and carry their scope marking"
   "conformance: the kind, stage, refusal and admission tables agree with the environment"
   "conformance: 22 mini-AST rows agree with the environment"
   "conformance: 22 docstring rows agree with the environment"
@@ -555,4 +560,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 121-record format-2 kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 125-record format-2 kernel conformance corpus)"

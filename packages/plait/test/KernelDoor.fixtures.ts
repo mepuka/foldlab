@@ -71,7 +71,7 @@ export const PLANTED_CANDIDATES: {
     _tag: "join",
     cell: 6n,
     contribution: [{ _tag: "literal", value: 42n }],
-    strategy: { _tag: "lastWriterWins" },
+    strategy: { _tag: "lastWriterWins", algebra: 7n },
   },
   trustingRead: { _tag: "trustBytes", kind: "schema", target: 8n, asserted: 999n },
   crossRegisterDecide: {
@@ -105,8 +105,10 @@ export const PLANTED_CANDIDATES: {
   },
   pastMutation: {
     _tag: "updateInPlace",
+    kind: "schema",
     target: 8n,
     payload: [{ _tag: "literal", value: 43n }],
+    writ: 4n,
   },
   offWritDeclare: {
     _tag: "declare",
@@ -140,6 +142,28 @@ export const PLANTED_CANDIDATES: {
     ],
     writ: 4n,
   },
+  // A lawful trigger production carrying a stage rank the closed table cannot
+  // read. There are five stages, so rank 5 decodes to nothing and the door owes
+  // the absence-trigger row.
+  staleStageTrigger: {
+    _tag: "trigger",
+    predicate: { _tag: "holeReaches", hole: 0n, stage: 5n },
+    declaration: 3n,
+  },
+  // A lawful trigger with every referent it names already catalogued: the
+  // declaration (program, 3) and the predicate's lane leaf (lane, 1). Both
+  // other planted triggers refuse on their predicate, so this is the only row
+  // whose admission reaches the trigger arm's referent check. It says nothing
+  // about a predicate naming an UNCATALOGUED leaf - that reading is open.
+  catalogedTrigger: {
+    _tag: "trigger",
+    predicate: { _tag: "evidenceAppears", lane: 1n, pattern: 17n },
+    declaration: 3n,
+  },
+  // No entry for the aliasing pair. Those two rows are emitted into the
+  // `model-admission` group marked `scope: "model-internal"`, so no host
+  // replays them and this table - which exists only to feed the replay - has
+  // nothing to say about them (operator grill ruling A8, DEV-772).
 }
 
 /** Negative control: the conformance replay must kill an all-refusing door. */

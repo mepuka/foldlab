@@ -812,6 +812,97 @@ posture.
   placement oracle service (refused — an ambient input; placement
   must be citable evidence). Reversal: additive fact plane;
   retiring it strands no identity.
+- **KM-24 — `canonicalBytes` is not injective on lawful payloads.
+  RULED 2026-08-19: an INTENDED QUOTIENT, model-internal** (operator
+  grill ruling A8, sitting record DEV-772). Raised by the
+  admission-vector growth; the corpus now EXHIBITS it rather than
+  describing it, in the `model-admission` group, marked
+  `scope: "model-internal"` and excluded from the host conformance
+  roster. Option A below is the ruling; option B is retained as the
+  priced alternative it was. Real injectivity is the byte-level
+  canonicalizer's obligation and is walled separately under DEV-807,
+  so nothing here claims a host reproduces the collision. The
+  statement of the phenomenon follows. The model's
+  payload canonicalizer (`Kernel/Definitions.lean`) folds a payload
+  left to right, `acc * 1000003 + weight(atom)` from 7, weighing a
+  digest reference `1 + kind.rank * 4096 + id` and a literal
+  `2 + value * 16`. Those two ranges overlap: for any kind of rank
+  `r`, the reference `(kind, 1)` and the literal `r * 256` both weigh
+  `2 + r * 4096`. The planted pair takes `r = 4` (`lane`), so
+  `[ref lane 1]` and `[literal 1024]` both weigh 16386, and the two
+  DISTINCT lawful declarations `aliasRefDeclare` and
+  `aliasLiteralDeclare` are both ADMITTED under one encoded sentence,
+  `[0,0,7016407,4]`. Both referents are catalogued and pinned, so
+  neither row is refused for a reason that would mask the collision.
+  The decision had two answers; A was ruled. **Option A (RULED) — the
+  quotient is intended**: a payload
+  denotes its canonical value, two spellings of one sentence are one
+  sentence, and a declaration's identity is its value's identity, not
+  its syntax. Then the model owes a STATED sentence saying so (the
+  canonicalizer's docstring currently says the opposite by omission —
+  it defers injectivity to "the byte-level canonicalizer's own
+  obligation, walled where that machinery lives", which reads as a
+  promise that the obligation is discharged elsewhere, and for THIS
+  fold it is not), plus a law fixing which of the spellings a
+  round trip returns. **Option B (not taken) — a latent identity defect**:
+  the weights are a modeling convenience whose ranges were never
+  meant to overlap, and the fold should separate the atom's tag from
+  its data (for instance `tag * K + data` with `K` past every datum,
+  or one prime per constructor) so that distinct payloads separate.
+  Then the repair is a semantics change with a corpus regeneration
+  behind it, and the two planted rows become two sentences.
+  This seat recommended B weakly, on the ground that a fold described
+  as a stand-in for canonical BYTES reads as injective to every
+  reviewer. The ruling took A and drew the boundary the recommendation
+  was actually reaching for: the quotient is fine WHERE IT LIVES, and
+  what must not happen is a host treating it as the estate's byte
+  identity. Hence the marking — the pair is emitted into
+  `model-admission` with `scope: "model-internal"`, the host reader
+  skips the group, and the door is never replayed against it; real
+  injectivity stays DEV-807's obligation. Outstanding under A: the
+  canonicalizer's docstring still defers injectivity to "the
+  byte-level canonicalizer's own obligation, walled where that
+  machinery lives", which reads as a promise that the obligation is
+  discharged elsewhere; under the ruling it should say plainly that
+  THIS fold quotients on purpose. Not changed here — it is the
+  model's prose, and this seat changed NOTHING about the
+  canonicalizer.
+- **KM-25 — the trigger arm's catalogue support names only the
+  declaration; predicate leaves go unchecked. RULED 2026-08-19: A
+  DEFECT** (grill round 2, record on DEV-772). DEV-754 repairs the
+  model by adding catalogue checks on predicate leaves; the refusal
+  vectors that follow emit only after the model moves. Reported here
+  as the finding it was, with the ruling recorded and option B taken.
+  `requiredCatalog`'s `.trigger` arm returns
+  `[(DeclKind.program, declaration)]`, and `admit`'s trigger case
+  checks `refMember DeclKind.program declaration door.catalog` and
+  nothing else. Predicate leaves are bare naturals rather than
+  `RawArg`s, so they never meet `argSweep`: a trigger whose predicate
+  names an UNCATALOGUED lane, cell, or register is ADMITTED today.
+  Distinguish it from the adjacent question it will be grilled beside
+  — pinned-universe inspection being declare-only — which IS
+  documented as chosen, in `requiredPinned`'s docstring ("Only
+  declarations inspect the acting writ's pinned universe"). This one
+  is documented nowhere and is visible only by reading the arm. Two
+  lines, ruled separately: the first is a stated choice a vector could
+  pin, the second an unstated behaviour that may be a gap in the
+  referent discipline the sort system otherwise enforces. Options:
+  **(A) intended** — a predicate leaf is an observation about a world
+  the door does not own, so it carries no catalogue obligation; then
+  the arm's docstring should say so. **(B) a gap** — a predicate leaf
+  is a referent like any other and belongs in `requiredCatalog`, which
+  makes `evidenceAppears` on an unknown lane refuse with
+  `forward-reference`. **B was ruled.** This seat offered no
+  recommendation — it found the behaviour while planting a vector and
+  had not modelled the consequences for trigger growth. What the
+  corpus carries is only the fully-catalogued case
+  (`Planted.catalogedTrigger`), which claims nothing either way and
+  survives the repair by construction: its declaration `(program, 3)`
+  and its one predicate referent `(lane, 1)` are both catalogued, so
+  it stays ADMITTED after DEV-754 adds the checks. The stage-rank edge
+  survives too — `holeReaches` carries no referent at all, and
+  `predicateRefusal` fires ahead of any referent check, so it stays
+  refused on `absence-trigger`.
 
 ## 12. Sources
 

@@ -216,6 +216,20 @@ def checkAdmissionRows (rows : List Row) : MetaM Unit := do
     unless environment.contains name do
       throwError "conformance: the admission row names {name}, which is not declared"
 
+/-- Every model-internal row names a candidate that exists AND carries
+    its scope marking. The marking is what keeps these rows out of a
+    host's conformance roster, so a row that lost it is a row that would
+    silently become a claim about an implementation. -/
+def checkModelInternalRows (rows : List Row) : MetaM Unit := do
+  checkAdmissionRows rows
+  unless rows.length == Emit.modelInternal.length do
+    throwError "conformance: the corpus carries {rows.length} model-internal rows; the model publishes {Emit.modelInternal.length}"
+  for row in rows do
+    let scope <- fieldString row "scope"
+    unless scope == "model-internal" do
+      let name <- fieldString row "name"
+      throwError "conformance: model-internal row {name} declares scope {scope}, not model-internal"
+
 /-- Every canon vector: the committed names in the committed order, and
     each vector's `bytes` field equal to the canonicalization of its own
     `value` field. This is the corpus testing the writer that wrote
@@ -300,6 +314,9 @@ def checkCorpus (path : String) : MetaM Unit := do
   checkRefusalRows (rowsTagged "refusal" rows)
   checkAdmissionRows (rowsTagged "admission" rows)
   logInfo "conformance: the kind, stage, refusal and admission tables agree with the environment"
+  let modelInternalRows := rowsTagged "model-admission" rows
+  checkModelInternalRows modelInternalRows
+  logInfo s!"conformance: {modelInternalRows.length} model-internal rows name real candidates and carry their scope marking"
   let typeRows := rowsTagged "type" rows
   checkTypeRows typeRows
   logInfo s!"conformance: {typeRows.length} mini-AST rows agree with the environment"

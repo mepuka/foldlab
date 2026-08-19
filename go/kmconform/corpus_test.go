@@ -188,7 +188,7 @@ func TestHeaderCountsMatchTheRecordsRead(t *testing.T) {
 	// model rather than to this file.
 	want := map[string]int{
 		"kind": 12, "stage": 5, "refusal": 16, "type": 22,
-		"encoding": 12, "admission": 17, "doc": 22, "canon": 10,
+		"encoding": 12, "admission": 19, "doc": 22, "canon": 10,
 	}
 	got := map[string]int{}
 	for _, count := range corpus.Header.Counts {
@@ -281,26 +281,31 @@ func TestVectors(t *testing.T) {
 			t.Fatalf("no encoding vector carries generator tag %d; no generator may be unrepresented", tag)
 		}
 	}
-	if len(corpus.Admissions) != 17 {
-		t.Fatalf("%d admission records, want 17", len(corpus.Admissions))
+	if len(corpus.Admissions) != 19 {
+		t.Fatalf("%d admission records, want 19", len(corpus.Admissions))
 	}
+	// Refused rows first, admitted rows after. The prefix is what the taught
+	// refusal table is read against position for position, so an admitted row
+	// in the middle would shift every later refusal off its reason.
 	admitted := 0
 	for index, row := range corpus.Admissions {
 		if row.Verdict == "admitted" {
 			admitted++
-			if index != 16 {
-				t.Fatalf("the admitted row is at position %d, want last", index)
-			}
 			if len(row.Encoded) == 0 {
 				t.Fatalf("the admitted row %q carries no encoding", row.Name)
 			}
+			continue
+		}
+		if admitted > 0 {
+			t.Fatalf("refused row %q at position %d follows an admitted row; the refused rows are not a prefix", row.Name, index)
 		}
 	}
 	// A suite of refusals alone cannot tell a correct door from one that
-	// refuses everything. The seventeenth row is what makes the other sixteen
-	// mean anything.
-	if admitted != 1 {
-		t.Fatalf("%d admitted rows, want exactly 1", admitted)
+	// refuses everything. The admitted rows are what make the refusals mean
+	// anything: the lawful twin, and the catalogued trigger that is the only
+	// admitted witness anywhere for the trigger arm's referent check.
+	if admitted != 2 {
+		t.Fatalf("%d admitted rows, want exactly 2", admitted)
 	}
 }
 
@@ -355,8 +360,20 @@ func TestCrossRecordInvariants(t *testing.T) {
 	if lawful == nil {
 		t.Fatal("no encoding vector is the lawful twin")
 	}
+	// By name, not by position: the admission group grows as the model plants
+	// candidates, and a positional lookup silently reads a different row when
+	// it does.
+	var twin kmconform.AdmissionRow
+	for _, row := range corpus.Admissions {
+		if row.Name == "lawfulDeclare" {
+			twin = row
+		}
+	}
+	if twin.Name == "" {
+		t.Fatal("the admitted lawful twin is absent from the admission group")
+	}
 	var encoded []string
-	for _, number := range corpus.Admissions[16].Encoded {
+	for _, number := range twin.Encoded {
 		encoded = append(encoded, number.String())
 	}
 	if strings.Join(lawful, ",") != strings.Join(encoded, ",") {

@@ -79,16 +79,17 @@ export const KERNEL_CANONICAL_EXAMPLES_KEY = "canonicalExamples"
 /** The provenance line, with the counts it pins. Examples are real records from the corpus. */
 export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
   canonicalExamples: [
-    "{\"counts\":{\"admission\":17,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
+    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
   ],
   examples: [
     {
       counts: {
-        admission: 17n,
+        admission: 19n,
         canon: 10n,
         doc: 22n,
         encoding: 12n,
         kind: 12n,
+        "model-admission": 2n,
         program: 4n,
         refusal: 16n,
         stage: 5n,
@@ -695,20 +696,23 @@ export const KernelTokenClaim = Schema.Struct({
 })
 
 /**
- * A candidate merge strategy. The lawful strategy names a declared
- * merge algebra; last-writer-wins is spellable here and refused at
- * the door, because no such carrier exists in the fabric.
+ * A candidate merge strategy. Both spellings retain the intended
+ * declared algebra. Last-writer-wins additionally asks arrival order
+ * to override that algebra and is refused at the door. Retaining the
+ * algebra makes dropping the unlawful override a candidate-only
+ * repair: no catalog lookup or new choice is smuggled into it.
  */
 export const KernelMergeStrategy = Schema.Union([
   Schema.TaggedStruct("declaredAlgebra", { algebra: KernelNat }),
-  Schema.TaggedStruct("lastWriterWins", {}),
+  Schema.TaggedStruct("lastWriterWins", { algebra: KernelNat }),
 ]).annotate({
   identifier: "KernelMergeStrategy",
   title: "A candidate merge strategy.",
   description:
-    "A candidate merge strategy. The lawful strategy names a declared\nmerge algebra; "
-    + "last-writer-wins is spellable here and refused at\nthe door, because no such carrier "
-    + "exists in the fabric. ",
+    "A candidate merge strategy. Both spellings retain the intended\ndeclared algebra. "
+    + "Last-writer-wins additionally asks arrival order\nto override that algebra and is refused "
+    + "at the door. Retaining the\nalgebra makes dropping the unlawful override a "
+    + "candidate-only\nrepair: no catalog lookup or new choice is smuggled into it. ",
 })
 
 /**
@@ -787,8 +791,10 @@ export const KernelCandidateAct = Schema.Union([
   }),
   Schema.TaggedStruct("spawn", { parent: KernelNat, request: KernelNat }),
   Schema.TaggedStruct("updateInPlace", {
+    kind: KernelDeclKind,
     target: KernelNat,
     payload: Schema.Array(KernelRawArg),
+    writ: KernelNat,
   }),
 ]).annotate({
   identifier: "KernelCandidateAct",
