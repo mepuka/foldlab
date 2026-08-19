@@ -34,7 +34,6 @@ import { Schema } from "effect"
 import type { JsonValue } from "@foldlab/core/jcs"
 
 import { loadKernelArtifact } from "./KernelConformance.harness.js"
-import { firstSentence } from "../scripts/kernel-schemas.js"
 import {
   KERNEL_CANONICAL_EXAMPLES_KEY,
   KERNEL_RECORD_SCHEMA,
@@ -55,6 +54,23 @@ const corpus = await loadKernelArtifact()
 const annotationsOf = (schema: { readonly ast: { readonly annotations?: unknown } }): {
   readonly [key: string]: unknown
 } => (schema.ast.annotations ?? {}) as { readonly [key: string]: unknown }
+
+/**
+ * The title rule, restated here rather than imported.
+ *
+ * It used to be imported from the bun renderer that wrote the surface, which
+ * made this assertion the generator agreeing with itself. The surface is now
+ * projected from the model, so a restatement on this side is a third statement
+ * of the rule and an oracle outside both: the model computes the title, this
+ * file computes it again from the same docstring, and the two must meet on the
+ * committed bytes.
+ */
+const firstSentence = (doc: string): string => {
+  const breaks = [doc.indexOf(". "), doc.indexOf("\n")].filter((at) => at >= 0)
+  if (breaks.length === 0) return doc
+  const at = Math.min(...breaks)
+  return doc[at] === "." ? doc.slice(0, at + 1) : doc.slice(0, at)
+}
 
 describe("generated annotations are the model's own text", () => {
   test("every closed-list type has a schema, in the corpus's declaration order", () => {
