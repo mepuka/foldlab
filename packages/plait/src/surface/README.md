@@ -1,8 +1,10 @@
 # surface — entry points
 
-The outermost layer: what a person or another program actually invokes. Three
-files wear this plane — `cli.ts`, the `plait` bin that deploys a declared fold,
-runs the chaos arms, and serves the MCP face; `mcp.ts`, the agent face whose
+The outermost layer: what a person or another program actually invokes. Four
+files wear this plane — `cli.ts`, the `plait` bin that declares the opening
+coordination, deploys a declared fold, runs the chaos arms, and serves the MCP
+face; `init.ts`, first contact, which mints the opening declaration set and
+registers the agent client that speaks it; `mcp.ts`, the agent face whose
 eight tools are the model's own tool-schema projection read from the committed
 artifact copy and served verbatim (served equals derived — `bun run
 check:kernel-tools` holds the copy byte-identical to the model gate's
@@ -10,6 +12,19 @@ emission, and `../../test/KernelMcp.test.ts` walls artifact-to-wire); and
 `../index.ts`, the curated barrel that *is* the public surface. Nothing leaves
 the package that is not exported there. Surface may import every layer beneath
 it; nothing imports surface.
+
+`init.ts` is where a practitioner meets this estate. It writes no configuration:
+it mints the store, the options, the holder and the writ as canonical values,
+writes each at the name its own bytes earn, names all four from one root, and
+places a project-scoped registration pointing the agent client at the program
+the party just ran. Saying the same sentences twice writes the same bytes, which
+is what makes "start the substrate and run it again" a safe instruction, and it
+is executed rather than asserted — `../../test/Init.test.ts` compares the tree
+byte for byte and `../../test/BootstrapWall.test.ts` does it again over a real
+substrate, then connects an agent client to what the registration named and
+round-trips one admitted sentence. That gate also holds the one cross-language
+oracle in this directory: the options and store digests the bootstrap declares
+must be the ones the shipped substrate lifecycle command prints when it starts.
 
 `cli.ts` is declared on the catalog-pinned Effect release's own CLI,
 `effect/unstable/cli` (DEV-786). It parses nothing: the command tree is data —

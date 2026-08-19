@@ -44,6 +44,7 @@ import { jetstreamManager } from "@nats-io/jetstream"
 
 import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import { Engine } from "../carriage/Engine.js"
+import * as Init from "./init.js"
 import * as McpFace from "./mcp.js"
 import { Catalog, Payloads } from "../planes/Catalog.js"
 import { Cells } from "../planes/Cell.js"
@@ -714,7 +715,7 @@ const measure = Effect.fn("cli.measure")(function* (
 // ===========================================================================
 
 /**
- * `plait chaos` — the one shipped verb.
+ * `plait chaos` — the measurement verb.
  *
  * Its handler reads a decoded request and writes a canonical scoreboard. It
  * fails with refusals; it renders none, because rendering belongs to the one
@@ -834,6 +835,10 @@ const mcp = Command.make("mcp", {
     Flag.withSchema(Holder),
     Flag.withDescription("The attribution carried on every fact this connection lands"),
   ),
+  writ: digestFlag(
+    "writ",
+    "The declared writ this agent acts under, by digest; every declaration is offered against it",
+  ),
 }, (request) =>
   Effect.gen(function* () {
     const carriers = Layer.mergeAll(
@@ -843,7 +848,16 @@ const mcp = Command.make("mcp", {
       Cells.layer({ servers: request.nats }),
       Registers.layer({ servers: request.nats }),
     )
-    const engine = Engine.layer().pipe(Layer.provide(carriers))
+    // The writ enters as an already-admitted POLICY referent: the door's pinned
+    // universe is what a declaration's writ is checked against, so a server
+    // started without one could admit no sentence at all. The digest is the
+    // whole seed — this surface reads no writ file and resolves no writ value,
+    // because a plait item refers to another by digest.
+    const seed = Option.match(request.writ, {
+      onNone: () => ({}),
+      onSome: (writ) => ({ catalog: [{ kind: "policy" as const, digest: writ }] }),
+    })
+    const engine = Engine.layer(seed).pipe(Layer.provide(carriers))
     return yield* Layer.launch(McpFace.layerStdio({ holder: request.holder }).pipe(
       Layer.provide(engine),
     ))
@@ -853,9 +867,89 @@ const mcp = Command.make("mcp", {
     ),
   )
 
+/**
+ * `plait init` — first contact.
+ *
+ * One command, and the whole of it is declaration: the store, the options, the
+ * holder, and the writ are minted as canonical values, written at the names
+ * their own bytes earn, and named to the agent client in a project-scoped
+ * registration. Nothing is configured; sentences are said.
+ *
+ * The flags carry defaults on purpose. `plait init --holder <name>` is a
+ * complete sentence — a party meeting this estate for the first time should not
+ * have to know what a store directory or a partition is in order to be heard —
+ * and every other flag narrows a default that is already stated.
+ *
+ * The handler's shape is the estate's: judgment and minting are the bootstrap
+ * module's, the substrate probe is the spine's one acquire, and the report is
+ * one line. Neither the refusal rendering nor the exit belongs here.
+ */
+const init = Command.make("init", {
+  holder: Flag.string("holder").pipe(
+    Flag.withDescription("The party this agent acts as; attribution, never authority"),
+  ),
+  directory: Flag.directory("directory", { mustExist: true }).pipe(
+    Flag.withDescription("The project the declaration set and the registration are written into"),
+    Flag.withDefault("."),
+  ),
+  store: Flag.path("store", { mustExist: false }).pipe(
+    Flag.withDescription("The substrate's store directory; placed under the project when omitted"),
+    Flag.optional,
+  ),
+  name: Flag.string("name").pipe(
+    Flag.withDescription("The name the substrate runs under"),
+    Flag.withDefault("foldlab-substrate"),
+  ),
+  addr: Flag.string("addr").pipe(
+    Flag.withDescription("The address the substrate listens on and the agent dials"),
+    Flag.withDefault("127.0.0.1"),
+  ),
+  port: Flag.integer("port").pipe(
+    Flag.withDescription("The port the substrate listens on and the agent dials"),
+    Flag.withDefault(4222),
+  ),
+  view: Flag.string("view").pipe(
+    Flag.withDescription("Grant one declared view by digest; repeatable, and none by default"),
+    Flag.atLeast(0),
+  ),
+  tool: Flag.string("tool").pipe(
+    Flag.withDescription("Grant one served tool; repeatable, and every served tool when omitted"),
+    Flag.atLeast(0),
+  ),
+}, (request) =>
+  Effect.gen(function* () {
+    const opening = yield* Init.bootstrap({
+      holder: request.holder,
+      directory: request.directory,
+      store: Option.getOrNull(request.store),
+      serverName: request.name,
+      host: request.addr,
+      port: request.port,
+      views: request.view,
+      tools: request.tool,
+      // The registration names THE PROGRAM THIS PARTY JUST RAN, so the agent
+      // client is handed the same command rather than a location this surface
+      // invented.
+      invocation: {
+        command: process.execPath,
+        program: fileURLToPath(import.meta.url),
+      },
+    })
+    // The standing line claims a serving substrate, so it is printed only once
+    // one has answered. An absent substrate is an absence: the declarations are
+    // already minted and re-derive byte for byte, and the taught repair names
+    // the verb that starts one.
+    yield* Init.probeSubstrate(opening.url).pipe(Effect.scoped)
+    yield* Console.log(Init.standingLine(opening))
+  })).pipe(
+    Command.withDescription(
+      "Declare the opening coordination — store, options, holder, writ — and register the agent client that speaks it.",
+    ),
+  )
+
 const plait = Command.make("plait").pipe(
   Command.withDescription("The Plait coordination fabric spine."),
-  Command.withSubcommands([chaos, mcp, pump]),
+  Command.withSubcommands([chaos, init, mcp, pump]),
 )
 
 // ===========================================================================
