@@ -357,3 +357,17 @@ surface; escalations surfaced to the operator rather than parked.
    direction pointing one level deeper — what this is, how to
    regenerate it, which wall proves it. Wall: the battery's check
    scripts + review. Severity: blocker.
+10. **Official documents carry no tracking artifacts; plait refers by
+   digest.** Operator ruling 2026-08-19, verbatim intent: repo-local
+   ids, ticket numbers, dev-tracking parentheticals, script
+   invocations, and filesystem paths NEVER appear in official
+   documents — the kernel language's projections and every rendered
+   surface above all. Plait items refer only to digests or derived
+   digests; a filesystem path is an ambient reference the algebra
+   itself refuses, and provenance on an official surface is a digest
+   of the source, never a path or a command. Tracking artifacts live
+   where tracking lives — tickets, DECISIONS logs, dispatch records,
+   reviewed roster sources and pins — and are never rendered outward.
+   Wall: the vocabulary wall's tracking-artifact clause over the
+   committed bytes of the generated tables and prose page (landing;
+   until it lands, review). Severity: blocker.

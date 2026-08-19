@@ -27,6 +27,15 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
 
 ## Scoped laws
 
+- **No tracking artifacts on any rendered surface; references are digests.**
+  (Root law 10, operator-ruled 2026-08-19.) Nothing this package renders
+  outward — generated doc comments, the prose page, tool schemas, refusal
+  payloads, CLI output — carries a ticket id, a dev-tracking parenthetical, a
+  script invocation, or a filesystem path. A plait item refers to another
+  value by digest or derived digest, never by path; provenance on a rendered
+  surface is the digest of its source. Ticket citations and waiver lines stay
+  in the reviewed roster sources, pins, and DECISIONS — the generators do not
+  project them.
 - `Canonical.ts` delegates to `@foldlab/core/jcs`. There is one RFC 8785
   canonicalizer; never add or copy another. That is a wall now, not an
   exhortation: `check:one-canonicalizer` scans every module under `src/` for a

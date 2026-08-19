@@ -37,6 +37,15 @@ rung definitions. Scoped laws:
   — commit the trace and lead with it; do not repair the spec to make
   the run green. Failed inductive candidates stay in `CLIMB.md`,
   because their counterexamples explain the invariant that worked.
+- Official artifacts a model or emitter renders (projection pages,
+  generated corpora headers, prose registers) carry no tracking
+  artifacts: no ticket ids, no dev parentheticals, no script commands,
+  no filesystem paths (root law 10, operator-ruled 2026-08-19).
+  Provenance inside an official artifact is a digest of its source;
+  regeneration instructions live in the README beside the artifact,
+  never in it. Run records and gate scripts are tracking-native and
+  exempt — the rule binds what is rendered as the language, not the
+  evidence machinery around it.
 
 ## Layout
 
