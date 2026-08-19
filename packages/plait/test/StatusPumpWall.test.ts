@@ -6,11 +6,14 @@ import { afterEach, describe, expect, test } from "bun:test"
 
 import { Effect } from "effect"
 
+import { digestOf } from "../src/truth/Digest.js"
+import { connectionOf } from "../src/internal/connectionfold.js"
 import type { SessionFact } from "../src/internal/sessionfacts.js"
 import { transportRefusal } from "../src/internal/lanes.js"
 import { establishConnection } from "../src/internal/transport.js"
 import type { StatusPump } from "../src/internal/statuspump.js"
 import { CONNECTION_TRANSITIONS } from "../src/internal/statusvocabulary.js"
+import type { PositionedEvent } from "../src/internal/successors.js"
 import { ESTATE_CONNECT_PINS } from "../src/internal/substrate.js"
 import { buildServerBinary, startNatsHarness, type NatsHarness } from "./NatsHarness.js"
 
@@ -166,6 +169,16 @@ const drainFor = (
 const KILL_OBSERVATION_WINDOW = 40_000
 
 const isEnded = (fact: SessionFact): boolean => fact.kind === "substrate-session-ended"
+
+/** The facts a pump handed over, as a lane read would position them. */
+const positioned = (
+  facts: ReadonlyArray<SessionFact>,
+): Effect.Effect<ReadonlyArray<PositionedEvent<SessionFact>>> =>
+  Effect.forEach(facts, (event, index) =>
+    Effect.map(
+      digestOf(event as never).pipe(Effect.orDie),
+      (digest) => ({ position: index + 1, event, digest }),
+    ))
 
 const eventOf = (fact: SessionFact): string =>
   fact.kind === "substrate-session-transition" || fact.kind === "substrate-session-observation"
@@ -372,6 +385,18 @@ describe("the status pump over a real substrate", () => {
       }
       // No transition fact landed at all: a reading moves the machine nowhere.
       expect(facts.filter((fact) => fact.kind === "substrate-session-transition").length).toBe(0)
+
+      // And the FOLD over this sequence — facts a real substrate produced —
+      // stands where the sequence left it: the initial position, which no event
+      // names, with the position of the last fact it read. The read carries no
+      // age and asks the connection nothing.
+      const delivered = await Effect.runPromise(positioned(facts))
+      const folded = await Effect.runPromise(
+        connectionOf(delivered, delivered[0]!.event.session).pipe(Effect.orDie),
+      )
+      expect(folded.state).toBe(null)
+      expect(folded.position).toBe(delivered.length)
+
       console.log(
         `STATUS PUMP MEASUREMENT: ${observations.length} readings observed on a live connection; ${facts.length} facts in total.`,
       )

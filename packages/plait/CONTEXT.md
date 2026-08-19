@@ -285,3 +285,24 @@ on a session, and a fold the writ does not name refuses instead of being served.
 The cataloged declaration of an ordered list of (selector, renderer) pairs,
 each tagged with a volatility class. A declaration only — no assembly executor
 exists, and nothing in this package assembles a context value.
+
+**Connection machine**:
+The lifecycle machine over the transcribed status vocabulary: an alphabet split
+into transitions and readings, a table total over it, a terminal that absorbs,
+and an initial position named by no event because establishment is not a status
+event. Every state is named by the transition that enters it, so no state
+carries a word the substrate never said.
+
+**Connection reading**:
+What folding one session's status facts through that machine answers: the state
+those facts support, and the position of the last fact consumed. A state and a
+position, never an age — the reading says what the lane supported by that
+position and nothing about now. `null` state at `null` position is a session no
+fact cited; `null` state at a real position is a session established and moved
+nowhere since.
+
+**Trace view**:
+A read over the causal chain of facts reachable by digest from a root. The
+connection reading is the first named one: it consumes facts, never spans, log
+lines, or console output, which are evidence machinery and are never read back
+into meaning.
