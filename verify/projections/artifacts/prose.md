@@ -314,3 +314,29 @@ it consumes.
 Algebraic register:
 
 `Kernel.ProgramNode ::= { name : Nat, generator : GenTag, args : List(RawArg), uses : List(Nat) }`
+
+## `Kernel.RunStep`
+
+Plain register:
+
+One judged node of a run: the program-scoped name, the context the
+node was judged at, the candidate sentence it completed to, and the
+intrinsic sentence the door translated that candidate into. 
+
+Algebraic register:
+
+`Kernel.RunStep ::= { node : Nat, context : Door, candidate : CandidateAct, act : Act }`
+
+## `Kernel.RunOutcome`
+
+Plain register:
+
+How one run ended. A landed run reports the context it reached and
+every step in walked order; a refused run reports the refusing
+node, its taught refusal, and the steps that stood before it. The
+reached context is this model's sharpening: the carriage holds the
+same replica behind its own reference and does not return it. 
+
+Algebraic register:
+
+`Kernel.RunOutcome ::= Kernel.RunOutcome.landed(context : Door, steps : List(RunStep)) | Kernel.RunOutcome.refused(node : Nat, refusal : Refusal, steps : List(RunStep))`

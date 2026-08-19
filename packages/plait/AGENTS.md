@@ -166,6 +166,32 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   `SchemaIssue`-typed signature diverges the public-surface type-level walk.
 - `ContextProgram` is declaration shapes only. Adding an assembly executor, a
   context value, or any F7 language belongs to the assembly slice, not here.
+- **One connection carries one status pump, and the vocabulary it speaks is
+  transcribed.** `internal/statuspump.ts` is the only consumer of a
+  connection's status source and it attaches in `establishConnection`, so
+  "built once as a fact source" is a construction rather than a convention; a
+  second attach on one connection is a caller DEFECT and dies as one, never a
+  refusal (the pin's source fans out, so the failure a second consumer causes
+  is double-minting, not loss). The eleven event types and their payloads are
+  transcribed in `internal/statusvocabulary.ts` as data with per-row
+  provenance, in the pin's declaration order, all eleven, never a subset and
+  never a hand-written union; seven are placed as transitions and four are
+  readings within a state, and a reading is never a state and never feeds a
+  state decision. A machine state is named by the transition that enters it, so
+  no state carries a word the substrate never said; the position before any
+  transition is `null`, which is the absence of a state and not one. The
+  transition that re-attaches mints a successor through the session mint,
+  naming its predecessor; the terminal transition lands the session-ended fact
+  with the cause the pin resolved, and an empty cause is the pin's own report
+  of an orderly teardown rather than a missing one. The pump reacts to nothing —
+  the lame-duck fact is emitted here and honoured elsewhere. Wall:
+  `check:status-vocabulary` byte-compares the table against the installed
+  client's own declaration and holds totality, the reading/state split, the
+  reachable absorbing state, and the no-per-event-branch scan over the pump's
+  source; `check:status-vocabulary-control` plants one mutation per clause.
+  Adding a hand-written state union, a per-event branch in the pump, a second
+  consumer of a status source, or a landing path beside `sessionlanes.ts`'s one
+  emit is a finding.
 - A session is read-plane state and writes nothing. `Session` reads anchors and
   the states they name; it never commits an anchor, never emits, and never
   carries a revision on its values. A write verb on that seam is a finding, and

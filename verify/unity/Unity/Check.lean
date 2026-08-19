@@ -300,6 +300,155 @@ def checkProgramRows (rows : List Row) : MetaM Unit := do
                     unless entry.2.contains argument.name do
                       throwError "conformance: program vector {name} binds the field {argument.name} on {spelling}, which the environment does not declare"
 
+/-- The node names one committed program admits, in the order a run
+    walks them: the declaration is newest first, so admission order is
+    that list read back. -/
+def admissionOrder (declaration : Program.Declaration) : List Nat :=
+  declaration.nodes.reverse.map (·.name)
+
+/-- The node names one run record's outcome reports as walked. -/
+def walkedNodes (outcome : Canon.Value) : Option (List Nat) :=
+  match Canon.member outcome "steps" with
+  | none => none
+  | some steps =>
+      match Canon.asItems steps with
+      | none => none
+      | some items =>
+          items.foldr
+            (fun item accumulated =>
+              match Canon.natAt item "node", accumulated with
+              | some node, some rest => some (node :: rest)
+              | _, _ => none)
+            (some [])
+
+/-- Every run vector, checked the way a consumer will check it.
+
+    The names and their order come first, then the vocabulary the
+    completion reads: every raw-argument spelling against `RawArg`'s
+    constructors, and every field the completion reads against the
+    environment's own account of `Kernel.Act` — with `strategy` singled
+    out, because it is the one slot a candidate carries that no intrinsic
+    sentence does. A `strategy` that appeared on `Act` would mean the
+    slot stopped being execution-time, so the checker refuses that too
+    rather than silently agreeing with a moved model.
+
+    Then the rows themselves: each run's program must be a vector the
+    corpus carries in its OWN program group, with the very declaration
+    the run was walked over — the two groups are one claim, and a run
+    reporting an execution of a declaration the corpus does not publish
+    would be unfalsifiable. Each outcome's bytes must be its own
+    canonical form, its walked nodes must be a prefix of the program's
+    admission order, and the group as a whole must exercise every
+    outcome arm. -/
+def checkRunRows (rows : List Row) (programRows : List Row) : MetaM Unit := do
+  let names <- rows.mapM (fieldString · "name")
+  unless names == Run.vectorNames do
+    throwError "conformance: the run vectors do not name the committed set\n  corpus:    {names}\n  committed: {Run.vectorNames}"
+  let atomNames <- Reflect.ctorNames "RawArg"
+  unless atomNames == Run.argTags do
+    throwError "conformance: the raw-argument spellings disagree with the environment\n  corpus:      {Run.argTags}\n  environment: {atomNames}"
+  let actShape <- Reflect.shapeOf "Act"
+  let actFields := actShape.ctors.map fun constructor =>
+    (constructor.name, constructor.fields.map (·.name))
+  let candidateShape <- Reflect.shapeOf "CandidateAct"
+  let candidateFields := candidateShape.ctors.map fun constructor =>
+    (constructor.name, constructor.fields.map (·.name))
+  for generator in Program.generators do
+    let spelling := Program.generatorName generator
+    match actFields.find? (fun entry => entry.1 == spelling) with
+    | none =>
+        throwError "conformance: the run completion applies {spelling}, which the environment does not declare on Act"
+    | some entry =>
+        let wired := (Run.valueField generator).toList ++
+          Run.referenceFields generator
+        for field in wired do
+          unless entry.2.contains field do
+            throwError "conformance: the run completion reads the field {field} on {spelling}, which the environment does not declare on Act"
+        for field in Run.supplyFields generator do
+          if field == "strategy" then
+            match candidateFields.find? (fun row => row.1 == spelling) with
+            | none =>
+                throwError "conformance: the run completion supplies {field} to {spelling}, which the environment does not declare on CandidateAct"
+            | some row =>
+                unless row.2.contains field do
+                  throwError "conformance: the run completion supplies {field} to {spelling}, which the environment does not declare on CandidateAct"
+            if entry.2.contains field then
+              throwError "conformance: the run group carries {field} as an execution-time supply on {spelling}, but the environment now declares it on Act — the slot stopped being candidate-only"
+          else
+            unless entry.2.contains field do
+              throwError "conformance: the run completion supplies {field} to {spelling}, which the environment does not declare on Act"
+  for row in rows do
+    let name <- fieldString row "name"
+    let program <- fieldString row "program"
+    match programRows.find? (fun candidate =>
+        Canon.stringAt candidate.value "name" == some program) with
+    | none =>
+        throwError "conformance: run vector {name} runs the program {program}, which the corpus does not carry"
+    | some programRow =>
+        match Canon.member programRow.value "declaration" with
+        | none =>
+            throwError "conformance: the program vector {program} binds no declaration"
+        | some value =>
+            match Program.readDeclaration value with
+            | none =>
+                throwError "conformance: the program vector {program} is not a program declaration"
+            | some declaration =>
+                match Run.vectors.find? (fun vector => vector.name == name) with
+                | none =>
+                    throwError "conformance: run vector {name} is not committed"
+                | some vector =>
+                    unless declaration == vector.declaration do
+                      throwError "conformance: run vector {name} was walked over a declaration that is not the corpus's own {program}"
+                    match Canon.member row.value "outcome" with
+                    | none =>
+                        throwError "conformance: run vector {name} binds no outcome"
+                    | some outcome =>
+                        let bytes <- fieldString row "bytes"
+                        let canonical := Canon.render outcome
+                        unless canonical == bytes do
+                          throwError "conformance: run vector {name} carries bytes that are not its outcome's canonical form\n  bytes:     {bytes}\n  canonical: {canonical}"
+                        -- The row recomputed from its own inputs: the door
+                        -- and supplies read back out of these bytes, the
+                        -- declaration read back out of the corpus's program
+                        -- group, and the model's own door walking them.
+                        match Canon.member row.value "context",
+                            Canon.member row.value "supplies",
+                            Canon.natAt row.value "writ" with
+                        | some context, some supplies, some writ =>
+                            match Run.readDoor context, Canon.asItems supplies with
+                            | some door, some supplyItems =>
+                                match Run.readSupplyRows supplyItems with
+                                | none =>
+                                    throwError "conformance: run vector {name} carries supplies this reader cannot read back"
+                                | some rows =>
+                                    let walked :=
+                                      Canon.render
+                                        (Run.recompute door writ rows declaration)
+                                    unless walked == bytes do
+                                      throwError "conformance: run vector {name} reports an outcome the model's door does not reach from the row's own inputs\n  corpus:    {bytes}\n  recomputed: {walked}"
+                            | _, _ =>
+                                throwError "conformance: run vector {name} carries a context or supply list this reader cannot read back"
+                        | _, _, _ =>
+                            throwError "conformance: run vector {name} binds no context, supplies or writ"
+                        match walkedNodes outcome with
+                        | none =>
+                            throwError "conformance: run vector {name} carries an outcome whose steps do not name their nodes"
+                        | some walked =>
+                            let order := admissionOrder declaration
+                            unless walked == order.take walked.length do
+                              throwError "conformance: run vector {name} walks {walked}, which is not a prefix of the admission order {order}"
+  let arms <- rows.mapM fun row => do
+    match Canon.member row.value "outcome" with
+    | none => throwError "conformance: a run record binds no outcome: {row.line}"
+    | some outcome =>
+        match Canon.stringAt outcome "outcome" with
+        | none =>
+            throwError "conformance: a run record's outcome names no arm: {row.line}"
+        | some arm => return arm
+  for arm in Run.outcomeArms do
+    unless arms.contains arm do
+      throwError "conformance: the run group exercises no {arm} outcome; the corpus carries {arms}"
+
 /-- The whole committed corpus, checked against the environment. -/
 def checkCorpus (path : String) : MetaM Unit := do
   let rows <- readRows path
@@ -329,6 +478,9 @@ def checkCorpus (path : String) : MetaM Unit := do
   let programRows := rowsTagged "program" rows
   checkProgramRows programRows
   logInfo s!"conformance: {programRows.length} program vectors state their own graph, erase to admitted programs, and re-canonicalize to their own bytes"
+  let runRows := rowsTagged "run" rows
+  checkRunRows runRows programRows
+  logInfo s!"conformance: {runRows.length} run vectors execute the corpus's own programs, walk them in admission order, and re-canonicalize to their own bytes"
 
 /-! ## The commands -/
 

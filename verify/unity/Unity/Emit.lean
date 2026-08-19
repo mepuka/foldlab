@@ -35,6 +35,7 @@ an implementation, never a guarantee about one.
 -/
 import Unity.Program
 import Unity.Reflect
+import Unity.Run
 
 namespace Unity.Emit
 
@@ -140,7 +141,8 @@ kernel_manifest kernelTypes typeRows docRows from
   DeclKind Digest Value StateLabel Petname Token LanePartition Position
   AnchorFact HoleStage KTriggerPredicate Act RawArg CandidateAnchor
   TokenClaim MergeStrategy CandidatePredicate CandidateAct RefusalReason
-  Refusal Applicability Door AdmitResult GenTag ProgramNode
+  Refusal Applicability Door AdmitResult GenTag ProgramNode RunStep
+  RunOutcome
 
 /-! ## Sentence encoding vectors
 
@@ -396,21 +398,45 @@ def programRow (entry : String × Program.Declaration) : String :=
 /-- The program rows. -/
 def programRows : List String := Program.vectors.map programRow
 
+/-! ## The run vectors
+
+The eleventh group, and the first that reports an EXECUTION rather than a
+value. Each record carries one run of one committed program: the door it
+was judged at, the writ it acted under, the execution-time supplies its
+completion read, the outcome, and the outcome's own canonical bytes.
+
+The rows are computed by walking the model's door, so a door that changed
+its mind about any node moves these bytes. What the completion is — the
+one thing the kernel's run leaves open, because it belongs to the
+carriage — is committed in `Unity/Run.lean` beside the vectors, and the
+emitter refuses to print a run whose walk disagrees with the model's own
+`Kernel.runProgram` at that same completion. -/
+
+/-- One run record: the vector's whole execution as data. -/
+def runRow (vector : Run.Vector) : String := Run.runRow vector
+
+/-- The run rows. -/
+def runRows : List String := Run.runRows
+
 /-! ## The document -/
 
-/-- The record groups, in the order the freeze fixes them.
+/-- The record groups, in the order the freeze fixes them. The order is
+    ADD-ONLY: a new group appends after every group already here.
 
-    `model-admission` is LAST, and the position is load-bearing rather
-    than cosmetic. A consumer that does not know a group skips it, and
-    the strict reading of the add-only rule — the one the Go reader
-    enforces — is that an unrecognised group must be APPENDED after
-    every known group, so that skipping it can never leave a known group
-    stranded behind an unknown one. A tenth group written between
-    `admission` and `doc` is refused by that reader; written after
-    `program` it is skipped by every reader that does not want it. -/
+    The position is load-bearing rather than cosmetic. A consumer that
+    does not know a group skips it, and the strict reading of the
+    add-only rule — the one the Go reader enforces — is that an
+    unrecognised group must be APPENDED after every known group, so that
+    skipping it can never leave a known group stranded behind an unknown
+    one. A group written between `admission` and `doc` is refused by that
+    reader; written last it is skipped by every reader that does not want
+    it. `model-admission` appends after `program` for that reason, and
+    `run` appends after `model-admission` for the same one — a reader
+    that skips the model-internal group still meets `run` in ascending
+    order. -/
 def groupOrder : List String :=
   ["kind", "stage", "refusal", "type", "encoding", "admission", "doc",
-    "canon", "program", "model-admission"]
+    "canon", "program", "model-admission", "run"]
 
 /-- The counts the header declares. The emitter re-derives every one of
     them from the RENDERED document before printing: a declared count is
@@ -426,7 +452,8 @@ def counts : List (String × Nat) :=
   , ("doc", docRows.length)
   , ("canon", canonRows.length)
   , ("program", programRows.length)
-  , ("model-admission", modelInternalRows.length) ]
+  , ("model-admission", modelInternalRows.length)
+  , ("run", runRows.length) ]
 
 /-- The header. -/
 def header : String :=
@@ -441,7 +468,7 @@ def header : String :=
 def document : List String :=
   header :: kindRows ++ stageRows ++ refusalRows ++ typeRows ++
     encodingRows ++ admissionRows ++ docRows ++ canonRows ++
-    programRows ++ modelInternalRows
+    programRows ++ modelInternalRows ++ runRows
 
 /-! ## Emit-time checks
 
@@ -597,6 +624,6 @@ def programFailures : List String :=
 def emitFailures : List String :=
   parseFailures ++ bothWaysFailures ++ countFailures ++ orderFailures ++
     roundTripFailures ++ verdictFailures ++ modelInternalFailures ++
-    asciiFailures ++ canonFailures ++ programFailures
+    asciiFailures ++ canonFailures ++ programFailures ++ Run.runFailures
 
 end Unity.Emit

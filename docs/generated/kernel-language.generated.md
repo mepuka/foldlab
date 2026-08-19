@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE - DO NOT EDIT. -->
 
-Rendered from the kernel corpus `533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c` at interchange format 2. That is the corpus's identity - SHA-256 over its canonical bytes - and it is what this page names its source by, because everything in this language refers to a digest or to a derivation of one. A path would name wherever a reader happens to be standing, which is precisely the ambient reference the algebra refuses; a digest names one byte sequence forever, so a reader who wants to know whether they hold this page's source hashes what they have and compares.
+Rendered from the kernel corpus `b5a7c9ba123dc2e3e28c209a63752ed9129600e19b7960e3847f60416b1762d3` at interchange format 2. That is the corpus's identity - SHA-256 over its canonical bytes - and it is what this page names its source by, because everything in this language refers to a digest or to a derivation of one. A path would name wherever a reader happens to be standing, which is precisely the ambient reference the algebra refuses; a digest names one byte sequence forever, so a reader who wants to know whether they hold this page's source hashes what they have and compares.
 
 Every name, rank, law, repair, and docstring on this page is the model's own text, reproduced verbatim - not paraphrased, not reflowed, not truncated. Two mechanical exceptions, and no others: inside a table cell a line break becomes a space and a pipe is escaped, because a cell holds neither; and trailing spaces are trimmed from line ends, which Markdown discards anyway. The untrimmed text is what the generated schemas carry.
 
@@ -490,7 +490,7 @@ An incarnation is one life of a store — the store a name resolved to at the mo
 
 ## The type vocabulary
 
-25 types, in the model's declaration order. A field's type is a small grammar: a leaf (`Nat`, `String`, `Ref`), a declared type, or a one-argument container, optionally applied to brand arguments. A brand argument is either one of the declaration kinds above or the name of an earlier field or parameter of the same constructor.
+27 types, in the model's declaration order. A field's type is a small grammar: a leaf (`Nat`, `String`, `Ref`), a declared type, or a one-argument container, optionally applied to brand arguments. A brand argument is either one of the declaration kinds above or the name of an earlier field or parameter of the same constructor.
 
 ### DeclKind
 
@@ -837,6 +837,29 @@ it consumes.
 A product type, with one constructor.
 
 - `mk` — name : Nat, generator : GenTag, args : List(RawArg), uses : List(Nat)
+
+### RunStep
+
+One judged node of a run: the program-scoped name, the context the
+node was judged at, the candidate sentence it completed to, and the
+intrinsic sentence the door translated that candidate into.
+
+A product type, with one constructor.
+
+- `mk` — node : Nat, context : Door, candidate : CandidateAct, act : Act
+
+### RunOutcome
+
+How one run ended. A landed run reports the context it reached and
+every step in walked order; a refused run reports the refusing
+node, its taught refusal, and the steps that stood before it. The
+reached context is this model's sharpening: the carriage holds the
+same replica behind its own reference and does not return it.
+
+A sum type, with 2 constructors.
+
+- `landed` — context : Door, steps : List(RunStep)
+- `refused` — node : Nat, refusal : Refusal, steps : List(RunStep)
 
 ## Encoding vectors
 

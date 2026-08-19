@@ -26,7 +26,8 @@ import {
   type SessionGroups,
   type SubstrateField,
 } from "../src/internal/substrate.js"
-import { endedFact, mintSession, sessionLane } from "../src/internal/sessionlanes.js"
+import { endedFact, mintSession } from "../src/internal/sessionfacts.js"
+import { sessionLane } from "../src/internal/sessionlanes.js"
 import {
   SUBSTRATE_WRITS,
   declareSubstrateWrit,

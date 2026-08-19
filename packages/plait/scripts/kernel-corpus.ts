@@ -56,6 +56,7 @@ import {
   type KernelProgramRecord,
   type KernelRecordGroup,
   type KernelRefusalRecord,
+  type KernelRunRecord,
   type KernelStageRecord,
   type KernelTypeRecord,
 } from "../src/kernel/KernelCorpusSchemas.js"
@@ -84,6 +85,7 @@ export interface KernelCorpus {
   readonly docs: ReadonlyArray<KernelDocRecord>
   readonly canons: ReadonlyArray<KernelCanonRecord>
   readonly programs: ReadonlyArray<KernelProgramRecord>
+  readonly runs: ReadonlyArray<KernelRunRecord>
   /** The file's lines, without the trailing empty one. The bytes, for a re-emit check. */
   readonly lines: ReadonlyArray<string>
   /** Groups this reader does not know, skipped under the add-only rule. */
@@ -348,9 +350,23 @@ const checkCounts = (
       )
     }
   }
+  // The run group is the same shape of allowance one group later: a corpus
+  // emitted before it landed carries neither its records nor its count, and
+  // present on either side must agree.
+  const pinnedRuns = corpus.header.counts.run
+  if (pinnedRuns !== undefined || corpus.runs.length > 0) {
+    if (pinnedRuns === undefined) {
+      refuse(`the file carries ${corpus.runs.length} run records and pins no count`)
+    }
+    if (pinnedRuns !== BigInt(corpus.runs.length)) {
+      refuse(
+        `the header pins ${pinnedRuns} run records, the file carries ${corpus.runs.length}`,
+      )
+    }
+  }
   // The add-only rule cuts both ways: a count for a group this reader skipped
   // is skipped with it, but a count for a group that never appeared is a lie.
-  const known = new Set<string>([...counted.map(([group]) => group), "program"])
+  const known = new Set<string>([...counted.map(([group]) => group), "program", "run"])
   for (const name of Object.keys(corpus.header.counts)) {
     if (!known.has(name) && !skipped.includes(name)) {
       refuse(`the header pins a ${name} count that names no record group in the file`)
@@ -499,6 +515,98 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">)
   })
 
   checkPrograms(corpus)
+  checkRuns(corpus)
+}
+
+/**
+ * The run vectors, checked against the rest of the file rather than against
+ * themselves.
+ *
+ * A run record is a claim about executing a declaration the corpus publishes
+ * separately, so almost every check here crosses groups: the program must be
+ * one the `program` group carries, the walked nodes must be a prefix of that
+ * declaration's own admission order, a supply must bind a node the declaration
+ * has, a refusal must name a reason the `refusal` table teaches, a step's
+ * generator must be one `Act` declares, and a payload tag must be a
+ * constructor of `RawArg`. Nothing here restates a vocabulary: every list is
+ * read off another group of the same file.
+ *
+ * The one within-record check is the pairing every vector group in this file
+ * carries — canonicalizing `outcome` must reproduce `bytes` — which is what
+ * lets a consumer that computes its own outcome compare bytes to bytes.
+ */
+const checkRuns = (corpus: Omit<KernelCorpus, "lines" | "skipped" | "digest">): void => {
+  if (corpus.runs.length === 0) return
+  const names = corpus.runs.map((run) => run.name)
+  if (new Set(names).size !== names.length) refuse("a run vector is named twice")
+
+  const fields = generatorFields(corpus.types)
+  const reasons = new Set(corpus.refusals.map((refusal) => refusal.reason))
+  const atoms = corpus.types.find((type) => type.name === "RawArg")
+  if (atoms === undefined) refuse("the run group needs the RawArg type record and the file has none")
+  const atomTags = new Set(atoms.constructors.map((constructor) => constructor.name))
+  const arms = new Set<string>()
+
+  for (const run of corpus.runs) {
+    const where = `run vector ${run.name}`
+    const written = writeCanonicalValue(run.outcome as unknown as JsonValue, where)
+    if (written !== run.bytes) {
+      refuse(`${where} pins bytes ${run.bytes}, the canonicalizer writes ${written}`)
+    }
+
+    const program = corpus.programs.find((carried) => carried.name === run.program)
+    if (program === undefined) {
+      refuse(`${where} runs program ${run.program}, which the file does not carry`)
+    }
+    // Newest first in the declaration, so admission order is that list read
+    // back: the oldest node is walked first.
+    const order = [...program.declaration.nodes].reverse().map((node) => node.name)
+    const nodeNames = new Set(order)
+
+    for (const supply of run.supplies) {
+      if (!nodeNames.has(supply.node)) {
+        refuse(`${where}: a ${supply.slot} supply binds node ${supply.node}, which ${run.program} has not`)
+      }
+    }
+
+    arms.add(run.outcome.outcome)
+    if (run.outcome.outcome === "refused" && !reasons.has(run.outcome.reason)) {
+      refuse(`${where} refuses for ${run.outcome.reason}, which the taught refusal table has not`)
+    }
+    if (run.outcome.outcome === "unspeakable" && !nodeNames.has(run.outcome.node)) {
+      refuse(`${where} cannot speak node ${run.outcome.node}, which ${run.program} has not`)
+    }
+    if (run.outcome.outcome === "refused" && !nodeNames.has(run.outcome.node)) {
+      refuse(`${where} refuses at node ${run.outcome.node}, which ${run.program} has not`)
+    }
+
+    const walked = run.outcome.steps.map((step) => step.node)
+    const prefix = order.slice(0, walked.length)
+    if (walked.join(",") !== prefix.join(",")) {
+      refuse(
+        `${where} walks ${walked.join(",")}, which is not a prefix of the admission order` +
+          ` ${order.join(",")}`,
+      )
+    }
+    for (const step of run.outcome.steps) {
+      const declared = fields.get(step.generator)
+      if (declared === undefined) {
+        refuse(`${where}: step ${step.node} names generator ${step.generator}, which Act has not`)
+      }
+      for (const tag of step.payload) {
+        if (!atomTags.has(tag)) {
+          refuse(`${where}: step ${step.node} sweeps a ${tag} atom, which RawArg has not`)
+        }
+      }
+    }
+  }
+
+  // A run group that only refused would satisfy every refusal statement in it
+  // and still be wrong; one that only landed would never show the tail
+  // untouched. All three arms, or the group is not a wall.
+  for (const arm of ["landed", "refused", "unspeakable"]) {
+    if (!arms.has(arm)) refuse(`the run group carries no ${arm} outcome`)
+  }
 }
 
 /**
@@ -726,6 +834,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
   const docs: Array<KernelDocRecord> = []
   const canons: Array<KernelCanonRecord> = []
   const programs: Array<KernelProgramRecord> = []
+  const runs: Array<KernelRunRecord> = []
   const skipped: Array<string> = []
   const collect: { readonly [Group in KernelRecordGroup]: (row: never) => void } = {
     kind: (row: KernelKindRecord) => void kinds.push(row),
@@ -737,6 +846,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
     doc: (row: KernelDocRecord) => void docs.push(row),
     canon: (row: KernelCanonRecord) => void canons.push(row),
     program: (row: KernelProgramRecord) => void programs.push(row),
+    run: (row: KernelRunRecord) => void runs.push(row),
   }
 
   // Group order is part of the grammar, so the reader walks a fixed ladder
@@ -771,6 +881,7 @@ export const readKernelCorpus = (source: string): KernelCorpus => {
     docs,
     canons,
     programs,
+    runs,
   }
   checkCounts(corpus, skipped)
   checkTables(corpus)

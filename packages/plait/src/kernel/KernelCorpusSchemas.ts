@@ -49,6 +49,7 @@ export const KERNEL_RECORD_GROUPS = [
   "doc",
   "canon",
   "program",
+  "run",
 ] as const
 
 /** One record group of the interchange, after the header. */
@@ -406,6 +407,245 @@ export const KernelProgramRecord = Schema.Struct({
 })
 
 /**
+ * One catalogued reference of a run's door: an identity label and the kind it
+ * is branded by. The pair is the model's own `Ref`, written out rather than
+ * abbreviated, because a label without its brand names nothing.
+ */
+export const KernelRunRef = Schema.Struct({
+  id: KernelNat,
+  kind: Schema.String,
+}).annotate({
+  identifier: "KernelRunRef",
+  title: "Run door reference",
+  description:
+    "One already-admitted referent the run's door held, as an identity label and a declaration" +
+    " kind.",
+})
+
+/** The admission context one run was judged at. */
+export const KernelRunContext = Schema.Struct({
+  catalog: Schema.Array(KernelRunRef),
+  pinned: Schema.Array(KernelRunRef),
+}).annotate({
+  identifier: "KernelRunContext",
+  title: "Run door",
+  description:
+    "The door the run was judged at: the already-admitted catalog and the universe the acting" +
+    " writ pins. It rides with the run so every verdict in the row is reproducible from the row.",
+})
+
+/**
+ * The value a `predicate` supply carries. Written out because the grammar
+ * refers to itself through negation, and a suspended schema needs a type to be
+ * annotated with.
+ */
+export type KernelRunPredicateValue =
+  | { readonly production: "evidenceAppears"; readonly lane: bigint; readonly pattern: bigint }
+  | { readonly production: "cellReaches"; readonly cell: bigint; readonly threshold: bigint }
+  | { readonly production: "holeReaches"; readonly hole: bigint; readonly stage: bigint }
+  | { readonly production: "outcomeLanded"; readonly register: bigint }
+  | {
+    readonly production: "headAdvancedPast"
+    readonly lane: bigint
+    readonly shard: bigint
+    readonly position: bigint
+  }
+  | { readonly production: "onAbsence"; readonly subject: bigint }
+  | { readonly production: "negation"; readonly inner: KernelRunPredicateValue }
+  | { readonly production: "deadline"; readonly tick: bigint }
+  | { readonly production: "absentEverywhere"; readonly cell: bigint }
+
+/**
+ * The candidate trigger grammar at the interchange's spelling: the production
+ * names the shape, and the unlawful productions are spellable here for the same
+ * reason they are spellable in the model — a grammar that cannot say the
+ * refused thing cannot demonstrate the refusal.
+ */
+export const KernelRunPredicate: Schema.Codec<KernelRunPredicateValue> = Schema.Union([
+  Schema.Struct({
+    production: Schema.Literal("evidenceAppears"),
+    lane: KernelNat,
+    pattern: KernelNat,
+  }),
+  Schema.Struct({
+    production: Schema.Literal("cellReaches"),
+    cell: KernelNat,
+    threshold: KernelNat,
+  }),
+  Schema.Struct({
+    production: Schema.Literal("holeReaches"),
+    hole: KernelNat,
+    stage: KernelNat,
+  }),
+  Schema.Struct({ production: Schema.Literal("outcomeLanded"), register: KernelNat }),
+  Schema.Struct({
+    production: Schema.Literal("headAdvancedPast"),
+    lane: KernelNat,
+    shard: KernelNat,
+    position: KernelNat,
+  }),
+  Schema.Struct({ production: Schema.Literal("onAbsence"), subject: KernelNat }),
+  Schema.Struct({
+    production: Schema.Literal("negation"),
+    inner: Schema.suspend((): Schema.Codec<KernelRunPredicateValue> => KernelRunPredicate),
+  }),
+  Schema.Struct({ production: Schema.Literal("deadline"), tick: KernelNat }),
+  Schema.Struct({ production: Schema.Literal("absentEverywhere"), cell: KernelNat }),
+]).annotate({
+  identifier: "KernelRunPredicate",
+  title: "Run trigger production",
+  description:
+    "One candidate trigger production, as an execution-time supply. The production field names" +
+    " the shape, and negation carries another production inside it.",
+})
+
+/**
+ * One execution-time supply of a run, bound to the node it completes.
+ *
+ * The slot selects the shape, which is what lets a reader take the row without
+ * knowing which generator the node applies. Four of the five slots are the
+ * fields the model's own declaration form leaves absent — a declare's kind, a
+ * fold's anchor, a decide's token, a trigger's predicate. The fifth,
+ * `strategy`, is the one slot a candidate carries that no intrinsic sentence
+ * does: `CandidateAct.join` takes a merge strategy and `Act.join` drops it, so
+ * no declaration form can write one and no field table read off `Act` can name
+ * one. It is carried here because the completion had to answer for it.
+ */
+export const KernelRunSupply = Schema.Union([
+  Schema.Struct({
+    bound: Schema.String,
+    node: KernelNat,
+    slot: Schema.Literal("kind"),
+  }),
+  Schema.Struct({
+    bound: Schema.Struct({
+      floor: KernelNat,
+      foldId: KernelNat,
+      head: KernelNat,
+      lane: KernelNat,
+      shard: KernelNat,
+      state: KernelNat,
+    }),
+    node: KernelNat,
+    slot: Schema.Literal("anchor"),
+  }),
+  Schema.Struct({
+    bound: Schema.Struct({ register: KernelNat, value: KernelNat }),
+    node: KernelNat,
+    slot: Schema.Literal("token"),
+  }),
+  Schema.Struct({
+    bound: KernelRunPredicate,
+    node: KernelNat,
+    slot: Schema.Literal("predicate"),
+  }),
+  Schema.Struct({
+    bound: Schema.Struct({
+      algebra: KernelNat,
+      merge: Schema.Literals(["declaredAlgebra", "lastWriterWins"]),
+    }),
+    node: KernelNat,
+    slot: Schema.Literal("strategy"),
+  }),
+]).annotate({
+  identifier: "KernelRunSupply",
+  title: "Run supply",
+  description:
+    "One candidate slot the declaration form carries no reference for, bound at the node it" +
+    " completes. The slot selects the shape of what is bound.",
+})
+
+/**
+ * One judged node of a run: the node's local name, the generator it applied,
+ * the tags of the payload atoms the door swept, and the verdict.
+ *
+ * The payload is tags and not values on purpose. A run's identity labels are
+ * the model's own small naturals; a runtime reasons in content addresses, and
+ * comparing the two would fail for a reason that is not a defect. What the tags
+ * state survives every relabelling: a consumed local must reach the door as a
+ * literal, an unfilled hole must reach it as a hole.
+ */
+export const KernelRunStep = Schema.Struct({
+  generator: Schema.String,
+  node: KernelNat,
+  payload: Schema.Array(Schema.String),
+  verdict: Schema.Literal("admitted"),
+}).annotate({
+  identifier: "KernelRunStep",
+  title: "Run step",
+  description:
+    "One node the door admitted, in walked order, with the tags of the payload atoms it swept.",
+})
+
+/**
+ * How one run ended.
+ *
+ * Two of the three arms are the model's own `RunOutcome`: a run lands, or it
+ * meets a taught refusal at a node and the tail is never judged. The third is
+ * NOT the model's, and says so. `RunOutcome` has two arms because the model's
+ * completion is total — it always produces a candidate — while a carriage's
+ * does not: a slot may be unwired by the declaration, unsupplied by the run, or
+ * consume a local that never landed, and then the door is never reached and
+ * there is no door verdict to report. A row carrying `unspeakable` is a witness
+ * that a program the admission relation accepts is not thereby executable, and
+ * it records which node, which slot, and which of the four ways the slot had no
+ * value.
+ */
+export const KernelRunOutcome = Schema.Union([
+  Schema.Struct({
+    outcome: Schema.Literal("landed"),
+    steps: Schema.Array(KernelRunStep),
+  }),
+  Schema.Struct({
+    node: KernelNat,
+    outcome: Schema.Literal("refused"),
+    reason: Schema.String,
+    steps: Schema.Array(KernelRunStep),
+  }),
+  Schema.Struct({
+    detail: Schema.Literals(["unwired", "unsupplied", "unlanded", "unbranded"]),
+    generator: Schema.String,
+    node: KernelNat,
+    outcome: Schema.Literal("unspeakable"),
+    slot: Schema.String,
+    steps: Schema.Array(KernelRunStep),
+  }),
+]).annotate({
+  identifier: "KernelRunOutcome",
+  title: "Run outcome",
+  description:
+    "A run that landed, a run the door refused at a named node, or a run whose completion could" +
+    " not speak a node at all. The third arm is the carriage's, not the door's.",
+})
+
+/**
+ * One run vector: an execution of a program the corpus itself carries.
+ *
+ * The record is a claim, not a transcript. It states the door, the writ and the
+ * supplies the completion read, so a consumer holding the corpus's own program
+ * declaration can recompute the outcome and compare. As with a canonical form
+ * vector, the `bytes` field pairs the answer with the question: canonicalizing
+ * `outcome` must reproduce it exactly.
+ */
+export const KernelRunRecord = Schema.Struct({
+  bytes: Schema.String,
+  context: KernelRunContext,
+  name: Schema.String,
+  outcome: KernelRunOutcome,
+  program: Schema.String,
+  record: Schema.Literal("run"),
+  supplies: Schema.Array(KernelRunSupply),
+  writ: KernelNat,
+}).annotate({
+  identifier: "KernelRunRecord",
+  title: "Run vector",
+  description:
+    "One execution of one committed program declaration: the door it was judged at, the writ it" +
+    " acted under, the execution-time supplies its completion read, the outcome, and the" +
+    " outcome's own canonical bytes.",
+})
+
+/**
  * Any record of the interchange. Members are tried in file-group order, which
  * is also the order a reader meets them.
  */
@@ -421,6 +661,7 @@ export const KernelCorpusRecord = Schema.Union([
   KernelDocRecord,
   KernelCanonRecord,
   KernelProgramRecord,
+  KernelRunRecord,
 ]).annotate({
   identifier: "KernelCorpusRecord",
   title: "Corpus record",
@@ -463,6 +704,18 @@ export type KernelProgramNode = typeof KernelProgramNode.Type
 export type KernelProgramDeclaration = typeof KernelProgramDeclaration.Type
 /** One program vector line, decoded. */
 export type KernelProgramRecord = typeof KernelProgramRecord.Type
+/** One run door reference, decoded. */
+export type KernelRunRef = typeof KernelRunRef.Type
+/** One run's admission context, decoded. */
+export type KernelRunContext = typeof KernelRunContext.Type
+/** One execution-time supply, decoded. */
+export type KernelRunSupply = typeof KernelRunSupply.Type
+/** One judged node of a run, decoded. */
+export type KernelRunStep = typeof KernelRunStep.Type
+/** How one run ended, decoded. */
+export type KernelRunOutcome = typeof KernelRunOutcome.Type
+/** One run vector line, decoded. */
+export type KernelRunRecord = typeof KernelRunRecord.Type
 /** Any line of the interchange, decoded. */
 export type KernelCorpusRecord = typeof KernelCorpusRecord.Type
 
@@ -477,4 +730,5 @@ export const KERNEL_RECORD_SCHEMA = {
   doc: KernelDocRecord,
   canon: KernelCanonRecord,
   program: KernelProgramRecord,
+  run: KernelRunRecord,
 } as const satisfies { readonly [Group in KernelRecordGroup]: Schema.Top }

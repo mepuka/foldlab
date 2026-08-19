@@ -513,6 +513,11 @@ var TypeNames = []string{
 	"Refusal",
 	"Applicability",
 	"Door",
+	"AdmitResult",
+	"GenTag",
+	"ProgramNode",
+	"RunStep",
+	"RunOutcome",
 }
 
 // ---- Docstrings ----
@@ -553,6 +558,11 @@ var DocTable = []DocEntry{
 	{Name: "Refusal", Doc: "A structural refusal: the reason, the law it defends, and the\ntaught repair. Refusal parity as data: the door never refuses\nwithout teaching the legal next move. "},
 	{Name: "Applicability", Doc: "How a taught repair may be applied. A repair is machine-applicable\nexactly when the lawful rewrite is a function of the refused\ncandidate alone -- an agent may apply it mechanically, with no new\ninformation; it is advisory when the repair needs something the\ncandidate does not carry (a token to hold, a value to declare, an\nauthority to request). The Rust diagnostic discipline, adopted by\nthe operator's ruling. "},
 	{Name: "Door", Doc: "The admission context: the already-admitted catalog and the\nuniverse of referents the acting writ pins. "},
+	{Name: "AdmitResult", Doc: "The admission verdict: an intrinsic sentence, or a taught\nstructural refusal. "},
+	{Name: "GenTag", Doc: "The generator a program node applies. "},
+	{Name: "ProgramNode", Doc: "One node of a program declaration: a program-scoped name, the\ngenerator it applies, its raw arguments (holes permitted here --\nthe program's typed parameters), and the names of the prior nodes\nit consumes. "},
+	{Name: "RunStep", Doc: "One judged node of a run: the program-scoped name, the context the\nnode was judged at, the candidate sentence it completed to, and the\nintrinsic sentence the door translated that candidate into. "},
+	{Name: "RunOutcome", Doc: "How one run ended. A landed run reports the context it reached and\nevery step in walked order; a refused run reports the refusing\nnode, its taught refusal, and the steps that stood before it. The\nreached context is this model's sharpening: the carriage holds the\nsame replica behind its own reference and does not return it. "},
 }
 
 // DocFor resolves a type's docstring. A type without one is reported as

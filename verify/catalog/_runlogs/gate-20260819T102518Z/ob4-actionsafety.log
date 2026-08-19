@@ -1,0 +1,92 @@
+### label:   ob4-actionsafety
+### started: 2026-08-19T12:01:47Z
+### jar:     tools/apalache-0.61.0/lib/apalache.jar  sha256 33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346
+### java:    openjdk version "21.0.2" 2024-01-16
+### cmd:     java -jar apalache.jar check --config=CatalogInd.cfg --init=IndInit --inv=SafetySteps --length=1 CatalogInd.tla
+### -----------------------------------------------------------
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-01-49_11307072606640863278
+# APALACHE version: 0.61.0 | build: 831d473                       I@07:01:49.442
+  > CatalogInd.cfg: Loading TLC configuration                     I@07:01:49.447
+  > Using next predicate(s) Next from the TLC config              I@07:01:49.525
+checker.init overrides the value from the TLC configuration.      W@07:01:49.525
+Tuning:                                                           I@07:01:49.525
+PASS #0: SanyParser                                               I@07:01:49.744
+PASS #1: TypeCheckerSnowcat                                       I@07:01:50.178
+ > Running Snowcat .::.                                           I@07:01:50.178
+ > Your types are purrfect!                                       I@07:01:51.115
+ > All expressions are typed                                      I@07:01:51.115
+PASS #2: ConfigurationPass                                        I@07:01:51.115
+  > CatalogInd.cfg: found INVARIANTS: SafetySteps                 I@07:01:51.452
+  > Set the initialization predicate to IndInit                   I@07:01:51.454
+  > Set the transition predicate to Next                          I@07:01:51.454
+  > Set the constant initialization predicate to CInit            I@07:01:51.454
+  > Set an invariant to SafetySteps                               I@07:01:51.456
+PASS #3: DesugarerPass                                            I@07:01:51.461
+  > Desugaring...                                                 I@07:01:51.461
+PASS #4: InlinePass                                               I@07:01:51.483
+Leaving only relevant operators: CInit, CInitPrimed, IndInit, IndInitPrimed, Next, SafetySteps I@07:01:51.483
+PASS #5: TemporalPass                                             I@07:01:51.584
+  > Rewriting temporal operators...                               I@07:01:51.584
+  > No temporal property specified, nothing to encode             I@07:01:51.584
+PASS #6: InlinePass                                               I@07:01:51.584
+Leaving only relevant operators: CInit, CInitPrimed, IndInit, IndInitPrimed, Next, SafetySteps I@07:01:51.584
+PASS #7: PrimingPass                                              I@07:01:51.584
+  > Introducing CInitPrimed for CInit'                            I@07:01:51.599
+  > Introducing IndInitPrimed for IndInit'                        I@07:01:51.599
+PASS #8: VCGen                                                    I@07:01:51.599
+  > Producing verification conditions from the invariant SafetySteps I@07:01:51.599
+  > VCGen produced 2 verification condition(s)                    I@07:01:51.618
+PASS #9: PreprocessingPass                                        I@07:01:51.630
+  > Before preprocessing: unique renaming                         I@07:01:51.630
+ > Applying standard transformations:                             I@07:01:51.658
+  > PrimePropagation                                              I@07:01:51.658
+  > Desugarer                                                     I@07:01:51.663
+  > UniqueRenamer                                                 I@07:01:51.663
+  > Normalizer                                                    I@07:01:51.679
+  > SetMembershipSimplifier                                       I@07:01:51.679
+  > Keramelizer                                                   I@07:01:51.702
+  > After preprocessing: UniqueRenamer                            I@07:01:51.714
+PASS #10: TransitionFinderPass                                    I@07:01:51.730
+  > Found 1 initializing transitions                              I@07:01:51.795
+  > Found 7 transitions                                           I@07:01:51.812
+  > Found constant initializer CInit                              I@07:01:51.812
+  > Applying unique renaming                                      I@07:01:51.819
+PASS #11: OptimizationPass                                        I@07:01:51.830
+ > Applying optimizations:                                        I@07:01:51.843
+  > ConstSimplifier                                               I@07:01:51.843
+  > ExprOptimizer                                                 I@07:01:51.858
+  > SetMembershipSimplifier                                       I@07:01:51.877
+  > ConstSimplifier                                               I@07:01:51.879
+PASS #12: AnalysisPass                                            I@07:01:51.885
+ > Marking skolemizable existentials and sets to be expanded...   I@07:01:51.902
+  > Skolemization                                                 I@07:01:51.902
+  > Expansion                                                     I@07:01:51.902
+  > Remove unused let-in defs                                     I@07:01:51.917
+ > Running analyzers...                                           I@07:01:51.917
+  > Introduced expression grades                                  I@07:01:51.937
+PASS #13: BoundedChecker                                          I@07:01:51.938
+Step 0: picking a transition out of 1 transition(s)               I@07:02:07.565
+State 0: Checking 2 action invariants                             I@07:02:16.779
+State 0: action invariant 0 holds.                                I@07:02:17.260
+State 0: action invariant 1 holds.                                I@07:03:32.405
+State 0: Checking 2 action invariants                             I@07:03:37.243
+State 0: action invariant 0 holds.                                I@07:03:37.756
+State 0: action invariant 1 holds.                                I@07:05:19.332
+State 0: Checking 2 action invariants                             I@07:05:29.493
+State 0: action invariant 0 holds.                                I@07:05:30.236
+State 0: action invariant 1 holds.                                I@07:09:11.252
+State 0: Checking 2 action invariants                             I@07:09:22.986
+State 0: action invariant 0 holds.                                I@07:10:51.523
+State 0: action invariant 1 holds.                                I@07:12:59.552
+Step 1: picking a transition out of 5 transition(s)               I@07:13:10.528
+The outcome is: NoError                                           I@07:13:10.929
+Checker reports no error up to computation length 1               I@07:13:10.929
+It took me 0 days  0 hours 11 min 21 sec                          I@07:13:10.929
+Total time: 681.486 sec                                           I@07:13:10.929
+EXITCODE: OK
+### -----------------------------------------------------------
+### exit code: 0
+### wall clock: 684s

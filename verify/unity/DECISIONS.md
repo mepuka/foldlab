@@ -616,3 +616,159 @@ in `TsKernel.lean`, docstringed as the residual they are, so the follow-up is a
 re-emission and nothing more. **Load-bearing? yes** — it records that the
 reopening was layout, not vocabulary, and that the residual is deferred by
 measurement rather than forgotten.
+
+## The run group: the model's own executions as vectors
+
+The eleventh record group, and the first that publishes an EXECUTION rather
+than a value. Task-local placeholders follow the numbering rule in
+`proto/DECISIONS.md`; repository D-numbers are assigned at merge.
+
+The kernel states a run as a walk parameterised by a completion and a carriage
+growth rule, and proves the composition for EVERY completion. That generality
+is what makes the group possible and what makes these decisions necessary: a
+corpus cannot publish a run without saying which completion produced it, or the
+rows report a verdict about nothing.
+
+### T1. The completion is committed beside the vectors, not left open
+
+Decided: `Unity/Run.lean` carries one completion and commits it. For a node it
+reads the generator's value field with dataflow substituted, its reference
+fields, and the run's supplies bound by node name — three provenances, in that
+order, and no fourth.
+
+Alternatives: emit a run at the model's `Kernel.Planted.runCandidate` (which
+maps a node NAME to a planted candidate and so runs no committed program at
+all); leave the completion abstract and emit only the outcome (which publishes
+a verdict no consumer can reproduce, since a different completion reaches a
+different verdict on the same declaration).
+
+Why: the composition law holds for every completion, so "which one" is exactly
+the fact the corpus must carry. A run row whose completion is unstated is
+unfalsifiable — any divergence a replay found could be blamed on the reader
+having guessed the wrong completion. **Load-bearing? yes** — it is what turns
+these rows from a transcript into a claim.
+
+### T2. The completion runs over the DECLARATION, so `Kernel.runWalk` cannot host it
+
+Decided: the walk lives in `Unity/Run.lean` over `Program.Node`, and the
+emitter cross-checks it against `Kernel.runProgram` at the completion
+"this node name completes to this candidate" before printing a row.
+
+The model's `Kernel.Completion` has domain `ProgramNode` — the ERASED node,
+whose arguments are a positional `List RawArg` with the generator's field keys
+dropped. A completion faithful to the carriage keys arguments by field NAME
+(`lane`, `writ`, `contribution`), so it cannot be written at that domain
+without re-deriving field identity from position. Alternatives: complete
+positionally (a second, weaker rule that would agree with the carriage only by
+accident); widen `Kernel.Completion` to the un-erased declaration (a model
+change, refused under this commission's limits).
+
+Why: node names are unique within an admitted program, so a name-keyed
+completion IS a faithful `Kernel.Completion` — the candidates are computed over
+the declaration and then handed to the model's own walk by name. That keeps the
+model's walk as the referee without touching it. The cross-check is executed at
+emit time over every gap-free vector and reddens the emitter, not a comment.
+**Load-bearing? yes** — it is why the emitter's walk is a restatement rather
+than a second machine.
+
+### T3. A run row carries a third outcome arm, and it is the carriage's, not the door's
+
+Decided: the group's outcome vocabulary is `landed`, `refused`, `unspeakable`.
+The first two are `Kernel.RunOutcome`'s. The third is not, and is spelled after
+the carriage's own name for the condition.
+
+`Kernel.RunOutcome` has two arms because `Kernel.Completion` is TOTAL: a
+completion always answers, so a walk either lands or meets the door. A
+carriage's completion does not always answer — a slot may be unwired,
+unsupplied, or consume a local that never landed — and then the door is never
+reached, so there is no door verdict to report. Alternatives: add the arm to
+`Kernel.RunOutcome` (a model semantic change, refused); drop the vector (which
+would delete the F-3 witness the commission asked for — the program the
+admission relation accepts and no carriage can execute).
+
+Why: the arm is honest precisely because it is marked as not the model's. A run
+carrying it is a witness that admissibility is not executability, and the row
+records WHERE (node, generator, slot) and WHY (`unwired`, `unsupplied`,
+`unlanded`, `unbranded`) rather than merely that something went wrong.
+**Load-bearing? yes** — it is the one place the group departs from the model's
+own outcome type, and the departure is the finding.
+
+### T4. The door rides as a value, and the identity labels are the model's
+
+Decided: every run row carries its own `context` — the catalog and the pinned
+universe as reference rows — and its `writ`, so a judgment is reproducible from
+the row alone. Steps carry the node, the generator, the payload's atom TAGS and
+the verdict; they do not carry identity labels.
+
+Alternatives: carry the encoded sentence per step (which pins the model's small
+natural labels into rows a runtime at content-address scale can never
+reproduce); carry the landed labels (the same problem one level down).
+
+Why: the two sides run at different identity scales — the model's labels are
+small naturals it chose, a runtime's are content addresses its hasher
+computed — and a wall that compared them would fail for a reason that is not a
+defect. What IS comparable is label-free: the arm, the refusing node, the
+taught reason, the walked node sequence, and the shape of each payload. The
+atom tags are the strongest label-free statement available, and they still
+catch a dataflow defect: a consumed local must reach the door as a `literal`,
+an unfilled hole as a `hole`. **Load-bearing? yes** — it fixes what "byte-equal
+replay" can mean and what it cannot.
+
+### T5. `join`'s strategy is carried as a supply, and that is a FINDING
+
+Decided: the supply vocabulary is `kind`, `anchor`, `token`, `predicate`,
+`strategy`. The first four are the runtime's own `RunSupplies` members. The
+fifth is not, and it is carried anyway.
+
+`Kernel.CandidateAct.join` takes a `MergeStrategy`; `Kernel.Act.join` drops it,
+so the generated builder's field table — which is read off `Act` — carries no
+`strategy` field, and the declaration form has nowhere to write one. The
+carriage fills the slot from its OWN cell-binding replica, which is a
+provenance the model's run has no counterpart for. Alternatives: invent a
+declaration form for it (forbidden — no supplies invention); omit the join node
+so the question never arises (which would delete the only landed four-node
+vector).
+
+Why: the slot is real, the completion must answer for it, and the honest
+account is to record what the completion used and report that the runtime does
+not read it from there. The conformance checker pins this mechanically: it
+demands `strategy` be a field of `CandidateAct.join` and refuses if it ever
+appears on `Act.join`, so the day the model closes the gap the gate says so.
+**Load-bearing? yes** — it is the commission's named finding class, made into a
+check rather than a paragraph.
+
+### T6. The verdict count pins are scoped by record tag
+
+Decided: `verify/unity/run.sh` stops counting `"verdict":"admitted"` and
+`"verdict":"refused"` over the whole file and counts them under their record
+tags instead — seventeen refused and two admitted under `admission`, two
+admitted under `model-admission`.
+
+Why: a run step reports a per-node verdict, so the whole-file counts silently
+began folding two groups' claims into one number. Rewriting the pins to a
+larger number would have kept the collision and hidden it. Alternatives: rename
+the step's field (which would cost the group the word the commission asked for);
+drop the step verdict (which makes a step less self-describing for no gain).
+**Load-bearing? no** — the regeneration diff catches a moved corpus either way,
+but a pin that no longer measures what its name says is a pin on its way to
+becoming decoration.
+
+### T7. `RunStep` and `RunOutcome` join the type manifest, and generated bytes move
+
+Decided: the two types enter `kernel_manifest`, which grows the `type` and
+`doc` groups from 25 to 27 and empties the projection orphan register down to
+`Kernel.World` alone.
+
+This was not free and the cost is recorded rather than discovered later: the
+projections gate diffs `names.txt` against the corpus's own emitted type
+roster, so the manifest cannot name a type the corpus does not carry. Adding
+the two names to `names.txt` therefore REQUIRES adding them to the corpus, and
+adding them to the corpus moves every surface generated from it. Measured: the
+`kernel-tables` and `refusal-kinds` surfaces moved by their corpus provenance
+digest only — no table content changed — and `kernel-builder` did not move at
+all, because it carries a path rather than a digest.
+
+Why: the commission answers the DEV-845 membership question YES, and membership
+in the projection manifest is not separable from membership in the corpus while
+that wall stands. **Load-bearing? yes** — anyone expecting the run group to
+move no generated byte needs this paragraph to tell them why it did.

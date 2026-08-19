@@ -80,21 +80,22 @@ export const KERNEL_CANONICAL_EXAMPLES_KEY = "canonicalExamples"
 /** The provenance line, with the counts it pins. Examples are real records from the corpus. */
 export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
   canonicalExamples: [
-    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":25,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":25},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
+    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":27,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"run\":5,\"stage\":5,\"type\":27},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
   ],
   examples: [
     {
       counts: {
         admission: 19n,
         canon: 10n,
-        doc: 25n,
+        doc: 27n,
         encoding: 12n,
         kind: 12n,
         "model-admission": 2n,
         program: 4n,
         refusal: 16n,
+        run: 5n,
         stage: 5n,
-        type: 25n,
+        type: 27n,
       },
       format: 2n,
       generator: "verify/unity emit",
@@ -319,6 +320,141 @@ export const KernelProgramRecord = Grammar.KernelProgramRecord.annotate({
   ],
 })
 
+/**
+ * One execution of a committed program, and the outcome's own bytes. Examples are real records
+ * from the corpus.
+ */
+export const KernelRunRecord = Grammar.KernelRunRecord.annotate({
+  canonicalExamples: [
+    "{\"bytes\":\"{\\\"outcome\\\":\\\"landed\\\",\\\"steps\\\":[{\\\"generator\\\":\\\"resolve\\\",\\\"node\\\":1,\\\"payload\\\":[],\\\"verdict\\\":\\\"admitted\\\"},{\\\"generator\\\":\\\"decide\\\",\\\"node\\\":2,\\\"payload\\\":[\\\"literal\\\"],\\\"verdict\\\":\\\"admitted\\\"},{\\\"generator\\\":\\\"emit\\\",\\\"node\\\":3,\\\"payload\\\":[\\\"literal\\\"],\\\"verdict\\\":\\\"admitted\\\"},{\\\"generator\\\":\\\"join\\\",\\\"node\\\":4,\\\"payload\\\":[\\\"literal\\\"],\\\"verdict\\\":\\\"admitted\\\"}]}\",\"context\":{\"catalog\":[{\"id\":8,\"kind\":\"index\"},{\"id\":5,\"kind\":\"program\"},{\"id\":1,\"kind\":\"lane\"},{\"id\":6,\"kind\":\"resource\"},{\"id\":11,\"kind\":\"algebra\"},{\"id\":4,\"kind\":\"policy\"}],\"pinned\":[{\"id\":8,\"kind\":\"index\"},{\"id\":5,\"kind\":\"program\"},{\"id\":1,\"kind\":\"lane\"},{\"id\":6,\"kind\":\"resource\"},{\"id\":11,\"kind\":\"algebra\"},{\"id\":4,\"kind\":\"policy\"}]},\"name\":\"distill-shape\",\"outcome\":{\"outcome\":\"landed\",\"steps\":[{\"generator\":\"resolve\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"},{\"generator\":\"decide\",\"node\":2,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"emit\",\"node\":3,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"join\",\"node\":4,\"payload\":[\"literal\"],\"verdict\":\"admitted\"}]},\"program\":\"distill-shape\",\"record\":\"run\",\"supplies\":[{\"bound\":{\"register\":5,\"value\":1},\"node\":2,\"slot\":\"token\"},{\"bound\":{\"algebra\":11,\"merge\":\"declaredAlgebra\"},\"node\":4,\"slot\":\"strategy\"}],\"writ\":4}",
+    "{\"bytes\":\"{\\\"node\\\":2,\\\"outcome\\\":\\\"refused\\\",\\\"reason\\\":\\\"unfenced-decide\\\",\\\"steps\\\":[{\\\"generator\\\":\\\"resolve\\\",\\\"node\\\":1,\\\"payload\\\":[],\\\"verdict\\\":\\\"admitted\\\"}]}\",\"context\":{\"catalog\":[{\"id\":8,\"kind\":\"index\"},{\"id\":5,\"kind\":\"program\"},{\"id\":1,\"kind\":\"lane\"},{\"id\":6,\"kind\":\"resource\"},{\"id\":11,\"kind\":\"algebra\"},{\"id\":4,\"kind\":\"policy\"}],\"pinned\":[{\"id\":8,\"kind\":\"index\"},{\"id\":5,\"kind\":\"program\"},{\"id\":1,\"kind\":\"lane\"},{\"id\":6,\"kind\":\"resource\"},{\"id\":11,\"kind\":\"algebra\"},{\"id\":4,\"kind\":\"policy\"}]},\"name\":\"distill-shape-unfenced\",\"outcome\":{\"node\":2,\"outcome\":\"refused\",\"reason\":\"unfenced-decide\",\"steps\":[{\"generator\":\"resolve\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"}]},\"program\":\"distill-shape\",\"record\":\"run\",\"supplies\":[{\"bound\":{\"algebra\":11,\"merge\":\"declaredAlgebra\"},\"node\":4,\"slot\":\"strategy\"}],\"writ\":4}",
+    "{\"bytes\":\"{\\\"outcome\\\":\\\"landed\\\",\\\"steps\\\":[{\\\"generator\\\":\\\"declare\\\",\\\"node\\\":1,\\\"payload\\\":[\\\"literal\\\"],\\\"verdict\\\":\\\"admitted\\\"},{\\\"generator\\\":\\\"emit\\\",\\\"node\\\":2,\\\"payload\\\":[\\\"literal\\\"],\\\"verdict\\\":\\\"admitted\\\"}]}\",\"context\":{\"catalog\":[{\"id\":1,\"kind\":\"lane\"},{\"id\":4,\"kind\":\"policy\"}],\"pinned\":[{\"id\":1,\"kind\":\"lane\"},{\"id\":4,\"kind\":\"policy\"}]},\"name\":\"holey-filled\",\"outcome\":{\"outcome\":\"landed\",\"steps\":[{\"generator\":\"declare\",\"node\":1,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"emit\",\"node\":2,\"payload\":[\"literal\"],\"verdict\":\"admitted\"}]},\"program\":\"holey-filled\",\"record\":\"run\",\"supplies\":[{\"bound\":\"resource\",\"node\":1,\"slot\":\"kind\"}],\"writ\":4}",
+    "{\"bytes\":\"{\\\"node\\\":1,\\\"outcome\\\":\\\"refused\\\",\\\"reason\\\":\\\"unfilled-hole\\\",\\\"steps\\\":[]}\",\"context\":{\"catalog\":[{\"id\":1,\"kind\":\"lane\"},{\"id\":4,\"kind\":\"policy\"}],\"pinned\":[{\"id\":1,\"kind\":\"lane\"},{\"id\":4,\"kind\":\"policy\"}]},\"name\":\"holey\",\"outcome\":{\"node\":1,\"outcome\":\"refused\",\"reason\":\"unfilled-hole\",\"steps\":[]},\"program\":\"holey\",\"record\":\"run\",\"supplies\":[{\"bound\":\"resource\",\"node\":1,\"slot\":\"kind\"}],\"writ\":4}",
+    "{\"bytes\":\"{\\\"detail\\\":\\\"unwired\\\",\\\"generator\\\":\\\"emit\\\",\\\"node\\\":2,\\\"outcome\\\":\\\"unspeakable\\\",\\\"slot\\\":\\\"lane\\\",\\\"steps\\\":[{\\\"generator\\\":\\\"declare\\\",\\\"node\\\":1,\\\"payload\\\":[],\\\"verdict\\\":\\\"admitted\\\"}]}\",\"context\":{\"catalog\":[{\"id\":4,\"kind\":\"policy\"}],\"pinned\":[{\"id\":4,\"kind\":\"policy\"}]},\"name\":\"ground-two-node\",\"outcome\":{\"detail\":\"unwired\",\"generator\":\"emit\",\"node\":2,\"outcome\":\"unspeakable\",\"slot\":\"lane\",\"steps\":[{\"generator\":\"declare\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"}]},\"program\":\"ground-two-node\",\"record\":\"run\",\"supplies\":[{\"bound\":\"resource\",\"node\":1,\"slot\":\"kind\"}],\"writ\":4}",
+  ],
+  examples: [
+    {
+      bytes: "{\"outcome\":\"landed\",\"steps\":[{\"generator\":\"resolve\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"},{\"generator\":\"decide\",\"node\":2,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"emit\",\"node\":3,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"join\",\"node\":4,\"payload\":[\"literal\"],\"verdict\":\"admitted\"}]}",
+      context: {
+        catalog: [
+          { id: 8n, kind: "index" },
+          { id: 5n, kind: "program" },
+          { id: 1n, kind: "lane" },
+          { id: 6n, kind: "resource" },
+          { id: 11n, kind: "algebra" },
+          { id: 4n, kind: "policy" },
+        ],
+        pinned: [
+          { id: 8n, kind: "index" },
+          { id: 5n, kind: "program" },
+          { id: 1n, kind: "lane" },
+          { id: 6n, kind: "resource" },
+          { id: 11n, kind: "algebra" },
+          { id: 4n, kind: "policy" },
+        ],
+      },
+      name: "distill-shape",
+      outcome: {
+        outcome: "landed",
+        steps: [
+          { generator: "resolve", node: 1n, payload: [], verdict: "admitted" },
+          { generator: "decide", node: 2n, payload: ["literal"], verdict: "admitted" },
+          { generator: "emit", node: 3n, payload: ["literal"], verdict: "admitted" },
+          { generator: "join", node: 4n, payload: ["literal"], verdict: "admitted" },
+        ],
+      },
+      program: "distill-shape",
+      record: "run",
+      supplies: [
+        { bound: { register: 5n, value: 1n }, node: 2n, slot: "token" },
+        { bound: { algebra: 11n, merge: "declaredAlgebra" }, node: 4n, slot: "strategy" },
+      ],
+      writ: 4n,
+    },
+    {
+      bytes: "{\"node\":2,\"outcome\":\"refused\",\"reason\":\"unfenced-decide\",\"steps\":[{\"generator\":\"resolve\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"}]}",
+      context: {
+        catalog: [
+          { id: 8n, kind: "index" },
+          { id: 5n, kind: "program" },
+          { id: 1n, kind: "lane" },
+          { id: 6n, kind: "resource" },
+          { id: 11n, kind: "algebra" },
+          { id: 4n, kind: "policy" },
+        ],
+        pinned: [
+          { id: 8n, kind: "index" },
+          { id: 5n, kind: "program" },
+          { id: 1n, kind: "lane" },
+          { id: 6n, kind: "resource" },
+          { id: 11n, kind: "algebra" },
+          { id: 4n, kind: "policy" },
+        ],
+      },
+      name: "distill-shape-unfenced",
+      outcome: {
+        node: 2n,
+        outcome: "refused",
+        reason: "unfenced-decide",
+        steps: [{ generator: "resolve", node: 1n, payload: [], verdict: "admitted" }],
+      },
+      program: "distill-shape",
+      record: "run",
+      supplies: [{ bound: { algebra: 11n, merge: "declaredAlgebra" }, node: 4n, slot: "strategy" }],
+      writ: 4n,
+    },
+    {
+      bytes: "{\"outcome\":\"landed\",\"steps\":[{\"generator\":\"declare\",\"node\":1,\"payload\":[\"literal\"],\"verdict\":\"admitted\"},{\"generator\":\"emit\",\"node\":2,\"payload\":[\"literal\"],\"verdict\":\"admitted\"}]}",
+      context: {
+        catalog: [{ id: 1n, kind: "lane" }, { id: 4n, kind: "policy" }],
+        pinned: [{ id: 1n, kind: "lane" }, { id: 4n, kind: "policy" }],
+      },
+      name: "holey-filled",
+      outcome: {
+        outcome: "landed",
+        steps: [
+          { generator: "declare", node: 1n, payload: ["literal"], verdict: "admitted" },
+          { generator: "emit", node: 2n, payload: ["literal"], verdict: "admitted" },
+        ],
+      },
+      program: "holey-filled",
+      record: "run",
+      supplies: [{ bound: "resource", node: 1n, slot: "kind" }],
+      writ: 4n,
+    },
+    {
+      bytes: "{\"node\":1,\"outcome\":\"refused\",\"reason\":\"unfilled-hole\",\"steps\":[]}",
+      context: {
+        catalog: [{ id: 1n, kind: "lane" }, { id: 4n, kind: "policy" }],
+        pinned: [{ id: 1n, kind: "lane" }, { id: 4n, kind: "policy" }],
+      },
+      name: "holey",
+      outcome: { node: 1n, outcome: "refused", reason: "unfilled-hole", steps: [] },
+      program: "holey",
+      record: "run",
+      supplies: [{ bound: "resource", node: 1n, slot: "kind" }],
+      writ: 4n,
+    },
+    {
+      bytes: "{\"detail\":\"unwired\",\"generator\":\"emit\",\"node\":2,\"outcome\":\"unspeakable\",\"slot\":\"lane\",\"steps\":[{\"generator\":\"declare\",\"node\":1,\"payload\":[],\"verdict\":\"admitted\"}]}",
+      context: { catalog: [{ id: 4n, kind: "policy" }], pinned: [{ id: 4n, kind: "policy" }] },
+      name: "ground-two-node",
+      outcome: {
+        detail: "unwired",
+        generator: "emit",
+        node: 2n,
+        outcome: "unspeakable",
+        slot: "lane",
+        steps: [{ generator: "declare", node: 1n, payload: [], verdict: "admitted" }],
+      },
+      program: "ground-two-node",
+      record: "run",
+      supplies: [{ bound: "resource", node: 1n, slot: "kind" }],
+      writ: 4n,
+    },
+  ],
+})
+
 /** One admission verdict, refused or admitted, with both shapes exemplified. */
 export const KernelAdmissionRecord = Schema.Union([
   KernelAdmissionRefusedRecord,
@@ -353,6 +489,7 @@ export const KERNEL_RECORD_SCHEMA = {
   doc: KernelDocRecord,
   canon: KernelCanonRecord,
   program: KernelProgramRecord,
+  run: KernelRunRecord,
 } as const
 
 // ---------------------------------------------------------------------------
@@ -1084,6 +1221,61 @@ export const KernelProgramNode = Schema.Struct({
  */
 export type KernelProgramNodeValue = typeof KernelProgramNode.Type
 
+/**
+ * One judged node of a run: the program-scoped name, the context the
+ * node was judged at, the candidate sentence it completed to, and the
+ * intrinsic sentence the door translated that candidate into.
+ */
+export const KernelRunStep = Schema.Struct({
+  node: KernelNat,
+  context: KernelDoor,
+  candidate: KernelCandidateAct,
+  act: KernelAct,
+}).annotate({
+  identifier: "KernelRunStep",
+  title: "One judged node of a run: the program-scoped name, the context the",
+  description:
+    "One judged node of a run: the program-scoped name, the context the\nnode was judged at, "
+    + "the candidate sentence it completed to, and the\nintrinsic sentence the door translated "
+    + "that candidate into. ",
+})
+
+/**
+ * The value RunStep carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelRunStepValue = typeof KernelRunStep.Type
+
+/**
+ * How one run ended. A landed run reports the context it reached and
+ * every step in walked order; a refused run reports the refusing
+ * node, its taught refusal, and the steps that stood before it. The
+ * reached context is this model's sharpening: the carriage holds the
+ * same replica behind its own reference and does not return it.
+ */
+export const KernelRunOutcome = Schema.Union([
+  Schema.TaggedStruct("landed", { context: KernelDoor, steps: Schema.Array(KernelRunStep) }),
+  Schema.TaggedStruct("refused", {
+    node: KernelNat,
+    refusal: KernelRefusal,
+    steps: Schema.Array(KernelRunStep),
+  }),
+]).annotate({
+  identifier: "KernelRunOutcome",
+  title: "How one run ended.",
+  description:
+    "How one run ended. A landed run reports the context it reached and\nevery step in walked "
+    + "order; a refused run reports the refusing\nnode, its taught refusal, and the steps that "
+    + "stood before it. The\nreached context is this model's sharpening: the carriage holds "
+    + "the\nsame replica behind its own reference and does not return it. ",
+})
+
+/**
+ * The value RunOutcome carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelRunOutcomeValue = typeof KernelRunOutcome.Type
+
 /** Every mini-AST schema, keyed by the model's short name for the type. */
 export const KERNEL_TYPE_SCHEMA = {
   DeclKind: KernelDeclKind,
@@ -1111,6 +1303,8 @@ export const KERNEL_TYPE_SCHEMA = {
   AdmitResult: KernelAdmitResult,
   GenTag: KernelGenTag,
   ProgramNode: KernelProgramNode,
+  RunStep: KernelRunStep,
+  RunOutcome: KernelRunOutcome,
 } as const
 
 /**

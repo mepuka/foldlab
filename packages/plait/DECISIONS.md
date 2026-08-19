@@ -5811,3 +5811,480 @@ a role, and a layer acting as two roles would then need two writs and a rule for
 combining them. **Load-bearing? yes** — group 3's writ field existed and named
 nothing; it now names a value, and the difference between those two states is
 the whole of what "open writs" asked for.
+
+---
+
+## Task: the status pump as a fact source, over the transcribed event vocabulary (estate-daemon S2, 2026-08-19)
+
+Placeholders `T33`–`T38` continue the series; repository D-numbers are assigned
+at merge. The commission is the estate-daemon slice plan's second vertical
+slice, cut under the daemon commission's ruling R-3 — *the protocol is the wire
+vocabulary, by transcription* — and rider (b), full adoption of the vendor's
+lifecycle events. The session-fact schema this slice builds against is the
+LANDED one, roster digest and writ digest included, not the commissioning body's
+prose.
+
+### T33. The vocabulary is a transcribed table with per-row provenance, and the machine is a second table over it
+
+Decided: the eleven status event types the pinned client declares are
+transcribed into one declared value in the pin's own declaration order, with the
+vendor's own event name, the vendor's own payload field names, a sort per field,
+and the vendor's own type-alias name as that row's provenance. A second declared
+value places seven of the eleven as state transitions, carrying per row the
+state entered, the admissible predecessors, whether the row mints a successor,
+which fact form it emits, and whether the state is absorbing. Both tables are
+data. The event-name type and the state type are PROJECTIONS of those tables,
+derived from them, so a row appended tomorrow widens both by construction.
+
+The refused alternative is the hand-written union — a `type ConnectionState =
+"connected" | "disconnected" | ...` beside a switch statement over eleven cases.
+It is refused for a mechanical reason and not a stylistic one: the parity ticket
+in this same stage byte-compares the two language sides' tables against one
+another and against the pinned source, and a table that exists only as inline
+branches has nothing to compare. The gate this slice ships makes the refusal
+executable rather than asserted — it plants the union and requires the refusal.
+
+**The state before any transition is `null`, not a word.** The pin declares no
+event meaning "attached for the first time", so naming that condition would have
+been the invention R-3 forbids. Every state is named by the transition that
+enters it, and the absence of one is spelled as an absence. The cost is that a
+reader sees `null` where they expected a name; the payoff is that every word in
+the machine is the substrate's own, checkably.
+
+**Sorts are this transcription's vocabulary and events are the vendor's, and the
+two share no word.** The client's error payload is transcribed at the sort
+`error-object` rather than `error`, because the vendor also declares an event
+named `error` and a consumer branching on the sort would then be
+indistinguishable from a consumer branching on the event — which is exactly what
+the gate's fifth clause refuses. The collision was found by that clause going
+red on the first honest spelling. **Load-bearing? yes.**
+
+### T34. Readings within a state are observations, and the split is walled rather than asserted
+
+Decided: four of the eleven rows — the cluster-list update, the protocol error,
+the client ping, the slow consumer — are placed as READINGS. They emit
+observation facts citing the session and the state they were read within, they
+move the machine nowhere, and no row of the machine names one as a state. The
+gate holds all three: no reading appears as a state, no reading has a machine
+row at all, and every machine state is a transcribed transition's own name.
+
+Modelling them as states would have been the invention the composition rule
+warns about, and it is a live temptation: three of the four read like conditions
+a connection could be *in*. The wall is what keeps the temptation from being
+resolved by taste. Its plant promotes a reading to a state and requires the
+refusal; the runtime half of the claim is a real slow-consumer condition induced
+on a real connection, landing as an observation with the state it was read
+within, next to zero transition facts.
+
+The commissioned second reading — the client's own ping — is NOT induced against
+a live server. The client emits one on its declared ping interval, that interval
+is a declared connect option, and this slice may not move a declared value to
+make an arm convenient. The ping row is exercised over a constructed status
+value of the pin's own shape instead, and the gap is named here rather than
+papered over. **Load-bearing? yes.**
+
+### T35. The pump attaches where connections are established, and its exposure is a hand-off rather than a landing
+
+Decided: the one consumer of a connection's status source is built inside
+`establishConnection`, which also mints the session that consumer cites. There
+is no other place a connection comes into existence, so "one pump per
+connection" is a property of the tree rather than a rule someone has to
+remember. Facts leave through a bounded queue that a lane-holder takes from and
+lands through the session lane's one emit.
+
+The landing regress the predecessor slice recorded is unchanged and was not
+worked around: the lane service opens a connection whose establishment is itself
+a session, so a spine that landed its own facts would open a connection to
+record that it had opened a connection. The pump therefore mints and exposes;
+it holds no lane, imports no lane module, and has no second landing path to
+build. Backpressure is real rather than lossy — a holder that stops taking stops
+the pump, and the client's own status iterator buffers behind it — because
+dropping the record of what happened to a connection is the one outcome this
+slice exists to prevent.
+
+**A finalizer closes the connection before the consumer is interrupted, and that
+is load-bearing rather than tidy.** The pin's status source is a generator parked
+on a signal that only the connection's own teardown resolves, so a scope that
+interrupted the consumer first waited forever on an iterator nothing was going
+to wake. Two wall arms hung for two minutes each before the ordering was
+corrected. **Load-bearing? yes.**
+
+### T36. The commissioning record's single-consumption premise is false at the pin, and the fence stands for the other reason
+
+Decided: the fence against a second consumer of one connection's status source
+stays, and its stated reason is corrected. The commission ruled that "the pinned
+client's status source is not a broadcast: consuming it twice splits events
+between consumers and silently loses facts". Measured at the pin, it is the
+opposite: each call to the source registers a fresh listener and the protocol
+pushes every event to every listener. A second consumer therefore loses nothing
+and DOUBLES everything — every transition minted twice, and a second successor
+chain running against one connection.
+
+Both halves are executed rather than argued. One arm reads the client's own
+dispatch out of the installed bytes; another runs two consumers over one event
+sequence and shows the facts duplicated exactly. The fence itself is a defect
+and not a refusal: calling the spine twice on one connection is this package
+calling itself wrong, and the transport spine's own two-sided rule is that a
+defect never wears the absence sort — a retryable absence over a bug is what
+that rule exists to prevent.
+
+The alternative was to build against the commission's premise and wall
+"consuming it twice loses facts", which would have been a wall that passes over
+a falsehood. **Load-bearing? yes** — the reported reason is what a later reader
+uses to decide whether the fence may be relaxed.
+
+### T37. The session lane's event form grows add-only, and teardown keeps its own variant
+
+Decided: the transition and observation variants are APPENDED to the declared
+event form, leaving the established and ended variants in place and in order.
+The form's digest is the lane's route, so an append moves the route visibly
+while a rewrite in place would move it silently — the same discipline the field
+roster carries, for the same reason.
+
+The terminal transition does NOT emit a transition fact. It emits the
+session-ended fact, because the record already has a form for "this connection
+is over" and a second one would be a twin of it. That decision is what makes the
+empty cause meaningful: the pin resolves its closed promise with an error when
+the connection died of one and with nothing when it was taken down in order, so
+an empty cause is the pin's own report rather than a missing field, and an
+orderly drain and a hard kill stay distinguishable in the record instead of
+being remembered. **Load-bearing? yes.**
+
+### T38. The status vocabulary sits at the truth seam, and the session facts moved down with it
+
+Decided: the fact vocabulary the establishment path mints — the declared event
+form, the four schemas, the mints — moved into its own module at the truth seam,
+and the lane module above it kept the declaration and the one emit. The pump
+ranks at truth for the same reason: it reaches nothing on the state-carrier
+plane.
+
+This was forced rather than chosen. The spine reaches the session mint the
+moment a connection resolves, before any lane exists; the lane module imports
+the lane plane, which imports the lane adapter, which imports the spine. Leaving
+the mints in the lane module would have closed that cycle through a module whose
+top-level bindings are built at import time, and the first test file to import
+the spine directly would have hit the dead binding rather than a stack trace
+anyone could read. Splitting by seam rank rather than by resemblance is what the
+layering law already asks for, and the split says so in both module headers.
+**Load-bearing? yes.**
+
+## Task: the daemon takes its first breath (estate-daemon S4, 2026-08-19)
+
+Placeholders `T33`–`T37` continue the series; repository D-numbers are assigned
+at merge. The specification is the estate-daemon spec's slice S4 and its
+lifecycle contract, under the operator's daemon commission of 2026-08-19. The
+code this slice lands is in the Go module rather than in this package, and the
+entries live here because the daemon track's earlier entries do: a decision log
+split across two files by which language happened to hold the code is a log
+nobody reads whole. What lands in this package is one test-only process — the
+far side of the differential — and nothing under `src/`.
+
+Two pins the specification leaves open stay open and are NOT resolved here: the
+values the connect and server options should be pinned to, and the schema for
+the full declared option set. Both are named in the slice's own limits as a
+later slice's, and this slice reads a declared value rather than defining what
+one may say.
+
+### T33. The daemon is a package in the Go module, beside the substrate rather than inside it
+
+Decided: the daemon lands as a library package in the Go module with its wall
+as a sibling command — the shape that module's existing walls already take. The
+graduation map named that destination and nothing occupied it.
+
+Alternatives, priced. Growing it inside the substrate-assumption package: that
+directory is tests only and holds no shipped Go file at all, so promoting its
+harness into it would have made an assumption gate own production lifecycle
+code, and a red there would then mean either "an assumption moved" or "the
+daemon broke". Growing it inside the journal package: the lanes are journal
+lanes and the daemon uses them, but a lane package that also owns a server's
+lifecycle is two seams at one name. Making it a command with no library: the
+wall needs the package and so will the supervisor slice, and a command's
+internals are reachable by nobody. **Load-bearing? no** — it is a placement
+decision with a cheap reversal, recorded because the map named a destination
+and the seat should say it went there.
+
+The substrate harness's pattern is ADOPTED rather than rebuilt: options value →
+construct → start on a goroutine → readiness gate → in-process connection →
+teardown on release is exactly what that harness proves, and this package is
+that pattern promoted from test-only scaffolding to owned code with the health
+read added. The lanes are the journal package's, the canonical bytes are the
+canonical package's, and the register package is untouched — the incarnation
+register is the next slice's.
+
+### T34. The Go fold is a transcription with a byte-compare wall, never a twin
+
+Decided: the Go side restates the roster, the three groups, and the folded
+value's shape from the TypeScript spine's fold, and the wall that makes the
+restatement honest is a byte comparison across the language boundary rather
+than two tables agreeing by inspection. The spine's fold is the REFERENCE: a
+divergence the wall exposes is a defect on the Go side, and reconciling one by
+moving the reference is refused on sight.
+
+The Go side folds into the JSON domain — the maps and slices the canonicalizer
+already speaks — rather than into Go structs with tags. Structs would have read
+better and would have put a second encoder on the meaning path: the field order
+would then be the struct's and the omission rule would be the tag's, and both
+are exactly what RFC 8785 exists to take away from the author. Folding into the
+domain the canonicalizer accepts means the bytes are the canonicalizer's
+opinion and nobody else's.
+
+Alternatives, priced. Generating the Go fold from the corpus: right, and not
+available — the emitter has no substrate-vocabulary group yet, which is the
+staged debt the reference itself wears. Sharing one implementation by having
+the daemon call the TypeScript spine: that inverts the topology the commission
+adopted, since lifecycle authority cannot cross into a client-only ecosystem.
+Comparing digests only rather than bytes: cheaper to print and strictly weaker,
+because a digest disagreement says two things differ and a byte disagreement
+says which field. **Load-bearing? yes** — the transcription is the whole risk
+this slice takes on, and the byte compare is the only thing that makes it
+survivable.
+
+### T35. Two group-one rows are not reachable from options and registration, and the bound is stated rather than papered over
+
+Decided: the daemon's options-and-registration carriage takes two inputs that
+phrase does not name, both measured rather than assumed, and the differential's
+residual says so.
+
+The first is the server's public exchange key. The pinned vendor generates it
+at construction from a fresh keypair, so it is a function of neither the
+options value nor any registration, and the vendor exports NO accessor for it —
+the server identifier is exported, the exchange key is not. The only surface
+carrying it is the protocol greeting the server writes. The daemon therefore
+reads its incarnation identity once, from one greeting taken at acquire time
+before any served connection exists, and cites it thereafter. The cost is real
+and is the differential's residual: of sixteen group-one rows, fourteen are
+folded from the options value and the registration alone, one comes from an
+exported accessor, and the exchange key's two carriages share a source and so
+cannot disagree.
+
+The second is the pair of rows the roster already calls MEASURED — the
+connect-info flag and the bound account. The pinned server writes a SECOND
+greeting after the connect exchange to any client registered at a protocol that
+understands one, and only that second greeting carries them; a connection's
+current declaration is therefore the later greeting, not the opening one. Two
+consequences were taken. The daemon's greeting capture keeps the LATER greeting
+rather than the first, because the reference folds the declaration a connection
+currently holds. And the options-and-registration carriage declares the flag
+true and reads the bound account from the registration, falling back to the
+server's own global account name when the registration omits it — which the
+registration does exactly when the account IS the global one.
+
+The bound on that second decision, stated: the registration does not carry the
+client's protocol, so the daemon cannot check that a given client was sent the
+second greeting. Both pinned clients register at a protocol that is, and that
+is measured by the differential itself rather than asserted — a client that did
+not would fold a null against a true and redden the first arm on the spot.
+
+A third measurement made the first arm honest and is recorded with them: the
+server enqueues its reply to the connect exchange's round trip BEFORE that
+second greeting, so a fold taken the instant establishment resolves can race
+it. The daemon takes one further round trip before reading, which cannot race
+because the greeting was enqueued ahead of that trip's own reply. The reference
+takes no such trip, and whether its fold is exposed to the same race across a
+socket read boundary is a question this slice raises and does not answer.
+
+Alternatives, priced. Folding the opening greeting on both sides: symmetric,
+and it would fold a declaration the connection no longer holds, so the wall
+would prove agreement about a stale value. Dropping the two measured rows from
+the roster: it would make this slice's arithmetic easy by shrinking the
+reference's fold, which is moving the reference to make the transcription pass
+— the one move refused above. Minting a system-account credential to read the
+connection's protocol from the server's own event stream: outside the algebra,
+an operator act with blast radius, and named as a stop-and-report in the
+slice's limits. **Load-bearing? yes** — a differential whose residuals are not
+stated is believed further than it was measured.
+
+### T36. The daemon's own connect options under-declare, visibly, rather than transcribing a table nobody has walled
+
+Decided: the daemon's client-zero connect-options declaration names exactly the
+three options the daemon SETS, in the pinned Go client's own option vocabulary,
+and names no default at all. The reference's declaration names every option its
+own pinned client runs under because that client's defaults have been
+transcribed with a wall behind them; the Go client's table has not been, and
+transcribing it here would put values nobody has ruled into the estate through
+a package with no wall for them. An absent row is honestly absent — it says the
+estate has declared nothing about that option, which is true.
+
+The declared server-options value takes the same stance from the other side: it
+carries six keys, every one the pinned vendor's own spelling, and the vendor's
+baseline fills the rest. Those filled values are READ BACK from the constructed
+options rather than re-declared, for the reason the reference states about its
+own defaults — a transcription passed as an argument turns a transcription
+mistake into a silent change to what the estate runs under, while a
+transcription that is only declared makes the declaration wrong and the runtime
+unchanged.
+
+Two option fields are set that the declared value does not carry, and they are
+named rather than hidden: the vendor's logging and signal handling are
+suppressed, because a library inside another process owns neither its process's
+log nor its signals. Neither is configuration and both are the vendor's own
+option names.
+
+Alternatives, priced. Transcribing the Go client's defaults now: it is the
+honest full declaration and it is a later slice's, and doing it here would
+resolve a pin the specification names as the operator's. Declaring nothing for
+group two at all: the group is what the process declares about itself, and a
+connection that declares nothing has not declared that it declares nothing.
+**Load-bearing? maybe** — the under-declaration is visible and cheap to grow,
+but a reader who mistook it for a full declaration would mistake silence for a
+measurement.
+
+### T37. The differential is driven from the Go side, and the far side holds its connection open
+
+Decided: the wall is a Go command that owns the daemon, executes the
+one-language arm in process, spawns the TypeScript minter against the daemon's
+client URL for the two-language arm, and compares. The far side writes one line
+of evidence and then WAITS on its own input until the near side closes it,
+because a registration is gone the moment its connection is and a wall that
+read the registration after the far side exited would be comparing two
+different connections.
+
+The declared VALUES cross the boundary, not only their digests. The far side
+sends its connect-options declaration and its estate declaration as values; the
+near side canonicalizes them with its own canonicalizer and derives the digests
+itself. Sending digests alone would have made the comparison one
+implementation's opinion carried twice.
+
+The negative control is its own battery stage rather than a second pass inside
+the passing one, so a red line names which claim broke: the differential and
+the proof that the differential can fail are different claims. The control
+mutates exactly one field in exactly one group — the declared connect-options
+digest, the cheapest single-field mutation available — and the stage passes
+only when the comparison fails.
+
+The ports-file retirement takes the battery's existing empty-output shape, and
+its detector proves it can fire inside every run: an empty-output stage is the
+shape most exposed to a scanner that quietly stopped matching, so the run scans
+a planted sample first and reports a detector that does not fire on it. The
+stock-binary harness whose readiness IS that poll is deliberately not walked —
+both postures run side by side, and a suite that spawns a binary has no other
+signal.
+
+Alternatives, priced. Driving from the TypeScript side, as the register wall
+does: that wall's Go process is a participant and its TypeScript side owns the
+server, which is the opposite of this topology — here the Go process owns the
+lifecycle by physics, so a TypeScript driver would have to spawn a Go process
+that spawns a server and then ask it questions through a protocol invented for
+the purpose. Running the far side as an ordinary test file: it would run twice
+per battery, once in its own stage and once in the package's, and the second
+run would prove nothing the first did not. **Load-bearing? yes** — the
+direction is forced by which side can hold a server, and the held-open
+connection is the difference between measuring one connection and measuring
+two.
+
+## Task: the run replay wall (the corpus's run group, operator commission 2026-08-19)
+
+The interchange grew a `run` group carrying the model's own executions of the
+committed program declarations. This side reads them and runs them, and the
+decisions below are about what a replay can honestly claim.
+
+### T33. The comparison is byte-equal on the outcome, and the outcome is label-free
+
+Decided: `test/EngineReplay.test.ts` canonicalizes the outcome this engine
+reaches and compares it byte-for-byte with the vector's own `bytes` field. What
+it compares is the arm, the refusing node, the taught reason, the walked node
+sequence, and per step the generator and the TAGS of the payload atoms.
+
+Alternatives, priced. Compare encoded sentences: the model's identity labels are
+small naturals it chose and this engine's are content addresses its hasher
+computed, so the comparison fails for a reason that is not a defect — and
+"relabel the encoding back" is not sound, because an encoding interleaves labels
+with tags. Compare landed labels: the same problem one level down. Compare
+nothing but the arm: passes on an engine that walks one node and stops.
+
+Why the tags earn their place: they are the strongest label-free statement
+available and they catch the defect this wall exists to catch. A consumed local
+must reach the door as a `literal` and an unfilled hole as a `hole`, so a
+dataflow substitution that silently stopped substituting moves a byte. The
+executed control mutates exactly that, and two more besides. **Load-bearing?
+yes** — it is the definition of what "replays byte-equal" means here, and
+anything stronger would be a claim the two identity scales cannot support.
+
+### T34. The payload comes off the verdict stream, not off a re-derivation
+
+Decided: the wall reads each step's payload atoms from `engine.verdicts` — the
+judgments the engine publishes as it issues them — rather than recomputing what
+the completion should have produced from the declaration and the landings.
+
+Why: recomputing it here would rebuild the engine's completion inside the test,
+which is precisely the hand-built expectation the commission asked to retire.
+The engine's step record carries the node and the ACT's encoding but not the
+candidate, so the stream is the only place the engine itself says what it swept.
+Alternatives: widen `RunStep` to carry the candidate (an engine change, and the
+commission forbids engine semantic changes); accept a re-derivation (a wall that
+agrees with itself). **Load-bearing? yes** — it is what keeps the payload column
+the engine's answer rather than the test's.
+
+### T35. The label map is built by declaring the vector's OWN door
+
+Decided: for each referent the vector's `context` names, the wall declares one
+real carrier through this engine — a lane for a lane, a cell for a resource, a
+register for a program, a declared value otherwise — and the map from the
+model's labels to this engine's falls out of those declarations.
+
+The retired alternative is the one that was there: `test/Engine.test.ts` carries
+hand-typed maps (`if (kind === "index" && id === 8n) return …`) beside hand-typed
+supplies and hand-typed expectations. Those tests are KEPT — a hand-built wall
+and a vector wall disagreeing is a finding, and deleting one of them deletes the
+comparison — but nothing new is added to them.
+
+Why: the map is now a function of the vector, so a vector naming a referent the
+wall has never staged fails loudly instead of silently mapping it to itself.
+**Load-bearing? yes** — it is the difference between running the corpus and
+running a transcription of it.
+
+### T36. A supply slot this wall cannot stage refuses; it is never skipped
+
+Decided: `suppliesOf` translates `kind` and `token` directly, stages `strategy`
+as a cell binding, and THROWS on any other slot.
+
+`anchor` and `predicate` are real slots of the model's completion that no
+committed program vector exercises, because no committed declaration applies
+`fold` or `trigger`. Writing untested translations for them would ship code no
+run has ever taken. Alternatives: translate them speculatively (untested code on
+a wall's critical path); skip unknown slots (a vector whose supply nobody
+translated then replays green by omission, which is the worst of the three).
+
+Why: the loud refusal is the honest shape — the day the corpus grows a fold or
+trigger vector, this wall fails and someone writes the translation with a run to
+test it against. **Load-bearing? yes** — silence on an unknown supply is how a
+conformance wall stops conforming.
+
+### T37. `join`'s strategy is staged as a binding, and the mismatch is reported
+
+Decided: the vector's `strategy` supply is not passed to `Engine.run`. It is
+read, and the cell it names is DECLARED against that algebra, so the engine
+fills the slot from its own binding exactly as it does in production.
+
+This is the finding the commission asked to be reported rather than repaired.
+`RunSupplies` names four members — kinds, anchors, tokens, predicates — and
+`strategy` is not among them, because `Act.join` drops the strategy that
+`CandidateAct.join` carries, so no declaration form and no field table read off
+`Act` can name it. The engine therefore has a fifth completion provenance the
+model's run form has no counterpart for: its own binding replica. Alternatives:
+add a `strategies` member to `RunSupplies` (an engine surface change, forbidden
+here, and a decision that belongs to the model first); drop the join node from
+the landed vector (deletes the only four-generator end-to-end run).
+
+Why: staging the binding replays what the engine actually does, and reporting
+the gap is what the limits require. **Load-bearing? yes** — it is a named gap
+between the model's run form and the runtime's, standing open on purpose.
+
+### T38. The unspeakable arm is not byte-compared, and the divergence is named
+
+Decided: for a vector whose outcome arm is `unspeakable`, the wall asserts that
+`Engine.run` refuses structurally — in the error channel, before the door — and
+checks the vector's account of WHERE against the corpus's own declaration: the
+named slot really is absent from the named node's arguments. It does not compare
+bytes.
+
+The divergence, stated: the model's account carries the steps that stood before
+the unspeakable node; this engine's completion refuses into the error channel,
+which discards every step the run had already carried. So the two sides agree on
+the arm, the node and the reason, and disagree about whether the prefix survives.
+That is a real difference in what a failed completion reports, and it is written
+down rather than smoothed over by dropping the steps from the vector.
+Alternatives: drop the steps from the model's account (destroys the evidence
+that node 1 landed before node 2 could not be spoken); make the engine return
+the prefix (an engine semantic change, forbidden). **Load-bearing? yes** — the
+wall's coverage is uneven across the three arms and a reader has to know where.
