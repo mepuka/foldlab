@@ -1,0 +1,6 @@
+interface:
+  display_name: "Verified Codegen"
+  short_description: "Generation that cannot silently lie - emitters, generated types and schemas, conformance corpora, canonical serializations, gates. Use when building any generator, checker, fixture, or cross-language projection, or when dispatching agents to build such artifacts in parallel."
+  default_prompt: "Use $verified-codegen when building a generator, checker, fixture, canonical format, or cross-language projection, or when dispatching a parallel fleet to build verified artifacts."
+policy:
+  allow_implicit_invocation: true

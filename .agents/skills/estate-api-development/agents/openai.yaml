@@ -1,0 +1,6 @@
+interface:
+  display_name: "Estate API Development"
+  short_description: "The API discipline: every public surface (TypeScript API, MCP tool schema, CLI command, SDK method, prose doc) is a generated projection of the one language algebra core, judged by the one door, idiomatic Effect throughout. Use when designing, implementing, or reviewing any public surface or any seat ticket that touches one."
+  default_prompt: "Use $estate-api-development when designing, building, or reviewing ANY public surface, tool schema, CLI command, or wire format."
+policy:
+  allow_implicit_invocation: true
