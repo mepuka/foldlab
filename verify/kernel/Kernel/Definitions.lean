@@ -1397,4 +1397,153 @@ def ComposedExecution
       land node.name context state outcome /\
       outcomes node.name = some outcome
 
+/-! ## The program run — per-node judgment, composed
+
+The plait algebra engine runs a program by walking it in admission
+order read back (a declaration stores its nodes newest first;
+execution goes oldest first), completing each node into one candidate
+sentence, judging that candidate at the one door, carrying the
+admitted act, and stopping at the first refusal with every earlier
+step kept. This section carries that walk at kernel sorts, so what
+the engine's run wall witnesses is a law rather than a
+recommendation.
+
+Two things are deliberately parameters. Completion is one: the engine
+substitutes dataflow landings into a node's arguments, and this model
+judges whatever completion produces rather than restating how it
+produces it. Carriage is the other, and it is absent entirely: what a
+carrier lands is that plane's obligation, and the only feedback
+carriage gives the door is context growth, modeled below as the
+engine's own replica growth.
+
+Bounds, stated because they are the engine's own. One sequential
+walk. No concurrency beyond the benignity the growth order buys — a
+candidate admitted at a smaller door is admitted at every larger one,
+which is the law stated below, not an assumption. No liveness, no
+retries, no scheduler. No correspondence between the model's identity
+labels and the engine's content addresses; that seam is guarded
+elsewhere and is not claimed here. Closedness and filledness are not
+premises: an unfilled hole reaching the door refuses there with its
+own taught row, which is exactly what the engine does with it. -/
+
+/-- The completion of one node into a candidate sentence, given the
+    prefix already executed. A parameter, not a definition: the
+    engine's completion substitutes dataflow landings, and this model
+    judges what that produces. -/
+abbrev Completion := List ProgramNode -> ProgramNode -> CandidateAct
+
+/-- Door growth under one carried act. An admitted declaration enters
+    the catalog and the acting view's pinned universe together — the
+    engine's replica reading, a lower bound grown only by its own
+    admitted declarations — and every other generator moves no
+    context. -/
+def growDoor (door : Door) : Act -> Door
+  | .declare kind value _ =>
+      { catalog := (kind, value.bytes) :: door.catalog
+        pinned := (kind, value.bytes) :: door.pinned }
+  | .resolve _ _ => door
+  | .emit _ _ => door
+  | .join _ _ => door
+  | .fold _ _ _ _ => door
+  | .decide _ _ _ => door
+  | .trigger _ _ => door
+  | .spawn _ _ => door
+
+/-- One executed step: the node's name and the act its candidate was
+    admitted to. -/
+abbrev RunStep := Nat × Act
+
+/-- The door a sequence of carried steps leaves behind. -/
+def doorAfter (door : Door) : List RunStep -> Door
+  | [] => door
+  | step :: rest => doorAfter (growDoor door step.2) rest
+
+/-- How one walk ended: every node admitted and carried, or stopped
+    at the first refusing node, carrying that node's name, the taught
+    row, and every step admitted before it. -/
+inductive WalkOutcome where
+  | landed (steps : List RunStep)
+  | refused (node : Nat) (refusal : Refusal) (steps : List RunStep)
+
+/-- Prepend already-executed steps onto a later outcome. -/
+def prependSteps (steps : List RunStep) : WalkOutcome -> WalkOutcome
+  | .landed later => .landed (steps ++ later)
+  | .refused node refusal later => .refused node refusal (steps ++ later)
+
+/-- The walk: judge each node at the door its prefix produced, carry
+    the admitted act, grow the door, and stop at the first refusal
+    without judging the tail. -/
+def walk (complete : Completion) (door : Door)
+    (executed : List ProgramNode) : List ProgramNode -> WalkOutcome
+  | [] => .landed []
+  | node :: rest =>
+      match admit door (complete executed node) with
+      | .refused refusal => .refused node.name refusal []
+      | .admitted act =>
+          prependSteps [(node.name, act)]
+            (walk complete (growDoor door act) (executed ++ [node]) rest)
+
+/-- The run of a whole declaration: the walk over its nodes in
+    admission order read back. The declaration is newest first; the
+    run is oldest first. -/
+def runProgram (complete : Completion) (door : Door)
+    (nodes : List ProgramNode) : WalkOutcome :=
+  walk complete door [] nodes.reverse
+
+/-- An admitted run as a relation: every node judged at the door its
+    own prefix produced, every judgment admitted, in order. This is
+    the sequence-of-admitted-acts reading that the composition law
+    identifies a landed walk with. -/
+inductive AdmittedWalk (complete : Completion) :
+    Door -> List ProgramNode -> List ProgramNode -> List RunStep -> Prop where
+  | nil (door : Door) (executed : List ProgramNode) :
+      AdmittedWalk complete door executed [] []
+  | step (door : Door) (executed : List ProgramNode) (node : ProgramNode)
+      (rest : List ProgramNode) (act : Act) (steps : List RunStep)
+      (judged : admit door (complete executed node) = .admitted act)
+      (later : AdmittedWalk complete (growDoor door act)
+        (executed ++ [node]) rest steps) :
+      AdmittedWalk complete door executed (node :: rest)
+        ((node.name, act) :: steps)
+
+/-! ### Planted run vectors
+
+The ground rows the run controls execute. Node identity is all the
+walk reads, because the completion below is a function of the node
+name: these rows exercise the judgment order the engine's walk
+imposes, never the engine's dataflow substitution. -/
+
+namespace RunPlanted
+
+/-- A ground program node. Only its name is load-bearing here. -/
+def groundNode (name : Nat) : ProgramNode where
+  name := name
+  generator := .declare
+  args := []
+  uses := []
+
+/-- The ground completion: one planted candidate per node name. Node
+    one admits and grows the door, node two refuses on the fence row,
+    and the two tail rows are chosen to disagree — node three refuses
+    on the secret row, node four admits — so a walk that judges the
+    tail after a refusal is visibly a function of that tail, while
+    the lawful walk is not. -/
+def completion : Completion := fun _ current =>
+  match current.name with
+  | 1 => Planted.lawfulDeclare
+  | 2 => Planted.unfencedDecide
+  | 3 => Planted.secretEmit
+  | _ => Planted.catalogedTrigger
+
+/-- The refusing program with one tail row. -/
+def refusingLeft : List ProgramNode :=
+  [groundNode 1, groundNode 2, groundNode 3]
+
+/-- The same admitted prefix and the same refusing node, with the
+    other tail row. -/
+def refusingRight : List ProgramNode :=
+  [groundNode 1, groundNode 2, groundNode 4]
+
+end RunPlanted
+
 end Kernel

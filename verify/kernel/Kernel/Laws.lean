@@ -166,6 +166,77 @@ def KInterpInflationary : Prop :=
     forall (act : Act) (world : World Evidence),
       World.Le merge world (interp merge contribution act world)
 
+/-- The run composition law, admitted half: a landed walk IS a
+    sequence of admitted acts, and a sequence of admitted acts IS a
+    landed walk. Both directions are claimed — the forward one says a
+    run that landed judged every node at the door its own prefix
+    produced and admitted every one of them; the backward one says
+    nothing else is needed to land a run. Per-node judgments compose,
+    and the composite adds no judgment of its own. -/
+def KRunComposesAdmissions : Prop :=
+  forall (complete : Completion) (door : Door)
+      (executed nodes : List ProgramNode) (steps : List RunStep),
+    walk complete door executed nodes = .landed steps <->
+      AdmittedWalk complete door executed nodes steps
+
+/-- Sequential composition: a walk over a concatenation whose first
+    half landed is the first half's steps prepended to the walk of
+    the second half, started at the door the first half left and the
+    prefix it executed. Running a program in two passes is running it
+    in one. -/
+def KRunSequentialComposition : Prop :=
+  forall (complete : Completion) (door : Door)
+      (executed before after : List ProgramNode) (steps : List RunStep),
+    walk complete door executed before = .landed steps ->
+      walk complete door executed (before ++ after) =
+        prependSteps steps
+          (walk complete (doorAfter door steps) (executed ++ before) after)
+
+/-- The tail is unjudged: once a walk refuses inside a prefix, the
+    whole outcome — refusing node, taught row, and the standing steps
+    — is unchanged by whatever follows that prefix. Stated as
+    independence from the tail rather than as an absence of effects,
+    because independence is what a model can witness: two different
+    tails cannot be told apart by the outcome. -/
+def KRunTailUnjudged : Prop :=
+  forall (complete : Completion) (door : Door)
+      (executed before after : List ProgramNode) (node : Nat)
+      (refusal : Refusal) (steps : List RunStep),
+    walk complete door executed before = .refused node refusal steps ->
+      walk complete door executed (before ++ after) =
+        .refused node refusal steps
+
+/-- The prefix's admissions stand: a refusal locates one node, and
+    everything before it is an admitted walk whose steps the outcome
+    carries, with the refusal taken at exactly the door those steps
+    left and against exactly that node's completion. A refusal is a
+    verdict about one node, never a retraction of the ones before
+    it. -/
+def KRunRefusalPrefixStands : Prop :=
+  forall (complete : Completion) (door : Door)
+      (executed nodes : List ProgramNode) (name : Nat)
+      (refusal : Refusal) (steps : List RunStep),
+    walk complete door executed nodes = .refused name refusal steps ->
+      exists (before : List ProgramNode) (node : ProgramNode)
+          (after : List ProgramNode),
+        nodes = before ++ node :: after /\
+        node.name = name /\
+        AdmittedWalk complete door executed before steps /\
+        admit (doorAfter door steps) (complete (executed ++ before) node) =
+          .refused refusal
+
+/-- Monotone-context benignity, at run scale: an admitted walk stays
+    the same admitted walk when the door it started at grows. This is
+    the exact bound the engine's replica claims — a replica is a
+    lower bound, and the read-judge-grow race between fibers is
+    benign because growth never retracts an admission. -/
+def KRunMonotoneContext : Prop :=
+  forall (complete : Completion) (smaller larger : Door),
+    Door.Le smaller larger ->
+    forall (executed nodes : List ProgramNode) (steps : List RunStep),
+      AdmittedWalk complete smaller executed nodes steps ->
+        AdmittedWalk complete larger executed nodes steps
+
 /-- Candidate F13, bound-execution replay — STATED, deliberately
     unproven. For an admitted program, any two execution records
     reached through deterministic assembly, resumption, and landing

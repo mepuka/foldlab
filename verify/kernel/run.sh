@@ -63,7 +63,10 @@ expected_laws=(
   KProgramPinWellFounded KFillCommutative KFillMonoidAction
   KProvisionNewestWins KProvisionAppendUnion KRequiresExclude
   KProvisionPositionedCorrespondence
-  KInterpInflationary CandidateF13BoundExecutionReplay
+  KInterpInflationary
+  KRunComposesAdmissions KRunSequentialComposition KRunTailUnjudged
+  KRunRefusalPrefixStands KRunMonotoneContext
+  CandidateF13BoundExecutionReplay
 )
 mapfile -t actual_laws < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
