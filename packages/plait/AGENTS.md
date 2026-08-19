@@ -358,6 +358,48 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   of the F4 bridge only: a filtered-out event contributes the algebra's own
   identity, so the rung survives because the algebra is untouched. No
   arbitration, finishing, or open combinator hook exists to call.
+- **A read-side fold's arms derive from the union, and the closure is held by
+  the compiler.** The folds over the refusal kinds and the envelope kinds take a
+  mapped arm record over the generated union, so a kind added tomorrow is a key
+  every existing caller is missing and a kind the union does not carry is a key
+  no caller can spell. Their suites build every arm record from the union
+  artifact — `StructuralRefusalKind.literals`, `EnvelopeKind.literals`, the
+  accessor `ContextProgram.volatilityRank` already reads — and never from a
+  written list: an enumeration that is listed drifts, and a closure suite that
+  drifts reports totality it no longer has. A suite cannot state the other half,
+  because a suite that derives its arms grows with the union and keeps passing on
+  the day a kind arrives; that half is `check:matcher-control` in `test:types`,
+  two arm-short folds that must fail to typecheck against committed traces, each
+  mutant carrying a lawful twin so the compiler reports one error. The traces
+  name the whole arm record, so growing the vocabulary costs one deliberate
+  re-recording — which is the acknowledgement that every caller must now handle
+  the new kind. A hand-enumerated arm record, a hand-written switch over kinds,
+  or an optional arm is a finding.
+- **Equality of a decoded value IS equality of its digest, and that is walled.**
+  The digest equivalences over decoded envelopes and over cell states replace a
+  structural walk with one string compare, and `test/EqualCoherence.test.ts` is
+  what licenses them: `Equal.equals(a.envelope, b.envelope)` iff
+  `a.digest === b.digest`, over the generated corpus and over generated
+  envelopes drawn from a pool the wall measures for collisions. Forward is
+  canonicalization determinism; backward holds modulo SHA-256 collision
+  resistance, which is stated as trusted base and is not proved anywhere here.
+  The wall compares only decode-fresh values and demonstrates why: the pinned
+  `Equal.equals` caches per object pair, so a value mutated after its first
+  comparison keeps its stale answer. Plait values are decode-produced and
+  treated as immutable; a comparison over a value something could have moved is
+  a finding, and so is a claim that the backward direction is proved.
+- **A read-side affordance carries its bounds on its own export, and arbitrates
+  nothing.** The token order is meaningful within one register key and one
+  backing-stream incarnation, and it licenses sorting and rendering, never
+  "read the maximum and act" — arbitration is the register's act under its
+  revision fence. A publish acknowledgement's duplicate bit is the commons
+  stream's dedup window and an emission acknowledgement's is that
+  `(lane, partition)` stream's; the two folds stay separate because the two
+  acknowledgements answer different subscriptions, and neither bit is
+  durability or absence. The cell equivalence is licensed by the canonical form
+  the door already imposes, so extensional equivalence over raw observation
+  arrays is not exported — `canonicalize` is the door, and a predicate
+  comparing un-canonicalized arrays would rebuild it beside itself.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
   Effect release, `@effect/platform-bun` at that same catalog pin, and the five
   NATS packages pinned at 3.4.0. Add nothing else. The platform package joined

@@ -36,7 +36,7 @@
  *
  * @module
  */
-import { Context, Effect, Layer, Schema, Stream, SubscriptionRef } from "effect"
+import { Context, Effect, Equivalence, Layer, Schema, Stream, SubscriptionRef } from "effect"
 
 import type { ConnectionBootstrap } from "../internal/transport.js"
 import { canonicalBytes } from "../truth/Canonical.js"
@@ -74,6 +74,29 @@ export interface CellState {
   readonly observations: ReadonlyArray<Observation>
   readonly digest: Digest
 }
+
+/**
+ * Two cell states are the same lattice point when their digests agree.
+ *
+ * One string compare stands in for set equality, and the door is what licenses
+ * it: `canonicalize` erases arrival order and multiplicity before any byte is
+ * compared, and `stateOf` derives the digest from that canonical form. So two
+ * states are the same set exactly when they are the same bytes exactly when
+ * they carry the same digest — the gap the general case would have to walk is
+ * closed at this seam by construction rather than by this function.
+ *
+ * The bound rides in from the declared canonical order: the claim is set
+ * equality among TypeScript replicas, and agreement with the model carrier's own
+ * comparator order is not claimed.
+ *
+ * Extensional equivalence over raw, un-canonicalized observation arrays is
+ * deliberately absent. `canonicalize` is the door, and a predicate that compared
+ * arrays as they arrived would be the door rebuilt beside itself.
+ */
+export const byDigest: Equivalence.Equivalence<CellState> = Equivalence.mapInput(
+  Equivalence.String,
+  (state: CellState) => state.digest,
+)
 
 /** Connection bootstrap for the cell bucket. */
 export interface CellOptions extends ConnectionBootstrap {}

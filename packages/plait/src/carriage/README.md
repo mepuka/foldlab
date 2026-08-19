@@ -25,6 +25,11 @@ import back up — `../kernel/KernelProgram.ts` takes `CasDaemon`'s shape and
 `../internal/nats.ts` takes `FabricClient`'s. Both are type-only; the layering
 law carves out no exception, so both are open findings under its pending lint.
 
+`FabricClient` also carries the fold over a publish acknowledgement. It is not
+shared with the lane's, deliberately: the two answer different subscriptions,
+and each `duplicate` bit names its own stream's dedup window — this one the
+commons stream's.
+
 Nothing here is machine-generated, and both service shapes are hand-written
 declarations of corpus concepts — staged debt under the first standing law.
 

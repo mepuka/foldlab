@@ -64,5 +64,21 @@ and each required to reach the surface, with a fourth arm renaming a record this
 surface does not project and requiring the bytes NOT to move. Both are wired
 into `test:fast` rather than merely declared.
 
+`Wire.ts` carries the read-side folds and instances over the wire grammar: a
+kind fold whose arm record is the kind schema's own literals, the digest
+equivalence over decoded envelopes, and the schema-derived structural one beside
+it. Two walls hold them. `../../test/EqualCoherence.test.ts` pins the
+coincidence every digest equivalence in this package leans on — structural
+equality of envelopes IS digest equality — forward by canonicalization
+determinism and backward on SHA-256 collision resistance, which it states as
+trusted base rather than proving; it compares only decode-fresh values, and
+demonstrates the pin's per-object-pair equality cache rather than citing it.
+`../../test/MatchClosure.test.ts` holds the runtime half of the folds' closure,
+building every arm record from the union artifacts so a suite cannot cover fewer
+kinds than the union carries. The compile-time half is
+`check:matcher-control`, in `test:types`: two arm-short folds that must fail to
+typecheck, each against a committed trace, re-recorded with `bun run
+generate:matcher-control` after a deliberate change.
+
 One level deeper: the corpus file, then
 [`verify/kernel/README.md`](../../../../verify/kernel/README.md).

@@ -74,6 +74,41 @@ export interface EmittedEvent {
   readonly duplicate: boolean
 }
 
+/**
+ * Folds an emission acknowledgement over the two answers a partition gives.
+ *
+ * **What `duplicate` means here, exactly.** A declared `(lane, partition)` owns
+ * one exact stream, and that stream suppresses a re-emission of the same message
+ * id within its own pinned two-minute window. So `duplicate` says "this
+ * partition's stream already stored this event, recently" — a statement about
+ * one partition's window and about nothing else. It is not durability, not
+ * absence, and not a claim about any other partition of the same lane.
+ *
+ * The sibling fold over a commons publish acknowledgement lives on the client
+ * seam and is deliberately not shared with this one: the two acknowledgements
+ * answer different subscriptions, and their windows are different streams'.
+ *
+ * @example
+ * ```ts
+ * import { matchEmitted } from "@foldlab/plait/Lane"
+ *
+ * const positioned = matchEmitted({
+ *   fresh: (emitted) => emitted.position,
+ *   duplicate: (emitted) => emitted.position,
+ * })
+ * ```
+ */
+export const matchEmitted: <Out>(cases: {
+  readonly fresh: (emitted: EmittedEvent) => Out
+  readonly duplicate: (emitted: EmittedEvent) => Out
+}) => (emitted: EmittedEvent) => Out =
+  <Out>(cases: {
+    readonly fresh: (emitted: EmittedEvent) => Out
+    readonly duplicate: (emitted: EmittedEvent) => Out
+  }) =>
+  (emitted: EmittedEvent): Out =>
+    emitted.duplicate ? cases.duplicate(emitted) : cases.fresh(emitted)
+
 /** Transport-free live lane operations. */
 export interface LaneService {
   readonly emit: <Event, const Partitions extends number>(
