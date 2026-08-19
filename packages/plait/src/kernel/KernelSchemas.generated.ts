@@ -1249,9 +1249,17 @@ export type KernelRunStepValue = typeof KernelRunStep.Type
 /**
  * How one run ended. A landed run reports the context it reached and
  * every step in walked order; a refused run reports the refusing
- * node, its taught refusal, and the steps that stood before it. The
- * reached context is this model's sharpening: the carriage holds the
- * same replica behind its own reference and does not return it.
+ * node, its taught refusal, and the steps that stood before it; an
+ * unspeakable run reports the node whose completion answered with
+ * nothing, and again the steps that stood before it. The reached
+ * context is this model's sharpening: the carriage holds the same
+ * replica behind its own reference and does not return it.
+ *
+ * The third arm is the silent completion's own outcome. A completion
+ * that cannot answer never reaches the door, so there is no verdict to
+ * report and neither arm above can carry it; the prefix's admissions
+ * stand exactly as they do under a refusal, because nothing about them
+ * depended on the node that could not be spoken.
  */
 export const KernelRunOutcome = Schema.Union([
   Schema.TaggedStruct("landed", { context: KernelDoor, steps: Schema.Array(KernelRunStep) }),
@@ -1260,14 +1268,20 @@ export const KernelRunOutcome = Schema.Union([
     refusal: KernelRefusal,
     steps: Schema.Array(KernelRunStep),
   }),
+  Schema.TaggedStruct("unspeakable", { node: KernelNat, steps: Schema.Array(KernelRunStep) }),
 ]).annotate({
   identifier: "KernelRunOutcome",
   title: "How one run ended.",
   description:
     "How one run ended. A landed run reports the context it reached and\nevery step in walked "
     + "order; a refused run reports the refusing\nnode, its taught refusal, and the steps that "
-    + "stood before it. The\nreached context is this model's sharpening: the carriage holds "
-    + "the\nsame replica behind its own reference and does not return it. ",
+    + "stood before it; an\nunspeakable run reports the node whose completion answered "
+    + "with\nnothing, and again the steps that stood before it. The reached\ncontext is this "
+    + "model's sharpening: the carriage holds the same\nreplica behind its own reference and does "
+    + "not return it.\n\nThe third arm is the silent completion's own outcome. A completion\nthat "
+    + "cannot answer never reaches the door, so there is no verdict to\nreport and neither arm "
+    + "above can carry it; the prefix's admissions\nstand exactly as they do under a refusal, "
+    + "because nothing about them\ndepended on the node that could not be spoken. ",
 })
 
 /**

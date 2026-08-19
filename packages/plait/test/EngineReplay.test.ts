@@ -495,12 +495,22 @@ const replay = (vector: KernelRunRecord): Promise<Replay> =>
           verdict: "admitted",
         }
       })
-      const shaped: JsonValue = outcome.success._tag === "landed"
+      const reached = outcome.success
+      const shaped: JsonValue = reached._tag === "landed"
         ? { outcome: "landed", steps }
-        : {
-          node: outcome.success.node,
+        : reached._tag === "refused"
+        ? {
+          node: reached.node,
           outcome: "refused",
-          reason: outcome.success.refusal.reason,
+          reason: reached.refusal.reason,
+          steps,
+        }
+        : {
+          detail: reached.detail,
+          generator: generatorOf(reached.node),
+          node: reached.node,
+          outcome: "unspeakable",
+          slot: reached.slot,
           steps,
         }
       return { bytes: writeCanonicalValue(shaped, `run vector ${vector.name}`), structural: null }
@@ -509,17 +519,25 @@ const replay = (vector: KernelRunRecord): Promise<Replay> =>
 
 /**
  * The wall over one vector. Landed and refused runs are byte-compared; an
- * unspeakable run is checked at what both sides say, because this engine's
- * completion refuses into the error channel and the steps do not survive it.
+ * unspeakable run is checked at the arm, the node, and the account of WHERE
+ * and WHY that both sides now give.
  */
 const assertReplays = async (vector: KernelRunRecord): Promise<void> => {
   const produced = await replay(vector)
   const outcome = vector.outcome
+  expect(produced.structural).toBeNull()
   if (outcome.outcome === "unspeakable") {
-    expect(produced.bytes).toBeNull()
-    expect(produced.structural).not.toBeNull()
-    expect(produced.structural?._tag).toBe("StructuralRefusal")
-    // The vector's account of WHERE and WHY, checked against the corpus's own
+    const shaped = JSON.parse(produced.bytes ?? "null") as {
+      outcome: string
+      node: number
+      slot: string
+      detail: string
+    }
+    expect(shaped.outcome).toBe("unspeakable")
+    expect(BigInt(shaped.node)).toBe(outcome.node)
+    expect(shaped.slot).toBe(outcome.slot)
+    expect(shaped.detail).toBe(outcome.detail)
+    // The vector's account of WHERE, checked against the corpus's own
     // declaration: the named slot really is unwired at the named node.
     const declaration = programNamed(vector.program)
     const node = declaration.nodes.find((carried) => carried.name === outcome.node)
@@ -529,7 +547,6 @@ const assertReplays = async (vector: KernelRunRecord): Promise<void> => {
     }
     return
   }
-  expect(produced.structural).toBeNull()
   expect(produced.bytes).toBe(vector.bytes)
 }
 
