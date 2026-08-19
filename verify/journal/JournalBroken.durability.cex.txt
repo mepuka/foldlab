@@ -1,14 +1,14 @@
 TLC2 Version 2026.08.11.125311 (rev: 0894c34)
-Running breadth-first search Model-Checking with fp 1 and seed -7083181822614349178 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 32348] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
+Running breadth-first search Model-Checking with fp 1 and seed -2922502542397110428 with 1 worker on 16 cores with 3556MB heap and 64MB offheap memory [pid: 11512] (Windows 11 10.0 amd64, Oracle Corporation 21.0.2 64bit, MSBDiskFPSet, DiskStateQueue).
 Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\JournalBroken.tla
 Parsing file C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-a1ffce31fd5868af6\verify\journal\Journal.tla
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
-Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-3663132981056560327\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\_TLCTrace.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/_TLCTrace.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\FiniteSets.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\Integers.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\Sequences.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\Naturals.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\TLC.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file C:\Users\kokok\AppData\Local\Temp\tlc-12268003482741744876\TLCExt.tla (jar:file:/C:/Users/kokok/Dev/foldlab/.claude/worktrees/agent-a1ffce31fd5868af6/verify/catalog/tools/tla2tools.jar!/tla2sany/StandardModules/TLCExt.tla)
 Semantic processing of module Naturals
 Semantic processing of module Sequences
 Semantic processing of module FiniteSets
@@ -22,9 +22,9 @@ Linting of module Journal
 Linting of module TLCExt
 Linting of module _TLCTrace
 Linting of module JournalBroken
-Starting... (2026-08-19 05:50:17)
+Starting... (2026-08-19 05:52:27)
 Computing initial states...
-Finished computing initial states: 1 distinct state generated at 2026-08-19 05:50:17.
+Finished computing initial states: 1 distinct state generated at 2026-08-19 05:52:28.
 Error: Action property AppendOnly is violated.
 Error: The behavior up to this point is:
 State 1: <Initial predicate>
@@ -89,5 +89,5 @@ State 5: <Crash(1) line 395, col 3 to line 404, col 25 of module Journal>
 
 69 states generated, 42 distinct states found, 26 states left on queue.
 The depth of the complete state graph search is 5.
-Finished in 00s at (2026-08-19 05:50:17)
-Trace exploration spec path: .\JournalBroken_TTrace_1787136617.tla
+Finished in 00s at (2026-08-19 05:52:28)
+Trace exploration spec path: .\JournalBroken_TTrace_1787136747.tla
