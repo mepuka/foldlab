@@ -309,6 +309,35 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "go"),
     command: ["go", "run", "./cmd/optionswall", "--parity"],
   },
+  // The wire vocabulary's parity wall and its executed controls. Five arms —
+  // byte parity across the language boundary, every row's provenance digest
+  // re-derived from the pinned vendor source as installed, an independently
+  // derived row census, per-row closure, and a sweep for wire words written as
+  // bare literals anywhere outside the transcription modules — each failing on
+  // its own named reason. The wall spawns a TypeScript process for the parity
+  // arm, like the CL-1 differential and the options parity above, so it needs
+  // the root install already warmed by the preflight; it also reads the pinned
+  // vendor sources out of the module cache and the spine's own install, and a
+  // pinned source this checkout does not carry FAILS the arm rather than
+  // skipping it.
+  //
+  // The controls stage is the other half: four planted defects — one mutated
+  // byte of the committed rendering, one row with its pin dropped, one bare
+  // wire word planted in a source tree of the control's own, and one
+  // provenance digest edited as a table typed from memory would be — each of
+  // which must refute, and each on the arm it was planted against. A control
+  // that reddens for the wrong reason proves the wrong thing, so the stage
+  // checks which arm refused and not merely that one did.
+  {
+    label: "daemon — wire vocabulary parity wall",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/wirewall"],
+  },
+  {
+    label: "daemon — wire vocabulary wall controls",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/wirewall", "--controls"],
+  },
   // The ports-file poll's retirement, in the empty-output shape this battery
   // already uses for formatting drift: the check prints every line in the
   // daemon-backed suite that reaches for a ports file or for the stock-binary
