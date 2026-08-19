@@ -35,16 +35,19 @@ dispatched as a staged parent issue on the board —
 `00-the-vertical-slice.md` is the parent body (DEV-664); stages open
 in order:
 
-- stage 1: `12-total-step-runner.md` (DEV-671) — stepK closes
-  MOVES-1. DONE on `agent/codex/DEV-671`; Rev-reviewed; framing
-  repairs subsumed by stage 2.
-- stage 2: `14-d85-confluence-package.md` (DEV-673) — Branch A
-  ratified: absorb semantics + strong no-loss + full confluence
-  under a Rev-frozen, hash-pinned Spec.lean with mutant-killers.
-- stage 3: `15-daemon-absorb.md` (DEV-674) — D85 on the wire;
-  no-self-revision stays as a named Divergence. Brief tightened
-  2026-08-15: the serve/replay lockstep obligation, the pair-newness
-  and self-revision predicates fixed, reopen-equivalence acceptance.
+- stage 1: `12-total-step-runner.md` (DEV-671) — RETIRED 2026-08-19,
+  landed on main (a25677730); stepK closes MOVES-1. Rev-reviewed;
+  framing repairs subsumed by stage 2. Archived: `scratch/_archive/`.
+- stage 2: `14-d85-confluence-package.md` (DEV-673) — RETIRED
+  2026-08-19, landed on main (e296c8031); Branch A ratified: absorb
+  semantics + strong no-loss + full confluence under a Rev-frozen,
+  hash-pinned Spec.lean with mutant-killers. Archived:
+  `scratch/_archive/`.
+- stage 3: `15-daemon-absorb.md` (DEV-674) — RETIRED 2026-08-19,
+  landed on main (0d1464216); D85 on the wire; no-self-revision stays
+  as a named Divergence. Brief tightened 2026-08-15: the serve/replay
+  lockstep obligation, the pair-newness and self-revision predicates
+  fixed, reopen-equivalence acceptance. Archived: `scratch/_archive/`.
 - stage 4: `07-moves-vector-wall.md` (DEV-670, revised post-review) —
   exhaustive wire-image corpus at post-D85 semantics; the
   hand-authored fixture and its kind leave the estate. The oracle
