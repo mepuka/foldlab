@@ -481,6 +481,10 @@ func sweep(repo string, roots []sweptRoot) ([]footprintHit, map[int]bool, error)
 // comment is not a string: a regular expression that ignored the difference
 // would blind the sweep from the first URL it met.
 func blankComments(source string, extension string) string {
+	// The extension rides along because the blanking is language-aware BY
+	// CONTRACT even though the two languages it reads happen to agree on
+	// comment and string syntax today. A third language joining the swept roots
+	// would change this function rather than surprise it.
 	_ = extension
 	out := []byte(source)
 	length := len(out)

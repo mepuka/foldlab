@@ -173,9 +173,10 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   second attach on one connection is a caller DEFECT and dies as one, never a
   refusal (the pin's source fans out, so the failure a second consumer causes
   is double-minting, not loss). The eleven event types and their payloads are
-  transcribed in `internal/statusvocabulary.ts` as data with per-row
-  provenance, in the pin's declaration order, all eleven, never a subset and
-  never a hand-written union; seven are placed as transitions and four are
+  ABSORBED into `internal/statusvocabulary.ts` from the wire vocabulary's own
+  status group — stated once, never twice — in the pin's declaration order, all
+  eleven, never a subset and never a hand-written union; seven are placed as
+  transitions and four are
   readings within a state, and a reading is never a state and never feeds a
   state decision. A machine state is named by the transition that enters it, so
   no state carries a word the substrate never said; the position before any
@@ -192,6 +193,23 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   Adding a hand-written state union, a per-event branch in the pump, a second
   consumer of a status source, or a landing path beside `sessionlanes.ts`'s one
   emit is a finding.
+- **The wire vocabulary arrives by pass-through and is never re-read here.**
+  `internal/wirevocabulary.ts` is EMITTED from the substrate daemon's normative
+  tables — the five groups the estate speaks, one hundred and eleven rows, each
+  with its provenance pin, its wire shape, and its promotion note where it is
+  chatter. Nothing in this package opens a vendor source to state one of those
+  words a second time: a consumer reaches a row through the emitted
+  by-declaration index, keyed by the pinned vendor's own identifier, so the word
+  travels out of the table rather than into the query. `internal/permissions.ts`
+  reads its subject coordinates that way and fills the vendor's own format
+  spellings; the substrate writ table deliberately does NOT, because it is the
+  independent oracle that projection is checked against and its rows are
+  declared values whose digests session facts cite. Hand-editing the emitted
+  module, adding a second reading of a pinned vendor source, or spelling a
+  protocol verb, API subject, system event subject, status event name, or
+  lifecycle entry point as a bare literal outside the transcription modules is
+  a finding — the daemon-side parity wall's footprint arm refuses it, and its
+  exceptions are declared lines with stated reasons, never silent skips.
 - A session is read-plane state and writes nothing. `Session` reads anchors and
   the states they name; it never commits an anchor, never emits, and never
   carries a revision on its values. A write verb on that seam is a finding, and
