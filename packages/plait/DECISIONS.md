@@ -7952,11 +7952,13 @@ means is written down.
 ### T5. Declared-but-unused is a column, never an omission
 
 Decided: every row the single-server posture never reaches is transcribed and
-marked declared-but-unused. Sixty-eight of the hundred and eleven rows are so
-marked: the cluster and account administration requests, every system-account
-subject with none excepted, the auth-callout subject, the clustered assignment
-results, the verbose acknowledgement, the force-reconnect status, and the
-resource-plane enable the declared options value already carries.
+marked declared-but-unused. Counted from the rendered bytes: seventy-four of the
+hundred and eleven — one protocol verb, thirty-two of the forty API subjects,
+all thirty-eight system-account subjects, two status events, and one lifecycle
+entry. The stream and consumer administration requests, the cluster and account
+requests, the auth-callout subject, the clustered assignment results, the
+verbose acknowledgement, the cluster-update and force-reconnect statuses, and
+the resource-plane enable the declared options value already carries.
 
 Omission was the alternative and it is how a table starts lying: a table that
 carried only the reachable rows would read, to the next posture, as a claim that
