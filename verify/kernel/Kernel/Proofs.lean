@@ -1611,4 +1611,326 @@ theorem provision_positioned_correspondence :
 
 end Provision
 
+/-! ## The program run -/
+
+section Run
+
+/-- The empty walk lands nothing. -/
+theorem walk_nil (complete : Completion) (door : Door)
+    (executed : List ProgramNode) :
+    walk complete door executed [] = .landed [] := rfl
+
+/-- A refused head stops the walk at that node, carrying no step and
+    reaching no further node. -/
+theorem walk_cons_refused (complete : Completion) (door : Door)
+    (executed : List ProgramNode) (node : ProgramNode)
+    (rest : List ProgramNode) (refusal : Refusal)
+    (judged : admit door (complete executed node) = .refused refusal) :
+    walk complete door executed (node :: rest) =
+      .refused node.name refusal [] := by
+  simp only [walk, judged]
+
+/-- An admitted head carries its step and continues at the grown
+    door, whatever the rest of the walk does. -/
+theorem walk_cons_admitted (complete : Completion) (door : Door)
+    (executed : List ProgramNode) (node : ProgramNode)
+    (rest : List ProgramNode) (act : Act)
+    (judged : admit door (complete executed node) = .admitted act) :
+    walk complete door executed (node :: rest) =
+      prependSteps [(node.name, act)]
+        (walk complete (growDoor door act) (executed ++ [node]) rest) := by
+  simp only [walk, judged]
+
+/-- Prepending nothing changes nothing. -/
+theorem prepend_steps_nil (outcome : WalkOutcome) :
+    prependSteps [] outcome = outcome := by
+  cases outcome <;> simp only [prependSteps, List.nil_append]
+
+/-- Prepending twice is prepending the concatenation: the step
+    accumulator is a monoid action on outcomes. -/
+theorem prepend_steps_append (left right : List RunStep)
+    (outcome : WalkOutcome) :
+    prependSteps left (prependSteps right outcome) =
+      prependSteps (left ++ right) outcome := by
+  cases outcome <;> simp only [prependSteps, List.append_assoc]
+
+/-- The composition, general form: a walk lands exactly when its
+    nodes form an admitted walk. Forward, a landed run judged every
+    node at the door its own prefix produced and admitted every one;
+    backward, nothing beyond those judgments is needed to land. -/
+theorem walk_landed_iff_admitted (complete : Completion) :
+    forall (nodes : List ProgramNode) (door : Door)
+      (executed : List ProgramNode) (steps : List RunStep),
+      walk complete door executed nodes = .landed steps <->
+        AdmittedWalk complete door executed nodes steps := by
+  intro nodes
+  induction nodes with
+  | nil =>
+      intro door executed steps
+      constructor
+      · intro landed
+        rw [walk_nil] at landed
+        injection landed with stepsEq
+        subst stepsEq
+        exact .nil door executed
+      · intro admitted
+        cases admitted
+        exact walk_nil complete door executed
+  | cons node rest ih =>
+      intro door executed steps
+      constructor
+      · intro landed
+        cases judged : admit door (complete executed node) with
+        | refused refusal =>
+            rw [walk_cons_refused complete door executed node rest refusal
+              judged] at landed
+            exact WalkOutcome.noConfusion landed
+        | admitted act =>
+            rw [walk_cons_admitted complete door executed node rest act
+              judged] at landed
+            cases tail : walk complete (growDoor door act)
+                (executed ++ [node]) rest with
+            | refused innerName innerRefusal later =>
+                rw [tail] at landed
+                simp only [prependSteps] at landed
+                exact WalkOutcome.noConfusion landed
+            | landed later =>
+                rw [tail] at landed
+                simp only [prependSteps] at landed
+                injection landed with stepsEq
+                subst stepsEq
+                exact .step door executed node rest act later judged
+                  ((ih (growDoor door act) (executed ++ [node]) later).mp tail)
+      · intro admitted
+        cases admitted with
+        | step _ _ _ _ act later judged tailWalk =>
+            rw [walk_cons_admitted complete door executed node rest act judged,
+              (ih (growDoor door act) (executed ++ [node]) later).mpr tailWalk]
+            rfl
+
+/-- Sequential composition over an admitted prefix: walking a
+    concatenation is walking the halves, the first half's steps
+    prepended to a second half started at the door the first left. -/
+theorem walk_append_of_admitted (complete : Completion) (door : Door)
+    (executed before : List ProgramNode) (steps : List RunStep)
+    (admitted : AdmittedWalk complete door executed before steps)
+    (after : List ProgramNode) :
+    walk complete door executed (before ++ after) =
+      prependSteps steps
+        (walk complete (doorAfter door steps) (executed ++ before) after) := by
+  induction admitted with
+  | nil door executed =>
+      simp only [List.nil_append, doorAfter, prepend_steps_nil,
+        List.append_nil]
+  | step door executed node rest act steps judged later ih =>
+      rw [List.cons_append,
+        walk_cons_admitted complete door executed node (rest ++ after) act
+          judged, ih, prepend_steps_append]
+      have assoc : (executed ++ [node]) ++ rest = executed ++ (node :: rest) := by
+        simp
+      rw [assoc]
+      rfl
+
+/-- The tail is unjudged: once a walk refuses inside a prefix, no
+    tail can change the outcome. Independence from the tail is what a
+    model can witness, and it is the exact reading of "the tail never
+    carries". -/
+theorem walk_append_refused (complete : Completion) :
+    forall (before : List ProgramNode) (door : Door)
+      (executed : List ProgramNode) (name : Nat) (refusal : Refusal)
+      (steps : List RunStep) (after : List ProgramNode),
+      walk complete door executed before = .refused name refusal steps ->
+        walk complete door executed (before ++ after) =
+          .refused name refusal steps := by
+  intro before
+  induction before with
+  | nil =>
+      intro door executed name refusal steps after refused
+      rw [walk_nil] at refused
+      exact WalkOutcome.noConfusion refused
+  | cons node rest ih =>
+      intro door executed name refusal steps after refused
+      cases judged : admit door (complete executed node) with
+      | refused headRefusal =>
+          rw [walk_cons_refused complete door executed node rest headRefusal
+            judged] at refused
+          rw [List.cons_append,
+            walk_cons_refused complete door executed node
+              (rest ++ after) headRefusal judged]
+          exact refused
+      | admitted act =>
+          rw [walk_cons_admitted complete door executed node rest act
+            judged] at refused
+          cases tail : walk complete (growDoor door act)
+              (executed ++ [node]) rest with
+          | landed later =>
+              rw [tail] at refused
+              simp only [prependSteps] at refused
+              exact WalkOutcome.noConfusion refused
+          | refused innerName innerRefusal later =>
+              rw [tail] at refused
+              simp only [prependSteps] at refused
+              rw [List.cons_append,
+                walk_cons_admitted complete door executed node
+                  (rest ++ after) act judged,
+                ih (growDoor door act) (executed ++ [node]) innerName
+                  innerRefusal later after tail]
+              simp only [prependSteps]
+              exact refused
+
+/-- The refusal decomposition: a refusing walk splits the node list
+    at exactly one node, the prefix before it is an admitted walk
+    whose steps the outcome carries, and the refusal is taken at the
+    door those steps left, against that node's own completion. -/
+theorem walk_refused_decomposes (complete : Completion) :
+    forall (nodes : List ProgramNode) (door : Door)
+      (executed : List ProgramNode) (name : Nat) (refusal : Refusal)
+      (steps : List RunStep),
+      walk complete door executed nodes = .refused name refusal steps ->
+        exists (before : List ProgramNode) (node : ProgramNode)
+            (after : List ProgramNode),
+          nodes = before ++ node :: after /\
+          node.name = name /\
+          AdmittedWalk complete door executed before steps /\
+          admit (doorAfter door steps) (complete (executed ++ before) node) =
+            .refused refusal := by
+  intro nodes
+  induction nodes with
+  | nil =>
+      intro door executed name refusal steps refused
+      rw [walk_nil] at refused
+      exact WalkOutcome.noConfusion refused
+  | cons node rest ih =>
+      intro door executed name refusal steps refused
+      cases judged : admit door (complete executed node) with
+      | refused headRefusal =>
+          rw [walk_cons_refused complete door executed node rest headRefusal
+            judged] at refused
+          injection refused with nameEq refusalEq stepsEq
+          subst nameEq
+          subst refusalEq
+          subst stepsEq
+          refine ⟨[], node, rest, rfl, rfl, .nil door executed, ?_⟩
+          have empty : executed ++ ([] : List ProgramNode) = executed := by simp
+          rw [empty]
+          exact judged
+      | admitted act =>
+          rw [walk_cons_admitted complete door executed node rest act
+            judged] at refused
+          cases tail : walk complete (growDoor door act)
+              (executed ++ [node]) rest with
+          | landed later =>
+              rw [tail] at refused
+              simp only [prependSteps] at refused
+              exact WalkOutcome.noConfusion refused
+          | refused innerName innerRefusal later =>
+              rw [tail] at refused
+              simp only [prependSteps] at refused
+              injection refused with nameEq refusalEq stepsEq
+              subst nameEq
+              subst refusalEq
+              subst stepsEq
+              obtain ⟨before, target, after, split, targetName, prefixWalk,
+                targetRefused⟩ :=
+                ih (growDoor door act) (executed ++ [node]) innerName
+                  innerRefusal later tail
+              refine ⟨node :: before, target, after, ?_, targetName, ?_, ?_⟩
+              · rw [split]
+                rfl
+              · exact .step door executed node before act later judged
+                  prefixWalk
+              · have assoc :
+                    (executed ++ [node]) ++ before =
+                      executed ++ (node :: before) := by simp
+                rw [← assoc]
+                exact targetRefused
+
+/-- Door growth is preserved by carriage: a grown door stays grown
+    after either side carries the same act. -/
+theorem grow_door_monotone (smaller larger : Door)
+    (le : Door.Le smaller larger) (act : Act) :
+    Door.Le (growDoor smaller act) (growDoor larger act) := by
+  cases act with
+  | declare kind value writ =>
+      refine { catalog := ?_, pinned := ?_ }
+      · intro ref mem
+        simp only [growDoor, List.mem_cons] at mem ⊢
+        exact mem.imp id (le.catalog ref)
+      · intro ref mem
+        simp only [growDoor, List.mem_cons] at mem ⊢
+        exact mem.imp id (le.pinned ref)
+  | resolve kind target => exact le
+  | emit lane body => exact le
+  | join cell contribution => exact le
+  | fold declared partition anchor query => exact le
+  | decide register token outcome => exact le
+  | trigger predicate declaration => exact le
+  | spawn parent request => exact le
+
+/-- An admitted walk survives door growth unchanged: every node's
+    judgment rides `admit_monotone`, and carriage keeps the two doors
+    ordered. -/
+theorem admitted_walk_monotone (complete : Completion) :
+    forall (smaller : Door) (executed nodes : List ProgramNode)
+      (steps : List RunStep),
+      AdmittedWalk complete smaller executed nodes steps ->
+        forall larger : Door, Door.Le smaller larger ->
+          AdmittedWalk complete larger executed nodes steps := by
+  intro smaller executed nodes steps admitted
+  induction admitted with
+  | nil door executed =>
+      intro larger _
+      exact .nil larger executed
+  | step door executed node rest act steps judged later ih =>
+      intro larger le
+      exact .step larger executed node rest act steps
+        (admit_monotone door larger le (complete executed node) act judged)
+        (ih (growDoor larger act) (grow_door_monotone door larger le act))
+
+/-- The run composition law: per-node door judgments compose, and an
+    admitted run is exactly a sequence of admitted acts. -/
+theorem run_composes_admissions : Laws.KRunComposesAdmissions := by
+  intro complete door executed nodes steps
+  exact walk_landed_iff_admitted complete nodes door executed steps
+
+/-- Sequential composition: running a program in two passes is
+    running it in one. -/
+theorem run_sequential_composition : Laws.KRunSequentialComposition := by
+  intro complete door executed before after steps landed
+  exact walk_append_of_admitted complete door executed before steps
+    ((walk_landed_iff_admitted complete before door executed steps).mp landed)
+    after
+
+/-- A refusal ends the run: the outcome is independent of the tail. -/
+theorem run_tail_unjudged : Laws.KRunTailUnjudged := by
+  intro complete door executed before after name refusal steps refused
+  exact walk_append_refused complete before door executed name refusal steps
+    after refused
+
+/-- A refusal is a verdict about one node, never a retraction of the
+    admissions that stood before it. -/
+theorem run_refusal_prefix_stands : Laws.KRunRefusalPrefixStands := by
+  intro complete door executed nodes name refusal steps refused
+  exact walk_refused_decomposes complete nodes door executed name refusal
+    steps refused
+
+/-- Monotone-context benignity at run scale: the engine's replica is
+    a lower bound, so growth never retracts a run's admissions. -/
+theorem run_monotone_context : Laws.KRunMonotoneContext := by
+  intro complete smaller larger le executed nodes steps admitted
+  exact admitted_walk_monotone complete smaller executed nodes steps admitted
+    larger le
+
+/-- The whole-declaration reading: a run lands exactly when the
+    declaration's nodes, read back into admission order, form an
+    admitted walk. A declaration stores newest first; a run goes
+    oldest first, and nothing else separates the two. -/
+theorem program_run_composes (complete : Completion) (door : Door)
+    (nodes : List ProgramNode) (steps : List RunStep) :
+    runProgram complete door nodes = .landed steps <->
+      AdmittedWalk complete door [] nodes.reverse steps :=
+  walk_landed_iff_admitted complete nodes.reverse door [] steps
+
+end Run
+
 end Kernel

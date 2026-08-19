@@ -143,6 +143,12 @@ roster=(
   provision_override_idem requires_arg_fill requires_list_fill
   requires_of_fill greatest_at_cons greatest_at_le_length
   provision_positioned_correspondence
+  walk_nil walk_cons_refused walk_cons_admitted
+  prepend_steps_nil prepend_steps_append
+  walk_landed_iff_admitted walk_append_of_admitted walk_append_refused
+  walk_refused_decomposes grow_door_monotone admitted_walk_monotone
+  run_composes_admissions run_sequential_composition run_tail_unjudged
+  run_refusal_prefix_stands run_monotone_context program_run_composes
 )
 
 roster_tmp=$(mktemp "./.roster.XXXXXX")
