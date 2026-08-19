@@ -167,6 +167,7 @@ var allowances = []allowance{
 	{file: "packages/plait/scripts/negative-trace.ts", word: "error", reason: reasonHomonym},
 	{file: "packages/plait/src/internal/anchors.ts", word: "error", reason: reasonHomonym},
 	{file: "packages/plait/src/internal/cells.ts", word: "error", reason: reasonHomonym},
+	{file: "packages/plait/src/internal/lanereads.ts", word: "error", reason: reasonHomonym},
 	{file: "packages/plait/src/internal/permissions.ts", word: "error", reason: reasonHomonym},
 	{file: "packages/plait/src/internal/pump.ts", word: "error", reason: reasonHomonym},
 	{file: "packages/plait/src/internal/registers.ts", word: "error", reason: reasonHomonym},
