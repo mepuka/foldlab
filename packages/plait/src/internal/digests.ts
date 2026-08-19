@@ -33,8 +33,10 @@ export const digestOfCanonicalBytes = sha256Hex
  * digest before writing and `get` re-derives it over what it fetched, so the
  * store's answers are locally checkable whatever the backend is. That is a
  * different precondition from `digestOfCanonicalBytes` — this door claims
- * nothing about the bytes being one canonical wire value, and the seam that
- * needs that claim (`Resolved.decodePayload`) checks it itself.
+ * nothing about the bytes being one canonical wire value. The seam that needs
+ * that claim, the payload leg of `Resolved.resolve`, establishes it: it admits
+ * on this digest first and only then runs the constrained decoder, so bytes
+ * that reach a value have already been named by their own hash.
  *
  * One implementation, two names: the name is the precondition, and the two
  * preconditions are not the same one (DEV-738 T2).

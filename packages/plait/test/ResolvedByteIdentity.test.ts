@@ -319,6 +319,11 @@ describe("payload identity is the fetched bytes", () => {
       }),
       launderedRows: laundered,
     }
-    expect(JSON.stringify(record, null, 2) + "\n").toBe(await Bun.file(mutantTrace).text())
+    const rendered = JSON.stringify(record, null, 2) + "\n"
+    // The committed trace is executed, never typed: this arm writes it and the
+    // comparison below still runs, so a regeneration that changed a verdict
+    // shows up as a diff in the working tree rather than as a silent pass.
+    if (process.env["PLAIT_WRITE_CONTROL_TRACE"] === "1") await Bun.write(mutantTrace, rendered)
+    expect(rendered).toBe(await Bun.file(mutantTrace).text())
   })
 })
