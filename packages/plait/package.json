@@ -71,6 +71,7 @@
     "test:walls": "bun scripts/run-test-group.ts walls"
   },
   "dependencies": {
+    "@effect/platform-bun": "catalog:",
     "@foldlab/core": "workspace:*",
     "@nats-io/jetstream": "3.4.0",
     "@nats-io/kv": "3.4.0",

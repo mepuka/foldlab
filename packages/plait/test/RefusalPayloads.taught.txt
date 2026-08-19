@@ -347,8 +347,8 @@ packages/plait/src/surface/cli.ts#0
 packages/plait/src/surface/cli.ts#1
   kind <expression>
   law <expression>
-  expected <expression>
-  next <expression>
+  expected <absent>
+  next <absent>
 packages/plait/src/truth/Algebra.ts#0
   kind "invalid-algebra-declaration"
   law "A declared algebra's definition and initial state are canonical wire-grammar values."

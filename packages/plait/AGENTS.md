@@ -236,4 +236,13 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   reaches no candidate. The map is injective on the guarded domain and is the
   trusted base's, never a theorem.
 - Runtime dependencies are the workspace RFC 8785 seam, the catalog-pinned
-  Effect release, and the five NATS packages pinned at 3.4.0. Add nothing else.
+  Effect release, `@effect/platform-bun` at that same catalog pin, and the five
+  NATS packages pinned at 3.4.0. Add nothing else. The platform package joined
+  the list on 2026-08-19 (DEV-786) for exactly one reason, recorded in
+  `DECISIONS.md` T0: the CLI surface is built on the official Effect CLI, which
+  on the v4 line ships IN-TREE at `effect/unstable/cli` and so cost the list
+  nothing — but its `Command.Environment` needs real `FileSystem`, `Path`,
+  `Terminal`, `Stdio`, and `ChildProcessSpawner` services, and `effect` core
+  ships only `layerNoop`/`layerTest` fakes of them. `BunServices.layer` is that
+  provision. Do not add `@effect/cli`: on this release line it is a v3 package,
+  and pulling it would be a second, older CLI beside the one already present.

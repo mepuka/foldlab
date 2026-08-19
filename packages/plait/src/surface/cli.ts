@@ -3,22 +3,50 @@
 /**
  * Plane: surface — entry points.
  *
+ * The `plait` command line, declared on the pinned Effect release's own CLI
+ * (`effect/unstable/cli`). Nothing here parses arguments: the command tree is
+ * DATA — flags, arguments, and subcommands declared as values — and the
+ * library's parser is the interpreter that walks it. `--help`, `--version`,
+ * `--wizard`, and shell completions are properties of that data, not features
+ * this file writes.
+ *
+ * ## The shape, and why it is this shape
+ *
+ * The file reads in three movements, and the estate's algebra is meant to be
+ * visible in each:
+ *
+ * 1. **The vocabulary** — what this surface refuses, and the ONE total
+ *    function that renders a refusal to a terminal. A refusal is a sum
+ *    (`truth/Refusal.ts`'s `Refusal` union) and it is rendered by ENCODING the
+ *    value through its own schema, then through the one canonicalizer. No
+ *    command prints a refusal its own way, and no field list is restated here:
+ *    what reaches stderr is the taught value itself.
+ * 2. **The declaration** — the command tree as data. Where the estate has a
+ *    schema for a domain (`truth/Digest.ts` for content addresses), the flag
+ *    carries that schema, so decoding is the estate's decode algebra rather
+ *    than this file's `if`.
+ * 3. **The interpretation** — handlers as `Effect.fn`, services via `Layer`,
+ *    and one total map from the error channel to an exit code.
+ *
+ * Judgment is not here. `admit` below is re-exported from the one door; this
+ * surface routes to it and never wraps it.
+ *
  * @module
  */
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { dirname, isAbsolute, join, resolve } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
+
+import { BunServices } from "@effect/platform-bun"
+import { Console, Context, Effect, FileSystem, Layer, Option, Path, Ref, Result, Schema, SchemaParser, Scope } from "effect"
+import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 
 import { jetstreamManager } from "@nats-io/jetstream"
-import { connect } from "@nats-io/transport-node"
-import { Effect, Predicate } from "effect"
 
 import { admit as kernelAdmit } from "../kernel/KernelDoor.js"
 import * as Algebra from "../truth/Algebra.js"
 import type { Anchor } from "../planes/Anchor.js"
 import { canonicalBytes, type WireValue } from "../truth/Canonical.js"
-import { digestOf, type Digest } from "../truth/Digest.js"
+import { digestOf, Digest } from "../truth/Digest.js"
 import {
   Folds,
   declare as declareFold,
@@ -28,34 +56,135 @@ import {
 } from "../planes/Fold.js"
 import * as Lane from "../planes/Lane.js"
 import {
+  Refusal,
   StructuralRefusal,
   structuralRefusal,
-  type Refusal,
 } from "../truth/Refusal.js"
 import {
   runRedeliveryChaos,
+  transportRefusal,
   type RedeliveryChaosResult,
 } from "../internal/chaos.js"
 import { laneStreamName } from "../internal/lanes.js"
-
-type ChaosFold = DeclaredFold<WireValue, WireValue, number>
-type Axis = "kill" | "duplicate" | "reorder"
+import { acquireConnection } from "../internal/transport.js"
 
 /** The kernel's one candidate-judgment function; the CLI defines no side door. */
 export const admit = kernelAdmit
 
-interface CliOptions {
-  readonly modulePath?: string
-  readonly foldDigest?: string
-  readonly lane?: string
-  readonly head?: number
-  readonly pinHead: boolean
-  readonly axes: ReadonlyArray<Axis>
-  readonly seed: number
-  readonly repeat: number
-  readonly output: "json" | "text"
-  readonly report?: string
+type ChaosFold = DeclaredFold<WireValue, WireValue, number>
+
+/** The three measured chaos axes, named once and read by both the flag and the run. */
+const AXES = ["kill", "duplicate", "reorder"] as const
+type Axis = (typeof AXES)[number]
+
+// ===========================================================================
+// 1. The vocabulary — what this surface refuses, and how a refusal is rendered
+// ===========================================================================
+
+/**
+ * The one minting site for this surface's structural refusal.
+ *
+ * Its `kind` is a member of the generated vocabulary
+ * (`truth/RefusalKinds.generated.ts`), and its `law` is the pinned teaching in
+ * `test/RefusalPayloads.taught.txt`. Neither is spelled twice.
+ */
+const chaosRefusal = (
+  path: ReadonlyArray<string>,
+  got: WireValue,
+  expected: WireValue,
+  note: string,
+): StructuralRefusal =>
+  structuralRefusal({
+    kind: "invalid-chaos-request",
+    law:
+      "plait chaos runs one pinned span of one admitted declared fold; no ambient head or arbitrary program is accepted.",
+    path,
+    got,
+    expected,
+    next: [{ subject: "plait chaos", note }],
+  })
+
+const usage =
+  "plait chaos <module-path> (--head <position> | --pin-head) [--fold <digest>] [--lane <digest>] [--axis kill|duplicate|reorder] [--seed <n>] [--repeat <n>] [--output json|text] [--report <path>]"
+
+/**
+ * Renders one refusal to standard error, and is the ONLY place this surface
+ * writes one.
+ *
+ * The rendering is a projection of the value, not a transcription of it: the
+ * refusal is encoded through the `Refusal` schema union — which is what makes
+ * this function total over the sum, and what carries the taught `_tag`,
+ * `sort`, `kind`, `law`, `path`, `got`, `expected`, and `next` without this
+ * file naming any of them — and then through the package's one RFC 8785
+ * canonicalizer, so a refusal on a terminal is byte-identical to the same
+ * refusal anywhere else it is written.
+ *
+ * The fallback exists because a total function may not fail: a refusal whose
+ * own payload will not canonicalize still has to reach the operator, and a
+ * rendering that refused to render would lose the only evidence there is.
+ */
+const renderRefusal = Effect.fn("cli.renderRefusal")(function* (
+  refusal: Refusal,
+): Effect.fn.Return<void> {
+  const rendered = yield* SchemaParser.encodeUnknownEffect(Refusal)(refusal).pipe(
+    Effect.flatMap((encoded) => canonicalBytes(encoded as WireValue)),
+    Effect.map((bytes) => new TextDecoder().decode(bytes)),
+    Effect.orElseSucceed(() => JSON.stringify({ sort: refusal.sort, kind: refusal.kind, law: refusal.law })),
+  )
+  yield* Console.error(rendered)
+})
+
+// ===========================================================================
+// 2. The declaration — the command tree as data
+// ===========================================================================
+
+/**
+ * A content address on the command line is decoded by the estate's own digest
+ * schema, so `--fold` and `--lane` admit exactly what `truth/Digest.ts` admits
+ * and the CLI states no width and no alphabet of its own.
+ */
+const digestFlag = (name: string, description: string) =>
+  Flag.string(name).pipe(
+    Flag.withSchema(Digest),
+    Flag.withDescription(description),
+    Flag.optional,
+  )
+
+const chaosFlags = {
+  fold: digestFlag("fold", "Run a cataloged fold by digest instead of a module path"),
+  lane: digestFlag("lane", "Assert the lane digest the fold declaration commits to"),
+  head: Flag.integer("head").pipe(
+    Flag.withDescription("Pin every partition's span at this stream position"),
+    Flag.optional,
+  ),
+  pinHead: Flag.boolean("pin-head").pipe(
+    Flag.withDescription("Pin each partition's span at the live stream head"),
+  ),
+  axis: Flag.choice("axis", AXES).pipe(
+    Flag.withDescription("Measure this axis; repeatable, and all three when omitted"),
+    Flag.atLeast(0),
+  ),
+  seed: Flag.integer("seed").pipe(
+    Flag.withDescription("Seed the redelivery and interruption schedule"),
+    Flag.withDefault(712),
+  ),
+  repeat: Flag.integer("repeat").pipe(
+    Flag.withDescription("Measure this many schedules; the kill arm admits exactly one"),
+    Flag.withDefault(1),
+  ),
+  output: Flag.choice("output", ["json", "text"]).pipe(
+    Flag.withDescription("Print the canonical scoreboard, or the axis lines and verdict"),
+    Flag.withDefault("text" as const),
+  ),
+  report: Flag.path("report", { mustExist: false }).pipe(
+    Flag.withDescription("Also write the canonical scoreboard bytes to this path"),
+    Flag.optional,
+  ),
 }
+
+// ===========================================================================
+// 3. The interpretation — the measurement, in Effect
+// ===========================================================================
 
 interface PumpResult {
   readonly anchors: ReadonlyArray<Anchor>
@@ -69,376 +198,306 @@ interface KillMeasurement {
   readonly equal: boolean
 }
 
-const cliRefusal = (
-  path: ReadonlyArray<string>,
-  got: WireValue,
-  expected: WireValue,
-  note: string,
-): StructuralRefusal => structuralRefusal({
-  kind: "invalid-chaos-request",
-  law: "plait chaos runs one pinned span of one admitted declared fold; no ambient head or arbitrary program is accepted.",
-  path,
-  got,
-  expected,
-  next: [{ subject: "plait chaos", note }],
-})
-
-const usage = "plait chaos <module-path> (--head <position> | --pin-head) [--lane <digest>] [--axis kill|duplicate|reorder] [--seed <n>] [--repeat <n>] [--output json|text] [--report <path>]"
-
-const parseNatural = (name: string, value: string | undefined, minimum: number): number => {
-  const parsed = value === undefined ? Number.NaN : Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed < minimum) {
-    throw cliRefusal([name], value ?? "missing", `a safe integer >= ${minimum}`, usage)
-  }
-  return parsed
-}
-
-const parse = (args: ReadonlyArray<string>): CliOptions => {
-  if (args[0] !== "chaos") throw cliRefusal(["command"], args[0] ?? "missing", "chaos", usage)
-  let modulePath: string | undefined
-  let foldDigest: string | undefined
-  let lane: string | undefined
-  let head: number | undefined
-  let pinHead = false
-  const axes: Array<Axis> = []
-  let seed = 712
-  let repeat = 1
-  let output: "json" | "text" = "text"
-  let report: string | undefined
-
-  for (let index = 1; index < args.length; index++) {
-    const argument = args[index]!
-    if (!argument.startsWith("--")) {
-      if (modulePath !== undefined) throw cliRefusal(["module"], argument, "one module path", usage)
-      modulePath = argument
-      continue
-    }
-    switch (argument) {
-      case "--fold":
-        foldDigest = args[++index]
-        break
-      case "--lane":
-        lane = args[++index]
-        break
-      case "--head":
-        head = parseNatural("head", args[++index], 1)
-        break
-      case "--pin-head":
-        pinHead = true
-        break
-      case "--axis": {
-        const axis = args[++index]
-        if (axis !== "kill" && axis !== "duplicate" && axis !== "reorder") {
-          throw cliRefusal(["axis"], axis ?? "missing", ["kill", "duplicate", "reorder"], usage)
-        }
-        axes.push(axis)
-        break
-      }
-      case "--seed":
-        seed = parseNatural("seed", args[++index], 0)
-        break
-      case "--repeat":
-        repeat = parseNatural("repeat", args[++index], 1)
-        break
-      case "--output": {
-        const selected = args[++index]
-        if (selected !== "json" && selected !== "text") {
-          throw cliRefusal(["output"], selected ?? "missing", ["json", "text"], usage)
-        }
-        output = selected
-        break
-      }
-      case "--report":
-        report = args[++index]
-        if (report === undefined) throw cliRefusal(["report"], "missing", "one path", usage)
-        break
-      default:
-        throw cliRefusal(["flag"], argument, "one declared plait chaos flag", usage)
-    }
-  }
-  if (modulePath === undefined && foldDigest === undefined) {
-    throw cliRefusal(["fold"], "missing", "a module path or --fold digest", usage)
-  }
-  if (modulePath !== undefined && foldDigest !== undefined) {
-    throw cliRefusal(["fold"], "module path and digest", "exactly one fold selector", usage)
-  }
-  if (head === undefined && !pinHead) {
-    throw cliRefusal(["head"], "unpinned", "--head <position> or --pin-head", "Pin the span before running either arm.")
-  }
-  if (head !== undefined && pinHead) {
-    throw cliRefusal(["head"], "two head selectors", "exactly one head selector", usage)
-  }
-  const selectedAxes = axes.length === 0 ? ["kill", "duplicate", "reorder"] as const : axes
-  if (repeat > 1 && selectedAxes.includes("kill")) {
-    throw cliRefusal(
-      ["repeat"],
-      repeat,
-      1,
-      "The v0 hard-kill arm owns one immutable anchor namespace; repeat duplicate/reorder schedules or use a fresh fold declaration.",
-    )
-  }
-  return {
-    ...(modulePath === undefined ? {} : { modulePath }),
-    ...(foldDigest === undefined ? {} : { foldDigest }),
-    ...(lane === undefined ? {} : { lane }),
-    ...(head === undefined ? {} : { head }),
-    pinHead,
-    axes: [...new Set(selectedAxes)],
-    seed,
-    repeat,
-    output,
-    ...(report === undefined ? {} : { report }),
-  }
-}
-
 /**
  * Guards the legacy chaos harness's untyped JavaScript module boundary. This
  * is not candidate judgment: it accepts no `KernelCandidateAct`, constructs no
  * `KernelAct`, and teaches no kernel refusal. That route is {@link admit}.
+ *
+ * The shape is stated as a schema rather than as a chain of `typeof` tests, so
+ * the boundary is decoded by the same algebra every other boundary is.
  */
-const isChaosFoldExport = (exported: unknown): exported is ChaosFold =>
-  Predicate.isObject(exported) &&
-  Predicate.isObject(exported.declaration) &&
-  exported.declaration.kind === "fold" &&
-  typeof exported.digest === "string" &&
-  Predicate.isObject(exported.lane) &&
-  Predicate.isObject(exported.lane.declaration) &&
-  typeof exported.lane.digest === "string" &&
-  typeof exported.lane.handle === "string" &&
-  typeof exported.lane.partitions === "number" &&
-  Predicate.isObject(exported.algebra) &&
-  Predicate.isObject(exported.algebra.declaration) &&
-  Predicate.isObject(exported.algebra.reducer) &&
-  Predicate.isObject(exported.contribution) &&
-  typeof exported.contribution.apply === "function" &&
-  typeof exported.step === "function"
+const PlainObject = Schema.declare<Record<string, unknown>>(
+  (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
+  { identifier: "PlainObject" },
+)
 
-const absoluteModulePath = (path: string): string => isAbsolute(path) ? path : resolve(process.cwd(), path)
+const AnyFunction = Schema.declare<(...args: never) => unknown>(
+  (value): value is (...args: never) => unknown => typeof value === "function",
+  { identifier: "Function" },
+)
 
-const rebuildChaosFoldExport = async (exported: ChaosFold): Promise<ChaosFold> => {
-  const lane = await Effect.runPromise(Lane.declare({
+const ChaosFoldExport = Schema.Struct({
+  digest: Schema.String,
+  declaration: Schema.Struct({ kind: Schema.Literal("fold") }),
+  lane: Schema.Struct({
+    declaration: PlainObject,
+    digest: Schema.String,
+    handle: Schema.String,
+    partitions: Schema.Number,
+  }),
+  algebra: Schema.Struct({
+    declaration: PlainObject,
+    digest: Schema.String,
+    reducer: PlainObject,
+  }),
+  contribution: Schema.Struct({ apply: AnyFunction }),
+  step: AnyFunction,
+})
+
+const absoluteModulePath = Effect.fn("cli.absoluteModulePath")(function* (
+  candidate: string,
+): Effect.fn.Return<string, never, Path.Path> {
+  const path = yield* Path.Path
+  return path.isAbsolute(candidate) ? candidate : path.resolve(process.cwd(), candidate)
+})
+
+/**
+ * Re-declares every part of an imported fold through the package's own
+ * declaration seams and requires each to agree with the digest the module
+ * exported. A module hands in values; only `Fold.declare` mints the admitted
+ * one this measurement runs.
+ */
+const rebuildChaosFoldExport = Effect.fn("cli.rebuildChaosFoldExport")(function* (
+  exported: ChaosFold,
+): Effect.fn.Return<ChaosFold, Refusal> {
+  const lane = yield* Lane.declare({
     handle: exported.lane.handle,
     event: exported.lane.event,
     eventSchema: exported.lane.declaration.eventSchema,
     partitions: exported.lane.partitions,
     partitionKey: exported.lane.partitionKey,
-  }))
+  })
   if (lane.digest !== exported.lane.digest) {
-    throw cliRefusal(
+    return yield* Effect.fail(chaosRefusal(
       ["module", "fold", "lane", "digest"],
       exported.lane.digest,
       lane.digest,
       "Export the exact admitted lane returned by Lane.declare.",
-    )
+    ))
   }
-  const algebra = await Effect.runPromise(Algebra.declare({
+  const algebra = yield* Algebra.declare({
     declaration: exported.algebra.declaration.definition,
     reducer: exported.algebra.reducer,
-  }))
+  })
   if (algebra.digest !== exported.algebra.digest) {
-    throw cliRefusal(
+    return yield* Effect.fail(chaosRefusal(
       ["module", "fold", "algebra", "digest"],
       exported.algebra.digest,
       algebra.digest,
       "Export the exact admitted algebra returned by Algebra.declare.",
-    )
+    ))
   }
-  const admitted = await Effect.runPromise(declareFold({
+  const admitted = yield* declareFold({
     lane,
     algebra: exported.algebra as Algebra.CommutativeAlgebra<WireValue>,
     contribution: exported.contribution,
-  }))
-  const exportedDigest = await Effect.runPromise(digestOf(exported.declaration as unknown as WireValue))
+  })
+  const exportedDigest = yield* digestOf(exported.declaration as unknown as WireValue)
   if (exportedDigest !== exported.digest || admitted.digest !== exported.digest) {
-    throw cliRefusal(
+    return yield* Effect.fail(chaosRefusal(
       ["module", "fold", "digest"],
       exported.digest,
       admitted.digest,
       "Export one internally consistent fold declaration returned by Fold.declare.",
-    )
+    ))
   }
   return admitted
-}
+})
 
-const loadFold = async (modulePath: string): Promise<ChaosFold> => {
-  let namespace: Record<string, unknown>
-  try {
-    namespace = await import(pathToFileURL(absoluteModulePath(modulePath)).href) as Record<string, unknown>
-  } catch (cause) {
-    throw cliRefusal(["module"], String(cause), "an importable module exporting one declared fold", usage)
-  }
-  const exported = await Promise.resolve(namespace.fold ?? namespace.default)
-  if (!isChaosFoldExport(exported)) {
-    throw cliRefusal(
-      ["module", "fold"],
-      exported === undefined ? "missing" : "not a declared fold",
-      "a `fold` or default export returned by Fold.declare",
-      "Export the admitted fold value itself; plait chaos never invokes an arbitrary program export.",
-    )
-  }
-  return rebuildChaosFoldExport(exported)
-}
+const loadFold = Effect.fn("cli.loadFold")(function* (
+  modulePath: string,
+): Effect.fn.Return<ChaosFold, Refusal, Path.Path> {
+  const absolute = yield* absoluteModulePath(modulePath)
+  const namespace = yield* Effect.tryPromise({
+    try: () => import(/* @vite-ignore */ `file://${absolute}`) as Promise<Record<string, unknown>>,
+    catch: (cause) =>
+      chaosRefusal(["module"], String(cause), "an importable module exporting one declared fold", usage),
+  })
+  const exported = yield* Effect.promise(() => Promise.resolve(namespace.fold ?? namespace.default))
+  yield* SchemaParser.decodeUnknownEffect(ChaosFoldExport)(exported).pipe(
+    Effect.mapError(() =>
+      chaosRefusal(
+        ["module", "fold"],
+        exported === undefined ? "missing" : "not a declared fold",
+        "a `fold` or default export returned by Fold.declare",
+        "Export the admitted fold value itself; plait chaos never invokes an arbitrary program export.",
+      )
+    ),
+  )
+  return yield* rebuildChaosFoldExport(exported as ChaosFold)
+})
 
-const readHeads = async (
+/**
+ * Pins the span every arm of this run measures.
+ *
+ * An explicit `--head` is the same pin on every partition. `--pin-head` reads
+ * each declared partition's live stream head through the package's own
+ * Scope-owned connection seam, so the connection is released by the scope
+ * rather than by a `finally`, and a substrate failure arrives as the chaos
+ * harness's retryable transport absence.
+ */
+const readHeads = Effect.fn("cli.readHeads")(function* (
   servers: string,
   fold: ChaosFold,
-  requested: number | undefined,
-): Promise<ReadonlyArray<number>> => {
-  if (requested !== undefined) return Array.from({ length: fold.lane.partitions }, () => requested)
-  const connection = await connect({ servers, name: "foldlab-plait-chaos-pin-head" })
-  try {
-    const manager = await jetstreamManager(connection)
-    const heads: Array<number> = []
-    for (let partition = 0; partition < fold.lane.partitions; partition++) {
-      const info = await manager.streams.info(laneStreamName(fold.lane, partition))
-      if (info.state.last_seq < 1) {
-        throw cliRefusal(["head", String(partition)], 0, "a positive pinned stream head", "Emit a finite span before running chaos.")
-      }
-      heads.push(info.state.last_seq)
-    }
-    return heads
-  } finally {
-    await connection.close()
+  requested: Option.Option<number>,
+): Effect.fn.Return<ReadonlyArray<number>, Refusal, Scope.Scope> {
+  if (Option.isSome(requested)) {
+    return Array.from({ length: fold.lane.partitions }, () => requested.value)
   }
-}
-
-const waitForJson = async <A>(
-  path: string,
-  child: ReturnType<typeof Bun.spawn>,
-): Promise<A> => {
-  let lastParseFailure = "file not created"
-  for (let attempt = 0; attempt < 800; attempt++) {
-    if (await Bun.file(path).exists()) {
-      try {
-        return JSON.parse(await Bun.file(path).text()) as A
-      } catch (cause) {
-        lastParseFailure = String(cause)
-      }
-    }
-    if (child.exitCode !== null) {
-      const stderr = child.stderr instanceof ReadableStream
-        ? await new Response(child.stderr).text()
-        : ""
-      throw cliRefusal(
-        ["kill", "child"],
-        `${child.exitCode}: ${stderr}; ${lastParseFailure}`,
-        "a live pump child and one complete JSON handoff",
-        "Inspect the child refusal and substrate.",
-      )
-    }
-    await Bun.sleep(25)
-  }
-  throw cliRefusal(
-    ["kill", "child"],
-    `timeout: ${lastParseFailure}`,
-    "one complete checkpoint marker",
-    "Use a larger pinned span or inspect the substrate.",
+  const connection = yield* acquireConnection(
+    { servers },
+    "foldlab-plait-chaos-pin-head",
+    "chaos.pin-head",
+    transportRefusal,
   )
-}
-
-const runPumpChild = async (args: ReadonlyArray<string>): Promise<void> => {
-  const [modulePath, servers, headsJson, resultPath, markerPath, markerFloorText] = args
-  if (modulePath === undefined || servers === undefined || headsJson === undefined || resultPath === undefined) {
-    throw new Error("internal chaos pump arguments are incomplete")
-  }
-  const fold = await loadFold(modulePath)
-  const heads = JSON.parse(headsJson) as ReadonlyArray<number>
-  const markerFloor = markerFloorText === undefined ? Number.POSITIVE_INFINITY : Number(markerFloorText)
-  await Effect.runPromise(Effect.gen(function* () {
-    const handle = yield* deploy(fold, { checkpointEvery: 16 })
-    let markerWritten = false
-    while (true) {
-      const anchors = yield* Effect.forEach(
-        heads,
-        (_, partition) => handle.anchor(partition),
-        { concurrency: "unbounded" },
-      )
-      const applied = anchors.reduce((sum, anchor) => sum + anchor.floor, 0)
-      if (!markerWritten && markerPath !== undefined && applied >= markerFloor) {
-        markerWritten = true
-        yield* Effect.promise(() => Bun.write(markerPath, JSON.stringify({ anchors, applied })))
-      }
-      if (anchors.every((anchor, partition) => anchor.floor >= heads[partition]!)) {
-        const scoreboard = yield* handle.scoreboard
-        yield* Effect.promise(() => Bun.write(resultPath, JSON.stringify({ anchors, scoreboard })))
-        return
-      }
-      yield* Effect.sleep("5 millis")
+  const heads: Array<number> = []
+  for (let partition = 0; partition < fold.lane.partitions; partition++) {
+    const info = yield* Effect.tryPromise({
+      try: async () => {
+        const manager = await jetstreamManager(connection)
+        return manager.streams.info(laneStreamName(fold.lane, partition))
+      },
+      catch: (cause) => transportRefusal("chaos.pin-head", cause),
+    })
+    if (info.state.last_seq < 1) {
+      return yield* Effect.fail(chaosRefusal(
+        ["head", String(partition)],
+        0,
+        "a positive pinned stream head",
+        "Emit a finite span before running chaos.",
+      ))
     }
-  }).pipe(
-    Effect.provide(Folds.layer({ servers })),
-    Effect.scoped,
-  ))
-}
+    heads.push(info.state.last_seq)
+  }
+  return heads
+})
 
-const runKill = async (
+/**
+ * Waits for one pump child's JSON handoff.
+ *
+ * The bound is the same 800 x 25ms this arm has always carried, and the exit
+ * condition is the same pair: the file parses, or the child is gone. What
+ * moved is that a dead child and an exhausted bound are refusals on the error
+ * channel rather than thrown values.
+ */
+const waitForJson = <A>(
+  path: string,
+  child: ChildProcessSpawner.ChildProcessHandle,
+): Effect.Effect<A, Refusal, FileSystem.FileSystem> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    let lastParseFailure = "file not created"
+    for (let attempt = 0; attempt < 800; attempt++) {
+      const text = yield* fs.readFileString(path).pipe(Effect.option)
+      if (Option.isSome(text)) {
+        const parsed = yield* Effect.try({
+          try: () => JSON.parse(text.value) as A,
+          catch: (cause) => String(cause),
+        }).pipe(Effect.result)
+        if (Result.isSuccess(parsed)) return parsed.success
+        lastParseFailure = parsed.failure
+      }
+      const running = yield* child.isRunning.pipe(Effect.orElseSucceed(() => false))
+      if (!running) {
+        return yield* Effect.fail(chaosRefusal(
+          ["kill", "child"],
+          `exited: ${lastParseFailure}`,
+          "a live pump child and one complete JSON handoff",
+          "Inspect the child refusal and substrate.",
+        ))
+      }
+      yield* Effect.sleep("25 millis")
+    }
+    return yield* Effect.fail(chaosRefusal(
+      ["kill", "child"],
+      `timeout: ${lastParseFailure}`,
+      "one complete checkpoint marker",
+      "Use a larger pinned span or inspect the substrate.",
+    ))
+  })
+
+/**
+ * The hard-kill arm: run a pump to a marked coordinate, SIGKILL it mid-stream,
+ * and measure what the resumed pump re-derives.
+ *
+ * Both children are spawned through the CLI runtime's own
+ * `ChildProcessSpawner` — the same service `Command.Environment` already
+ * carries — and both are owned by the scope, so an interrupted measurement
+ * cannot leave a pump behind.
+ */
+const runKill = Effect.fn("cli.runKill")(function* (
   modulePath: string,
   servers: string,
   heads: ReadonlyArray<number>,
   seed: number,
   reference: ReadonlyArray<Digest>,
-): Promise<KillMeasurement> => {
-  const directory = await mkdtemp(join(tmpdir(), "plait-chaos-cli-"))
-  const marker = join(directory, "marker.json")
-  const result = join(directory, "result.json")
-  const children = new Set<ReturnType<typeof Bun.spawn>>()
-  const spawn = (withMarker: boolean) => {
-    const command = [
-      process.execPath,
-      fileURLToPath(import.meta.url),
-      "__pump",
-      absoluteModulePath(modulePath),
-      servers,
-      JSON.stringify(heads),
-      result,
-    ]
+): Effect.fn.Return<
+  KillMeasurement,
+  Refusal,
+  FileSystem.FileSystem | Path.Path | ChildProcessSpawner.ChildProcessSpawner | Scope.Scope
+> {
+  const fs = yield* FileSystem.FileSystem
+  const path = yield* Path.Path
+  const directory = yield* fs.makeTempDirectoryScoped({ prefix: "plait-chaos-cli-" }).pipe(
+    Effect.mapError((cause) =>
+      chaosRefusal(["kill", "workspace"], String(cause), "a writable temporary directory", "Inspect the filesystem.")
+    ),
+  )
+  const marker = path.join(directory, "marker.json")
+  const result = path.join(directory, "result.json")
+  const absolute = yield* absoluteModulePath(modulePath)
+
+  const spawn = Effect.fn("cli.runKill.spawn")(function* (withMarker: boolean) {
+    const args = ["__pump", absolute, servers, JSON.stringify(heads), result]
     if (withMarker) {
       const total = heads.reduce((sum, head) => sum + head, 0)
       const markerFloor = Math.max(1, Math.min(total - 1, 1 + (seed % Math.max(total - 1, 1))))
-      command.push(marker, String(markerFloor))
+      args.push("--marker", marker, "--marker-floor", String(markerFloor))
     }
-    const child = Bun.spawn({ cmd: command, stdout: "ignore", stderr: "pipe" })
-    children.add(child)
-    return child
-  }
-  try {
-    const first = spawn(true)
-    const marked = await waitForJson<{ anchors: ReadonlyArray<Anchor> }>(marker, first)
-    if (marked.anchors.every((anchor, partition) => anchor.floor >= heads[partition]!)) {
-      throw cliRefusal(
-        ["kill", "span"],
-        "fully anchored before interruption",
-        "an unanchored suffix",
-        "Use a fresh declared fold and a larger pinned span so the hard kill lands mid-stream.",
-      )
-    }
-    first.kill(9)
-    await first.exited
+    const handle = yield* Effect.acquireRelease(
+      ChildProcess.make(process.execPath, [fileURLToPath(import.meta.url), ...args], {
+        stdout: "pipe",
+        stderr: "pipe",
+      }),
+      (child) => child.kill({ killSignal: "SIGKILL" }).pipe(Effect.ignore),
+    ).pipe(
+      Effect.mapError((cause) =>
+        chaosRefusal(["kill", "child"], String(cause), "one spawned pump child", "Inspect the substrate.")
+      ),
+    )
+    return handle
+  })
 
-    const resumed = spawn(false)
-    const measured = await waitForJson<PumpResult>(result, resumed)
-    await resumed.exited
-    const observed = measured.anchors.map((anchor) => anchor.stateDigest)
-    return {
-      anchors: measured.anchors,
-      resumeCoordinates: marked.anchors.map((anchor) => anchor.floor),
-      scoreboard: measured.scoreboard,
-      equal: reference.every((digest, index) => digest === observed[index]),
-    }
-  } finally {
-    for (const child of children) {
-      if (child.exitCode === null) child.kill()
-      await child.exited
-    }
-    await rm(directory, { recursive: true, force: true })
+  const first = yield* spawn(true)
+  const marked = yield* waitForJson<{ anchors: ReadonlyArray<Anchor> }>(marker, first)
+  if (marked.anchors.every((anchor, partition) => anchor.floor >= heads[partition]!)) {
+    return yield* Effect.fail(chaosRefusal(
+      ["kill", "span"],
+      "fully anchored before interruption",
+      "an unanchored suffix",
+      "Use a fresh declared fold and a larger pinned span so the hard kill lands mid-stream.",
+    ))
   }
-}
+  yield* first.kill({ killSignal: "SIGKILL" }).pipe(Effect.ignore)
+  yield* first.exitCode.pipe(Effect.ignore)
 
-const corpusDigest = async (): Promise<string> => {
-  const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-  const bytes = new Uint8Array(await Bun.file(join(packageRoot, "fixtures", "fabric-conformance.ndjson")).arrayBuffer())
+  const resumed = yield* spawn(false)
+  const measured = yield* waitForJson<PumpResult>(result, resumed)
+  yield* resumed.exitCode.pipe(Effect.ignore)
+  const observed = measured.anchors.map((anchor) => anchor.stateDigest)
+  return {
+    anchors: measured.anchors,
+    resumeCoordinates: marked.anchors.map((anchor) => anchor.floor),
+    scoreboard: measured.scoreboard,
+    equal: reference.every((digest, index) => digest === observed[index]),
+  }
+})
+
+const corpusDigest = Effect.fn("cli.corpusDigest")(function* (): Effect.fn.Return<
+  string,
+  Refusal,
+  FileSystem.FileSystem | Path.Path
+> {
+  const fs = yield* FileSystem.FileSystem
+  const path = yield* Path.Path
+  const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+  const bytes = yield* fs.readFile(path.join(packageRoot, "fixtures", "fabric-conformance.ndjson")).pipe(
+    Effect.mapError((cause) =>
+      chaosRefusal(["corpus"], String(cause), "the readable conformance corpus", "Restore the package fixtures.")
+    ),
+  )
   return new Bun.CryptoHasher("sha256").update(bytes).digest("hex")
-}
+})
 
 const axisRecord = (
   axis: Axis,
@@ -446,7 +505,7 @@ const axisRecord = (
   observed: ReadonlyArray<Digest>,
   equal: boolean,
   extra: Record<string, WireValue> = {},
-): WireValue => ({
+): Record<string, WireValue> => ({
   axis,
   status: equal ? "pass" : "diverged",
   reference: [...reference],
@@ -455,38 +514,119 @@ const axisRecord = (
   ...extra,
 })
 
-const execute = async (options: CliOptions): Promise<{ readonly scoreboard: WireValue; readonly exit: number }> => {
-  if (options.foldDigest !== undefined) {
-    throw cliRefusal(
+interface ChaosRequest {
+  readonly module: Option.Option<string>
+  readonly fold: Option.Option<Digest>
+  readonly lane: Option.Option<Digest>
+  readonly head: Option.Option<number>
+  readonly pinHead: boolean
+  readonly axis: ReadonlyArray<Axis>
+  readonly seed: number
+  readonly repeat: number
+  readonly output: "json" | "text"
+  readonly report: Option.Option<string>
+}
+
+/** A request that survived judgment: one fold selector, one pinned span, one axis set. */
+interface AdmittedRun {
+  readonly modulePath: string
+  readonly axes: ReadonlyArray<Axis>
+}
+
+/**
+ * The laws this surface holds over a well-FORMED invocation.
+ *
+ * The library owns syntax — an unknown flag, a missing value, a bad choice
+ * are its structured usage errors, rendered with the command's own help. What
+ * the library cannot know is the estate's law: that a chaos run pins exactly
+ * one span of exactly one fold. Those are refusals, and they are judged here
+ * so the division stays legible — syntax refused by the parser, law refused by
+ * the taught vocabulary.
+ *
+ * Judgment RETURNS the admitted run rather than nodding at the request and
+ * leaving the caller to re-read it. That is why nothing downstream needs a
+ * cast: the only way to hold a module path here is to have been admitted.
+ */
+const judgeRequest = Effect.fn("cli.judgeRequest")(function* (
+  request: ChaosRequest,
+): Effect.fn.Return<AdmittedRun, Refusal> {
+  if (Option.isSome(request.fold)) {
+    if (Option.isSome(request.module)) {
+      return yield* Effect.fail(
+        chaosRefusal(["fold"], "module path and digest", "exactly one fold selector", usage),
+      )
+    }
+    return yield* Effect.fail(chaosRefusal(
       ["fold"],
-      options.foldDigest,
+      request.fold.value,
       "a cataloged fold available through the future catalog slice",
       "v0 can load a declared fold module; digest lookup is refused until the catalog exists.",
-    )
+    ))
   }
-  const modulePath = options.modulePath!
-  const fold = await loadFold(modulePath)
-  if (options.lane !== undefined && options.lane !== fold.lane.digest) {
-    throw cliRefusal(["lane"], options.lane, fold.lane.digest, "Use the lane committed by the fold declaration.")
+  if (Option.isNone(request.module)) {
+    return yield* Effect.fail(chaosRefusal(["fold"], "missing", "a module path or --fold digest", usage))
+  }
+  if (Option.isNone(request.head) && !request.pinHead) {
+    return yield* Effect.fail(chaosRefusal(
+      ["head"],
+      "unpinned",
+      "--head <position> or --pin-head",
+      "Pin the span before running either arm.",
+    ))
+  }
+  if (Option.isSome(request.head) && request.pinHead) {
+    return yield* Effect.fail(chaosRefusal(["head"], "two head selectors", "exactly one head selector", usage))
+  }
+  const axes = request.axis.length === 0 ? AXES : [...new Set(request.axis)]
+  if (request.repeat > 1 && axes.includes("kill")) {
+    return yield* Effect.fail(chaosRefusal(
+      ["repeat"],
+      request.repeat,
+      1,
+      "The v0 hard-kill arm owns one immutable anchor namespace; repeat duplicate/reorder schedules or use a fresh fold declaration.",
+    ))
+  }
+  return { modulePath: request.module.value, axes }
+})
+
+/** The measurement itself. Returns the scoreboard and the exit its verdict earns. */
+const measure = Effect.fn("cli.measure")(function* (
+  request: ChaosRequest,
+): Effect.fn.Return<
+  { readonly scoreboard: WireValue; readonly exit: number },
+  Refusal,
+  FileSystem.FileSystem | Path.Path | ChildProcessSpawner.ChildProcessSpawner | Scope.Scope
+> {
+  const { axes: selected, modulePath } = yield* judgeRequest(request)
+  const fold = yield* loadFold(modulePath)
+  if (Option.isSome(request.lane) && request.lane.value !== fold.lane.digest) {
+    return yield* Effect.fail(chaosRefusal(
+      ["lane"],
+      request.lane.value,
+      fold.lane.digest,
+      "Use the lane committed by the fold declaration.",
+    ))
   }
   const servers = process.env.PLAIT_NATS_URL ?? "nats://127.0.0.1:4222"
-  const heads = await readHeads(servers, fold, options.head)
+  const heads = yield* readHeads(servers, fold, request.head)
   const started = performance.now()
+
   const runs: Array<RedeliveryChaosResult> = []
-  for (let repeat = 0; repeat < options.repeat; repeat++) {
-    runs.push(await Effect.runPromise(runRedeliveryChaos({
+  for (let repeat = 0; repeat < request.repeat; repeat++) {
+    runs.push(yield* runRedeliveryChaos({
       servers,
       fold,
       heads,
-      seed: options.seed + repeat,
-    }).pipe(Effect.scoped)))
+      seed: request.seed + repeat,
+    }).pipe(Effect.scoped))
   }
   const reference = runs[0]!.referenceDigests
-  const axes: Array<WireValue> = []
+  const axes: Array<Record<string, WireValue>> = []
   let anchorWrites = runs.reduce((sum, run) => sum + run.anchorWrites, 0)
   let kills = 0
-  if (options.axes.includes("kill")) {
-    const killed = await runKill(modulePath, servers, heads, options.seed, reference)
+
+  if (selected.includes("kill")) {
+    const killed = yield* runKill(modulePath, servers, heads, request.seed, reference)
     axes.push(axisRecord("kill", reference, killed.anchors.map((anchor) => anchor.stateDigest), killed.equal, {
       kills: 1,
       resumeCoordinates: [...killed.resumeCoordinates],
@@ -495,7 +635,7 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
     anchorWrites += killed.scoreboard.anchorWrites
     kills = 1
   }
-  if (options.axes.includes("duplicate")) {
+  if (selected.includes("duplicate")) {
     const equal = runs.every((run) => run.equal)
     axes.push(axisRecord("duplicate", reference, runs[0]!.successorDigests, equal, {
       schedulesMeasured: runs.length,
@@ -503,7 +643,7 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
       mechanism: "durable-consumer NAK/redelivery; no republish",
     }))
   }
-  if (options.axes.includes("reorder")) {
+  if (selected.includes("reorder")) {
     const equal = runs.every((run) => run.equal)
     axes.push(axisRecord("reorder", reference, runs[0]!.successorDigests, equal, {
       schedulesMeasured: runs.length,
@@ -517,9 +657,10 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
     status: "n/a",
     reason: "deferred by the v0 ruling; arrival reorder is the shipped F2b axis",
   })
-  const applicable = axes.filter((axis) => Predicate.isObject(axis) && axis.status !== "n/a") as Array<Record<string, WireValue>>
+
+  const applicable = axes.filter((axis) => axis.status !== "n/a")
   const passed = applicable.filter((axis) => axis.equal === true).length
-  const digest = await corpusDigest()
+  const digest = yield* corpusDigest()
   const elapsedMillis = Math.round((performance.now() - started) * 1000) / 1000
   const scoreboard: WireValue = {
     v: 0,
@@ -528,8 +669,8 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
       fold: fold.digest,
       lane: fold.lane.digest,
       heads: [...heads],
-      seed: options.seed,
-      repeat: options.repeat,
+      seed: request.seed,
+      repeat: request.repeat,
       substrate: "nats-server v2.14.4; single node; non-clustered; R=1; file-backed",
     },
     axes,
@@ -553,57 +694,189 @@ const execute = async (options: CliOptions): Promise<{ readonly scoreboard: Wire
       laws: ["F3ResumeExact", "F2TraceInvariant", "F2bGuardedExactlyOnce"],
       corpusSha256: digest,
     },
-    verdict: `Under this schedule, on this substrate envelope, the deployed runtime produced byte-equal terminal digests on ${passed} of ${applicable.length} applicable axes. This is a measurement of one run, not a proof. The machine-checked reason is F3 / F2 / F2b, proven in verify/fabric at corpus ${digest}.`,
-    bounds: "No liveness, exactly-once, external-effect, or floor-protection claim. One live pump per fold partition is assumed.",
+    verdict:
+      `Under this schedule, on this substrate envelope, the deployed runtime produced byte-equal terminal digests on ${passed} of ${applicable.length} applicable axes. This is a measurement of one run, not a proof. The machine-checked reason is F3 / F2 / F2b, proven in verify/fabric at corpus ${digest}.`,
+    bounds:
+      "No liveness, exactly-once, external-effect, or floor-protection claim. One live pump per fold partition is assumed.",
   }
   return { scoreboard, exit: passed === applicable.length ? 0 : 1 }
-}
+})
 
-const printRefusal = (refusal: Refusal | StructuralRefusal): void => {
-  const body = {
-    kind: refusal.kind,
-    sort: refusal.sort,
-    law: refusal.law,
-    path: refusal.path,
-    got: refusal.got,
-    expected: refusal.expected,
-    next: refusal.next,
-  }
-  process.stderr.write(`${JSON.stringify(body)}\n`)
-}
+// ===========================================================================
+// The command tree
+// ===========================================================================
 
-const main = async (): Promise<number> => {
-  if (process.argv[2] === "__pump") {
-    await runPumpChild(process.argv.slice(3))
-    return 0
-  }
-  let options: CliOptions
-  try {
-    options = parse(process.argv.slice(2))
-    const result = await execute(options)
-    const bytes = await Effect.runPromise(canonicalBytes(result.scoreboard))
-    if (options.report !== undefined) await Bun.write(options.report, bytes)
-    if (options.output === "json") {
-      process.stdout.write(bytes)
-      process.stdout.write("\n")
+/**
+ * `plait chaos` — the one shipped verb.
+ *
+ * Its handler reads a decoded request and writes a canonical scoreboard. It
+ * fails with refusals; it renders none, because rendering belongs to the one
+ * function above and the exit belongs to the one seam below.
+ */
+const chaos = Command.make("chaos", {
+  module: Argument.string("module").pipe(
+    Argument.withDescription("Path to a module exporting one fold declared by Fold.declare"),
+    Argument.optional,
+  ),
+  ...chaosFlags,
+}, (request) =>
+  Effect.gen(function* () {
+    const measured = yield* measure(request)
+    const bytes = yield* canonicalBytes(measured.scoreboard)
+    const text = new TextDecoder().decode(bytes)
+    if (Option.isSome(request.report)) {
+      const fs = yield* FileSystem.FileSystem
+      yield* fs.writeFile(request.report.value, bytes).pipe(
+        Effect.mapError((cause) =>
+          chaosRefusal(["report"], String(cause), "a writable report path", "Choose a writable report path.")
+        ),
+      )
+    }
+    if (request.output === "json") {
+      yield* Console.log(text)
     } else {
-      const score = result.scoreboard as Record<string, WireValue>
-      const axes = score.axes as ReadonlyArray<Record<string, WireValue>>
-      for (const axis of axes) {
-        process.stdout.write(`${String(axis.axis).padEnd(20)} ${String(axis.status)}${axis.reason === undefined ? "" : ` — ${String(axis.reason)}`}\n`)
+      const score = measured.scoreboard as Record<string, WireValue>
+      const lines = score.axes as ReadonlyArray<Record<string, WireValue>>
+      for (const axis of lines) {
+        yield* Console.log(
+          `${String(axis.axis).padEnd(20)} ${String(axis.status)}${
+            axis.reason === undefined ? "" : ` — ${String(axis.reason)}`
+          }`,
+        )
       }
-      process.stdout.write(`${String(score.verdict)}\n`)
+      yield* Console.log(String(score.verdict))
     }
-    return result.exit
-  } catch (cause) {
-    if (cause instanceof StructuralRefusal ||
-      (Predicate.isObject(cause) && (cause.sort === "structural" || cause.sort === "absence"))) {
-      printRefusal(cause as Refusal)
-    } else {
-      printRefusal(cliRefusal(["runtime"], String(cause), "a completed chaos measurement", "Inspect the substrate and module refusal."))
+    const verdict = yield* Verdict
+    yield* verdict.record(measured.exit)
+  }).pipe(Effect.scoped)).pipe(
+    Command.withDescription(
+      "Measure one pinned span of one admitted declared fold under redelivery, reorder, and hard-kill schedules.",
+    ),
+  )
+
+/**
+ * `plait __pump` — the kill arm's own child, declared rather than smuggled.
+ *
+ * The hard-kill arm needs a second process it can SIGKILL mid-stream. That
+ * process is this command: unlisted, so it never appears in help or
+ * completions, but parsed by the same tree as every other verb rather than by
+ * an `argv[2]` test ahead of the parser.
+ */
+const pump = Command.make("__pump", {
+  module: Argument.string("module"),
+  servers: Argument.string("servers"),
+  heads: Argument.string("heads"),
+  result: Argument.string("result"),
+  marker: Flag.string("marker").pipe(Flag.optional),
+  markerFloor: Flag.integer("marker-floor").pipe(Flag.optional),
+}, (config) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const fold = yield* loadFold(config.module)
+    const heads = JSON.parse(config.heads) as ReadonlyArray<number>
+    const markerFloor = Option.getOrElse(config.markerFloor, () => Number.POSITIVE_INFINITY)
+    const handle = yield* deploy(fold, { checkpointEvery: 16 })
+    let markerWritten = false
+    while (true) {
+      const anchors = yield* Effect.forEach(
+        heads,
+        (_, partition) => handle.anchor(partition),
+        { concurrency: "unbounded" },
+      )
+      const applied = anchors.reduce((sum, anchor) => sum + anchor.floor, 0)
+      if (!markerWritten && Option.isSome(config.marker) && applied >= markerFloor) {
+        markerWritten = true
+        yield* fs.writeFileString(config.marker.value, JSON.stringify({ anchors, applied })).pipe(Effect.orDie)
+      }
+      if (anchors.every((anchor, partition) => anchor.floor >= heads[partition]!)) {
+        const scoreboard = yield* handle.scoreboard
+        yield* fs.writeFileString(config.result, JSON.stringify({ anchors, scoreboard })).pipe(Effect.orDie)
+        return
+      }
+      yield* Effect.sleep("5 millis")
     }
-    return 2
-  }
+  }).pipe(
+    Effect.provide(Folds.layer({ servers: config.servers })),
+    Effect.scoped,
+  )).pipe(Command.unlisted)
+
+/**
+ * The root. Growth happens HERE and only here: a future generator verb —
+ * declare, resolve, emit, fold, decide — is a `Command` value added to this
+ * list, with its own flags carrying the estate's schemas. Nothing about the
+ * parser, the help, the completions, or the refusal rendering changes when one
+ * arrives, which is the property that makes this a projection rather than a
+ * twin of the grammar.
+ */
+const plait = Command.make("plait").pipe(
+  Command.withDescription("The Plait coordination fabric spine."),
+  Command.withSubcommands([chaos, pump]),
+)
+
+// ===========================================================================
+// The exit seam — one total map from the error channel to a process exit
+// ===========================================================================
+
+/**
+ * A verdict a verb earned, held apart from the process that exits on it.
+ *
+ * A chaos run that measures divergence has not failed — it has succeeded at
+ * reporting a divergence, and its scoreboard is the evidence. So divergence
+ * cannot ride the error channel, and the handler must be able to say what it
+ * measured without also deciding how the process ends. It records here; the
+ * seam below reads once.
+ */
+interface VerdictService {
+  readonly record: (code: number) => Effect.Effect<void>
+  readonly read: Effect.Effect<number>
 }
 
-if (import.meta.main) process.exitCode = await main()
+class Verdict extends Context.Service<Verdict, VerdictService>()("plait/cli/Verdict") {
+  static readonly layer: Layer.Layer<Verdict> = Layer.effect(
+    Verdict,
+    Effect.gen(function* () {
+      const earned = yield* Ref.make(0)
+      return {
+        record: (code: number) => Ref.set(earned, code),
+        read: Ref.get(earned),
+      }
+    }),
+  )
+}
+
+/**
+ * The one place a refusal, a usage error, or a verdict becomes a process exit.
+ *
+ * Three outcomes, and each is exactly one line of policy:
+ * - a refusal — this surface's taught vocabulary — renders and exits 2;
+ * - a `CliError` — the library's structured usage error, already rendered by
+ *   the library with the command's own help — exits 2 without a second word,
+ *   because writing one would be the re-implementation this file exists to end;
+ * - a completed run exits on the verdict it recorded: 0 when every applicable
+ *   axis held, 1 when one diverged.
+ */
+const main = Effect.gen(function* () {
+  const verdict = yield* Verdict
+  yield* Command.run(plait, { version: "0.0.0" })
+  return yield* verdict.read
+}).pipe(
+  Effect.catch((error) =>
+    Effect.gen(function* () {
+      if (Schema.is(Refusal)(error)) {
+        yield* renderRefusal(error)
+        return 2
+      }
+      if (CliError.isCliError(error)) return 2
+      yield* renderRefusal(chaosRefusal(
+        ["runtime"],
+        String(error),
+        "a completed chaos measurement",
+        "Inspect the substrate and module refusal.",
+      ))
+      return 2
+    })
+  ),
+  Effect.provide([BunServices.layer, Verdict.layer]),
+)
+
+if (import.meta.main) process.exitCode = await Effect.runPromise(main)
