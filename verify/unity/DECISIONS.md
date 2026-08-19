@@ -559,3 +559,27 @@ Why: the sketch was hand-derived and four of its rows were already known
 defects before this slice started. Diffing against it would measure the sketch,
 not the printer. **Load-bearing? yes** — it is what makes "the sketch retires
 at parity of intent" a checkable sentence.
+### U11. Ratification removes the marker from the roster, not just from the rendering
+
+Decided: the operator ratified the meaning corpus on 2026-08-19, so the marker
+row leaves `refusal-meanings.ndjson`, the `marker` field leaves `Roster`, the
+exactly-one-marker-row read leaves `readRoster`, and `meaningDoc` takes the
+sentence alone. The roster is now sixty rows: forty-four runtime spellings and
+sixteen model-emitted reasons, each with its meaning and nothing else.
+
+Alternatives: keep the row and stop rendering it (an input nothing reads is an
+input nothing keeps honest, and the reader's own refusal — that the roster must
+carry exactly one marker row — would then be guarding a value with no
+consumer); keep the field and pass the empty string (the same dead datum with a
+sentinel spelling, and a printer arm that renders a blank line whenever someone
+forgets what the sentinel means).
+
+Why: the marker was never decoration on this side — it was a reviewed datum
+threaded from the roster through the printer into two surfaces, and ratification
+is the fact that retires the datum, not merely its rendering. Whether a ratified
+sentence may reappear behind a draft marker is a question about the SHIPPED
+bytes, and the runtime package's vocabulary wall is where that is answered; this
+package's job is to emit the sentence and prove the emission fresh.
+**Load-bearing? no** — the byte wall would catch a stale rendering either way,
+but a roster carrying a value no target reads is exactly the drift this package
+exists to refuse.

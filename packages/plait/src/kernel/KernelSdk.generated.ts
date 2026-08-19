@@ -31,8 +31,8 @@
  * can refuse, and for every refusal the law it defends and the legal next
  * move. Each refusal row carries its reason's standing MEANING as a doc
  * comment, distinct from the law and the repair a refusal teaches when it
- * fires, and every meaning is a draft until the operator's taste pass rules -
- * which is what the marker above each of them says.
+ * fires. The operator's taste pass ratified those sentences, so each one
+ * stands as written rather than as a draft awaiting a ruling.
  *
  * The **candidate grammar** is the raw spelling: every shape a caller can
  * present, lawful and unlawful alike. The unlawful shapes are here on
@@ -223,7 +223,6 @@ export interface Refusal {
  */
 export const TAUGHT = [
   /**
-   * Draft meaning, awaiting ratification.
    * A fold read a clock. The fold carrier has no clock parameter, so a time a fold consumes
    * arrives as a tick fact on an evidence lane like every other fact.
    */
@@ -234,7 +233,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A trigger fires on silence rather than on a fact. The trigger grammar is closed at five
    * monotone productions, so acting on the absence of evidence has no production to be written
    * in.
@@ -246,7 +244,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A commit was attempted without holding a fencing token. Only a fenced token lands an
    * outcome, so an unfenced decide has nothing making it at most once.
    */
@@ -257,7 +254,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A write was resolved by arrival order. Cells merge by join under a declared ACI algebra, so
    * an idempotent merge leaves arrival order nothing to decide.
    */
@@ -268,7 +264,6 @@ export const TAUGHT = [
     applicability: "machine-applicable",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A fetched value was trusted without re-deriving its digest. A decode re-derives the
    * identity of what it fetched, so an unverified read makes the store, rather than the bytes,
    * the authority.
@@ -280,7 +275,6 @@ export const TAUGHT = [
     applicability: "machine-applicable",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * Two identifiers were compared across the spaces that mint them. Tokens are per-register and
    * positions are per-partition, so a comparison across spaces is a sort error wearing the
    * shape of a number.
@@ -292,7 +286,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A name was invented rather than derived. Every identifier is the digest of a declaration or
    * a derivation from one, so nothing in the language mints a name out of nothing.
    */
@@ -303,7 +296,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A derived read depends on something outside its support and its query value. Such a read is
    * a function of those two alone, so an ambient input would make one query at one anchor
    * answerable two ways.
@@ -315,7 +307,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A pin names a declaration that has not been admitted. The reference graph is a DAG in
    * admission order, so a referent is declared before anything points at it.
    */
@@ -326,7 +317,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A secret was carried in the wire grammar. The grammar admits no secret position, so
    * credentials ride the environmental band as redacted configuration, outside meaning.
    */
@@ -337,7 +327,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A read claimed that something is present nowhere. A local view is a lattice lower bound, so
    * it licenses an at-least claim and never a global negative.
    */
@@ -348,7 +337,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A recorded fact was changed after the fact. Journals are append-only, so a correction is a
    * successor value pinning its predecessor and forgetting is fenced compaction above the
    * horizon.
@@ -360,7 +348,6 @@ export const TAUGHT = [
     applicability: "machine-applicable",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A declaration names an identifier outside the universe its writ pins. The writ is the
    * boundary a declaration's references live inside, so reaching past it would let a spawn read
    * what its grant never admitted.
@@ -372,7 +359,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A program's identity was taken from its closure bytes. A declaration is the identity, so
    * computation is referenced by the digest of a declared fold and never by the shape of a
    * function value.
@@ -384,7 +370,6 @@ export const TAUGHT = [
     applicability: "advisory",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * A resolve was qualified by an anchor. A digest names one value forever, so an anchor could
    * only decorate that answer; head-relative reading belongs to a fold read at an anchor
    * instead.
@@ -396,7 +381,6 @@ export const TAUGHT = [
     applicability: "machine-applicable",
   },
   /**
-   * Draft meaning, awaiting ratification.
    * Execution was attempted on a declaration with a hole still open. Only closed programs
    * execute, and a hole is a declared parameter rather than a wildcard, so it is filled before
    * the declaration is a run.

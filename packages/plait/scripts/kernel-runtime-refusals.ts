@@ -28,12 +28,12 @@
  * because the emitted reasons are vocabulary too and the model corpus has no
  * field to carry a meaning in.
  *
- * Every meaning below is a DRAFT. The operator's taste pass ratifies the
- * sentences; until it rules, every projection renders the meaning behind
- * `DRAFT_MEANING_MARKER`, and the vocabulary wall requires that marker to be
- * there. Editing a sentence here is a visible act: the generated modules and
- * the prose page all move, and their byte-identical regeneration checks show
- * the diff.
+ * Every meaning below is RATIFIED. The operator's taste pass ruled on the
+ * corpus and its voice in session on 2026-08-19, so every projection renders
+ * the sentence as standing text and the vocabulary wall refuses a meaning that
+ * claims draftness. Editing a sentence here is now an ordinary reviewed diff,
+ * and it is still a visible act: the generated modules and the prose page all
+ * move, and their byte-identical regeneration checks show the diff.
  *
  * THIS FILE IS A TRACKING-NATIVE SOURCE, and the distinction is law (root law
  * 10, operator-ruled 2026-08-19). The waiver ticket below, and every ticket
@@ -60,17 +60,25 @@
 export const RUNTIME_REFUSAL_WAIVER_TICKET = "DEV-804" as const
 
 /**
- * The line every unratified meaning is rendered behind, verbatim, in every
- * projection. Its presence is walled: a meaning that lost its marker reads as
- * ratified prose, and nothing but the operator's taste pass may make it read
- * that way.
+ * The two lines an unratified meaning used to be rendered behind, kept here so
+ * the wall can refuse them by name.
  *
- * The marker names no ticket and carries no parenthetical, because it is
- * rendered into official documents and those carry no tracking artifacts. What
- * it has to say is that the sentence is not yet ruled on, and it says exactly
- * that.
+ * The corpus is ratified, so no projection renders either of these and no
+ * projection may render anything else that opens the same way: a ratified
+ * sentence that still claims draftness would be telling a reader the operator
+ * has not ruled, which is now false. The first form is the original, which
+ * carried a ticket number outward and was retired by the tracking-artifact
+ * ruling; the second is the artifact-free form the mechanism ran under until
+ * the taste pass ruled on the sentences.
+ *
+ * These strings are read by the wall and by its control, and are never
+ * rendered. The ticket citation the first one carries is why the list lives in
+ * this tracking-native source rather than beside the surfaces it guards.
  */
-export const DRAFT_MEANING_MARKER = "Draft meaning, awaiting ratification." as const
+export const RETIRED_DRAFT_MARKERS = [
+  "Draft meaning (pending DEV-825 taste pass):",
+  "Draft meaning, awaiting ratification.",
+] as const
 
 /** One runtime structural spelling and its standing meaning. */
 export interface RuntimeRefusalMeaning {

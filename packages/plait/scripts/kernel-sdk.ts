@@ -13,7 +13,7 @@
  * What the generator transcribes, and what it decides.
  *
  * - **Transcribed.** Every closed inventory and its ranks, every taught
- *   refusal with its law, repair and applicability, every reviewed draft
+ *   refusal with its law, repair and applicability, every reviewed standing
  *   meaning, the whole candidate grammar (its constructors, their field names,
  *   their order and their model types), the eight generator names, and the
  *   docstring the model attaches to each type. None of it is retyped here.
@@ -37,10 +37,7 @@
  */
 import type { KernelConstructorRecord, KernelTypeRecord } from "../src/kernel/KernelCorpusSchemas.js"
 import { parseTypeReference, type KernelCorpus } from "./kernel-corpus.js"
-import {
-  DRAFT_MEANING_MARKER,
-  KERNEL_REFUSAL_REASON_MEANINGS,
-} from "./kernel-runtime-refusals.js"
+import { KERNEL_REFUSAL_REASON_MEANINGS } from "./kernel-runtime-refusals.js"
 
 /** The command a reader runs to reproduce the generated module. */
 export const GENERATE_SDK_COMMAND = "bun run generate:kernel-sdk"
@@ -108,10 +105,10 @@ const docComment = (text: string, indent = ""): ReadonlyArray<string> => {
 }
 
 /**
- * One drafted meaning as doc-comment lines, with the marker reproduced
- * verbatim as its own first line. The vocabulary wall reads the marker back
- * out of these bytes: a meaning that lost it reads as ratified prose, and only
- * the operator's taste pass may make it read that way.
+ * One ratified meaning as doc-comment lines, opening on the sentence itself.
+ * The operator's taste pass ruled on the corpus, so nothing stands above the
+ * meaning; the vocabulary wall sweeps these bytes and refuses a draft marker
+ * reappearing over one.
  */
 const meaningComment = (
   meaning: string,
@@ -123,7 +120,6 @@ const meaningComment = (
   if (meaning.includes("\n")) return refuse(`${where}'s meaning carries a line break`)
   return [
     `${indent}/**`,
-    `${indent} * ${DRAFT_MEANING_MARKER}`,
     ...wrapWords(text, (run) => run.length + indent.length + 3 - WIDTH)
       .map((run) => `${indent} * ${run}`.trimEnd()),
     `${indent} */`,
@@ -588,7 +584,7 @@ const resolveGenerators = (corpus: KernelCorpus): ReadonlyArray<ResolvedGenerato
 }
 
 /**
- * The drafted meaning of each model-emitted refusal reason, resolved against
+ * The standing meaning of each model-emitted refusal reason, resolved against
  * the corpus's own rows. Both directions are refused rather than defaulted, as
  * they are wherever else the ledger is read: a reason the ledger does not
  * cover would render an unexplained row, and a ledger row naming no reason is
@@ -792,8 +788,8 @@ export const renderKernelSdk = (corpus: KernelCorpus): string => {
   line(" * can refuse, and for every refusal the law it defends and the legal next")
   line(" * move. Each refusal row carries its reason's standing MEANING as a doc")
   line(" * comment, distinct from the law and the repair a refusal teaches when it")
-  line(" * fires, and every meaning is a draft until the operator's taste pass rules -")
-  line(" * which is what the marker above each of them says.")
+  line(" * fires. The operator's taste pass ratified those sentences, so each one")
+  line(" * stands as written rather than as a draft awaiting a ruling.")
   line(" *")
   line(" * The **candidate grammar** is the raw spelling: every shape a caller can")
   line(" * present, lawful and unlawful alike. The unlawful shapes are here on")

@@ -216,15 +216,18 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   refusal's teaching: `law`, `expected`, and `next` speak at the moment of
   refusal about one presentation, and a meaning speaks about the kind, standing.
   The generators project every meaning into `KernelTables.generated.ts`,
-  `RefusalKinds.generated.ts`, and the prose page, each behind the verbatim
-  draft marker, and `check:refusal-vocabulary` holds four clauses over those
-  bytes: a kind with no meaning refuses, a meaning that lost the marker refuses,
-  one name carries one meaning, and the page and the modules render the same
-  sentence. Only the DEV-825 operator taste pass retires the marker — until it
-  rules, adding a kind means adding its drafted meaning, and moving a sentence
+  `RefusalKinds.generated.ts`, the plain-TypeScript surface, and the prose page,
+  each as standing text, and `check:refusal-vocabulary` holds four clauses over
+  those bytes: a kind with no meaning refuses, a meaning rendered behind a draft
+  marker refuses, one name carries one meaning, and the page and the modules
+  render the same sentence. The DEV-825 operator taste pass ratified the corpus
+  on 2026-08-19, which INVERTED that second clause: the marker was required
+  before and any claim of draftness is refused now — the two retired forms by
+  name, and anything else opening the same way. Adding a kind still means adding
+  its meaning, amending one is an ordinary reviewed diff, and moving a sentence
   reddens the model emitter's gate and `check:kernel-prose` until both are
-  regenerated. `check:refusal-meaning-control` plants a meaningless kind, an
-  unmarked meaning, and a paraphrased page, and must fail on all three.
+  regenerated. `check:refusal-meaning-control` plants a meaningless kind, a
+  marked meaning, and a paraphrased page, and must fail on all three.
 - A refusal's taught payload is persisted evidence. `check:refusal-payloads`
   pins every `law`, `expected`, and `next` text under `src/` in
   `test/RefusalPayloads.taught.txt` and byte-compares it, so editing one

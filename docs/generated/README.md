@@ -40,8 +40,11 @@ appendix.
   each kind's standing meaning across this page and the generated modules, and
   refuses any tracking artifact rendered into either.
 
-The meanings on that page are DRAFTS. Each renders behind the line
-`Draft meaning, awaiting ratification.`, the wall requires that marker, and
-only the operator's taste pass retires it. The sentences are reviewed house
-data in `packages/plait/scripts/kernel-runtime-refusals.ts`, which is a
-tracking-native source and is where ticket citations for this material belong.
+The meanings on that page are RATIFIED. The operator's taste pass ruled on the
+corpus and its voice on 2026-08-19, so each sentence renders as standing text
+and the wall now refuses a meaning that reappears behind a draft marker — both
+retired forms by name, and anything else opening the same way. Amending a
+sentence is an ordinary reviewed diff from here on, caught by the byte walls
+like any other change. The sentences are reviewed house data in
+`packages/plait/scripts/kernel-runtime-refusals.ts`, which is a tracking-native
+source and is where ticket citations for this material belong.
