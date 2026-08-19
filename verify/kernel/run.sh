@@ -28,7 +28,13 @@ if ! grep -q 'leanprover/lean4:v4.33.0' lean-toolchain ||
   exit 1
 fi
 
-mapfile -t lean_sources < <(find Kernel must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
+# Portable array read: macOS ships bash 3.2, which has no mapfile, and a
+# gate only one host can run is not a gate. Every array this gate builds
+# from a command's lines uses the same while-read shape.
+lean_sources=()
+while IFS= read -r lean_file; do
+  lean_sources+=("$lean_file")
+done < <(find Kernel must-not-compile -type f -name '*.lean' -print | LC_ALL=C sort)
 lean_sources+=(Kernel.lean ControlMain.lean)
 
 # Kernel-bound source hygiene: no proof escapes, no trusted-code widening.
@@ -71,7 +77,10 @@ expected_laws=(
   KRunTailUnjudged KRunContextGrows KRunLandedClosed
   CandidateF13BoundExecutionReplay
 )
-mapfile -t actual_laws < <(
+actual_laws=()
+while IFS= read -r law_name; do
+  actual_laws+=("$law_name")
+done < <(
   grep -oE '^[[:space:]]*(@\[[^]]+\][[:space:]]*)?def[[:space:]]+[A-Z][0-9A-Za-z_]*' \
     Kernel/Laws.lean | sed -E 's/.*def[[:space:]]+//'
 )
@@ -90,7 +99,10 @@ if grep -n 'CandidateF13' Kernel/Proofs.lean ControlMain.lean; then
 fi
 echo "GATE: PASS (definitions / statements / proofs partition; F13 stated-only)"
 
-mapfile -t actual_private < <(
+actual_private=()
+while IFS= read -r private_name; do
+  actual_private+=("$private_name")
+done < <(
   grep -rhoE '^[[:space:]]*(private|protected)[[:space:]]+(theorem|lemma)[[:space:]]+[A-Za-z0-9_]+' Kernel/ \
     | sed -E 's/.*(theorem|lemma)[[:space:]]+//' | sort
 )
@@ -265,8 +277,14 @@ check_control drop-run-tail-halt
 check_control drop-run-prefix-standing
 check_control drop-provision-disjointness
 
-mapfile -t committed_controls < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
-mapfile -t exercised_sorted < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
+committed_controls=()
+while IFS= read -r control_trace; do
+  committed_controls+=("$control_trace")
+done < <(find negative-controls -type f -name '*.cex.txt' -print | LC_ALL=C sort)
+exercised_sorted=()
+while IFS= read -r control_trace; do
+  exercised_sorted+=("$control_trace")
+done < <(printf '%s\n' "${exercised_controls[@]}" | LC_ALL=C sort)
 if [[ "${committed_controls[*]}" != "${exercised_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed control trace is orphaned" >&2
   exit 1
@@ -314,8 +332,14 @@ check_must_not_compile cross-partition-position
 check_must_not_compile cross-kind-digest
 check_must_not_compile anchored-resolve
 
-mapfile -t committed_refusals < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
-mapfile -t exercised_refusals_sorted < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
+committed_refusals=()
+while IFS= read -r refusal_control; do
+  committed_refusals+=("$refusal_control")
+done < <(find must-not-compile -type f -name '*.lean' ! -name '*.witness.lean' -print | LC_ALL=C sort)
+exercised_refusals_sorted=()
+while IFS= read -r refusal_control; do
+  exercised_refusals_sorted+=("$refusal_control")
+done < <(printf '%s\n' "${exercised_refusals[@]}" | LC_ALL=C sort)
 if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   echo "GATE: FAIL — a committed must-not-compile control is orphaned" >&2
   exit 1
