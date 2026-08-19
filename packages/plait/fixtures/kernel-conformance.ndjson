@@ -1,4 +1,4 @@
-{"counts":{"admission":19,"canon":10,"doc":22,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
+{"counts":{"admission":19,"canon":10,"doc":25,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":25},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}
 {"name":"schema","rank":0,"record":"kind"}
 {"name":"program","rank":1,"record":"kind"}
 {"name":"policy","rank":2,"record":"kind"}
@@ -54,6 +54,9 @@
 {"constructors":[{"fields":[{"name":"reason","type":"RefusalReason"},{"name":"law","type":"String"},{"name":"repair","type":"String"}],"name":"mk"}],"form":"structure","name":"Refusal","params":[],"record":"type"}
 {"constructors":[{"fields":[],"name":"machineApplicable"},{"fields":[],"name":"advisory"}],"form":"inductive","name":"Applicability","params":[],"record":"type"}
 {"constructors":[{"fields":[{"name":"catalog","type":"List(Ref)"},{"name":"pinned","type":"List(Ref)"}],"name":"mk"}],"form":"structure","name":"Door","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"act","type":"Act"}],"name":"admitted"},{"fields":[{"name":"refusal","type":"Refusal"}],"name":"refused"}],"form":"inductive","name":"AdmitResult","params":[],"record":"type"}
+{"constructors":[{"fields":[],"name":"declare"},{"fields":[],"name":"resolve"},{"fields":[],"name":"emit"},{"fields":[],"name":"join"},{"fields":[],"name":"fold"},{"fields":[],"name":"decide"},{"fields":[],"name":"trigger"},{"fields":[],"name":"spawn"}],"form":"inductive","name":"GenTag","params":[],"record":"type"}
+{"constructors":[{"fields":[{"name":"name","type":"Nat"},{"name":"generator","type":"GenTag"},{"name":"args","type":"List(RawArg)"},{"name":"uses","type":"List(Nat)"}],"name":"mk"}],"form":"structure","name":"ProgramNode","params":[],"record":"type"}
 {"act":[0,0,7000051000172,4],"name":"lawful-declare","record":"encoding"}
 {"act":[1,0,8],"name":"resolve-schema","record":"encoding"}
 {"act":[2,1,42],"name":"emit-lane","record":"encoding"}
@@ -107,6 +110,9 @@
 {"doc":"A structural refusal: the reason, the law it defends, and the\ntaught repair. Refusal parity as data: the door never refuses\nwithout teaching the legal next move. ","name":"Refusal","record":"doc","target":"type"}
 {"doc":"How a taught repair may be applied. A repair is machine-applicable\nexactly when the lawful rewrite is a function of the refused\ncandidate alone -- an agent may apply it mechanically, with no new\ninformation; it is advisory when the repair needs something the\ncandidate does not carry (a token to hold, a value to declare, an\nauthority to request). The Rust diagnostic discipline, adopted by\nthe operator's ruling. ","name":"Applicability","record":"doc","target":"type"}
 {"doc":"The admission context: the already-admitted catalog and the\nuniverse of referents the acting writ pins. ","name":"Door","record":"doc","target":"type"}
+{"doc":"The admission verdict: an intrinsic sentence, or a taught\nstructural refusal. ","name":"AdmitResult","record":"doc","target":"type"}
+{"doc":"The generator a program node applies. ","name":"GenTag","record":"doc","target":"type"}
+{"doc":"One node of a program declaration: a program-scoped name, the\ngenerator it applies, its raw arguments (holes permitted here --\nthe program's typed parameters), and the names of the prior nodes\nit consumes. ","name":"ProgramNode","record":"doc","target":"type"}
 {"bytes":"{}","name":"empty-object","record":"canon","value":{}}
 {"bytes":"[]","name":"empty-array","record":"canon","value":[]}
 {"bytes":"\"\"","name":"empty-string","record":"canon","value":""}

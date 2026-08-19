@@ -280,3 +280,37 @@ universe of referents the acting writ pins.
 Algebraic register:
 
 `Kernel.Door ::= { catalog : List(Ref), pinned : List(Ref) }`
+
+## `Kernel.AdmitResult`
+
+Plain register:
+
+The admission verdict: an intrinsic sentence, or a taught
+structural refusal. 
+
+Algebraic register:
+
+`Kernel.AdmitResult ::= Kernel.AdmitResult.admitted(act : Act) | Kernel.AdmitResult.refused(refusal : Refusal)`
+
+## `Kernel.GenTag`
+
+Plain register:
+
+The generator a program node applies. 
+
+Algebraic register:
+
+`Kernel.GenTag ::= Kernel.GenTag.declare | Kernel.GenTag.resolve | Kernel.GenTag.emit | Kernel.GenTag.join | Kernel.GenTag.fold | Kernel.GenTag.decide | Kernel.GenTag.trigger | Kernel.GenTag.spawn`
+
+## `Kernel.ProgramNode`
+
+Plain register:
+
+One node of a program declaration: a program-scoped name, the
+generator it applies, its raw arguments (holes permitted here --
+the program's typed parameters), and the names of the prior nodes
+it consumes. 
+
+Algebraic register:
+
+`Kernel.ProgramNode ::= { name : Nat, generator : GenTag, args : List(RawArg), uses : List(Nat) }`

@@ -24,9 +24,6 @@ export * as Catalog from "./planes/Catalog.js"
 /** Lattice cells: the join, the merge-write loop, and the cell service. */
 export * as Cell from "./planes/Cell.js"
 
-/** Context programs as cataloged declarations; no assembly executor. */
-export * as ContextProgram from "./kernel/ContextProgram.js"
-
 /** SHA-256 identity over canonical uncompressed bytes. */
 export * as Digest from "./truth/Digest.js"
 

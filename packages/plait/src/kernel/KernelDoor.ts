@@ -19,12 +19,14 @@ import * as Generated from "./KernelSchemas.generated.js"
 // every one of them back to `KernelSchemas.generated.d.ts`.
 import type {
   KernelActValue as KernelAct,
-  KernelCandidateActValue as KernelCandidateAct,
+  KernelAdmit,
   KernelCandidatePredicateValue as KernelCandidatePredicate,
+  KernelDoorInterface as KernelDoor,
   KernelDoorValue as KernelDoorContext,
   KernelKTriggerPredicateValue as KernelTriggerPredicate,
   KernelRawArgValue as KernelRawArg,
   KernelRefValue as KernelRef,
+  KernelVerdict,
 } from "./KernelSchemas.generated.js"
 import {
   KERNEL_DECL_KINDS,
@@ -33,7 +35,6 @@ import {
   type KernelDeclKind,
   type KernelHoleStage,
   type KernelRefusalReason,
-  type KernelRefusalRow,
 } from "./KernelTables.generated.js"
 
 /** The generated schema for a candidate offered to the door. */
@@ -68,47 +69,44 @@ export type {
 } from "./KernelSchemas.generated.js"
 
 /**
- * The result of admission. Success carries both the intrinsic sentence and its
- * canonical model encoding; refusal carries the complete generated teaching
- * row, flattened so every host exposes identical reason/law/repair fields.
+ * The verdict vocabulary, re-exported from the module the generator writes:
+ * what the door answers, the context-bound view of it, and the judgment
+ * function itself.
+ *
+ * All three were hand-written here until DEV-852, standing beside the model
+ * rather than deriving from it — the twin the corpus had no word for, because
+ * `AdmitResult` was not a manifest type. It is one now, and these three are
+ * rendered from it, from the `Door` record, and from the `CandidateAct`
+ * record. The spellings did not move; only their ancestry did.
+ *
+ * `KernelDoorInterface` is renamed on the way through because the generated
+ * module already binds `KernelDoor` to the Door record's schema. The name a
+ * host reads is this one.
  */
-export type KernelVerdict =
-  | {
-    readonly verdict: "admitted"
-    readonly act: KernelAct
-    readonly encoded: ReadonlyArray<bigint>
-  }
-  | ({ readonly verdict: "refused" } & KernelRefusalRow)
-
-/** A context-bound view of the single admission function. */
-export interface KernelDoor {
-  readonly admit: (candidate: KernelCandidateAct) => KernelVerdict
-}
-
-/** The one host-facing judgment function. */
-export type KernelAdmit = (
-  context: KernelDoorContext,
-  candidate: KernelCandidateAct,
-) => KernelVerdict
+export type {
+  KernelAdmit,
+  KernelDoorInterface as KernelDoor,
+  KernelVerdict,
+} from "./KernelSchemas.generated.js"
 
 const kindRank = (kind: KernelDeclKind): bigint => BigInt(KERNEL_DECL_KINDS.indexOf(kind))
 
 const stageRank = (stage: KernelHoleStage): bigint => BigInt(KERNEL_HOLE_STAGES.indexOf(stage))
 
 /** The decode half of the kind rank. */
-export const rankToKind = (rank: bigint): KernelDeclKind | undefined =>
+const rankToKind = (rank: bigint): KernelDeclKind | undefined =>
   rank < 0n || rank >= BigInt(KERNEL_DECL_KINDS.length)
     ? undefined
     : KERNEL_DECL_KINDS[Number(rank)]
 
 /** The decode half of the hole-stage rank. */
-export const rankToStage = (rank: bigint): KernelHoleStage | undefined =>
+const rankToStage = (rank: bigint): KernelHoleStage | undefined =>
   rank < 0n || rank >= BigInt(KERNEL_HOLE_STAGES.length)
     ? undefined
     : KERNEL_HOLE_STAGES[Number(rank)]
 
 /** The canonical framing of a lawful trigger predicate. */
-export const encodePredicate = (
+const encodePredicate = (
   predicate: KernelTriggerPredicate,
 ): ReadonlyArray<bigint> => {
   switch (predicate._tag) {
@@ -131,7 +129,7 @@ export const encodePredicate = (
 }
 
 /** The decode half of the trigger framing. */
-export const decodePredicate = (
+const decodePredicate = (
   tag: bigint,
   a: bigint,
   b: bigint,
@@ -275,7 +273,7 @@ const atomWeight = (argument: KernelRawArg): bigint => {
 }
 
 /** The model canonicalizer for a candidate payload, over unbounded naturals. */
-export const canonicalValue = (arguments_: ReadonlyArray<KernelRawArg>): bigint => {
+const canonicalValue = (arguments_: ReadonlyArray<KernelRawArg>): bigint => {
   let accumulator = 7n
   for (const argument of arguments_) {
     accumulator = accumulator * 1_000_003n + atomWeight(argument)

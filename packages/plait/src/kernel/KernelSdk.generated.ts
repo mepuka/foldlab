@@ -3,7 +3,7 @@
  *
  * GENERATED FILE - DO NOT EDIT.
  *
- * Corpus:  64afd406f040a419f7c4192906944f7abb75def21fb7c729980d3035508456ed
+ * Corpus:  533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c
  * Format:  interchange format 2
  *
  * That digest is this module's whole provenance, and it is a digest rather
@@ -70,7 +70,7 @@
  * been a hope.
  */
 export const KERNEL_SDK_PROVENANCE = {
-  corpus: "64afd406f040a419f7c4192906944f7abb75def21fb7c729980d3035508456ed",
+  corpus: "533906015f3c360052e915052101d28f24e743a29b070adb0af23255cf2e354c",
   format: 2n,
 } as const
 

@@ -13,7 +13,18 @@ import {
 import { connect } from "@nats-io/transport-node"
 import { Effect, Redacted, Scope } from "effect"
 
+import type { Digest } from "../truth/Digest.js"
 import { absenceRefusal, type Next, type Refusal } from "../truth/Refusal.js"
+import {
+  connectOptionsDeclaration,
+  connectOptionsDigest,
+  estateConnectArguments,
+  estateDeclaration,
+  substrateDeclarationOf,
+  type ConnectOptionsDeclaration,
+  type SessionGroups,
+} from "./substrate.js"
+import { writDigestFor } from "./writs.js"
 
 /**
  * The transport spine every NATS adapter in this package sits on.
@@ -177,11 +188,136 @@ export const closeConnection = (connection: NatsConnection): Effect.Effect<void>
   }).pipe(Effect.ignore)
 
 /**
- * Opens one scope-owned connection to the pinned servers.
+ * What one connect runs under, declared before it runs.
+ *
+ * The declaration and the arguments are one value read twice: `arguments_` is
+ * projected back out of `declaration` rather than built beside it, so "the
+ * session fact pins the options the connection ran under" is a construction
+ * and not a comment. The two cannot drift, because there is only one of them.
+ */
+export interface DeclaredConnect {
+  /** Every connect option, named with the value this connection runs under. */
+  readonly declaration: ConnectOptionsDeclaration
+  /** The declaration's digest — what the session fact pins. */
+  readonly digest: Digest
+  /** Exactly what is handed to the pinned client. */
+  readonly arguments_: NonNullable<Parameters<typeof connect>[0]>
+}
+
+/**
+ * Declares one connect, then projects the arguments out of the declaration.
+ *
+ * Only the estate-set options are passed. A transcribed default is declared
+ * and never handed to the client: passing one would turn a transcription
+ * mistake into a silent change to what the estate runs under, and the whole
+ * point of declaring the defaults is to make them readable without moving
+ * them. The pinned client normalizes a single server address into a one-entry
+ * pool as its first act, so passing the declaration's list is the same
+ * connect the spine has always made.
+ */
+export const declaredConnect = Effect.fn("Transport.declaredConnect")(function* (
+  options: ConnectionOptions,
+  defaultName: string,
+): Effect.fn.Return<DeclaredConnect, Refusal> {
+  const credential = options.credential
+  const declaration = yield* connectOptionsDeclaration({
+    servers: options.servers,
+    name: options.connectionName ?? defaultName,
+    inboxPrefix: credential === undefined ? null : credential.inboxPrefix,
+    authenticator: credential === undefined ? null : "username-password",
+  })
+  const estate = yield* estateConnectArguments(declaration)
+  const digest = yield* connectOptionsDigest(declaration)
+  return {
+    declaration,
+    digest,
+    arguments_: {
+      servers: [...estate.servers],
+      name: estate.name,
+      ...(credential === undefined ? {} : {
+        authenticator: usernamePasswordAuthenticator(
+          credential.user,
+          () => Redacted.value(credential.password),
+        ),
+        inboxPrefix: credential.inboxPrefix,
+      }),
+    },
+  }
+})
+
+/** One established connection with the three groups its session folds from. */
+export interface EstablishedConnection {
+  readonly connection: NatsConnection
+  /** The connect declaration this connection ran under, and its digest. */
+  readonly declared: DeclaredConnect
+  /** The three groups, folded and ready to name the session. */
+  readonly groups: SessionGroups
+}
+
+/**
+ * Opens one scope-owned connection and folds its substrate session's groups at
+ * the moment establishment resolves.
+ *
+ * The fold happens here because here is where the three groups first exist
+ * together: the substrate's declaration arrives with the connection, the
+ * process's declaration was made a step earlier, and the estate's is the
+ * spine's own. Naming the session is a pure step over those groups, so nothing
+ * on this path reads a clock or asks the connection anything a second time.
+ *
+ * The writ is read BEFORE the socket opens, and it is keyed by the layer's own
+ * name rather than by the caller's connection nickname: renaming a connection
+ * renames a connection, it does not change what the layer may do. A layer this
+ * package declares no writ for folds `null` rather than refusing — a writ is a
+ * declaration and not a guard, so a missing declaration must not take down a
+ * connection. The fence against a spine acquire site drifting into that state
+ * is a wall over `src/`, not a runtime refusal.
  *
  * The refusal stays the caller's: `operation` names the acquire in the refusal
- * path and `refuse` carries the adapter's own absence kind, so collapsing the
- * six copies of this block changes no refusal any wall observes.
+ * path and `refuse` carries the adapter's own absence kind.
+ */
+export const establishConnection = (
+  options: ConnectionOptions,
+  defaultName: string,
+  operation: string,
+  refuse: TransportRefusal,
+): Effect.Effect<EstablishedConnection, Refusal, Scope.Scope> =>
+  Effect.gen(function* () {
+    const declared = yield* declaredConnect(options, defaultName)
+    const writ = yield* writDigestFor(defaultName)
+    const connection = yield* Effect.acquireRelease(
+      Effect.tryPromise({
+        try: () => connect(declared.arguments_),
+        catch: (cause) => refuse(operation, cause),
+      }),
+      closeConnection,
+    )
+    const substrate = yield* substrateDeclarationOf(connection.info)
+    return {
+      connection,
+      declared,
+      groups: {
+        substrate,
+        options: declared.digest,
+        // The writ digest names the declared value this layer's connection acts
+        // under; resolving it returns the exact bytes. The asserted shape set is
+        // empty because every carrier asserts its shapes after this point —
+        // honestly empty, which is the whole reason the field is declared rather
+        // than omitted.
+        estate: estateDeclaration({
+          writ,
+          layer: options.connectionName ?? defaultName,
+          shapes: [],
+        }),
+      },
+    }
+  })
+
+/**
+ * Opens one scope-owned connection to the pinned servers.
+ *
+ * Every adapter still reaches the substrate through this one call, and it is
+ * now the establishment path's projection: the session's groups are folded on
+ * the way through whether or not this caller wants them.
  */
 export const acquireConnection = (
   options: ConnectionOptions,
@@ -189,25 +325,9 @@ export const acquireConnection = (
   operation: string,
   refuse: TransportRefusal,
 ): Effect.Effect<NatsConnection, Refusal, Scope.Scope> =>
-  Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => {
-        const credential = options.credential
-        return connect({
-          servers: typeof options.servers === "string" ? options.servers : [...options.servers],
-          name: options.connectionName ?? defaultName,
-          ...(credential === undefined ? {} : {
-            authenticator: usernamePasswordAuthenticator(
-              credential.user,
-              () => Redacted.value(credential.password),
-            ),
-            inboxPrefix: credential.inboxPrefix,
-          }),
-        })
-      },
-      catch: (cause) => refuse(operation, cause),
-    }),
-    closeConnection,
+  Effect.map(
+    establishConnection(options, defaultName, operation, refuse),
+    (established) => established.connection,
   )
 
 /**

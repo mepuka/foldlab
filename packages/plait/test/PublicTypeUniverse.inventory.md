@@ -6,14 +6,14 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 190 public types: 40 derives-from-the-generated-core, 150 debt-with-a-ticket.
+Classified 182 public types: 43 derives-from-the-generated-core, 139 debt-with-a-ticket.
 
 ## Ratchet pins
 
 | Owning prefix | Pinned debt |
 | --- | --- |
 | `carriage` | 29 |
-| `kernel` | 20 |
+| `kernel` | 9 |
 | `planes` | 65 |
 | `truth` | 36 |
 
@@ -67,12 +67,6 @@ Classified 190 public types: 40 derives-from-the-generated-core, 150 debt-with-a
 | `Cell.CellState` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Cell.Cells` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Cell.Observation` | `src/planes/Cell.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
-| `ContextProgram.ContextProgram` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `ContextProgram.DeclaredProgram` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `ContextProgram.Renderer` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `ContextProgram.Segment` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `ContextProgram.Selector` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `ContextProgram.VolatilityClass` | `src/kernel/ContextProgram.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Digest.Digest` | `src/truth/Digest.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: converge truth primitives under the generated core |
 | `Engine.DeclareCellOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Engine.DeclareLaneOptions` | `src/carriage/Engine.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
@@ -117,15 +111,15 @@ Classified 190 public types: 40 derives-from-the-generated-core, 150 debt-with-a
 | `Fold.LaneQuotient` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Fold.Transform` | `src/planes/Fold.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `KernelDoor.KernelAct` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
-| `KernelDoor.KernelAdmit` | `src/kernel/KernelDoor.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `KernelDoor.KernelAdmit` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelCandidateAct` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelCandidatePredicate` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
-| `KernelDoor.KernelDoor` | `src/kernel/KernelDoor.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `KernelDoor.KernelDoor` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelDoorContext` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelRawArg` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelRef` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelTriggerPredicate` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
-| `KernelDoor.KernelVerdict` | `src/kernel/KernelDoor.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `KernelDoor.KernelVerdict` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelSdk.AlgebraDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelSdk.AnchorFact` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelSdk.Applicability` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
@@ -204,10 +198,8 @@ Classified 190 public types: 40 derives-from-the-generated-core, 150 debt-with-a
 | `Subjects.FabricSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Subjects.FactSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Subjects.NodeSubject` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `Subjects.SubjectResult` | `src/kernel/Subjects.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.BlobReference` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.Certificate` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.DecodedEnvelope` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.Envelope` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
-| `Wire.EnvelopeDecode` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
 | `Wire.EnvelopeKind` | `src/kernel/Wire.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |

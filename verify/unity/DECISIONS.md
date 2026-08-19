@@ -583,3 +583,36 @@ package's job is to emit the sentence and prove the emission fresh.
 **Load-bearing? no** — the byte wall would catch a stale rendering either way,
 but a roster carrying a value no target reads is exactly the drift this package
 exists to refuse.
+
+### U12. The third surface flips, and the reopening is layout rather than vocabulary
+
+Decided: `kernel-builder` joins `Target`, the runtime's bun renderer is deleted
+in the same commit under U9's discipline, and the gate holds three surfaces at
+byte parity instead of two. Parity was reached at the first emission over
+19 521 bytes with an empty diff, and the emitted bytes hash to the digest the
+DEV-812 measurement recorded for the committed file before the generator
+existed.
+
+U6 claimed the grammar was sized to all four surfaces so this slice would not
+reopen it. On node kinds that held — every construct the builder needs was
+already carried. On LAYOUT it did not: five constructs the builder writes broken
+had no broken rendering, so `Layout` reached `.union`, `.mapped` and
+`.function`, `Member` gained a doc, `.interfaceDecl` gained a parameter layout
+and a spacing flag, and `brokenType` names the two types the target breaks. The
+census counted vocabulary, and layout is a second axis it never measured. That
+is the honest amendment to U6, and it is worth stating because U6's own cost
+paragraph promised the opposite.
+
+The rule that did NOT bend: no raw-text escape hatch. `TsType.keyword` renders
+its argument verbatim and would have spelled all five broken forms as strings.
+Reaching for it would have retired the grammar in the act of extending it.
+
+Not done: U8's clean header. The builder still carries a `Corpus:` path, a
+`Command:` invocation and a `Source:` path, and U8 pre-approved cleaning them at
+the slice that emits this file. Cleaning them moves the bytes, and moving the
+bytes in the flip commit would have left the flip without the parity evidence
+that is its whole warrant. The three strings are carried as reviewed constants
+in `TsKernel.lean`, docstringed as the residual they are, so the follow-up is a
+re-emission and nothing more. **Load-bearing? yes** — it records that the
+reopening was layout, not vocabulary, and that the residual is deferred by
+measurement rather than forgotten.

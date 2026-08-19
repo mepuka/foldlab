@@ -5193,3 +5193,621 @@ is to fail the CHECKER, and a probe that cannot mutate proves nothing about
 it). **Load-bearing? yes** — it restores the surfaces wall's falsifiability,
 and it is the session's second executed lesson that battery exits are read
 unmasked.
+
+### T25. Task DEV-852 slice A — the minimality pass: dead surface deleted, scaffolding leaves the barrel
+
+Decided: the kernel family's public surface shrinks to what something
+actually reads. Four names were commissioned for deletion and two were
+deleted: `Subjects.SubjectResult` and `Wire.EnvelopeDecode`, each a bare
+`Effect.Effect<…, StructuralRefusal>` alias whose only two occurrences in the
+tree were its own declaration and its debt row in the type-universe ledger —
+no importer, no test, no wall. The other two were REFUSED, and the refusal is
+the finding: `KernelDoor.Act` and `KernelDoor.DoorContext` have no
+TypeScript importer, but `DOOR_FORM_ROLES` in the one-door containment script
+requires the door to export the bindings `Candidate`, `Act`, and
+`DoorContext`, and refuses by name when a role's binding is missing. They are
+not dead surface; they are the contract `check:kernel-door` reads off the
+door's own bytes ("3 generated form roles"). Deleting them would have failed
+the wall, and the wall would have been right. Five self-used-only functions
+became module-private instead of deleted — `rankToKind`, `rankToStage`,
+`encodePredicate`, `decodePredicate`, `canonicalValue` — each verified to
+have callers only inside `KernelDoor.ts`; the code stays, the export goes,
+and the door's public surface is `admit`, `make`, `encodeAct`, `decodeAct`,
+and the generated form. `ContextProgram` leaves the barrel: it declares
+shapes and an order with no assembly executor (T22 above, and the module's own
+header says scaffolding only), it has no consumer under `src/`, and its test
+imports the module directly. The price is exact and paid knowingly: there is
+no public context-program surface until the F7 corpus lands, so a host that
+wants those shapes reaches the subpath export rather than the barrel. The
+module file, its subpath entry, and its test are untouched, so the F7 work
+re-exports one line when it arrives. Alternatives: keep the six ledger rows
+and let the generator absorb them later (the honest end state, but it prices
+six rows of hand-written debt against a corpus group nobody has scheduled, and
+the operator's minimal-API commission of this session says a public name earns
+its place by being read); deleting the module outright (throws away the shapes
+F7 is specified against). Ledger movement: 190 public types → 182, debt 150 →
+142, and the kernel ratchet pin fell 20 → 12 under `--write`. No pin rose.
+**Load-bearing? yes** — it is the record of which kernel names are public
+because something reads them, and the standing evidence that the door's three
+form bindings are wall contract rather than dead consts.
+
+### T26. Task DEV-852 slice B — the corpus grows the door's verdict, and the verdict vocabulary becomes generated
+
+Decided: three of the four orphan types enter the emitter's manifest —
+`AdmitResult`, `GenTag`, `ProgramNode` — and the door's three hand-written
+declarations become re-exports of generated ones. `verify/kernel` was not
+edited: all four commissioned types already carried docstrings, so the only
+lawful edit was never needed.
+
+**`World` is withheld, and the withholding is the finding.** Its type argument
+survives the Lean side intact — `renderRef`'s fvar path renders the binder and
+the type record lands carrying `params:[{"name":"Evidence","role":"type"}]` —
+so the risk the commission named did not materialise where it was expected. It
+materialised one stage downstream, in `scripts/kernel-schemas.ts`, which has
+exactly one story for a type parameter: brand erasure, the compile-time
+separation carried by the generated aliases. That story is false for a genuine
+type argument, whose field `evidence : Evidence` names no declared type and has
+no runtime shape at all. Rendering it honestly means a schema factory
+parameterized by the evidence schema, which is a surface design the ticket did
+not commission and which would move the type universe, the prose renderer and
+the SDK together. So `World` stays declared and unprojected, the orphan
+register names it at count 1, and the projections gate pins that name where it
+pinned `AdmitResult` before. A generator surprise is a finding, not a field to
+improvise around.
+
+**The frozen-header pin is a count pin, so updating it is part of add-only
+growth.** `type` and `doc` moved 22 → 25 and the corpus 125 lines → 131. The
+pin's identity fields — format 2, the generator string, the record and source
+names — are untouched, which is the test that distinguished a count update from
+a wall being edited to agree. Eight count sites moved in
+`verify/unity/run.sh` and three in `verify/projections/run.sh`. Two further
+pins moved for cause rather than for count: the projections orphan wall named
+`Kernel.AdmitResult` as its known orphan and now names `Kernel.World`, and one
+test — `KernelCorpus.test.ts` — counted 22 types and 22 docs and now counts 25.
+
+**The enrichment, in the `KernelRef` precedent's shape.** `KernelVerdict` is
+rendered from the `AdmitResult` record: arm names from its constructors, the
+admitted arm's field name and carrier from its field. Two things the record
+does not state are added by the generator, under a doc comment that names them
+where they are applied. First, the admitted arm gains
+`encoded: ReadonlyArray<bigint>`: the model SEPARATES admission from framing —
+`AdmitResult` carries the `Act`, and an act's encoding lives in the corpus's own
+`encoding` group — while the runtime door computes both in one pass and returns
+them together. Second, the refused arm flattens `KernelRefusalRow` and the
+discriminant is spelled `verdict` rather than `_tag`, because that is what the
+door already published. The row comes from `KernelTables.generated.ts` and
+deliberately not from this file's `KernelRefusalValue`: the two disagree on
+applicability, which the tables spell at the wire (`machine-applicable`) and the
+schemas spell in camel. This is the `KernelRef` precedent exactly — reviewed
+generator code that admits in a doc comment what the model spells differently,
+rather than a hand-written twin standing beside the corpus.
+
+**The SDK's `Verdict` was the ungrounded-generated finding, and is now
+grounded.** Three literal `line(...)` calls rendered its two arms with no type
+record behind them, so a model that renamed an arm would have left a generated
+file asserting the old name. The arm names and the refused arm's payload now
+come from the record, and the generator refuses a record whose shape moved. The
+admitted arm does NOT gain `act`: this surface's types are the CANDIDATE side,
+what a caller builds and hands over, and a minted sentence is not something a
+caller can spell — there is no `Act` carrier here and this round does not add
+one. What the SDK returns for it is that sentence's canonical framing,
+`encoded`, which is what a caller can actually check. The generator asserts the
+field it is projecting is still `Act`, so the projection cannot go on quietly
+standing for something else. The rendering reproduced the committed bytes
+exactly, so no test moved and `KernelSdk.test.ts` needed no reconciliation.
+
+**Three conversions.** `KernelVerdict`, `KernelDoor` and `KernelAdmit` leave
+`KernelDoor.ts` as declarations and return as
+`export type { ... } from "./KernelSchemas.generated.js"` — the only shape the
+type-universe walk counts as derived. `KernelDoorInterface` is renamed on the
+way through because the generated module already binds `KernelDoor` to the Door
+record's schema; the name a host reads is unchanged. The runtime `admit` and
+`make` implementations stay exactly where they were, annotated now against the
+re-exported types, which the file also imports locally — a bare re-export binds
+nothing in the module's own scope. Ledger movement: 182 public types classified,
+derived 40 → 43, debt 142 → 139, and the kernel ratchet pin fell 12 → 9 under
+`--write`. No pin rose.
+
+Alternatives priced: re-export the SDK's `Verdict` across from the door rather
+than rendering it (refused — the carriers differ on both sides of the sum, since
+the SDK's `Refusal` is its own declaration and its integers ride its own digest
+carrier, so the re-export would have dragged the schemas module's carrier set
+into a surface built to be free of it); leave the SDK hard-coding in place
+(refused — it is precisely the ungrounded-generated defect this series exists to
+remove, and a generated file that no record grounds is worse than a hand-written
+one, because its provenance header claims otherwise); expand the schemas
+generator to render `World` as a parameterized schema factory (refused — see
+above, an uncommissioned surface design); render the refused arm structurally
+from this file's own `Refusal` and `Applicability` schemas to avoid the
+cross-module import (refused — the applicability spellings differ, so the
+conversion would have silently changed the type the door publishes, which is the
+one thing a spelling-neutral conversion must not do).
+
+**Load-bearing? yes** — it is the record of why `World` is declared but
+unprojected, and of which two expansions in the generated verdict are the
+generator's rather than the model's.
+
+### T27. Task DEV-852 slice C1 (DEV-824) — the builder control's trace was a recording of a compiler nobody named
+
+Decided: the compiler pin is enforced, the stale arm is re-recorded, and the
+byte comparison stays total. The ticket offered the fork as "normalize the
+trace or enforce the toolchain pin", and the executed evidence decided it
+before the argument did.
+
+What actually reds: `check:kernel-builder` was green (byte-identical
+regeneration); `check:builder-control` failed on its fourth arm alone, the
+cross-sort handle, and on nothing but the order of eight union members inside
+one diagnostic — the same eight sorts, `{join, declare, resolve, emit, fold,
+decide, trigger, spawn}`, printed as a different sequence. The other three
+arms were byte-identical. So the divergence was one line of one trace.
+
+The cause is not host drift, which is what the ticket's framing assumed. The
+traces were recorded at `c2b471c` when the root manifest pinned
+`typescript: "^5.9.2"`; the pin is now the exact `typescript: "7.0.2"` with
+`@effect/tsgo: "0.36.5"` patched over it, and that is a different compiler —
+the Go-native port, not the JS one. Three orders for one unchanged type, all
+executed on this host:
+
+- committed (5.9.2): `"join" | "declare" | "resolve" | "emit" | "fold" | "decide" | "trigger" | "spawn"`
+- 5.9.3 (`typescript-five`, still installed): `"join" | "emit" | "declare" | "resolve" | "fold" | "decide" | "trigger" | "spawn"`
+- pinned 7.0.2: `"decide" | "declare" | "emit" | "fold" | "join" | "resolve" | "spawn" | "trigger"`
+
+That middle line is the one that settles the fork. 5.9.3 is a PATCH bump inside
+the very range `^5.9.2` the trace was recorded under, and it already prints a
+different order: 5.x printed a union in whatever sequence the checker happened
+to instantiate it, so under the old floating range the trace was unstable by
+construction and its greenness was luck. The pinned 7.0.2 prints the members
+sorted — a canonical form, stable across runs (executed six times, identical)
+and across hosts on the same lockfile.
+
+Fork (a), normalize the trace — priced and refused. It is cheap and it is not
+unfalsifiable: sorting is a canonical form, so an added or removed member still
+moves the sorted sequence, and the mutation arm would still red. Three things
+refuse it anyway. It buys nothing the pin does not already buy, because the
+pinned compiler ALREADY prints sorted — the normalizer would be a no-op the day
+it lands, dead machinery justified by a compiler no longer in the tree. It
+weakens the one thing a trace control has: the recorded diagnostic text is the
+claim, named in full, and a comparison that rewrites the text before checking it
+grades the compiler's answer against a paraphrase of its own. And it goes a step
+past the DEV-797 precedent it would cite. That precedent normalizes WHICH
+diagnostics are in the contract (errors, never advisories); it does not touch
+the words inside one. Sorting members inside a printed type is a different act,
+and accepting it is accepting the next one.
+
+Fork (b), enforce the pin — taken. `scripts/negative-trace.ts` gains
+`compilerPin`, which reads `typescript` and `@effect/tsgo` from the repository
+manifest — read, never hard-coded, so the guard cannot drift from the version
+the lockfile installs — runs `tsc --version`, and refuses by name before any arm
+executes. A host on another compiler is now told which compiler it is on and to
+run `bun install`, instead of being shown four moved traces it cannot act on.
+The trace is stable by construction and the comparison stays total. Cost: the
+control refuses rather than reds when the pin moves deliberately, which is one
+extra step — `bun run generate:builder-control`, added for symmetry with the
+door and SDK controls — on any intentional toolchain bump. That is the intended
+price: a toolchain bump SHOULD be a deliberate re-recording act.
+
+Carried with it: this control was the last one still holding a private copy of
+the trace rule. The address, rung, and public-effect controls all read
+`errorDiagnostics` from `negative-trace.ts` and the address control's own header
+says it copied its shape from this one — while this one still compared raw
+compiler output, so an advisory about unrelated `src/` could have reddened it at
+any time (the DEV-797 failure mode exactly, latent here). It now reads the rule
+from the same place. The adoption is byte-neutral, and that was checked rather
+than assumed: re-recording all four arms under the shared rule rewrote three of
+them byte-identical, and the only line in the diff is the union order.
+
+Falsifiability, executed, not asserted. `KERNEL_GENERATORS` had `"trigger"`
+removed — a real member removal, the ticket's named mutation — and the control
+failed with exit 1 on a moved trace; the mutation was reverted and the control
+returned to exit 0. The pin guard was proved the same way: the manifest pin was
+moved to `7.0.3`, the control printed `REFUSED - the compiler is not the pinned
+one` naming both versions, and the manifest was reverted.
+
+Where they run: the ticket asked where, and the answer is the battery, because
+the DEV-799 finding that these were unreached by `bun run gates` is what let the
+red stand for a day. `gates` runs `test:packages`, which runs plait's `test`,
+which chains `test:fast` and `test:types`. `check:kernel-builder` is
+toolchain-free — it regenerates from the corpus and diffs, spawning no
+compiler — so it joins `test:fast` beside the other generated-surface walls.
+`check:builder-control` spawns `tsc`, so it joins `test:types` beside the other
+compile-time controls, next to `check:address-control`, which is its own
+descendant. Neither can silently rot again.
+
+Not done, and named: the other three `tsc` controls (address, rung,
+public-effects) still run on whatever compiler the host offers. `compilerPin`
+lives in the shared module rather than in this script precisely so they can
+adopt it without a second copy, but adopting them is outside this ticket's
+"the control's comparison discipline only" limit.
+
+**Load-bearing? yes** — it is the record that a committed compiler trace is a
+recording of ONE named compiler, and the standing reason the estate does not
+normalize the text inside a diagnostic it commits to.
+
+### T28. Task DEV-852 slice C2 — the builder surface flips to the Lean emission, and its interpretive load becomes reviewed data
+
+Decided: `KernelBuilder.generated.ts` is projected by `verify/unity`'s
+TypeScript emitter, the bun renderer that used to write it is deleted in this
+same commit, and the runtime battery holds the surface through the digest
+register rather than through a second generator. This is U9's flip discipline
+applied to the third surface: retire the renderer in the commit that flips the
+gate, or the wall compares a generator with itself.
+
+**The parity evidence.** `lake exe ts --target=kernel-builder` twice; the two
+emissions agree; and the emission equals the committed surface byte for byte
+over **19,521 bytes / 520 lines — an empty diff, at the first attempt, with no
+divergence class met and no iteration spent.** The emitted bytes hash to
+`3f79603043cca553bc056ff01884f10a7ab24a6be2afff850899ba9cb143004b`, which is
+the digest the DEV-812 measurement artifact recorded for the committed file
+before any of this was written, so the two sides agree against a number neither
+of them computed for the occasion. The committed target was never edited toward
+the generator.
+
+**What the corpus answers, and what it does not.** The eight generators, their
+field names, their field order, and each field's own model type reference are
+read out of the `Act` record. Four things are not in the corpus, and each is
+carried as a reviewed Lean table with a docstring saying so, on the
+`JsonSchemaManifest` J1/J2 precedent rather than smuggled in as if the model had
+said it: `fieldForm`, the one judgement — how a model type reference becomes an
+accepted argument shape, total over what `Act` uses and refusing anything else;
+`argumentGrammar`, the three reference forms, which are the freeze's and not the
+corpus's, stated once as tree; `handleBrandKey`, the property a handle's brand
+rides on; and two authored sentences — what calling a `$` constructor does, and
+the two paragraphs about the reference helpers and `Holes`. The model's own
+`Act` docstring rides through as its own rows rather than being re-wrapped: it
+is prose the model wrote at a width the model chose.
+
+**The grammar had to be reopened, and U6 is the reason that is worth saying.**
+U6 sized `TsType`/`TsExpr`/`TsStmt` to all four surfaces so the next slice would
+not reopen them, and on node KINDS it succeeded — every construct the builder
+needs was already carried. What the census did not size was LAYOUT. Five
+constructs the builder writes broken had no broken rendering: an interface whose
+members carry their own doc comments and stand a blank line apart, an interface
+whose type parameters break one per line, a member whose function type breaks
+its binders, a type alias whose union is written one member per line behind a
+leading bar, and a `satisfies` whose mapped type breaks. So `Layout` reached
+`.union`, `.mapped` and `.function`, `Member` gained a `doc`, `.interfaceDecl`
+gained a parameter layout and a spacing flag, and `brokenType` states — as an
+`Option`, so a type with no broken rendering says so instead of acquiring one —
+which two types the target breaks. The rule the reopening did NOT break is the
+one that mattered: no raw-text escape hatch was added. `TsType.keyword` would
+have rendered any of these in one line as a string, and using it that way is
+exactly how a target grammar stops being a grammar.
+
+Alternatives priced: normalize the layout inside the printer with a width budget
+(refused — U5, and it would have agreed with these bytes by coincidence);
+render the five broken forms through `.keyword` as raw text (refused — see
+above, and the grammar's own docstring forbids it by name); leave the builder
+on the bun renderer and wall the two against each other (refused — that is U9's
+named defect, two generators for one surface).
+
+**The self-test probe that this flip would have silently retired.**
+`check-kernel-surfaces.ts` proved its "unplaceable target" clause by rewriting a
+register row to `"kernel-builder"` — a target the check could not place BECAUSE
+THE BUILDER HAD NOT FLIPPED YET. Enrolling the builder in `SURFACE_PATHS` would
+have turned that probe into a self-comparison accepting its own unmutated input,
+which is the identical failure the digest-flip probe already carries a guard and
+a comment against. The probe now names `no-such-surface`: a probe keyed to "not
+yet a target" expires, one keyed to a name the register cannot mint does not.
+
+**Where the wall now lives.** `scripts/kernel-builder.ts`,
+`scripts/generate-kernel-builder.ts` and `scripts/check-kernel-builder.ts` are
+deleted, with `check:kernel-builder` and `generate:kernel-builder`. This is the
+addendum T27 asked for: C1 put `check:kernel-builder` into `test:fast` so the
+builder wall could not rot unwatched, and one commit later the wall changed
+shape rather than went away. The surface is now covered by
+`check:kernel-surfaces`, which was already in `test:fast` and now holds three
+surfaces instead of two, and `check:builder-control` stays in `test:types`
+exactly where C1 put it. Both walls are still in the battery; neither is a
+second name for the other. `verify/unity/run.sh` gains the third
+`check_surface` arm, the builder's digest under the host oracle, and a printer
+mutation arm — `field-form-rule` — that moves the surface by changing the
+reviewed reference rule and restores it byte-identically, so the one judgement
+in the generator is shown load-bearing rather than merely present.
+
+**The em-dash clause needed a per-surface count.** The gate asserted exactly two
+em dashes on every surface. The builder carries one — its plane header, and
+nothing else — because the second occurrence on the other two is a drafted
+meaning about an incarnation mismatch that this surface does not project. One
+expected count for three surfaces would have had to be wrong for one of them, so
+the count is now pinned per surface and measured.
+
+**Finding, not fixed here: the header still names a command that no longer
+exists.** The surface's header carries `Corpus:` as a path, `Command: bun run
+generate:kernel-builder`, and `Source:` as a path, and `KERNEL_BUILDER_PROVENANCE`
+carries the same three as data. That is U8's filed law-10 residual, and U8
+pre-approved the clean header landing at this slice. It did NOT land, and the
+reason is the parity wall: cleaning the header moves the bytes, and moving the
+bytes in the same commit that flips the generator would have left the flip with
+no verifiable parity evidence — the one thing that proves the new generator is
+faithful rather than merely plausible. The generator carries the three strings
+as reviewed constants documented as the residual they are, so the follow-up is a
+three-line change to `builderCorpusPath`, `builderCommand` and `builderHeader`
+plus a re-emission. Until it lands, that `Command:` line names a script this
+commit deleted, and a reader who runs it gets nothing.
+
+**Load-bearing? yes** — it is the record of which four things in the builder are
+reviewed judgement rather than model emission, of why the grammar's layout had
+to be reopened when its node census did not, and of the one probe whose meaning
+this flip consumed.
+
+## Task: the substrate-session fact and the incarnation fence (estate-daemon S1, and S5's fence groundwork, 2026-08-19)
+
+Placeholders `T25`–`T29` continue the series; repository D-numbers are
+assigned at merge. The specification is the estate-daemon spec (COMMISSIONED,
+operator ruling 2026-08-19) and its parent measurement record, the
+substrate-session-plane record. Two open pins named in that specification stay
+the operator's and are NOT resolved here: whether the per-connection exchange
+key belongs in the fold, and what the connect option values should be pinned
+to. Every decision below is a drafting decision made so that either ruling
+later moves one declared list and no code.
+
+### T25. The exchange key is out of the fold, and its exclusion is one row
+
+Decided: the group-1 field roster in `src/internal/substrate.ts` carries the
+fifteen fields the parent record measured on a live connection and does NOT
+carry the per-connection exchange key. The record lists the key because it was
+measured and says in as many words that its membership is a grill question
+rather than a drafting one, so the slice lands with it excluded and the
+exclusion is a row of a declared table rather than a shape of the code: the
+fold walks the roster and selects nothing by hand, so ruling the key in adds
+one entry and moves no branch. The wall executes the exclusion rather than
+asserting it — a connection carrying an exchange key and a connection stripped
+of one name the same session.
+
+The roster also records, per field, whether the pinned client's own
+server-information type declares it or whether the substrate sends it on the
+wire without that type carrying it. Two of the fifteen are in the second class
+— the connect-info flag and the remote account — which is a real finding: the
+transcription target is a strict SUBSET of the field set the record measured,
+so a transcription narrowed to the type would have silently dropped two fields
+the record calls part of the substrate's declaration. Provenance is carried per
+row so the narrowing is visible rather than absorbed. Alternatives: transcribe
+only the pinned type's fields (drops what the substrate actually declared, and
+those fields are named explicitly in the slice's own contract); transcribe
+whatever the wire carries by iterating the received object (the fold's key set
+would then depend on what one server happened to send, and two mints against
+different builds would name different sessions). **Load-bearing? yes** — the
+roster IS the fold, and the open pin's whole cheapness is that it moves one row
+of it.
+
+### T26. Group 3 is minimal by declaration, and its bound is stated in the value
+
+Decided: the estate's group carries exactly three fields — the writ digest the
+connection acts under, which service layer opened it, and the asserted-shape
+set — because the parent record calls this group a sketch and names those
+three. At the running posture the spine fills the writ with `null` and the
+shape set with the empty set, and both are HONEST rather than placeholders: the
+spine acquires connections below the plane that judges writs, so there is no
+writ to name, and every carrier asserts its shapes after the connection
+resolves, so the set at open is empty. That is precisely the ambiguity the
+field exists to close — an empty asserted-shape set is now empty by declaration
+instead of empty by omission, and re-assertion after a reconnect has a declared
+target to compare against. The set is sorted and deduplicated inside the
+constructor, so two parties asserting the same shapes in different orders fold
+to the same bytes.
+
+Stated bound, because it bites the claim: this slice does not make group 3
+carry a writ. A session fact is connection-attributed mechanics and not an
+evidentiary "who", and with the writ null it is not even that — it is the
+service layer's own name, which any process could claim. Alternatives: omitting
+the fields until they can be filled (the omission is what made the empty memo
+ambiguous in the first place); reaching up for a writ from the transport spine
+(a deeper plane reading a shallower one's judgment, which the layering law
+refuses and which would make the fold depend on what was convenient to have at
+hand). **Load-bearing? yes** — the empty set's honesty is the field's entire
+purpose.
+
+### T27. The predecessor rides the fact, never the fold
+
+Decided: the session's NAME is the digest of the three groups alone; the
+predecessor session is a field of the session-established fact that lands on
+the lane. The reason is derivability, which is the property the whole
+construction exists for: a party holding the same three groups must compute the
+same digest with zero I/O, and a predecessor is not one of the three groups — a
+party that never saw the connection could not supply it. Folding it in would
+make the name uncomputable by exactly the parties the name is for, and would
+make the client-minted and owner-minted bytes differ whenever the two disagreed
+about history. A reconnect still mints a new session, because the connection
+identifier the substrate assigns has moved, and the prior fact is never edited:
+nothing on the mint path reads or writes a fact at all. Alternatives:
+predecessor inside the folded value (breaks derivability, as above); a separate
+successor fact linking two sessions (a second fact kind carrying one field, and
+a chain that breaks by dropping a message rather than by editing one).
+**Load-bearing? yes** — it is the difference between a name and a log line.
+
+### T28. The declared connect options are the connect's source, not its description
+
+Decided: every connect option the estate runs under is named in one declared
+table, with the four the spine sets taking the caller's values and every other
+row taking the pinned client's own value, transcribed. The arguments handed to
+the client are then PROJECTED back out of that declaration rather than built
+beside it, so "the session fact pins the options the connection ran under" is a
+construction and not a comment — there is one value, read twice. No transcribed
+default is passed: passing one would convert a transcription mistake into a
+silent change to what the estate runs under, and the wall asserts that the
+argument object's key set is exactly the estate-set rows. This slice changes no
+option value; the value pins stay the operator's, and changing one afterwards
+is a one-field edit to a declared value.
+
+The table separates two kinds of inherited value, because they are not the same
+fact: a row the pinned client's default table carries, and a row it carries
+nowhere and reads as absent at its point of use. Four options are in the second
+class, and they are exactly the ones nobody could have read without opening the
+client's source. Alternatives: declaring only the four options the spine sets
+(leaves the defaults undeclared, which is the omission the ruling retires);
+passing the transcribed defaults through to the client (turns a declaration
+into a runtime change, and the transcription is not the authority on the
+client's behaviour). **Load-bearing? yes** — it is the declared-data half of
+the standing connect-options requirement.
+
+### T29. The incarnation register is keyed by the chain position, not by the store alone
+
+Decided: the register key a decide competes at is the digest of the round — the
+store-directory digest together with the incarnation being succeeded — rather
+than the store-directory digest alone. The reason is the register's own law: an
+outcome, once landed, never changes. A key that is the store digest alone
+therefore admits exactly one landed incarnation for the life of the store,
+which is right for one round and wrong for a store directory that outlives many
+server runs; succession would be unsayable without destroying and recreating
+the backing bucket, which is precisely the lifecycle mutation the incarnation
+pin exists to refuse. With the round as the key, at most one incarnation lands
+per chain position, which is at most one incarnation current per store
+directory, which is the property the store needs. The store digest remains the
+key's only free coordinate at any one position.
+
+The fence is built ON the register and does not extend it: grant then commit,
+with the granted token carried between them, and no path through the decide
+starts a server — starting one is the winner's act afterwards. The register's
+incarnation pin is what makes this fence trustworthy at all, and it is
+consumed, not re-derived.
+
+Alternatives, both refused on the register's own semantics: key by the store
+digest alone (one incarnation ever, or bucket lifecycle mutation, and the
+second is the pin's refused case); re-open a landed round with expire-steal
+(the steal takes a lease, and an outcome once landed never changes, so it
+cannot re-open what has landed).
+
+Stated bounds. The race arm is executed against a fixture carrier with a
+scheduling window between every read and write, with a committed refutation —
+the same fence minus its token comparison lands two incarnations — so the arm
+is falsifiable. It is not the out-of-process race the specification's later
+slice describes, and it certifies only its own bounds. The chain walk is total
+and acyclic over seeded histories and refuses on a planted cycle; nothing is
+claimed about chains this package did not build. Crash is not forged: nothing
+here retires an incarnation on another's behalf, and a round nobody decided
+reads as absence, never as a running server. **Load-bearing? yes** — the key
+choice is what makes the fence expressible on the register the estate already
+has.
+
+## Task: the roster expands and the writs open (estate-daemon S1 follow-up, operator ruling 2026-08-19)
+
+Placeholders `T30`–`T32` continue the series; repository D-numbers are
+assigned at merge. The commission is the operator's follow-up ruling in
+session 2026-08-19 — *authorized to update estate facts to allow for digest to
+expand, open writs* — and it resolves the first of the two pins `T25`–`T29`
+were drafted around. The second, what the connect option values should be
+pinned to, stays the operator's and is untouched here.
+
+### T30. The roster is add-only, and its digest rides the value it governs
+
+Decided: the group-1 field roster expands by APPENDING one row with its
+provenance, and the roster is itself a declared value whose digest is folded
+into the substrate declaration and carried on the session-established fact. Two
+parties on the same roster still fold byte-identical declarations; a party on a
+grown roster names a different session, and the difference is READABLE rather
+than merely present — each fact says which roster its holder folded, so the two
+resolve the rosters and see the appended row instead of discovering only that
+two digests disagree.
+
+The add-only half is walled, not asked for: the wall pins the roster as it
+stood before this expansion and asserts it is a PREFIX of the standing one, so
+an append passes and a rename, reorder, retype, or removal reddens. That
+discipline is not tidiness. The roster digest is folded, so a rewrite in place
+would silently rename every session ever folded under the old roster, while an
+append renames them visibly.
+
+Alternatives, priced. A schema version integer on the fact: cheaper to write and
+strictly worse, because a version is a word this package would have to keep
+true by hand — two different rosters can carry the same number, and the number
+says nothing about what differs. Nothing at all, resting on the fact that the
+folded key set already changes when a row is added: true, and it is why the
+derivability wall held before this slice, but a key-set difference is
+indistinguishable from a substrate that sent different fields, and neither party
+can name which roster the other held. A full roster value inside the fold rather
+than its digest: self-describing without a resolve, at the cost of putting
+sixteen rows of transcription into every session's bytes and making the fold's
+size grow with the roster; the digest buys the same property at one field, and
+resolving it is the estate's ordinary act. **Load-bearing? yes** — the digest is
+the whole difference between "we disagree" and "you are on the roster with the
+exchange key and I am not".
+
+### T31. The exchange key joins the roster; T25's exclusion is superseded, not rewritten
+
+Decided: `xkey` is the sixteenth row of the group-1 roster, `measured`, because
+`@nats-io/nats-core@3.4.0`'s own server-information type does not carry it —
+the same class as the connect-info flag and the remote account. T25 recorded the
+key as excluded and said in as many words that its membership was an open pin
+held by the operator rather than a drafting question. The operator ruled in
+session 2026-08-19; this section records the supersession and T25 stands as
+written, because what T25 decided was correct at the posture it was decided at
+and rewriting it would erase the evidence that the exclusion was cheap to
+reverse.
+
+It was cheap to reverse, and that is the claim T25 made and this section
+discharges: ruling the key in moved one row of one declared list and no branch
+of any function. The wall that asserted the key was out INVERTED rather than
+being deleted — a connection carrying an exchange key and a connection stripped
+of one named one session before and name two now, and both parties are shown to
+be on the same roster, so the disagreement is about what the substrate declared
+and says so. Alternatives: leaving the key out and folding it into a separate
+observation value (a second value to carry and reconcile, for a field that is
+part of the substrate's own declaration); folding it but suppressing it when
+absent (an optional key in the fold, which is the presence ambiguity the
+always-all-keys rule exists to refuse). **Load-bearing? yes** — it is the
+expansion discipline's first exercise, and an expansion mechanism never exercised
+is a claim, not a construction.
+
+### T32. The substrate writ declares roles and families, and declares nothing else
+
+Decided: a substrate connection acts under a declared writ — one canonical
+value carrying the layer it is declared for, the carrier roles that layer acts
+as in the permission projection's own vocabulary, and the subject FAMILIES those
+roles are granted, with each deployment coordinate written as its own
+brace-wrapped name. Its digest is its name, group 3 carries that digest, and
+resolving the digest returns the exact bytes. The table is keyed by the layer's
+own name and not by the caller's connection nickname: renaming a connection
+renames a connection, it does not change what the layer may do, so the session
+fact carries both — the nickname in `layer`, the authority in `writ`.
+
+Three bounds, each stated because each bites.
+
+**No enforcement is built, and none is implied.** Enforcement at the substrate
+is the substrate's: the account ACLs the carrier-permission projection derives
+are what refuses a publish, and the daemon that owns the credentials provisions
+them. A writ disagreeing with those ACLs is a WRONG DECLARATION that changes no
+runtime behaviour — the same failure posture T28 chose for the connect options,
+and the one to prefer, because the other posture changes what the estate may do
+by editing a table. It is also why an undeclared layer folds `null` at the spine
+instead of refusing the connection: a declaration that can take down a
+connection is enforcement by the back door at the one seam where this package
+says it builds none. The lookup still refuses, so "no writ is declared" and "the
+least writ is declared" stay two different facts, and the fence against a spine
+acquire site drifting into the first is a wall that WALKS the acquire sites out
+of `src/` — a ninth site joins the wall by construction.
+
+**The content is the permission projection's, gated rather than imported.**
+Every family is exactly what `internal/permissions.ts` grants the named roles,
+read out of that projection under a scope whose free coordinates are their own
+names. The projection is not imported: it sits at the carriage seam, the writ
+sits at truth, and a truth module importing carriage is the one edge the
+layering law refuses. The wall derives the same rows from the projection and
+compares them, so the two cannot drift undetected; what is lost against a direct
+import is that the drift is caught by the battery rather than by the type
+checker, and that is stated rather than absorbed. The alternative that would
+restore the import — inverting the dependency so the projection interpolates a
+scope into families declared at truth — is a rewrite of a security module's
+projection for a property the wall already holds, and it is refused on blast
+radius rather than on taste.
+
+**Two of the eight layers hold the LEAST writ, and that is a finding.** The
+projection declares roles for the estate's publishing and key-value carriers
+only; it declares none for a consuming connection, none for the chaos harness,
+and none for the CLI's head probe. Those two layers therefore declare no role
+and no family — the same shape as the read plane's empty writ, and honest: the
+estate has declared no substrate authority for them. It is not a claim that they
+reach nothing, and the writs of the six layers that do carry roles under-declare
+their consuming half for the same reason. Inventing a role to cover the gap
+would put a word in the security projection's mouth that the projection never
+said.
+
+Alternatives, priced. Roles alone with no families: genuinely minimal and it
+keeps one authority with no gate at all, but a reader then needs the projection
+AND a deployment scope in hand to learn what the connection may address, and the
+writ stops being self-describing — which is the property that makes a digest
+worth resolving. Fully-scoped subjects rather than families: the spine has no
+deployment coordinates at acquire time, so every one of them would have been
+invented. A writ per role rather than per layer: the acquire site is a layer, not
+a role, and a layer acting as two roles would then need two writs and a rule for
+combining them. **Load-bearing? yes** — group 3's writ field existed and named
+nothing; it now names a value, and the difference between those two states is
+the whole of what "open writs" asked for.

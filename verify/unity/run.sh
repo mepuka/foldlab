@@ -436,18 +436,18 @@ fi
 # The frozen interchange: the header at its canonical byte form (so the
 # key order is pinned along with the values), the record counts, and
 # printable ASCII on every line, which also refuses a carriage return.
-expected_header='{"counts":{"admission":19,"canon":10,"doc":22,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":22},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
+expected_header='{"counts":{"admission":19,"canon":10,"doc":25,"encoding":12,"kind":12,"model-admission":2,"program":4,"refusal":16,"stage":5,"type":25},"format":2,"generator":"verify/unity emit","record":"header","source":"verify/kernel"}'
 if [[ "$(head -n 1 "$fixture")" != "$expected_header" ]] ||
-    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 125 ]] ||
+    [[ "$(wc -l < "$fixture" | tr -d ' ')" -ne 131 ]] ||
     [[ "$(grep -c '"record":"kind"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"stage"' "$fixture")" -ne 5 ]] ||
     [[ "$(grep -c '"record":"refusal"' "$fixture")" -ne 16 ]] ||
-    [[ "$(grep -c '"record":"type"' "$fixture")" -ne 22 ]] ||
+    [[ "$(grep -c '"record":"type"' "$fixture")" -ne 25 ]] ||
     [[ "$(grep -c '"record":"encoding"' "$fixture")" -ne 12 ]] ||
     [[ "$(grep -c '"record":"admission"' "$fixture")" -ne 19 ]] ||
     [[ "$(grep -c '"record":"model-admission"' "$fixture")" -ne 2 ]] ||
     [[ "$(grep -c '"scope":"model-internal"' "$fixture")" -ne 2 ]] ||
-    [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 22 ]] ||
+    [[ "$(grep -c '"record":"doc"' "$fixture")" -ne 25 ]] ||
     [[ "$(grep -c '"record":"canon"' "$fixture")" -ne 10 ]] ||
     [[ "$(grep -c '"record":"program"' "$fixture")" -ne 4 ]] ||
     [[ "$(grep -c '"verdict":"refused"' "$fixture")" -ne 17 ]] ||
@@ -472,7 +472,7 @@ if [[ "$(grep -c '"value":9007199254740993' "$fixture")" -ne 1 ]]; then
   echo "GATE: FAIL — the corpus lost its past-the-safe-range integer witness" >&2
   exit 1
 fi
-echo "GATE: PASS (125-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
+echo "GATE: PASS (131-record format-2 corpus regenerates byte-identically; header, counts, ASCII and the unbounded-integer witness pinned)"
 
 # The conformance check: the both-ways law over every committed line,
 # the header and group sequence, and every record whose truth lives in
@@ -481,12 +481,12 @@ echo "GATE: PASS (125-record format-2 corpus regenerates byte-identically; heade
 # rebuilt from `getConstInfo` and `findDocString?` and compared with the
 # committed bytes.
 conformance_arms=(
-  "conformance: 125 lines survive read and rewrite byte-identically"
+  "conformance: 131 lines survive read and rewrite byte-identically"
   "conformance: the header declares 10 groups and every count matches the records present"
   "conformance: 2 model-internal rows name real candidates and carry their scope marking"
   "conformance: the kind, stage, refusal and admission tables agree with the environment"
-  "conformance: 22 mini-AST rows agree with the environment"
-  "conformance: 22 docstring rows agree with the environment"
+  "conformance: 25 mini-AST rows agree with the environment"
+  "conformance: 25 docstring rows agree with the environment"
   "conformance: 10 canon vectors re-canonicalize to their own bytes"
   "conformance: 4 program vectors state their own graph, erase to admitted programs, and re-canonicalize to their own bytes"
 )
@@ -592,6 +592,7 @@ check_falsification unresolvable-consumption \
 # ---------------------------------------------------------------------------
 ts_roster="refusal-meanings.ndjson"
 ts_tables="../../packages/plait/src/kernel/KernelTables.generated.ts"
+ts_builder="../../packages/plait/src/kernel/KernelBuilder.generated.ts"
 ts_vocabulary="../../packages/plait/src/truth/RefusalKinds.generated.ts"
 
 emit_surface() {
@@ -629,15 +630,23 @@ check_surface() {
 }
 
 check_surface kernel-tables "$ts_tables"
+check_surface kernel-builder "$ts_builder"
 check_surface refusal-kinds "$ts_vocabulary"
 
 # The em dash survives VERBATIM on this target, and it is the only code point
-# outside ASCII either surface carries. The prose register folds it to two
+# outside ASCII any surface carries. The prose register folds it to two
 # hyphens; applying that fold here would move six lines across the four
 # generated files, so the rule is walled rather than remembered.
-for surface in "$ts_tables" "$ts_vocabulary"; do
-  if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne 2 ]]; then
-    echo "GATE: FAIL — $surface lost an em dash the target carries verbatim" >&2
+#
+# The count is per surface and measured, not one number for all three: the two
+# that carry a drafted meaning about an incarnation mismatch carry the dash
+# twice, and the builder carries it once, in its plane header alone. A single
+# expected count would have had to be the wrong one for some surface.
+for pinned in "$ts_tables:2" "$ts_builder:1" "$ts_vocabulary:2"; do
+  surface="${pinned%:*}"
+  expected="${pinned##*:}"
+  if [[ "$(LC_ALL=C grep -c '—' "$surface")" -ne "$expected" ]]; then
+    echo "GATE: FAIL — $surface does not carry its $expected em-dash lines verbatim" >&2
     exit 1
   fi
   stray=$(LC_ALL=C tr -d '\11\12\40-\176' < "$surface" | LC_ALL=C tr -d '\342\200\224' | wc -c | tr -d ' ')
@@ -685,9 +694,10 @@ done < <(
   printf '%s\t%s\n' \
     "$fixture" "$(grep '"record":"corpus"' surface-digests.ndjson | sed 's/.*"digest":"\([^"]*\)".*/\1/')" \
     "$ts_tables" "$(grep '"target":"kernel-tables"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
+    "$ts_builder" "$(grep '"target":"kernel-builder"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')" \
     "$ts_vocabulary" "$(grep '"target":"refusal-kinds"' surface-digests.ndjson | sed 's/{"digest":"\([^"]*\)".*/\1/')"
 )
-echo "GATE: PASS (digest register fresh; the corpus and both surfaces hash as registered under a host oracle)"
+echo "GATE: PASS (digest register fresh; the corpus and all three surfaces hash as registered under a host oracle)"
 
 # Falsification of the printer itself. Each arm edits ONE constant or ONE rule
 # in this package's own sources, rebuilds, and demands that the emitted surface
@@ -751,6 +761,10 @@ check_ts_mutation refusal-ancestry Unity/TsKernel.lean \
   's/else "staged-debt"/else "kernel-corpus"/' \
   kernel-tables "$ts_tables" \
   "each runtime spelling's ancestry is resolved against the corpus, never assumed"
+check_ts_mutation field-form-rule Unity/TsKernel.lean \
+  's/else if name == "Value" then .ok .value/else if name == "Value" then .ok .absent/' \
+  kernel-builder "$ts_builder" \
+  "the builder's argument shapes come from the reviewed reference rule, which is load-bearing"
 
 # The roster is reviewed data, so the reconciliation between it and the corpus
 # must refuse rather than default in both directions.
@@ -840,4 +854,4 @@ if [[ "${committed_refusals[*]}" != "${exercised_refusals_sorted[*]}" ]]; then
   exit 1
 fi
 
-echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 125-record format-2 kernel conformance corpus)"
+echo "GATE: PASS (3 translation controls; ${#exercised_probes[@]} corpus falsification probes; 2 must-not-compile refusals; roster ${#roster[@]}; 131-record format-2 kernel conformance corpus)"

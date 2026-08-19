@@ -138,14 +138,15 @@ inductive TsType where
   | query (target : TsType)
   | parens (inner : TsType)
   | indexed (object : TsType) (index : TsType)
-  | union (members : List TsType)
+  | union (layout : Layout) (members : List TsType)
   | intersection (members : List TsType)
   | tuple (items : List TsType)
   | operator (name : String) (inner : TsType)
   | record (layout : Layout) (members : List (Bool × Bool × PropertyKey × TsType))
   | index (key : String) (domain : TsType) (value : TsType)
-  | mapped (binder : String) (domain : TsType) (value : TsType)
-  | function (binders : List (String × TsType)) (result : TsType)
+  | mapped (layout : Layout) (binder : String) (domain : TsType) (value : TsType)
+  | function (parameters : List (String × TsType)) (layout : Layout)
+      (binders : List (String × TsType)) (result : TsType)
   | template (head : String) (spans : List (TsType × String))
 
 /-- A value expression. Array and object elements carry an optional doc
@@ -173,9 +174,12 @@ structure TypeParameter where
   constraint : Option TsType
   fallback : Option TsType
 
-/-- One member of an interface: whether it is read-only, whether it is
-    optional, its key, and its type. -/
+/-- One member of an interface: its own doc comment, whether it is read-only,
+    whether it is optional, its key, and its type. A member documents itself
+    because the emitted surfaces document a field where the field stands, not
+    in a table above the interface. -/
 structure Member where
+  doc : Option Doc := none
   readOnly : Bool
   optional : Bool
   key : PropertyKey
@@ -190,8 +194,8 @@ inductive TsStmt where
   | constant (doc : Option Doc) (name : String) (value : TsExpr)
   | typeAlias (doc : Option Doc) (name : String) (parameters : List TypeParameter)
       (layout : Layout) (value : TsType)
-  | interfaceDecl (doc : Option Doc) (name : String) (parameters : List TypeParameter)
-      (members : List Member)
+  | interfaceDecl (doc : Option Doc) (name : String) (parameterLayout : Layout)
+      (parameters : List TypeParameter) (spaced : Bool) (members : List Member)
   | blank
 
 /-- A module: the statements it carries, in order. -/
@@ -304,7 +308,7 @@ def typeText : TsType -> String
   | .query target => "typeof " ++ typeText target
   | .parens inner => "(" ++ typeText inner ++ ")"
   | .indexed object index => typeText object ++ "[" ++ typeText index ++ "]"
-  | .union members => joinTypes " | " members
+  | .union _ members => joinTypes " | " members
   | .intersection members => joinTypes " & " members
   | .tuple items => "[" ++ typeList items ++ "]"
   | .operator name inner => name ++ " " ++ typeText inner
@@ -312,12 +316,21 @@ def typeText : TsType -> String
   | .record _ members => "{ " ++ recordMembers members ++ " }"
   | .index key domain value =>
       "{ readonly [" ++ key ++ ": " ++ typeText domain ++ "]: " ++ typeText value ++ " }"
-  | .mapped binder domain value =>
+  | .mapped _ binder domain value =>
       "{ readonly [" ++ binder ++ " in " ++ typeText domain ++ "]: " ++
         typeText value ++ " }"
-  | .function binders result =>
-      "(" ++ binderList binders ++ ") => " ++ typeText result
+  | .function parameters _ binders result =>
+      (if parameters.isEmpty then "" else "<" ++ functionParameterList parameters ++ ">") ++
+        "(" ++ binderList binders ++ ") => " ++ typeText result
   | .template head spans => "`" ++ head ++ spanText spans ++ "`"
+
+/-- Comma-separated type parameters of a function type. Every one the target
+    writes carries a constraint, so a parameter is a name and its bound. -/
+def functionParameterList : List (String × TsType) -> String
+  | [] => ""
+  | [only] => only.1 ++ " extends " ++ typeText only.2
+  | first :: rest =>
+      first.1 ++ " extends " ++ typeText first.2 ++ ", " ++ functionParameterList rest
 
 /-- Comma-separated type arguments. -/
 def typeList : List TsType -> String
@@ -413,6 +426,31 @@ end
     test does, and then sets the layout it decided on. -/
 def flatWidth (expression : TsExpr) : Nat := (inlineExpr expression).length
 
+/-- The single member of a mapped type, without its braces: the one piece both
+    the flat and the broken rendering share. -/
+def mappedMember (binder : String) (domain : TsType) (value : TsType) : String :=
+  "readonly [" ++ binder ++ " in " ++ typeText domain ++ "]: " ++ typeText value
+
+/-- A function type's own type parameters, empty when it has none. -/
+def functionParameters : List (String × TsType) -> String
+  | [] => ""
+  | parameters => "<" ++ functionParameterList parameters ++ ">"
+
+/-- A type the target breaks across lines, as the text that closes the line
+    introducing it and the lines that follow at `indent`. Every other type is
+    written on one line, which is why this is an `Option` rather than a second
+    total printer: the two block forms are the two the surfaces measure, and a
+    type with no broken rendering says so instead of acquiring one. -/
+def brokenType (indent : String) : TsType -> Option (String × List String)
+  | .mapped .block binder domain value =>
+      some ("{", [indent ++ "  " ++ mappedMember binder domain value, indent ++ "}"])
+  | .function parameters .block binders result =>
+      some (functionParameters parameters ++ "(",
+        binders.map (fun binder =>
+          indent ++ "  " ++ binder.1 ++ ": " ++ typeText binder.2 ++ ",") ++
+          [indent ++ ") => " ++ typeText result])
+  | _ => none
+
 mutual
 
 /-- One expression as lines. The first line carries no indent — the caller
@@ -429,7 +467,10 @@ def exprLines (indent : String) : TsExpr -> List String
   | .concat runs => runLines indent runs
   | .asConst inner => appendLast (exprLines indent inner) " as const"
   | .satisfies inner type =>
-      appendLast (exprLines indent inner) (" satisfies " ++ typeText type)
+      match brokenType indent type with
+      | some (opening, rest) =>
+          appendLast (exprLines indent inner) (" satisfies " ++ opening) ++ rest
+      | none => appendLast (exprLines indent inner) (" satisfies " ++ typeText type)
   | other => [inlineExpr other]
 
 /-- The lines of a block array's elements, each documented in place. -/
@@ -481,11 +522,28 @@ def parametersText (parameters : List TypeParameter) : String :=
   if parameters.isEmpty then ""
   else "<" ++ String.intercalate ", " (parameters.map parameterText) ++ ">"
 
-/-- One interface member as a line. -/
-def memberLine (member : Member) : String :=
-  "  " ++ (if member.readOnly then "readonly " else "") ++
-    keyText member.key ++ (if member.optional then "?" else "") ++
-    ": " ++ typeText member.type
+/-- One interface member as lines: its own doc comment, then the member. -/
+def memberLines (member : Member) : List String :=
+  let head := "  " ++ (if member.readOnly then "readonly " else "") ++
+    keyText member.key ++ (if member.optional then "?" else "") ++ ": "
+  optionalDocLines "  " member.doc ++
+    (match brokenType "  " member.type with
+     | some (opening, rest) => (head ++ opening) :: rest
+     | none => [head ++ typeText member.type])
+
+/-- The members of an interface, with a blank line between each pair when the
+    site writes them apart. -/
+def interfaceMembers (spaced : Bool) : List Member -> List String
+  | [] => []
+  | [only] => memberLines only
+  | first :: rest =>
+      memberLines first ++ (if spaced then [""] else []) ++ interfaceMembers spaced rest
+
+/-- The value of a type alias broken onto its own lines: a union written one
+    member per line behind its leading bar, anything else on one line. -/
+def aliasValueLines : TsType -> List String
+  | .union .block members => members.map (fun member => "  | " ++ typeText member)
+  | value => ["  " ++ typeText value]
 
 /-- One statement as lines. -/
 def statementLines : TsStmt -> List String
@@ -504,11 +562,16 @@ def statementLines : TsStmt -> List String
       optionalDocLines "" doc ++
         (match layout with
          | .inline => [head ++ " " ++ typeText value]
-         | .block => [head, "  " ++ typeText value])
-  | .interfaceDecl doc name parameters members =>
+         | .block => head :: aliasValueLines value)
+  | .interfaceDecl doc name parameterLayout parameters spaced members =>
       optionalDocLines "" doc ++
-        ("export interface " ++ name ++ parametersText parameters ++ " {") ::
-        members.map memberLine ++ ["}"]
+        (match parameterLayout with
+         | .inline => [("export interface " ++ name ++ parametersText parameters ++ " {")]
+         | .block =>
+             ("export interface " ++ name ++ "<") ::
+               parameters.map (fun parameter => "  " ++ parameterText parameter ++ ",") ++
+               ["> {"]) ++
+        interfaceMembers spaced members ++ ["}"]
   | .blank => [""]
 
 /-- The module's bytes. A blank statement is a line of its own, so a module

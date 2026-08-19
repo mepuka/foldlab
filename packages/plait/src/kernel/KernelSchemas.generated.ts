@@ -37,6 +37,7 @@
 import { Schema } from "effect"
 
 import * as Grammar from "./KernelCorpusSchemas.js"
+import type { KernelRefusalRow } from "./KernelTables.generated.js"
 
 /** Where these schemas came from, carried as data for a consumer to assert. */
 export const KERNEL_SCHEMA_PROVENANCE = {
@@ -79,21 +80,21 @@ export const KERNEL_CANONICAL_EXAMPLES_KEY = "canonicalExamples"
 /** The provenance line, with the counts it pins. Examples are real records from the corpus. */
 export const KernelHeaderRecord = Grammar.KernelHeaderRecord.annotate({
   canonicalExamples: [
-    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":22,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":22},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
+    "{\"counts\":{\"admission\":19,\"canon\":10,\"doc\":25,\"encoding\":12,\"kind\":12,\"model-admission\":2,\"program\":4,\"refusal\":16,\"stage\":5,\"type\":25},\"format\":2,\"generator\":\"verify/unity emit\",\"record\":\"header\",\"source\":\"verify/kernel\"}",
   ],
   examples: [
     {
       counts: {
         admission: 19n,
         canon: 10n,
-        doc: 22n,
+        doc: 25n,
         encoding: 12n,
         kind: 12n,
         "model-admission": 2n,
         program: 4n,
         refusal: 16n,
         stage: 5n,
-        type: 22n,
+        type: 25n,
       },
       format: 2n,
       generator: "verify/unity emit",
@@ -1014,6 +1015,75 @@ export const KernelDoor = Schema.Struct({
  */
 export type KernelDoorValue = typeof KernelDoor.Type
 
+/**
+ * The admission verdict: an intrinsic sentence, or a taught
+ * structural refusal.
+ */
+export const KernelAdmitResult = Schema.Union([
+  Schema.TaggedStruct("admitted", { act: KernelAct }),
+  Schema.TaggedStruct("refused", { refusal: KernelRefusal }),
+]).annotate({
+  identifier: "KernelAdmitResult",
+  title: "The admission verdict: an intrinsic sentence, or a taught",
+  description:
+    "The admission verdict: an intrinsic sentence, or a taught\nstructural refusal. ",
+})
+
+/**
+ * The value AdmitResult carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelAdmitResultValue = typeof KernelAdmitResult.Type
+
+/** The generator a program node applies.  */
+export const KernelGenTag = Schema.Literals([
+  "declare",
+  "resolve",
+  "emit",
+  "join",
+  "fold",
+  "decide",
+  "trigger",
+  "spawn",
+]).annotate({
+  identifier: "KernelGenTag",
+  title: "The generator a program node applies.",
+  description:
+    "The generator a program node applies. ",
+})
+
+/**
+ * The value GenTag carries, named here so a consumer re-exports this declaration instead of
+ * restating the type as one of its own.
+ */
+export type KernelGenTagValue = typeof KernelGenTag.Type
+
+/**
+ * One node of a program declaration: a program-scoped name, the
+ * generator it applies, its raw arguments (holes permitted here --
+ * the program's typed parameters), and the names of the prior nodes
+ * it consumes.
+ */
+export const KernelProgramNode = Schema.Struct({
+  name: KernelNat,
+  generator: KernelGenTag,
+  args: Schema.Array(KernelRawArg),
+  uses: Schema.Array(KernelNat),
+}).annotate({
+  identifier: "KernelProgramNode",
+  title: "One node of a program declaration: a program-scoped name, the",
+  description:
+    "One node of a program declaration: a program-scoped name, the\ngenerator it applies, its "
+    + "raw arguments (holes permitted here --\nthe program's typed parameters), and the names of "
+    + "the prior nodes\nit consumes. ",
+})
+
+/**
+ * The value ProgramNode carries, named here so a consumer re-exports this declaration instead
+ * of restating the type as one of its own.
+ */
+export type KernelProgramNodeValue = typeof KernelProgramNode.Type
+
 /** Every mini-AST schema, keyed by the model's short name for the type. */
 export const KERNEL_TYPE_SCHEMA = {
   DeclKind: KernelDeclKind,
@@ -1038,6 +1108,9 @@ export const KERNEL_TYPE_SCHEMA = {
   Refusal: KernelRefusal,
   Applicability: KernelApplicability,
   Door: KernelDoor,
+  AdmitResult: KernelAdmitResult,
+  GenTag: KernelGenTag,
+  ProgramNode: KernelProgramNode,
 } as const
 
 /**
@@ -1084,3 +1157,40 @@ export const KernelActEncoding = Schema.Array(KernelNat).annotate({
     [7n, 4n, 5n],
   ],
 })
+
+// ---------------------------------------------------------------------------
+// The door's verdict vocabulary, from the AdmitResult, Door and CandidateAct
+// records. The runtime enrichments are named where they are added.
+// ---------------------------------------------------------------------------
+
+/**
+ * The result of admission. Success carries both the intrinsic sentence and its canonical model
+ * encoding; refusal carries the complete generated teaching row, flattened so every host
+ * exposes identical reason/law/repair fields.
+ */
+export type KernelVerdict =
+  | {
+    readonly verdict: "admitted"
+    readonly act: KernelActValue
+    readonly encoded: ReadonlyArray<bigint>
+  }
+  | ({ readonly verdict: "refused" } & KernelRefusalRow)
+
+/**
+ * A context-bound view of the single admission function. Exported under this name because the
+ * Door record's own schema already holds KernelDoor; the door module re-exports it as
+ * KernelDoor, which is the name a host reads.
+ */
+export interface KernelDoorInterface {
+  readonly admit: (candidate: KernelCandidateActValue) => KernelVerdict
+}
+
+/**
+ * The one host-facing judgment function. The arrow is this generator's composition of three
+ * records: the Door record is the context it judges under, the CandidateAct record is what it
+ * judges, and the AdmitResult record is what it returns.
+ */
+export type KernelAdmit = (
+  context: KernelDoorValue,
+  candidate: KernelCandidateActValue,
+) => KernelVerdict
