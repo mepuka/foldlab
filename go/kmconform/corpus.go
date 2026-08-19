@@ -85,15 +85,18 @@ var countedGroups = []string{
 	RecordType,
 }
 
-// closedTypeNames is the closed twenty-two, in Kernel/Definitions.lean
+// closedTypeNames is the closed twenty-five, in Kernel/Definitions.lean
 // declaration order. Adding a name is an add-only change to the corpus and a
-// one-line change here; removing one is a format bump.
+// one-line change here; removing one is a format bump. The last three joined
+// with the 2026-08-19 manifest growth (the door's verdict and the program
+// vocabulary).
 var closedTypeNames = []string{
 	"DeclKind", "Digest", "Value", "StateLabel", "Petname", "Token",
 	"LanePartition", "Position", "AnchorFact", "HoleStage",
 	"KTriggerPredicate", "Act", "RawArg", "CandidateAnchor", "TokenClaim",
 	"MergeStrategy", "CandidatePredicate", "CandidateAct", "RefusalReason",
-	"Refusal", "Applicability", "Door",
+	"Refusal", "Applicability", "Door", "AdmitResult", "GenTag",
+	"ProgramNode",
 }
 
 // machineApplicableReasons are the four repairs that are a function of the

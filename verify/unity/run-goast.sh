@@ -159,7 +159,7 @@ if [[ "$aligned" -ne 125 ]]; then
   echo "GATE: FAIL — the emission carries $aligned elastically aligned lines, not the measured 125" >&2
   exit 1
 fi
-if [[ "$(wc -l < "$emission_first" | tr -d ' ')" -ne 694 ]] ||
+if [[ "$(wc -l < "$emission_first" | tr -d ' ')" -ne 700 ]] ||
     [[ "$(grep -cE '[ 	]+$' "$emission_first" || true)" -ne 0 ]] ||
     [[ "$(LC_ALL=C grep -c $'\r' "$emission_first" || true)" -ne 0 ]] ||
     [[ "$(grep -cE '[^	]	' "$emission_first" || true)" -ne 0 ]] ||
@@ -168,7 +168,7 @@ if [[ "$(wc -l < "$emission_first" | tr -d ' ')" -ne 694 ]] ||
   echo "GATE: FAIL — the emission's measured layout facts moved" >&2
   exit 1
 fi
-echo "GATE: PASS (elastic pass decides 155 lines and aligns 125; 694 lines, no trailing space, no CR, no interior tab, banner at Go's convention, 12 brand directives)"
+echo "GATE: PASS (elastic pass decides 155 lines and aligns 125; 700 lines, no trailing space, no CR, no interior tab, banner at Go's convention, 12 brand directives)"
 
 # -------------------------------------------------- arm 4: the mutation
 
@@ -253,4 +253,4 @@ if ! cmp -s "$emission_second" "$committed"; then
 fi
 echo "GATE: PASS (producer restored; parity returns)"
 
-echo "GATE: PASS (Go projection: 30-node census, one printer, 694-line emission byte-identical to cmd/kmgen's committed output; 2 mutation arms, 1 refusal arm)"
+echo "GATE: PASS (Go projection: 30-node census, one printer, 700-line emission byte-identical to cmd/kmgen's committed output; 2 mutation arms, 1 refusal arm)"

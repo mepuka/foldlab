@@ -187,8 +187,8 @@ func TestHeaderCountsMatchTheRecordsRead(t *testing.T) {
 	// so it is pinned as a literal and a change to one is a change to the
 	// model rather than to this file.
 	want := map[string]int{
-		"kind": 12, "stage": 5, "refusal": 16, "type": 22,
-		"encoding": 12, "admission": 19, "doc": 22, "canon": 10,
+		"kind": 12, "stage": 5, "refusal": 16, "type": 25,
+		"encoding": 12, "admission": 19, "doc": 25, "canon": 10,
 	}
 	got := map[string]int{}
 	for _, count := range corpus.Header.Counts {
@@ -252,8 +252,8 @@ func TestTables(t *testing.T) {
 	if got := strings.Join(machineApplicable, ","); got != "last-writer-wins,unverified-read,past-mutation,anchored-resolve" {
 		t.Fatalf("the machine-applicable four are [%s]; the codemod catalog is a different set than expected", got)
 	}
-	if len(corpus.Types) != 22 {
-		t.Fatalf("%d type records, want the closed 22", len(corpus.Types))
+	if len(corpus.Types) != 25 {
+		t.Fatalf("%d type records, want the closed 25", len(corpus.Types))
 	}
 	for _, row := range corpus.Types {
 		if row.Form == "structure" {
