@@ -10,7 +10,7 @@ import type { WireValue } from "../truth/Canonical.js"
 import { Digest, digestOf, type Digest as DigestValue } from "../truth/Digest.js"
 import type { DeclaredFold } from "./Fold.js"
 import { structuralRefusal, type Refusal, type StructuralRefusal } from "../truth/Refusal.js"
-import type { Holder } from "../kernel/Wire.js"
+import { Holder } from "../kernel/Wire.js"
 import { makeSessionService } from "../internal/sessions.js"
 
 /** Where a session takes its opening consumer position. */
@@ -183,7 +183,10 @@ const admitView = (
 export const writ = Effect.fn("Session.writ")(function* (
   options: WritOptions,
 ): Effect.fn.Return<DeclaredWrit, StructuralRefusal> {
-  if (typeof options.holder !== "string" || options.holder.length === 0) {
+  // The holder sort's own check, asked rather than restated: a typed caller
+  // cannot reach this branch at all, and an untyped one meets the same law the
+  // brand carries, taught with this seam's own words.
+  if (!Schema.is(Holder)(options.holder)) {
     return yield* declarationRefusal(
       ["holder"],
       typeof options.holder === "string" ? options.holder : String(options.holder),

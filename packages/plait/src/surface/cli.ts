@@ -228,7 +228,10 @@ const ChaosFoldExport = Schema.Struct({
   lane: Schema.Struct({
     declaration: PlainObject,
     digest: Schema.String,
-    handle: Schema.String,
+    // The handle a module exports is judged as the sort it is: this value is
+    // handed straight to `Lane.declare`, so the boundary that admits the module
+    // admits its route name under the same grammar the lane seam demands.
+    handle: Lane.LaneHandle,
     partitions: Schema.Finite,
   }),
   algebra: Schema.Struct({

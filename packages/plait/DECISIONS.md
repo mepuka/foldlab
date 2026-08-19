@@ -7330,9 +7330,38 @@ in front of it, and the two fences catch different callers.
 
 **Load-bearing? no**
 
-### T13. What this run deliberately did not touch
+### T13. A completeness audit closed three gaps the first pass left
 
-Two findings are reported rather than fixed, both outside this dispatch.
+Decided: a sweep of the package for missed seams, restated grammars, and
+re-validations found three things worth fixing, and they were fixed.
+
+`internal/permissions.ts` carried a character-for-character copy of the
+literal-token pattern with no import — exactly the duplicate the "stated once"
+rule exists to prevent, and the one that would have made the law this run wrote
+a false claim on the day it landed. It now imports `TOKEN_PATTERN`. The subject
+and permission FAMILIES beside it keep their own anchored patterns: they compose
+tokens with fixed prefixes and wildcards, so they are different grammars that
+share an alphabet rather than restatements of one grammar, and the law says so
+in those words.
+
+`surface/cli.ts`'s chaos-fold export schema judged a lane handle as
+`Schema.String`, and the decoded value is handed straight to `Lane.declare`. It
+now decodes as `LaneHandle`, so the boundary that admits an untrusted module
+admits its route name under the grammar the lane seam demands, rather than
+leaning on a cast further down to re-brand it.
+
+`Session.writ` hand-tested its holder for being a non-empty string — the brand's
+own check, restated. It now asks `Schema.is(Holder)`. The refusal is unchanged
+in kind, path, and every taught word; what changed is that the law has one
+statement. A typed caller cannot reach the branch at all now, which is the point
+of the brand, and an untyped one still meets the seam teaching it always did.
+
+**Load-bearing? yes** — the first of the three is what keeps this run's own law
+true.
+
+### T14. What this run deliberately did not touch
+
+Four findings are reported rather than fixed, all outside this dispatch.
 
 `ContextProgram.declare` takes `candidate: unknown` and decodes, so the branded
 `Segment` and `Selector` shapes constrain a caller who BUILDS a typed program —
@@ -7345,3 +7374,16 @@ slice's call, not this sweep's.
 adapter plumbing under a branded public option and were left bare; branding them
 would be a second statement of the public sort's grammar with no seam crossing to
 justify it.
+
+`internal/permissions.ts`'s `CarrierPermissionScope` carries `evidenceLane`,
+`commonsStream`, and `evidenceStreams` as literal tokens where a lane handle and
+two stream names are what they hold — the scope is interpolated into
+`flb.fab.ev.{lane}.*` and into a stream-info subject, so the values really are
+those sorts. The struct is internal and crosses no public seam, so it sits
+outside the sweep's stated boundary; it is the strongest remaining candidate if
+that boundary is ever widened to the security projection.
+
+`surface/cli.ts` decodes three content addresses in the same chaos-fold export
+schema as `Schema.String` rather than as the estate's own `Digest`. That is the
+same slip the lane handle beside them had, against a sort this task did not
+mint, and it belongs to whoever tightens that boundary next.

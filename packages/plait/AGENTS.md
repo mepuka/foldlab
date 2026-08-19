@@ -421,7 +421,11 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   shape never compare. The brands add nominal identity to checks the seams
   already made; they moved no refusal's kind and no law text. The literal-token
   grammar those sorts share is stated ONCE, as `Subjects.TOKEN_PATTERN`, and a
-  second regular expression restating it anywhere under `src/` is a finding.
+  second regular expression stating that same one-token grammar anywhere under
+  `src/` is a finding. The routing-subject families and the carrier-permission
+  families are different grammars that merely share its character class — one
+  is a composite with a fixed prefix, the other admits wildcards — and they
+  stay their own anchored patterns rather than being composed out of this one.
   Each sort that teaches a refusal has ONE minting site, in the module whose
   concept it names — `Cell.cellName`, `Register.workKey`, `Lane.laneHandle` —
   and the adapter under that seam calls it rather than re-testing the grammar.
