@@ -304,6 +304,18 @@ packages/plait/src/internal/sessions.ts#0
   expected "the pinned local NATS KV operation to be available"
   next[0].subject "Session.subscribe"
   next[0].note "Reconnect and subscribe again; a session is a value the substrate never learned, so re-opening under the same writ resumes the same read."
+packages/plait/src/internal/spawnseats.ts#0
+  kind "malformed-value"
+  law "A trace step carries one admitted sentence's canonical encoding, which the door reads back as a vector of unbounded naturals."
+  expected "the exact decimal of every atom of one intrinsic sentence's framing"
+  next[0].subject "SpawnSeats.consume"
+  next[0].note "Fold traces the engine wrote; a step whose encoding the door cannot read is not a sentence this estate said, and guessing past it would read a spawn out of an unknown word."
+packages/plait/src/internal/spawnseats.ts#1
+  kind "ambiguous-binding"
+  law "One policy carries at most one seat charter, because a seat's writ is what selects what it runs."
+  expected "one charter per policy"
+  next[0].subject "SpawnSeats.attach"
+  next[0].note "Declare one charter per policy; a seat that could run either of two programs under one writ has no reading that a spawn chose."
 packages/plait/src/internal/substrate.ts#0
   kind "malformed-value"
   law "A substrate session folds the substrate's own declaration, field by field, from the declared roster."

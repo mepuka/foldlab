@@ -9932,3 +9932,270 @@ The law's own wall clause in the root contract still names the vocabulary wall
 over the generated tables and the prose page. This arm extends the law's
 mechanical coverage to a second surface family; amending the clause to say so is
 an operator ruling and is not taken here.
+### T0. The consumer folds the RUN-TRACE lane; no lane announces spawns
+
+Decided: an admitted spawn is sighted as a STEP of a landed run-trace fact, read
+back through the door's own `decodeAct`. Nothing kernel-side or engine-side
+moved: spawn stays world-identity and still lands nothing.
+
+Why there is nowhere else to look. The model interprets spawn as
+world-identity, so the engine carries nothing for it and no spawn-shaped value
+exists anywhere. What does exist is the trace: one fact per run carrying every
+admitted sentence's canonical encoding in walk order. An admitted spawn is
+therefore legible exactly where every other admitted sentence is.
+
+Alternatives priced. A lane that announced spawns, one fact per admitted spawn,
+is the per-step landing the run-trace law already refuses, and it would say a
+second time what the trace says. The engine's verdict stream carries every
+judgment live and is FLUX — in process, unaddressed, gone once nobody listens —
+so a seat brought up off it would make meaning load-bearing on transport,
+against the two-register doctrine. Landing something for spawn in the engine is
+a kernel-shaped change this ticket forbids and KM-6/7 do not want.
+**Load-bearing? yes.**
+
+### T1. A refused spawn brings up nothing because it has no step
+
+Decided: the consumer reads `steps` and nothing else. The refused arm's `node`
+and its taught row are never read as a sighting.
+
+Why that is structural rather than a check. `Engine.run` stops at the first
+refusing node and pushes no step for it, so every arm keeps only the prefix that
+STOOD. Zero carriage is a property of the trace's shape, which means there is no
+filter in this module that could rot, and no branch a later edit could invert.
+
+The falsification is executed. A check that cannot fail proves nothing, so the
+suite promotes the refused node INTO its own trace's steps — framed by the
+door's own `encodeAct`, so the mutant is a mutation of a law rather than an
+invented vector — hands it to the same consumer, and requires the recorder
+outside the consumer to catch the seat it brings up.
+**Load-bearing? yes.**
+
+### T2. A seat is named by the digest of the coordinate its spawn was sighted at
+
+Decided: the name is the digest of `{ v, kind, trace, node }` — the landed trace
+fact's identity and the program node the spawn stood at.
+
+Why a coordinate. The name has to be computable by anyone holding the trace,
+with no I/O and no agreement, because that is what makes a redelivery, a second
+consumer, and a restart all name one seat.
+
+Alternatives priced. Keying by the admitted spawn's own encoding
+(`[tag, parent, request]`) names a SENTENCE rather than an occurrence: two
+different runs saying the same spawn would collapse to one seat, and the reading
+"this seat came from that run" would be gone. Minting a key is a
+`minted-identifier` the door refuses on the meaning path, and it would destroy
+the idempotence the whole fence rests on. Keying by the trace digest alone loses
+the node, so a program spawning twice would name one seat.
+
+The corollary, stated rather than hidden: two byte-identical runs land ONE trace
+— identity is bytes, the partition's dedup window absorbs the repeat, and past
+the window the second landing carries the same digest — so two byte-identical
+runs are one seat. That is the estate's own "saying it twice says it once", and
+it is the price of a trace that carries no clock and no program name.
+**Load-bearing? yes.**
+
+### T3. Idempotence by digest, and why no register round was spent
+
+Decided: an atomic claim over the seat name in the consumer's own state, seeded
+at attach from the seat lane's own bounded tail. No fenced register.
+
+The argument in full, because the ticket asked for it. Bringing up a seat is
+genuinely non-idempotent IN THE WORLD: it runs a program that lands facts. But
+that program's landings are ordinary judged emits, and re-running the identical
+program under the identical writ with the identical supplies produces
+byte-identical facts, which the emit seam's own duplicate suppression absorbs —
+so the world-effect of a double bring-up is bounded by the idempotence the emit
+seam already teaches, and is not new exposure. What a double bring-up WOULD cost
+is a second opening and a second retirement for one spawn. Those are the facts
+that would read as two seats, and they are what the fence exists for.
+
+The fence has two halves answering two questions. The atomic claim absorbs a
+duplicate within one consumer's life — it is `Ref.modify`, so it is a
+test-and-insert and not a check-then-act. The seeding extends it across a
+restart: a consumer opens with whatever the seat lane's opening facts show,
+which is a REPLICA in the cell-replica sense — a lower bound taken through a
+bounded tail, never an oracle. Past that tail's per-partition ceiling a
+restarted consumer may bring a seat up again, and that bound is stated in the
+module header, in the package law, and here.
+
+The register was priced and refused. Keying a register by the seat name would
+make the claim exclusive across every consumer that ever ran; it costs a
+declared work value, a grant round, and a commit per seat — an arbitration on
+the hot path of every spawn. The fence inventory's own demotion question ("could
+both land, with the choice deferred to a read?") answers YES here: two openings
+for one seat are absorbed by the claim in the ordinary case and are VISIBLE in
+the record in the extraordinary one, because both cite the same seat name. A
+fence whose demotion has not failed is a fence not to spend.
+**Load-bearing? yes.**
+
+### T4. The writ comes from a charter the request label selects; no label is inverted
+
+Decided: the terms carry charters keyed by policy digest, the index is built by
+running each digest FORWARD through the guarded identity seam at attach, and a
+sighted spawn's `request` label selects the charter.
+
+Why forward only. A trace step carries model identity LABELS and the runtime's
+translation is one-way by ruling: the guarded seam maps a content address to a
+label and nothing inverts it. The engine solves the same problem the same way —
+it remembers every translation it made and refuses a label it has not seen — and
+this consumer keeps that discipline rather than adding a second reading of
+digest bytes, which the door containment wall refuses anyway.
+
+What that costs, stated. A spawn requesting a policy no charter names brings up
+nothing. That is an ABSENCE and not a judgment — this consumer cannot name what
+it would run — and it is reported on its own arm rather than dressed as
+authority. A charter licenses no spawn and refuses nobody; the door already
+judged.
+
+Alternative recorded as the follow-on: an accessor on the engine exposing its
+own label-to-address replica would let a consumer reach the requested policy
+without a charter table at all. It is the cheapest correct answer and it is an
+ENGINE change, which this ticket forbids.
+**Load-bearing? yes.**
+
+### T5. The seat vocabulary is its own; the substrate-session one does not fit
+
+Decided: two facts on a new declared lane, rather than a variant appended to the
+substrate-session event form.
+
+Why the existing vocabulary was re-derived and refused. That form is the
+SUBSTRATE SESSION's — one connection's life — and its ended fact carries "the
+cause the substrate reported". A seat is not a connection, has no substrate
+cause, and its ending answers a different question: how its run ended, and where
+that run's record went. Appending a seat variant would put seat words in a form
+named for connections, and it would move that lane's ROUTE, which is the digest
+of the form — a wire change for a concept that does not belong there.
+
+What was copied is the shape, not the vocabulary: a declared event form whose
+digest is the lane's handle, an add-only variant list, and a partition key on
+the thing whose facts must stay in order — here the seat, so one seat's opening
+and retirement land on one partition at consecutive positions.
+**Load-bearing? yes.**
+
+### T6. The retirement carries how the run ended AND what became of its record
+
+Decided: `outcome` is the run's own word, `landing` is the trace landing's own
+word, and `trace` is the digest, null exactly when the trace did not land.
+
+Why not one field. They are different questions with different answers: a run
+that landed perfectly may have had its trace refused at the door or lost to a
+seam, and one field would make one stand in for the other. The two registers
+stay distinct here for the same reason they stay distinct everywhere else in
+this package.
+**Load-bearing? no** — but the honesty is the reason it is three fields.
+
+### T7. The citation rides the body, never the envelope pins
+
+Decided: the retirement names the trace fact by a field.
+
+Why the obvious reach is wrong. The engine's `pins` are swept by the DOOR
+against the catalog, and a referent outside it refuses `forward-reference`. A
+landed fact's digest is not a cataloged declaration, so pinning it would refuse
+the emit. Recorded because "cite by pin" is what a reader expects and it does
+not work here.
+**Load-bearing? yes.**
+
+### T8. The home is `internal/` at two seams, and nothing joins the barrel
+
+Decided: `internal/seats.ts` at seam `planes` (vocabulary, name, route) and
+`internal/spawnseats.ts` at seam `carriage` (the consumer). No export from the
+barrel.
+
+Why that split: it is the run trace's exactly — the vocabulary module reaches
+only the lane plane and lands nothing, and the consumer's own edges (the engine,
+the traced run, the lane reads) rank it at carriage, which the layering wall
+reads off the seam tag rather than off the directory.
+
+Why nothing is public: the request-plane record this slice's language matches is
+PRE-GRILL, and the epic stage that turns writs into guards has not landed.
+Putting a seat surface on the barrel would ship an un-ratified concept as public
+API and would cost a Law 1 waiver plus a hand-raised ratchet pin to carry it.
+The status pump, the presence reads, the heartbeat seat, and the connection fold
+are all internal-only on the same reasoning. Consequence, measured rather than
+assumed: the type-universe ratchet did not move — carriage stayed at 37, planes
+at 75, kernel at 13, truth at 36 — and the public signature manifest is
+unchanged at 118.
+**Load-bearing? yes.**
+
+### T9. A step the door cannot read refuses, rather than being skipped
+
+Decided: the sighting refuses `malformed-value` on a step whose members are not
+the exact decimals the trace's own law says they are, or whose vector the door's
+decode cannot read.
+
+Why refusing. It is the connection fold's ruled posture applied here: the
+alphabet is consulted FIRST, and a symbol outside it has no row from any state,
+so the fold refuses rather than guessing. Skipping would let a broken writer
+make a spawn INVISIBLE, which is the one failure this consumer must not have.
+
+What is deliberately NOT refused: a spawn step that claims a landing. The
+kernel's world-identity reading is OBSERVED in the suite — the admitted spawn's
+step carries a null landing — rather than enforced in the module, because
+enforcing it would be this consumer checking the engine's answer, which is the
+re-judging it must not do.
+**Load-bearing? yes.**
+
+### T10. Each seat gets a forked scope, and this slice does not fill it
+
+Decided: `Scope.fork` from the consumer's scope per seat, closed with the run's
+own exit.
+
+Why, and what it does not buy. It makes two things constructions instead of
+promises: a seat's resources are the seat's and die with it, and every live seat
+dies when its consumer's scope closes. This slice's seat acquires nothing in
+that scope and the module header says so plainly. What will live there is the
+seat's own connection and its effectful completion, each its own ticket.
+
+Alternative priced: no scope until something needs one. Refused because
+retrofitting a scope changes the shape every seat is built at, and that shape is
+what the later tickets attach to.
+**Load-bearing? no** — it is structure, stated as empty today.
+
+### T11. The fold is sequential, and the scaling answer is more consumers
+
+Decided: one seat at a time, in the order the lane delivered the traces.
+
+Why: two seats brought up concurrently would race the claim that makes one spawn
+one seat, and the estate's answer to a slow reader is another reader on another
+partition — both lane read faces take one. Stated as a bound in the header
+rather than left to be discovered by whoever first runs a long seat.
+**Load-bearing? no.**
+
+### T12. What this slice does NOT do
+
+No process and no model. A seat is an in-process Effect scope running a declared
+program; the effectful completion is its own gated ticket, and this slice's
+seats run table and payload completions exactly as the engine's own run suite
+does.
+
+No writ enforcement. Writs are declared and not guards estate-wide, and a seat
+inherits exactly that: the opening fact NAMES the writ, the run acts under it,
+the door judges the run's own declares against the pinned universe, and nothing
+here begins refusing on a writ. Wherever this slice surfaces a writ it says so.
+
+No view binding beyond the door's. The ticket asked for a seat with its own
+lanes bound per the writ's views, and re-derivation says what that means today:
+the door binds a run's referents against the writ's PINNED UNIVERSE, and the
+engine's universe is its whole catalog by its own stated design, with a narrower
+per-writ discipline assigned to the writ slice. A seat inherits exactly that and
+no more. Its own lanes it does have — the seat lane carries its life, the
+run-trace lane carries its run — but the stronger claim, that every byte a seat
+reads is a declared writ-scoped image, is the consumer seam's own owed law and
+is not made here.
+
+No reaction runtime. An admitted TRIGGER still lands nothing and nothing
+consumes one; this consumer answers spawns only.
+
+No depth bound on the composition. A seat's own run lands its trace on the same
+lane the consumer folds, so a seat whose program spawned would bring up a
+grandchild. That composition is deliberate and unexercised: this slice's
+charters run programs with no spawn node, and a bound on it belongs to whichever
+ticket first wants recursive seats.
+
+No retirement for a seat whose holder dies. Crash is not a fact; an unretired
+seat whose lanes went quiet is what a dead seat looks like, and there is
+deliberately no finalizer that would land one. The same applies inside the
+process: a SEAM refusal during a seat's run reaches the caller and ends the
+fold, leaving an opened seat that never retired. Nothing catches it, because
+catching it would either forge the retirement or hide a substrate that stopped
+answering — and the next fact would have failed anyway.

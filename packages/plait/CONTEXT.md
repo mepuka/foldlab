@@ -345,3 +345,34 @@ identity that rounds is a different identity. It is the MEANING half of a run:
 the flux half is the verdict stream, live and unaddressed, and a trace is what
 survives it. There is one trace per run and never one per step, and no clock on
 one.
+
+**Seat**:
+One party this estate brought up because an admitted spawn said to: a scope, a
+writ, and one traced run under it. The scope is a child of the consumer's, so a
+seat's resources are the seat's and every live seat dies with its consumer. The
+writ is the policy the spawn REQUESTED, so a seat cannot speak under a policy
+its spawn did not name. A seat is not an operating-system process and not a
+completion — those are later slices — and the kernel's spawn still lands
+nothing: the language records that a speaker was minted, and a seat is the
+harness's own testimony about what it did with that sentence.
+
+**Seat name**:
+The digest of the coordinate a spawn was sighted at: the landed run-trace fact
+that carried it, and the program node it stood at. A name computed from what
+landed rather than minted, so a redelivered trace, a second consumer, and a
+restart all compute one name — which is what makes bringing the same seat up
+twice absorbable instead of a race.
+
+**Spawn sighting**:
+One admitted spawn as a landed trace shows it: the seat it names, the trace and
+node it stood at, and the parent and requested policies' identity labels written
+exactly. A refused spawn is never sighted, because every arm of a run keeps the
+prefix that STOOD and the refused node is not a step.
+
+**Seat charter**:
+What a consumer knows how to bring up under one policy: the writ, the holder its
+facts are attributed to, the one program a seat runs, and that program's
+execution-time supplies. A declaration of capability and never a guard — it
+licenses no spawn, and its absence refuses nobody. A spawn whose requested
+policy no charter names reaches a consumer that cannot name what it would run,
+which is an absence and is reported as one.

@@ -84,6 +84,36 @@ and the read face consume it without the read face reaching the engine's
 neighbourhood at all. The three arms share one `kind` and are told apart by the
 outcome word, exactly as the model's own run outcome is.
 
+`seats.ts` and `spawnseats.ts` are the harness's half of the kernel's spawn. The
+kernel's own stays world-identity — an admitted spawn lands nothing, so there is
+no spawn-shaped value anywhere — and the place an admitted spawn IS legible is
+the run trace, which carries every admitted sentence's canonical encoding as a
+step. So `spawnseats.ts` folds the run-trace lane, reads each step back through
+the DOOR'S OWN decode rather than spelling the act framing a second time, and
+brings up a seat for every spawn it sights. A refused spawn is invisible to it by
+construction: an arm keeps the prefix that STOOD, and the refused node is not a
+step. A seat is one forked scope, the policy the spawn REQUESTED, and one traced
+run under it; its first landed act is the opening fact, which carries that writ,
+and it ends by landing a retirement after its run reached an outcome — never by
+going quiet, because crash is not a fact and an unretired seat is what a dead one
+looks like. `seats.ts` is the vocabulary and the route: the declared event form
+whose digest is the lane's handle, the two facts, and the seat NAME, which is the
+digest of the coordinate the spawn was sighted at — so a redelivered trace, a
+second consumer, and a restart all compute one name. That is the fence: an atomic
+claim absorbs a duplicate within one consumer's life, and the seat lane's own
+opening facts seed it at attach, which makes the seeding a replica in the
+cell-replica sense and never an oracle. Past the tail's bound a restarted
+consumer may bring a seat up again; an exclusive claim across every consumer that
+ever ran is a fenced register round and is not built. The consumer judges
+nothing, mints no verdict, and holds no charter authority: a spawn whose
+requested policy no charter names is reported as the absence it is. Walls:
+`../../test/SpawnSeats.test.ts` over the lane fixture, with the executed
+falsification that promotes a refused node into its trace's steps and requires
+the recorder to catch the seat it brings up, and
+`../../test/SpawnSeatWall.test.ts` over a real substrate, where the seat's facts
+are read back through the lane's own verify-on-read and the writ is checked
+against the identity label the admitted sentence itself named.
+
 `incarnations.ts` is the REFERENCE side of the substrate's own lifecycle
 vocabulary — the store, the incarnation, the round a start competes at, and the
 facts a run leaves: established, lame-duck, retired, and the teardown
