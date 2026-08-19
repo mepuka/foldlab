@@ -68,6 +68,16 @@ fenced register over one file-backed, single-replica JetStream server.
   one door, admitted sentences carried to their planes, configuration built by
   declaring, and closed program declarations executed node by node through
   that same door with the taught refusal stopping a run where it fires.
+- `RunTrace` is the engine's execution log: one program run projected into ONE
+  canonical fact and landed on a declared lane, keyed by the writ the run acted
+  under. The live per-act story is the verdict stream and stays flux; this is
+  the run as meaning — the arm it ended on, the node it stopped at, the door's
+  own taught row where it was refused, and every walked step verbatim, with
+  each unbounded integer written as its exact decimal because a JSON number
+  rounds identities. The landing is a judged emit like any other, and both a
+  refused sentence and a refused seam are handed back in the value rather than
+  costing the caller the run's own answer. Replay reads the fact and re-asks no
+  completion; there is no clock on a trace.
 - `Environment` carries environments as directories: positioned provision
   facts, the greatest-position read that never arbitrates, and
   `fillFrom`, which hands the derived valuation to the program builder's one

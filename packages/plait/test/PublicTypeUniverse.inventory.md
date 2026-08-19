@@ -6,13 +6,13 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 197 public types: 43 derives-from-the-generated-core, 154 debt-with-a-ticket.
+Classified 204 public types: 43 derives-from-the-generated-core, 161 debt-with-a-ticket.
 
 ## Ratchet pins
 
 | Owning prefix | Pinned debt |
 | --- | --- |
-| `carriage` | 30 |
+| `carriage` | 37 |
 | `kernel` | 13 |
 | `planes` | 75 |
 | `truth` | 36 |
@@ -196,6 +196,13 @@ Classified 197 public types: 43 derives-from-the-generated-core, 154 debt-with-a
 | `Resolved.ResolveCacheService` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Resolved.Resolved` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Resolved.ResolvedOf` | `src/planes/Resolved.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
+| `RunTrace.RunTraceFact` | `src/internal/runtraces.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.RunTraceLanding` | `src/internal/runtraces.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.RunTraceRow` | `src/internal/runtraces.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.RunTraceStep` | `src/internal/runtraces.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.TraceLanding` | `src/carriage/RunTrace.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.TraceOptions` | `src/carriage/RunTrace.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
+| `RunTrace.TracedRun` | `src/carriage/RunTrace.ts` | debt-with-a-ticket | `DEV-817` | stage 4: consume the shared generated-core candidate form through KernelDoor |
 | `Session.AnchorPolicy` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Session.DeclaredWrit` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Session.Session` | `src/planes/Session.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |

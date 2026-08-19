@@ -9494,3 +9494,260 @@ holds it emits nothing at all and asserts a 200 with an empty snapshot, which is
 the exact state the run found. **Load-bearing? yes** — it is the difference
 between an empty estate and a broken one, on the first request a practitioner
 ever makes.
+
+## Task: the run steps land as one fact — the engine's execution log on a lane (2026-08-19)
+
+### T0. The landing is a WRAPPING COMBINATOR, not an option on `Engine.run`
+
+Decided: `RunTrace.runTraced(program, options)` runs the program through the
+engine's own `run` and then lands the trace through the engine's own `emit`.
+`Engine.ts` is untouched: no new option on `RunOptions`, no new member on
+`RunOutcome`, no new method on `EngineService`.
+
+Alternatives: an opt-in `land` option on `run`, which the dispatch offered first;
+a `run` variant inside the engine service.
+
+Why the combinator is the least. An option on `run` has to answer for what
+happens when the trace's own emit is refused, and both answers are worse than
+this one. Failing on the error channel would destroy the run's outcome — the
+thing the caller asked for — because a record could not be written, which
+inverts what a record is for. Reporting it in the value means growing
+`RunOutcome`, and `RunOutcome` is the type the replay wall folds and the type
+three arms of the corpus are compared through; every member added there is a
+member every existing arm carries. The combinator needs neither: the run's
+outcome comes back exactly as the engine answered it, the trace comes back
+beside it, and what became of the landing comes back beside both. It is also
+the shape the ticket's own words name — a pure consumer, no new vocabulary —
+and it leaves the engine's walls green by construction rather than by
+re-running them and hoping.
+
+The one thing the combinator gives up is that a caller who wants a trace has to
+ask for one. That is the right default: a trace is a fact that costs a judged
+emit and a stored message, and a runtime that wrote one for every run whether
+or not anybody wanted it would be charging every caller for a record most of
+them do not read. **Load-bearing? yes.**
+
+### T1. The vocabulary lives in `internal/`, and the tree decided it
+
+Decided: the declared event form, the fact schema, and the lane declaration are
+`src/internal/runtraces.ts` (seam: planes); the projection, the combinator, the
+fold, and the read are `src/carriage/RunTrace.ts`.
+
+Re-derived rather than chosen. The read face has to serve this lane — that is
+where the read comes from for free — and `Api.test.ts` holds a wall over
+`src/surface/api.ts`'s own import specifiers: not one of them may contain
+`/carriage/` or name the door. So a lane declaration the face can reach cannot
+live in carriage, and the split follows the two lane vocabularies already in
+the tree, whose carriage half and vocabulary half are held apart for their own
+reasons. What stays in carriage is what needs the engine's own types: the
+projection reads `RunOutcome`, so it belongs beside it.
+
+The direction of the edge matters as much as the placement. `runtraces.ts`
+reaches nothing in carriage, so the trace module imports it and the read face
+imports it and neither imports the other — which is what keeps the write door
+out of the read face's graph while both speak about the same lane.
+**Load-bearing? yes.**
+
+### T2. ONE fact per run, never one per step
+
+Decided: a run lands exactly one trace fact, whatever its node count.
+
+Why: the live per-step story already exists and is a different register. Every
+judgment the engine issues is published on its verdict stream as it happens —
+in process, unaddressed, gone when nobody is listening — and that is FLUX,
+which the epic's law says is transport. A fact per judgment would put that flux
+onto a lane, where the digest of any one row would name a keystroke rather than
+a run, and a reader wanting "what did this run do" would have to reassemble it
+from rows nothing groups. One fact per run is the meaning half of the same law:
+the run as one value, with one digest, reachable by that digest, foldable
+whole. Alternatives: a fact per step (rejected above); a fact per step plus a
+summary fact (two spellings of one run, and the summary would be a twin).
+**Load-bearing? yes.**
+
+### T3. Every unbounded integer travels as its exact decimal, as text
+
+Decided: node names, identity labels, and every atom of an admitted sentence's
+canonical encoding are written into the fact as minimal decimal strings.
+
+Why: they are unbounded naturals, and at this runtime an identity label is a
+256-bit content address read as an integer. A JSON number holds 2^53 exactly
+and no more, so a number would round an identity into a different identity —
+silently, and in the one artifact whose whole purpose is to be quotable. The
+served tool face already renders the same values the same way for the same
+reason, and its comment states it: doubles lose identities. This is a rendering
+and not a second canonical form: the fact's own bytes are RFC 8785 over the
+rendered value, produced by the one canonicalizer like every other fact.
+**Load-bearing? yes.**
+
+### T4. The trace does NOT name the program, and that is a deviation with a reason
+
+Decided: the fact carries the writ, the arm, the stopping node, and the steps.
+It does not carry a program digest, which the dispatch's recommended shape
+named.
+
+Why, and this is a finding rather than a shortcut. The corpus states in the
+declaration's own annotation that a program declaration's canonical bytes ARE
+the program's identity, and the committed program vectors show what those bytes
+are: identity labels written as JSON NUMBERS. At the model's scale that is
+exact, because its labels are small naturals it chose. At this runtime the same
+labels are content addresses, and the number that would carry one does not
+exist. So the model's identity form is not computable here without loss, and
+the only way to name the program in this fact would be to render the
+declaration a SECOND way — exact decimals, as the steps are rendered — and
+digest that. That would be a second identity for a concept the corpus already
+names, which is the first standing law's defect exactly, and it would be a
+particularly bad one: two digests would circulate for one program, and a reader
+could not tell which one a field held.
+
+What is lost is grouping: a reader cannot ask "every run of this program"
+without reading the steps. What is kept is that no field of this fact means two
+things. The follow-on is named rather than forgotten — when the two identity
+scales get their stated map for declarations, the trace gains the name in that
+edit and its route moves visibly, because the route is the digest of the
+declared form. Alternatives: render a second form and digest it (rejected
+above); carry a caller-supplied program address, which would be attribution a
+caller can make say anything, on a field readers would take for identity.
+**Load-bearing? yes.**
+
+### T5. Three arms, one `kind`, discriminated by the outcome word
+
+Decided: the fact is a union of three structs that all carry
+`kind: "engine-run-trace"` and differ in `outcome`, each with the members its
+own arm has: the landed arm's terminal landing, the refused arm's node and
+taught row, the unspeakable arm's node, slot and detail.
+
+Why: it is the model's own spelling of the same thing. `KernelRunOutcome` is a
+union discriminated by an `outcome` literal with per-arm members, and mirroring
+it means a reader who knows one knows the other. It also keeps every arm's key
+set honest — a landed run has no node to name and no row to carry, and a struct
+with five nullable members would let a producer emit an arm shaped like another
+one. The declared event form carries the three field lists, and a wall compares
+each landed arm's key set against them, so a member added to the projection
+without moving the route reddens.
+
+The field is `outcome` and not `verdict`, deliberately: the door's containment
+wall reads source bytes for a `verdict` property assigned a string literal,
+because that is what constructing an admission verdict outside the one door
+looks like. This fact reports which arm a run ended on and constructs no
+verdict; using the model's own word for the arm keeps it that way in the bytes
+as well as in the meaning. **Load-bearing? yes.**
+
+### T6. What became of the landing is its own three-armed fold, over two registers
+
+Decided: `TracedRun` carries the outcome, the trace, and a `TraceLanding` with
+three arms — `carried` with the emission acknowledgement, `refused` with the
+door's taught row, and `unlanded` with the estate refusal.
+
+Why three rather than two. The door refusing a sentence and a seam refusing a
+carriage are different facts with different repairs, and the served tool face
+already rules that the two registers never dress as each other. Merging them
+would leave a reader unable to tell "the language says no to this emit" from
+"the substrate is not answering". Why the seam refusal is caught at all: a
+trace is ancillary evidence, and losing a run's own answer because the record
+could not be written would be the tail wagging the dog — the run happened, and
+the caller asked about the run.
+
+The fold is `Match.tagsExhaustive`, which is the pin's matcher and the right
+one here because this is a union of tagged object types. It is owed no
+compile-time control by the estate's own rule: a control is owed where a union
+can grow without anyone touching the fold, which is the corpus-projected
+vocabularies, and this union is declared in the module that folds it — the
+compiler reports every call site in the same edit that grows it. The three arm
+types are private `Extract`s of the union, exactly as the engine's own outcome
+arms are, so the fold's signature names them without three more public types.
+**Load-bearing? yes.**
+
+### T7. The lane is keyed by the writ, at eight partitions
+
+Decided: `partitionKey: { path: ["writ"] }`, eight declared partitions.
+
+Why the writ: it is the coordinate a run acts under and the one a reader groups
+by, and a partition is the unit that has an order — so keying by the writ means
+one policy's runs land in one sequence and their positions are comparable,
+while two writs' positions come from two sequences and are not. Keying by the
+run would put every run in its own partition-of-one and make the lane's order
+meaningless. Why eight rather than one: one partition would serialize every
+writ's traces into one stream for an ordering nobody asked for, and eight is
+the declared fan-out the estate's other keyed lane already uses. The number
+never affects a single writ's order — its traces share a partition however many
+there are — so it is a spread choice and nothing else. The substrate wall
+measures the claim rather than restating it: two runs under one writ land on
+one partition at consecutive positions. **Load-bearing? yes.**
+
+### T8. The read is the lane read seam's, and `/runs/:writ` is the follow-on
+
+Decided: `RunTrace.traces` is a bounded tail through `LaneReads` and nothing
+else, and the run-trace lane joins the read face's served lane roster so
+`/lanes/:handle` answers it. No new endpoint ships.
+
+Why no second read dialect: the bounded ack-none tail already exists, is
+walled, and is the only read on a lane the estate has. Adding one here would be
+the pump built beside itself.
+
+Why no `/runs/:writ`. The face's own law is that a bounded collection REPORTS
+the bound it was admitted under, so a reader can tell a short answer from a
+clipped one. A writ-scoped endpoint would have to read a partition and then
+filter it, and the bound it could report would name positions READ rather than
+rows ANSWERED — a number that means something different from the same field on
+every other endpoint. Making it honest needs a partition selected from the writ
+without deriving one, and the only site that turns a key into a partition is
+the lane's own, pinned as routing. So the honest cheap thing is what shipped:
+the lane joins the roster, `/lanes/:handle` serves its bounded tail with the
+same discipline as every other lane, and a reader that wants one writ selects
+it from a bounded answer whose bound means what it says. The follow-on is a
+partition read whose bound is stated in the writ's own terms.
+**Load-bearing? yes.**
+
+### T9. The corpus staging moved to a harness, and the replay wall was not touched
+
+Decided: `test/EngineRun.harness.ts` carries the fixture carriers, the corpus
+staging, the relabelling, and the supply translation. `test/EngineReplay.test.ts`
+keeps its own copy and was not edited.
+
+Why: the trace wall executes the same five run vectors the replay wall does,
+and both need every referent a vector's door names declared as a real carrier.
+Sharing the staging is right; editing a green wall to get there is not — the
+replay wall is the fold/replay claim this slice is required to leave standing,
+and a mechanical extraction that goes wrong there costs more than the
+duplication saves. The duplication is a stated finding, not an accident: folding
+the replay wall onto this harness is a follow-on edit whose whole diff is
+imports, and it belongs in a change that is allowed to touch it.
+**Load-bearing? no** — it is a test-tree arrangement.
+
+### T10. The type-universe pin was raised by hand
+
+Recorded: the `carriage` ratchet pin moved from 30 to 37, by hand, under the
+coordinator's dispatch of this ticket. The seven rows are this slice's:
+`RunTraceFact`, `RunTraceLanding`, `RunTraceRow` and `RunTraceStep` from the
+vocabulary module, and `TraceLanding`, `TraceOptions` and `TracedRun` from the
+carriage module — each a Law 1 waiver citing the standing candidate-form
+unification ticket, exactly as the rest of that plane's types do. The three arm
+types of the landing fold are private `Extract`s and cost no row. The `planes`,
+`kernel` and `truth` pins did not move.
+
+### T11. What this slice does NOT do
+
+No trace for a run that refuses on the SEAM. The three arms are the OUTCOME's,
+and a run whose error channel fires never produced one — there is nothing to
+project. That refusal reaches the caller unchanged, and with it goes the prefix
+the outcome arms would have kept: the engine discards steps when it fails on
+the error channel, which is the same divergence the unspeakable arm closed for
+completions and has not been closed for carriage. It is stated here as a
+finding rather than repaired, because changing what the engine's error channel
+carries is an engine ruling with its own ticket.
+
+No trace for a run that dies mid-walk. The fact is written after the walk
+reaches an outcome, so a process that is killed halfway leaves nothing on the
+lane. What exists for a run in progress is the verdict stream, which is flux
+and is not durable — a durable in-progress journal would be the per-step
+landing this slice's own law refuses.
+
+No bound on trace size beyond the carrier's. A run with enough nodes to exceed
+the inline payload budget refuses at the emit and is reported on the seam arm;
+nothing truncates a trace, because a truncated trace read as a whole one would
+understate a run exactly as a truncated chain understates a history.
+
+No writ-scoped read, no program name, and no replay executor. The first two are
+T8 and T4. The third is the doctrine's other half stated but not built: the
+fact carries every admitted sentence's encoding and every landing's identity,
+which is what a replay needs, and the reader that walks one is its own slice.

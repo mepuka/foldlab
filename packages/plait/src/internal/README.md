@@ -74,6 +74,16 @@ admitted by the envelope digest over the fetched octets before anything decodes
 it, and nothing reads the substrate's stored timestamp: a row carries its
 position, its identity, its holder, and its fact.
 
+`runtraces.ts` is the run-trace vocabulary and its route: the declared event
+form whose digest is the lane's handle, the fact shape one program run projects
+into, and the lane declaration itself, keyed by the writ so one policy's runs
+never separate across partitions. It lands nothing — landing a trace is a judged
+emit through the one door and belongs where the engine is reached — and it
+reaches no carriage module, which is what lets both the engine's trace projection
+and the read face consume it without the read face reaching the engine's
+neighbourhood at all. The three arms share one `kind` and are told apart by the
+outcome word, exactly as the model's own run outcome is.
+
 `incarnations.ts` is the REFERENCE side of the substrate's own lifecycle
 vocabulary — the store, the incarnation, the round a start competes at, and the
 facts a run leaves: established, lame-duck, retired, and the teardown
