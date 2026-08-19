@@ -20,6 +20,17 @@ not an edge in the module graph. Regenerate with
 one render, and it carries each spelling's ancestry, with a corpus miss named
 as `DEV-804` staged debt.
 
+"Exactly one canonicalizer" is enforced, not asserted. `bun run
+check:one-canonicalizer` reads every module under `src/` and refuses a retired
+twin's path, a retired twin's name, or the canonicalizer signature — a member
+sort beside a JSON serializer — anywhere but `Canonical.ts`, and `bun run
+check:one-canonicalizer-control` plants the committed twin
+(`../../negative-controls/OneCanonicalizer.private-twin.mutant.ts`) at the
+retired path, requires both arms to go red, and restores the tree. The twins
+this plane carried until DEV-804 slice C — `CanonicalJson.ts` and
+`SchemaCanonical.ts` — were justified only by a number-domain divergence the
+operator closed on 2026-08-18 (DEV-807).
+
 Walls: `bun run check:kernel-tables` regenerates both halves and byte-compares
 them. `bun run check:refusal-vocabulary` reads the union out of this module's
 source bytes, the model's refusal reasons out of the fixture's bytes, and the

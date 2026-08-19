@@ -28,7 +28,18 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
 ## Scoped laws
 
 - `Canonical.ts` delegates to `@foldlab/core/jcs`. There is one RFC 8785
-  canonicalizer; never add or copy another.
+  canonicalizer; never add or copy another. That is a wall now, not an
+  exhortation: `check:one-canonicalizer` scans every module under `src/` for a
+  retired twin's path, a retired twin's name, or the canonicalizer signature (a
+  member sort beside a JSON serializer), and `check:one-canonicalizer-control`
+  plants the committed twin at
+  `negative-controls/OneCanonicalizer.private-twin.mutant.ts` into `src/truth/`,
+  requires the scan to go red on both arms, and restores the tree. The private
+  twins this package carried until DEV-804 slice C
+  (`truth/CanonicalJson.ts`, `truth/SchemaCanonical.ts`) existed because the
+  seam's number domain and the kernel corpus's disagreed; the operator ruling
+  of 2026-08-18 (DEV-807) moved the estate number domain into the seam and
+  removed the excuse.
 - Envelope identity is SHA-256 over canonical, uncompressed bytes. Compression,
   framing, storage, and chunking are transport only and never move identity.
 - The inline/blob threshold is pinned against a MEASURED `max_payload`, never a
