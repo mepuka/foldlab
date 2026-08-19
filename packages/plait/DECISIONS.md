@@ -8785,3 +8785,53 @@ under the standing staged-debt waiver, and this slice mints no generated
 artifact. No lockstep model oracle, and no refinement map between this fold and
 the substrate model's run function — the model gate proves the machine, this
 suite executes a walk over it, and neither is claimed to be the other.
+
+## Task: three findings from the connection-fold landing — the presence fold, the emission singleton, and the lame-duck twin (2026-08-19)
+
+Three small findings raised by the connection-fold landing (DEV-890, DEV-891,
+DEV-892), worked as one batch. All three preserve behaviour by construction: no
+refusal kind moved, no law text moved, no served byte moved, and the only gate
+line that moved is the one a new control adds.
+
+### T0. The presence contribution folds through the pin's discriminator matcher
+
+Decided: `internal/presence.ts`'s `presenceContribution.apply` is
+`Match.type<SessionFact>()` piped through `Match.withReturnType<PresenceState>()`
+and `Match.discriminatorsExhaustive("kind")`, one arm per declared variant, with
+no default and no fallthrough. Alternatives: leave the ternary chain; use a
+mapped arm record keyed by the kind literal.
+
+Why the discriminator matcher and not the arm record: the scoped law splits the
+two by the shape of the union. `SessionFact` is a union of tagged OBJECT types,
+which is where the pin's matcher belongs and where the sibling connection fold
+already uses it; the arm record is for one type whose field carries many
+literals, and the matcher would narrow every arm of such a union to the empty
+type. Same discipline, two shapes, two spellings.
+
+`withReturnType` is what makes the arms load-bearing rather than merely present.
+Without it the arms infer `v: number` and `kind: string` and the shape is caught
+only at the assignment to `Contribution<SessionFact, PresenceState>`, which names
+the record and not the arm; with it, each arm is contextually typed by the state
+and a wrong shape is reported where it was written.
+
+**Load-bearing? no** for behaviour — the ternary and the fold agree on every
+variant, and the four presence controls print the same four lines before and
+after. **Yes** for what it exposed: the ternary's trailing branch was silently
+absorbing the fifth variant, and the module's own prose still said "two of the
+four session facts" over a five-variant union. The fold turns the fifth into an
+arm, and the prose now says five.
+
+### T1. No compile-time control is owed for this fold, and the absence was executed rather than argued
+
+Decided: `check:matcher-control` gains no arm for the presence contribution.
+
+The scoped law owes a compile-time control only where a union can GROW WITHOUT
+ANYONE TOUCHING THE FOLD — the corpus-projected vocabularies — because only
+there can a variant arrive in a regeneration that edits no call site.
+`SessionFact` is a hand-written union declared one module away, so a variant
+appended to it is a missing arm the compiler reports at this call site in the
+same edit that grew it. The claim was measured rather than asserted: deleting
+the drain-disposition arm and running the package typecheck refuses with the
+missing key named, and the arm was restored from a byte copy rather than
+retyped. **Load-bearing? no** — it records why the absence of a control is
+lawful here and would not be lawful over a generated vocabulary.
