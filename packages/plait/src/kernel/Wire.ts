@@ -141,9 +141,6 @@ export interface DecodedEnvelope {
   readonly digest: DigestValue
 }
 
-/** The constrained envelope computation and its structural error channel. */
-export type EnvelopeDecode = Effect.Effect<DecodedEnvelope, StructuralRefusal>
-
 const closedEnvelopeLaw =
   "Envelope v0 is a closed struct; excess properties are refused."
 const envelopeShapeLaw =

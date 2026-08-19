@@ -5193,3 +5193,40 @@ is to fail the CHECKER, and a probe that cannot mutate proves nothing about
 it). **Load-bearing? yes** — it restores the surfaces wall's falsifiability,
 and it is the session's second executed lesson that battery exits are read
 unmasked.
+
+### T25. Task DEV-852 slice A — the minimality pass: dead surface deleted, scaffolding leaves the barrel
+
+Decided: the kernel family's public surface shrinks to what something
+actually reads. Four names were commissioned for deletion and two were
+deleted: `Subjects.SubjectResult` and `Wire.EnvelopeDecode`, each a bare
+`Effect.Effect<…, StructuralRefusal>` alias whose only two occurrences in the
+tree were its own declaration and its debt row in the type-universe ledger —
+no importer, no test, no wall. The other two were REFUSED, and the refusal is
+the finding: `KernelDoor.Act` and `KernelDoor.DoorContext` have no
+TypeScript importer, but `DOOR_FORM_ROLES` in the one-door containment script
+requires the door to export the bindings `Candidate`, `Act`, and
+`DoorContext`, and refuses by name when a role's binding is missing. They are
+not dead surface; they are the contract `check:kernel-door` reads off the
+door's own bytes ("3 generated form roles"). Deleting them would have failed
+the wall, and the wall would have been right. Five self-used-only functions
+became module-private instead of deleted — `rankToKind`, `rankToStage`,
+`encodePredicate`, `decodePredicate`, `canonicalValue` — each verified to
+have callers only inside `KernelDoor.ts`; the code stays, the export goes,
+and the door's public surface is `admit`, `make`, `encodeAct`, `decodeAct`,
+and the generated form. `ContextProgram` leaves the barrel: it declares
+shapes and an order with no assembly executor (T22 above, and the module's own
+header says scaffolding only), it has no consumer under `src/`, and its test
+imports the module directly. The price is exact and paid knowingly: there is
+no public context-program surface until the F7 corpus lands, so a host that
+wants those shapes reaches the subpath export rather than the barrel. The
+module file, its subpath entry, and its test are untouched, so the F7 work
+re-exports one line when it arrives. Alternatives: keep the six ledger rows
+and let the generator absorb them later (the honest end state, but it prices
+six rows of hand-written debt against a corpus group nobody has scheduled, and
+the operator's minimal-API commission of this session says a public name earns
+its place by being read); deleting the module outright (throws away the shapes
+F7 is specified against). Ledger movement: 190 public types → 182, debt 150 →
+142, and the kernel ratchet pin fell 20 → 12 under `--write`. No pin rose.
+**Load-bearing? yes** — it is the record of which kernel names are public
+because something reads them, and the standing evidence that the door's three
+form bindings are wall contract rather than dead consts.

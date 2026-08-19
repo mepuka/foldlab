@@ -96,19 +96,19 @@ const kindRank = (kind: KernelDeclKind): bigint => BigInt(KERNEL_DECL_KINDS.inde
 const stageRank = (stage: KernelHoleStage): bigint => BigInt(KERNEL_HOLE_STAGES.indexOf(stage))
 
 /** The decode half of the kind rank. */
-export const rankToKind = (rank: bigint): KernelDeclKind | undefined =>
+const rankToKind = (rank: bigint): KernelDeclKind | undefined =>
   rank < 0n || rank >= BigInt(KERNEL_DECL_KINDS.length)
     ? undefined
     : KERNEL_DECL_KINDS[Number(rank)]
 
 /** The decode half of the hole-stage rank. */
-export const rankToStage = (rank: bigint): KernelHoleStage | undefined =>
+const rankToStage = (rank: bigint): KernelHoleStage | undefined =>
   rank < 0n || rank >= BigInt(KERNEL_HOLE_STAGES.length)
     ? undefined
     : KERNEL_HOLE_STAGES[Number(rank)]
 
 /** The canonical framing of a lawful trigger predicate. */
-export const encodePredicate = (
+const encodePredicate = (
   predicate: KernelTriggerPredicate,
 ): ReadonlyArray<bigint> => {
   switch (predicate._tag) {
@@ -131,7 +131,7 @@ export const encodePredicate = (
 }
 
 /** The decode half of the trigger framing. */
-export const decodePredicate = (
+const decodePredicate = (
   tag: bigint,
   a: bigint,
   b: bigint,
@@ -275,7 +275,7 @@ const atomWeight = (argument: KernelRawArg): bigint => {
 }
 
 /** The model canonicalizer for a candidate payload, over unbounded naturals. */
-export const canonicalValue = (arguments_: ReadonlyArray<KernelRawArg>): bigint => {
+const canonicalValue = (arguments_: ReadonlyArray<KernelRawArg>): bigint => {
   let accumulator = 7n
   for (const argument of arguments_) {
     accumulator = accumulator * 1_000_003n + atomWeight(argument)
