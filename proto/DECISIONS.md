@@ -3321,3 +3321,62 @@ the corpus vector round-trip, the safe-integer boundary from both sides,
 and the refused RFC rounding. **Load-bearing? yes** — the TS ≡ Go
 differential wall byte-compares both implementations over the seeded and
 fuzzed number lanes, and reverting either side's number rule reds it.
+
+## DEV-801 (cross-harness skill absorption, made structural)
+
+### D??. Skills' canonical home is `.agents/skills/`, relocated, not dual-homed
+
+Decided: the three estate skills move from `.claude/skills/<name>/` to
+`.agents/skills/<name>/` — the ONE canonical copy (references included), a
+migration (git mv) that edits no teaching material. Per-harness discovery,
+measured and documented: opencode discovers `.agents/skills/` natively
+(measured this run: opencode advertises the `.claude` and `.agents` project
+skill sources alike), codex and pi discover `.agents/skills/` natively
+(documented), and antigravity and cursor reach the skills through AGENTS.md
+(the cross-tool rules file both read natively). Alternatives: dual-home in
+`.claude/skills/` too, as real files or as a generation step. Refused:
+symlinks are the ticket-named Windows refusenik; real duplicate files drift
+and opencode advertises BOTH `.claude/skills` and `.agents/skills`, so a
+skill in each would show up twice to the one harness this ticket runs on
+(native duplication is worse than a clean move). Why: `.agents/skills/` is
+the cross-agent convention the vendored `repos/effect` already uses, it is
+native to three of the ticket's five harnesses, and AGENTS.md already
+nominated it as the boarded destination. Cost, stated: codex, pi, and
+opencode get native discovery; Claude (not in this ticket's fleet) loses its
+`.claude` auto-discovery and now reaches the skills through the AGENTS.md
+section, which this ticket's wall pins. **Load-bearing? yes** — every seat
+finds the skills by the path this decides.
+
+### D??. The wall is a root `scripts/` check wired into the battery
+
+Decided: the roster wall lives at `scripts/check-skills.ts`, run by
+`bun run gates` as two stages ("skills — roster agreement" and "skills —
+roster-agreement control" via `--self-test`), with its refusals pinned in
+`scripts/skills-control.trace.txt`. Alternatives: `packages/plait/scripts/`
+(the sibling checks' home). Why: the contract this wall reads is repo-level
+(AGENTS.md + `.agents/skills/`), not a plait package seam, so it belongs with
+the root scripts that host the other repo-level walls (`check-laws.ts`); the
+plait checks stay where their package's tests stage them. The wall's decision
+function is pure and separately exercised by a `--self-test` arm that replays
+a mutated AGENTS.md section and `.agents/skills/` tree in a temp dir, drops
+exactly one law per mutant (the ticket's named control — a skill left on disk
+but dropped from the section — plus steering-to-missing, missing SKILL.md,
+missing manifest, and an emptied section), requires each to refuse with a
+pinned trace, and asserts a lawful roster is accepted so the machinery cannot
+refuse everything. **Load-bearing? yes** — the ticket's evidence of done is
+this check green in the battery with its mutated control executed.
+
+### D??. Per-tool manifests are codex `agents/openai.yaml`, content stays out
+
+Decided: each skill carries `.agents/skills/<name>/agents/openai.yaml` in the
+codex shape the vendored `repos/effect` uses (interface display/short
+description/default prompt + policy allow_implicit_invocation), whose prose
+is distilled from each skill's own description, not new teaching. Alternatives:
+no manifest (codex still discovers SKILL.md, but the ticket names the manifest
+at minimum); a manifest split by more tools. Why: codex consumes the
+manifest; opencode, pi, antigravity, and cursor do not, so one manifest shape
+covers the runtime that needs it without minting per-tool flavours that
+nothing consumes. The wall requires each steered skill to carry a present,
+non-empty manifest, and states the bound: it does not diff manifest prose
+against SKILL.md — that is review territory. **Load-bearing? maybe** — the
+manifest is additive metadata; the roster wall would still hold without it.

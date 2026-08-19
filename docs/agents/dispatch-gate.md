@@ -26,7 +26,7 @@ dispatch; they are reasons to write a research note.
 ## The admission test rides every public-surface ticket, verbatim
 
 The operator-authored API skill
-(`.claude/skills/estate-api-development/`) rules the mechanism: seats
+(`.agents/skills/estate-api-development/`) rules the mechanism: seats
 don't load skills — the ticket text is how the discipline reaches
 them. A ticket touching any public surface carries that skill's
 six-question admission test pasted verbatim into its body, plus the

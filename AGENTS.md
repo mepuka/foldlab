@@ -69,25 +69,35 @@ archived all off-path work at tag `archive/pre-estate-focus`
 ## Skills — read as documents, every harness
 
 Three estate skills carry the teaching material behind the standing
-laws. They live at `.claude/skills/<name>/SKILL.md` with references
-beside them — a path only the Claude harness auto-discovers, so every
-other seat (codex, pi, cursor, antigravity, opencode) MUST read them as
-ordinary files when the trigger below matches. Not optional: reviews
-already judge against the laws these teach, and misadherence to the API
-discipline is a high-severity finding.
+laws. Their canonical home is `.agents/skills/<name>/SKILL.md` (with
+references beside it) — the cross-agent convention the vendored
+`repos/effect` already uses, so codex, pi, and opencode discover them
+natively; antigravity and cursor reach them through this section, which
+the wall below keeps honest. Every seat, harness native or not, reads a
+skill as an ordinary file when the trigger below matches. Not optional:
+reviews already judge against the laws these teach, and misadherence to
+the API discipline is a high-severity finding.
 
-- `.claude/skills/architecture-to-algebra/` — mapping any system or
+The absorption is mechanical, not prose-held. `bun run gates` runs
+`scripts/check-skills.ts`, which pins this section's roster against the
+on-disk skill set and their per-tool `agents/openai.yaml` manifests in
+BOTH directions: a skill added on disk without a row here, or a row
+pointing at a missing or incomplete skill, reddens the battery. The
+check's own `--self-test` arm replays a mutated section and disk set
+and refuses, so the wall cannot quietly stop failing.
+
+- `.agents/skills/architecture-to-algebra/` — mapping any system or
   feature onto the algebra: truth plane, directory plane, fences, the
   fold table with rungs and carriers, coalgebras. Read before designing
   or re-deriving any service, capability, or data flow; its
   `references/` carry the generators, the planes ladder, and worked
   examples.
-- `.claude/skills/estate-api-development/` — the API discipline: every
+- `.agents/skills/estate-api-development/` — the API discipline: every
   public surface is a projection of the one algebra core, generated not
   hand-written, judged by the one door, idiomatic Effect throughout.
   Read before designing, building, or reviewing ANY public surface,
   tool schema, CLI command, or wire format.
-- `.claude/skills/verified-codegen/` — generation that cannot silently
+- `.agents/skills/verified-codegen/` — generation that cannot silently
   lie: emitters, generated types/schemas, conformance corpora,
   canonical formats, gates. Read before building any generator,
   checker, fixture, or cross-language projection; its `references/`
@@ -95,10 +105,7 @@ discipline is a high-severity finding.
 
 Board acts have their own gate: `docs/agents/dispatch-gate.md` binds
 cutting and dispatch; `docs/agents/issue-tracker.md` is the tracker
-contract. Relocation of the skills to the cross-agent `.agents/skills/`
-convention (as the vendored `repos/effect` already does, with per-tool
-manifests) is board-tracked; until it lands, this section is the
-absorption path.
+contract.
 
 ## Read first
 

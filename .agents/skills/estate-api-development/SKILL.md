@@ -79,7 +79,7 @@ their citations before applying the test to unfamiliar territory.
 
 When authoring a board ticket that touches any public surface, paste
 the admission test into the ticket description and cite this skill's
-path (`.claude/skills/estate-api-development/`) plus the current
+path (`.agents/skills/estate-api-development/`) plus the current
 authorities: the kernel algebra record's one-AST section, the
 projections (`verify/kernel/projections/`), and the plane-reorg spec.
 Seats don't load skills — the ticket text is how the discipline
