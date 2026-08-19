@@ -1,0 +1,86 @@
+### label:   ob5-ctrl-nofresh
+### started: 2026-08-19T12:20:14Z
+### jar:     tools/apalache-0.61.0/lib/apalache.jar  sha256 33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346
+### java:    openjdk version "21.0.2" 2024-01-16
+### cmd:     java -jar apalache.jar check --config=CatalogInd.cfg --init=IndInitSansFreshness --inv=Convergence --length=1 CatalogInd.tla
+### -----------------------------------------------------------
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-20-16_2601480216197634175
+# APALACHE version: 0.61.0 | build: 831d473                       I@07:20:16.219
+  > CatalogInd.cfg: Loading TLC configuration                     I@07:20:16.221
+  > Using next predicate(s) Next from the TLC config              I@07:20:16.285
+checker.init overrides the value from the TLC configuration.      W@07:20:16.288
+Tuning:                                                           I@07:20:16.289
+PASS #0: SanyParser                                               I@07:20:16.435
+PASS #1: TypeCheckerSnowcat                                       I@07:20:16.803
+ > Running Snowcat .::.                                           I@07:20:16.809
+ > Your types are purrfect!                                       I@07:20:17.720
+ > All expressions are typed                                      I@07:20:17.720
+PASS #2: ConfigurationPass                                        I@07:20:17.720
+  > CatalogInd.cfg: found INVARIANTS: Convergence                 I@07:20:18.004
+  > Set the initialization predicate to IndInitSansFreshness      I@07:20:18.004
+  > Set the transition predicate to Next                          I@07:20:18.004
+  > Set the constant initialization predicate to CInit            I@07:20:18.004
+  > Set an invariant to Convergence                               I@07:20:18.004
+PASS #3: DesugarerPass                                            I@07:20:18.004
+  > Desugaring...                                                 I@07:20:18.004
+PASS #4: InlinePass                                               I@07:20:18.037
+Leaving only relevant operators: CInit, CInitPrimed, Convergence, IndInitSansFreshness, IndInitSansFreshnessPrimed, Next I@07:20:18.037
+PASS #5: TemporalPass                                             I@07:20:18.142
+  > Rewriting temporal operators...                               I@07:20:18.142
+  > No temporal property specified, nothing to encode             I@07:20:18.142
+PASS #6: InlinePass                                               I@07:20:18.142
+Leaving only relevant operators: CInit, CInitPrimed, Convergence, IndInitSansFreshness, IndInitSansFreshnessPrimed, Next I@07:20:18.142
+PASS #7: PrimingPass                                              I@07:20:18.160
+  > Introducing CInitPrimed for CInit'                            I@07:20:18.165
+  > Introducing IndInitSansFreshnessPrimed for IndInitSansFreshness' I@07:20:18.165
+PASS #8: VCGen                                                    I@07:20:18.166
+  > Producing verification conditions from the invariant Convergence I@07:20:18.167
+  > VCGen produced 2 verification condition(s)                    I@07:20:18.185
+PASS #9: PreprocessingPass                                        I@07:20:18.187
+  > Before preprocessing: unique renaming                         I@07:20:18.187
+ > Applying standard transformations:                             I@07:20:18.222
+  > PrimePropagation                                              I@07:20:18.222
+  > Desugarer                                                     I@07:20:18.224
+  > UniqueRenamer                                                 I@07:20:18.224
+  > Normalizer                                                    I@07:20:18.240
+  > SetMembershipSimplifier                                       I@07:20:18.250
+  > Keramelizer                                                   I@07:20:18.251
+  > After preprocessing: UniqueRenamer                            I@07:20:18.268
+PASS #10: TransitionFinderPass                                    I@07:20:18.286
+  > Found 1 initializing transitions                              I@07:20:18.351
+  > Found 7 transitions                                           I@07:20:18.370
+  > Found constant initializer CInit                              I@07:20:18.370
+  > Applying unique renaming                                      I@07:20:18.375
+PASS #11: OptimizationPass                                        I@07:20:18.384
+ > Applying optimizations:                                        I@07:20:18.399
+  > ConstSimplifier                                               I@07:20:18.399
+  > ExprOptimizer                                                 I@07:20:18.411
+  > SetMembershipSimplifier                                       I@07:20:18.424
+  > ConstSimplifier                                               I@07:20:18.433
+PASS #12: AnalysisPass                                            I@07:20:18.443
+ > Marking skolemizable existentials and sets to be expanded...   I@07:20:18.451
+  > Skolemization                                                 I@07:20:18.451
+  > Expansion                                                     I@07:20:18.451
+  > Remove unused let-in defs                                     I@07:20:18.451
+ > Running analyzers...                                           I@07:20:18.468
+  > Introduced expression grades                                  I@07:20:18.478
+PASS #13: BoundedChecker                                          I@07:20:18.478
+State 0: Checking 2 state invariants                              I@07:20:36.216
+State 0: state invariant 0 holds.                                 I@07:20:38.505
+State 0: state invariant 1 holds.                                 I@07:22:12.418
+Step 0: picking a transition out of 1 transition(s)               I@07:22:12.469
+State 1: Checking 2 state invariants                              I@07:22:19.358
+Check the trace in: C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-20-16_2601480216197634175\violation1.tla, C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-20-16_2601480216197634175\MCviolation1.out, C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-20-16_2601480216197634175\violation1.json, C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-20-16_2601480216197634175\violation1.itf.json I@07:22:25.196
+State 1: state invariant 0 violated.                              I@07:22:25.196
+Found 1 error(s)                                                  I@07:22:25.258
+The outcome is: Error                                             I@07:22:25.529
+Checker has found an error                                        I@07:22:25.579
+It took me 0 days  0 hours  2 min  9 sec                          I@07:22:25.579
+Total time: 129.357 sec                                           I@07:22:25.579
+EXITCODE: ERROR (12)
+### -----------------------------------------------------------
+### exit code: 12
+### wall clock: 131s

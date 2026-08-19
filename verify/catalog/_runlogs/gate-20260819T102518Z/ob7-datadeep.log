@@ -1,0 +1,100 @@
+### label:   ob7-datadeep
+### started: 2026-08-19T12:34:32Z
+### jar:     tools/apalache-0.61.0/lib/apalache.jar  sha256 33611081942d392646af60993c599907f1f41752fce4a62304dbf9e2cdad4346
+### java:    openjdk version "21.0.2" 2024-01-16
+### cmd:     java -jar apalache.jar check --config=CatalogInd.cfg --init=IndInitDataDeep --inv=IndInv --length=1 CatalogInd.tla
+### -----------------------------------------------------------
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: C:\Users\kokok\Dev\foldlab\.claude\worktrees\agent-af02de288306fa248\verify\catalog\_apalache-out\CatalogInd.tla\2026-08-19T07-34-34_17594712875578217994
+# APALACHE version: 0.61.0 | build: 831d473                       I@07:34:34.740
+  > CatalogInd.cfg: Loading TLC configuration                     I@07:34:34.744
+  > Using next predicate(s) Next from the TLC config              I@07:34:34.800
+checker.init overrides the value from the TLC configuration.      W@07:34:34.800
+Tuning:                                                           I@07:34:34.800
+PASS #0: SanyParser                                               I@07:34:34.951
+PASS #1: TypeCheckerSnowcat                                       I@07:34:35.314
+ > Running Snowcat .::.                                           I@07:34:35.317
+ > Your types are purrfect!                                       I@07:34:36.237
+ > All expressions are typed                                      I@07:34:36.237
+PASS #2: ConfigurationPass                                        I@07:34:36.243
+  > CatalogInd.cfg: found INVARIANTS: IndInv                      I@07:34:36.524
+  > Set the initialization predicate to IndInitDataDeep           I@07:34:36.526
+  > Set the transition predicate to Next                          I@07:34:36.528
+  > Set the constant initialization predicate to CInit            I@07:34:36.528
+  > Set an invariant to IndInv                                    I@07:34:36.528
+PASS #3: DesugarerPass                                            I@07:34:36.530
+  > Desugaring...                                                 I@07:34:36.530
+PASS #4: InlinePass                                               I@07:34:36.556
+Leaving only relevant operators: CInit, CInitPrimed, IndInitDataDeep, IndInitDataDeepPrimed, IndInv, Next I@07:34:36.556
+PASS #5: TemporalPass                                             I@07:34:36.669
+  > Rewriting temporal operators...                               I@07:34:36.669
+  > No temporal property specified, nothing to encode             I@07:34:36.669
+PASS #6: InlinePass                                               I@07:34:36.669
+Leaving only relevant operators: CInit, CInitPrimed, IndInitDataDeep, IndInitDataDeepPrimed, IndInv, Next I@07:34:36.669
+PASS #7: PrimingPass                                              I@07:34:36.685
+  > Introducing CInitPrimed for CInit'                            I@07:34:36.685
+  > Introducing IndInitDataDeepPrimed for IndInitDataDeep'        I@07:34:36.685
+PASS #8: VCGen                                                    I@07:34:36.685
+  > Producing verification conditions from the invariant IndInv   I@07:34:36.685
+  > VCGen produced 14 verification condition(s)                   I@07:34:36.702
+PASS #9: PreprocessingPass                                        I@07:34:36.725
+  > Before preprocessing: unique renaming                         I@07:34:36.725
+ > Applying standard transformations:                             I@07:34:36.754
+  > PrimePropagation                                              I@07:34:36.754
+  > Desugarer                                                     I@07:34:36.756
+  > UniqueRenamer                                                 I@07:34:36.756
+  > Normalizer                                                    I@07:34:36.779
+  > SetMembershipSimplifier                                       I@07:34:36.795
+  > Keramelizer                                                   I@07:34:36.805
+  > After preprocessing: UniqueRenamer                            I@07:34:36.820
+PASS #10: TransitionFinderPass                                    I@07:34:36.844
+  > Found 1 initializing transitions                              I@07:34:36.903
+  > Found 7 transitions                                           I@07:34:36.919
+  > Found constant initializer CInit                              I@07:34:36.924
+  > Applying unique renaming                                      I@07:34:36.924
+PASS #11: OptimizationPass                                        I@07:34:36.943
+ > Applying optimizations:                                        I@07:34:36.957
+  > ConstSimplifier                                               I@07:34:36.957
+  > ExprOptimizer                                                 I@07:34:36.975
+  > SetMembershipSimplifier                                       I@07:34:36.992
+  > ConstSimplifier                                               I@07:34:36.992
+PASS #12: AnalysisPass                                            I@07:34:37.003
+ > Marking skolemizable existentials and sets to be expanded...   I@07:34:37.022
+  > Skolemization                                                 I@07:34:37.022
+  > Expansion                                                     I@07:34:37.022
+  > Remove unused let-in defs                                     I@07:34:37.036
+ > Running analyzers...                                           I@07:34:37.039
+  > Introduced expression grades                                  I@07:34:37.059
+PASS #13: BoundedChecker                                          I@07:34:37.059
+State 0: Checking 14 state invariants                             I@07:34:51.884
+State 0: state invariant 0 holds.                                 I@07:34:53.700
+State 0: state invariant 1 holds.                                 I@07:34:57.621
+State 0: state invariant 2 holds.                                 I@07:35:11.388
+State 0: state invariant 3 holds.                                 I@07:37:08.304
+State 0: state invariant 4 holds.                                 I@07:37:10.154
+State 0: state invariant 5 holds.                                 I@07:37:16.476
+State 0: state invariant 6 holds.                                 I@07:37:16.493
+State 0: state invariant 7 holds.                                 I@07:37:28.123
+State 0: state invariant 8 holds.                                 I@07:37:56.470
+State 0: state invariant 9 holds.                                 I@07:38:00.088
+State 0: state invariant 10 holds.                                I@07:38:02.600
+State 0: state invariant 11 holds.                                I@07:39:33.966
+State 0: state invariant 12 holds.                                I@07:40:04.613
+State 0: state invariant 13 holds.                                I@07:43:13.154
+Step 0: picking a transition out of 1 transition(s)               I@07:43:13.204
+State 1: Checking 3 state invariants                              I@07:43:20.410
+State 1: state invariant 5 holds.                                 I@07:43:28.851
+State 1: state invariant 9 holds.                                 I@07:43:35.690
+State 1: state invariant 13 holds.                                I@07:46:24.217
+State 1: Checking 10 state invariants                             I@07:46:31.916
+State 1: state invariant 0 holds.                                 I@07:46:47.575
+State 1: state invariant 2 holds.                                 I@07:46:59.101
+State 1: state invariant 3 holds.                                 I@07:49:23.031
+State 1: state invariant 4 holds.                                 I@07:49:32.402
+State 1: state invariant 5 holds.                                 I@07:49:44.946
+State 1: state invariant 9 holds.                                 I@07:49:52.223
+State 1: state invariant 10 holds.                                I@07:50:08.984
+State 1: state invariant 11 holds.                                I@07:52:14.867
+State 1: state invariant 12 holds.                                I@07:53:17.632
