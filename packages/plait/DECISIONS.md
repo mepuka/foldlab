@@ -5967,3 +5967,207 @@ the spine directly would have hit the dead binding rather than a stack trace
 anyone could read. Splitting by seam rank rather than by resemblance is what the
 layering law already asks for, and the split says so in both module headers.
 **Load-bearing? yes.**
+
+## Task: the daemon takes its first breath (estate-daemon S4, 2026-08-19)
+
+Placeholders `T33`–`T37` continue the series; repository D-numbers are assigned
+at merge. The specification is the estate-daemon spec's slice S4 and its
+lifecycle contract, under the operator's daemon commission of 2026-08-19. The
+code this slice lands is in the Go module rather than in this package, and the
+entries live here because the daemon track's earlier entries do: a decision log
+split across two files by which language happened to hold the code is a log
+nobody reads whole. What lands in this package is one test-only process — the
+far side of the differential — and nothing under `src/`.
+
+Two pins the specification leaves open stay open and are NOT resolved here: the
+values the connect and server options should be pinned to, and the schema for
+the full declared option set. Both are named in the slice's own limits as a
+later slice's, and this slice reads a declared value rather than defining what
+one may say.
+
+### T33. The daemon is a package in the Go module, beside the substrate rather than inside it
+
+Decided: the daemon lands as a library package in the Go module with its wall
+as a sibling command — the shape that module's existing walls already take. The
+graduation map named that destination and nothing occupied it.
+
+Alternatives, priced. Growing it inside the substrate-assumption package: that
+directory is tests only and holds no shipped Go file at all, so promoting its
+harness into it would have made an assumption gate own production lifecycle
+code, and a red there would then mean either "an assumption moved" or "the
+daemon broke". Growing it inside the journal package: the lanes are journal
+lanes and the daemon uses them, but a lane package that also owns a server's
+lifecycle is two seams at one name. Making it a command with no library: the
+wall needs the package and so will the supervisor slice, and a command's
+internals are reachable by nobody. **Load-bearing? no** — it is a placement
+decision with a cheap reversal, recorded because the map named a destination
+and the seat should say it went there.
+
+The substrate harness's pattern is ADOPTED rather than rebuilt: options value →
+construct → start on a goroutine → readiness gate → in-process connection →
+teardown on release is exactly what that harness proves, and this package is
+that pattern promoted from test-only scaffolding to owned code with the health
+read added. The lanes are the journal package's, the canonical bytes are the
+canonical package's, and the register package is untouched — the incarnation
+register is the next slice's.
+
+### T34. The Go fold is a transcription with a byte-compare wall, never a twin
+
+Decided: the Go side restates the roster, the three groups, and the folded
+value's shape from the TypeScript spine's fold, and the wall that makes the
+restatement honest is a byte comparison across the language boundary rather
+than two tables agreeing by inspection. The spine's fold is the REFERENCE: a
+divergence the wall exposes is a defect on the Go side, and reconciling one by
+moving the reference is refused on sight.
+
+The Go side folds into the JSON domain — the maps and slices the canonicalizer
+already speaks — rather than into Go structs with tags. Structs would have read
+better and would have put a second encoder on the meaning path: the field order
+would then be the struct's and the omission rule would be the tag's, and both
+are exactly what RFC 8785 exists to take away from the author. Folding into the
+domain the canonicalizer accepts means the bytes are the canonicalizer's
+opinion and nobody else's.
+
+Alternatives, priced. Generating the Go fold from the corpus: right, and not
+available — the emitter has no substrate-vocabulary group yet, which is the
+staged debt the reference itself wears. Sharing one implementation by having
+the daemon call the TypeScript spine: that inverts the topology the commission
+adopted, since lifecycle authority cannot cross into a client-only ecosystem.
+Comparing digests only rather than bytes: cheaper to print and strictly weaker,
+because a digest disagreement says two things differ and a byte disagreement
+says which field. **Load-bearing? yes** — the transcription is the whole risk
+this slice takes on, and the byte compare is the only thing that makes it
+survivable.
+
+### T35. Two group-one rows are not reachable from options and registration, and the bound is stated rather than papered over
+
+Decided: the daemon's options-and-registration carriage takes two inputs that
+phrase does not name, both measured rather than assumed, and the differential's
+residual says so.
+
+The first is the server's public exchange key. The pinned vendor generates it
+at construction from a fresh keypair, so it is a function of neither the
+options value nor any registration, and the vendor exports NO accessor for it —
+the server identifier is exported, the exchange key is not. The only surface
+carrying it is the protocol greeting the server writes. The daemon therefore
+reads its incarnation identity once, from one greeting taken at acquire time
+before any served connection exists, and cites it thereafter. The cost is real
+and is the differential's residual: of sixteen group-one rows, fourteen are
+folded from the options value and the registration alone, one comes from an
+exported accessor, and the exchange key's two carriages share a source and so
+cannot disagree.
+
+The second is the pair of rows the roster already calls MEASURED — the
+connect-info flag and the bound account. The pinned server writes a SECOND
+greeting after the connect exchange to any client registered at a protocol that
+understands one, and only that second greeting carries them; a connection's
+current declaration is therefore the later greeting, not the opening one. Two
+consequences were taken. The daemon's greeting capture keeps the LATER greeting
+rather than the first, because the reference folds the declaration a connection
+currently holds. And the options-and-registration carriage declares the flag
+true and reads the bound account from the registration, falling back to the
+server's own global account name when the registration omits it — which the
+registration does exactly when the account IS the global one.
+
+The bound on that second decision, stated: the registration does not carry the
+client's protocol, so the daemon cannot check that a given client was sent the
+second greeting. Both pinned clients register at a protocol that is, and that
+is measured by the differential itself rather than asserted — a client that did
+not would fold a null against a true and redden the first arm on the spot.
+
+A third measurement made the first arm honest and is recorded with them: the
+server enqueues its reply to the connect exchange's round trip BEFORE that
+second greeting, so a fold taken the instant establishment resolves can race
+it. The daemon takes one further round trip before reading, which cannot race
+because the greeting was enqueued ahead of that trip's own reply. The reference
+takes no such trip, and whether its fold is exposed to the same race across a
+socket read boundary is a question this slice raises and does not answer.
+
+Alternatives, priced. Folding the opening greeting on both sides: symmetric,
+and it would fold a declaration the connection no longer holds, so the wall
+would prove agreement about a stale value. Dropping the two measured rows from
+the roster: it would make this slice's arithmetic easy by shrinking the
+reference's fold, which is moving the reference to make the transcription pass
+— the one move refused above. Minting a system-account credential to read the
+connection's protocol from the server's own event stream: outside the algebra,
+an operator act with blast radius, and named as a stop-and-report in the
+slice's limits. **Load-bearing? yes** — a differential whose residuals are not
+stated is believed further than it was measured.
+
+### T36. The daemon's own connect options under-declare, visibly, rather than transcribing a table nobody has walled
+
+Decided: the daemon's client-zero connect-options declaration names exactly the
+three options the daemon SETS, in the pinned Go client's own option vocabulary,
+and names no default at all. The reference's declaration names every option its
+own pinned client runs under because that client's defaults have been
+transcribed with a wall behind them; the Go client's table has not been, and
+transcribing it here would put values nobody has ruled into the estate through
+a package with no wall for them. An absent row is honestly absent — it says the
+estate has declared nothing about that option, which is true.
+
+The declared server-options value takes the same stance from the other side: it
+carries six keys, every one the pinned vendor's own spelling, and the vendor's
+baseline fills the rest. Those filled values are READ BACK from the constructed
+options rather than re-declared, for the reason the reference states about its
+own defaults — a transcription passed as an argument turns a transcription
+mistake into a silent change to what the estate runs under, while a
+transcription that is only declared makes the declaration wrong and the runtime
+unchanged.
+
+Two option fields are set that the declared value does not carry, and they are
+named rather than hidden: the vendor's logging and signal handling are
+suppressed, because a library inside another process owns neither its process's
+log nor its signals. Neither is configuration and both are the vendor's own
+option names.
+
+Alternatives, priced. Transcribing the Go client's defaults now: it is the
+honest full declaration and it is a later slice's, and doing it here would
+resolve a pin the specification names as the operator's. Declaring nothing for
+group two at all: the group is what the process declares about itself, and a
+connection that declares nothing has not declared that it declares nothing.
+**Load-bearing? maybe** — the under-declaration is visible and cheap to grow,
+but a reader who mistook it for a full declaration would mistake silence for a
+measurement.
+
+### T37. The differential is driven from the Go side, and the far side holds its connection open
+
+Decided: the wall is a Go command that owns the daemon, executes the
+one-language arm in process, spawns the TypeScript minter against the daemon's
+client URL for the two-language arm, and compares. The far side writes one line
+of evidence and then WAITS on its own input until the near side closes it,
+because a registration is gone the moment its connection is and a wall that
+read the registration after the far side exited would be comparing two
+different connections.
+
+The declared VALUES cross the boundary, not only their digests. The far side
+sends its connect-options declaration and its estate declaration as values; the
+near side canonicalizes them with its own canonicalizer and derives the digests
+itself. Sending digests alone would have made the comparison one
+implementation's opinion carried twice.
+
+The negative control is its own battery stage rather than a second pass inside
+the passing one, so a red line names which claim broke: the differential and
+the proof that the differential can fail are different claims. The control
+mutates exactly one field in exactly one group — the declared connect-options
+digest, the cheapest single-field mutation available — and the stage passes
+only when the comparison fails.
+
+The ports-file retirement takes the battery's existing empty-output shape, and
+its detector proves it can fire inside every run: an empty-output stage is the
+shape most exposed to a scanner that quietly stopped matching, so the run scans
+a planted sample first and reports a detector that does not fire on it. The
+stock-binary harness whose readiness IS that poll is deliberately not walked —
+both postures run side by side, and a suite that spawns a binary has no other
+signal.
+
+Alternatives, priced. Driving from the TypeScript side, as the register wall
+does: that wall's Go process is a participant and its TypeScript side owns the
+server, which is the opposite of this topology — here the Go process owns the
+lifecycle by physics, so a TypeScript driver would have to spawn a Go process
+that spawns a server and then ask it questions through a protocol invented for
+the purpose. Running the far side as an ordinary test file: it would run twice
+per battery, once in its own stage and once in the package's, and the second
+run would prove nothing the first did not. **Load-bearing? yes** — the
+direction is forced by which side can hold a server, and the held-open
+connection is the difference between measuring one connection and measuring
+two.
