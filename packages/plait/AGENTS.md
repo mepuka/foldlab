@@ -161,11 +161,14 @@ Beside this file: [`CONTEXT.md`](CONTEXT.md) glosses the terms behind the seam,
   `test/fixtures/kernel-conformance.sample.ndjson` is the independently
   transcribed control the corpus wall compares against, never a source.
 - The refusal vocabulary is emitted INTO `truth/`, never imported up from
-  `kernel/`. `truth/` is the deepest plane and imports only itself; a generated
-  artifact carries no import-direction debt because its ancestry is the
-  generator, not an edge in the module graph. A truth module that reaches into
-  `kernel/` for the vocabulary is a Law 4 finding, and so is a hand-written
-  literal union standing beside the generated one.
+  `kernel/`. `truth/` is the deepest plane and imports only itself; a
+  seam-tagged internal edge is tolerated where necessary, each edge pinned in
+  `test/fixtures/truth-internal-edges.pin.txt`, and folding the material into
+  `truth/` proper is preferred when a way exists. A generated artifact carries
+  no import-direction debt because its ancestry is the generator, not an edge in
+  the module graph. A truth module that reaches into `kernel/` for the
+  vocabulary is a Law 4 finding, and so is a hand-written literal union standing
+  beside the generated one.
 - `check:refusal-vocabulary` compares three artifacts and never two views of
   one value: the runtime union read from the truth-plane module's source bytes,
   the refusal reasons read from the interchange fixture's bytes, and the
