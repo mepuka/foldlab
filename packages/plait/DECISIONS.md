@@ -2698,3 +2698,164 @@ kinds, and pins what a run produced rather than what the source teaches). Why:
 one manifest, one diff, and the diff is the edit. **Load-bearing? yes** — a
 field whose value is not written down as a literal renders `<expression>`, so
 the wall pins what the source teaches and claims nothing about computed values.
+
+## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
+
+### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
+
+Decided: every `debt-with-a-ticket` row in
+`test/PublicTypeUniverse.inventory.md` is a Law 1 waiver, and `--enforce`
+admits a walked debt row exactly when its `(public type, owning module,
+unification ticket)` triple appears there. A walked row with no such triple is
+UNWAIVERED and named. That replaces DEV-796's all-or-nothing branch, which
+refused the whole run whenever any debt existed and therefore could not be
+turned on until stage 2 had emptied the table — the flip would have arrived
+last, when every conversion had already been reviewed by hand. It arrives
+first instead, at 132 waivers, and the conversions ratchet it down. Alternatives:
+a second committed waiver file beside the inventory (two artifacts that must
+agree about the same 132 rows, and nothing but review keeping them in step);
+waivers as a reviewed constant in the walk (the rows are generated data, so
+the constant would be a hand-retyped copy of the table it authorises); keep
+all-or-nothing and wait for stage 2 (the flip lands after the work it was
+supposed to gate). Why: one artifact, generated from the walk, read back by
+the same module that writes it, and the enforcement question is coverage of
+one side by the other rather than emptiness of one side.
+**Load-bearing? yes** — deleting the coverage stage leaves the control's
+unwaivered arm green, and it fails naming the accepted mutant: `PUBLIC TYPE
+UNIVERSE CONTROL: FAIL — enforce mode accepted a public type the ledger grants
+no waiver for`.
+
+### T1. A waiver cites a ticket off a reviewed liveness list, checked on both sides
+
+Decided: `liveUnificationTickets` is a small reviewed constant — `DEV-795`,
+`DEV-804`, `DEV-817`, and `DEV-796` scoped to `negative-controls/` — and a
+citation outside it is a violation of the gate's own precondition, refused
+before any coverage question is asked. Both sides are checked, because a
+citation can rot from either: the walk's route table is audited on every run
+of every mode including `--write`, and every waiver on the committed ledger is
+audited in enforce mode. The rule is not hypothetical. `debtTarget` routed the
+seven carriage and internal rows to `DEV-763`, which had closed, and the rows
+kept reading as lawful debt for as long as nobody cross-checked a table of 132
+rows against the board; this task repoints them to `DEV-817` and makes the
+next such drift a red gate instead of an audit. Closing a listed ticket
+therefore requires draining its rows first — closing it while rows remain
+turns the whole ledger red, which is the intended direction and still a worse
+day than draining. The `DEV-796` entry is scoped rather than plain because
+that ticket IS closed: the rows citing it are the negative control's own
+plant, they are not estate surface, and they drain when the control retires.
+No `src/` row may cite it. Alternatives: query the board at gate time (a wall
+that needs the network is a wall that goes yellow on a bad afternoon, and the
+board is not a build input); check nothing and trust the routes (the DEV-763
+state, restated); admit any `DEV-` shaped string (spelling is not liveness).
+Why: liveness is a small reviewed datum, the environment is the routes and the
+ledger, and the checker compares them. **Load-bearing? yes** — repointing the
+carriage route back to `DEV-763` fails every mode before the walk runs, with
+`debt route for src/carriage/ is unlawful: ticket=DEV-763 is not on the
+reviewed liveness list`, and deleting the ledger-side stage moves the control's
+liveness arm to a different refusal, which its committed trace catches as
+`the liveness arm's trace moved`.
+
+### T2. The ratchet pins debt per owning prefix, and `--write` refuses to raise a pin
+
+Decided: the ledger carries a `## Ratchet pins` table — one count per owning
+prefix (`truth`, `kernel`, `planes`, `carriage` covering carriage/surface/
+internal, `negative-controls`) — enforce mode re-derives each count from the
+declaration walk and refuses any prefix whose walked count EXCEEDS its pin, and
+`--write` lowers a pin that fell while refusing to raise one. Pins bootstrap
+only when there is no committed ledger at all. Without the write half the
+ratchet would be worthless: report mode already forces regeneration after any
+surface change, so a `--write` that re-pinned upward would make every increase
+green in the same act that recorded it. The prefix, ticket, and unification
+target are one row of one table (`debtRoutes`), so a pin cannot end up pinned
+against a family whose ticket column was re-cut underneath it. Alternatives:
+one global count (a conversion in `truth/` would pay for growth in `planes/`,
+which is the netting the per-prefix split exists to refuse); pins as a
+constant in the script (raising one becomes a code edit, but lowering one
+becomes a hand-typed count — the thing this estate bans); pins derived from
+the committed ledger's own row counts (measured: coverage then implies
+domination, the ratchet can never fire on its own, and a stage that cannot
+fail proves nothing); no ratchet at all, coverage only (a new type plus a
+`--write` is a green gate and a silently larger universe). Why: the pin is
+policy, the walk is truth, and they must be able to disagree.
+**Load-bearing? yes** — with `Address.RatchetPlant` planted and its waiver row
+hand-added while the pin stayed at 61, enforce refused with `PUBLIC TYPE
+UNIVERSE RATCHET: owning prefix=planes walked=62 pinned=61`; `--write` over the
+same plant refused with `--write refuses to raise a ratchet pin` and left the
+ledger's bytes untouched; and deleting the ratchet stage leaves the control's
+ratchet arm green, failing as `enforce mode accepted a prefix whose walked debt
+count rose above its pin`.
+
+**What this does NOT cover.** Raising a pin is a hand edit of a committed file,
+and so is deleting the ledger to re-bootstrap. The ratchet makes debt growth
+NAMED, reviewable, and impossible to acquire as a side effect of regeneration;
+it does not make it impossible. The waiver grant stays what A5 says it is —
+the operator's act — and the gate's job is to ensure the act leaves a diff
+that says which prefix grew and by how much.
+
+### T3. Enforcement is three ordered stages, each with its own refusal vocabulary
+
+Decided: enforce runs PRECONDITION (the ledger parses, pins every prefix the
+walk found, and cites only live tickets), then UNWAIVERED (coverage), then
+RATCHET (counts), returning at the first stage that has anything to say. The
+order is measured, not aesthetic: an unwaivered new type also lifts its
+prefix's count, so a ratchet-first order would answer a question about
+`Address.RatchetPlant` by naming `planes`. Each stage owns a distinct line
+prefix, which is what lets the control's three arms fail apart — an arm whose
+mutation produced the right colour for the wrong reason is caught by its
+committed trace, not by its exit code. Alternatives: one violation list in
+walk order (the three failures interleave and no arm can name its own law);
+collect every stage and report all of them (a dropped stage stays invisible
+because the other two still speak); a single "enforce failed" message (the
+2026-08-18 shape, which cannot distinguish a stale gate from new debt). Why: a
+gate with three laws needs three vocabularies or its control has one arm.
+**Load-bearing? yes** — each of the three arms goes green under deletion of its
+own stage and only its own stage, measured one at a time.
+
+### T4. Report mode keeps running beside enforce, in the same `test:fast` step
+
+Decided: `check:type-universe` invokes the script twice — once bare, once with
+`--enforce` — and enforce still never byte-compares the ledger. DEV-796's T2
+already bound this: a `test:fast` that swapped report for enforce would leave
+the committed ledger gated by nothing exactly when its debt table empties and
+the count line becomes the whole artifact. It binds harder now, because the
+ledger has stopped being a report and become the gate's own authority: enforce
+reads its waivers and its pins, so an enforce run over a stale ledger is a run
+over stale authority, and report mode is what proves the authority is fresh.
+Alternatives: one invocation doing both (re-entangles the control's arms —
+T2's refused shape); enforce byte-compares as a fourth stage (same
+entanglement, one mutation away); run enforce only in `test:types` beside the
+control (the production surface would be enforced on a different cadence from
+the ledger that authorises it). Why: two questions, two runs, and the second
+costs 1.9 seconds. **Load-bearing? yes** — dropping the report invocation makes
+a hand-edited ledger authoritative with nothing regenerating it.
+
+### T5. The control plants by taking a waiver away, and A5's condition rides the header
+
+Decided: the negative control runs five arms over its one planted pair — enforce
+must ADMIT the planted ledger's own six waivers, three ledger mutations must
+each be refused for their own reason against their own committed trace, and
+report mode must still reproduce the ledger byte for byte. The mutations are
+applied to the control's committed ledger, not to a second mutant declaration
+file: the gate compares a walk against a ledger, so a planted new public type
+and a ledger that stopped naming an existing one are the same edge approached
+from opposite sides, and only the ledger side can be mutated without
+invalidating the admission arm's artifact, which report mode regenerates from
+the walk. A mutation that changes no bytes fails as a control in its own right.
+A5's ruling (DEV-772 sitting record, round 1) rides the ledger's Authority
+header rather than the walk: a waiver MAY cover NEW surface, on condition that
+it names the provably-absent generator/corpus group and its unification ticket
+— the DEV-764 shape — and the ratchet then counts that conditioned waiver as
+ticketed debt like any other row, so the new surface still costs a pin.
+Alternatives: a second mutant `.d.ts` with an eighth type (a second declaration
+project and tsconfig to keep in step, for an edge the ledger mutation already
+reaches); assert the enforcement result in a unit test over the pure function
+(it would stop proving that the CLI wires the stages, which is the failure
+DEV-796's T2 was built against); encode A5's condition as a machine check (the
+"provably absent generator group" is a judgement about the corpus, not a
+predicate over the emitted barrel — claiming to check it would be the false
+green this wall exists to refuse). Why: the control exercises the production
+`--enforce` branch for every law it now carries, and the one condition the
+machine cannot judge is written where the operator granting a waiver reads it.
+**Load-bearing? yes** — the three arms and their traces are what caught each
+stage deletion above; the A5 header is stated evidence, and this DECISIONS
+entry is its record.

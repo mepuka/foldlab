@@ -43,7 +43,7 @@
     "check:refusal-payloads": "bun scripts/check-refusal-payloads.ts",
     "check:refusal-vocabulary": "bun scripts/check-refusal-vocabulary.ts",
     "check:rung-control": "bun scripts/check-rung-controls.ts",
-    "check:type-universe": "bun scripts/check-public-type-universe.ts",
+    "check:type-universe": "bun scripts/check-public-type-universe.ts && bun scripts/check-public-type-universe.ts --enforce",
     "check:type-universe-control": "bun scripts/check-public-type-universe-negative.ts",
     "check:type-control": "bun scripts/check-public-effects-negative.ts",
     "generate:corpus": "bun scripts/generate-corpus.ts",

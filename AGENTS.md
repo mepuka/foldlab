@@ -291,8 +291,12 @@ style notes.
    is a DEFECT, not a style choice; existing hand-written types are
    staged debt wearing explicit waivers that cite their unification
    ticket, and the truth/ primitives themselves converge under the
-   generated core. Wall: the type-universe walk (DEV-796,
-   inventory → enforce). Severity: blocker.
+   generated core. Wall: the type-universe walk — inventory
+   (DEV-796), then enforce over a waiver ledger with per-prefix
+   ratchet pins (DEV-805): an untraced public type with no committed
+   waiver fails the gate, a waiver citing a ticket off the reviewed
+   liveness list fails it, and a prefix whose debt count rises above
+   its pin fails it. Severity: blocker.
 2. **One door.** All judgment routes through kernel admission; a
    private validator is a second door. Wall: pending the shared
    candidate form (DEV-763/796 stage 4). Severity: blocker.
