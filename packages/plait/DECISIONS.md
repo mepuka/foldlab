@@ -6729,6 +6729,301 @@ not accept); a control that merely fails to compile (it would show the shape is
 unavailable, not that the two shapes differ in what they leave behind).
 **Load-bearing? yes** — the shuttle inherits this seam.
 
+## Task: the schema and SDK surfaces flip to the model emitter (DEV-812, operator ratification 2026-08-19)
+
+The last two hand-written TypeScript projections move onto the canonical AST.
+Both interpretive manifests were ratified AS-IS by the operator in session, so
+what follows is transcription and the record of what the committed bytes forced,
+not a second round of judgement.
+
+### T1. The schema surface's interpretive load becomes reviewed Lean data, transcribed rather than re-decided
+
+Decided: the ratified schemas manifest is carried in `verify/unity`'s emitter as
+reviewed Lean values with their own docstrings, and every row of it is the
+retiring renderer's, transcribed. The idiom map says `List` is `Schema.Array`,
+`Option` is `Schema.UndefinedOr`, a sum whose constructors are all nullary is a
+`Schema.Literals` union, and everything else is a union of tagged structs. Brand
+arguments are dropped, because the target erases and the compile-time separation
+is generated next door. The title of every schema is its docstring's first
+sentence. The module's own prose, the `KernelRef` expansion and the brand
+sentence are carried as string data, verbatim.
+
+The alternative considered and refused was paraphrase: re-deriving the prose from
+the corpus, or tightening a sentence while moving it. Either would have made
+parity unmeasurable, and parity is the only evidence a flip has.
+
+**Load-bearing? yes** — the manifest is the surface's meaning; the emitter is
+only its transcription.
+
+### T2. The recursion rule is a manifest row, and it is mechanical
+
+Decided: a type whose constructor field references the type being declared is
+SUSPENDED. Its schema is written `Schema.suspend((): Schema.Codec<T> => S)` and
+its value type `T` is written out in full ahead of the schema, because a
+suspended schema carries no type to read back off it. The rule is stated over
+the type records — declaration index of the referenced name against the
+declaration index of the referencing type — and nothing in the generator knows
+that today's one instance is `CandidatePredicate.negation.inner`.
+
+A forward reference (a name declared strictly later) is refused rather than
+suspended: the model writes none, and admitting one would emit a schema that is
+not yet bound.
+
+Alternatives: name the recursion by type (works today, silently wrong the first
+time the model gains a second one); suspend every declared reference (correct
+output, but it would spell eight schemas as thunks and say something false about
+each).
+
+**Load-bearing? yes** — the rule decides both a schema spelling and whether an
+alias is written out, and it is the one place the surface's shape depends on the
+corpus's order rather than its contents.
+
+### T3. The two layout kinds added to the target grammar, and the evidence that forced them
+
+Decided, and RATIFIED BY THE OPERATOR IN SESSION 2026-08-19: `Unity.Ts` grows
+two expression constructors, append-only, both on the LAYOUT axis. No structural
+TypeScript kind was added and the forty-five-kind census is unchanged — a
+`CallExpression` is still a `CallExpression` and a property is still a property.
+
+The evidence the ratification rests on is the committed bytes, per kind:
+
+  * `.apply` — the surface writes `Grammar.KernelHeaderRecord.annotate({` with
+    the argument's brace closing the calling line and `})` closing it. The
+    existing `.call ... .block` writes the argument on its own indented line
+    (`annotate(` / `  {` / `  },` / `)`), and `.call ... .inline` writes the
+    whole object flat. Neither is the committed rendering, and no layout the
+    spine already carried reaches it.
+  * `.offset` — the surface writes `description:` alone on its line with the
+    concatenation beginning two columns deeper on the next. `propertyLines`
+    could only write `key: value`, beside the key. The rendering is a fact about
+    the site, which is exactly what LAYOUT IS DATA says belongs upstream.
+
+Three smaller reachings on the same axis went with them: `.constant` gained a
+type-annotation slot (`export const KernelCandidatePredicate:
+Schema.Codec<...> =` — a slot the spine did not have at all), `.field` and the
+inline type alias gained broken renderings, and a union member may now be a
+record the site writes open. Each is the same argument: the committed bytes name
+a rendering, and the spine had no path to it.
+
+Alternatives: a raw-text escape hatch on the tree (refused on sight — raw text
+is how a target grammar stops being a grammar, and it would have spelled all
+five of these as strings); editing the committed surface toward the spine (the
+one thing a parity discipline may never do).
+
+**Load-bearing? yes** — this is a change to the shared spine four other surfaces
+print through, and it is written so it can be overruled cleanly: reverting the
+two constructors reverts the schema surface and nothing else, because the three
+standing surfaces re-emit byte-identically with or without them.
+
+### T4. A third layout kind was proposed, probed, and withdrawn
+
+Decided: the doc-comment wrap is the spine's existing `descriptionWrap`, and the
+second wrap policy drafted for it was removed.
+
+The reasoning that drafted it was sound and the probe refuted it. The retiring
+renderer's word wrap keeps each run's trailing separator and treats the empty
+string after a trailing space as a word; the spine's `wrapWords` drops
+separators and skips empty words. The two differ whenever a paragraph's last row
+lands exactly on the budget, which the model's docstrings — every one of them
+ending in a space — could plausibly hit. So a `DocBlock.paragraph` constructor
+was added.
+
+Measured: substituting the spine's own `descriptionWrap` and re-emitting
+produced the committed bytes exactly, cmp exit 0. The boundary never fires on
+this corpus, so the constructor came out.
+
+The separator-keeping split did NOT come out, because a second consumer does
+force it: a description is emitted as a concatenation of string literals, the
+runs must add back up character for character, and a wrap that dropped the space
+between two runs would silently rewrite the sentence. It is exposed as
+`splitRuns` for the generator on the `flatWidth` precedent — a width test a
+generator has to reproduce, whose result is a value the tree carries.
+
+Alternatives: keep the constructor because the divergence is real in principle
+(it would have been growth no committed byte demands, which is the fence this
+task was given).
+
+**Load-bearing? yes** — as precedent rather than as code: growth is argued from
+the bytes, and a growth whose probe passes without it is not growth.
+
+### T5. Measured facts the committed bytes forced, recorded as facts
+
+Decided: three quirks of the retiring renderer are reproduced rather than
+corrected, because parity is bytes.
+
+  1. **The generated file ends without a trailing newline.** The renderer joins
+     its lines and writes; the emitter's module therefore closes on its last
+     statement rather than on a blank. The printer already treats the trailing
+     newline as a fact about the surface and not a constant of the printer, so
+     this needed no change — only the discipline not to add one.
+  2. **The renderer's broken-object join is a no-op undone.** It joins members
+     that already end in commas with `",\n"` and then replaces `",,"` with
+     `","`, which is exactly `join("\n")` unless a member's own text contains a
+     double comma. Measured: neither the corpus nor the committed surface
+     contains `",,"` anywhere, so the two spellings agree and the emitter writes
+     the plain join.
+  3. **A container's layout is decided after its elements are rendered at the
+     inner indent.** The renderer measures the flat form built from already
+     rendered children, so a child that broke makes its parent break without a
+     second test. The emitter reproduces the order rather than re-deriving a
+     width rule.
+
+None of these is a judgement about what the surface should say. Each is recorded
+so that a later cleanup knows it is changing bytes on purpose.
+
+**Load-bearing? no** — but a future header cleanup will move all three, and it
+should move them knowingly.
+
+### T6. The renderer retires in the flip commit, not after it
+
+Decided: `scripts/kernel-schemas.ts`, its generate script and its check script
+are deleted in the same commit that enrols the surface in the digest register,
+on the builder's precedent (U9): a flip that keeps both generators walls one
+against the other and proves nothing.
+
+What replaced each wall: `check:kernel-schemas` regenerated and diffed on the
+bun side; the surface now rides `check:kernel-surfaces` in `test:fast`, which
+holds the committed bytes to the digest the model emitter registers, and the
+byte-identical regeneration itself is walled under `verify/unity/run.sh` where
+the emitter can be run.
+
+One test had to change rather than move. `test/KernelSchemas.test.ts` imported
+`firstSentence` from the renderer to check every schema's title — which, once
+the renderer wrote the surface, was the generator agreeing with itself. The rule
+is now restated in the test file. That is a strengthening: the model computes
+the title, the test computes it again from the same docstring, and the two meet
+on the committed bytes, so the assertion has an oracle outside both sides for the
+first time.
+
+Alternatives: keep the renderer as a second opinion (the both-sides-agree
+failure the estate has already paid for once); drop the title assertion (it
+would have retired a real wall to avoid restating four lines).
+
+**Load-bearing? yes** — after this commit nothing hand-written stands on the
+surface's road.
+
+### T7. The SDK manifest is transcribed whole, and reconciled against the corpus in both directions
+
+Decided: the ratified SDK manifest — the eight-row projection table with each
+row's candidate arm, its extra parameter and the ties it makes unspellable, the
+two type maps, and the projection notes — is carried as reviewed Lean data,
+verbatim.
+
+The reconciliation is the part worth stating, because it is what makes the table
+safe to transcribe. Before a byte is written the emitter checks that the table
+has exactly as many rows as `Act` has generators, that row `n` names generator
+`n`, that no two rows claim one candidate arm, that a row's field list equals the
+candidate constructor's own field list name for name and in order, that every
+tag a row writes names a constructor the corpus has, and that no parameter is
+taken and read nowhere. A field added to the model reddens the emission instead
+of arriving as a silently dropped argument.
+
+Two of those checks changed shape in the move and both got stronger. The
+retiring renderer found the tags with a regular expression over the expression's
+source text and found the unread parameters with a second one; the emitter walks
+the expression tree, so it is reading what the surface will actually write
+rather than a rendering of it.
+
+Alternatives: derive the table from the corpus (it cannot be — the projection is
+a judgement about how a lawful sentence meets a raw one, and the corpus states
+neither side of that); check one direction only (the failure it misses is a
+surface that silently lost a sentence).
+
+**Load-bearing? yes** — the table decides what every caller of the SDK is asked
+for.
+
+### T8. The target grammar grew PAST the ratified layout fence, and this is the entry that says so
+
+Decided, and NOT covered by the operator's in-session ratification: emitting the
+SDK required five additions to `Unity.Ts` that are structural rather than
+layout. The census moves from forty-five reachable kinds to fifty. This is
+recorded as its own decision, separate from T3, because T3's ratification was
+argued on the ground that no structural TypeScript construct was added — and
+here some are.
+
+What forced each, from the committed bytes:
+
+  * `digestOf` is written with a Block body:
+    `): Digest<Kind> => {` / `  void kind` / `  return id as Digest<Kind>` / `}`.
+    That is a Block, a ReturnStatement, and an ExpressionStatement over a
+    VoidExpression — three kinds the spine did not carry, because until this
+    surface every function the emitter wrote returned an expression.
+  * `id as Digest<Kind>` is an AsExpression that is not `as const`, which the
+    spine carried only in its const-assertion form.
+  * The generators' bodies are written `{ _tag: "declare", kind, payload: value,
+    writ }` — `kind` and `writ` are ShorthandPropertyAssignments, a different
+    node from the PropertyAssignment the spine's object properties were.
+
+The layout-axis additions in the same commit are the ratified kind and are
+listed for completeness: an arrow now carries its own type parameters, the
+layout its binders are written at, a doc comment per binder, and where its body
+starts. Those are four renderings of an ArrowFunction, not four new kinds.
+
+One function in one surface forces the first four of the five. That is the
+smallest true statement of the cost, and it is the number the operator should
+rule against. The alternative was to change the committed bytes of `digestOf` to
+an expression body, which is the one move a parity discipline may never make —
+the surface is the target, and a generator that edits its target to fit itself
+has stopped being a projection.
+
+Refused outright: a raw-text escape hatch on the tree. It would have carried all
+five as strings and cost nothing today, and it is exactly how a target grammar
+stops being a grammar.
+
+**Load-bearing? yes** — and reversible in one direction only: reverting these
+five reverts the SDK surface, and the other four surfaces re-emit
+byte-identically without them.
+
+### T9. The SDK's two walls move to where the emitter runs, and the sharpest one is rebuilt rather than dropped
+
+Decided: `check:kernel-sdk` and `check:kernel-sdk-control` retire with the
+renderer, and what each proved is re-established under `verify/unity/run.sh`.
+
+`check:kernel-sdk` proved three things. Determinism — two renderings of one
+corpus byte-equal — is what the gate's `check_surface` does for every surface it
+emits. Served-equals-derived is the parity arm itself. Provenance-is-a-digest is
+unchanged in the bytes: the surface still names the corpus by digest and the
+register now cross-checks that digest against a host oracle.
+
+`check:kernel-sdk-control` is the one that could not simply move. It planted
+mutations into the *bytes of the corpus file* the renderer read; the emitter
+reads the model's own emission rather than a file, so that plant has no site.
+The clause worth keeping is the third arm — a moved candidate field name must
+make the generator REFUSE rather than drop an argument into the wrong slot — and
+it is rebuilt as a gate arm that plants the moved field into the reviewed table
+and requires the emission to stop, naming the two field lists it could not
+match. The two "a model edit reaches the surface" arms are covered by the
+existing shape of the wall: the surface is byte-compared against a fresh
+emission from the model on every gate run, so a model edit that failed to reach
+it reddens by construction, which is a stronger statement than a planted word.
+
+The fourth arm — renaming a record the surface does not project must NOT move
+the bytes — is the one thing genuinely lost, and it is recorded as lost rather
+than waved at. It discriminated a wall that reddens on any change from one that
+reddens on a vocabulary change. Its replacement, if the operator wants one, is a
+gate arm that edits the model and requires exactly one surface to move; that is
+a change to the model gates rather than to this lane, so it is not made here.
+
+Alternatives: keep the bun control by having it read the emitter's output (it
+would compare the emitter against itself); leave both walls declared but
+unreachable (the DEV-799 failure).
+
+**Load-bearing? yes** — and it carries one named loss, above.
+
+### T10. The trailing newline is a fact about each surface, measured separately
+
+Decided: the schema surface ends without a final newline and the SDK surface
+ends with one, and the emitter reproduces each.
+
+Measured, and it was the only byte wrong on the SDK's first emission: both
+renderers join their lines with newlines and write, so the difference is entirely
+whether the renderer's last act was a blank line. The SDK's generator loop ends
+with one; the schema renderer's last statement does not. The printer already
+treats the trailing newline as a fact about the surface rather than a constant of
+its own, so both are expressed by what the module's last statement is.
+
+**Load-bearing? no** — one byte, on two files. Recorded because it is the kind of
+difference a reader assumes is a mistake in one of the two files, and it is not.
 ## Task: server options as declared data, and the closed-channel refusal (estate-daemon S6, 2026-08-19)
 
 ### T1. The option table is the schema, and the declared value's key set IS the table

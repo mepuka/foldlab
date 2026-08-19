@@ -17,8 +17,9 @@
  * 1. **The generated schema module** is read out of its own *bytes*, through
  *    the TypeScript AST, for the set of symbols the generator emitted — not by
  *    importing the schemas and asking them their names, which would only ask
- *    the generated value to agree with itself. `check:kernel-schemas`
- *    separately holds those bytes to a byte-identical regeneration.
+ *    the generated value to agree with itself. `check:kernel-surfaces`
+ *    separately holds those bytes to the digest the model emitter registers
+ *    for them.
  * 2. **The door module** is read out of its *bytes* for the form it claims:
  *    which generated symbol each of the candidate, intrinsic-act, and context
  *    bindings names, and which `Kernel*` type names it puts into circulation.
