@@ -442,7 +442,7 @@ describe("the group-1 roster expands, add-only", () => {
   test("the committed roster is a PREFIX of the standing one: appends pass, every other edit reddens", () => {
     expect(SUBSTRATE_FIELDS.length).toBeGreaterThanOrEqual(COMMITTED_ROSTER_PREFIX.length)
     expect(SUBSTRATE_FIELDS.slice(0, COMMITTED_ROSTER_PREFIX.length))
-      .toEqual(COMMITTED_ROSTER_PREFIX)
+      .toEqual([...COMMITTED_ROSTER_PREFIX])
     // No row is ever added twice, so an "append" cannot quietly be a rename.
     expect(new Set(SUBSTRATE_FIELDS.map((field) => field.name)).size)
       .toBe(SUBSTRATE_FIELDS.length)
@@ -556,7 +556,7 @@ describe("the substrate writ", () => {
     const resolved = await Effect.runPromise(resolveSubstrateWrit(writ!).pipe(Effect.orDie))
     expect(resolved.holder).toBe(LAYER)
     const redigested = await Effect.runPromise(digestOf(resolved as unknown as WireValue))
-    expect(redigested).toBe(writ)
+    expect(writ).toBe(redigested)
   })
 
   test("two layers mean two writs mean two session facts, on otherwise identical groups", async () => {
