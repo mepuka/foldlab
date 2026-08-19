@@ -1,16 +1,23 @@
-import { Schema } from "effect"
-
-import { ANCHOR_BUCKET } from "../planes/Anchor.js"
-import { CELL_BUCKET } from "../planes/Cell.js"
-import { REGISTER_BUCKET } from "../planes/Register.js"
-
 /**
+ * Plane: internal — private adapters, housed flat.
+ * Seam: carriage — hosts and transport clients.
+ *
  * Server-side carrier permissions, declared without credential material.
  *
  * This is the security projection of the writ, not the writ itself. The map
  * names what each connection role may address at NATS; passwords and issued
  * users remain environmental inputs owned by the daemon that provisions them.
+ * The seam is carriage rather than planes because what this module declares is
+ * a connection's authority at the broker — the bucket names it reads are the
+ * subjects it grants, not state it carries.
+ *
+ * @module
  */
+import { Schema } from "effect"
+
+import { ANCHOR_BUCKET } from "../planes/Anchor.js"
+import { CELL_BUCKET } from "../planes/Cell.js"
+import { REGISTER_BUCKET } from "../planes/Register.js"
 
 const LiteralSubjectToken = Schema.String.check(
   Schema.isPattern(/^[^.*>\s]+$/u),

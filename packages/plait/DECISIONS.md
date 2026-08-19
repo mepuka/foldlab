@@ -2776,3 +2776,553 @@ untouched rather than quietly fixed, and owed to whichever lane lands second.
 **Load-bearing? no** — this branch does not move the census (132 total, 0
 derived, 132 debt before and after), so the ledger is byte-identical either way
 and only the sentence describing the rule is stale.
+## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
+
+### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
+
+Decided: every `debt-with-a-ticket` row in
+`test/PublicTypeUniverse.inventory.md` is a Law 1 waiver, and `--enforce`
+admits a walked debt row exactly when its `(public type, owning module,
+unification ticket)` triple appears there. A walked row with no such triple is
+UNWAIVERED and named. That replaces DEV-796's all-or-nothing branch, which
+refused the whole run whenever any debt existed and therefore could not be
+turned on until stage 2 had emptied the table — the flip would have arrived
+last, when every conversion had already been reviewed by hand. It arrives
+first instead, at 132 waivers, and the conversions ratchet it down. Alternatives:
+a second committed waiver file beside the inventory (two artifacts that must
+agree about the same 132 rows, and nothing but review keeping them in step);
+waivers as a reviewed constant in the walk (the rows are generated data, so
+the constant would be a hand-retyped copy of the table it authorises); keep
+all-or-nothing and wait for stage 2 (the flip lands after the work it was
+supposed to gate). Why: one artifact, generated from the walk, read back by
+the same module that writes it, and the enforcement question is coverage of
+one side by the other rather than emptiness of one side.
+**Load-bearing? yes** — deleting the coverage stage leaves the control's
+unwaivered arm green, and it fails naming the accepted mutant: `PUBLIC TYPE
+UNIVERSE CONTROL: FAIL — enforce mode accepted a public type the ledger grants
+no waiver for`.
+
+### T1. A waiver cites a ticket off a reviewed liveness list, checked on both sides
+
+Decided: `liveUnificationTickets` is a small reviewed constant — `DEV-795`,
+`DEV-804`, `DEV-817`, and `DEV-796` scoped to `negative-controls/` — and a
+citation outside it is a violation of the gate's own precondition, refused
+before any coverage question is asked. Both sides are checked, because a
+citation can rot from either: the walk's route table is audited on every run
+of every mode including `--write`, and every waiver on the committed ledger is
+audited in enforce mode. The rule is not hypothetical. `debtTarget` routed the
+seven carriage and internal rows to `DEV-763`, which had closed, and the rows
+kept reading as lawful debt for as long as nobody cross-checked a table of 132
+rows against the board; this task repoints them to `DEV-817` and makes the
+next such drift a red gate instead of an audit. Closing a listed ticket
+therefore requires draining its rows first — closing it while rows remain
+turns the whole ledger red, which is the intended direction and still a worse
+day than draining. The `DEV-796` entry is scoped rather than plain because
+that ticket IS closed: the rows citing it are the negative control's own
+plant, they are not estate surface, and they drain when the control retires.
+No `src/` row may cite it. Alternatives: query the board at gate time (a wall
+that needs the network is a wall that goes yellow on a bad afternoon, and the
+board is not a build input); check nothing and trust the routes (the DEV-763
+state, restated); admit any `DEV-` shaped string (spelling is not liveness).
+Why: liveness is a small reviewed datum, the environment is the routes and the
+ledger, and the checker compares them. **Load-bearing? yes** — repointing the
+carriage route back to `DEV-763` fails every mode before the walk runs, with
+`debt route for src/carriage/ is unlawful: ticket=DEV-763 is not on the
+reviewed liveness list`, and deleting the ledger-side stage moves the control's
+liveness arm to a different refusal, which its committed trace catches as
+`the liveness arm's trace moved`.
+
+### T2. The ratchet pins debt per owning prefix, and `--write` refuses to raise a pin
+
+Decided: the ledger carries a `## Ratchet pins` table — one count per owning
+prefix (`truth`, `kernel`, `planes`, `carriage` covering carriage/surface/
+internal, `negative-controls`) — enforce mode re-derives each count from the
+declaration walk and refuses any prefix whose walked count EXCEEDS its pin, and
+`--write` lowers a pin that fell while refusing to raise one. Pins bootstrap
+only when there is no committed ledger at all. Without the write half the
+ratchet would be worthless: report mode already forces regeneration after any
+surface change, so a `--write` that re-pinned upward would make every increase
+green in the same act that recorded it. The prefix, ticket, and unification
+target are one row of one table (`debtRoutes`), so a pin cannot end up pinned
+against a family whose ticket column was re-cut underneath it. Alternatives:
+one global count (a conversion in `truth/` would pay for growth in `planes/`,
+which is the netting the per-prefix split exists to refuse); pins as a
+constant in the script (raising one becomes a code edit, but lowering one
+becomes a hand-typed count — the thing this estate bans); pins derived from
+the committed ledger's own row counts (measured: coverage then implies
+domination, the ratchet can never fire on its own, and a stage that cannot
+fail proves nothing); no ratchet at all, coverage only (a new type plus a
+`--write` is a green gate and a silently larger universe). Why: the pin is
+policy, the walk is truth, and they must be able to disagree.
+**Load-bearing? yes** — with `Address.RatchetPlant` planted and its waiver row
+hand-added while the pin stayed at 61, enforce refused with `PUBLIC TYPE
+UNIVERSE RATCHET: owning prefix=planes walked=62 pinned=61`; `--write` over the
+same plant refused with `--write refuses to raise a ratchet pin` and left the
+ledger's bytes untouched; and deleting the ratchet stage leaves the control's
+ratchet arm green, failing as `enforce mode accepted a prefix whose walked debt
+count rose above its pin`.
+
+**What this does NOT cover.** Raising a pin is a hand edit of a committed file,
+and so is deleting the ledger to re-bootstrap. The ratchet makes debt growth
+NAMED, reviewable, and impossible to acquire as a side effect of regeneration;
+it does not make it impossible. The waiver grant stays what A5 says it is —
+the operator's act — and the gate's job is to ensure the act leaves a diff
+that says which prefix grew and by how much.
+
+### T3. Enforcement is three ordered stages, each with its own refusal vocabulary
+
+Decided: enforce runs PRECONDITION (the ledger parses, pins every prefix the
+walk found, and cites only live tickets), then UNWAIVERED (coverage), then
+RATCHET (counts), returning at the first stage that has anything to say. The
+order is measured, not aesthetic: an unwaivered new type also lifts its
+prefix's count, so a ratchet-first order would answer a question about
+`Address.RatchetPlant` by naming `planes`. Each stage owns a distinct line
+prefix, which is what lets the control's three arms fail apart — an arm whose
+mutation produced the right colour for the wrong reason is caught by its
+committed trace, not by its exit code. Alternatives: one violation list in
+walk order (the three failures interleave and no arm can name its own law);
+collect every stage and report all of them (a dropped stage stays invisible
+because the other two still speak); a single "enforce failed" message (the
+2026-08-18 shape, which cannot distinguish a stale gate from new debt). Why: a
+gate with three laws needs three vocabularies or its control has one arm.
+**Load-bearing? yes** — each of the three arms goes green under deletion of its
+own stage and only its own stage, measured one at a time.
+
+### T4. Report mode keeps running beside enforce, in the same `test:fast` step
+
+Decided: `check:type-universe` invokes the script twice — once bare, once with
+`--enforce` — and enforce still never byte-compares the ledger. DEV-796's T2
+already bound this: a `test:fast` that swapped report for enforce would leave
+the committed ledger gated by nothing exactly when its debt table empties and
+the count line becomes the whole artifact. It binds harder now, because the
+ledger has stopped being a report and become the gate's own authority: enforce
+reads its waivers and its pins, so an enforce run over a stale ledger is a run
+over stale authority, and report mode is what proves the authority is fresh.
+Alternatives: one invocation doing both (re-entangles the control's arms —
+T2's refused shape); enforce byte-compares as a fourth stage (same
+entanglement, one mutation away); run enforce only in `test:types` beside the
+control (the production surface would be enforced on a different cadence from
+the ledger that authorises it). Why: two questions, two runs, and the second
+costs 1.9 seconds. **Load-bearing? yes** — dropping the report invocation makes
+a hand-edited ledger authoritative with nothing regenerating it.
+
+### T5. The control plants by taking a waiver away, and A5's condition rides the header
+
+Decided: the negative control runs five arms over its one planted pair — enforce
+must ADMIT the planted ledger's own six waivers, three ledger mutations must
+each be refused for their own reason against their own committed trace, and
+report mode must still reproduce the ledger byte for byte. The mutations are
+applied to the control's committed ledger, not to a second mutant declaration
+file: the gate compares a walk against a ledger, so a planted new public type
+and a ledger that stopped naming an existing one are the same edge approached
+from opposite sides, and only the ledger side can be mutated without
+invalidating the admission arm's artifact, which report mode regenerates from
+the walk. A mutation that changes no bytes fails as a control in its own right.
+A5's ruling (DEV-772 sitting record, round 1) rides the ledger's Authority
+header rather than the walk: a waiver MAY cover NEW surface, on condition that
+it names the provably-absent generator/corpus group and its unification ticket
+— the DEV-764 shape — and the ratchet then counts that conditioned waiver as
+ticketed debt like any other row, so the new surface still costs a pin.
+Alternatives: a second mutant `.d.ts` with an eighth type (a second declaration
+project and tsconfig to keep in step, for an edge the ledger mutation already
+reaches); assert the enforcement result in a unit test over the pure function
+(it would stop proving that the CLI wires the stages, which is the failure
+DEV-796's T2 was built against); encode A5's condition as a machine check (the
+"provably absent generator group" is a judgement about the corpus, not a
+predicate over the emitted barrel — claiming to check it would be the false
+green this wall exists to refuse). Why: the control exercises the production
+`--enforce` branch for every law it now carries, and the one condition the
+machine cannot judge is written where the operator granting a waiver reads it.
+**Load-bearing? yes** — the three arms and their traces are what caught each
+stage deletion above; the A5 header is stated evidence, and this DECISIONS
+entry is its record.
+## Task DEV-767 — the plane layering lint
+
+### T0. The ladder is held against law 4's bytes; the printed law is a transcription
+
+Decided: `scripts/plane-layering.ts` encodes the five planes in order and, as a
+separate arm, reads the ladder back out of the root `AGENTS.md` — the file law 4
+is written down in — and refuses when the two disagree. The law text a violation
+quotes is the transcribed constant, not the text just read. Alternatives: encode
+the ladder and never look at the law (a wall whose authority is one agent's
+memory of a sentence); render every refusal from the freshly read law (an
+editorial pass over the standing laws would then move every committed control
+trace, so a wording change would red the battery as if code had moved); read the
+ladder and skip the comparison (the read would decorate nothing). Why: two
+artifacts, and the one that drifts names itself — a reordered ladder fails on
+"the transcription is stale" rather than as a pile of code findings.
+**Load-bearing? yes** — it is the only thing tying this wall to the law it
+claims to enforce.
+
+### T1. `internal/` is excluded by citation, and the wall states what it therefore does not claim
+
+SUPERSEDED BY T5 — the coordinator ruled the escalation this entry raised, and
+`internal/` is no longer excluded from the ladder. The entry stands as the
+record of the gap and of what the round-one wall did not claim.
+
+Decided: the walk places modules in the five planes law 4 names and excludes
+`src/internal/` on a stated ruling —
+`scratch/dispatch/2026-08-18-plait-plane-reorg-spec.md` §2, RATIFIED 2026-08-18:
+"`internal/` is exempt: it is private adapters and helpers, importable from any
+layer, never itself importing a public module except its own seam's siblings."
+The wall reads that ruling no wider than its first half. Edges *into*
+`internal/` are lawful from every plane and are counted separately in the PASS
+line; edges *out of* `internal/` are neither judged nor cleared, because "its own
+seam's siblings" has no mechanical reading until someone rules what a seam
+sibling is. Alternatives: give `internal/` a rung on the ladder (inventing the
+placement the spec deliberately withheld); enforce the second half by guessing
+the mapping from an adapter's file name to its public seam (`chaos.ts` alone
+reaches three of them, so the guess would manufacture findings); count
+`internal/`'s outbound edges as clean (the honest gap becomes a green tick).
+Why: an unstated placement silently guessed is the machinery this estate
+deletes, and a wall that overstates its coverage is worse than an absent arm.
+**Load-bearing? yes** — the one open finding `src/carriage/README.md` names that
+this wall does NOT catch, `internal/nats.ts` importing `carriage/FabricClient`,
+sits exactly in the half left unread.
+
+### T2. Placement is evidenced twice: the directory and the module's own `Plane:` tag
+
+Decided: every module's plane is read from the directory it sits in (the reorg
+spec's "Directory = plane") *and* from the `Plane:` tag its header declares, and
+a disagreement is a violation. `src/index.ts` is the one module at the root of
+`src/`, placed on the surface plane by `src/surface/README.md` ("Two files wear
+this plane — `cli.ts` ... and `../index.ts`, the curated barrel that *is* the
+public surface"). Any other root-level module, and any directory that is neither
+a plane nor a stated exclusion, is refused rather than skipped. Alternatives:
+trust the directory alone (a file dragged between planes leaves a header
+asserting the old one, and the header is what a reader believes); trust the tag
+alone (then placement is whatever a module claims for itself); skip files the
+roster does not recognise (a sixth plane could enter the tree by going
+unmentioned). Why: two readings that must agree, and a roster with no silent
+skip. **Load-bearing? yes** — it is what makes the walk's placements evidence
+rather than assumption.
+
+### T3. Delivered wired but ungated, because the tree is red today
+
+Decided: `check:layering` and `check:layering-control` are declared in
+`package.json`; only the control joins `test:types`. The positive arm stays out
+of the battery until the operator disposes of the two violations it reports on
+this tip (`src/kernel/KernelProgram.ts:62` importing `../carriage/CasDaemon.js`,
+and `src/internal/permissions.ts` carrying no `Plane:` tag). Alternatives: gate
+the battery now (every unrelated seat inherits a red `bun run gates` for a
+finding none of them made, and the pressure to soften the lint arrives with it);
+ship nothing until the findings are repaired (the seat that repairs them would
+be repairing before reporting, which destroys the finding); add a waiver for the
+two edges (a wall that ships with its first two exceptions already carved is not
+a wall). Why: findings before fixes — the lint is the evidence, and gating is
+one line of `package.json` on the day the disposition lands. **Load-bearing?
+yes** — this is the difference between a reported finding and a repaired one.
+
+### T4. The control plants both edge forms into a shipped module's bytes, at fixed lines
+
+Decided: `negative-controls/PlaneLayering.shallower-import.mutant.ts` reads the
+shipped bytes of `src/truth/Canonical.ts`, checks them clean under the
+production law first, then prepends two planted imports — one value, one
+`import type` — and runs the same production readers and the same production law
+over the planted source. The plants lead the file so the lines the refusal names
+are 1 and 2 whatever the victim's own body does; the declared-plane read is
+taken from the unplanted bytes, which the plants do not touch. The trace is
+recorded by executing the mutant (`bun run generate:layering-control`).
+Alternatives: hand a helper a constructed import graph (proves a comparison
+function can return false, and nothing about what the wall parses); plant into a
+synthetic module (the reader would no longer be reading a shipped artifact);
+plant only the value import (the type-only branch carries the real finding on
+this tip and would ship unproved); insert after the header so the plant reads
+naturally (pins a line number that moves whenever the victim's prose does). Why:
+the only difference between this run and a clean one is the two planted lines,
+and both forms of the edge the law refuses are exercised. **Load-bearing? yes** —
+a lint nobody has watched fail proves nothing, and `src/carriage/README.md`
+records that the edges this wall exists for are type-only.
+
+AMENDED BY T7 — the control now carries seven arms, and each arm declares
+whether it plants imports or a header so the tag readers and the import reader
+are each pointed at the bytes that arm actually moved.
+
+### T5. Internal modules are plane members housed in a flat directory
+
+Decided (coordinator ruling, 2026-08-18, on the G1 escalation T1 raised;
+operator delegated the decision in session): `src/internal/` stays flat, and
+every module in it declares a `Seam: <plane>` tag in its header, exactly
+parallel to the `Plane:` tag the plane modules carry. For the layering law that
+tag IS the module's plane — outbound, an internal module may import public
+modules only of its seam plane or deeper; inbound, anything may import it only
+from that seam's rank or shallower; internal-to-internal edges compare the two
+seams. The reorg spec's "importable from any layer" clause is superseded, and
+its "its own seam's siblings" phrase now has the mechanical reading it lacked:
+the public modules of its seam plane.
+
+In the lint this collapses to one inequality — for every edge, the target's
+plane must be at or deeper than the source's, with a seamed module ranked by its
+tag. Alternatives: keep the exemption (it is a laundering channel — a kernel
+module importing an internal adapter that itself reaches carriage arrives at
+carriage through the private bag, and no arm sees it); mirror the plane
+directories inside `internal/` (moves fifteen files and re-opens every import
+path for a fact a header line already carries); leave the second half of the
+clause unenforced (the honest gap T1 reported, now closed). Why: the flat layout
+the reorg ratified is a housing decision, and membership is a law — writing the
+membership down per module lets both be true at once. **Load-bearing? yes** — it
+is what lets one rule judge both directions, and it turns the round-one gap into
+a wall.
+
+### T6. Each seam is the deepest one its imports allow, unless the module's purpose is shallower
+
+Decided: an internal module's seam is the deepest plane consistent with its
+outbound imports — the tightest bound its own edges force — except where the
+module's documented purpose names a shallower home. Fifteen assignments, each
+justified by what the module already imports:
+
+| Module | Seam | Why |
+| --- | --- | --- |
+| `cas.ts` | truth | the one lattice write loop; reaches `truth/Refusal` only |
+| `digests.ts` | truth | SHA-256 over canonical bytes; reaches `truth/Digest` only |
+| `refusals.ts` | truth | the schema-issue bridge; reaches `truth/Refusal` only |
+| `transport.ts` | truth | the NATS error classifier; reaches `truth/Refusal` only |
+| `anchors.ts` | planes | the anchor KV adapter; reaches `planes/Anchor`, `planes/Fold` |
+| `cells.ts` | planes | the cell KV adapter; reaches `planes/Cell` |
+| `chaos.ts` | planes | chaos arms over declared folds; reaches `planes/Anchor`, `planes/Fold` |
+| `folds.ts` | planes | durable fold deployment; reaches `planes/Fold` |
+| `lanes.ts` | planes | lane streams and emission; reaches `planes/Lane` |
+| `pump.ts` | planes | the positioned pump; reaches `planes/{Anchor,Fold,Lane}` |
+| `registers.ts` | planes | the register KV adapter; reaches `planes/Register` |
+| `sessions.ts` | planes | read-plane session reads; reaches `planes/Session` |
+| `successors.ts` | planes | the successor discipline; reaches `planes/Anchor` |
+| `nats.ts` | carriage | connection and message-pump types; reaches `carriage/FabricClient` |
+| `permissions.ts` | carriage | THE EXCEPTION — its imports reach only `planes/*`, but what it declares is a connection's authority at the broker; the bucket names it reads are the subjects it grants, not state it carries |
+
+`permissions.ts` additionally gained the module header it never had: it arrived
+after the reorg's tagging pass, which is why the round-one wall reported it as
+half its placement evidence missing. Alternatives: seam every adapter to the
+plane it is named after (`chaos.ts` is named after no plane and reaches three);
+seam everything to `planes` (four adapters that never touch a carrier would
+carry a rank they do not need, and the inbound rule would loosen for all of
+them); let `permissions.ts` take `planes` from its imports (a permissions map is
+a carriage concern wearing a planes rank, and the next carriage-only import
+would silently look lawful). Why: the tightest rank each module's own edges
+force is the one that keeps the inbound rule sharpest, and a documented purpose
+outranks an incidental import list. **Load-bearing? yes** — these fifteen tags
+are what the inbound and outbound rules are evaluated against.
+
+### T7. Truth's internal edges are pinned, and the pin is a reviewed file
+
+Decided (operator amendment to the T5 ruling): a truth-plane edge into
+`internal/` is tolerated where necessary and NOT encouraged, and the
+discouragement is mechanical —
+`test/fixtures/truth-internal-edges.pin.txt` lists every such edge with the
+reason the material has not been folded into `truth/` proper, and an edge absent
+from the pin is refused even when both seam ranks are lawful. Nothing generates
+the pin and no generator reads it, so the only way to add an edge is a diff a
+reviewer reads. A row that outlives its edge is refused too: a pin nobody is
+reading any more is a standing licence. One row stands today —
+`truth/Refusal.ts → internal/refusals.ts`, the schema-issue bridge that owns the
+Effect Schema types the seam exists to keep off the public surface.
+
+The control grew to seven arms accordingly: the two round-one plane edges, an
+internal module reaching above its seam, a deep module reaching a
+shallow-seamed internal (the laundering channel), a truth edge whose ranks are
+lawful but which the pin does not carry, a missing seam tag, a seam tag on a
+plane module, and a pinned row whose edge is gone. Each arm declares whether it
+plants imports or a header, so the tag readers and the import reader are each
+pointed at the bytes that arm moved — which is also what keeps the planted line
+numbers at 1 and 2 whatever the victims' prose does. Alternatives: let the seam
+ranks alone license truth's edges (correct by rank, but "tolerated" and
+"encouraged" would then look identical to the wall); forbid truth → internal
+outright (the schema-issue bridge has no other home today, so the wall would
+ship red on a law nobody has a repair for); keep the roster in a comment
+(a comment is not an artifact a check can read). Why: the reviewed diff is what
+"not encouraged" means when a machine has to enforce it. **Load-bearing? yes** —
+without the pin the deepest plane's exception is invisible the moment it grows.
+## Task DEV-763/796 stage 4 — the one-door containment wall
+
+### T0. The shared candidate form is read out of the door's bytes, and its ancestry is checked first
+
+Decided: `check:kernel-door` reads the door module's *source bytes* through the
+TypeScript AST for the form it claims — which generated symbol each of the
+candidate, intrinsic-act, and admission-context bindings names, and which
+`Kernel*` type names it exports — and requires every one of those symbols to be
+a name the generated schema module's own bytes emit. That clause runs before
+any other module is swept. Alternatives: import `KernelDoor` and read the
+schemas off the values (the generated value would only be asked to agree with
+itself, verified-codegen's self-comparison failure); hard-code the three
+generated symbol names in the checker (a hand-maintained twin of the thing the
+wall exists to keep generated); sweep the hosts and never check the door (a
+sweep held against a drifted door guards nothing — a door whose `Candidate`
+stopped naming a generated symbol would leave every host lawfully consuming a
+hand-written form). Why: the ratified stage-4 target is "consume the shared
+generated-core candidate form through KernelDoor", so the wall has to establish
+that the door's form IS the generated one before it can hold anything to it.
+**Load-bearing? yes** — the `door-form-drift` control arm plants exactly this
+and is refused before the module clauses are reached.
+
+### T1. The sweep quantifies over every `admit` route, exported or not, and the exception rides a reviewed pin
+
+Decided: the route clause reads every binding, class member, object property,
+property signature, method, and function under `src/` named `admit` — not only
+the exported ones — and requires each to BE the door's imported function: a
+bare identifier bound by `import { admit } from ".../KernelDoor.js"`, or
+`<namespace>.admit`, or a signature typed `typeof <that binding>`. A module
+that names a route the door does not own is written into
+`test/fixtures/kernel-door-routes.pin.txt` by hand with the ticket that owns
+its convergence, and a pin row that stops naming a real route reds the wall.
+Measured: the tree carries exactly one such route, `src/planes/Address.ts`'s
+petname name law, which accepts no candidate, constructs no verdict, and mints
+`invalid-petname` — a spelling that module's own header already stages as
+DEV-796 debt beside `Binding` and `Directory`. Alternatives: quantify over
+exported routes only (a private validator called by an exported function is the
+exact shape standing law 2 names, and it would pass); refuse `Address.ts`
+outright and ship the wall red (an overclaim — law 2 is about kernel candidate
+admission, and this function judges a name against a regular expression);
+special-case `Address.ts` inside the checker (a waiver nobody reviews, buried
+in mechanics). Why: the pin is nothing's input, so an exception costs a diff a
+reviewer reads, and the liveness clause stops the roster outliving what it
+waives. **Load-bearing? yes** — narrowing the quantifier to exported bindings
+was measured to admit the wrapper the control plants.
+
+### T2. Four spellings of a second door, and two exemptions stated rather than assumed
+
+Decided: the module sweep refuses four shapes — an admission verdict
+constructed or declared outside the door (an object property `verdict` whose
+initializer is a string literal, or a type member `verdict` whose type is a
+string literal); an `admit` route that is not the door's own function; a
+hand-written declaration of a name in the door's `Kernel*` form vocabulary; and
+a use of one of those names that no import from the door or the generated
+schema module bound. Two exemptions: the `*.generated.ts` projections, whose
+bytes are the model's and carry the corpus's own admission examples, and whose
+regeneration is byte-gated by `check:kernel-schemas` and `check:kernel-tables`;
+and `test/` with `negative-controls/`, because a control that plants a second
+door has to be able to spell one. Alternatives: refuse any `verdict` field
+whatever its initializer (`KernelCorpusSchemas.ts` describes the field with
+`Schema.Literal("refused")` — a grammar that describes a verdict is not a door
+that mints one, and refusing it would red the wall on the corpus schema);
+structurally compare each declared type against the generated candidate union
+(fragile, and it answers a question the type-universe walk already owns);
+sweep `test/` too (it would refuse `KernelDoor.routes.test.ts`'s own identity
+control). Why: the four shapes are the four ways a second door can be written
+down in source, and each is refused by its own clause so a red wall names which
+one moved. **Load-bearing? yes** — each clause has a planted arm, and dropping
+the route clause was measured to leave the other six green.
+
+### T3. The control plants one spelling per clause, at synthetic module paths
+
+Decided: `negative-controls/KernelDoor.second-door.mutant.ts` builds seven
+evidence sets from the shipped bytes — the real generated roster, the real door
+form, real swept modules — and plants exactly one thing in each, then runs the
+production readers and the production law over them. The planted modules carry
+paths this file owns rather than the package's, and each avoids every clause
+but its own, since the clauses are ordered and an arm that tripped two would
+answer with whichever came first. The trace is recorded by executing the mutant
+(`bun run generate:kernel-door-control`), never transcribed. Alternatives:
+splice the plant into a shipped module's real bytes (the committed trace would
+then carry that module's line numbers and "move" on every unrelated edit above
+the site — a control reporting a moved law when a comment was added); plant one
+mutant that trips several clauses (it answers with the first clause and can no
+longer name the law it drops — the shape DEV-796's control was refused for);
+assert the refusal strings in a test (a deleted assertion is invisible). Why: a
+negative control asks one question, and seven single-clause arms answer seven.
+**Load-bearing? yes** — dropping the route clause was measured to make the
+control report `the wrapper-route plant was accepted` rather than a trace diff.
+
+### T4. The wall states what can be SPELLED, and says what it does not cover
+
+Decided: this wall reads source bytes, so its claim is about `src/` as written
+and never about a running program. Runtime identity of the three host routes
+stays `test/KernelDoor.routes.test.ts`, agreement with the model's verdicts
+stays `test/KernelConformance.test.ts`, and a route reached only through an
+object spread is invisible to the sweep and is the runtime test's to hold.
+Alternatives: import the modules and compare function identity in the check
+(that is the routes test, already shipped, and a second copy would be the twin
+this estate refuses); claim the wall proves no second door exists anywhere
+(false — a spread, a dynamic import, or a `test/` fixture is outside it). Why:
+a claim is sized to its evidence, and the bound belongs in the module header
+where the next reader meets it rather than in a ticket nobody re-reads.
+**Load-bearing? yes** — the pair of walls is what makes standing law 2's wall
+mechanical; either alone leaves a hole the other closes.
+
+### T5. The guard's domain is the runtime's, because the corpus deliberately has none
+
+Decided (ruling A1, 2026-08-19, board DEV-772): `kernel/KernelIdentity.ts`
+holds `kernelIdentity`, and its width-and-alphabet guard is `truth/Digest.ts`'s
+own schema run through `Refusal.decodeRefusing` — not a `/^[0-9a-f]{64}$/`
+restated in the kernel plane. The ruling asked for the width to be read from
+the generated schema rather than assumed. **Measured: there is none to read.**
+The generated `KernelDigest` is `Schema.Struct({ id: KernelNat })`, and its own
+emitted description says a real digest "is a hash over one canonical byte form"
+that "stays in the trusted base" — the model models identity labels and says
+nothing about hexadecimal, deliberately. So the only statement of the runtime
+digest domain in this package is `truth/Digest.ts:14-15`, and the guard
+inherits it rather than twinning it. Alternatives: hard-code 64 lowercase hex
+in the kernel plane (a second statement of a domain that already has one, and
+the exact hand-written twin Law 1 refuses — it would also silently disagree the
+day the domain moves); derive a width from `KernelNat` (the model's naturals
+are unbounded, so there is no width there to derive); assume the ruling's "64"
+literally and stop reading (it would have been right today and unfounded
+tomorrow). Why: the ruling's intent is that the guard not invent its domain,
+and the honest way to satisfy that here is to inherit the one domain statement
+that exists and to write down that the generated one does not. **Load-bearing?
+yes** — this is the difference between a guard that tracks the digest domain
+and one that agrees with it by coincidence.
+
+### T6. The guard reuses `malformed-value` and mints no vocabulary at all
+
+Decided: the guard refuses through the existing schema-issue bridge, so its
+refusal is `malformed-value` — kind, law, and repair already taught and already
+pinned in `test/RefusalPayloads.taught.txt`. Nothing is added to
+`scripts/kernel-runtime-refusals.ts`, nothing is regenerated, and no model
+refusal reason is minted. The ruling licensed the staged runtime-refusal
+mechanism as a fallback "if no emitted reason fits"; measured, the fallback is
+not needed, because the bridge that mechanism feeds already carries this exact
+meaning: `decodeRefusing(Digest)("")` refuses `malformed-value` teaching "A
+decoded value satisfies its declared schema", which is precisely the law a
+malformed content address fails. Alternatives: mint `malformed-digest` as a new
+DEV-804 staged row (grows the roster, the taught-payload pin, and both
+generated files, to say what an existing spelling already says — and every
+runtime spelling added is persisted wire vocabulary that DEV-804 must later
+converge); reach for a model reason (forbidden by the ruling, and none of the
+sixteen means "this text is not an address"). Why: the cheapest lawful refusal
+is an existing one that is already true, and the ruling's constraint was about
+not minting MODEL vocabulary — honoring it by minting no vocabulary at all
+honors it strictly. **Load-bearing? yes** — a reviewer overruling this pays one
+line in the seam plus a manifest row, and the wall does not change either way.
+*Note for the coordinator: this is the one place I read the ruling's fallback
+as permission rather than instruction.*
+
+### T7. Ruling A1's clauses are four, and the second site is pinned rather than refused
+
+Decided: the wall gains four clauses — the seam's conversions all sit behind the
+domain guard; the seam contains no `throw`; no unpinned module under `src/`
+reads digest bytes as an unbounded natural; and the identity pin names only live
+sites. An identity translation is defined as a `BigInt(...)` call over a
+hex-prefixed argument. Measured, the tree already carries a SECOND such site:
+`Lane.partition` computes `Number(BigInt(\`0x${keyDigest}\`) % BigInt(lane.partitions))`.
+It is not refused, and it is not silently exempted either — it gets a pin row
+saying what it is. It reduces an ALREADY-BRANDED `Digest` to a shard index; the
+result is a routing coordinate that reaches no candidate and names no
+declaration, and the package's own law already governs it ("subjects route and
+envelopes identify"). Alternatives: refuse it and ship the wall red (an
+overclaim — the ruling refuses a second translation into IDENTITY LABELS, and a
+partition index is not one); exempt it inside the checker (a waiver nobody
+reviews, buried in mechanics — the shape T1 already rejected for `Address.ts`);
+widen the rule to `Number.parseInt(_, 16)` as well (it would catch the JSON
+`\uXXXX` unescape in `truth/Canonical.ts`, which cannot carry a 256-bit address
+because it yields a `number` — the bound is stated in the pin instead of
+discovered as noise). Why: a wall that cannot see a site cannot be trusted about
+it, and the pin is where "seen and lawful" is written down separately from
+"seen and refused". **Load-bearing? yes** — the pin's liveness clause means the
+day `Lane.partition` stops converting, the row reds rather than rotting.
+
+### T8. The seam is a subpath export and stays out of the barrel
+
+Decided: `package.json` gains `"./KernelIdentity"` so the module's own example
+is truthful, and `src/index.ts` is NOT touched. The plane-reorg spec's open
+placement 4 rules that "Exporting Kernel* namespaces from index.ts: a real
+surface decision with T7 consequences; stage 3+, its own ticket, not assumed",
+and this ticket has no licence to make it. Measured: the public type quantifier
+is the emitted barrel, so the subpath export moves neither walk — 132 public
+types and 79 emitted signatures before and after. Alternatives: add
+`export * as KernelIdentity` to the barrel (assumes the placement decision the
+spec reserves, and grows the DEV-795 debt ledger with rows nobody ratified);
+ship no export at all (the module docstring's `@example` would name an import
+path that does not resolve, which is a doc that lies). Why: hosts inside the
+package reach the seam directly, which is what "hosts become judgable" needs,
+and the barrel decision stays where the spec put it. **Load-bearing? no** — it
+is reversible in one line, and it is recorded so the reviewer sees it was a
+choice.

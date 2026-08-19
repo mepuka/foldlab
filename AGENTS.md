@@ -291,19 +291,28 @@ style notes.
    is a DEFECT, not a style choice; existing hand-written types are
    staged debt wearing explicit waivers that cite their unification
    ticket, and the truth/ primitives themselves converge under the
-   generated core. Wall: the type-universe walk (DEV-796,
-   inventory → enforce). Severity: blocker.
+   generated core. Wall: the type-universe walk — inventory
+   (DEV-796), then enforce over a waiver ledger with per-prefix
+   ratchet pins (DEV-805): an untraced public type with no committed
+   waiver fails the gate, a waiver citing a ticket off the reviewed
+   liveness list fails it, and a prefix whose debt count rises above
+   its pin fails it. Severity: blocker.
 2. **One door.** All judgment routes through kernel admission; a
-   private validator is a second door. Wall: pending the shared
-   candidate form (DEV-763/796 stage 4). Severity: blocker.
+   private validator is a second door. One guarded trusted-base seam
+   is lawful: kernelIdentity, width-and-alphabet-guarded, refusing in
+   the error channel (ruling A1). Wall: check:kernel-door and its
+   executed control, battery-gated. Severity: blocker.
 3. **Served equals derived.** Rendered surfaces (tool schemas, docs,
    command trees) are generated from declared sources and
    byte-compared; hand-authored twins are refused. Walls: corpus
    regeneration checks, check-kernel-* scripts, T7 public-surface
    walk. Severity: blocker.
 4. **Plane layering.** truth ← kernel ← planes ← carriage ← surface;
-   a layer imports only itself and deeper. Wall: layering lint
-   (DEV-767, pending; until it lands, review). Severity: blocker.
+   a layer imports only itself and deeper; internal modules rank by
+   their Seam: tag, and truth's internal edges ride a reviewed pin.
+   Wall: check:layering (landed; its control battery-gated; the lint
+   itself gates when the ruled F1 inversion lands and the red set
+   empties). Severity: blocker.
 5. **Effect first-class, idiomatic, deep.** Layers for services,
    typed errors, Stream/PubSub/Cache/RequestResolver over hand-rolls,
    @effect/cli for CLIs; core algebras as shared services. Wall:
