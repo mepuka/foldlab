@@ -1,8 +1,10 @@
 package daemon
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -57,20 +59,24 @@ var ErrUndeclaredSyncInterval = errors.New("the declared server-options value mu
 // DeclaredServerOptions is the declared server-options value the daemon starts
 // under.
 //
-// It carries the fields this slice's lifecycle depends on — the store directory
-// that is the substrate's durable identity, the listen address, the JetStream
-// enablement, the server name, the log posture, and the two durability rows.
-// The schema for the FULL declared option set, and the refusal that closes the
-// channels the vendor leaves unopened, are a later slice's work and are
-// deliberately absent here: an option this value does not carry is an option the
-// vendor's own baseline fills, and reading that baseline back is honest where
-// re-declaring it would be a transcription this slice has no wall for.
+// It carries a setting for every option in [ServerOptionRoster] — the store
+// directory that is the substrate's durable identity, the listen address, the
+// JetStream enablement, the server name, the log and signal posture, the two
+// durability rows, and the eight admission channels the closed inventory reads.
+// The roster is the schema and this struct is its Go carriage; a row in one and
+// not the other is a defect, and the option-table wall is what says so.
 //
-// **Every key below is the pinned vendor's own.** The server, the store
-// directory, the listen host, the listen port, the JetStream enablement, the
-// no-listen switch, the log suppression, and the two durability rows are the
-// vendor's option names verbatim, spelled as that vendor's own configuration
-// spells them. No estate word enters the value.
+// **Every key below is the pinned vendor's own.** The vendor's configuration
+// word is used wherever the vendor has one, and its own field name in the
+// vendor's snake spelling wherever it does not; [ServerOption.Named] records
+// which, per row. No estate word enters the value.
+//
+// **Two fields are declared inverted, and the inversion is deliberate.** The
+// listen switch and the signal switch are the vendor's `dont_listen` and
+// `no_sigs` read the positive way round, so that the zero value of this struct
+// is the hermetic, signal-free posture an embedded server has to hold. The
+// declared VALUE carries the vendor's own key at the vendor's own polarity —
+// the inversion is in this struct's field, never in the bytes.
 type DeclaredServerOptions struct {
 	// ServerName is the vendor's `server_name`, and under the daemon posture
 	// it is SET. See [ErrUndeclaredServerName] for why it is refused empty.
@@ -109,11 +115,56 @@ type DeclaredServerOptions struct {
 	// SyncAlways is the vendor's `sync_always`, the one reversible field the
 	// residual names. Declared [DeclaredSyncAlways].
 	SyncAlways bool
+	// Signals declares whether the substrate installs the vendor's own signal
+	// handlers, and it is the positive reading of the vendor's `no_sigs`. It
+	// is false under every posture the estate runs: a library inside another
+	// process does not own that process's signals. This used to be the one
+	// value the construction set behind the declared value's back; it is a
+	// declared row now, transcribed at what is measured, and the constructor
+	// reads it like every other row.
+	Signals bool
+	// HTTPPort is the vendor's `http_port`, the monitoring listener. Its value
+	// is a priced row belonging to the operator; what is recorded here is what
+	// is MEASURED — the port is unset, so the listener does not exist, and the
+	// daemon's own health and registration reads are in-process and need none.
+	// Transcribing a measurement is not ruling it.
+	HTTPPort int
+	// HTTPSPort is the vendor's `https_port`, a closed-inventory row.
+	HTTPSPort int
+	// ProfPort is the vendor's `prof_port`, a closed-inventory row.
+	ProfPort int
+	// WebsocketPort is the vendor's `websocket` block's `port`, a
+	// closed-inventory row.
+	WebsocketPort int
+	// MQTTPort is the vendor's `mqtt` block's `port`, a closed-inventory row.
+	MQTTPort int
+	// ClusterPort is the vendor's `cluster` block's `port`, a closed-inventory
+	// row.
+	ClusterPort int
+	// GatewayPort is the vendor's `gateway` block's `port`, a closed-inventory
+	// row.
+	GatewayPort int
+	// LeafNodePort is the vendor's `leafnodes` block's `port`, a
+	// closed-inventory row.
+	LeafNodePort int
+	// LeafNodeRemotes is the vendor's `leafnodes` block's `remotes`, each
+	// declared by the address the substrate would dial. A closed-inventory
+	// row, and the one that admits in the other direction.
+	LeafNodeRemotes []string
 }
 
 // Value is the declared value's own shape, in the JSON domain the
 // canonicalizer speaks.
+//
+// The nesting is the VENDOR's. A row the vendor declares inside a
+// configuration block is declared inside that block here, spelled with that
+// block's own word, so the table's key for it is a path through the vendor's
+// own structure rather than a name the estate flattened and rejoined.
 func (d DeclaredServerOptions) Value() map[string]any {
+	remotes := make([]any, 0, len(d.LeafNodeRemotes))
+	for _, remote := range d.LeafNodeRemotes {
+		remotes = append(remotes, remote)
+	}
 	return map[string]any{
 		"v":    float64(0),
 		"kind": "substrate-server-options",
@@ -125,8 +176,20 @@ func (d DeclaredServerOptions) Value() map[string]any {
 			"jetstream":     d.JetStream,
 			"dont_listen":   !d.Listen,
 			"no_log":        d.NoLog,
+			"no_sigs":       !d.Signals,
 			"sync_interval": d.SyncInterval.String(),
 			"sync_always":   d.SyncAlways,
+			"http_port":     float64(d.HTTPPort),
+			"https_port":    float64(d.HTTPSPort),
+			"prof_port":     float64(d.ProfPort),
+			"websocket":     map[string]any{"port": float64(d.WebsocketPort)},
+			"mqtt":          map[string]any{"port": float64(d.MQTTPort)},
+			"cluster":       map[string]any{"port": float64(d.ClusterPort)},
+			"gateway":       map[string]any{"port": float64(d.GatewayPort)},
+			"leafnodes": map[string]any{
+				"port":    float64(d.LeafNodePort),
+				"remotes": remotes,
+			},
 		},
 	}
 }
@@ -142,15 +205,20 @@ func (d DeclaredServerOptions) Digest() (string, error) {
 	return digestOf(d.Value())
 }
 
-// ServerOptions constructs the pinned vendor's options struct from the
-// declared value.
+// ServerOptions constructs the pinned vendor's options struct from the declared
+// value.
 //
-// Nothing is set here that the declared value did not carry, with ONE stated
-// exception that is a property of being embedded rather than configuration: the
-// vendor's signal handling is suppressed, because a library inside another
-// process does not own its process's signals. The log posture used to be the
-// second such exception and is not any more — it is a declared row now, and the
-// declared value is what decides it.
+// **Nothing is set here that the declared value did not carry.** The struct is a
+// CARRIAGE type and never enters the truth plane: it is built from the declared
+// value on the way to the vendor's constructor and read back nowhere. The signal
+// posture used to be the one exception, set behind the declared value's back
+// because an embedded server does not own its process's signals; it is a
+// declared row now, so the exception is retired and the sentence above is total.
+//
+// The closed-inventory rows are constructed from the declared value like every
+// other row rather than being pinned shut here. That is deliberate: a
+// constructor that zeroed them would make the door decorative, and the door is
+// what the estate is relying on. This function is reached only after admission.
 func (d DeclaredServerOptions) ServerOptions() (*server.Options, error) {
 	if d.ServerName == "" {
 		return nil, ErrUndeclaredServerName
@@ -161,6 +229,14 @@ func (d DeclaredServerOptions) ServerOptions() (*server.Options, error) {
 	if d.JetStream && d.StoreDir == "" {
 		return nil, errors.New("a JetStream-enabled declared value must declare a store directory")
 	}
+	remotes := make([]*server.RemoteLeafOpts, 0, len(d.LeafNodeRemotes))
+	for _, remote := range d.LeafNodeRemotes {
+		address, err := url.Parse(remote)
+		if err != nil {
+			return nil, fmt.Errorf("read the declared leafnode remote %q: %w", remote, err)
+		}
+		remotes = append(remotes, &server.RemoteLeafOpts{URLs: []*url.URL{address}})
+	}
 	return &server.Options{
 		ServerName:   d.ServerName,
 		StoreDir:     d.StoreDir,
@@ -169,9 +245,17 @@ func (d DeclaredServerOptions) ServerOptions() (*server.Options, error) {
 		JetStream:    d.JetStream,
 		DontListen:   !d.Listen,
 		NoLog:        d.NoLog,
-		NoSigs:       true,
+		NoSigs:       !d.Signals,
 		SyncInterval: d.SyncInterval,
 		SyncAlways:   d.SyncAlways,
+		HTTPPort:     d.HTTPPort,
+		HTTPSPort:    d.HTTPSPort,
+		ProfPort:     d.ProfPort,
+		Websocket:    server.WebsocketOpts{Port: d.WebsocketPort},
+		MQTT:         server.MQTTOpts{Port: d.MQTTPort},
+		Cluster:      server.ClusterOpts{Port: d.ClusterPort},
+		Gateway:      server.GatewayOpts{Port: d.GatewayPort},
+		LeafNode:     server.LeafNodeOpts{Port: d.LeafNodePort, Remotes: remotes},
 	}, nil
 }
 
@@ -196,6 +280,11 @@ var ErrTiedDeclaredOptions = errors.New("two distinct server-options values are 
 // make the read a decision. Two IDENTICAL values at one position are one
 // value declared twice and are admitted, because there is nothing to choose
 // between.
+//
+// "Distinct" is decided by CANONICAL BYTES rather than by Go equality. Identity
+// is of canonical bytes throughout this estate, and the declared value now
+// carries a list, which Go cannot compare at all — so the comparison the tie
+// check needs and the comparison the digest already makes are one comparison.
 func GreatestDeclaredOptions(declared []PositionedOptions) (DeclaredServerOptions, error) {
 	if len(declared) == 0 {
 		return DeclaredServerOptions{}, ErrNoDeclaredOptions
@@ -207,17 +296,25 @@ func GreatestDeclaredOptions(declared []PositionedOptions) (DeclaredServerOption
 		}
 	}
 	var read *DeclaredServerOptions
+	var readBytes []byte
 	for index := range declared {
 		candidate := declared[index]
 		if candidate.Position != greatest {
 			continue
 		}
-		if read != nil && *read != candidate.Declared {
+		encoded, err := candidate.Declared.Bytes()
+		if err != nil {
+			return DeclaredServerOptions{}, fmt.Errorf(
+				"take the canonical bytes of the value at position %d: %w", greatest, err,
+			)
+		}
+		if read != nil && !bytes.Equal(readBytes, encoded) {
 			return DeclaredServerOptions{}, fmt.Errorf(
 				"%w: position %d", ErrTiedDeclaredOptions, greatest,
 			)
 		}
 		read = &declared[index].Declared
+		readBytes = encoded
 	}
 	return *read, nil
 }

@@ -16,13 +16,13 @@
 // a substrate-session fact folded from declared groups. A value this package
 // keeps only in a Go field is the drift class it exists to refuse.
 //
-// **What this package does NOT do, deliberately.** It speaks no `decide` and
-// holds no register: the fenced start, the lame-duck disposition, and the
-// incarnation retirement fact are a later slice's, and a local "make sure only
-// one runs" check here would be exactly the unfenced act that slice exists to
-// fence. It defines no schema for the full server-option set and refuses
-// nothing. It opens no channel the vendor closes by default — no WebSocket, no
-// MQTT, no leafnode, no cluster, no gateway, no monitoring port.
+// **The channels the vendor can open are closed by declaration.** No WebSocket,
+// no MQTT, no leafnode listener or remote, no cluster, no gateway, no HTTPS
+// monitoring listener, no profiling listener. That is not a property of what
+// this package happens to set: it is an inventory, each row refusing on its own,
+// walked at the one admission door before any server is constructed. A declared
+// value that opens one of them receives a typed refusal carrying reason, law and
+// a repair that names the act which would open it.
 //
 // The fully hermetic no-socket posture stays available and stays in use for
 // Go-only suites that need no TypeScript client: a declared value with no
@@ -78,9 +78,16 @@ type IncarnationIdentity struct {
 }
 
 // Acquire resolves nothing and constructs everything: it takes one already
-// resolved declared server-options value, records the digest the incarnation
-// will cite, builds the pinned vendor's options struct from it, and constructs
-// the server.
+// resolved declared server-options value, ADMITS it, records the digest the
+// incarnation will cite, builds the pinned vendor's options struct from it, and
+// constructs the server.
+//
+// **Admission comes first, and that ordering is the whole guarantee.** A value
+// that opens a closed channel is refused here — before the value is digested,
+// before the vendor's options struct exists, before a server is constructed and
+// therefore before any listener could be bound. The refusal is a typed value
+// carrying reason, law and repair; the caller receives it in the error channel
+// and receives no server at all.
 //
 // No server option reaches the constructed value except through the declared
 // value passed here. The vendor's own baseline fills every option the estate
@@ -88,6 +95,19 @@ type IncarnationIdentity struct {
 // re-declared — a transcribed default passed as an argument would turn a
 // transcription mistake into a silent change to what the estate runs under.
 func Acquire(declared DeclaredServerOptions) (*Daemon, error) {
+	return AcquireUnder(ClosedChannels, declared)
+}
+
+// AcquireUnder is the same acquisition over a given closed-channel inventory.
+//
+// It exists so that the refusal's own refutation can be EXECUTED rather than
+// argued: the committed control acquires the same enabling values over an empty
+// inventory and they are admitted, which is what shows the inventory is what
+// refuses. No shipped caller passes anything but [ClosedChannels].
+func AcquireUnder(inventory []ClosedChannel, declared DeclaredServerOptions) (*Daemon, error) {
+	if refusal := AdmitUnder(inventory, declared); refusal != nil {
+		return nil, refusal
+	}
 	digest, err := declared.Digest()
 	if err != nil {
 		return nil, fmt.Errorf("digest the declared server options: %w", err)
