@@ -43,11 +43,10 @@ name = "emit"
 root = "EmitMain"
 
 [[lean_exe]]
-<<<<<<< HEAD
-name = "goemit"
-root = "GoEmitMain"
-=======
 name = "ts"
 root = "TsMain"
 supportInterpreter = true
->>>>>>> origin/main
+
+[[lean_exe]]
+name = "goemit"
+root = "GoEmitMain"
