@@ -6,11 +6,13 @@
  *
  * 1. **Bytes.** LF endings, ASCII only, no empty line, a final newline. These
  *    are properties of the file, not of any record.
- * 2. **Canonical form.** Every line is parsed into the canonical domain and
- *    written back; if the bytes differ, the line was not canonical. One
- *    comparison covers member order, absence of whitespace, string escaping,
- *    and the minimal-decimal number rule - all things a schema cannot see,
- *    because a schema sees a value and these are properties of its spelling.
+ * 2. **Canonical form.** Every line is read through the estate's one
+ *    canonicalizer - `@foldlab/core/jcs`, the same seam Go is byte-compared
+ *    against - and written back; if the bytes differ, the line was not
+ *    canonical. One comparison covers member order, absence of whitespace,
+ *    string escaping, and the minimal-decimal number rule - all things a
+ *    schema cannot see, because a schema sees a value and these are properties
+ *    of its spelling.
  * 3. **Meaning.** Each record decodes through the schema for its group, so a
  *    malformed record reports the annotated path a schema knows how to give,
  *    and the decoded value carries `bigint` integers rather than lossy
@@ -35,11 +37,9 @@
  *
  * @module
  */
-import {
-  encodeCanonicalJson,
-  parseCanonicalJson,
-  type CanonicalJson,
-} from "../src/truth/CanonicalJson.js"
+import { decodeJson, encodeJsonValue, type JsonValue } from "@foldlab/core/jcs"
+import { Schema, SchemaIssue } from "effect"
+
 import {
   KERNEL_CORPUS_FORMAT,
   KERNEL_RECORD_GROUPS,
@@ -57,7 +57,6 @@ import {
   type KernelStageRecord,
   type KernelTypeRecord,
 } from "../src/kernel/KernelCorpusSchemas.js"
-import { canonicalWriter, decodeCanonicalText } from "../src/truth/SchemaCanonical.js"
 
 /**
  * The interchange file the runtime derives its tables from, relative to the
@@ -95,6 +94,119 @@ const refuse: (reason: string) => never = (reason) => {
   throw new Error(`kernel-conformance corpus: ${reason}`)
 }
 
+const utf8 = new TextEncoder()
+
+/**
+ * The interchange's number rule, applied to a decoded document.
+ *
+ * The estate has one canonicalizer and its number domain is the estate's
+ * (DEV-807): `decodeJson` returns a `number` for a literal below 2^53 and a
+ * `bigint` at or past it, because that is the boundary where a double stops
+ * being exact. This file's grammar is narrower than the estate's - every
+ * number in it is an unbounded non-negative integer, and every record schema
+ * declares `bigint` as its carrier - so the reader states that narrowing once,
+ * here, by lifting every integral literal onto the carrier the schemas expect.
+ *
+ * A non-integral literal is left exactly as it decoded, so the schema refuses
+ * it by name rather than this walk swallowing it into an integer.
+ */
+const asNat = (value: JsonValue): JsonValue => {
+  if (typeof value === "number") return Number.isInteger(value) ? BigInt(value) : value
+  if (value === null || typeof value !== "object") return value
+  if (Array.isArray(value)) return value.map(asNat)
+  const lifted = Object.create(null) as { [key: string]: JsonValue }
+  for (const [key, member] of Object.entries(value as { readonly [key: string]: JsonValue })) {
+    lifted[key] = asNat(member)
+  }
+  return lifted
+}
+
+/**
+ * Reads one line of the interchange into the corpus's value domain: the
+ * estate's constrained decoder, then this file's number rule. Refuses whatever
+ * the seam refuses, naming the byte offset the seam names.
+ */
+export const readCanonicalValue = (text: string, where = "the value"): JsonValue => {
+  const decoded = decodeJson(utf8.encode(text))
+  return decoded.ok
+    ? asNat(decoded.value)
+    : refuse(`${where} is not JSON: ${decoded.refusal.reason} (at offset ${decoded.refusal.offset})`)
+}
+
+/**
+ * Writes one value as its canonical bytes through the estate's one
+ * canonicalizer. A value outside the canonical domain refuses with the path
+ * the seam names rather than acquiring a byte form by coercion.
+ */
+export const writeCanonicalValue = (value: JsonValue, where = "the value"): string => {
+  const encoded = encodeJsonValue(value)
+  return encoded.ok
+    ? encoded.bytes
+    : refuse(`${where} has no canonical form: ${encoded.refusal.reason} (at ${encoded.refusal.path})`)
+}
+
+/** Whether text is already the one canonical spelling of the value it denotes. */
+export const isCanonicalText = (text: string): boolean => {
+  try {
+    return writeCanonicalValue(readCanonicalValue(text)) === text
+  } catch {
+    return false
+  }
+}
+
+/** The result of reading one canonical record through a schema. */
+export type CanonicalRead<A> =
+  | { readonly ok: true; readonly value: A }
+  | { readonly ok: false; readonly reason: string }
+
+/**
+ * Reads canonical text through a schema: decode to the corpus's value domain,
+ * then decode through the schema. A schema failure is reported with the
+ * annotated message the schema itself carries, so an identifier or a
+ * description written on a field is what a reader sees when that field is
+ * wrong.
+ */
+export const decodeCanonicalText = <S extends Schema.ConstraintDecoder<unknown>>(
+  schema: S,
+  text: string,
+): CanonicalRead<S["Type"]> => {
+  let parsed: JsonValue
+  try {
+    parsed = readCanonicalValue(text)
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  }
+  const decoded = Schema.decodeUnknownResult(schema)(parsed)
+  return decoded._tag === "Success"
+    ? { ok: true, value: decoded.success }
+    : { ok: false, reason: SchemaIssue.makeFormatterDefault()(decoded.failure.issue) }
+}
+
+/**
+ * The both-ways law for one record and one schema: the text decodes through
+ * the schema, and the decoded value writes back to the same bytes. A `false`
+ * here means the text was not canonical, the schema does not describe it, or
+ * the schema widened or narrowed what the bytes carry - a member the schema
+ * does not declare is dropped by the decode and shows up as a shorter
+ * re-emission. All of those are the same defect from the wire's point of view.
+ */
+export const roundTripsCanonically = <S extends Schema.Top & Schema.ConstraintDecoder<unknown>>(
+  schema: S,
+  text: string,
+): CanonicalRead<string> => {
+  const read = decodeCanonicalText(schema, text)
+  if (!read.ok) return read
+  let written: string
+  try {
+    written = writeCanonicalValue(read.value as JsonValue)
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  }
+  return written === text
+    ? { ok: true, value: written }
+    : { ok: false, reason: `re-emission moved:\n  read  ${text}\n  wrote ${written}` }
+}
+
 /** The arity each generator tag requires of an encoded sentence. */
 export const GENERATOR_ARITY = [4, 3, 3, 3, 8, 4, 6, 3] as const
 
@@ -117,11 +229,11 @@ export const CANON_VECTOR_NAMES = [
 ] as const
 
 const groupOf = (line: string, where: string): string => {
-  const parsed = parseCanonicalJson(line)
+  const parsed = readCanonicalValue(line, where)
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return refuse(`${where} is not a JSON object`)
   }
-  const record = (parsed as { readonly [key: string]: CanonicalJson }).record
+  const record = (parsed as { readonly [key: string]: JsonValue }).record
   return typeof record === "string" ? record : refuse(`${where} carries no record group`)
 }
 
@@ -135,7 +247,7 @@ const readGroupRecord = <Group extends KernelRecordGroup>(
   if (!read.ok) return refuse(`${where} is not a ${group} record: ${read.reason}`)
   // The both-ways law, per record: what the schema decoded writes back to the
   // bytes it came from. A schema that quietly widened a field would show here.
-  const written = canonicalWriter(schema).toText(read.value)
+  const written = writeCanonicalValue(read.value as JsonValue, where)
   if (written !== line) {
     return refuse(`${where} does not survive its own schema: wrote ${written}`)
   }
@@ -162,7 +274,8 @@ const checkBytes = (source: string): ReadonlyArray<string> => {
 
 const checkCanonical = (rows: ReadonlyArray<string>): void => {
   for (const [index, line] of rows.entries()) {
-    const rewritten = encodeCanonicalJson(parseCanonicalJson(line))
+    const where = `line ${index + 1}`
+    const rewritten = writeCanonicalValue(readCanonicalValue(line, where), where)
     if (rewritten !== line) {
       refuse(
         `line ${index + 1} is not in canonical form\n  read  ${line}\n  canon ${rewritten}`,
@@ -350,7 +463,7 @@ const checkTables = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void => {
   corpus.canons.forEach((canon, index) => {
     const wanted = CANON_VECTOR_NAMES[index]
     if (canon.name !== wanted) refuse(`canon vector ${index} is ${canon.name}, want ${wanted}`)
-    const written = encodeCanonicalJson(canon.value as CanonicalJson)
+    const written = writeCanonicalValue(canon.value as JsonValue, `canon vector ${canon.name}`)
     if (written !== canon.bytes) {
       refuse(
         `canon vector ${canon.name} pins bytes ${canon.bytes}, the canonicalizer writes ${written}`,
@@ -401,7 +514,7 @@ const checkPrograms = (corpus: Omit<KernelCorpus, "lines" | "skipped">): void =>
 
   for (const program of corpus.programs) {
     const where = `program vector ${program.name}`
-    const written = encodeCanonicalJson(program.declaration as unknown as CanonicalJson)
+    const written = writeCanonicalValue(program.declaration as unknown as JsonValue, where)
     if (written !== program.bytes) {
       refuse(`${where} pins bytes ${program.bytes}, the canonicalizer writes ${written}`)
     }

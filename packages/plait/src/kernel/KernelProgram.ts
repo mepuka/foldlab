@@ -58,12 +58,13 @@ import { createHash } from "node:crypto"
 
 import type { Effect } from "effect"
 
-import { encodeCanonicalJson, type CanonicalJson } from "../truth/CanonicalJson.js"
+import { encodeJsonValue, type JsonValue } from "@foldlab/core/jcs"
+
 import type {
   CasDaemon,
   CasHoleRequirement,
   CasProgramOutcome,
-} from "../carriage/CasDaemon.js"
+} from "./CasDaemon.js"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
@@ -100,6 +101,27 @@ export class KernelProgramError extends Error {
 // bare `refuse(...)` as control flow that does not return and narrows after it.
 const refuse: (message: string) => never = (message) => {
   throw new KernelProgramError(message)
+}
+
+/**
+ * A declaration's identity bytes, through the estate's one canonicalizer.
+ *
+ * Program identity is the SHA-256 of these bytes, so the seam that writes them
+ * is the seam that decides identity. There is exactly one - `@foldlab/core/jcs`,
+ * the RFC 8785 implementation Go is byte-compared against, carrying the estate
+ * number domain ruled on 2026-08-18 (DEV-807): an integer's canonical bytes
+ * are its exact decimal digits at every magnitude, which is what lets an
+ * identity label past 2^53 be an identity rather than a rounding.
+ *
+ * A declaration is built from bigints, strings, arrays, and plain objects, so
+ * the encoding is total in practice; the refusal arm exists because a total
+ * function that cannot say why it failed is a function that fails silently.
+ */
+const canonicalBytesOf = (declaration: KernelProgramDeclaration): string => {
+  const encoded = encodeJsonValue(declaration as unknown as JsonValue)
+  return encoded.ok ? encoded.bytes : refuse(
+    `the declaration has no canonical form at ${encoded.refusal.path}: ${encoded.refusal.reason}`,
+  )
 }
 
 /** One declared parameter of a program: a local name and the schema its filling must satisfy. */
@@ -390,7 +412,7 @@ export const program = <
     lineage: spec.lineage ?? [],
     nodes: newestFirst.map(canonicalNode),
   }
-  const bytes = encodeCanonicalJson(declaration as unknown as CanonicalJson)
+  const bytes = canonicalBytesOf(declaration)
   const digestHex = createHash("sha256").update(bytes, "utf8").digest("hex")
 
   return {
@@ -453,7 +475,7 @@ export const fill = (
       name: node.name,
     })),
   }
-  const bytes = encodeCanonicalJson(declaration as unknown as CanonicalJson)
+  const bytes = canonicalBytesOf(declaration)
   const digestHex = createHash("sha256").update(bytes, "utf8").digest("hex")
   return {
     name: built.name,

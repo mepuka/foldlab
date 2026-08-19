@@ -2807,6 +2807,346 @@ and the test: every leaf here is catalogued deliberately, and the row claims
 NOTHING about an uncatalogued predicate leaf, which is the held question in T4a.
 **Load-bearing? yes** — it is the only admitted trigger in the corpus, so the
 refuse-everything mutant is now killed on a trigger as well as on a declaration.
+## Task DEV-804 (slice C) — one canonicalizer: the plait twins retire
+
+### T0. The private twins retire onto the jcs seam, and the seam's number line wins
+
+Decided: `src/truth/CanonicalJson.ts` and `src/truth/SchemaCanonical.ts` are
+deleted, and every importer moves onto `@foldlab/core/jcs`. Where the twins and
+the seam disagreed — the number line — the seam wins, per the operator ruling
+of 2026-08-18 (DEV-807, PR #138). The twins had one honest justification and it
+was in their own module header: RFC 8785 serializes numbers through IEEE-754
+doubles, this interchange carries identity labels past 2^53, so the twins wrote
+unbounded integers as minimal decimal and refused a fraction, an exponent, and
+a minus sign at the parser. DEV-807 moved that exact rule into
+`packages/core/src/jcs.ts` — bigint carriers, exact integer digits, the decoder
+returning `bigint` for any pure-integer literal at or past 2^53 — and into Go.
+With the divergence gone the twins were a second identity with no remaining
+reason, which is Law 1 debt and a standing invitation to drift. Alternatives:
+keep the twins and add a differential wall between them and the seam (two
+canonicalizers plus a wall is strictly worse than one canonicalizer, and
+both-sides-agree is not verification); re-export the seam under the twins'
+names (leaves the retired vocabulary alive and the wall with nothing to refuse);
+retire only `CanonicalJson.ts` and leave the schema walk (the walk is built on
+the twin's value domain and cannot outlive it). Why: identity is bytes, and two
+things that write bytes are two identities. **Load-bearing? yes** — program
+content addresses are SHA-256 over these bytes, and the daemon and carriage
+paths compare them.
+
+Measured, before committing anything: over all 121 lines of
+`fixtures/kernel-conformance.ndjson`, the twin's encoder and the seam's encoder
+produce identical bytes for every parsed value (0 moved); all four committed
+program vectors' declarations encode to the bytes the vectors pin under both
+encoders (0 moved); every line survives seam-decode-then-seam-encode byte for
+byte (0 moved); and every line survives schema-decode-then-seam-encode byte for
+byte (0 moved). No committed digest, canon vector, program byte string, or
+generated artifact moved: `check:corpus`, `check:kernel-tables`, and
+`check:kernel-schemas` all report byte-identical regeneration, and
+`test/PublicTypeUniverse.inventory.md` is unchanged at 132 classified types.
+The canon vector the ruling turns on round-trips through the surviving seam
+unchanged: `{"bytes":"9007199254740993","name":"big-integer","record":"canon","value":9007199254740993}`
+reads back with `value === 9007199254740993n` and re-emits to those same bytes,
+while `JSON.parse("9007199254740993")` is still `9007199254740992`.
+
+### T1. The corpus's Nat rule is a stated narrowing of the estate's domain, not a second parser
+
+Decided: `scripts/kernel-corpus.ts` decodes through the seam's `decodeJson` and
+then lifts every integral literal onto `bigint` (`asNat`), because the seam
+returns `number` below 2^53 and `bigint` at or past it while every record schema
+declares `KernelNat`. A non-integral literal is left as the seam decoded it, so
+the schema refuses it by name rather than the lift swallowing it into an
+integer. Alternatives: widen the record schemas to accept `number | bigint`
+(two carriers for one wire shape, and the widening reaches the generated
+schemas and every consumer); make the seam's decoder corpus-shaped (a
+package-wide domain change to serve one file, and it would move `packages/core`
+under a ticket that does not own it); parse the corpus with a second reader
+(the twin, under a new name). Why: the corpus's grammar genuinely is narrower
+than the estate's, and the honest place to say so is the reader of that file,
+in one walk that adds no serialization. **Load-bearing? no** — the lift is a
+carrier choice on the decode path; the bytes are the seam's either way, and the
+canonical-form check compares bytes, not carriers.
+
+### T2. Two type-level refusals are traded for three value-level controls, and the trade is named
+
+Decided: retiring `SchemaCanonical.ts` gives up two refusals it made at
+derivation time, before any data existed — a schema node of JavaScript
+`number`, and a schema carrying an encode/decode transformation — and the
+replacement catches both at the first record that exercises them, through
+`roundTripsCanonically` in `scripts/kernel-corpus.ts`. The `number` refusal is
+not relocated, it is **repealed**: the estate's number domain now carries
+JavaScript numbers, so there is no longer a type to refuse. The codec refusal
+survives as a value-level one, because a codec decodes to a value whose
+canonical form is not the text it came from. A third property the AST walk gave
+for free — an object member the schema does not declare — is now caught because
+`Schema.Struct` drops it and a dropped member is a shorter re-emission.
+`test/KernelSchemas.test.ts` carries a control for each of the three, and
+`test/KernelCorpus.test.ts` restates the number rule as what it now is: a
+fraction and an exponent are non-canonical *spellings* (refused by the
+canonical-form check, which is where a spelling was always refutable), a
+leading zero is still refused at the reader, and `-1` is canonical text that
+`KernelNat` refuses at the schema. Alternatives: keep the AST walk on top of
+the seam (the walk's whole value domain was the twin's, so keeping it keeps a
+twin); assert the loss in prose and move on (a claim without a gate).
+**Load-bearing? yes** — a control that only fires on values needs a value that
+fires it, and all three are committed.
+
+### T3. The wall is a source scan with a planted twin, because the failure it prevents compiles
+
+Decided: `check:one-canonicalizer` (wired into `test:fast`) reads every module
+under `src/` and refuses three things: a retired twin's file path existing
+again, a retired twin's name (`CanonicalJson`, `SchemaCanonical`) spelled
+anywhere but `src/truth/Canonical.ts`, and the canonicalizer signature —
+`JSON.stringify` beside `.sort(` beside `Object.keys(` — in any module but that
+one. `check:one-canonicalizer-control` (wired into `test:types`) copies the
+committed mutant at `negative-controls/OneCanonicalizer.private-twin.mutant.ts`
+to the retired path, requires the scan to fail naming both arms, and restores
+the tree in a `finally`. Alternatives: a lint rule on imports of
+`@foldlab/core/jcs` (the seam is meant to be imported; the offence is
+re-implementing it); a type-level check (a second canonicalizer typechecks
+perfectly — that is the whole problem); a test that greps in `bun test` (a wall
+that lives beside the code it guards is a wall the same edit can delete, and
+the package's other structural laws are check scripts). Why: the arms are
+properties of source bytes, and the third arm catches the twin coming back
+under a name nobody has thought of yet. **Load-bearing? yes** — the wall is
+what makes "there is one RFC 8785 canonicalizer" in `AGENTS.md` a law rather
+than an exhortation, and its control is what makes the wall refutable.
+## Task DEV-804 — the generator emits named types
+
+### T0. The alias sits beside its schema, and only the suspended entry's moves
+
+Decided: every mini-AST type in `KernelSchemas.generated.ts` is emitted with a
+named value type. A non-suspended entry's is
+`export type KernelXValue = typeof KernelX.Type`, written immediately after the
+const it names; the one suspended entry keeps the structural alias it already
+had, emitted ahead of the schemas because the annotated const is what refers to
+it. What varies between entries is where the alias sits, never whether it
+exists. Alternatives: emit all twenty-two structurally in the pre-schema block
+(twenty-one restatements of shapes the schemas already carry, each a second
+place one shape can be wrong); emit the suspended entry's alias a second time as
+`typeof KernelCandidatePredicate.Type` (its const is annotated
+`Schema.Codec<KernelCandidatePredicateValue>`, so the alias would be defined
+through itself and the module would not compile). Why: DEV-796's wall,
+`isDeclaredByGeneratedCore`, credits the file a symbol's declarations resolve
+to, so a consumer-side `typeof Generated.X.Type` is the consumer's own
+declaration and traces back to nothing — `KernelDoor.ts` spells seven types
+exactly that way and scores 0 derived. A named type is the only thing a
+consumer can re-export. **Load-bearing? yes** — restoring the suspended-only
+gate regenerates main's file exactly (1 `export type`, not 23) and
+`check:kernel-schemas` reds on the committed bytes.
+
+### T0a. `KernelRef` gets an alias although it has no type record
+
+Decided: the expanded `Ref` abbreviation is emitted with
+`export type KernelRefValue = typeof KernelRef.Type` like every declared type.
+The model spells `Ref` as an abbreviation rather than a declaration, so it
+carries no type record and is not a mini-AST entry; it is nonetheless one of the
+seven types `KernelDoor.ts` restates, so leaving it unnamed would leave that
+family one alias short of derivable for a reason no reader could see.
+Alternatives: emit no alias and let the consumer keep restating it (leaves the
+hole in exactly the family this ticket converts); promote `Ref` to a corpus type
+record (hand-authors model structure). Why: the alias is a projection of a
+schema this generator already emits, so it claims nothing the corpus does not
+already license. **Load-bearing? no** — nothing but that seventh consumer type
+depends on it.
+
+### T1. The anchor element type widens by union, not by dropping the template
+
+Decided: `generatedCoreAnchors` takes the element type
+`` `src/kernel/${string}.generated.d.ts` | `src/truth/${string}.generated.d.ts` ``,
+and `src/truth/RefusalKinds.generated.d.ts` joins the list. DEV-796's T4 fixed
+the template deliberately: an anchor must spell `.generated.d.ts`, so the walk
+cannot be granted authority over a file nothing byte-gates, and
+`KernelCorpusSchemas.d.ts` was struck from the list on exactly that ground. The
+widening preserves that law in full — both arms of the union still end
+`.generated.d.ts`, so a hand-written path stays unrepresentable in either plane.
+What moves is the directory, and the directory moved for a reason the record
+already carries: DEV-808's T0a emits the refusal vocabulary into `truth/` rather
+than importing it up from `kernel/`, because root Law 4 makes `truth/` the
+deepest plane. One generator, two emissions, both byte-gated by
+`check:kernel-tables`; refusing the second emission an anchor would make Law 4's
+compliance cost Law 1's credit. Alternatives: relax the element type to
+`` `${string}.generated.d.ts` `` (admits a generated file in any plane, gated or
+not); move `RefusalKinds.generated.ts` into `kernel/` (undoes DEV-808 T0a and
+re-crosses Law 4); leave the list alone and let the truth-plane vocabulary stay
+debt permanently (the union it names is generated, so the ledger would record a
+falsehood about it). Why: the law T4 states is about what byte-gates a file, not
+about which directory the file sits in. **Load-bearing? yes** — measured:
+appending `"src/truth/Refusal.d.ts"` and `"src/kernel/KernelCorpusSchemas.d.ts"`
+to the list reds `tsgo -p packages/plait/tsconfig.json --noEmit` with two TS2322
+diagnostics naming both spellings, so the unrepresentability T4 bought survives
+the widening intact.
+
+### T2. The ledger's authority prose is left to the lane that owns the ledger
+
+Decided: `renderInventory`'s authority line still reads
+`` (`src/kernel/*.generated.d.ts`) `` and is deliberately not updated in this
+branch. That line is generated into `test/PublicTypeUniverse.inventory.md`,
+which the concurrent DEV-805 lane is rewriting; editing it here would move the
+committed ledger's bytes under another lane for prose alone. Reported as
+untouched rather than quietly fixed, and owed to whichever lane lands second.
+**Load-bearing? no** — this branch does not move the census (132 total, 0
+derived, 132 debt before and after), so the ledger is byte-identical either way
+and only the sentence describing the rule is stale.
+## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
+
+### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
+
+Decided: every `debt-with-a-ticket` row in
+`test/PublicTypeUniverse.inventory.md` is a Law 1 waiver, and `--enforce`
+admits a walked debt row exactly when its `(public type, owning module,
+unification ticket)` triple appears there. A walked row with no such triple is
+UNWAIVERED and named. That replaces DEV-796's all-or-nothing branch, which
+refused the whole run whenever any debt existed and therefore could not be
+turned on until stage 2 had emptied the table — the flip would have arrived
+last, when every conversion had already been reviewed by hand. It arrives
+first instead, at 132 waivers, and the conversions ratchet it down. Alternatives:
+a second committed waiver file beside the inventory (two artifacts that must
+agree about the same 132 rows, and nothing but review keeping them in step);
+waivers as a reviewed constant in the walk (the rows are generated data, so
+the constant would be a hand-retyped copy of the table it authorises); keep
+all-or-nothing and wait for stage 2 (the flip lands after the work it was
+supposed to gate). Why: one artifact, generated from the walk, read back by
+the same module that writes it, and the enforcement question is coverage of
+one side by the other rather than emptiness of one side.
+**Load-bearing? yes** — deleting the coverage stage leaves the control's
+unwaivered arm green, and it fails naming the accepted mutant: `PUBLIC TYPE
+UNIVERSE CONTROL: FAIL — enforce mode accepted a public type the ledger grants
+no waiver for`.
+
+### T1. A waiver cites a ticket off a reviewed liveness list, checked on both sides
+
+Decided: `liveUnificationTickets` is a small reviewed constant — `DEV-795`,
+`DEV-804`, `DEV-817`, and `DEV-796` scoped to `negative-controls/` — and a
+citation outside it is a violation of the gate's own precondition, refused
+before any coverage question is asked. Both sides are checked, because a
+citation can rot from either: the walk's route table is audited on every run
+of every mode including `--write`, and every waiver on the committed ledger is
+audited in enforce mode. The rule is not hypothetical. `debtTarget` routed the
+seven carriage and internal rows to `DEV-763`, which had closed, and the rows
+kept reading as lawful debt for as long as nobody cross-checked a table of 132
+rows against the board; this task repoints them to `DEV-817` and makes the
+next such drift a red gate instead of an audit. Closing a listed ticket
+therefore requires draining its rows first — closing it while rows remain
+turns the whole ledger red, which is the intended direction and still a worse
+day than draining. The `DEV-796` entry is scoped rather than plain because
+that ticket IS closed: the rows citing it are the negative control's own
+plant, they are not estate surface, and they drain when the control retires.
+No `src/` row may cite it. Alternatives: query the board at gate time (a wall
+that needs the network is a wall that goes yellow on a bad afternoon, and the
+board is not a build input); check nothing and trust the routes (the DEV-763
+state, restated); admit any `DEV-` shaped string (spelling is not liveness).
+Why: liveness is a small reviewed datum, the environment is the routes and the
+ledger, and the checker compares them. **Load-bearing? yes** — repointing the
+carriage route back to `DEV-763` fails every mode before the walk runs, with
+`debt route for src/carriage/ is unlawful: ticket=DEV-763 is not on the
+reviewed liveness list`, and deleting the ledger-side stage moves the control's
+liveness arm to a different refusal, which its committed trace catches as
+`the liveness arm's trace moved`.
+
+### T2. The ratchet pins debt per owning prefix, and `--write` refuses to raise a pin
+
+Decided: the ledger carries a `## Ratchet pins` table — one count per owning
+prefix (`truth`, `kernel`, `planes`, `carriage` covering carriage/surface/
+internal, `negative-controls`) — enforce mode re-derives each count from the
+declaration walk and refuses any prefix whose walked count EXCEEDS its pin, and
+`--write` lowers a pin that fell while refusing to raise one. Pins bootstrap
+only when there is no committed ledger at all. Without the write half the
+ratchet would be worthless: report mode already forces regeneration after any
+surface change, so a `--write` that re-pinned upward would make every increase
+green in the same act that recorded it. The prefix, ticket, and unification
+target are one row of one table (`debtRoutes`), so a pin cannot end up pinned
+against a family whose ticket column was re-cut underneath it. Alternatives:
+one global count (a conversion in `truth/` would pay for growth in `planes/`,
+which is the netting the per-prefix split exists to refuse); pins as a
+constant in the script (raising one becomes a code edit, but lowering one
+becomes a hand-typed count — the thing this estate bans); pins derived from
+the committed ledger's own row counts (measured: coverage then implies
+domination, the ratchet can never fire on its own, and a stage that cannot
+fail proves nothing); no ratchet at all, coverage only (a new type plus a
+`--write` is a green gate and a silently larger universe). Why: the pin is
+policy, the walk is truth, and they must be able to disagree.
+**Load-bearing? yes** — with `Address.RatchetPlant` planted and its waiver row
+hand-added while the pin stayed at 61, enforce refused with `PUBLIC TYPE
+UNIVERSE RATCHET: owning prefix=planes walked=62 pinned=61`; `--write` over the
+same plant refused with `--write refuses to raise a ratchet pin` and left the
+ledger's bytes untouched; and deleting the ratchet stage leaves the control's
+ratchet arm green, failing as `enforce mode accepted a prefix whose walked debt
+count rose above its pin`.
+
+**What this does NOT cover.** Raising a pin is a hand edit of a committed file,
+and so is deleting the ledger to re-bootstrap. The ratchet makes debt growth
+NAMED, reviewable, and impossible to acquire as a side effect of regeneration;
+it does not make it impossible. The waiver grant stays what A5 says it is —
+the operator's act — and the gate's job is to ensure the act leaves a diff
+that says which prefix grew and by how much.
+
+### T3. Enforcement is three ordered stages, each with its own refusal vocabulary
+
+Decided: enforce runs PRECONDITION (the ledger parses, pins every prefix the
+walk found, and cites only live tickets), then UNWAIVERED (coverage), then
+RATCHET (counts), returning at the first stage that has anything to say. The
+order is measured, not aesthetic: an unwaivered new type also lifts its
+prefix's count, so a ratchet-first order would answer a question about
+`Address.RatchetPlant` by naming `planes`. Each stage owns a distinct line
+prefix, which is what lets the control's three arms fail apart — an arm whose
+mutation produced the right colour for the wrong reason is caught by its
+committed trace, not by its exit code. Alternatives: one violation list in
+walk order (the three failures interleave and no arm can name its own law);
+collect every stage and report all of them (a dropped stage stays invisible
+because the other two still speak); a single "enforce failed" message (the
+2026-08-18 shape, which cannot distinguish a stale gate from new debt). Why: a
+gate with three laws needs three vocabularies or its control has one arm.
+**Load-bearing? yes** — each of the three arms goes green under deletion of its
+own stage and only its own stage, measured one at a time.
+
+### T4. Report mode keeps running beside enforce, in the same `test:fast` step
+
+Decided: `check:type-universe` invokes the script twice — once bare, once with
+`--enforce` — and enforce still never byte-compares the ledger. DEV-796's T2
+already bound this: a `test:fast` that swapped report for enforce would leave
+the committed ledger gated by nothing exactly when its debt table empties and
+the count line becomes the whole artifact. It binds harder now, because the
+ledger has stopped being a report and become the gate's own authority: enforce
+reads its waivers and its pins, so an enforce run over a stale ledger is a run
+over stale authority, and report mode is what proves the authority is fresh.
+Alternatives: one invocation doing both (re-entangles the control's arms —
+T2's refused shape); enforce byte-compares as a fourth stage (same
+entanglement, one mutation away); run enforce only in `test:types` beside the
+control (the production surface would be enforced on a different cadence from
+the ledger that authorises it). Why: two questions, two runs, and the second
+costs 1.9 seconds. **Load-bearing? yes** — dropping the report invocation makes
+a hand-edited ledger authoritative with nothing regenerating it.
+
+### T5. The control plants by taking a waiver away, and A5's condition rides the header
+
+Decided: the negative control runs five arms over its one planted pair — enforce
+must ADMIT the planted ledger's own six waivers, three ledger mutations must
+each be refused for their own reason against their own committed trace, and
+report mode must still reproduce the ledger byte for byte. The mutations are
+applied to the control's committed ledger, not to a second mutant declaration
+file: the gate compares a walk against a ledger, so a planted new public type
+and a ledger that stopped naming an existing one are the same edge approached
+from opposite sides, and only the ledger side can be mutated without
+invalidating the admission arm's artifact, which report mode regenerates from
+the walk. A mutation that changes no bytes fails as a control in its own right.
+A5's ruling (DEV-772 sitting record, round 1) rides the ledger's Authority
+header rather than the walk: a waiver MAY cover NEW surface, on condition that
+it names the provably-absent generator/corpus group and its unification ticket
+— the DEV-764 shape — and the ratchet then counts that conditioned waiver as
+ticketed debt like any other row, so the new surface still costs a pin.
+Alternatives: a second mutant `.d.ts` with an eighth type (a second declaration
+project and tsconfig to keep in step, for an edge the ledger mutation already
+reaches); assert the enforcement result in a unit test over the pure function
+(it would stop proving that the CLI wires the stages, which is the failure
+DEV-796's T2 was built against); encode A5's condition as a machine check (the
+"provably absent generator group" is a judgement about the corpus, not a
+predicate over the emitted barrel — claiming to check it would be the false
+green this wall exists to refuse). Why: the control exercises the production
+`--enforce` branch for every law it now carries, and the one condition the
+machine cannot judge is written where the operator granting a waiver reads it.
+**Load-bearing? yes** — the three arms and their traces are what caught each
+stage deletion above; the A5 header is stated evidence, and this DECISIONS
+entry is its record.
 ## Task DEV-767 — the plane layering lint
 
 ### T0. The ladder is held against law 4's bytes; the printed law is a transcription

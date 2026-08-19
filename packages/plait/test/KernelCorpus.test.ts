@@ -35,18 +35,19 @@
 import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 
+import type { JsonValue } from "@foldlab/core/jcs"
+
 import {
   CANON_VECTOR_NAMES,
   CORPUS_PATH,
+  isCanonicalText,
+  readCanonicalValue,
   readKernelCorpus,
+  writeCanonicalValue,
 } from "../scripts/kernel-corpus.js"
-import {
-  canonicalizeJsonText,
-  encodeCanonicalJson,
-  isCanonicalJsonText,
-  parseCanonicalJson,
-  type CanonicalJson,
-} from "../src/truth/CanonicalJson.js"
+
+/** The canonical form of text that is merely well-formed. */
+const canonicalize = (text: string): string => writeCanonicalValue(readCanonicalValue(text))
 
 const repository = resolve(import.meta.dir, "../../..")
 const source = await Bun.file(resolve(repository, CORPUS_PATH)).text()
@@ -57,7 +58,7 @@ const corpus = readKernelCorpus(source)
  * `key-order` is written `b` first on purpose: that is the only way the member
  * sort is exercised at all, since anything already in the corpus is sorted.
  */
-const nativeVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
+const nativeVectors: ReadonlyArray<readonly [string, JsonValue, string]> = [
   ["empty-object", {}, "{}"],
   ["empty-array", [], "[]"],
   ["empty-string", "", "\"\""],
@@ -79,7 +80,7 @@ const nativeVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
  * three literals, appear nowhere in the corpus at all. Every one of them is
  * cheap to cover directly, against the specification rather than the file.
  */
-const gapVectors: ReadonlyArray<readonly [string, CanonicalJson, string]> = [
+const gapVectors: ReadonlyArray<readonly [string, JsonValue, string]> = [
   ["control-char-surrounded", "control\u0001char", "\"control\\u0001char\""],
   ["hex-letter", "\u000b", "\"\\u000b\""],
   ["every-two-char-escape", "\b\f\n\r\t", "\"\\b\\f\\n\\r\\t\""],
@@ -96,7 +97,7 @@ const mutate = (find: string, replace: string): string => {
 describe("the both-ways law", () => {
   test("the whole corpus survives parse and re-emit, byte for byte", () => {
     const rewritten = corpus.lines
-      .map((line) => `${encodeCanonicalJson(parseCanonicalJson(line))}\n`)
+      .map((line) => `${writeCanonicalValue(readCanonicalValue(line))}\n`)
       .join("")
     expect(rewritten).toBe(source)
     console.info(
@@ -108,7 +109,7 @@ describe("the both-ways law", () => {
   test("every line is already in canonical form", () => {
     const moved = corpus.lines
       .map((line, index) => ({ line, index }))
-      .filter((row) => !isCanonicalJsonText(row.line))
+      .filter((row) => !isCanonicalText(row.line))
     expect(moved.map((row) => row.index + 1)).toEqual([])
   })
 
@@ -127,13 +128,13 @@ describe("the canon vectors", () => {
 
   test("weak: every vector's value canonicalizes to the bytes it carries", () => {
     for (const canon of corpus.canons) {
-      expect(encodeCanonicalJson(canon.value as CanonicalJson)).toBe(canon.bytes)
+      expect(writeCanonicalValue(canon.value as JsonValue)).toBe(canon.bytes)
     }
   })
 
   test("strong: values built here canonicalize to the bytes the schema pins", () => {
     for (const [name, value, bytes] of nativeVectors) {
-      expect({ name, bytes: encodeCanonicalJson(value) }).toEqual({ name, bytes })
+      expect({ name, bytes: writeCanonicalValue(value) }).toEqual({ name, bytes })
     }
     console.info(
       `CANON STRONG: PASS constructed=${nativeVectors.length}/${CANON_VECTOR_NAMES.length}` +
@@ -150,7 +151,7 @@ describe("the canon vectors", () => {
 
   test("the cases the emitted ten leave uncovered are covered here", () => {
     for (const [name, value, bytes] of gapVectors) {
-      expect({ name, bytes: encodeCanonicalJson(value) }).toEqual({ name, bytes })
+      expect({ name, bytes: writeCanonicalValue(value) }).toEqual({ name, bytes })
     }
     console.info(
       `CANON GAPS: PASS covered=${gapVectors.map(([name]) => name).join(",")}` +
@@ -163,26 +164,59 @@ describe("the canon vectors", () => {
     expect(canon?.value).toBe(9007199254740993n)
     // The one-line proof that JSON.parse is not a conforming parser here.
     expect(JSON.parse("9007199254740993")).toBe(9007199254740992)
-    expect(parseCanonicalJson("9007199254740993")).toBe(9007199254740993n)
+    expect(readCanonicalValue("9007199254740993")).toBe(9007199254740993n)
   })
 })
 
-describe("the number rule, tighter than JSON's", () => {
-  test("a fraction, an exponent, a minus, and a leading zero are refused", () => {
-    for (const text of ["1.0", "1e3", "1E3", "-1", "01"]) {
-      expect(() => parseCanonicalJson(text)).toThrow()
+/**
+ * The number rule, after the estate ruled on it (DEV-807, 2026-08-18).
+ *
+ * The private canonicalizer this corpus used to read through refused a
+ * fraction, an exponent, and a minus sign at the parser. The estate's one
+ * canonicalizer admits all three - RFC 8785 for non-integral numbers, exact
+ * decimal digits for every integer - and the ruling says the estate's
+ * canonicalizer wins. So the corpus's tighter grammar is enforced where it
+ * belongs and where it was always enforceable: a spelling that is not the one
+ * canonical spelling of its value is refused by the canonical-form check, and
+ * a number outside `KernelNat` is refused by the schema that names the field.
+ * No line this reader refused before is admitted now; what moved is which
+ * layer says no, and what it says.
+ */
+describe("the number rule, and the layer that now enforces it", () => {
+  test("a fraction and an exponent are not canonical spellings", () => {
+    for (const [text, canon] of [["1.0", "1"], ["1e3", "1000"], ["1E3", "1000"]] as const) {
+      expect([text, isCanonicalText(text)]).toEqual([text, false])
+      expect([text, canonicalize(text)]).toEqual([text, canon])
     }
+  })
+
+  test("a leading zero is still refused at the reader", () => {
+    expect(() => readCanonicalValue("01")).toThrow(/leading zero/)
+  })
+
+  test("a minus sign is canonical text, and the schema is what refuses it", () => {
+    // The estate's number line is signed, so `-1` is the one canonical
+    // spelling of the integer minus one and the byte check has nothing to say
+    // about it. This corpus admits only naturals, and `KernelNat` says so.
+    expect(isCanonicalText("-1")).toBe(true)
+    expect(canonicalize("-1")).toBe("-1")
+    expect(() => readKernelCorpus(mutate("\"rank\":0", "\"rank\":-1")))
+      .toThrow(/non-negative/)
+    console.info(
+      "NUMBER RULE: PASS fraction=non-canonical exponent=non-canonical leading-zero=refused" +
+        " minus=canonical-text-refused-by-KernelNat seam=@foldlab/core/jcs",
+    )
   })
 
   test("integers parse at arbitrary precision, and re-emit minimally", () => {
     const wide = "170141183460469231731687303715884105727"
-    expect(canonicalizeJsonText(wide)).toBe(wide)
-    expect(parseCanonicalJson(wide)).toBe(BigInt(wide))
+    expect(canonicalize(wide)).toBe(wide)
+    expect(readCanonicalValue(wide)).toBe(BigInt(wide))
   })
 
   test("a duplicate member and an unescaped control character are refused", () => {
-    expect(() => parseCanonicalJson("{\"a\":1,\"a\":2}")).toThrow(/written twice/)
-    expect(() => parseCanonicalJson("\"a\u0001b\"")).toThrow(/unescaped control character/)
+    expect(() => readCanonicalValue("{\"a\":1,\"a\":2}")).toThrow(/duplicate object member/)
+    expect(() => readCanonicalValue("\"a\u0001b\"")).toThrow(/unescaped control character/)
   })
 })
 
@@ -205,9 +239,9 @@ describe("the control arm", () => {
     // the lowercase rule goes unexercised by the corpus. The gap is named in
     // the schema rather than papered over, so it is closed here directly,
     // against the canonicalizer, with U+000B - which does print one.
-    expect(isCanonicalJsonText("\"\\u000B\"")).toBe(false)
-    expect(isCanonicalJsonText("\"\\u000b\"")).toBe(true)
-    expect(canonicalizeJsonText("\"\\u000B\"")).toBe("\"\\u000b\"")
+    expect(isCanonicalText("\"\\u000B\"")).toBe(false)
+    expect(isCanonicalText("\"\\u000b\"")).toBe(true)
+    expect(canonicalize("\"\\u000B\"")).toBe("\"\\u000b\"")
     // And in the corpus itself: a newline written the long way is the same
     // value and a different line, which is exactly what the per-line canonical
     // check exists to catch.

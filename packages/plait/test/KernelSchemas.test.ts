@@ -14,17 +14,24 @@
  * the schema it annotates. An example that no longer parses is a lie told to
  * every reader of the JSON Schema export, and it is caught before it ships.
  *
- * **The canonical writer is derived from the tree, not written per record.**
- * `canonicalWriter` walks a schema's `SchemaAST` once and returns the writer
- * for it, so the both-ways law is earned generically: add a record type and its
- * writer arrives with its schema. The walk also refuses, before any data
- * exists, a schema that *cannot* have a canonical form - a JavaScript `number`,
- * or a codec whose two views would disagree about what reaches the wire. Those
- * are refusals of a type rather than of a value, which no amount of testing
- * over values would give.
+ * **The canonical writer is the estate's one canonicalizer, not a per-schema
+ * derivation.** `roundTripsCanonically` decodes a line through the schema and
+ * writes the decoded value back through `@foldlab/core/jcs`, so the both-ways
+ * law is earned generically: add a record type and its writer arrives with the
+ * seam. Until DEV-804 slice C this package walked each schema's `SchemaAST` to
+ * build a private writer, which bought two refusals of a *type* rather than of
+ * a value - a JavaScript `number` node, and a codec whose two views disagree
+ * about what reaches the wire. That walk is gone with the twin it was built
+ * on, and the loss is measured rather than waved at: both defects are still
+ * caught, at the first record that exercises them, by the three controls at
+ * the end of this block. The `number` refusal is not merely relocated - it is
+ * repealed, because the estate's number domain (DEV-807) carries JavaScript
+ * numbers and the ruling says the estate's canonicalizer wins.
  */
 import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
+
+import type { JsonValue } from "@foldlab/core/jcs"
 
 import { loadKernelArtifact } from "./KernelConformance.harness.js"
 import { firstSentence } from "../scripts/kernel-schemas.js"
@@ -38,10 +45,10 @@ import {
   KernelRefusalRecord,
 } from "../src/kernel/KernelSchemas.generated.js"
 import {
-  canonicalWriter,
   decodeCanonicalText,
   roundTripsCanonically,
-} from "../src/truth/SchemaCanonical.js"
+  writeCanonicalValue,
+} from "../scripts/kernel-corpus.js"
 
 const corpus = await loadKernelArtifact()
 
@@ -121,7 +128,7 @@ describe("the canonical writer, derived from the tree", () => {
     expect(failures).toEqual([])
     console.info(
       `SCHEMA BOTH-WAYS: PASS lines=${corpus.lines.length - 1} groups=${groups.size}` +
-        " writer=derived-from-ast",
+        " writer=@foldlab/core/jcs",
     )
   })
 
@@ -132,17 +139,54 @@ describe("the canonical writer, derived from the tree", () => {
     const read = decodeCanonicalText(KernelCanonRecord, line)
     expect(read.ok).toBe(true)
     expect(read.ok && read.value.value).toBe(9007199254740993n)
-    expect(canonicalWriter(KernelCanonRecord).toText(read.ok ? read.value : undefined!)).toBe(line)
+    expect(writeCanonicalValue(read.ok ? read.value as JsonValue : undefined!)).toBe(line)
+    console.info(
+      "CANON CARRIER: PASS vector=9007199254740993 carrier=bigint" +
+        " bytes=9007199254740993 seam=@foldlab/core/jcs",
+    )
   })
 
-  test("a schema of JavaScript numbers is refused at derivation, before any value", () => {
-    expect(() => canonicalWriter(Schema.Struct({ n: Schema.Number })))
-      .toThrow(/has no canonical form/)
+  test("a schema of JavaScript numbers refuses the identity it cannot hold", () => {
+    // The AST walk used to refuse this schema before any data existed. The
+    // estate's number domain carries JavaScript numbers now, so there is no
+    // type to refuse - and the vector that made the old refusal worth having
+    // still stops the schema, at the record, without rounding.
+    const rounding = Schema.Struct({
+      bytes: Schema.String,
+      name: Schema.String,
+      record: Schema.Literal("canon"),
+      value: Schema.Number,
+    })
+    const line =
+      "{\"bytes\":\"9007199254740993\",\"name\":\"big-integer\",\"record\":\"canon\","
+      + "\"value\":9007199254740993}"
+    const round = roundTripsCanonically(rounding, line)
+    expect(round.ok).toBe(false)
+    expect(round.ok ? "" : round.reason).toContain("value")
   })
 
-  test("a schema with two views is refused: neither view is the one on the wire", () => {
-    expect(() => canonicalWriter(Schema.Struct({ n: Schema.BigIntFromString })))
-      .toThrow(/two views and no single canonical form/)
+  test("a schema with two views moves the bytes at its first record", () => {
+    // A codec decodes to a value whose canonical form is not the text it came
+    // from, which is exactly what "two views and no single canonical form"
+    // meant. Caught per record now instead of per type.
+    const round = roundTripsCanonically(Schema.Struct({ n: Schema.BigIntFromString }), "{\"n\":\"5\"}")
+    expect(round.ok).toBe(false)
+    expect(round.ok ? "" : round.reason).toContain("re-emission moved")
+  })
+
+  test("a member the schema does not declare is dropped, and the bytes say so", () => {
+    // The AST walk refused an undeclared member outright. The decode drops it
+    // instead - and a dropped member is a shorter re-emission, so the byte
+    // comparison is what refuses. Without this control the collapse would have
+    // widened the reader silently.
+    const line = "{\"extra\":1,\"name\":\"schema\",\"rank\":0,\"record\":\"kind\"}"
+    const round = roundTripsCanonically(KERNEL_RECORD_SCHEMA.kind, line)
+    expect(round.ok).toBe(false)
+    expect(round.ok ? "" : round.reason).toContain("re-emission moved")
+    console.info(
+      "SCHEMA CONTROLS: PASS repealed=number-node-at-derivation" +
+        " caught-per-record=two-views,undeclared-member writer=@foldlab/core/jcs",
+    )
   })
 
   test("a decode failure names the field, through the schema's own annotations", () => {

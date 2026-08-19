@@ -82,3 +82,11 @@ export const STRUCTURAL_REFUSAL_KINDS = [
  * literals in a failed decode's reported expectation with this schema's name.
  */
 export const StructuralRefusalKind = Schema.Literals(STRUCTURAL_REFUSAL_KINDS)
+
+/**
+ * One structural refusal kind, named here so a consumer re-exports this
+ * declaration instead of restating the type as one of its own. A consumer-side
+ * `typeof StructuralRefusalKind.Type` reads as derivation and is not: it is the
+ * consumer's own declaration, and no checker can read its ancestry back.
+ */
+export type StructuralRefusalKind = typeof StructuralRefusalKind.Type

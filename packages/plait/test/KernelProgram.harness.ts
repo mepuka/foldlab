@@ -32,7 +32,7 @@
  */
 import { resolve } from "node:path"
 
-import { encodeCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
+import type { JsonValue } from "@foldlab/core/jcs"
 import type {
   KernelArgRef,
   KernelProgramDeclaration,
@@ -41,7 +41,12 @@ import type {
 import type { KernelCandidateAct, KernelRawArg } from "../src/kernel/KernelDoor.js"
 import { program, type KernelProgram } from "../src/kernel/KernelProgram.js"
 import { KERNEL_DECL_KINDS, type KernelDeclKind } from "../src/kernel/KernelTables.generated.js"
-import { CORPUS_PATH, readKernelCorpus, type KernelCorpus } from "../scripts/kernel-corpus.js"
+import {
+  CORPUS_PATH,
+  readKernelCorpus,
+  writeCanonicalValue,
+  type KernelCorpus,
+} from "../scripts/kernel-corpus.js"
 
 const repository = resolve(import.meta.dir, "../../..")
 
@@ -312,9 +317,9 @@ export const asProgramRecord = (
   name: string,
   declaration: KernelProgramDeclaration,
 ): string =>
-  encodeCanonicalJson({
-    bytes: encodeCanonicalJson(declaration as unknown as CanonicalJson),
-    declaration: declaration as unknown as CanonicalJson,
+  writeCanonicalValue({
+    bytes: writeCanonicalValue(declaration as unknown as JsonValue),
+    declaration: declaration as unknown as JsonValue,
     name,
     record: "program",
   })

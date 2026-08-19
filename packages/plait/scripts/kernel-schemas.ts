@@ -38,8 +38,9 @@ import type {
   KernelConstructorRecord,
   KernelTypeRecord,
 } from "../src/kernel/KernelCorpusSchemas.js"
-import { encodeCanonicalJson, type CanonicalJson } from "../src/truth/CanonicalJson.js"
-import { parseTypeReference, type KernelCorpus } from "./kernel-corpus.js"
+import type { JsonValue } from "@foldlab/core/jcs"
+
+import { parseTypeReference, writeCanonicalValue, type KernelCorpus } from "./kernel-corpus.js"
 
 /** The command a reader runs to reproduce the generated module. */
 export const GENERATE_SCHEMAS_COMMAND = "bun run generate:kernel-schemas"
@@ -111,7 +112,7 @@ const stringExpression = (text: string, indent: string): string =>
     .join(`\n${indent}+ `)
 
 /** One corpus value, as the TypeScript literal that denotes it. */
-const literal = (value: CanonicalJson, indent: string): string => {
+const literal = (value: JsonValue, indent: string): string => {
   if (value === null) return "null"
   switch (typeof value) {
     case "boolean":
@@ -120,6 +121,16 @@ const literal = (value: CanonicalJson, indent: string): string => {
       return quote(value)
     case "bigint":
       return `${value.toString(10)}n`
+    // The estate's wire domain carries JavaScript numbers; this corpus's does
+    // not. Every number the reader hands back is already lifted onto the
+    // `bigint` carrier the record schemas declare, so a `number` arriving here
+    // means the lift missed one - and rendering it as a numeric literal would
+    // put a rounded identity into a generated file.
+    case "number":
+      return refuse(
+        `the corpus value ${value} reached the renderer as a JavaScript number; the interchange's` +
+          " numbers are unbounded integers and their carrier is bigint",
+      )
     default: {
       const inner = `${indent}  `
       if (Array.isArray(value)) {
@@ -130,7 +141,7 @@ const literal = (value: CanonicalJson, indent: string): string => {
           ? flat
           : `[\n${entries.map((entry) => `${inner}${entry},`).join("\n")}\n${indent}]`
       }
-      const source = value as { readonly [name: string]: CanonicalJson }
+      const source = value as { readonly [name: string]: JsonValue }
       const names = Object.keys(source).sort()
       if (names.length === 0) return "{}"
       const members = names.map((name) => `${key(name)}: ${literal(source[name]!, inner)}`)
@@ -149,10 +160,10 @@ interface RecordBinding {
   /** What the schema is for, in one line, for the generated doc comment. */
   readonly gloss: string
   /** The exemplifying records, already canonical values. */
-  readonly examples: ReadonlyArray<CanonicalJson>
+  readonly examples: ReadonlyArray<JsonValue>
 }
 
-const asValue = (record: unknown): CanonicalJson => record as CanonicalJson
+const asValue = (record: unknown): JsonValue => record as JsonValue
 
 /**
  * Chooses which corpus records exemplify which record schema. One example per
@@ -161,7 +172,7 @@ const asValue = (record: unknown): CanonicalJson => record as CanonicalJson
  * reader who sees three of them has to go looking for the rest.
  */
 const recordBindings = (corpus: KernelCorpus): ReadonlyArray<RecordBinding> => {
-  const first = <A>(rows: ReadonlyArray<A>, group: string): ReadonlyArray<CanonicalJson> =>
+  const first = <A>(rows: ReadonlyArray<A>, group: string): ReadonlyArray<JsonValue> =>
     rows.length === 0 ? refuse(`the corpus carries no ${group} record`) : [asValue(rows[0])]
   const refused = corpus.admissions.filter((row) => row.verdict === "refused")
   const admitted = corpus.admissions.filter((row) => row.verdict === "admitted")
@@ -581,9 +592,9 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
   line("// The interchange records, annotated with the corpus's own examples.")
   line("// ---------------------------------------------------------------------------")
   line()
-  const exampleAnnotations = (examples: ReadonlyArray<CanonicalJson>): void => {
+  const exampleAnnotations = (examples: ReadonlyArray<JsonValue>): void => {
     line("  canonicalExamples: [")
-    for (const example of examples) line(`    ${quote(encodeCanonicalJson(example))},`)
+    for (const example of examples) line(`    ${quote(writeCanonicalValue(example))},`)
     line("  ],")
     line("  examples: [")
     for (const example of examples) line(`    ${literal(example, "    ")},`)
@@ -646,14 +657,27 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
     body: renderType(type, context, at, declarationOf(type.name).length + 1 + ".annotate({".length),
   }))
 
+  // Every mini-AST type is emitted with a named value type, and the name is
+  // the whole point: a named type is the only thing a consumer can re-export,
+  // so that the declaration a checker resolves to stays this generated file's.
+  // A consumer-side `typeof Generated.X.Type` reads as derivation and is not —
+  // it declares a type of the consumer's own, whose ancestry no checker can
+  // read back. Where the alias sits is the one thing that varies: a suspended
+  // entry's is written out structurally and emitted ahead of the schemas,
+  // because the annotated const is what refers to it, while every other
+  // entry's names the schema it follows.
+  const aliasDoc = (name: string): ReadonlyArray<string> =>
+    docComment(
+      context.suspended.has(name)
+        ? `The value ${name} carries. Written out because ${name} refers to` +
+          " itself, and a suspended schema needs a type to be annotated with."
+        : `The value ${name} carries, named here so a consumer re-exports this declaration` +
+          " instead of restating the type as one of its own.",
+    )
+
   for (const entry of rendered) {
     if (!context.suspended.has(entry.type.name)) continue
-    for (
-      const row of docComment(
-        `The value ${entry.type.name} carries. Written out because ${entry.type.name} refers to` +
-          " itself, and a suspended schema needs a type to be annotated with.",
-      )
-    ) line(row)
+    for (const row of aliasDoc(entry.type.name)) line(row)
     line(`export type ${valueTypeName(entry.type.name)} =${entry.body.type}`)
     line()
   }
@@ -681,6 +705,13 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
     }
     line("})")
     line()
+    if (!context.suspended.has(entry.type.name)) {
+      for (const row of aliasDoc(entry.type.name)) line(row)
+      line(
+        `export type ${valueTypeName(entry.type.name)} = typeof ${schemaName(entry.type.name)}.Type`,
+      )
+      line()
+    }
     if (context.usesRef && declKind !== undefined && entry.type.name === declKind.type.name) {
       line("/**")
       line(" * A kind-tagged reference: the one lawful way a heterogeneous collection of")
@@ -705,6 +736,12 @@ export const renderKernelSchemas = (corpus: KernelCorpus, corpusPath: string): s
         },`,
       )
       line("})")
+      line()
+      line("/**")
+      line(" * The value KernelRef carries, named here so a consumer re-exports this")
+      line(" * declaration instead of restating the type as one of its own.")
+      line(" */")
+      line("export type KernelRefValue = typeof KernelRef.Type")
       line()
     }
   }
