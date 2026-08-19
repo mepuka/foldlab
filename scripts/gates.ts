@@ -269,6 +269,46 @@ const stages: ReadonlyArray<Stage> = [
     cwd: resolve(repo, "go"),
     command: ["go", "run", "./cmd/teardownwall", "--consumer-control"],
   },
+  // The server-options slice's four walls. The options a substrate runs under
+  // are declared data now, so what the battery measures is that the data is
+  // what decides: the inventory refuses at the one admission door, the door
+  // refuses because of the inventory and not because of something else, a
+  // running incarnation cites the exact value it started under, and the two
+  // languages' tables are one table rather than twins.
+  //
+  // The refusal stage probes every inventory row ON ITS OWN and measures the
+  // absence of a server from the host — no listener on either port the refused
+  // value named, and an untouched store directory — because "no server was
+  // constructed" is a claim about the world rather than about a return value.
+  // Its control is the other half: the same enabling values pass the same door
+  // over an emptied inventory and must be ADMITTED, since a refusal that cannot
+  // be turned off proves nothing about what is doing the refusing.
+  {
+    label: "daemon — closed-channel refusal",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall"],
+  },
+  {
+    label: "daemon — closed-channel admission control",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall", "--admission-control"],
+  },
+  {
+    label: "daemon — options digest citation",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall", "--citation"],
+  },
+  // The parity stage spawns a TypeScript process, like the CL-1 differential
+  // and the incarnation parity above, and needs the root install already warmed
+  // by the preflight. It also carries the oracles that keep it from being two
+  // transcriptions agreeing with each other: the pin is checked against the
+  // module the binary links, and every row's site is read in the pinned
+  // vendor's own source.
+  {
+    label: "daemon — options schema parity",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/optionswall", "--parity"],
+  },
   // The ports-file poll's retirement, in the empty-output shape this battery
   // already uses for formatting drift: the check prints every line in the
   // daemon-backed suite that reaches for a ports file or for the stock-binary
