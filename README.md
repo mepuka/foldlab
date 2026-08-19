@@ -333,7 +333,7 @@ deterministic replay works at all.
 | [packages/plait/](packages/plait/) | Plait: the merged spine and register, with the quickstart, the agent mapping, and the negative controls |
 | [packages/core/](packages/core/) | The RFC 8785 seam and the fold algebra (TypeScript) |
 | [packages/moves/](packages/moves/) | The move-calculus kernel that replays the Lean model's corpus |
-| [go/](go/) | The Go substrate: `canonical`, `journal`, `register`, `substrate` (the assumptions gate), and `cmd/` (the walls: `plaitwall`, `registerwall`, `jcsprobe`) |
+| [go/](go/) | The Go substrate: `canonical`, `journal`, `register`, `daemon` (the embedded substrate as a scoped process value), `substrate` (the assumptions gate), and `cmd/` (the walls: `plaitwall`, `registerwall`, `daemonwall`, `jcsprobe`) |
 | [proto/](proto/) | The tracer bullet — daemon, wire contract, MCP derivation, and its own gates |
 | [verify/](verify/) | Model gates: `fabric` and `fabric-veil` (Plait), `moves`, `ir`, `catalog`, `journal`, `implication`, `pipeline` |
 | [fixtures/](fixtures/) | Frozen corpora. `golden-conformance.json` and `jcs-rfc8785.json` do not move without an explicit, reasoned regeneration |

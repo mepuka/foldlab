@@ -202,6 +202,37 @@ const stages: ReadonlyArray<Stage> = [
   // is worse than no wall, because it is believed. Arming the stage rather than
   // the package is what keeps a reader added tomorrow from inheriting the gap.
   { label: "go — tests", cwd: resolve(repo, "go"), command: ["go", "test", "-count=1", "-v", "./..."] },
+  // The daemon's carriage-invariance differential and its committed control.
+  // Both spawn a TypeScript process against the daemon's client URL, so both
+  // run from the Go module with the root install already warmed by the
+  // preflight above. The differential is the wall the posture transition
+  // rests on: without it, every later slice that moves work from the
+  // privileged-client posture to the daemon moves it on faith. The control is
+  // the other half — one field mutated in one group must fail the comparison,
+  // and the stage passes only when it does, because a differential that
+  // cannot fail proves nothing.
+  {
+    label: "daemon — CL-1 session-fact differential",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/daemonwall"],
+  },
+  {
+    label: "daemon — CL-1 differential control (mutated group)",
+    cwd: resolve(repo, "go"),
+    command: ["go", "run", "./cmd/daemonwall", "--control"],
+  },
+  // The ports-file poll's retirement, in the empty-output shape this battery
+  // already uses for formatting drift: the check prints every line in the
+  // daemon-backed suite that reaches for a ports file or for the stock-binary
+  // harness whose readiness IS that poll, and the runner refuses any output.
+  // The detector's own control runs inside it, so a scanner that stopped
+  // matching reports itself instead of reading as a pass.
+  {
+    label: "daemon — ports-file poll retirement",
+    cwd: repo,
+    command: ["bun", resolve(repo, "scripts/check-daemon-ports-file.ts")],
+    requireEmptyStdout: true,
+  },
   { label: "proto/go — formatting", cwd: resolve(repo, "proto/go"), command: ["gofmt", "-l", "."], requireEmptyStdout: true },
   { label: "proto/go — vet", cwd: resolve(repo, "proto/go"), command: ["go", "vet", "./..."] },
   { label: "proto/go — tests", cwd: resolve(repo, "proto/go"), command: ["go", "test", "-count=1", "./..."] },

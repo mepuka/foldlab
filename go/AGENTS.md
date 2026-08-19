@@ -3,8 +3,9 @@
 Slimmed 2026-08-15 to the focus substrate, then extended by DEV-711 with a
 fresh `register/` twin and `cmd/registerwall/`, and by the kernel-model slice
 with the conformance consumer `kmconform/`, its generator `cmd/kmgen/`, and
-the brand lint `brandlint/` with `cmd/brandlint/`: `canonical/`, `journal/`,
-`register/`, `kmconform/`, `brandlint/`, and the commands. The
+the brand lint `brandlint/` with `cmd/brandlint/`, and by the estate-daemon
+slice with `daemon/` and `cmd/daemonwall/`: `canonical/`, `journal/`,
+`register/`, `kmconform/`, `brandlint/`, `daemon/`, and the commands. The
 stream/transform hot path, the archived effector, the
 gauntlet lanes, and their commands live at tag
 `archive/pre-estate-focus`. Read root `AGENTS.md` first; scoped laws:
@@ -62,3 +63,23 @@ gauntlet lanes, and their commands live at tag
   so it keeps that package's SHAPE without its dependency. It runs inside
   `go test`, and its two arms (`brandlint/testdata/{clean,leaky}`) are the
   control pair: a lint with no failing case proves nothing.
+- `daemon/` is the estate's substrate held as a scoped process value: the
+  declared server-options value, the pinned vendor's own lifecycle verbs, the
+  in-process client zero, readiness observations onto a journal lane, and the
+  Go side of the substrate-session fold. It DECIDES nothing and holds no
+  register — the fenced start, the drain disposition and the incarnation
+  retirement fact are the supervisor slice's, and a local "only one runs"
+  check here is exactly the unfenced act that slice exists to fence. Its
+  session fold is a TRANSCRIPTION of the TypeScript spine's, never a twin: the
+  spine's fold is the reference, and a divergence the wall exposes is a defect
+  here, never a reason to move the reference. The hermetic no-socket posture
+  is held open by its own test and is not to be removed.
+- `cmd/daemonwall/` is that transcription's wall — the carriage-invariance
+  differential, run bare and its numbers printed: one connection folded from
+  two carriages in one language, one connection folded from two carriages
+  across two languages, and the committed control that mutates one field in
+  one group and must fail. It is wired into the battery as three named stages
+  and it spawns a TypeScript process, so it is the one command in this module
+  that needs the root install warm. The claim it measures is a CANDIDATE
+  stated only; the command executes a runtime differential at a bound and
+  prints the bound with the result.
