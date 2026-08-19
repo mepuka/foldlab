@@ -136,6 +136,17 @@ export const readRuntimeRefusalKinds = (
  * Checks that the module the minting sites import takes its union from the
  * generated roster and mints no second one. Without this the wall would guard
  * a roster nothing speaks.
+ *
+ * The admitted shape is a value re-export straight from the generated module.
+ * DEV-804 replaced the older `export const X: typeof Generated = Generated`
+ * spelling with it, and the replacement was forced rather than chosen:
+ * `StructuralRefusalKind` is a merged value-and-type name, TypeScript admits
+ * one export declaration per exported name across both meanings, and only a
+ * re-export gives the TYPE half a declaration the public-type census can trace
+ * back to the generator. The clause is stronger for the move — an
+ * `export ... from` cannot be a second roster wearing the name, so nothing here
+ * has to chase an initializer back to an import alias and hope no later
+ * statement rebound it.
  */
 export const checkRuntimeUnionWiring = (
   source: string,
@@ -143,38 +154,42 @@ export const checkRuntimeUnionWiring = (
   generatedSpecifier: string,
 ): RefusalVocabularyCheck => {
   const file = parse(source, path)
-  let alias: string | undefined
   for (const statement of file.statements) {
-    if (!ts.isImportDeclaration(statement)) continue
-    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue
-    if (statement.moduleSpecifier.text !== generatedSpecifier) continue
-    const bindings = statement.importClause?.namedBindings
-    if (bindings === undefined || !ts.isNamedImports(bindings)) continue
-    for (const element of bindings.elements) {
-      const imported = element.propertyName?.text ?? element.name.text
-      if (imported === RUNTIME_UNION_SCHEMA_BINDING) alias = element.name.text
+    if (!ts.isExportDeclaration(statement) || statement.isTypeOnly) continue
+    const specifier = statement.moduleSpecifier
+    if (specifier === undefined || !ts.isStringLiteral(specifier)) continue
+    if (specifier.text !== generatedSpecifier) continue
+    const clause = statement.exportClause
+    if (clause === undefined || !ts.isNamedExports(clause)) continue
+    for (const element of clause.elements) {
+      if (element.isTypeOnly) continue
+      if (element.name.text !== RUNTIME_UNION_SCHEMA_BINDING) continue
+      const exported = element.propertyName?.text ?? element.name.text
+      if (exported !== RUNTIME_UNION_SCHEMA_BINDING) {
+        return {
+          ok: false,
+          reason:
+            `${path} exports ${RUNTIME_UNION_SCHEMA_BINDING} as ${quote(exported)},`
+            + " which is not the generated roster's schema",
+        }
+      }
+      return { ok: true, corpusBacked: 0, stagedDebt: 0 }
     }
   }
-  if (alias === undefined) {
+  if (exportedInitializer(file, RUNTIME_UNION_SCHEMA_BINDING) !== undefined) {
     return {
       ok: false,
       reason:
-        `${path} does not import ${RUNTIME_UNION_SCHEMA_BINDING} from ${quote(generatedSpecifier)}`,
+        `${path} declares ${RUNTIME_UNION_SCHEMA_BINDING} of its own rather than re-exporting`
+        + ` it from ${quote(generatedSpecifier)}`,
     }
   }
-  const initializer = exportedInitializer(file, RUNTIME_UNION_SCHEMA_BINDING)
-  if (initializer === undefined) {
-    return { ok: false, reason: `${path} exports no ${RUNTIME_UNION_SCHEMA_BINDING} value` }
+  return {
+    ok: false,
+    reason:
+      `${path} does not re-export ${RUNTIME_UNION_SCHEMA_BINDING} from`
+      + ` ${quote(generatedSpecifier)}`,
   }
-  const value = unwrapAssertions(initializer)
-  if (!ts.isIdentifier(value) || value.text !== alias) {
-    return {
-      ok: false,
-      reason:
-        `${path}'s ${RUNTIME_UNION_SCHEMA_BINDING} is not the generated roster's schema`,
-    }
-  }
-  return { ok: true, corpusBacked: 0, stagedDebt: 0 }
 }
 
 /**

@@ -400,8 +400,73 @@ describe("structural refusal repairs", () => {
       max_msgs_per_subject: -1,
       deny_delete: true,
       deny_purge: true,
+      republish: null,
+      allow_msg_counter: false,
     }))
     refusals.push(laneShape)
+
+    // The two authority-carrier laws that are not shape laws, each minted on a
+    // lane of its own so neither can be satisfied by the shape refusal above.
+    // Their mutated-config controls, across all three carriers and every newly
+    // pinned field, are `test/CarrierAdminSurface.test.ts`.
+    const mirrorProbe = await Effect.runPromise(declareProbeFold("mirrored-carrier"))
+    const ttlProbe = await Effect.runPromise(declareProbeFold("expiring-carrier"))
+    const namedLawConnection = await connect({ servers: harness.url })
+    try {
+      const manager = await jetstreamManager(namedLawConnection)
+      await manager.streams.add({
+        name: "REFUSAL_MIRROR_ORIGIN",
+        subjects: ["flb.origin.mirrored.>"],
+        storage: StorageType.File,
+        num_replicas: 1,
+      })
+      // A mirror carries no subjects of its own; before this law the shape
+      // gate refused it on the subjects clause and taught the wrong repair.
+      await manager.streams.add({
+        name: laneStreamName(mirrorProbe.lane, 0),
+        mirror: { name: "REFUSAL_MIRROR_ORIGIN" },
+        storage: StorageType.File,
+        num_replicas: 1,
+      })
+      const ttlSubject = await Effect.runPromise(evidenceSubject(ttlProbe.lane.handle, 0))
+      await manager.streams.add({
+        name: laneStreamName(ttlProbe.lane, 0),
+        subjects: [ttlSubject],
+        storage: StorageType.File,
+        num_replicas: 1,
+        max_msgs: -1,
+        max_msgs_per_subject: -1,
+        max_bytes: -1,
+        max_age: 0,
+        duplicate_window: 2 * 60 * 1_000_000_000,
+        deny_delete: true,
+        deny_purge: true,
+        allow_msg_ttl: true,
+      })
+    } finally {
+      await namedLawConnection.close()
+    }
+    const mirrored = await Effect.runPromise(Effect.flip(Lane.emit(
+      mirrorProbe.lane,
+      { tenant: "north", delta: 1 },
+      { holder: "seat-a" },
+    ).pipe(
+      Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
+      Effect.scoped,
+    )))
+    expect(mirrored.kind).toBe("mirrored-authority-carrier")
+    refusals.push(mirrored)
+
+    const expiring = await Effect.runPromise(Effect.flip(Lane.emit(
+      ttlProbe.lane,
+      { tenant: "north", delta: 1 },
+      { holder: "seat-a" },
+    ).pipe(
+      Effect.provide(Lane.Lanes.layer({ servers: harness.url })),
+      Effect.scoped,
+    )))
+    expect(expiring.kind).toBe("expiring-authority-carrier")
+    refusals.push(expiring)
 
     // payload-substrate-shape: the same pinned binary started with a lowered
     // `max_payload` cannot carry an emit at the inline threshold, so the emit

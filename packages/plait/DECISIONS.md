@@ -2996,6 +2996,106 @@ untouched rather than quietly fixed, and owed to whichever lane lands second.
 **Load-bearing? no** — this branch does not move the census (132 total, 0
 derived, 132 debt before and after), so the ledger is byte-identical either way
 and only the sentence describing the rule is stale.
+## Task DEV-804 (slices A+B) — the first public types credit as corpus-derived
+
+### T0. A re-export of a NAMED generated type is the one crediting shape
+
+Decided: the conversion is `export type { KernelXValue as KernelX } from
+"./KernelSchemas.generated.js"`, and nothing else counts. Seven of
+`KernelDoor.ts`'s types and `truth/Refusal.ts`'s `StructuralRefusalKind`
+convert; the census moves 0 → 8 derived, and the kernel and truth pins fall
+27 → 20 and 37 → 36. What does NOT convert stays hand-written and waivered:
+`KernelVerdict` (a host projection that flattens a generated refusal row into a
+tagged union the corpus does not carry), the `KernelDoor` context interface, and
+`KernelAdmit` — no generated counterpart exists for any of them, and inventing
+one would put a shape in the generator that the model never declared.
+Alternatives: `typeof Generated.X.Type` at the consumer, which is what the seven
+door types said before this branch and which reads as derivation while being a
+fresh local declaration — DEV-800 round 2 measured it at 0 derived across the
+whole barrel, and T0 of the generator slice records the same finding from the
+emitter's side; a structural restatement of the shape (a second place one shape
+can be wrong); crediting by import-graph proximity rather than by declaration
+owner (the false-positive direction `isDeclaredByGeneratedCore` exists to
+refuse). Why: the walk credits the file a symbol's declarations resolve to, and
+a re-export is the only spelling that leaves a public name with no declaration
+of its own. **Load-bearing? yes** — measured on this branch: reverting
+`KernelRawArg` alone to `export type KernelRawArg = typeof
+Generated.KernelRawArg.Type` reds enforce at exit 1 with `PUBLIC TYPE UNIVERSE
+UNWAIVERED: KernelDoor.KernelRawArg owner=src/kernel/KernelDoor.ts
+classification=debt-with-a-ticket ticket=DEV-795`, because the conversion
+removed that row's waiver from the ledger; and `--write` cannot launder it back,
+reding at `PUBLIC TYPE UNIVERSE RATCHET: owning prefix=kernel walked=21
+pinned=20 — raising a pin is the operator's act`. Restored, both green.
+
+### T0a. The door binds the generated names locally by importing them under its own spelling
+
+Decided: `KernelDoor.ts` carries the seven names twice — once as
+`import type { KernelRawArgValue as KernelRawArg } from ...` for its own body,
+once as the `export type { ... } from` re-export that is the public surface. A
+re-export creates no local binding, so the door's twenty-odd internal uses need
+something to refer to, and the import alias is that something without declaring
+anything: it is the generated declaration under the door's name. Alternatives:
+spell every internal use `Generated.KernelRawArgValue` through the namespace
+import the door already has (correct, and it churns every signature in the file
+for no change in what anything means); declare local non-exported aliases
+(`type KernelRawArg = Generated.KernelRawArgValue`), which reintroduces the
+local declaration this task is removing and would credit only by the accident
+that the census walks exports. Why: the diff should be the conversion and
+nothing else, so a reviewer can see the seven names move in one block.
+**Load-bearing? no** — the census reads the export, not the import.
+
+### T1. The refusal kind converts as ONE value-and-type re-export, because it must
+
+Decided: `truth/Refusal.ts`'s `export const StructuralRefusalKind: typeof
+GeneratedStructuralRefusalKind = GeneratedStructuralRefusalKind` beside
+`export type StructuralRefusalKind = typeof GeneratedStructuralRefusalKind.Type`
+becomes the single `export { StructuralRefusalKind } from
+"./RefusalKinds.generated.js"`, and the `StructuralRefusal` class takes its
+`kind` field from the import alias instead of from the retired const. This was
+forced, not chosen: `StructuralRefusalKind` is one name in both declaration
+spaces, and TypeScript admits ONE export declaration per exported name across
+both — keeping the const and adding `export type { StructuralRefusalKind } from`
+reds with TS2323 and TS2484, and renaming the type in the generated module does
+not help because the collision is on the EXPORTED name, not on the source name
+(probed both ways). Alternatives: keep the const and leave the type as a local
+`typeof` alias (leaves the one truth-plane type the generator actually emits
+uncredited, which is the row this slice exists to move); drop the type export
+and keep only the const (`Refusal.StructuralRefusalKind` in type position is
+public surface two call sites already use, so this deletes surface); emit the
+generated type under a second name and re-export that (same collision). Why: the
+re-export carries the schema and the type it admits, and both resolve to
+`RefusalKinds.generated.d.ts`. **Load-bearing? yes** — it is the whole of slice
+B: without it truth stays pinned at 37 and the derived count stops at 7.
+
+### T2. Two wall readers learn the export-declaration form, in the direction that keeps them strict
+
+Decided: `scripts/kernel-door-containment.ts`'s `readDoorForm` collects `Kernel*`
+names from export declarations as well as from type-alias and interface
+declarations, and `scripts/refusal-vocabulary.ts`'s `checkRuntimeUnionWiring`
+now asks for a value re-export from the generated module rather than for an
+exported const whose initializer traces back to an import alias. Both changes
+are caused by the conversion and both are checked, not assumed. The door reader
+matters because the form vocabulary is what the twin and unbound-use clauses
+quantify over: an export declaration is not a type-alias declaration, so reading
+only declarations would have silently dropped the seven converted names and
+turned two arms of `check:kernel-door-control` — `form-twin` and
+`unbound-form-name`, both planted as `KernelCandidateAct`, one of the seven —
+green on an accepted mutant. The vocabulary reader gets STRICTER for the move: an
+`export ... from` cannot be a second roster wearing the name, so the clause no
+longer has to chase an initializer and hope no later statement rebound it, and a
+module that declares a roster of its own is now refused by name rather than by a
+mismatched-identifier message. Alternatives: leave `readDoorForm` alone and let
+the vocabulary shrink (a wall weakened as a side effect of a conversion, which
+is the failure this record exists to make impossible); admit both the const and
+the re-export shape in the vocabulary clause (two admissible spellings for one
+law, and the older one is the one that cannot credit); move
+`StructuralRefusalKind` out of the wall's reach (it IS the union the minting
+sites speak). Why: a wall whose subject changed shape has to be re-read against
+the new shape or it is measuring nothing. **Load-bearing? yes** — the door
+control still refuses all eleven planted spellings on its committed trace
+(`ONE DOOR CONTROL: PASS (11 planted second-door spellings refused, each for its
+committed reason)`), which is only true because the vocabulary still carries the
+converted names.
 ## Task DEV-805 — the enforce flip: a waiver ledger with a per-prefix ratchet
 
 ### T0. The committed inventory IS the waiver ledger, and enforce asks coverage
@@ -3729,6 +3829,158 @@ recovery) — this re-scopes to the stable, documented behavior. **Load-bearing?
 yes** — the wall's claim is the repull loop ahead of heartbeat recovery, and
 that is what is asserted; a future client that heartbeat-recovers instead
 (emitting heartbeats_missed) or stops repulling still reddens it.
+
+## Task DEV-780 — the admin surface pinned; two authority-carrier laws named
+
+Task-local placeholders (rule 1): T-numbers restart per task. Spec authority:
+`docs/research/2026-08-13-nats-vendor-corpus-scorecard.md` item 6 — the admin
+surface graded CONFIRMED-and-larger-than-gate — plus the DEV-780 charter
+refresh, which absorbed DEV-783's mirror half into this ticket. ADR-0009 rules
+the roles the two named laws defend. The values below are measurements against
+the pinned nats-server (`v2.14.4`, `test/NatsHarness.ts`), not documentation.
+
+**The measured surface at the pin.** A stream created with only the fields the
+three carriers used to pin comes back carrying nine more: `republish` and
+`subject_transform` absent, `allow_direct` false, `mirror_direct` false,
+`compression` `"none"`, `max_msg_size` -1, `allow_msg_ttl` false, and
+`allow_atomic` / `allow_msg_counter` omitted from the serialization entirely
+when off. A KV bucket's backing stream comes back the same except
+`allow_direct`, which `@nats-io/kv` turns ON at creation and reads through.
+Every one of the nine was settable on a stream these carriers would then open
+and trust.
+
+### T0. Two of the nine fields get their own named laws; the other seven stay shape
+
+Decided: `mirror`/`sources` mint `mirrored-authority-carrier` and
+`allow_msg_ttl` mints `expiring-authority-carrier`; `republish`,
+`subject_transform`, `allow_direct`, `mirror_direct`, `allow_atomic`,
+`allow_msg_counter`, `compression`, and `max_msg_size` widen the three existing
+substrate-shape kinds. The split is by REPAIR, not by field count. A mirrored
+carrier's repair is a different carrier — ADR-0009's replica read plane — and a
+TTL carrier's repair is a fresh stream, because the server refuses to clear
+`allow_msg_ttl` once it is set. Neither repair is "restore the shape", which is
+what every shape kind teaches. Alternatives: one new kind for the mirror only
+and per-message TTL folded into shape (the ticket body rules TTL refused "by
+its law", and the charter refresh names both kinds as this widening's mints);
+a new kind per field (nine kinds whose repair sentence is one sentence, which
+is a vocabulary that has stopped classifying anything). Why: DEV-783's absorbed
+finding is precisely that a real law refused INCIDENTALLY teaches the wrong
+repair — a mirror carries no `subjects`, so the old gates refused it on the
+subjects clause and told the operator to restore subjects a mirror must not
+have. **Load-bearing? yes** — the mirror arm in
+`test/CarrierAdminSurface.test.ts` asserts the KIND, so a regression to the
+incidental refusal reddens rather than passing as "still refused".
+
+### T1. Both new laws are minted once, in one internal module, not once per carrier
+
+Decided: `src/internal/carriers.ts` holds the admin-surface reading and both
+named-law mints; `lanes.ts`, `cells.ts`, and `anchors.ts` call them with a
+`CarrierSite` naming their refusal path and repair subject. The consequence is
+deliberate and visible in the wall: `RefusalPayloads.taught.txt` renders
+`next[0].subject <expression>` for both payloads, because the subject is the
+one parameterized field. Alternatives: mint at each carrier (three copies of
+one law sentence, and the taught-payload wall would then pin three texts that
+must be edited together — the drift the wall exists to catch, installed by
+hand); make the subject a literal shared by all three carriers (pins the fifth
+facet at the cost of telling an operator which seam refused). Why: the role
+rule is ADR-0009's and not any one plane's, so one law has one text; the wall
+still pins kind, law, expected, the repair note, and the repair body, which is
+four of five facets and every sentence an operator reads. **Load-bearing? no** —
+it is a placement decision; the laws would hold either way.
+
+### T2. `allow_direct` is pinned per carrier, and declared at creation rather than inherited
+
+Decided: the lane's evidence stream pins `allow_direct: false` and the two KV
+carriers pin `true`, and each carrier now STATES the value when it creates its
+stream or bucket instead of accepting the client's feature detection. Pinning
+one value for both would refuse a carrier this package itself created: the lane
+reads through consumers, while `@nats-io/kv` turns direct-get on at creation and
+reads through it. Declaring it means a substrate that cannot serve direct reads
+fails loudly at `bucket.ensure` — the client rejects the option by name — rather
+than creating a bucket the very next line refuses as misshaped. At the R=1 this
+package already pins there is no second replica for a direct read to be stale
+against, which is the only hazard the vendor names for the flag. Alternatives:
+pin `false` everywhere (refuses our own buckets); leave it unpinned (the field
+stays in the unchecked set item 6 names). **Load-bearing? yes** — it is the one
+field whose lawful value differs by carrier, so a gate that pinned it uniformly
+would be wrong at two carriers out of three.
+
+### T3. Two pinned fields have no mutation arm, and the reason is pinned instead
+
+Decided: `mirror_direct` at every carrier, and `allow_msg_counter` at the two KV
+carriers, are asserted by the gates but carry no mutated-config control, because
+the pinned server refuses to create either configuration —
+`mirror_direct` without a mirror is answered "stream has no mirror but does have
+mirror direct", and a counter stream over the KV bucket's `discard: new` is
+answered "counter stream cannot use discard new". Rather than drop the
+assertions or fake the arms, the test file pins those two server refusals by
+their exact messages. Alternatives: drop the two assertions (the fields return
+to the unchecked set, and a substrate that later admits them is unwatched);
+weaken the KV base to `discard: old` so a counter arm plants (mutates two fields
+at once, which is exactly what the mutation-arm discipline forbids); assert
+`mirror_direct` only on mirrored streams (the mirror law fires first, so the
+arm would prove nothing about this field). Why: an assertion with no reachable
+control is honest defence in depth as long as its unreachability is itself
+walled — the day either configuration becomes creatable, that test reddens and
+the field owes an arm like every other. **Load-bearing? yes** — without the
+pinned refusal messages the two assertions would be unfalsifiable and
+undocumented, which is the shape of a gate that has quietly stopped checking.
+
+### T4. The KV gates read the backing stream's config, not the KV status projection
+
+Decided: both KV carriers now assert over `status.streamInfo.config`. `KvStatus`
+projects five of the fields this ticket pins and none of the other four — it has
+no reading of `subject_transform`, `allow_direct`, `allow_atomic`, or
+`allow_msg_counter` at all, and its `compression` getter collapses the store
+level to a boolean. Alternatives: assert what `KvStatus` exposes and leave the
+rest unchecked (four of nine fields stay in item 6's unchecked set); read the
+stream through `jetstreamManager` separately (a second round trip for a value
+the status already carries). The five-field checks keep reading the projection,
+so the existing refusal's `got` is unchanged in shape and only gains the admin
+surface. **Load-bearing? yes** — half the widening is unreachable through the
+projection.
+
+### T5. The lawful arm is the control that makes every mutation arm attributable
+
+Decided: `test/CarrierAdminSurface.test.ts` builds the three carriers' backing
+streams by hand — the lane partition stream as `lanes.ts` creates it, the two KV
+backing streams as `@nats-io/kv` 3.4.0 creates them for the options the carriers
+pass — and its first arm requires all three carriers to OPEN on them, with no
+`flip`. Every other arm moves exactly one field off that same base. Alternatives:
+let each carrier create its own stream and mutate afterwards (a config update is
+refused for several of these fields, and for the rest it is a second code path);
+skip the lawful arm (a base unlawful in some second field would make all ten
+mutation arms refuse for a reason no assertion names, and a gate that stopped
+reading a field would still look green). Why: the hand-built base is a second
+statement of the admitted shape, so the wall is not the gate agreeing with
+itself. **Load-bearing? yes** — it is the only thing that makes a mutation arm's
+refusal attributable to its own field.
+
+### T6. The two kinds are ordinary add-only mints, and the census does not move
+
+Decided: both kinds enter through the DEV-808 machinery — the roster line in
+`scripts/kernel-runtime-refusals.ts`, the hand pin citing DEV-804 in
+`test/fixtures/refusal-staged-debt.pin.txt`, the taught payloads regenerated
+into `test/RefusalPayloads.taught.txt` — and both land as staged debt, since the
+kernel corpus carries neither reason. Cited: the operator's A7 ruling that a
+refusal mint is add-only and ordinary. No public type name is added: the union
+gains two literals, `Refusal.StructuralRefusalKind` stays one row, and
+`check:type-universe` reports the same 132 classified types with the same
+ratchet pins before and after. **Load-bearing? no** — it records that the
+vocabulary door was walked and that the public-surface census was checked
+against it rather than assumed.
+
+**Stated residual.** Three things this ticket does NOT do. (a) The Go journal's
+shape-gate twin is untouched, so `go/` still pins the narrower surface and the
+parity gap is real — the ticket's own Limits section rules its widening a
+separate ticket. (b) `internal/registers.ts` and the commons control stream in
+`internal/nats.ts` keep their un-widened gates: the dispatch scoped this slice to
+the lane stream and the two KV bucket gates, and the register bucket is named in
+the ticket body's seam list, so it is owed a follow-up rather than absorbed here
+without a ruling. (c) Every check is still open-time. A config mutated after the
+carrier opened is invisible to all three gates, exactly as scorecard item 1's
+residue says; the standing-invariant ticket owns that and this one does not
+claim it.
 
 ## Task DEV-779 — the register incarnation pin
 

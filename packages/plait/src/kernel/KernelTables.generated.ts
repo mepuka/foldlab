@@ -263,6 +263,8 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSAL_KINDS = [
   "lane-evidence-mismatch",
   "lane-substrate-shape",
   "payload-substrate-shape",
+  "mirrored-authority-carrier",
+  "expiring-authority-carrier",
   "invalid-algebra-declaration",
   "invalid-fold-declaration",
   "unearned-commutative-algebra",
@@ -366,6 +368,16 @@ export const KERNEL_RUNTIME_STRUCTURAL_REFUSALS = [
   },
   {
     kind: "payload-substrate-shape",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "mirrored-authority-carrier",
+    source: "staged-debt",
+    waiver: "DEV-804",
+  },
+  {
+    kind: "expiring-authority-carrier",
     source: "staged-debt",
     waiver: "DEV-804",
   },

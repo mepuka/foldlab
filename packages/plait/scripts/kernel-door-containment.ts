@@ -284,6 +284,22 @@ export const readDoorForm = (source: string, path: string): DoorForm => {
   const vocabulary: Array<string> = []
   let admits = false
   for (const statement of file.statements) {
+    // A name the door circulates by re-exporting the generator's declaration.
+    // This arm is not decoration: DEV-804 converted seven of the door's type
+    // aliases into `export type { KernelXValue as KernelX } from` re-exports —
+    // the one shape whose ancestry the public-type census can read back — and
+    // an export declaration is not a type alias declaration. Reading only the
+    // declarations would have quietly dropped those seven names out of the
+    // vocabulary, which is what the twin and unbound-use clauses quantify over.
+    if (ts.isExportDeclaration(statement)) {
+      const clause = statement.exportClause
+      if (clause === undefined || !ts.isNamedExports(clause)) continue
+      for (const element of clause.elements) {
+        const name = element.name.text
+        if (name.startsWith("Kernel")) vocabulary.push(name)
+      }
+      continue
+    }
     if (!isExported(statement)) continue
     if (ts.isTypeAliasDeclaration(statement) || ts.isInterfaceDeclaration(statement)) {
       const name = statement.name.text
