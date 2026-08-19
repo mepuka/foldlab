@@ -2120,9 +2120,11 @@ def emit (target : Target) (corpus rosterLines : List String)
       let renderedTables := Ts.render (<- tablesModule tables roster ast)
       let renderedVocabulary := Ts.render (vocabularyModule tables roster)
       let renderedBuilder := Ts.render (<- builderModule tables corpus)
+      let renderedSchemas := Ts.render (<- schemasModule tables corpus)
       return digestRegister tables
         [ (Target.kernelTables.wire, renderedTables)
         , (Target.kernelBuilder.wire, renderedBuilder)
-        , (Target.refusalKinds.wire, renderedVocabulary) ]
+        , (Target.refusalKinds.wire, renderedVocabulary)
+        , (Target.kernelSchemas.wire, renderedSchemas) ]
 
 end Unity.TsKernel

@@ -28,17 +28,17 @@ live under `../../test/` is gone; the replay targets the shipping door.
 a model identity label (ruling A1), and it judges nothing.
 
 The emitted set comes from `../../fixtures/kernel-conformance.ndjson`, which
-`verify/unity`'s emitter writes out of the `verify/kernel` model. Three of them
-are also emitted there — `KernelTables.generated.ts`, its truth-plane half, and
-`KernelBuilder.generated.ts` — so regenerate those with that emitter, which
-documents its targets beside them: `lake exe ts --target=kernel-builder` under
-`verify/unity`, and the digest register re-emitted with it. From
-`packages/plait`, two renderers remain: `bun run generate:kernel-schemas` and
-`generate:kernel-sdk`, and `generate:kernel-prose` for the prose under
+`verify/unity`'s emitter writes out of the `verify/kernel` model. Four of them
+are also emitted there — `KernelTables.generated.ts`, its truth-plane half,
+`KernelBuilder.generated.ts` and `KernelSchemas.generated.ts` — so regenerate
+those with that emitter, which documents its targets beside them: `lake exe ts
+--target=kernel-schemas` under `verify/unity`, and the digest register
+re-emitted with it. From `packages/plait`, one renderer remains: `bun run
+generate:kernel-sdk`, and `generate:kernel-prose` for the prose under
 `docs/generated/`. Never hand-edit a kind, a rank, a taught law, or a repair.
 
 Wall: the matching `check:kernel-*` scripts regenerate and diff byte-for-byte,
-`check:kernel-surfaces` holds the three model-emitted surfaces to the digests
+`check:kernel-surfaces` holds the four model-emitted surfaces to the digests
 its gate registers,
 and `../../test/KernelConformance.test.ts` replays the model's verdicts against
 the shipping door, with a refuse-everything mutant that makes a pass evidence
