@@ -92,6 +92,10 @@ const rendered = checkNoTrackingArtifacts(
       surface: OFFICIAL_SURFACES.prosePage,
       bytes: await read(REFUSAL_VOCABULARY_PATHS.prosePage),
     },
+    {
+      surface: OFFICIAL_SURFACES.plainSdk,
+      bytes: await read(REFUSAL_VOCABULARY_PATHS.plainSdk),
+    },
   ],
   DRAFT_MEANING_MARKER,
   LAWFUL_ID_SHAPED_TOKENS,

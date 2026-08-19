@@ -6,7 +6,7 @@
 <!-- A5 (DEV-772 sitting record, round 1, 2026-08-19): a Law 1 waiver MAY cover NEW public surface, on condition that it names the provably-absent generator/corpus group AND its unification ticket — the DEV-764 shape. A waiver that names neither is a hand-granted exemption, and this ledger does not carry those: the ratchet counts a conditioned waiver as ticketed debt like any other row, so new surface still costs a pin the operator has to raise by hand. -->
 <!-- Ratchet: the pins below are re-derived from the declaration walk on every enforce run. A prefix whose walked debt count EXCEEDS its pin fails the gate; `--write` lowers a pin that fell and refuses to raise one, so debt growth is an operator edit of this file and never a regeneration side effect. -->
 
-Classified 132 public types: 8 derives-from-the-generated-core, 124 debt-with-a-ticket.
+Classified 164 public types: 40 derives-from-the-generated-core, 124 debt-with-a-ticket.
 
 ## Ratchet pins
 
@@ -102,6 +102,38 @@ Classified 132 public types: 8 derives-from-the-generated-core, 124 debt-with-a-
 | `KernelDoor.KernelRef` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelTriggerPredicate` | `src/kernel/KernelSchemas.generated.ts` | derives-from-the-generated-core | — | — |
 | `KernelDoor.KernelVerdict` | `src/kernel/KernelDoor.ts` | debt-with-a-ticket | `DEV-795` | stage 2+: replace hand-written kernel declarations with generated projections |
+| `KernelSdk.AlgebraDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.AnchorFact` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Applicability` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Brand` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.CandidateAct` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.CandidateAnchor` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.CandidatePredicate` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.CapabilityDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.DeclKind` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Digest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Door` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Generator` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.HoleStage` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.IndexDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.LaneDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.LanePartition` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.LanguageDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.MergeStrategy` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.OntologyDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.PolicyDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.ProgramDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.RawArg` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Ref` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Refusal` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.RefusalReason` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.ResourceDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.ScheduleDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.SchemaDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.TemplateDigest` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.TokenClaim` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.TriggerProduction` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
+| `KernelSdk.Verdict` | `src/kernel/KernelSdk.generated.ts` | derives-from-the-generated-core | — | — |
 | `Lane.DeclareOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.DeclaredLane` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |
 | `Lane.EmitOptions` | `src/planes/Lane.ts` | debt-with-a-ticket | `DEV-795` | stage 3: re-type plane declarations against generated core types |

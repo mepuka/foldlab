@@ -78,6 +78,8 @@ export const REFUSAL_VOCABULARY_PATHS = {
   kernelTables: "packages/plait/src/kernel/KernelTables.generated.ts",
   /** The rendered prose page, read as page bytes for the third derivation. */
   prosePage: "docs/generated/kernel-language.generated.md",
+  /** The generated plain-TypeScript surface, read as source bytes. */
+  plainSdk: "packages/plait/src/kernel/KernelSdk.generated.ts",
 } as const
 
 /** The name the truth-plane module gives its literal roster. */
@@ -702,15 +704,20 @@ export const checkRefusalMeanings = (
 }
 
 /**
- * The three surfaces the estate renders as the language itself. Everything on
- * them is read here as bytes, and each is named rather than pathed, because a
- * refusal about a document that carries no paths should not itself have to
- * print one.
+ * The surfaces the estate renders as the language itself. Everything on them is
+ * read here as bytes, and each is named rather than pathed, because a refusal
+ * about a document that carries no paths should not itself have to print one.
+ *
+ * The plain-TypeScript surface joined them when it became generated. It is an
+ * official document by the same test as the other three: it is rendered from
+ * the corpus, it is what a reader is handed as the language, and its provenance
+ * is a digest rather than a location.
  */
 export const OFFICIAL_SURFACES = {
   runtimeUnion: "the truth-plane refusal vocabulary",
   kernelTables: "the kernel conformance tables",
   prosePage: "the kernel language page",
+  plainSdk: "the plain-TypeScript surface",
 } as const
 
 /** One official surface's committed bytes, under the name a refusal prints. */
