@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "foldlab-reference",
+  "description": "Local reference corpus for provenance, Effect language semantics, Schema JSON source notes, and supporting evidence.",
+  "root": ".reference",
+  "humanManifest": "MANIFEST.md",
+  "organization": "ORGANIZATION.md",
+  "developmentInvariants": "DEVELOPMENT-INVARIANTS.md",
+  "contextMap": "CONTEXT-MAP.md",
+  "rootDocuments": [
+    "README.md",
+    "MANIFEST.md",
+    "ORGANIZATION.md",
+    "DEVELOPMENT-INVARIANTS.md",
+    "CONTEXT-MAP.md"
+  ],
+  "modules": [
+    {
+      "id": "source-provenance",
+      "path": "provenance",
+      "interface": [
+        "provenance/README.md",
+        "provenance/CONTEXT.md",
+        "provenance/sources.lock.json"
+      ],
+      "owns": [
+        "repository identity",
+        "artifact identity",
+        "content digests",
+        "resolution rules",
+        "source pins"
+      ]
+    },
+    {
+      "id": "effect-language-semantics",
+      "path": "effect-typescript-semantics",
+      "interface": [
+        "effect-typescript-semantics/README.md",
+        "effect-typescript-semantics/CONTEXT.md",
+        "effect-typescript-semantics/CLAIM-GATES.md",
+        "effect-typescript-semantics/IMPLEMENTATION-PLAN.md"
+      ],
+      "owns": [
+        "semantic layer vocabulary",
+        "observation vocabulary",
+        "claim gates",
+        "implementation sequencing"
+      ]
+    },
+    {
+      "id": "schema-json",
+      "path": "schema-json",
+      "interface": [
+        "schema-json/README.md",
+        "schema-json/CONTEXT.md",
+        "schema-json/SOURCE-SURFACE.md"
+      ],
+      "owns": [
+        "Schema JSON vocabulary",
+        "pinned source surface notes",
+        "unresolved modeling questions"
+      ]
+    }
+  ],
+  "sharedEvidence": [
+    {
+      "id": "catalog-index",
+      "path": "catalog/README.md",
+      "kind": "index"
+    },
+    {
+      "id": "reference-catalog",
+      "path": "catalog/REFERENCES.md",
+      "kind": "catalog"
+    },
+    {
+      "id": "effect-module-surface",
+      "path": "catalog/EFFECT-SURFACE.md",
+      "kind": "keyword-catalog"
+    }
+  ],
+  "invariants": [
+    "Every listed path exists relative to .reference.",
+    "Canonical terms live in exactly one CONTEXT.md.",
+    "Canonical source pins live only in provenance/sources.lock.json.",
+    "The catalog classifies evidence but does not own pins or semantic definitions.",
+    "Source surface notes do not establish accepted project scope.",
+    "Project-owned semantic code is defined as a typed functional core before external adapters are admitted.",
+    "Every soundness claim names and proves the exact relation it preserves.",
+    "All local Markdown links resolve.",
+    "Agent bootstrap files remain outside this manifest."
+  ],
+  "maintenance": {
+    "addDocument": [
+      "Place the document under its owning module or catalog.",
+      "Add it to the owning module interface or sharedEvidence when it is externally navigable.",
+      "Add a row to MANIFEST.md.",
+      "Verify all local links."
+    ],
+    "moveDocument": [
+      "Update manifest.json before removing the old path.",
+      "Update MANIFEST.md and inbound links in the same change."
+    ],
+    "changePin": [
+      "Update provenance/sources.lock.json.",
+      "Verify commit, tree, blob, content digest, and byte length.",
+      "Update dependent catalog notes without duplicating the canonical pin."
+    ],
+    "changeTerm": [
+      "Edit the owning CONTEXT.md.",
+      "Update references to the old term in the same change."
+    ]
+  }
+}

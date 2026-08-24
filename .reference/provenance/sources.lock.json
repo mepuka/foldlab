@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-source-lock",
+  "location": ".reference/provenance",
+  "snapshotDate": "2026-08-24",
+  "repositories": [
+    {
+      "id": "effect",
+      "kind": "git",
+      "repository": {
+        "host": "github.com",
+        "owner": "Effect-TS",
+        "name": "effect",
+        "canonicalUrl": "https://github.com/Effect-TS/effect",
+        "fetchUrl": "https://github.com/Effect-TS/effect.git"
+      },
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+        "url": "https://github.com/Effect-TS/effect/commit/0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07"
+      },
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "68a2b3baeed509bc291cc3788c9b2c04bf53a80f"
+      },
+      "package": {
+        "path": "packages/effect",
+        "name": "effect",
+        "version": "4.0.0-rc.111",
+        "license": "MIT"
+      },
+      "artifacts": [
+        {
+          "path": "packages/effect/package.json",
+          "role": "package-identity-and-exports",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "5e82f181825a61e4d8e0b3405a845f6ada5a9ef0"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "7231bf061a5c7d694da71e032ab165c7e31964b2fbfae4aafd1f96169ebfab6d"
+          },
+          "bytes": 4452
+        },
+        {
+          "path": "packages/effect/src/Schema.ts",
+          "role": "public-schema-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "2924d92fcd5b397ab1e0d0635bd661dfa453f11b"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "83319c69f3800be62682f84d7ded838bc2111123cea29f1370337ba11a17fc15"
+          },
+          "bytes": 543184
+        },
+        {
+          "path": "packages/effect/src/SchemaAST.ts",
+          "role": "runtime-algebraic-schema-carrier",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "e99d7f473b4ecc0e6ba919ddbc98bb0dace8fe40"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "314182016c451078cf2da29170f3b5f98c3c43ed704d2ac53d4a8c539ee6c7c9"
+          },
+          "bytes": 135333
+        },
+        {
+          "path": "packages/effect/src/SchemaParser.ts",
+          "role": "public-decode-and-encode-runners",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "7cc35ebffe58a9a51476c238308c8aa34b2b4f42"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "895509ec736cd26cb281fc82257b10b39df162f29843d8c1219e76433ed5f06b"
+          },
+          "bytes": 46192
+        },
+        {
+          "path": "packages/effect/src/JsonSchema.ts",
+          "role": "json-schema-conversion-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "054b8e6b650dd9149517557b744e566e2835b0fa"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "a28c09b33e967df40b5e81f49ae910b6f8d2829a69472b98b7b656bb480d0253"
+          },
+          "bytes": 56650
+        },
+        {
+          "path": "packages/effect/src/SchemaRepresentation.ts",
+          "role": "schema-representation-and-revival-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "6282ab9cbf5c7a50b79580065881b5a6c5799aae"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "a1e427fdd36a60132b3f389a8cc26df3bcf6fb52e057f226f4076f74e5fc31e8"
+          },
+          "bytes": 39851
+        },
+        {
+          "path": "packages/effect/SCHEMA.md",
+          "role": "project-schema-guide",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "1bd38606244bb52c7c6fe13bde4f0176ee54c9e4"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "53ee1ee0237744ec07557dc96e577e202117d0f548511668b61bad43ba848732"
+          },
+          "bytes": 230301
+        }
+      ]
+    }
+  ],
+  "candidateEditionAuthorities": [
+    {
+      "id": "rfc8259",
+      "title": "The JavaScript Object Notation Data Interchange Format",
+      "pin": "RFC 8259",
+      "url": "https://www.rfc-editor.org/rfc/rfc8259.html",
+      "selectionStatus": "candidate",
+      "localArtifactStatus": "unresolved"
+    },
+    {
+      "id": "ecma404",
+      "title": "The JSON Data Interchange Syntax",
+      "pin": "ECMA-404, 2nd edition",
+      "url": "https://www.ecma-international.org/publications-and-standards/standards/ecma-404/",
+      "selectionStatus": "candidate",
+      "localArtifactStatus": "unresolved"
+    },
+    {
+      "id": "json-schema-core-2020-12",
+      "title": "JSON Schema Core",
+      "pin": "Draft 2020-12",
+      "url": "https://json-schema.org/draft/2020-12/json-schema-core",
+      "selectionStatus": "candidate",
+      "localArtifactStatus": "unresolved"
+    },
+    {
+      "id": "json-schema-validation-2020-12",
+      "title": "JSON Schema Validation",
+      "pin": "Draft 2020-12",
+      "url": "https://json-schema.org/draft/2020-12/json-schema-validation",
+      "selectionStatus": "candidate",
+      "localArtifactStatus": "unresolved"
+    },
+    {
+      "id": "ecma262-2026",
+      "title": "ECMAScript Language Specification",
+      "pin": "ECMA-262 edition 17, 2026",
+      "url": "https://tc39.es/ecma262/2026/",
+      "selectionStatus": "candidate",
+      "localArtifactStatus": "unresolved"
+    }
+  ],
+  "pendingRepositoryPins": [
+    {
+      "id": "json-schema-test-suite",
+      "repository": "https://github.com/json-schema-org/JSON-Schema-Test-Suite",
+      "requiredBefore": "schema-conformance"
+    },
+    {
+      "id": "test262",
+      "repository": "https://github.com/tc39/test262",
+      "requiredBefore": "ecmascript-conformance"
+    },
+    {
+      "id": "typescript",
+      "repository": "https://github.com/microsoft/TypeScript",
+      "requiredBefore": "source-extraction-or-compilation"
+    },
+    {
+      "id": "effect-tsgo",
+      "repository": "https://github.com/Effect-TS/tsgo",
+      "requiredBefore": "diagnostic-or-compilation-claims"
+    }
+  ]
+}
