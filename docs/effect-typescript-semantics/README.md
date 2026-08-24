@@ -17,7 +17,7 @@ The separate [Schema JSON reference context](../schema-json/README.md) inventori
 - [Claim-gate vocabulary](CLAIM-GATES.md)
 - [Implementation plan](IMPLEMENTATION-PLAN.md)
 - [Source provenance](../provenance/README.md)
-- [Reference catalog](../catalog/REFERENCES.md)
-- [Effect module surface](../catalog/EFFECT-SURFACE.md)
+- [Reference catalog](../../.reference/catalog/REFERENCES.md)
+- [Effect module surface](../../.reference/catalog/EFFECT-SURFACE.md)
 
 The repository's existing agent and Lean-skill setup is intentionally unchanged.

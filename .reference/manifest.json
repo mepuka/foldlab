@@ -16,6 +16,20 @@
   ],
   "modules": [
     {
+      "id": "lab-core",
+      "path": "../docs/lab-core",
+      "interface": [
+        "../docs/lab-core/CONTEXT.md",
+        "../docs/lab-core/KINDS.md",
+        "../docs/lab-core/TOOLS.md"
+      ],
+      "owns": [
+        "artifact and grade vocabulary",
+        "artifact-kind ledger",
+        "tool register"
+      ]
+    },
+    {
       "id": "source-provenance",
       "path": "provenance",
       "interface": [
@@ -33,7 +47,7 @@
     },
     {
       "id": "effect-language-semantics",
-      "path": "effect-typescript-semantics",
+      "path": "../docs/effect-typescript-semantics",
       "interface": [
         "../docs/effect-typescript-semantics/README.md",
         "../docs/effect-typescript-semantics/CONTEXT.md",
@@ -49,7 +63,7 @@
     },
     {
       "id": "schema-json",
-      "path": "schema-json",
+      "path": "../docs/schema-json",
       "interface": [
         "../docs/schema-json/README.md",
         "../docs/schema-json/CONTEXT.md",

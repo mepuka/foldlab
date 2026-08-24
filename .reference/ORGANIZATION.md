@@ -1,6 +1,13 @@
 # Reference organization
 
-The reference tree is designed as three deep modules plus one shared catalog. Each module has a small documented interface and owns the complexity behind one clean seam.
+Status: organization contract for the reference corpus. The context documents
+it describes now live under ../docs; only evidence remains in this tree.
+
+The corpus is designed as deep modules — modules whose small documented
+interface hides the complexity behind one clean seam (Ousterhout's sense) —
+plus one shared catalog. The modules are the bounded contexts named in the
+[context map](../CONTEXT-MAP.md); Lab Core's interface is its glossary, kind
+ledger, and tool register under ../docs/lab-core.
 
 All modules are governed by the global [development invariants](../docs/DEVELOPMENT-INVARIANTS.md). In particular, the semantic interface is project-owned and definition-first; external implementations enter later through typed adapters.
 

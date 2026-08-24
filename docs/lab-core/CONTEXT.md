@@ -6,20 +6,36 @@ standing.
 
 ## Language
 
+**Estate**:
+The governed whole: every artifact, document, rule, and piece of evidence the
+lab maintains under this vocabulary.
+_Avoid_: repo, codebase (for this sense)
+
+**Operator**:
+The human who directs the lab. Rulings, ratifications, and dispatch are
+theirs.
+_Avoid_: user, admin, owner
+
+**Grilling**:
+The ratification procedure: a structured interrogation of a proposal,
+decision by decision, until shared understanding is reached. Nothing enters
+`docs/` or `formal/` without it.
+_Avoid_: review, sign-off, approval
+
 **Artifact**:
 A thing the lab built that has earned its grade: it carries a kind, a
 canonical identity, and declared transformations.
 _Avoid_: build artifact, work product, output
 
 **Grade**:
-The earned standing of a built thing — staged material, experimental artifact,
-or formal verification artifact. Promotion between grades is a declared
-transformation, never silent.
+The earned standing of an artifact: experimental artifact or formal
+verification artifact. Promotion — into a grade from staged material, or
+between grades — is a declared transformation, never silent.
 _Avoid_: maturity, quality level, confidence
 
 **Staged material**:
-A built thing whose grade and publish-readiness are undecided; not yet an
-artifact.
+A built thing not yet admitted to any grade; its publish-readiness is
+undecided, and it is not yet an artifact.
 _Avoid_: draft, WIP, scratch
 
 **Experimental artifact**:

@@ -27,7 +27,7 @@ Completion gate:
 Deliverables:
 
 - project-owned provenance types;
-- a resolver interface that returns a verified Resolved Artifact or typed failure;
+- a resolver interface that returns a verified Resolved Evidence or typed failure;
 - adapters only for genuinely distinct resolution mechanisms;
 - immutable source-lock entries; and
 - reproducible resolution receipts.

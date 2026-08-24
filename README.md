@@ -4,34 +4,34 @@ A formal-semantics laboratory over the Effect TypeScript ecosystem.
 
 ## Thesis
 
-LLMs plus automated verification are collapsing the cost of verifiable,
-content-addressed software artifacts. Advantage accrues to whoever coalesces
-the linkages — canonical forms, projections, contracts, and the tooling between
-them — that let more advanced abstractions be built and trusted. Foldlab
-builds at that altitude, and intends to prove that marrying Lean (as referee)
-with an Effect implementation in TypeScript (as substrate) works.
+The lab's founding bet: LLMs plus automated verification are collapsing the
+cost of verifiable, content-addressed software artifacts. Advantage accrues to
+whoever coalesces the linkages — canonical forms, projections, contracts, and
+the tooling between them — that let more advanced abstractions be built and
+trusted. Foldlab builds at that altitude. Its wager: marrying Lean (as
+referee) with an Effect implementation in TypeScript (as substrate) works.
 
 ## Programme
 
-The lab organizes its subject as a descriptive tower, each layer reifying the
-one below as a first-class object: host execution, effectful computation (the
-Effect value), description in the small (Schema as codec, refinement,
-effectful operator, and reified AST), interaction (sessions, global types,
-topology), meta-interaction (protocols of protocols), and ontology
-(canonicalization and growth of vocabularies).
+The lab organizes its subject as a six-layer *descriptive tower*, from the
+JavaScript engine at the bottom, through the Effect value and Schema, up to
+interaction protocols and ontologies. Each layer treats the layer below it as
+an object it can describe. The full table and the vocabulary behind it are in
+the [charter](CHARTER.md).
 
-The central principle is verification-achievability: authoring at the global
-level and deriving local artifacts by projection makes verification tractable —
-the global object is small and declarative, and projection theorems transport
-its verification to everything derived from it.
+The central principle (P3 in the charter) is verification-achievability:
+author one small, declarative global description; derive the local artifacts
+from it by projection; prove the projection correct once — and everything
+derived inherits that verification.
 
 Development is ground-up and cooperative: first a formal description of the
 Effect core, then Schema as the smallest contract object, then the climb to
-many-roled asynchronous interaction.
+many-party asynchronous interaction.
 
-Everything the lab produces is a typed artifact with an identity and declared
-transformations — the functional discipline applies to the lab's own outputs,
-not just its subject matter.
+Everything the lab produces is built toward *artifact grade*: a
+classification, a canonical identity, and declared transformations. The grade
+is earned, not assumed — the [agent specification](AGENTS.md) carries the
+rules.
 
 ## References
 
@@ -55,10 +55,11 @@ not just its subject matter.
 - [.reference/](.reference/) — evidence: source lock, catalog, study clones.
 - [formal/](formal/) — formal verification artifacts (Lean, claim-gated).
 - [experiments/](experiments/) — experimental artifacts.
+- `.staging/` — pre-grade material, kept out of version control.
 
 Toolchains and tasks run through [mise](https://mise.jdx.dev/): `mise run
-check` regenerates derived files, asserts a clean tree, and runs the gates —
-locally and in CI alike.
+check` regenerates derived files, asserts a clean tree, and runs every test
+and gate defined so far — locally and in CI alike.
 
 ## License
 

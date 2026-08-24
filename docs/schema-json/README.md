@@ -8,7 +8,7 @@ Keep the pinned Effect Schema/JSON source topology, canonical discussion terms, 
 
 ## Current state
 
-- source snapshot: selected and byte-identified in the shared [source lock](../provenance/sources.lock.json);
+- source snapshot: selected and byte-identified in the shared [source lock](../../.reference/provenance/sources.lock.json);
 - terminology and generic claim gates: drafted;
 - accepted constructor subset: not selected;
 - Lean package, definitions, theorems, fixtures, and conformance harness: not created.

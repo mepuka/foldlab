@@ -1,9 +1,10 @@
-# Approved-tools ledger
+# Tool register
 
 A tool whose output flows into a gated artifact is admitted here first, with
-its verification kind and trust statement (modeled on the Rust std-lib
-verification project's approved-tools rule). Start light; grow as work gets
-defined.
+its role and trust statement (modeled on the Rust std-lib verification
+project's approved-tools rule). Start light; grow as work gets defined.
+("Register", not "ledger" — the artifact-kind ledger is
+[KINDS.md](KINDS.md).)
 
 | Tool | Role | Trust statement |
 | --- | --- | --- |

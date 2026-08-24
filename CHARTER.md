@@ -7,8 +7,8 @@ sessions.
 
 ## Thesis
 
-LLMs plus automated verification are collapsing the cost of verifiable,
-content-addressed software artifacts. As that cost falls, advantage accrues to
+The lab's founding bet: LLMs plus automated verification are collapsing the
+cost of verifiable, content-addressed software artifacts. As that cost falls, advantage accrues to
 whoever coalesces the linkages — canonical forms, projections, contracts, and
 the tooling between them — that let more advanced abstractions be built and
 trusted. Foldlab builds at that altitude.
@@ -85,13 +85,16 @@ altitude: studied to stand on, not to stop at.
 - **Author above the protocol level; derive below it.** Primary artifacts are
   global descriptions held as first-class TypeScript values. Local Effect and
   Schema artifacts are obtained by projection, not hand-written against prose.
-- **Projection** (global → local): obligation is the endpoint-projection
-  theorem shape — projections jointly realize the global scenario. Proved once
-  in the model; inherited by every projected artifact.
+- **Projection** (global → local): each participant's local artifact is
+  computed from the global description, and one theorem — proved once in the
+  model — guarantees that the projected parts, run together, do exactly what
+  the global description says. Every projected artifact inherits that
+  guarantee.
 - **Lift** (local → global): existing Effect and Schema artifacts embed upward
-  with no loss of validity — established judgments survive the lift, and
-  projecting a lifted artifact returns it up to the layer's equivalence.
-  Characterizing the liftable subset is lab research.
+  with no loss of validity — every judgment already established for the
+  artifact survives the lift, and projecting a lifted artifact returns it,
+  identical up to the equivalence relation declared for its layer.
+  Characterizing which local artifacts are liftable is lab research.
 - **LLM-harnessed verification.** Practical verification tooling is built by
   harnessing low-cost LLMs against machine-checkable gates. The gates carry the
   trust, never the models.
@@ -138,7 +141,8 @@ Inspirations:
   stored by hash in a database, names as metadata, code as shippable data,
   abilities for effects. Open, simple, rigorous roots betting on the same
   principles — its roadmap now targets agentic computing directly.
-- **Lysxia study clones** (`.reference/clones/`, gitignored, shallow):
+- **Study clones by Lysxia** (Li-yao Xia's GitHub handle; evidence in
+  `.reference/clones/`, gitignored, shallow):
   InteractionTrees, profunctor-monad (bidirectional programming with monadic
   profunctors — closest prior art for the H2 codec thesis), system-F,
   first-class-families, coq-mtl.
@@ -149,10 +153,11 @@ definitions appearing in its claims
 
 ## Roadmap
 
-Reference projects composed under `.reference/` reify the lab's themes and tie
-into the **central bus of canonical abstractions** the verification wave is
-producing — the shared spine of canonical forms, proofs, and linkages that
-downstream projects plug into.
+Every roadmap item contributes to one shared structure the lab calls the
+**central bus**: the growing collection of canonical forms, machine-checked
+proofs, and recorded links between artifacts and their evidence that later
+projects build on instead of rebuilding. As verification gets cheap, the bet
+is that this shared structure is where the value accrues.
 
 1. **Verification-kinds taxonomy** (immediate). Declare the different kinds of
    formal verification as lab vocabulary — what is proved, against what
@@ -160,22 +165,21 @@ downstream projects plug into.
    newcomers. (Concrete's proved/assumed/trusted/incomplete split and our
    claim gates G0–G6 are the starting inputs; the two are orthogonal axes —
    strength of belief versus layer of claim.)
-2. **Repo self-model** (first build after the tooling grill and a clean dev
-   setup). Type-model the Foldlab repository itself in Lean 4: the grade
-   lattice, artifact kinds, contexts, and transformations as types — the lab
-   as its own first subject (P2 applied to the estate). Candidate
-   GitHub-facing color.
-3. **R1 — Effect TS as artifact.** Begin the formal description of Effect TS
-   as an artifact (H1). "Artifact" is provisionally adopted as the term of
-   art; its definition entry is owed at domain modeling.
-4. **R2 — Concrete study, then a verified build.** Learn Concrete end to end;
-   then design and build something verifiably correct in a stated, significant
-   sense. Open research-pass question: composing verified Concrete tools into
+2. **Repo self-model** (first build, now that tooling is set). Type-model the
+   Foldlab repository itself in Lean 4: grades, artifact kinds, contexts, and
+   transformations as types — the lab as its own first subject (P2 applied to
+   the estate), and a showcase piece for the repository's public page.
+3. **Effect TS as artifact.** Begin the formal description of Effect TS as an
+   artifact (H1), using the lab-core definition of that term.
+4. **Concrete study, then a verified build.** Learn Concrete end to end; then
+   design and build something verifiably correct in a stated, significant
+   sense. Open research question: composing verified Concrete tools into
    machine-level pipelines with codec-typed boundaries (inputs: Haskell
    [codec](https://hackage.haskell.org/package/codec), Xia's
    profunctor-monad, Effect Schema v4
    [toCodecJson](https://www.effect.website/docs/v4/api/effect/Schema#toCodecJson-interface)
    — a verified-tool pipeline is a small instance of projection).
 
-Sequencing: grill project tooling first, then research passes, then lay out
-the projects. Coq/Linux tooling setup is tabled pending that grill.
+Items run in numbered order; research passes precede the layout of each
+project. The Coq/OCaml annex (WSL2) is added only when item 4 needs to build
+Coq code.

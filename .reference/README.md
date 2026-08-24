@@ -15,6 +15,6 @@ This is the local evidence and design corpus for Foldlab. It is organized by dom
 
 ## Current claim state
 
-The corpus has source identity and a proposed domain contract only. No Lean theorem, implementation-conformance, compilation-preservation, or hosted-runtime claim exists yet.
+The corpus has source identity and reference vocabulary only. No domain decision is selected. No Lean theorem, implementation-conformance, compilation-preservation, or hosted-runtime claim exists yet.
 
 The repository's separate agent bootstrap remains outside this corpus and is intentionally unchanged.
