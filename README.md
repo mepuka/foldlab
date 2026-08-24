@@ -1,6 +1,10 @@
 # Foldlab
 
-A formal-semantics laboratory over the Effect TypeScript ecosystem.
+Experiments and open-source tooling for formally verified software.
+
+Foldlab is a laboratory. The Effect TypeScript ecosystem and Lean 4 are its
+current substrate; its aim is open tooling for a practice where
+machine-checked verification is cheap enough to be ordinary.
 
 ## Thesis
 
