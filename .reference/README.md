@@ -4,12 +4,12 @@ This is the local evidence and design corpus for Foldlab. It is organized by dom
 
 ## Start here
 
-- [Context map](CONTEXT-MAP.md): canonical contexts and their relationships
+- [Context map](../CONTEXT-MAP.md): canonical contexts and their relationships
 - [Organization](ORGANIZATION.md): module ownership, interfaces, seams, and placement rules
-- [Development invariants](DEVELOPMENT-INVARIANTS.md): definition-first, typed, strict functional development rules
-- [Source provenance](provenance/README.md): immutable artifact identities and the source lock
-- [Effect language semantics](effect-typescript-semantics/README.md): semantic layers and claim gates
-- [Schema JSON codec](schema-json/README.md): source and terminology references for a future domain decision
+- [Development invariants](../docs/DEVELOPMENT-INVARIANTS.md): definition-first, typed, strict functional development rules
+- [Source provenance](../docs/provenance/README.md): immutable artifact identities and the source lock
+- [Effect language semantics](../docs/effect-typescript-semantics/README.md): semantic layers and claim gates
+- [Schema JSON codec](../docs/schema-json/README.md): source and terminology references for a future domain decision
 - [Reference catalog](catalog/REFERENCES.md): normative sources, prior art, corpora, and contextual material
 - [Effect module surface](catalog/EFFECT-SURFACE.md): keyword-only capability coverage
 

@@ -2,22 +2,22 @@
 
 The reference tree is designed as three deep modules plus one shared catalog. Each module has a small documented interface and owns the complexity behind one clean seam.
 
-All modules are governed by the global [development invariants](DEVELOPMENT-INVARIANTS.md). In particular, the semantic interface is project-owned and definition-first; external implementations enter later through typed adapters.
+All modules are governed by the global [development invariants](../docs/DEVELOPMENT-INVARIANTS.md). In particular, the semantic interface is project-owned and definition-first; external implementations enter later through typed adapters.
 
 ## Modules
 
 | Module | Interface | What it owns | What it must not own |
 | --- | --- | --- | --- |
-| Source Provenance | provenance/README.md, provenance/CONTEXT.md, and provenance/sources.lock.json | Canonical repository identity, full Git object identity, content digests, artifact resolution, and receipts | Semantic interpretation, theorem statements, or test verdicts |
-| Effect Language Semantics | effect-typescript-semantics/README.md, CONTEXT.md, CLAIM-GATES.md, and IMPLEMENTATION-PLAN.md | Semantic layers, observations, refinement, bridge meanings, generic claim gates, and implementation sequence | Git resolution rules or Schema-specific constructor policy |
-| Schema JSON Codec | schema-json/README.md, CONTEXT.md, and SOURCE-SURFACE.md | Source topology, canonical discussion terms, and inputs to a future domain decision | Accepted constructors, semantic behavior, theorem targets, or runtime claims |
+| Source Provenance | ../docs/provenance/README.md, ../docs/provenance/CONTEXT.md, and provenance/sources.lock.json | Canonical repository identity, full Git object identity, content digests, evidence resolution, and receipts | Semantic interpretation, theorem statements, or test verdicts |
+| Effect Language Semantics | ../docs/effect-typescript-semantics/ README.md, CONTEXT.md, CLAIM-GATES.md, and IMPLEMENTATION-PLAN.md | Semantic layers, observations, refinement, bridge meanings, generic claim gates, and implementation sequence | Git resolution rules or Schema-specific constructor policy |
+| Schema JSON Codec | ../docs/schema-json/ README.md, CONTEXT.md, and SOURCE-SURFACE.md | Source topology, canonical discussion terms, and inputs to a future domain decision | Accepted constructors, semantic behavior, theorem targets, or runtime claims |
 
 The [catalog](catalog/REFERENCES.md) is supporting evidence rather than a module. It records why a source matters and what it cannot prove. It may point to a canonical pin, but it never duplicates ownership of that pin.
 
 ## Seams
 
-**Artifact resolution seam**:
-Source Provenance turns an Artifact Locator into either a Resolved Artifact and receipt or a typed resolution failure. Git remotes, object formats, redirects, and byte hashing remain behind this interface.
+**Evidence resolution seam**:
+Source Provenance turns an Evidence Locator into either a Resolved Evidence entry and receipt or a typed resolution failure. Git remotes, object formats, redirects, and byte hashing remain behind this interface.
 
 **Accepted source seam**:
 After a domain decision, Schema JSON Codec may turn a raw pinned Schema AST into either an admitted Source Schema or a typed rejection. The reference organization records where this future seam belongs without deciding its accepted forms.

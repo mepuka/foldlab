@@ -5,22 +5,22 @@
   "root": ".reference",
   "humanManifest": "MANIFEST.md",
   "organization": "ORGANIZATION.md",
-  "developmentInvariants": "DEVELOPMENT-INVARIANTS.md",
-  "contextMap": "CONTEXT-MAP.md",
+  "developmentInvariants": "../docs/DEVELOPMENT-INVARIANTS.md",
+  "contextMap": "../CONTEXT-MAP.md",
   "rootDocuments": [
     "README.md",
     "MANIFEST.md",
     "ORGANIZATION.md",
-    "DEVELOPMENT-INVARIANTS.md",
-    "CONTEXT-MAP.md"
+    "../docs/DEVELOPMENT-INVARIANTS.md",
+    "../CONTEXT-MAP.md"
   ],
   "modules": [
     {
       "id": "source-provenance",
       "path": "provenance",
       "interface": [
-        "provenance/README.md",
-        "provenance/CONTEXT.md",
+        "../docs/provenance/README.md",
+        "../docs/provenance/CONTEXT.md",
         "provenance/sources.lock.json"
       ],
       "owns": [
@@ -35,10 +35,10 @@
       "id": "effect-language-semantics",
       "path": "effect-typescript-semantics",
       "interface": [
-        "effect-typescript-semantics/README.md",
-        "effect-typescript-semantics/CONTEXT.md",
-        "effect-typescript-semantics/CLAIM-GATES.md",
-        "effect-typescript-semantics/IMPLEMENTATION-PLAN.md"
+        "../docs/effect-typescript-semantics/README.md",
+        "../docs/effect-typescript-semantics/CONTEXT.md",
+        "../docs/effect-typescript-semantics/CLAIM-GATES.md",
+        "../docs/effect-typescript-semantics/IMPLEMENTATION-PLAN.md"
       ],
       "owns": [
         "semantic layer vocabulary",
@@ -51,9 +51,9 @@
       "id": "schema-json",
       "path": "schema-json",
       "interface": [
-        "schema-json/README.md",
-        "schema-json/CONTEXT.md",
-        "schema-json/SOURCE-SURFACE.md"
+        "../docs/schema-json/README.md",
+        "../docs/schema-json/CONTEXT.md",
+        "../docs/schema-json/SOURCE-SURFACE.md"
       ],
       "owns": [
         "Schema JSON vocabulary",
@@ -80,7 +80,7 @@
     }
   ],
   "invariants": [
-    "Every listed path exists relative to .reference.",
+    "Every listed path exists relative to .reference (moved context documents resolve through ../docs).",
     "Canonical terms live in exactly one CONTEXT.md.",
     "Canonical source pins live only in provenance/sources.lock.json.",
     "The catalog classifies evidence but does not own pins or semantic definitions.",

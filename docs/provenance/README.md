@@ -16,8 +16,8 @@ The project must distinguish a human-facing link from an artifact identity. A br
 | GitTreeId | A GitObjectId verified to name the commit's root tree. |
 | GitBlobId | A GitObjectId verified to name the blob reached at an exact repository-relative path. |
 | ContentDigest | Algorithm plus digest of materialized bytes. The initial external integrity digest is SHA-256. |
-| ArtifactLocator | Canonical repository, exact commit, exact path, and expected object kind. |
-| ResolvedArtifact | Locator, commit, tree, blob, content SHA-256, byte length, and stable pinned links. |
+| EvidenceLocator | Canonical repository, exact commit, exact path, and expected object kind. |
+| ResolvedEvidence | Locator, commit, tree, blob, content SHA-256, byte length, and stable pinned links. |
 | ResolutionReceipt | Resolver identity/version, observed remote, resolved values, verification result, and time. Receipts are observations; the resolved identities are the reproducible contract. |
 
 Git object IDs and content digests are deliberately different. A Git blob ID hashes a Git object header and contents using the repository's object format. The SHA-256 field hashes the materialized file bytes. Neither one is a signature or an authorship claim.
@@ -51,7 +51,7 @@ For a repository using SHA-1 objects, “full SHA verification” therefore comm
 
 ## Current pinned snapshot
 
-The machine-readable [sources.lock.json](sources.lock.json) records:
+The machine-readable [sources.lock.json](../../.reference/provenance/sources.lock.json) records:
 
 - Effect repository commit 0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07;
 - root tree 68a2b3baeed509bc291cc3788c9b2c04bf53a80f;

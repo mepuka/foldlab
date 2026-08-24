@@ -16,20 +16,20 @@ _Avoid_: Version, pin
 A full algorithm-qualified Git object identifier verified to name a commit.
 _Avoid_: SHA, hash, short SHA
 
-**Artifact Locator**:
+**Evidence Locator**:
 A Repository Identity, Commit Identity, exact repository-relative path, and expected object kind.
-_Avoid_: Link, file reference
+_Avoid_: Artifact Locator, link, file reference
 
-**Resolved Artifact**:
-The commit, root tree, blob identity, content digest, byte length, and materialized bytes produced from one Artifact Locator.
-_Avoid_: Download, checkout
+**Resolved Evidence**:
+The commit, root tree, blob identity, content digest, byte length, and materialized bytes produced from one Evidence Locator.
+_Avoid_: Resolved Artifact, download, checkout
 
 **Content Digest**:
 An algorithm-qualified digest of the materialized file bytes, independent of the Git object identifier.
 _Avoid_: Git SHA, checksum
 
 **Source Lock**:
-The immutable set of Repository Identities, Commit Identities, Artifact Locators, and expected resolved identities approved for a claim.
+The immutable set of Repository Identities, Commit Identities, Evidence Locators, and expected resolved identities approved for a claim. "Pin" is the sanctioned informal name for one Source Lock entry.
 _Avoid_: Lockfile, manifest
 
 **Resolution Receipt**:
