@@ -1,6 +1,6 @@
 ---
 name: lean
-description: Lean 4 formalization pipeline covering Lake project bootstrap, domain contracts and prior-art reuse, type and invariant representation, effectful or protocol system models, LLM-assisted proof development and repair, and assurance review of verification claims. Use for any Lean 4, Lake, Mathlib, theorem-statement, proof-hole, proof-repair, or "this code is formally verified" task; route to the matching stage below rather than working from this page.
+description: Lean 4 skills workflows covering Lake project bootstrap, research and prior-art reuse, algebraic data types and typeclasses and invariant representation, effectful or protocol system models, LLM-assisted proof development and repair, and assurance review of verification claims. Use for any Lean 4, Lake, Mathlib, theorem-statement, proof-hole, proof-repair, or "this code is formally verified" task; route to the matching stage below rather than working from this page.
 ---
 
 # Lean
