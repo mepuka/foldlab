@@ -1,3 +1,7 @@
 .staging/*
 !.staging/README.md
 node_modules/
+# Paper PDFs stay local-only: the public repo must not redistribute publisher-copyrighted
+# documents. The catalog ledger (.reference/catalog/REFERENCES.md) records identifiers and
+# digests so every file is independently re-fetchable.
+.reference/papers/*.pdf

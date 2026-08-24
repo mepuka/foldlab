@@ -117,3 +117,12 @@ These revisions were observed during the 2026-08-24 sweep. They are discovery ai
 5. pinned official conformance corpora;
 6. Aeneas, Cedar, Lean4Lean, ESMeta, JSCert, K, Strata, Thales, and lean4-json-schema as bounded prior art; and
 7. tutorials and experience reports for education and design context only.
+
+## Unison theory basis (E1 lineage)
+
+Local copies live in [papers/](../papers/) with SHA-256 digests recorded here; full lock entries pending.
+
+| Source | Pin and role | Supports | Does not support |
+| --- | --- | --- | --- |
+| [Dunfield & Krishnaswami 2013, Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism](https://arxiv.org/abs/1306.6032) | arXiv 1306.6032; local PDF sha256 0e75ac60ee631775d663189bf5fc4811275e84c62178f826879feed4555ad941 | The declarative and algorithmic bidirectional systems with soundness and completeness; the documented basis of Unison's typechecker; the specification shape for any typechecker-equivalence claim | Unison's implementation details, abilities, or content addressing |
+| [Lindley, McBride & McLaughlin 2016, Do Be Do Be Do (Frank)](https://arxiv.org/abs/1611.09259) | arXiv 1611.09259; local PDF sha256 9cc06103fd865a49315baf9110a2b1f6285a55fbec40bee8f1b174db0b2077cf | The effect-handler calculus behind Unison's abilities: operators, adjustments, and handling as first-class | Unison's exact ability implementation or hashing discipline |
