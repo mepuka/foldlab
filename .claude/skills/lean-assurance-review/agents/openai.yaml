@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lean Assurance Review"
-  short_description: "Audit Lean proof and implementation trust"
-  default_prompt: "Use $lean-assurance-review to audit this Lean model, proof, and implementation claim."

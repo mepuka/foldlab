@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lean Formalization Strategy"
-  short_description: "Plan Lean models and prior-art reuse"
-  default_prompt: "Use $lean-formalization-strategy to decompose this problem and choose reuse, adaptation, or a from-scratch model."

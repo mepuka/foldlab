@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lean Algebraic Systems"
-  short_description: "Model compositional effectful systems in Lean"
-  default_prompt: "Use $lean-algebraic-systems to design a lawful compositional model of this system."

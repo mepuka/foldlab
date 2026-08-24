@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lean Model Invariants"
-  short_description: "Choose practical Lean invariant encodings"
-  default_prompt: "Use $lean-model-invariants to design the types and invariants for this domain model."
