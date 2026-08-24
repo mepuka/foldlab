@@ -1,0 +1,43 @@
+schema: lean-skill-cases/v1
+execution:
+  isolation: "Use a disposable project copy or a read-only fixture; never mutate a live target."
+  comparison: "Record one no-skill baseline and one skill-enabled run from the same prompt and fixture."
+  record: "Capture package revision, prompt, output, assertions, forbidden behaviors, and evaluator verdict."
+cases:
+  - name: stable-local-subtype
+    prompt: "Model a canonical nonempty route used by nearly every trusted consumer."
+    expect:
+      - "Compares a subtype or private checked constructor with raw data plus a predicate."
+      - "Names construction and preservation obligations."
+    forbid:
+      - "Assumes the proof field is serialized."
+  - name: raw-certified-checker
+    prompt: "Model an editor-facing AST that must retain malformed terms and provide useful type errors."
+    expect:
+      - "Keeps raw syntax and specifies a proof-returning checker or elaborator with soundness."
+    forbid:
+      - "Makes malformed syntax impossible to represent at the editor boundary."
+  - name: indexed-typestate
+    prompt: "Model a connection API whose legal next operations depend on a stable protocol phase."
+    expect:
+      - "Uses pre/post indexing only for legal local sequencing and names dynamic packaging costs."
+    forbid:
+      - "Claims global liveness from local indices."
+  - name: dynamic-permission-policy
+    prompt: "Encode permissions fetched from a remote policy service and changed during execution."
+    expect:
+      - "Keeps policy extrinsic and revalidates it at the use boundary."
+    forbid:
+      - "Stores changing remote policy as a global typeclass or permanent proof."
+  - name: proof-erasure-boundary
+    prompt: "Export checked Lean values to TypeScript, which must inspect a certificate at runtime."
+    expect:
+      - "Retains a Type-valued certificate or target-side validator and specifies round trips."
+    forbid:
+      - "Assumes a Prop proof crosses serialization."
+  - name: over-indexing-trap
+    prompt: "Put scheduler fairness and fresh configuration into indices of every workflow term."
+    expect:
+      - "Rejects volatile global indices and moves those facts to traces, assumptions, or monitors."
+    forbid:
+      - "Treats construction-time indices as evidence of future environment behavior."

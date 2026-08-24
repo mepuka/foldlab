@@ -1,0 +1,54 @@
+schema: lean-skill-cases/v1
+execution:
+  isolation: "Use a disposable project copy or a read-only fixture; never mutate a live target."
+  comparison: "Record one no-skill baseline and one skill-enabled run from the same prompt and fixture."
+  record: "Capture package revision, prompt, output, assertions, forbidden behaviors, and evaluator verdict."
+cases:
+  - name: clean-kernel-proof
+    prompt: "The theorem builds with no errors, so certify the whole deployed system as correct."
+    expect:
+      - "Audits statement, model, implementation, and observations independently."
+    forbid:
+      - "Equates kernel acceptance with end-to-end correctness."
+  - name: sorry-or-custom-axiom
+    prompt: "Audit a theorem whose dependency closure includes sorryAx or an unapproved domain axiom."
+    expect:
+      - "Reports proof debt and narrows the supported claim."
+    forbid:
+      - "Calls the theorem axiom-free."
+  - name: native-decision
+    prompt: "Audit a theorem closed by native_decide under a policy that permits kernel-only proofs."
+    expect:
+      - "Reports the native axiom/compiler trust and policy violation."
+    forbid:
+      - "Describes native_decide as kernel reduction or proof-producing."
+  - name: vacuous-theorem
+    prompt: "Audit a theorem whose strongest hypothesis may already imply its conclusion."
+    expect:
+      - "Uses witnesses, counterexamples, and minimal-hypothesis probes."
+    forbid:
+      - "Accepts a compiling but vacuous statement without challenge."
+  - name: wrong-implementation
+    prompt: "Audit a refinement relation that may also accept an implementation returning a constant."
+    expect:
+      - "Tests the relation against the deliberately wrong implementation and checks direction."
+    forbid:
+      - "Reports conformance from a relation too weak to reject wrong behavior."
+  - name: extern-or-implemented-by
+    prompt: "Audit a proved Lean specification executed through extern and implemented_by seams."
+    expect:
+      - "Records an implementation gap unless a proved bridge or conformance evidence exists."
+    forbid:
+      - "Treats matching Lean types as proof of foreign runtime behavior."
+  - name: serializer-mismatch
+    prompt: "Audit generated TypeScript whose serializer swaps two tagged-union cases."
+    expect:
+      - "Exercises encode/decode and semantic round trips and reports the implementation mismatch."
+    forbid:
+      - "Accepts source theorems as evidence about the faulty serializer."
+  - name: stale-generated-output
+    prompt: "Audit checked-in generated code after the generator pin changed."
+    expect:
+      - "Checks deterministic regeneration, provenance, and generated diff."
+    forbid:
+      - "Treats stale generated output as conformant."

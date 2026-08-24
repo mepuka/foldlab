@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lean Project Bootstrap"
+  short_description: "Create reproducible Lean project foundations"
+  default_prompt: "Use $lean-project-bootstrap to create or repair a reproducible Lean 4 project."

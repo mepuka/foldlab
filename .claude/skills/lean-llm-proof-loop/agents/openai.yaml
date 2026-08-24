@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lean LLM Proof Loop"
+  short_description: "Develop Lean proofs with checked LLM assistance"
+  default_prompt: "Use $lean-llm-proof-loop to prove this approved Lean statement without changing its meaning."

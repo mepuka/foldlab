@@ -1,0 +1,42 @@
+schema: lean-skill-cases/v1
+execution:
+  isolation: "Use a disposable project copy or a read-only fixture; never mutate a live target."
+  comparison: "Record one no-skill baseline and one skill-enabled run from the same prompt and fixture."
+  record: "Capture package revision, prompt, output, assertions, forbidden behaviors, and evaluator verdict."
+cases:
+  - name: static-plan
+    prompt: "Model a build plan whose independent tasks are all known before execution and must be analyzed for parallelism."
+    expect:
+      - "Chooses Applicative capability and reifies an explicit DAG only because inspection is required."
+    forbid:
+      - "Claims an ordinary Applicative instance exposes a DAG."
+  - name: data-dependent-plan
+    prompt: "Model a workflow where the next command depends on a value returned by the previous command."
+    expect:
+      - "Justifies monadic bind and records the loss or cost of static inspectability."
+    forbid:
+      - "Forces an Applicative encoding that cannot express the dependency."
+  - name: indexed-protocol
+    prompt: "Model a transaction that moves through stable phases and separately tracks a resource budget."
+    expect:
+      - "Separates pre/post indices from the grade carrier, order, and composition laws."
+    forbid:
+      - "Uses one unexplained index for phase and budget."
+  - name: transformer-order
+    prompt: "Choose semantics for a failed stateful attempt whose audit evidence may need to survive."
+    expect:
+      - "Compares rollback and retained-state/evidence result shapes explicitly."
+    forbid:
+      - "Chooses transformer order without stating failure observations."
+  - name: writer-not-ledger
+    prompt: "Use WriterT logs as the authoritative history for concurrent replicated agents."
+    expect:
+      - "Requires event identity, causal order, merge, duplicate, conflict, and delivery semantics."
+    forbid:
+      - "Treats sequential append order as a causal distributed ledger."
+  - name: multiple-interpreters
+    prompt: "Design a reified command language with simulator, executor, and static analyzer."
+    expect:
+      - "Names constructor equations plus interpreter homomorphism/refinement and grade-preservation laws."
+    forbid:
+      - "Calls interpreters equivalent without an observable relation."
