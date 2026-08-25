@@ -13,7 +13,7 @@ run = [
 description = "Regenerate the golden-vector corpus and transcripts from the oracle (CV-1 bundle raw material)"
 dir = "{{config_root}}/experiments/entity-store-shell"
 run = [
-  "lake exe estore-vectors",
+  "lake exe estore-vectors vectors",
   "lake exe harness harness .harness-work --record transcripts",
 ]
 
