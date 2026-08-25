@@ -274,7 +274,21 @@ pre-existing statement byte-identical except the ordered `tags_distinct` extensi
 still rejects the flat value the new constructor accepts (`E2/A4Probe.lean`). M18
 seat note, pinned from the delivery: `tupleRest` conformance stays syntax-directed —
 `ConformsL` is lockstep, so the split point is forced by the element count, no search
-over splits. G2: the value plane stays float-free in v1; anything float-bearing is
+over splits.
+
+**Pre-wave grill rulings (2026-08-25, all as recommended).** **Q12 — Conforms
+observability:** `Conforms` does not observe the union `mode` byte, though the address
+does; kept for v1 as a PRICED DIVERGENCE (conformance is a typing judgment; `oneOf`
+exclusivity is a decode semantic) and named a wave-2 refutation target. **Bridge
+pins:** the four M17-feeding statements are frozen in `E2/Bridge.lean` (B1–B3
+unconditional; B4 conditional per F-23/F-24). Pinning B4 surfaced two cracks, priced
+into the statement: F-23 — `canonS` passes `lit` payloads through while `canonV`
+sorts the same bytes, falsifying the unconditional bridge (probe-verified); F-24 —
+the `refine` case forces `checkSem` to be `canonV`-invariant, which becomes an R-4
+admission criterion. **Q13 OPEN:** whether `canonS` canonicalizes `lit` payloads
+(uniform canonical form; changes addresses of lit-bearing schemas — free pre-push,
+never free again). **M10/M19 vocabulary:** minted next by the coordinator, both
+statements together (acyclicity and set-ordering are one vocabulary apart). G2: the value plane stays float-free in v1; anything float-bearing is
 REJECTED explicitly — silent reinterpretation of Effect's `Number` as `Int` is
 forbidden. G5: addresses never ride inside object KEYS (`refs` does not look there);
 order-insensitive collection nodes (set/map with sorted canonicalization) are a future
