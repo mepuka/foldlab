@@ -8,6 +8,10 @@ Nat mod 2^64, falsifying unconditional injectivity (var (2^64) collided with var
 blocking an unconditional round-trip. Frames are now `encNat` — LEB128-style, unbounded,
 prefix-free, injective on all of Nat. Injectivity/round-trip obligations live in
 Decode.lean (round-trip PROVED there).
+
+AMENDED 2026-08-25 (A-1, ratified under Q10): `Value.vaddr` uses discriminator
+0x16 and frames its payload with `encAddress`; `SchemaCore.address` is the nullary
+schema leaf at discriminator 0x3A.
 -/
 import E2.Core
 
@@ -57,7 +61,7 @@ def SchemaList.length : SchemaList → Nat
   | .nil => 0
   | .cons _ tl => tl.length + 1
 
-/- Value encoding. Tag bytes 0x10–0x15. -/
+/- Value encoding. Tag bytes 0x10–0x16. -/
 mutual
 def encValue : Value → List UInt8
   | .vnull    => [0x10]
@@ -66,6 +70,7 @@ def encValue : Value → List UInt8
   | .vstr s   => 0x13 :: encStr s
   | .varr vs  => 0x14 :: (encNat vs.length ++ encValueList vs)
   | .vobj fs  => 0x15 :: (encNat fs.length ++ encValueFields fs)
+  | .vaddr a  => 0x16 :: encAddress a
   termination_by structural x => x
 
 def encValueList : ValueList → List UInt8
@@ -94,7 +99,7 @@ def encCheckList : CheckList → List UInt8
   termination_by structural x => x
 end
 
-/- Schema encoding. Tag bytes 0x30–0x39; Prim and UMode fold into a second byte. -/
+/- Schema encoding. Tag bytes 0x30–0x3A; Prim and UMode fold into a second byte. -/
 def encPrim : Prim → UInt8
   | .null => 0x00 | .bool => 0x01 | .int => 0x02 | .str => 0x03
 
@@ -113,6 +118,7 @@ def encSchema : SchemaCore → List UInt8
   | .ref a         => 0x37 :: encAddress a
   | .var i         => 0x38 :: encNat i
   | .mu d body     => 0x39 :: (encStr d ++ encSchema body)
+  | .address       => [0x3A]
   termination_by structural x => x
 
 def encFieldList : FieldList → List UInt8

@@ -8,6 +8,10 @@ from input length, and the round-trip theorems (M4a, PROVED) discharge it via th
 lemmas. Strings decode by validity check + the `String.ofByteArray` constructor — no
 dependence on the runtime's `fromUTF8` implementation. M4b (rejection of non-image
 bytes) is a separate owed obligation.
+
+AMENDED 2026-08-25 (A-1, ratified under Q10): the value decoder handles
+`Value.vaddr` at 0x16 through `decAddr`, and the schema decoder handles the nullary
+`SchemaCore.address` leaf at 0x3A. The unconditional M4a proof families include both.
 -/
 import E2.Core
 import E2.Encode
@@ -173,6 +177,10 @@ def decV : Nat → List UInt8 → Option (Value × List UInt8)
         | some (fs, r2) => some (.vobj fs, r2)
         | none => none
       | none => none
+    else if b = 0x16 then
+      match decAddr r with
+      | some (a, r') => some (.vaddr a, r')
+      | none => none
     else none
   termination_by k l => (k, 0)
 
@@ -315,6 +323,7 @@ def decS : Nat → List UInt8 → Option (SchemaCore × List UInt8)
         | some (body, r2) => some (.mu d body, r2)
         | none => none
       | none => none
+    else if b = 0x3A then some (.address, r)
     else none
   termination_by k l => (k, 0)
 
@@ -364,6 +373,7 @@ def szV : Value → Nat
   | .vbool _ => 1
   | .vint _ => 1
   | .vstr _ => 1
+  | .vaddr _ => 1
   | .varr vs => 1 + szVs vs
   | .vobj fs => 1 + szVFs fs
   termination_by structural x => x
@@ -395,6 +405,7 @@ mutual
 def szS : SchemaCore → Nat
   | .prim _ => 1
   | .lit v => 1 + szV v
+  | .address => 1
   | .object fs => 1 + szFs fs
   | .tuple es => 1 + szSs es
   | .array e => 1 + szS e
@@ -454,6 +465,14 @@ theorem rtV (v : Value) : ∀ (k : Nat) (r : List UInt8), szV v ≤ k →
     | succ k =>
       rw [decV.eq_def]
       simp [encValue, decStr_encStr]
+  | vaddr a =>
+    intro k r hk
+    simp only [szV] at hk
+    cases k with
+    | zero => omega
+    | succ k =>
+      rw [decV.eq_def]
+      simp [encValue, decAddr_encAddress]
   | varr vs =>
     intro k r hk
     simp only [szV] at hk
@@ -584,6 +603,14 @@ theorem rtS (s : SchemaCore) : ∀ (k : Nat) (r : List UInt8), szS s ≤ k →
       have hv := rtV v k r h1
       rw [decS.eq_def]
       simp [encSchema, hv]
+  | address =>
+    intro k r hk
+    simp only [szS] at hk
+    cases k with
+    | zero => omega
+    | succ k =>
+      rw [decS.eq_def]
+      simp [encSchema]
   | object fs =>
     intro k r hk
     simp only [szS] at hk
@@ -712,6 +739,7 @@ theorem szleV (v : Value) : szV v ≤ (encValue v).length := by
   | vbool b => simp only [szV, encValue, List.length_cons, List.length_nil]; omega
   | vint n => simp only [szV, encValue, List.length_cons]; omega
   | vstr s => simp only [szV, encValue, List.length_cons]; omega
+  | vaddr a => simp only [szV, encValue, List.length_cons]; omega
   | varr vs =>
     have h := szleVs vs
     have hn := encNat_length_pos vs.length
@@ -774,6 +802,7 @@ theorem szleS (s : SchemaCore) : szS s ≤ (encSchema s).length := by
   | lit v =>
     have h := szleV v
     simp only [szS, encSchema, List.length_cons]; omega
+  | address => simp only [szS, encSchema, List.length_cons, List.length_nil]; omega
   | object fs =>
     have h := szleFs fs
     have hn := encNat_length_pos fs.length

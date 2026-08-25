@@ -11,18 +11,23 @@ a declared transformation, not drift.
 Toolchain: `leanprover/lean4:v4.33.1` (kernel-soundness floor). No dependencies — core
 only. Build: `lake build` (in this directory).
 
+Amendment A-1 was implemented 2026-08-25 under the ratified Q10 amendment discipline:
+address-valued values are `Value.vaddr`; the nullary address-type schema leaf uses the
+pre-R-1 working label `SchemaCore.address`; their discriminator bytes are 0x16 and 0x3A,
+respectively. Joint B now closes entity insertion over every address in the value.
+
 ## What is here, and what is proved
 
 | Module | Content | Proved now |
 |---|---|---|
-| `E2/Core.lean` | mutual-monomorphic carriers: `SchemaCore`/`FieldList`/`SchemaList`, `Value` family, `Check` family; derived `DecidableEq`, `BEq` from it | — |
-| `E2/Encode.lean` | framed byte encoding; unbounded LEB128-style `encNat` frames (Q10 amendment: the earlier be64 frame truncated and falsified injectivity) | — |
-| `E2/Decode.lean` | fueled decoders, fuel derived from input length and absent from all statements | **M4a both kinds**: `decodeSchema ∘ encSchema = some`, `decodeValue ∘ encValue = some`, unconditional |
-| `E2/Canon.lean` | `canonS` with the ratified sort-by-name field order (R-10) | — |
-| `E2/Model.lean` | `refsS`, `closedB`/`guardedB`/`WFS`, `substS`/`unfoldMu`, inductive `Conforms` (parameterized check semantics + resolver), `StoreMap`, `Reachable`, operations, `NameMap` | **M8** WF1 (address consistency, by induction on `Reachable`); **M12** unconditional dedup; **M13** frame/append-only; **M14** get-after-put (fresh half) |
+| `E2/Core.lean` | mutual-monomorphic carriers: `SchemaCore`/`FieldList`/`SchemaList`, `Value` family (including `vaddr`), `Check` family; nullary `SchemaCore.address`; derived `DecidableEq`, `BEq` from it | — |
+| `E2/Encode.lean` | framed byte encoding; unbounded LEB128-style `encNat` frames (Q10 amendment: the earlier be64 frame truncated and falsified injectivity); A-1 tags 0x16/0x3A | — |
+| `E2/Decode.lean` | fueled decoders, fuel derived from input length and absent from all statements; A-1 cases included | **M4a both kinds**: `decodeSchema ∘ encSchema = some`, `decodeValue ∘ encValue = some`, unconditional over the extended carriers |
+| `E2/Canon.lean` | `canonS` with the ratified sort-by-name field order (R-10); the address-type node is a leaf | — |
+| `E2/Model.lean` | `refsS`/`refsV`, `closedB`/`guardedB`/`WFS`, `substS`/`unfoldMu`, inductive `Conforms` (including unconditional address conformance; parameterized check semantics + resolver), `StoreMap`, `Reachable` with entity-reference closure, operations, `NameMap` | **M8** WF1 (address consistency, by induction on `Reachable`); **M12** unconditional dedup; **M13** frame/append-only; **M14** get-after-put (fresh half) |
 | `E2/Obligations.lean` | identity assembly (`preimageS`/`preimageE`, version + kind in pre-image); obligation ledger as named `Prop`s | **directionA** (congruence); **kind_separation** (schema/entity pre-images differ) |
 | `E2/Correspondence.lean` | Shape B correspondence pattern (ascriptions + exhaustive tag map) | `tags_distinct` (zero axioms) |
-| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,144 constants |
+| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,185 constants |
 
 Axiom posture: every proved theorem within `[propext, Classical.choice, Quot.sound]`
 (several at `[propext]` or fewer). No `native_decide`, no Mathlib, no `partial`, no

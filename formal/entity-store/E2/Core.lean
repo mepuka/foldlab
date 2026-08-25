@@ -2,6 +2,10 @@
 E2 scratch lab — staged, pre-grade. Carrier per entity-store-kickoff.md §5/§11/§12,
 rulings R-10/R-11/R-12 ratified 2026-08-25. Statements only where marked; nothing frozen.
 
+AMENDED 2026-08-25 (A-1, ratified under Q10): address-valued values enter as
+`Value.vaddr`; the nullary address-type schema node uses the working label
+`SchemaCore.address` until R-1 freezes the vocabulary.
+
 Shape: mutual-monomorphic per the metaprogramming survey §4 (deriving DecidableEq works,
 `induction` works). No derived Repr/Ord/ToJson/FromJson/ToExpr anywhere (partial→opaque
 trap). BEq recovered from DecidableEq in one line.
@@ -23,8 +27,9 @@ inductive UMode
   | anyOf | oneOf
 deriving DecidableEq
 
-/- v1 value universe (kickoff §4.5): no float, no undefined, no identity.
-    R-11: integer literals only; bigint folds into `Int` here (unbounded). -/
+/- v1 value universe (kickoff §4.5, amended by A-1): no float, no undefined;
+    address identity appears only through `vaddr`. R-11: integer literals only;
+    bigint folds into `Int` here (unbounded). -/
 mutual
 inductive Value
   | vnull
@@ -33,6 +38,7 @@ inductive Value
   | vstr  (s : String)
   | varr  (vs : ValueList)
   | vobj  (fs : ValueFields)
+  | vaddr (a : Address)
 inductive ValueList
   | nil
   | cons (hd : Value) (tl : ValueList)
@@ -74,6 +80,7 @@ inductive SchemaCore
   | ref    (a : Address)
   | var    (i : Nat)
   | mu     (discriminator : String) (body : SchemaCore)
+  | address
 inductive FieldList
   | nil
   | cons (key : String) (val : SchemaCore) (optional : Bool) (rest : FieldList)

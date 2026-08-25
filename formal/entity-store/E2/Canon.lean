@@ -3,6 +3,9 @@ Canonicalization v1, per the ratified equivalence table (kickoff §4.3, R-10):
 object fields sort by name (total and tie-free — duplicate names are inadmissible);
 union and tuple order is semantic and untouched; everything else is syntactic.
 Soundness/completeness/idempotence are OBLIGATIONS (Obligations.lean).
+
+AMENDED 2026-08-25 (A-1, ratified under Q10): `SchemaCore.address` is a leaf and
+canonicalizes to itself. Values remain outside schema canonicalization.
 -/
 import E2.Core
 
@@ -27,6 +30,7 @@ def canonS : SchemaCore → SchemaCore
   | .mu d body   => .mu d (canonS body)
   | .prim p      => .prim p
   | .lit v       => .lit v
+  | .address     => .address
   | .ref a       => .ref a
   | .var i       => .var i
   termination_by structural x => x

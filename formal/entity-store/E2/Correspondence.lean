@@ -3,6 +3,9 @@ Shape B correspondence (metaprogramming survey §3 P2) — demonstrated here aga
 hand-written carrier; in the generated pipeline these three parts are emitted from
 inventory.json. No metaprogram anywhere: type ascriptions (soundness), an exhaustive tag
 match (completeness), a decided distinctness lemma. All kernel-checked on every build.
+
+AMENDED 2026-08-25 (A-1, ratified under Q10): the exhaustive carrier tag map and
+distinctness witness include the new nullary `SchemaCore.address` variant.
 -/
 import E2.Core
 
@@ -34,9 +37,10 @@ def tag : SchemaCore → Nat
   | .ref _      => 7
   | .var _      => 8
   | .mu _ _     => 9
+  | .address    => 10
 
 -- (3) DISTINCTNESS: the tag assignment aliases no two variants.
 theorem tags_distinct :
-    ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : List Nat).eraseDups.length = 10 := by decide
+    ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : List Nat).eraseDups.length = 11 := by decide
 
 end E2.Correspondence

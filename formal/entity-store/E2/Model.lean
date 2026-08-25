@@ -3,6 +3,11 @@ The store model per STORE-MODEL.md (ratified 2026-08-25, joints A/B/C closed).
 Statements-first: cheap theorems proved inline (M8 WF1, M12 dedup, M13 frame, M14 half);
 real seats stated as Props (M11, M18); statements owed pending decode are listed in the
 OWED block — added by amendment per Q10, never as vacuous placeholders.
+
+AMENDED 2026-08-25 (A-1, ratified under Q10): joint B now collects address-valued
+entity references through `refsV`; `Reachable.putE` requires those references to
+resolve. `SchemaCore.address` is the working nullary address-type label, and
+`Conforms.addr` types every `Value.vaddr` without an existence premise.
 -/
 import E2.Core
 import E2.Encode
@@ -11,13 +16,14 @@ import E2.Obligations
 
 namespace E2
 
-/-! ## refs on carriers (joint B). v1: values carry no addresses; schema refs collect
-    `.ref` leaves; checks carry none. -/
+/-! ## refs on carriers (joint B). Schema refs collect `.ref` leaves; value refs
+    collect `.vaddr` leaves; address-type schema nodes and checks carry none. -/
 
 mutual
 def refsS : SchemaCore → List Address
   | .prim _ => []
   | .lit _ => []
+  | .address => []
   | .object fs => refsF fs
   | .tuple es => refsL es
   | .array e => refsS e
@@ -39,6 +45,28 @@ def refsL : SchemaList → List Address
   termination_by structural x => x
 end
 
+mutual
+def refsV : Value → List Address
+  | .vnull => []
+  | .vbool _ => []
+  | .vint _ => []
+  | .vstr _ => []
+  | .vaddr a => [a]
+  | .varr vs => refsVL vs
+  | .vobj fs => refsVF fs
+  termination_by structural x => x
+
+def refsVL : ValueList → List Address
+  | .nil => []
+  | .cons hd tl => refsV hd ++ refsVL tl
+  termination_by structural x => x
+
+def refsVF : ValueFields → List Address
+  | .nil => []
+  | .cons _ v rest => refsV v ++ refsVF rest
+  termination_by structural x => x
+end
+
 /-! ## Schema well-formedness: closed and guarded (STORE-MODEL §5; the checks-allowlist
     clause is deferred to ruling R-4 and enters by amendment per Q10). -/
 
@@ -46,6 +74,7 @@ mutual
 def closedB (k : Nat) : SchemaCore → Bool
   | .prim _ => true
   | .lit _ => true
+  | .address => true
   | .object fs => closedF k fs
   | .tuple es => closedL k es
   | .array e => closedB k e
@@ -90,6 +119,7 @@ mutual
 def guardedB : SchemaCore → Bool
   | .prim _ => true
   | .lit _ => true
+  | .address => true
   | .object fs => guardedF fs
   | .tuple es => guardedL es
   | .array e => guardedB e
@@ -122,6 +152,7 @@ mutual
 def substS (k : Nat) (u : SchemaCore) : SchemaCore → SchemaCore
   | .prim p => .prim p
   | .lit v => .lit v
+  | .address => .address
   | .object fs => .object (substF k u fs)
   | .tuple es => .tuple (substL k u es)
   | .array e => .array (substS k u e)
@@ -165,6 +196,7 @@ inductive Conforms (env : ConformsEnv) : SchemaCore → Value → Prop
   | prim_bool (b : Bool) : Conforms env (.prim .bool) (.vbool b)
   | prim_int (n : Int) : Conforms env (.prim .int) (.vint n)
   | prim_str (s : String) : Conforms env (.prim .str) (.vstr s)
+  | addr (a : Address) : Conforms env .address (.vaddr a)
   | lit (v : Value) : Conforms env (.lit v) v
   | obj {fs vfs} : ConformsF env fs vfs → Conforms env (.object fs) (.vobj vfs)
   | tup {es vs} : ConformsL env es vs → Conforms env (.tuple es) (.varr vs)
@@ -230,13 +262,15 @@ def getChecked (H : Bytes → Address) (σ : StoreMap) (d : Address) : Option By
 /-- Joint A: the legal stores, inductively. Canonical-image strictness (Q5) holds by
     construction — inserts go only through `preimageS`/`preimageE`. `putE` carries the
     ratified typing precondition (Q4); its schema-presence half is WF2 for the entity's
-    one reference, stated as the `find`. -/
+    schema reference, stated as the `find`, while `AllResolve σ (refsV v)` extends WF2
+    to every entity reference carried by the value. -/
 inductive Reachable (H : Bytes → Address) (env : ConformsEnv) : StoreMap → Prop
   | empty : Reachable H env []
   | putS {σ s} : Reachable H env σ → WFS s → AllResolve σ (refsS s) →
       Reachable H env (putSchema H σ s)
   | putE {σ sAddr v s} : Reachable H env σ → σ.find sAddr = some (preimageS s) →
-      Conforms env s v → Reachable H env (putEntity H σ sAddr v)
+      Conforms env s v → AllResolve σ (refsV v) →
+      Reachable H env (putEntity H σ sAddr v)
 
 /-- Names beside the store (Q6): the mutable plane, never inside any pre-image. -/
 abbrev NameMap := List (String × Address)
@@ -264,7 +298,7 @@ theorem M8_wf1 {H env σ} (h : Reachable H env σ) :
   induction h with
   | empty => intro d b hf; simp [StoreMap.find] at hf
   | putS _ _ _ ih => intro d b hf; exact find_putPre_hashes ih hf
-  | putE _ _ _ ih => intro d b hf; exact find_putPre_hashes ih hf
+  | putE _ _ _ _ ih => intro d b hf; exact find_putPre_hashes ih hf
 
 /-- M12 — unconditional deduplication for schemas: equal canonical forms give identical
     stores and addresses. PROVED — no cryptographic hypothesis anywhere. -/
