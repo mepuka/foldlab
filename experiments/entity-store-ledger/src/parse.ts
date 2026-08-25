@@ -67,8 +67,13 @@ export const parseModelReport = (text: string): ModelReport => {
   return { constantCount: Number(gate[1]), theorems }
 }
 
+// Format advanced past the seat's branch point, updated consciously at adjudication:
+// the F-43 repair moved coverage to module membership ("over N modules", G-S4 names its
+// namespaces, a coverage line follows) and W3-15 added the G-S5 clause.
 const SHELL_GATE =
-  /^shell gates ok \(\d+ constants scanned\) — G-S1 opaque\/unsafe clean; G-S2 IO confined to \[[^\]]+\]; G-S4 no core shadowing\.$/
+  /^shell gates ok \(\d+ constants over \d+ modules\) — G-S1 opaque\/unsafe clean; G-S2 IO confined to \[[^\]]+\]; G-S4 no shadowing of \[[^\]]+\]; G-S5 no clock reading off \[[^\]]+\]\.$/
+const SHELL_COVERAGE =
+  /^G-S coverage \(by module, executable roots included\): \[[^\]]+\]$/
 const SHELL_WHITELIST_HEADING =
   "G-S3 — every IO/FilePath constant this package references, all whitelisted:"
 const LEAN_NAME = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/
@@ -77,26 +82,32 @@ export const parseShellReport = (text: string): ShellReport => {
   const lines = linesOf(text)
   const start = lines.findIndex((line) => SHELL_GATE.test(line))
   if (start < 0) throw new ReportParseError("shell", "missing shell gate line")
-  if (lines[start + 1] !== SHELL_WHITELIST_HEADING) {
+  if (!SHELL_COVERAGE.test(lines[start + 1] ?? "")) {
     throw new ReportParseError(
       "shell",
       `unexpected line ${start + 2}: ${lines[start + 1] ?? "<missing>"}`
     )
   }
+  if (lines[start + 2] !== SHELL_WHITELIST_HEADING) {
+    throw new ReportParseError(
+      "shell",
+      `unexpected line ${start + 3}: ${lines[start + 2] ?? "<missing>"}`
+    )
+  }
 
-  const whitelistLine = lines[start + 2]
+  const whitelistLine = lines[start + 3]
   const match = /^  \[([^\]]+)\]$/.exec(whitelistLine ?? "")
   if (match === null) {
     throw new ReportParseError(
       "shell",
-      `unexpected line ${start + 3}: ${whitelistLine ?? "<missing>"}`
+      `unexpected line ${start + 4}: ${whitelistLine ?? "<missing>"}`
     )
   }
   const whitelist = match[1].split(", ")
   if (whitelist.some((name) => !LEAN_NAME.test(name))) {
     throw new ReportParseError("shell", "whitelist contains an invalid Lean name")
   }
-  for (let index = start + 3; index < lines.length; index += 1) {
+  for (let index = start + 4; index < lines.length; index += 1) {
     if (lines[index] === "" && index === lines.length - 1) continue
     throw new ReportParseError("shell", `unexpected line ${index + 1}: ${lines[index]}`)
   }

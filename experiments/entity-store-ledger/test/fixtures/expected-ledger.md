@@ -32,7 +32,7 @@ Gate constant count: 1444
 ### Shell gate
 
 ```text
-shell gates ok (884 constants scanned) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness]; G-S4 no core shadowing.
+shell gates ok (884 constants over 13 modules) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness]; G-S4 no shadowing of [E2, Sha3, Sha3.Impl, Sha3.Spec]; G-S5 no clock reading off [IO.FS.Metadata.accessed, IO.FS.Metadata.modified].
 ```
 
 ### IO whitelist

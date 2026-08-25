@@ -4,7 +4,12 @@ node = "22.23.2"
 
 [tasks.gen]
 description = "Regenerate every derived file from declared sources"
-run = "echo 'gen: no derived files declared yet'"
+run = "mise run gen:ledger"
+
+[tasks."gen:ledger"]
+description = "Regenerate docs/entity-store/LEDGER.md by fresh extraction (PROCEDURE §8)"
+dir = "{{config_root}}/experiments/entity-store-ledger"
+run = "bun run gen"
 
 [tasks."check:fips202"]
 description = "Build and replay the promoted fips202 Lean artifact"
@@ -14,10 +19,25 @@ run = [
   "lake env leanchecker --fresh Sha3.Bridge",
 ]
 
+[tasks."check:entity-store"]
+description = "Build the E2 model with its opaque/unsafe gate and axiom reports"
+dir = "{{config_root}}/formal/entity-store"
+run = "lake --wfail build"
+
+[tasks."check:ledger"]
+description = "Both packages green, harness green, committed LEDGER.md byte-equal to a fresh extraction"
+dir = "{{config_root}}/experiments/entity-store-ledger"
+run = [
+  "bun test",
+  "bun run check",
+]
+
 [tasks.check]
 description = "gen + clean-tree assertion + tests and gates (what CI runs)"
 run = [
   "mise run gen",
   "git diff --exit-code",
   "mise run check:fips202",
+  "mise run check:entity-store",
+  "mise run check:ledger",
 ]

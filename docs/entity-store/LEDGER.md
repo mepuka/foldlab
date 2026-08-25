@@ -4,7 +4,7 @@
 
 ## Model
 
-Gate constant count: 1444
+Gate constant count: 1707
 
 | theorem | axioms |
 | --- | --- |
@@ -26,13 +26,25 @@ Gate constant count: 1444
 | E2.encSchema_inj | propext, Classical.choice, Quot.sound |
 | E2.encValue_inj | propext, Classical.choice, Quot.sound |
 | E2.M12E_dedup | propext, Classical.choice, Quot.sound |
+| E2.wfsB_iff | propext |
+| E2.M17_typed_reachability | propext, Classical.choice, Quot.sound |
+| E2.S1_canon_idempotent | propext, Classical.choice, Quot.sound |
+| E2.S1_canon_v_idempotent | propext, Classical.choice, Quot.sound |
+| E2.M10_rank | propext, Classical.choice, Quot.sound |
+| E2.M10_wf3 | propext, Classical.choice, Quot.sound |
+| E2.reachable_keys_nodup | propext, Classical.choice, Quot.sound |
+| E2.M11_comm | propext, Classical.choice, Quot.sound |
+| E2.M11_comm_keys_nodup | propext, Classical.choice, Quot.sound |
+| E2.version_byte_separates | propext, Classical.choice, Quot.sound |
+| E2.version_byte_separates_bump | propext, Classical.choice, Quot.sound |
+| E2.intraKindFaithful | propext, Classical.choice, Quot.sound |
 
 ## Live build
 
 ### Shell gate
 
 ```text
-shell gates ok (884 constants scanned) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness]; G-S4 no core shadowing.
+shell gates ok (1107 constants over 13 modules) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness, Main, EncodeMain, HarnessMain]; G-S4 no shadowing of [E2, Sha3, Sha3.Impl, Sha3.Spec]; G-S5 no clock reading off [IO.FS.Metadata.accessed, IO.FS.Metadata.modified].
 ```
 
 ### IO whitelist
@@ -41,22 +53,48 @@ shell gates ok (884 constants scanned) — G-S1 opaque/unsafe clean; G-S2 IO con
 2. `EIO`
 3. `IO`
 4. `IO.Error`
-5. `IO.FS.DirEntry`
-6. `IO.FS.DirEntry.fileName`
-7. `IO.FS.DirEntry.path`
-8. `IO.FS.createDirAll`
-9. `IO.FS.readBinFile`
-10. `IO.FS.rename`
-11. `IO.FS.writeBinFile`
-12. `IO.eprintln`
-13. `IO.println`
-14. `System.FilePath`
-15. `System.FilePath._sizeOf_inst`
-16. `System.FilePath.instDiv`
-17. `System.FilePath.instHDivString`
-18. `System.FilePath.mk`
-19. `System.FilePath.pathExists`
-20. `System.FilePath.readDir`
+5. `IO.Error.alreadyExists`
+6. `IO.Error.casesOn`
+7. `IO.Error.hardwareFault`
+8. `IO.Error.illegalOperation`
+9. `IO.Error.inappropriateType`
+10. `IO.Error.interrupted`
+11. `IO.Error.invalidArgument`
+12. `IO.Error.noFileOrDirectory`
+13. `IO.Error.noSuchThing`
+14. `IO.Error.otherError`
+15. `IO.Error.permissionDenied`
+16. `IO.Error.protocolError`
+17. `IO.Error.resourceBusy`
+18. `IO.Error.resourceExhausted`
+19. `IO.Error.resourceVanished`
+20. `IO.Error.timeExpired`
+21. `IO.Error.unexpectedEof`
+22. `IO.Error.unsatisfiedConstraints`
+23. `IO.Error.unsupportedOperation`
+24. `IO.Error.userError`
+25. `IO.FS.DirEntry`
+26. `IO.FS.DirEntry.fileName`
+27. `IO.FS.DirEntry.path`
+28. `IO.FS.FileType`
+29. `IO.FS.FileType.file`
+30. `IO.FS.Metadata`
+31. `IO.FS.Metadata.type`
+32. `IO.FS.createDirAll`
+33. `IO.FS.instBEqFileType`
+34. `IO.FS.readBinFile`
+35. `IO.FS.rename`
+36. `IO.FS.writeBinFile`
+37. `IO.eprintln`
+38. `IO.println`
+39. `System.FilePath`
+40. `System.FilePath._sizeOf_inst`
+41. `System.FilePath.instDiv`
+42. `System.FilePath.instHDivString`
+43. `System.FilePath.mk`
+44. `System.FilePath.pathExists`
+45. `System.FilePath.readDir`
+46. `System.FilePath.symlinkMetadata`
 
 ### Harness
 
@@ -72,9 +110,25 @@ shell gates ok (884 constants scanned) — G-S1 opaque/unsafe clean; G-S2 IO con
 | 08-canonicity-strict.script | PASS | 23 |
 | 09-hostile-bytes.script | PASS | 31 |
 | 10-a4-constructors.script | PASS | 24 |
+| 11-a6-lit-canon.script | PASS | 26 |
+| 12-wfs-closed.script | PASS | 27 |
+| 13-wfs-guarded.script | PASS | 22 |
+| 14-wfs-dupkey.script | PASS | 26 |
+| 15-wfs-dupkey-value.script | PASS | 23 |
+| 16-wfs-lit-payload.script | PASS | 34 |
+| 17-wfs-spelling.script | PASS | 66 |
+| 18-acyclic-order.script | PASS | 66 |
+| 19-order-replay.script | PASS | 42 |
+| 20-canon-diagnosis.script | PASS | 14 |
+| 21-open-not-a-file.script | PASS | 48 |
+| 22-place-strays.script | PASS | 63 |
+| 23-exit-codes.script | PASS | 39 |
+| 24-name-case-bindings.script | PASS | 38 |
+| 25-name-roundtrip-hostile.script | PASS | 140 |
+| 26-names-listing.script | PASS | 55 |
 
 ```text
-harness: 10 scripts, all model/disk observables identical
+harness: 26 scripts, all model/disk observables identical
 ```
 
 ## Extraction basis

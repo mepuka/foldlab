@@ -32,7 +32,7 @@ test("the model report preserves the gate block's theorem order", () => {
 test("the shell report retains the gate line and enumerates the whitelist", () => {
   const report = parseShellReport(fixture("shell.log"))
 
-  expect(report.gateLine).toStartWith("shell gates ok (884 constants scanned)")
+  expect(report.gateLine).toStartWith("shell gates ok (884 constants over 13 modules)")
   expect(report.whitelist).toEqual([
     "BaseIO",
     "EIO",

@@ -1,3 +1,4 @@
-shell gates ok (884 constants scanned) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness]; G-S4 no core shadowing.
+shell gates ok (884 constants over 13 modules) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness]; G-S4 no shadowing of [E2, Sha3, Sha3.Impl, Sha3.Spec]; G-S5 no clock reading off [IO.FS.Metadata.accessed, IO.FS.Metadata.modified].
+G-S coverage (by module, executable roots included): [Shell.Boundary, Shell.Store]
 G-S3 — every IO/FilePath constant this package references, all whitelisted:
   [BaseIO, EIO, IO, IO.Error, IO.FS.DirEntry, IO.FS.DirEntry.fileName, IO.FS.DirEntry.path, IO.FS.createDirAll, IO.FS.readBinFile, IO.FS.rename, IO.FS.writeBinFile, IO.eprintln, IO.println, System.FilePath, System.FilePath._sizeOf_inst, System.FilePath.instDiv, System.FilePath.instHDivString, System.FilePath.mk, System.FilePath.pathExists, System.FilePath.readDir]
