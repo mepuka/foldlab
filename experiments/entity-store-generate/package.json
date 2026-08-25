@@ -1,0 +1,10 @@
+{
+  "name": "entity-store-generate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "bun run src/generate.ts ../entity-store-extract/inventory.json",
+    "check": "bun run src/check.ts ../entity-store-extract/inventory.json",
+    "test": "bun test"
+  }
+}

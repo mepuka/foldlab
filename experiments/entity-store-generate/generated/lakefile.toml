@@ -1,0 +1,6 @@
+name = "entity_store_generate"
+version = "0.1.0"
+defaultTargets = ["EntityStoreGenerate"]
+
+[[lean_lib]]
+name = "EntityStoreGenerate"
