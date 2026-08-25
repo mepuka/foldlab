@@ -344,7 +344,10 @@ def ObligationM18_conforms_decidable : Prop :=
 
 /-! OWED statements (Q10 amendment discipline — added when their vocabulary exists,
     never as vacuous placeholders). UPDATE 2026-08-25: decode landed (`E2/Decode.lean`,
-    M4a proved both halves) — the decode-blocked seats below are now unblocked:
+    M4a proved both halves) — the decode-blocked seats below are now unblocked.
+    DISPATCH 2026-08-25: the M9, M15, and NEG-2 statements are PINNED in
+    `E2/Resolve.lean` (seat modules `Faithful`/`Closure`/`Reject`); still owed here
+    for vocabulary: M10, M11-commutation, M16, M17/M17′.
     - M9  WF2 closure over stored bytes — needs refs-of-bytes via decode (M4).
     - M10 WF3 acyclicity — needs the reference-graph vocabulary.
     - M11 commutation half (independent puts commute) — with the idempotence Prop above.

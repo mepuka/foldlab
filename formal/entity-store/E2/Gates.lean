@@ -11,6 +11,10 @@ import E2.Correspondence
 import E2.Obligations
 import E2.Model
 import E2.Decode
+import E2.Resolve
+import E2.Faithful
+import E2.Closure
+import E2.Reject
 
 open Lean Elab Command in
 elab "#e2_opaque_scan" : command => do

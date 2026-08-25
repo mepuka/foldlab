@@ -27,15 +27,19 @@ respectively. Joint B now closes entity insertion over every address in the valu
 | `E2/Model.lean` | `refsS`/`refsV`, `closedB`/`guardedB`/`WFS`, `substS`/`unfoldMu`, inductive `Conforms` (including unconditional address conformance; parameterized check semantics + resolver), `StoreMap`, `Reachable` with entity-reference closure, operations, `NameMap` | **M8** WF1 (address consistency, by induction on `Reachable`); **M12** unconditional dedup; **M13** frame/append-only; **M14** get-after-put (fresh half) |
 | `E2/Obligations.lean` | identity assembly (`preimageS`/`preimageE`, version + kind in pre-image); obligation ledger as named `Prop`s | **directionA** (congruence); **kind_separation** (schema/entity pre-images differ) |
 | `E2/Correspondence.lean` | Shape B correspondence pattern (ascriptions + exhaustive tag map) | `tags_distinct` (zero axioms) |
-| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,185 constants |
+| `E2/Resolve.lean` | STORE-MODEL §4 `resolve_k` (`resolveSchema`/`resolveEntity`, `stripPre`), `refsOfPreimage`; the PINNED M15/M9/NEG-2 statements (coordinator-frozen, dispatch 2026-08-25) | — |
+| `E2/Faithful.lean`, `E2/Closure.lean`, `E2/Reject.lean` | seat modules for M15 / M9 / NEG-2 (stubs; proofs arrive by worktree) | — |
+| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,200 constants |
 
 Axiom posture: every proved theorem within `[propext, Classical.choice, Quot.sound]`
 (several at `[propext]` or fewer). No `native_decide`, no Mathlib, no `partial`, no
 `@[extern]`/`@[implemented_by]` in these namespaces.
 
-Stated (seats, statements pinned): M11 idempotence, M18 conformance decidability. Owed
-with named vocabulary dependencies (see `E2/Model.lean` OWED block and STORE-MODEL §6):
-M9, M10, M11-commutation, M15, M16, M17/M17′, NEG-2, M4b.
+Stated (seats, statements pinned): M11 idempotence, M18 conformance decidability;
+M15 (fresh + both faithful halves), M9, NEG-2 in `E2/Resolve.lean` (dispatched to a
+worktree, briefs under `docs/entity-store/dispatch/`). Owed with named vocabulary
+dependencies (see `E2/Model.lean` OWED block and STORE-MODEL §6): M10, M11-commutation,
+M16, M17/M17′, M4b.
 
 ## Not claimed
 
