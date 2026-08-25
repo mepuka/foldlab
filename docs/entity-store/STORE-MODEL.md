@@ -285,10 +285,15 @@ unconditional; B4 conditional per F-23/F-24). Pinning B4 surfaced two cracks, pr
 into the statement: F-23 — `canonS` passes `lit` payloads through while `canonV`
 sorts the same bytes, falsifying the unconditional bridge (probe-verified); F-24 —
 the `refine` case forces `checkSem` to be `canonV`-invariant, which becomes an R-4
-admission criterion. **Q13 OPEN:** whether `canonS` canonicalizes `lit` payloads
-(uniform canonical form; changes addresses of lit-bearing schemas — free pre-push,
-never free again). **M10/M19 vocabulary:** minted next by the coordinator, both
-statements together (acyclicity and set-ordering are one vocabulary apart). G2: the value plane stays float-free in v1; anything float-bearing is
+admission criterion. **Q13 RULED YES (operator, 2026-08-25):** `canonS` applies
+`canonV` inside `lit` payloads — one carrier, one canonical form; the address change
+to lit-bearing schemas is free pre-push. Implementation is amendment **A-6**,
+scheduled for the serialization window that opens when wave 2 returns (refuters are
+probing the current semantics; changing `canonS`'s equations mid-wave would mix
+substrates — the additive-vs-arity rule extended to equation changes). A-6 also
+amends B4: the `litsCanonicalB` hypothesis becomes dischargeable on canon images and
+the pin is restated accordingly. **M10/M19 vocabulary:** minted after refuter 3
+returns its proposed statement forms — refutation before freezing, per PROCEDURE. G2: the value plane stays float-free in v1; anything float-bearing is
 REJECTED explicitly — silent reinterpretation of Effect's `Number` as `Int` is
 forbidden. G5: addresses never ride inside object KEYS (`refs` does not look there);
 order-insensitive collection nodes (set/map with sorted canonicalization) are a future
