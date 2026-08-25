@@ -76,6 +76,23 @@ def laneOfBytes (bs : List UInt8) (i : Nat) : W :=
 def absorbBlock (s : St) (block : List UInt8) : St :=
   keccakF (Vector.ofFn fun i : Fin 25 => s[i] ^^^ laneOfBytes block i.val)
 
+/-- One absorb step carrying the not-yet-absorbed suffix beside the state: absorb the leading
+rate block of the suffix, then advance the suffix past it. The block index is not read — the
+suffix is the position. -/
+def absorbStep (st : St × List UInt8) (_i : Nat) : St × List UInt8 :=
+  (absorbBlock st.1 (st.2.take rateBytes), st.2.drop rateBytes)
+
+/-- §4 Algorithm 8, Steps 5–6 over every rate block of `P`, in a single left-to-right pass.
+
+Because the fold carries the remaining suffix, block `i` costs one `take`/`drop` of the rate
+rather than a fresh `P.drop (i * rateBytes)` traversal of the whole padded message: total
+absorb work is linear in `P.length`, where the indexed form was quadratic in it. Extensional
+agreement with that indexed form is `Sha3.Bridge.absorbAll_eq`, which is what the B2 bridge
+proof rewrites through — the digest is unchanged. -/
+def absorbAll (P : List UInt8) : St :=
+  ((List.range (P.length / rateBytes)).foldl absorbStep
+    ((Vector.replicate 25 0 : St), P)).1
+
 /-- Byte-aligned `01 ‖ pad10*1` for rate 72: append 0x06, zero-fill, set the final byte's
 top bit (0x80); a single free byte gets 0x86. -/
 def padBytes (msg : List UInt8) : List UInt8 :=
@@ -90,11 +107,7 @@ def bytesOfLane (w : W) : List UInt8 :=
 /-- SHA3-512 on byte messages: pad, absorb all rate blocks, squeeze 64 bytes
 (d = 512 ≤ r, so a single squeeze — lanes 0–7). -/
 def sha3_512 (msg : List UInt8) : List UInt8 :=
-  let P := padBytes msg
-  let n := P.length / rateBytes
-  let s := (List.range n).foldl
-    (fun s i => absorbBlock s ((P.drop (i * rateBytes)).take rateBytes))
-    (Vector.replicate 25 0)
+  let s := absorbAll (padBytes msg)
   ((List.range 8).map fun i => bytesOfLane s[i]!).flatten
 
 /-- T10's subject (Pass B approved addition): the pre-FIPS Keccak padding — bare `pad10*1`
@@ -104,10 +117,7 @@ def keccak512_prefips (msg : List UInt8) : List UInt8 :=
   let padLen := rateBytes - msg.length % rateBytes
   let P := if padLen = 1 then msg ++ [0x81]
            else msg ++ (0x01 :: List.replicate (padLen - 2) 0) ++ [0x80]
-  let n := P.length / rateBytes
-  let s := (List.range n).foldl
-    (fun s i => absorbBlock s ((P.drop (i * rateBytes)).take rateBytes))
-    (Vector.replicate 25 0)
+  let s := absorbAll P
   ((List.range 8).map fun i => bytesOfLane s[i]!).flatten
 
 /-- Lowercase hex rendering (sanity-check plumbing only). -/
