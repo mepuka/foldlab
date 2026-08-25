@@ -1,0 +1,74 @@
+; STORE-SHELL §5 check 2, the canonical-spelling clause table (ruling W3-17, R-B §5.2).
+;
+; A spelling family is a set of distinct carriers denoting one source construct. Left
+; admissible, each family is a second address for the same thing, and L-dedup stops being
+; a theorem about the encoding. W3-17 ruled option (b): the clause table joins `WFS` as
+; conjuncts, and `canonS` stays constructor-preserving PERMANENTLY (a normalization pass
+; asked to carry an admission rule is not even a function of its equivalence class on the
+; inputs the rule would have rejected — rule `canonicalizer-is-not-an-admission-rule`).
+;
+; The reject side of each clause was chosen to preserve pre-A-4 addresses, so no address
+; moves; the rejected spelling is always the redundant one.
+;
+; UNCHECKED CLAIM, carried deliberately: the table is audited against the census, never
+; proved complete. No finite syntactic clause reaches the uninhabited generalisation
+; (F-34; W3-17). This fixture pins the ruled clauses, and claims nothing beyond them.
+
+; --- SP-1: a one-member union is a spelling of its member. Both modes.
+(schema-put (union anyOf (prim int)))
+(assert-code prev 1)
+(schema-put (union oneOf (prim int)))
+(assert-code prev 1)
+
+; --- SP-3: duplicate members are a spelling of the deduplicated union. MODE-GATED: under
+; `oneOf` a duplicate member changes the judgment's ARITY, not merely its spelling, so no
+; dedup clause fires there (F-50). The two lines below are the gate, asserted.
+(schema-put (union anyOf (prim int) (prim int)))
+(assert-code prev 1)
+(schema-put (union oneOf (prim int) (prim int)))
+(assert-code prev 0)
+
+; --- SP-6 and the unbounded SP-6' family: a `mu` whose body ignores its binder is a
+; spelling of the body. `usesBinderB` kills the whole family at once.
+(schema-put (mu "d" (prim int)))
+(assert-code prev 1)
+(schema-put (mu "d" (mu "e" (object (f "a" req (var 0))))))
+(assert-code prev 1)
+
+; --- SP-7, the infinite family: an empty positional prefix is a spelling of `.array`.
+(schema-put (tuple-rest (prim int)))
+(assert-code prev 1)
+
+; --- SP-8: a Never tail is a spelling of the plain `.tuple`. Never is the empty `anyOf`
+; union (MAPPING row 12), compared SYNTACTICALLY — the yardstick is the source construct.
+(schema-put (tuple-rest (union anyOf) (prim str)))
+(assert-code prev 1)
+
+; --- SP-9: `.record Never` is a second spelling of the empty object type.
+(schema-put (record (union anyOf)))
+(assert-code prev 1)
+
+; --- SP-10: `.array Never` is a second spelling of the empty array type.
+(schema-put (array (union anyOf)))
+(assert-code prev 1)
+
+; --- the canonical spellings of the same constructs are admitted, which is what makes
+; the clauses a SPELLING rule rather than a ban on the constructors.
+(schema-put (union anyOf (prim int) (prim str)))
+(assert-code prev 0)
+(schema-put (mu "d" (object (f "next" opt (var 0)))))
+(assert-code prev 0)
+(schema-put (tuple-rest (prim bool) (prim str)))
+(assert-code prev 0)
+(schema-put (record (prim int)))
+(assert-code prev 0)
+(schema-put (array (prim int)))
+(assert-code prev 0)
+
+; --- Never itself is admissible: the empty `anyOf` union is the CANONICAL spelling, and
+; the clauses above reject only its use as a redundant sub-spelling.
+(schema-put (union anyOf))
+(assert-code prev 0)
+
+; seven objects, not sixteen.
+(check)

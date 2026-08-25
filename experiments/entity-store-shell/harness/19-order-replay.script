@@ -1,0 +1,53 @@
+; STORE-SHELL §4/SH5, W3-12 — R-C §2.6's `18-order-replay`, as far as the script
+; language can express it.
+;
+; THE REPLAY READING. `E2.putPre` conses, so `Keys sigma` is newest-first and the model's
+; insertion order REVERSED is a sinks-first order. Kahn's emits a sinks-first order too.
+; On the chain in script 18 the two coincide line for line; here they need not, and that
+; is the point of this fixture.
+;
+; WHAT THIS FIXTURE DOES NOT ASSERT, stated rather than implied. The equality "the
+; emitted order equals the insertion order reversed" is not written down below, because
+; the script language has no store-aware assertion: `assert-same`, `assert-differ` and
+; `assert-code` all decide on the step alone, and an order assertion would need the
+; opened view. Adding one is a new harness primitive and therefore a ruling, not a seat.
+; What IS pinned here is everything the current language can pin, and it is not nothing:
+; both runners must emit the same order, from the same normalized view, over a graph the
+; disk presents through a directory listing that has no defined order of its own.
+;
+; THE BATCHING PROPERTY, which the chain in script 18 cannot reach. A diamond puts TWO
+; nodes in one Kahn round. A round emits its ready set in the REMAINING LIST's order, and
+; the remaining list is `Keys sigma` over the NORMALIZED view — sorted by address, on both
+; sides. So the batch order is a function of the addresses and nothing else; in
+; particular it is not a function of `readDir`'s order, which is the property that would
+; break silently on a different filesystem and which no earlier fixture tested.
+
+; A is a sink.
+(schema-put (prim int))
+
+; B and C both reference A, and nothing references them yet: one Kahn round, two nodes.
+(schema-put (array (ref @1)))
+(schema-put (record (ref @1)))
+
+; D references both middles: the diamond closes.
+(schema-put (tuple (ref @2) (ref @3)))
+
+; the graph, read back off the stored bytes rather than off the carriers in hand
+(refs @2)
+(refs @3)
+(refs @4)
+
+; acyclic: the order exists, and `check` says so.
+(check)
+(assert-code prev 0)
+
+; sinks first: A, then the {B, C} batch in address order, then D.
+(order)
+(assert-code prev 0)
+
+; an entity hanging off A adds a typing edge into the same graph without disturbing the
+; rest of the order — the emitted sequence stays a legal insertion sequence.
+(entity-put @1 (i 7))
+(order)
+(check)
+(assert-code prev 0)

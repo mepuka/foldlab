@@ -1,0 +1,46 @@
+; STORE-SHELL §5 check 2, the `lit` payload domain — R-C §1.6's `15-wfs-lit-payload`,
+; UNBLOCKED. R-C could only propose this fixture as an expected-FAIL marker, because
+; `dupFreeS (.lit _)` was `true` unconditionally (`E2/Canon.lean`), so a duplicate-key
+; object hidden inside a literal passed every clause. F-26 landed with A-6 in window A
+; (ruling W3-10): `dupFreeS (.lit v) := dupFreeV v`. This fixture is now writable.
+;
+; Two clauses fire on this plane and the ORDER between them is asserted by the rejection
+; strings, not by the exit codes — every rejection here exits 1, and a fixture that
+; checked only the code could not tell an F-26 regression from a W3-18 regression.
+;
+;   `dup-key`     — F-26: the duplicate-key object INSIDE the payload (plane-inheritance:
+;                   every plane a carrier nests into inherits the carrier's clauses)
+;   `lit-narrow`  — W3-18 / F-35: MAPPING admission rule 1, made decidable. A `.lit`
+;                   payload is a string, a boolean, or an integer and nothing else.
+
+; F-26's shape: the duplicate-key object inside the payload rejects on the DUP clause,
+; which is strictly earlier than the payload-domain clause.
+(schema-put (lit (obj ("a" (i 1)) ("a" (i 1)))))
+(assert-code prev 1)
+
+; a dup-FREE object payload gets past F-26's clause and is caught by the payload domain
+(schema-put (lit (obj ("a" (i 1)))))
+(assert-code prev 1)
+
+; the rest of the excluded payload domain
+(schema-put (lit null))
+(assert-code prev 1)
+(schema-put (lit (arr (i 1) (i 2))))
+(assert-code prev 1)
+
+; SP-11, the load-bearing exclusion: the schema-plane `refsS` does not descend into
+; `.lit`, so an address hidden in a literal would be invisible to WF2 while `WFS` held
+; and the store stayed `Reachable`
+(schema-put (lit (vaddr 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000)))
+(assert-code prev 1)
+
+; the admitted domain: str, bool, int
+(schema-put (lit (s "x")))
+(assert-code prev 0)
+(schema-put (lit false))
+(assert-code prev 0)
+(schema-put (lit (i -3)))
+(assert-code prev 0)
+
+; three objects, not eight.
+(check)

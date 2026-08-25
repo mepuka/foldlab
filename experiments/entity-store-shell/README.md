@@ -39,7 +39,7 @@ Spec §1 numbers the rungs. This package reaches rung 1 and claims nothing above
 | Rung | Statement | Here |
 |---|---|---|
 | 0 | shared core: the shell's pure behavior IS the core's, by construction | held, and mechanically guarded — see **Gates** |
-| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 11 committed scripts, all green** |
+| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 23 committed scripts, all green** |
 | 2 | `Std.Do` Hoare triples on shell operations | not attempted |
 | 3 | full refinement / bisimulation | not attempted; the word does not appear as a claim |
 
@@ -101,34 +101,61 @@ There is no deletion in v0, so removing it is an operator act below the model.
 
 ## The PUT boundary (§5)
 
-`admit` enforces, in this order:
+`admit` enforces `Reachable`'s insert premises with exactly what is decidable today, in
+this order (as amended by rulings **W3-12** and **W3-13**):
 
 1. the bytes parse as a well-formed pre-image of a known kind — and of the kind the verb
    was asked for (`stripPre` checks version and tag; the decoders demand the body be
    consumed exactly);
 1a. for entities, the `<schema-addr>` argument matches the address embedded in the
    pre-image (an argument-consistency check, not a model condition);
-2. **canonicity**: re-run the core's own `preimageS`/`preimageE` and byte-compare. Q5
+2. **well-formedness**: the decoded carrier satisfies the model's own admission verdict —
+   `E2.schemaAdmissionClause` on the schema plane, which *is* `Reachable.putS`'s `WFS`
+   premise, and `E2.valueAdmissionClause` on the value plane, which *is* `Reachable.putE`'s
+   `dupFreeV` premise. The rejection **names the failing clause**: `closed`, `guarded`,
+   `dup-key`, `spelling`, `lit-narrow`, `dup-key-value`. The shell calls those two verdict
+   functions and never the clause predicates behind them (CONTEXT avoid-list, W3-3), so
+   the check is *provably* the model's premise rather than incidentally equal to it;
+3. **canonicity**: re-run the core's own `preimageS`/`preimageE` and byte-compare. Q5
    canonical-image strictness — non-canonical bytes are **rejected, never repaired**.
    Silently canonicalizing would put two byte-forms of one carrier into circulation and
    stop dedup from being a theorem;
-3. every reference resolves in the store (WF2 precondition);
-4. for entities, the schema address resolves **as a schema** — check 3 established only
+4. every reference resolves in the store (WF2 precondition);
+5. for entities, the schema address resolves **as a schema** — check 4 established only
    that it is present.
 
-Check 5, `Conforms`, is not enforceable until the M18 seat delivers the decision
+**Ordering note (W3-13, from F-40/F-41).** Well-formedness precedes canonicity because
+`ObligationCanonIdempotent` is *conditional* on `dupFreeS`: on a duplicate-key carrier
+`canonS` is an involution, not idempotent, so the byte-compare's verdict is not a
+statement about canonicity at all. Run the other way round it produced `non-canonical` on
+bytes the shell had itself assembled from a carrier literal — the boundary rejecting its
+own output. With check 2 ahead of it, a `non-canonical` verdict means what §5 says it
+means. Scripts `14` and `20` pin the flipped diagnosis; `08` is the standing regression
+test that the change is invisible to every dup-free input.
+
+Check 6, `Conforms`, is not enforceable until the M18 seat delivers the decision
 procedure. Per SH6, v0 records it as an explicitly accepted obligation per entity PUT and
 flags it in `check` output. **When M18 lands, enforcement with no grace period** — the
-single place to add it is check 5 in `admit`, and `check` gains the corresponding scan.
+single place to add it is check 6 in `admit`, and `check` gains the corresponding scan.
 
 ## Verification-on-open (§4, SH5)
 
-Opening a directory as a store *establishes* reachability, so every verb opens by running
-the full scan, and every verb but `check` refuses to run when the scan fails — reporting
-exactly what `check` would report, then `aborted store-verification-failed`. Each object
-is re-hashed, parsed, canonicity-checked, its references resolved, and — for entities —
-its schema resolved as a schema. What is not decidable today is exactly what the
-obligation records carry, and the scan cross-checks that every stored entity has one.
+Opening a directory as a store establishes **every clause of reachability that is
+decidable today, and no more** (SH5 as narrowed by W3-12), so every verb opens by running
+the full scan, and every verb but `check` and the harness primitives refuses to run when
+the scan fails — reporting exactly what `check` would report, then
+`aborted store-verification-failed`. Each object is re-hashed, parsed, checked well-formed
+against the model's admission verdicts, canonicity byte-compared, its references resolved,
+and — for entities — its schema resolved as a schema; then the reference graph is decided
+acyclic by Kahn's algorithm (WF3). What is not decidable today is exactly `Conforms`,
+which is what the obligation records carry, and the scan cross-checks that every stored
+entity has one.
+
+**Anti-claim (F-33's lesson).** The scan establishes `E2.Admissible`, **never**
+`Reachable`. The bridge is `E2.ObligationM19_transport` — stated, unproved, and carrying
+a conformance premise the scan does not supply. Kahn's pass is the *computational* half
+of that bridge: it produces the insertion order M19 asserts exists, and the `order` verb
+makes that order observable. The theorem half is a seat.
 
 Violation classes, one line each:
 
@@ -136,23 +163,30 @@ Violation classes, one line each:
 |---|---|
 | `wf1` | the content does not hash to the filename (STORE-MODEL M8) |
 | `parse` | stored bytes are not a well-formed pre-image |
+| `not-well-formed` | the stored carrier is outside the model's admission; the line names the failing clause (W3-12), same vocabulary as the PUT rejection |
 | `non-canonical` | stored bytes are not in the image of `pre_k` |
 | `wf2` | a reference does not resolve (M9) |
+| `cycle` | the reference graph has a cycle, and this address is one Kahn's could not emit (WF3, F-32, W3-12). One line per unemitted node — a cycle is a *global* property, so it does not fit the one-line-per-object shape; the report is normalized by address before the pass runs, so the lines are deterministic |
 | `typing` | an entity's schema address does not resolve as a schema (§5 check 4) |
 | `obligation-missing` / `obligation-orphan` | the SH6 record set does not match the entity set |
 | `stray-object` / `stray-name` | a file the layout does not admit |
 | `not-a-regular-file` | an entry the layout names *correctly* that is a directory, a symlink, or a device. Reported, never opened — the discipline that makes the scan total on a directory the shell did not create (F-42) |
 
 Per object the scan reports the **first** structural failure (`wf1`, `parse`,
-`non-canonical`) and stops for that object, because those cascade; reference misses do
+`not-well-formed`, `non-canonical`) and stops for that object, because those cascade;
+the scan runs those checks in the **same order the PUT boundary does** — well-formedness
+before canonicity (W3-13, aligned on the PUT order, which is the one with the
+model-premise argument behind it). Reference misses do
 not cascade, so every missing reference is reported. An address already carrying a
 violation is excluded from the obligation cross-check, so one corruption produces one
 line, not three. In `check`'s summary line, `objects=` counts every object file while
 `schemas=` and `entities=` count only those that passed the scan.
 
-`parse` and `non-canonical` are unreachable in a store this shell built — the boundary
-rejects such bytes, and any later mutation changes the hash and is caught as `wf1` first.
-They exist for stores assembled or transported by something else.
+`parse`, `not-well-formed`, `non-canonical` and `cycle` are unreachable in a store this
+shell built through admitted verbs — the boundary rejects such bytes, and any later
+mutation changes the hash and is caught as `wf1` first. They exist for stores assembled or
+transported by something else, and the `(place …)` primitives below are how the harness
+manufactures one.
 
 ## Names
 
@@ -180,8 +214,22 @@ anywhere is a nonzero exit.
 | `05-roundtrips` | M15 in executable form: `get` / `resolve` / `refs` return the canonical representative |
 | `06-corrupt-wf1` | WF1 catches a flipped bit, and every other verb then refuses to open the store |
 | `07-corrupt-typing` | corruption propagating along the typing edge: `wf1` on a schema, `typing` on its entity |
-| `08-canonicity-strict` | Q5 and its Q11 twin: non-canonical bytes rejected; the canonicalizing path agrees |
+| `08-canonicity-strict` | Q5 and its Q11 twin: non-canonical bytes rejected; the canonicalizing path agrees. **Standing regression test for W3-13's ordering: if this script ever changes, the ordering wiring has over-reached** |
 | `09-hostile-bytes` | inline byte fixtures: `not-a-preimage`, `wrong-kind`, `schema-addr-mismatch`, `schema-unresolved` |
+| `10-a4-constructors` | A-4's `tuple-rest` and `record`, end to end through both runners |
+| `11-a6-lit-canon` | A-6 / F-26, **flipped by W3-12 + W3-18**: `(lit (obj …))` is now inadmissible on the payload-domain clause, and the surviving `lit` domain is str/bool/int |
+| `12-wfs-closed` | check 2, `closed`: free de Bruijn variables, bare and nested (`r2-13` corrected); and the **scan** side of the same clause, via a non-`WFS` carrier placed at its own address so WF1 passes and well-formedness is the first check that can speak |
+| `13-wfs-guarded` | check 2, `guarded`: the binder reachable through a bare body, a union spine, a refine spine |
+| `14-wfs-dupkey` | check 2, `dup-key`: `r2-12`'s palindromic shapes — `canonS` fixed points — now reject, and reject on the *dup* clause, never `non-canonical` |
+| `15-wfs-dupkey-value` | check 2, value plane, `dup-key-value`: `r2-17`'s shape (W3-9) |
+| `16-wfs-lit-payload` | check 2 on the `lit` plane: F-26's `dup-key` inside the payload, then W3-18's `lit-narrow` payload domain including SP-11's `vaddr` exclusion |
+| `17-wfs-spelling` | check 2, `spelling`: the W3-17 clause table — SP-1, SP-3 (mode-gated, F-50), SP-6/6′, SP-7, SP-8, SP-9, SP-10, each beside its admitted canonical form |
+| `18-acyclic-order` | WF3 by Kahn's on a chain; the `order` verb emits sinks-first; `check`'s transcript is unchanged by it. And the **cyclic** case, unconstructible through any admitted verb: two placed pre-images naming each other, one `violation cycle` line per unemitted node, `order` refusing |
+| `19-order-replay` | the diamond: two nodes in one Kahn round, batched in *address* order on both sides — not in `readDir` order |
+| `20-canon-diagnosis` | `r2-14` corrected: the non-palindromic duplicate-key carriers reject `dup-key` where they used to reject `non-canonical`, and genuine non-canonicity still reports as itself |
+| `21-open-not-a-file` | `(place-dir …)` on all three planes: `not-a-regular-file`, a verdict rather than a crash, and every other verb refusing on the same verdict |
+| `22-place-strays` | `(place …)` files the layout does not admit: `stray-object`, `stray-name`, the `.tmp-` leftover, and a placed object caught by WF1 |
+| `23-exit-codes` | the three-way exit contract's reachable legs: clean → 0, corrupted → 1 |
 
 ### Script language
 
@@ -194,10 +242,14 @@ step that produced one), or 128 lowercase hex characters.
 (schema-put-raw <schema>)      (entity-put-raw <addr> <value>)     ; canonicalization skipped
 (schema-put-bytes <hex>)       (entity-put-bytes <addr> <hex>)     ; raw bytes
 (get <addr>) (resolve <addr>) (refs <addr>)
-(name-set "<name>" <addr>) (name-get "<name>") (check)
+(name-set "<name>" <addr>) (name-get "<name>") (check) (order)
 (corrupt <addr> <byte-index> <mask-hex>)                            ; harness primitive
+(place <plane> <filename> <hex>)                                    ; harness primitive
+(place-dir <plane> <filename>)                                      ; harness primitive
 (assert-same <addr> <addr>) (assert-differ <addr> <addr>) (assert-code <N|prev> <code>)
 ```
+
+`<plane>` is `objects`, `names`, or `obligations`.
 
 Carrier syntax is exactly what `resolve` prints, so a resolve result pastes back into a
 fixture; gate G-S1's `#guard`s exercise that round-trip.
@@ -210,18 +262,47 @@ value   null | true | false | (i <n>) | (s "…") | (arr <v>…) | (obj ("k" <v>
 check   (filter "<id>" <v> true|false) | (group <check>…)
 ```
 
-`corrupt` is a **harness primitive, not a CLI verb**: it is the only writer in the package
-that bypasses admission, and it exists so that a corrupted store is a differential
-observable rather than a disk-only anecdote. It is unreachable from `estore`.
+`corrupt` and the `(place …)` family are **harness primitives, not CLI verbs**: they are
+the only writers in the package that bypass admission, and they exist so that a broken
+store is a differential observable rather than a disk-only anecdote. None is reachable
+from `estore`.
+
+`corrupt` can only flip bytes in an object that is already present, so until W3-20 no
+script could produce a stray, a directory, or a malformed name file at all, and
+`StoreView`'s stray and non-regular lists were hard-wired `[]` on the model side. The
+`(place …)` family closes that: the disk side creates the entry, and the model side
+records the row `StoreRoot.readView` would classify it as — one function,
+`Shell.placedEntry`, written as a clause-for-clause transcription of the reader, so the
+two sides agree by construction rather than by luck. Placed filenames are restricted to
+`[A-Za-z0-9._-]`, at most 128 characters, never `.` or `..`: SH3 confines the shell to
+file IO *under the store root*, and a primitive that could leave it would be a hole in the
+whitelist rather than a test of it.
+
+**`place-symlink` and `place-fifo` are not implemented, and the reason is a whitelist
+question, not an oversight.** Lean 4.33.1 offers no symlink-creation primitive and no FIFO
+primitive; the only route to either is a process spawn (`ln -s`, `mkfifo`), which is
+outside SHELL-v0 §3's "file IO under the store root" and would widen the whitelist by a
+whole capability class. That is a ruling, so the two members of the family are reported
+BLOCKED rather than taken. The consequence is that R-C §4.6's `open-symlink` and
+`open-fifo` fixtures cannot be written as differential scripts; the symlink and FIFO legs
+of the file-type discipline remain exercised by hand only. `place-dir` needs nothing new
+(`IO.FS.createDirAll` was already whitelisted) and covers the directory leg, which is the
+one that used to crash the scan.
 
 ## CLI
 
 ```
-estore [--store <dir>] init | check
+estore [--store <dir>] init | check | order
                             | put-schema <file> | put-entity <schema-addr> <file>
                             | get <addr> | resolve <addr> | refs <addr>
                             | name-set <name> <addr> | name-get <name>
 ```
+
+`order` prints one `addr <hex>` line per object, sinks first — the topological order
+Kahn's emits, which is M19's witness computed rather than asserted (W3-12). It is
+additive by design: `check`'s transcript is byte-identical with or without it, which is
+why the order is a verb and not a line in the report (R-C §2.4, option (b) over (a)).
+Like every verb but `check`, it refuses to run on a store that fails the scan.
 
 The store root comes from argv (default `.`) because the whitelist forbids reading the
 environment. `<file>` holds the object's **pre-image bytes** — see finding F-1. Exit
@@ -327,6 +408,21 @@ They are recorded for the coordinator; none was chosen silently.
   `--wfail` task covering it would fail on its dependency. `formal/` is read-only from
   this worktree; recorded for whoever wires the `mise` task.
 
+- **F-12 — `place-symlink` and `place-fifo` need a whitelist ruling, so they are BLOCKED.**
+  W3-20 adopts the `(place …)` family including symlink and FIFO members. Lean 4.33.1 has
+  no symlink-creation primitive and no FIFO primitive: `System.FilePath.symlinkMetadata`
+  *reads* a link's type but nothing in `Init/System/IO.lean` creates one, and a FIFO needs
+  `mkfifo`. The only route to either is a process spawn (`IO.Process.run "ln" …`), which
+  is not a file primitive under the store root but a whole new capability class, and §3's
+  whitelist is enumerated precisely so that such a widening is a ruling rather than a
+  seat's convenience. Taken here as: **do not widen, do not ship a half-member.** The
+  family ships as `place` (regular file) and `place-dir` (directory), which needed
+  **no whitelist change at all** — `IO.FS.writeBinFile` and `IO.FS.createDirAll` were
+  already listed. Consequence for the coordinator: R-C §4.6's `open-symlink` and
+  `open-fifo` fixtures remain unwritable, so two of the four legs of the F-42 file-type
+  discipline stay hand-exercised, and script slot `22` carries the stray battery instead.
+  A ruling that admits `IO.Process` for the harness would unblock both in one seat.
+
 ## Not claimed
 
 Mirrors STORE-SHELL §7, with what this package adds.
@@ -345,16 +441,24 @@ Mirrors STORE-SHELL §7, with what this package adds.
 - **Nothing about the pinned Effect implementation**, about any digest's cryptographic
   properties (`H` is a parameter in the model; injectivity appears only as a named
   hypothesis), or about deployment.
-- **Rung 1 is testing, not proof.** The harness shows that twelve committed scripts
+- **Rung 1 is testing, not proof.** The harness shows that twenty-three committed scripts
   produce identical observables on both sides. It is not a theorem about all scripts, and
   no bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
   untouched.
+- **No claim that a clean `check` implies `Reachable`** (SH5 as narrowed by W3-12). The
+  scan decides the `E2.Admissible` clauses; `Admissible → Reachable` is
+  `E2.ObligationM19_transport`, stated and unproved, and it carries a conformance premise
+  the scan does not supply. Kahn's pass computes the order M19 asserts exists; it does not
+  prove the implication. Nor is the `WFS` clause table claimed complete: no finite
+  syntactic clause reaches the uninhabited generalisation (F-34, W3-17), and that marker
+  is permanent rather than seat-owed.
 - **No totality claim beyond the file-type discipline.** A store entry is opened only when
   `symlinkMetadata` reports a regular file, and every residual IO fault exits 2 with a
   `StoreFault` instead of a verdict (F-42, ruling W3-15). That is a claim about *this*
   package's calls on a POSIX filesystem; nothing is claimed about a filesystem the shell
-  cannot interrogate, and the hostile-entry cases are exercised by hand rather than by a
-  script — the `(place …)` primitive that would make them fixtures is a separate seat.
+  cannot interrogate. The **directory** leg is now a committed fixture (script `21`, via
+  `place-dir`); the **symlink** and **FIFO** legs are still exercised by hand only,
+  because creating either needs a primitive outside the §3 whitelist (see F-12).
 - **`Conforms` is recorded, not enforced** (SH6). A store that passes `check` is *not*
   claimed to be internally well-typed in M17's sense; every entity carries an explicitly
   accepted obligation saying exactly that.
@@ -367,5 +471,12 @@ Mirrors STORE-SHELL §7, with what this package adds.
 - `mise` task wiring so `mise run check` covers this package. Not done here: the worktree
   brief confines this branch to `experiments/entity-store-shell/`, and `mise.toml` is at
   the repository root.
-- Coordinator rulings on F-1 through F-10; the core addition proposed in F-2.
-- M18 lands ⇒ boundary check 5 enforced, no grace period (SH6).
+- Coordinator rulings on F-1 through F-12; the core addition proposed in F-2.
+- **F-12's whitelist question**: admit a process surface for the harness, or leave the
+  symlink and FIFO legs of the file-type discipline hand-exercised for good.
+- A **store-aware assertion** in the script language, if the emitted order is to be
+  asserted rather than merely differenced. `assert-same`, `assert-differ` and
+  `assert-code` all decide on the step alone; asserting "the emitted order equals the
+  insertion order reversed" needs the opened view, which is a new harness primitive and
+  therefore a ruling. Script `19` pins everything the current language can pin.
+- M18 lands ⇒ boundary check 6 enforced, no grace period (SH6).

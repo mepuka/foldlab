@@ -2,14 +2,41 @@
 ; (RULINGS W3-10, adjudicated 2026-08-25): `canonS` recurses into `lit` payloads —
 ; one carrier, one canonical form.
 ;
-; Two lit schemas whose object payloads differ only in key order now take the SAME
-; address: the dedup L-dedup promised extends into the lit plane (F-23 closed).
-; Before A-6 these were two addresses.
+; FLIPPED 2026-08-25 by W3-12 + W3-18 — the amendment record PROCEDURE §5 asks for.
+;
+; What this fixture asserted until today: two `lit` schemas whose OBJECT payloads differ
+; only in key order take the same address, so A-6's dedup extends into the lit plane
+; (F-23 closed). Both puts exited 0 and `(assert-same @1 @2)` held.
+;
+; What it asserts now: those two schemas are INADMISSIBLE and never reach the store.
+; W3-18 made `litNarrowB` a `WFS` conjunct (MAPPING admission rule 1, made decidable,
+; F-35), and W3-12 wired the boundary to the model's admission verdict. A `.lit` payload
+; is a string, a boolean, or an integer and nothing else, so `(lit (obj …))` is rejected
+; `not-well-formed lit-narrow` before canonicity is ever consulted (W3-13's order).
+;
+; A-6 is NOT retracted by this. `canonS` still recurses into `lit` payloads and the
+; kernel receipts still hold; what changed is that the recursion has no OBSERVABLE at the
+; boundary any more, because every admissible payload is a scalar with no internal order
+; to canonicalize. The dedup claim moved from "provable at the shell" to "true and
+; unreachable", and the honest form of this fixture is the rejection below.
 
+; the two A-6 shapes, now inadmissible on the payload-domain clause
 (schema-put (lit (obj ("alpha" (i 1)) ("beta" (s "x")))))
+(assert-code prev 1)
 (schema-put (lit (obj ("beta" (s "x")) ("alpha" (i 1)))))
+(assert-code prev 1)
 
-(assert-same @1 @2)
+; the payload domain that IS admitted (MAPPING admission rule 1): str, bool, int
+(schema-put (lit (s "x")))
+(assert-code prev 0)
+(schema-put (lit true))
+(assert-code prev 0)
+(schema-put (lit (i 7)))
+(assert-code prev 0)
 
-; One object, not two — and the store checks clean.
+; and the same literal twice is one object, not two — L-dedup, on the surviving domain
+(schema-put (lit (s "x")))
+(assert-same @5 @11)
+
+; nothing rejected ever landed: three objects, not five.
 (check)

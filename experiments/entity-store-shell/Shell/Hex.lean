@@ -66,6 +66,17 @@ def addrOfHex (s : String) : Option Address := do
 /-- Is this string a well-formed address spelling? -/
 def isAddrHex (s : String) : Bool := (addrOfHex s).isSome
 
+/-- Read an address out of a text file's bytes: the content up to the first whitespace,
+    read as ASCII, must be exactly the digest hex. Total — never panics on odd bytes.
+
+    It lives HERE rather than beside the disk reader because the names plane's model side
+    must classify a placed file exactly as the disk reader does (W3-20): one function, so
+    the two sides cannot drift into a differential divergence that is really a
+    transcription slip. -/
+def addrOfFileBytes (bs : Bytes) : Option Address :=
+  let body := bs.takeWhile (fun b => b != 0x0a && b != 0x0d && b != 0x20 && b != 0x09)
+  addrOfHex (String.ofList (body.map (fun b => Char.ofNat b.toNat)))
+
 /-! ## ByteArray bridge — the only place the IO carrier meets the model carrier. -/
 
 def bytesOfByteArray (ba : ByteArray) : Bytes := ba.data.toList

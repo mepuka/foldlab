@@ -1,0 +1,56 @@
+; STORE-SHELL §4, the stray classes — the second half of W3-20's `(place …)` family.
+;
+; `(place <plane> <name> <hexbytes>)` writes a FILE below the boundary: the disk gets the
+; raw bytes at that entry, and the model records the row the disk reader would classify
+; the entry as. The classification is one function (`Shell.placedEntry`), written as a
+; clause-for-clause transcription of `StoreRoot.readView`, including the two places where
+; the reader's ORDER of tests decides the answer:
+;
+;   * on the objects and obligations planes the filename is tested for address-hex FIRST,
+;     so a badly named entry is a STRAY, whatever shape it is;
+;   * on the obligations plane a badly named entry joins the stray-OBJECT list, not the
+;     stray-name list — the reader's own choice, mirrored rather than tidied.
+;
+; A transcription is exactly the kind of thing that rots silently, which is why it is
+; committed as a differential fixture on the day it is written rather than asserted in a
+; comment.
+
+; a clean baseline
+(schema-put (prim int))
+(check)
+(assert-code prev 0)
+
+; an object file whose name is not an address at all
+(place objects zzz 00)
+(check)
+(assert-code prev 1)
+
+; the `.tmp-` file an interrupted atomic write leaves behind: a stray, deliberately, and
+; not something the scan quietly skips
+(place objects .tmp-deadbeef 00)
+(check)
+(assert-code prev 1)
+
+; a name file whose CONTENT is not an address: the name plane's stray class is about
+; content as well as filename
+(place names bad 6e6f74686578)
+(check)
+(assert-code prev 1)
+
+; a name that could not have come from `name-set`: the leading dot `validName` refuses
+(place names ..escape 00)
+(check)
+(assert-code prev 1)
+
+; the obligations plane's badly named entry, which lands in the stray-OBJECT list
+(place obligations zzz 00)
+(check)
+(assert-code prev 1)
+
+; and the leg that proves the model really RECORDS a placed object rather than merely
+; noting a stray: valid address-shaped filename, bytes that are a well-formed canonical
+; prim-int pre-image, and an address that is not their digest. WF1 catches it — on both
+; sides, with the same actual digest.
+(place objects 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 01003002)
+(check)
+(assert-code prev 1)

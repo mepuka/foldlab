@@ -1,0 +1,34 @@
+; STORE-SHELL §5 check 2 (W3-12), guardedness leg — `r2-13`'s lines 2 to 4, corrected.
+;
+; `guardedB` is the second `WFS` conjunct and the second half of `Reachable.putS`'s
+; premise. Unguarded recursion is the classic non-terminating spelling: a `mu` whose
+; binder is reachable through positions that consume no value structure (the bare body,
+; a union member, a refine subject). Each was admitted before W3-12 wired the check.
+;
+; Note the clause ORDER matters here and is asserted by the rejection strings: all three
+; bodies DO mention their binder, so `usesBinderB` is satisfied and the spelling clause
+; stays silent. `guarded` is the honest diagnosis, and it is the one the boundary gives.
+
+; the bare unguarded body
+(schema-put (mu "d" (var 0)))
+(assert-code prev 1)
+
+; the binder on a union spine: a union consumes no value structure
+(schema-put (mu "d" (union anyOf (var 0) (prim int))))
+(assert-code prev 1)
+
+; the binder on a refine spine
+(schema-put (mu "d" (refine (var 0) (filter "f" null true))))
+(assert-code prev 1)
+
+; guarded by an array: value structure is consumed on the way to the binder, so this is
+; admitted — the clause discriminates
+(schema-put (mu "d" (array (var 0))))
+(assert-code prev 0)
+
+; guarded by an object field, the ordinary recursive-record shape
+(schema-put (mu "d" (object (f "next" opt (var 0)) (f "leaf" req (prim int)))))
+(assert-code prev 0)
+
+; two objects, not five.
+(check)

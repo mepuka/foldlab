@@ -1,0 +1,41 @@
+; STORE-SHELL §5 check 2 (W3-12): the PUT boundary calls the model's admission verdict,
+; and `E2.schemaAdmissionClause` names the failing `WFS` clause.
+;
+; The corrected form of `r2-13-wfs-unchecked.script`'s closedness lines. That fixture
+; asserted TODAY'S DEFECT: `closedB 0` is `Reachable.putS`'s premise and was decidable
+; all along, and the boundary checked none of it — a schema with a free de Bruijn
+; variable was admitted, `check` called the store clean, and `resolve` handed the thing
+; back (F-33). The boundary now rejects it, naming the clause.
+
+; a bare free variable: closedB 0 (var 0) = false
+(schema-put (var 0))
+(assert-code prev 1)
+
+; nested, so the rejection is not an artefact of the top-level shape
+(schema-put (array (var 7)))
+(assert-code prev 1)
+
+; a free variable under an object field
+(schema-put (object (f "a" req (var 3))))
+(assert-code prev 1)
+
+; the SAME variable, correctly bound, is admitted — the clause discriminates, it does not
+; simply refuse every `var`
+(schema-put (mu "d" (object (f "next" opt (var 0)))))
+(assert-code prev 0)
+
+; nothing rejected ever landed: one object, not four.
+(check)
+(assert-code prev 0)
+
+; --- the SCAN side of the same clause (W3-12, W3-13).
+;
+; The boundary rejects; the scan re-derives. A store the shell did not build can still
+; hold a carrier outside `WFS`, and until W3-12 nothing looked: `check` called such a
+; store clean and `resolve` handed the carrier back (F-33). Placed below the boundary at
+; its OWN address — `01003800` is `preimageS (var 0)` and the filename is its digest — so
+; WF1 passes and the well-formedness check is the FIRST thing that can speak. It reports
+; the same clause the PUT rejection names, which is what makes the two sides comparable.
+(place objects 6669f686ad57eac1e08dcf6d5c8d9e4022247adea8b0e784c8f5f9654db0f4ca08c87cb55b3db4c88bc9eb61874ede6f0ef2c128d09bdb687a1b229a7e56afcd 01003800)
+(check)
+(assert-code prev 1)

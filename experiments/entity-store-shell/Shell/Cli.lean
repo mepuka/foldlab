@@ -3,6 +3,7 @@ The CLI (STORE-SHELL §5, v0 verb set exactly).
 
     estore [--store <dir>] init
     estore [--store <dir>] check
+    estore [--store <dir>] order
     estore [--store <dir>] put-schema <file>
     estore [--store <dir>] put-entity <schema-addr> <file>
     estore [--store <dir>] get <addr>
@@ -41,6 +42,7 @@ def usageLines : List String :=
   , "verbs:"
   , "  init                              create the store planes"
   , "  check                             verification-on-open; exit code is the verdict"
+  , "  order                             the emitted topological order, sinks first"
   , "  put-schema <file>                 admit a schema pre-image"
   , "  put-entity <schema-addr> <file>   admit an entity pre-image"
   , "  get <addr>                        the stored pre-image bytes, as hex"
@@ -93,6 +95,9 @@ def runCli (argv : List String) : IO UInt32 := do
           IO.println s!"ok initialized {rootPath}"
           pure 0
   | "check" :: [] => onStore r .check
+  -- W3-12: the order Kahn's emits is M19's witness. `check`'s transcript is untouched;
+  -- the observable is additive, which is why it is a verb and not a line in the report.
+  | "order" :: [] => onStore r .order
   | "put-schema" :: file :: [] => do
       match ← readBytesArg ⟨file⟩ with
       | .error e => fail e

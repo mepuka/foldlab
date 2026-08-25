@@ -45,6 +45,12 @@ def StoreRoot.objectsDir (r : StoreRoot) : FilePath := r.path / "objects"
 def StoreRoot.namesDir (r : StoreRoot) : FilePath := r.path / "names"
 def StoreRoot.obligationsDir (r : StoreRoot) : FilePath := r.path / "obligations"
 
+/-- The directory a plane lives in — the disk half of `Plane.dirName`. -/
+def StoreRoot.planeDir (r : StoreRoot) : Plane → FilePath
+  | .objects => r.objectsDir
+  | .names => r.namesDir
+  | .obligations => r.obligationsDir
+
 def tmpPrefix : String := ".tmp-"
 
 /-! ## Faults — the third channel (F-42, ruling W3-15)
@@ -129,12 +135,6 @@ private def atomicWrite (plane : String) (dir : FilePath) (name : String) (bytes
   attempt s!"{plane}/{name}" (IO.FS.rename tmp (dir / name))
 
 private def textBytes (s : String) : ByteArray := s.toUTF8
-
-/-- Read an address out of a text file's bytes: the content up to the first whitespace,
-    read as ASCII, must be exactly the digest hex. Total — never panics on odd bytes. -/
-private def addrOfFileBytes (bs : Bytes) : Option Address :=
-  let body := bs.takeWhile (fun b => b != 0x0a && b != 0x0d && b != 0x20 && b != 0x09)
-  addrOfHex (String.ofList (body.map (fun b => Char.ofNat b.toNat)))
 
 /-! ## Reading the store
 
@@ -235,6 +235,15 @@ def StoreRoot.applyEffect (r : StoreRoot) : Effect → ExceptT StoreFault IO Uni
       let rel := "objects/" ++ hex
       let raw ← attempt rel (IO.FS.readBinFile p)
       attempt rel (IO.FS.writeBinFile p (byteArrayOfBytes (flipByte (bytesOfByteArray raw) idx mask)))
+  | .place plane name kind => do
+      -- Below the boundary, deliberately (W3-20): no temp+rename, no admission. Harness
+      -- only. The filename alphabet was checked in `runVerb`, so this path cannot leave
+      -- the plane's directory and SH3's "under the store root" still holds.
+      let dir := r.planeDir plane
+      let rel := plane.dirName ++ "/" ++ name
+      match kind with
+      | .file bs => attempt rel (IO.FS.writeBinFile (dir / name) (byteArrayOfBytes bs))
+      | .dir => attempt rel (IO.FS.createDirAll (dir / name))
 
 /-- Run one verb against the disk store: open (read the view), decide with the SAME pure
     `runVerb` the model uses, then perform the authorized writes. A `StoreFault` anywhere

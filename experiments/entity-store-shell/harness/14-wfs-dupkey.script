@@ -1,0 +1,42 @@
+; STORE-SHELL §5 checks 2 and 3, and the ORDER between them (W3-12 + W3-13).
+;
+; The corrected form of `r2-12-dupkey-admitted.script`. That fixture pinned F-40: the
+; §9 claim that a duplicate-key submission was "operationally covered" by the check-2
+; re-canonicalization byte-compare is FALSE, because `canonFields` places an equal key
+; AFTER the run and is therefore an INVOLUTION on a duplicate-key run — and an involution
+; has fixed points. A run whose entries are a PALINDROME byte-compares equal to its own
+; re-canonicalization and was admitted, with `check` calling the store clean and
+; `resolve` handing the ambiguity back.
+;
+; THE ASSERTION THAT MATTERS HERE IS THE REJECTION STRING, not the exit code. Every shape
+; below is a `canonS` fixed point, so a boundary running canonicity FIRST would have
+; admitted it outright; a boundary running canonicity first on the NON-palindromic shapes
+; (script 20) rejects them `non-canonical`, which is a false statement about the carrier.
+; With W3-13's order, all of them reject `not-well-formed dup-key`, which is true.
+
+; the identical pair — the shortest palindrome
+(schema-put (object (f "a" req (prim int)) (f "a" req (prim int))))
+(assert-code prev 1)
+
+; the palindromic triple carrying TWO DIFFERENT schemas at one key: int, str, int
+(schema-put (object (f "a" req (prim int)) (f "a" req (prim str)) (f "a" req (prim int))))
+(assert-code prev 1)
+
+; the palindromic triple differing in OPTIONALITY rather than in schema
+(schema-put (object (f "a" req (prim int)) (f "a" opt (prim int)) (f "a" req (prim int))))
+(assert-code prev 1)
+
+; a duplicate run beside a distinct key, so the sortedness half of check 3 is satisfied
+(schema-put (object (f "b" req (prim int)) (f "a" req (prim int)) (f "a" req (prim int))))
+(assert-code prev 1)
+
+; nested under a field: the clause descends, it is not a top-level-only test
+(schema-put (object (f "outer" req (object (f "a" req (prim int)) (f "a" req (prim str))))))
+(assert-code prev 1)
+
+; the same object with distinct keys is admitted
+(schema-put (object (f "a" req (prim int)) (f "b" req (prim str))))
+(assert-code prev 0)
+
+; one object, not six — and the store checks clean.
+(check)
