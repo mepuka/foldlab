@@ -218,6 +218,14 @@ open tag-byte enumeration confirmed. Vocabulary held as working labels until R-1
 the context home. M1–M18 + NEG-1/2 is the pinned ledger; additions by amendment only,
 never smuggled.
 
+**Naming-as-entities addendum (2026-08-25).** The design thrust for modeling naming —
+name views, scenario/local naming, annotation sidecars — is captured in KICKOFF.md §17
+and does not change this model: naming structures are ordinary entities; M16's mutable
+plane stays one pointer per scope. Amendments A-1 (address-valued values: `Value.vaddr`
++ a schema address node, extending entity `refs` and WF2 to entity→entity references)
+and A-2 (the name-view schema) are ratified as planned and enter §5's carriers by
+declared amendment when implemented.
+
 ## 8. Exclusions
 
 No mutation or deletion in the model (GC stated only). No cycles (unconstructible —

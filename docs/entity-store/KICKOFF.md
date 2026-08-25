@@ -966,6 +966,42 @@ Nix cannot occupy it, a content-addressed store can); Hackett–Hutton's own CBN
 clairvoyant-CBV theorem; demand-as-heat in any formalism; T-B address–projection
 commutation.
 
+## 17. Naming as entities — the metadata design thrust (2026-08-25, ratified as direction)
+
+Captured from the in-session exchange after the operator asked what L-names-inert (M16)
+means and ruled that the lab still wants a carrier for *modeling* naming — annotations,
+local and scenario naming — as forward-looking convenience.
+
+**The principle.** Naming is not added to the identity layer; naming is modeled **as
+entities in the store** — P2's reflexive move applied to the name plane, and the
+completion of R-15b's staged ruling. M16 stays exact throughout: everything below is
+ordinary immutable entities, and the mutable plane remains one pointer per scope
+("current view is address X").
+
+**Name views.** A name view is an entity under its own schema — shape:
+`{ bindings: [{name, target}], parent, base, annotations }`. Consequences, each free once
+views are entities: a *scenario* is its own view entity; a *local context* is a view
+whose `base` references another view by address and overlays deltas — "what does this
+name mean here" is resolution against a chosen view, a pure provable function over
+entities; *history* is the Unison causal spine as plain data (each view references its
+predecessor; "what were the names last Tuesday" is a lookup); and deduplication applies
+to naming itself — two scenarios converging on the same naming ARE the same entity.
+
+**Annotations as sidecar entities.** An annotation is an entity that references its
+subject by address — documentation, deprecation, provenance of a naming decision,
+scenario tags. The subject never knows its annotations: no back-pointer, or the
+subject's address would change (the census's open-annotation-bag lesson, inverted into a
+design rule). Names are thereby one species of a uniform shape — metadata-about-
+addresses — and the sidecar pattern covers the species uniformly.
+
+**The carrier gap this exposes, and its amendments (RATIFIED as planned; enter the
+carrier per Q10 when implemented, natural companion to the M15 seat):**
+
+| # | Amendment | Content |
+|---|---|---|
+| **A-1** | Address-valued values | `Value.vaddr (a : Address)` plus a SchemaCore address-type node, so schemas can *type* address-valued fields. Unlocks name views, annotation sidecars, and §16's trace entities (`(output, deps, recipe)` are addresses) in one stroke. Extends joint B: an entity's `refs` become its schema address plus every `vaddr` in its value, so WF2 closure covers entity→entity references — typed name views can only name what exists. Mechanical cost bounded: one new case each in encode/decode/canon/refs/`Conforms`; the M4a proof stack extends per-constructor by its uniform pattern. |
+| **A-2** | The name-view schema | First dogfood schema once A-1 lands; its resolution function and view-composition laws are the first entity-level theorems over the store. |
+
 **Provenance actions owed (operator assent required — touches `.reference/provenance/`).**
 
 1. The lock's `bytes` and sha256 `contentDigest` fields are wrong for **all five** pinned
