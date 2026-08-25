@@ -173,6 +173,11 @@ def sexpToSchema (env : AddrEnv) : Sexp → Except String SchemaCore
       match readUMode m with
       | some m' => (sexpToSchemaList env rest).map (.union m')
       | none => .error s!"unknown union mode '{m}'"
+  | .list (.cons (.atom "record") (.cons c .nil)) => (sexpToSchema env c).map .record
+  | .list (.cons (.atom "tuple-rest") (.cons r rest)) => do
+      let r' ← sexpToSchema env r
+      let es ← sexpToSchemaList env rest
+      .ok (.tupleRest es r')
   | .list _ => .error "unknown schema form"
   termination_by structural x => x
 

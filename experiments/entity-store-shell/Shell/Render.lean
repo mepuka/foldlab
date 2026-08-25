@@ -96,6 +96,8 @@ def renderSchema : SchemaCore → String
   | .var i        => "(var " ++ toString i ++ ")"
   | .mu d b       => "(mu " ++ renderStr d ++ " " ++ renderSchema b ++ ")"
   | .address      => "address"
+  | .tupleRest es rest => "(tuple-rest " ++ renderSchema rest ++ renderSchemaList es ++ ")"
+  | .record cod   => "(record " ++ renderSchema cod ++ ")"
   termination_by structural x => x
 
 def renderFieldList : FieldList → String

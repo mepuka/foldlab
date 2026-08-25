@@ -153,6 +153,8 @@ private def rtValue (v : Value) : Bool :=
 #guard rtSchema (.mu "tag" (.union .oneOf (.cons (.var 0) (.cons .address .nil))))
 #guard rtSchema (.refine (.prim .str) (.filter "minLength" (.vint 3) true))
 #guard rtSchema (.tuple (.cons (.ref ⟨List.replicate 64 0⟩) (.cons (.lit .vnull) .nil)))
+#guard rtSchema (.tupleRest (.cons (.prim .str) (.cons (.prim .int) .nil)) (.prim .bool))
+#guard rtSchema (.record (.union .anyOf (.cons (.prim .int) (.cons .address .nil))))
 #guard rtValue (.vobj (.cons "k" (.varr (.cons (.vint (-7)) (.cons (.vbool true) .nil))) .nil))
 #guard rtValue (.vstr "quote\" back\\slash\nnewline")
 #guard rtValue (.vaddr ⟨List.replicate 64 255⟩)

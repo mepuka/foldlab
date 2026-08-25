@@ -1,0 +1,26 @@
+; Amendment A-4 (STORE-MODEL §7 mapping-wave record; KICKOFF §18 G4): tuple-with-rest
+; and the string-keyed record, exercised end-to-end through both runners the same day
+; the amendment merged — the audit-ratified loop: every model change gains a
+; differential script.
+
+(schema-put (tuple-rest (prim bool) (prim str) (prim int)))
+(schema-put (record (prim int)))
+
+; The two new constructors are distinct schemas at distinct addresses, and neither
+; collides with the plain tuple or object spellings of the same components.
+(schema-put (tuple (prim str) (prim int)))
+(assert-differ @1 @3)
+(assert-differ @1 @2)
+(assert-differ @2 @3)
+
+; Entities: the FLAT value report A proved the nested workaround rejects (scout
+; probe `flat_rejected`) is stored under the tuple-rest schema; a two-key record
+; value with keys the schema never names is stored under the record schema.
+(entity-put @1 (arr (s "a") (i 1) true false))
+(entity-put @2 (obj ("alpha" (i 1)) ("beta" (i 2))))
+
+; Q11 still governs the value plane: record-entity field order canonicalizes away.
+(entity-put @2 (obj ("beta" (i 2)) ("alpha" (i 1))))
+(assert-same @8 @9)
+
+(check)

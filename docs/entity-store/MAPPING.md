@@ -24,7 +24,7 @@ Disposition vocabulary:
 | 1 | `Any` | REJECTED-v1 | no top type exists; the mu-union approximation silently narrows conformance, which G2's posture forbids elsewhere; revisit after A-4 | ruled 2026-08-25 |
 | 2 | `Arrays` (elements only) | MAPS | `.tuple` | A §4a |
 | 3 | `Arrays` (rest only) | MAPS | `.array` | A §4b |
-| 4 | `Arrays` (both) | AWAITS-A-4 | `tupleRest`; the flat-value workaround is proved wrong (`flat_rejected`) | G4 |
+| 4 | `Arrays` (both) | MAPS | `.tupleRest` (A-4 landed 2026-08-25, tag 0x3B); the flat value conforms — probe `A4Probe` | G4 |
 | 5 | `Arrays.isMutable` | COLLAPSE-PRICED | Effect's own codec drops and never restores it (census §4) — L-prec | A §4, B |
 | 6 | `BigInt` | MAPS | `.prim .int` — bigints are integers; the former Number collision dissolves under G2 | G2 |
 | 7 | `Boolean` | MAPS | `.prim .bool` | A table 4 |
@@ -38,7 +38,7 @@ Disposition vocabulary:
 | 15 | `ObjectKeyword` | REJECTED-v1 | exact-width conformance means no faithful form; revisit after A-4's `record` | G4 rider |
 | 16 | `Objects` (string keys + optionality) | MAPS | `.object`; R-10 sort is the ratified deliberate divergence (Q11 record) | A §5 |
 | 17 | `Objects` (symbol keys) | REJECTED-v1 | key is `String`; re-spelling collides | A §5ii |
-| 18 | `Objects` (index signatures) | AWAITS-A-4 | `record` | G4 |
+| 18 | `Objects` (index signatures) | MAPS | `.record` (A-4 landed 2026-08-25, tag 0x3C, string-keyed) | G4 |
 | 19 | `Objects` per-property `isMutable` | MAPS+ID | `lab/mutable` on the property schema; unlike the array side, Effect KEEPS this one — dropping it would be unprecedented L-3509 | ruled 2026-08-25 |
 | 20 | `String` | MAPS | `.prim .str` | A table 13 |
 | 21 | `Suspend` | MAPS | `.mu`/`.var`; discriminator mandatory (D1) and in identity (G3) | G3 |

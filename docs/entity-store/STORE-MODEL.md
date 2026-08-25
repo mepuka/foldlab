@@ -265,10 +265,16 @@ M11's commutation half must be pinned up to `find`-extensionality when seated.
 
 **Mapping-wave rulings touching the model (G1–G8 ratified 2026-08-25, all as
 recommended; full record in KICKOFF §18).** G4: `tupleRest` and `record` (index
-signature) constructors enter the carrier by planned amendment **A-4** — value shapes
-cannot be patched later (scout-proved at the value plane) — scheduled with A-3 as one
-serialization point after the in-flight seat wave merges; `Declaration` stays
-rejected-v1. G2: the value plane stays float-free in v1; anything float-bearing is
+signature) constructors enter the carrier by amendment **A-4** — value shapes cannot
+be patched later (scout-proved at the value plane); `Declaration` stays rejected-v1.
+**A-4 IMPLEMENTED 2026-08-25** (worktree seat, adjudicated): tags 0x3B/0x3C,
+componentwise and guard-positive throughout, M4a still unconditional, every
+pre-existing statement byte-identical except the ordered `tags_distinct` extension to
+13 variants; the gain exhibited by an axiom-free re-proof that the old nested spelling
+still rejects the flat value the new constructor accepts (`E2/A4Probe.lean`). M18
+seat note, pinned from the delivery: `tupleRest` conformance stays syntax-directed —
+`ConformsL` is lockstep, so the split point is forced by the element count, no search
+over splits. G2: the value plane stays float-free in v1; anything float-bearing is
 REJECTED explicitly — silent reinterpretation of Effect's `Number` as `Int` is
 forbidden. G5: addresses never ride inside object KEYS (`refs` does not look there);
 order-insensitive collection nodes (set/map with sorted canonicalization) are a future

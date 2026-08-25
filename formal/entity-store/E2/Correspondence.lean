@@ -27,6 +27,7 @@ def refine : SchemaCore → Check → SchemaCore  := SchemaCore.refine
 def ref    : Address → SchemaCore             := SchemaCore.ref
 def var    : Nat → SchemaCore                 := SchemaCore.var
 def mu     : String → SchemaCore → SchemaCore := SchemaCore.mu
+def address : SchemaCore                      := SchemaCore.address
 def tupleRest : SchemaList → SchemaCore → SchemaCore := SchemaCore.tupleRest
 def record : SchemaCore → SchemaCore          := SchemaCore.record
 

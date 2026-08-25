@@ -35,7 +35,8 @@ unconditional dedup to entities. The M15 entity pin returns `canonV v`.
 | `E2/Faithful.lean` | seat delivery (codex worktree, adjudicated 2026-08-25) | **M15** fresh + both L-faithful halves (reachable stores; H-injectivity only ever a hypothesis); **F/S, F/V encode injectivity** discharged as M4a corollaries |
 | `E2/Closure.lean` | canon-refs lemma families (schema and value sides), `refsOfPreimage` characterizations | **M9** WF2 over stored bytes |
 | `E2/Reject.lean` | the dangling-singleton derivation analysis | **NEG-2** unreachability, for every `H` and env |
-| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,372 constants |
+| `E2/A4Probe.lean` | A-4 exhibits: the flat tuple-rest value conforms, the two-key record conforms, the old nested spelling still rejects (axiom-free), byte receipts for tags 0x3B/0x3C | smoke `example`s + `nested_still_rejects` |
+| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,427 constants |
 
 Axiom posture: every proved theorem within `[propext, Classical.choice, Quot.sound]`
 (several at `[propext]` or fewer). No `native_decide`, no Mathlib, no `partial`, no
@@ -45,8 +46,8 @@ Stated (seats, statements pinned): M11 idempotence, M18 conformance decidability
 S1 canon idempotence both kinds (conditional on duplicate-freedom after the M1
 falsification — STORE-MODEL §7 A-3 record). Owed with named vocabulary dependencies
 (see `E2/Model.lean` OWED block and STORE-MODEL §6): M10, M11-commutation, M16,
-M17/M17′, M4b, M19. A-3 (WFS clause 4) landed 2026-08-25; A-4 (`tupleRest`/`record`)
-is briefed to worktree 4 (`docs/entity-store/dispatch/`).
+M17/M17′, M4b, M19. A-3 (WFS clause 4) and A-4 (`tupleRest` 0x3B / `record` 0x3C,
+componentwise, guard-positive) both landed 2026-08-25.
 
 ## Not claimed
 
