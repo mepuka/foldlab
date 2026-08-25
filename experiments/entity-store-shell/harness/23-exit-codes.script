@@ -1,0 +1,45 @@
+; STORE-SHELL §5, the three-way exit contract; F-42 / ruling W3-15.
+;
+; `check`'s exit code IS the verdict: 0 checked and clean, 1 checked and violations
+; found, 2 could not check at all. Before W3-15 the third leg was unreachable — an
+; exception thrown inside `readView` escaped `fail`, `emit`, and a `main` with no
+; handler, and Lean exited 1 — so a store nobody could open and a store found corrupt
+; produced the same observable, and no caller could tell them apart.
+;
+; This fixture pins the two legs the script language can reach today. Both run on BOTH
+; sides of the differential, so the codes are the model's codes as well as the disk's.
+;
+; The 2 leg is NOT here, and cannot be: making a store unopenable means placing a
+; directory, a symlink, a FIFO, or a permission bit BELOW the boundary, and the script
+; language has exactly one below-the-boundary primitive (`corrupt`, which writes bytes
+; into an object that already exists). The `(place …)` family is the seat that unblocks
+; it — with it, `20-open-not-a-file`, `21-open-symlink`, `22-open-fifo`, and this
+; fixture's third leg become writable. Until then the 2 leg is exercised by hand only,
+; and this comment is the record of that gap.
+
+; leg 0 — an empty store is clean
+(check)
+(assert-code prev 0)
+
+; leg 0 — a store the boundary itself built is clean.
+; Step numbering counts assertions too, so the schema is step 3 and the entity step 5.
+(schema-put (object (f "alpha" req (prim int)) (f "beta" opt (prim str))))
+(assert-code prev 0)
+(entity-put @3 (obj ("alpha" (i 7))))
+(assert-code prev 0)
+(name-set "head" @5)
+(assert-code prev 0)
+(check)
+(assert-code prev 0)
+
+; leg 1 — the same store, one byte flipped below the boundary: CHECKED, and bad
+(corrupt @5 4 80)
+(check)
+(assert-code prev 1)
+
+; leg 1 is a verdict, not a crash: the store is still open, and every other verb
+; refuses on the SAME verdict rather than escaping through an unhandled exception
+(get @3)
+(assert-code prev 1)
+(check)
+(assert-code prev 1)
