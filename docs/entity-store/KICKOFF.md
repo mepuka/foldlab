@@ -1015,3 +1015,28 @@ carrier per Q10 when implemented, natural companion to the M15 seat):**
    file table. Pin them before any census-dependent claim is promoted past G0.
 3. InteractionTrees 5.2.1 enters `REFERENCES.md` as prior art, pinned by the sha512 the
    annex's `switch.export` already carries (§13) — no clone needed on this host.
+
+## 18. Mapping-wave rulings (2026-08-25 — three-scout evidence wave, G1–G8 ratified)
+
+Method (operator-instituted this date): before each ruling, scouts take the model as it
+stands and collect actual data — expressibility probes over the Lean carrier (report A),
+an identity dossier over the pinned Effect bytes (report B), and end-to-end store
+scenarios (report C). Reports with receipts: `.staging/scouts/2026-08-25-mapping/`.
+Report C's kernel-checked M1 falsification and its A-3 consequence are recorded in
+STORE-MODEL §7. Ruled all-as-recommended:
+
+| # | Joint | Ruling |
+|---|---|---|
+| G1 | Keyword nullaries (21→14 address collapse) | Mint the lab check-ids through the ratified `Check` channel, restoring all 21 distinctions. The ids are lab vocabulary — no Effect `representation` counterpart claimed. They are the first committed rows of the future R-4 allowlist; the allowlist's SHAPE stays open (G7). |
+| G2 | Floats | `Value` stays float-free in v1. Float-bearing schemas and values are REJECTED-v1, explicitly and loudly; silently reinterpreting Effect's `Number` as `Int` is forbidden (the #3509 spirit). A float ruling is its own future amendment. BigInt maps to the integer carrier legitimately. |
+| G3 | `mu` discriminator vs alpha-invariance | Discriminator stays in identity (D1's priced carve-out). Alpha-invariance of recursive schemas is a non-goal v1; the over-specification tension (report A) is recorded, not resolved. |
+| G4 | Carrier additions | `tupleRest` and `record` enter by planned amendment A-4 BEFORE R-2 freezes (report A proved the workarounds wrong at the value plane — unpatchable later). `Declaration` stays rejected-v1. A-4 schedules with A-3 as one serialization point after the in-flight seat wave merges. |
+| G5 | Order-insensitive collections vs WF2 | Addresses never ride inside object keys (`refs` cannot see them — report C proved the coverage loss). First-class set/map nodes with sorted canonicalization are future amendment candidate A-5. The §16 provenance-merge and §17 naming-convergence aspirations are demoted to pending-A-5. |
+| G6 | Address subject | The address subject is the AST as constructed (type level). Codec-derived forms (`toCodecJsonAST` reorders unions — report B) are transformations; they may become entities later, never the identity of the source schema. |
+| G7 | R-4 allowlist shape | Deferred to a dedicated session with report B's 75-site catalog on the table; report B's relabelling hole (annotations spread last + `Filter.annotate` + id dispatch) means neither bare ids nor (id, payload) pairs close it. |
+| G8 | Transport adequacy | New stated obligation M19 (STORE-MODEL §6): a ref-closed, acyclic finite set of pre-images admits a reaching insertion order — owed with M10's graph vocabulary. R-15c makes no G1 claim until M19 is proved. |
+
+Riders: R-2 (constructor freeze) now explicitly waits on A-4. R-3 stays deferred with
+report C's finding recorded — SCC-as-unit is not expressible while `.ref` carries no
+component index. Report B's eight pin requests route to the lock-repair effort
+(provenance action 2 above overlaps six of them).

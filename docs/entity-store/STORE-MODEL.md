@@ -183,6 +183,7 @@ what a theorem does **not** claim is part of its statement discipline.
 | M14 | L-get-put; getChecked = get on reachable stores |
 | M15 | L-faithful (round-trip through the store, up to `≈`) |
 | M16 | L-names-inert |
+| M19 | transport adequacy (G8, 2026-08-25): every ref-closed, acyclic finite set of pre-images admits an insertion order reaching it — owed with M10's reference-graph vocabulary; R-15c makes no G1 claim until this is proved |
 
 **Coupling:**
 
@@ -264,6 +265,21 @@ differ — the interim incoherence is model-accepts/shell-rejects, closed by A-3
 harness fixtures stay duplicate-free. Related statement caution from the same wave:
 L-comm is false as `StoreMap` value equality (the list conses) and true up to `find` —
 M11's commutation half must be pinned up to `find`-extensionality when seated.
+
+**Mapping-wave rulings touching the model (G1–G8 ratified 2026-08-25, all as
+recommended; full record in KICKOFF §18).** G4: `tupleRest` and `record` (index
+signature) constructors enter the carrier by planned amendment **A-4** — value shapes
+cannot be patched later (scout-proved at the value plane) — scheduled with A-3 as one
+serialization point after the in-flight seat wave merges; `Declaration` stays
+rejected-v1. G2: the value plane stays float-free in v1; anything float-bearing is
+REJECTED explicitly — silent reinterpretation of Effect's `Number` as `Int` is
+forbidden. G5: addresses never ride inside object KEYS (`refs` does not look there);
+order-insensitive collection nodes (set/map with sorted canonicalization) are a future
+amendment candidate (A-5), not a key-encoding idiom. G3: the `mu` discriminator stays
+in identity (D1's priced carve-out); alpha-invariance of recursive schemas is a
+non-goal v1. G8: obligation M19 added to §6 as owed. The §16 provenance-merge and §17
+naming-convergence aspirations are DEMOTED to pending-A-5 (both die on array
+order-sensitivity today).
 
 ## 8. Exclusions
 
