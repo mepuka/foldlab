@@ -120,9 +120,12 @@ These revisions were observed during the 2026-08-24 sweep. They are discovery ai
 
 ## Unison theory basis (E1 lineage)
 
-Local copies live in [papers/](../papers/) with SHA-256 digests recorded here; full lock entries pending.
+Local copies live in [papers/](../papers/), pinned by digest in the [paper
+lock](../provenance/papers.lock.json). These two sources carry per-source role
+scoping here; the rest of the local corpus is role-scoped by cluster in
+[PAPERS.md](PAPERS.md).
 
 | Source | Pin and role | Supports | Does not support |
 | --- | --- | --- | --- |
-| [Dunfield & Krishnaswami 2013, Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism](https://arxiv.org/abs/1306.6032) | arXiv 1306.6032; local PDF sha256 0e75ac60ee631775d663189bf5fc4811275e84c62178f826879feed4555ad941 | The declarative and algorithmic bidirectional systems with soundness and completeness; the documented basis of Unison's typechecker; the specification shape for any typechecker-equivalence claim | Unison's implementation details, abilities, or content addressing |
-| [Lindley, McBride & McLaughlin 2016, Do Be Do Be Do (Frank)](https://arxiv.org/abs/1611.09259) | arXiv 1611.09259; local PDF sha256 9cc06103fd865a49315baf9110a2b1f6285a55fbec40bee8f1b174db0b2077cf | The effect-handler calculus behind Unison's abilities: operators, adjustments, and handling as first-class | Unison's exact ability implementation or hashing discipline |
+| [Dunfield & Krishnaswami 2013, Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism](https://arxiv.org/abs/1306.6032) | arXiv 1306.6032; local copy pinned in the [paper lock](../provenance/papers.lock.json) | The declarative and algorithmic bidirectional systems with soundness and completeness; the documented basis of Unison's typechecker; the specification shape for any typechecker-equivalence claim | Unison's implementation details, abilities, or content addressing |
+| [Lindley, McBride & McLaughlin 2016, Do Be Do Be Do (Frank)](https://arxiv.org/abs/1611.09259) | arXiv 1611.09259; local copy pinned in the [paper lock](../provenance/papers.lock.json) | The effect-handler calculus behind Unison's abilities: operators, adjustments, and handling as first-class | Unison's exact ability implementation or hashing discipline |

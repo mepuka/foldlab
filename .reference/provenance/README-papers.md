@@ -1,0 +1,60 @@
+# Paper lock regeneration
+
+The [paper lock](papers.lock.json) and the catalog's
+[local paper corpus](../catalog/PAPERS.md) are generated, never hand-edited.
+Both are rendered from three evidence inputs plus the cluster roles declared in
+`papers-lock/build_ledger.py`.
+
+## Procedure
+
+The local PDFs under `.reference/papers/` are gitignored, so regeneration runs
+on a host that holds them.
+
+1. Parse the first two pages of every paper to a transcript. The house
+   extractor is `liteparse`, which the tool register
+   ([TOOLS.md](../../docs/lab-core/TOOLS.md)) carries under *pending
+   admission* for evidence preparation only. This corpus is evidence, not
+   gated work, so that standing is sufficient here; admitting `liteparse`
+   into gated work remains a separate ratification.
+
+   ```
+   liteparse batch-parse .reference/papers <transcripts> \
+     --format json --max-pages 2 --no-ocr --extension pdf --quiet
+   ```
+
+2. Condense each transcript to identity evidence — the arXiv identifier, DOI,
+   or ISBN the document prints, and its opening text:
+
+   ```
+   python papers-lock/condense.py <transcripts> > identity.jsonl
+   ```
+
+3. Record each file's digest and byte length as `files.json`, a JSON array of
+   `{file, bytes, sha256}`.
+
+4. Render both artifacts:
+
+   ```
+   python papers-lock/build_ledger.py \
+     files.json identity.jsonl papers-lock/titles.json \
+     papers.lock.json ../catalog/PAPERS.md
+   ```
+
+The generator refuses to run unless the cluster assignment is an exact
+partition of the corpus: a paper in no cluster, a paper in two, or a cluster
+naming an absent paper is an error, so a file added to `.reference/papers/`
+cannot enter the corpus without being given a declared role.
+
+## What is asserted, and by whom
+
+`titles.json` transcribes the title as printed on each document; it is the one
+hand-maintained input, and a `null` entry records a document whose text layer
+does not decode rather than a title supplied by inference. Identifiers are
+matched out of the document's own text — publisher placeholder DOIs
+(`10.1145/0000000.0000000` and similar) are discarded, not recorded. Where a
+document prints no identifier, the lock carries `null` and the index says
+*unresolved*: the digest is then the whole of that source's identity.
+
+Cluster membership and the **Supports** / **Does not support** lines are
+editorial judgment, declared in the generator and reviewable as code. They are
+role scoping under C6, not claims about the papers' contents.

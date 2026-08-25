@@ -1,0 +1,1215 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-paper-lock",
+  "location": ".reference/provenance",
+  "snapshotDate": "2026-08-24",
+  "note": "Identity of each locally held paper. Titles and identifiers are read off the document itself; a null title or identifier records that the document did not yield one, and is never filled in by inference. Local copies are gitignored; the digest makes each independently re-fetchable and verifiable.",
+  "papers": [
+    {
+      "id": "16146_Tree_Based_Premise_Selec",
+      "path": ".reference/papers/16146_Tree_Based_Premise_Selec.pdf",
+      "title": "Tree-Based Premise Selection for Lean4",
+      "cluster": "proof-automation-ml",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "12b81958bf2f9f10587053689a061d9e93c14e52428eae5a02106602266c85a9",
+        "bytes": 6162227
+      }
+    },
+    {
+      "id": "almeida-2017-jasmin-ccs",
+      "path": ".reference/papers/almeida-2017-jasmin-ccs.pdf",
+      "title": "Jasmin: High-Assurance and High-Speed Cryptography",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3133956.3134078"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7d9766b109ec264ef21b7c457a73ff816c36c456677e566744133564e98201ec",
+        "bytes": 1285686
+      }
+    },
+    {
+      "id": "almeida-2019-sha3-sponge-easycrypt",
+      "path": ".reference/papers/almeida-2019-sha3-sponge-easycrypt.pdf",
+      "title": "Machine-Checked Proofs for Cryptographic Standards: Indifferentiability of Sponge and Secure High-Assurance Implementations of SHA-3",
+      "cluster": "hash-mechanization",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3319535.3363211"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "463214a90569716bc29ca12dd04d4573f5d272d70da4e24b738e82c5a304003b",
+        "bytes": 982454
+      }
+    },
+    {
+      "id": "almeida-2020-last-mile-sp",
+      "path": ".reference/papers/almeida-2020-last-mile-sp.pdf",
+      "title": "The Last Mile: High-Assurance and High-Speed Cryptographic Implementations",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1904.04606v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "f7ca3c64981f94779b1030d0498c72fd4c828cca32dd6fd4d5b3ca3b33016324",
+        "bytes": 785363
+      }
+    },
+    {
+      "id": "almeida-2023-formally-verifying-kyber-ep4",
+      "path": ".reference/papers/almeida-2023-formally-verifying-kyber-ep4.pdf",
+      "title": "Formally verifying Kyber Episode IV: Implementation correctness",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "6beec8cb66f7c021f2376cf3dd28a2dafb8b2ecd2b38f1f3eb05c4f5e6000682",
+        "bytes": 261226
+      }
+    },
+    {
+      "id": "almeida-2024-formally-verifying-kyber-ep5",
+      "path": ".reference/papers/almeida-2024-formally-verifying-kyber-ep5.pdf",
+      "title": "Formally verifying Kyber Episode V: Machine-checked IND-CCA security and correctness of ML-KEM in EasyCrypt",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "a5ed0be5587f26b6849657bd571d364dffd2342972e6520056d79bf5e76fcddc",
+        "bytes": 1478718
+      }
+    },
+    {
+      "id": "apinis-ahman-2025-simple-formalization-alpha-equivalence",
+      "path": ".reference/papers/apinis-ahman-2025-simple-formalization-alpha-equivalence.pdf",
+      "title": "A Simple Formalization of Alpha-Equivalence",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2507.10181v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7a85278a884203f4413e55e0ec35c19d8398d590299981f03242e8d9325b522c",
+        "bytes": 708946
+      }
+    },
+    {
+      "id": "appel-2015-sha256-verification",
+      "path": ".reference/papers/appel-2015-sha256-verification.pdf",
+      "title": "Verification of a Cryptographic Primitive: SHA-256 (second edition)",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "75527a72e57d7752effc8796c81ad703fb8163736a89366ad7c6ba272fbb1959",
+        "bytes": 365873
+      }
+    },
+    {
+      "id": "arranz-olmos-2024-preservation-sct-by-compilation",
+      "path": ".reference/papers/arranz-olmos-2024-preservation-sct-by-compilation.pdf",
+      "title": "Preservation of Speculative Constant-Time by Compilation",
+      "cluster": "side-channel-preservation",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3704880"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "e8e30064e490288257e74bf73413c68cff18296f42986ac6aee8ce682101d380",
+        "bytes": 797015
+      }
+    },
+    {
+      "id": "arranz-olmos-2025-kem-ind-cca-preserving-compilation-jasmin",
+      "path": ".reference/papers/arranz-olmos-2025-kem-ind-cca-preserving-compilation-jasmin.pdf",
+      "title": "KEM-IND-CCA-Preserving Compilation of Jasmin's ML-KEM",
+      "cluster": "side-channel-preservation",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2511.11292v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "400e0a532c4b984308d74d324f7a5a7a78b1bb09a7d7e6c37f321212b514d17f",
+        "bytes": 763355
+      }
+    },
+    {
+      "id": "barthe-2020-high-assurance-crypto-spectre-era",
+      "path": ".reference/papers/barthe-2020-high-assurance-crypto-spectre-era.pdf",
+      "title": "High-Assurance Cryptography in the Spectre Era",
+      "cluster": "side-channel-preservation",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1a5e3911891b667b72730a5223e7f5753ad6d54ff84128deaa89f3d637f5933e",
+        "bytes": 489057
+      }
+    },
+    {
+      "id": "basin-lochbihler-sefidgar-2020-crypthol",
+      "path": ".reference/papers/basin-lochbihler-sefidgar-2020-crypthol.pdf",
+      "title": "CryptHOL: Game-based Proofs in Higher-order Logic",
+      "cluster": "crypto-proof-frameworks",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8e5557a07d91e1b1d3c52b9f8f4b0722586659671b394cb85e1d6bbb188f34f5",
+        "bytes": 959113
+      }
+    },
+    {
+      "id": "beck-2025-vellvm-formalizing-informal-llvm",
+      "path": ".reference/papers/beck-2025-vellvm-formalizing-informal-llvm.pdf",
+      "title": "Vellvm: Formalizing the Informal LLVM (Experience Report)",
+      "cluster": "semantics-carriers",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "e51286573144d32bfe96049356797bd05805f1ec946d0b70309cd41f0504d057",
+        "bytes": 1142160
+      }
+    },
+    {
+      "id": "beringer-2015-openssl-hmac",
+      "path": ".reference/papers/beringer-2015-openssl-hmac.pdf",
+      "title": "Verified correctness and security of OpenSSL HMAC",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "017d4acd67d9db5cb6ef1f00f229436419092798cdbfe948edd96571881e8ece",
+        "bytes": 908618
+      }
+    },
+    {
+      "id": "blaauwbroek-2024-tacticians-web",
+      "path": ".reference/papers/blaauwbroek-2024-tacticians-web.pdf",
+      "title": "The Tactician's Web of Large-Scale Formal Knowledge",
+      "cluster": "proof-automation-ml",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2401.02950v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "97a0a285995ca7f50b7c6f2c8073e220b0355ff6123db9371e8b6be4480bb91b",
+        "bytes": 5895480
+      }
+    },
+    {
+      "id": "blaauwbroek-olsak-geuvers-2024-hashing-modulo-context-sensitive-alpha",
+      "path": ".reference/papers/blaauwbroek-olsak-geuvers-2024-hashing-modulo-context-sensitive-alpha.pdf",
+      "title": "Hashing Modulo Context-Sensitive Alpha-Equivalence",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2401.02948v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "2538ba5cf57e5592bdef058beb42932f22bb20ba6b379f9e28b94ce60e70d3db",
+        "bytes": 6229621
+      }
+    },
+    {
+      "id": "bloyet-2019-scott-graphs-as-rooted-trees",
+      "path": ".reference/papers/bloyet-2019-scott-graphs-as-rooted-trees.pdf",
+      "title": "Scott: A method for representing graphs as rooted trees for graph canonization",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1007/978-3-030-36687-2_48"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "dab0960cd30ba3cba1de40e27c030b5e31f534a1cfbcc04d56426478ea9fff72",
+        "bytes": 605017
+      }
+    },
+    {
+      "id": "bloyet-2020-scott-correctness-complexity",
+      "path": ".reference/papers/bloyet-2020-scott-correctness-complexity.pdf",
+      "title": "Canonical Forms for General Graphs Using Rooted Trees: Correctness and Complexity Study of the SCOTT Algorithm",
+      "cluster": "canonical-hashing",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "092a2b06cac29bd87ac4657b811b50bc308e27e76d1277fbc03f537118d396cb",
+        "bytes": 761467
+      }
+    },
+    {
+      "id": "boehme-2011-z3-bitvector-proof-reconstruction",
+      "path": ".reference/papers/boehme-2011-z3-bitvector-proof-reconstruction.pdf",
+      "title": "Reconstruction of Z3's Bit-Vector Proofs in HOL4 and Isabelle/HOL",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "a8e7e6dc8ddacbc783ce40af320576f0a6c1cf843b8212b8087d6f76c41c68a5",
+        "bytes": 221191
+      }
+    },
+    {
+      "id": "boespflug-2011-full-reduction-full-throttle",
+      "path": ".reference/papers/boespflug-2011-full-reduction-full-throttle.pdf",
+      "title": "Full reduction at full throttle",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8c6a65520b8235ea476a9991ec8469d95b5cd00e899ab4f021e7eaa1b1aed3fa",
+        "bytes": 148013
+      }
+    },
+    {
+      "id": "bond-2017-vale-verifying-crypto-assembly",
+      "path": ".reference/papers/bond-2017-vale-verifying-crypto-assembly.pdf",
+      "title": "Vale: Verifying High-Performance Cryptographic Assembly Code",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "68100387a2ffdca3e1651caa6aacab2918fd0dbce8fafd621f7b8da475b39f67",
+        "bytes": 708995
+      }
+    },
+    {
+      "id": "borrione-toma-2003-sha-formalization-acl2",
+      "path": ".reference/papers/borrione-toma-2003-sha-formalization-acl2.pdf",
+      "title": null,
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "2354e76fd272d85604960175989d9f004362a9f765b1e6c050e206bfd266d004",
+        "bytes": 106330
+      }
+    },
+    {
+      "id": "boston-2021-verified-cryptographic-code-for-everybody",
+      "path": ".reference/papers/boston-2021-verified-cryptographic-code-for-everybody.pdf",
+      "title": "Verified Cryptographic Code for Everybody",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1007/978-3-030-81685-8_31"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "d30b37a8eddcad68fc2c955f69c9d45f89192080592aa1b08809d73838e2ee4e",
+        "bytes": 662498
+      }
+    },
+    {
+      "id": "boving-2025-verified-bit-blasting-bv-decide",
+      "path": ".reference/papers/boving-2025-verified-bit-blasting-bv-decide.pdf",
+      "title": "Interactive Bitvector Reasoning using Verified Bit-Blasting",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3763167"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "a89fa62e1ed96a144d5e1c8dfc7d2fe15be1be05d2b0407b886b8b025bf0e436",
+        "bytes": 2998816
+      }
+    },
+    {
+      "id": "braibant-jourdan-monniaux-2014-hash-consed-coq",
+      "path": ".reference/papers/braibant-jourdan-monniaux-2014-hash-consed-coq.pdf",
+      "title": "Implementing and reasoning about hash-consed data structures in Coq",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1311.2959v4"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1d42a91a6f12371c0697157c923ec20520189cc8b97c6b09118ba8237f449f77",
+        "bytes": 610106
+      }
+    },
+    {
+      "id": "carneiro-2024-lean4lean",
+      "path": ".reference/papers/carneiro-2024-lean4lean.pdf",
+      "title": "Lean4Lean: Verifying a Typechecker for Lean, in Lean",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2403.14064v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "6c252ceb01b82a5fa93b91a79ef3e48217afc948197a3da8ca9f1f121d73e2ed",
+        "bytes": 699173
+      }
+    },
+    {
+      "id": "chappe-2023-choice-trees",
+      "path": ".reference/papers/chappe-2023-choice-trees.pdf",
+      "title": "Choice Trees: Representing Nondeterministic, Recursive, and Impure Programs in Coq",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2211.06863v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "87cae08d3a3c0156a38536ebefbf7bc179895a8b67759c277d474b71fad1d3a5",
+        "bytes": 863779
+      }
+    },
+    {
+      "id": "cohen-johnsonfreyd-2024-core-why3-coq",
+      "path": ".reference/papers/cohen-johnsonfreyd-2024-core-why3-coq.pdf",
+      "title": "A Formalization of Core Why3 in Coq",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3632902"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "79cb0553de36380c39140f7315df0d130df61be02cf275c9825c49514f23ce76",
+        "bytes": 650212
+      }
+    },
+    {
+      "id": "courant-leroy-2026-lazy-concurrent-convertibility-checker",
+      "path": ".reference/papers/courant-leroy-2026-lazy-concurrent-convertibility-checker.pdf",
+      "title": "A Lazy, Concurrent Convertibility Checker",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2510.18418v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "6384b268fe53f3be3b069edab81dd91c90828ab9889484ce95676bae396eb18d",
+        "bytes": 388516
+      }
+    },
+    {
+      "id": "demoura-ullrich-2021-lean4",
+      "path": ".reference/papers/demoura-ullrich-2021-lean4.pdf",
+      "title": "The Lean 4 Theorem Prover and Programming Language",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1007/978-3-030-79876-5_37"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "e1fc635e3e6e84572240316d34275592cca99a871b45005456c4ac4690764f9b",
+        "bytes": 306659
+      }
+    },
+    {
+      "id": "dorsch-2017-coalgebraic-partition-refinement",
+      "path": ".reference/papers/dorsch-2017-coalgebraic-partition-refinement.pdf",
+      "title": "Efficient Coalgebraic Partition Refinement",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.4230/LIPIcs.CONCUR.2017.28"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "91f3a010512e837a818a44c9385877a0d52482115b76dff1a7ba8e1348b8080d",
+        "bytes": 740258
+      }
+    },
+    {
+      "id": "doussot-2024-lean4-sha3",
+      "path": ".reference/papers/doussot-2024-lean4-sha3.pdf",
+      "title": "Cryptography Experiments In Lean 4: SHA-3 Implementation",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "64118c081b480dfe04658466b1d3af456f1b20fc9e5ea2580d075fdce124796d",
+        "bytes": 177966
+      }
+    },
+    {
+      "id": "dunfield-krishnaswami-2013-bidirectional",
+      "path": ".reference/papers/dunfield-krishnaswami-2013-bidirectional.pdf",
+      "title": "Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism",
+      "cluster": "type-effect-lineage",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1306.6032v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0e75ac60ee631775d663189bf5fc4811275e84c62178f826879feed4555ad941",
+        "bytes": 1023501
+      }
+    },
+    {
+      "id": "ekici-2017-smtcoq",
+      "path": ".reference/papers/ekici-2017-smtcoq.pdf",
+      "title": "SMTCoq: A plug-in for integrating SMT solvers into Coq",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7054a806218d3e0b4cb0a9af24dbc9b53ae01e7472e778223673c61b3fcdd02a",
+        "bytes": 236569
+      }
+    },
+    {
+      "id": "erbsen-2019-fiat-crypto",
+      "path": ".reference/papers/erbsen-2019-fiat-crypto.pdf",
+      "title": "Simple High-Level Code For Cryptographic Arithmetic: With Proofs, Without Compromises",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "bbb0f6fcd768b8208392bfa27d34d40e24b16a4715659783a1f78f11ceaff75e",
+        "bytes": 415676
+      }
+    },
+    {
+      "id": "fadaei-sammler-2025-hitrees",
+      "path": ".reference/papers/fadaei-sammler-2025-hitrees.pdf",
+      "title": "HITrees: Higher-Order Interaction Trees",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2510.14558v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "86389e257dc4b0bd24ee838e40496f86bf4b65c5c71112db0664c6188cb3afc7",
+        "bytes": 665188
+      }
+    },
+    {
+      "id": "foster-hur-woodcock-2021-interaction-trees-isabelle",
+      "path": ".reference/papers/foster-hur-woodcock-2021-interaction-trees-isabelle.pdf",
+      "title": "Formally Verified Simulations of State-Rich Processes using Interaction Trees in Isabelle/HOL",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2105.05133v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7ea89f9ef194aace51f58a6c4684768b4b2e5d90eb29b367af84ccb6da08997d",
+        "bytes": 759520
+      }
+    },
+    {
+      "id": "fromherz-2019-verified-efficient-embedding-verifiable-assembly",
+      "path": ".reference/papers/fromherz-2019-verified-efficient-embedding-verifiable-assembly.pdf",
+      "title": "A Verified, Efficient Embedding of a Verifiable Assembly Language",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3290376"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "9fa061bb98c5134610e43f0fcb16381772ca20f6bd21f246c3a304c23431e2d1",
+        "bytes": 530746
+      }
+    },
+    {
+      "id": "frumin-timany-birkedal-2024-guarded-interaction-trees",
+      "path": ".reference/papers/frumin-timany-birkedal-2024-guarded-interaction-trees.pdf",
+      "title": "Modular Denotational Semantics for Effects with Guarded Interaction Trees",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2307.08514v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "40d999b3e15d69b89037aac819d1b088daf7f806ea3ba26fbc32c82bb508325a",
+        "bytes": 901722
+      }
+    },
+    {
+      "id": "gonthier-2005-four-colour-theorem",
+      "path": ".reference/papers/gonthier-2005-four-colour-theorem.pdf",
+      "title": "A computer-checked proof of the Four Colour Theorem",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "4019e3bce2525a36e9502e9b94f901f9d50e353bcb5f6c0107c75c33bb395fd3",
+        "bytes": 607499
+      }
+    },
+    {
+      "id": "gonthier-mahboubi-2010-small-scale-reflection",
+      "path": ".reference/papers/gonthier-mahboubi-2010-small-scale-reflection.pdf",
+      "title": "An introduction to small scale reflection in Coq",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "83cc7c36a24cefa567c3b85cb59f2a839cfaad685ab0e75d5848562b82b36b51",
+        "bytes": 556434
+      }
+    },
+    {
+      "id": "grabmayer-rochel-2014-maximal-sharing-letrec",
+      "path": ".reference/papers/grabmayer-rochel-2014-maximal-sharing-letrec.pdf",
+      "title": "Maximal Sharing in the Lambda Calculus with letrec",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1401.1460v5"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "a867452b21b8573031990ace3565143927d09666a7523293896399a06ba7273a",
+        "bytes": 1170062
+      }
+    },
+    {
+      "id": "gregoire-leroy-2002-compiled-strong-reduction",
+      "path": ".reference/papers/gregoire-leroy-2002-compiled-strong-reduction.pdf",
+      "title": "A Compiled Implementation of Strong Reduction",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0d799e758d73d3a5138b08fb259d0b377e8aa340d62c792c0bdb44ee6bd65bcf",
+        "bytes": 124874
+      }
+    },
+    {
+      "id": "gregoire-mahboubi-2005-ring-done-right",
+      "path": ".reference/papers/gregoire-mahboubi-2005-ring-done-right.pdf",
+      "title": "Proving Equalities in a Commutative Ring Done Right in Coq",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1815552890c02cb9ca4a80b05c15978b03ab00ade863295b5ff3619b289c1267",
+        "bytes": 176068
+      }
+    },
+    {
+      "id": "gross-2021-performance-engineering-proof-systems",
+      "path": ".reference/papers/gross-2021-performance-engineering-proof-systems.pdf",
+      "title": "Performance Engineering of Proof-Based Software Systems at Scale",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1009b9904182adf793fdd606f95ab781b1771c7dbc9a83c0696c7736f00305ce",
+        "bytes": 5139941
+      }
+    },
+    {
+      "id": "hacl-star-2017-verified-modern-crypto-library",
+      "path": ".reference/papers/hacl-star-2017-verified-modern-crypto-library.pdf",
+      "title": "HACL*: A Verified Modern Cryptographic Library",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "2c8e0345089d700452b5edfde90af5143fb19633621821916d7ebf0218b47639",
+        "bytes": 977616
+      }
+    },
+    {
+      "id": "haselwarter-2023-last-yard",
+      "path": ".reference/papers/haselwarter-2023-last-yard.pdf",
+      "title": "The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "ceac115253dde925838e674e154959124a9b8c4351ecfce8b3c28dd0c9ae0759",
+        "bytes": 668400
+      }
+    },
+    {
+      "id": "hawblitzel-2014-ironclad-apps",
+      "path": ".reference/papers/hawblitzel-2014-ironclad-apps.pdf",
+      "title": "Ironclad Apps: End-to-End Security via Automated Full-System Verification",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8cae14c26bc82b73b15ae6f7ad7636787f531918ef98ee3c28399ff13cff57f2",
+        "bytes": 544858
+      }
+    },
+    {
+      "id": "helbling-2020-directed-graph-hashing",
+      "path": ".reference/papers/helbling-2020-directed-graph-hashing.pdf",
+      "title": "Directed Graph Hashing",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2002.06653v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1a4f2e4bc8ea42c6d044e53978ee18b81b91c61771a47c222d21c54344272a2b",
+        "bytes": 806136
+      }
+    },
+    {
+      "id": "ho-2023-modularity-code-specialization-zero-cost-abstractions",
+      "path": ".reference/papers/ho-2023-modularity-code-specialization-zero-cost-abstractions.pdf",
+      "title": "Modularity, Code Specialization, and Zero-Cost Abstractions for Program Verification",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2102.01644v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "473dec09755c4b5d0d046d882bffb458e8af6c75fbca94c2329e54c84f72b424",
+        "bytes": 462607
+      }
+    },
+    {
+      "id": "jourdan-pottier-leroy-2012-validating-lr1-parsers",
+      "path": ".reference/papers/jourdan-pottier-leroy-2012-validating-lr1-parsers.pdf",
+      "title": "Validating LR(1) Parsers",
+      "cluster": "translation-validation",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "12c960e08f7b52357ec2cbf107dba5357e3bf192a165ec20492a9eb7eeda2b11",
+        "bytes": 525789
+      }
+    },
+    {
+      "id": "kan-ertel-2026-interaction-tree-riscv",
+      "path": ".reference/papers/kan-ertel-2026-interaction-tree-riscv.pdf",
+      "title": "Interaction Tree Semantics for RISC-V: Bridging Compiler and Hardware Verification",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2605.04933v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3136b2b383615ba8686551e7c099937fba3246cb8da6400eb4210e61f5973b9f",
+        "bytes": 727885
+      }
+    },
+    {
+      "id": "klaus-2026-rust-to-lean-pipeline",
+      "path": ".reference/papers/klaus-2026-rust-to-lean-pipeline.pdf",
+      "title": "A Rust-to-Lean Verification Pipeline with AI Provers: An Experience Report",
+      "cluster": "proof-automation-ml",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2605.30106v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7edf74067d3b218635c2d6beda81bdc571d66fb2641432030692ee2f4eb1a4bc",
+        "bytes": 676168
+      }
+    },
+    {
+      "id": "kobeissi-2026-verification-theatre",
+      "path": ".reference/papers/kobeissi-2026-verification-theatre.pdf",
+      "title": "Verification Theatre: False Assurance in Formally Verified Cryptographic Libraries",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "acd25e26fe0f65a646720289be942e1cc557c368500c468c1dce32e20615811b",
+        "bytes": 267549
+      }
+    },
+    {
+      "id": "koh-2019-from-c-to-interaction-trees",
+      "path": ".reference/papers/koh-2019-from-c-to-interaction-trees.pdf",
+      "title": "From C to Interaction Trees: Specifying, Verifying, and Testing a Networked Server",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1811.11911v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8c7d610f72255df0c60ad718cf14b958e8ae88b5ea3d6f286aa4272e5f4b652c",
+        "bytes": 803799
+      }
+    },
+    {
+      "id": "lai-2023-cryptoline-block-function-lec",
+      "path": ".reference/papers/lai-2023-cryptoline-block-function-lec.pdf",
+      "title": "Automatic Verification of Cryptographic Block Function Implementations with Logical Equivalence Checking",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3abfda5479a7ed7b754bef6eae310d8d63736b7a1a51aea615413db15b7266bf",
+        "bytes": 564421
+      }
+    },
+    {
+      "id": "lasser-casinghino-fisher-roux-2019-verified-ll1-parser-generator",
+      "path": ".reference/papers/lasser-casinghino-fisher-roux-2019-verified-ll1-parser-generator.pdf",
+      "title": "A Verified LL(1) Parser Generator",
+      "cluster": "translation-validation",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.4230/LIPIcs.ITP.2019.24"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0e80eca0a7835ccbcc488ec0176be4b692f49d7398992ecda8012e0ffe7c4c58",
+        "bytes": 523685
+      }
+    },
+    {
+      "id": "leissa-2024-mimir-ir",
+      "path": ".reference/papers/leissa-2024-mimir-ir.pdf",
+      "title": "MimIR: An Extensible and Type-Safe Intermediate Representation for the DSL Age",
+      "cluster": "translation-validation",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2411.07443v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "89abaa4b949554e69109f674a377e938640e0a4ab65346bdbec08d4128c048ef",
+        "bytes": 981844
+      }
+    },
+    {
+      "id": "lim-nagarakatte-2019-casm-verify",
+      "path": ".reference/papers/lim-nagarakatte-2019-casm-verify.pdf",
+      "title": "Automatic Equivalence Checking for Assembly Implementations of Cryptography Libraries",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.5281/zenodo.2229779"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "f3716c148c3d033f37504335853666f8bed757ac6031466fea62c8a46071a903",
+        "bytes": 390709
+      }
+    },
+    {
+      "id": "lindley-mcbride-mclaughlin-2016-frank",
+      "path": ".reference/papers/lindley-mcbride-mclaughlin-2016-frank.pdf",
+      "title": "Do Be Do Be Do",
+      "cluster": "type-effect-lineage",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1611.09259v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "9cc06103fd865a49315baf9110a2b1f6285a55fbec40bee8f1b174db0b2077cf",
+        "bytes": 467552
+      }
+    },
+    {
+      "id": "lochbihler-2016-probabilistic-functions-crypto-oracles",
+      "path": ".reference/papers/lochbihler-2016-probabilistic-functions-crypto-oracles.pdf",
+      "title": "Probabilistic functions and cryptographic oracles in higher order logic",
+      "cluster": "crypto-proof-frameworks",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3c7a6f3baf876493def81f0531a12cbd05e3118dac4f4ada2d81e533c86ffc1a",
+        "bytes": 491042
+      }
+    },
+    {
+      "id": "magaud-2003-changing-data-representation",
+      "path": ".reference/papers/magaud-2003-changing-data-representation.pdf",
+      "title": "Changing Data Representation within the Coq System",
+      "cluster": "proof-assistant-internals",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "fbc39bcc2fcdfda6584faf814d9d1ee0e66442e408ad77bbfc9955a77eaaf962",
+        "bytes": 218848
+      }
+    },
+    {
+      "id": "maziarz-2021-hashing-modulo-alpha-equivalence",
+      "path": ".reference/papers/maziarz-2021-hashing-modulo-alpha-equivalence.pdf",
+      "title": "Hashing Modulo Alpha-Equivalence",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2105.02856v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "37cda15bd6ff8605da609667e1eb54d8bc407455d5a19ec509c3403c7f51008d",
+        "bytes": 1064287
+      }
+    },
+    {
+      "id": "mouha-celi-2023-sha3-vulnerability",
+      "path": ".reference/papers/mouha-celi-2023-sha3-vulnerability.pdf",
+      "title": "A Vulnerability in Implementations of SHA-3, SHAKE, EdDSA, and Other NIST-Approved Algorithms",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "e5ce94c802fc96b96a37593074295283819a7abf859a04a1c1cbfcdb566dcdb1",
+        "bytes": 581106
+      }
+    },
+    {
+      "id": "necula-2000-translation-validation",
+      "path": ".reference/papers/necula-2000-translation-validation.pdf",
+      "title": "Translation Validation for an Optimizing Compiler",
+      "cluster": "translation-validation",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "335d4a06577b223194b91373635d3b6fa95e1786e0f648a39c3e4583bbe31430",
+        "bytes": 237034
+      }
+    },
+    {
+      "id": "niemetz-2019-bit-width-independent-proofs",
+      "path": ".reference/papers/niemetz-2019-bit-width-independent-proofs.pdf",
+      "title": "Towards Bit-Width-Independent Proofs in SMT Solvers",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1905.10434v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8beb0f2701513011f19412344fc8a79671b02a2de7f39488eebd87b0fefbab6c",
+        "bytes": 305167
+      }
+    },
+    {
+      "id": "nist-2015-fips202-sha3-standard",
+      "path": ".reference/papers/nist-2015-fips202-sha3-standard.pdf",
+      "title": "SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions (FIPS PUB 202)",
+      "cluster": "normative-standard",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.6028/NIST.FIPS.202"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+        "bytes": 1459683
+      }
+    },
+    {
+      "id": "polubelova-2020-haclxn-verified-generic-simd-crypto",
+      "path": ".reference/papers/polubelova-2020-haclxn-verified-generic-simd-crypto.pdf",
+      "title": "HACLxN: Verified Generic SIMD Crypto (for all your favorite platforms)",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "cffc679db7f9528b1788cef64553517c3b522838f478b0bcb5174d29d66d559e",
+        "bytes": 1017428
+      }
+    },
+    {
+      "id": "protzenko-2017-verified-lowlevel-programming-fstar",
+      "path": ".reference/papers/protzenko-2017-verified-lowlevel-programming-fstar.pdf",
+      "title": "Verified Low-Level Programming Embedded in F*",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1703.00053v6"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0300c35ca6eabd9158e504e9da9ba92acf84f8b9ea019113c101d533e97fd3c9",
+        "bytes": 1493370
+      }
+    },
+    {
+      "id": "protzenko-2019-verified-crypto-web-applications-webassembly",
+      "path": ".reference/papers/protzenko-2019-verified-crypto-web-applications-webassembly.pdf",
+      "title": "Formally Verified Cryptographic Web Applications in WebAssembly",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "170cfea65d9059ff46df7cfd58db46d1dccc7cca8eae3f5581d64a403759c7aa",
+        "bytes": 727918
+      }
+    },
+    {
+      "id": "protzenko-2020-evercrypt",
+      "path": ".reference/papers/protzenko-2020-evercrypt.pdf",
+      "title": "EverCrypt: A Fast, Verified, Cross-Platform Cryptographic Provider",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1d2fc6715fbf5cc4c5472e9260659de1891f887df611da853d65335a599798ea",
+        "bytes": 929292
+      }
+    },
+    {
+      "id": "rute-2024-graph2tac",
+      "path": ".reference/papers/rute-2024-graph2tac.pdf",
+      "title": "Graph2Tac: Online Representation Learning of Formal Math Concepts",
+      "cluster": "proof-automation-ml",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2401.02949v3"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3cc5312d60edf083d268a97963f2b34f934cb0a1a1acd197ef97877b66691ea9",
+        "bytes": 7967074
+      }
+    },
+    {
+      "id": "sakaguchi-2022-reflexive-tactics-algebra",
+      "path": ".reference/papers/sakaguchi-2022-reflexive-tactics-algebra.pdf",
+      "title": "Reflexive tactics for algebra, revisited",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2202.04330v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3f7282db94befe8b0df2f6bf7e15a06b205d86c6ec570befbfde35e30762217b",
+        "bytes": 735755
+      }
+    },
+    {
+      "id": "schneider-2025-slotted-egraphs",
+      "path": ".reference/papers/schneider-2025-slotted-egraphs.pdf",
+      "title": "Slotted E-Graphs: First-Class Support for (Bound) Variables in E-Graphs",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3729326"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "b7f2563e39b5dbd60d466868576efaa3445931aa069e590ee5c4625417b22775",
+        "bytes": 929784
+      }
+    },
+    {
+      "id": "shivakumar-2022-spectre-declassified",
+      "path": ".reference/papers/shivakumar-2022-spectre-declassified.pdf",
+      "title": "Spectre Declassified: Reading from the Right Place at the Wrong Time",
+      "cluster": "side-channel-preservation",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0308ba9956fdf6a630c983bd4e850fefa600e63750c1ff9f33e8b21eec9a9d0f",
+        "bytes": 700990
+      }
+    },
+    {
+      "id": "shivakumar-2022-typing-against-spectre-v1",
+      "path": ".reference/papers/shivakumar-2022-typing-against-spectre-v1.pdf",
+      "title": "Typing High-Speed Cryptography against Spectre v1",
+      "cluster": "side-channel-preservation",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "527b6e6120d550b5aeeeebd6549cf2d90ad44a02002e1aa6a22825b4bae9a0cc",
+        "bytes": 776387
+      }
+    },
+    {
+      "id": "shivakumar-2024-spectre-rsb",
+      "path": ".reference/papers/shivakumar-2024-spectre-rsb.pdf",
+      "title": "Protecting Cryptographic Code Against Spectre-RSB (and, in Fact, All Known Spectre Variants)",
+      "cluster": "side-channel-preservation",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.5281/zenodo.14773254"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "64cb76f4fa0ebaa42c6165dafb5c4a6d09ac34e89bad0db042a4149c8e852ea6",
+        "bytes": 226116
+      }
+    },
+    {
+      "id": "smith-2011-axe-dissertation-FRONTMATTER-ONLY",
+      "path": ".reference/papers/smith-2011-axe-dissertation-FRONTMATTER-ONLY.pdf",
+      "title": "AXE: An Automated Formal Equivalence Checking Tool for Programs (front matter only)",
+      "cluster": "crypto-toolchains",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "a67276820853ddd839ba614133f1acd7330ece13f1082315d40219bed10009de",
+        "bytes": 905566
+      }
+    },
+    {
+      "id": "szeider-2026-lrat-catcher-lean4",
+      "path": ".reference/papers/szeider-2026-lrat-catcher-lean4.pdf",
+      "title": "LRAT-Catcher: Importing SAT Solver Certificates into Lean 4 by Reflection",
+      "cluster": "proof-assistant-internals",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2607.00815v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "3838fff9f3a6248170859a7ec696648933cd61dce97ade713662853b2ede8e0f",
+        "bytes": 637351
+      }
+    },
+    {
+      "id": "toma-borrione-2004-sha1-acl2-slides",
+      "path": ".reference/papers/toma-borrione-2004-sha1-acl2-slides.pdf",
+      "title": "Verification of a cryptographic circuit: SHA-1 using ACL2 (ACL2 Workshop 2004 slides)",
+      "cluster": "hash-mechanization",
+      "identifier": null,
+      "content": {
+        "algorithm": "sha256",
+        "digest": "c1243d552cd76ee0cba274a3ce9d22405e1dff52121ca1050c4460603ae59c14",
+        "bytes": 334551
+      }
+    },
+    {
+      "id": "tropin-2025-highly-interactive-testing",
+      "path": ".reference/papers/tropin-2025-highly-interactive-testing.pdf",
+      "title": "Highly Interactive Testing for Uninterrupted Development Flow",
+      "cluster": "proof-automation-ml",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2508.02176v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "b12e04c917f7e58895057fa83280e31fb38bd70dc0ae1d50c04cb8f20b040bc4",
+        "bytes": 527916
+      }
+    },
+    {
+      "id": "tsai-2025-jazzline-cryptoline-jasmin",
+      "path": ".reference/papers/tsai-2025-jazzline-cryptoline-jasmin.pdf",
+      "title": "Jazzline: Composable CryptoLine Functional Correctness Proofs for Jasmin Programs",
+      "cluster": "crypto-toolchains",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3719027.3744814"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "eb97cfc8081a35d9a5bd7712da84b612ab913800ae252226d2c37c55558e99ba",
+        "bytes": 1349378
+      }
+    },
+    {
+      "id": "xia-2020-interaction-trees",
+      "path": ".reference/papers/xia-2020-interaction-trees.pdf",
+      "title": "Interaction Trees: Representing Recursive and Impure Programs in Coq (preprint)",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1906.00046v2"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "943dc278978b9d85f8957e9044ec2f571f315b43e98d58762dad3e08dca4934c",
+        "bytes": 554944
+      }
+    },
+    {
+      "id": "xia-2020-interaction-trees-popl-published",
+      "path": ".reference/papers/xia-2020-interaction-trees-popl-published.pdf",
+      "title": "Interaction Trees: Representing Recursive and Impure Programs in Coq (POPL published version)",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3371119"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "4cc833d5d09f520ebc6dc7ee92c3409b492ae3f417bc879be7c6e3c3b87f9f6a",
+        "bytes": 517250
+      }
+    },
+    {
+      "id": "zakowski-2020-gpaco-weak-bisimulation",
+      "path": ".reference/papers/zakowski-2020-gpaco-weak-bisimulation.pdf",
+      "title": "An Equational Theory for Weak Bisimulation via Generalized Parameterized Coinduction",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2001.02659v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "8c00b92dd09ec077ee60f3e8ff1c1df93965edb2665c251e72f5e371d557f22a",
+        "bytes": 317515
+      }
+    },
+    {
+      "id": "zakowski-2021-llvm-ir-semantics",
+      "path": ".reference/papers/zakowski-2021-llvm-ir-semantics.pdf",
+      "title": "Modular, compositional, and executable formal semantics for LLVM IR",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3473572"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "592aa955d443d6aca46933735883d8092a6700ac48742fd85770f797156d9009",
+        "bytes": 614407
+      }
+    },
+    {
+      "id": "zhang-2021-http-kv-server-itrees-vst",
+      "path": ".reference/papers/zhang-2021-http-kv-server-itrees-vst.pdf",
+      "title": "Verifying an HTTP Key-Value Server with Interaction Trees and VST",
+      "cluster": "semantics-carriers",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.4230/LIPIcs.ITP.2021.32"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "f159b5ea9b2cbde408d7fd37fbdde308a27d999431ecd4dd944d2c9a7e72b04c",
+        "bytes": 770230
+      }
+    },
+    {
+      "id": "zucker-2026-lifting-egraphs",
+      "path": ".reference/papers/zucker-2026-lifting-egraphs.pdf",
+      "title": "Lifting E-Graphs: A Function Isn't a Constant",
+      "cluster": "canonical-hashing",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2606.22734v1"
+      },
+      "content": {
+        "algorithm": "sha256",
+        "digest": "c35b501ba33da8766a483c2b9ce8ff01f777735982ad521c688d33d369c3a32f",
+        "bytes": 546542
+      }
+    }
+  ]
+}
