@@ -782,11 +782,40 @@ private theorem absorbP_bridge (P : List UInt8) :
   rw [hn]
   exact hfold.symm
 
+/-- The suffix-carrying absorb fold is the indexed one: after `n` steps the state is the
+`n`-fold indexed absorb and the carried suffix is `P.drop (n * rateBytes)`. This is what makes
+`Sha3.Impl.absorbAll`'s single pass admissible against every obligation stated on the indexed
+form — `absorbP_bridge` and below are untouched by the implementation's change of shape. -/
+private theorem absorbStep_fold (P : List UInt8) (n : Nat) :
+    (List.range n).foldl Sha3.Impl.absorbStep
+        ((Vector.replicate 25 0 : Sha3.Impl.St), P) =
+      ((List.range n).foldl
+        (fun s i => Sha3.Impl.absorbBlock s
+          ((P.drop (i * Sha3.Impl.rateBytes)).take Sha3.Impl.rateBytes))
+        (Vector.replicate 25 0),
+       P.drop (n * Sha3.Impl.rateBytes)) := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+      simp only [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, ih,
+        Sha3.Impl.absorbStep, List.drop_drop, Nat.succ_mul]
+
+/-- `absorbAll` computes the indexed absorb fold. -/
+theorem absorbAll_eq (P : List UInt8) :
+    Sha3.Impl.absorbAll P =
+      (List.range (P.length / Sha3.Impl.rateBytes)).foldl
+        (fun s i => Sha3.Impl.absorbBlock s
+          ((P.drop (i * Sha3.Impl.rateBytes)).take Sha3.Impl.rateBytes))
+        (Vector.replicate 25 0) := by
+  unfold Sha3.Impl.absorbAll
+  rw [absorbStep_fold]
+
 /-- B2: the implementation computes the frozen byte-level SHA3-512 specification. -/
 theorem sha3_512_bridge (msg : List UInt8) :
     Sha3.Impl.sha3_512 msg = Sha3.Spec.sha3_512_bytes msg := by
   unfold Sha3.Impl.sha3_512 Sha3.Spec.sha3_512_bytes Sha3.Spec.SHA3_512
     Sha3.Spec.keccakC
+  rw [absorbAll_eq]
   rw [squeeze_bridge, Sha3.Structural.sponge_576_512_eq]
   rw [List.take_take]
   simp only [Nat.min_eq_left (by omega : 512 ≤ 576)]
@@ -866,6 +895,7 @@ theorem keccak512_prefips_bridge (msg : List UInt8) :
       Sha3.Spec.bytesOfBits
         (Sha3.Spec.keccakC 1024 (Sha3.Spec.bitsOfBytes msg) 512) := by
   unfold Sha3.Impl.keccak512_prefips Sha3.Spec.keccakC
+  simp only [absorbAll_eq]
   rw [squeeze_bridge, Sha3.Structural.sponge_576_512_eq]
   rw [List.take_take]
   simp only [Nat.min_eq_left (by omega : 512 ≤ 576)]
@@ -929,6 +959,8 @@ theorem sha3_ne_prefips_spec :
 #print axioms absorbIndices_bridge
 #print axioms bitsOfState_abs_zero
 #print axioms absorbP_bridge
+#print axioms absorbStep_fold
+#print axioms absorbAll_eq
 #print axioms sha3_512_bridge
 #print axioms bitsOfByte_81
 #print axioms bitsOfByte_01
