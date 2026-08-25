@@ -19,5 +19,11 @@ jobs:
         with:
           auto-config: false
           lake-package-directory: formal/fips202
+      # lean-action installs elan but exports a POSIX-style PATH entry that Windows
+      # task shells cannot resolve; re-export it in Windows form for later steps.
+      - name: Put elan on PATH for Windows shells
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.elan\bin"
       - uses: jdx/mise-action@v2
       - run: mise run check
