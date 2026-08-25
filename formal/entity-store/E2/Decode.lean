@@ -188,7 +188,7 @@ def decV : Nat → List UInt8 → Option (Value × List UInt8)
       | some (a, r') => some (.vaddr a, r')
       | none => none
     else none
-  termination_by k l => (k, 0)
+  termination_by k _l => (k, 0)
 
 def decVs : Nat → Nat → List UInt8 → Option (ValueList × List UInt8)
   | _, 0, r => some (.nil, r)
@@ -199,7 +199,7 @@ def decVs : Nat → Nat → List UInt8 → Option (ValueList × List UInt8)
       | some (vs, r2) => some (.cons v vs, r2)
       | none => none
     | none => none
-  termination_by k n l => (k, n + 1)
+  termination_by k n _l => (k, n + 1)
 
 def decVFs : Nat → Nat → List UInt8 → Option (ValueFields × List UInt8)
   | _, 0, r => some (.nil, r)
@@ -213,7 +213,7 @@ def decVFs : Nat → Nat → List UInt8 → Option (ValueFields × List UInt8)
         | none => none
       | none => none
     | none => none
-  termination_by k n l => (k, n + 1)
+  termination_by k n _l => (k, n + 1)
 end
 
 /-! ## Fueled decoders — Check family -/
@@ -244,7 +244,7 @@ def decC : Nat → List UInt8 → Option (Check × List UInt8)
         | none => none
       | none => none
     else none
-  termination_by k l => (k, 0)
+  termination_by k _l => (k, 0)
 
 def decCs : Nat → Nat → List UInt8 → Option (CheckList × List UInt8)
   | _, 0, r => some (.nil, r)
@@ -255,7 +255,7 @@ def decCs : Nat → Nat → List UInt8 → Option (CheckList × List UInt8)
       | some (cs, r2) => some (.cons c cs, r2)
       | none => none
     | none => none
-  termination_by k n l => (k, n + 1)
+  termination_by k n _l => (k, n + 1)
 end
 
 /-! ## Fueled decoders — Schema family -/
@@ -345,7 +345,7 @@ def decS : Nat → List UInt8 → Option (SchemaCore × List UInt8)
       | some (cod, r') => some (.record cod, r')
       | none => none
     else none
-  termination_by k l => (k, 0)
+  termination_by k _l => (k, 0)
 
 def decFs : Nat → Nat → List UInt8 → Option (FieldList × List UInt8)
   | _, 0, r => some (.nil, r)
@@ -371,7 +371,7 @@ def decFs : Nat → Nat → List UInt8 → Option (FieldList × List UInt8)
           | none => none
         else none
     | none => none
-  termination_by k n l => (k, n + 1)
+  termination_by k n _l => (k, n + 1)
 
 def decSs : Nat → Nat → List UInt8 → Option (SchemaList × List UInt8)
   | _, 0, r => some (.nil, r)
@@ -382,7 +382,7 @@ def decSs : Nat → Nat → List UInt8 → Option (SchemaList × List UInt8)
       | some (ss, r2) => some (.cons s ss, r2)
       | none => none
     | none => none
-  termination_by k n l => (k, n + 1)
+  termination_by k n _l => (k, n + 1)
 end
 
 /-! ## Parse-depth sizes (fuel bounds; internal to the round-trip proofs) -/
