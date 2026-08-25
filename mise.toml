@@ -14,6 +14,7 @@ description = "Regenerate the golden-vector corpus and transcripts from the orac
 dir = "{{config_root}}/experiments/entity-store-shell"
 run = [
   "lake exe estore-vectors vectors",
+  "git clean -qxfd .harness-work",
   "lake exe harness harness .harness-work --record transcripts",
 ]
 
