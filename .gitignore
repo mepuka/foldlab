@@ -5,3 +5,5 @@ node_modules/
 # documents. The catalog ledger (.reference/catalog/REFERENCES.md) records identifiers and
 # digests so every file is independently re-fetchable.
 .reference/papers/*.pdf
+# Personal Claude Code overrides (machine-specific)
+.claude/settings.local.json
