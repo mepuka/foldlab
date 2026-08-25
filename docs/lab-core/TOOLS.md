@@ -18,8 +18,13 @@ project's approved-tools rule). Start light; grow as work gets defined.
 | LLM harnesses | Proof search, drafting, review | Empty trust contribution: every output must pass a machine-checked gate; the gate carries the trust. |
 | opam (annex-pinned) | Package manager for the [Coq/OCaml annex](../../annex/coq/README.md) | Trusted for reproducing the annex's declared switch from its committed export; contributes nothing to claims. |
 | Rocq / Coq (annex) | Reading and running executable prior art | Evidence and technique only. A Rocq development is never an estate artifact, no gate G0–G6 may be stamped on one, and a technique read there enters the estate only by being restated and reproved in Lean. |
+| TypeScript compiler API (`typescript@5.9.2` exactly, npm; classic JS API, not the 7.x native port) | Interim Stage 1 extractor instrument: syntax-only parse (`createSourceFile`, no checker) of the pinned Effect sources ([experiments/entity-store-extract](../../experiments/entity-store-extract/)) | Trusted only that its parser maps the pinned bytes to a faithful syntax tree; no type resolution is used, so no inference is trusted. Output enters gated work solely as `inventory.json`, which must pass the four-way enumeration agreement and the pinned-byte pre-check. Version drift is a re-admission event. |
 
-Pending admission (not yet used in gated work): lean4-tree-sitter (C FFI —
-named trusted seam required), liteparse (`npm:@llamaindex/liteparse`;
+Pending admission (not yet used in gated work): lean4-tree-sitter
+(`predictable-machines/lean4-tree-sitter`, to be revision-pinned; C seam: the
+tree-sitter runtime plus the `tree-sitter-typescript` grammar shared library, each
+version-and-digest-pinned per host — admitted for the same Stage 1 walk when stood up;
+running it beside the TypeScript compiler API and asserting byte-identical inventories
+makes the two extractors each other's check), liteparse (`npm:@llamaindex/liteparse`;
 PDF/local text extraction — evidence preparation only, and the extractor
 behind the [paper corpus](../../.reference/catalog/PAPERS.md)).
