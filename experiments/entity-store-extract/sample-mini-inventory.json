@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "Effect-TS/effect",
+    "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+    "package": "effect@4.0.0-rc.111",
+    "files": [
+      {
+        "path": "packages/effect/src/SchemaAST.ts",
+        "gitBlobSha1": "e99d7f473b4ecc0e6ba919ddbc98bb0dace8fe40"
+      },
+      {
+        "path": "packages/effect/src/SchemaRepresentation.ts",
+        "gitBlobSha1": "6282ab9cbf5c7a50b79580065881b5a6c5799aae"
+      }
+    ]
+  },
+  "extractor": {
+    "name": "e2-extract",
+    "instrument": "typescript-compiler-api",
+    "instrumentVersion": "5.9.2",
+    "mode": "syntax-only",
+    "nameTables": {
+      "closureBearing": [
+        "Annotations",
+        "Check",
+        "Checks",
+        "DeclarationRun",
+        "Encoding",
+        "Filter",
+        "FilterGroup",
+        "Getter",
+        "Link",
+        "Middleware",
+        "Transformation"
+      ],
+      "derivedCache": [
+        "TemplateLiteral.encodedParts",
+        "TemplateLiteral.literals",
+        "TemplateLiteral.suffixLengths"
+      ]
+    }
+  },
+  "counts": {
+    "variants": 21,
+    "unionAlias": 21,
+    "guardTags": 21,
+    "representationUnion": 22,
+    "runtimeArray": 22
+  },
+  "baseFields": [
+    {
+      "name": "_tag",
+      "typeText": "string",
+      "kind": "data",
+      "kindBy": "syntax",
+      "declLine": 638,
+      "optional": false
+    },
+    {
+      "name": "annotations",
+      "typeText": "Schema.Annotations.Annotations | undefined",
+      "kind": "closure-bearing",
+      "kindBy": "name-table",
+      "declLine": 639,
+      "optional": true
+    },
+    {
+      "name": "checks",
+      "typeText": "Checks | undefined",
+      "kind": "closure-bearing",
+      "kindBy": "name-table",
+      "declLine": 640,
+      "optional": true
+    },
+    {
+      "name": "encoding",
+      "typeText": "Encoding | undefined",
+      "kind": "closure-bearing",
+      "kindBy": "name-table",
+      "declLine": 641,
+      "optional": true
+    },
+    {
+      "name": "context",
+      "typeText": "Context | undefined",
+      "kind": "data",
+      "kindBy": "syntax",
+      "declLine": 642,
+      "optional": true
+    }
+  ],
+  "variants": [
+    {
+      "variant": "Null",
+      "tagLiteral": "Null",
+      "unionIndex": 1,
+      "declLine": 765,
+      "tagDeclLine": 766,
+      "fields": [],
+      "ctorParams": []
+    },
+    {
+      "variant": "Suspend",
+      "tagLiteral": "Suspend",
+      "unionIndex": 20,
+      "declLine": 3144,
+      "tagDeclLine": 3145,
+      "fields": [
+        {
+          "name": "thunk",
+          "typeText": "() => AST",
+          "kind": "closure",
+          "kindBy": "syntax",
+          "declLine": 3146,
+          "optional": false
+        }
+      ],
+      "ctorParams": [
+        {
+          "name": "thunk",
+          "typeText": "() => AST",
+          "optional": false,
+          "hasDefault": false
+        },
+        {
+          "name": "annotations",
+          "typeText": "Schema.Annotations.Annotations",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "checks",
+          "typeText": "Checks",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "encoding",
+          "typeText": "Encoding",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "context",
+          "typeText": "Context",
+          "optional": true,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "variant": "Union",
+      "tagLiteral": "Union",
+      "unionIndex": 19,
+      "declLine": 2913,
+      "tagDeclLine": 2914,
+      "fields": [
+        {
+          "name": "types",
+          "typeText": "ReadonlyArray<A>",
+          "kind": "data",
+          "kindBy": "syntax",
+          "declLine": 2915,
+          "optional": false
+        },
+        {
+          "name": "mode",
+          "typeText": "\"anyOf\" | \"oneOf\"",
+          "kind": "data",
+          "kindBy": "syntax",
+          "declLine": 2916,
+          "optional": false
+        },
+        {
+          "name": "encodingChecks",
+          "typeText": "Checks | undefined",
+          "kind": "closure-bearing",
+          "kindBy": "name-table",
+          "declLine": 2917,
+          "optional": true
+        }
+      ],
+      "ctorParams": [
+        {
+          "name": "types",
+          "typeText": "ReadonlyArray<A>",
+          "optional": false,
+          "hasDefault": false
+        },
+        {
+          "name": "mode",
+          "typeText": "\"anyOf\" | \"oneOf\"",
+          "optional": false,
+          "hasDefault": false
+        },
+        {
+          "name": "annotations",
+          "typeText": "Schema.Annotations.Annotations",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "checks",
+          "typeText": "Checks",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "encoding",
+          "typeText": "Encoding",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "context",
+          "typeText": "Context",
+          "optional": true,
+          "hasDefault": false
+        },
+        {
+          "name": "encodingChecks",
+          "typeText": "Checks",
+          "optional": true,
+          "hasDefault": false
+        }
+      ]
+    }
+  ],
+  "_note": "hand-checkable sample: 3 of 21 variants, otherwise identical shape; counts refer to the full inventory"
+}
