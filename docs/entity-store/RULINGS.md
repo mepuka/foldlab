@@ -134,6 +134,34 @@ triage (`audit/`). All twenty-two ruled items were ruled as recommended; Block V
 
 ---
 
+## CV-1 — the Effect-native monorepo and the conformance ratchet (2026-08-25, operator, in-session)
+
+The production implementation lives in a **separate Effect-native monorepo** whose domain
+model is expressed as Effect Schemas. Truth splits by kind and neither side redefines the
+other: **semantic truth stays estate-minted** (the theorems, the glossary, this record,
+MAPPING — one mint), **production truth lives in the monorepo** (what the running system
+does, its CI, its releases).
+
+The cross-repo seam is the **versioned conformance bundle**, exported by the estate and
+consumed by the monorepo as a pinned dependency (C6 in reverse — commit SHA + bundle
+digest; the estate never reaches into the monorepo; drift is a failing byte-compare):
+golden vectors (fixture carriers → pre-image bytes → addresses), the wire-format
+specification, the script corpus, and the theorem-contract table extracted from
+LEDGER.md.
+
+Progression is **ratchet-like gated iteration**: the cutover decomposes into stations;
+a station lands in the monorepo only when its slice of the bundle passes in the
+monorepo's own CI; a green station never regresses (the §5 monotonicity invariant,
+extended across repos); the conformance suite reports the first red station — each run
+names the next step. The generation lane runs one-inventory-two-targets: the committed
+inventory generates the Lean carrier here and the TS codec tables there, each checked by
+regenerate-and-diff in its own repo.
+
+Terms minted with this ruling (entries in [CONTEXT.md](CONTEXT.md)): **oracle**,
+**conformance bundle**, **station**. Evidence lineage: the wave-3 packet (D1–D6), the
+in-session design dialogue of 2026-08-25, and the ledger landing (`f32330c`…`6b25d5b`)
+that makes the bundle's theorem-contract table extractable rather than hand-written.
+
 ## R-1 — the Entity Store context ratified (2026-08-25, operator, in-session)
 
 `CONTEXT.md` ratified as recommended, discharging R-1 and completing W3-6 step 2: the
