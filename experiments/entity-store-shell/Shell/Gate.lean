@@ -40,7 +40,21 @@ namespace Shell.Gate
 
 /-- The modules permitted to mention `IO` in a type. `Shell.Gate` itself is exempt from
     every scan below — it is a metaprogram over the environment, not shell code. -/
-def ioModules : List Name := [`Shell.Store, `Shell.Cli, `Shell.Encode, `Shell.Harness]
+def ioModules : List Name :=
+  [`Shell.Store, `Shell.Cli, `Shell.Encode, `Shell.Harness,
+   -- F-43(a): the executable roots perform IO by nature. They are now SCANNED (see
+   -- `coveredModule`) and therefore must be named here — invisible is not permitted.
+   `Main, `EncodeMain, `HarnessMain]
+
+/-- The executable roots. Their `main` is top-level, so the old `Shell`-name-prefix scan
+    never reached them: a clock, `getEnv`, or a random source in `main` built
+    all-gates-green (F-43(a), refuter wave 2). Coverage is by MODULE now, not by name. -/
+def rootModules : List Name := [`Main, `EncodeMain, `HarnessMain]
+
+/-- The modules this gate covers. `Shell.Gate` is exempt: it is a metaprogram over the
+    environment, not shell code. -/
+def coveredModule (m : Name) : Bool :=
+  ((`Shell).isPrefixOf m && m != `Shell.Gate) || rootModules.contains m
 
 /-- The IO whitelist of STORE-SHELL §3, SHELL-v0, by enumeration. The effectful members
     are exactly: file read/write under the store root, directory listing and creation,
@@ -71,25 +85,45 @@ def generatedSuffixes : List String :=
     "noConfusion", "noConfusionType", "toCtorIdx", "ofNat", "sizeOf", "induct", "mk",
     "injEq", "inj", "eq_def", "eq_1", "eq_2", "eq_3", "unfold", "fun_cases" ]
 
+/-- Compiler-generated companions, by exact shape. F-43(b): the previous form carried a
+    blanket `s.startsWith "_"`, so any constant a shell author named `_foo` evaded G-S1,
+    G-S2 and G-S4 at once. The list below is deliberately exhaustive-by-enumeration: a
+    new compiler companion shape fails the build as a false offender, which is the safe
+    direction for a trust instrument. -/
 private def isInternal (n : Name) : Bool :=
   match n with
   | .str _ s =>
-      s == "_unsafe_rec" || s == "_cstage1" || s == "_cstage2" || s == "_lambda"
-        || s.startsWith "_" || s == "match_1" || s == "eq_def"
+      s == "_unsafe_rec" || s.startsWith "_cstage" || s.startsWith "_sparse"
+        || s.startsWith "_lambda" || s.startsWith "_elambda"
+        || s.startsWith "_closed" || s.startsWith "_spec_"
+        || s == "match_1" || s == "eq_def"
   | _ => n.hasMacroScopes
 
 elab "#shell_gates" : command => do
   let env ← getEnv
+  let mods := env.allImportedModuleNames
+  -- G-S4's subject: the final name component of every core DEFINITION, across both
+  -- packages the shell shares code with. F-43(c): the previous form asked only
+  -- `env.contains (E2 ++ base)`, so the digest — `Sha3.Impl.sha3_512`, the one function
+  -- whose silent replacement would forge every address in the store — was shadowable.
+  let coreNamespaces : List Name := [`E2, `Sha3, `Sha3.Impl, `Sha3.Spec]
   let mut opaqueOffenders : Array (Name × String) := #[]
   let mut ioOffenders : Array (Name × Name) := #[]
   let mut usedIO : NameSet := {}
   let mut shadow : Array Name := #[]
   let mut scanned := 0
+  let mut covered : NameSet := {}
   for (n₀, ci) in env.constants.toList do
+    -- Coverage is by MODULE, not by name prefix (F-43(a)). A constant defined in the
+    -- module currently being elaborated has no module index; the gate never scans its
+    -- own module, which is the intended exemption.
+    let some idx := env.getModuleIdxFor? n₀ | continue
+    let some m := mods[idx.toNat]? | continue
+    unless coveredModule m do continue
+    covered := covered.insert m
     -- `private` definitions carry a `_private.<Module>.0.` prefix; scanning the raw name
     -- would silently exempt every one of them, which is most of this package.
     let n := privateToUserName n₀
-    unless (`Shell).isPrefixOf n && !(`Shell.Gate).isPrefixOf n do continue
     scanned := scanned + 1
     -- G-S1
     match ci with
@@ -101,10 +135,8 @@ elab "#shell_gates" : command => do
     | _ => pure ()
     -- G-S2
     if mentionsIO ci.type && !isInternal n then
-      let mods := env.allImportedModuleNames
-      let m := (env.getModuleIdxFor? n₀).bind (fun i => mods[i.toNat]?)
-      unless (m.map (fun mm => ioModules.contains mm)).getD false do
-        ioOffenders := ioOffenders.push (n, m.getD `unknown)
+      unless ioModules.contains m do
+        ioOffenders := ioOffenders.push (n, m)
     -- G-S3: every IO/FilePath constant this package's code actually references
     for u in (ci.value?.map Expr.getUsedConstants).getD #[] ++ ci.type.getUsedConstants do
       if (`IO).isPrefixOf u || u == `IO || (`System.FilePath).isPrefixOf u
@@ -113,8 +145,8 @@ elab "#shell_gates" : command => do
     -- G-S4 — definitions only; constructors and generated companions are exempt
     match ci, n with
     | .defnInfo _, .str _ base =>
-        if env.contains (`E2 ++ Name.mkSimple base) && !isInternal n
-            && !generatedSuffixes.contains base then
+        if coreNamespaces.any (fun ns => env.contains (ns ++ Name.mkSimple base))
+            && !isInternal n && !generatedSuffixes.contains base then
           shadow := shadow.push n
     | _, _ => pure ()
   unless opaqueOffenders.isEmpty do
@@ -126,8 +158,10 @@ elab "#shell_gates" : command => do
     throwError "G-S3 FAILED — IO constants outside the SHELL-v0 whitelist: {stray}"
   unless shadow.isEmpty do
     throwError "G-S4 FAILED — Shell constants shadowing core names: {shadow}"
-  logInfo s!"shell gates ok ({scanned} constants scanned) — G-S1 opaque/unsafe clean; \
-G-S2 IO confined to {ioModules}; G-S4 no core shadowing.\n\
+  logInfo s!"shell gates ok ({scanned} constants over {covered.toList.length} modules) \
+— G-S1 opaque/unsafe clean; G-S2 IO confined to {ioModules}; G-S4 no shadowing of \
+{coreNamespaces}.\n\
+G-S coverage (by module, executable roots included): {sortStrings (covered.toList.map toString)}\n\
 G-S3 — every IO/FilePath constant this package references, all whitelisted:\n  \
 {sortStrings (usedIO.toList.map toString)}"
 

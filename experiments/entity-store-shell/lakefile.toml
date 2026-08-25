@@ -1,5 +1,5 @@
 name = "entity-store-shell"
-defaultTargets = ["Shell", "estore", "estore-encode", "harness"]
+defaultTargets = ["Shell", "Roots", "RootGate", "estore", "estore-encode", "harness"]
 
 [[require]]
 name = "entity-store"
@@ -11,6 +11,17 @@ path = "../../formal/fips202"
 
 [[lean_lib]]
 name = "Shell"
+
+# The executable roots, ALSO declared as a library so the whole-package gate can import
+# them. Without this they are invisible to every G-S scan (F-43(a)).
+[[lean_lib]]
+name = "Roots"
+roots = ["Main", "EncodeMain", "HarnessMain"]
+
+# The whole-package gate: scans the executable roots too (F-43(a)).
+[[lean_lib]]
+name = "RootGate"
+roots = ["RootGate.Cli", "RootGate.Encode", "RootGate.Harness"]
 
 [[lean_exe]]
 name = "estore"
