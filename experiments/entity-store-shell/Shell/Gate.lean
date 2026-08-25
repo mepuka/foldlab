@@ -40,6 +40,7 @@ import Shell.Harness
 import Shell.Cli
 import Shell.Encode
 import Shell.Vectors
+import Shell.VectorTheorems
 
 open Lean Elab Command
 
