@@ -22,8 +22,10 @@ export const extractLedger = (progress: Progress = quiet): string => {
 
   const harnessWork = mkdtempSync(join(tmpdir(), "entity-store-ledger-harness-"))
   try {
+    // The harness refuses a workdir that already exists (F-53: it never deletes
+    // anything), so hand it a not-yet-existing child of our temp root.
     const harness = parseHarnessReport(
-      runLake(["exe", "harness", "harness", harnessWork], shellDirectory)
+      runLake(["exe", "harness", "harness", join(harnessWork, "work")], shellDirectory)
     )
     progress("fresh harness report parsed")
     return renderLedger({ model, shell, harness })
