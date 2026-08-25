@@ -58,7 +58,7 @@ def ObligationEncodeValueInjective : Prop :=
     counterexample (scenario scout, probe3: a duplicate-key run reverses under
     `insertField`, making canon an involution there; STORE-MODEL §7 A-3 record).
     Idempotence is claimed only on duplicate-free schemas — exactly the §5 clause-4
-    admission that `WFS` still owes (planned amendment A-3). -/
+    admission `WFS` now enforces (A-3, implemented 2026-08-25). -/
 def ObligationCanonIdempotent : Prop :=
   ∀ s : SchemaCore, dupFreeS s = true → canonS (canonS s) = canonS s
 

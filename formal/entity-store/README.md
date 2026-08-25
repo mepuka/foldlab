@@ -45,8 +45,8 @@ Stated (seats, statements pinned): M11 idempotence, M18 conformance decidability
 S1 canon idempotence both kinds (conditional on duplicate-freedom after the M1
 falsification — STORE-MODEL §7 A-3 record). Owed with named vocabulary dependencies
 (see `E2/Model.lean` OWED block and STORE-MODEL §6): M10, M11-commutation, M16,
-M17/M17′, M4b, M19. Planned amendments A-3 (WFS clause 4) and A-4
-(`tupleRest`/`record`) are one scheduled serialization point.
+M17/M17′, M4b, M19. A-3 (WFS clause 4) landed 2026-08-25; A-4 (`tupleRest`/`record`)
+is briefed to worktree 4 (`docs/entity-store/dispatch/`).
 
 ## Not claimed
 

@@ -254,15 +254,12 @@ REVERSES the run — an involution, not idempotence, for both kinds. Root cause:
 implements only §5 clauses 1–2; clause 4's duplicate-free demand was never carried into
 the scaffold, so duplicate-key schemas are reachable today. Landed same day under Q10
 discipline: `dupFreeS`/`dupFreeV` vocabulary (`E2/Canon.lean`) and both S1 obligations
-restated conditionally on duplicate-freedom. Planned **A-3**: `WFS` gains the clause-4
-conjunct; scheduled as a serialization point AFTER the in-flight seat wave merges,
-because strengthening `Reachable`'s preconditions mid-dispatch would break seat proof
-scripts. Value-plane duplicate-freedom is a boundary admission, not a `Reachable`
-clause (a JS object cannot carry duplicate keys, so the excluded values have no host
-counterpart). Interim shell note: STORE-SHELL §5 check 2 (re-canonicalize and compare)
-already REJECTS duplicate-key submissions, since non-idempotence makes the re-canon
-differ — the interim incoherence is model-accepts/shell-rejects, closed by A-3;
-harness fixtures stay duplicate-free. Related statement caution from the same wave:
+restated conditionally on duplicate-freedom. **A-3 IMPLEMENTED the same day**, in the
+serialization window that opened when the seat wave merged: `WFS` carries the clause-4
+conjunct (`dupFreeS`), every seat proof rebuilds green over the strengthened
+`Reachable`, and the model-accepts/shell-rejects incoherence is closed. Value-plane
+duplicate-freedom stays a boundary admission, not a `Reachable` clause (a JS object
+cannot carry duplicate keys, so the excluded values have no host counterpart). Related statement caution from the same wave:
 L-comm is false as `StoreMap` value equality (the list conses) and true up to `find` —
 M11's commutation half must be pinned up to `find`-extensionality when seated.
 

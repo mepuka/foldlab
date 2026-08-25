@@ -84,12 +84,11 @@ def canonVList : ValueList → ValueList
   termination_by structural x => x
 end
 
-/-! ## Duplicate-freedom (A-3 vocabulary, 2026-08-25). STORE-MODEL §5 clause 4 demands
-    duplicate-free field-name lists; `WFS` does not yet implement the clause (planned
-    amendment A-3, scheduled after the in-flight seat wave merges — changing
-    `Reachable`'s constructors mid-dispatch would break seat proofs). On duplicate keys
-    the sort below is an INVOLUTION, not idempotent — kernel-checked falsification of
-    the unconditional S1 obligations, recorded in STORE-MODEL §7. -/
+/-! ## Duplicate-freedom (A-3, 2026-08-25). STORE-MODEL §5 clause 4 demands
+    duplicate-free field-name lists; `WFS` implements the clause via `dupFreeS` (landed
+    the same day, in the post-seat-wave serialization window). On duplicate keys the
+    sort below is an INVOLUTION, not idempotent — kernel-checked falsification of the
+    unconditional S1 obligations, recorded in STORE-MODEL §7. -/
 
 def keyAbsent (key : String) : FieldList → Bool
   | .nil => true

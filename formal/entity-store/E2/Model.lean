@@ -141,9 +141,11 @@ def guardedL : SchemaList → Bool
   termination_by structural x => x
 end
 
-/-- Schema well-formedness (v1 clauses; R-4 allowlist clause pending). -/
+/-- Schema well-formedness (v1 clauses; R-4 allowlist clause pending).
+    A-3 (2026-08-25): §5 clause 4 — duplicate-free field names — implemented; its
+    absence is what let the M1 falsification's schemas be reachable. -/
 def WFS (s : SchemaCore) : Prop :=
-  closedB 0 s = true ∧ guardedB s = true
+  closedB 0 s = true ∧ guardedB s = true ∧ dupFreeS s = true
 
 /-! ## mu-unfolding. Substitution of a CLOSED schema (no lifting needed — WFS demands
     closedness at the top, and `mu d b` is closed whenever the whole schema is). -/
