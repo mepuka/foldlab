@@ -61,9 +61,16 @@ Three layers, strictly ordered by import:
 
 ## 3. IO whitelist (SH3)
 
-- **SHELL-v0 (CLI + harness):** file read/write under the store root, argv,
-  stdout/stderr, exit codes, temp-file + atomic rename. No clock, no randomness, no
-  environment, no network.
+- **SHELL-v0 (CLI + harness):** file read/write under the store root, **file-type
+  interrogation of store entries without following symlinks
+  (`System.FilePath.symlinkMetadata`)**, argv, stdout/stderr, exit codes, temp-file +
+  atomic rename. No clock, no randomness, no environment, no network. **The file-type
+  primitive is admitted for one purpose only (F-42): a directory entry is read only when
+  it is a regular file, so that `readView` is total on arbitrary directories and
+  `check`'s exit code stays a verdict.** Note `Metadata` carries no clock reading the
+  shell may use: `accessed`/`modified` are timestamps and are OUT of the whitelist's
+  spirit; the shell reads `Metadata.type` and nothing else. G-S5 gate leg owed (W3-15).
+  (W3-15 ruling, 2026-08-25; implementation seat owed.)
 - **SHELL-v1 (daemon):** v0 plus a listening socket via `Std.Http.Server` on an
   argv-given port, `Std.Sync` primitives, cancellation. Still no clock/rand/env.
 - The v1 rung does not START until the `Std.Http` spike is green on both hosts
@@ -82,35 +89,70 @@ toolchain-internal, same pin as the compiler; no new instrument row).
 ```
 store/
   objects/<hex-address>     # pre-image bytes, verbatim; write-temp-then-rename
-  names/<name>              # one address per file — the mutable plane, beside the store
+  names/<hex-of-name>       # one address per file, filename = lowercase hex of the
+                            # name's UTF-8 bytes — the mutable plane, beside the store.
+                            # The FILENAME IS NOT THE KEY (F-39): a case-folding
+                            # filesystem would otherwise merge two model bindings into
+                            # one file and answer `name-get` differently on each plane,
+                            # both exiting 0.
+                            # Name length capped at 64 characters; a names listing verb
+                            # restores inspectability (seat owed).
+                            # (W3-14 ruling, 2026-08-25; implementation seat owed.)
 ```
 
 - An object file's content is exactly the pre-image (`versionByte ∷ kind ∷ body`); its
   name is exactly the hex of `H` of its content. `getChecked` made physical: open =
   hash-check (STORE-MODEL §4: getChecked's purpose is "the implementation boundary,
   where the map may be a disk").
-- **Verification-on-open (SH5)**: opening a directory as a store ESTABLISHES
-  reachability — v0 does the full scan: every object re-hashed (WF1), parsed, refs
-  resolved (WF2). Manifest/append-log optimizations arrive only by amendment.
+- **Verification-on-open (SH5)**: opening a directory as a store **establishes every
+  clause of reachability that is decidable today, and no more**. v0 does the full scan:
+  every object re-hashed (WF1), parsed, checked well-formed (`wfsB` on schemas,
+  `dupFreeV` on entity values), canonicity byte-compared (Q5), refs resolved (WF2),
+  entity schema addresses resolved as schemas, and **the reference graph decided acyclic
+  by Kahn's algorithm, which also emits the insertion order (WF3; M19's witness,
+  computed rather than asserted)**. What remains undecided is exactly `Conforms` — the
+  M18 seat — carried as the SH6 obligation record. **The scan therefore establishes
+  `Admissible` (R3 §6), not `Reachable`; the bridge between them is
+  `ObligationM19_transport`, stated and unproved.** Manifest/append-log optimizations
+  arrive only by amendment (see §4 amortization, SH5′). (W3-12/W3-13 ruling, 2026-08-25;
+  implementation seat owed.)
 - No packfiles, no GC, no deletion (GC is stated-only in the model; deletion exists
   only below the model).
 
 ## 5. Operations and the PUT boundary (SH6)
 
-CLI verbs (v0): `init`, `check` (verification-on-open, exit code = verdict),
+CLI verbs (v0): `init`, `check` (verification-on-open, exit code = verdict: **0 checked
+and clean, 1 checked and violations found, 2 could not check — an environment fault,
+never a verdict**; W3-15 ruling, 2026-08-25, implementation seat owed),
 `put-schema <file>`, `put-entity <schema-addr> <file>`, `get <addr>`, `resolve <addr>`,
 `name-set <name> <addr>`, `name-get <name>`, `refs <addr>`.
 
-The PUT boundary enforces `legalInsert` with exactly what is decidable today:
+The PUT boundary enforces `Reachable`'s insert premises with exactly what is decidable
+today. `legalInsert` as STORE-MODEL §3 words it is **strictly weaker** than
+`Reachable.putS`/`putE`; where the two differ, this boundary implements the latter
+(F-33, F-40).
 
 1. bytes parse as a well-formed pre-image of a known kind (decode — M4a's machinery);
-2. canonicity: re-canonicalize and byte-compare (canonical-image strictness, Q5);
-3. refs resolve in the store (WF2 precondition);
-4. entities: the schema address resolves (typing precondition, schema half);
-5. entities: `Conforms` — NOT enforceable until the M18 seat delivers the decision
-   procedure. Ruled (SH6): v0 enforces 1–4 and records 5 as an explicit accepted
-   obligation per entity PUT, flagged in `check` output; when M18 lands, enforcement
-   with no grace period.
+2. **well-formedness: schemas satisfy `E2.wfsB` — `closedB 0`, `guardedB`, `dupFreeS`,
+   which IS `Reachable.putS`'s `WFS` premise; entities satisfy `dupFreeV`, which is
+   A-3's value-plane boundary admission (STORE-MODEL §7). The rejection names the
+   failing clause;** (W3-12 ruling, 2026-08-25; implementation seat owed)
+3. canonicity: re-canonicalize and byte-compare (canonical-image strictness, Q5).
+   **Runs AFTER check 2 — see the ordering note below;** (W3-13 ruling, 2026-08-25;
+   implementation seat owed)
+4. refs resolve in the store (WF2 precondition);
+5. entities: the schema address resolves (typing precondition, schema half);
+6. entities: `Conforms` — NOT enforceable until the M18 seat delivers the decision
+   procedure. Ruled (SH6): v0 enforces 1–5 and records 6 as an explicit accepted
+   obligation per entity PUT.
+
+**Ordering note (F-40/F-41).** Well-formedness precedes canonicity because
+`ObligationCanonIdempotent` is conditional on `dupFreeS`: on a duplicate-key carrier
+`canonS` is an involution, not idempotent, so the byte-compare's verdict is not a
+statement about canonicity. Running check 2 first produced `non-canonical` on bytes the
+shell had itself assembled from a carrier literal — the boundary rejecting its own
+output. With check 2 ahead of it, a `non-canonical` verdict means what §5 says it means.
+The §4 scan runs this same order (W3-13).
 
 Wire protocol (v1): `GET /objects/{addr}` (immutable bytes, infinitely cacheable),
 `PUT /objects` (body = pre-image; server runs the same boundary checks; responds with
@@ -135,6 +177,16 @@ durability claims (no fsync discipline yet). No security claims (localhost v1). 
 claim that `Std`'s HTTP/TCP stack is itself verified. Nothing about the pinned Effect
 implementation. Windows leg unverified until the spike runs (dual-host gate).
 
+No claim that a clean `check` implies `Reachable`: the scan decides the `Admissible`
+clauses (R3 §6) and `Admissible → Reachable` is `ObligationM19_transport`, stated and
+unproved. No claim that `check` is total on arbitrary directories beyond §3's
+file-type discipline (see §5 amendment).
+
+No claim of totality on directories the shell did not create beyond the file-type
+discipline of §3: entries that are not regular files are reported and not read, and any
+residual IO fault exits 2 without a verdict. No claim about a store on a filesystem the
+shell cannot interrogate.
+
 ## 8. Ruling record
 
 | # | Joint | Ruling (2026-08-25, all as recommended) |
@@ -143,7 +195,7 @@ implementation. Windows leg unverified until the spike runs (dual-host gate).
 | SH2 | First interface | library + CLI + harness (v0) before any daemon; daemon is v1 |
 | SH3 | IO whitelist rungs | as §3; Std.Http spike green on both hosts before v1 starts |
 | SH4 | Disk layout | as §4: one file per object, hex names, temp+rename; packing/GC deferred |
-| SH5 | Verification-on-open depth | full WF1+WF2 scan in v0; amortized forms only by amendment |
+| SH5 | Verification-on-open depth | full scan in v0 — WF1, parse, `wfsB`/`dupFreeV`, canonicity, WF2, typing-schema-half, WF3 by Kahn's; `Conforms` deferred to M18 as an obligation record. The scan establishes `Admissible`, not `Reachable`. Amortized forms only by amendment (SH5′) (W3-12/W3-13 ruling, 2026-08-25; implementation seat owed) |
 | SH6 | Conformance at PUT | v0 enforces boundary checks 1–4; check 5 recorded as an explicit accepted obligation per entity PUT until M18 lands, then enforced, no grace period |
 | SH7 | Harness shape | committed deterministic scripts as the acceptance gate; generated scripts later |
 | SH8 | Std trust posture | TOOLS.md trust-statement addendum; no new instrument row |
@@ -155,7 +207,7 @@ other dispatched worktrees.
 ## 9. Delivery record — SHELL-v0 (2026-08-25, codex worktree, adjudicated at merge)
 
 Delivered at rung 1 and claiming nothing above it: library, CLI verbs, and the
-differential harness — nine committed scripts, all green on the merged tree
+differential harness — ten committed scripts, all green on the merged tree
 ("9 scripts, all model/disk observables identical"), including corrupted-store (WF1),
 corrupted-typing, canonicity-strict, and hostile-bytes cases. The seat exceeded the
 brief with `Shell/Gate.lean`, making §1 rung 0 and §3's whitelist mechanical: G-S1
@@ -166,3 +218,10 @@ branch predates A-3, so the boundary does not yet name `dupFreeS` explicitly —
 operationally covered today because a duplicate-key submission fails the §5 check-2
 re-canonicalization byte-compare. The daemon rung remains untouched (Windows
 `Std.Http` spike still owed).
+
+**Addendum 2026-08-25 (F-40, superseding F-21).** The sentence above is FALSE.
+`canonFields` is an involution on a duplicate-key run, and an involution has fixed
+points: a *palindromic* run byte-compares equal to its own re-canonicalization and is
+admitted (`r2-12`, kernel receipt `dup_canon_fixed`). The canonicity byte-compare
+covers sortedness only; it cannot see duplicate keys at all. Corrected by the §5 check-2
+amendment above.
