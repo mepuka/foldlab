@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "sha3-source-lock",
+  "snapshotDate": "2026-08-24",
+  "artifact": "formal/sha3",
+  "sources": [
+    {
+      "id": "nist-fips-202",
+      "kind": "normative-standard",
+      "title": "SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions",
+      "identifier": "doi:10.6028/NIST.FIPS.202",
+      "url": "https://doi.org/10.6028/NIST.FIPS.202",
+      "content": {
+        "path": ".reference/papers/nist-2015-fips202-sha3-standard.pdf",
+        "sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+        "bytes": 1459683,
+        "ledger": ".reference/provenance/papers.lock.json"
+      },
+      "supports": "The algorithm and parameter definitions transcribed in Sha3/Spec.lean.",
+      "doesNotSupport": "Correctness of the transcription or of any implementation."
+    },
+    {
+      "id": "nist-sha3-byte-test-vectors",
+      "kind": "conformance-corpus",
+      "title": "SHA-3 Hash Function Test Vectors for Hashing Byte-Oriented Messages",
+      "url": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "archive": {
+        "sha256": "cd07701af2e47f5cc889d642528b4bf11f8b6eb55797c7307a96828ed8d8fc8c",
+        "bytes": 2801880
+      },
+      "selectedFile": {
+        "path": "SHA3_512ShortMsg.rsp",
+        "downloadedSha256": "f73a39d8091d58c9225cfad8e6d8cfa3e8d67532c7029bf376baef0d0d86d5b6",
+        "downloadedBytes": 16802,
+        "vendoredPath": ".reference/clones/lean-crypto-hash/validation/vectors/nist/SHA3_512ShortMsg.rsp",
+        "vendoredSha256": "11d0676f4c6f10e30c5025204f4e15cd1ef6b1e34f6660d586d8ae9dfab4d721",
+        "vendoredBytes": 16502,
+        "canonicalTextSha256": "d8efb048b69a91569bd784441c067deb3a2d5ede37f1cda2dd572be22072ac2b",
+        "canonicalization": "Convert CRLF to LF and remove trailing LF bytes.",
+        "comparison": "Canonical texts are byte-identical; the raw files differ only by line endings and a terminal blank line."
+      },
+      "supports": "The byte literals in T8 and T9 and the four build-time CAVP guards.",
+      "doesNotSupport": "CAVP validation, exhaustive conformance, or any input beyond the selected vectors."
+    },
+    {
+      "id": "xkcp-keccakf-1600-zero-state-vector",
+      "kind": "git-source",
+      "repository": "https://github.com/XKCP/XKCP",
+      "revision": "eb5244d6b95fb1c434b211bac293093e18aa8fd1",
+      "rootTree": "3b371b2eb2327490746cb26c628c5164aeb0c9e9",
+      "selectedFile": {
+        "path": "tests/TestVectors/KeccakF-1600-IntermediateValues.txt",
+        "gitBlob": "5d2b1bc0b68c15548e8993959ba947f051d67f9f",
+        "sha256": "770d1e8e34241472dc68a83ee5181481c4e9fc88ec6236a2c66333feea5229d3",
+        "bytes": 112158,
+        "selection": "The 25 lanes following the final-round 'After iota' marker."
+      },
+      "supports": "The zero-state Keccak-f[1600] literal in T7.",
+      "doesNotSupport": "The FIPS transcription, the SHA3-512 padding bridge, or deployment behavior."
+    }
+  ]
+}

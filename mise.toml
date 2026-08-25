@@ -6,9 +6,18 @@ node = "22.23.2"
 description = "Regenerate every derived file from declared sources"
 run = "echo 'gen: no derived files declared yet'"
 
+[tasks."check:sha3"]
+description = "Build and replay the promoted SHA3 Lean artifact"
+dir = "{{config_root}}/formal/sha3"
+run = [
+  "lake --wfail build",
+  "lake env leanchecker --fresh Sha3.Bridge",
+]
+
 [tasks.check]
 description = "gen + clean-tree assertion + tests and gates (what CI runs)"
 run = [
   "mise run gen",
   "git diff --exit-code",
+  "mise run check:sha3",
 ]
