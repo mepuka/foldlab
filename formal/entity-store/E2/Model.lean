@@ -617,11 +617,17 @@ def ObligationCanonVPreservesDupFree : Prop :=
     WINDOW B 2026-08-25: M17 and M17′ are now STATED, in `E2/Admission.lean` — both
     quantify over `resolveSchema`/`resolveEntity`, which live in `E2/Resolve.lean`,
     downstream of this module, and `E2/Resolve.lean` is frozen. `ObligationM19_transport`
-    and the two topo obligations are stated there and in `E2/Graph.lean`. Still owed here
-    for vocabulary: M10, M11-commutation, M16.
-    - M10 WF3 acyclicity — the `Acyclic` vocabulary now exists (`E2/Graph.lean`); the
-      statement itself is owed, with `ObligationM10_rank` beside it.
-    - M11 commutation half (independent puts commute) — with the idempotence Prop above.
+    and the two topo obligations are stated there and in `E2/Graph.lean`.
+    W3-22 2026-08-25: M10 and M11's commutation half are no longer owed here — both need
+    `E2/Graph.lean`'s address-node vocabulary, which is downstream of this module, so both
+    are stated (and proved) in their seats:
+    - M10 WF3 acyclicity — `ObligationM10_wf3` with `ObligationM10_rank` beside it, in
+      `E2/Wf3.lean`. Nodes are ADDRESSES, not pre-images (F-31's correction).
+    - M11 commutation half (independent puts commute) — `ObligationM11_comm` in
+      `E2/Commutation.lean`, pinned up to find-extensionality and shipped with the
+      `reachable_keys_nodup` companion F-38 showed it needs. The idempotence Prop above
+      is unchanged and stays here.
+    Still owed here for vocabulary:
     - M16 names-inert — stated against the shell API surface, not as a tautology. -/
 
 end E2
