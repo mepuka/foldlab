@@ -114,8 +114,8 @@ store/
   M18 seat — carried as the SH6 obligation record. **The scan therefore establishes
   `Admissible` (R3 §6), not `Reachable`; the bridge between them is
   `ObligationM19_transport`, stated and unproved.** Manifest/append-log optimizations
-  arrive only by amendment (see §4 amortization, SH5′). (W3-12/W3-13 ruling, 2026-08-25;
-  implementation seat owed.)
+  arrive only by amendment (SH5′ — deferred to a measurement, W3-21). (W3-12/W3-13
+  ruling, 2026-08-25; implementation seat owed.)
 - No packfiles, no GC, no deletion (GC is stated-only in the model; deletion exists
   only below the model).
 
@@ -144,15 +144,17 @@ today. `legalInsert` as STORE-MODEL §3 words it is **strictly weaker** than
 5. entities: the schema address resolves (typing precondition, schema half);
 6. entities: `Conforms` — NOT enforceable until the M18 seat delivers the decision
    procedure. Ruled (SH6): v0 enforces 1–5 and records 6 as an explicit accepted
-   obligation per entity PUT.
+   obligation per entity PUT, flagged in `check` output; when M18 lands, enforcement
+   with no grace period.
 
 **Ordering note (F-40/F-41).** Well-formedness precedes canonicity because
 `ObligationCanonIdempotent` is conditional on `dupFreeS`: on a duplicate-key carrier
 `canonS` is an involution, not idempotent, so the byte-compare's verdict is not a
-statement about canonicity. Running check 2 first produced `non-canonical` on bytes the
-shell had itself assembled from a carrier literal — the boundary rejecting its own
-output. With check 2 ahead of it, a `non-canonical` verdict means what §5 says it means.
-The §4 scan runs this same order (W3-13).
+statement about canonicity. Running the byte-compare ahead of well-formedness produced
+`non-canonical` on bytes the shell had itself assembled from a carrier literal — the
+boundary rejecting its own output. With the well-formedness check ahead of it, a
+`non-canonical` verdict means what §5 says it means. The §4 scan runs this same order
+(W3-13).
 
 Wire protocol (v1): `GET /objects/{addr}` (immutable bytes, infinitely cacheable),
 `PUT /objects` (body = pre-image; server runs the same boundary checks; responds with
@@ -179,13 +181,10 @@ implementation. Windows leg unverified until the spike runs (dual-host gate).
 
 No claim that a clean `check` implies `Reachable`: the scan decides the `Admissible`
 clauses (R3 §6) and `Admissible → Reachable` is `ObligationM19_transport`, stated and
-unproved. No claim that `check` is total on arbitrary directories beyond §3's
-file-type discipline (see §5 amendment).
-
-No claim of totality on directories the shell did not create beyond the file-type
-discipline of §3: entries that are not regular files are reported and not read, and any
-residual IO fault exits 2 without a verdict. No claim about a store on a filesystem the
-shell cannot interrogate.
+unproved. No claim of totality on directories the shell did not create beyond §3's
+file-type discipline: entries that are not regular files are reported and not read, and
+any residual IO fault exits 2 without a verdict. No claim about a store on a filesystem
+the shell cannot interrogate.
 
 ## 8. Ruling record
 
@@ -196,7 +195,7 @@ shell cannot interrogate.
 | SH3 | IO whitelist rungs | as §3; Std.Http spike green on both hosts before v1 starts |
 | SH4 | Disk layout | as §4: one file per object, hex names, temp+rename; packing/GC deferred |
 | SH5 | Verification-on-open depth | full scan in v0 — WF1, parse, `wfsB`/`dupFreeV`, canonicity, WF2, typing-schema-half, WF3 by Kahn's; `Conforms` deferred to M18 as an obligation record. The scan establishes `Admissible`, not `Reachable`. Amortized forms only by amendment (SH5′) (W3-12/W3-13 ruling, 2026-08-25; implementation seat owed) |
-| SH6 | Conformance at PUT | v0 enforces boundary checks 1–4; check 5 recorded as an explicit accepted obligation per entity PUT until M18 lands, then enforced, no grace period |
+| SH6 | Conformance at PUT | v0 enforces boundary checks 1–5; check 6 recorded as an explicit accepted obligation per entity PUT until M18 lands, then enforced, no grace period (renumbered at the W3 adjudication to match §5's amended list; the ruling's content is unchanged) |
 | SH7 | Harness shape | committed deterministic scripts as the acceptance gate; generated scripts later |
 | SH8 | Std trust posture | TOOLS.md trust-statement addendum; no new instrument row |
 
