@@ -224,3 +224,68 @@ points: a *palindromic* run byte-compares equal to its own re-canonicalization a
 admitted (`r2-12`, kernel receipt `dup_canon_fixed`). The canonicity byte-compare
 covers sortedness only; it cannot see duplicate keys at all. Corrected by the §5 check-2
 amendment above.
+
+**Addendum 2026-08-25 (W3-12 / W3-13 / W3-20 — the family-2 boundary seat, Mac
+worktree).** The implementation-seat markers §5 carries on checks 2 and 3 are discharged,
+and the SH5 narrowing is enacted. What landed, and what did not:
+
+*Boundary and scan.* PUT check 2 calls `E2.schemaAdmissionClause` on the schema plane and
+`E2.valueAdmissionClause` on the value plane, and nothing else: the shell reaches
+Admission's surface and never the clause predicates behind it (CONTEXT avoid-list, W3-3),
+so `schemaAdmissionClause_none_iff` and `wfsB_iff` make the check *provably*
+`Reachable.putS`'s premise rather than incidentally equal to it. The rejection is
+`rejected not-well-formed <clause>`, the clause vocabulary being the model's:
+`closed | guarded | dup-key | spelling | lit-narrow | dup-key-value`. The §4 scan runs the
+same test in the same position, before canonicity (W3-13), and emits
+`violation not-well-formed addr=<hex> clause=<name>`. Script `08-canonicity-strict` is
+unchanged, which is the standing evidence that the reordering is invisible to every
+dup-free input (R-C §3.6).
+
+*Acyclicity, and one verb added by this ruling.* `checkReport` calls `E2.topoOrder`; a
+cyclic candidate yields one `violation cycle addr=<hex>` per node Kahn's could not emit,
+deterministic because the view is normalized by address before the pass runs. Both legs
+are committed fixtures: a cycle is unconstructible through any admitted verb — check 4
+forbids the dangling reference and an address is a digest of its own bytes — so script
+`18` builds one with two placed pre-images naming each other's filename, `E2.refsAt`
+reading the edges off the stored bytes. The two objects draw `wf1` lines as well, which is
+necessity rather than noise: a cycle cannot exist where WF1 holds. **§5's v0
+verb list gains `order`** — one `addr <hex>` line per object, sinks first, the emitted
+topological order. It is recorded here rather than by an edit to §5 because W3-12 is the
+ruling that adds it ("Kahn's decides acyclicity and emits the order — an `order` verb plus
+a per-node cycle violation line"); the verb list still changes only by ruling. SH5 is
+enacted as narrowed: the scan establishes **`Admissible`, never `Reachable`**, and the
+`order` output is M19's witness *computed*, with `ObligationM19_transport` still stated
+and unproved.
+
+*The `(place …)` family, and one item BLOCKED.* `(place <plane> <name> <hex>)` and
+`(place-dir <plane> <name>)` ship on both sides; `StoreView`'s model-side stray and
+non-regular lists are no longer hard-wired `[]`. Neither needed a whitelist change —
+`IO.FS.writeBinFile` and `IO.FS.createDirAll` were already enumerated, so **G-S3 is
+unchanged by this seat**. `place-symlink` and `place-fifo` are **BLOCKED and not shipped**:
+Lean 4.33.1 has no symlink-creation primitive and no FIFO primitive, and the only route to
+either is a process spawn, which is not a file primitive under the store root but a new
+capability class — a whitelist ruling, not a seat's convenience. Consequence for the
+coordinator: R-C §4.6's `open-symlink` and `open-fifo` fixtures stay unwritable, so two of
+the four legs of W3-15's file-type discipline remain hand-exercised. The directory leg is
+now a committed fixture, and it is the leg that used to crash the scan.
+
+*Harness.* Twenty-three committed scripts, all green on both runners. Eleven are new
+(`12`–`22`): the five `WFS` clause batteries, the spelling table, acyclicity with the
+`order` verb, the Kahn-batching diamond, the canonicity diagnosis, and the two
+below-the-boundary placement fixtures. One committed fixture **flipped**, and the flip is
+the amendment record PROCEDURE §5 asks for: `11-a6-lit-canon` asserted that two `lit`
+schemas with object payloads dedup to one address; under W3-18's `litNarrowB` both are now
+inadmissible (`lit-narrow`), so the script asserts the rejection and the surviving
+str/bool/int payload domain instead. A-6 is not retracted — `canonS` still recurses into
+`lit` payloads — but the recursion has no boundary observable left, because every
+admissible payload is a scalar. `16-wfs-lit-payload`, which R-C could only propose as an
+expected-FAIL marker, is writable because F-26 landed, and it pins that the duplicate-key
+clause fires *before* the payload-domain clause.
+
+*Not closed by this seat.* `Conforms` (the M18 seat, SH6) — unchanged. The `WFS` clause
+table's completeness — a permanent unchecked claim (F-34, W3-17), not a seat-owed gap.
+`ObligationM19_transport`, `ObligationTopoSound`, `ObligationTopoComplete`,
+`ObligationAdmissibleReportDecides` — all still stated and unproved. Asserting that the
+emitted order equals the model's insertion order reversed needs a store-aware assertion
+the script language does not have; adding one is a ruling, so script `19` pins what the
+current assertion set can pin and the residue is recorded in the shell README's *Owed*.

@@ -1,0 +1,38 @@
+; STORE-SHELL §5, the ORDER of checks 2 and 3 (ruling W3-13) — R-C §3.6's
+; `19-canon-diagnosis`, the corrected form of `r2-14-canon-involution-self-reject`.
+;
+; F-41, the other direction of F-40's root. `schema-put <carrier>` assembles bytes with
+; the core's OWN canonicalizing `preimageS`. On a NON-palindromic duplicate-key run
+; `canonS` is an involution, so the boundary's re-canonicalization disagreed with the
+; assembly and the shell rejected bytes it had itself produced from a carrier literal —
+; with the verdict `non-canonical`, which was not a true statement about the carrier.
+;
+; W3-13's argument, in one line: `ObligationCanonIdempotent` is CONDITIONAL on `dupFreeS`,
+; so outside that hypothesis the byte-compare's verdict is not a statement about
+; canonicity at all — it is the involution leaking. Well-formedness first restores the
+; hypothesis, and `non-canonical` goes back to meaning what §5 says it means.
+;
+; THE ASSERTION THAT MATTERS IS THE REJECTION STRING, not the exit code: both orders
+; reject these two shapes with code 1. What flipped is the diagnosis, from
+; `non-canonical` to `not-well-formed dup-key`, and a reader can now tell an F-40 fix
+; from a canonicity regression.
+
+; the non-palindromic pair: int then str at one key
+(schema-put (object (f "a" req (prim int)) (f "a" req (prim str))))
+(assert-code prev 1)
+
+; a non-palindromic run carried beside a distinct key
+(schema-put (object (f "b" req (prim int)) (f "a" req (prim int)) (f "a" req (prim str))))
+(assert-code prev 1)
+
+; the ordering change must be INVISIBLE to every dup-free input, and this is the leg that
+; says so from the other side: genuine non-canonicity still reports as non-canonicity.
+; `schema-put-raw` assembles a pre-image with canonicalization deliberately skipped, so
+; the fields reach the boundary out of order with no duplicate key anywhere. Check 2
+; passes, check 3 rejects. (Script 08 is the standing regression test for this property
+; and must stay green UNCHANGED — if it ever changes, the ordering wiring over-reached.)
+(schema-put-raw (object (f "beta" req (prim str)) (f "alpha" req (prim int))))
+(assert-code prev 1)
+
+; nothing landed.
+(check)

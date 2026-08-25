@@ -26,34 +26,6 @@ structure Outcome where
 def Outcome.ok (lines : List String) : Outcome := ⟨0, lines⟩
 def Outcome.rejected (r : Rejection) : Outcome := ⟨1, [s!"rejected {r.render}"]⟩
 
-/-- A write the verb has authorized. The two runners interpret these; nothing else
-    writes. -/
-inductive Effect
-  | putObject (a : Address) (b : Bytes) (kind : Kind)
-  | setName (n : String) (a : Address)
-  | corrupt (a : Address) (idx : Nat) (mask : UInt8)
-
-inductive Verb
-  | check
-  | putSchema (b : Bytes)
-  | putEntity (sAddr : Address) (b : Bytes)
-  | get (a : Address)
-  | resolve (a : Address)
-  | refs (a : Address)
-  | nameSet (n : String) (a : Address)
-  | nameGet (n : String)
-  /-- HARNESS PRIMITIVE, not a CLI verb: flip bits in a stored object, below the PUT
-      boundary. The only writer in the shell that bypasses admission — it exists so that
-      a corrupted store is a differential observable rather than a disk-only anecdote. -/
-  | corrupt (a : Address) (idx : Nat) (mask : UInt8)
-
-/-- Flip bits in a byte string — the `corrupt` primitive's payload, below the boundary.
-    Shared by both runners so that a corruption is the same corruption on either side. -/
-def flipByte (bs : Bytes) (idx : Nat) (mask : UInt8) : Bytes :=
-  match bs[idx]? with
-  | none => bs
-  | some b => bs.set idx (b ^^^ mask)
-
 /-- Names are filenames under `names/` (§4). The IO whitelist confines the shell to file
     IO UNDER THE STORE ROOT, so the name alphabet is restricted at the input boundary:
     a name that could traverse or escape a directory is rejected, not sanitized. -/
@@ -65,6 +37,149 @@ def validName (n : String) : Bool :=
            || c = '-' || c = '_' || c = '.')
     && (cs.head? != some '.')
 
+/-! ## Planes and below-the-boundary placement (W3-20)
+
+`corrupt` can only flip bytes in an object that is already present, so no script could
+produce a stray, a cycle, a directory, or a malformed name file as a DIFFERENTIAL
+observable — three of the family-2 package's pieces were untestable at rung 1 for want of
+one primitive (R-C §2.7). The `(place …)` family is that primitive: it writes a directory
+entry directly, and the model records exactly what the disk reader would classify the
+entry as, so the two sides' scan reports agree by construction rather than by luck. -/
+
+/-- The three planes of the on-disk layout (§4). -/
+inductive Plane
+  | objects
+  | names
+  | obligations
+deriving DecidableEq
+
+def Plane.dirName : Plane → String
+  | .objects => "objects"
+  | .names => "names"
+  | .obligations => "obligations"
+
+/-- What a `place` puts at a directory entry. `file` is the only shape v0 can create:
+    Lean 4.33.1 offers no symlink-creation and no FIFO primitive, and the only route to
+    either is a process spawn, which is OUTSIDE the SHELL-v0 §3 whitelist and therefore a
+    ruling rather than a seat (reported as BLOCKED under W3-20). `dir` is reachable
+    through the already-whitelisted `IO.FS.createDirAll`. -/
+inductive PlaceKind
+  | file (bytes : Bytes)
+  | dir
+deriving DecidableEq
+
+def PlaceKind.render : PlaceKind → String
+  | .file bs => s!"file bytes={bs.length}"
+  | .dir => "dir"
+
+/-- A placed entry's filename, restricted at the input boundary for the same reason
+    `validName` restricts a name: SH3 confines the shell to file IO UNDER THE STORE ROOT,
+    so a name that could traverse or escape a directory is refused, never sanitized. Wider
+    than `validName` in exactly one respect — a leading dot is admitted, because
+    `.tmp-<hex>` is a stray the scan is supposed to be able to see. -/
+def validPlacedName (n : String) : Bool :=
+  let cs := n.toList
+  !cs.isEmpty && cs.length ≤ 128
+    && cs.all (fun c =>
+         ('a' ≤ c && c ≤ 'z') || ('A' ≤ c && c ≤ 'Z') || ('0' ≤ c && c ≤ '9')
+           || c = '-' || c = '_' || c = '.')
+    && n != "." && n != ".."
+
+/-- What a directory entry contributes to a `StoreView`. -/
+inductive PlacedEntry
+  | object (a : Address) (b : Bytes)
+  | name (n : String) (a : Address)
+  | obligation (a : Address)
+  | strayObject (rel : String)
+  | strayName (rel : String)
+  | notRegular (rel : String)
+
+/-- The model's mirror of `StoreRoot.readView`'s classification, entry by entry. This is
+    the one function that has to agree with the disk reader, and it is written as a
+    TRANSCRIPTION of it, clause for clause — including the two places where the reader's
+    order of tests decides the answer:
+
+    * on the objects and obligations planes the filename is tested for address-hex FIRST,
+      so a directory whose name is not valid hex is a STRAY, not a non-regular entry;
+    * on the obligations plane a badly named entry joins `strayObjectFiles`, not
+      `strayNameFiles` — the reader's own choice, mirrored rather than tidied. -/
+def placedEntry (plane : Plane) (name : String) (kind : PlaceKind) : PlacedEntry :=
+  let rel := plane.dirName ++ "/" ++ name
+  match plane with
+  | .objects =>
+      match addrOfHex name with
+      | none => .strayObject rel
+      | some a => match kind with
+        | .file bs => .object a bs
+        | .dir => .notRegular rel
+  | .obligations =>
+      match addrOfHex name with
+      | none => .strayObject rel
+      | some a => match kind with
+        | .file _ => .obligation a
+        | .dir => .notRegular rel
+  | .names =>
+      if !validName name then .strayName rel
+      else match kind with
+        | .dir => .notRegular rel
+        | .file bs =>
+          match addrOfFileBytes bs with
+          | some a => .name name a
+          | none => .strayName rel
+
+/-- Fold one placed entry into a view. A directory holds one entry per name, so each
+    contribution REPLACES any earlier one at the same key rather than accumulating —
+    the disk's `writeBinFile` overwrites, and the model must too. -/
+def StoreView.withPlaced (v : StoreView) : PlacedEntry → StoreView
+  | .object a b => { v with objects := (a, b) :: v.objects.filter (fun p => p.fst != a) }
+  | .name n a => { v with names := (n, a) :: v.names.filter (fun p => p.fst != n) }
+  | .obligation a => { v with obligations := a :: v.obligations.filter (fun x => x != a) }
+  | .strayObject r =>
+      { v with strayObjectFiles := r :: v.strayObjectFiles.filter (fun x => x != r) }
+  | .strayName r =>
+      { v with strayNameFiles := r :: v.strayNameFiles.filter (fun x => x != r) }
+  | .notRegular r =>
+      { v with notRegularFiles := r :: v.notRegularFiles.filter (fun x => x != r) }
+
+/-- A write the verb has authorized. The two runners interpret these; nothing else
+    writes. -/
+inductive Effect
+  | putObject (a : Address) (b : Bytes) (kind : Kind)
+  | setName (n : String) (a : Address)
+  | corrupt (a : Address) (idx : Nat) (mask : UInt8)
+  /-- HARNESS PRIMITIVE (W3-20): create a directory entry below the boundary. -/
+  | place (plane : Plane) (name : String) (kind : PlaceKind)
+
+inductive Verb
+  | check
+  /-- The emitted topological order, sinks first (W3-12): M19's witness, computed rather
+      than asserted, and observable rather than merely computed. One `addr <hex>` line per
+      object. Additive — `check`'s transcript is untouched. -/
+  | order
+  | putSchema (b : Bytes)
+  | putEntity (sAddr : Address) (b : Bytes)
+  | get (a : Address)
+  | resolve (a : Address)
+  | refs (a : Address)
+  | nameSet (n : String) (a : Address)
+  | nameGet (n : String)
+  /-- HARNESS PRIMITIVE, not a CLI verb: flip bits in a stored object, below the PUT
+      boundary. One of the two writers in the shell that bypass admission — it exists so
+      that a corrupted store is a differential observable rather than a disk-only
+      anecdote. -/
+  | corrupt (a : Address) (idx : Nat) (mask : UInt8)
+  /-- HARNESS PRIMITIVE, not a CLI verb (W3-20): create a directory entry below the
+      boundary, so that a stray, a malformed name file, or a non-regular entry is a
+      differential observable. -/
+  | place (plane : Plane) (name : String) (kind : PlaceKind)
+
+/-- Flip bits in a byte string — the `corrupt` primitive's payload, below the boundary.
+    Shared by both runners so that a corruption is the same corruption on either side. -/
+def flipByte (bs : Bytes) (idx : Nat) (mask : UInt8) : Bytes :=
+  match bs[idx]? with
+  | none => bs
+  | some b => bs.set idx (b ^^^ mask)
+
 /-- Decide a verb against an opened store. Returns the observable and the authorized
     writes. Total; the store is never mutated here. -/
 def runVerb (view₀ : StoreView) (v : Verb) : Outcome × List Effect :=
@@ -74,11 +189,27 @@ def runVerb (view₀ : StoreView) (v : Verb) : Outcome × List Effect :=
   let blocked : Outcome × List Effect :=
     (⟨1, rep.render ++ ["aborted store-verification-failed"]⟩, [])
   -- Verification-on-open: nothing but `check` and the below-the-boundary harness
-  -- primitive runs against a store that fails the scan.
+  -- primitives (`corrupt`, `place`) runs against a store that fails the scan.
   let gated : (Outcome × List Effect) → Outcome × List Effect :=
     fun x => if rep.ok then x else blocked
   match v with
   | .check => (⟨if rep.ok then 0 else 1, rep.render⟩, [])
+  | .order =>
+      gated <|
+        match topoOrder σ with
+        | some o => (Outcome.ok (o.map (fun a => s!"addr {hexOfAddr a}")), [])
+        -- Unreachable behind `gated`: a cyclic store fails `check` (one `violation cycle`
+        -- line per unemitted node), so the gate has already aborted. Total deliberately,
+        -- and answering with the verdict the gate would give rather than minting a second
+        -- observable for a state that cannot be reached.
+        | none => blocked
+  | .place plane name kind =>
+      -- Below the boundary, like `corrupt`: UNGATED, because its whole purpose is to put
+      -- a store into a state the scan will condemn.
+      if !validPlacedName name then (Outcome.rejected (.badName name), [])
+      else
+        (Outcome.ok [s!"ok placed {plane.dirName}/{name} {kind.render}"],
+          [.place plane name kind])
   | .corrupt a idx mask =>
       match σ.find a with
       | none => (Outcome.rejected (.notFound a), [])

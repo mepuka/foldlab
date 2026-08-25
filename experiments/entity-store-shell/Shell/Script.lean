@@ -54,9 +54,32 @@ private def readByteHex (s : String) : Option UInt8 :=
   | some [b] => some b
   | _ => none
 
+private def readPlane : String → Option Plane
+  | "objects" => some .objects
+  | "names" => some .names
+  | "obligations" => some .obligations
+  | _ => none
+
 /-- The verb forms. -/
 def sexpToVerbAux (env : AddrEnv) : Sexp → Except String Verb
   | .list (.cons (.atom "check") .nil) => .ok .check
+  | .list (.cons (.atom "order") .nil) => .ok .order
+  -- The `(place …)` family (W3-20): the below-the-boundary writers. The filename is
+  -- taken VERBATIM, never resolved through `@N` — the point of the primitive is to write
+  -- an entry the boundary would never have produced, including one whose name is not an
+  -- address at all.
+  | .list (.cons (.atom "place") (.cons (.atom pl) (.cons (.atom fn) (.cons (.atom h) .nil)))) => do
+      let plane ← match readPlane pl with
+        | some p => .ok p
+        | none => .error s!"unknown plane '{pl}' (objects | names | obligations)"
+      match bytesOfHex h with
+      | some b => .ok (.place plane fn (.file b))
+      | none => .error s!"bad hex '{h}'"
+  | .list (.cons (.atom "place-dir") (.cons (.atom pl) (.cons (.atom fn) .nil))) => do
+      let plane ← match readPlane pl with
+        | some p => .ok p
+        | none => .error s!"unknown plane '{pl}' (objects | names | obligations)"
+      .ok (.place plane fn .dir)
   | .list (.cons (.atom "schema-put") (.cons s .nil)) =>
       (sexpToSchema env s).map (fun s' => .putSchema (schemaBytes s'))
   | .list (.cons (.atom "schema-put-raw") (.cons s .nil)) =>

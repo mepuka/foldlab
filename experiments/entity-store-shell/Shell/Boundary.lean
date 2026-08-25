@@ -73,11 +73,35 @@ def classify (b : Bytes) : Option Parsed :=
       | none => none
     | none => none
 
+/-! ## Carrier admission (boundary check 2, W3-12/W3-13) -/
+
+/-- The carrier-level admission verdict, taken from the MODEL's own surface (W3-12).
+
+    `E2.schemaAdmissionClause` IS `Reachable.putS`'s `WFS` premise, decided and named:
+    `schemaAdmissionClause_none_iff` bridges it to `wfsB`, and `wfsB_iff` bridges that to
+    `WFS`. `E2.valueAdmissionClause` is the value plane's twin (`wfvB` = `dupFreeV`,
+    which is `Reachable.putE`'s premise under W3-9).
+
+    The two verdict functions are the ONLY door: the shell never calls `closedB`,
+    `guardedB`, `dupFreeS`, `canonicalSpellingB`, `litNarrowB` or `dupFreeV` directly
+    (the CONTEXT avoid-list — "never bypass `admissibleReport` to call its internal
+    predicates from the shell", W3-3). Going through the named verdicts is what makes the
+    boundary check PROVABLY the model's premise rather than incidentally equal to it. -/
+def Parsed.admissionClause : Parsed → Option String
+  | .schema s => E2.schemaAdmissionClause s
+  | .entity _ v => E2.valueAdmissionClause v
+
 /-! ## Rejections -/
 
 inductive Rejection
   | notPreimage
   | wrongKind (expected got : Kind)
+  /-- The carrier is outside the model's admission: the FIRST failing clause, by name.
+      A single `not-well-formed` verdict would leave the differential harness unable to
+      tell a `closed` fix from a `guarded` one (R-C §1.2). Clause vocabulary is the
+      model's, not the shell's: `closed | guarded | dup-key | spelling | lit-narrow` on
+      the schema plane, `dup-key-value` on the value plane. -/
+  | notWellFormed (clause : String)
   | nonCanonical
   | schemaAddrMismatch (declared embedded : Address)
   | danglingRef (missing : Address)
@@ -89,6 +113,7 @@ inductive Rejection
 def Rejection.render : Rejection → String
   | .notPreimage => "not-a-preimage"
   | .wrongKind e g => s!"wrong-kind expected={e.name} got={g.name}"
+  | .notWellFormed c => s!"not-well-formed {c}"
   | .nonCanonical => "non-canonical"
   | .schemaAddrMismatch d e =>
       s!"schema-addr-mismatch declared={hexOfAddr d} embedded={hexOfAddr e}"
@@ -100,19 +125,39 @@ def Rejection.render : Rejection → String
 
 /-! ## The PUT boundary
 
-STORE-SHELL §5 enforces, in this order:
+STORE-SHELL §5, as amended by W3-12/W3-13, enforces `Reachable`'s insert premises with
+exactly what is decidable today, in this order:
 
 1. the bytes parse as a well-formed pre-image of a known kind (and of the kind the verb
    was asked for);
 1a. for entities, the schema address the verb was given matches the one embedded in the
    pre-image — an argument-consistency check, not a model condition;
-2. canonicity: re-canonicalize and byte-compare (Q5 strictness — non-canonical bytes are
+2. WELL-FORMEDNESS (W3-12): the decoded carrier satisfies the model's admission —
+   `E2.schemaAdmissionClause` on the schema plane (which IS `Reachable.putS`'s `WFS`
+   premise), `E2.valueAdmissionClause` on the value plane (`Reachable.putE`'s `dupFreeV`
+   premise, W3-9). The rejection names the failing clause;
+3. canonicity: re-canonicalize and byte-compare (Q5 strictness — non-canonical bytes are
    REJECTED, never silently repaired);
-3. every reference resolves in the store (WF2 precondition);
-4. for entities, the schema address resolves AS A SCHEMA (the typing precondition's
-   decidable half; check 3 only established presence).
+4. every reference resolves in the store (WF2 precondition);
+5. for entities, the schema address resolves AS A SCHEMA (the typing precondition's
+   decidable half; check 4 only established presence).
 
-Check 5, `Conforms`, is not enforceable until the M18 seat lands. Ruled (SH6): v0 records
+ORDERING NOTE (W3-13, from F-40/F-41). Well-formedness precedes canonicity because
+`ObligationCanonIdempotent` is conditional on `dupFreeS`: on a duplicate-key carrier
+`canonS` is an involution, not idempotent, so the byte-compare's verdict is not a
+statement about canonicity at all. Run the other way round it produced `non-canonical`
+on bytes the shell had itself assembled from a carrier literal — the boundary rejecting
+its own output. With check 2 ahead of it, a `non-canonical` verdict means what §5 says it
+means.
+
+WHY CHECK 2 SUBJECTS THE DECODED CARRIER, not the source carrier: checks 2 and 3 together
+establish `Admissible.admitted` with the decoded `p` as the witness. Check 3 gives
+`preimageS p = b`; `b` decoded to `p`, and `M4a_schema` gives
+`decodeSchema (encSchema (canonS p)) = some (canonS p)`, hence `canonS p = p`. So
+`Reachable.putS` fires with `s := p`: its stored bytes are `preimageS p = b` and its
+premise is `WFS p`, which is exactly what check 2 decided (R-C §1.3).
+
+Check 6, `Conforms`, is not enforceable until the M18 seat lands. Ruled (SH6): v0 records
 it as an explicitly accepted obligation per entity PUT — see `Shell/Store.lean` for the
 record and `checkReport` below for its appearance in `check` output. -/
 
@@ -134,13 +179,17 @@ def admit (σ : StoreMap) (expect : Kind) (declaredSchema : Option Address) (b :
   | .entity embedded _, some declared =>
       if declared ≠ embedded then .error (.schemaAddrMismatch declared embedded) else pure ()
   | _, _ => pure ()
-  -- 2: canonical-image strictness
+  -- 2: well-formedness — the model's own admission verdict, BEFORE canonicity (W3-13)
+  match p.admissionClause with
+  | some clause => .error (.notWellFormed clause)
+  | none => pure ()
+  -- 3: canonical-image strictness
   if p.canonicalPreimage ≠ b then .error .nonCanonical else
-  -- 3: reference closure
+  -- 4: reference closure
   match p.refs.find? (fun r => (σ.find r).isNone) with
   | some missing => .error (.danglingRef missing)
   | none =>
-    -- 4: for entities, the schema resolves as a schema
+    -- 5: for entities, the schema resolves as a schema
     match p with
     | .entity sAddr _ =>
         if (resolveSchema H σ sAddr).isNone then .error (.schemaUnresolved sAddr)
@@ -149,19 +198,33 @@ def admit (σ : StoreMap) (expect : Kind) (declaredSchema : Option Address) (b :
 
 /-! ## Verification-on-open (STORE-SHELL §4, SH5)
 
-Opening a directory as a store ESTABLISHES reachability (STORE-MODEL joint A): v0 runs
-the full scan — every object re-hashed (WF1), parsed, canonicity-checked, references
-resolved (WF2), and each entity's schema resolved as a schema (the decidable half of the
-typing precondition). What is NOT decidable today — `Conforms` — is exactly what the
+Opening a directory as a store establishes EVERY CLAUSE OF REACHABILITY THAT IS DECIDABLE
+TODAY, AND NO MORE (SH5 as narrowed by W3-12). v0 runs the full scan — every object
+re-hashed (WF1), parsed, checked well-formed against the model's admission verdicts,
+canonicity byte-compared, references resolved (WF2), each entity's schema resolved as a
+schema (the decidable half of the typing precondition), and the reference graph decided
+acyclic by Kahn's (WF3). What is NOT decidable today — `Conforms` — is exactly what the
 obligation records carry, and the scan cross-checks that every stored entity has one.
+
+ANTI-CLAIM (F-33's lesson, and the CONTEXT avoid-list). The scan establishes
+`E2.Admissible`, NEVER `Reachable`. The bridge between them is
+`E2.ObligationM19_transport`, which is stated and unproved and which additionally carries
+a conformance premise this scan does not supply. Kahn's pass is the COMPUTATIONAL half of
+that bridge — it produces the insertion order M19 asserts exists; the theorem half is a
+seat.
 
 The same scan runs over the in-process `StoreMap` and over the disk, so a corrupted store
 is a differential observable, not a disk-only anecdote. -/
 
-/-- What the scan reads. Both the model and the disk materialize one of these; the three
-    file-shape lists are always empty on the model side, since a `StoreMap` key is an
-    `Address` and a `NameMap` value is an `Address` — neither can be malformed, and
-    neither can be a directory. -/
+/-- What the scan reads. Both the model and the disk materialize one of these.
+
+    The three file-shape lists WERE hard-wired empty on the model side, on the reasoning
+    that a `StoreMap` key is an `Address` and a `NameMap` value is an `Address` — neither
+    can be malformed, neither can be a directory. True of anything the PUT boundary
+    admits, and false of anything written BELOW it, which is precisely the surface the
+    differential harness exists to cover. W3-20's `(place …)` family writes below the
+    boundary on both sides, so the model now carries real lists and the two sides diverge
+    only where they should. -/
 structure StoreView where
   objects : List (Address × Bytes)
   obligations : List Address
@@ -182,8 +245,18 @@ inductive Violation
   | notARegularFile (file : String)
   | wf1 (claimed actual : Address)
   | parseFail (a : Address)
+  /-- The stored carrier is outside the model's admission, first failing clause named.
+      Same vocabulary as the PUT rejection, and — per W3-13 — decided in the same place
+      in the order: before canonicity, on both sides. -/
+  | notWellFormed (a : Address) (clause : String)
   | nonCanonical (a : Address)
   | wf2 (a : Address) (missing : Address)
+  /-- WF3 (F-32, ruling W3-12): the reference graph has a cycle, and this address is one
+      Kahn's algorithm could not emit. A cycle is a GLOBAL property, so it does not fit
+      the one-line-per-object shape; one line per unemitted node is the useful shape and
+      stays deterministic, because the objects list is already `normalize`d by address
+      before Kahn's runs. -/
+  | cycle (a : Address)
   | typing (a : Address) (sAddr : Address)
   | obligationMissing (a : Address)
   | obligationOrphan (a : Address)
@@ -194,8 +267,10 @@ def Violation.render : Violation → String
   | .notARegularFile f => s!"violation not-a-regular-file file={renderStr f}"
   | .wf1 c a => s!"violation wf1 addr={hexOfAddr c} actual={hexOfAddr a}"
   | .parseFail a => s!"violation parse addr={hexOfAddr a}"
+  | .notWellFormed a c => s!"violation not-well-formed addr={hexOfAddr a} clause={c}"
   | .nonCanonical a => s!"violation non-canonical addr={hexOfAddr a}"
   | .wf2 a m => s!"violation wf2 addr={hexOfAddr a} missing={hexOfAddr m}"
+  | .cycle a => s!"violation cycle addr={hexOfAddr a}"
   | .typing a s => s!"violation typing addr={hexOfAddr a} schema={hexOfAddr s}"
   | .obligationMissing a => s!"violation obligation-missing entity={hexOfAddr a}"
   | .obligationOrphan a => s!"violation obligation-orphan record={hexOfAddr a}"
@@ -220,22 +295,65 @@ def StoreView.normalize (v : StoreView) : StoreView :=
 def StoreView.toMap (v : StoreView) : StoreMap := v.objects
 
 /-- The structural checks, in order, for one object. A structural failure (wf1, parse,
-    canonicity) short-circuits: those faults cascade, and one line per faulty object
-    naming the first check it fails is the readable report. Reference misses do not
-    cascade, so every missing reference is reported. -/
+    well-formedness, canonicity) short-circuits: those faults cascade, and one line per
+    faulty object naming the first check it fails is the readable report. Reference misses
+    do not cascade, so every missing reference is reported.
+
+    ORDER (W3-13). The scan runs the SAME order as the PUT boundary: well-formedness
+    before canonicity. R-C §3.3 offered the opposite order here — on the scan side
+    canonicity is a statement about bytes already on disk and is the more primitive fault
+    — and flagged that an operator might reasonably rule the two must agree. W3-13 so
+    ruled, and the PUT order won, because it is the one with the model-premise argument
+    behind it: outside `dupFreeS` the byte-compare's verdict is meaningless on either
+    side of the boundary. -/
 def scanObject (σ : StoreMap) (a : Address) (b : Bytes) : List Violation :=
   if H b ≠ a then [.wf1 a (H b)]
   else match classify b with
     | none => [.parseFail a]
     | some p =>
-      if p.canonicalPreimage ≠ b then [.nonCanonical a]
-      else
-        let wf2s := (p.refs.filter (fun r => (σ.find r).isNone)).map (Violation.wf2 a)
-        let typ := match p with
-          | .entity sAddr _ =>
-              if (resolveSchema H σ sAddr).isNone then [Violation.typing a sAddr] else []
-          | .schema _ => []
-        wf2s ++ typ
+      match p.admissionClause with
+      | some clause => [.notWellFormed a clause]
+      | none =>
+        if p.canonicalPreimage ≠ b then [.nonCanonical a]
+        else
+          let wf2s := (p.refs.filter (fun r => (σ.find r).isNone)).map (Violation.wf2 a)
+          let typ := match p with
+            | .entity sAddr _ =>
+                if (resolveSchema H σ sAddr).isNone then [Violation.typing a sAddr] else []
+            | .schema _ => []
+          wf2s ++ typ
+
+/-! ## Acyclicity (WF3), decided — F-32, ruling W3-12
+
+`E2.topoOrder` is Kahn's algorithm over the reference graph: `none` exactly when the
+graph has a cycle, otherwise the topological order sinks-first — which is also a legal
+insertion sequence, which is why the same pass triples as the acyclicity decision, the
+cycle witness, and M19's reconstruction order. `Admissible.acyclic` is the clause it
+decides; `ObligationTopoComplete` is the theorem that says so, stated and unproved. -/
+
+/-- The addresses Kahn's algorithm could not emit — empty exactly when `E2.topoOrder`
+    succeeds, and otherwise the cyclic core together with everything that depends on it.
+
+    `topoOrder` is all-or-nothing, so the per-node witness W3-12 asks for is not readable
+    off its result. This drives the CORE's own round function (`E2.kahnSplit`) and keeps
+    only the leftovers; the shell supplies the fuel and the accumulator and never a second
+    notion of "ready" — the Layer-2 discipline at the head of this file, applied to a
+    graph pass rather than to a codec.
+
+    DETERMINISTIC: `checkReport` normalizes the view by address before building `σ`, and
+    `List.partition` preserves input order, so the leftovers come out in address order on
+    both runners. -/
+def cycleNodes (σ : StoreMap) : List Address :=
+  let rec go : Nat → List Address → List Address
+    | 0, remaining => remaining
+    | fuel + 1, remaining =>
+      match remaining with
+      | [] => []
+      | _ :: _ =>
+        match kahnSplit σ remaining with
+        | ([], _) => remaining
+        | (_, rest) => go fuel rest
+  go (Keys σ).length (Keys σ)
 
 /-- The verdict of opening a directory as a store. -/
 structure CheckReport where
@@ -268,14 +386,21 @@ def checkReport (view₀ : StoreView) : CheckReport :=
     (fun e => Violation.obligationMissing e.fst)
   let orphan := (view.obligations.filter (fun o =>
       !entityAddrs.contains o && !isFaulted o)).map Violation.obligationOrphan
+  -- WF3 (W3-12): the whole-graph clause, decided by the core's Kahn's pass. Read off
+  -- STORED BYTES via `E2.refsAt`, so it is a statement about the candidate directory and
+  -- not about any carrier the scan happens to be holding.
+  let cycles := (if (topoOrder σ).isSome then [] else cycleNodes σ).map Violation.cycle
   { obligations := entities
     violations :=
       -- File-shape observations first, in the order the planes are laid out: what the
-      -- scan could not even open comes before what it opened and found wrong. Each list
-      -- is sorted by name in `normalize`, so the whole block is deterministic.
+      -- scan could not even open comes before what it opened and found wrong. Then the
+      -- per-object faults, then the whole-graph fault, then the obligation plane, then
+      -- names. Each list is sorted by name or address in `normalize`, so the whole block
+      -- is deterministic.
       view.strayObjectFiles.map Violation.strayObject
         ++ view.notRegularFiles.map Violation.notARegularFile
         ++ perObject.flatMap Prod.snd
+        ++ cycles
         ++ missing ++ orphan
         ++ view.strayNameFiles.map Violation.strayName
     objectCount := view.objects.length

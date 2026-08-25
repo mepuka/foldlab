@@ -1,0 +1,51 @@
+; STORE-SHELL §4, F-42 / ruling W3-15, made DIFFERENTIAL by W3-20's `(place …)` family —
+; R-C §4.6's `20-open-not-a-file`.
+;
+; THE GAP THIS CLOSES. Until today the only writer below the PUT boundary was
+; `(corrupt <addr> <idx> <mask>)`, which can only flip bytes in an object that is already
+; present, and `StoreView`'s stray and non-regular lists were hard-wired `[]` on the model
+; side. So no script could produce a directory, a stray, or a malformed name file as a
+; DIFFERENTIAL observable: the whole file-type discipline W3-15 admitted
+; `symlinkMetadata` for was exercised by hand only. `(place-dir <plane> <name>)` writes
+; the entry on the disk side and records the row the disk reader would classify it as on
+; the model side, so both sides' scan reports agree by construction.
+;
+; WHAT THE DISCIPLINE IS. An entry is opened only when `symlinkMetadata` says it is a
+; regular FILE. A directory named as a valid address is not opened — the old code crashed
+; on it, "inappropriate type ... is a directory". It becomes one `not-a-regular-file`
+; violation: a VERDICT, exit 1, which is correct, because a directory named as an address
+; IS a malformed store and `check` exists to say so. It is deliberately NOT a stray:
+; "your objects/ contains a directory" is the diagnosis a transported store needs, and
+; "stray" is not.
+
+; an ordinary store first, so the flip to a violation is visible against a clean baseline
+(schema-put (prim int))
+(check)
+(assert-code prev 0)
+
+; a DIRECTORY at a name the layout admits as an address. Never opened, always reported.
+(place-dir objects 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000)
+(check)
+(assert-code prev 1)
+
+; exit 1 is a verdict, not a crash: the store is still open and every other verb refuses
+; on the SAME verdict rather than escaping through an unhandled exception. This is the
+; leg that pins totality on a hostile directory.
+(get @1)
+(assert-code prev 1)
+(resolve @1)
+(assert-code prev 1)
+(order)
+(assert-code prev 1)
+
+; the same discipline on the names plane: an obligation record's or a name's IDENTITY is
+; its filename, so a directory there could be COUNTED without ever being opened.
+(place-dir names alias)
+(check)
+(assert-code prev 1)
+
+; and on the obligations plane, where a directory named as an entity's address would
+; otherwise discharge that entity's SH6 record for free
+(place-dir obligations 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111)
+(check)
+(assert-code prev 1)

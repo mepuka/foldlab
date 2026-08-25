@@ -1,0 +1,33 @@
+; STORE-SHELL §5 check 2, VALUE plane (W3-12 + W3-9) — `r2-17`'s shape, corrected.
+;
+; A-3 said duplicate-key freedom on the value plane was "a boundary check"; F-33 showed
+; the boundary had no such check, and `r2-17` pinned it: the same `canonVFields`
+; involution admits a palindromic duplicate-key `vobj`, `check` calls the store clean,
+; and `resolve` hands it back. W3-9 moved the clause onto `Reachable.putE`'s premise list
+; and W3-12 wired the boundary to `E2.valueAdmissionClause`, which IS that premise.
+;
+; The rejection names `dup-key-value` rather than `dup-key`: one verdict for both planes
+; would leave this fixture unable to tell a value-plane fix from a schema-plane one.
+
+; a record schema, so the value's keys are unconstrained by the schema
+(schema-put (record (prim int)))
+(assert-code prev 0)
+
+; the identical pair
+(entity-put @1 (obj ("a" (i 1)) ("a" (i 1))))
+(assert-code prev 1)
+
+; the palindromic triple carrying two different values at one key
+(entity-put @1 (obj ("a" (i 1)) ("a" (i 2)) ("a" (i 1))))
+(assert-code prev 1)
+
+; nested inside an array inside an object: the clause descends both value constructors
+(entity-put @1 (obj ("outer" (arr (obj ("k" (i 1)) ("k" (i 2)))))))
+(assert-code prev 1)
+
+; distinct keys are admitted
+(entity-put @1 (obj ("a" (i 1)) ("b" (i 2))))
+(assert-code prev 0)
+
+; the schema and the one admitted entity, and nothing else.
+(check)

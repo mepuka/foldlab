@@ -1,0 +1,77 @@
+; STORE-SHELL §4/SH5 as amended by W3-12: WF3 (acyclicity) is DECIDED, by Kahn's
+; algorithm over the reference graph, and the order the same pass emits is observable
+; through the new `order` verb — R-C §2.6's `16-acyclic-clean`.
+;
+; F-32: `HEADLINE_wf1_wf2_insufficient` exhibits a store satisfying WF1 and WF2 that
+; contains a reference cycle and is unreachable. `check` did not test acyclicity at all.
+; It does now, and the pass triples: the acyclicity decision, the cycle witness (one
+; `violation cycle addr=…` per node Kahn's could not emit), and M19's reconstruction
+; order.
+;
+; ANTI-CLAIM, stated so this fixture cannot be read as more than it is: a clean `check`
+; establishes `E2.Admissible`, NEVER `Reachable`. The bridge is
+; `ObligationM19_transport`, stated and unproved, and it carries a conformance premise
+; this scan does not supply (the SH6 obligation records are that gap, made visible).
+; Kahn's pass is the COMPUTATIONAL half of that bridge; the theorem half is a seat.
+
+; a chain: A is a sink, B references A, C references B.
+(schema-put (prim int))
+(schema-put (array (ref @1)))
+(schema-put (tuple (ref @2) (prim str)))
+
+; the edges, read back off the stored bytes
+(refs @1)
+(refs @2)
+(refs @3)
+
+; acyclic, so the scan is clean and the order exists
+(check)
+(assert-code prev 0)
+
+; the emitted order: one `addr <hex>` line per object, SINKS FIRST — replaying it is a
+; legal insertion sequence, which is exactly what M19 asserts exists. The two runners
+; compute it from the same normalized view with the same core pass, so a divergence here
+; would be a divergence in the graph the disk presents, not in the algorithm.
+(order)
+(assert-code prev 0)
+
+; `order` is additive: `check`'s transcript is byte-identical before and after it, which
+; is why W3-12 made the order a verb rather than a line in the report (R-C §2.4 option b
+; over option a).
+(check)
+(assert-code prev 0)
+
+; an entity's schema address heads its reference list, so the typing edge is an edge like
+; any other and joins the same graph.
+(entity-put @1 (i 42))
+(refs @last)
+(order)
+(check)
+(assert-code prev 0)
+
+; --- the cyclic case, which no admitted verb can reach.
+;
+; Check 4 forbids a dangling reference, and an object's address is a digest of its own
+; bytes, so a cycle is UNCONSTRUCTIBLE through the PUT boundary — which is the point, and
+; also the reason F-32 sat untested. `(place …)` writes below the boundary: two schema
+; pre-images, each a bare `(ref …)` naming the other's filename, dropped straight into
+; `objects/`. `E2.refsAt` reads references off the STORED BYTES, so the edges are real
+; even though neither object hashes to its own name.
+;
+; Both objects therefore draw a `wf1` line as well, and that is honest rather than
+; incidental: a cycle cannot exist in a store where WF1 holds, so the two faults arrive
+; together by necessity. The lines that matter are the two `cycle` ones — one per node
+; Kahn's could not emit, in address order.
+;
+; The hex payloads are `preimageS (ref <other>)`, produced by `estore-encode`, the fixture
+; tool §6 permits.
+(place objects 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 0100374011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111)
+(place objects 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 0100374000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000)
+(check)
+(assert-code prev 1)
+
+; `order` refuses on a cyclic store — it is gated like every verb but `check`, so the
+; unreachable-by-construction `none` branch stays unreachable and the caller gets the
+; verdict rather than a second observable.
+(order)
+(assert-code prev 1)
