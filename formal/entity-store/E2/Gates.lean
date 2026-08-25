@@ -12,6 +12,8 @@ import E2.Obligations
 import E2.Model
 import E2.Decode
 import E2.Resolve
+import E2.Graph
+import E2.Admission
 import E2.Bridge
 import E2.Faithful
 import E2.Closure
@@ -76,3 +78,7 @@ example :
 #print axioms E2.encSchema_inj
 #print axioms E2.encValue_inj
 #print axioms E2.M12E_dedup
+
+/- Window B (W3-3): the only new PROVED item. `Graph` and `Admission` are otherwise
+   definitions and stated obligations, which `#print axioms` has nothing to say about. -/
+#print axioms E2.wfsB_iff

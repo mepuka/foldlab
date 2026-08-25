@@ -203,13 +203,16 @@ theorem wf2_of_reachable {H : Bytes → Address} {env : ConformsEnv} {σ : Store
         hinserted | hold
       · subst b
         refine ⟨refsS (canonS s), refsOfPreimage_preimageS s, ?_⟩
+        -- W3-7: `href` is now `AllResolve σ (refsS (canonS s))` directly — the stored
+        -- form IS the premise, so the `allResolve_canonS` step disappears.
         simpa [putSchema] using
-          (allResolve_putPre (H := H) (b := preimageS s) (allResolve_canonS href))
+          (allResolve_putPre (H := H) (b := preimageS s) href)
       · rcases ih d b hold with ⟨rs, hparse, hresolve⟩
         refine ⟨rs, hparse, ?_⟩
         simpa [putSchema] using
           (allResolve_putPre (H := H) (b := preimageS s) hresolve)
-  | @putE σ sAddr v s _ hschema _ href ih =>
+  -- W3-9 pattern hole 2 of 3: one added hole for the `dupFreeV (canonV v)` premise.
+  | @putE σ sAddr v s _ hschema _ _ href ih =>
       intro d b hfind
       rcases find_putPre_cases (show
           (putPre H σ (preimageE sAddr v)).find d = some b from hfind) with
@@ -222,7 +225,8 @@ theorem wf2_of_reachable {H : Bytes → Address} {env : ConformsEnv} {σ : Store
           rcases ha with rfl | ha
           · rw [hschema]
             simp
-          · exact allResolve_canonV href a ha
+          -- W3-7: same collapse on the value plane — `href` is already about `canonV v`.
+          · exact href a ha
         simpa [putEntity] using
           (allResolve_putPre (H := H) (b := preimageE sAddr v) hresolveOld)
       · rcases ih d b hold with ⟨rs, hparse, hresolve⟩

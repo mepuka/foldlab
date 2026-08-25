@@ -40,8 +40,12 @@ theorem reachable_ne_dangling_singleton {H : Bytes → Address} {env : ConformsE
         have htail : σ = [] := (List.cons.inj heq).2
         subst s
         subst σ
-        simp [AllResolve, refsS, StoreMap.find] at href
-  | @putE σ sAddr v s _ _ _ _ ih =>
+        -- W3-7: `href` is now about the STORED form, so the simp set needs the
+        -- `canonS (.ref a₀) = .ref a₀` equation to get back to `refsS (.ref a₀) = [a₀]`.
+        -- The argument is otherwise unchanged: the reference dangles in the empty store.
+        simp [AllResolve, canonS, refsS, StoreMap.find] at href
+  -- W3-9 pattern hole 3 of 3: one added hole for the `dupFreeV (canonV v)` premise.
+  | @putE σ sAddr v s _ _ _ _ _ ih =>
       intro heq
       unfold putEntity putPre at heq
       split at heq
