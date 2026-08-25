@@ -4,7 +4,18 @@ node = "22.23.2"
 
 [tasks.gen]
 description = "Regenerate every derived file from declared sources"
-run = "mise run gen:ledger"
+run = [
+  "mise run gen:vectors",
+  "mise run gen:ledger",
+]
+
+[tasks."gen:vectors"]
+description = "Regenerate the golden-vector corpus and transcripts from the oracle (CV-1 bundle raw material)"
+dir = "{{config_root}}/experiments/entity-store-shell"
+run = [
+  "lake exe estore-vectors",
+  "lake exe harness harness .harness-work --record transcripts",
+]
 
 [tasks."gen:ledger"]
 description = "Regenerate docs/entity-store/LEDGER.md by fresh extraction (PROCEDURE §8)"
